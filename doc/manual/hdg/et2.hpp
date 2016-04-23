@@ -28,6 +28,8 @@
 #include <feel/feelvf/norml2.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feelmesh/concatenate.hpp>
+
 
 namespace Feel {
 
@@ -136,8 +138,7 @@ ElectroThermal<Dim, OrderP>::run()
 
     auto Vh = Pdhv<OrderP>( mesh, true );
     auto Wh = Pdh<OrderP>( mesh, true );
-    auto complement_integral_bdy = concatenate(concatenate(internalfaces(mesh),markedfaces(mesh,"top")), 
-                                               markedfaces(mesh,"R"));
+    auto complement_integral_bdy = concatenate(internalfaces(mesh),markedfaces(mesh,"top"), markedfaces(mesh, "R"));
     auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
     auto face_mesh_bottom = createSubmesh( mesh, markedfaces(mesh,"bottom"), EXTRACTION_KEEP_MESH_RELATION, 0 );
     auto Mh = Pdh<OrderP>( face_mesh, true );
@@ -247,15 +248,17 @@ ElectroThermal<Dim, OrderP>::run()
     double I_error_last = I_error ;
     double I_In = 0.5*I_error ;
 
-#if 0
+#if 1
     assemble_A_and_F( A, F, Vh, Wh, Mh, Ch, Xh, up, pp, Tp );
     backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=U );
     hdg_sol.localize(U);
     double I =  integrate(_range=markedfaces(mesh,"bottom"),
                           _expr=inner(idv(*up),N())).evaluate()(0,0);
-    cout << "I=" << I << std::endl;
+    cout << "I=" << I << "  |I-I_target|=" << std::abs( I-I_target) << std::endl;
     e->add( "V", *pp );
     e->add( "J", *up );
+    // save the value of the potential difference (only one dof, we access entry 0)
+    e->add( "Vdiff", (*mup)(0) );
     e->add( "T", *Tp );
     e->save();
 #else
@@ -352,11 +355,12 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                        _rowstart=1 );
 
     //rhs2 += integrate(_range=elements(mesh),                      _expr=f*id(w));
-
+#if 0
     auto rhs3 = form1( _test=Mh, _vector=F,
                        _rowstart=2);
     rhs3 += integrate(_range=markedfaces(mesh,"top"),
                       _expr=id(l)*V);
+#endif
 
     auto rhs4 = form1( _test=Xh, _vector=F,
                        _rowstart=4);
@@ -466,9 +470,9 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     auto a41 = form2(_trial=Vh, _test=Ch,_matrix=A,
                      _rowstart=3,
                      _colstart=0);
-    a41 += integrate( _range=markedfaces(mesh,"bottom"), 
+    a41 += integrate( _range=markedfaces(mesh,"bottom"),
                       _expr=trans(idt(u))*N()*id(nu) );
-    
+
     auto a42 = form2(_trial=Wh, _test=Ch,_matrix=A,
         _rowstart=3,
                      _colstart=1);
