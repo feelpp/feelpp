@@ -29,15 +29,113 @@
 
 namespace Feel {
 
+/**
+ * \addtogroup Traits
+ * @{
+ */
 
+/**
+ * if \p T has base class \p ScalarBase then @return the member constant value equal
+ * to true, false otherwise
+ */
 template<typename T>
 using is_scalar_field = typename std::is_base_of<ScalarBase, T>::type;
+
+/**
+ * helper variable template for is_scalar_field
+ */
+template<typename T>
+constexpr bool is_scalar_field_v = is_scalar_field<T>::value;
+
+/**
+ * if \p T has base class \p VectorialBase then @return the member constant value equal
+ * to true, false otherwise
+ */
 template<typename T>
 using is_vector_field = typename std::is_base_of<VectorialBase, T>::type;
+
+/**
+ * helper variable template for is_vector_field
+ */
+template<typename T>
+constexpr bool is_vector_field_v = is_vector_field<T>::value;
+
+/**
+ * if \p T has base class \p Tensor2Base then @return the member constant value equal
+ * to true, false otherwise
+ */
 template<typename T>
 using is_tensor2_field  =typename std::is_base_of<Tensor2Base, T>::type;
+
+/**
+ * helper variable template for is_tensor2_field
+ */
+template<typename T>
+constexpr bool is_tensor2_field_v = is_tensor2_field<T>::value;
+
+/**
+ * if \p T has base class \p Tensor2SymmBase then @return the member constant value equal
+ * to true, false otherwise
+ */
 template<typename T>
 using is_tensor2symm_field  =typename std::is_base_of<Tensor2SymmBase, T>::type;
 
+/**
+ * helper variable template for is_tensor2symm_field
+ */
+template<typename T>
+constexpr bool is_tensor2symm_field_v = is_tensor2symm_field<T>::value;
+
+/**
+ * if \p T has base class \p FunctionSpaceBase (hense if it is a function space)
+ * then provides the member constant value equal to true, false otherwise
+ */
+template<typename FuncSpaceType>
+using is_functionspace = typename std::is_base_of<FunctionSpaceBase,FuncSpaceType>::type;
+
+/**
+ * helper variable template for is_functionspace
+ */
+template<typename FuncSpaceType>
+constexpr bool is_functionspace_v = is_functionspace<FuncSpaceType>::value;
+
+/**
+ * provides the function space type
+ * if \p FESpace is a shared_ptr of a function space then provides the function space type
+ * \note it checks that FESpace is indeed a functionspace type and return void if it is not the case.
+ */
+template<typename FESpace>
+using functionspace_type = typename mpl::if_<is_functionspace<decay_type<FESpace> >,
+                                             mpl::identity<decay_type<FESpace>>,
+                                             mpl::identity<void> >::type::type;
+
+
+/**
+ * if \p T has base class \p ElementBase (hense if it is an element of a function space)
+ * then provides the member constant value equal to true, false otherwise
+ */
+template<typename ElementType>
+using is_functionspace_element = typename std::is_base_of<ElementBase,ElementType>::type;
+
+/**
+ * helper variable template for is_functionspace_element
+ */
+template<typename ElementType>
+constexpr bool is_functionspace_element_v = is_element_of_functionspace_v<ElementType>::value;
+
+
+/**
+ * provides the function space type
+ * if \p FESpace is a shared_ptr of a function space then provides the function space type
+ * \note it checks that FESpace is indeed a functionspace type and return void if it is not the case.
+ */
+template<typename ElementT>
+using functionspace_element_type = typename mpl::if_<is_functionspace_element<decay_type<ElementT> >,
+                                                     mpl::identity<decay_type<ElementT>>,
+                                                     mpl::identity<void> >::type::type;
+
+/**
+ * @} // end Traits group
+ */
 }
 #endif
