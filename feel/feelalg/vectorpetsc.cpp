@@ -862,9 +862,45 @@ VectorPetscMPI<T>::VectorPetscMPI( datamap_ptrtype const& dm, bool doInit )
 template<typename T>
 VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplicate )
     :
-    super( v,dm,duplicate )
+    super( dm,false )
 {
-    //this->close();
+    this->M_destroy_vec_on_exit = duplicate;
+
+    if ( duplicate )
+    {
+        int ierr = 0;
+        ierr = VecDuplicate( v, &this->M_vec );
+        CHKERRABORT( this->comm(),ierr );
+
+        Vec lx;
+        ierr = VecGhostGetLocalForm(this->vec(),&lx);
+        CHKERRABORT( this->comm(),ierr );
+        if ( !lx )
+        {
+            int petsc_n_localWithoutGhost = static_cast<PetscInt>( this->map().nLocalDofWithoutGhost() );
+            int petsc_n_localGhost = static_cast<PetscInt>( this->map().nLocalGhosts() );
+            PetscInt *idx = NULL;
+            if ( petsc_n_localGhost > 0 )
+            {
+                idx = new PetscInt[petsc_n_localGhost];
+                std::copy( this->map().mapGlobalProcessToGlobalCluster().begin()+petsc_n_localWithoutGhost,
+                           this->map().mapGlobalProcessToGlobalCluster().end(),
+                           idx );
+            }
+
+            ierr = VecMPISetGhost( this->vec(), petsc_n_localGhost, idx );
+            CHKERRABORT( this->comm(),ierr );
+        }
+        ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+        CHKERRABORT( this->comm(),ierr );
+
+        ierr = VecCopy( v, this->vec() );
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else
+        this->M_vec = v;
+
+    this->M_is_initialized = true;
     this->localize();
     this->setIsClosed( true );
 }

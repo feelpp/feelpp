@@ -166,22 +166,26 @@ int main(int argc, char**argv )
     BoundaryConditions bcs;
     map_vector_field<dim,1,2> dirichlet_conditions { bcs.getVectorFields<dim> ( "velocity", "Dirichlet" ) };
     
+    double temps;
+    double v_mean;
     
+    std::ifstream fichier(filename, std::ios::in);
+    if(!fichier)
+    {
+        if ( Environment::isMasterRank() )
+        {
+            std::cout<<"Echec d'ouverture du fichier \n";
+        }
+    }
+    else
+    {
+        if ( Environment::isMasterRank() )
+        {
+            std::cout<<"Lecture du fichier "<<filename<<".dat \n\n";
+        }
+    }
     if (pulsatile==1)
     {
-        double temps;
-        double v_mean;
-        std::ifstream fichier(filename, std::ios::in);
-        if(!fichier)
-            if ( Environment::isMasterRank() )
-            {
-                std::cout<<"Echec d'ouverture du fichier \n";
-            }
-        else
-            if ( Environment::isMasterRank() )
-            {
-                std::cout<<"Lecture du fichier "<<filename<<".dat \n\n";
-            }
         fichier >> temps >> v_mean;
         dirichlet_conditions.setParameterValues( { {"v",v_mean }});
         dirichlet_conditions.setParameterValues( { {"c",coeff }});
@@ -200,9 +204,10 @@ int main(int argc, char**argv )
                               _type=soption("ns.preconditioner"),
                               _bc=BoundaryConditionFactory::instance(),
                               _matrix= a.matrixPtr(),
-                              _alpha=rho*mybdf->polyDerivCoefficient(0),
-                              _mu=mu,
-                              _rho=rho,
+                              _properties_space = Pdh<0>( mesh ),
+                              _alpha=cst(rho*mybdf->polyDerivCoefficient(0)),
+                              _mu=cst(mu),
+                              _rho=cst(rho),
                               _prefix="velocity" );
 
     toc("bdf, forms,...");
