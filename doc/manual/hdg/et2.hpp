@@ -29,6 +29,7 @@
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feelmesh/concatenate.hpp>
+#include <feel/feelmesh/complement.hpp>
 
 
 namespace Feel {
@@ -138,9 +139,15 @@ ElectroThermal<Dim, OrderP>::run()
 
     auto Vh = Pdhv<OrderP>( mesh, true );
     auto Wh = Pdh<OrderP>( mesh, true );
-    auto complement_integral_bdy = concatenate(internalfaces(mesh),markedfaces(mesh,"top"), markedfaces(mesh, "R"));
-    auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
-    auto face_mesh_bottom = createSubmesh( mesh, markedfaces(mesh,"bottom"), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    face_mesh_ptrtype face_mesh, face_mesh_bottom;
+
+    //auto complement_integral_bdy = concatenate(internalfaces(mesh),markedfaces(mesh,"top"), markedfaces(mesh, "R"));
+    auto complement_integral_bdy = complement(faces(mesh),[&mesh]( auto const& e ) { return e.marker().value() == mesh->markerName( "bottom" ); });
+    face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
+    face_mesh_bottom = createSubmesh( mesh, markedfaces(mesh,"bottom"), EXTRACTION_KEEP_MESH_RELATION, 0 );
+
+    //face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
+
     auto Mh = Pdh<OrderP>( face_mesh, true );
     auto Xh = Pch<OrderP>( mesh );
     auto Ch = Pch<0>( mesh );
