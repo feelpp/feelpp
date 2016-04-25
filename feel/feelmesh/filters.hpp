@@ -113,10 +113,11 @@ using filter_entity_t = typename filter_iterator_t<IteratorType>::value_type;
 
 template<typename IteratorType>
 using ext_entities_from_iterator_t = boost::tuple<filter_enum_t<IteratorType>,
-                                               typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
-                                               typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
-                                               boost::shared_ptr<std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> > >
-                                               >;
+                                                  typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
+                                                  typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
+                                                  boost::shared_ptr<std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> > >
+                                                  >;
+
 template<typename MeshType>
 using idfaces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
                                 typename MeshTraits<MeshType>::face_const_iterator,
@@ -153,19 +154,19 @@ using marked3faces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
 
 template<typename MeshType>
 using edges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,
-                               typename MeshTraits<MeshType>::edge_const_iterator,
-                               typename MeshTraits<MeshType>::edge_const_iterator>;
+                              typename MeshTraits<MeshType>::edge_const_iterator,
+                              typename MeshTraits<MeshType>::edge_const_iterator>;
 template<typename MeshType>
 using pid_edges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,
-                                typename MeshTraits<MeshType>::pid_edge_const_iterator,
-                                typename MeshTraits<MeshType>::pid_edge_const_iterator>;
+                                  typename MeshTraits<MeshType>::pid_edge_const_iterator,
+                                  typename MeshTraits<MeshType>::pid_edge_const_iterator>;
 
 template<typename MeshType>
 using ext_edges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,
-                              typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::edge_type const> >::const_iterator,
-                              typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::edge_type const> >::const_iterator,
-                              boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::edge_type const> > >
-                              >;
+                                  typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::edge_type const> >::const_iterator,
+                                  typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::edge_type const> >::const_iterator,
+                                  boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::edge_type const> > >
+                                  >;
 
 template<typename MeshType>
 using markededges_t = boost::tuple<mpl::size_t<MESH_EDGES>,
@@ -210,8 +211,8 @@ struct elements
 {
     static const uint16_type nDim = MeshType::nDim;
     typedef boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-            typename MeshTraits<MeshType>::element_const_iterator,
-            typename MeshTraits<MeshType>::element_const_iterator> type;
+                         typename MeshTraits<MeshType>::element_const_iterator,
+                         typename MeshTraits<MeshType>::element_const_iterator> type;
 };
 
 template<typename MeshType>
@@ -219,8 +220,8 @@ struct markedelements
 {
     static const uint16_type nDim = MeshType::nDim;
     typedef boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-            typename MeshTraits<MeshType>::marker_element_const_iterator,
-            typename MeshTraits<MeshType>::marker_element_const_iterator> type;
+                         typename MeshTraits<MeshType>::marker_element_const_iterator,
+                         typename MeshTraits<MeshType>::marker_element_const_iterator> type;
 };
 
 template<typename MeshType>
@@ -228,8 +229,8 @@ struct marked2elements
 {
     static const uint16_type nDim = MeshType::nDim;
     typedef boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-            typename MeshTraits<MeshType>::marker2_element_const_iterator,
-            typename MeshTraits<MeshType>::marker2_element_const_iterator> type;
+                         typename MeshTraits<MeshType>::marker2_element_const_iterator,
+                         typename MeshTraits<MeshType>::marker2_element_const_iterator> type;
 };
 
 template<typename MeshType>
@@ -237,8 +238,8 @@ struct marked3elements
 {
     static const uint16_type nDim = MeshType::nDim;
     typedef boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-            typename MeshTraits<MeshType>::marker3_element_const_iterator,
-            typename MeshTraits<MeshType>::marker3_element_const_iterator> type;
+                         typename MeshTraits<MeshType>::marker3_element_const_iterator,
+                         typename MeshTraits<MeshType>::marker3_element_const_iterator> type;
 };
 
 } // meta
@@ -396,11 +397,11 @@ marked2elements( MeshType const& mesh, std::string const& flag )
     return Feel::detail::marked2elements( mesh, mesh->markerName( flag ), rank( mesh ), is_ptr_or_shared_ptr() );
 }
 /**
-*
-* \ingroup MeshIterators
-* \return a pair of iterators to iterate over elements of the
-* mesh with marker \p flag
-*/
+ *
+ * \ingroup MeshIterators
+ * \return a pair of iterators to iterate over elements of the
+ * mesh with marker \p flag
+ */
 template<typename MeshType>
 marked2elements_t<MeshType>
 marked2elements( MeshType const& mesh, const char* flag )
@@ -618,8 +619,8 @@ markedfaces( MeshType const& mesh,
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::marker2_face_const_iterator,
-      typename MeshTraits<MeshType>::marker2_face_const_iterator>
+             typename MeshTraits<MeshType>::marker2_face_const_iterator,
+             typename MeshTraits<MeshType>::marker2_face_const_iterator>
 marked2faces( MeshType const& mesh,
               flag_type __marker )
 {
@@ -632,7 +633,7 @@ std::list<boost::tuple<mpl::size_t<MESH_FACES>,
                        typename MeshTraits<MeshType>::marker2_face_const_iterator,
                        typename MeshTraits<MeshType>::marker2_face_const_iterator> >
 marked2faces( MeshType const& mesh,
-             std::initializer_list<boost::any> __markers )
+              std::initializer_list<boost::any> __markers )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
     std::list<boost::tuple<mpl::size_t<MESH_FACES>,
@@ -678,7 +679,7 @@ marked3faces( MeshType const& mesh,
 template<typename MeshType>
 std::list<marked3faces_t<MeshType>>
 marked3faces( MeshType const& mesh,
-             std::initializer_list<boost::any> __markers )
+              std::initializer_list<boost::any> __markers )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
     std::list<marked3faces_t<MeshType>> list_faces;
@@ -807,9 +808,9 @@ markededges( MeshType const& mesh,
  */
 template<typename MeshType>
 decltype(auto)
-markededges( MeshType const& mesh,
-             std::string const& __marker,
-             typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
+    markededges( MeshType const& mesh,
+                 std::string const& __marker,
+                 typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
 {
     return markedfaces( mesh, __marker );
 }
@@ -836,9 +837,9 @@ markededges( MeshType const& mesh,
  */
 template<typename MeshType>
 decltype(auto)
-markededges( MeshType const& mesh,
-             std::list<std::string> const& __markers,
-             typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
+    markededges( MeshType const& mesh,
+                 std::list<std::string> const& __markers,
+                 typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
 {
     return markedfaces(mesh, __markers);
 }
@@ -1047,8 +1048,8 @@ nelements( boost::tuple<MT,Iterator,Iterator,Container> const& its, bool global 
 
 template<typename ElementType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename std::list<ElementType>::const_iterator,
-      typename std::list<ElementType>::const_iterator>
+             typename std::list<ElementType>::const_iterator,
+             typename std::list<ElementType>::const_iterator>
 element( ElementType const& elt  )
 {
     std::list<ElementType> lst;
