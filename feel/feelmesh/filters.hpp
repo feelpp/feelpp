@@ -112,7 +112,7 @@ template<typename IteratorType>
 using filter_entity_t = typename filter_iterator_t<IteratorType>::value_type;
 
 template<typename IteratorType>
-using ext_faces_from_iterator_t = boost::tuple<filter_enum_t<IteratorType>,
+using ext_entities_from_iterator_t = boost::tuple<filter_enum_t<IteratorType>,
                                                typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
                                                typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
                                                boost::shared_ptr<std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> > >
