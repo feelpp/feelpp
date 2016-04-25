@@ -945,6 +945,8 @@ public:
 
     VectorPetscMPIRange( datamap_ptrtype const& dm );
 
+    VectorPetscMPIRange( Vec v, datamap_ptrtype const& dm, bool duplicate = false );
+
     template<typename Storage>
     VectorPetscMPIRange( VectorUblas<T,Storage> const& v )
         :
