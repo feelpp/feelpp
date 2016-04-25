@@ -148,8 +148,19 @@ extern "C"
             if ( preconditioner->worldComm().localSize() > 1 )
             {
                 CHECK ( preconditioner->matrix() ) << "matrix is not defined";
-                x_vec.reset( new VectorPetscMPI<double>( x, preconditioner->matrix()->mapColPtr() ) );
-                y_vec.reset( new VectorPetscMPI<double>( y, preconditioner->matrix()->mapRowPtr() ) );
+                Vec lx, ly;
+                VecGhostGetLocalForm(x,&lx);
+                VecGhostGetLocalForm(y,&ly);
+                if ( lx )
+                    x_vec.reset( new VectorPetscMPI<double>( x, preconditioner->matrix()->mapColPtr() ) );
+                else
+                    x_vec.reset( new VectorPetscMPIRange<double>( x, preconditioner->matrix()->mapColPtr() ) );
+                if ( ly )
+                    y_vec.reset( new VectorPetscMPI<double>( y, preconditioner->matrix()->mapRowPtr() ) );
+                else
+                    y_vec.reset( new VectorPetscMPIRange<double>( y, preconditioner->matrix()->mapRowPtr() ) );
+                VecGhostRestoreLocalForm(x,&lx);
+                VecGhostRestoreLocalForm(y,&ly);
             }
             else
             {
