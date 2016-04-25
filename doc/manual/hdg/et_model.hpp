@@ -179,30 +179,15 @@ void
 ElectroThermal<Dim, OrderP>::init()
 {
     M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption("model_json") ) );
-    if ( boost::icontains(M_modelProperties->model(), "integral" ) )
-        M_integralCondition = true;
-    else
-        M_integralCondition = false;
-    if ( boost::icontains(M_modelProperties->model(),"picard") )
-        M_isPicard = true;
-    else
-        M_isPicard = false;
-
-    cout << "Model : " << M_modelProperties->model()
-         << " using ";
-    if ( M_integralCondition )
-        cout << "integral condition on the current and ";
-    if ( M_isPicard )
-        cout << "Picard algorithm" << std::endl;
-    else
-        cout << "linear case" << std::endl;
 
     int proc_rank = Environment::worldComm().globalRank();
 
     M_tau_order = ioption("tau_order");
 
     tic();
+
     auto mesh = loadMesh( new mesh_type);
+
     // initialize marker lists for each boundary condition type
     M_dirichletMarkersList.clear();
     M_neumannMarkersList.clear();
@@ -229,7 +214,12 @@ ElectroThermal<Dim, OrderP>::init()
                 M_neumannMarkersList.push_back(marker);
             }
         }
-        itType = mapField.find( "Integral" );
+    }
+    itField = M_modelProperties->boundaryConditions().find( "flux");
+    if ( itField != M_modelProperties->boundaryConditions().end() )
+    {
+        auto mapField = (*itField).second;
+        auto itType = mapField.find( "Integral" );
         if ( itType != mapField.end() )
         {
             for ( auto const& exAtMarker : (*itType).second )
@@ -239,7 +229,7 @@ ElectroThermal<Dim, OrderP>::init()
             }
         }
     }
-    // auto complement_integral_bdy = concatenate(internalfaces(mesh), markedfaces(mesh,M_dirichletMarkersList), markedfaces(mesh,M_neumannMarkersList));
+
     auto complement_integral_bdy = complement(faces(mesh),[&mesh,this]( auto const& e ) {
             for( auto marker : this->M_integralMarkersList)
             {
@@ -251,6 +241,24 @@ ElectroThermal<Dim, OrderP>::init()
     auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
 
     toc("mesh",true);
+
+    if ( M_integralMarkersList.empty() )
+        M_integralCondition = false;
+    else
+        M_integralCondition = true;
+    if ( boost::icontains(M_modelProperties->model(),"picard") )
+        M_isPicard = true;
+    else
+        M_isPicard = false;
+
+    cout << "Model : " << M_modelProperties->model()
+         << " using ";
+    if ( M_integralCondition )
+        cout << "integral condition on the current and ";
+    if ( M_isPicard )
+        cout << "Picard algorithm" << std::endl;
+    else
+        cout << "linear case" << std::endl;
 
     // ****** Hybrid-mixed formulation ******
     // We treat Vh, Wh, and Mh separately
@@ -659,7 +667,7 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
     {
         auto rhs4 = form1( _test=M_Ch, _vector=M_F,
                            _rowstart=3);
-        itField = M_modelProperties->boundaryConditions().find( "potential");
+        itField = M_modelProperties->boundaryConditions().find( "flux");
         if ( itField != M_modelProperties->boundaryConditions().end() )
         {
             auto mapField = (*itField).second;

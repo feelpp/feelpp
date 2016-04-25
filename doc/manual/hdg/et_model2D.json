@@ -28,10 +28,6 @@
                 "top":
                 {
                     "expr":"1"
-                },
-                "bottom":
-                {
-                    "expr":"0"
                 }
             },
             "Neumann":
@@ -40,7 +36,10 @@
                 {
                     "expr":"0"
                 }
-            },
+            }
+        },
+        "flux":
+        {
             "Integral":
             {
                 "bottom":
