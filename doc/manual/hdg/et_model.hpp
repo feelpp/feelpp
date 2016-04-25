@@ -576,7 +576,7 @@ ElectroThermal<Dim, OrderP>::assembleACst()
         if ( itField != M_modelProperties->boundaryConditions().end() )
         {
             auto mapField = (*itField).second;
-            auto itType = mapField.find( "Dirichlet" );
+            auto itType = mapField.find( "Integral" );
             if ( itType != mapField.end() )
             {
                 for ( auto const& exAtMarker : (*itType).second )
@@ -651,7 +651,7 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
         if ( itField != M_modelProperties->boundaryConditions().end() )
         {
             auto mapField = (*itField).second;
-            auto itType = mapField.find( "Dirichlet" );
+            auto itType = mapField.find( "Integral" );
             if ( itType != mapField.end() )
             {
                 for ( auto const& exAtMarker : (*itType).second )
