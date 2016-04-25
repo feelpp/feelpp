@@ -42,11 +42,19 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
 {
     if ( !fs::exists( filename ) ) 
     {
-      LOG(INFO) << "Could not find " << filename << std::endl;
-      return;
+        if ( Environment::isMasterRank() )
+        {
+            std::cout << "[modelProperties]  Could not find :\"" << filename << "\"" <<std::endl;
+        }
+        LOG(INFO) << "Could not find " << filename << std::endl;
+        return;
     }
     else
     {
+        if ( Environment::isMasterRank() )
+        {
+            std::cout << "[modelProperties] Loading Model Properties : \"" << filename << "\"" << std::endl;
+        }
         LOG(INFO) << "Loading " << filename << std::endl;
     }
 
