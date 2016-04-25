@@ -153,8 +153,8 @@ extern "C"
             }
             else
             {
-                x_vec.reset( new VectorPetsc<double>( x ) );
-                y_vec.reset( new VectorPetsc<double>( y ) );
+                x_vec.reset( new VectorPetsc<double>( x,preconditioner->matrix()->mapColPtr() ) );
+                y_vec.reset( new VectorPetsc<double>( y,preconditioner->matrix()->mapRowPtr() ) );
             }
             preconditioner->apply( *x_vec,*y_vec );
         }
