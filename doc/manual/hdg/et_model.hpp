@@ -37,6 +37,7 @@
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelmesh/complement.hpp>
+#include <feel/feelmesh/concatenate.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/algorithm/string.hpp>
@@ -156,6 +157,10 @@ private:
     bool M_integralCondition;
     bool M_isPicard;
 
+    std::list<std::string> M_dirichletMarkersList;
+    std::list<std::string> M_neumannMarkersList;
+    std::list<std::string> M_integralMarkersList;
+
     void initGraphs();
     void initGraphsWithIntegralCond();
     void assembleACst();
@@ -198,9 +203,62 @@ ElectroThermal<Dim, OrderP>::init()
 
     tic();
     auto mesh = loadMesh( new mesh_type);
-    auto complement_integral_bdy = complement(faces(mesh),[&mesh]( auto const& e ) { return e.marker().value() == mesh->markerName( "V1" ); });
+    // initialize marker lists for each boundary condition type
+    M_dirichletMarkersList.clear();
+    M_neumannMarkersList.clear();
+    M_integralMarkersList.clear();
+    auto itField = M_modelProperties->boundaryConditions().find( "potential");
+    if ( itField != M_modelProperties->boundaryConditions().end() )
+    {
+        auto mapField = (*itField).second;
+        auto itType = mapField.find( "Dirichlet" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                M_dirichletMarkersList.push_back(marker);
+            }
+        }
+    }
+    itField = M_modelProperties->boundaryConditions().find( "potential");
+    if ( itField != M_modelProperties->boundaryConditions().end() )
+    {
+        auto mapField = (*itField).second;
+        auto itType = mapField.find( "Neumann" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                M_neumannMarkersList.push_back(marker);
+            }
+        }
+    }
+    itField = M_modelProperties->boundaryConditions().find( "current");
+    if ( itField != M_modelProperties->boundaryConditions().end() )
+    {
+        auto mapField = (*itField).second;
+        auto itType = mapField.find( "Integral" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                M_integralMarkersList.push_back(marker);
+            }
+        }
+    }
+    // auto complement_integral_bdy = concatenate(internalfaces(mesh), markedfaces(mesh,M_dirichletMarkersList), markedfaces(mesh,M_neumannMarkersList));
+    auto complement_integral_bdy = complement(faces(mesh),[&mesh,this]( auto const& e ) {
+            for( auto marker : this->M_integralMarkersList)
+            {
+                if ( e.marker().value() == mesh->markerName( marker ) )
+                    return true;
+            }
+            return false; });
+
     auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
-    auto face_mesh_bottom = createSubmesh( mesh, markedfaces(mesh,"V1"), EXTRACTION_KEEP_MESH_RELATION, 0 );
 
     toc("mesh",true);
 
@@ -343,14 +401,15 @@ ElectroThermal<Dim, OrderP>::initGraphsWithIntegralCond()
     hdg_graph(0,2) = stencil( _test=M_Vh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,2) = stencil( _test=M_Wh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(2,2) = stencil( _test=M_Mh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(3,2) = stencil( _test=M_Ch,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(3,2) = stencil( _test=M_Ch,_trial=M_Mh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
 
     hdg_graph(0,3) = stencil( _test=M_Vh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,3) = stencil( _test=M_Wh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,3) = stencil( _test=M_Mh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(2,3) = stencil( _test=M_Mh,_trial=M_Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     hdg_graph(3,3) = stencil( _test=M_Ch,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
 
     M_A = M_pBackend->newBlockMatrix(_block=hdg_graph);
+    M_A_cst = M_pBackend->newBlockMatrix(_block=hdg_graph);
 
     BlocksBaseVector<double> hdg_vec(4);
     hdg_vec(0,0) = M_pBackend->newVector( M_Vh );
@@ -410,6 +469,13 @@ ElectroThermal<Dim, OrderP>::assembleACst()
 {
     M_A_cst->zero();
     auto mesh = M_Vh->mesh();
+    auto gammaMinusIntegral = complement(boundaryfaces(mesh),[&mesh,this]( auto const& e ) {
+            for( auto marker : this->M_integralMarkersList)
+            {
+                if ( e.marker().value() == mesh->markerName( marker ) )
+                    return true;
+            }
+            return false; });
 
     // stabilisation parameter
     auto tau_constant = cst(doption("tau_constant"));
@@ -452,100 +518,77 @@ ElectroThermal<Dim, OrderP>::assembleACst()
     auto a33 = form2(_trial=M_Mh, _test=M_Mh,_matrix=M_A_cst,
                      _rowstart=2,
                      _colstart=2);
-    auto a55 = form2(_trial=M_Xh, _test=M_Xh,_matrix=M_A_cst,
-                     _rowstart=M_integralCondition?4:3,
-                     _colstart=M_integralCondition?4:3);
 
     // -(p,div(v))
-    a12 += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
+    a12 += integrate(_range=elements(mesh), _expr=-idt(p)*div(v) );
 
-    // <phat,v.n>_Gamma
+    // <phat,v.n>_Gamma\Gamma_I
     a13 += integrate(_range=internalfaces(mesh),
-                     _expr=( idt(phat)*leftface(trans(id(v))*N())+
-                             idt(phat)*rightface(trans(id(v))*N())) );
-    a13 += integrate(_range=boundaryfaces(mesh),
+                     // _expr=idt(phat)*jump(v) );
+                     _expr=idt(phat)*(leftface(trans(id(v))*N())
+                                      + rightface(trans(id(v))*N()) ) );
+    a13 += integrate(_range=gammaMinusIntegral,
                      _expr=idt(phat)*trans(id(v))*N());
 
     // -(j, grad(w))
-    a21 += integrate(_range=elements(mesh),_expr=(-grad(w)*idt(u)));
+    a21 += integrate(_range=elements(mesh), _expr=-grad(w)*idt(u) );
     // <j.n,w>_Gamma
     a21 += integrate(_range=internalfaces(mesh),
-                     _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N()) ) );
-    a21 += integrate(_range=internalfaces(mesh),
-                     _expr=(rightface(id(w))*rightfacet(trans(idt(u))*N())) );
+                     _expr=leftface(id(w))*leftfacet(trans(idt(u))*N())
+                     + rightface(id(w))*rightfacet(trans(idt(u))*N()) );
     a21 += integrate(_range=boundaryfaces(mesh),
-                     _expr=(id(w)*trans(idt(u))*N()));
+                     _expr=id(w)*trans(idt(u))*N());
 
     // <tau p, w>_Gamma
     a22 += integrate(_range=internalfaces(mesh),
                      _expr=tau_constant *
-                     ( leftfacet( pow(h(),M_tau_order)*idt(p))*leftface(id(w)) +
-                       rightfacet( pow(h(),M_tau_order)*idt(p))*rightface(id(w) )));
+                     ( leftfacet( pow(h(),M_tau_order)*idt(p))*leftface(id(w))
+                       + rightfacet( pow(h(),M_tau_order)*idt(p))*rightface(id(w) )));
     a22 += integrate(_range=boundaryfaces(mesh),
-                     _expr=(tau_constant * pow(h(),M_tau_order)*id(w)*idt(p)));
+                     _expr=tau_constant * pow(h(),M_tau_order)*id(w)*idt(p) );
 
-    // <-tau phat, w>_Gamma
+    // <-tau phat, w>_Gamma\Gamma_I
     a23 += integrate(_range=internalfaces(mesh),
                      _expr=-tau_constant * idt(phat) *
-                     ( leftface( pow(h(),M_tau_order)*id(w) )+
-                       rightface( pow(h(),M_tau_order)*id(w) )));
-    a23 += integrate(_range=boundaryfaces(mesh),
+                     ( leftface( pow(h(),M_tau_order)*id(w) )
+                       + rightface( pow(h(),M_tau_order)*id(w) )));
+    a23 += integrate(_range=gammaMinusIntegral,
                      _expr=-tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
 
 
     // <j.n,mu>_Omega/Gamma
     a31 += integrate(_range=internalfaces(mesh),
-                     _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
-                                    rightfacet(trans(idt(u))*N())) ) );
+    //                  _expr=id(l)*jumpt(idt(u)) );
+                     _expr=id(l)*(leftfacet(trans(idt(u))*N())
+                                  + rightfacet(trans(idt(u))*N())) );
+    // <j.n,mu>_Gamma_N
+    a31 += integrate(_range=markedfaces(mesh,M_neumannMarkersList),
+                     _expr=id(l)*(trans(idt(u))*N()) );
 
     // <tau p, mu>_Omega/Gamma
     a32 += integrate(_range=internalfaces(mesh),
-                     _expr=tau_constant * id(l) * ( leftfacet( pow(h(),M_tau_order)*idt(p) )+
-                                                    rightfacet( pow(h(),M_tau_order)*idt(p) )));
+                     _expr=tau_constant * id(l) * idt(p) *
+                     ( leftfacet( pow(h(),M_tau_order) )
+                       + rightfacet( pow(h(),M_tau_order) )) );
+    // <tau p, mu>_Gamma_N
+    a32 += integrate(_range=markedfaces(mesh,M_neumannMarkersList),
+                     _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
 
     // <-tau phat, mu>_Omega/Gamma
     a33 += integrate(_range=internalfaces(mesh),
-                     _expr=-tau_constant * idt(phat) * id(l) * ( leftface( pow(h(),M_tau_order) )+
-                                                                 rightface( pow(h(),M_tau_order) )));
+                     _expr=-tau_constant * idt(phat) * id(l) *
+                     ( leftface( pow(h(),M_tau_order) )+
+                       rightface( pow(h(),M_tau_order) )));
+    // <-tau phat, mu>_Gamma_N
+    a33 += integrate(_range=markedfaces(mesh,M_neumannMarkersList),
+                     _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );
+
+    // <phat, mu>_Gamma_D
+    a33 += integrate(_range=markedfaces(mesh,M_dirichletMarkersList),
+                     _expr=idt(phat) * id(l) );
 
 
     // BC
-
-    auto itField = M_modelProperties->boundaryConditions().find( "potential");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
-    {
-        auto mapField = (*itField).second;
-        auto itType = mapField.find( "Dirichlet" );
-        if ( itType != mapField.end() )
-        {
-            for ( auto const& exAtMarker : (*itType).second )
-            {
-                std::string marker = exAtMarker.marker();
-                // <phat, mu>_{Gamma_in,Gamma_out}
-                a33 += integrate(_range=markedfaces(mesh,marker),
-                                 _expr=idt(phat) * id(l) );
-            }
-        }
-        itType = mapField.find( "Neumann" );
-        if ( itType != mapField.end() )
-        {
-            for ( auto const& exAtMarker : (*itType).second )
-            {
-                std::string marker = exAtMarker.marker();
-                // <j.n,mu>_Gamma_E
-                a31 += integrate(_range=markedfaces(mesh,marker),
-                                 _expr=( id(l)*(trans(idt(u))*N()) ));
-
-                // <tau p, mu>_Gamma_E
-                a32 += integrate(_range=markedfaces(mesh,marker),
-                                 _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
-
-                // <-tau phat, mu>_Gamma_E
-                a33 += integrate(_range=markedfaces(mesh,marker),
-                                 _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );
-            }
-        }
-    }
 
     if ( M_integralCondition )
     {
@@ -571,43 +614,22 @@ ElectroThermal<Dim, OrderP>::assembleACst()
                          _rowstart=3,
                          _colstart=3);
 
-        itField = M_modelProperties->boundaryConditions().find( "current");
-        // only if model contains integral
-        if ( itField != M_modelProperties->boundaryConditions().end() )
-        {
-            auto mapField = (*itField).second;
-            auto itType = mapField.find( "Integral" );
-            if ( itType != mapField.end() )
-            {
-                for ( auto const& exAtMarker : (*itType).second )
-                {
-                    std::string marker = exAtMarker.marker();
+        // <lambda, v.n>_Gamma_I
+        a14 += integrate( _range=markedfaces(mesh,M_integralMarkersList), _expr=trans(id(u))*N()*idt(nu) );
 
-                    // <lambda, v.n>_Gamma_out
-                    a14 += integrate( _range=markedfaces(mesh,marker), _expr=trans(id(u))*N()*idt(nu) );
+        // <lambda, tau w>_Gamma_I
+        a24 += integrate( _range=markedfaces(mesh,M_integralMarkersList),
+                          _expr=-tau_constant * ( pow(h(),M_tau_order)*id(w) ) * idt(nu) );
 
-                    // <lambda, tau w>_Gamma_out
-                    a24 += integrate( _range=markedfaces(mesh,marker),
-                                      _expr=tau_constant * ( pow(h(),M_tau_order)*id(w) ) * idt(nu) );
+        // <j.n, m>_Gamma_I
+        a41 += integrate( _range=markedfaces(mesh,M_integralMarkersList), _expr=trans(idt(u))*N()*id(nu) );
 
-                    // <lambda, -tau mu>_Gamma_out
-                    a34 += integrate(_range=markedfaces(mesh,marker),
-                                     _expr=-tau_constant * idt(nu) * id(l) * ( pow(h(),M_tau_order) ));
+        // <tau p, m>_Gamma_I
+        a42 += integrate( _range=markedfaces(mesh,M_integralMarkersList), _expr=tau_constant *
+                          ( pow(h(),M_tau_order)*idt(p) ) * id(nu) );
 
-                    // <j.n, m>_Gamma_out
-                    a41 += integrate( _range=markedfaces(mesh,marker), _expr=trans(idt(u))*N()*id(nu) );
-
-                    // <tau p, m>_Gamma_out
-                    a42 += integrate( _range=markedfaces(mesh,marker), _expr=tau_constant *
-                                      ( pow(h(),M_tau_order)*idt(p) ) * id(nu) );
-
-                    // <tau phat, m>_Gamma_out
-                    a43 += integrate(_range=markedfaces(mesh,marker),
-                                     _expr=-tau_constant * id(nu) * idt(phat) * ( pow(h(),M_tau_order) ));
-                    a44 += integrate( _range=markedfaces(mesh,marker), _expr=-pow(h(),M_tau_order)*id(nu)*idt(nu) );
-                }
-            }
-        }
+        // -<lambda2, m>_Gamma_I
+        a44 += integrate( _range=markedfaces(mesh,M_integralMarkersList), _expr=-pow(h(),M_tau_order)*id(nu)*idt(nu) );
     }
 }
 
@@ -636,7 +658,7 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
             {
                 std::string marker = exAtMarker.marker();
                 auto g = expr(exAtMarker.expression());
-                // <V, mu>_Gamma_out
+                // <V, mu>_Gamma_D
                 rhs3 += integrate(_range=markedfaces(mesh,marker),
                                   _expr=id(l)*g);
             }
@@ -657,10 +679,11 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
                 for ( auto const& exAtMarker : (*itType).second )
                 {
                     std::string marker = exAtMarker.marker();
+                    double meas = integrate( _range=markedfaces(mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
                     auto g = expr(exAtMarker.expression());
-                    // <I_target,m>_Gamma_out
+                    // <I_target,m>_Gamma_I
                     rhs4 += integrate(_range=markedfaces(mesh,marker),
-                                      _expr=g*id(nu));
+                                      _expr=g*id(nu)/meas);
                 }
             }
         }
