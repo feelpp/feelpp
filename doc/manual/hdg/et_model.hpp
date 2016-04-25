@@ -36,6 +36,7 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
+#include <feel/feelmesh/complement.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/algorithm/string.hpp>
@@ -197,7 +198,10 @@ ElectroThermal<Dim, OrderP>::init()
 
     tic();
     auto mesh = loadMesh( new mesh_type);
-    auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto complement_integral_bdy = complement(faces(mesh),[&mesh]( auto const& e ) { return e.marker().value() == mesh->markerName( "V1" ); });
+    auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto face_mesh_bottom = createSubmesh( mesh, markedfaces(mesh,"V1"), EXTRACTION_KEEP_MESH_RELATION, 0 );
+
     toc("mesh",true);
 
     // ****** Hybrid-mixed formulation ******
@@ -344,7 +348,7 @@ ElectroThermal<Dim, OrderP>::initGraphsWithIntegralCond()
     hdg_graph(0,3) = stencil( _test=M_Vh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,3) = stencil( _test=M_Wh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(2,3) = stencil( _test=M_Mh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(3,3) = stencil( _test=M_Ch,_trial=M_Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(3,3) = stencil( _test=M_Ch,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
 
     M_A = M_pBackend->newBlockMatrix(_block=hdg_graph);
 
@@ -424,34 +428,33 @@ ElectroThermal<Dim, OrderP>::assembleACst()
 
 
     // Building the LHS
-    size_type VhDof = M_Vh->nLocalDofWithGhost();
-    size_type WhDof = M_Wh->nLocalDofWithGhost();
-    size_type MhDof = M_Mh->nLocalDofWithGhost();
-
     auto a12 = form2( _trial=M_Wh, _test=M_Vh,_matrix=M_A_cst,
                       _rowstart=0,
-                      _colstart=VhDof );
+                      _colstart=1 );
     auto a13 = form2( _trial=M_Mh, _test=M_Vh,_matrix=M_A_cst,
                       _rowstart=0,
-                      _colstart=VhDof+WhDof);
+                      _colstart=2);
     auto a21 = form2( _trial=M_Vh, _test=M_Wh,_matrix=M_A_cst,
-                      _rowstart=VhDof,
+                      _rowstart=1,
                       _colstart=0);
     auto a22 = form2( _trial=M_Wh, _test=M_Wh,_matrix=M_A_cst,
-                      _rowstart=VhDof,
-                      _colstart=VhDof );
+                      _rowstart=1,
+                      _colstart=1 );
     auto a23 = form2( _trial=M_Mh, _test=M_Wh,_matrix=M_A_cst,
-                      _rowstart=VhDof,
-                      _colstart=VhDof+WhDof);
+                      _rowstart=1,
+                      _colstart=2);
     auto a31 = form2( _trial=M_Vh, _test=M_Mh,_matrix=M_A_cst,
-                      _rowstart=VhDof+WhDof,
+                      _rowstart=2,
                       _colstart=0);
     auto a32 = form2( _trial=M_Wh, _test=M_Mh,_matrix=M_A_cst,
-                      _rowstart=VhDof+WhDof,
-                      _colstart=VhDof);
+                      _rowstart=2,
+                      _colstart=1);
     auto a33 = form2(_trial=M_Mh, _test=M_Mh,_matrix=M_A_cst,
-                     _rowstart=VhDof+WhDof,
-                     _colstart=VhDof+WhDof);
+                     _rowstart=2,
+                     _colstart=2);
+    auto a55 = form2(_trial=M_Xh, _test=M_Xh,_matrix=M_A_cst,
+                     _rowstart=M_integralCondition?4:3,
+                     _colstart=M_integralCondition?4:3);
 
     // -(p,div(v))
     a12 += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
@@ -548,22 +551,26 @@ ElectroThermal<Dim, OrderP>::assembleACst()
     {
         auto a14 = form2(_trial=M_Ch, _test=M_Vh,_matrix=M_A_cst,
                          _rowstart=0,
-                         _colstart=VhDof+WhDof+MhDof);
+                         _colstart=3);
         auto a34 = form2(_trial=M_Ch, _test=M_Mh,_matrix=M_A_cst,
-                         _rowstart=VhDof+WhDof,
-                         _colstart=VhDof+WhDof+MhDof);
+                         _rowstart=2,
+                         _colstart=3);
         auto a41 = form2(_trial=M_Vh, _test=M_Ch,_matrix=M_A_cst,
-                         _rowstart=VhDof+WhDof+MhDof,
+                         _rowstart=3,
                          _colstart=0);
         auto a42 = form2(_trial=M_Wh, _test=M_Ch,_matrix=M_A_cst,
-                         _rowstart=VhDof+WhDof+MhDof,
-                         _colstart=VhDof);
+                         _rowstart=3,
+                         _colstart=1);
         auto a43 = form2(_trial=M_Mh, _test=M_Ch,_matrix=M_A_cst,
-                         _rowstart=VhDof+WhDof+MhDof,
-                         _colstart=VhDof+WhDof);
+                         _rowstart=3,
+                         _colstart=2);
         auto a24 = form2(_trial=M_Ch, _test=M_Wh,_matrix=M_A_cst,
-                         _rowstart=VhDof,
-                         _colstart=VhDof+WhDof+MhDof);
+                         _rowstart=1,
+                         _colstart=3);
+        auto a44 = form2(_trial=M_Ch, _test=M_Ch,_matrix=M_A_cst,
+                         _rowstart=3,
+                         _colstart=3);
+
         itField = M_modelProperties->boundaryConditions().find( "current");
         // only if model contains integral
         if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -597,7 +604,7 @@ ElectroThermal<Dim, OrderP>::assembleACst()
                     // <tau phat, m>_Gamma_out
                     a43 += integrate(_range=markedfaces(mesh,marker),
                                      _expr=-tau_constant * id(nu) * idt(phat) * ( pow(h(),M_tau_order) ));
-
+                    a44 += integrate( _range=markedfaces(mesh,marker), _expr=-pow(h(),M_tau_order)*id(nu)*idt(nu) );
                 }
             }
         }
@@ -615,12 +622,8 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
 
     // Building the RHS
 
-    size_type VhDof = M_Vh->nLocalDofWithGhost();
-    size_type WhDof = M_Wh->nLocalDofWithGhost();
-    size_type MhDof = M_Mh->nLocalDofWithGhost();
-
     auto rhs3 = form1( _test=M_Mh, _vector=M_F,
-                       _rowstart=VhDof+WhDof);
+                       _rowstart=2);
 
     auto itField = M_modelProperties->boundaryConditions().find( "potential");
     if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -642,8 +645,8 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
 
     if ( M_integralCondition )         // only if model contains integral
     {
-        auto rhs5 = form1( _test=M_Ch, _vector=M_F,
-                           _rowstart=VhDof+WhDof+MhDof);
+        auto rhs4 = form1( _test=M_Ch, _vector=M_F,
+                           _rowstart=3);
         itField = M_modelProperties->boundaryConditions().find( "current");
         if ( itField != M_modelProperties->boundaryConditions().end() )
         {
@@ -656,7 +659,7 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
                     std::string marker = exAtMarker.marker();
                     auto g = expr(exAtMarker.expression());
                     // <I_target,m>_Gamma_out
-                    rhs5 += integrate(_range=markedfaces(mesh,marker),
+                    rhs4 += integrate(_range=markedfaces(mesh,marker),
                                       _expr=g*id(nu));
                 }
             }
@@ -695,7 +698,7 @@ ElectroThermal<Dim, OrderP>::solveT( int iter )
             auto k0 = material.getDouble("k0");
             auto k = material.getScalar("k", "T", idv(M_Tp));
             k.setParameterValues({{"k0",k0},{"T0",T0},{"alpha",alpha}});
-            // (k grad(T), grad(q))
+            // (k grad(T), grad(q))_Omega
             a += integrate(_range=markedelements(mesh,marker),
                            _expr=k*gradt(T)*trans(grad(q)) );
             // (j^2/sigma,q)_Omega

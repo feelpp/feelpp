@@ -245,7 +245,7 @@ ElectroThermal<Dim, OrderP>::run()
     double I_error_last = I_error ;
     double I_In = 0.5*I_error ;
 
-#if 0
+#if 1
     assemble_A_and_F( A, F, Vh, Wh, Mh, Ch, Xh, up, pp, Tp );
     backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=U );
     hdg_sol.localize(U);
@@ -457,7 +457,7 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     a33 += integrate(_range=markedfaces(mesh,"R"),
                      _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );
-    a33 += integrate(_range=markedfaces(mesh,{"top"}),
+    a33 += integrate(_range=markedfaces(mesh,{"top","bottom"}),
                      _expr=idt(phat) * id(l) );
 
     auto a34 = form2(_trial=Ch, _test=Mh,_matrix=A,

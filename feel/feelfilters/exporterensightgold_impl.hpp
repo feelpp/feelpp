@@ -453,7 +453,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                         if ( this->worldComm().isMasterRank() )
                         {
 
-                            __out << "constant per case file: " << __ts->index() << " " << s_it->first << " " << __ts->name() << "." << s_it->first << ".scl";
+                            __out << "constant per case file: " << __ts->index() << " " << s_it->first << " " << __ts->name() << "." << s_it->first << ".cst";
                             // loop over time
                             auto stepit = __ts->beginStep();
                             auto stepen = __ts->endStep();
@@ -462,9 +462,9 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                             int d = std::distance( stepit, stepen );
                             LOG(INFO) << "distance = " << d;
                             if ( d > 1 )
-                                ofs.open( s_it->first+".scl", std::ios::out | std::ios::app );
+                                ofs.open( this->path()+ "/"+ __ts->name()+"."+s_it->first+".cst", std::ios::out | std::ios::app );
                             else
-                                ofs.open( s_it->first+".scl", std::ios::out );
+                                ofs.open( this->path()+ "/" +__ts->name()+"."+s_it->first+".cst", std::ios::out );
 
                             auto step = *boost::prior(stepen);
                             ofs << step->scalar( s_it->first ) << "\n";
@@ -1998,7 +1998,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
             int nc = __var->second.nComponents;
             if ( __var->second.is_tensor2symm )
                 nc = __var->second.nComponents1*(__var->second.nComponents1+1)/2;
-            
+
             /*
             std::cout << this->worldComm().rank() << " marker=" << *mit << " nbPts:" << npts << " nComp:" << nComponents
                       << " __evar->second.nComponents:" << __var->second.nComponents << std::endl;
@@ -2244,10 +2244,9 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
             int nc = __evar->second.nComponents;
             if ( __evar->second.is_tensor2symm )
                 nc = __evar->second.nComponents1*(__evar->second.nComponents1+1)/2;
-            
+
             size_type __field_size = nComponents * __evar->second.size()/nc;
-            cout << "components: " << nComponents << " field.size: " << __field_size << std::endl;
-            cout << "components old: " << nc  << " field.size: " <<  __evar->second.size()<< std::endl;
+
             ublas::vector<float> __field( __field_size );
             __field.clear();
 
@@ -2270,7 +2269,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
                       << " __evar->second.nComponents:" << __evar->second.nComponents << std::endl;
             */
             int reorder_tensor2symm[6] = { 0, 3, 1, 4, 5, 2 };
-            
+
             for ( int c = 0; c < nComponents; ++c )
             {
                 uint16_type c1= c;
