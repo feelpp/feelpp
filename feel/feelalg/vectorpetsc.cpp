@@ -1970,9 +1970,9 @@ VectorPetscMPIRange<T>::initRangeView( const PetscScalar arrayActive[], const Pe
 
     // active dof view
     if ( arrayActive )
-        ierr = VecCreateMPIWithArray( this->comm(),1, petsc_n_localWithoutGhost, petsc_n_dof, arrayActive, &this->vec() );
+        ierr = VecCreateMPIWithArray( this->comm(),1, petsc_n_localWithoutGhost, petsc_n_dof, arrayActive, &this->M_vec );
     else
-        ierr = VecCreateMPI( this->comm(), petsc_n_localWithoutGhost, petsc_n_dof, &this->vec() );
+        ierr = VecCreateMPI( this->comm(), petsc_n_localWithoutGhost, petsc_n_dof, &this->M_vec );
     CHKERRABORT( this->comm(),ierr );
 
     // ghost dof view
