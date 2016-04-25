@@ -183,7 +183,7 @@ ElectroThermal<Dim, OrderP>::init()
         M_integralCondition = true;
     else
         M_integralCondition = false;
-    if ( boost::icontains(M_modelProperties->model(),"hdg-picard") )
+    if ( boost::icontains(M_modelProperties->model(),"picard") )
         M_isPicard = true;
     else
         M_isPicard = false;
@@ -220,12 +220,7 @@ ElectroThermal<Dim, OrderP>::init()
                 M_dirichletMarkersList.push_back(marker);
             }
         }
-    }
-    itField = M_modelProperties->boundaryConditions().find( "potential");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
-    {
-        auto mapField = (*itField).second;
-        auto itType = mapField.find( "Neumann" );
+        itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
         {
             for ( auto const& exAtMarker : (*itType).second )
@@ -234,12 +229,7 @@ ElectroThermal<Dim, OrderP>::init()
                 M_neumannMarkersList.push_back(marker);
             }
         }
-    }
-    itField = M_modelProperties->boundaryConditions().find( "current");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
-    {
-        auto mapField = (*itField).second;
-        auto itType = mapField.find( "Integral" );
+        itType = mapField.find( "Integral" );
         if ( itType != mapField.end() )
         {
             for ( auto const& exAtMarker : (*itType).second )
@@ -301,7 +291,7 @@ void
 ElectroThermal<Dim, OrderP>::solve()
 {
     assembleACst();
-    if ( boost::icontains(M_modelProperties->model(),"hdg-picard") )
+    if ( M_isPicard )
     {
         int itmax = ioption( "picard.itmax" );
         double tol = doption( "picard.itol" );
@@ -330,7 +320,7 @@ ElectroThermal<Dim, OrderP>::solve()
             To=*M_Tp;
 
             // compute current
-            double I = integrate(_range=markedfaces(mesh,"bottom"),
+            double I = integrate(_range=markedfaces(mesh,M_integralMarkersList),
                                  _expr=inner(idv(*M_up),N())).evaluate()(0,0);
             cout << "  picard #" << it << " " << incrp << " " << incrT << " " << I << std::endl;
         } while ( ( incrp > tol || incrT > tol ) && ( ++it < itmax ) );
@@ -669,7 +659,7 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
     {
         auto rhs4 = form1( _test=M_Ch, _vector=M_F,
                            _rowstart=3);
-        itField = M_modelProperties->boundaryConditions().find( "current");
+        itField = M_modelProperties->boundaryConditions().find( "potential");
         if ( itField != M_modelProperties->boundaryConditions().end() )
         {
             auto mapField = (*itField).second;
