@@ -896,12 +896,17 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
 
         ierr = VecCopy( v, this->vec() );
         CHKERRABORT( this->comm(),ierr );
+
+        // update ghosts
+        this->M_is_initialized = true;
+        this->localize();
     }
     else
+    {
         this->M_vec = v;
+        this->M_is_initialized = true;
+    }
 
-    this->M_is_initialized = true;
-    this->localize();
     this->setIsClosed( true );
 }
 
@@ -1862,6 +1867,83 @@ VectorPetscMPIRange<T>::VectorPetscMPIRange( datamap_ptrtype const& dm )
 }
 
 template<typename T>
+VectorPetscMPIRange<T>::VectorPetscMPIRange( Vec v, datamap_ptrtype const& dm, bool duplicate )
+    :
+    super_type( dm, false )
+{
+
+    this->M_destroy_vec_on_exit = duplicate;
+
+    int ierr = 0;
+    if ( duplicate )
+    {
+        ierr = VecDuplicate( v, &this->M_vec );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecCopy( v, this->M_vec );
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else
+    {
+        this->M_vec = v;
+    }
+
+    PetscInt petsc_n_localWithoutGhost=static_cast<PetscInt>( this->map().nLocalDofWithoutGhost() );
+    PetscInt petsc_n_localGhost = static_cast<PetscInt>( this->map().nLocalGhosts() );
+    // create ghost vector
+    ierr = VecCreateSeq( PETSC_COMM_SELF, petsc_n_localGhost, &M_vecGhost );
+    CHKERRABORT( this->comm(),ierr );
+
+    // create ghosts mapping
+    PetscInt *idxGhost = NULL;
+    if ( petsc_n_localGhost > 0 )
+    {
+        idxGhost = new PetscInt[petsc_n_localGhost];
+        std::copy( this->map().mapGlobalProcessToGlobalCluster().begin()+petsc_n_localWithoutGhost,
+                   this->map().mapGlobalProcessToGlobalCluster().end(),
+                   idxGhost );
+    }
+
+    // create vecScatter
+    IS isScatter;
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = ISCreateGeneral( this->comm(), petsc_n_localGhost, idxGhost, PETSC_COPY_VALUES, &isScatter );
+#else
+    ierr = ISCreateGeneral( this->comm(), petsc_n_localGhost, idxGhost, &isScatter );
+#endif
+    CHKERRABORT( this->comm(),ierr );
+
+    IS isLoc;
+    ierr = ISCreateStride( PETSC_COMM_SELF,petsc_n_localGhost,0,1,&isLoc );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecScatterCreate( this->vec(), isScatter,
+                             M_vecGhost, isLoc,
+                             &M_vecScatterGhost );
+    CHKERRABORT( this->comm(),ierr );
+
+    // Clean up
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = ISDestroy ( &isScatter );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISDestroy ( &isLoc );
+    CHKERRABORT( this->comm(),ierr );
+#else
+    ierr = ISDestroy ( isScatter );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISDestroy ( isLoc );
+    CHKERRABORT( this->comm(),ierr );
+#endif
+    delete[] idxGhost;
+
+#if 0
+    ierr = VecSetFromOptions( M_vecGhost );
+    CHKERRABORT( this->comm(),ierr );
+#endif
+    this->setInitialized( true );
+    this->localize();
+    this->setIsClosed( true );
+}
+
+template<typename T>
 void
 VectorPetscMPIRange<T>::init( datamap_ptrtype const& dm )
 {
@@ -1888,9 +1970,9 @@ VectorPetscMPIRange<T>::initRangeView( const PetscScalar arrayActive[], const Pe
 
     // active dof view
     if ( arrayActive )
-        ierr = VecCreateMPIWithArray( this->comm(),1, petsc_n_localWithoutGhost, petsc_n_dof, arrayActive, &this->vec() );
+        ierr = VecCreateMPIWithArray( this->comm(),1, petsc_n_localWithoutGhost, petsc_n_dof, arrayActive, &this->M_vec );
     else
-        ierr = VecCreateMPI( this->comm(), petsc_n_localWithoutGhost, petsc_n_dof, &this->vec() );
+        ierr = VecCreateMPI( this->comm(), petsc_n_localWithoutGhost, petsc_n_dof, &this->M_vec );
     CHKERRABORT( this->comm(),ierr );
 
     // ghost dof view
