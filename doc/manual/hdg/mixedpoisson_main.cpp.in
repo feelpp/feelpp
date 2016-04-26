@@ -1,4 +1,4 @@
-#include <MixedPoisson.hpp>
+#include <mixedpoisson.hpp>
 
 using namespace Feel;
 
