@@ -59,8 +59,8 @@ int main(int argc, char**argv )
     // List of NLOPT algorithm
     const boost::unordered_map< const std::string, ::nlopt::algorithm >& authAlgo = boost::assign::map_list_of
         ("LN_NEWUOA", ::nlopt::LN_NEWUOA )
-        ("LN_COBYLA", ::nlopt::LN_NEWUOA )
-        ("LN_BOBYQA", ::nlopt::LN_NEWUOA )
+        ("LN_COBYLA", ::nlopt::LN_COBYLA )
+        ("LN_BOBYQA", ::nlopt::LN_BOBYQA )
         ("LD_LBFGS", ::nlopt::LD_LBFGS )
         ("LD_MMA", ::nlopt::LD_MMA )
         ("LD_SLSQP", ::nlopt::LD_SLSQP );
@@ -227,7 +227,7 @@ int main(int argc, char**argv )
     // Set a priori inclusion diffusion coefficients.
     x = { doption("k0init"), doption("k1init"), doption("k2init") };
 
-    auto salgo = soption("nlopt.algo");
+    auto salgo = soption("nlopt.algo"); 
     Feel::cout << "NLOP algorithm: " << salgo << "\n";
     auto algo = authAlgo.at(salgo);
     ::nlopt::opt opt( algo, N_UNKNOWNS );
