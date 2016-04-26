@@ -565,9 +565,9 @@ ElectroThermal<Dim, OrderP>::assembleACst()
 
     // <tau p, mu>_Omega/Gamma
     a32 += integrate(_range=internalfaces(mesh),
-                     _expr=tau_constant * id(l) * idt(p) *
-                     ( leftfacet( pow(h(),M_tau_order) )
-                       + rightfacet( pow(h(),M_tau_order) )) );
+                     _expr=tau_constant * id(l)  *
+                     ( leftfacet( pow(h(),M_tau_order) * idt(p))
+                       + rightfacet( pow(h(),M_tau_order) * idt(p))) );
     // <tau p, mu>_Gamma_N
     a32 += integrate(_range=markedfaces(mesh,M_neumannMarkersList),
                      _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
