@@ -33,5 +33,12 @@ foreach(D 2 3)
   endforeach()
 endforeach()
 
+foreach(D 2 3)
+  foreach(P  RANGE 1 3 1)
+    configure_file(mixedpoisson_main.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/mp${D}DP${P}_main.cpp )
+    feelpp_add_application( mixed-poisson-model_${D}DP${P} SRCS mp${D}DP${P}_main.cpp mixedpoisson.hpp )
+  endforeach()
+endforeach()
+
 feelpp_add_testcase(quarter-turn)
 feelpp_add_testcase(bitter)
