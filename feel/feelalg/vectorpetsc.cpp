@@ -632,12 +632,21 @@ void VectorPetsc<T>::printMatlab ( const std::string name, bool renumber ) const
                                      &petsc_viewer );
         CHKERRABORT( this->comm(),ierr );
 
+#if PETSC_VERSION_LESS_THAN(3,7,0)
         ierr = PetscViewerSetFormat ( petsc_viewer,
                                       PETSC_VIEWER_ASCII_MATLAB );
+#else
+        ierr = PetscViewerPushFormat ( petsc_viewer,
+                                      PETSC_VIEWER_BINARY_MATLAB );
+#endif
         CHKERRABORT( this->comm(),ierr );
 
         ierr = VecView ( const_cast<Vec>( M_vec ), petsc_viewer );
         CHKERRABORT( this->comm(),ierr );
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+        ierr = PetscViewerPopFormat ( petsc_viewer );
+        CHKERRABORT( this->comm(),ierr );
+#endif
     }
 
     /**
@@ -645,12 +654,20 @@ void VectorPetsc<T>::printMatlab ( const std::string name, bool renumber ) const
      */
     else
     {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+        ierr = PetscViewerPushFormat ( PETSC_VIEWER_STDOUT_WORLD, PETSC_VIEWER_ASCII_MATLAB );
+#else
         ierr = PetscViewerSetFormat ( PETSC_VIEWER_STDOUT_WORLD,
                                       PETSC_VIEWER_ASCII_MATLAB );
+#endif
         CHKERRABORT( this->comm(),ierr );
 
         ierr = VecView ( const_cast<Vec>( M_vec ), PETSC_VIEWER_STDOUT_WORLD );
         CHKERRABORT( this->comm(),ierr );
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+        ierr = PetscViewerPopFormat ( PETSC_VIEWER_STDOUT_WORLD);
+        CHKERRABORT( this->comm(),ierr );
+#endif
     }
 
 
