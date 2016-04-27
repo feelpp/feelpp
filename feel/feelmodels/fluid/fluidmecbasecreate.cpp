@@ -914,6 +914,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
                                                          this->subPrefix(), this->rootRepositoryWithoutNumProc() ) );
         M_thermodynModel->setFieldVelocityConvectionIsUsed( !M_useGravityForce/*false*/ );
         M_thermodynModel->loadMesh( this->mesh() );
+        // disable thermo exporter if we use fluid exporter
+        M_thermodynModel->setDoExportResults( false );
         M_thermodynModel->init( !M_useGravityForce/*false*/ );
     }
     //-------------------------------------------------//
@@ -960,29 +962,25 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     this->initPostProcess();
     //-------------------------------------------------//
     // define start dof index ( lm , windkessel )
-    size_type currentStartIndex = 0;
-    currentStartIndex += M_Xh->nLocalDofWithGhost();
+    size_type currentStartIndex = 2;// velocity and pressure before
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
-        M_startDofIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex;
-        currentStartIndex += M_XhMeanPressureLM->nLocalDofWithGhost() ;
+        M_startBlockIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex++;
     }
     if (this->hasMarkerDirichletBClm())
     {
-        M_startDofIndexFieldsInMatrix["dirichletlm"] = currentStartIndex;
-        currentStartIndex += this->XhDirichletLM()->nLocalDofWithGhost() ;
+        M_startBlockIndexFieldsInMatrix["dirichletlm"] = currentStartIndex++;
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
-        M_startDofIndexFieldsInMatrix["windkessel"] = currentStartIndex;
-        currentStartIndex += 2*this->nFluidOutletWindkesselImplicit();
+        M_startBlockIndexFieldsInMatrix["windkessel"] = currentStartIndex++;
     }
     if ( M_useThermodynModel && M_useGravityForce )
     {
         M_thermodynModel->setRowStartInMatrix( currentStartIndex );
         M_thermodynModel->setColStartInMatrix( currentStartIndex );
         M_thermodynModel->setRowStartInVector( currentStartIndex );
-        currentStartIndex += M_thermodynModel->nLocalDof();
+        ++currentStartIndex;
     }
     //-------------------------------------------------//
     // prepare block vector

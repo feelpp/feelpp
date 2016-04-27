@@ -92,6 +92,15 @@ public :
      */
     void buildVector( backend_ptrtype _backend = Feel::backend(_rebuild=false));
 
+    /**
+     * set values of VectorBlock from subvector
+     */
+    void setVector( vector_type & vec, vector_type const& subvec , int blockId ) const;
+    /**
+     * set values of subvector from global vector build with VectorBlock
+     */
+    void setSubVector( vector_type & subvec, vector_type const& vec , int blockId ) const;
+
     vector_ptrtype& vector() { return M_vector; }
     vector_ptrtype const& vector() const { return M_vector; }
 

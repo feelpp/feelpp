@@ -281,12 +281,35 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
 
     // TODO: possible memory leak here
     //VecDestroy( M_mode );
+    auto const& dmCol = matrix_A->mapCol();
+    if ( dmCol.nProcessors() == 1 )
+    {
 #if PETSC_VERSION_LESS_THAN(3,6,0)
-    ierr = MatGetVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+        ierr = MatGetVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
 #else
-    ierr = MatCreateVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+        ierr = MatCreateVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
 #endif
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    }
+    else
+    {
+        // define a mpi vector with ghost
+        PetscInt *ghostId = NULL;
+        int petsc_n=static_cast<PetscInt>( dmCol.nDof() );
+        int petsc_n_localWithoutGhost=static_cast<PetscInt>( dmCol.nLocalDofWithoutGhost() );
+        int petsc_n_localWithGhost=static_cast<PetscInt>( dmCol.nLocalDofWithGhost() );
+        int petsc_n_localGhost=static_cast<PetscInt>( dmCol.nLocalGhosts() );
+        if ( petsc_n_localGhost > 0 )
+        {
+            ghostId = new PetscInt[petsc_n_localGhost];
+            std::copy( dmCol.mapGlobalProcessToGlobalCluster().begin()+petsc_n_localWithoutGhost,
+                       dmCol.mapGlobalProcessToGlobalCluster().end(),
+                       ghostId );
+        }
+        ierr = VecCreateGhost( dmCol.worldComm(), petsc_n_localWithoutGhost, petsc_n,
+                               petsc_n_localGhost, ghostId, &M_mode );
+        CHKERRABORT( dmCol.worldComm(),ierr );
+    }
 
     std::vector<double> ret_error( nconv );
 
@@ -472,12 +495,35 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
 
     // TODO: possible memory leak here
     //VecDestroy( M_mode );
+    auto const& dmCol = matrix_A->mapCol();
+    if ( dmCol.nProcessors() == 1 )
+    {
 #if PETSC_VERSION_LESS_THAN(3,6,0)
-    ierr = MatGetVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+        ierr = MatGetVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
 #else
-    ierr = MatCreateVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+        ierr = MatCreateVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
 #endif
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    }
+    else
+    {
+        // define a mpi vector with ghost
+        PetscInt *ghostId = NULL;
+        int petsc_n=static_cast<PetscInt>( dmCol.nDof() );
+        int petsc_n_localWithoutGhost=static_cast<PetscInt>( dmCol.nLocalDofWithoutGhost() );
+        int petsc_n_localWithGhost=static_cast<PetscInt>( dmCol.nLocalDofWithGhost() );
+        int petsc_n_localGhost=static_cast<PetscInt>( dmCol.nLocalGhosts() );
+        if ( petsc_n_localGhost > 0 )
+        {
+            ghostId = new PetscInt[petsc_n_localGhost];
+            std::copy( dmCol.mapGlobalProcessToGlobalCluster().begin()+petsc_n_localWithoutGhost,
+                       dmCol.mapGlobalProcessToGlobalCluster().end(),
+                       ghostId );
+        }
+        ierr = VecCreateGhost( dmCol.worldComm(), petsc_n_localWithoutGhost, petsc_n,
+                               petsc_n_localGhost, ghostId, &M_mode );
+        CHKERRABORT( dmCol.worldComm(),ierr );
+    }
 
 
     std::vector<double> ret_error( nconv );

@@ -45,13 +45,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
     auto linearFormDisplacement = form1( _test=M_XhDisplacement, _vector=R,_rowstart=rowStartInVector );
 
     //--------------------------------------------------------------------------------------------------//
-
-    auto u = M_XhDisplacement->element();
-    auto v = u;
-    // copy vector values in fluid element
-    for ( size_type k=0;k<M_XhDisplacement->nLocalDofWithGhost();++k )
-        u(k) = X->operator()(rowStartInVector+k);
-    //auto buzz1 = M_timeStepNewmark->previousUnknown();
+    auto const u = M_XhDisplacement->element(X, rowStartInVector);
+    auto const& v = this->fieldDisplacement();
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -140,11 +135,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
     // incompressibility terms
     if ( this->useDisplacementPressureFormulation() && !BuildCstPart)
     {
-        auto p = M_XhPressure->element();//*M_fieldPressure;
-        // copy vector values in pressure element
-        size_type startDofIndexPressure = this->startDofIndexFieldsInMatrix().find("pressure")->second;
-        for ( size_type k=0;k<M_XhPressure->nLocalDofWithGhost();++k )
-            p(k) = X->operator()(rowStartInVector+startDofIndexPressure+k);
+        // define pressure field
+        size_type blockIndexPressure = rowStartInVector+this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+        auto const p = M_XhPressure->element(X, blockIndexPressure);
         // assemble
         this->updateResidualIncompressibilityTerms(u,p,R);
     }
@@ -285,7 +278,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( element_displacement_type const& u, element_pressure_type const& p, vector_ptrtype& R) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( element_displacement_external_storage_type const& u,
+                                                                              element_pressure_external_storage_type const& p, vector_ptrtype& R) const
 {
     using namespace Feel::vf;
 
@@ -293,8 +287,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( el
     this->log("SolidMechanics","updateResidualIncompressibilityTerms", "start" );
 
     auto mesh = M_XhDisplacement->mesh();
-    auto v = u;
-    auto q = p;
+    auto const& v = this->fieldDisplacement();
+    auto const& q = this->fieldPressure();
     auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
     auto const& coeffLame2 = this->mechanicalProperties()->fieldCoeffLame2();
 
@@ -304,11 +298,11 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( el
      double beta=0.25*(1+alpha_m-alpha_f)*(1+alpha_m-alpha_f);*/
 
     size_type rowStartInVector = this->rowStartInVector();
-    size_type startDofIndexPressure = this->startDofIndexFieldsInMatrix().find("pressure")->second;
+    size_type blockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
     auto linearFormDisplacement = form1( _test=M_XhDisplacement, _vector=R,
                                          _rowstart=rowStartInVector );
     auto linearFormPressure = form1( _test=M_XhPressure, _vector=R,
-                                     _rowstart=rowStartInVector+startDofIndexPressure );
+                                     _rowstart=rowStartInVector+blockIndexPressure );
 
     if (M_pdeType=="Hyper-Elasticity")
     {
@@ -367,7 +361,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( el
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( element_displacement_type const& u, vector_ptrtype& R) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( element_displacement_external_storage_type const& u, vector_ptrtype& R) const
 {
 #if 0
     using namespace Feel::vf;

@@ -80,6 +80,7 @@ public:
     typedef VectorPetsc<value_type> petsc_vector_type;
     typedef boost::shared_ptr<vector_type> petsc_vector_ptrtype;
     typedef VectorPetscMPI<value_type> petscMPI_vector_type;
+    typedef boost::shared_ptr<petscMPI_vector_type> petscMPI_vector_ptrtype;
 
     typedef typename super::solve_return_type solve_return_type;
     typedef typename super::nl_solve_return_type nl_solve_return_type;
@@ -114,6 +115,18 @@ public:
     }
     ~BackendPetsc();
     void clear();
+
+
+    /**
+     * convert a vector into a backend pointer vector
+     */
+    vector_ptrtype toBackendVectorPtr( vector_type const& v  );
+
+    /**
+     * convert a pointer vector into a backend pointer vector
+     */
+    vector_ptrtype toBackendVectorPtr( vector_ptrtype const& v  );
+
 
     sparse_matrix_ptrtype
     newMatrix()
@@ -314,50 +327,13 @@ public:
         // petsc mat/vec here
     }
 
+    /**
+     * apply matrix vector product with the matrix A and vector x
+     * and stores the result in b.
+     */
     void prod( sparse_matrix_type const& A,
                vector_type const& x,
-               vector_type& b, bool transpose ) const
-    {
-        int ierr = 0;
-        petsc_sparse_matrix_type const& _A = dynamic_cast<petsc_sparse_matrix_type const&>( A );
-        petsc_vector_type const& _x = dynamic_cast<petsc_vector_type const&>( x );
-        petsc_vector_type const& _b = dynamic_cast<petsc_vector_type const&>( b );
-        if(!transpose) {
-            if ( _A.mapCol().worldComm().globalSize() == x.map().worldComm().globalSize() )
-            {
-                //std::cout << "BackendPetsc::prod STANDART"<< std::endl;
-                ierr = MatMult( _A.mat(), _x.vec(), _b.vec() );
-                CHKERRABORT( _A.comm().globalComm(),ierr );
-            }
-            else
-            {
-                //std::cout << "BackendPetsc::prod with convert"<< std::endl;
-                auto x_convert = petscMPI_vector_type(_A.mapColPtr());
-                x_convert.duplicateFromOtherPartition(x);
-                x_convert.close();
-                ierr = MatMult( _A.mat(), x_convert.vec(), _b.vec() );
-                CHKERRABORT( _A.comm().globalComm(),ierr );
-            }
-        }
-        else {
-            if ( _A.mapRow().worldComm().globalSize() == x.map().worldComm().globalSize() )
-            {
-                //std::cout << "BackendPetsc::prod STANDART"<< std::endl;
-                ierr = MatMultTranspose( _A.mat(), _x.vec(), _b.vec() );
-                CHKERRABORT( _A.comm().globalComm(),ierr );
-            }
-            else
-            {
-                //std::cout << "BackendPetsc::prod with convert"<< std::endl;
-                auto x_convert = petscMPI_vector_type(_A.mapRowPtr());
-                x_convert.duplicateFromOtherPartition(x);
-                x_convert.close();
-                ierr = MatMultTranspose( _A.mat(), x_convert.vec(), _b.vec() );
-                CHKERRABORT( _A.comm().globalComm(),ierr );
-            }
-        }
-        b.close();
-    }
+               vector_type& b, bool transpose ) const;
 
     /**
      * get the matrix \c M whose diagonal is \c -v
@@ -428,5 +404,7 @@ extern template class BackendPetsc<std::complex<double>>;
 
 #endif // FEELPP_HAS_PETSC_H
 } // Feel
+
+#include <feel/feelalg/topetsc.hpp>
 
 #endif /* _BACKENDPETSC_HPP_ */

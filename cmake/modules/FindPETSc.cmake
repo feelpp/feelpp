@@ -66,6 +66,7 @@ if ( NOT PETSC_DIR )
       message(STATUS "checking version ${version} for file ${flavor}/include/petsc.h...")
       find_path (PETSC_DIR include/petsc.h
         PATHS
+        /usr/local/opt/petsc/real
         /usr/lib/petscdir/${version}/${flavor}
         /usr/local/Cellar/petsc/${version}/${flavor}
         NO_DEFAULT_PATH
