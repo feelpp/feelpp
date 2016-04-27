@@ -25,6 +25,7 @@ makeMixedPoissonOptions( std::string prefix = "" )
         ( prefixvm( prefix, "tau_order").c_str(), po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( prefixvm( prefix, "picard.itol").c_str(), po::value<double>()->default_value( 1e-4 ), "tolerance" )
         ( prefixvm( prefix, "picard.itmax").c_str(), po::value<int>()->default_value( 10 ), "iterations max" )
+        ( prefixvm( prefix, "hface").c_str(), po::value<int>()->default_value( 0 ), "hface" )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ;
     return mpOptions;
@@ -87,6 +88,11 @@ public:
     using Ch_ptr_t = Pch_ptrtype<mesh_type,0>;
     using Ch_element_t = typename Ch_t::element_type;
     using Ch_element_ptr_t = typename Ch_t::element_ptrtype;
+    // M0h
+    using M0h_t = Pdh_type<face_mesh_type,0>;
+    using M0h_ptr_t = Pdh_ptrtype<face_mesh_type,0>;
+    using M0h_element_t = typename M0h_t::element_type;
+    using M0h_element_ptr_t = typename M0h_t::element_ptrtype;
 
     //! Model properties type
     using model_prop_type = ModelProperties;
@@ -102,6 +108,7 @@ private:
     Wh_ptr_t M_Wh; // potential
     Mh_ptr_t M_Mh; // potential trace
     Ch_ptr_t M_Ch; // Lagrange multiplier
+    M0h_ptr_t M_M0h;
 
     backend_ptrtype M_backend;
     sparse_matrix_ptrtype M_A;
@@ -253,6 +260,7 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
     M_Wh = Pdh<Order>( M_mesh, true );
     M_Mh = Pdh<Order>( face_mesh, true );
     M_Ch = Pch<0>( M_mesh );
+    M_M0h = Pdh<0>( face_mesh, true );
 
     toc("spaces",true);
 
@@ -420,6 +428,15 @@ MixedPoisson<Dim, Order>::assembleACst()
     auto nu = M_Ch->element( "nu" );
     auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
+    auto H = M_M0h->element( "H" );
+    if ( ioption("hface" ) == 0 )
+        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
+    else if ( ioption("hface" ) == 1 )
+        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
+    else if ( ioption("hface" ) == 2 )
+        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
+    else
+        H.on( _range=elements(M_M0h->mesh()), _expr=h() );
 
 
     // Building the LHS
@@ -471,18 +488,18 @@ MixedPoisson<Dim, Order>::assembleACst()
     // <tau p, w>_Gamma
     a22 += integrate(_range=internalfaces(M_mesh),
                      _expr=tau_constant *
-                     ( leftfacet( pow(h(),M_tau_order)*idt(p))*leftface(id(w))
-                       + rightfacet( pow(h(),M_tau_order)*idt(p))*rightface(id(w) )));
+                     ( leftfacet( pow(idv(H),M_tau_order)*idt(p))*leftface(id(w))
+                       + rightfacet( pow(idv(H),M_tau_order)*idt(p))*rightface(id(w) )));
     a22 += integrate(_range=boundaryfaces(M_mesh),
-                     _expr=tau_constant * pow(h(),M_tau_order)*id(w)*idt(p) );
+                     _expr=tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p) );
 
     // <-tau phat, w>_Gamma\Gamma_I
     a23 += integrate(_range=internalfaces(M_mesh),
                      _expr=-tau_constant * idt(phat) *
-                     ( leftface( pow(h(),M_tau_order)*id(w) )
-                       + rightface( pow(h(),M_tau_order)*id(w) )));
+                     ( leftface( pow(idv(H),M_tau_order)*id(w) )
+                       + rightface( pow(idv(H),M_tau_order)*id(w) )));
     a23 += integrate(_range=gammaMinusIntegral,
-                     _expr=-tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
+                     _expr=-tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
 
 
     // <j.n,mu>_Omega/Gamma
@@ -497,20 +514,20 @@ MixedPoisson<Dim, Order>::assembleACst()
     // <tau p, mu>_Omega/Gamma
     a32 += integrate(_range=internalfaces(M_mesh),
                      _expr=tau_constant * id(l) *
-                     ( leftfacet( pow(h(),M_tau_order) * idt(p))
-                       + rightfacet( pow(h(),M_tau_order) * idt(p))) );
+                     ( leftfacet( pow(idv(H),M_tau_order) * idt(p))
+                       + rightfacet( pow(idv(H),M_tau_order) * idt(p))) );
     // <tau p, mu>_Gamma_N
     a32 += integrate(_range=markedfaces(M_mesh,M_neumannMarkersList),
-                     _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
+                     _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
 
     // <-tau phat, mu>_Omega/Gamma
     a33 += integrate(_range=internalfaces(M_mesh),
                      _expr=-tau_constant * idt(phat) * id(l) *
-                     ( leftface( pow(h(),M_tau_order) )+
-                       rightface( pow(h(),M_tau_order) )));
+                     ( leftface( pow(idv(H),M_tau_order) )+
+                       rightface( pow(idv(H),M_tau_order) )));
     // <-tau phat, mu>_Gamma_N
     a33 += integrate(_range=markedfaces(M_mesh,M_neumannMarkersList),
-                     _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );
+                     _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
 
     // <phat, mu>_Gamma_D
     a33 += integrate(_range=markedfaces(M_mesh,M_dirichletMarkersList),
@@ -548,17 +565,17 @@ MixedPoisson<Dim, Order>::assembleACst()
 
         // <lambda, tau w>_Gamma_I
         a24 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList),
-                          _expr=-tau_constant * ( pow(h(),M_tau_order)*id(w) ) * idt(nu) );
+                          _expr=-tau_constant * ( pow(idv(H),M_tau_order)*id(w) ) * idt(nu) );
 
         // <j.n, m>_Gamma_I
         a41 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList), _expr=trans(idt(u))*N()*id(nu) );
 
         // <tau p, m>_Gamma_I
         a42 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList), _expr=tau_constant *
-                          ( pow(h(),M_tau_order)*idt(p) ) * id(nu) );
+                          ( pow(idv(H),M_tau_order)*idt(p) ) * id(nu) );
 
         // -<lambda2, m>_Gamma_I
-        a44 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList), _expr=-pow(h(),M_tau_order)*id(nu)*idt(nu) );
+        a44 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList), _expr=-pow(idv(H),M_tau_order)*id(nu)*idt(nu) );
     }
 }
 
