@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=3.7.0
+VERSION=$1
 basedir=$HOME
 #basedir=/tmp
 
@@ -8,10 +8,10 @@ set -e
 # check to see if protobuf folder is empty
 if [ ! -d "$basedir/software/install/petsc-${VERSION}" ]; then
 
-    wget -c http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-$VERSION.tar.gz
+    wget -c http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-${VERSION}.tar.gz
 
-    tar xzf petsc-lite-$VERSION.tar.gz
-    cd petsc-$VERSION
+    tar xzf petsc-lite-${VERSION}.tar.gz
+    cd petsc-${VERSION}
     
     ./configure --with-shared-libraries=1 \
         --with-debugging=0 \
@@ -32,6 +32,6 @@ make all
 make install
 
 else
-    echo 'Using cached directory $basedir/software/install/petsc-$VERSION';
+    echo 'Using cached directory $basedir/software/install/petsc-${VERSION}';
     echo "Cached version: ${VERSION}";
 fi
