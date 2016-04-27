@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-02
 
-  Copyright (C) 2007-2011 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2011 UniversitÃÂÃÂÃÂÃÂ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -764,13 +764,21 @@ void SolverNonLinearPetsc<T>::init ()
 
         if ( this->showSNESMonitor() )
         {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+            ierr = SNESMonitorSet( M_snes,__feel_petsc_snes_monitor,PETSC_NULL,PETSC_NULL );
+#else
             ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_NULL,PETSC_NULL );
+#endif
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
         if ( this->showKSPMonitor() )
         {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+            ierr = KSPMonitorSet( M_ksp,__feel_petsc_monitor,PETSC_NULL,PETSC_NULL );
+#else
             ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+#endif
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-04
 
-  Copyright (C) 2007, 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007, 2009 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -643,7 +643,7 @@ SolverEigenSlepc<T>::setSlepcProblemType()
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         break;
 
-        // Generalized Non-Hermitian with positive (semi-)deﬁnite B
+        // Generalized Non-Hermitian with positive (semi-)deï¬nite B
     case PGNHEP:
         ierr = EPSSetProblemType ( M_eps, EPS_PGNHEP );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
@@ -818,7 +818,11 @@ SolverEigenSlepc<T>:: setSlepcDimensions()
              Note: depending on the interval, it may be necessary also to increase the workspace:
              '-mat_mumps_icntl_14 <percentage>': increase workspace with a percentage (50, 100 or more)
              */
+#if PETSC_VERSION_LESS_THAN(3,7,0)
             PetscOptionsInsertString("-mat_mumps_icntl_13 1");
+#else
+            PetscOptionsInsertString(NULL,"-mat_mumps_icntl_13 1");
+#endif
         }
     }
 }

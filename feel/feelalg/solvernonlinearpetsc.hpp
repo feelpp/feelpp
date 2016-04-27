@@ -49,8 +49,6 @@ extern "C" {
 # include <petscsnes.h>
 #endif
 
-
-
 /**
 
  *
