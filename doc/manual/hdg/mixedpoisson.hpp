@@ -155,6 +155,7 @@ public:
     Vh_element_ptr_t fluxField() const { return M_up; }
     Wh_element_ptr_t potentialField() const { return M_pp; }
     model_prop_type modelProperties() const { return *M_modelProperties; }
+    std::list<std::string> integralMarkersList() const { return M_integralMarkersList; }
 };
 
 template<int Dim, int Order>
@@ -247,7 +248,7 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
     cout << "Model : " << M_modelProperties->model()
          << " using ";
     if ( M_integralCondition )
-        cout << "integral condition on the current and ";
+        cout << "integral condition on the flux and ";
     if ( M_isPicard )
         cout << "Picard algorithm" << std::endl;
     else
@@ -643,6 +644,18 @@ MixedPoisson<Dim, Order>::assembleF()
                 // <V, mu>_Gamma_D
                 rhs3 += integrate(_range=markedfaces(M_mesh,marker),
                                   _expr=id(l)*g);
+            }
+        }
+        itType = mapField.find( "Neumann" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                auto g = expr(exAtMarker.expression());
+                // <g_N,mu>_Gamma_N
+                rhs3 += integrate( _range=markedfaces(M_mesh, marker),
+                                   _expr=id(l)*g);
             }
         }
     }
