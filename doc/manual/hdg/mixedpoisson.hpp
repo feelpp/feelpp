@@ -133,16 +133,17 @@ private:
     void initGraphs();
     void initGraphsWithIntegralCond();
     void assembleACst();
-    void assembleA( int iter = -1 );
-    void assembleF( int iter = -1 );
+    void assembleA();
+    void assembleF();
 
 public:
     MixedPoisson( std::string prefix = "" );
     void init( mesh_ptrtype mesh = NULL);
     void solve();
     void assembleLinear();
+    void solveNL();
     template<typename ExprT>
-    void updateConductivity( Expr<ExprT> expr);
+    void updateConductivity( Expr<ExprT> expr, std::string marker = "");
     template<typename ExprT>
     void updateRHS( Expr<ExprT> expr, std::string marker = "");
     void exportResults();
@@ -608,12 +609,13 @@ MixedPoisson<Dim, Order>::assembleF()
     auto nu = M_Ch->element( "nu" );
     auto l = M_Mh->element( "lambda" );
     auto w = M_Wh->element();
+    auto v = M_Vh->element();
 
     // Building the RHS
 
+    auto rhs1 = form1( _test=M_Wh, _vector=M_F, _rowstart=0);
     auto rhs2 = form1( _test=M_Wh, _vector=M_F, _rowstart=1);
-    auto rhs3 = form1( _test=M_Mh, _vector=M_F,
-                       _rowstart=2);
+    auto rhs3 = form1( _test=M_Mh, _vector=M_F, _rowstart=2);
 
     auto itField = M_modelProperties->boundaryConditions().find( "potential");
     if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -641,6 +643,24 @@ MixedPoisson<Dim, Order>::assembleF()
                 // <V, mu>_Gamma_D
                 rhs3 += integrate(_range=markedfaces(M_mesh,marker),
                                   _expr=id(l)*g);
+            }
+        }
+    }
+
+    itField = M_modelProperties->boundaryConditions().find( "flux");
+    if ( itField != M_modelProperties->boundaryConditions().end() )
+    {
+        auto mapField = (*itField).second;
+        auto itType = mapField.find( "SourceTerm" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                auto g = expr<3,1>(exAtMarker.expression());
+                // (g, v)_Omega
+                rhs2 += integrate( _range=markedelements(M_mesh,marker),
+                                   _expr=inner(g,id(v)));
             }
         }
     }
@@ -725,5 +745,5 @@ MixedPoisson<Dim, Order>::exportResults()
 
 /* TODO:
  * - bind function to update Mat and Vec
- * - override updateConductivity to use json
+ * - solvePicard nl just on potential/flux
  */
