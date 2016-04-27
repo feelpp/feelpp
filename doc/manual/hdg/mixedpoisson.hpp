@@ -26,6 +26,7 @@ makeMixedPoissonOptions( std::string prefix = "" )
         ( prefixvm( prefix, "picard.itol").c_str(), po::value<double>()->default_value( 1e-4 ), "tolerance" )
         ( prefixvm( prefix, "picard.itmax").c_str(), po::value<int>()->default_value( 10 ), "iterations max" )
         ( prefixvm( prefix, "hface").c_str(), po::value<int>()->default_value( 0 ), "hface" )
+        ( prefixvm( prefix, "conductivity_json").c_str(), po::value<std::string>()->default_value( "cond" ), "key for conductivity in json" )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ;
     return mpOptions;
@@ -599,7 +600,7 @@ MixedPoisson<Dim, Order>::assembleA()
         auto material = pairMat.second;
 
         // (sigma^-1 j, v)
-        a11 += integrate(_range=markedelements(M_mesh,marker), _expr=(trans(idt(u))*id(v))/material.getScalar("cond") );
+        a11 += integrate(_range=markedelements(M_mesh,marker), _expr=(trans(idt(u))*id(v))/material.getScalar(soption(prefixvm(M_prefix,"conductivity_json"))) );
     }
 }
 
