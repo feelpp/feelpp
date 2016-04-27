@@ -146,7 +146,8 @@ public:
     template<typename ExprT>
     void updateConductivity( Expr<ExprT> expr, std::string marker = "");
     template<typename ExprT>
-    void updateRHS( Expr<ExprT> expr, std::string marker = "");
+    void updatePotentialRHS( Expr<ExprT> expr, std::string marker = "");
+    void updateFluxRHS( Expr<ExprT> expr, std::string marker = "");
     void exportResults();
 
     mesh_ptrtype mesh() const { return M_mesh; }
@@ -722,7 +723,7 @@ MixedPoisson<Dim, Order>::updateConductivity( Expr<ExprT> expr, std::string mark
 template<int Dim, int Order>
 template<typename ExprT>
 void
-MixedPoisson<Dim, Order>::updateRHS( Expr<ExprT> expr, std::string marker)
+MixedPoisson<Dim, Order>::updatePotentialRHS( Expr<ExprT> expr, std::string marker)
 {
     auto rhs = form1( _test=M_Wh, _vector=M_F, _colstart=1);
     auto w = M_Wh->element();
@@ -730,7 +731,21 @@ MixedPoisson<Dim, Order>::updateRHS( Expr<ExprT> expr, std::string marker)
         rhs += integrate(_range=elements(M_mesh), _expr=expr*id(w) );
     else
         rhs += integrate( _range=markedelements(M_mesh, marker),
-                          _expr=expr*id(w));
+                          _expr=inner(expr,id(w)) );
+}
+
+template<int Dim, int Order>
+template<typename ExprT>
+void
+MixedPoisson<Dim, Order>::updateFluxRHS( Expr<ExprT> expr, std::string marker)
+{
+    auto rhs = form1( _test=M_Vh, _vector=M_F, _colstart=0);
+    auto v = M_Vh->element();
+    if ( marker.empty() )
+        rhs += integrate(_range=elements(M_mesh), _expr=expr*id(v) );
+    else
+        rhs += integrate( _range=markedelements(M_mesh, marker),
+                          _expr=inner(expr,id(v)) );
 }
 
 template<int Dim, int Order>
