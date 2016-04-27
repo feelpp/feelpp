@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-04
 
-  Copyright (C) 2007, 2009 UniversitÃ© Joseph Fourier (Grenoble I)
+  Copyright (C) 2012 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -643,7 +643,7 @@ SolverEigenSlepc<T>::setSlepcProblemType()
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         break;
 
-        // Generalized Non-Hermitian with positive (semi-)deï¬nite B
+        // Generalized Non-Hermitian with positive (semi-)definite B
     case PGNHEP:
         ierr = EPSSetProblemType ( M_eps, EPS_PGNHEP );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
