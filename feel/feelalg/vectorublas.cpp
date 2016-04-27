@@ -72,6 +72,13 @@ struct fake<ublas::vector<double> >: public ublas::vector<double>
     {
         boost::ignore_unused_variable_warning( r );
     }
+    fake( size_type /*nDof*/, value_type* /*arrayDof*/ )
+        :
+        ublas::vector<double>( 0 )
+    {
+        CHECK( false ) << "not allowed";
+    }
+
 };
 
 
@@ -98,6 +105,25 @@ struct fake<ublas::vector_range<ublas::vector<double> > >: public ublas::vector_
         ublas::vector_range<ublas::vector<double> >( v, ublas::range( r.start(), r.size() ) )
     {
     }
+    fake( size_type /*nDof*/, value_type* /*arrayDof*/ )
+        :
+        ublas::vector_range<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() )
+    {
+        CHECK( false ) << "not allowed";
+    }
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::range const& /*r*/ )
+        :
+        ublas::vector_range<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() )
+    {
+        CHECK( false ) << "not allowed";
+    }
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::slice const& /*r*/ )
+        :
+        ublas::vector_range<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() )
+    {
+        CHECK( false ) << "not allowed";
+    }
+
 };
 
 template<>
@@ -113,8 +139,137 @@ struct fake<ublas::vector_slice<ublas::vector<double> > >: public ublas::vector_
         ublas::vector_slice<ublas::vector<double> >( v, ublas::slice( r.start(),1,r.size() ) )
     {
     }
+    fake( size_type /*nDof*/, value_type* /*arrayDof*/ )
+        :
+        ublas::vector_slice<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::slice() )
+    {
+        CHECK( false ) << "not allowed";
+    }
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::range const& /*r*/ )
+        :
+        ublas::vector_slice<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::slice() )
+    {
+        CHECK( false ) << "not allowed";
+    }
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::slice const& /*r*/ )
+        :
+        ublas::vector_slice<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::slice() )
+    {
+        CHECK( false ) << "not allowed";
+    }
+};
+
+template<>
+struct fake<ublas::vector<double, Feel::detail::shallow_array_adaptor<double> > >: public ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >
+{
+    fake( ublas::vector<double>& /*v*/, ublas::slice const& /*r*/ )
+        :
+        ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >( Feel::detail::shallow_array_adaptor<double>( 0, nullptr ) )
+    {
+        CHECK( false ) << "not allowed";
+    }
+    fake( ublas::vector<double>& /*v*/, ublas::range const& /*r*/ )
+        :
+        ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >( Feel::detail::shallow_array_adaptor<double>( 0, nullptr ) )
+    {
+        CHECK( false ) << "not allowed";
+    }
+    fake( size_type nDof, value_type* arrayDof )
+        :
+        ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >( Feel::detail::shallow_array_adaptor<double>( nDof, arrayDof ) )
+    {}
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::range const& /*r*/ )
+        :
+        ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >( Feel::detail::shallow_array_adaptor<double>( 0, nullptr ) )
+     {
+         CHECK( false ) << "not allowed"; //CHECK
+     }
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::slice const& /*r*/ )
+        :
+        ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >( Feel::detail::shallow_array_adaptor<double>( 0, nullptr ) )
+     {
+         CHECK( false ) << "not allowed"; //CHECK
+     }
 
 };
+
+template<>
+struct fake<ublas::vector_range<ublas::vector<double, Feel::detail::shallow_array_adaptor<double> > > > :
+        public ublas::vector_range<ublas::vector<double, Feel::detail::shallow_array_adaptor<double>> >
+{
+    typedef ublas::vector<double, Feel::detail::shallow_array_adaptor<double> > vector_type;
+    typedef ublas::vector_range<vector_type > super_type;
+
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& v, ublas::range const& r )
+        :
+        super_type( v, r )
+    {}
+
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::slice const& /*r*/ )
+        :
+        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::range() )
+    {
+        CHECK( false ) << "not allowed";
+    }
+
+    fake( ublas::vector<double>& /*v*/, ublas::range const& /*r*/ )
+        :
+        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::range() )
+    {
+         CHECK( false ) << "not allowed";
+    }
+    fake( ublas::vector<double>& /*v*/, ublas::slice const& /*r*/ )
+        :
+        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::range() )
+    {
+         CHECK( false ) << "not allowed";
+    }
+
+    fake( size_type /*nDof*/, value_type* /*arrayDof*/ )
+        :
+        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::range() )
+    {
+        CHECK( false ) << "not allowed";
+    }
+};
+
+template<>
+struct fake<ublas::vector_slice<ublas::vector<double, Feel::detail::shallow_array_adaptor<double> > > > :
+        public ublas::vector_slice<ublas::vector<double, Feel::detail::shallow_array_adaptor<double>> >
+{
+    typedef ublas::vector<double, Feel::detail::shallow_array_adaptor<double> > vector_type;
+    typedef ublas::vector_slice<vector_type > super_type;
+
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& v, ublas::slice const& r )
+        :
+        super_type( v, r ) // super_type( ublas::project( v, r ) ) )
+    {}
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& v, ublas::range const& r )
+        :
+        super_type( v, ublas::slice( r.start(),1,r.size() ) )
+    {}
+
+    fake( ublas::vector<double>& /*v*/, ublas::range const& /*r*/ )
+        :
+        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::slice() )
+    {
+         CHECK( false ) << "not allowed";
+    }
+    fake( ublas::vector<double>& /*v*/, ublas::slice const& /*r*/ )
+        :
+        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::slice() )
+    {
+         CHECK( false ) << "not allowed";
+    }
+
+    fake( size_type /*nDof*/, value_type* /*arrayDof*/ )
+        :
+        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::slice() )
+    {
+        CHECK( false ) << "not allowed";
+    }
+};
+
 
 #if 0
 template<>
@@ -147,6 +302,19 @@ void resize( ublas::vector_slice<ublas::vector<T> >& /*v*/, size_type /*s*/, boo
     boost::ignore_unused_variable_warning( preserve );
 }
 template<typename T>
+void resize( ublas::vector<T,Feel::detail::shallow_array_adaptor<T> >& /*v*/, size_type /*s*/, bool preserve = true )
+{
+}
+template<typename T>
+void resize( ublas::vector_range<ublas::vector<T,Feel::detail::shallow_array_adaptor<T> > >& /*v*/, size_type /*s*/, bool preserve = true )
+{
+}
+template<typename T>
+void resize( ublas::vector_slice<ublas::vector<T,Feel::detail::shallow_array_adaptor<T> > >& /*v*/, size_type /*s*/, bool preserve = true )
+{
+}
+
+template<typename T>
 size_type start( ublas::vector<T> const& /*v*/ )
 {
     return 0;
@@ -162,6 +330,21 @@ size_type start( ublas::vector_slice<ublas::vector<T> > const& v )
 {
     return v.start();
 }
+template<typename T>
+size_type start( ublas::vector<T,Feel::detail::shallow_array_adaptor<T>> const& /*v*/ )
+{
+    return 0;
+}
+template<typename T>
+size_type start( ublas::vector_range<ublas::vector<T,Feel::detail::shallow_array_adaptor<T> > > const& v )
+{
+    return v.start();
+}
+template<typename T>
+size_type start( ublas::vector_slice<ublas::vector<T,Feel::detail::shallow_array_adaptor<T> > > const& v )
+{
+    return v.start();
+}
 
 }
 /// \endcond detail
@@ -171,18 +354,16 @@ VectorUblas<T,Storage>::VectorUblas()
     :
     super1(),
     M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_global_values_updated( false )
-    //M_global_values()
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
 {
 }
 
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( size_type __s )
     :
-    super1( __s ),
+    super1( __s, Environment::worldCommSeq() ),
     M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_global_values_updated( false )
-    //M_global_values( __s )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
 {
     this->init( __s, __s, false );
 }
@@ -192,7 +373,7 @@ VectorUblas<T,Storage>::VectorUblas( datamap_ptrtype const& dm )
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
 {
     //this->init( dm.nGlobalElements(), dm.nMyElements(), false );
     this->init( dm->nDof(), dm->nLocalDofWithGhost(), false );
@@ -201,9 +382,9 @@ VectorUblas<T,Storage>::VectorUblas( datamap_ptrtype const& dm )
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( size_type __s, size_type __n_local )
     :
-    super1( __s, __n_local ),
+    super1( __s, __n_local, Environment::worldCommSeq() ),
     M_vec( detail::fake<Storage>( *new ublas::vector<value_type>(), ublas::range() ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
 {
     this->init( this->size(), this->localSize(), false );
 }
@@ -213,7 +394,7 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas const & m )
     :
     super1( m ),
     M_vec( m.M_vec ),
-    M_global_values_updated( m.M_global_values_updated )
+    M_vecNonContiguousGhosts( m.M_vecNonContiguousGhosts )
 {
     DVLOG(2) << "[VectorUblas] copy constructor with range: size:" << this->size() << ", start:" << this->start() << "\n";
     DVLOG(2) << "[VectorUblas] copy constructor with range: size:" << this->vec().size() << "\n";
@@ -224,21 +405,66 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, range_type cons
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m.vec(), range ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), ublas::range(0,0) ) )
 {
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << M_vec.size() << "\n";
 }
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( m.vec(), rangeActive ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), rangeGhost ) )
+{
+    CHECK( is_range_vector ) << "is not a range vector";
+    DVLOG(2) << "[VectorUblas] constructor with active range: size:" << rangeActive.size() << ", start:" << rangeActive.start() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with ghost range: size:" << rangeGhost.size() << ", start:" << rangeGhost.start() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with range: size:" << M_vec.size() << "\n";
+}
+
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m,
+                                     range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( m.vec(), rangeActive ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vecNonContiguousGhosts(), rangeGhost ) )
+{
+    CHECK( is_range_vector ) << "is not a range vector";
+    CHECK( is_shallow_array_adaptor_vector ) << "is_shallow_array_adaptor_vector";
+}
+
 
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm )
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m.vec(), range ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), ublas::range(0,0) ) )
 {
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << M_vec.size() << "\n";
+}
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( m.vec(), sliceActive ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), sliceGhost ) )
+{
+    DVLOG(2) << "[VectorUblas] constructor with active range: size:" << sliceActive.size() << ", start:" << sliceActive.start() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with ghost range: size:" << sliceGhost.size() << ", start:" << sliceGhost.start() << "\n";
+}
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( m.vec(), sliceActive ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vecNonContiguousGhosts(), sliceGhost ) )
+{
+    DVLOG(2) << "[VectorUblas] constructor with active range: size:" << sliceActive.size() << ", start:" << sliceActive.start() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with ghost range: size:" << sliceGhost.size() << ", start:" << sliceGhost.start() << "\n";
 }
 
 template <typename T, typename Storage>
@@ -246,7 +472,7 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type co
     :
     super1( invalid_size_type_value, range.size() ),
     M_vec( detail::fake<Storage>( m, range ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m, range_type(0,0) ) )
 {
     //this->init( m.size(), m.size(), false );
 }
@@ -255,7 +481,7 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type co
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m, range ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m, range_type(0,0) ) )
 {}
 
 template <typename T, typename Storage>
@@ -263,8 +489,7 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type cons
     :
     super1( invalid_size_type_value, range.size() ),
     M_vec( detail::fake<Storage>( m.vec(), range ) ),
-    M_global_values_updated( false )
-    //M_global_values( range.size() )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), slice_type(0,1,0) ) )
 {
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << M_vec.size() << "\n";
@@ -277,7 +502,7 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type co
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m, range ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m, slice_type(0,1,0) ) )
 {}
 
 template <typename T, typename Storage>
@@ -285,11 +510,44 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type co
     :
     super1( invalid_size_type_value, range.size() ),
     M_vec( detail::fake<Storage>( m, range ) ),
-    M_global_values_updated( false )
-    //M_global_values( range.size() )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m, slice_type(0,1,0) ) )
 {
     //this->init( m.size(), m.size(), false );
 }
+
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& mActive, slice_type const& sliceActive,
+                                     ublas::vector<value_type>& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( mActive, sliceActive ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( mGhost, sliceGhost ) )
+{
+    CHECK( is_slice_vector ) << "is not a slice vector";
+}
+
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( typename this_type::shallow_array_adaptor::subtype& mActive, slice_type const& sliceActive,
+                                     typename this_type::shallow_array_adaptor::subtype& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( mActive, sliceActive ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( mGhost, sliceGhost ) )
+{
+    CHECK( is_slice_vector ) << "is not a slice vector";
+}
+
+
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( size_type nActiveDof, value_type* arrayActiveDof,
+                                     size_type nGhostDof, value_type* arrayGhostDof,
+                                     datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( nActiveDof, arrayActiveDof ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( nGhostDof, arrayGhostDof ) )
+{}
+
 
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::~VectorUblas()
@@ -312,26 +570,91 @@ VectorUblas<T,Storage>::start( ) const
 }
 
 template <typename T, typename Storage>
-Vector<T> &
-VectorUblas<T,Storage>::operator= ( const Vector<value_type> &V )
+size_type
+VectorUblas<T,Storage>::startNonContiguousGhosts( ) const
 {
+    return detail::start( M_vecNonContiguousGhosts );
+}
+
+template <typename T, typename Storage>
+Vector<T> &
+VectorUblas<T,Storage>::operator= ( const Vector<value_type> &v )
+{
+    if ( this == &v )
+        return *this;
+
+    if ( !this->map().isCompatible( v.map() ) )
+        this->setMap( v.mapPtr() );
     checkInvariant();
-    FEELPP_ASSERT( this->firstLocalIndex() == V.firstLocalIndex() &&
-                   this->lastLocalIndex() == V.lastLocalIndex() )
-    ( this->firstLocalIndex() )( this->lastLocalIndex() )
+
+    FEELPP_ASSERT( this->localSize() == v.localSize() &&
+                   this->map().nLocalDofWithoutGhost() == v.map().nLocalDofWithoutGhost() )
+    ( this->localSize() )( this->map().nLocalDofWithoutGhost() )
     ( this->vec().size() )
-    ( V.firstLocalIndex() )( V.lastLocalIndex() ).warn( "may be vector invalid  copy" );
+    ( v.localSize() )( v.map().nLocalDofWithoutGhost() ).warn( "may be vector invalid  copy" );
 
-    for ( size_type i = 0; i < this->localSize(); ++i )
+    typedef VectorUblas<T> the_vector_ublas_type;
+    typedef typename the_vector_ublas_type::range::type the_vector_ublas_range_type;
+    typedef typename the_vector_ublas_type::slice::type the_vector_ublas_slice_type;
+    typedef typename VectorUblas<T>::shallow_array_adaptor::type the_vector_ublas_extarray_type;
+    typedef typename the_vector_ublas_extarray_type::range::type the_vector_ublas_extarray_range_type;
+    typedef typename the_vector_ublas_extarray_type::slice::type the_vector_ublas_extarray_slice_type;
+
+    const the_vector_ublas_type * vecUblas = dynamic_cast<the_vector_ublas_type const*>( &v );
+    if ( vecUblas )
     {
-        M_vec.operator()( i ) = V( V.firstLocalIndex() + i );
-        //M_vec.operator()( i ) = V(  i );
-
+        this->assignWithUblasImpl( *vecUblas );
+        return *this;
+    }
+    const the_vector_ublas_range_type * vecUblasRange = dynamic_cast<the_vector_ublas_range_type const*>( &v );
+    if ( vecUblasRange )
+    {
+        this->assignWithUblasImpl( *vecUblasRange );
+        return *this;
+    }
+    const the_vector_ublas_slice_type * vecUblasSlice = dynamic_cast<the_vector_ublas_slice_type const*>( &v );
+    if ( vecUblasSlice )
+    {
+        this->assignWithUblasImpl( *vecUblasSlice );
+        return *this;
+    }
+    const the_vector_ublas_extarray_type * vecUblasExtArray = dynamic_cast<the_vector_ublas_extarray_type const*>( &v );
+    if ( vecUblasExtArray )
+    {
+        this->assignWithUblasImpl( *vecUblasExtArray );
+        return *this;
+    }
+    const the_vector_ublas_extarray_range_type * vecUblasExtArrayRange = dynamic_cast<the_vector_ublas_extarray_range_type const*>( &v );
+    if ( vecUblasExtArrayRange )
+    {
+        this->assignWithUblasImpl( *vecUblasExtArrayRange );
+        return *this;
+    }
+    const the_vector_ublas_extarray_slice_type * vecUblasExtArraySlice = dynamic_cast<the_vector_ublas_extarray_slice_type const*>( &v );
+    if ( vecUblasExtArraySlice )
+    {
+        this->assignWithUblasImpl( *vecUblasExtArraySlice );
+        return *this;
+    }
+    const VectorPetsc<T> * vecPetsc = dynamic_cast<VectorPetsc<T> const*>( &v );
+    if ( vecPetsc && !is_slice_vector )
+    {
+        //toPETSc( *this ).operator=( *vecPetsc );
+        toPETScPtr( *this )->operator=( *vecPetsc );
+        return *this;
     }
 
-    this->outdateGlobalValues();
+    // default operator=
+    for ( size_type i = 0; i < this->localSize(); ++i )
+        this->operator()( i ) = v(  i );
 
     return *this;
+}
+template <typename T, typename Storage>
+Vector<T>&
+VectorUblas<T,Storage>::operator= ( const this_type &V )
+{
+    return this->operator=( *dynamic_cast< Vector<value_type> const* >( &V ) );
 }
 
 template <typename T, typename Storage>
@@ -350,9 +673,6 @@ VectorUblas<T,Storage>::init ( const size_type n,
         this->clear();
 
     super1::init( n, n_local, fast );
-
-    M_global_values_updated = false;
-    //M_global_values.resize( this->size() );
 
     // Initialize data structures
     detail::resize( M_vec, this->localSize() );
@@ -395,13 +715,82 @@ template<typename T, typename Storage>
 void
 VectorUblas<T,Storage>::clear()
 {
-    detail::resize( M_vec, 0, false );
+    if ( !is_extarray_vector )
+    {
+        detail::resize( M_vec, 0, false );
+        if ( has_non_contiguous_ghosts )
+            detail::resize( M_vecNonContiguousGhosts, 0, false );
+    }
 }
 
 template<typename T, typename Storage>
 void
 VectorUblas<T,Storage>::close() const
 {
+}
+
+template<typename T, typename Storage>
+void
+VectorUblas<T,Storage>::add( const T& a, const Vector<T>& v )
+{
+    checkInvariant();
+
+    typedef VectorUblas<T> the_vector_ublas_type;
+    typedef typename the_vector_ublas_type::range::type the_vector_ublas_range_type;
+    typedef typename the_vector_ublas_type::slice::type the_vector_ublas_slice_type;
+    typedef typename VectorUblas<T>::shallow_array_adaptor::type the_vector_ublas_extarray_type;
+    typedef typename the_vector_ublas_extarray_type::range::type the_vector_ublas_extarray_range_type;
+    typedef typename the_vector_ublas_extarray_type::slice::type the_vector_ublas_extarray_slice_type;
+
+    const the_vector_ublas_type * vecUblas = dynamic_cast<the_vector_ublas_type const*>( &v );
+    if ( vecUblas )
+    {
+        this->addWithUblasImpl( a,*vecUblas );
+        return;
+    }
+    const the_vector_ublas_range_type * vecUblasRange = dynamic_cast<the_vector_ublas_range_type const*>( &v );
+    if ( vecUblasRange )
+    {
+        this->addWithUblasImpl( a,*vecUblasRange );
+        return;
+    }
+    const the_vector_ublas_slice_type * vecUblasSlice = dynamic_cast<the_vector_ublas_slice_type const*>( &v );
+    if ( vecUblasSlice )
+    {
+        this->addWithUblasImpl( a,*vecUblasSlice );
+        return;
+    }
+    const the_vector_ublas_extarray_type * vecUblasExtArray = dynamic_cast<the_vector_ublas_extarray_type const*>( &v );
+    if ( vecUblasExtArray )
+    {
+        this->addWithUblasImpl( a,*vecUblasExtArray );
+        return;
+    }
+    const the_vector_ublas_extarray_range_type * vecUblasExtArrayRange = dynamic_cast<the_vector_ublas_extarray_range_type const*>( &v );
+    if ( vecUblasExtArrayRange )
+    {
+        this->addWithUblasImpl( a,*vecUblasExtArrayRange );
+        return;
+    }
+    const the_vector_ublas_extarray_slice_type * vecUblasExtArraySlice = dynamic_cast<the_vector_ublas_extarray_slice_type const*>( &v );
+    if ( vecUblasExtArraySlice )
+    {
+        this->addWithUblasImpl( a,*vecUblasExtArraySlice );
+        return;
+    }
+    const VectorPetsc<T> * vecPetsc = dynamic_cast<VectorPetsc<T> const*>( &v );
+    if ( vecPetsc && !is_slice_vector )
+    {
+        //toPETSc( *this ).add( a,*vecPetsc );
+        toPETScPtr( *this )->add( a,*vecPetsc );
+        return;
+    }
+
+    // default add operator
+    for ( size_type i = 0; i < this->localSize(); ++i )
+        this->operator()( i ) += a*v(  i );
+
+    return;
 }
 
 template<typename T, typename Storage>
@@ -648,14 +1037,9 @@ VectorUblas<T,Storage>::checkInvariant() const
 {
     DCHECK ( this->isInitialized() ) <<  "vector not initialized" ;
     DCHECK ( this->localSize() <= this->size() ) << "vector invalid size: " << this->size() << "," << this->localSize();
-    DCHECK ( this->localSize() == M_vec.size() ) << "vector invalid size: " << M_vec.size() << "," << this->localSize();
-    DCHECK( ( this->lastLocalIndex() - this->firstLocalIndex() ) == this->localSize() ||
-            (this->localSize()==0 && this->comm().globalSize()>1 ) )
-        << "vector invalid size"
-        << " this->size()="<< this->size()
-        << " this->lastLocalIndex()=" << this->lastLocalIndex()
-        << " this->firstLocalIndex()=" << this->firstLocalIndex()
-        << " this->localSize()=" << this->localSize() << "\n";
+    DCHECK ( this->localSize() == (M_vec.size()+M_vecNonContiguousGhosts.size() ) ) << "vector invalid size: " << M_vec.size() << ","
+                                                                                      << M_vecNonContiguousGhosts.size() << ","
+                                                                                      << this->localSize();
 }
 
 namespace detail
@@ -713,36 +1097,63 @@ VectorUblas<T,Storage>::pow( int n ) const
 
 template<typename T, typename Storage>
 typename VectorUblas<T,Storage>::value_type
-VectorUblas<T,Storage>::dot( Vector<T> const& __v )
+VectorUblas<T,Storage>::dot( Vector<T> const& v ) const
 {
-    VectorUblas<T,Storage> const *v = dynamic_cast<VectorUblas<T,Storage> const*>( &__v );
-    real_type local_in_prod = 0;
-    real_type global_in_prod = 0;
-    if ( this->comm().size() == 1 )
+    typedef VectorUblas<T> the_vector_ublas_type;
+    typedef typename the_vector_ublas_type::range::type the_vector_ublas_range_type;
+    typedef typename the_vector_ublas_type::slice::type the_vector_ublas_slice_type;
+    typedef typename VectorUblas<T>::shallow_array_adaptor::type the_vector_ublas_extarray_type;
+    typedef typename the_vector_ublas_extarray_type::range::type the_vector_ublas_extarray_range_type;
+    typedef typename the_vector_ublas_extarray_type::slice::type the_vector_ublas_extarray_slice_type;
+
+    const the_vector_ublas_type * vecUblas = dynamic_cast<the_vector_ublas_type const*>( &v );
+    if ( vecUblas )
     {
-        local_in_prod = ublas::inner_prod( M_vec, v->vec() );
-        global_in_prod = local_in_prod;
+        return this->dotWithUblasImpl( *vecUblas );
     }
-    else
+    const the_vector_ublas_range_type * vecUblasRange = dynamic_cast<the_vector_ublas_range_type const*>( &v );
+    if ( vecUblasRange )
     {
-        size_type s = this->localSize();
-        size_type start = this->firstLocalIndex();
-        for ( size_type i = 0; i < s; ++i )
-        {
-            if ( !this->localIndexIsGhost( start + i ) )
-            {
-                real_type value1 =   M_vec.operator()( start + i );
-                real_type value2 = v->vec().operator()( start + i );
-                local_in_prod += value1*value2;
-            }
-        }
+        return this->dotWithUblasImpl( *vecUblasRange );
+    }
+    const the_vector_ublas_slice_type * vecUblasSlice = dynamic_cast<the_vector_ublas_slice_type const*>( &v );
+    if ( vecUblasSlice )
+    {
+        return this->dotWithUblasImpl( *vecUblasSlice );
+    }
+    const the_vector_ublas_extarray_type * vecUblasExtArray = dynamic_cast<the_vector_ublas_extarray_type const*>( &v );
+    if ( vecUblasExtArray )
+    {
+        return this->dotWithUblasImpl( *vecUblasExtArray );
+    }
+    const the_vector_ublas_extarray_range_type * vecUblasExtArrayRange = dynamic_cast<the_vector_ublas_extarray_range_type const*>( &v );
+    if ( vecUblasExtArrayRange )
+    {
+        return this->dotWithUblasImpl( *vecUblasExtArrayRange );
+    }
+    const the_vector_ublas_extarray_slice_type * vecUblasExtArraySlice = dynamic_cast<the_vector_ublas_extarray_slice_type const*>( &v );
+    if ( vecUblasExtArraySlice )
+    {
+        return this->dotWithUblasImpl( *vecUblasExtArraySlice );
+    }
+    const VectorPetsc<T> * vecPetsc = dynamic_cast<VectorPetsc<T> const*>( &v );
+    if ( vecPetsc && !is_slice_vector )
+    {
+        return toPETScPtr( *this )->dot( *vecPetsc );
+    }
+
+    // default dot operator
+    value_type localResult = 0;
+    for ( size_type k = 0; k < this->map().nLocalDofWithoutGhost(); ++k )
+    {
+        localResult += this->operator()(k)*v(k);
+    }
+    value_type globalResult = localResult;
 #ifdef FEELPP_HAS_MPI
-        mpi::all_reduce( this->comm(), local_in_prod, global_in_prod, std::plus<real_type>() );
+    if ( this->comm().size() > 1 )
+        mpi::all_reduce( this->comm(), localResult, globalResult, std::plus<value_type>() );
 #endif
-    }
-
-    return global_in_prod;
-
+    return globalResult;
 }
 
 #ifdef FEELPP_HAS_HDF5
@@ -888,7 +1299,7 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename, std::s
         hdf5.closeTable( tableName );
 
         for ( size_type k=0;k<dataStorage.size();++k )
-            this->set( dm.mapGlobalClusterToGlobalProcess( k ), dataStorage[k] );
+            this->set( k, dataStorage[k] );
         sync( *this );
     }
     else // save
@@ -912,7 +1323,7 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename, std::s
         }
 
         for ( size_type k=0;k<dataStorage.size();++k )
-            dataStorage[k] = this->operator()( dm.mapGlobalClusterToGlobalProcess( k ) );
+            dataStorage[k] = this->operator()( k );
 
         // create double tab
         hdf5.createTable( tableName, H5T_NATIVE_DOUBLE, dimsElt );
@@ -945,6 +1356,9 @@ VectorUblas<T,Storage>::loadHDF5( std::string const& filename, std::string table
 template class VectorUblas<double,ublas::vector<double> >;
 template class VectorUblas<double,ublas::vector_range<ublas::vector<double> > >;
 template class VectorUblas<double,ublas::vector_slice<ublas::vector<double> > >;
+template class VectorUblas<double,ublas::vector<double, Feel::detail::shallow_array_adaptor<double> > >;
+template class VectorUblas<double,ublas::vector_range<ublas::vector<double, Feel::detail::shallow_array_adaptor<double> > > >;
+template class VectorUblas<double,ublas::vector_slice<ublas::vector<double, Feel::detail::shallow_array_adaptor<double> > > >;
 //template class VectorUblas<long double,ublas::vector<long double> >;
 //template class VectorUblas<long double,ublas::vector_range<ublas::vector<long double> > >;
 

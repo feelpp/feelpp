@@ -11,37 +11,33 @@
 
 using namespace Feel;
 
-struct CustomOperator {
+struct CustomOperator : HPDDM::EmptyOperator<double> {
     Mat                                            _A;
     boost::shared_ptr<PreconditionerPetsc<double>> _P;
     Vec                                          _rhs;
-    mutable Vec                                 _work;
-    double* const                                  _x;
-    CustomOperator(Mat A, boost::shared_ptr<PreconditionerPetsc<double>> P, Vec rhs, double* const x) : _A(A), _P(P), _rhs(rhs), _x(x) { }
-    bool setBuffer(const int&, double* = nullptr, const int& = 0) const {
-        int N;
+    Vec                                         _work;
+    CustomOperator(Mat A, boost::shared_ptr<PreconditionerPetsc<double>> P) : HPDDM::EmptyOperator<double>(0), _A(A), _P(P) {
+        int n, N;
+        MatGetLocalSize(_A, &n, NULL);
+        HPDDM::EmptyOperator<double>::_n = n;
         MatGetSize(_A, &N, NULL);
-        if(Environment::worldComm().size() > 1)
-            VecCreateMPIWithArray(Environment::worldComm(), 1, getDof(), N, _x, &_work);
-        else
-            VecCreateSeqWithArray(Environment::worldComm(), 1, N, _x, &_work);
-        return false;
+        if(Environment::worldComm().size() > 1) {
+            VecCreateMPIWithArray(Environment::worldComm(), 1, getDof(), N, NULL, &_rhs);
+            VecCreateMPIWithArray(Environment::worldComm(), 1, getDof(), N, NULL, &_work);
+        }
+        else {
+            VecCreateSeqWithArray(Environment::worldComm(), 1, N, NULL, &_rhs);
+            VecCreateSeqWithArray(Environment::worldComm(), 1, N, NULL, &_work);
+        }
     }
-    void clearBuffer(const bool) const {
+    ~CustomOperator() {
+        VecDestroy(&_rhs);
         VecDestroy(&_work);
     }
-    template<bool = true> void start(const double* const, double* const, const unsigned short& = 1) const { }
-
-    int getDof() const {
-        int n;
-        MatGetLocalSize(_A, &n, NULL);
-        return n;
-    }
     void GMV(const double* const in, double* const out, const int& mu = 1) const {
-        int n = getDof();
         for(unsigned short nu = 0; nu < mu; ++nu) {
-            VecPlaceArray(_rhs, in + nu * n);
-            VecPlaceArray(_work, out + nu * n);
+            VecPlaceArray(_rhs, in + nu * HPDDM::EmptyOperator<double>::_n);
+            VecPlaceArray(_work, out + nu * HPDDM::EmptyOperator<double>::_n);
             MatMult(_A, _rhs, _work);
             VecResetArray(_work);
             VecResetArray(_rhs);
@@ -49,17 +45,15 @@ struct CustomOperator {
     }
     template<bool = true>
     void apply(const double* const in, double* const out, const unsigned short& mu = 1, double* = nullptr, const unsigned short& = 0) const {
-        int n = getDof();
         for(unsigned short nu = 0; nu < mu; ++nu) {
-            VecPlaceArray(_rhs, in + nu * n);
-            VecPlaceArray(_work, out + nu * n);
+            VecPlaceArray(_rhs, in + nu * HPDDM::EmptyOperator<double>::_n);
+            VecPlaceArray(_work, out + nu * HPDDM::EmptyOperator<double>::_n);
             _P->apply(_rhs, _work);
             VecResetArray(_work);
             VecResetArray(_rhs);
         }
     }
 };
-
 
 inline
 po::options_description
@@ -163,7 +157,6 @@ int main(int argc, char**argv )
         //                   _expr=vec(cst(0.),cst(0.)) );
 #ifdef FEELPP_HAS_HPDDM
         if(HPDDM::Option::get()->set("krylov_method")) {
-            Mat PetscA = static_cast<MatrixPetsc<double>*> ( &*A )->mat();
             Vec rhs;
             if(Environment::worldComm().size() > 1)
                 rhs = dynamic_cast<VectorPetscMPI<double> const*> ( &(*lVit.vectorPtr()) )->vec();
@@ -173,11 +166,12 @@ int main(int argc, char**argv )
             auto P = ptr_backend->preconditioner();
             P->setMatrix(A);
             P->init();
-            CustomOperator op(PetscA, toPETSc(P), rhs, sol);
+            CustomOperator op(toPETSc(A)->mat(), toPETSc(P));
             double* ptr_rhs;
             VecGetArray(rhs, &ptr_rhs);
-            HPDDM::IterativeMethod::GCRODR(op, ptr_rhs, sol, 1, Environment::worldComm());
+            HPDDM::IterativeMethod::solve(op, ptr_rhs, sol, 1, Environment::worldComm());
             VecRestoreArray(rhs, &ptr_rhs);
+            toPETScPtr(UTn1)->localize();
         }
         else
 #endif

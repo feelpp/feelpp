@@ -861,12 +861,10 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typena
     if (this->isStandardModel())
     {
         // define start dof index ( lm , windkessel )
-        size_type currentStartIndex = 0;
-        currentStartIndex += M_XhDisplacement->nLocalDofWithGhost();
+        size_type currentStartIndex = 1;
         if ( M_useDisplacementPressureFormulation )
         {
-            M_startDofIndexFieldsInMatrix["pressure"] = currentStartIndex;
-            currentStartIndex += M_XhPressure->nLocalDofWithGhost() ;
+            M_startBlockIndexFieldsInMatrix["pressure"] = currentStartIndex++;
         }
         // prepare block vector
         int nBlock = this->nBlockMatrixGraph();
