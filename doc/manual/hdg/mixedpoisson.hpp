@@ -25,6 +25,8 @@ makeMixedPoissonOptions( std::string prefix = "" )
         ( prefixvm( prefix, "tau_order").c_str(), po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( prefixvm( prefix, "picard.itol").c_str(), po::value<double>()->default_value( 1e-4 ), "tolerance" )
         ( prefixvm( prefix, "picard.itmax").c_str(), po::value<int>()->default_value( 10 ), "iterations max" )
+        ( prefixvm( prefix, "hface").c_str(), po::value<int>()->default_value( 0 ), "hface" )
+        ( prefixvm( prefix, "conductivity_json").c_str(), po::value<std::string>()->default_value( "cond" ), "key for conductivity in json" )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ;
     return mpOptions;
@@ -36,7 +38,7 @@ makeMixedPoissonLibOptions( std::string prefix = "" )
     po::options_description mpLibOptions( "Mixed Poisson HDG Lib options");
     if ( !prefix.empty() )
         mpLibOptions.add( backend_options( prefix ) );
-    return mpLibOptions.add( feel_options());
+    return mpLibOptions;
 }
 
 template<int Dim, int Order>
@@ -87,6 +89,11 @@ public:
     using Ch_ptr_t = Pch_ptrtype<mesh_type,0>;
     using Ch_element_t = typename Ch_t::element_type;
     using Ch_element_ptr_t = typename Ch_t::element_ptrtype;
+    // M0h
+    using M0h_t = Pdh_type<face_mesh_type,0>;
+    using M0h_ptr_t = Pdh_ptrtype<face_mesh_type,0>;
+    using M0h_element_t = typename M0h_t::element_type;
+    using M0h_element_ptr_t = typename M0h_t::element_ptrtype;
 
     //! Model properties type
     using model_prop_type = ModelProperties;
@@ -102,6 +109,7 @@ private:
     Wh_ptr_t M_Wh; // potential
     Mh_ptr_t M_Mh; // potential trace
     Ch_ptr_t M_Ch; // Lagrange multiplier
+    M0h_ptr_t M_M0h;
 
     backend_ptrtype M_backend;
     sparse_matrix_ptrtype M_A;
@@ -121,23 +129,27 @@ private:
 
     std::list<std::string> M_dirichletMarkersList;
     std::list<std::string> M_neumannMarkersList;
+    std::list<std::string> M_robinMarkersList;
     std::list<std::string> M_integralMarkersList;
 
     void initGraphs();
     void initGraphsWithIntegralCond();
     void assembleACst();
-    void assembleA( int iter = -1 );
-    void assembleF( int iter = -1 );
+    void assembleA();
+    void assembleF();
 
 public:
     MixedPoisson( std::string prefix = "" );
     void init( mesh_ptrtype mesh = NULL);
     void solve();
     void assembleLinear();
+    void solveNL();
     template<typename ExprT>
-    void updateConductivity( Expr<ExprT> expr);
+    void updateConductivity( Expr<ExprT> expr, std::string marker = "");
     template<typename ExprT>
-    void updateRHS( Expr<ExprT> expr, std::string marker = "");
+    void updatePotentialRHS( Expr<ExprT> expr, std::string marker = "");
+    template<typename ExprT>
+    void updateFluxRHS( Expr<ExprT> expr, std::string marker = "");
     void exportResults();
 
     mesh_ptrtype mesh() const { return M_mesh; }
@@ -147,6 +159,7 @@ public:
     Vh_element_ptr_t fluxField() const { return M_up; }
     Wh_element_ptr_t potentialField() const { return M_pp; }
     model_prop_type modelProperties() const { return *M_modelProperties; }
+    std::list<std::string> integralMarkersList() const { return M_integralMarkersList; }
 };
 
 template<int Dim, int Order>
@@ -176,6 +189,7 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
     // initialize marker lists for each boundary condition type
     M_dirichletMarkersList.clear();
     M_neumannMarkersList.clear();
+    M_robinMarkersList.clear();
     M_integralMarkersList.clear();
     auto itField = M_modelProperties->boundaryConditions().find( "potential");
     if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -197,6 +211,15 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
             {
                 std::string marker = exAtMarker.marker();
                 M_neumannMarkersList.push_back(marker);
+            }
+        }
+        itType = mapField.find( "Robin" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                M_robinMarkersList.push_back(marker);
             }
         }
     }
@@ -239,7 +262,7 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
     cout << "Model : " << M_modelProperties->model()
          << " using ";
     if ( M_integralCondition )
-        cout << "integral condition on the current and ";
+        cout << "integral condition on the flux and ";
     if ( M_isPicard )
         cout << "Picard algorithm" << std::endl;
     else
@@ -253,6 +276,7 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
     M_Wh = Pdh<Order>( M_mesh, true );
     M_Mh = Pdh<Order>( face_mesh, true );
     M_Ch = Pch<0>( M_mesh );
+    M_M0h = Pdh<0>( face_mesh, true );
 
     toc("spaces",true);
 
@@ -411,7 +435,7 @@ MixedPoisson<Dim, Order>::assembleACst()
             return false; });
 
     // stabilisation parameter
-    auto tau_constant = cst(doption(prefixvm(M_prefix, "tau_constant").c_str()));
+    auto tau_constant = cst(doption(prefixvm(M_prefix, "tau_constant")));
 
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
@@ -420,6 +444,15 @@ MixedPoisson<Dim, Order>::assembleACst()
     auto nu = M_Ch->element( "nu" );
     auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
+    auto H = M_M0h->element( "H" );
+    if ( ioption(prefixvm(M_prefix, "hface") ) == 0 )
+        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
+    else if ( ioption(prefixvm(M_prefix, "hface") ) == 1 )
+        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
+    else if ( ioption(prefixvm(M_prefix, "hface") ) == 2 )
+        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
+    else
+        H.on( _range=elements(M_M0h->mesh()), _expr=h() );
 
 
     // Building the LHS
@@ -448,7 +481,7 @@ MixedPoisson<Dim, Order>::assembleACst()
                      _rowstart=2,
                      _colstart=2);
 
-    // -(p,div(v))
+    // -(p,div(v))_Omega
     a12 += integrate(_range=elements(M_mesh), _expr=-idt(p)*div(v) );
 
     // <phat,v.n>_Gamma\Gamma_I
@@ -471,18 +504,18 @@ MixedPoisson<Dim, Order>::assembleACst()
     // <tau p, w>_Gamma
     a22 += integrate(_range=internalfaces(M_mesh),
                      _expr=tau_constant *
-                     ( leftfacet( pow(h(),M_tau_order)*idt(p))*leftface(id(w))
-                       + rightfacet( pow(h(),M_tau_order)*idt(p))*rightface(id(w) )));
+                     ( leftfacet( pow(idv(H),M_tau_order)*idt(p))*leftface(id(w))
+                       + rightfacet( pow(idv(H),M_tau_order)*idt(p))*rightface(id(w) )));
     a22 += integrate(_range=boundaryfaces(M_mesh),
-                     _expr=tau_constant * pow(h(),M_tau_order)*id(w)*idt(p) );
+                     _expr=tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p) );
 
     // <-tau phat, w>_Gamma\Gamma_I
     a23 += integrate(_range=internalfaces(M_mesh),
                      _expr=-tau_constant * idt(phat) *
-                     ( leftface( pow(h(),M_tau_order)*id(w) )
-                       + rightface( pow(h(),M_tau_order)*id(w) )));
+                     ( leftface( pow(idv(H),M_tau_order)*id(w) )
+                       + rightface( pow(idv(H),M_tau_order)*id(w) )));
     a23 += integrate(_range=gammaMinusIntegral,
-                     _expr=-tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
+                     _expr=-tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
 
 
     // <j.n,mu>_Omega/Gamma
@@ -493,29 +526,54 @@ MixedPoisson<Dim, Order>::assembleACst()
     // <j.n,mu>_Gamma_N
     a31 += integrate(_range=markedfaces(M_mesh,M_neumannMarkersList),
                      _expr=id(l)*(trans(idt(u))*N()) );
+    // <j.n,mu>_Gamma_R
+    a31 += integrate(_range=markedfaces(M_mesh,M_robinMarkersList),
+                     _expr=id(l)*(trans(idt(u))*N()) );
 
     // <tau p, mu>_Omega/Gamma
     a32 += integrate(_range=internalfaces(M_mesh),
                      _expr=tau_constant * id(l) *
-                     ( leftfacet( pow(h(),M_tau_order) * idt(p))
-                       + rightfacet( pow(h(),M_tau_order) * idt(p))) );
+                     ( leftfacet( pow(idv(H),M_tau_order) * idt(p))
+                       + rightfacet( pow(idv(H),M_tau_order) * idt(p))) );
     // <tau p, mu>_Gamma_N
     a32 += integrate(_range=markedfaces(M_mesh,M_neumannMarkersList),
-                     _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
+                     _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
+    // <tau p, mu>_Gamma_R
+    a32 += integrate(_range=markedfaces(M_mesh,M_robinMarkersList),
+                     _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
 
     // <-tau phat, mu>_Omega/Gamma
     a33 += integrate(_range=internalfaces(M_mesh),
                      _expr=-tau_constant * idt(phat) * id(l) *
-                     ( leftface( pow(h(),M_tau_order) )+
-                       rightface( pow(h(),M_tau_order) )));
+                     ( leftface( pow(idv(H),M_tau_order) )+
+                       rightface( pow(idv(H),M_tau_order) )));
     // <-tau phat, mu>_Gamma_N
     a33 += integrate(_range=markedfaces(M_mesh,M_neumannMarkersList),
-                     _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );
+                     _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
+    // <-tau phat, mu>_Gamma_R
+    a33 += integrate(_range=markedfaces(M_mesh,M_robinMarkersList),
+                     _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
 
     // <phat, mu>_Gamma_D
     a33 += integrate(_range=markedfaces(M_mesh,M_dirichletMarkersList),
                      _expr=idt(phat) * id(l) );
-
+    auto itField = M_modelProperties->boundaryConditions().find( "potential");
+    if ( itField != M_modelProperties->boundaryConditions().end() )
+    {
+        auto mapField = (*itField).second;
+        auto itType = mapField.find( "Robin" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                auto g = expr(exAtMarker.expression1());
+                // <g_R^1 phat, mu>_Gamma_R
+                a33 += integrate(_range=markedfaces(M_mesh,M_robinMarkersList),
+                                 _expr=g*idt(phat) * id(l) );
+            }
+        }
+    }
 
     // BC
 
@@ -548,17 +606,17 @@ MixedPoisson<Dim, Order>::assembleACst()
 
         // <lambda, tau w>_Gamma_I
         a24 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList),
-                          _expr=-tau_constant * ( pow(h(),M_tau_order)*id(w) ) * idt(nu) );
+                          _expr=-tau_constant * ( pow(idv(H),M_tau_order)*id(w) ) * idt(nu) );
 
         // <j.n, m>_Gamma_I
         a41 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList), _expr=trans(idt(u))*N()*id(nu) );
 
         // <tau p, m>_Gamma_I
         a42 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList), _expr=tau_constant *
-                          ( pow(h(),M_tau_order)*idt(p) ) * id(nu) );
+                          ( pow(idv(H),M_tau_order)*idt(p) ) * id(nu) );
 
         // -<lambda2, m>_Gamma_I
-        a44 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList), _expr=-pow(h(),M_tau_order)*id(nu)*idt(nu) );
+        a44 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList), _expr=-pow(idv(H),M_tau_order)*id(nu)*idt(nu) );
     }
 }
 
@@ -580,7 +638,7 @@ MixedPoisson<Dim, Order>::assembleA()
         auto material = pairMat.second;
 
         // (sigma^-1 j, v)
-        a11 += integrate(_range=markedelements(M_mesh,marker), _expr=(trans(idt(u))*id(v))/material.getScalar("cond") );
+        a11 += integrate(_range=markedelements(M_mesh,marker), _expr=(trans(idt(u))*id(v))/material.getScalar(soption(prefixvm(M_prefix,"conductivity_json"))) );
     }
 }
 
@@ -591,12 +649,13 @@ MixedPoisson<Dim, Order>::assembleF()
     auto nu = M_Ch->element( "nu" );
     auto l = M_Mh->element( "lambda" );
     auto w = M_Wh->element();
+    auto v = M_Vh->element();
 
     // Building the RHS
 
+    auto rhs1 = form1( _test=M_Wh, _vector=M_F, _rowstart=0);
     auto rhs2 = form1( _test=M_Wh, _vector=M_F, _rowstart=1);
-    auto rhs3 = form1( _test=M_Mh, _vector=M_F,
-                       _rowstart=2);
+    auto rhs3 = form1( _test=M_Mh, _vector=M_F, _rowstart=2);
 
     auto itField = M_modelProperties->boundaryConditions().find( "potential");
     if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -621,9 +680,51 @@ MixedPoisson<Dim, Order>::assembleF()
             {
                 std::string marker = exAtMarker.marker();
                 auto g = expr(exAtMarker.expression());
-                // <V, mu>_Gamma_D
+                // <g_D, mu>_Gamma_D
                 rhs3 += integrate(_range=markedfaces(M_mesh,marker),
                                   _expr=id(l)*g);
+            }
+        }
+        itType = mapField.find( "Neumann" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                auto g = expr(exAtMarker.expression());
+                // <g_N,mu>_Gamma_N
+                rhs3 += integrate( _range=markedfaces(M_mesh, marker),
+                                   _expr=id(l)*g);
+            }
+        }
+        itType = mapField.find( "Robin" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                auto g = expr(exAtMarker.expression2());
+                // <g_R^2,mu>_Gamma_R
+                rhs3 += integrate( _range=markedfaces(M_mesh, marker),
+                                   _expr=id(l)*g);
+            }
+        }
+    }
+
+    itField = M_modelProperties->boundaryConditions().find( "flux");
+    if ( itField != M_modelProperties->boundaryConditions().end() )
+    {
+        auto mapField = (*itField).second;
+        auto itType = mapField.find( "SourceTerm" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                auto g = expr<3,1>(exAtMarker.expression());
+                // (g, v)_Omega
+                rhs2 += integrate( _range=markedelements(M_mesh,marker),
+                                   _expr=inner(g,id(v)));
             }
         }
     }
@@ -671,7 +772,7 @@ MixedPoisson<Dim, Order>::updateConductivity( Expr<ExprT> expr, std::string mark
 template<int Dim, int Order>
 template<typename ExprT>
 void
-MixedPoisson<Dim, Order>::updateRHS( Expr<ExprT> expr, std::string marker)
+MixedPoisson<Dim, Order>::updatePotentialRHS( Expr<ExprT> expr, std::string marker)
 {
     auto rhs = form1( _test=M_Wh, _vector=M_F, _colstart=1);
     auto w = M_Wh->element();
@@ -679,7 +780,21 @@ MixedPoisson<Dim, Order>::updateRHS( Expr<ExprT> expr, std::string marker)
         rhs += integrate(_range=elements(M_mesh), _expr=expr*id(w) );
     else
         rhs += integrate( _range=markedelements(M_mesh, marker),
-                          _expr=expr*id(w));
+                          _expr=inner(expr,id(w)) );
+}
+
+template<int Dim, int Order>
+template<typename ExprT>
+void
+MixedPoisson<Dim, Order>::updateFluxRHS( Expr<ExprT> expr, std::string marker)
+{
+    auto rhs = form1( _test=M_Vh, _vector=M_F, _colstart=0);
+    auto v = M_Vh->element();
+    if ( marker.empty() )
+        rhs += integrate(_range=elements(M_mesh), _expr=expr*id(v) );
+    else
+        rhs += integrate( _range=markedelements(M_mesh, marker),
+                          _expr=inner(expr,id(v)) );
 }
 
 template<int Dim, int Order>
@@ -708,5 +823,5 @@ MixedPoisson<Dim, Order>::exportResults()
 
 /* TODO:
  * - bind function to update Mat and Vec
- * - override updateConductivity to use json
+ * - solvePicard nl just on potential/flux
  */

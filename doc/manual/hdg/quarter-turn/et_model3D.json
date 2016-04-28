@@ -25,26 +25,14 @@
         {
             "Dirichlet":
             {
-                "V0":
+                "in":
                 {
-                    "expr":"0.25"
+                    "expr":"0"
                 }
             },
             "Neumann":
             {
-                "Channel0":
-                {
-                    "expr":"0"
-                },
-                "Channel1":
-                {
-                    "expr":"0"
-                },
-                "CoolingHoles":
-                {
-                    "expr":"0"
-                },
-                "TieRods":
+                "R":
                 {
                     "expr":"0"
                 },
@@ -62,7 +50,7 @@
         {
             "Integral":
             {
-                "V1":
+                "out":
                 {
                     "expr":"3333"
                 }
@@ -72,25 +60,10 @@
         {
             "Robin":
             {
-                "Channel0":
+                "R":
                 {
                     "expr1":"0.01",
                     "expr2":"0.01*Tw:Tw"
-                },
-                "Channel1":
-                {
-                    "expr1":"0.01",
-                    "expr2":"0.01*Tw:Tw"
-                },
-                "TieRods":
-                {
-                    "expr1":"0.055",
-                    "expr2":"0.055*Tw::Tw"
-                },
-                "CoolingHoles":
-                {
-                    "expr1":"0.055",
-                    "expr2":"0.055*Tw:Tw"
                 }
             }
         }
