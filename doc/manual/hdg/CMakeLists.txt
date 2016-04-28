@@ -45,4 +45,5 @@ feelpp_add_testcase(bitter)
 feelpp_add_testcase(mp-quarter-turn)
 feelpp_add_testcase(et-quarter-turn)
 feelpp_add_testcase(cylinder)
+feelpp_add_testcase(testDarcy)
 
