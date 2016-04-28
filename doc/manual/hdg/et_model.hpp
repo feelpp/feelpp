@@ -48,7 +48,7 @@ makeETHDGLibOptions()
     po::options_description options ( "Electro-Thermal lib options");
     options.add( makeMixedPoissonLibOptions("E"));
     options.add( makeMixedPoissonLibOptions("T"));
-    return options;
+    return options.add( feel_options());
 }
 
 template<int Dim, int Order>
@@ -201,9 +201,6 @@ ElectroThermal<Dim, Order>::run()
         M_T = M_ThermalModel.potentialField();
         M_GT = M_ThermalModel.fluxField();
 
-        for ( auto const& marker : M_ElectroModel.integralMarkersList())
-            cout << " current_" << marker << std::endl;
-
         incrV = normL2( _range=elements(M_mesh), _expr=idv(*M_V)-idv(Vo) );
         incrT = normL2( _range=elements(M_mesh), _expr=idv(*M_T)-idv(To) );
         Vo = *M_V;
@@ -217,7 +214,14 @@ ElectroThermal<Dim, Order>::run()
                                   _expr=inner(idv(*M_j),N()) ).evaluate()(0,0);
             cout << " " << I << std::endl;
         }
-    }
+    } // Picard Loop
+
+    auto e = exporter( M_mesh);
+    e->add("potential", *M_V);
+    e->add("current", *M_j);
+    e->add("temperature", *M_T);
+    e->add("thermal-flux", *M_GT);
+    e->save();
 }
 
 
