@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
                            _argv=argv,
                            _about=makeAbout(),
                            _desc=makeMixedPoissonOptions(),
-                           _desc_lib=makeMixedPoissonLibOptions() );
+                           _desc_lib=makeMixedPoissonLibOptions().add(feel_options()) );
 
     typedef MixedPoisson<@D@,@P@> mp_type;
 

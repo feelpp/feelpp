@@ -99,6 +99,8 @@ public:
     using model_prop_type = ModelProperties;
     using model_prop_ptrtype = std::shared_ptr<model_prop_type>;
 
+    using linearAssembly_function_type = boost::function<void ( sparse_matrix_ptrtype& A,vector_ptrtype& F )>;
+
 private:
     model_prop_ptrtype M_modelProperties;
     std::string M_prefix;
@@ -124,7 +126,6 @@ private:
     int M_tau_order;
 
     bool M_integralCondition;
-    bool M_condHasBeenUpdated;
     bool M_isPicard;
 
     std::list<std::string> M_dirichletMarkersList;
@@ -139,6 +140,8 @@ private:
     void assembleF();
 
 public:
+    linearAssembly_function_type M_updateAssembly;
+
     MixedPoisson( std::string prefix = "" );
     void init( mesh_ptrtype mesh = NULL);
     void solve();
@@ -166,19 +169,19 @@ template<int Dim, int Order>
 MixedPoisson<Dim, Order>::MixedPoisson(std::string prefix )
 {
     M_prefix = prefix;
+    M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption( prefixvm(M_prefix, "model_json") ) ) );
+    if ( M_prefix.empty())
+        M_backend = backend( _rebuild=true);
+    else
+        M_backend = backend( _name=M_prefix, _rebuild=true);
+
+    M_tau_order = ioption( prefixvm(M_prefix, "tau_order") );
 }
 
 template<int Dim, int Order>
 void
 MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
 {
-    M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption( prefixvm(M_prefix, "model_json") ) ) );
-
-    int proc_rank = Environment::worldComm().globalRank();
-
-    M_tau_order = ioption( prefixvm(M_prefix, "tau_order") );
-    M_condHasBeenUpdated = false;
-
     tic();
 
     if ( !mesh )
@@ -237,6 +240,9 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
             }
         }
     }
+    cout << "Dirichlet : " << M_dirichletMarkersList << std::endl
+         << "Neumann : " << M_neumannMarkersList << std::endl
+         << "Robin : " << M_robinMarkersList << std::endl;
 
     // Mh only on the faces whitout integral condition
     auto complement_integral_bdy = complement(faces(M_mesh),[this]( auto const& e ) {
@@ -285,11 +291,6 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
          << "Mh<" << Order << "> : " << M_Mh->nDof() << std::endl;
     if ( M_integralCondition )
         cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
-
-    if ( M_prefix.empty())
-        M_backend = backend( _rebuild=true);
-    else
-        M_backend = backend( _name=M_prefix, _rebuild=true);
 
     M_up = M_Vh->elementPtr( "u" );
     M_pp = M_Wh->elementPtr( "p" );
@@ -396,6 +397,8 @@ MixedPoisson<Dim, Order>::solve()
     M_F->zero();
     assembleF();
 
+    if ( M_updateAssembly != NULL )
+        this->M_updateAssembly( M_A, M_F );
     M_backend->solve( _matrix=M_A, _rhs=M_F, _solution=M_U);
     M_hdg_sol.localize(M_U);
     toc("solve", true);
@@ -416,6 +419,8 @@ void
 MixedPoisson<Dim, Order>::solveNL()
 {
     tic();
+    if ( M_updateAssembly != NULL )
+        this->M_updateAssembly( M_A, M_F );
     M_backend->solve( _matrix=M_A, _rhs=M_F, _solution=M_U);
     M_hdg_sol.localize(M_U);
     toc("solve", true);
@@ -759,9 +764,6 @@ template<typename ExprT>
 void
 MixedPoisson<Dim, Order>::updateConductivity( Expr<ExprT> expr, std::string marker)
 {
-    M_A->zero();
-    M_A->addMatrix(1,M_A_cst);
-
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
 
