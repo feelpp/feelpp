@@ -38,7 +38,7 @@ makeMixedPoissonLibOptions( std::string prefix = "" )
     po::options_description mpLibOptions( "Mixed Poisson HDG Lib options");
     if ( !prefix.empty() )
         mpLibOptions.add( backend_options( prefix ) );
-    return mpLibOptions.add( feel_options());
+    return mpLibOptions;
 }
 
 template<int Dim, int Order>
@@ -129,6 +129,7 @@ private:
 
     std::list<std::string> M_dirichletMarkersList;
     std::list<std::string> M_neumannMarkersList;
+    std::list<std::string> M_robinMarkersList;
     std::list<std::string> M_integralMarkersList;
 
     void initGraphs();
@@ -147,6 +148,7 @@ public:
     void updateConductivity( Expr<ExprT> expr, std::string marker = "");
     template<typename ExprT>
     void updatePotentialRHS( Expr<ExprT> expr, std::string marker = "");
+    template<typename ExprT>
     void updateFluxRHS( Expr<ExprT> expr, std::string marker = "");
     void exportResults();
 
@@ -187,6 +189,7 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
     // initialize marker lists for each boundary condition type
     M_dirichletMarkersList.clear();
     M_neumannMarkersList.clear();
+    M_robinMarkersList.clear();
     M_integralMarkersList.clear();
     auto itField = M_modelProperties->boundaryConditions().find( "potential");
     if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -208,6 +211,15 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
             {
                 std::string marker = exAtMarker.marker();
                 M_neumannMarkersList.push_back(marker);
+            }
+        }
+        itType = mapField.find( "Robin" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                M_robinMarkersList.push_back(marker);
             }
         }
     }
@@ -423,7 +435,7 @@ MixedPoisson<Dim, Order>::assembleACst()
             return false; });
 
     // stabilisation parameter
-    auto tau_constant = cst(doption(prefixvm(M_prefix, "tau_constant").c_str()));
+    auto tau_constant = cst(doption(prefixvm(M_prefix, "tau_constant")));
 
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
@@ -433,11 +445,11 @@ MixedPoisson<Dim, Order>::assembleACst()
     auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
     auto H = M_M0h->element( "H" );
-    if ( ioption("hface" ) == 0 )
+    if ( ioption(prefixvm(M_prefix, "hface") ) == 0 )
         H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
-    else if ( ioption("hface" ) == 1 )
+    else if ( ioption(prefixvm(M_prefix, "hface") ) == 1 )
         H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
-    else if ( ioption("hface" ) == 2 )
+    else if ( ioption(prefixvm(M_prefix, "hface") ) == 2 )
         H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
     else
         H.on( _range=elements(M_M0h->mesh()), _expr=h() );
@@ -469,7 +481,7 @@ MixedPoisson<Dim, Order>::assembleACst()
                      _rowstart=2,
                      _colstart=2);
 
-    // -(p,div(v))
+    // -(p,div(v))_Omega
     a12 += integrate(_range=elements(M_mesh), _expr=-idt(p)*div(v) );
 
     // <phat,v.n>_Gamma\Gamma_I
@@ -514,6 +526,9 @@ MixedPoisson<Dim, Order>::assembleACst()
     // <j.n,mu>_Gamma_N
     a31 += integrate(_range=markedfaces(M_mesh,M_neumannMarkersList),
                      _expr=id(l)*(trans(idt(u))*N()) );
+    // <j.n,mu>_Gamma_R
+    a31 += integrate(_range=markedfaces(M_mesh,M_robinMarkersList),
+                     _expr=id(l)*(trans(idt(u))*N()) );
 
     // <tau p, mu>_Omega/Gamma
     a32 += integrate(_range=internalfaces(M_mesh),
@@ -522,6 +537,9 @@ MixedPoisson<Dim, Order>::assembleACst()
                        + rightfacet( pow(idv(H),M_tau_order) * idt(p))) );
     // <tau p, mu>_Gamma_N
     a32 += integrate(_range=markedfaces(M_mesh,M_neumannMarkersList),
+                     _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
+    // <tau p, mu>_Gamma_R
+    a32 += integrate(_range=markedfaces(M_mesh,M_robinMarkersList),
                      _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
 
     // <-tau phat, mu>_Omega/Gamma
@@ -532,11 +550,30 @@ MixedPoisson<Dim, Order>::assembleACst()
     // <-tau phat, mu>_Gamma_N
     a33 += integrate(_range=markedfaces(M_mesh,M_neumannMarkersList),
                      _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
+    // <-tau phat, mu>_Gamma_R
+    a33 += integrate(_range=markedfaces(M_mesh,M_robinMarkersList),
+                     _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
 
     // <phat, mu>_Gamma_D
     a33 += integrate(_range=markedfaces(M_mesh,M_dirichletMarkersList),
                      _expr=idt(phat) * id(l) );
-
+    auto itField = M_modelProperties->boundaryConditions().find( "potential");
+    if ( itField != M_modelProperties->boundaryConditions().end() )
+    {
+        auto mapField = (*itField).second;
+        auto itType = mapField.find( "Robin" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                auto g = expr(exAtMarker.expression1());
+                // <g_R^1 phat, mu>_Gamma_R
+                a33 += integrate(_range=markedfaces(M_mesh,M_robinMarkersList),
+                                 _expr=g*idt(phat) * id(l) );
+            }
+        }
+    }
 
     // BC
 
@@ -643,7 +680,7 @@ MixedPoisson<Dim, Order>::assembleF()
             {
                 std::string marker = exAtMarker.marker();
                 auto g = expr(exAtMarker.expression());
-                // <V, mu>_Gamma_D
+                // <g_D, mu>_Gamma_D
                 rhs3 += integrate(_range=markedfaces(M_mesh,marker),
                                   _expr=id(l)*g);
             }
@@ -656,6 +693,18 @@ MixedPoisson<Dim, Order>::assembleF()
                 std::string marker = exAtMarker.marker();
                 auto g = expr(exAtMarker.expression());
                 // <g_N,mu>_Gamma_N
+                rhs3 += integrate( _range=markedfaces(M_mesh, marker),
+                                   _expr=id(l)*g);
+            }
+        }
+        itType = mapField.find( "Robin" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                auto g = expr(exAtMarker.expression2());
+                // <g_R^2,mu>_Gamma_R
                 rhs3 += integrate( _range=markedfaces(M_mesh, marker),
                                    _expr=id(l)*g);
             }
