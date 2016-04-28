@@ -44,19 +44,19 @@
             {
                 "top":
                 {
-                    "expr":"0"
+                    "expr":"sin(Pi*x)/(2*Pi):x"
                 },
                 "bottom":
                 {
-                    "expr":"0"
+                    "expr":"-sin(Pi*x)/(2*Pi):x"
                 },
                 "left":
                 {
-                    "expr":"0"
+                    "expr":"-sin(Pi*y)/(2*Pi):y"
                 },
                 "right":
                 {
-                    "expr":"0"
+                    "expr":"sin(Pi*y)/(2*Pi):y"
                 }
             }
         }
