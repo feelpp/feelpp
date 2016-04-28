@@ -54,8 +54,6 @@ int main(int argc, char *argv[])
     typedef ElectroThermal<@D@,@P@> et_type;
 
     et_type ET;
-    ET.init();
-    ET.solve();
-    ET.exportResults();
+    ET.run();
     return 0;
 }
