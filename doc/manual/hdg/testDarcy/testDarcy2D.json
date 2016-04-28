@@ -1,0 +1,79 @@
+{
+    "Name": "HDG-Mixed-Poisson ",
+    "ShortName":"MP",
+    "Model":"hdg",
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+            "cond":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+                    "expr":"sin(Pi*x)*sin(Pi*y):x:y"
+                }
+            },
+            // "Dirichlet":
+            // {
+            //     "top":
+            //     {
+            //         "expr":"1/(2*Pi*Pi)*sin(Pi*x)*sin(Pi*y):x:y"
+            //     },
+            //     "bottom":
+            //     {
+            //         "expr":"1/(2*Pi*Pi)*sin(Pi*x)*sin(Pi*y):x:y"
+            //     },
+            //     "left":
+            //     {
+            //         "expr":"1/(2*Pi*Pi)*sin(Pi*x)*sin(Pi*y):x:y"
+            //     },
+            //     "right":
+            //     {
+            //         "expr":"1/(2*Pi*Pi)*sin(Pi*x)*sin(Pi*y):x:y"
+            //     }
+            // }
+            "Neumann":
+            {
+                "top":
+                {
+                    "expr":"0"
+                },
+                "bottom":
+                {
+                    "expr":"0"
+                },
+                "left":
+                {
+                    "expr":"0"
+                },
+                "right":
+                {
+                    "expr":"0"
+                }
+            }
+        }
+    },
+    "Functions": // Model.fieldUserScalar/Vectorial("u")
+    {
+        "u":
+        {
+            "expr":"{1/(2*Pi)*cos(Pi*x)*sin(Pi*y),1/(2*Pi)*sin(Pi*x)*cos(Pi*y)}:x:y"
+        },
+        "p":
+        {
+            "expr":"1/(2*Pi*Pi)*sin(Pi*x)*sin(Pi*y):x:y"
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["potential","flux"]
+    }
+}

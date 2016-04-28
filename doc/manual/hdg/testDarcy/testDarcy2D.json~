@@ -1,0 +1,46 @@
+{
+    "Name": "HDG-Mixed-Poisson ",
+    "ShortName":"MP",
+    "Model":"hdg",
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+            "cond":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "SourceTerm":
+            {
+                "expr":"sin(Pi*x)*sin(Pi*y):x:y"
+            },
+            "Neumann":
+            {
+                "top":
+                {
+                    "expr":"0"
+                },
+                "bottom":
+                {
+                    "expr":"0"
+                },
+                "left":
+                {
+                    "expr":"0"
+                },
+                "right":
+                {
+                    "expr":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["potential","flux"]
+    }
+}
