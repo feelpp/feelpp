@@ -97,12 +97,15 @@ void cleanup()
 /* - Whether we use the boost or hdf5 backend */
 int main(int argc, char **argv)
 {
-    gArgc = 3;
+    gArgc = 5;
     gArgv = new char*[gArgc + 1];
     gArgv[0] = strdup("feelpp_test_db");
-    gArgv[1] = strdup("--config-file");
-    gArgv[2] = strdup("test_db.cfg");
-    gArgv[3] = NULL;
+    // Needed for the moment: see https://github.com/feelpp/feelpp/issues/719
+    gArgv[1] = strdup("-st_pc_factor_mat_solver_package");
+    gArgv[2] = strdup("mumps");
+    gArgv[3] = strdup("--config-file");
+    gArgv[4] = strdup("./test_db.cfg");
+    gArgv[5] = NULL;
 
     Feel::Environment env( _argc=gArgc, _argv=gArgv,
                            _desc=opusapp_options("heat1d")
@@ -219,40 +222,53 @@ int main(int argc, char **argv)
     delete app;
 
     /* Check that we have the correct basis sizes */
+    std::cout << "Checking basis sizes ..." << std::endl;
     for(int i = 1; i < wnSize.size(); i++)
     {
-        if(wnSize[0] == wnSize[i])
-        {
-            cleanup();
-            return 1;
-        }
-    }
- 
-    for(int i = 1; i < wnSize.size(); i++)
-    {
+        std::cout << "WN0:size=" << wnSize[0] << " ; WN" << i << ":size=" << wnSize[i] << std::endl;
         if(wnSize[0] != wnSize[i])
         {
             cleanup();
             return 1;
         }
     }   
+    std::cout << "Basis sizes OK" << std::endl;
 
     /* Check that we have the correct amount of samples */
+    std::cout << "Checking Number of samples ..." << std::endl;
     if(wnSample.size() != 4 * sampleSize)
     {
         cleanup();
         return 1;
     }
+    std::cout << "Number of samples OK" << std::endl;
 
-    double tolerance = 1e-9;
+    double tolerance = 1e-5;
     int nbGroups = wnSample.size() / sampleSize;
+    std::cout << "Checking Samples ..." << std::endl;
     for(int i = 0; i < sampleSize; i++)
     {
-        BOOST_CHECK_CLOSE(wnSample[i], wnSample[i + sampleSize], tolerance);
-        BOOST_CHECK_CLOSE(wnSample[i], wnSample[i + 2 * sampleSize], tolerance);
-        BOOST_CHECK_CLOSE(wnSample[i], wnSample[i + 3 * sampleSize], tolerance);
-        BOOST_CHECK_CLOSE(wnSample[i], wnSample[i + 4 * sampleSize], tolerance);
+        std::cout << "wnSample[i]:" << wnSample[i] << " ; " << wnSample[i + sampleSize] << std::endl;
+        // std tolerance : std::fabs(a - b) < std::numeric_limits<double>::epsilon();
+        if(std::fabs(wnSample[i] - wnSample[i + sampleSize]) > tolerance)
+        {
+            cleanup();
+            return 1;
+        }
+        std::cout << "wnSample[i]:" << wnSample[i] << " ; wnSample[i + 2 * sampleSize]):" << wnSample[i + 2 * sampleSize] << std::endl;
+        if(std::fabs(wnSample[i] - wnSample[i + 2 * sampleSize]) > tolerance)
+        {
+            cleanup();
+            return 1;
+        }
+        std::cout << "wnSample[i]:" << wnSample[i] << " ; wnSample[i + 3 * sampleSize]):" << wnSample[i + 3 * sampleSize] << std::endl;
+        if(std::fabs(wnSample[i] - wnSample[i + 3 * sampleSize]) > tolerance)
+        {
+            cleanup();
+            return 1;
+        }
     }
+    std::cout << "Samples OK" << std::endl;
 
     cleanup();
     return 0;
