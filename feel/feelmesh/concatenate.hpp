@@ -35,7 +35,7 @@ namespace Feel {
 /**
  * this function takes a set of iterators over geometrical entities of the same
  * type (e.g. faces, volumes, edges, points) and generate a data structure that
- * will hold the corresponding reference of mesh elenents. This data structure
+ * will hold the corresponding reference of mesh elements. This data structure
  * can then be used to iterate over meshes like other mesh filters.
  *
  * \code
