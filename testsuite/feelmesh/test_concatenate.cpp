@@ -35,6 +35,7 @@
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelfilters/filters.hpp>
+#include <feel/feelmesh/concatenate.hpp>
 
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
@@ -47,9 +48,7 @@ BOOST_AUTO_TEST_CASE( test_concatenate_elements )
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<2,1>>);
     if ( mesh->hasMarkers( {"left","right"} ) )
         {
-            auto e1 = markedelements(mesh,"left");
-            auto e2 = markedelements(mesh,"right");
-            auto e3 = concatenate( e1, e2 );
+            auto e3 = concatenate( markedelements(mesh,"left"), markedelements(mesh,"right") );
             auto submesh1 = createSubmesh( mesh, e3 );
             BOOST_CHECK_EQUAL( nelements(elements(submesh1)), nelements(elements(mesh)) );
 
