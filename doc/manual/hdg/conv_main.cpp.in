@@ -1,4 +1,4 @@
-#include <mixedpoisson.hpp>
+#include <conv.hpp>
 
 using namespace Feel;
 
@@ -6,16 +6,17 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "mixed-poisson-model" ,
-                     "mixed-poisson-model" ,
+    AboutData about( "conv-mixed-poisson-model" ,
+                     "conv-mixed-poisson-model" ,
                      "0.1",
-                     "Mixed-Poisson-Model",
+                     "Convergence Mixed Poisson Model",
                      AboutData::License_GPL,
                      "Copyright (c) 2016 Feel++ Consortium" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    about.addAuthor( "Romain Hild", "developer", "", "" );
+    about.addAuthor( "Christophe Trophime", "developer", "christophe.trophime@lncmi.cnrs.fr", "" );
     about.addAuthor( "Daniele Prada", "developer", "", "" );
     return about;
+
 }
 
 int main(int argc, char *argv[])
@@ -24,14 +25,12 @@ int main(int argc, char *argv[])
     Feel::Environment env( _argc=argc,
                            _argv=argv,
                            _about=makeAbout(),
-                           _desc=makeMixedPoissonOptions(),
-                           _desc_lib=makeMixedPoissonLibOptions().add(feel_options()) );
+                           _desc=makeConvOptions(),
+                           _desc_lib=makeConvLibOptions() );
 
-    typedef MixedPoisson<@D@,@P@> mp_type;
+    typedef ConvergenceTest<@D@,@P@> cv_type;
 
-    mp_type MP;
-    MP.init();
-    MP.solve();
-    MP.exportResults();
+    cv_type CV;;
+    CV.run();
     return 0;
 }
