@@ -35,6 +35,7 @@ makeETHDGOptions()
     options.add_options()
         ( "picard.itol", po::value<double>()->default_value( 1e-14 ), "tolerance" )
         ( "picard.itmax", po::value<int>()->default_value( 10 ), "iterations max" )
+        ( "linear", po::value<bool>()->default_value( false ), "update conductivities or not")
         ;
     options.add( makeMixedPoissonOptions("E"));
     options.add( makeMixedPoissonOptions("T"));
@@ -78,10 +79,80 @@ private:
     thermal_flux_ptrtype M_GT;
     thermal_potential_ptrtype M_T;
 
+    void updateElectroAssembly( sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
+    void updateThermalAssembly( sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
+
 public:
     ElectroThermal();
     void run();
 };
+
+template<int Dim, int Order>
+void
+ElectroThermal<Dim, Order>::updateElectroAssembly( sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+{
+    auto Vh = M_ElectroModel.fluxSpace();
+    auto u = Vh->element( "u" );
+    auto v = Vh->element( "v" );
+
+    auto a11 = form2( _trial=Vh, _test=Vh,_matrix=A );
+
+    auto electroModelProp = M_ElectroModel.modelProperties();
+
+    for( auto const& pairMat : electroModelProp.materials() )
+    {
+        auto marker = pairMat.first;
+        auto material = pairMat.second;
+        auto alpha = material.getDouble("alpha");
+        auto T0 = material.getDouble("T0");
+        auto sigma0 = material.getDouble("sigma0");
+        auto sigma = material.getScalar("sigma", "T", idv(*M_T));
+        sigma.setParameterValues({{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
+        a11 += integrate( _range=markedelements(M_mesh, marker), _expr=inner(idt(u),id(v))/sigma);
+    }
+}
+
+template<int Dim, int Order>
+void
+ElectroThermal<Dim, Order>::updateThermalAssembly( sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+{
+    auto Vh = M_ThermalModel.fluxSpace();
+    auto Wh = M_ThermalModel.potentialSpace();
+    auto u = Vh->element( "u" );
+    auto v = Vh->element( "v" );
+    auto w = Wh->element();
+
+    auto a11 = form2( _trial=Vh, _test=Vh,_matrix=A );
+    auto rhs = form1( _test=Wh, _vector=F, _colstart=1);
+
+    auto thermalModelProp = M_ThermalModel.modelProperties();
+    auto electroModelProp = M_ElectroModel.modelProperties();
+
+    for( auto const& pairMat : electroModelProp.materials() )
+    {
+        auto marker = pairMat.first;
+        auto material = pairMat.second;
+        auto alpha = material.getDouble("alpha");
+        auto T0 = material.getDouble("T0");
+        auto sigma0 = material.getDouble("sigma0");
+        auto sigma = material.getScalar("sigma", "T", idv(*M_T));
+        sigma.setParameterValues({{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
+        auto expr = inner(idv(*M_j))/sigma;
+        rhs += integrate( _range=markedelements(M_mesh, marker),
+                          _expr=inner(expr,id(w)) );
+    }
+    for( auto const& pairMat : thermalModelProp.materials() )
+    {
+        auto marker = pairMat.first;
+        auto material = pairMat.second;
+        auto alpha = material.getDouble("alpha");
+        auto T0 = material.getDouble("T0");
+        auto k0 = material.getDouble("k0");
+        auto k = material.getScalar("k", "T", idv(*M_T));
+        k.setParameterValues({{"k0",k0},{"T0",T0},{"alpha",alpha}});
+        a11 += integrate( _range=markedelements(M_mesh, marker), _expr=inner(idt(u),id(v))/k);
+    }
+}
 
 template<int Dim, int Order>
 ElectroThermal<Dim, Order>::ElectroThermal()
@@ -107,6 +178,8 @@ ElectroThermal<Dim, Order>::run()
     auto itmax = ioption("picard.itmax");
     auto i = 0;
     double incrV = 0, incrT = 0;
+
+    auto e = exporter( M_mesh);
 
     M_ElectroModel.solve();
     M_j = M_ElectroModel.fluxField();
@@ -134,6 +207,12 @@ ElectroThermal<Dim, Order>::run()
     M_T = M_ThermalModel.potentialField();
     M_GT = M_ThermalModel.fluxField();
 
+    e->step(i)->add("potential", *M_V);
+    e->step(i)->add("current", *M_j);
+    e->step(i)->add("temperature", *M_T);
+    e->step(i)->add("thermal-flux", *M_GT);
+    e->save();
+
     cout << " #iteration incrV incrT";
     for ( auto const& marker : M_ElectroModel.integralMarkersList())
         cout << " current_" << marker << std::endl;
@@ -145,61 +224,47 @@ ElectroThermal<Dim, Order>::run()
 
     cout << " picard #" << i << " " << incrV << " " << incrT;
 
-    for ( auto const& marker : M_ElectroModel.integralMarkersList())
+    auto itField = electroModelProp.boundaryConditions().find( "flux");
+    if ( itField != electroModelProp.boundaryConditions().end() )
     {
-        double I = integrate( _range=markedfaces(M_mesh, marker ),
-                              _expr=inner(idv(*M_j),N()) ).evaluate()(0,0);
-        cout << " " << I << std::endl;
+        auto mapField = (*itField).second;
+        auto itType = mapField.find( "Integral" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                double meas = integrate( _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
+                double I_target = boost::lexical_cast<double>(exAtMarker.expression());
+                double I = integrate( _range=markedfaces(M_mesh, marker ),
+                                      _expr=inner(idv(*M_j),N()) ).evaluate()(0,0);
+                cout << " " << std::abs(I-I_target) << std::endl;
+            }
+        }
     }
+
+    M_ElectroModel.M_updateAssembly = boost::bind( &ElectroThermal<Dim, Order>::updateElectroAssembly,
+                                                   this, _1, _2 );
+    M_ThermalModel.M_updateAssembly = boost::bind( &ElectroThermal<Dim, Order>::updateThermalAssembly,
+                                                   this, _1, _2 );
 
     while ( ( incrV > tol || incrT > tol ) && ( ++i < itmax ) )
     {
         M_ElectroModel.assembleLinear();
-
-        for( auto const& pairMat : electroModelProp.materials() )
-        {
-            auto marker = pairMat.first;
-            auto material = pairMat.second;
-            auto alpha = material.getDouble("alpha");
-            auto T0 = material.getDouble("T0");
-            auto sigma0 = material.getDouble("sigma0");
-            auto sigma = material.getScalar("sigma", "T", idv(*M_T));
-            sigma.setParameterValues({{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
-            M_ElectroModel.updateConductivity( sigma, marker);
-        }
-
         M_ElectroModel.solveNL();
         M_j = M_ElectroModel.fluxField();
         M_V = M_ElectroModel.potentialField();
 
         M_ThermalModel.assembleLinear();
-        for( auto const& pairMat : electroModelProp.materials() )
-        {
-            auto marker = pairMat.first;
-            auto material = pairMat.second;
-            auto alpha = material.getDouble("alpha");
-            auto T0 = material.getDouble("T0");
-            auto sigma0 = material.getDouble("sigma0");
-            auto sigma = material.getScalar("sigma", "T", idv(*M_T));
-            sigma.setParameterValues({{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
-            auto expr = inner(idv(*M_j))/sigma;
-            M_ThermalModel.updatePotentialRHS(expr, marker);
-        }
-        for( auto const& pairMat : thermalModelProp.materials() )
-        {
-            auto marker = pairMat.first;
-            auto material = pairMat.second;
-            auto alpha = material.getDouble("alpha");
-            auto T0 = material.getDouble("T0");
-            auto k0 = material.getDouble("k0");
-            auto k = material.getScalar("k", "T", idv(*M_T));
-            k.setParameterValues({{"k0",k0},{"T0",T0},{"alpha",alpha}});
-            M_ThermalModel.updateConductivity(k,marker);
-        }
-
         M_ThermalModel.solveNL();
         M_T = M_ThermalModel.potentialField();
         M_GT = M_ThermalModel.fluxField();
+
+        e->step(i)->add("potential", *M_V);
+        e->step(i)->add("current", *M_j);
+        e->step(i)->add("temperature", *M_T);
+        e->step(i)->add("thermal-flux", *M_GT);
+        e->save();
 
         incrV = normL2( _range=elements(M_mesh), _expr=idv(*M_V)-idv(Vo) );
         incrT = normL2( _range=elements(M_mesh), _expr=idv(*M_T)-idv(To) );
@@ -208,20 +273,26 @@ ElectroThermal<Dim, Order>::run()
 
         cout << " picard #" << i << " " << incrV << " " << incrT;
 
-        for ( auto const& marker : M_ElectroModel.integralMarkersList())
+        auto itField = electroModelProp.boundaryConditions().find( "flux");
+        if ( itField != electroModelProp.boundaryConditions().end() )
         {
-            double I = integrate( _range=markedfaces(M_mesh, marker ),
-                                  _expr=inner(idv(*M_j),N()) ).evaluate()(0,0);
-            cout << " " << I << std::endl;
+            auto mapField = (*itField).second;
+            auto itType = mapField.find( "Integral" );
+            if ( itType != mapField.end() )
+            {
+                for ( auto const& exAtMarker : (*itType).second )
+                {
+                    std::string marker = exAtMarker.marker();
+                    double meas = integrate( _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
+                    double I_target = boost::lexical_cast<double>(exAtMarker.expression());
+                    double I = integrate( _range=markedfaces(M_mesh, marker ),
+                                          _expr=inner(idv(*M_j),N()) ).evaluate()(0,0);
+                    cout << " " << std::abs(I-I_target) << std::endl;
+                }
+            }
         }
     } // Picard Loop
 
-    auto e = exporter( M_mesh);
-    e->add("potential", *M_V);
-    e->add("current", *M_j);
-    e->add("temperature", *M_T);
-    e->add("thermal-flux", *M_GT);
-    e->save();
 }
 
 

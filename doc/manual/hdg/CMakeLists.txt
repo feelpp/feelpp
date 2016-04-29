@@ -40,9 +40,17 @@ foreach(D 2 3)
   endforeach()
 endforeach()
 
+foreach(D 2 3)
+  foreach(P RANGE 1 3 1)
+    configure_file(conv_main.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/conv${D}DP${P}_main.cpp )
+    feelpp_add_application( conv_${D}DP${P} SRCS conv${D}DP${P}_main.cpp mixedpoisson.hpp conv.hpp DEFS FEELPP_DIM=${D} )
+  endforeach()
+endforeach()
+
 feelpp_add_testcase(quarter-turn)
 feelpp_add_testcase(bitter)
 feelpp_add_testcase(mp-quarter-turn)
 feelpp_add_testcase(et-quarter-turn)
 feelpp_add_testcase(cylinder)
+feelpp_add_testcase(testDarcy)
 
