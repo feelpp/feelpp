@@ -96,3 +96,6 @@
 [submodule "projects/hamm"]
 	path = projects/hamm
 	url = https://github.com/feelpp/hamm.git
+[submodule "contrib/ipopt"]
+	path = contrib/ipopt
+	url = https://github.com/feelpp/Ipopt.git
