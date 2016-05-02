@@ -66,5 +66,8 @@ boost_dir=("$lib_dir/boost-1.58 $lib_dir/boost-1.59.0 default")
 
 for ccomp in ${compiler[@]}; do
   echo "**"
-  boost
+  which $ccomp
+  if [[ $? == 0 ]]; then
+    boost
+  fi
 done #Compiler
