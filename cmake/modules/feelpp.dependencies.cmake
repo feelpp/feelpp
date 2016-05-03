@@ -69,6 +69,19 @@ IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "XL") )
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qlanglvl=extc1x" )
 endif()
 
+# Sometimes relinking libraries in contrib does not work becaus of bad paths
+# A discussion has been opened on the bugtracker of CMake: https://cmake.org/Bug/print_bug_page.php?bug_id=13934
+# To fix this: if the executable format has not been specified, which seems to happen with Clang, we force it to ELF for Linux
+# Potentially also a bug to fix on OS X if it happens (The format is MACHO on OS X)
+if(NOT CMAKE_EXECUTABLE_FORMAT)
+    if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+        message(STATUS "CMAKE_EXECUTABLE_FORMAT is not set. Setting to ELF on current system (Linux).")
+        set(CMAKE_EXECUTABLE_FORMAT "ELF")
+    else()
+        message(WARNING "CMAKE_EXECUTABLE_FORMAT is not set, you might end up with relinking errors with contrib libraries.")
+    endif()
+endif()
+
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS)
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS_DEBUG)
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS_RELEASE)
