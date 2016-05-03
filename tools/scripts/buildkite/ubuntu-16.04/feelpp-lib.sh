@@ -16,7 +16,8 @@ mkdir -p build
 cd build
 
 echo '--- configure -r'
-../configure -r  --cmakeflags="-DFEELPP_ENABLE_VTK_INSITU=ON -DCMAKE_INSTALL_PREFIX=${FEELPP_HOME}"
+#../configure -r  --cmakeflags="-DFEELPP_ENABLE_VTK_INSITU=ON -DCMAKE_INSTALL_PREFIX=${FEELPP_HOME}"
+../configure -r  --cmakeflags="-DCMAKE_INSTALL_PREFIX=${FEELPP_HOME}"
 
 echo '--- make feelpp library'
 make -j10 feelpp
