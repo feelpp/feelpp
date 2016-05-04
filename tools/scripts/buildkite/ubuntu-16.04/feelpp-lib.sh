@@ -2,8 +2,8 @@
 
 set -e
 
-export CXX=clang++-3.8
-export CC=clang-3.8
+#export CXX=clang++-3.8
+#export CC=clang-3.8
 export FEELPP_DEP_INSTALL_PREFIX=/usr/local
 #export LD_LIBRARY_PATH=${FEELPP_DEP_INSTALL_PREFIX}/lib:${FEELPP_DEP_INSTALL_PREFIX}/lib/paraview-4.4:$LD_LIBRARY_PATH
 export PKG_CONFIG_PATH=${FEELPP_DEP_INSTALL_PREFIX}/lib/pkgconfig:$PKG_CONFIG_PATH
