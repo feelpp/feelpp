@@ -1,0 +1,40 @@
+#undef ADVECTION_DIM
+#undef ADVECTION_ORDERGEO
+#undef ADVECTION_ORDERPOLY
+
+#define ADVECTION_DIM @ADVECTION_DIM@
+#define ADVECTION_ORDERGEO @ADVECTION_ORDERGEO@
+#define ADVECTION_ORDERPOLY @ADVECTION_ORDERPOLY@
+
+
+#define ADVECTION_INTERPOLATIONPOINTS PointSetFekete
+
+#define ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS \
+    template< typename ConvexType, typename BasisAdvectionType> \
+        /**/
+#define ADVECTIONBASE_CLASS_TEMPLATE_TYPE \
+    AdvectionBase<ConvexType,BasisAdvectionType> \
+        /**/
+#define ADVECTIONBASE_CLASS_TYPE \
+    AdvectionBase< Simplex<ADVECTION_DIM,ADVECTION_ORDERGEO,ADVECTION_DIM>, \
+        Lagrange<ADVECTION_ORDERPOLY, Scalar,Continuous,ADVECTION_INTERPOLATIONPOINTS > \
+        >                                                              \
+    /**/
+#define ADVECTIONBASE_CLASS_INSTANTIATION \
+    template class ADVECTIONBASE_CLASS_TYPE ;  \
+    /**/
+
+#define ADVECTION_CLASS_TEMPLATE_DECLARATIONS \
+    template< typename ConvexType, typename BasisAdvectionType> \
+        /**/
+#define ADVECTION_CLASS_TEMPLATE_TYPE \
+    Advection<ConvexType,BasisAdvectionType> \
+        /**/
+#define ADVECTION_CLASS_TYPE \
+    Advection< Simplex<ADVECTION_DIM,ADVECTION_ORDERGEO,ADVECTION_DIM>, \
+        Lagrange<ADVECTION_ORDERPOLY, Scalar,Continuous,ADVECTION_INTERPOLATIONPOINTS > \
+        >                                                              \
+    /**/
+#define ADVECTION_CLASS_INSTANTIATION \
+    template class ADVECTION_CLASS_TYPE ;  \
+    /**/
