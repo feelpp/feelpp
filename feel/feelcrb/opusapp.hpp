@@ -107,6 +107,7 @@ public:
 
     typedef typename ModelType::parameter_type parameter_type;
     typedef typename ModelType::mesh_type mesh_type;
+    
     typedef std::vector< parameter_type > vector_parameter_type;
 
     typedef typename crb_type::sampling_ptrtype sampling_ptrtype;
@@ -1033,6 +1034,7 @@ public:
                                     {
                                         std::string exportName = u_pfem.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
                                         e->add( exportName, u_pfem );
+                                        model->postPro( exportName, u_pfem , mu);
                                     }
                                 auto u_fem = model->solve( mu );
                                 auto u_error = (( u_fem - u_pfem ).pow(2)).sqrt();
@@ -1120,6 +1122,7 @@ public:
                                     }
                                     std::string exportName = u_crb.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
                                     e->add( exportName, u_crb );
+                                    model->postPro( exportName, u_crb , mu);
                                 }
 
                                 double relative_error = -1;
@@ -1185,6 +1188,7 @@ public:
                                         LOG(INFO) << "export u_fem \n";
                                         std::string exportName = u_fem.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
                                         e->add( exportName, u_fem );
+                                        model->postPro( exportName, u_fem, mu );
                                     }
 
                                     ti.restart();
@@ -1209,6 +1213,7 @@ public:
                                         {
                                             std::string exportName = u_error.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
                                             e->add( exportName, u_error );
+                                            model->postPro( exportName, u_error, mu );
                                         }
 
                                     LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";

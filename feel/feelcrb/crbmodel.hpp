@@ -2437,6 +2437,14 @@ public:
 
 
     /**
+     * Post process a finite element solution
+     */
+    virtual void postPro( std::string s, element_type &u, parameter_type const &mu)
+    {
+      LOG(INFO) << "No postPro function provided\n";
+    }
+
+    /**
      * solve \f$M u = f\f$ where \f$ M \f$ is the matrix associated to
      * the energy norm
      */
