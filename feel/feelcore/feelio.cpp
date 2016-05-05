@@ -23,11 +23,10 @@
  */
 #include <feel/feelcore/feelio.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 MasterStream cout( std::cout );
 MasterStream cerr( std::cerr );
 MasterStream clog( std::clog );
-
-
 }

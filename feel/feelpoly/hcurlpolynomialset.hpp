@@ -25,21 +25,23 @@
 #define FEELPP_HCURL_POLYNOMIALSET_HPP 1
 #include <boost/type_traits/is_base_of.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
  * HCurl conforming polynomialset base class
  */
-class HCurlPolynomialSet {};
+class HCurlPolynomialSet
+{
+};
 
 /**
  * type traits for hcurl conforming polynomialset
  * @return true_type if hcurl conforming polynomialset, false_type otherwise
  */
-template<typename P>
-class is_hcurl_conforming : public boost::is_base_of<HCurlPolynomialSet,P>
+template <typename P>
+class is_hcurl_conforming : public boost::is_base_of<HCurlPolynomialSet, P>
 {
 };
-
 }
 #endif

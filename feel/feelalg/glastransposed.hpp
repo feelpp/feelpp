@@ -34,10 +34,10 @@ namespace glas
 {
 template <typename Matrix>
 inline
-typename transposed_return<L *>::return_type
-transposed( Matrix &m )
+    typename transposed_return<L*>::return_type
+    transposed( Matrix& m )
 {
-    return typename transposed_return<L *>::return_type( linalg_cast( l ) );
+    return typename transposed_return<L*>::return_type( linalg_cast( l ) );
 }
 
 } // namespace glas

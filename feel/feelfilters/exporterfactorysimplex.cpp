@@ -27,9 +27,9 @@
    \date 2010-04-16
 */
 
-#include <feel/feelfilters/exporterimpl.hpp>
 #include <feel/feelfilters/exporterensight.hpp>
 #include <feel/feelfilters/exportergmsh.hpp>
+#include <feel/feelfilters/exporterimpl.hpp>
 
 namespace Feel
 {
@@ -49,35 +49,33 @@ Exporter<MT,N>* createGmsh()
 }
 } // detail
 
+#define DIMS BOOST_PP_TUPLE_TO_LIST( 3, ( 1, 2, 3 ) )
+#define ORDERS BOOST_PP_TUPLE_TO_LIST( 5, ( 1, 2, 3, 4, 5 ) )
+#define ORDERS_FUN_ENSIGHT BOOST_PP_TUPLE_TO_LIST( 1, ( 1 ) )
+#define ORDERS_FUN_GMSH BOOST_PP_TUPLE_TO_LIST( 5, ( 1, 2, 3, 4, 5 ) )
 
-# define DIMS BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
-# define ORDERS BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
-# define ORDERS_FUN_ENSIGHT BOOST_PP_TUPLE_TO_LIST(1,(1))
-# define ORDERS_FUN_GMSH BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
-
-#define MeshName(name,LDIM,LORDER,ORDERFUN) BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(name,LDIM),LORDER),ORDERFUN)
-#define MeshType(name,LDIM,LORDER,ORDERFUN) BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(name,LDIM),LORDER),ORDERFUN),_t)
+#define MeshName( name, LDIM, LORDER, ORDERFUN ) BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( name, LDIM ), LORDER ), ORDERFUN )
+#define MeshType( name, LDIM, LORDER, ORDERFUN ) BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( name, LDIM ), LORDER ), ORDERFUN ), _t )
 
 // Ensight
-# define FACTORY_ENSIGHT(LDIM,LORDER,ORDERFUN)                          \
-    typedef Mesh<Simplex<LDIM,LORDER> > MeshType(mesh,LDIM,LORDER,ORDERFUN); \
-    const bool MeshName(meshespensight,LDIM,LORDER,ORDERFUN) =          \
-        Exporter<MeshType(mesh,LDIM,LORDER,ORDERFUN),ORDERFUN>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<MeshType(mesh,LDIM,LORDER,ORDERFUN),ORDERFUN> );
+#define FACTORY_ENSIGHT( LDIM, LORDER, ORDERFUN )                                 \
+    typedef Mesh<Simplex<LDIM, LORDER>> MeshType( mesh, LDIM, LORDER, ORDERFUN ); \
+    const bool MeshName( meshespensight, LDIM, LORDER, ORDERFUN ) =               \
+        Exporter<MeshType( mesh, LDIM, LORDER, ORDERFUN ), ORDERFUN>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<MeshType( mesh, LDIM, LORDER, ORDERFUN ), ORDERFUN> );
 
-
-# define FACTORY_ENSIGHT_OP(_, GDO) FACTORY_ENSIGHT GDO
+#define FACTORY_ENSIGHT_OP( _, GDO ) FACTORY_ENSIGHT GDO
 
 // Gmsh
-# define FACTORY_GMSH(LDIM,LORDER,ORDERFUN)                             \
-    typedef Mesh<Simplex<LDIM,LORDER> > MeshType(mesh,LDIM,LORDER,ORDERFUN); \
-    const bool MeshName(meshexpgmsh,LDIM,LORDER,ORDERFUN) =             \
-        Exporter<MeshType(mesh,LDIM,LORDER,ORDERFUN),ORDERFUN>::Factory::type::instance().registerProduct( "ensight", &detail::createGmsh<MeshType(mesh,LDIM,LORDER,ORDERFUN),ORDERFUN> );
+#define FACTORY_GMSH( LDIM, LORDER, ORDERFUN )                                    \
+    typedef Mesh<Simplex<LDIM, LORDER>> MeshType( mesh, LDIM, LORDER, ORDERFUN ); \
+    const bool MeshName( meshexpgmsh, LDIM, LORDER, ORDERFUN ) =                  \
+        Exporter<MeshType( mesh, LDIM, LORDER, ORDERFUN ), ORDERFUN>::Factory::type::instance().registerProduct( "ensight", &detail::createGmsh<MeshType( mesh, LDIM, LORDER, ORDERFUN ), ORDERFUN> );
 
-# define FACTORY_GMSH_OP(_, GDO) FACTORY_GMSH GDO
+#define FACTORY_GMSH_OP( _, GDO ) FACTORY_GMSH GDO
 
 // ensight
-# define FACTORY(LDIM,LORDER,ORDERFUN) template class Exporter<Mesh<Simplex<LDIM,LORDER,LDIM> >, ORDERFUN >;
-# define FACTORY_OP(_, GDO) FACTORY GDO
+#define FACTORY( LDIM, LORDER, ORDERFUN ) template class Exporter<Mesh<Simplex<LDIM, LORDER, LDIM>>, ORDERFUN>;
+#define FACTORY_OP( _, GDO ) FACTORY GDO
 
 //BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_ENSIGHT_OP, 3, (DIMS, ORDERS,ORDERS_FUN_ENSIGHT))
 BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_GMSH_OP, 3, ( DIMS, ORDERS,ORDERS_FUN_GMSH ) )

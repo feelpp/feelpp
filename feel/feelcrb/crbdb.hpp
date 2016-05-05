@@ -31,9 +31,9 @@
 
 #include <string>
 
-#include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/convenience.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem/operations.hpp>
 #include <boost/serialization/version.hpp>
 
 #include <feel/feelcore/feel.hpp>
@@ -49,20 +49,16 @@ namespace Feel
  */
 class CRBDB
 {
-public:
-
-
+  public:
     /** @name Constants
      */
     //@{
-
 
     //@}
 
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -77,7 +73,7 @@ public:
            std::string dbprefix,
            po::variables_map const& vm );
     //! copy constructor
-    CRBDB( CRBDB const & );
+    CRBDB( CRBDB const& );
     //! destructor
     virtual ~CRBDB();
 
@@ -88,7 +84,7 @@ public:
     //@{
 
     //! copy operator
-    CRBDB& operator=( CRBDB const & o )
+    CRBDB& operator=( CRBDB const& o )
     {
         if ( this != &o )
         {
@@ -177,7 +173,7 @@ public:
 
     //@}
 
-protected:
+  protected:
     void setIsLoaded( bool isloaded )
     {
         M_isloaded = isloaded;
@@ -187,24 +183,23 @@ protected:
     // When the class Archive corresponds to an output archive, the
     // & operator is defined similar to <<.  Likewise, when the class Archive
     // is a type of input archive the & operator is defined similar to >>.
-    template<class Archive>
-    void save( Archive & ar, const unsigned int version ) const
-    {}
+    template <class Archive>
+    void save( Archive& ar, const unsigned int version ) const
+    {
+    }
 
-    template<class Archive>
-    void load( Archive & ar, const unsigned int version )
-    {}
+    template <class Archive>
+    void load( Archive& ar, const unsigned int version )
+    {
+    }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
-private:
-
+  private:
     std::string M_prefixdir;
     std::string M_name;
     std::string M_dbfilename;
     po::variables_map M_vm;
     bool M_isloaded;
-
-
 };
 }
 #endif /* __CRBDB_H */

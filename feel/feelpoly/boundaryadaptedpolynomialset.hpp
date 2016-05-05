@@ -41,25 +41,25 @@ namespace detail
  *
  */
 
-template<uint16_type Dim,
-         uint16_type Order,
-         template<uint16_type> class PolySetType = Scalar,
-         typename T = double,
-         template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
+template <uint16_type Dim,
+          uint16_type Order,
+          template <uint16_type> class PolySetType = Scalar,
+          typename T = double,
+          template <uint16_type, uint16_type, uint16_type> class Convex = Simplex>
 class BoundaryAdaptedPolynomialSet
-{};
-
-template<uint16_type Dim,
-         uint16_type Order,
-         template<uint16_type> class PolySetType,
-         typename T>
-class BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType, T, Simplex>
-    :
-public PolynomialSet<BoundaryAdapted<Dim, Order, T>, PolySetType >
 {
-    typedef PolynomialSet<BoundaryAdapted<Dim, Order, T>, PolySetType > super;
-public:
+};
 
+template <uint16_type Dim,
+          uint16_type Order,
+          template <uint16_type> class PolySetType,
+          typename T>
+class BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType, T, Simplex>
+    : public PolynomialSet<BoundaryAdapted<Dim, Order, T>, PolySetType>
+{
+    typedef PolynomialSet<BoundaryAdapted<Dim, Order, T>, PolySetType> super;
+
+  public:
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
 
@@ -82,7 +82,7 @@ public:
     typedef typename basis_type::points_type points_type;
 
     typedef Simplex<Dim, Order, Dim> convex_type;
-    template<int O>
+    template <int O>
     struct convex
     {
         typedef Simplex<Dim, O, Dim> type;
@@ -104,15 +104,14 @@ public:
 
     static const uint16_type nDof = nLocalDof;
     static const uint16_type nNodes = nDof;
-    static const uint16_type nDofGrad = super::nDim*nDof;
-    static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
+    static const uint16_type nDofGrad = super::nDim * nDof;
+    static const uint16_type nDofHess = super::nDim * super::nDim * nDof;
 
     BoundaryAdaptedPolynomialSet()
-        :
-        super( basis_type() )
+        : super( basis_type() )
     {
 
-        ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
+        ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents * convex_type::polyDims( nOrder ) ) );
 
         if ( is_tensor2 )
             std::cout << "[boundaryadaptedpolynomialset] m = " << m << "\n";
@@ -120,9 +119,9 @@ public:
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
-    BoundaryAdaptedPolynomialSet<Dim, Order, Scalar,T, Simplex > toScalar() const
+    BoundaryAdaptedPolynomialSet<Dim, Order, Scalar, T, Simplex> toScalar() const
     {
-        return BoundaryAdaptedPolynomialSet<Dim, Order, Scalar,T, Simplex >();
+        return BoundaryAdaptedPolynomialSet<Dim, Order, Scalar, T, Simplex>();
     }
 
     /**
@@ -143,30 +142,28 @@ public:
     }
 };
 
-template<uint16_type Dim,
-         uint16_type Order,
-         template<uint16_type> class PolySetType,
-         typename T>
-const uint16_type BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType,T, Simplex >::nDofPerEdge;
+template <uint16_type Dim,
+          uint16_type Order,
+          template <uint16_type> class PolySetType,
+          typename T>
+const uint16_type BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType, T, Simplex>::nDofPerEdge;
 
-template<uint16_type Dim,
-         uint16_type Order,
-         template<uint16_type> class PolySetType,
-         typename T>
-const uint16_type BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType,T, Simplex >::nLocalDof;
+template <uint16_type Dim,
+          uint16_type Order,
+          template <uint16_type> class PolySetType,
+          typename T>
+const uint16_type BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType, T, Simplex>::nLocalDof;
 
-
-template<uint16_type Dim,
-         uint16_type Order,
-         template<uint16_type> class PolySetType,
-         typename T>
+template <uint16_type Dim,
+          uint16_type Order,
+          template <uint16_type> class PolySetType,
+          typename T>
 class BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType, T, Hypercube>
-    :
-public PolynomialSet<TensorisedBoundaryAdapted<Dim, Order, T>, PolySetType >
+    : public PolynomialSet<TensorisedBoundaryAdapted<Dim, Order, T>, PolySetType>
 {
-    typedef PolynomialSet<TensorisedBoundaryAdapted<Dim, Order, T>, PolySetType > super;
-public:
+    typedef PolynomialSet<TensorisedBoundaryAdapted<Dim, Order, T>, PolySetType> super;
 
+  public:
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
 
@@ -185,7 +182,7 @@ public:
     typedef T value_type;
     typedef TensorisedBoundaryAdapted<Dim, Order, T> basis_type;
     typedef Hypercube<Dim, Order, Dim> convex_type;
-    template<int O>
+    template <int O>
     struct convex
     {
         typedef Hypercube<Dim, O, Dim> type;
@@ -196,14 +193,12 @@ public:
 
     typedef typename basis_type::points_type points_type;
 
-
     //!< Number of degrees of freedom per vertex
     static const uint16_type nDofPerVertex = convex_type::nbPtsPerVertex;
     //!< Number of degrees  of freedom per edge
     static const uint16_type nDofPerEdge = convex_type::nbPtsPerEdge;
     //!< Number of degrees  of freedom per face
     static const uint16_type nDofPerFace = convex_type::nbPtsPerFace;
-
 
     //!< Number of degrees  of freedom per volume
     static const uint16_type nDofPerVolume = convex_type::nbPtsPerVolume;
@@ -218,15 +213,14 @@ public:
 
     static const uint16_type nDof = nLocalDof;
     static const uint16_type nNodes = nDof;
-    static const uint16_type nDofGrad = super::nDim*nDof;
-    static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
+    static const uint16_type nDofGrad = super::nDim * nDof;
+    static const uint16_type nDofHess = super::nDim * super::nDim * nDof;
 
     BoundaryAdaptedPolynomialSet()
-        :
-        super( basis_type() )
+        : super( basis_type() )
 
     {
-        ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
+        ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents * convex_type::polyDims( nOrder ) ) );
 
         if ( is_tensor2 )
             std::cout << "[boundaryadaptedpolynomialset] m = " << m << "\n";
@@ -234,9 +228,9 @@ public:
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
-    BoundaryAdaptedPolynomialSet<Dim, Order, Scalar,T, Hypercube > toScalar() const
+    BoundaryAdaptedPolynomialSet<Dim, Order, Scalar, T, Hypercube> toScalar() const
     {
-        return BoundaryAdaptedPolynomialSet<Dim, Order, Scalar,T, Hypercube >();
+        return BoundaryAdaptedPolynomialSet<Dim, Order, Scalar, T, Hypercube>();
     }
 
     /**
@@ -258,27 +252,26 @@ public:
 };
 } // detail
 
-/// \encond 
+/// \encond
 
-template<uint16_type Order,
-         template<uint16_type Dim> class PolySetType = Scalar>
+template <uint16_type Order,
+          template <uint16_type Dim> class PolySetType = Scalar>
 class BoundaryAdaptedPolynomialSet
 {
-public:
-    template<uint16_type N,
-             typename T = double,
-             typename Convex = Simplex<N> >
+  public:
+    template <uint16_type N,
+              typename T = double,
+              typename Convex = Simplex<N>>
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                mpl::identity<Feel::detail::BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,Simplex> >,
-                mpl::identity<Feel::detail::
-BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,Hypercube> > >::type::type result_type;
+                                  mpl::identity<Feel::detail::BoundaryAdaptedPolynomialSet<N, Order, PolySetType, T, Simplex>>,
+                                  mpl::identity<Feel::detail::
+                                                    BoundaryAdaptedPolynomialSet<N, Order, PolySetType, T, Hypercube>>>::type::type result_type;
         typedef result_type type;
     };
 
-    typedef BoundaryAdaptedPolynomialSet<Order,Scalar> component_basis_type;
+    typedef BoundaryAdaptedPolynomialSet<Order, Scalar> component_basis_type;
 };
-
 }
 #endif /* __BoundaryAdaptedPolynomialSet_H */

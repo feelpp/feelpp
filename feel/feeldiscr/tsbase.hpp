@@ -21,7 +21,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#if !defined(FEELPP_TSBASEDISCR_HPP)
+#if !defined( FEELPP_TSBASEDISCR_HPP )
 #define FEELPP_TSBASEDISCR_HPP 1
 
 #warning This file includes at least one deprecated or antiquated header \

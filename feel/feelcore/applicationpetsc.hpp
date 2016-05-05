@@ -33,8 +33,7 @@
 #include <feel/feelcore/application.hpp>
 
 #if defined( FEELPP_HAS_PETSC_H )
-extern "C"
-{
+extern "C" {
 #include <petsc.h>
 #include <petscerror.h>
 }
@@ -54,13 +53,11 @@ namespace Feel
 class Application : public Application
 {
     typedef Application super;
-public:
 
-
+  public:
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -89,13 +86,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
-
 
     //@}
 
@@ -103,25 +98,19 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-
     //@}
 
+  protected:
+  private:
+    Application( Application const& );
 
-
-protected:
-
-private:
-    Application( Application const & );
-
-private:
-
+  private:
 };
 #endif /* FEELPP_HAS_PETSC_H */
 } // Feel

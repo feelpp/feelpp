@@ -30,22 +30,22 @@
 #ifndef __GraphCSR_H
 #define __GraphCSR_H 1
 
-#include <vector>
+#include <boost/tuple/tuple.hpp>
 #include <map>
 #include <set>
-#include <boost/tuple/tuple.hpp>
+#include <vector>
 //#include <boost/mpi/communicator.hpp>
 
 #include <boost/shared_ptr.hpp>
 
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/environment.hpp>
 #include <feel/feelalg/datamap.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelvf/block.hpp>
 
 namespace Feel
 {
-namespace mpi=boost::mpi;
+namespace mpi = boost::mpi;
 
 /**
  * \class GraphCSR
@@ -56,9 +56,7 @@ namespace mpi=boost::mpi;
  */
 class GraphCSR
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -70,8 +68,8 @@ public:
     typedef boost::shared_ptr<nz_type> nz_ptrtype;
 
     //typedef boost::tuple<size_type, size_type, std::vector<size_type> > row_type;
-    typedef boost::tuple<size_type, size_type, std::set<size_type> > row_type;
-    typedef std::map<size_type, row_type > storage_type;
+    typedef boost::tuple<size_type, size_type, std::set<size_type>> row_type;
+    typedef std::map<size_type, row_type> storage_type;
     typedef boost::shared_ptr<storage_type> storage_ptrtype;
 
     typedef storage_type::iterator iterator;
@@ -102,14 +100,14 @@ public:
     GraphCSR( datamap_type const& mapRow,
               datamap_type const& mapCol );
 
-    GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
-              bool diagIsNonZero=true,
-              bool close=true );
+    GraphCSR( vf::BlocksBase<self_ptrtype> const& blockSet,
+              bool diagIsNonZero = true,
+              bool close = true );
 
     /**
      * copy constructor
      */
-    GraphCSR( GraphCSR const & g );
+    GraphCSR( GraphCSR const& g );
 
     /**
      * destructor
@@ -133,11 +131,11 @@ public:
 
     size_type nRows() const
     {
-        return M_last_row_entry_on_proc[this->worldComm().globalRank()]+1;
+        return M_last_row_entry_on_proc[this->worldComm().globalRank()] + 1;
     }
     size_type nCols() const
     {
-        return M_last_col_entry_on_proc[this->worldComm().globalRank()]+1;
+        return M_last_col_entry_on_proc[this->worldComm().globalRank()] + 1;
     }
 
     /**
@@ -239,7 +237,6 @@ public:
         return M_storage;
     }
 
-
     /**
      * \return the maximum number of non-zero entries per row
      */
@@ -305,13 +302,11 @@ public:
         return M_a;
     }
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     void setFirstRowEntryOnProc( size_type entry )
     {
@@ -366,7 +361,7 @@ public:
     self_ptrtype createSubGraph( std::vector<size_type> const& rows, std::vector<size_type> const& cols,
                                  datamap_ptrtype const& submapRow = datamap_ptrtype(),
                                  datamap_ptrtype const& submapCol = datamap_ptrtype(),
-                                 bool useSameDataMap=false, bool checkAndFixRange=true ) const;
+                                 bool useSameDataMap = false, bool checkAndFixRange = true ) const;
 
     /**
      * add missing zero entries diagonal
@@ -382,24 +377,22 @@ public:
 
     //@}
 
-private :
-
+  private:
     void mergeBlockGraph( self_ptrtype const& g,
                           size_type start_i, size_type start_j );
 
-    void mergeBlockGraphMPI( self_ptrtype const& g, vf::BlocksBase<self_ptrtype> const & blockSet, int i, int j,
+    void mergeBlockGraphMPI( self_ptrtype const& g, vf::BlocksBase<self_ptrtype> const& blockSet, int i, int j,
                              size_type start_i, size_type start_j );
 
-    void updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet );
+    void updateDataMap( vf::BlocksBase<self_ptrtype> const& blockSet );
 
-    size_type nLocalDofWithoutGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
-    size_type nLocalDofWithoutGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
-    size_type nLocalDofWithGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
-    size_type nLocalDofWithGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
+    size_type nLocalDofWithoutGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const& blockSet, int proc, int rowIndex, int colIndex ) const;
+    size_type nLocalDofWithoutGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const& blockSet, int proc, int rowIndex, int colIndex ) const;
+    size_type nLocalDofWithGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const& blockSet, int proc, int rowIndex, int colIndex ) const;
+    size_type nLocalDofWithGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const& blockSet, int proc, int rowIndex, int colIndex ) const;
 
-protected:
-
-private:
+  protected:
+  private:
     bool M_is_closed;
     //mpi::communicator M_comm;
     WorldComm M_worldComm;
@@ -421,32 +414,31 @@ private:
     datamap_ptrtype M_mapRow, M_mapCol;
 };
 
-
-class BlocksBaseGraphCSR : public vf::BlocksBase<boost::shared_ptr<GraphCSR> >
+class BlocksBaseGraphCSR : public vf::BlocksBase<boost::shared_ptr<GraphCSR>>
 {
-public :
-    typedef vf::BlocksBase<boost::shared_ptr<GraphCSR> > super_type;
+  public:
+    typedef vf::BlocksBase<boost::shared_ptr<GraphCSR>> super_type;
     typedef super_type::index_type index_type;
     typedef BlocksBaseGraphCSR self_type;
     typedef boost::shared_ptr<GraphCSR> graph_ptrtype;
 
-    BlocksBaseGraphCSR( index_type nr=0,index_type nc=0 )
-        :
-        super_type( nr,nc ),
-        M_isClosed( false )
-    {}
+    BlocksBaseGraphCSR( index_type nr = 0, index_type nc = 0 )
+        : super_type( nr, nc ),
+          M_isClosed( false )
+    {
+    }
 
-    BlocksBaseGraphCSR( self_type const & b )
-        :
-        super_type( b ),
-        M_isClosed( b.M_isClosed )
-    {}
+    BlocksBaseGraphCSR( self_type const& b )
+        : super_type( b ),
+          M_isClosed( b.M_isClosed )
+    {
+    }
 
-    BlocksBaseGraphCSR( super_type const & b )
-        :
-        super_type( b ),
-        M_isClosed( false )
-    {}
+    BlocksBaseGraphCSR( super_type const& b )
+        : super_type( b ),
+          M_isClosed( false )
+    {
+    }
 
     self_type
     operator<<( graph_ptrtype const& g ) const
@@ -458,13 +450,9 @@ public :
 
     bool isClosed() const { return M_isClosed; }
 
-private :
+  private:
     bool M_isClosed;
-
-
 };
-
-
 
 } // Feel
 #endif /* __GraphCSR_H */

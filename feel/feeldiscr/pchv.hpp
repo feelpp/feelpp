@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_PCHV_HPP)
+#if !defined( FEELPP_PCHV_HPP )
 #define FEELPP_PCHV_HPP 1
 
 #include <feel/feeldiscr/functionspace.hpp>
@@ -37,51 +37,50 @@ namespace Feel
 namespace meta
 {
 
-template<typename MeshType,
-         int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
-         int Tag = 0>
+template <typename MeshType,
+          int Order,
+          template <class, uint16_type, class> class Pts = PointSetEquiSpaced,
+          int Tag = 0>
 struct Pchv
 {
     typedef FunctionSpace<MeshType,
-                          bases<Lagrange<Order,Vectorial,Continuous,Pts,Tag>>,
+                          bases<Lagrange<Order, Vectorial, Continuous, Pts, Tag>>,
                           double,
-                          Periodicity <NoPeriodicity>,
-                          mortars<NoMortar>> type;
+                          Periodicity<NoPeriodicity>,
+                          mortars<NoMortar>>
+        type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 
 } // meta
 
-template<typename MeshType,
-         int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
-         int Tag = 0>
-using Pchv_type = typename meta::Pchv<MeshType,Order,Pts,Tag>::type;
-template<typename MeshType,
-         int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
-         int Tag = 0>
-using Pchv_ptrtype = typename meta::Pchv<MeshType,Order,Pts,Tag>::ptrtype;
+template <typename MeshType,
+          int Order,
+          template <class, uint16_type, class> class Pts = PointSetEquiSpaced,
+          int Tag = 0>
+using Pchv_type = typename meta::Pchv<MeshType, Order, Pts, Tag>::type;
+template <typename MeshType,
+          int Order,
+          template <class, uint16_type, class> class Pts = PointSetEquiSpaced,
+          int Tag = 0>
+using Pchv_ptrtype = typename meta::Pchv<MeshType, Order, Pts, Tag>::ptrtype;
 
 /**
    Given a \p mesh, build a function space of vectorial continuous function
    which are piecewise polynomial of degree (total or in each variable) less
    than k using Lagrange basis functions
  */
-template<int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
-         typename MeshType,
-         int Tag = 0>
-inline
-Pchv_ptrtype<MeshType,Order,Pts,Tag>
-Pchv( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
+template <int Order,
+          template <class, uint16_type, class> class Pts = PointSetEquiSpaced,
+          typename MeshType,
+          int Tag = 0>
+inline Pchv_ptrtype<MeshType, Order, Pts, Tag>
+Pchv( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable = false )
 {
-    return Pchv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
-                                                   _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                                   _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+    return Pchv_type<MeshType, Order, Pts, Tag>::New( _mesh = mesh,
+                                                      _worldscomm = std::vector<WorldComm>( 1, mesh->worldComm() ),
+                                                      _extended_doftable = std::vector<bool>( 1, buildExtendedDofTable ) );
 }
-
 }
 
 #endif /* FEELPP_PCHV_HPP */

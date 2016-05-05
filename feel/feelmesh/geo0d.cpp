@@ -23,53 +23,49 @@ namespace Feel
 /*--------------------------------------------------------------
                                  Geo0D
   ---------------------------------------------------------------*/
-template<uint16_type Dim>
+template <uint16_type Dim>
 Geo0D<Dim>::Geo0D()
-    :
-    MeshEntityWithBoundary( 0 ),
-    _coor( Dim )
+    : MeshEntityWithBoundary( 0 ),
+      _coor( Dim )
 {
     _coor = ZeroVector( _coor.size() );
 }
 
-template<uint16_type Dim>
+template <uint16_type Dim>
 Geo0D<Dim>::Geo0D( uint16_type id, bool boundary )
-    :
-    MeshEntityWithBoundary( id, boundary ),
-    _coor( Dim )
+    : MeshEntityWithBoundary( id, boundary ),
+      _coor( Dim )
 {
     _coor = ZeroVector( _coor.size() );
 }
 
-template<uint16_type Dim>
+template <uint16_type Dim>
 Geo0D<Dim>::Geo0D( uint16_type id, Real x, Real y, Real z, bool boundary )
-    :
-    MeshEntityWithBoundary( id, boundary ),
-    _coor()
+    : MeshEntityWithBoundary( id, boundary ),
+      _coor()
 {
     if ( Dim < 2 )
-        _coor[ 0 ] = x;
+        _coor[0] = x;
 
-    if (  Dim < 3 )
-        _coor[ 1 ] = y;
+    if ( Dim < 3 )
+        _coor[1] = y;
 
     if ( Dim == 3 )
-        _coor[ 2 ] = z;
+        _coor[2] = z;
 }
 
-template<uint16_type Dim>
-Geo0D<Dim>::Geo0D( Geo0D const & G )
-    :
-    MeshEntityWithBoundary( G._id, G._boundary ),
-    _coor( G._coor )
+template <uint16_type Dim>
+Geo0D<Dim>::Geo0D( Geo0D const& G )
+    : MeshEntityWithBoundary( G._id, G._boundary ),
+      _coor( G._coor )
 {
 }
 
-template<uint16_type Dim>
-Geo0D<Dim> &
-Geo0D<Dim>::operator=( Geo0D<Dim> const & G )
+template <uint16_type Dim>
+Geo0D<Dim>&
+Geo0D<Dim>::operator=( Geo0D<Dim> const& G )
 {
-    if (  this == &G )
+    if ( this == &G )
         return *this;
 
     _id = G._id;
@@ -78,9 +74,9 @@ Geo0D<Dim>::operator=( Geo0D<Dim> const & G )
     return *this;
 }
 
-template<uint16_type Dim>
-std::ostream &
-Geo0D<Dim>::showMe( bool verbose, std::ostream & out ) const
+template <uint16_type Dim>
+std::ostream&
+Geo0D<Dim>::showMe( bool verbose, std::ostream& out ) const
 {
     out.setf( std::ios::scientific, std::ios::floatfield );
     out << " Geo0D object " << std::endl;
@@ -93,8 +89,8 @@ Geo0D<Dim>::showMe( bool verbose, std::ostream & out ) const
     }
 
     out << "id = " << id() << "  ";
-    out << "----- END OF Geo0D data ---" << std::endl << std::endl;
+    out << "----- END OF Geo0D data ---" << std::endl
+        << std::endl;
     return out;
 }
-
 }

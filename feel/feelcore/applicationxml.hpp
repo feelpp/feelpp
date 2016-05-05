@@ -48,9 +48,8 @@ class ApplicationXML : public Application
 {
     //! super class
     typedef Application super;
-public:
 
-
+  public:
     /** @name Constants
      */
     //@{
@@ -61,13 +60,11 @@ public:
         RUN_EXIT
     };
 
-
     //@}
 
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -78,7 +75,7 @@ public:
     //! default constructor
     ApplicationXML( int argc, char** argv, AboutData const& ad, po::options_description const& od );
     //! copy constructor
-    ApplicationXML( ApplicationXML const & );
+    ApplicationXML( ApplicationXML const& );
     //! destructor
     ~ApplicationXML();
 
@@ -89,20 +86,18 @@ public:
     //@{
 
     //! copy operator
-    ApplicationXML& operator=( ApplicationXML const & o );
+    ApplicationXML& operator=( ApplicationXML const& o );
     //@}
 
     /** @name Accessors
      */
     //@{
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -121,7 +116,7 @@ public:
         return *this;
     }
 
-    template<typename T>
+    template <typename T>
     ApplicationXML& addOutputValue( T const& val )
     {
         std::ostringstream oss;
@@ -130,11 +125,11 @@ public:
         return *this;
     }
 
-    template<typename T>
+    template <typename T>
     ApplicationXML& addParameterValue( T const& val )
     {
         char sci_val[11];
-        sprintf( sci_val,"%.5e",( double )val );
+        sprintf( sci_val, "%.5e", (double)val );
         M_parameter_values.push_back( std::string( sci_val ) );
         return *this;
     }
@@ -145,10 +140,7 @@ public:
 
     //@}
 
-
-
-protected:
-
+  protected:
     //! parameters
     std::vector<Parameter> M_params;
 
@@ -161,9 +153,7 @@ protected:
     //! output values
     std::vector<std::string> M_output_values;
 
-
-private:
-
+  private:
 };
 } // Feel
 #endif /* __ApplicationXML_H */

@@ -34,43 +34,42 @@
 
 #include <boost/lambda/if.hpp>
 
-#include <feel/feelmesh/refentity.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/lu.hpp>
-#include <feel/feelpoly/expansions.hpp>
-#include <feel/feelpoly/policy.hpp>
-#include <feel/feelpoly/gausslobatto.hpp>
+#include <feel/feelmesh/refentity.hpp>
 #include <feel/feelpoly/equispaced.hpp>
+#include <feel/feelpoly/expansions.hpp>
 #include <feel/feelpoly/expansiontypes.hpp>
+#include <feel/feelpoly/gausslobatto.hpp>
+#include <feel/feelpoly/policy.hpp>
 
 namespace Feel
 {
-template< class Convex,
+template <class Convex,
           uint16_type Order,
-          typename T >
+          typename T>
 class PointSetGaussLobatto;
 
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
+template <uint16_type Dim,
+          uint16_type RealDim,
+          uint16_type Degree,
+          typename NormalizationPolicy,
+          typename T,
+          template <class> class StoragePolicy>
 class Legendre;
 
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy = Normalized<true>,
-         typename T = double,
-         template<class> class StoragePolicy = StorageUBlas>
+template <uint16_type Dim,
+          uint16_type RealDim,
+          uint16_type Degree,
+          typename NormalizationPolicy = Normalized<true>,
+          typename T = double,
+          template <class> class StoragePolicy = StorageUBlas>
 struct LegendreTraits
 {
     static const uint16_type nDim = Dim;
     static const uint16_type nRealDim = RealDim;
     static const uint16_type nOrder = Degree;
-    static const uint16_type nConvexOrderDiff = nOrder+2;
+    static const uint16_type nConvexOrderDiff = nOrder + 2;
     static const bool is_normalized = NormalizationPolicy::is_normalized;
 
     /** @name Typedefs
@@ -82,21 +81,21 @@ struct LegendreTraits
      */
     typedef T value_type;
 
-    template<uint16_type order, typename V = value_type>
+    template <uint16_type order, typename V = value_type>
     struct Convex
     {
-        typedef Hypercube<nDim, order, /*nRealDim*/nDim> type;
-        typedef Reference<Hypercube<nDim, order, /*nRealDim*/nDim>, nDim, order, nDim/*nRealDim*/, V>  reference_type;
+        typedef Hypercube<nDim, order, /*nRealDim*/ nDim> type;
+        typedef Reference<Hypercube<nDim, order, /*nRealDim*/ nDim>, nDim, order, nDim /*nRealDim*/, V> reference_type;
     };
 
-    template<typename NewT>
+    template <typename NewT>
     struct ChangeValueType
     {
         typedef Legendre<Dim, RealDim, Degree, NormalizationPolicy, NewT, StoragePolicy> type;
         typedef LegendreTraits<Dim, RealDim, Degree, NormalizationPolicy, NewT, StoragePolicy> traits_type;
     };
 
-    template<uint16_type NewOrder>
+    template <uint16_type NewOrder>
     struct ChangeOrder
     {
         typedef Legendre<Dim, RealDim, NewOrder, NormalizationPolicy, T, StoragePolicy> type;
@@ -125,7 +124,7 @@ struct LegendreTraits
     typedef typename storage_policy::node_type node_type;
 };
 
-template<int D, int O>
+template <int D, int O>
 struct LegendreTag
 {
     static const int Dim = D;
@@ -152,21 +151,20 @@ struct LegendreTag
  * Methods for CFD,'' Oxford University Press, March 1999.
  *
  */
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy = Normalized<true>,
-         typename T = double,
-         template<class> class StoragePolicy = StorageUBlas>
+template <uint16_type Dim,
+          uint16_type RealDim,
+          uint16_type Degree,
+          typename NormalizationPolicy = Normalized<true>,
+          typename T = double,
+          template <class> class StoragePolicy = StorageUBlas>
 class Legendre
 {
-public:
-
+  public:
     typedef LegendreTraits<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy> traits_type;
     static const uint16_type nDim = Dim;
     static const uint16_type nRealDim = RealDim;
     static const uint16_type nOrder = Degree;
-    static const uint16_type nConvexOrder = nOrder+2;
+    static const uint16_type nConvexOrder = nOrder + 2;
     static const bool is_normalized = NormalizationPolicy::is_normalized;
     static const bool isTransformationEquivalent = true;
     static const bool isContinuous = false;
@@ -205,7 +203,6 @@ public:
     typedef typename traits_type::points_type points_type;
     typedef typename traits_type::node_type node_type;
 
-
     //@}
 
     /** @name Constructors, destructor
@@ -213,22 +210,20 @@ public:
     //@{
 
     Legendre()
-        :
-        M_refconvex(),
-        M_pts( M_refconvex.makePoints( nDim, 0 ) )
+        : M_refconvex(),
+          M_pts( M_refconvex.makePoints( nDim, 0 ) )
     {
         this->initDerivation();
     }
-    Legendre( Legendre const & d )
-        :
-        M_refconvex(),
-        M_pts( d.M_pts )
+    Legendre( Legendre const& d )
+        : M_refconvex(),
+          M_pts( d.M_pts )
     {
-
     }
 
     ~Legendre()
-    {}
+    {
+    }
 
     //@}
 
@@ -314,7 +309,6 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
@@ -340,7 +334,6 @@ public:
         return ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), M_pts.size2() );
     }
 
-
     /**
      * evaluate the Legendre polynomials at a set of points \p __pts
      *
@@ -351,8 +344,8 @@ public:
         return evaluate( __pts, mpl::int_<nDim>() );
     }
 
-    template<typename AE>
-    static vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts )
+    template <typename AE>
+    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts )
     {
         return derivate( __pts, mpl::int_<nDim>() );
     }
@@ -379,26 +372,26 @@ public:
         return _S_D[i];
     }
 
-
     //@}
 
-private:
-private:
-
+  private:
+  private:
     static value_type normalization( int i )
     {
-        return ( is_normalized?math::sqrt( value_type( i ) + 0.5 ) : value_type( 1 ) );
+        return ( is_normalized ? math::sqrt( value_type( i ) + 0.5 ) : value_type( 1 ) );
     }
     static value_type normalization( int i, int j )
     {
-        return ( is_normalized?math::sqrt( ( value_type( i ) + 0.5 ) *
-                                           ( value_type( j ) + 0.5 ) ) : value_type( 1 ) );
+        return ( is_normalized ? math::sqrt( ( value_type( i ) + 0.5 ) *
+                                             ( value_type( j ) + 0.5 ) )
+                               : value_type( 1 ) );
     }
     static value_type normalization( int i, int j, int k )
     {
-        return ( is_normalized?math::sqrt( ( value_type( i ) + 0.5 ) *
-                                           ( value_type( j ) + 0.5 ) *
-                                           ( value_type( k ) + 0.5 ) ) : value_type( 1 ) );
+        return ( is_normalized ? math::sqrt( ( value_type( i ) + 0.5 ) *
+                                             ( value_type( j ) + 0.5 ) *
+                                             ( value_type( k ) + 0.5 ) )
+                               : value_type( 1 ) );
     }
     /**
      * Evaluation at a set of points of the expansion basis in 2D on
@@ -407,7 +400,7 @@ private:
     static matrix_type
     evaluate( points_type const& __pts, mpl::int_<1> )
     {
-        matrix_type m ( JacobiBatchEvaluation<nOrder,value_type>( 0.0, 0.0, ublas::row( __pts, 0 ) ) );
+        matrix_type m( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts, 0 ) ) );
 
         if ( is_normalized )
         {
@@ -422,19 +415,20 @@ private:
      * derivation at a set of points of the expansion basis in 2D on
      * the triangle
      */
-    template<typename AE>
+    template <typename AE>
     static vector_matrix_type
     derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
     {
-        FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error( "invalid points" );
+        FEELPP_ASSERT( __pts().size1() == 1 )
+        ( __pts().size1() )( __pts().size2() ).error( "invalid points" );
         // VLOG(1) << "Expansion::derivate<1>] number of points " << __pts().size2() << "\n";
 
         vector_matrix_type D( 1 );
-        D[0].resize( nOrder+1, __pts().size2() );
-        D[0] = JacobiBatchDerivation<nOrder,value_type>( 0.0, 0.0, ublas::row( __pts(),0 ) );
+        D[0].resize( nOrder + 1, __pts().size2() );
+        D[0] = JacobiBatchDerivation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 0 ) );
 
         if ( is_normalized )
-            for ( uint16_type i = 0; i < nOrder+1; ++i )
+            for ( uint16_type i = 0; i < nOrder + 1; ++i )
                 ublas::row( D[0], i ) *= normalization( i );
 
         return D;
@@ -450,7 +444,7 @@ private:
      * derivation at a set of points of the expansion basis in 2D on
      * the triangle
      */
-    template<typename AE>
+    template <typename AE>
     static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> );
 
     /**
@@ -463,11 +457,12 @@ private:
      * derivation at a set of points of the expansion basis in 3D on
      * the tetrahedron
      */
-    template<typename AE>
+    template <typename AE>
     static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> );
 
     static void initDerivation();
-private:
+
+  private:
     reference_convex_type M_refconvex;
     points_type M_pts;
     /**
@@ -484,31 +479,30 @@ private:
 
 }; // class Dubiner
 
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
+template <uint16_type Dim,
+          uint16_type RealDim,
+          uint16_type Degree,
+          typename NormalizationPolicy,
+          typename T,
+          template <class> class StoragePolicy>
 bool Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::_S_has_derivation = false;
 
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
+template <uint16_type Dim,
+          uint16_type RealDim,
+          uint16_type Degree,
+          typename NormalizationPolicy,
+          typename T,
+          template <class> class StoragePolicy>
 std::vector<typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type>
-Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::_S_D;
+    Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::_S_D;
 
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-void
-Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::initDerivation()
+template <uint16_type Dim,
+          uint16_type RealDim,
+          uint16_type Degree,
+          typename NormalizationPolicy,
+          typename T,
+          template <class> class StoragePolicy>
+void Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::initDerivation()
 {
 #if 0
     typedef typename traits_type::convex_type convex_type;
@@ -535,11 +529,11 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::initDeriv
         matrix_type A( evaluate( diff_pts.points() ) );
 
 #if 1
-        matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
+        matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
         LU<matrix_type> lu( A );
         matrix_type C = lu.solve( D );
 
-        vector_matrix_type d ( derivate( diff_pts.points() ) );
+        vector_matrix_type d( derivate( diff_pts.points() ) );
         _S_D.resize( d.size() );
 
         for ( size_type i = 0; i < d.size(); ++i )
@@ -552,12 +546,12 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::initDeriv
     }
 }
 
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
+template <uint16_type Dim,
+          uint16_type RealDim,
+          uint16_type Degree,
+          typename NormalizationPolicy,
+          typename T,
+          template <class> class StoragePolicy>
 typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
 Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<2> )
 {
@@ -569,25 +563,25 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate(
     matrix_type as( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta1s ) );
     matrix_type bs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta2s ) );
 
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
+    for ( uint16_type cur = 0, i = 0; i < nOrder + 1; ++i )
     {
-        for ( uint16_type j = 0; j < nOrder+1; ++j,++cur )
+        for ( uint16_type j = 0; j < nOrder + 1; ++j, ++cur )
         {
             ublas::row( res, cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( as, i ),
-                                     ublas::row( bs, j ) );
+                                                                                  ublas::row( bs, j ) );
         }
     }
 
     return res;
 }
 
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-template<typename AE>
+template <uint16_type Dim,
+          uint16_type RealDim,
+          uint16_type Degree,
+          typename NormalizationPolicy,
+          typename T,
+          template <class> class StoragePolicy>
+template <typename AE>
 typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
 Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> )
 {
@@ -601,26 +595,26 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate(
     matrix_type bs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
     matrix_type dbs( JacobiBatchDerivation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
 
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
+    for ( uint16_type cur = 0, i = 0; i < nOrder + 1; ++i )
     {
-        for ( uint16_type j = 0; j < nOrder+1; ++j,++cur )
+        for ( uint16_type j = 0; j < nOrder + 1; ++j, ++cur )
         {
             ublas::row( res[0], cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( das, i ),
-                                        ublas::row( bs, j ) );
+                                                                                     ublas::row( bs, j ) );
             ublas::row( res[1], cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( as, i ),
-                                        ublas::row( dbs, j ) );
+                                                                                     ublas::row( dbs, j ) );
         }
     }
 
     return res;
 }
 
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
+template <uint16_type Dim,
+          uint16_type RealDim,
+          uint16_type Degree,
+          typename NormalizationPolicy,
+          typename T,
+          template <class> class StoragePolicy>
 typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
 Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<3> )
 {
@@ -634,16 +628,16 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate(
     matrix_type bs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta2s ) );
     matrix_type cs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta3s ) );
 
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
+    for ( uint16_type cur = 0, i = 0; i < nOrder + 1; ++i )
     {
-        for ( uint16_type j = 0; j < nOrder+1; ++j )
+        for ( uint16_type j = 0; j < nOrder + 1; ++j )
         {
-            for ( uint16_type k = 0; k < nOrder+1; ++k,++cur )
+            for ( uint16_type k = 0; k < nOrder + 1; ++k, ++cur )
             {
                 ublas::row( res, cur ) =
-                    normalization( i, j, k )*
+                    normalization( i, j, k ) *
                     ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
-                                         ublas::row( bs, j ) ),
+                                                              ublas::row( bs, j ) ),
                                          ublas::row( cs, k ) );
             }
         }
@@ -652,13 +646,13 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate(
     return res;
 }
 
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-template<typename AE>
+template <uint16_type Dim,
+          uint16_type RealDim,
+          uint16_type Degree,
+          typename NormalizationPolicy,
+          typename T,
+          template <class> class StoragePolicy>
+template <typename AE>
 typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
 Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> )
 {
@@ -675,35 +669,31 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate(
     matrix_type cs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 2 ) ) );
     matrix_type dcs( JacobiBatchDerivation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 2 ) ) );
 
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
+    for ( uint16_type cur = 0, i = 0; i < nOrder + 1; ++i )
     {
-        for ( uint16_type j = 0; j < nOrder+1; ++j )
+        for ( uint16_type j = 0; j < nOrder + 1; ++j )
         {
-            for ( uint16_type k = 0; k < nOrder+1; ++k,++cur )
+            for ( uint16_type k = 0; k < nOrder + 1; ++k, ++cur )
             {
                 ublas::row( res[0], cur ) = ( normalization( i, j, k ) *
                                               ublas::element_prod( ublas::element_prod( ublas::row( das, i ),
-                                                      ublas::row( bs, j ) ),
-                                                      ublas::row( cs, k ) ) );
+                                                                                        ublas::row( bs, j ) ),
+                                                                   ublas::row( cs, k ) ) );
 
                 ublas::row( res[1], cur ) = ( normalization( i, j, k ) *
                                               ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
-                                                      ublas::row( dbs, j ) ),
-                                                      ublas::row( cs, k ) ) );
+                                                                                        ublas::row( dbs, j ) ),
+                                                                   ublas::row( cs, k ) ) );
 
                 ublas::row( res[2], cur ) = ( normalization( i, j, k ) *
                                               ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
-                                                      ublas::row( bs, j ) ),
-                                                      ublas::row( dcs, k ) ) );
-
-
+                                                                                        ublas::row( bs, j ) ),
+                                                                   ublas::row( dcs, k ) ) );
             }
         }
     }
 
     return res;
 }
-
-
 }
 #endif /* __Legendre_H */

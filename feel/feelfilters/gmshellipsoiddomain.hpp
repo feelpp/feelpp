@@ -29,7 +29,6 @@
 #ifndef __GmshEllipsoidDomain_H
 #define __GmshEllipsoidDomain_H 1
 
-
 #include <boost/parameter.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
@@ -50,9 +49,8 @@ namespace Feel
 class GmshEllipsoidDomain : public Gmsh
 {
     typedef Gmsh super;
-public:
 
-
+  public:
     /** @name Constants and Typedefs
      */
     //@{
@@ -63,7 +61,7 @@ public:
     //@{
 
     GmshEllipsoidDomain( int Dim,
-                         int Order= GMSH_ORDER_ONE,
+                         int Order = GMSH_ORDER_ONE,
                          DomainType dt = GMSH_REAL_DOMAIN );
 
     //! destructor
@@ -71,23 +69,18 @@ public:
 
     //@}
 
-
-protected:
-
+  protected:
     std::string getDescription() const;
 
-private:
-
+  private:
     // 1D
     std::string getDescription1D() const;
     // 2D
     std::string getDescription2D() const;
     // 3D
     std::string getDescription3D() const;
-
 };
 
 } // Feel
-
 
 #endif /* __GmshEllipsoidDomain_H */

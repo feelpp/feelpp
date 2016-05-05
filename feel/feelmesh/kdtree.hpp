@@ -29,18 +29,16 @@
 #ifndef __KDTree_H
 #define __KDTree_H 1
 
-#include <vector>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 #include <boost/tuple/tuple_io.hpp>
+#include <vector>
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
-
+#include <feel/feelcore/feel.hpp>
 
 namespace Feel
 {
-
 
 /**
  * \class KDTree
@@ -57,9 +55,7 @@ namespace Feel
  */
 class KDTree
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -75,7 +71,7 @@ public:
     typedef points_type::const_iterator points_const_iterator;
 
     //here, the double corresponds at the distance with the node that is search
-    typedef boost::tuple<node_type, size_type, uint16_type, size_type, double > index_node_search_type;
+    typedef boost::tuple<node_type, size_type, uint16_type, size_type, double> index_node_search_type;
     typedef std::vector<index_node_search_type> points_search_type;
     typedef points_search_type::iterator points_search_iterator;
     typedef points_search_type::const_iterator points_search_const_iterator;
@@ -87,23 +83,23 @@ public:
     //@{
 
     KDTree()
-        :
-        M_tree( 0 ),
-        M_pts(),
-        M_node_search(),
-        M_PtsNearest(),
-        M_distanceMax( INT_MAX ),
-        M_nbPtMax( 4 )
-    {}
-    KDTree( KDTree const & tree )
-        :
-        M_tree( tree.M_tree ),
-        M_pts( tree.M_pts ),
-        M_node_search( tree.M_node_search ),
-        M_PtsNearest( tree.M_PtsNearest ),
-        M_distanceMax( tree.M_distanceMax ),
-        M_nbPtMax( tree.M_nbPtMax )
-    {}
+        : M_tree( 0 ),
+          M_pts(),
+          M_node_search(),
+          M_PtsNearest(),
+          M_distanceMax( INT_MAX ),
+          M_nbPtMax( 4 )
+    {
+    }
+    KDTree( KDTree const& tree )
+        : M_tree( tree.M_tree ),
+          M_pts( tree.M_pts ),
+          M_node_search( tree.M_node_search ),
+          M_PtsNearest( tree.M_PtsNearest ),
+          M_distanceMax( tree.M_distanceMax ),
+          M_nbPtMax( tree.M_nbPtMax )
+    {
+    }
 
     ~KDTree()
     {
@@ -116,7 +112,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -135,7 +130,7 @@ public:
     /**
      * get the points set
      */
-    const points_type &points() const
+    const points_type& points() const
     {
         return M_pts;
     }
@@ -143,24 +138,21 @@ public:
     /**
      * get the points Near Neighbor set
      */
-    const points_search_type &pointsNearNeighbor() const
+    const points_search_type& pointsNearNeighbor() const
     {
         return M_PtsNearest;
     }
-
 
     size_type nPtMaxNearNeighbor()
     {
         return M_nbPtMax;
     }
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -190,41 +182,41 @@ public:
      */
     void nbNearNeighbor( size_type n )
     {
-        M_nbPtMax=n;
+        M_nbPtMax = n;
     }
 
     /**
      * insert a new point in the tree
      * @return  the index of the point
      */
-    size_type addPoint( node_type const& n, size_type indice_global=0 )
+    size_type addPoint( node_type const& n, size_type indice_global = 0 )
     {
         size_type i = M_pts.size();
-        addPointWithId( n,i,0,indice_global );
+        addPointWithId( n, i, 0, indice_global );
         return i;
     }
     /**
      * insert a new point, with an associated number.
      */
-    void addPointWithId( const node_type& n, size_type i, uint16_type comp, size_type indice_global=0  )
+    void addPointWithId( const node_type& n, size_type i, uint16_type comp, size_type indice_global = 0 )
     {
         if ( M_tree )
             clearTree();
 
-        M_pts.push_back( boost::make_tuple( n, i, comp,indice_global ) );
+        M_pts.push_back( boost::make_tuple( n, i, comp, indice_global ) );
     }
     /**
      * fills ipts with the indexes of points in the box
      * [min,max]
      */
-    void pointsInBox( points_type &inpts,
-                      const node_type &min,
-                      const node_type &max );
+    void pointsInBox( points_type& inpts,
+                      const node_type& min,
+                      const node_type& max );
 
     /**
      * search the neighbors points of M_node_search in the kd-tree
      */
-    void search( const node_type & node_ );
+    void search( const node_type& node_ );
 
     /**
      * print the result of the research
@@ -237,9 +229,7 @@ public:
     void writeLatexData( std::string __nameFile = "kdtreeData.tex" );
     //@}
 
-
-private:
-
+  private:
     /**
      * destroy the tree data structure
      */
@@ -248,14 +238,14 @@ private:
     /**
      * Run the the research of M_node_search neighbors(recursive)
      */
-    void run_search( Element * tree, uint16_type iter );
+    void run_search( Element* tree, uint16_type iter );
 
     /**
      * Updating the list of nearest points
      */
-    void update_Pts_search( const index_node_type & p );
+    void update_Pts_search( const index_node_type& p );
 
-private:
+  private:
     Element* M_tree;
     points_type M_pts;
 
@@ -267,8 +257,6 @@ private:
     double M_distanceMax;
     //the maximum number of neighbors points that we want to search
     size_type M_nbPtMax;
-
-
 };
 } // Feel
 #endif /* __KDTree_H */

@@ -37,12 +37,11 @@ namespace Feel
 namespace FeelModels
 {
 
-template< class SpaceType1,class SpaceType2 >
+template <class SpaceType1, class SpaceType2>
 class DofRelationshipMap
 {
 
-public :
-
+  public:
     typedef SpaceType1 functionspace1_type;
     typedef boost::shared_ptr<functionspace1_type> functionspace1_ptrtype;
     typedef SpaceType2 functionspace2_type;
@@ -63,136 +62,133 @@ public :
     static const uint16_type nDofPerVolume = functionspace1_type::fe_type::nDofPerVolume;
     static const uint16_type numVolumes = mesh1_type::element_type::numVolumes;
 
-    DofRelationshipMap(functionspace1_ptrtype __Xh1,functionspace2_ptrtype __Xh2 )
-        :
-        M_Xh1(__Xh1),
-        M_Xh2(__Xh2),
-        M_dofRelMapRefToHo( M_Xh1->nLocalDof() ),
-        M_dofRelMapHoToRef( M_Xh2->nLocalDof() )
-        {
-            buidGeoElementMap();
-            buildDofRelMap();
-        }
+    DofRelationshipMap( functionspace1_ptrtype __Xh1, functionspace2_ptrtype __Xh2 )
+        : M_Xh1( __Xh1 ),
+          M_Xh2( __Xh2 ),
+          M_dofRelMapRefToHo( M_Xh1->nLocalDof() ),
+          M_dofRelMapHoToRef( M_Xh2->nLocalDof() )
+    {
+        buidGeoElementMap();
+        buildDofRelMap();
+    }
 
     //std::vector<std::pair<size_type,rank_type> > const & geoElementMap() const { return M_geoElementMap; }
-    std::map<size_type, std::pair<size_type,rank_type> > const & geoElementMap() const { return M_geoElementMap; }
+    std::map<size_type, std::pair<size_type, rank_type>> const& geoElementMap() const { return M_geoElementMap; }
 
-    std::vector<size_type> const & dofRelMap() const { return this->dofRelMapRefToHo(); }
+    std::vector<size_type> const& dofRelMap() const { return this->dofRelMapRefToHo(); }
 
-    std::vector<size_type> const & dofRelMapRefToHo() const { return M_dofRelMapRefToHo; }
+    std::vector<size_type> const& dofRelMapRefToHo() const { return M_dofRelMapRefToHo; }
 
-    std::vector<size_type> const & dofRelMapHoToRef() const { return M_dofRelMapHoToRef; }
+    std::vector<size_type> const& dofRelMapHoToRef() const { return M_dofRelMapHoToRef; }
 
-private :
-
-    bool isIdenticalPoints(typename mesh1_type::point_type const & pt1,
-                           typename mesh1_type::point_type const & pt2,
-                           double tol = 1e-9 ) const;
+  private:
+    bool isIdenticalPoints( typename mesh1_type::point_type const& pt1,
+                            typename mesh1_type::point_type const& pt2,
+                            double tol = 1e-9 ) const;
 
     void buidGeoElementMap();
 
     void buildDofRelMap();
 
     std::vector<uint16_type>
-    buildElementaryMapPoints(typename mesh1_type::element_type const & elt,
-                             typename mesh2_type::element_type const & eltRef);
+    buildElementaryMapPoints( typename mesh1_type::element_type const& elt,
+                              typename mesh2_type::element_type const& eltRef );
 
-    std::vector<boost::tuple<uint16_type,uint16_type> >
-    buildElementaryMapEdges(std::vector<uint16_type> const & mapPoint);
+    std::vector<boost::tuple<uint16_type, uint16_type>>
+    buildElementaryMapEdges( std::vector<uint16_type> const& mapPoint );
 
-    std::vector<uint16_type>//std::vector<boost::tuple<uint> >
-    buildElementaryMapFaces(std::vector<uint16_type> const & mapPoint);
+    std::vector<uint16_type> //std::vector<boost::tuple<uint> >
+        buildElementaryMapFaces( std::vector<uint16_type> const& mapPoint );
 
     uint16_type
-    convertInternalDofInFace(typename mesh1_type::element_type const & elem,uint16_type nface, uint16_type ilocModif,
-                             std::vector<boost::tuple<uint16_type,uint16_type> > const & mapEdge,
-                             std::vector<uint16_type> const & mapFace);
+    convertInternalDofInFace( typename mesh1_type::element_type const& elem, uint16_type nface, uint16_type ilocModif,
+                              std::vector<boost::tuple<uint16_type, uint16_type>> const& mapEdge,
+                              std::vector<uint16_type> const& mapFace );
 
-
-    std::vector<boost::tuple<uint16_type,uint16_type> >
-    mapTrianglePoints2Edge(std::vector<uint16_type> const & mapPoint);
-    std::vector<boost::tuple<uint16_type,uint16_type> >
-    mapQuadranglePoints2Edge(std::vector<uint16_type> const & mapPoint);
-    std::vector<boost::tuple<uint16_type,uint16_type> >
-    mapTetraPoints2Edge(std::vector<uint16_type> const & mapPoint);
+    std::vector<boost::tuple<uint16_type, uint16_type>>
+    mapTrianglePoints2Edge( std::vector<uint16_type> const& mapPoint );
+    std::vector<boost::tuple<uint16_type, uint16_type>>
+    mapQuadranglePoints2Edge( std::vector<uint16_type> const& mapPoint );
+    std::vector<boost::tuple<uint16_type, uint16_type>>
+    mapTetraPoints2Edge( std::vector<uint16_type> const& mapPoint );
 
     std::vector<uint16_type>
-    mapTrianglePoints2Face(std::vector<uint16_type> const & mapPoint);
+    mapTrianglePoints2Face( std::vector<uint16_type> const& mapPoint );
     std::vector<uint16_type>
-    mapQuadranglePoints2Face(std::vector<uint16_type> const & mapPoint);
+    mapQuadranglePoints2Face( std::vector<uint16_type> const& mapPoint );
     std::vector<uint16_type>
-    mapTetraPoints2Face(std::vector<uint16_type> const & mapPoint);
+    mapTetraPoints2Face( std::vector<uint16_type> const& mapPoint );
 
-    template<uint16_type nDofInFace>
-    boost::tuple<uint16_type,uint16_type>
-    tableInternalDofFace2Edge(uint16_type dofLoc);
-    boost::tuple<uint16_type,uint16_type>
-    tableInternalDofFace2Edge1(uint16_type dofLoc);
-    boost::tuple<uint16_type,uint16_type>
-    tableInternalDofFace2Edge3(uint16_type dofLoc);
-    boost::tuple<uint16_type,uint16_type>
-    tableInternalDofFace2Edge6(uint16_type dofLoc);
+    template <uint16_type nDofInFace>
+    boost::tuple<uint16_type, uint16_type>
+    tableInternalDofFace2Edge( uint16_type dofLoc );
+    boost::tuple<uint16_type, uint16_type>
+    tableInternalDofFace2Edge1( uint16_type dofLoc );
+    boost::tuple<uint16_type, uint16_type>
+    tableInternalDofFace2Edge3( uint16_type dofLoc );
+    boost::tuple<uint16_type, uint16_type>
+    tableInternalDofFace2Edge6( uint16_type dofLoc );
 
-    template<uint16_type nDofInFace>
+    template <uint16_type nDofInFace>
     uint16_type
-    tableInternalDofEdge2Face(boost::tuple<uint16_type,uint16_type> traitsEdgesLoc);
+    tableInternalDofEdge2Face( boost::tuple<uint16_type, uint16_type> traitsEdgesLoc );
     uint16_type
-    tableInternalDofEdge2Face1(boost::tuple<uint16_type,uint16_type> traitsEdgesLoc);
+    tableInternalDofEdge2Face1( boost::tuple<uint16_type, uint16_type> traitsEdgesLoc );
     uint16_type
-    tableInternalDofEdge2Face3(boost::tuple<uint16_type,uint16_type> traitsEdgesLoc);
+    tableInternalDofEdge2Face3( boost::tuple<uint16_type, uint16_type> traitsEdgesLoc );
     uint16_type
-    tableInternalDofEdge2Face6(boost::tuple<uint16_type,uint16_type> traitsEdgesLoc);
+    tableInternalDofEdge2Face6( boost::tuple<uint16_type, uint16_type> traitsEdgesLoc );
 
-
-private :
-
+  private:
     functionspace1_ptrtype M_Xh1;
     functionspace2_ptrtype M_Xh2;
 
     //std::vector< std::pair<size_type,rank_type> > M_geoElementMap;
-    std::map<size_type, std::pair<size_type,rank_type> > M_geoElementMap;
+    std::map<size_type, std::pair<size_type, rank_type>> M_geoElementMap;
 
     std::vector<size_type> M_dofRelMapRefToHo;
     std::vector<size_type> M_dofRelMapHoToRef;
-
 };
-
 
 //---------------------------------------------------------------------------------//
 
-template< class SpaceType1,class SpaceType2 >
-bool
-DofRelationshipMap<SpaceType1,SpaceType2>::isIdenticalPoints( typename mesh1_type::point_type const & pt1,
-                                                              typename mesh1_type::point_type const & pt2,
-                                                              double tol ) const
+template <class SpaceType1, class SpaceType2>
+bool DofRelationshipMap<SpaceType1, SpaceType2>::isIdenticalPoints( typename mesh1_type::point_type const& pt1,
+                                                                    typename mesh1_type::point_type const& pt2,
+                                                                    double tol ) const
 {
     bool res;
-    if (mesh1_type::nRealDim==1)
-        if ( std::abs( pt1(0)-pt2(0) ) < tol) res=true;
-        else res=false;
-    else if (mesh1_type::nRealDim==2)
-        if ( std::abs( pt1(0)-pt2(0) ) < tol && std::abs( pt1(1)-pt2(1) ) < tol ) res=true;
-        else res=false;
+    if ( mesh1_type::nRealDim == 1 )
+        if ( std::abs( pt1( 0 ) - pt2( 0 ) ) < tol )
+            res = true;
+        else
+            res = false;
+    else if ( mesh1_type::nRealDim == 2 )
+        if ( std::abs( pt1( 0 ) - pt2( 0 ) ) < tol && std::abs( pt1( 1 ) - pt2( 1 ) ) < tol )
+            res = true;
+        else
+            res = false;
     else // if (mesh1_type::nRealDim==3)
-        if ( std::abs( pt1(0)-pt2(0) ) < tol && std::abs( pt1(1)-pt2(1) ) < tol && std::abs( pt1(2)-pt2(2) ) < tol ) res=true;
-        else res=false;
+        if ( std::abs( pt1( 0 ) - pt2( 0 ) ) < tol && std::abs( pt1( 1 ) - pt2( 1 ) ) < tol && std::abs( pt1( 2 ) - pt2( 2 ) ) < tol )
+        res = true;
+    else
+        res = false;
 
     return res;
 }
 
 //---------------------------------------------------------------------------------//
 
-template< class SpaceType1,class SpaceType2 >
-void
-DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
+template <class SpaceType1, class SpaceType2>
+void DofRelationshipMap<SpaceType1, SpaceType2>::buidGeoElementMap()
 {
-    std::vector<bool> findPtInElem(mesh1_type::element_type::numVertices);
+    std::vector<bool> findPtInElem( mesh1_type::element_type::numVertices );
     std::set<size_type> elt1Done;
 
-    CHECK ( M_Xh1->dof()->buildDofTableMPIExtended() == M_Xh2->dof()->buildDofTableMPIExtended() ) << "buildDofTableMPIExtended between space must be equal \n";
+    CHECK( M_Xh1->dof()->buildDofTableMPIExtended() == M_Xh2->dof()->buildDofTableMPIExtended() ) << "buildDofTableMPIExtended between space must be equal \n";
 
     bool upExtendedElt = M_Xh1->dof()->buildDofTableMPIExtended();
-    EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+    EntityProcessType entityProcess = ( upExtendedElt ) ? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
     auto rangeElt1 = elements( M_Xh1->mesh(), entityProcess );
     auto rangeElt2 = elements( M_Xh2->mesh(), entityProcess );
 
@@ -207,11 +203,11 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
         if ( useSubMeshRelation )
         {
             size_type elt1Id = M_Xh1->mesh()->meshToSubMesh( elt2.id() );
-            M_geoElementMap[elt1Id] = std::make_pair(elt2.id(),elt2.processId());
+            M_geoElementMap[elt1Id] = std::make_pair( elt2.id(), elt2.processId() );
         }
         else
         {
-            bool find=false;
+            bool find = false;
             for ( auto const& elt1RefWrapper : rangeElt1 )
             {
                 auto const& elt1 = boost::unwrap_ref( elt1RefWrapper );
@@ -221,12 +217,12 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
                     continue;
 
                 bool findSameElt = true;
-                for (uint16_type n=0 ; n<numVertices && findSameElt ; ++n)
+                for ( uint16_type n = 0; n < numVertices && findSameElt; ++n )
                 {
-                    auto const& pt2 = elt2.point(n);
+                    auto const& pt2 = elt2.point( n );
                     bool findSamePt = false;
-                    for (uint16_type m=0 ; m<numVertices && !findSamePt ; ++m)
-                        if ( this->isIdenticalPoints(elt1.point(m),pt2) )
+                    for ( uint16_type m = 0; m < numVertices && !findSamePt; ++m )
+                        if ( this->isIdenticalPoints( elt1.point( m ), pt2 ) )
                             findSamePt = true;
                     if ( !findSamePt )
                         findSameElt = false;
@@ -235,15 +231,13 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
                 if ( !findSameElt )
                     continue;
 
-
-                find=true;
-                M_geoElementMap[elt1Id] = std::make_pair(elt2.id(),elt2.processId());
+                find = true;
+                M_geoElementMap[elt1Id] = std::make_pair( elt2.id(), elt2.processId() );
                 break;
             }
-            CHECK( find ) <<"not found a relation betwwen elt";
+            CHECK( find ) << "not found a relation betwwen elt";
         }
     } // end for it
-
 
 #if 0
     // add also some ghost elt if has extended dof table
@@ -286,15 +280,12 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
         }
     }
 #endif
-
-
 }
 
 //---------------------------------------------------------------------------------//
 
-template< class SpaceType1,class SpaceType2 >
-void
-DofRelationshipMap<SpaceType1,SpaceType2>::buildDofRelMap()
+template <class SpaceType1, class SpaceType2>
+void DofRelationshipMap<SpaceType1, SpaceType2>::buildDofRelMap()
 {
     auto dof1 = M_Xh1->dof();
     auto dof2 = M_Xh2->dof();
@@ -303,11 +294,11 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buildDofRelMap()
     //auto en1 = M_Xh1->mesh()->endElementWithProcessId( M_Xh1->mesh()->worldComm().localRank() );
     auto it1 = M_Xh1->mesh()->beginElement();
     auto const en1 = M_Xh1->mesh()->endElement();
-    for ( ; it1 != en1 ; ++it1 )
+    for ( ; it1 != en1; ++it1 )
     {
         for ( uint16_type iloc1 = 0; iloc1 < functionspace1_type::basis_type::nLocalDof; ++iloc1 )
         {
-            for ( uint16_type comp = 0;comp < functionspace1_type::basis_type::nComponents;++comp )
+            for ( uint16_type comp = 0; comp < functionspace1_type::basis_type::nComponents; ++comp )
             {
                 auto itFindGeoElt = M_geoElementMap.find( it1->id() );
                 if ( itFindGeoElt == M_geoElementMap.end() )
@@ -320,284 +311,295 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buildDofRelMap()
                 auto const& elem1 = *it1;
                 auto const& elem2 = M_Xh2->mesh()->element( eltIdRelated, procIdRelated );
 
-                auto mapPoint=buildElementaryMapPoints(elem1,elem2);
-                auto mapEdge=buildElementaryMapEdges(mapPoint);
-                auto mapFace=buildElementaryMapFaces(mapPoint);
+                auto mapPoint = buildElementaryMapPoints( elem1, elem2 );
+                auto mapEdge = buildElementaryMapEdges( mapPoint );
+                auto mapFace = buildElementaryMapFaces( mapPoint );
 
                 //we search this num local
-                uint16_type iloc2=iloc1;
+                uint16_type iloc2 = iloc1;
 
-                if ( iloc1 < nDofPerVertex*numVertices )
-                    iloc2=mapPoint[iloc1];
-                else if (iloc1 < nDofPerVertex*numVertices + nDofPerEdge*numEdges )
-                    for (uint16_type ndpe=0;ndpe<numEdges;++ndpe) {
-                        if ( (iloc1 >= (nDofPerVertex*numVertices + nDofPerEdge*ndpe)) &&
-                             (iloc1 < (nDofPerVertex*numVertices + nDofPerEdge*(ndpe+1))) ) {
-                            auto numLocEdge = boost::get<0>(mapEdge[ndpe]);
-                            auto PermLocEdge = boost::get<1>(mapEdge[ndpe]);
-                            if (PermLocEdge==0)
-                                iloc2 = ( nDofPerVertex*numVertices + numLocEdge*nDofPerEdge +
-                                          (iloc1-nDofPerVertex*numVertices-ndpe*nDofPerEdge) );
+                if ( iloc1 < nDofPerVertex * numVertices )
+                    iloc2 = mapPoint[iloc1];
+                else if ( iloc1 < nDofPerVertex * numVertices + nDofPerEdge * numEdges )
+                    for ( uint16_type ndpe = 0; ndpe < numEdges; ++ndpe )
+                    {
+                        if ( ( iloc1 >= ( nDofPerVertex * numVertices + nDofPerEdge * ndpe ) ) &&
+                             ( iloc1 < ( nDofPerVertex * numVertices + nDofPerEdge * ( ndpe + 1 ) ) ) )
+                        {
+                            auto numLocEdge = boost::get<0>( mapEdge[ndpe] );
+                            auto PermLocEdge = boost::get<1>( mapEdge[ndpe] );
+                            if ( PermLocEdge == 0 )
+                                iloc2 = ( nDofPerVertex * numVertices + numLocEdge * nDofPerEdge +
+                                          ( iloc1 - nDofPerVertex * numVertices - ndpe * nDofPerEdge ) );
                             else
-                                iloc2 = ( nDofPerVertex*numVertices + numLocEdge*nDofPerEdge +
-                                          nDofPerEdge-1-(iloc1-nDofPerVertex*numVertices-ndpe*nDofPerEdge) );
+                                iloc2 = ( nDofPerVertex * numVertices + numLocEdge * nDofPerEdge +
+                                          nDofPerEdge - 1 - ( iloc1 - nDofPerVertex * numVertices - ndpe * nDofPerEdge ) );
                         }
                     }
-                else if (iloc1 < nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*numGeometricFaces )
-                    for (uint16_type ndpf=0;ndpf<numGeometricFaces;++ndpf) {
-                        if ( (iloc1 >= (nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*ndpf )) &&
-                             (iloc1 < (nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*(ndpf+1))) ) {
+                else if ( iloc1 < nDofPerVertex * numVertices + nDofPerEdge * numEdges + nDofPerFace * numGeometricFaces )
+                    for ( uint16_type ndpf = 0; ndpf < numGeometricFaces; ++ndpf )
+                    {
+                        if ( ( iloc1 >= ( nDofPerVertex * numVertices + nDofPerEdge * numEdges + nDofPerFace * ndpf ) ) &&
+                             ( iloc1 < ( nDofPerVertex * numVertices + nDofPerEdge * numEdges + nDofPerFace * ( ndpf + 1 ) ) ) )
+                        {
                             auto numLocFace = mapFace[ndpf];
-                            auto ilocModif = iloc1 - (nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*ndpf);
-                            auto numDofLocInface=convertInternalDofInFace(elem1,ndpf,ilocModif,mapEdge,mapFace);
-                            iloc2 = nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*numLocFace + numDofLocInface;
+                            auto ilocModif = iloc1 - ( nDofPerVertex * numVertices + nDofPerEdge * numEdges + nDofPerFace * ndpf );
+                            auto numDofLocInface = convertInternalDofInFace( elem1, ndpf, ilocModif, mapEdge, mapFace );
+                            iloc2 = nDofPerVertex * numVertices + nDofPerEdge * numEdges + nDofPerFace * numLocFace + numDofLocInface;
                         }
                     }
-                else if (iloc1 < nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*numGeometricFaces + nDofPerVolume*numVolumes)
-                    iloc2=iloc1;// we guess only one dof in volume ( 3d,order=4 only)
+                else if ( iloc1 < nDofPerVertex * numVertices + nDofPerEdge * numEdges + nDofPerFace * numGeometricFaces + nDofPerVolume * numVolumes )
+                    iloc2 = iloc1; // we guess only one dof in volume ( 3d,order=4 only)
 
+                size_type i1 = dof1->localToGlobal( elem1.id(), iloc1, comp ).index();
+                size_type i2 = dof2->localToGlobal( eltIdRelated, iloc2, comp ).index();
 
-                size_type i1 = dof1->localToGlobal( elem1.id(), iloc1 , comp ).index();
-                size_type i2 = dof2->localToGlobal( eltIdRelated , iloc2 , comp ).index();
-
-                M_dofRelMapRefToHo[i1]=i2;
-                M_dofRelMapHoToRef[i2]=i1;
-
+                M_dofRelMapRefToHo[i1] = i2;
+                M_dofRelMapHoToRef[i2] = i1;
             }
         }
 
     } //end it
-
 }
 
 //---------------------------------------------------------------------------------//
 
-template< class SpaceType1,class SpaceType2 >
+template <class SpaceType1, class SpaceType2>
 std::vector<uint16_type>
-DofRelationshipMap<SpaceType1,SpaceType2>::buildElementaryMapPoints(typename mesh1_type::element_type const & elt,
-                                                                    typename mesh2_type::element_type const & eltRef)
+DofRelationshipMap<SpaceType1, SpaceType2>::buildElementaryMapPoints( typename mesh1_type::element_type const& elt,
+                                                                      typename mesh2_type::element_type const& eltRef )
 {
-    std::vector<uint16_type> mapPoint(numVertices);
+    std::vector<uint16_type> mapPoint( numVertices );
 
-    for (uint16_type n1=0;n1<numVertices;++n1)
-        for (uint16_type n2=0;n2<numVertices;++n2)
-            if (isIdenticalPoints(elt.point(n1),eltRef.point(n2))) mapPoint[n1]=n2;
+    for ( uint16_type n1 = 0; n1 < numVertices; ++n1 )
+        for ( uint16_type n2 = 0; n2 < numVertices; ++n2 )
+            if ( isIdenticalPoints( elt.point( n1 ), eltRef.point( n2 ) ) ) mapPoint[n1] = n2;
 
     return mapPoint;
 }
 
 //---------------------------------------------------------------------------------//
 
-template< class SpaceType1,class SpaceType2 >
-std::vector<boost::tuple<uint16_type,uint16_type> >
-DofRelationshipMap<SpaceType1,SpaceType2>::buildElementaryMapEdges(std::vector<uint16_type> const & mapPoint)
+template <class SpaceType1, class SpaceType2>
+std::vector<boost::tuple<uint16_type, uint16_type>>
+DofRelationshipMap<SpaceType1, SpaceType2>::buildElementaryMapEdges( std::vector<uint16_type> const& mapPoint )
 {
 
-    if (nDim==2)
+    if ( nDim == 2 )
     {
-        if (is_simplex) { return mapTrianglePoints2Edge(mapPoint); }
-        else { return mapQuadranglePoints2Edge(mapPoint); }
+        if ( is_simplex )
+        {
+            return mapTrianglePoints2Edge( mapPoint );
+        }
+        else
+        {
+            return mapQuadranglePoints2Edge( mapPoint );
+        }
     }
-    else if (nDim==3)
+    else if ( nDim == 3 )
     {
-        if (is_simplex) { return mapTetraPoints2Edge(mapPoint); }
+        if ( is_simplex )
+        {
+            return mapTetraPoints2Edge( mapPoint );
+        }
     }
-
 }
 
 //---------------------------------------------------------------------------------//
 
-template< class SpaceType1,class SpaceType2 >
+template <class SpaceType1, class SpaceType2>
 std::vector<uint16_type>
-DofRelationshipMap<SpaceType1,SpaceType2>::buildElementaryMapFaces(std::vector<uint16_type> const & mapPoint)
+DofRelationshipMap<SpaceType1, SpaceType2>::buildElementaryMapFaces( std::vector<uint16_type> const& mapPoint )
 {
-    if (nDim==2)
+    if ( nDim == 2 )
     {
-        if (is_simplex) { return mapTrianglePoints2Face(mapPoint); }
-        else { return mapQuadranglePoints2Face(mapPoint); }
+        if ( is_simplex )
+        {
+            return mapTrianglePoints2Face( mapPoint );
+        }
+        else
+        {
+            return mapQuadranglePoints2Face( mapPoint );
+        }
     }
-    else if (nDim==3)
+    else if ( nDim == 3 )
     {
-        if (is_simplex) { return mapTetraPoints2Face(mapPoint); }
+        if ( is_simplex )
+        {
+            return mapTetraPoints2Face( mapPoint );
+        }
     }
 }
 
 //---------------------------------------------------------------------------------//
 
-
-template< class SpaceType1,class SpaceType2 >
+template <class SpaceType1, class SpaceType2>
 uint16_type
-DofRelationshipMap<SpaceType1,SpaceType2>::convertInternalDofInFace(typename mesh1_type::element_type const & elem,
-                                                                    uint16_type nface, uint16_type ilocModif,
-                                                                    std::vector<boost::tuple<uint16_type,uint16_type> > const & mapEdge,
-                                                                    std::vector<uint16_type> const & mapFace)
+DofRelationshipMap<SpaceType1, SpaceType2>::convertInternalDofInFace( typename mesh1_type::element_type const& elem,
+                                                                      uint16_type nface, uint16_type ilocModif,
+                                                                      std::vector<boost::tuple<uint16_type, uint16_type>> const& mapEdge,
+                                                                      std::vector<uint16_type> const& mapFace )
 {
-    auto traitLocal = /*template*/ tableInternalDofFace2Edge<nDofPerFace>(ilocModif);
+    auto traitLocal = /*template*/ tableInternalDofFace2Edge<nDofPerFace>( ilocModif );
 
-    auto traitGlobal = boost::make_tuple( elem.f2e(nface, boost::get<0>(traitLocal)),elem.f2e(nface,boost::get<1>(traitLocal)) );
+    auto traitGlobal = boost::make_tuple( elem.f2e( nface, boost::get<0>( traitLocal ) ), elem.f2e( nface, boost::get<1>( traitLocal ) ) );
 
-    auto traitGlobal2 = boost::make_tuple( boost::get<0>(mapEdge[boost::get<0>(traitGlobal)]),
-                                           boost::get<0>(mapEdge[boost::get<1>(traitGlobal)]) );
+    auto traitGlobal2 = boost::make_tuple( boost::get<0>( mapEdge[boost::get<0>( traitGlobal )] ),
+                                           boost::get<0>( mapEdge[boost::get<1>( traitGlobal )] ) );
 
-    auto traitLocal2 = boost::make_tuple( elem.f2eLoc( mapFace[nface], boost::get<0>(traitGlobal2)),
-                                          elem.f2eLoc( mapFace[nface], boost::get<1>(traitGlobal2)) );
+    auto traitLocal2 = boost::make_tuple( elem.f2eLoc( mapFace[nface], boost::get<0>( traitGlobal2 ) ),
+                                          elem.f2eLoc( mapFace[nface], boost::get<1>( traitGlobal2 ) ) );
 
-    return tableInternalDofEdge2Face<nDofPerFace>(traitLocal2);
+    return tableInternalDofEdge2Face<nDofPerFace>( traitLocal2 );
 }
 
-
-
-template< class SpaceType1,class SpaceType2 >
-std::vector<boost::tuple<uint16_type,uint16_type> >
-DofRelationshipMap<SpaceType1,SpaceType2>::mapTrianglePoints2Edge(std::vector<uint16_type> const & mapPoint)
+template <class SpaceType1, class SpaceType2>
+std::vector<boost::tuple<uint16_type, uint16_type>>
+DofRelationshipMap<SpaceType1, SpaceType2>::mapTrianglePoints2Edge( std::vector<uint16_type> const& mapPoint )
 {
     // 2 pts -> (num glob of edge, permutation)
-    std::map<boost::tuple<uint16_type,uint16_type>,boost::tuple<uint16_type,uint16_type> > mapEdgesBasis;
-    mapEdgesBasis[ boost::make_tuple(0,1) ] = boost::make_tuple(2,0);
-    mapEdgesBasis[ boost::make_tuple(1,0) ] = boost::make_tuple(2,1);
+    std::map<boost::tuple<uint16_type, uint16_type>, boost::tuple<uint16_type, uint16_type>> mapEdgesBasis;
+    mapEdgesBasis[boost::make_tuple( 0, 1 )] = boost::make_tuple( 2, 0 );
+    mapEdgesBasis[boost::make_tuple( 1, 0 )] = boost::make_tuple( 2, 1 );
 
-    mapEdgesBasis[ boost::make_tuple(2,0) ] = boost::make_tuple(1,0);
-    mapEdgesBasis[ boost::make_tuple(0,2) ] = boost::make_tuple(1,1);
+    mapEdgesBasis[boost::make_tuple( 2, 0 )] = boost::make_tuple( 1, 0 );
+    mapEdgesBasis[boost::make_tuple( 0, 2 )] = boost::make_tuple( 1, 1 );
 
-    mapEdgesBasis[ boost::make_tuple(1,2) ] = boost::make_tuple(0,0);
-    mapEdgesBasis[ boost::make_tuple(2,1) ] = boost::make_tuple(0,1);
-
+    mapEdgesBasis[boost::make_tuple( 1, 2 )] = boost::make_tuple( 0, 0 );
+    mapEdgesBasis[boost::make_tuple( 2, 1 )] = boost::make_tuple( 0, 1 );
 
     //uint le num, uint permutation : 0 or 1
-    std::vector<boost::tuple<uint16_type,uint16_type> > mapEdges(3);
-    mapEdges[0]= mapEdgesBasis[ boost::make_tuple( mapPoint[1],mapPoint[2]) ];
-    mapEdges[1]= mapEdgesBasis[ boost::make_tuple( mapPoint[2],mapPoint[0]) ];
-    mapEdges[2]= mapEdgesBasis[ boost::make_tuple( mapPoint[0],mapPoint[1]) ];
+    std::vector<boost::tuple<uint16_type, uint16_type>> mapEdges( 3 );
+    mapEdges[0] = mapEdgesBasis[boost::make_tuple( mapPoint[1], mapPoint[2] )];
+    mapEdges[1] = mapEdgesBasis[boost::make_tuple( mapPoint[2], mapPoint[0] )];
+    mapEdges[2] = mapEdgesBasis[boost::make_tuple( mapPoint[0], mapPoint[1] )];
 
     return mapEdges;
 }
 
-template< class SpaceType1,class SpaceType2 >
-std::vector<boost::tuple<uint16_type,uint16_type> >
-DofRelationshipMap<SpaceType1,SpaceType2>::mapQuadranglePoints2Edge(std::vector<uint16_type> const & mapPoint)
+template <class SpaceType1, class SpaceType2>
+std::vector<boost::tuple<uint16_type, uint16_type>>
+DofRelationshipMap<SpaceType1, SpaceType2>::mapQuadranglePoints2Edge( std::vector<uint16_type> const& mapPoint )
 {
     // 2 pts -> (num glob of edge, permutation)
-    std::map<boost::tuple<uint16_type,uint16_type>,boost::tuple<uint16_type,uint16_type> > mapEdgesBasis;
-    mapEdgesBasis[ boost::make_tuple(0,1) ] = boost::make_tuple(0,0);
-    mapEdgesBasis[ boost::make_tuple(1,0) ] = boost::make_tuple(0,1);
+    std::map<boost::tuple<uint16_type, uint16_type>, boost::tuple<uint16_type, uint16_type>> mapEdgesBasis;
+    mapEdgesBasis[boost::make_tuple( 0, 1 )] = boost::make_tuple( 0, 0 );
+    mapEdgesBasis[boost::make_tuple( 1, 0 )] = boost::make_tuple( 0, 1 );
 
-    mapEdgesBasis[ boost::make_tuple(1,2) ] = boost::make_tuple(1,0);
-    mapEdgesBasis[ boost::make_tuple(2,1) ] = boost::make_tuple(1,1);
+    mapEdgesBasis[boost::make_tuple( 1, 2 )] = boost::make_tuple( 1, 0 );
+    mapEdgesBasis[boost::make_tuple( 2, 1 )] = boost::make_tuple( 1, 1 );
 
-    mapEdgesBasis[ boost::make_tuple(2,3) ] = boost::make_tuple(2,0);
-    mapEdgesBasis[ boost::make_tuple(3,2) ] = boost::make_tuple(2,1);
+    mapEdgesBasis[boost::make_tuple( 2, 3 )] = boost::make_tuple( 2, 0 );
+    mapEdgesBasis[boost::make_tuple( 3, 2 )] = boost::make_tuple( 2, 1 );
 
-    mapEdgesBasis[ boost::make_tuple(3,0) ] = boost::make_tuple(3,0);
-    mapEdgesBasis[ boost::make_tuple(0,3) ] = boost::make_tuple(3,1);
+    mapEdgesBasis[boost::make_tuple( 3, 0 )] = boost::make_tuple( 3, 0 );
+    mapEdgesBasis[boost::make_tuple( 0, 3 )] = boost::make_tuple( 3, 1 );
 
     //uint le num, uint permutation : 0 or 1
-    std::vector<boost::tuple<uint16_type,uint16_type> > mapEdges(4);
-    mapEdges[0]= mapEdgesBasis[ boost::make_tuple( mapPoint[0],mapPoint[1]) ];
-    mapEdges[1]= mapEdgesBasis[ boost::make_tuple( mapPoint[1],mapPoint[2]) ];
-    mapEdges[2]= mapEdgesBasis[ boost::make_tuple( mapPoint[2],mapPoint[3]) ];
-    mapEdges[3]= mapEdgesBasis[ boost::make_tuple( mapPoint[3],mapPoint[0]) ];
+    std::vector<boost::tuple<uint16_type, uint16_type>> mapEdges( 4 );
+    mapEdges[0] = mapEdgesBasis[boost::make_tuple( mapPoint[0], mapPoint[1] )];
+    mapEdges[1] = mapEdgesBasis[boost::make_tuple( mapPoint[1], mapPoint[2] )];
+    mapEdges[2] = mapEdgesBasis[boost::make_tuple( mapPoint[2], mapPoint[3] )];
+    mapEdges[3] = mapEdgesBasis[boost::make_tuple( mapPoint[3], mapPoint[0] )];
 
     return mapEdges;
 }
 
-
-template< class SpaceType1,class SpaceType2 >
-std::vector<boost::tuple<uint16_type,uint16_type> >
-DofRelationshipMap<SpaceType1,SpaceType2>::mapTetraPoints2Edge(std::vector<uint16_type> const & mapPoint)
+template <class SpaceType1, class SpaceType2>
+std::vector<boost::tuple<uint16_type, uint16_type>>
+DofRelationshipMap<SpaceType1, SpaceType2>::mapTetraPoints2Edge( std::vector<uint16_type> const& mapPoint )
 {
     // 2 pts -> (num glob of edge, permutation)
-    std::map<boost::tuple<uint16_type,uint16_type>,boost::tuple<uint16_type,uint16_type> > mapEdgesBasis;
-    mapEdgesBasis[ boost::make_tuple(0,1) ] = boost::make_tuple(2,0);
-    mapEdgesBasis[ boost::make_tuple(0,2) ] = boost::make_tuple(1,1);
-    mapEdgesBasis[ boost::make_tuple(0,3) ] = boost::make_tuple(3,0);
+    std::map<boost::tuple<uint16_type, uint16_type>, boost::tuple<uint16_type, uint16_type>> mapEdgesBasis;
+    mapEdgesBasis[boost::make_tuple( 0, 1 )] = boost::make_tuple( 2, 0 );
+    mapEdgesBasis[boost::make_tuple( 0, 2 )] = boost::make_tuple( 1, 1 );
+    mapEdgesBasis[boost::make_tuple( 0, 3 )] = boost::make_tuple( 3, 0 );
 
-    mapEdgesBasis[ boost::make_tuple(1,0) ] = boost::make_tuple(2,1);
-    mapEdgesBasis[ boost::make_tuple(1,2) ] = boost::make_tuple(0,0);
-    mapEdgesBasis[ boost::make_tuple(1,3) ] = boost::make_tuple(4,0);
+    mapEdgesBasis[boost::make_tuple( 1, 0 )] = boost::make_tuple( 2, 1 );
+    mapEdgesBasis[boost::make_tuple( 1, 2 )] = boost::make_tuple( 0, 0 );
+    mapEdgesBasis[boost::make_tuple( 1, 3 )] = boost::make_tuple( 4, 0 );
 
-    mapEdgesBasis[ boost::make_tuple(2,0) ] = boost::make_tuple(1,0);
-    mapEdgesBasis[ boost::make_tuple(2,1) ] = boost::make_tuple(0,1);
-    mapEdgesBasis[ boost::make_tuple(2,3) ] = boost::make_tuple(5,0);
+    mapEdgesBasis[boost::make_tuple( 2, 0 )] = boost::make_tuple( 1, 0 );
+    mapEdgesBasis[boost::make_tuple( 2, 1 )] = boost::make_tuple( 0, 1 );
+    mapEdgesBasis[boost::make_tuple( 2, 3 )] = boost::make_tuple( 5, 0 );
 
-    mapEdgesBasis[ boost::make_tuple(3,0) ] = boost::make_tuple(3,1);
-    mapEdgesBasis[ boost::make_tuple(3,1) ] = boost::make_tuple(4,1);
-    mapEdgesBasis[ boost::make_tuple(3,2) ] = boost::make_tuple(5,1);
-
+    mapEdgesBasis[boost::make_tuple( 3, 0 )] = boost::make_tuple( 3, 1 );
+    mapEdgesBasis[boost::make_tuple( 3, 1 )] = boost::make_tuple( 4, 1 );
+    mapEdgesBasis[boost::make_tuple( 3, 2 )] = boost::make_tuple( 5, 1 );
 
     //uint le num, uint permutation : 0 or 1
-    std::vector<boost::tuple<uint16_type,uint16_type> > mapEdges(6);
-    mapEdges[0]= mapEdgesBasis[ boost::make_tuple( mapPoint[1],mapPoint[2]) ];
-    mapEdges[1]= mapEdgesBasis[ boost::make_tuple( mapPoint[2],mapPoint[0]) ];
-    mapEdges[2]= mapEdgesBasis[ boost::make_tuple( mapPoint[0],mapPoint[1]) ];
-    mapEdges[3]= mapEdgesBasis[ boost::make_tuple( mapPoint[0],mapPoint[3]) ];
-    mapEdges[4]= mapEdgesBasis[ boost::make_tuple( mapPoint[1],mapPoint[3]) ];
-    mapEdges[5]= mapEdgesBasis[ boost::make_tuple( mapPoint[2],mapPoint[3]) ];
+    std::vector<boost::tuple<uint16_type, uint16_type>> mapEdges( 6 );
+    mapEdges[0] = mapEdgesBasis[boost::make_tuple( mapPoint[1], mapPoint[2] )];
+    mapEdges[1] = mapEdgesBasis[boost::make_tuple( mapPoint[2], mapPoint[0] )];
+    mapEdges[2] = mapEdgesBasis[boost::make_tuple( mapPoint[0], mapPoint[1] )];
+    mapEdges[3] = mapEdgesBasis[boost::make_tuple( mapPoint[0], mapPoint[3] )];
+    mapEdges[4] = mapEdgesBasis[boost::make_tuple( mapPoint[1], mapPoint[3] )];
+    mapEdges[5] = mapEdgesBasis[boost::make_tuple( mapPoint[2], mapPoint[3] )];
 
     return mapEdges;
 }
 
 //---------------------------------------------------------------------------------//
 
-template< class SpaceType1,class SpaceType2 >
+template <class SpaceType1, class SpaceType2>
 std::vector<uint16_type>
-DofRelationshipMap<SpaceType1,SpaceType2>::mapTrianglePoints2Face(std::vector<uint16_type> const & mapPoint)
+DofRelationshipMap<SpaceType1, SpaceType2>::mapTrianglePoints2Face( std::vector<uint16_type> const& mapPoint )
 {
-    std::vector<uint16_type> mapFaces(1);// 1 faces
-    mapFaces[0]= 0; // trival : only 1 face
+    std::vector<uint16_type> mapFaces( 1 ); // 1 faces
+    mapFaces[0] = 0;                        // trival : only 1 face
 
     return mapFaces;
 }
 
-template< class SpaceType1,class SpaceType2 >
+template <class SpaceType1, class SpaceType2>
 std::vector<uint16_type>
-DofRelationshipMap<SpaceType1,SpaceType2>::mapQuadranglePoints2Face(std::vector<uint16_type> const & mapPoint)
+DofRelationshipMap<SpaceType1, SpaceType2>::mapQuadranglePoints2Face( std::vector<uint16_type> const& mapPoint )
 {
-    std::vector<uint16_type> mapFaces(1);// 1 faces
-    mapFaces[0]= 0; // trival : only 1 face
+    std::vector<uint16_type> mapFaces( 1 ); // 1 faces
+    mapFaces[0] = 0;                        // trival : only 1 face
 
     return mapFaces;
 }
 
-template< class SpaceType1,class SpaceType2 >
+template <class SpaceType1, class SpaceType2>
 std::vector<uint16_type>
-DofRelationshipMap<SpaceType1,SpaceType2>::mapTetraPoints2Face(std::vector<uint16_type> const & mapPoint)
+DofRelationshipMap<SpaceType1, SpaceType2>::mapTetraPoints2Face( std::vector<uint16_type> const& mapPoint )
 {
     // 3 pts -> (num glob of face )
-    std::map<boost::tuple<uint16_type,uint16_type,uint16_type>,uint16_type> mapFacesBasis;
-    mapFacesBasis[ boost::make_tuple(1,2,3) ] = 0;
-    mapFacesBasis[ boost::make_tuple(1,3,2) ] = 0;
-    mapFacesBasis[ boost::make_tuple(2,3,1) ] = 0;
-    mapFacesBasis[ boost::make_tuple(2,1,3) ] = 0;
-    mapFacesBasis[ boost::make_tuple(3,1,2) ] = 0;
-    mapFacesBasis[ boost::make_tuple(3,2,1) ] = 0;
+    std::map<boost::tuple<uint16_type, uint16_type, uint16_type>, uint16_type> mapFacesBasis;
+    mapFacesBasis[boost::make_tuple( 1, 2, 3 )] = 0;
+    mapFacesBasis[boost::make_tuple( 1, 3, 2 )] = 0;
+    mapFacesBasis[boost::make_tuple( 2, 3, 1 )] = 0;
+    mapFacesBasis[boost::make_tuple( 2, 1, 3 )] = 0;
+    mapFacesBasis[boost::make_tuple( 3, 1, 2 )] = 0;
+    mapFacesBasis[boost::make_tuple( 3, 2, 1 )] = 0;
 
-    mapFacesBasis[ boost::make_tuple(0,3,2) ] = 1;
-    mapFacesBasis[ boost::make_tuple(0,2,3) ] = 1;
-    mapFacesBasis[ boost::make_tuple(2,0,3) ] = 1;
-    mapFacesBasis[ boost::make_tuple(2,3,0) ] = 1;
-    mapFacesBasis[ boost::make_tuple(3,2,0) ] = 1;
-    mapFacesBasis[ boost::make_tuple(3,0,2) ] = 1;
+    mapFacesBasis[boost::make_tuple( 0, 3, 2 )] = 1;
+    mapFacesBasis[boost::make_tuple( 0, 2, 3 )] = 1;
+    mapFacesBasis[boost::make_tuple( 2, 0, 3 )] = 1;
+    mapFacesBasis[boost::make_tuple( 2, 3, 0 )] = 1;
+    mapFacesBasis[boost::make_tuple( 3, 2, 0 )] = 1;
+    mapFacesBasis[boost::make_tuple( 3, 0, 2 )] = 1;
 
-    mapFacesBasis[ boost::make_tuple(0,1,3) ] = 2;
-    mapFacesBasis[ boost::make_tuple(0,3,1) ] = 2;
-    mapFacesBasis[ boost::make_tuple(1,3,0) ] = 2;
-    mapFacesBasis[ boost::make_tuple(1,0,3) ] = 2;
-    mapFacesBasis[ boost::make_tuple(3,0,1) ] = 2;
-    mapFacesBasis[ boost::make_tuple(3,1,0) ] = 2;
+    mapFacesBasis[boost::make_tuple( 0, 1, 3 )] = 2;
+    mapFacesBasis[boost::make_tuple( 0, 3, 1 )] = 2;
+    mapFacesBasis[boost::make_tuple( 1, 3, 0 )] = 2;
+    mapFacesBasis[boost::make_tuple( 1, 0, 3 )] = 2;
+    mapFacesBasis[boost::make_tuple( 3, 0, 1 )] = 2;
+    mapFacesBasis[boost::make_tuple( 3, 1, 0 )] = 2;
 
-    mapFacesBasis[ boost::make_tuple(0,1,2) ] = 3;
-    mapFacesBasis[ boost::make_tuple(0,2,1) ] = 3;
-    mapFacesBasis[ boost::make_tuple(1,2,0) ] = 3;
-    mapFacesBasis[ boost::make_tuple(1,0,2) ] = 3;
-    mapFacesBasis[ boost::make_tuple(2,0,1) ] = 3;
-    mapFacesBasis[ boost::make_tuple(2,1,0) ] = 3;
+    mapFacesBasis[boost::make_tuple( 0, 1, 2 )] = 3;
+    mapFacesBasis[boost::make_tuple( 0, 2, 1 )] = 3;
+    mapFacesBasis[boost::make_tuple( 1, 2, 0 )] = 3;
+    mapFacesBasis[boost::make_tuple( 1, 0, 2 )] = 3;
+    mapFacesBasis[boost::make_tuple( 2, 0, 1 )] = 3;
+    mapFacesBasis[boost::make_tuple( 2, 1, 0 )] = 3;
 
-
-    std::vector<uint16_type> mapFaces(4);// 4 faces
-    mapFaces[0]= mapFacesBasis[ boost::make_tuple( mapPoint[1],mapPoint[2],mapPoint[3]) ];
-    mapFaces[1]= mapFacesBasis[ boost::make_tuple( mapPoint[0],mapPoint[2],mapPoint[3]) ];
-    mapFaces[2]= mapFacesBasis[ boost::make_tuple( mapPoint[0],mapPoint[1],mapPoint[3]) ];
-    mapFaces[3]= mapFacesBasis[ boost::make_tuple( mapPoint[0],mapPoint[1],mapPoint[2]) ];
+    std::vector<uint16_type> mapFaces( 4 ); // 4 faces
+    mapFaces[0] = mapFacesBasis[boost::make_tuple( mapPoint[1], mapPoint[2], mapPoint[3] )];
+    mapFaces[1] = mapFacesBasis[boost::make_tuple( mapPoint[0], mapPoint[2], mapPoint[3] )];
+    mapFaces[2] = mapFacesBasis[boost::make_tuple( mapPoint[0], mapPoint[1], mapPoint[3] )];
+    mapFaces[3] = mapFacesBasis[boost::make_tuple( mapPoint[0], mapPoint[1], mapPoint[2] )];
 
     return mapFaces;
 }
@@ -606,34 +608,32 @@ DofRelationshipMap<SpaceType1,SpaceType2>::mapTetraPoints2Face(std::vector<uint1
 //---------------------------------------------------------------------------------//
 //---------------------------------------------------------------------------------//
 
-template< class SpaceType1,class SpaceType2 >
-template<uint16_type nDofInFace>
-boost::tuple<uint16_type,uint16_type>
-DofRelationshipMap<SpaceType1,SpaceType2>::tableInternalDofFace2Edge(uint16_type dofLoc)
+template <class SpaceType1, class SpaceType2>
+template <uint16_type nDofInFace>
+boost::tuple<uint16_type, uint16_type>
+DofRelationshipMap<SpaceType1, SpaceType2>::tableInternalDofFace2Edge( uint16_type dofLoc )
 {
-    if (nDofInFace==1)
-        return tableInternalDofFace2Edge1(dofLoc);
-    else if (nDofInFace==3)
-        return tableInternalDofFace2Edge3(dofLoc);
-    else if (nDofInFace==6)
-        return tableInternalDofFace2Edge6(dofLoc);
+    if ( nDofInFace == 1 )
+        return tableInternalDofFace2Edge1( dofLoc );
+    else if ( nDofInFace == 3 )
+        return tableInternalDofFace2Edge3( dofLoc );
+    else if ( nDofInFace == 6 )
+        return tableInternalDofFace2Edge6( dofLoc );
     else // bad case
-        return boost::make_tuple(0,0);
-
+        return boost::make_tuple( 0, 0 );
 }
 
-
-template< class SpaceType1,class SpaceType2 >
-template<uint16_type nDofInFace>
+template <class SpaceType1, class SpaceType2>
+template <uint16_type nDofInFace>
 uint16_type
-DofRelationshipMap<SpaceType1,SpaceType2>::tableInternalDofEdge2Face(boost::tuple<uint16_type,uint16_type> traitsEdgesLoc)
+DofRelationshipMap<SpaceType1, SpaceType2>::tableInternalDofEdge2Face( boost::tuple<uint16_type, uint16_type> traitsEdgesLoc )
 {
-    if (nDofInFace==1)
-        return tableInternalDofEdge2Face1(traitsEdgesLoc);
-    else if (nDofInFace==3)
-        return tableInternalDofEdge2Face3(traitsEdgesLoc);
-    else if (nDofInFace==6)
-        return tableInternalDofEdge2Face6(traitsEdgesLoc);
+    if ( nDofInFace == 1 )
+        return tableInternalDofEdge2Face1( traitsEdgesLoc );
+    else if ( nDofInFace == 3 )
+        return tableInternalDofEdge2Face3( traitsEdgesLoc );
+    else if ( nDofInFace == 6 )
+        return tableInternalDofEdge2Face6( traitsEdgesLoc );
     else // bad case
         return 0;
 }
@@ -641,13 +641,13 @@ DofRelationshipMap<SpaceType1,SpaceType2>::tableInternalDofEdge2Face(boost::tupl
 //---------------------------------------------------------------------------------//
 
 //simplex or hypercube
-template< class SpaceType1,class SpaceType2 >
-boost::tuple<uint16_type,uint16_type>
-DofRelationshipMap<SpaceType1,SpaceType2>::tableInternalDofFace2Edge1(uint16_type dofLoc)
+template <class SpaceType1, class SpaceType2>
+boost::tuple<uint16_type, uint16_type>
+DofRelationshipMap<SpaceType1, SpaceType2>::tableInternalDofFace2Edge1( uint16_type dofLoc )
 {
     //valabale pour 3 dof in the face( thetra bien sur)
-    std::vector<boost::tuple<uint16_type,uint16_type> > table(1);
-    table[0] = boost::make_tuple(0,0);
+    std::vector<boost::tuple<uint16_type, uint16_type>> table( 1 );
+    table[0] = boost::make_tuple( 0, 0 );
 
     return table[dofLoc];
 }
@@ -655,13 +655,13 @@ DofRelationshipMap<SpaceType1,SpaceType2>::tableInternalDofFace2Edge1(uint16_typ
 //---------------------------------------------------------------------------------//
 
 //simplex or hypercube
-template< class SpaceType1,class SpaceType2 >
+template <class SpaceType1, class SpaceType2>
 uint16_type
-DofRelationshipMap<SpaceType1,SpaceType2>::tableInternalDofEdge2Face1(boost::tuple<uint16_type,uint16_type> traitsEdgesLoc)
+DofRelationshipMap<SpaceType1, SpaceType2>::tableInternalDofEdge2Face1( boost::tuple<uint16_type, uint16_type> traitsEdgesLoc )
 {
     //valabale pour 1 dof in the face( thetra bien sur)
-    std::map<boost::tuple<uint16_type,uint16_type>,uint16_type > table;
-    table[boost::make_tuple(0,0)]=0;
+    std::map<boost::tuple<uint16_type, uint16_type>, uint16_type> table;
+    table[boost::make_tuple( 0, 0 )] = 0;
 
     return table[traitsEdgesLoc];
 }
@@ -669,15 +669,15 @@ DofRelationshipMap<SpaceType1,SpaceType2>::tableInternalDofEdge2Face1(boost::tup
 //---------------------------------------------------------------------------------//
 
 // simplex
-template< class SpaceType1,class SpaceType2 >
-boost::tuple<uint16_type,uint16_type>
-DofRelationshipMap<SpaceType1,SpaceType2>::tableInternalDofFace2Edge3(uint16_type dofLoc)
+template <class SpaceType1, class SpaceType2>
+boost::tuple<uint16_type, uint16_type>
+DofRelationshipMap<SpaceType1, SpaceType2>::tableInternalDofFace2Edge3( uint16_type dofLoc )
 {
     //valabale pour 3 dof in the face( thetra bien sur)
-    std::vector<boost::tuple<uint16_type,uint16_type> > table(3);
-    table[0] = boost::make_tuple(1,2);
-    table[1] = boost::make_tuple(0,2);
-    table[2] = boost::make_tuple(0,1);
+    std::vector<boost::tuple<uint16_type, uint16_type>> table( 3 );
+    table[0] = boost::make_tuple( 1, 2 );
+    table[1] = boost::make_tuple( 0, 2 );
+    table[2] = boost::make_tuple( 0, 1 );
 
     return table[dofLoc];
 }
@@ -685,72 +685,68 @@ DofRelationshipMap<SpaceType1,SpaceType2>::tableInternalDofFace2Edge3(uint16_typ
 //---------------------------------------------------------------------------------//
 
 // simplex
-template< class SpaceType1,class SpaceType2 >
+template <class SpaceType1, class SpaceType2>
 uint16_type
-DofRelationshipMap<SpaceType1,SpaceType2>::tableInternalDofEdge2Face3(boost::tuple<uint16_type,uint16_type> traitsEdgesLoc)
+DofRelationshipMap<SpaceType1, SpaceType2>::tableInternalDofEdge2Face3( boost::tuple<uint16_type, uint16_type> traitsEdgesLoc )
 {
     //valabale pour 3 dof in the face( thetra bien sur)
-    std::map<boost::tuple<uint16_type,uint16_type>,uint16_type > table;
-    table[boost::make_tuple(1,2)]=0;
-    table[boost::make_tuple(2,1)]=0;
-    table[boost::make_tuple(0,2)]=1;
-    table[boost::make_tuple(2,0)]=1;
-    table[boost::make_tuple(0,1)]=2;
-    table[boost::make_tuple(1,0)]=2;
+    std::map<boost::tuple<uint16_type, uint16_type>, uint16_type> table;
+    table[boost::make_tuple( 1, 2 )] = 0;
+    table[boost::make_tuple( 2, 1 )] = 0;
+    table[boost::make_tuple( 0, 2 )] = 1;
+    table[boost::make_tuple( 2, 0 )] = 1;
+    table[boost::make_tuple( 0, 1 )] = 2;
+    table[boost::make_tuple( 1, 0 )] = 2;
 
     return table[traitsEdgesLoc];
 }
 
-
 // simplex
-template< class SpaceType1,class SpaceType2 >
-boost::tuple<uint16_type,uint16_type>
-DofRelationshipMap<SpaceType1,SpaceType2>::tableInternalDofFace2Edge6(uint16_type dofLoc)
+template <class SpaceType1, class SpaceType2>
+boost::tuple<uint16_type, uint16_type>
+DofRelationshipMap<SpaceType1, SpaceType2>::tableInternalDofFace2Edge6( uint16_type dofLoc )
 {
     //valabale pour 3 dof in the face( thetra bien sur)
-    std::vector<boost::tuple<uint16_type,uint16_type> > table(6);
-    table[0] = boost::make_tuple(1,2);
-    table[1] = boost::make_tuple(2,2);
-    table[2] = boost::make_tuple(2,0);
-    table[3] = boost::make_tuple(1,1);
-    table[4] = boost::make_tuple(0,0);
-    table[5] = boost::make_tuple(0,1);
+    std::vector<boost::tuple<uint16_type, uint16_type>> table( 6 );
+    table[0] = boost::make_tuple( 1, 2 );
+    table[1] = boost::make_tuple( 2, 2 );
+    table[2] = boost::make_tuple( 2, 0 );
+    table[3] = boost::make_tuple( 1, 1 );
+    table[4] = boost::make_tuple( 0, 0 );
+    table[5] = boost::make_tuple( 0, 1 );
 
     return table[dofLoc];
 }
 
 // simplex
-template< class SpaceType1,class SpaceType2 >
+template <class SpaceType1, class SpaceType2>
 uint16_type
-DofRelationshipMap<SpaceType1,SpaceType2>::tableInternalDofEdge2Face6(boost::tuple<uint16_type,uint16_type> traitsEdgesLoc)
+DofRelationshipMap<SpaceType1, SpaceType2>::tableInternalDofEdge2Face6( boost::tuple<uint16_type, uint16_type> traitsEdgesLoc )
 {
     //valabale pour 3 dof in the face( thetra bien sur)
-    std::map<boost::tuple<uint16_type,uint16_type>,uint16_type > table;
-    table[boost::make_tuple(1,2)]=0;
-    table[boost::make_tuple(2,1)]=0;
-    table[boost::make_tuple(2,2)]=1;
-    table[boost::make_tuple(2,0)]=2;
-    table[boost::make_tuple(0,2)]=2;
-    table[boost::make_tuple(1,1)]=3;
-    table[boost::make_tuple(0,0)]=4;
-    table[boost::make_tuple(0,1)]=5;
-    table[boost::make_tuple(1,0)]=5;
+    std::map<boost::tuple<uint16_type, uint16_type>, uint16_type> table;
+    table[boost::make_tuple( 1, 2 )] = 0;
+    table[boost::make_tuple( 2, 1 )] = 0;
+    table[boost::make_tuple( 2, 2 )] = 1;
+    table[boost::make_tuple( 2, 0 )] = 2;
+    table[boost::make_tuple( 0, 2 )] = 2;
+    table[boost::make_tuple( 1, 1 )] = 3;
+    table[boost::make_tuple( 0, 0 )] = 4;
+    table[boost::make_tuple( 0, 1 )] = 5;
+    table[boost::make_tuple( 1, 0 )] = 5;
 
     return table[traitsEdgesLoc];
 }
 
-
-
-template< class SpaceType1,class SpaceType2 >
-boost::shared_ptr< DofRelationshipMap<SpaceType1,SpaceType2> >
+template <class SpaceType1, class SpaceType2>
+boost::shared_ptr<DofRelationshipMap<SpaceType1, SpaceType2>>
 dofRelationshipMap( boost::shared_ptr<SpaceType1> Xh1, boost::shared_ptr<SpaceType2> Xh2 )
 {
-    boost::shared_ptr< DofRelationshipMap<SpaceType1,SpaceType2> > drm( new DofRelationshipMap<SpaceType1,SpaceType2>(Xh1,Xh2) );
+    boost::shared_ptr<DofRelationshipMap<SpaceType1, SpaceType2>> drm( new DofRelationshipMap<SpaceType1, SpaceType2>( Xh1, Xh2 ) );
     return drm;
 }
 
 } // namespace FeelModels
 } // namespace Feel
-
 
 #endif // FEELPP_MODELS_DOFRELATIONSHIPMAP_H

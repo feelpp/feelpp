@@ -21,207 +21,198 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
 
 namespace Feel
 {
 
 BoundaryConditions::BoundaryConditions( WorldComm const& world )
-    :
-    BoundaryConditions( "" )
-{}
+    : BoundaryConditions( "" )
+{
+}
 
 BoundaryConditions::BoundaryConditions( std::string const& p, WorldComm const& world )
-    :
-    super(),
-    M_worldComm( world ),
-    M_prefix( p )
+    : super(),
+      M_worldComm( world ),
+      M_prefix( p )
 {
-    fs::path bc( Environment::expand( soption("bc-file") ) );
-    
+    fs::path bc( Environment::expand( soption( "bc-file" ) ) );
+
     if ( fs::exists( bc ) )
     {
-        LOG(INFO) << "Loading Boundary Condition file " << bc.string();
+        LOG( INFO ) << "Loading Boundary Condition file " << bc.string();
         load( bc.string() );
     }
     else
     {
-        LOG(WARNING) << "Boundary condition file " << bc.string() << " does not exist";
+        LOG( WARNING ) << "Boundary condition file " << bc.string() << " does not exist";
     }
 }
 
-void
-BoundaryConditions::load(const std::string &filename)
+void BoundaryConditions::load( const std::string& filename )
 {
     // Create an empty property tree object
     using boost::property_tree::ptree;
 
-    read_json(filename, M_pt);
+    read_json( filename, M_pt );
     setup();
 }
-void
-BoundaryConditions::setPTree( pt::ptree const& p )
+void BoundaryConditions::setPTree( pt::ptree const& p )
 {
     M_pt = p;
     setup();
 }
 
-
-void
-BoundaryConditions::setup()
+void BoundaryConditions::setup()
 {
-    for( auto const& v : M_pt )
+    for ( auto const& v : M_pt )
     {
-        
+
         //std::cout << "v.first:" << v.first  << "\n";
         std::string t = v.first; // field name
-        for( auto const& f : v.second )
+        for ( auto const& f : v.second )
         {
-            std::string k = t+"."+f.first; // condition type
-            for( auto const& c : f.second ) // condition
+            std::string k = t + "." + f.first; // condition type
+            for ( auto const& c : f.second )   // condition
             {
                 try
                 {
-                    auto e= c.second.get<std::string>("expr");
-                    LOG(INFO) << "adding boundary " << c.first << " with expression " << e << " to " << k;
-                    this->operator[](t)[f.first].push_back( std::make_tuple( c.first, e, std::string("") ) );
+                    auto e = c.second.get<std::string>( "expr" );
+                    LOG( INFO ) << "adding boundary " << c.first << " with expression " << e << " to " << k;
+                    this->operator[]( t )[f.first].push_back( std::make_tuple( c.first, e, std::string( "" ) ) );
                 }
-                catch( ... )
+                catch ( ... )
                 {
                     try
                     {
-                        auto e1= c.second.get<std::string>("expr1");
-                        auto e2= c.second.get<std::string>("expr2");
-                        LOG(INFO) << "adding boundary " << c.first << " with expressions " << e1 << " and " << e2 << " to " << k;
-                        this->operator[](t)[f.first].push_back( std::make_tuple( c.first, e1, e2 ) );
+                        auto e1 = c.second.get<std::string>( "expr1" );
+                        auto e2 = c.second.get<std::string>( "expr2" );
+                        LOG( INFO ) << "adding boundary " << c.first << " with expressions " << e1 << " and " << e2 << " to " << k;
+                        this->operator[]( t )[f.first].push_back( std::make_tuple( c.first, e1, e2 ) );
                     }
-                    catch( ... )
+                    catch ( ... )
                     {
-                        LOG(INFO) << "adding boundary " << c.first << " without expression" << " to " << k;
-                        this->operator[]( t )[f.first].push_back( std::make_tuple( c.first, std::string(""), std::string("") ) );
+                        LOG( INFO ) << "adding boundary " << c.first << " without expression"
+                                    << " to " << k;
+                        this->operator[]( t )[f.first].push_back( std::make_tuple( c.first, std::string( "" ), std::string( "" ) ) );
                     }
                 }
             }
         }
-        
     }
     if ( Environment::isMasterRank() )
     {
-        for( auto const& s : *this )
+        for ( auto const& s : *this )
         {
-            LOG(INFO) << "field " << s.first << "\n";
-            for( auto const& t : s.second )
+            LOG( INFO ) << "field " << s.first << "\n";
+            for ( auto const& t : s.second )
             {
-                LOG(INFO) << " - type " << t.first << "\n";
-                for( auto const& c : t.second )
+                LOG( INFO ) << " - type " << t.first << "\n";
+                for ( auto const& c : t.second )
                 {
                     if ( c.hasExpression2() )
-                        LOG(INFO) << "  . boundary  " << c.marker() << " expr : " << c.expression1() << " expr2:" << c.expression2() << "\n";
+                        LOG( INFO ) << "  . boundary  " << c.marker() << " expr : " << c.expression1() << " expr2:" << c.expression2() << "\n";
                     else
-                        LOG(INFO) << "  . boundary  " << c.marker() << " expr : " << c.expression() << "\n";
+                        LOG( INFO ) << "  . boundary  " << c.marker() << " expr : " << c.expression() << "\n";
                 }
-                
             }
         }
     }
 }
-    
 
-void
-BoundaryConditions::saveMD(std::ostream &os)
+void BoundaryConditions::saveMD( std::ostream& os )
 {
-  os << "### Boundary Conditions\n";
-  os << "|Name|Type|Expressions|\n";
-  os << "|---|---|---|\n";
-  for (auto it = this->begin(); it!= this->end(); it++)
-  {
-    os << "|**" << it->first << "**"; // Var name
-    for(auto iit = it->second.begin(); iit !=  it->second.end(); iit++)
+    os << "### Boundary Conditions\n";
+    os << "|Name|Type|Expressions|\n";
+    os << "|---|---|---|\n";
+    for ( auto it = this->begin(); it != this->end(); it++ )
     {
-     os << "|" << iit->first; // Type
-     os << "|<ul>";
-     for(auto iiit = iit->second.begin(); iiit !=  iit->second.end(); iiit++)
-     {
-       os << "<li>**" << iiit->marker()      << "**</li>";
-       os << "<li>" << iiit->expression()  << "</li>";
-       os << "<li>" << iiit->expression1() << "</li>";
-       os << "<li>" << iiit->expression2() << "</li>";
-     }
+        os << "|**" << it->first << "**"; // Var name
+        for ( auto iit = it->second.begin(); iit != it->second.end(); iit++ )
+        {
+            os << "|" << iit->first; // Type
+            os << "|<ul>";
+            for ( auto iiit = iit->second.begin(); iiit != iit->second.end(); iiit++ )
+            {
+                os << "<li>**" << iiit->marker() << "**</li>";
+                os << "<li>" << iiit->expression() << "</li>";
+                os << "<li>" << iiit->expression1() << "</li>";
+                os << "<li>" << iiit->expression2() << "</li>";
+            }
+        }
+        os << "</ul>|\n";
     }
-    os << "</ul>|\n";
-  }
-  os << "\n";
+    os << "\n";
 }
 
-
-std::pair<bool,int>
+std::pair<bool, int>
 BoundaryConditions::iparam( std::string const& field, std::string const& bc, std::string const& marker, std::string const& param ) const
 {
-    return this->param<int>( field,bc,marker,param, int(0) );
+    return this->param<int>( field, bc, marker, param, int( 0 ) );
 }
-std::pair<bool,double>
+std::pair<bool, double>
 BoundaryConditions::dparam( std::string const& field, std::string const& bc, std::string const& marker, std::string const& param ) const
 {
-    return this->param<double>( field,bc,marker,param, double(0) );
+    return this->param<double>( field, bc, marker, param, double( 0 ) );
 }
-std::pair<bool,std::string>
+std::pair<bool, std::string>
 BoundaryConditions::sparam( std::string const& field, std::string const& bc, std::string const& marker, std::string const& param ) const
 {
-    return this->param<std::string>( field,bc,marker,param, std::string("") );
+    return this->param<std::string>( field, bc, marker, param, std::string( "" ) );
 }
 template <typename CastType>
-std::pair<bool,CastType>
-BoundaryConditions::param( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param, CastType const& defaultValue ) const
+std::pair<bool, CastType>
+BoundaryConditions::param( std::string const& field, std::string const& bc, std::string const& marker, std::string const& param, CastType const& defaultValue ) const
 {
-    for( auto const& v : M_pt )
+    for ( auto const& v : M_pt )
     {
         std::string t = v.first; // field name
         if ( t != field ) continue;
-        for( auto const& f : v.second )
+        for ( auto const& f : v.second )
         {
-            std::string k = t+"."+f.first; // condition type
+            std::string k = t + "." + f.first; // condition type
             if ( f.first != bc ) continue;
-            for( auto const& c : f.second ) // marker
+            for ( auto const& c : f.second ) // marker
             {
                 if ( c.first != marker ) continue;
                 try
                 {
-                    CastType e= c.second.get<CastType>( param );
-                    return std::make_pair(true,e);
+                    CastType e = c.second.get<CastType>( param );
+                    return std::make_pair( true, e );
                 }
-                catch( ... )
+                catch ( ... )
                 {
                     continue;
                 }
             }
         }
     }
-    return std::make_pair(false,defaultValue);
+    return std::make_pair( false, defaultValue );
 }
 
 std::list<std::string>
 BoundaryConditions::markers( std::string const& field, std::string const& type ) const
 {
-    return this->markers( { { field,type } } );
+    return this->markers( {{field, type}} );
 }
 
 std::list<std::string>
-BoundaryConditions::markers( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
+BoundaryConditions::markers( std::initializer_list<std::pair<std::string, std::string>> const& listKeys ) const
 {
     std::list<std::string> res;
     for ( auto const& key : listKeys )
     {
         std::string const& field = key.first;
         std::string const& type = key.second;
-        auto const& itFindField = this->find(field);
+        auto const& itFindField = this->find( field );
         if ( itFindField == this->end() )
             continue;
-        auto const& itFindType = itFindField->second.find(type);
+        auto const& itFindType = itFindField->second.find( type );
         if ( itFindType == itFindField->second.end() )
             continue;
         for ( auto const& f : itFindType->second )
@@ -232,4 +223,4 @@ BoundaryConditions::markers( std::initializer_list< std::pair<std::string,std::s
     return res;
 }
 
-}//Feel
+} //Feel

@@ -29,8 +29,6 @@
 #ifndef __Application_H
 #define __Application_H 1
 
-
-
 #if defined( FEELPP_HAS_TRILINOS_EPETRA )
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
@@ -38,12 +36,12 @@
 #undef PACKAGE_TARNAME
 #undef PACKAGE_VERSION
 //#include <Epetra_Vector.h>
-#if defined(FEELPP_HAS_MPI)
-#include <feel/feelcore/application.hpp>
+#if defined( FEELPP_HAS_MPI )
 #include <Epetra_MpiComm.h>
-#else
 #include <feel/feelcore/application.hpp>
+#else
 #include <Epetra_SerialComm.h>
+#include <feel/feelcore/application.hpp>
 #endif /* FEELPP_HAS_MPI */
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
@@ -61,38 +59,36 @@ namespace Feel
  * @see Application
  */
 class Application
-#if defined(FEELPP_HAS_MPI)
+#if defined( FEELPP_HAS_MPI )
     : public Application
 #else
     : public Application
 #endif
 {
-#if defined(FEELPP_HAS_MPI)
+#if defined( FEELPP_HAS_MPI )
     typedef Application super;
 #else
     typedef Application super;
 #endif
 
-public:
-
-
-    /** @name Typedefs
+  public:
+/** @name Typedefs
      */
-    //@{
+//@{
 
-#if defined(FEELPP_HAS_MPI)
+#if defined( FEELPP_HAS_MPI )
     typedef Epetra_MpiComm comm_type;
 #else
     typedef Epetra_SerialComm comm_type;
 #endif /* FEELPP_HAS_MPI */
 
-    //@}
+//@}
 
-    /** @name Constructors, destructor
+/** @name Constructors, destructor
      */
-    //@{
+//@{
 
-    /**
+/**
      * Initialize the epetra application
      */
 #if defined( FEELPP_HAS_MPI )
@@ -105,7 +101,7 @@ public:
                  char** argv,
                  AboutData const& ad );
 #endif
-    /**
+/**
      * Initialize the epetra application and pass options to super classes
      */
 #if defined( FEELPP_HAS_MPI )
@@ -131,7 +127,6 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
@@ -152,24 +147,19 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-
     //@}
 
+  protected:
+  private:
+    Application( Application const& );
 
-
-protected:
-
-private:
-    Application( Application const & );
-
-private:
+  private:
     static void init( MPI_Comm& comm );
 
     static bool _S_is_Initialized;

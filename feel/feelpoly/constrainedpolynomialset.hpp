@@ -29,27 +29,28 @@
 #ifndef __ConstrainedPolynomialSet_H
 #define __ConstrainedPolynomialSet_H 1
 
-
 namespace Feel
 {
 
-template<typename P> class Functional;
-template<typename P> class FunctionalSet;
+template <typename P>
+class Functional;
+template <typename P>
+class FunctionalSet;
 
 /**
  * \class ConstrainedPolynomialSet
  */
-template<typename Poly>
+template <typename Poly>
 class ConstrainedPolynomialSet
-    :
-public mpl::if_<mpl::bool_<Poly::is_scalar>,
-    mpl::identity<PolynomialSet<Poly> >,
-    mpl::identity<PolynomialSet<Poly, Vectorial> > >::type::type
+    : public mpl::if_<mpl::bool_<Poly::is_scalar>,
+                      mpl::identity<PolynomialSet<Poly>>,
+                      mpl::identity<PolynomialSet<Poly, Vectorial>>>::type::type
 {
     typedef typename mpl::if_<mpl::bool_<Poly::is_scalar>,
-            mpl::identity<PolynomialSet<Poly> >,
-            mpl::identity<PolynomialSet<Poly, Vectorial> > >::type::type super;
-public:
+                              mpl::identity<PolynomialSet<Poly>>,
+                              mpl::identity<PolynomialSet<Poly, Vectorial>>>::type::type super;
+
+  public:
     /** @name Constants
      */
     //@{
@@ -73,16 +74,14 @@ public:
     typedef Functional<space_type> constraint_type;
     typedef FunctionalSet<space_type> constraintset_type;
 
-
     typedef PolynomialSet<space_type, Scalar> component_type;
     typedef typename mpl::if_<mpl::bool_<is_scalar>,
-            mpl::identity<Polynomial<space_type> >,
-            mpl::identity<Polynomial<space_type, Vectorial> > >::type::type polynomial_type;
+                              mpl::identity<Polynomial<space_type>>,
+                              mpl::identity<Polynomial<space_type, Vectorial>>>::type::type polynomial_type;
 
     typedef typename super::convex_type convex_type;
     typedef typename basis_type::matrix_type matrix_type;
     typedef typename basis_type::points_type points_type;
-
 
     BOOST_STATIC_ASSERT( ( boost::is_same<typename matrix_type::value_type, value_type>::value ) );
     BOOST_STATIC_ASSERT( ( boost::is_same<typename matrix_type::value_type, typename points_type::value_type>::value ) );
@@ -94,9 +93,9 @@ public:
     //@{
 
     ConstrainedPolynomialSet()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
 
     void setConstraints( constraintset_type const& fset )
     {
@@ -118,10 +117,9 @@ public:
 
         //extract the coefficients of V associated with the null
         //singular values
-        matrix_type mv ( ublas::subrange( svd.V(), svd.S().size(), svd.V().size1(), 0, m.size2() ) );
+        matrix_type mv( ublas::subrange( svd.V(), svd.S().size(), svd.V().size1(), 0, m.size2() ) );
         //std::cout << "[ConstrainedPolynomialSet] mv = " << mv << "\n";
-        this->setCoefficient( polyset_type::toType( mv ), true  );
-
+        this->setCoefficient( polyset_type::toType( mv ), true );
     }
 
     //@}

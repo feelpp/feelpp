@@ -29,10 +29,10 @@
 #ifndef _OPERATORTRACE_HPP_
 #define _OPERATORTRACE_HPP_
 
+#include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feelvf/vf.hpp>
-#include<iostream>
-#include <feel/feeldiscr/functionspace.hpp>
+#include <iostream>
 
 namespace Feel
 {
@@ -44,13 +44,12 @@ namespace Feel
  * @author Abdoulaye Samake
  * @see OperatorLinear
  */
-template<class fs_type>
+template <class fs_type>
 class OperatorTrace
 {
     typedef OperatorTrace<fs_type> super;
 
-public :
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -66,8 +65,7 @@ public :
     //@{
 
     OperatorTrace( functionspace_ptrtype domainSpace )
-        :
-        M_domainSpace( domainSpace )
+        : M_domainSpace( domainSpace )
     {
     }
 
@@ -81,33 +79,25 @@ public :
     BOOST_PARAMETER_MEMBER_FUNCTION( ( trace_element_type ),
                                      trace,
                                      tag,
-                                     ( required
-                                       ( expr,   * )
-                                     )
-                                     ( optional
-                                       ( range,  *, boundaryfaces( M_domainSpace->mesh() ) )
-                                     ) )
+                                     ( required( expr, * ) )( optional( range, *, boundaryfaces( M_domainSpace->mesh() ) ) ) )
 
     {
         using namespace vf;
 
-
-        auto Th = M_domainSpace->trace( range ) ;
+        auto Th = M_domainSpace->trace( range );
 
         trace_element_type te = Th->element();
 
-        te = vf::project( _space=Th, _range=elements( Th->mesh() ), _expr=expr );
+        te = vf::project( _space = Th, _range = elements( Th->mesh() ), _expr = expr );
 
         return te;
     }
 
     //@}
 
-
-private :
-
+  private:
     functionspace_ptrtype M_domainSpace;
-};//OperatorTrace
+}; //OperatorTrace
 
 /**
  * this function returns a \c OperatorTrace \c shared_ptr with
@@ -116,8 +106,8 @@ private :
  *
  */
 
-template<typename self_type>
-boost::shared_ptr< OperatorTrace<self_type> >
+template <typename self_type>
+boost::shared_ptr<OperatorTrace<self_type>>
 operatorTrace( boost::shared_ptr<self_type> const& domainspace )
 {
     typedef OperatorTrace<self_type> Trace_type;
@@ -126,6 +116,5 @@ operatorTrace( boost::shared_ptr<self_type> const& domainspace )
 }
 
 } //namespace Feel
-
 
 #endif

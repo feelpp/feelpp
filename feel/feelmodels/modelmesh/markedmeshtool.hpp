@@ -30,7 +30,6 @@
 #ifndef FEELPP_MODELS_MARKEDMESHTOOL_H
 #define FEELPP_MODELS_MARKEDMESHTOOL_H 1
 
-
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>
 
@@ -39,48 +38,42 @@ namespace Feel
 namespace FeelModels
 {
 
-
-template<typename IteratorRange,typename SpaceP0Type,typename VectorType>
-void
-updateP0EltMarkerFromFaceRange( IteratorRange const& range, boost::shared_ptr<SpaceP0Type> const& XhP0,
-                                boost::shared_ptr<VectorType> & markEltVec )
+template <typename IteratorRange, typename SpaceP0Type, typename VectorType>
+void updateP0EltMarkerFromFaceRange( IteratorRange const& range, boost::shared_ptr<SpaceP0Type> const& XhP0,
+                                     boost::shared_ptr<VectorType>& markEltVec )
 {
-    for ( auto itr = range.template get<1>(), enr = range.template get<2>() ; itr!=enr ; ++itr )
+    for ( auto itr = range.template get<1>(), enr = range.template get<2>(); itr != enr; ++itr )
     {
         if ( itr->isConnectedTo0() )
         {
             auto const& elt = itr->element0();
-            const size_type thedof = XhP0->dof()->localToGlobal(elt,0,0).index();
-            markEltVec->add(thedof, 1.);
+            const size_type thedof = XhP0->dof()->localToGlobal( elt, 0, 0 ).index();
+            markEltVec->add( thedof, 1. );
         }
         if ( itr->isConnectedTo1() )
         {
             auto const& elt = itr->element1();
-            const size_type thedof = XhP0->dof()->localToGlobal(elt,0,0).index();
-            markEltVec->add(thedof, 1.);
+            const size_type thedof = XhP0->dof()->localToGlobal( elt, 0, 0 ).index();
+            markEltVec->add( thedof, 1. );
         }
     }
 }
 
-
-
-template< class MeshType >
+template <class MeshType>
 class MarkedMeshTool
 {
-public :
-
+  public:
     typedef MeshType mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar,Discontinuous> > > space_P0_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar, Discontinuous>>> space_P0_type;
     typedef boost::shared_ptr<space_P0_type> space_P0_ptrtype;
     typedef typename space_P0_type::element_type element_P0_type;
     typedef boost::shared_ptr<element_P0_type> element_P0_ptrtype;
 
-
     MarkedMeshTool( mesh_ptrtype mesh )
-        :
-        M_mesh( mesh )
-    {}
+        : M_mesh( mesh )
+    {
+    }
 
     void addFaceMarker( std::string mark ) { M_listMarkers.push_back( mark ); }
     void setFaceMarker( std::list<std::string> listmark ) { M_listMarkers = listmark; }
@@ -95,20 +88,20 @@ public :
     void
     buildSpaceP0()
     {
-        M_XhP0 = space_P0_type::New(_mesh=M_mesh,
-                                    _worldscomm=std::vector<WorldComm>(1,M_mesh->worldComm()),
-                                    _extended_doftable=std::vector<bool>(1,true) );
+        M_XhP0 = space_P0_type::New( _mesh = M_mesh,
+                                     _worldscomm = std::vector<WorldComm>( 1, M_mesh->worldComm() ),
+                                     _extended_doftable = std::vector<bool>( 1, true ) );
     }
 
     void updateFaceMarker3FromInternalFaces()
     {
-        M_mesh->updateMarker3WithRange(internalfaces(M_mesh),1);
+        M_mesh->updateMarker3WithRange( internalfaces( M_mesh ), 1 );
     }
 
     void updateFaceMarker3FromFaceMarker()
     {
         for ( std::string mark : M_listMarkers )
-            M_mesh->updateMarker3WithRange(markedfaces(M_mesh,mark),1);
+            M_mesh->updateMarker3WithRange( markedfaces( M_mesh, mark ), 1 );
     }
 
     void updateFaceMarker3FromEltConnectedToFaceMarker()
@@ -118,10 +111,10 @@ public :
         M_mesh->updateMarkersFromElements();
     }
 
-    template < typename ExprT >
-    void updateFaceMarker3FromExpr( vf::Expr<ExprT> const& expr, bool doUpdateForUse=true )
+    template <typename ExprT>
+    void updateFaceMarker3FromExpr( vf::Expr<ExprT> const& expr, bool doUpdateForUse = true )
     {
-        this->updateP0EltMarkerFromExpr(expr);
+        this->updateP0EltMarkerFromExpr( expr );
         if ( doUpdateForUse )
             this->updateForUseFaceMarker3();
     }
@@ -137,95 +130,93 @@ public :
                                      marked3faces( M_mesh, 1 ).template get<2>() );
         size_type gd = d;
 
-        if ( M_mesh->worldComm().localSize()>1 )
+        if ( M_mesh->worldComm().localSize() > 1 )
             mpi::all_reduce( M_mesh->worldComm().localComm(),
                              d,
                              gd,
-                             std::plus<size_type>());
+                             std::plus<size_type>() );
 
-        if (M_mesh->worldComm().isMasterRank() )
+        if ( M_mesh->worldComm().isMasterRank() )
             std::cout << "[ToolBoxMarkedMesh] : number of marked 3 faces: " << gd << std::endl;
     }
 
     void saveSubMeshFromMarked3Faces()
     {
-        auto meshMark1 = createSubmesh( M_mesh, marked3faces(M_mesh,1),EXTRACTION_KEEP_MESH_RELATION, 0, false);
-        saveGMSHMesh(_mesh=meshMark1,_filename="submesh-marked3facesBy1.msh");
-        auto meshMark0 = createSubmesh( M_mesh, marked3faces(M_mesh,0),EXTRACTION_KEEP_MESH_RELATION, 0, false);
-        saveGMSHMesh(_mesh=meshMark0,_filename="submesh-marked3facesBy0.msh");
+        auto meshMark1 = createSubmesh( M_mesh, marked3faces( M_mesh, 1 ), EXTRACTION_KEEP_MESH_RELATION, 0, false );
+        saveGMSHMesh( _mesh = meshMark1, _filename = "submesh-marked3facesBy1.msh" );
+        auto meshMark0 = createSubmesh( M_mesh, marked3faces( M_mesh, 0 ), EXTRACTION_KEEP_MESH_RELATION, 0, false );
+        saveGMSHMesh( _mesh = meshMark0, _filename = "submesh-marked3facesBy0.msh" );
     }
 
     void saveSubMeshFromMarked3Elements()
     {
-        auto meshMark1 = createSubmesh( M_mesh, marked3elements(M_mesh,1),EXTRACTION_KEEP_MESH_RELATION, 0, false);
-        saveGMSHMesh(_mesh=meshMark1,_filename="submesh-marked3elementsBy1.msh");
-        auto meshMark0 = createSubmesh( M_mesh, marked3elements(M_mesh,0),EXTRACTION_KEEP_MESH_RELATION, 0, false);
-        saveGMSHMesh(_mesh=meshMark0,_filename="submesh-marked3elementsBy0.msh");
+        auto meshMark1 = createSubmesh( M_mesh, marked3elements( M_mesh, 1 ), EXTRACTION_KEEP_MESH_RELATION, 0, false );
+        saveGMSHMesh( _mesh = meshMark1, _filename = "submesh-marked3elementsBy1.msh" );
+        auto meshMark0 = createSubmesh( M_mesh, marked3elements( M_mesh, 0 ), EXTRACTION_KEEP_MESH_RELATION, 0, false );
+        saveGMSHMesh( _mesh = meshMark0, _filename = "submesh-marked3elementsBy0.msh" );
     }
-
 
     void exportP0EltMarkerFromFaceMarker()
     {
         this->updateP0EltMarkerFromFaceMarker();
-        auto myexporter = exporter( _mesh=M_mesh, _name="MyExportMarkP0Elt" );
-        myexporter->step(0)->add( "markP0Elt", *M_markP0Elt );
+        auto myexporter = exporter( _mesh = M_mesh, _name = "MyExportMarkP0Elt" );
+        myexporter->step( 0 )->add( "markP0Elt", *M_markP0Elt );
         myexporter->save();
     }
-private :
 
+  private:
     void
     updateP0EltMarkerFromFaceMarker()
     {
-        if (!M_XhP0)
+        if ( !M_XhP0 )
             this->buildSpaceP0();
-        if (!M_markP0Elt)
+        if ( !M_markP0Elt )
             M_markP0Elt = M_XhP0->elementPtr();
 
         auto markEltVec = backend()->newVector( M_XhP0 );
 
         for ( std::string mark : M_listMarkers )
-            updateP0EltMarkerFromFaceRange( markedfaces(M_mesh,mark), M_XhP0, markEltVec );
+            updateP0EltMarkerFromFaceRange( markedfaces( M_mesh, mark ), M_XhP0, markEltVec );
 
         markEltVec->close();
 
         //*M_markP0Elt = *markEltVec;
 
         // because we add values, we need to push only the positives values
-        for ( size_type k=0 ; k < M_XhP0->nLocalDof() ; ++k )
-            if ( markEltVec->operator()(k) > 1e-8 ) M_markP0Elt->set( k,1. );
+        for ( size_type k = 0; k < M_XhP0->nLocalDof(); ++k )
+            if ( markEltVec->operator()( k ) > 1e-8 ) M_markP0Elt->set( k, 1. );
         //if ( M_markP0Elt->operator()(k) > 1e-8 ) M_markP0Elt->set( k,1. );
     }
 
-    template < typename ExprT >
+    template <typename ExprT>
     void
     updateP0EltMarkerFromExpr( vf::Expr<ExprT> const& expr )
     {
-        if (!M_XhP0)
+        if ( !M_XhP0 )
             this->buildSpaceP0();
-        if (!M_markP0Elt)
+        if ( !M_markP0Elt )
             M_markP0Elt = M_XhP0->elementPtr();
 
-        auto markEltTemp = vf::project(_space=M_XhP0,
-                                       _range=elements(M_mesh,EntityProcessType::ALL),
-                                       _expr=expr );
+        auto markEltTemp = vf::project( _space = M_XhP0,
+                                        _range = elements( M_mesh, EntityProcessType::ALL ),
+                                        _expr = expr );
 
         // use petsc vector for communicate values
         auto markEltVec = backend()->newVector( M_XhP0 );
-        for ( size_type k=0 ; k < M_XhP0->nLocalDof() ; ++k )
-            markEltVec->add(k,markEltTemp(k));
+        for ( size_type k = 0; k < M_XhP0->nLocalDof(); ++k )
+            markEltVec->add( k, markEltTemp( k ) );
         //*markEltVec = markEltTemp;
         markEltVec->close();
 
         //*M_markP0Elt = *markEltVec;
 
         // because we add values, we need to push one the positives values
-        for ( size_type k=0 ; k < M_XhP0->nLocalDof() ; ++k )
-            if ( markEltVec->operator()(k) > 1e-8 ) M_markP0Elt->set( k,1. );
-            //if ( M_markP0Elt->operator()(k) > 1e-8 ) M_markP0Elt->set( k,1. );
+        for ( size_type k = 0; k < M_XhP0->nLocalDof(); ++k )
+            if ( markEltVec->operator()( k ) > 1e-8 ) M_markP0Elt->set( k, 1. );
+        //if ( M_markP0Elt->operator()(k) > 1e-8 ) M_markP0Elt->set( k,1. );
     }
 
-
-private :
+  private:
     mesh_ptrtype M_mesh;
     std::list<std::string> M_listMarkers;
 
@@ -235,6 +226,5 @@ private :
 
 } // namespace FeelModels
 } // namespace Feel
-
 
 #endif // FEELPP_MODELS_MARKEDMESHTOOL_H

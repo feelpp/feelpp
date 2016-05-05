@@ -29,53 +29,51 @@
 
 #include <feel/feelmodels/modelcore/log.hpp>
 
-namespace Feel {
-namespace FeelModels {
+namespace Feel
+{
+namespace FeelModels
+{
 
-    void
-    Log(std::string _className,std::string _functionName,std::string _msg)
+void Log( std::string _className, std::string _functionName, std::string _msg )
+{
+    std::cout << "["
+              << _className
+              << "] : ["
+              << _functionName
+              << "] : "
+              << _msg
+              << std::endl;
+}
+
+void Log( std::string _className, std::string _functionName, std::string _msg,
+          WorldComm const& worldComm, bool allproc )
+{
+    if ( allproc || worldComm.globalRank() == worldComm.masterRank() )
     {
-        std::cout<<"["
-                 << _className
-                 << "] : ["
-                 << _functionName
-                 << "] : "
-                 << _msg
-                 << std::endl;
+        std::cout << "["
+                  << _className << "("
+                  << worldComm.globalRank() << ")] : ["
+                  << _functionName << "] : "
+                  << _msg
+                  << std::endl;
     }
+}
 
-    void
-    Log(std::string _className,std::string _functionName,std::string _msg,
-        WorldComm const& worldComm, bool allproc)
+void Log( std::string _msgbefore,
+          std::string _className, std::string _functionName, std::string _msg,
+          WorldComm const& worldComm, bool allproc )
+{
+    if ( allproc || worldComm.globalRank() == worldComm.masterRank() )
     {
-        if (allproc || worldComm.globalRank()==worldComm.masterRank() )
-            {
-                std::cout<<"["
-                         << _className << "("
-                         << worldComm.globalRank() << ")] : ["
-                         << _functionName << "] : "
-                         << _msg
-                         << std::endl;
-            }
+        std::cout << _msgbefore
+                  << "["
+                  << _className << "("
+                  << worldComm.globalRank() << ")] : ["
+                  << _functionName << "] : "
+                  << _msg
+                  << std::endl;
     }
-
-    void
-    Log(std::string _msgbefore,
-        std::string _className,std::string _functionName,std::string _msg,
-        WorldComm const& worldComm, bool allproc)
-    {
-        if (allproc || worldComm.globalRank()==worldComm.masterRank() )
-            {
-                std::cout<<_msgbefore
-                         <<"["
-                         << _className << "("
-                         << worldComm.globalRank() << ")] : ["
-                         << _functionName << "] : "
-                         << _msg
-                         << std::endl;
-            }
-    }
-
+}
 
 } // namespace FeelModels
 } // namespace Feel

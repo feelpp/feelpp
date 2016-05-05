@@ -40,14 +40,13 @@ namespace Feel
  * \class Operator
  * \brief Operator between function spaces
  */
-template<class DomainSpace, class DualImageSpace>
+template <class DomainSpace, class DualImageSpace>
 class Operator
 {
-public:
-
+  public:
     // -- TYPEDEFS --
-    typedef DomainSpace     domain_space_type;
-    typedef DualImageSpace  dual_image_space_type;
+    typedef DomainSpace domain_space_type;
+    typedef DualImageSpace dual_image_space_type;
 
     typedef typename domain_space_type::value_type value_type;
     typedef Backend<value_type> backend_type;
@@ -55,23 +54,24 @@ public:
 
     typedef boost::shared_ptr<domain_space_type> domain_space_ptrtype;
     typedef boost::shared_ptr<dual_image_space_type>
-    dual_image_space_ptrtype;
+        dual_image_space_ptrtype;
     typedef typename domain_space_type::element_type domain_element_type;
     typedef FsFunctionalLinear<dual_image_space_type> image_element_type;
 
     Operator() = default;
 
-    Operator( domain_space_ptrtype     domainSpace,
-              dual_image_space_ptrtype dualImageSpace ) :
-        M_domainSpace( domainSpace ),
-        M_dualImageSpace( dualImageSpace )
-    {}
-    Operator( Operator<domain_space_type,DualImageSpace> const& ) = default;
-    Operator( Operator<domain_space_type,DualImageSpace> && ) = default;
+    Operator( domain_space_ptrtype domainSpace,
+              dual_image_space_ptrtype dualImageSpace )
+        : M_domainSpace( domainSpace ),
+          M_dualImageSpace( dualImageSpace )
+    {
+    }
+    Operator( Operator<domain_space_type, DualImageSpace> const& ) = default;
+    Operator( Operator<domain_space_type, DualImageSpace>&& ) = default;
 
     Operator& operator=( Operator const& ) = default;
-    Operator& operator=( Operator && ) = default;
-    
+    Operator& operator=( Operator&& ) = default;
+
     virtual ~Operator() {}
 
     void setDomainSpace( domain_space_ptrtype const& domainspace )
@@ -87,9 +87,7 @@ public:
     // apply the operator: ie := Op de
     virtual void
     apply( const domain_element_type& de,
-           image_element_type&        ie ) const = 0;
-
-
+           image_element_type& ie ) const = 0;
 
     // for convenience
     image_element_type operator()( const domain_element_type& de ) const
@@ -119,9 +117,8 @@ public:
         return M_dualImageSpace;
     }
 
-private:
-
-    domain_space_ptrtype     M_domainSpace;
+  private:
+    domain_space_ptrtype M_domainSpace;
     dual_image_space_ptrtype M_dualImageSpace;
 
 }; // class Operator

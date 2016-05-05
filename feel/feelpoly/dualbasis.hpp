@@ -41,12 +41,10 @@ namespace Feel
  * \ingroup Polynomial
  * @author Christophe Prud'homme
  */
-template<typename Primal>
+template <typename Primal>
 class DualBasis
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -66,17 +64,17 @@ public:
      */
     //@{
 
-
     DualBasis( primal_space_type const& primal )
-        :
-        M_primal( primal )
-    {}
-    DualBasis( DualBasis const & b )
-        :
-        M_primal( b.M_primal )
-    {}
+        : M_primal( primal )
+    {
+    }
+    DualBasis( DualBasis const& b )
+        : M_primal( b.M_primal )
+    {
+    }
     ~DualBasis()
-    {}
+    {
+    }
 
     //@}
 
@@ -121,23 +119,16 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-
-
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
     primal_space_type M_primal;
 };
 } // Feel

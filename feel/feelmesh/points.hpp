@@ -29,10 +29,10 @@
 #ifndef __points_H
 #define __points_H 1
 
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
 #include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index_container.hpp>
 
 #include <feel/feelmesh/geoelement.hpp>
 
@@ -48,46 +48,42 @@ namespace multi_index = boost::multi_index;
   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   @see
 */
-template<uint16_type nDim>
+template <uint16_type nDim>
 class Points
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
 
     typedef GeoElement0D<nDim> point_type;
     typedef multi_index::multi_index_container<
-    point_type,
-    multi_index::indexed_by<
-    // sort by employee::operator<
-        multi_index::ordered_unique<multi_index::identity<point_type> >,
+        point_type,
+        multi_index::indexed_by<
+            // sort by employee::operator<
+            multi_index::ordered_unique<multi_index::identity<point_type>>,
 
-        // sort by less<int> on marker
-        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
-                                        multi_index::composite_key<point_type,
-                                                                   multi_index::const_mem_fun<point_type,
-                                                                                              Marker1 const&,
-                                                                                              &point_type::marker>,
-                                                                   multi_index::const_mem_fun<point_type,
-                                                                                              rank_type,
-                                                                                              &point_type::processId> > >,
-        // sort by less<int> on processId
-        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
-                                        multi_index::const_mem_fun<point_type,
-                                                                   rank_type,
-                                                                   &point_type::processId> >,
+            // sort by less<int> on marker
+            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
+                                            multi_index::composite_key<point_type,
+                                                                       multi_index::const_mem_fun<point_type,
+                                                                                                  Marker1 const&,
+                                                                                                  &point_type::marker>,
+                                                                       multi_index::const_mem_fun<point_type,
+                                                                                                  rank_type,
+                                                                                                  &point_type::processId>>>,
+            // sort by less<int> on processId
+            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
+                                            multi_index::const_mem_fun<point_type,
+                                                                       rank_type,
+                                                                       &point_type::processId>>,
 
-        // sort by less<int> on boundary
-        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
-                                        multi_index::const_mem_fun<point_type,
-                                                                   bool,
-                                                                   &point_type::isOnBoundary> >
-    >
-    > points_type;
-
+            // sort by less<int> on boundary
+            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
+                                            multi_index::const_mem_fun<point_type,
+                                                                       bool,
+                                                                       &point_type::isOnBoundary>>>>
+        points_type;
 
     typedef typename points_type::iterator point_iterator;
     typedef typename points_type::const_iterator point_const_iterator;
@@ -104,8 +100,6 @@ public:
     typedef typename location_points::iterator location_point_iterator;
     typedef typename location_points::const_iterator location_point_const_iterator;
 
-
-
     //@}
 
     /** @name Constructors, destructor
@@ -113,24 +107,24 @@ public:
     //@{
 
     Points( WorldComm const& worldComm = Environment::worldComm() )
-        :
-        M_worldCommPoints( worldComm ),
-        M_points()
-    {}
+        : M_worldCommPoints( worldComm ),
+          M_points()
+    {
+    }
 
-    Points( Points const & f )
-        :
-        M_worldCommPoints( f.M_worldCommPoints ),
-        M_points( f.M_points )
-    {}
+    Points( Points const& f )
+        : M_worldCommPoints( f.M_worldCommPoints ),
+          M_points( f.M_points )
+    {
+    }
 
     virtual ~Points()
-        {
-            this->clear();
-        }
+    {
+        this->clear();
+    }
     void clear()
     {
-        VLOG(1) << "deleting points...\n";
+        VLOG( 1 ) << "deleting points...\n";
         M_points.clear();
     }
 
@@ -160,7 +154,7 @@ public:
     /**
      * \return the points container
      */
-    points_type & points()
+    points_type& points()
     {
         return M_points;
     }
@@ -173,20 +167,18 @@ public:
         return M_points;
     }
 
-
     virtual bool isEmpty() const
     {
         return M_points.empty();
     }
-    bool isBoundaryPoint( point_type const & e ) const
+    bool isBoundaryPoint( point_type const& e ) const
     {
         return M_points.find( e )->isOnBoundary();
     }
-    bool isBoundaryPoint( size_type const & id ) const
+    bool isBoundaryPoint( size_type const& id ) const
     {
         return M_points.find( point_type( id ) )->isOnBoundary();
     }
-
 
     point_type const& point( size_type i ) const
     {
@@ -210,16 +202,15 @@ public:
         return M_points.end();
     }
 
-
     /**
      * \return the range of iterator \c (begin,end) over the points
      * with marker \p m on processor \p p
      */
     std::pair<point_iterator, point_iterator>
     pointsRange()
-        {
-            return std::make_pair( M_points.begin(), M_points.end() );
-        }
+    {
+        return std::make_pair( M_points.begin(), M_points.end() );
+    }
 
     /**
      * \return the range of iterator \c (begin,end) over the points
@@ -227,47 +218,47 @@ public:
      */
     std::pair<point_const_iterator, point_const_iterator>
     pointsRange() const
-        {
-            return std::make_pair( M_points.begin(), M_points.end() );
-        }
+    {
+        return std::make_pair( M_points.begin(), M_points.end() );
+    }
 
     marker_point_iterator beginPointWithMarker( size_type m, rank_type p = invalid_rank_type_value )
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommPoints().localRank() : p;
         return M_points.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
     }
     marker_point_const_iterator beginPointWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommPoints().localRank() : p;
         return M_points.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
     }
     marker_point_iterator endPointWithMarker( size_type m, rank_type p = invalid_rank_type_value )
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommPoints().localRank() : p;
         return M_points.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
     }
     marker_point_const_iterator endPointWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommPoints().localRank() : p;
         return M_points.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
     }
 
     point_iterator pointIterator( size_type i ) const
     {
-        return  M_points.find( point_type( i ) );
+        return M_points.find( point_type( i ) );
     }
 
     bool hasPoint( size_type i ) const
-        {
-            return M_points.find( point_type( i ) ) != M_points.end();
-        }
+    {
+        return M_points.find( point_type( i ) ) != M_points.end();
+    }
     /**
      * get the points container by id
      *
      *
      * @return the point container by id
      */
-    typename points_type::template nth_index<0>::type &
+    typename points_type::template nth_index<0>::type&
     pointsById()
     {
         return M_points.template get<0>();
@@ -291,7 +282,7 @@ public:
      *
      * @return the point container using marker view
      */
-    marker_points &
+    marker_points&
     pointsByMarker()
     {
         return M_points.template get<Feel::detail::by_marker>();
@@ -314,7 +305,7 @@ public:
      *
      * @return the point container using location view
      */
-    location_points &
+    location_points&
     pointsByLocation()
     {
         return M_points.template get<Feel::detail::by_location>();
@@ -410,28 +401,26 @@ public:
         return M_points.template get<Feel::detail::by_location>().upper_bound( ON_BOUNDARY );
     }
 
-
     pid_point_iterator beginPointWithProcessId( rank_type p = invalid_rank_type_value )
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommPoints().localRank() : p;
         return M_points.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
     }
     pid_point_const_iterator beginPointWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommPoints().localRank() : p;
         return M_points.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
     }
     pid_point_iterator endPointWithProcessId( rank_type p = invalid_rank_type_value )
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommPoints().localRank() : p;
         return M_points.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
     }
     pid_point_const_iterator endPointWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommPoints().localRank() : p;
         return M_points.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
     }
-
 
     std::pair<pid_point_iterator, pid_point_iterator>
     pointsWithProcessId( size_type p ) const
@@ -444,7 +433,6 @@ public:
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -474,16 +462,15 @@ public:
 
     //@}
 
-private:
-
+  private:
     friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-        {
-            ar & M_points;
-        }
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version )
+    {
+        ar& M_points;
+    }
 
-private:
+  private:
     WorldComm M_worldCommPoints;
 
     points_type M_points;

@@ -30,7 +30,6 @@
 #ifndef __operator_trilinos_matrix_H
 #define __operator_trilinos_matrix_H 1
 
-
 #include <feel/feelalg/matrixepetra.hpp>
 #include <feel/feelalg/vectorepetra.hpp>
 // #include <feel/feelalg/operatortrilinos.hpp>
@@ -41,27 +40,22 @@
 #include "Epetra_ConfigDefs.h"
 #include "Epetra_Operator.h"
 
-
 #if defined( FEELPP_HAS_MPI )
-#include "mpi.h"
 #include "Epetra_MpiComm.h"
+#include "mpi.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif
 #include "Epetra_Map.h"
-#include "Epetra_Vector.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_Operator.h"
-
-
-
+#include "Epetra_Vector.h"
 
 namespace Feel
 {
 class OperatorMatrix : public Epetra_Operator
 {
-public:
-
+  public:
     typedef MatrixSparse<double> sparse_matrix_type;
     typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
 
@@ -84,69 +78,63 @@ public:
 
     typedef solver_type::real_type real_type;
 
-
     OperatorMatrix( sparse_matrix_ptrtype const& F, std::string _label, bool transpose = 0 )
-        :
-        M_F( F ),
-        M_Matrix( dynamic_cast<epetra_sparse_matrix_type const*>( F.get() ) ),
-        M_Prec( ),
-        M_Solver( new solver_type() ),
-        M_hasInverse( 1 ),
-        M_hasApply( 1 ),
-        M_useTranspose( transpose ),
-        M_domainMap( M_Matrix->getDomainMap() ),
-        M_rangeMap( M_Matrix->getRangeMap() ),
-        M_label( _label ),
-        M_maxiter( 1000 ),
-        M_tol( 1e-10 )
+        : M_F( F ),
+          M_Matrix( dynamic_cast<epetra_sparse_matrix_type const*>( F.get() ) ),
+          M_Prec(),
+          M_Solver( new solver_type() ),
+          M_hasInverse( 1 ),
+          M_hasApply( 1 ),
+          M_useTranspose( transpose ),
+          M_domainMap( M_Matrix->getDomainMap() ),
+          M_rangeMap( M_Matrix->getRangeMap() ),
+          M_label( _label ),
+          M_maxiter( 1000 ),
+          M_tol( 1e-10 )
     {
-        DVLOG(2) << "Create operator " << Label() << " ...\n";
+        DVLOG( 2 ) << "Create operator " << Label() << " ...\n";
     }
 
     OperatorMatrix( sparse_matrix_ptrtype const& F,
                     list_type const& options,
                     std::string _label,
-                    prec_ptrtype  Prec, bool transpose = 0 )
-        :
-        M_F( F ),
-        M_Matrix( dynamic_cast<epetra_sparse_matrix_type const*>( F.get() ) ),
-        M_Prec( Prec ),
-        M_Solver( new solver_type() ),
-        M_hasInverse( 1 ),
-        M_hasApply( 1 ),
-        M_useTranspose( transpose ),
-        M_domainMap( M_Matrix->getDomainMap() ),
-        M_rangeMap( M_Matrix->getRangeMap() ),
-        M_label( _label ),
-        M_maxiter( 1000 ),
-        M_tol( 1e-10 )
+                    prec_ptrtype Prec, bool transpose = 0 )
+        : M_F( F ),
+          M_Matrix( dynamic_cast<epetra_sparse_matrix_type const*>( F.get() ) ),
+          M_Prec( Prec ),
+          M_Solver( new solver_type() ),
+          M_hasInverse( 1 ),
+          M_hasApply( 1 ),
+          M_useTranspose( transpose ),
+          M_domainMap( M_Matrix->getDomainMap() ),
+          M_rangeMap( M_Matrix->getRangeMap() ),
+          M_label( _label ),
+          M_maxiter( 1000 ),
+          M_tol( 1e-10 )
     {
-        DVLOG(2) << "Create operator " << Label() << " ...\n";
+        DVLOG( 2 ) << "Create operator " << Label() << " ...\n";
 
         M_Solver->setOptions( options );
 
         M_tol = M_Solver->getOptions().get( "tol", 1e-10 );
         M_maxiter = M_Solver->getOptions().get( "max_iter", 100 );
-
-
     }
 
     OperatorMatrix( const OperatorMatrix& tc )
-        :
-        M_F( tc.M_F ),
-        M_Matrix( tc.M_Matrix ),
-        M_Prec( tc.M_Prec ),
-        M_Solver( tc.M_Solver ),
-        M_hasInverse( tc.M_hasInverse ),
-        M_hasApply( tc.M_hasApply ),
-        M_useTranspose( tc.M_useTranspose ),
-        M_domainMap( tc.M_domainMap ),
-        M_rangeMap( tc.M_rangeMap ),
-        M_label( tc.M_label ),
-        M_maxiter( tc.M_maxiter ),
-        M_tol( tc.M_tol )
+        : M_F( tc.M_F ),
+          M_Matrix( tc.M_Matrix ),
+          M_Prec( tc.M_Prec ),
+          M_Solver( tc.M_Solver ),
+          M_hasInverse( tc.M_hasInverse ),
+          M_hasApply( tc.M_hasApply ),
+          M_useTranspose( tc.M_useTranspose ),
+          M_domainMap( tc.M_domainMap ),
+          M_rangeMap( tc.M_rangeMap ),
+          M_label( tc.M_label ),
+          M_maxiter( tc.M_maxiter ),
+          M_tol( tc.M_tol )
     {
-        DVLOG(2) << "Copy operator " << Label() << " ...\n";
+        DVLOG( 2 ) << "Copy operator " << Label() << " ...\n";
     }
 
     bool hasInverse() const
@@ -159,7 +147,6 @@ public:
         return M_hasApply;
     }
 
-
     int Apply( const vector_ptrtype& X, vector_ptrtype& Y ) const
     {
         Apply( dynamic_cast<epetra_vector_type const&>( *X ).vec(),
@@ -168,19 +155,20 @@ public:
         return !hasApply();
     }
 
-    int Apply( const Epetra_MultiVector & X, Epetra_MultiVector & Y ) const
+    int Apply( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        DVLOG(2) << "Apply Operator " << Label() << "\n";
+        DVLOG( 2 ) << "Apply Operator " << Label() << "\n";
 
-        M_Matrix->multiply( false,X,Y );
+        M_Matrix->multiply( false, X, Y );
 
-        DVLOG(2) << "Apply Operator " << Label() << " successfully\n";
+        DVLOG( 2 ) << "Apply Operator " << Label() << " successfully\n";
         return !hasApply();
     }
 
-    int ApplyInverse ( const vector_ptrtype& X, vector_ptrtype& Y ) const
+    int ApplyInverse( const vector_ptrtype& X, vector_ptrtype& Y ) const
     {
-        FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
+        FEELPP_ASSERT( hasInverse() )
+            .error( "This operator cannot be inverted." );
 
         int result = ApplyInverse( dynamic_cast<epetra_vector_type const&>( *X ).vec(),
                                    dynamic_cast<epetra_vector_type&>( *Y ).vec() );
@@ -188,13 +176,14 @@ public:
         return result;
     }
 
-    int ApplyInverse ( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
+    int ApplyInverse( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
+        FEELPP_ASSERT( hasInverse() )
+            .error( "This operator cannot be inverted." );
 
         std::pair<unsigned int, real_type> result;
 
-        DVLOG(2) << "Apply Inverse Operator " << Label() << "\n";
+        DVLOG( 2 ) << "Apply Inverse Operator " << Label() << "\n";
 
         if ( M_Prec.get() != 0 )
             result = M_Solver->solve( *M_Matrix, M_Prec, Y, X, M_tol, M_maxiter );
@@ -202,7 +191,7 @@ public:
         else
             result = M_Solver->solve( *M_Matrix, Y, X, M_tol, M_maxiter );
 
-        DVLOG(2) << "Apply Inverse Operator " << Label() << " successfully\n";
+        DVLOG( 2 ) << "Apply Inverse Operator " << Label() << " successfully\n";
 
         int result_integer = result.first;
 
@@ -222,9 +211,9 @@ public:
         return M_Matrix->linftyNorm();
     }
 
-    const char * Label () const
+    const char* Label() const
     {
-        return( M_label.c_str() );
+        return ( M_label.c_str() );
     }
 
     bool UseTranspose() const
@@ -232,33 +221,32 @@ public:
         return M_useTranspose;
     }
 
-    bool HasNormInf () const
+    bool HasNormInf() const
     {
-        return( true );
+        return ( true );
     }
 
     const Epetra_Comm& Comm() const
     {
-        return( M_Matrix->getDomainMap().Comm() );
+        return ( M_Matrix->getDomainMap().Comm() );
     }
 
     const Epetra_Map& OperatorDomainMap() const
     {
-        return( M_domainMap );
+        return ( M_domainMap );
     }
 
     const Epetra_Map& OperatorRangeMap() const
     {
-        return( M_rangeMap );
+        return ( M_rangeMap );
     }
 
     ~OperatorMatrix()
     {
-        DVLOG(2) << "Destroyed matrix operator: " << this->Label() << " ...\n";
+        DVLOG( 2 ) << "Destroyed matrix operator: " << this->Label() << " ...\n";
     };
 
-private:
-
+  private:
     sparse_matrix_ptrtype M_F;
     epetra_sparse_matrix_type const* M_Matrix;
 
@@ -277,36 +265,25 @@ private:
     double M_tol;
 };
 
-
-
-
-
-
-
-
-
-template< typename operator_type >
+template <typename operator_type>
 class OperatorInverse : public Epetra_Operator
 {
-public:
-
+  public:
     typedef boost::shared_ptr<operator_type> operator_ptrtype;
 
     // This constructor implements the F^-1 operator
     OperatorInverse( operator_ptrtype& F )
-        :
-        M_F( F )
+        : M_F( F )
     {
         this->setName();
-        DVLOG(2) << "Create inverse operator " << this->Label() << "...\n";
+        DVLOG( 2 ) << "Create inverse operator " << this->Label() << "...\n";
     }
 
     OperatorInverse( const OperatorInverse& tc )
-        :
-        M_F( tc.M_F ),
-        M_Label( tc.M_Label )
+        : M_F( tc.M_F ),
+          M_Label( tc.M_Label )
     {
-        DVLOG(2) << "Copy inverse operator " << this->Label() << "...\n";
+        DVLOG( 2 ) << "Copy inverse operator " << this->Label() << "...\n";
     }
 
     bool hasInverse() const
@@ -319,23 +296,25 @@ public:
         return M_F->hasInverse();
     }
 
-    int Apply( const Epetra_MultiVector & X, Epetra_MultiVector & Y ) const
+    int Apply( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        DVLOG(2) << "Apply matrix " << Label() << "\n";
+        DVLOG( 2 ) << "Apply matrix " << Label() << "\n";
 
-        FEELPP_ASSERT( hasApply() ).error( "This operator cannot be applied." );
-        M_F->ApplyInverse( X,Y );
+        FEELPP_ASSERT( hasApply() )
+            .error( "This operator cannot be applied." );
+        M_F->ApplyInverse( X, Y );
 
         return !hasApply();
     }
 
-    int ApplyInverse ( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
+    int ApplyInverse( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        DVLOG(2) << "ApplyInverse matrix " << Label() << "\n";
+        DVLOG( 2 ) << "ApplyInverse matrix " << Label() << "\n";
 
-        FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
+        FEELPP_ASSERT( hasInverse() )
+            .error( "This operator cannot be inverted." );
 
-        M_F->Apply( X,Y );
+        M_F->Apply( X, Y );
 
         return !hasInverse();
     }
@@ -343,52 +322,50 @@ public:
     // other function
     int SetUseTranspose( bool UseTranspose )
     {
-        return( false );
+        return ( false );
     }
 
     double NormInf() const
     {
-        return( false );
+        return ( false );
     }
 
-    const char * Label () const
+    const char* Label() const
     {
         return M_Label.c_str();
     }
 
     bool UseTranspose() const
     {
-        return( false );
+        return ( false );
     }
 
-    bool HasNormInf () const
+    bool HasNormInf() const
     {
-        return( false );
+        return ( false );
     }
 
-
-    const Epetra_Comm & Comm() const
+    const Epetra_Comm& Comm() const
     {
-        return( M_F->Comm() );
+        return ( M_F->Comm() );
     }
 
-    const Epetra_Map & OperatorDomainMap() const
+    const Epetra_Map& OperatorDomainMap() const
     {
-        return( M_F->OperatorRangeMap() );
+        return ( M_F->OperatorRangeMap() );
     }
 
-    const Epetra_Map & OperatorRangeMap() const
+    const Epetra_Map& OperatorRangeMap() const
     {
-        return( M_F->OperatorDomainMap() );
+        return ( M_F->OperatorDomainMap() );
     }
 
     ~OperatorInverse()
     {
-        DVLOG(2) << "Destroyed inverse operator: " << this->Label() << " ...\n";
+        DVLOG( 2 ) << "Destroyed inverse operator: " << this->Label() << " ...\n";
     };
 
-private:
-
+  private:
     operator_ptrtype M_F;
 
     std::string M_Label;
@@ -404,25 +381,18 @@ private:
     }
 };
 
-
-
-
-
-
-template< typename op1_type, typename op2_type >
+template <typename op1_type, typename op2_type>
 class OperatorCompose : public Epetra_Operator
 {
-public:
-
+  public:
     typedef boost::shared_ptr<op1_type> op1_ptrtype;
     typedef boost::shared_ptr<op2_type> op2_ptrtype;
 
     // This constructor implements the (F o G) operator
 
     OperatorCompose()
-        :
-        M_F(),
-        M_G()
+        : M_F(),
+          M_G()
     {
         std::string t( M_F->Label() );
         std::string u( M_G->Label() );
@@ -433,9 +403,8 @@ public:
     }
 
     OperatorCompose( op1_ptrtype& F, op2_ptrtype& G )
-        :
-        M_F( F ),
-        M_G( G )
+        : M_F( F ),
+          M_G( G )
     {
         std::string t( F->Label() );
         std::string u( G->Label() );
@@ -443,16 +412,15 @@ public:
         t.append( "*" );
         t.append( u );
         M_Label = t;
-        DVLOG(2) << "Create operator " << Label() << " ...\n";
+        DVLOG( 2 ) << "Create operator " << Label() << " ...\n";
     }
 
     OperatorCompose( const OperatorCompose& tc )
-        :
-        M_F( tc.M_F ),
-        M_G( tc.M_G ),
-        M_Label( tc.M_Label )
+        : M_F( tc.M_F ),
+          M_G( tc.M_G ),
+          M_Label( tc.M_Label )
     {
-        DVLOG(2) << "Copy operator " << Label() << " ...\n";
+        DVLOG( 2 ) << "Copy operator " << Label() << " ...\n";
     }
 
     bool hasInverse() const
@@ -465,30 +433,32 @@ public:
         return M_F->hasApply() * M_G->hasApply();
     }
 
-    int Apply( const Epetra_MultiVector & X, Epetra_MultiVector & Y ) const
+    int Apply( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        FEELPP_ASSERT( hasApply() ).error( "This operator cannot be applied." );
+        FEELPP_ASSERT( hasApply() )
+            .error( "This operator cannot be applied." );
 
-        DVLOG(2) << "Apply operator " << Label() << " ...\n";
+        DVLOG( 2 ) << "Apply operator " << Label() << " ...\n";
 
         Epetra_MultiVector Z( M_G->OperatorRangeMap(), 1 );
 
-        M_G->Apply( X,Z );
-        M_F->Apply( Z,Y );
+        M_G->Apply( X, Z );
+        M_F->Apply( Z, Y );
 
         return !hasApply();
     }
 
-    int ApplyInverse ( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
+    int ApplyInverse( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
+        FEELPP_ASSERT( hasInverse() )
+            .error( "This operator cannot be inverted." );
 
-        DVLOG(2) << "Apply Inverse operator " << Label() << " ...\n";
+        DVLOG( 2 ) << "Apply Inverse operator " << Label() << " ...\n";
 
         Epetra_MultiVector Z( X );
 
-        M_F->ApplyInverse( X,Z );
-        M_G->ApplyInverse( Z,Y );
+        M_F->ApplyInverse( X, Z );
+        M_G->ApplyInverse( Z, Y );
 
         return hasInverse();
     }
@@ -496,7 +466,7 @@ public:
     // other function
     int SetUseTranspose( bool UseTranspose )
     {
-        return( false );
+        return ( false );
     }
 
     double NormInf() const
@@ -504,7 +474,7 @@ public:
         return 0;
     }
 
-    const char * Label () const
+    const char* Label() const
     {
 
         return M_Label.c_str();
@@ -512,74 +482,57 @@ public:
 
     bool UseTranspose() const
     {
-        return( false );
+        return ( false );
     }
 
-    bool HasNormInf () const
+    bool HasNormInf() const
     {
-        return( false );
+        return ( false );
     }
 
-
-    const Epetra_Comm & Comm() const
+    const Epetra_Comm& Comm() const
     {
-        return( M_F->Comm() );
+        return ( M_F->Comm() );
     }
 
-    const Epetra_Map & OperatorDomainMap() const
+    const Epetra_Map& OperatorDomainMap() const
     {
-        return( M_G->OperatorDomainMap() );
+        return ( M_G->OperatorDomainMap() );
     }
 
-    const Epetra_Map & OperatorRangeMap() const
+    const Epetra_Map& OperatorRangeMap() const
     {
-        return( M_F->OperatorRangeMap() );
+        return ( M_F->OperatorRangeMap() );
     }
 
     ~OperatorCompose()
     {
-        DVLOG(2) << "Destroyed compose operator: " << this->Label() << " ...\n";
+        DVLOG( 2 ) << "Destroyed compose operator: " << this->Label() << " ...\n";
     };
 
-private:
-
+  private:
     op1_ptrtype M_F;
     op2_ptrtype M_G;
 
     std::string M_Label;
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-template< typename op1_type>
+template <typename op1_type>
 class OperatorScale : public Epetra_Operator
 {
-public:
-
+  public:
     typedef boost::shared_ptr<op1_type> op1_ptrtype;
 
     // This constructor implements the (\alpha F) operator
     OperatorScale()
-        :
-        M_F(),
-        M_alpha( 0 )
+        : M_F(),
+          M_alpha( 0 )
     {
     }
 
     OperatorScale( op1_ptrtype& F )
-        :
-        M_F( F ),
-        M_alpha( 1 )
+        : M_F( F ),
+          M_alpha( 1 )
     {
         std::string temp( "alpha" );
         std::string t = M_F->Label();
@@ -589,13 +542,12 @@ public:
 
         M_Label = temp;
 
-        DVLOG(2) << "Create scale operator " << Label() << " ...\n";
+        DVLOG( 2 ) << "Create scale operator " << Label() << " ...\n";
     }
 
     OperatorScale( op1_ptrtype& F, double alpha )
-        :
-        M_F( F ),
-        M_alpha( alpha )
+        : M_F( F ),
+          M_alpha( alpha )
     {
         std::string temp( "alpha" );
         std::string t = M_F->Label();
@@ -605,21 +557,20 @@ public:
 
         M_Label = temp;
 
-        DVLOG(2) << "Create scale operator " << Label() << " ...\n";
+        DVLOG( 2 ) << "Create scale operator " << Label() << " ...\n";
     }
 
     OperatorScale( const OperatorScale& tc )
-        :
-        M_F( tc.M_F ),
-        M_alpha( tc.M_alpha ),
-        M_Label( tc.M_Label )
+        : M_F( tc.M_F ),
+          M_alpha( tc.M_alpha ),
+          M_Label( tc.M_Label )
     {
-        DVLOG(2) << "Copy scale operator " << Label() << " ...\n";
+        DVLOG( 2 ) << "Copy scale operator " << Label() << " ...\n";
     }
 
     bool hasInverse() const
     {
-        return M_F->hasApply()*( M_alpha != 0 );
+        return M_F->hasApply() * ( M_alpha != 0 );
     }
 
     bool hasApply() const
@@ -627,29 +578,28 @@ public:
         return M_F->hasApply();
     }
 
-
-
-    int Apply( const Epetra_MultiVector & X, Epetra_MultiVector & Y ) const
+    int Apply( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        DVLOG(2) << "Apply scale operator " << Label() << "\n";
+        DVLOG( 2 ) << "Apply scale operator " << Label() << "\n";
 
-        M_F->Apply( X,Y );
+        M_F->Apply( X, Y );
 
         Y.Scale( M_alpha );
 
         return !hasApply();
     }
 
-    int ApplyInverse ( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
+    int ApplyInverse( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        DVLOG(2) << "ApplyInverse scale operator " << Label() << "\n";
+        DVLOG( 2 ) << "ApplyInverse scale operator " << Label() << "\n";
 
-        FEELPP_ASSERT( hasInverse() && ( M_alpha != 0 ) ).error( "This operator cannot be inverted." );
+        FEELPP_ASSERT( hasInverse() && ( M_alpha != 0 ) )
+            .error( "This operator cannot be inverted." );
 
         Epetra_MultiVector Z( X );
-        Z.Scale( 1./M_alpha );
+        Z.Scale( 1. / M_alpha );
 
-        M_F->ApplyInverse( Z,Y );
+        M_F->ApplyInverse( Z, Y );
 
         return !hasInverse();
     }
@@ -657,7 +607,7 @@ public:
     // other function
     int SetUseTranspose( bool UseTranspose )
     {
-        return( false );
+        return ( false );
     }
 
     double NormInf() const
@@ -665,44 +615,41 @@ public:
         return 0;
     }
 
-    const char * Label () const
+    const char* Label() const
     {
         return M_Label.c_str();
     }
 
     bool UseTranspose() const
     {
-        return( false );
+        return ( false );
     }
 
-    bool HasNormInf () const
+    bool HasNormInf() const
     {
-        return( false );
+        return ( false );
     }
 
-
-    const Epetra_Comm & Comm() const
+    const Epetra_Comm& Comm() const
     {
-        return( M_F->Comm() );
+        return ( M_F->Comm() );
     }
 
-    const Epetra_Map & OperatorDomainMap() const
+    const Epetra_Map& OperatorDomainMap() const
     {
-        return( M_F->OperatorDomainMap() );
+        return ( M_F->OperatorDomainMap() );
     }
 
-    const Epetra_Map & OperatorRangeMap() const
+    const Epetra_Map& OperatorRangeMap() const
     {
-        return( M_F->OperatorRangeMap() );
+        return ( M_F->OperatorRangeMap() );
     }
 
-    ~OperatorScale()
-    {
+    ~OperatorScale(){
         //DVLOG(2) << "Destroyed scale operator: " << Label() << " ...\n";
     };
 
-private:
-
+  private:
     op1_ptrtype M_F;
 
     double M_alpha;
@@ -710,16 +657,10 @@ private:
     std::string M_Label;
 };
 
-
-
-
-
-
-template< typename operator_type >
+template <typename operator_type>
 class OperatorFree : public Epetra_Operator
 {
-public:
-
+  public:
     typedef boost::shared_ptr<operator_type> operator_ptrtype;
 
     typedef Epetra_Operator prec_type;
@@ -733,48 +674,43 @@ public:
     typedef Teuchos::ParameterList list_type;
 
     OperatorFree( operator_ptrtype F )
-        :
-        M_op( F ),
-        M_Solver( new solver_type() ),
-        M_hasInverse( 0 ),
-        M_hasApply( F->hasApply() ),
-        M_useTranspose( F->UseTranspose() ),
-        M_label( F->Label() )
+        : M_op( F ),
+          M_Solver( new solver_type() ),
+          M_hasInverse( 0 ),
+          M_hasApply( F->hasApply() ),
+          M_useTranspose( F->UseTranspose() ),
+          M_label( F->Label() )
     {
-        DVLOG(2) << "Create operator " << Label() << " ...\n";
+        DVLOG( 2 ) << "Create operator " << Label() << " ...\n";
     }
 
     OperatorFree( operator_ptrtype F, prec_ptrtype Prec, list_type options )
-        :
-        M_op( F ),
-        M_Solver( new solver_type() ),
-        M_hasInverse( 1 ),
-        M_hasApply( F->hasApply() ),
-        M_useTranspose( F->UseTranspose() ),
-        M_label( F->Label() ),
-        M_Prec( Prec )
+        : M_op( F ),
+          M_Solver( new solver_type() ),
+          M_hasInverse( 1 ),
+          M_hasApply( F->hasApply() ),
+          M_useTranspose( F->UseTranspose() ),
+          M_label( F->Label() ),
+          M_Prec( Prec )
     {
-        DVLOG(2) << "Create operator " << Label() << " ...\n";
+        DVLOG( 2 ) << "Create operator " << Label() << " ...\n";
         M_tol = options.get( "tol", 1e-7 );
         M_maxiter = options.get( "max_iter", 100 );
 
         M_Solver->setOptions( options );
     }
 
-
     OperatorFree( const OperatorFree& tc )
-        :
-        M_op( tc.M_op ),
-        M_hasInverse( tc.M_hasInverse ),
-        M_hasApply( tc.M_hasApply ),
-        M_useTranspose( tc.M_useTranspose ),
-        M_Solver( tc.M_Solver ),
-        M_label( tc.M_label ),
-        M_Prec( tc.M_Prec )
+        : M_op( tc.M_op ),
+          M_hasInverse( tc.M_hasInverse ),
+          M_hasApply( tc.M_hasApply ),
+          M_useTranspose( tc.M_useTranspose ),
+          M_Solver( tc.M_Solver ),
+          M_label( tc.M_label ),
+          M_Prec( tc.M_Prec )
     {
-        DVLOG(2) << "Copy operator " << Label() << " ...\n";
+        DVLOG( 2 ) << "Copy operator " << Label() << " ...\n";
     }
-
 
     bool hasInverse() const
     {
@@ -786,25 +722,25 @@ public:
         return M_hasApply;
     }
 
-
-    int Apply( const Epetra_MultiVector & X, Epetra_MultiVector & Y ) const
+    int Apply( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        DVLOG(2) << "Apply operator " << Label() << "\n";
-        M_op->Apply( X,Y );
-        DVLOG(2) << "Finished Apply operator " << Label() << "\n";
+        DVLOG( 2 ) << "Apply operator " << Label() << "\n";
+        M_op->Apply( X, Y );
+        DVLOG( 2 ) << "Finished Apply operator " << Label() << "\n";
 
         return !hasApply();
     }
 
-    int ApplyInverse ( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
+    int ApplyInverse( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        DVLOG(2) << "ApplyInverse operator " << Label() << "\n";
+        DVLOG( 2 ) << "ApplyInverse operator " << Label() << "\n";
 
-        FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
+        FEELPP_ASSERT( hasInverse() )
+            .error( "This operator cannot be inverted." );
 
         std::pair<unsigned int, real_type> result = M_Solver->solve( M_op, M_Prec, Y, X, M_tol, M_maxiter );
 
-        DVLOG(2) << "Finished ApplyInverse operator " << Label() << "\n";
+        DVLOG( 2 ) << "Finished ApplyInverse operator " << Label() << "\n";
         return !hasInverse();
     }
 
@@ -821,9 +757,9 @@ public:
         return 0;
     }
 
-    const char * Label () const
+    const char* Label() const
     {
-        return( M_label.c_str() );
+        return ( M_label.c_str() );
     }
 
     bool UseTranspose() const
@@ -831,33 +767,32 @@ public:
         return M_useTranspose;
     }
 
-    bool HasNormInf () const
+    bool HasNormInf() const
     {
-        return( true );
+        return ( true );
     }
 
-    const Epetra_Comm & Comm() const
+    const Epetra_Comm& Comm() const
     {
-        return( M_op->OperatorDomainMap().Comm() );
+        return ( M_op->OperatorDomainMap().Comm() );
     }
 
-    const Epetra_Map & OperatorDomainMap() const
+    const Epetra_Map& OperatorDomainMap() const
     {
-        return( M_op->OperatorDomainMap() );
+        return ( M_op->OperatorDomainMap() );
     }
 
-    const Epetra_Map & OperatorRangeMap() const
+    const Epetra_Map& OperatorRangeMap() const
     {
-        return( M_op->OperatorRangeMap() );
+        return ( M_op->OperatorRangeMap() );
     }
 
     ~OperatorFree()
     {
-        DVLOG(2) << "Destroyed operator: " << Label() << " ...\n";
+        DVLOG( 2 ) << "Destroyed operator: " << Label() << " ...\n";
     };
 
-private:
-
+  private:
     operator_ptrtype M_op;
 
     solver_ptrtype M_Solver;
@@ -871,13 +806,6 @@ private:
 
     prec_ptrtype M_Prec;
 };
-
-
-
-
-
-
-
 
 } // Feel
 

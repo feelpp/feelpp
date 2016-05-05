@@ -35,8 +35,7 @@ namespace Feel
 {
 struct TimerPair : public std::pair<boost::timer, double>
 {
-public:
-
+  public:
     double elapsed()
     {
         second = first.elapsed();
@@ -67,10 +66,8 @@ public:
 class TimerMap : public std::map<std::string, TimerPair>
 {
     typedef std::map<std::string, TimerPair> super;
-public:
 
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -85,7 +82,8 @@ public:
     //@{
 
     TimerMap() {}
-    TimerMap( TimerMap const & tm ) : super( tm ) {}
+    TimerMap( TimerMap const& tm )
+        : super( tm ) {}
     ~TimerMap() {}
 
     //@}
@@ -94,13 +92,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
-
 
     //@}
 
@@ -108,32 +104,27 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-    template<typename PrefixType>
+    template <typename PrefixType>
     void report( PrefixType const& prefix )
     {
         const_iterator it;
 
-        for ( it=this->begin(); it!=this->end(); ++it )
+        for ( it = this->begin(); it != this->end(); ++it )
         {
-            VLOG(1) << prefix << " "  << it->first << ": " << it->second.second << "\n";
+            VLOG( 1 ) << prefix << " " << it->first << ": " << it->second.second << "\n";
         }
     }
 
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
 };
 } // Feel
 #endif /* __TimerMap_H */

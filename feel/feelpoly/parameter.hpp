@@ -37,13 +37,11 @@ namespace Feel
 
 namespace parameter = boost::parameter;
 
-
 BOOST_PARAMETER_TEMPLATE_KEYWORD( dim )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( order )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( value_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( convex_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( points_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( cont_type )
-
 }
 #endif /* __parameter_H */

@@ -26,24 +26,23 @@
 #include <cstdio>
 #include <iosfwd>
 
-#include <string>
 #include <sstream>
+#include <string>
 
 #include <feel/feelcore/feelmacros.hpp>
-
 
 namespace Feel
 {
 class DebugStream;
 class NdebugStream;
 
-typedef DebugStream & ( *LManipFunction )( DebugStream & ); // manipulator function
-typedef NdebugStream & ( *LNManipFunction )( NdebugStream& ); // manipulator function
+typedef DebugStream& ( *LManipFunction )( DebugStream& );    // manipulator function
+typedef NdebugStream& ( *LNManipFunction )( NdebugStream& ); // manipulator function
 
 #ifdef __GNUC__
-# define FEELPP_FUNCINFO "[" << __PRETTY_FUNCTION__ << "] "
+#define FEELPP_FUNCINFO "[" << __PRETTY_FUNCTION__ << "] "
 #else
-# define FEELPP_FUNCINFO "[" << __FILE__ << ":" << __LINE__ << "] "
+#define FEELPP_FUNCINFO "[" << __FILE__ << ":" << __LINE__ << "] "
 #endif
 
 #define FEELPP_LINEINFO "[" << __FILE__ << ":" << __LINE__ << "] "
@@ -88,9 +87,7 @@ private:
 
 class DebugStream
 {
-public:
-
-
+  public:
     /** @name Internal Structures
      */
     //@{
@@ -133,13 +130,12 @@ public:
     static void detachAll();
     void flush();
 
-
     DebugStream& operator<<( bool );
     DebugStream& operator<<( int16_type );
     DebugStream& operator<<( int32_type );
     DebugStream& operator<<( uint16_type );
     DebugStream& operator<<( uint32_type );
-#if defined (__s390x__) || defined( __s390__ )
+#if defined( __s390x__ ) || defined( __s390__ )
     DebugStream& operator<<( size_type );
 #endif
 #if defined( __APPLE__ )
@@ -154,7 +150,7 @@ public:
 
     DebugStream& operator<<( double );
     DebugStream& operator<<( std::complex<double> );
-#if defined(FEELPP_HAS_QD_H)
+#if defined( FEELPP_HAS_QD_H )
     DebugStream& operator<<( dd_real );
     DebugStream& operator<<( qd_real );
 #endif /* FEELPP_HAS_QD_H */
@@ -164,27 +160,25 @@ public:
     DebugStream& operator<<( LManipFunction f );
     //@}
 
-protected:
-
-private:
+  protected:
+  private:
     Private* __p;
-
 };
 
-template<typename T>
-DebugStream& operator<< ( DebugStream& __s, T const* __t )
+template <typename T>
+DebugStream& operator<<( DebugStream& __s, T const* __t )
 {
     std::ostringstream __os;
     __os << __t;
     __s << __os.str();
     return __s;
 }
-std::string backtrace ();
-std::string backtrace ( int );
+std::string backtrace();
+std::string backtrace( int );
 
 class NdebugStream
 {
-public:
+  public:
     /** @name Constructors, destructor
      */
     //@{
@@ -228,7 +222,7 @@ public:
     {
         return *this;
     }
-#if defined (__s390x__) || defined( __s390__ )
+#if defined( __s390x__ ) || defined( __s390__ )
     NdebugStream& operator<<( size_type )
     {
         return *this;
@@ -264,7 +258,7 @@ public:
     {
         return *this;
     }
-#if defined(FEELPP_HAS_QD_H)
+#if defined( FEELPP_HAS_QD_H )
     NdebugStream& operator<<( dd_real )
     {
         return *this;
@@ -279,7 +273,7 @@ public:
     {
         return *this;
     }
-    NdebugStream& operator<<( LManipFunction  )
+    NdebugStream& operator<<( LManipFunction )
     {
         return *this;
     }
@@ -303,7 +297,6 @@ inline NdebugStream& flush( NdebugStream& s )
 DebugStream Log( int area = 0, DebugStream::stprintf = 0 ) FEELPP_DEPRECATED;
 DebugStream Log( bool cond, int area = 0, DebugStream::stprintf = 0 ) FEELPP_DEPRECATED;
 
-
 #ifndef NDEBUG
 DebugStream Debug( int area = 0, DebugStream::stprintf = 0 ) FEELPP_DEPRECATED;
 DebugStream Debug( bool cond, int area = 0, DebugStream::stprintf = 0 ) FEELPP_DEPRECATED;
@@ -319,7 +312,6 @@ inline NdebugStream Ndebug( bool /*cond*/, int = 0, NdebugStream::stprintf = &pr
 }
 #endif
 
-
 DebugStream Warning( int area = 0 );
 DebugStream Warning( bool cond, int area = 0 );
 
@@ -330,20 +322,15 @@ DebugStream Fatal( int area = 0 );
 DebugStream Fatal( bool cond, int area = 0 );
 
 /// Standard function announcer
-#define FEELPP_DEBUG_FUNC_INFO(area) Debug(area) << FEELPP_FUNCINFO << "\n";
+#define FEELPP_DEBUG_FUNC_INFO( area ) Debug( area ) << FEELPP_FUNCINFO << "\n";
 
 /// Use these to introduce and extroduce functions
-#define FEELPP_DEBUG_BEGIN(area) Debug(area) << "BEGIN: " << __PRETTY_FUNCTION__ << "\n";
-#define FEELPP_DEBUG_END(area)   Debug(area) << "END: " << __PRETTY_FUNCTION__ << "\n";
-
+#define FEELPP_DEBUG_BEGIN( area ) Debug( area ) << "BEGIN: " << __PRETTY_FUNCTION__ << "\n";
+#define FEELPP_DEBUG_END( area ) Debug( area ) << "END: " << __PRETTY_FUNCTION__ << "\n";
 }
-
-
-
 
 Feel::DebugStream& perror( Feel::DebugStream& s );
 Feel::DebugStream& endl( Feel::DebugStream& s );
 Feel::DebugStream& flush( Feel::DebugStream& );
-
 
 #endif /* __Debug_H */

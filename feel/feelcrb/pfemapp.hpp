@@ -29,14 +29,12 @@
 #ifndef PFEMAPP_HPP
 #define PFEMAPP_HPP
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/options.hpp>
-
 
 #include <feel/feelcrb/crbmodel.hpp>
 #include <feel/feelcrb/pfemapp.hpp>
-
 
 namespace Feel
 {
@@ -56,26 +54,23 @@ std::string _o( std::string const& prefix, std::string const& opt )
  *
  * @author Christophe Prud'homme
  */
-template<typename ModelType>
-class PFemApp   : public Application
+template <typename ModelType>
+class PFemApp : public Application
 {
     typedef Application super;
-public:
 
+  public:
     typedef CRBModel<ModelType> crbmodel_type;
     typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
 
-
     PFemApp( AboutData const& ad, po::options_description const& od )
-        :
-        super( ad, pfemapp_options( ad.appName() ).add( od ) )
+        : super( ad, pfemapp_options( ad.appName() ).add( od ) )
     {
         this->init();
     }
 
     PFemApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
-        :
-        super( argc, argv, ad, pfemapp_options( ad.appName() ).add( od ) )
+        : super( argc, argv, ad, pfemapp_options( ad.appName() ).add( od ) )
     {
         this->init();
     }
@@ -83,10 +78,7 @@ public:
     {
         std::srand( static_cast<unsigned>( std::time( 0 ) ) );
         this->setLogs();
-        this->changeRepository( boost::format( "%1%/h_%2%/" )
-                                % this->about().appName()
-                                % this->vm()["hsize"].template as<double>()
-                              );
+        this->changeRepository( boost::format( "%1%/h_%2%/" ) % this->about().appName() % this->vm()["hsize"].template as<double>() );
         std::cout << "[PFemApp] build model " << this->about().appName() << "\n";
         model = crbmodel_ptrtype( new crbmodel_type( this->vm() ) );
 
@@ -101,7 +93,7 @@ public:
         }
 
         typename crbmodel_type::parameter_type mu( model->parameterSpace() );
-        int mutype = this->vm()[_o( this->about().appName(),"mu-type" )].template as<int>();
+        int mutype = this->vm()[_o( this->about().appName(), "mu-type" )].template as<int>();
 
         if ( mutype <= 0 )
         {
@@ -128,37 +120,34 @@ public:
         std::cout << "[PFemApp] running " << this->about().appName() << " with mu = [";
         int size = mu.size();
 
-        for ( int i=0; i<size-1; i++ ) std::cout<<mu( i )<<" , ";
+        for ( int i = 0; i < size - 1; i++ )
+            std::cout << mu( i ) << " , ";
 
-        std::cout<< mu( size-1 )<<"] "<<std::endl;
+        std::cout << mu( size - 1 ) << "] " << std::endl;
 
         model->solve( mu );
 
         auto Xh = model->functionSpace();
         auto u = Xh->element();
-        bool need_to_solve=true;
+        bool need_to_solve = true;
 
-        for ( int l =0; l < model->Nl(); ++l )
+        for ( int l = 0; l < model->Nl(); ++l )
         {
-            double o = model->output( l,mu , u , need_to_solve );
+            double o = model->output( l, mu, u, need_to_solve );
             std::cout << "[PFemApp] output " << l << " of  " << this->about().appName() << " = " << o << "\n";
         }
     }
 
-    void run( const double * X, unsigned long N,
-              double * Y, unsigned long P )
+    void run( const double* X, unsigned long N,
+              double* Y, unsigned long P )
     {
 
         model->run( X, N, Y, P );
-
     }
 
     crbmodel_ptrtype model;
 
-
 }; // Opus
-
-
 
 } // Feel
 

@@ -23,11 +23,11 @@
 */
 #include <feel/feells/reinit_fms_impl.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
-template class ReinitializerFMS< ls_space_type<3>, NoPeriodicity > ;
-template class ReinitializerFMS< ls_space_type<3>, Periodic<> > ;
-template class ReinitializerFMS< ls_space_type<3,2>, NoPeriodicity > ;
-template class ReinitializerFMS< lsh_space_type<3>, NoPeriodicity > ;
-
+template class ReinitializerFMS<ls_space_type<3>, NoPeriodicity>;
+template class ReinitializerFMS<ls_space_type<3>, Periodic<>>;
+template class ReinitializerFMS<ls_space_type<3, 2>, NoPeriodicity>;
+template class ReinitializerFMS<lsh_space_type<3>, NoPeriodicity>;
 }

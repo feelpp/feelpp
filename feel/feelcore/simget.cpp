@@ -28,26 +28,25 @@
  */
 
 #include <feel/feelcore/application.hpp>
-#include <feel/feelcore/simget.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/simget.hpp>
 
 namespace Feel
 {
 Simget::Simget()
-    :
-    M_vm( Environment::vm() ),
-    M_about( Environment::about() )
-{}
+    : M_vm( Environment::vm() ),
+      M_about( Environment::about() )
+{
+}
 
 Simget&
 Simget::changeRepository( boost::format fmt )
 {
     Environment::changeRepository( fmt );
-    return  *this;
+    return *this;
 }
 
-void
-Simget::print( std::ostream& out, std::vector<ptree::ptree> & stats )
+void Simget::print( std::ostream& out, std::vector<ptree::ptree>& stats )
 {
     const std::string key = M_about.appName();
 
@@ -55,21 +54,21 @@ Simget::print( std::ostream& out, std::vector<ptree::ptree> & stats )
     {
         out << std::setw( 10 ) << std::right << "levels"
             << std::setw( 10 ) << std::right << "h";
-        BOOST_FOREACH( ptree::ptree::value_type &v,
-                       stats.front().get_child( "e" ) )
+        BOOST_FOREACH ( ptree::ptree::value_type& v,
+                        stats.front().get_child( "e" ) )
         {
             out << std::setw( 15 ) << std::right << v.first
                 << std::setw( 15 ) << std::right << "ROC";
         }
-        out << "\n" ;
-        int l=1;
+        out << "\n";
+        int l = 1;
 
-        for ( auto it = stats.begin(), en =stats.end(); it!=en; ++it,++l )
+        for ( auto it = stats.begin(), en = stats.end(); it != en; ++it, ++l )
         {
             //std::for_each( it->begin(),it->end(), []( std::pair<std::string,boost::any> const& o ) { std::cout << o.first << "\n"; } );
             //std::map<std::string,boost::any> data = *it;
             //std::map<std::string,boost::any> datap;
-            double h  = it->get<double>( "h" );
+            double h = it->get<double>( "h" );
 #if 0
             double rocu = 1, rocp=1;
 
@@ -89,7 +88,7 @@ Simget::print( std::ostream& out, std::vector<ptree::ptree> & stats )
 
 #endif
             out << std::right << std::setw( 10 ) << l
-                << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h
+                << std::right << std::setw( 10 ) << std::fixed << std::setprecision( 4 ) << h
                 //<< std::right << std::setw(15) << std::scientific << std::setprecision( 2 ) << u
                 //<< std::right << std::setw(15) << std::fixed << std::setprecision( 2 ) << rocu
                 //<< std::right << std::setw(15) << std::scientific << std::setprecision( 2 ) << p
@@ -141,5 +140,4 @@ Simget::print( std::ostream& out, std::vector<ptree::ptree> & stats )
 
 #endif // 0
 }
-
 }

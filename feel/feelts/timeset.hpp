@@ -24,12 +24,13 @@
 #ifndef FEELPP_FEELTS_TIMESET_HPP
 #define FEELPP_FEELTS_TIMESET_HPP 1
 
+#include <boost/optional.hpp>
 #include <iostream>
 #include <tuple>
 #include <vector>
-#include <boost/optional.hpp>
 
-namespace Feel {
+namespace Feel
+{
 using optional_double_t = boost::optional<double>;
 
 /**
@@ -42,89 +43,85 @@ struct TimeStepInfo : public std::tuple<double, double, optional_double_t>
 {
     using super = std::tuple<double, double, optional_double_t>;
 
-    TimeStepInfo( super && s ) : super( std::forward<super>(s) ) {}
-    TimeStepInfo( std::tuple<double,double,double> const& s )
-        : super( std::get<0>(s), std::get<1>(s), optional_double_t(std::get<2>(s)) ) {}
+    TimeStepInfo( super&& s )
+        : super( std::forward<super>( s ) ) {}
+    TimeStepInfo( std::tuple<double, double, double> const& s )
+        : super( std::get<0>( s ), std::get<1>( s ), optional_double_t( std::get<2>( s ) ) ) {}
 
     double k() const { return std::get<0>( *this ); }
     double timeStep() const { return k(); }
-    double& k()  { return std::get<0>( *this ); }
+    double& k() { return std::get<0>( *this ); }
     double& timeStep() { return k(); }
 
     double t() const { return std::get<1>( *this ); }
     double time() const { return t(); }
-    double& t()  { return std::get<1>( *this ); }
-    double& time()  { return t(); }
+    double& t() { return std::get<1>( *this ); }
+    double& time() { return t(); }
 
     double e() const
-        {
+    {
 #if BOOST_VERSION > 105500
-            return std::get<2>( *this ).value_or( 0. );
+        return std::get<2>( *this ).value_or( 0. );
 #else
-            auto const& a = std::get<2>( *this );
-            return a?*a:0;
+        auto const& a = std::get<2>( *this );
+        return a ? *a : 0;
 #endif
-        }
+    }
     double error() const { return e(); }
 };
 
-
 class TimeSet : public std::vector<TimeStepInfo>
 {
-public:
+  public:
     using super = std::vector<TimeStepInfo>;
-    double  kprev(int n) const
+    double kprev( int n ) const
     {
-        CHECK(n>=0 && this->size()>=1) << "Invalid n " << n << " or size " << this->size();
+        CHECK( n >= 0 && this->size() >= 1 ) << "Invalid n " << n << " or size " << this->size();
         if ( index() == 0 ) return k();
-        return std::prev(this->end(), n+1 )->k();
+        return std::prev( this->end(), n + 1 )->k();
     }
-    double& kprev(int n)
+    double& kprev( int n )
     {
-        CHECK(n>=0 && this->size()>=1) << "Invalid n " << n << " or size " << this->size();
+        CHECK( n >= 0 && this->size() >= 1 ) << "Invalid n " << n << " or size " << this->size();
         if ( index() == 0 ) return k();
-        return std::prev(this->end(), n+1 )->k();
+        return std::prev( this->end(), n + 1 )->k();
     }
 
-    double  tprev(int n) const
+    double tprev( int n ) const
     {
-        CHECK(n>=0 && this->size()>=1) << "Invalid n " << n << " or size " << this->size();
+        CHECK( n >= 0 && this->size() >= 1 ) << "Invalid n " << n << " or size " << this->size();
         if ( index() == 0 ) return t();
-        return std::prev(this->end(), n+1 )->t();
+        return std::prev( this->end(), n + 1 )->t();
     }
-    double& tprev(int n)
+    double& tprev( int n )
     {
-        CHECK(n>=0 && this->size()>=1) << "Invalid n " << n << " or size " << this->size();
+        CHECK( n >= 0 && this->size() >= 1 ) << "Invalid n " << n << " or size " << this->size();
         if ( index() == 0 ) return t();
-        return std::prev(this->end(), n+1 )->t();
+        return std::prev( this->end(), n + 1 )->t();
     }
 
-    double  k() const { return this->back().k(); }
-    double& k()       { return this->back().k(); }
-    double  t() const { return this->back().t(); }
-    double& t()       { return this->back().t(); }
+    double k() const { return this->back().k(); }
+    double& k() { return this->back().k(); }
+    double t() const { return this->back().t(); }
+    double& t() { return this->back().t(); }
 
     void push_back( double k1, double t1 )
     {
-      super::push_back( std::make_tuple( k1, t1, optional_double_t() ) );
-      this->print();
+        super::push_back( std::make_tuple( k1, t1, optional_double_t() ) );
+        this->print();
     }
     void push_back( double k1, double t1, double err )
     {
-      super::push_back( std::make_tuple( k1, t1, err ) );
-      this->print();
+        super::push_back( std::make_tuple( k1, t1, err ) );
+        this->print();
     }
-    size_t index() const { return this->size()-1; }
+    size_t index() const { return this->size() - 1; }
 
     void print();
 
     //! save times and time steps in \p fname
     void save( std::string const& fname = "times.tsv" );
-
 };
-
-
-
 
 } // Feel
 

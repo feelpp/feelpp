@@ -30,15 +30,14 @@
 #ifndef __faces_H
 #define __faces_H 1
 
-
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index_container.hpp>
 
-#include <feel/feelmesh/geoelement.hpp>
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelmesh/geoelement.hpp>
 
 namespace Feel
 {
@@ -52,113 +51,100 @@ namespace multi_index = boost::multi_index;
  * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  * @see Elements, Edges, Points
  */
-template<typename EntityType, typename ElementType>
+template <typename EntityType, typename ElementType>
 class Faces
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<EntityType::nRealDim-1> >,
-                              mpl::identity<typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<0> >,
-                                                              mpl::identity<GeoElement0D<EntityType::nRealDim, SubFaceOf<ElementType> > >,
-                                                              typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<1> >,
-                                                                                mpl::identity<GeoElement1D<EntityType::nRealDim, EntityType,  SubFaceOf<ElementType> > >,
-                                                                                mpl::identity<GeoElement2D<EntityType::nRealDim, EntityType,  SubFaceOf<ElementType> > >
-                                                                                >::type>::type>,
-                              mpl::identity<typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<0> >,
-                                                              mpl::identity<GeoElement0D<EntityType::nRealDim, SubFaceOfMany<ElementType> > >,
-                                                              typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<1> >,
-                                                                                mpl::identity<GeoElement1D<EntityType::nRealDim, EntityType,  SubFaceOfMany<ElementType> > >,
-                                                                                mpl::identity<GeoElement2D<EntityType::nRealDim, EntityType,  SubFaceOfMany<ElementType> > >
-                                                                                >::type>::type> >::type::type::type face_type;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<EntityType::nRealDim - 1>>,
+                              mpl::identity<typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<0>>,
+                                                              mpl::identity<GeoElement0D<EntityType::nRealDim, SubFaceOf<ElementType>>>,
+                                                              typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<1>>,
+                                                                                mpl::identity<GeoElement1D<EntityType::nRealDim, EntityType, SubFaceOf<ElementType>>>,
+                                                                                mpl::identity<GeoElement2D<EntityType::nRealDim, EntityType, SubFaceOf<ElementType>>>>::type>::type>,
+                              mpl::identity<typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<0>>,
+                                                              mpl::identity<GeoElement0D<EntityType::nRealDim, SubFaceOfMany<ElementType>>>,
+                                                              typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<1>>,
+                                                                                mpl::identity<GeoElement1D<EntityType::nRealDim, EntityType, SubFaceOfMany<ElementType>>>,
+                                                                                mpl::identity<GeoElement2D<EntityType::nRealDim, EntityType, SubFaceOfMany<ElementType>>>>::type>::type>>::type::type::type face_type;
 
     typedef multi_index::multi_index_container<
-    face_type,
-    multi_index::indexed_by<
-    // sort by employee::operator<
+        face_type,
+        multi_index::indexed_by<
+// sort by employee::operator<
 #if 1
-        multi_index::ordered_unique<multi_index::identity<face_type> >,
+            multi_index::ordered_unique<multi_index::identity<face_type>>,
 #else
-        multi_index::ordered_unique<
-            multi_index::composite_key<face_type,
-                                       multi_index::const_mem_fun<face_type,
-                                                                  rank_type,
-                                                                  &face_type::processId>,
-                                       multi_index::const_mem_fun<face_type,
-                                                                  size_type,
-                                                                  &face_type::id> > >,
+            multi_index::ordered_unique<
+                multi_index::composite_key<face_type,
+                                           multi_index::const_mem_fun<face_type,
+                                                                      rank_type,
+                                                                      &face_type::processId>,
+                                           multi_index::const_mem_fun<face_type,
+                                                                      size_type,
+                                                                      &face_type::id>>>,
 #endif
 
-        // sort by less<int> on marker
-        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
-                                        multi_index::composite_key<
-                                            face_type,
-                                            multi_index::const_mem_fun<face_type,
-                                                                       Marker1 const&,
-                                                                       &face_type::marker>,
+            // sort by less<int> on marker
+            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
+                                            multi_index::composite_key<
+                                                face_type,
+                                                multi_index::const_mem_fun<face_type,
+                                                                           Marker1 const&,
+                                                                           &face_type::marker>,
+                                                multi_index::const_mem_fun<face_type,
+                                                                           rank_type,
+                                                                           &face_type::processId>>>,
+            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker2>,
+                                            multi_index::composite_key<
+                                                face_type,
+                                                multi_index::const_mem_fun<face_type,
+                                                                           Marker2 const&,
+                                                                           &face_type::marker2>,
+                                                multi_index::const_mem_fun<face_type,
+                                                                           rank_type,
+                                                                           &face_type::processId>>>,
+            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker3>,
+                                            multi_index::composite_key<
+                                                face_type,
+                                                multi_index::const_mem_fun<face_type,
+                                                                           Marker3 const&,
+                                                                           &face_type::marker3>,
+                                                multi_index::const_mem_fun<face_type,
+                                                                           rank_type,
+                                                                           &face_type::processId>>>,
+            // sort by less<int> on processId
+            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
                                             multi_index::const_mem_fun<face_type,
                                                                        rank_type,
-                                                                       &face_type::processId>
-                                            > >,
-        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker2>,
-                                        multi_index::composite_key<
-                                            face_type,
-                                            multi_index::const_mem_fun<face_type,
-                                                                       Marker2 const&,
-                                                                       &face_type::marker2>,
-                                            multi_index::const_mem_fun<face_type,
-                                                                       rank_type,
-                                                                       &face_type::processId>
-                                            > >,
-        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker3>,
-                                        multi_index::composite_key<
-                                            face_type,
-                                            multi_index::const_mem_fun<face_type,
-                                                                       Marker3 const&,
-                                                                       &face_type::marker3>,
-                                            multi_index::const_mem_fun<face_type,
-                                                                       rank_type,
-                                                                       &face_type::processId>
-                                            > >,
-        // sort by less<int> on processId
-        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
-                                        multi_index::const_mem_fun<face_type,
-                                                                   rank_type,
-                                                                   &face_type::processId> >,
+                                                                       &face_type::processId>>,
 
-
-        // sort by less<int> on boundary
-        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_interprocessdomain>,
-                                        multi_index::composite_key<
-                                            face_type,
-                                            multi_index::const_mem_fun<face_type,
-                                                                       bool,
-                                                                       &face_type::isInterProcessDomain>,
-                                            multi_index::const_mem_fun<face_type,
-                                                                       rank_type,
-                                                                       &face_type::partition1>,
-                                            multi_index::const_mem_fun<face_type,
-                                                                       rank_type,
-                                                                       &face_type::partition2>
-                                            >
-                                        >,
-        // sort by less<int> on boundary
-        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
-                                        multi_index::composite_key<
-                                            face_type,
-                                            multi_index::const_mem_fun<face_type,
-                                                                       bool,
-                                                                       &face_type::isOnBoundary>,
-                                            multi_index::const_mem_fun<face_type,
-                                                                       rank_type,
-                                                                       &face_type::processId>
-                                            >
-                                        > >
-    > faces_type;
-
+            // sort by less<int> on boundary
+            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_interprocessdomain>,
+                                            multi_index::composite_key<
+                                                face_type,
+                                                multi_index::const_mem_fun<face_type,
+                                                                           bool,
+                                                                           &face_type::isInterProcessDomain>,
+                                                multi_index::const_mem_fun<face_type,
+                                                                           rank_type,
+                                                                           &face_type::partition1>,
+                                                multi_index::const_mem_fun<face_type,
+                                                                           rank_type,
+                                                                           &face_type::partition2>>>,
+            // sort by less<int> on boundary
+            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
+                                            multi_index::composite_key<
+                                                face_type,
+                                                multi_index::const_mem_fun<face_type,
+                                                                           bool,
+                                                                           &face_type::isOnBoundary>,
+                                                multi_index::const_mem_fun<face_type,
+                                                                           rank_type,
+                                                                           &face_type::processId>>>>>
+        faces_type;
 
     typedef typename faces_type::iterator face_iterator;
     typedef typename faces_type::const_iterator face_const_iterator;
@@ -201,10 +187,10 @@ public:
          * @param pt point to update
          */
         FaceUpdatePoint( uint16_type index, typename face_type::point_type const& pt )
-            :
-            M_index( index ),
-            M_pt( pt )
-        {}
+            : M_index( index ),
+              M_pt( pt )
+        {
+        }
 
         /**
          * update the \p M_index point info in element \p e using
@@ -216,10 +202,10 @@ public:
             e.setPoint( M_index, M_pt );
             //VLOG(1) << "FaceUpdatePoint] update point "<< e.point(M_index).id() << "\n";
         }
-    private:
+
+      private:
         uint16_type M_index;
         typename face_type::point_type const& M_pt;
-
     };
 
     /** @name Constructors, destructor
@@ -227,26 +213,26 @@ public:
     //@{
 
     Faces( WorldComm const& worldComm = Environment::worldComm() )
-        :
-        M_worldCommFaces( worldComm ),
-        M_faces()
-    {}
+        : M_worldCommFaces( worldComm ),
+          M_faces()
+    {
+    }
 
-    Faces( Faces const & f )
-        :
-        M_worldCommFaces( f.M_worldCommFaces ),
-        M_faces( f.M_faces )
-    {}
+    Faces( Faces const& f )
+        : M_worldCommFaces( f.M_worldCommFaces ),
+          M_faces( f.M_faces )
+    {
+    }
 
     virtual ~Faces()
     {
         this->clear();
     }
     void clear()
-        {
-            VLOG(1) << "deleting faces...\n";
-            M_faces.clear();
-        }
+    {
+        VLOG( 1 ) << "deleting faces...\n";
+        M_faces.clear();
+    }
     //@}
 
     /** @name Operator overloads
@@ -273,7 +259,7 @@ public:
     /**
      * \return the points container
      */
-    faces_type & faces()
+    faces_type& faces()
     {
         return M_faces;
     }
@@ -295,11 +281,11 @@ public:
     {
         return M_faces.empty();
     }
-    bool isBoundaryFace( face_type const & e ) const
+    bool isBoundaryFace( face_type const& e ) const
     {
         return M_faces.find( e )->isOnBoundary();
     }
-    bool isBoundaryFace( size_type const & id ) const
+    bool isBoundaryFace( size_type const& id ) const
     {
         return M_faces.find( face_type( id ) )->isOnBoundary();
     }
@@ -320,7 +306,7 @@ public:
 
     face_iterator faceIterator( size_type i ) const
     {
-        return  M_faces.find( face_type( i ) );
+        return M_faces.find( face_type( i ) );
     }
     face_iterator faceIterator( face_type const& face ) const
     {
@@ -343,7 +329,6 @@ public:
     {
         return M_faces.end();
     }
-
 
     marker_face_iterator beginFaceWithMarker()
     {
@@ -466,22 +451,22 @@ public:
 
     pid_face_iterator beginFaceWithProcessId( rank_type p = invalid_rank_type_value )
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
     }
     pid_face_const_iterator beginFaceWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
     }
     pid_face_iterator endFaceWithProcessId( rank_type p = invalid_rank_type_value )
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
     }
     pid_face_const_iterator endFaceWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
     }
 
@@ -492,24 +477,23 @@ public:
     std::pair<marker_face_iterator, marker_face_iterator>
     facesWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) );
     }
 
     std::pair<marker2_face_iterator, marker2_face_iterator>
     facesWithMarker2( size_type m, rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_marker2>().equal_range( boost::make_tuple( Marker2( m ), part ) );
     }
 
     std::pair<marker3_face_iterator, marker3_face_iterator>
     facesWithMarker3( size_type m, rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_marker3>().equal_range( boost::make_tuple( Marker3( m ), part ) );
     }
-
 
     /**
      * \return the range of iterator \c (begin,end) over the faces
@@ -526,7 +510,7 @@ public:
      *  faces on processor \p p
      */
     std::pair<location_face_iterator, location_face_iterator>
-    facesOnBoundary( rank_type p  ) const
+    facesOnBoundary( rank_type p ) const
     {
         return M_faces.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( ON_BOUNDARY, p ) );
     }
@@ -538,7 +522,7 @@ public:
     std::pair<location_face_iterator, location_face_iterator>
     internalFaces( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( INTERNAL, part ) );
     }
 
@@ -549,7 +533,7 @@ public:
     std::pair<interprocess_face_iterator, interprocess_face_iterator>
     interProcessFaces( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part =  this->worldCommFaces().localRank();
+        const rank_type part = this->worldCommFaces().localRank();
         if ( p != invalid_rank_type_value )
             return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part, p ) );
         else
@@ -576,7 +560,7 @@ public:
     std::pair<pid_face_iterator, pid_face_iterator>
     facesWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_pid>().equal_range( part );
     }
 
@@ -586,7 +570,7 @@ public:
      *
      * @return the face container by id
      */
-    typename faces_type::template nth_index<0>::type &
+    typename faces_type::template nth_index<0>::type&
     facesById()
     {
         return M_faces.template get<0>();
@@ -610,7 +594,7 @@ public:
      *
      * @return the face container using marker view
      */
-    marker_faces &
+    marker_faces&
     facesByMarker()
     {
         return M_faces.template get<Feel::detail::by_marker>();
@@ -634,7 +618,7 @@ public:
      *
      * @return the face container using marker view
      */
-    marker2_faces &
+    marker2_faces&
     facesByMarker2()
     {
         return M_faces.template get<Feel::detail::by_marker2>();
@@ -658,7 +642,7 @@ public:
      *
      * @return the face container using marker view
      */
-    marker3_faces &
+    marker3_faces&
     facesByMarker3()
     {
         return M_faces.template get<Feel::detail::by_marker3>();
@@ -676,14 +660,13 @@ public:
         return M_faces.template get<Feel::detail::by_marker3>();
     }
 
-
     /**
      * get the faces container using the location view
      *
      *
      * @return the face container using location view
      */
-    location_faces &
+    location_faces&
     facesByLocation()
     {
         return M_faces.template get<Feel::detail::by_location>();
@@ -708,7 +691,7 @@ public:
      */
     location_face_iterator beginInternalFace( rank_type p = invalid_rank_type_value )
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, part ) );
     }
     /**
@@ -718,7 +701,7 @@ public:
      */
     location_face_iterator endInternalFace( rank_type p = invalid_rank_type_value )
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, part ) );
     }
 
@@ -729,7 +712,7 @@ public:
      */
     location_face_const_iterator beginInternalFace( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, part ) );
     }
 
@@ -740,7 +723,7 @@ public:
      */
     location_face_const_iterator endInternalFace( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, part ) );
     }
 
@@ -751,7 +734,7 @@ public:
      */
     location_face_iterator beginFaceOnBoundary( rank_type p = invalid_rank_type_value )
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( ON_BOUNDARY, part ) );
     }
     /**
@@ -761,7 +744,7 @@ public:
      */
     location_face_iterator endFaceOnBoundary( rank_type p = invalid_rank_type_value )
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( ON_BOUNDARY, part ) );
     }
 
@@ -772,7 +755,7 @@ public:
      */
     location_face_const_iterator beginFaceOnBoundary( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( ON_BOUNDARY, part ) );
     }
 
@@ -783,7 +766,7 @@ public:
      */
     location_face_const_iterator endFaceOnBoundary( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( ON_BOUNDARY, part ) );
     }
 
@@ -792,7 +775,6 @@ public:
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -805,14 +787,14 @@ public:
      * @param f a new point
      * @return the new point from the list
      */
-    std::pair<face_iterator,bool> addFace( face_type& f )
+    std::pair<face_iterator, bool> addFace( face_type& f )
     {
-        std::pair<face_iterator,bool> ret =  M_faces.insert( f );
-        LOG_IF(WARNING, ret.second == false )
+        std::pair<face_iterator, bool> ret = M_faces.insert( f );
+        LOG_IF( WARNING, ret.second == false )
             << "addFace failed, face not added to container : "
             << ret.first->id() << " face id:"
             << f.id();
-        
+
         return ret;
     }
 
@@ -843,30 +825,28 @@ public:
 
         auto it = beginFace(), en = endFace();
 
-        for (  ; it != en; ++it )
+        for ( ; it != en; ++it )
             M_faces.modify( it,
-                             []( face_type& e )
-        {
-            int tag2_0 = e.isConnectedTo0()?e.element0().marker2().value():-1;
-            int tag2_1 = e.isConnectedTo1()?e.element1().marker2().value():-1;
-            int tag3_0 = e.isConnectedTo0()?e.element0().marker3().value():-1;
-            int tag3_1 = e.isConnectedTo1()?e.element1().marker3().value():-1;
+                            []( face_type& e ) {
+                                int tag2_0 = e.isConnectedTo0() ? e.element0().marker2().value() : -1;
+                                int tag2_1 = e.isConnectedTo1() ? e.element1().marker2().value() : -1;
+                                int tag3_0 = e.isConnectedTo0() ? e.element0().marker3().value() : -1;
+                                int tag3_1 = e.isConnectedTo1() ? e.element1().marker3().value() : -1;
 
-            if ( ( tag2_0 != -1 && tag2_0 == tag2_1 ) || e.isOnBoundary() )
-                e.setMarker2( tag2_0 );
-            else if ( tag2_0 != -1 && tag2_1 != -1 )
-                e.setMarker2( std::max(tag2_0,tag2_1) );
-            else
-                e.setMarker2( 0 );
+                                if ( ( tag2_0 != -1 && tag2_0 == tag2_1 ) || e.isOnBoundary() )
+                                    e.setMarker2( tag2_0 );
+                                else if ( tag2_0 != -1 && tag2_1 != -1 )
+                                    e.setMarker2( std::max( tag2_0, tag2_1 ) );
+                                else
+                                    e.setMarker2( 0 );
 
-            if ( ( tag3_0 != -1 && tag3_0 == tag3_1 ) || e.isOnBoundary() )
-                e.setMarker3( tag3_0 );
-            else if ( tag3_0 != -1 && tag3_1 != -1 )
-                e.setMarker3( std::max(tag3_0,tag3_1) );
-            else
-                e.setMarker3( 0 );
-        } );
-
+                                if ( ( tag3_0 != -1 && tag3_0 == tag3_1 ) || e.isOnBoundary() )
+                                    e.setMarker3( tag3_0 );
+                                else if ( tag3_0 != -1 && tag3_1 != -1 )
+                                    e.setMarker3( std::max( tag3_0, tag3_1 ) );
+                                else
+                                    e.setMarker3( 0 );
+                            } );
     }
 
     /**
@@ -874,88 +854,83 @@ public:
      * faces. This vector can be generated using a P0 discontinuous space
      * associated to a mesh whose elements are the faces
      */
-    template<typename ElementVecType>
+    template <typename ElementVecType>
     void updateFacesMarker2( ElementVecType const& evec )
     {
         auto rangeElt = Feel::elements( evec.mesh() );
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();
         size_type id = 0;
-        auto update_marker2 = [&evec,&id]( face_type& e )
-            {
-                auto dof_value = evec.localToGlobal( id, 0, 0 );
-                e.setMarker2( dof_value );
-            };
+        auto update_marker2 = [&evec, &id]( face_type& e ) {
+            auto dof_value = evec.localToGlobal( id, 0, 0 );
+            e.setMarker2( dof_value );
+        };
         for ( ; it != en; ++it )
         {
-            id = boost::unwrap_ref(*it).id();
+            id = boost::unwrap_ref( *it ).id();
             auto const& theface = face( evec.mesh()->subMeshToMesh( id ) );
-            
+
             auto fid = evec.mesh()->subMeshToMesh( id );
             auto it = this->faceIterator( fid );
-            
+
             bool r = M_faces.modify( it, update_marker2 );
-            DLOG_IF(WARNING, r == false ) << "update marker2 failed for element id " << id << " face id " << fid;
+            DLOG_IF( WARNING, r == false ) << "update marker2 failed for element id " << id << " face id " << fid;
         }
     }
-    
+
     /**
      * update faces marker 3 from a vector whose size is exactely the number of
      * faces. This vector can be generated using a P0 discontinuous space
      * associated to a mesh whose elements are the faces
      */
-    template<typename ElementVecType>
+    template <typename ElementVecType>
     void updateFacesMarker3( ElementVecType const& evec )
     {
         auto rangeElt = Feel::elements( evec.mesh() );
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();
         size_type id = 0;
-        auto update_marker = [&evec,&id]( face_type& e )
-            {
-                auto dof_value = evec.localToGlobal( id, 0, 0 );
-                e.setMarker3( dof_value );
-            };
+        auto update_marker = [&evec, &id]( face_type& e ) {
+            auto dof_value = evec.localToGlobal( id, 0, 0 );
+            e.setMarker3( dof_value );
+        };
         for ( ; it != en; ++it )
         {
-            id = boost::unwrap_ref(*it).id();
+            id = boost::unwrap_ref( *it ).id();
             auto const& theface = face( evec.mesh()->subMeshToMesh( id ) );
-            
+
             auto fid = evec.mesh()->subMeshToMesh( id );
             auto it = this->faceIterator( fid );
-            
+
             bool r = M_faces.modify( it, update_marker );
-            DLOG_IF(WARNING, r == false ) << "update marker3 failed for element id " << id << " face id " << fid;
+            DLOG_IF( WARNING, r == false ) << "update marker3 failed for element id " << id << " face id " << fid;
         }
     }
 
-
-    template<typename IteratorRange>
+    template <typename IteratorRange>
     void updateMarker2WithRangeFaces( IteratorRange const& range, flag_type flag )
     {
         typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_range_type;
         iterator_range_type it, en;
         boost::tie( boost::tuples::ignore, it, en ) = range;
 
-        for (  ; it != en; ++it )
-            M_faces.modify( this->faceIterator( it->id() ), [&flag]( face_type& e )
-        {
-            e.setMarker2( flag );
-        } );
+        for ( ; it != en; ++it )
+            M_faces.modify( this->faceIterator( it->id() ), [&flag]( face_type& e ) {
+                e.setMarker2( flag );
+            } );
     }
 
-    template<typename IteratorRange>
+    template <typename IteratorRange>
     void updateMarker3WithRangeFaces( IteratorRange const& range, flag_type flag )
     {
         typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_range_type;
         iterator_range_type it, en;
         boost::tie( boost::tuples::ignore, it, en ) = range;
 
-        for (  ; it != en; ++it )
-            M_faces.modify( this->faceIterator( it->id() ), [&flag]( face_type& e )
-        {
-            e.setMarker3( flag );
-        } );
+        for ( ; it != en; ++it )
+            M_faces.modify( this->faceIterator( it->id() ), [&flag]( face_type& e ) {
+                e.setMarker3( flag );
+            } );
     }
 
     void setWorldCommFaces( WorldComm const& _worldComm )
@@ -965,16 +940,15 @@ public:
 
     //@}
 
-private:
-
+  private:
     friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-        {
-            ar & M_faces;
-        }
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version )
+    {
+        ar& M_faces;
+    }
 
-private:
+  private:
     WorldComm M_worldCommFaces;
     faces_type M_faces;
 };

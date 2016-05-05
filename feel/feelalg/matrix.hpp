@@ -26,12 +26,12 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-05-22
  */
-#if !defined(FEELPP_MATRIX_HPP)
+#if !defined( FEELPP_MATRIX_HPP )
 #define FEELPP_MATRIX_HPP 1
 
-#include <boost/numeric/ublas/vector.hpp>
-#include <boost/numeric/ublas/matrix_expression.hpp>
 #include <boost/numeric/ublas/detail/matrix_assign.hpp>
+#include <boost/numeric/ublas/matrix_expression.hpp>
+#include <boost/numeric/ublas/vector.hpp>
 
 namespace boost
 {
@@ -42,22 +42,22 @@ namespace ublas
 
 /// \cond detail
 // Identity matrix class
-template<class T>
-class anti_identity_matrix:
-    public matrix_container<anti_identity_matrix<T> >
+template <class T>
+class anti_identity_matrix : public matrix_container<anti_identity_matrix<T>>
 {
 
-    typedef const T *const_pointer;
+    typedef const T* const_pointer;
     typedef anti_identity_matrix<T> self_type;
-public:
+
+  public:
 #ifdef BOOST_UBLAS_ENABLE_PROXY_SHORTCUTS
-    using matrix_container<self_type>::operator ();
+    using matrix_container<self_type>::operator();
 #endif
     typedef std::size_t size_type;
     typedef std::ptrdiff_t difference_type;
     typedef T value_type;
-    typedef const T &const_reference;
-    typedef T &reference;
+    typedef const T& const_reference;
+    typedef T& reference;
     typedef const matrix_reference<const self_type> const_closure_type;
     typedef matrix_reference<self_type> closure_type;
     typedef sparse_tag storage_category;
@@ -65,43 +65,43 @@ public:
 
     // Construction and destruction
     BOOST_UBLAS_INLINE
-    anti_identity_matrix ():
-        matrix_container<self_type> (),
-        size1_ ( 0 ), size2_ ( 0 ), size_common_ ( 0 ) {}
+    anti_identity_matrix()
+        : matrix_container<self_type>(),
+          size1_( 0 ), size2_( 0 ), size_common_( 0 ) {}
     BOOST_UBLAS_INLINE
-    anti_identity_matrix ( size_type size ):
-        matrix_container<self_type> (),
-        size1_ ( size ), size2_ ( size ), size_common_ ( ( std::min ) ( size1_, size2_ ) ) {}
+    anti_identity_matrix( size_type size )
+        : matrix_container<self_type>(),
+          size1_( size ), size2_( size ), size_common_( ( std::min )( size1_, size2_ ) ) {}
     BOOST_UBLAS_INLINE
-    anti_identity_matrix ( size_type size1, size_type size2 ):
-        matrix_container<self_type> (),
-        size1_ ( size1 ), size2_ ( size2 ), size_common_ ( ( std::min ) ( size1_, size2_ ) ) {}
+    anti_identity_matrix( size_type size1, size_type size2 )
+        : matrix_container<self_type>(),
+          size1_( size1 ), size2_( size2 ), size_common_( ( std::min )( size1_, size2_ ) ) {}
     BOOST_UBLAS_INLINE
-    anti_identity_matrix ( const anti_identity_matrix &m ):
-        matrix_container<self_type> (),
-        size1_ ( m.size1_ ), size2_ ( m.size2_ ), size_common_ ( ( std::min ) ( size1_, size2_ ) ) {}
+    anti_identity_matrix( const anti_identity_matrix& m )
+        : matrix_container<self_type>(),
+          size1_( m.size1_ ), size2_( m.size2_ ), size_common_( ( std::min )( size1_, size2_ ) ) {}
 
     // Accessors
     BOOST_UBLAS_INLINE
-    size_type size1 () const
+    size_type size1() const
     {
         return size1_;
     }
     BOOST_UBLAS_INLINE
-    size_type size2 () const
+    size_type size2() const
     {
         return size2_;
     }
 
     // Resizing
     BOOST_UBLAS_INLINE
-    void resize ( size_type size, bool preserve = true )
+    void resize( size_type size, bool preserve = true )
     {
         size1_ = size;
         size2_ = size;
     }
     BOOST_UBLAS_INLINE
-    void resize ( size_type size1, size_type size2, bool /*preserve*/ = true )
+    void resize( size_type size1, size_type size2, bool /*preserve*/ = true )
     {
         size1_ = size1;
         size2_ = size2;
@@ -109,9 +109,9 @@ public:
 
     // Element access
     BOOST_UBLAS_INLINE
-    const_reference operator () ( size_type i, size_type j ) const
+    const_reference operator()( size_type i, size_type j ) const
     {
-        if ( i == size2_-( j+1 ) )
+        if ( i == size2_ - ( j + 1 ) )
             return one_;
 
         else
@@ -120,41 +120,41 @@ public:
 
     // Assignment
     BOOST_UBLAS_INLINE
-    anti_identity_matrix &operator = ( const anti_identity_matrix &m )
+    anti_identity_matrix& operator=( const anti_identity_matrix& m )
     {
         size1_ = m.size1_;
         size2_ = m.size2_;
         return *this;
     }
     BOOST_UBLAS_INLINE
-    anti_identity_matrix &assign_temporary ( anti_identity_matrix &m )
+    anti_identity_matrix& assign_temporary( anti_identity_matrix& m )
     {
-        swap ( m );
+        swap( m );
         return *this;
     }
 
     // Swapping
     BOOST_UBLAS_INLINE
-    void swap ( anti_identity_matrix &m )
+    void swap( anti_identity_matrix& m )
     {
         if ( this != &m )
         {
-            std::swap ( size1_, m.size1_ );
-            std::swap ( size2_, m.size2_ );
+            std::swap( size1_, m.size1_ );
+            std::swap( size2_, m.size2_ );
         }
     }
     BOOST_UBLAS_INLINE
-    friend void swap ( anti_identity_matrix &m1, anti_identity_matrix &m2 )
+    friend void swap( anti_identity_matrix& m1, anti_identity_matrix& m2 )
     {
-        m1.swap ( m2 );
+        m1.swap( m2 );
     }
 
     // Iterator types
-private:
+  private:
     // Use an index
     typedef size_type const_subiterator_type;
 
-public:
+  public:
     class const_iterator1;
     class const_iterator2;
     typedef reverse_iterator_base1<const_iterator1> const_reverse_iterator1;
@@ -162,35 +162,33 @@ public:
 
     // Element lookup
     BOOST_UBLAS_INLINE
-    const_iterator1 find1 ( int rank, size_type i, size_type j ) const
+    const_iterator1 find1( int rank, size_type i, size_type j ) const
     {
         if ( rank == 1 )
         {
-            i = ( std::max ) ( i, j );
-            i = ( std::min ) ( i, j + 1 );
+            i = ( std::max )( i, j );
+            i = ( std::min )( i, j + 1 );
         }
 
-        return const_iterator1 ( *this, i );
+        return const_iterator1( *this, i );
     }
     BOOST_UBLAS_INLINE
-    const_iterator2 find2 ( int rank, size_type i, size_type j ) const
+    const_iterator2 find2( int rank, size_type i, size_type j ) const
     {
         if ( rank == 1 )
         {
-            j = ( std::max ) ( j, i );
-            j = ( std::min ) ( j, i + 1 );
+            j = ( std::max )( j, i );
+            j = ( std::min )( j, i + 1 );
         }
 
-        return const_iterator2 ( *this, j );
+        return const_iterator2( *this, j );
     }
 
-
-    class const_iterator1:
-        public container_const_reference<anti_identity_matrix>,
-        public bidirectional_iterator_base<sparse_bidirectional_iterator_tag,
-        const_iterator1, value_type>
+    class const_iterator1 : public container_const_reference<anti_identity_matrix>,
+                            public bidirectional_iterator_base<sparse_bidirectional_iterator_tag,
+                                                               const_iterator1, value_type>
     {
-    public:
+      public:
         typedef typename anti_identity_matrix::value_type value_type;
         typedef typename anti_identity_matrix::difference_type difference_type;
         typedef typename anti_identity_matrix::const_reference reference;
@@ -201,31 +199,31 @@ public:
 
         // Construction and destruction
         BOOST_UBLAS_INLINE
-        const_iterator1 ():
-            container_const_reference<self_type> (), it_ () {}
+        const_iterator1()
+            : container_const_reference<self_type>(), it_() {}
         BOOST_UBLAS_INLINE
-        const_iterator1 ( const self_type &m, const const_subiterator_type &it ):
-            container_const_reference<self_type> ( m ), it_ ( it ) {}
+        const_iterator1( const self_type& m, const const_subiterator_type& it )
+            : container_const_reference<self_type>( m ), it_( it ) {}
 
         // Arithmetic
         BOOST_UBLAS_INLINE
-        const_iterator1 &operator ++ ()
+        const_iterator1& operator++()
         {
-            BOOST_UBLAS_CHECK ( it_ < ( *this ) ().size1 (), bad_index () );
+            BOOST_UBLAS_CHECK( it_ < ( *this )().size1(), bad_index() );
             ++it_;
             return *this;
         }
         BOOST_UBLAS_INLINE
-        const_iterator1 &operator -- ()
+        const_iterator1& operator--()
         {
-            BOOST_UBLAS_CHECK ( it_ > 0, bad_index () );
+            BOOST_UBLAS_CHECK( it_ > 0, bad_index() );
             --it_;
             return *this;
         }
 
         // Dereference
         BOOST_UBLAS_INLINE
-        const_reference operator * () const
+        const_reference operator*() const
         {
             return one_;
         }
@@ -235,88 +233,91 @@ public:
 #ifdef BOOST_UBLAS_MSVC_NESTED_CLASS_RELATION
         typename self_type::
 #endif
-        const_iterator2 begin () const
+            const_iterator2
+            begin() const
         {
-            return const_iterator2 ( ( *this ) (), it_ );
+            return const_iterator2( ( *this )(), it_ );
         }
         BOOST_UBLAS_INLINE
 #ifdef BOOST_UBLAS_MSVC_NESTED_CLASS_RELATION
         typename self_type::
 #endif
-        const_iterator2 end () const
+            const_iterator2
+            end() const
         {
-            return const_iterator2 ( ( *this ) (), it_ + 1 );
+            return const_iterator2( ( *this )(), it_ + 1 );
         }
         BOOST_UBLAS_INLINE
 #ifdef BOOST_UBLAS_MSVC_NESTED_CLASS_RELATION
         typename self_type::
 #endif
-        const_reverse_iterator2 rbegin () const
+            const_reverse_iterator2
+            rbegin() const
         {
-            return const_reverse_iterator2 ( end () );
+            return const_reverse_iterator2( end() );
         }
         BOOST_UBLAS_INLINE
 #ifdef BOOST_UBLAS_MSVC_NESTED_CLASS_RELATION
         typename self_type::
 #endif
-        const_reverse_iterator2 rend () const
+            const_reverse_iterator2
+            rend() const
         {
-            return const_reverse_iterator2 ( begin () );
+            return const_reverse_iterator2( begin() );
         }
 #endif
 
         // Indices
         BOOST_UBLAS_INLINE
-        size_type index1 () const
+        size_type index1() const
         {
             return it_;
         }
         BOOST_UBLAS_INLINE
-        size_type index2 () const
+        size_type index2() const
         {
             return it_;
         }
 
         // Assignment
         BOOST_UBLAS_INLINE
-        const_iterator1 &operator = ( const const_iterator1 &it )
+        const_iterator1& operator=( const const_iterator1& it )
         {
-            container_const_reference<self_type>::assign ( &it () );
+            container_const_reference<self_type>::assign( &it() );
             it_ = it.it_;
             return *this;
         }
 
         // Comparison
         BOOST_UBLAS_INLINE
-        bool operator == ( const const_iterator1 &it ) const
+        bool operator==( const const_iterator1& it ) const
         {
-            BOOST_UBLAS_CHECK ( &( *this ) () == &it (), external_logic () );
+            BOOST_UBLAS_CHECK( &( *this )() == &it(), external_logic() );
             return it_ == it.it_;
         }
 
-    private:
+      private:
         const_subiterator_type it_;
     };
 
     typedef const_iterator1 iterator1;
 
     BOOST_UBLAS_INLINE
-    const_iterator1 begin1 () const
+    const_iterator1 begin1() const
     {
-        return const_iterator1 ( *this, 0 );
+        return const_iterator1( *this, 0 );
     }
     BOOST_UBLAS_INLINE
-    const_iterator1 end1 () const
+    const_iterator1 end1() const
     {
-        return const_iterator1 ( *this, size_common_ );
+        return const_iterator1( *this, size_common_ );
     }
 
-    class const_iterator2:
-        public container_const_reference<anti_identity_matrix>,
-        public bidirectional_iterator_base<sparse_bidirectional_iterator_tag,
-        const_iterator2, value_type>
+    class const_iterator2 : public container_const_reference<anti_identity_matrix>,
+                            public bidirectional_iterator_base<sparse_bidirectional_iterator_tag,
+                                                               const_iterator2, value_type>
     {
-    public:
+      public:
         typedef typename anti_identity_matrix::value_type value_type;
         typedef typename anti_identity_matrix::difference_type difference_type;
         typedef typename anti_identity_matrix::const_reference reference;
@@ -327,31 +328,31 @@ public:
 
         // Construction and destruction
         BOOST_UBLAS_INLINE
-        const_iterator2 ():
-            container_const_reference<self_type> (), it_ () {}
+        const_iterator2()
+            : container_const_reference<self_type>(), it_() {}
         BOOST_UBLAS_INLINE
-        const_iterator2 ( const self_type &m, const const_subiterator_type &it ):
-            container_const_reference<self_type> ( m ), it_ ( it ) {}
+        const_iterator2( const self_type& m, const const_subiterator_type& it )
+            : container_const_reference<self_type>( m ), it_( it ) {}
 
         // Arithmetic
         BOOST_UBLAS_INLINE
-        const_iterator2 &operator ++ ()
+        const_iterator2& operator++()
         {
-            BOOST_UBLAS_CHECK ( it_ < ( *this ) ().size_common_, bad_index () );
+            BOOST_UBLAS_CHECK( it_ < ( *this )().size_common_, bad_index() );
             ++it_;
             return *this;
         }
         BOOST_UBLAS_INLINE
-        const_iterator2 &operator -- ()
+        const_iterator2& operator--()
         {
-            BOOST_UBLAS_CHECK ( it_ > 0, bad_index () );
+            BOOST_UBLAS_CHECK( it_ > 0, bad_index() );
             --it_;
             return *this;
         }
 
         // Dereference
         BOOST_UBLAS_INLINE
-        const_reference operator * () const
+        const_reference operator*() const
         {
             return one_;
         }
@@ -361,107 +362,111 @@ public:
 #ifdef BOOST_UBLAS_MSVC_NESTED_CLASS_RELATION
         typename self_type::
 #endif
-        const_iterator1 begin () const
+            const_iterator1
+            begin() const
         {
-            return const_iterator1 ( ( *this ) (), it_ );
+            return const_iterator1( ( *this )(), it_ );
         }
         BOOST_UBLAS_INLINE
 #ifdef BOOST_UBLAS_MSVC_NESTED_CLASS_RELATION
         typename self_type::
 #endif
-        const_iterator1 end () const
+            const_iterator1
+            end() const
         {
-            return const_iterator1 ( ( *this ) (), it_ + 1 );
+            return const_iterator1( ( *this )(), it_ + 1 );
         }
         BOOST_UBLAS_INLINE
 #ifdef BOOST_UBLAS_MSVC_NESTED_CLASS_RELATION
         typename self_type::
 #endif
-        const_reverse_iterator1 rbegin () const
+            const_reverse_iterator1
+            rbegin() const
         {
-            return const_reverse_iterator1 ( end () );
+            return const_reverse_iterator1( end() );
         }
         BOOST_UBLAS_INLINE
 #ifdef BOOST_UBLAS_MSVC_NESTED_CLASS_RELATION
         typename self_type::
 #endif
-        const_reverse_iterator1 rend () const
+            const_reverse_iterator1
+            rend() const
         {
-            return const_reverse_iterator1 ( begin () );
+            return const_reverse_iterator1( begin() );
         }
 #endif
 
         // Indices
         BOOST_UBLAS_INLINE
-        size_type index1 () const
+        size_type index1() const
         {
             return it_;
         }
         BOOST_UBLAS_INLINE
-        size_type index2 () const
+        size_type index2() const
         {
             return it_;
         }
 
         // Assignment
         BOOST_UBLAS_INLINE
-        const_iterator2 &operator = ( const const_iterator2 &it )
+        const_iterator2& operator=( const const_iterator2& it )
         {
-            container_const_reference<self_type>::assign ( &it () );
+            container_const_reference<self_type>::assign( &it() );
             it_ = it.it_;
             return *this;
         }
 
         // Comparison
         BOOST_UBLAS_INLINE
-        bool operator == ( const const_iterator2 &it ) const
+        bool operator==( const const_iterator2& it ) const
         {
-            BOOST_UBLAS_CHECK ( &( *this ) () == &it (), external_logic () );
+            BOOST_UBLAS_CHECK( &( *this )() == &it(), external_logic() );
             return it_ == it.it_;
         }
 
-    private:
+      private:
         const_subiterator_type it_;
     };
 
     typedef const_iterator2 iterator2;
 
     BOOST_UBLAS_INLINE
-    const_iterator2 begin2 () const
+    const_iterator2 begin2() const
     {
-        return const_iterator2 ( *this, 0 );
+        return const_iterator2( *this, 0 );
     }
     BOOST_UBLAS_INLINE
-    const_iterator2 end2 () const
+    const_iterator2 end2() const
     {
-        return const_iterator2 ( *this, size_common_ );
+        return const_iterator2( *this, size_common_ );
     }
 
     // Reverse iterators
 
     BOOST_UBLAS_INLINE
-    const_reverse_iterator1 rbegin1 () const
+    const_reverse_iterator1 rbegin1() const
     {
-        return const_reverse_iterator1 ( end1 () );
+        return const_reverse_iterator1( end1() );
     }
     BOOST_UBLAS_INLINE
-    const_reverse_iterator1 rend1 () const
+    const_reverse_iterator1 rend1() const
     {
-        return const_reverse_iterator1 ( begin1 () );
+        return const_reverse_iterator1( begin1() );
     }
 
     BOOST_UBLAS_INLINE
-    const_reverse_iterator2 rbegin2 () const
+    const_reverse_iterator2 rbegin2() const
     {
-        return const_reverse_iterator2 ( end2 () );
+        return const_reverse_iterator2( end2() );
     }
     BOOST_UBLAS_INLINE
-    const_reverse_iterator2 rend2 () const
+    const_reverse_iterator2 rend2() const
     {
-        return const_reverse_iterator2 ( begin2 () );
+        return const_reverse_iterator2( begin2() );
     }
 
-private:
+  private:
     size_type size1_;
     size_type size2_;
     size_type size_common_;
@@ -469,15 +474,13 @@ private:
     static const value_type one_;
 };
 
-template<class T>
-const typename anti_identity_matrix<T>::value_type anti_identity_matrix<T>::zero_ ( 0 );
-template<class T>
-const typename anti_identity_matrix<T>::value_type anti_identity_matrix<T>::one_ ( 1 );
+template <class T>
+const typename anti_identity_matrix<T>::value_type anti_identity_matrix<T>::zero_( 0 );
+template <class T>
+const typename anti_identity_matrix<T>::value_type anti_identity_matrix<T>::one_( 1 );
 /// \endcond detail
-
 }
 }
 }
 
 #endif /* FEELPP_MATRIX_HPP */
-

@@ -34,13 +34,7 @@ namespace Feel
 namespace details
 {
 
-
-
-
-
 } // details
 /// \endcond
 
 } // Feel
-
-

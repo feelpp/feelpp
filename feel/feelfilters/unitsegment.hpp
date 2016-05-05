@@ -26,18 +26,18 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_UNITSEGMENT_HPP)
+#if !defined( FEELPP_UNITSEGMENT_HPP )
 #define FEELPP_UNITSEGMENT_HPP 1
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 
-namespace Feel {
+namespace Feel
+{
 /**
    build a mesh of the unit segment [0,1]
 */
 boost::shared_ptr<Mesh<Simplex<1>>>
-unitSegment( double h = option(_name="gmsh.hsize").as<double>(), std::string prefix="", WorldComm const& c = Environment::worldComm() );
-
+unitSegment( double h = option( _name = "gmsh.hsize" ).as<double>(), std::string prefix = "", WorldComm const& c = Environment::worldComm() );
 }
 #endif /* FEELPP_UNISEGMENT_HPP */

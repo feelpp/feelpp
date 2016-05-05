@@ -30,98 +30,91 @@
 #include <feel/feelmodels/modelmesh/ale.hpp>
 #include <feel/feelmodels/modelmesh/ale_impl.hpp>
 
-
 #include <feel/feelfilters/gmsh.hpp>
-
 
 namespace Feel
 {
 namespace FeelModels
 {
 
-template < class Convex, int Order >
-ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, WorldComm const& worldcomm, bool moveGhostEltFromExtendedStencil )
-    :
-    super_type( prefix/*prefixvm(prefix,"alemesh")*/, worldcomm,"","" )
-    //super_type( mesh,prefix,worldcomm,moveGhostEltFromExtendedStencil ),
+template <class Convex, int Order>
+ALE<Convex, Order>::ALE( mesh_ptrtype mesh, std::string prefix, WorldComm const& worldcomm, bool moveGhostEltFromExtendedStencil )
+    : super_type( prefix /*prefixvm(prefix,"alemesh")*/, worldcomm, "", "" )
+//super_type( mesh,prefix,worldcomm,moveGhostEltFromExtendedStencil ),
 {
     M_flagSet["fixed"].clear();
     M_flagSet["moving"].clear();
     M_flagSet["free"].clear();
 }
 
-template < class Convex, int Order >
-ALE<Convex,Order>::ALE( ALE const& tc )
-    :
-    super_type( tc ),
-    M_flagSet( tc.M_flagSet )
-{}
-
-template< class Convex, int Order >
-typename ALE<Convex,Order>::self_ptrtype
-ALE<Convex,Order>::build( mesh_ptrtype mesh, std::string prefix,
-                          WorldComm const& worldcomm,
-                          bool moveGhostEltFromExtendedStencil )
+template <class Convex, int Order>
+ALE<Convex, Order>::ALE( ALE const& tc )
+    : super_type( tc ),
+      M_flagSet( tc.M_flagSet )
 {
-    return self_ptrtype( new ALE_IMPL::ALE<Convex,Order>(mesh,prefix,worldcomm,moveGhostEltFromExtendedStencil ) );
 }
 
+template <class Convex, int Order>
+typename ALE<Convex, Order>::self_ptrtype
+ALE<Convex, Order>::build( mesh_ptrtype mesh, std::string prefix,
+                           WorldComm const& worldcomm,
+                           bool moveGhostEltFromExtendedStencil )
+{
+    return self_ptrtype( new ALE_IMPL::ALE<Convex, Order>( mesh, prefix, worldcomm, moveGhostEltFromExtendedStencil ) );
+}
 
+template <class Convex, int Order>
+typename ALE<Convex, Order>::flagSet_type const&
+ALE<Convex, Order>::flagSet() const
+{
+    return M_flagSet;
+}
 
-template< class Convex, int Order >
-typename ALE<Convex,Order>::flagSet_type const&
-ALE<Convex,Order>::flagSet() const { return M_flagSet; }
-
-template < class Convex, int Order >
-void
-ALE<Convex,Order>::addBoundaryFlags( std::string str, flag_type flag )
+template <class Convex, int Order>
+void ALE<Convex, Order>::addBoundaryFlags( std::string str, flag_type flag )
 {
     if ( str == "fixed" )
-        M_flagSet["fixed"].push_back(flag);
+        M_flagSet["fixed"].push_back( flag );
     else if ( str == "moving" )
-        M_flagSet["moving"].push_back(flag);
+        M_flagSet["moving"].push_back( flag );
     else if ( str == "free" )
-        M_flagSet["free"].push_back(flag);
+        M_flagSet["free"].push_back( flag );
     else
         CHECK( false ) << "invalid flag type" << str << " with flag name " << flag;
 }
-template < class Convex, int Order >
-void
-ALE<Convex,Order>::addBoundaryFlags( flagSet_type flags )
+template <class Convex, int Order>
+void ALE<Convex, Order>::addBoundaryFlags( flagSet_type flags )
 {
     M_flagSet = flags;
 }
-template < class Convex, int Order >
-void
-ALE<Convex,Order>::clearFlagSet()
+template <class Convex, int Order>
+void ALE<Convex, Order>::clearFlagSet()
 {
     //M_flagSet.clear();
     M_flagSet["fixed"].clear();
     M_flagSet["moving"].clear();
     M_flagSet["free"].clear();
 }
-template < class Convex, int Order >
+template <class Convex, int Order>
 std::vector<flag_type> const&
-ALE<Convex,Order>::flagSet(std::string key) const
+ALE<Convex, Order>::flagSet( std::string key ) const
 {
-    CHECK( M_flagSet.find(key) != M_flagSet.end() ) << "the flag type " << key << " is unknown \n";
-    return M_flagSet.find(key)->second;
+    CHECK( M_flagSet.find( key ) != M_flagSet.end() ) << "the flag type " << key << " is unknown \n";
+    return M_flagSet.find( key )->second;
 }
-template < class Convex, int Order >
+template <class Convex, int Order>
 flag_type
-ALE<Convex,Order>::flagSet(std::string key, int k) const
+ALE<Convex, Order>::flagSet( std::string key, int k ) const
 {
-    CHECK( M_flagSet.find(key) != M_flagSet.end() ) << "the flag type " << key << " is unknown \n";
-    CHECK( M_flagSet.find(key)->second.size() > k ) << "the key " << k << " must be <  " <<  M_flagSet.find(key)->second.size() << "\n";
-    return M_flagSet.find(key)->second.at(k);
+    CHECK( M_flagSet.find( key ) != M_flagSet.end() ) << "the flag type " << key << " is unknown \n";
+    CHECK( M_flagSet.find( key )->second.size() > k ) << "the key " << k << " must be <  " << M_flagSet.find( key )->second.size() << "\n";
+    return M_flagSet.find( key )->second.at( k );
 }
-template < class Convex, int Order >
-void
-ALE<Convex,Order>::setFlagSet( flagSet_type const & fl )
+template <class Convex, int Order>
+void ALE<Convex, Order>::setFlagSet( flagSet_type const& fl )
 {
-    M_flagSet=fl;
+    M_flagSet = fl;
 }
 
 } // namespace FeelModels
 } // namespace Feel
-

@@ -32,25 +32,21 @@ namespace Feel
 {
 
 template <typename T>
-void MatrixShellSparse<T>::diagonal ( vector_type& out ) const
+void MatrixShellSparse<T>::diagonal( vector_type& out ) const
 {
     M_m->diagonal( out );
 }
 template <typename T>
-void MatrixShellSparse<T>::multVector ( const vector_type& in, vector_type& out ) const
+void MatrixShellSparse<T>::multVector( const vector_type& in, vector_type& out ) const
 {
     M_m->multVector( in, out );
 }
 
-
-
 template <typename T>
-void MatrixShellSparse<T>::multAddVector ( const vector_type& in, vector_type& out ) const
+void MatrixShellSparse<T>::multAddVector( const vector_type& in, vector_type& out ) const
 {
     M_m->multAddVector( in, out );
 }
-
-
 
 //------------------------------------------------------------------
 // Explicit instantiations

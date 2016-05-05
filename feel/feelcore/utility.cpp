@@ -21,24 +21,24 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 
-namespace Feel {
-
-std::string 
-readFromFile(std::string const& infile)
+namespace Feel
 {
-    std::ifstream instream(infile.c_str());
-    if (!instream.is_open()) {
+
+std::string
+readFromFile( std::string const& infile )
+{
+    std::ifstream instream( infile.c_str() );
+    if ( !instream.is_open() )
+    {
         std::cerr << "Couldn't open file: " << infile << std::endl;
-        exit(-1);
+        exit( -1 );
     }
-    instream.unsetf(std::ios::skipws);      // No white space skipping!
-    return std::string(std::istreambuf_iterator<char>(instream.rdbuf()),
-                       std::istreambuf_iterator<char>());
+    instream.unsetf( std::ios::skipws ); // No white space skipping!
+    return std::string( std::istreambuf_iterator<char>( instream.rdbuf() ),
+                        std::istreambuf_iterator<char>() );
 }
-
-
 }

@@ -38,12 +38,10 @@ namespace Feel
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename SpaceType>
+template <typename SpaceType>
 class System
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -64,8 +62,10 @@ public:
      */
     //@{
 
-    System( functionspace_ptrtype const& Xh, po::variables_map const& vm ) :  M_Xh( Xh ), M_vm( vm ) {}
-    System( System const & s ) : M_Xh( s.M_Xh ), M_vm( s.M_vm )  {}
+    System( functionspace_ptrtype const& Xh, po::variables_map const& vm )
+        : M_Xh( Xh ), M_vm( vm ) {}
+    System( System const& s )
+        : M_Xh( s.M_Xh ), M_vm( s.M_vm ) {}
     virtual ~System() {}
 
     //@}
@@ -140,16 +140,11 @@ public:
 
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
     po::variables_map M_vm;
 
     functionspace_ptrtype M_Xh;
-
 };
 } // Feel
 #endif /* FEELPP_SYSTEM_HPP */

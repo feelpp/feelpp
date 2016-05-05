@@ -29,8 +29,8 @@
 #ifndef FEELPP_ELEMENTON_HPP
 #define FEELPP_ELEMENTON_HPP 1
 
-#include <boost/timer.hpp>
 #include <boost/foreach.hpp>
+#include <boost/timer.hpp>
 
 #include <feel/feelalg/enums.hpp>
 
@@ -46,16 +46,14 @@ namespace vf
   @author Christophe Prud'homme
   @see
 */
-template<typename ElementRange, typename Elem, typename OnExpr >
+template <typename ElementRange, typename Elem, typename OnExpr>
 class ElementOnExpr
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
-    static const size_type context = OnExpr::context|vm::POINT;
+    static const size_type context = OnExpr::context | vm::POINT;
     static const size_type is_terminal = false;
 
     static const uint16_type imorder = OnExpr::imorder;
@@ -66,19 +64,19 @@ public:
     typedef Elem element_type;
     typedef typename element_type::value_type value_type;
     typedef typename element_type::return_type return_type;
-    typedef boost::function<return_type ( node_type const& )> bc_type;
+    typedef boost::function<return_type( node_type const& )> bc_type;
     typedef OnExpr expression_type;
 
-    template<typename Func>
+    template <typename Func>
     struct HasTestFunction
     {
         static const bool result = true;
     };
 
-    template<typename Func>
+    template <typename Func>
     struct HasTrialFunction
     {
-        static const bool result = boost::is_same<Func,typename element_type::functionspace_type::basis_type>::value;
+        static const bool result = boost::is_same<Func, typename element_type::functionspace_type::basis_type>::value;
     };
 
     static const uint16_type nComponents = element_type::nComponents;
@@ -92,19 +90,17 @@ public:
     ElementOnExpr( ElementRange const& __elts,
                    element_type& __u,
                    expression_type const& __expr )
-        :
-        M_eltbegin( __elts.template get<1>() ),
-        M_eltend( __elts.template get<2>() ),
-        M_u( __u ),
-        M_expr( __expr )
+        : M_eltbegin( __elts.template get<1>() ),
+          M_eltend( __elts.template get<2>() ),
+          M_u( __u ),
+          M_expr( __expr )
     {
     }
     ElementOnExpr( ElementOnExpr const& ioe )
-        :
-        M_eltbegin( ioe.M_eltbegin ),
-        M_eltend( ioe.M_eltend ),
-        M_u( ioe.M_u ),
-        M_expr( ioe.M_expr )
+        : M_eltbegin( ioe.M_eltbegin ),
+          M_eltend( ioe.M_eltend ),
+          M_u( ioe.M_u ),
+          M_expr( ioe.M_expr )
     {
     }
 
@@ -115,7 +111,6 @@ public:
     /** @name Accessors
     */
     //@{
-
 
     /**
      * iterator that points at the beginning of the container that
@@ -135,7 +130,6 @@ public:
         return M_eltend;
     }
 
-
     //@}
     /** @name  Methods
      */
@@ -143,8 +137,7 @@ public:
     void apply();
     //@}
 
-private:
-
+  private:
     element_iterator M_eltbegin;
     element_iterator M_eltend;
 
@@ -152,11 +145,11 @@ private:
     expression_type M_expr;
 };
 
-template<typename ElementRange, typename Elem, typename OnExpr>
-void
-ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
+template <typename ElementRange, typename Elem, typename OnExpr>
+void ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
 {
-    DVLOG(2) << "call on::assemble() " << "\n";
+    DVLOG( 2 ) << "call on::assemble() "
+               << "\n";
     //
     // a few typedefs
     //
@@ -170,15 +163,14 @@ ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>> map_gmc_type;
 
     // dof
     typedef typename element_type::functionspace_type::dof_type dof_type;
 
     // basis
     typedef typename element_type::functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
+    typedef typename fe_type::template Context<context, fe_type, gm_type, geoelement_type> fecontext_type;
     typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
     //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
 
@@ -199,17 +191,15 @@ ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
     if ( __face_it != __face_en )
     {
         // get the first face properly connected
-        for( ; __face_it != __face_en; ++__face_it )
+        for ( ; __face_it != __face_en; ++__face_it )
             if ( __face_it->isConnectedTo0() )
                 break;
-
 
         dof_type const* __dof = M_u.functionSpace()->dof().get();
 
         fe_type const* __fe = M_u.functionSpace()->fe().get();
 
         gm_ptrtype __gm( new gm_type );
-
 
         //
         // Precompute some data in the reference element for
@@ -218,30 +208,30 @@ ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
         typedef typename geoelement_type::permutation_type permutation_type;
         typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
         typedef typename gm_type::precompute_type geopc_type;
-        DVLOG(2)  << "[elementon] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
-        std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
+        DVLOG( 2 ) << "[elementon] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
+        std::vector<std::map<permutation_type, geopc_ptrtype>> __geopc( geoelement_type::numTopologicalFaces );
 
         for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
         {
             for ( permutation_type __p( permutation_type::IDENTITY );
                   __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
-                __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
+                __geopc[__f][__p] = geopc_ptrtype( new geopc_type( __gm, __fe->points( __f ) ) );
                 //DVLOG(2) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-                FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
+                FEELPP_ASSERT( __geopc[__f][__p]->nPoints() )
+                    .error( "invalid number of points" );
             }
         }
 
         uint16_type __face_id = __face_it->pos_first();
         gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
 
-        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( __c ) );
         //t_expr_type expr( M_expr, mapgmc );
 
-
-        DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
-                  << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
-                  << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
+        DVLOG( 2 ) << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
+                   << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
+                   << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
 
         size_type nbFaceDof = invalid_size_type_value;
 
@@ -253,7 +243,7 @@ ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
         else
             nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
 
-        DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
+        DVLOG( 2 ) << "nbFaceDof = " << nbFaceDof << "\n";
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
 
         for ( ;
@@ -271,45 +261,45 @@ ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
             // corresponding face
             if ( __face_it->isGhostFace() )
             {
-                LOG(WARNING) << "face id : " << __face_it->id() << " is a ghost face";
+                LOG( WARNING ) << "face id : " << __face_it->id() << " is a ghost face";
                 continue;
             }
 
-            DVLOG(2) << "FACE_ID = " << __face_it->id()
-                     << " element id= " << __face_it->ad_first()
-                     << " pos in elt= " << __face_it->pos_first()
-                     << " marker: " << __face_it->marker() << "\n";
-            DVLOG(2) << "FACE_ID = " << __face_it->id() << " face pts=" << __face_it->G() << "\n";
+            DVLOG( 2 ) << "FACE_ID = " << __face_it->id()
+                       << " element id= " << __face_it->ad_first()
+                       << " pos in elt= " << __face_it->pos_first()
+                       << " marker: " << __face_it->marker() << "\n";
+            DVLOG( 2 ) << "FACE_ID = " << __face_it->id() << " face pts=" << __face_it->G() << "\n";
 
             uint16_type __face_id = __face_it->pos_first();
             __c->update( __face_it->element( 0 ), __face_id );
 
-            DVLOG(2) << "FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
-            DVLOG(2) << "FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
+            DVLOG( 2 ) << "FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
+            DVLOG( 2 ) << "FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
 
-            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( __c ) );
 
             t_expr_type expr( M_expr, mapgmc );
             expr.update( mapgmc );
 
-            std::pair<size_type,size_type> range_dof( std::make_pair( M_u.start(),
-                                                                      M_u.functionSpace()->nDof() ) );
-            DVLOG(2)  << "[elementon] dof start = " << range_dof.first << "\n";
-            DVLOG(2)  << "[elementon] dof range = " << range_dof.second << "\n";
+            std::pair<size_type, size_type> range_dof( std::make_pair( M_u.start(),
+                                                                       M_u.functionSpace()->nDof() ) );
+            DVLOG( 2 ) << "[elementon] dof start = " << range_dof.first << "\n";
+            DVLOG( 2 ) << "[elementon] dof range = " << range_dof.second << "\n";
 
             for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                 for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                 {
                     for ( uint16_type l = 0; l < nbFaceDof; ++l )
                     {
-                        DVLOG(2) << "[elementonexpr] local dof=" << l
-                                 << " |comp1=" << c1 << " comp 2= " << c2 << " | pt = " <<  __c->xReal( l ) << "\n";
+                        DVLOG( 2 ) << "[elementonexpr] local dof=" << l
+                                   << " |comp1=" << c1 << " comp 2= " << c2 << " | pt = " << __c->xReal( l ) << "\n";
                         typename expression_type::value_type __value = expr.evalq( c1, c2, l );
-                        DVLOG(2) << "[elementonexpr] value=" << __value << "\n";
+                        DVLOG( 2 ) << "[elementonexpr] value=" << __value << "\n";
 
                         // global Dof
-                        size_type thedof =  M_u.start() +
-                            boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
+                        size_type thedof = M_u.start() +
+                                           boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
 
                         //size_type thedof_nproc = __dof->dofNProc( thedof );
                         if ( std::find( dofs.begin(),
@@ -326,24 +316,21 @@ ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
     } // __face_it != __face_en
 }
 
-
 namespace detail
 {
 
-template<typename Args>
+template <typename Args>
 struct elementon_type
 {
-    typedef typename clean_type<Args,tag::range>::type _range_type;
-    typedef typename clean_type<Args,tag::element>::type _element_type;
-    typedef typename clean_type<Args,tag::expr>::type _expr_type;
+    typedef typename clean_type<Args, tag::range>::type _range_type;
+    typedef typename clean_type<Args, tag::element>::type _element_type;
+    typedef typename clean_type<Args, tag::expr>::type _expr_type;
     typedef ElementOnExpr<_range_type, _element_type,
-                      typename mpl::if_<boost::is_arithmetic<_expr_type>,
-                                        mpl::identity<Expr<Cst<_expr_type> > >,
-                                        mpl::identity<_expr_type> >::type::type> type;
+                          typename mpl::if_<boost::is_arithmetic<_expr_type>,
+                                            mpl::identity<Expr<Cst<_expr_type>>>,
+                                            mpl::identity<_expr_type>>::type::type>
+        type;
 };
-
-
-
 }
 /**
  *
@@ -356,30 +343,21 @@ struct elementon_type
  */
 BOOST_PARAMETER_FUNCTION(
     ( typename vf::detail::elementon_type<Args>::type ), // return type
-    on2,    // 2. function name
+    on2,                                                 // 2. function name
 
-    tag,           // 3. namespace of tag types
+    tag, // 3. namespace of tag types
 
-    ( required
-      ( range, *  )
-      ( element, *  )
-      ( expr,   * )
-        ) // 4. one required parameter, and
+    ( required( range, * )( element, * )(expr, *)) // 4. one required parameter, and
 
-    ( optional
-      ( prefix,   ( std::string ), "" )
-      ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )
-        )
-    )
+    ( optional( prefix, ( std::string ), "" )( verbose, (bool), boption( _prefix = prefix, _name = "on.verbose" ) ) ) )
 {
-    typename vf::detail::elementon_type<Args>::type ion( range,element,expr );
+    typename vf::detail::elementon_type<Args>::type ion( range, element, expr );
     if ( verbose )
     {
-        LOG(INFO) << "set Dof over : "<< nelements(range) << " faces";
+        LOG( INFO ) << "set Dof over : " << nelements( range ) << " faces";
     }
     return ion;
 }
-
 
 } // vf
 } // feel

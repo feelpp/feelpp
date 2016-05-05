@@ -36,12 +36,12 @@
 #include <feel/feelcore/visitor.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 
-#if defined(FEELPP_HAS_VTK)
+#if defined( FEELPP_HAS_VTK )
 // Vtk header files
 //#include "vtkPointSet.h"
+#include "vtkCell.h"
 #include "vtkPolyData.h"
 #include "vtkUnstructuredGrid.h"
-#include "vtkCell.h"
 
 #endif /* FEELPP_HAS_VTK */
 
@@ -56,15 +56,13 @@ namespace Feel
  * \author Gilles Steiner <gilles.steiner@epfl.ch>
  * \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
-template<typename MeshType>
+template <typename MeshType>
 class FilterFromVtk
-    :
-public VisitorBase,
-public Visitor<MeshType>
+    : public VisitorBase,
+      public Visitor<MeshType>
 {
 
-public:
-
+  public:
     static const uint16_type nDim = MeshType::nDim;
     BOOST_STATIC_ASSERT( nDim == 2 || nDim == 3 );
 
@@ -77,21 +75,20 @@ public:
     typedef typename mesh_type::edge_type edge_type;
     typedef typename mesh_type::face_type face_type;
     typedef typename mesh_type::element_type element_type;
-#if defined(FEELPP_HAS_VTK)
+#if defined( FEELPP_HAS_VTK )
 
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>,mpl::int_<2> >,
-            mpl::identity<vtkPolyData>,
-            mpl::identity<vtkUnstructuredGrid> >::type::type vtkmesh_type;
-
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<2>>,
+                              mpl::identity<vtkPolyData>,
+                              mpl::identity<vtkUnstructuredGrid>>::type::type vtkmesh_type;
 
 #endif /* FEELPP_HAS_VTK */
-    //@}
+//@}
 
-    /** @name Constructors, destructor
+/** @name Constructors, destructor
      */
-    //@{
+//@{
 
-#if defined(FEELPP_HAS_VTK)
+#if defined( FEELPP_HAS_VTK )
     FilterFromVtk( vtkmesh_type* __vtkmesh )
     {
         M_vtkmesh = vtkmesh_type::New();
@@ -99,17 +96,18 @@ public:
     }
 #else
     FilterFromVtk()
-    {}
+    {
+    }
 #endif /* FEELPP_HAS_VTK */
 
     ~FilterFromVtk()
     {
-#if defined(FEELPP_HAS_VTK)
+#if defined( FEELPP_HAS_VTK )
         M_vtkmesh->Delete();
 #endif /* FEELPP_HAS_VTK */
     }
 
-#if defined(FEELPP_HAS_VTK)
+#if defined( FEELPP_HAS_VTK )
     vtkmesh_type* getVtkMesh()
     {
         return M_vtkmesh;
@@ -127,17 +125,14 @@ public:
         visit( mesh, mpl::int_<nDim>() );
     }
 
-
     //@}
 
-protected :
-
-#if defined(FEELPP_HAS_VTK)
+  protected:
+#if defined( FEELPP_HAS_VTK )
     vtkmesh_type* M_vtkmesh;
 #endif /* FEELPP_HAS_VTK */
 
-private:
-
+  private:
     void visit( mesh_type* mesh, mpl::int_<2> );
     //void visit( mesh_type* mesh, mpl::int_<3> );
 };
@@ -150,15 +145,13 @@ private:
  * \author Gilles Steiner <gilles.steiner@epfl.ch>
  * \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
-template<typename MeshType>
+template <typename MeshType>
 class FilterFromVtk3D
-    :
-public VisitorBase,
-public Visitor<MeshType>
+    : public VisitorBase,
+      public Visitor<MeshType>
 {
 
-public:
-
+  public:
     static const uint16_type nDim = MeshType::nDim;
     BOOST_STATIC_ASSERT( nDim == 2 || nDim == 3 );
 
@@ -171,19 +164,19 @@ public:
     typedef typename mesh_type::edge_type edge_type;
     typedef typename mesh_type::face_type face_type;
     typedef typename mesh_type::element_type element_type;
-#if defined(FEELPP_HAS_VTK)
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>,mpl::int_<2> >,
-            mpl::identity<vtkPolyData>,
-            mpl::identity<vtkUnstructuredGrid> >::type::type vtkmesh_type;
+#if defined( FEELPP_HAS_VTK )
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<2>>,
+                              mpl::identity<vtkPolyData>,
+                              mpl::identity<vtkUnstructuredGrid>>::type::type vtkmesh_type;
 
 #endif /* FEELPP_HAS_VTK */
-    //@}
+//@}
 
-    /** @name Constructors, destructor
+/** @name Constructors, destructor
      */
-    //@{
+//@{
 
-#if defined(FEELPP_HAS_VTK)
+#if defined( FEELPP_HAS_VTK )
     FilterFromVtk3D( vtkmesh_type* __vtkmesh )
     {
         M_vtkmesh = vtkmesh_type::New();
@@ -191,17 +184,18 @@ public:
     }
 #else
     FilterFromVtk3D()
-    {}
+    {
+    }
 #endif /* FEELPP_HAS_VTK */
 
     ~FilterFromVtk3D()
     {
-#if defined(FEELPP_HAS_VTK)
+#if defined( FEELPP_HAS_VTK )
         M_vtkmesh->Delete();
 #endif /* FEELPP_HAS_VTK */
     }
 
-#if defined(FEELPP_HAS_VTK)
+#if defined( FEELPP_HAS_VTK )
     vtkmesh_type* getVtkMesh()
     {
         return M_vtkmesh;
@@ -219,38 +213,34 @@ public:
         visit( mesh, mpl::int_<nDim>() );
     }
 
-
     //@}
 
-protected :
-
-#if defined(FEELPP_HAS_VTK)
+  protected:
+#if defined( FEELPP_HAS_VTK )
     vtkmesh_type* M_vtkmesh;
 #endif /* FEELPP_HAS_VTK */
 
-private:
-
+  private:
     //void visit( mesh_type* mesh, mpl::int_<2> );
     void visit( mesh_type* mesh, mpl::int_<3> );
 };
 
-template<typename MeshType>
-void
-FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
+template <typename MeshType>
+void FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
 {
     Feel::detail::ignore_unused_variable_warning( mesh );
-#if defined(FEELPP_HAS_VTK)
+#if defined( FEELPP_HAS_VTK )
     //  std::cout <<"Start of mesh conversion !" << std::endl;
 
-    vtkPolyData * _vtkMesh = this->getVtkMesh();
+    vtkPolyData* _vtkMesh = this->getVtkMesh();
 
     uint16_type __n = _vtkMesh->GetNumberOfPoints(); // Number of nodes
 
-    DVLOG( 2 ) <<"Number of points : "<< __n << "\n";
+    DVLOG( 2 ) << "Number of points : " << __n << "\n";
 
     uint16_type __nele = _vtkMesh->GetNumberOfPolys(); // Number of elements
 
-    DVLOG( 2 ) <<"Number of elements : "<< __nele << "\n";
+    DVLOG( 2 ) << "Number of elements : " << __nele << "\n";
 
     // add the points to the mesh
 
@@ -259,7 +249,7 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
         node_type __nd( 2 );
         __nd[0] = _vtkMesh->GetPoint( __i )[0];
         __nd[1] = _vtkMesh->GetPoint( __i )[1];
-        point_type __pt( __i,__nd, false );
+        point_type __pt( __i, __nd, false );
         __pt.marker() = 0;
         __pt.setProcessIdInPartition( mesh->worldComm().localRank() );
         __pt.setProcessId( mesh->worldComm().localRank() );
@@ -268,7 +258,6 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
 
         {
             __pt.setOnBoundary( true );
-
         }
 
         else
@@ -329,7 +318,7 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
         DVLOG( 2 ) << "[FilterFromVtk] element " << __i << "\n";
         // Here we only have triangular elements of order 1
 
-        element_type * pf = new element_type;
+        element_type* pf = new element_type;
 
         pf->setId( __i );
         pf->setMarker( 0 );
@@ -348,43 +337,38 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
         delete pf;
     }
 
-
-
-    DVLOG( 2 ) <<"[FilterFromVtk] done with element accumulation !\n";
+    DVLOG( 2 ) << "[FilterFromVtk] done with element accumulation !\n";
 
     mesh->setNumVertices( __n );
     mesh->components().reset();
-    mesh->components().set ( MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    mesh->components().set( MESH_UPDATE_EDGES | MESH_UPDATE_FACES | MESH_CHECK );
     mesh->updateForUse();
 
-    DVLOG( 2 ) <<"[FilterFromVtk] Face Update !\n";
+    DVLOG( 2 ) << "[FilterFromVtk] Face Update !\n";
 
-
-    DVLOG( 2 ) <<"[FilterFromVtk] Face Update Successful !\n";
+    DVLOG( 2 ) << "[FilterFromVtk] Face Update Successful !\n";
 
 #else
     std::cerr << "The library was not compiled with vtk support\n";
 #endif /* FEELPP_HAS_VTK */
-
 }
 
-template<typename MeshType>
-void
-FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
+template <typename MeshType>
+void FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
 {
     Feel::detail::ignore_unused_variable_warning( mesh );
-#if defined(FEELPP_HAS_VTK)
+#if defined( FEELPP_HAS_VTK )
     //  std::cout <<"Start of mesh conversion !" << std::endl;
 
-    vtkUnstructuredGrid * _vtkMesh = this->getVtkMesh();
+    vtkUnstructuredGrid* _vtkMesh = this->getVtkMesh();
 
     uint16_type __n = _vtkMesh->GetNumberOfPoints(); // Nbre of nodes
 
-    DVLOG( 2 ) <<"Number of points : "<< __n << "\n";
+    DVLOG( 2 ) << "Number of points : " << __n << "\n";
 
     uint16_type __nele = _vtkMesh->GetNumberOfCells(); // Nbre of elements
 
-    DVLOG( 2 ) <<"Number of elements : "<< __nele << "\n";
+    DVLOG( 2 ) << "Number of elements : " << __nele << "\n";
 
     // add the points to the mesh
 
@@ -394,7 +378,7 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
         __nd[0] = _vtkMesh->GetPoint( __i )[0];
         __nd[1] = _vtkMesh->GetPoint( __i )[1];
         __nd[2] = _vtkMesh->GetPoint( __i )[2];
-        point_type __pt( __i,__nd, false );
+        point_type __pt( __i, __nd, false );
         __pt.setProcessIdInPartition( mesh->worldComm().localRank() );
         __pt.setProcessId( mesh->worldComm().localRank() );
 
@@ -415,7 +399,8 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
     }
 
     DVLOG( 2 ) << "[FilterFromVtk3D] mesh np = " << mesh->numPoints() << "\n";
-    FEELPP_ASSERT( mesh->numPoints() == __n )( __n )( mesh->numPoints() ).error( "invalid number of points" );
+    FEELPP_ASSERT( mesh->numPoints() == __n )
+    ( __n )( mesh->numPoints() ).error( "invalid number of points" );
 
 #if 0
     size_type n_faces = 0;
@@ -483,10 +468,10 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
     {
         // Here we only have triangular elements of order 1
 
-        element_type * pf = new element_type;
+        element_type* pf = new element_type;
 
         pf->setId( __i );
-        pf->setMarker( 0  );
+        pf->setMarker( 0 );
         pf->setProcessIdInPartition( mesh->worldComm().localRank() );
         pf->setProcessId( mesh->worldComm().localRank() );
 
@@ -500,27 +485,23 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
         delete pf;
     }
 
-
-
-
-    DVLOG( 2 ) <<"[FilterFromVtk] done with element accumulation !\n";
+    DVLOG( 2 ) << "[FilterFromVtk] done with element accumulation !\n";
 
     mesh->setNumVertices( __n );
     mesh->components().reset();
-    mesh->components().set ( MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    mesh->components().set( MESH_UPDATE_EDGES | MESH_UPDATE_FACES | MESH_CHECK );
     mesh->updateForUse();
 
-    DVLOG( 2 ) <<"[FilterFromVtk] Face Update !\n";
+    DVLOG( 2 ) << "[FilterFromVtk] Face Update !\n";
 
     // do not renumber the mesh entities
     //mesh->updateForUse( MESH_ALL_COMPONENTS & (~MESH_RENUMBER) );
 
-    DVLOG( 2 ) <<"[FilterFromVtk] Face Update Successful !\n";
+    DVLOG( 2 ) << "[FilterFromVtk] Face Update Successful !\n";
 
 #else
     std::cerr << "The library was not compiled with vtk support\n";
 #endif /* FEELPP_HAS_VTK */
-
 }
 
 } // Feel

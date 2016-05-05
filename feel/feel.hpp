@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-09-18
  */
-#if !defined(FEELPP_FEEL_HPP)
+#if !defined( FEELPP_FEEL_HPP )
 #define FEELPP_FEEL_HPP 1
 
 #include <boost/math/constants/constants.hpp>

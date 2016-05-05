@@ -28,8 +28,8 @@
  */
 #include <boost/concept_check.hpp>
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
+#include <feel/feelcore/feel.hpp>
 
 namespace Feel
 {
@@ -39,11 +39,7 @@ po::options_description
 makeMLEpetraOptions()
 {
     po::options_description mlEpetraOptions( "ML Epetra options" );
-    mlEpetraOptions.add_options()
-    ( "max-levels", po::value<int>()->default_value( 6 ), "max levels number" )
-    ( "aggregation-type", po::value<std::string>()->default_value( "MIS" ), "aggregation type" )
-    ( "coarse-type", po::value<std::string>()->default_value( "Amesos_KLU" ), "coarse type" )
-    ( "increasing-or-decreasing", po::value<std::string>()->default_value( "decreasing" ), "increasing or decreasing level indices" );
+    mlEpetraOptions.add_options()( "max-levels", po::value<int>()->default_value( 6 ), "max levels number" )( "aggregation-type", po::value<std::string>()->default_value( "MIS" ), "aggregation type" )( "coarse-type", po::value<std::string>()->default_value( "Amesos_KLU" ), "coarse type" )( "increasing-or-decreasing", po::value<std::string>()->default_value( "decreasing" ), "increasing or decreasing level indices" );
     return mlEpetraOptions;
 }
 FEELPP_NO_EXPORT
@@ -51,14 +47,11 @@ po::options_description
 epetraOptions()
 {
     po::options_description epetra( "EPETRA options" );
-    epetra.add_options()
-    ( "disable-epetra", "disable epetra" )
-    ;
+    epetra.add_options()( "disable-epetra", "disable epetra" );
     return epetra;
 }
 
-void
-Application::init( MPI_Comm& _comm )
+void Application::init( MPI_Comm& _comm )
 {
     if ( _S_is_Initialized == false )
     {
@@ -68,39 +61,33 @@ Application::init( MPI_Comm& _comm )
     }
 }
 
-
-#if defined(FEELPP_HAS_MPI)
+#if defined( FEELPP_HAS_MPI )
 Application::Application( int argc,
                           char** argv,
                           AboutData const& ad,
                           MPI_Comm comm )
-    :
-    super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ), comm )
+    : super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ), comm )
 {
     init( comm );
 }
-
 
 #else
 Application::Application( int argc,
                           char** argv,
                           AboutData const& ad )
-    :
-    super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ) )
+    : super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ) )
 {
     init( comm );
 }
 #endif /* FEELPP_HAS_MPI */
 
-
-#if defined(FEELPP_HAS_MPI)
+#if defined( FEELPP_HAS_MPI )
 Application::Application( int argc,
                           char** argv,
                           AboutData const& ad,
                           po::options_description const& od,
                           MPI_Comm comm )
-    :
-    super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ).add( od ), comm )
+    : super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ).add( od ), comm )
 {
     //cout << "hallo FEELPP_HAS_MPI2\n" << endl;
     init( comm );
@@ -111,16 +98,12 @@ Application::Application( int argc,
                           char** argv,
                           AboutData const& ad,
                           po::options_description const& od )
-    :
-    super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ).add( od ) )
+    : super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ).add( od ) )
 {
     init( comm );
 }
 
-
-
 #endif /* FEELPP_HAS_MPI */
-
 
 Application::~Application()
 {
@@ -131,8 +114,4 @@ boost::shared_ptr<Epetra_MpiComm> Application::_S_comm;
 bool Application::_S_is_Initialized = false;
 
 #endif // FEELPP_HAS_TRILINOS_EPETRA
-
-
-
 }
-

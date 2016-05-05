@@ -26,14 +26,15 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_SAVEGMSHMESH_HPP)
+#if !defined( FEELPP_SAVEGMSHMESH_HPP )
 #define FEELPP_SAVEGMSHMESH_HPP 1
 
-#include <feel/feelfilters/exportergmsh.hpp>
 #include <feel/feelfilters/detail/mesh.hpp>
 #include <feel/feelfilters/detail/meshfromgeoentity.hpp>
+#include <feel/feelfilters/exportergmsh.hpp>
 
-namespace Feel {
+namespace Feel
+{
 /**
  *
  * \brief save a mesh data structure (hold in a shared_ptr<>) in the GMSH format
@@ -42,48 +43,38 @@ namespace Feel {
  * \arg filename filename string (with extension)
  */
 BOOST_PARAMETER_FUNCTION(
-    ( void ),          // return type
-    saveGMSHMesh,    // 2. function name
-    tag,             // 3. namespace of tag types
-    ( required
-      ( mesh, * )
-      ( filename, * ) ) // 4. one required parameter, and
-    ( optional
-      ( parametricnodes,          *( boost::is_integral<mpl::_> ), 0 ) )
-    )
+    (void),                                // return type
+    saveGMSHMesh,                          // 2. function name
+    tag,                                   // 3. namespace of tag types
+    ( required( mesh, * )( filename, * ) ) // 4. one required parameter, and
+    ( optional( parametricnodes, *(boost::is_integral<mpl::_>), 0 ) ) )
 {
     typedef typename Feel::detail::mesh<Args>::type _mesh_type;
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
 #if BOOST_FILESYSTEM_VERSION == 3
-    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  mesh->worldComm() );
+    ExporterGmsh<_mesh_type, 1> exporter( fs::path( filename ).stem().string(), 1, mesh->worldComm() );
 #elif BOOST_FILESYSTEM_VERSION == 2
-    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, mesh->worldComm() );
+    ExporterGmsh<_mesh_type, 1> exporter( fs::path( filename ).stem(), 1, mesh->worldComm() );
 #endif
     exporter.saveMesh( filename, mesh, parametricnodes );
-
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( void ),  // return type
-    saveGeoEntityAsGMSHMesh,    // 2. function name
-    tag,             // 3. namespace of tag types
-    ( required
-      ( geoentity, * )
-      ( filename, * ) ) // 4. one required parameter, and
-    ( optional
-      ( pointset, *, typename Feel::detail::meshFromGeoEntity<Args>::pointset_type() ) )
-    )
+    (void),                                     // return type
+    saveGeoEntityAsGMSHMesh,                    // 2. function name
+    tag,                                        // 3. namespace of tag types
+    ( required( geoentity, * )( filename, * ) ) // 4. one required parameter, and
+    ( optional( pointset, *, typename Feel::detail::meshFromGeoEntity<Args>::pointset_type() ) ) )
 {
     typedef typename Feel::detail::meshFromGeoEntity<Args>::type _mesh_type;
 
 #if BOOST_FILESYSTEM_VERSION == 3
-    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  Environment::worldComm().subWorldCommSeq() );
+    ExporterGmsh<_mesh_type, 1> exporter( fs::path( filename ).stem().string(), 1, Environment::worldComm().subWorldCommSeq() );
 #elif BOOST_FILESYSTEM_VERSION == 2
-    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, Environment::worldComm().subWorldCommSeq() );
+    ExporterGmsh<_mesh_type, 1> exporter( fs::path( filename ).stem(), 1, Environment::worldComm().subWorldCommSeq() );
 #endif
     exporter.gmshSaveOneElementAsMesh( filename, geoentity, pointset );
 }
-
 }
 #endif /* FEELPP_SAVEGMSHMESH_HPP */

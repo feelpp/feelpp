@@ -29,7 +29,6 @@
 #ifndef __ADTypeOrder1_H
 #define __ADTypeOrder1_H 1
 
-
 #include <boost/numeric/ublas/vector.hpp>
 
 #include <boost/numeric/ublas/io.hpp>
@@ -52,13 +51,18 @@ namespace Feel
   @author Christophe Prud'homme
   @see
 */
-template<typename T, int Nvar, int Var>
+template <typename T, int Nvar, int Var>
 class ADType<T, Nvar, 1, Var>
 {
-public:
-
-    enum { nvar = Nvar };
-    enum { order = 1 };
+  public:
+    enum
+    {
+        nvar = Nvar
+    };
+    enum
+    {
+        order = 1
+    };
 
     typedef ADVariable<Var> variable_type;
 
@@ -68,55 +72,53 @@ public:
     //typedef typename STinyVector<value_type, Nvar>::type gradient_type;
     //typedef typename STinyVector<bool, Nvar>::type deps_type;
     typedef std::vector<int> deps_type;
-    typedef ADType<T,Nvar, 1, Var> This;
+    typedef ADType<T, Nvar, 1, Var> This;
     typedef std::set<int> dependency_type;
 
-    template<typename NumT, int NumVar, int Order, int VarNum> friend class ADType;
+    template <typename NumT, int NumVar, int Order, int VarNum>
+    friend class ADType;
 
     /** @name Constructors/Destructor
      */
     //@ {
     ADType()
-        :
-        M_val( 0. ),
-        M_grad( nvar ),
-        __dep( nvar, false ),
-        __deps()
-    {}
+        : M_val( 0. ),
+          M_grad( nvar ),
+          __dep( nvar, false ),
+          __deps()
+    {
+    }
 
     ADType( value_type val )
-        :
-        M_val( val ),
-        M_grad( nvar ),
-        __dep( nvar, false ),
-        __deps()
+        : M_val( val ),
+          M_grad( nvar ),
+          __dep( nvar, false ),
+          __deps()
     {
         M_grad = boost::numeric::ublas::zero_vector<value_type>( nvar );
 
         if ( Var != -1 )
         {
-            __dep[Var]=true;
+            __dep[Var] = true;
             M_grad( Var ) = 1.;
         }
     }
 
-    template<int VarNum>
-    ADType( ADType<T,Nvar,1,VarNum> const& sad )
-        :
-        M_val( sad.M_val ),
-        M_grad( sad.M_grad ),
-        __dep( sad.__dep ),
-        __deps()
+    template <int VarNum>
+    ADType( ADType<T, Nvar, 1, VarNum> const& sad )
+        : M_val( sad.M_val ),
+          M_grad( sad.M_grad ),
+          __dep( sad.__dep ),
+          __deps()
     {
     }
 
-    template<typename ExprT>
-    ADType ( const ADExpr<ExprT>& expr )
-        :
-        M_val( 0 ),
-        M_grad( nvar ),
-        __dep( nvar, false ),
-        __deps()
+    template <typename ExprT>
+    ADType( const ADExpr<ExprT>& expr )
+        : M_val( 0 ),
+          M_grad( nvar ),
+          __dep( nvar, false ),
+          __deps()
     {
         *this = expr;
     }
@@ -138,7 +140,7 @@ public:
     bool deps( int __i ) const
     {
         ENSURE( __i >= 0 && __i < nvar );
-        return __dep[ __i ];
+        return __dep[__i];
     }
 
     value_type grad( int __i ) const
@@ -164,7 +166,7 @@ public:
     bool& deps( int __i )
     {
         ENSURE( __i >= 0 && __i < nvar );
-        return __dep[ __i ];
+        return __dep[__i];
     }
     value_type& grad( int __i )
     {
@@ -184,28 +186,29 @@ public:
 
     This& operator=( T const& );
     This& operator=( This const& );
-    template <class ExprT> This& operator=( const ADExpr<ExprT>& expr );
+    template <class ExprT>
+    This& operator=( const ADExpr<ExprT>& expr );
 
     //! implements unary + \f$ +x \f$
-    ADExpr< ADUnaryPlus< This > > operator+ () const
+    ADExpr<ADUnaryPlus<This>> operator+() const
     {
         typedef ADUnaryPlus<This> expr_t;
-        return ADExpr<expr_t> ( expr_t ( *this ) );
+        return ADExpr<expr_t>( expr_t( *this ) );
     }
 
     //! implements unary - \f$ -x \f$
-    ADExpr< ADUnaryMinus< This > > operator- () const
+    ADExpr<ADUnaryMinus<This>> operator-() const
     {
         typedef ADUnaryMinus<This> expr_t;
-        return ADExpr<expr_t> ( expr_t ( *this ) );
+        return ADExpr<expr_t>( expr_t( *this ) );
     }
 
-#define AD_UNARY_OP( op )                         \
-      This& operator op ( value_type val )         \
-      {                                            \
-        M_val op val;                              \
-        return *this;                              \
-      }
+#define AD_UNARY_OP( op )               \
+    This& operator op( value_type val ) \
+    {                                   \
+        M_val op val;                   \
+        return *this;                   \
+    }
 
     AD_UNARY_OP( += );
     AD_UNARY_OP( -= );
@@ -214,65 +217,63 @@ public:
 
 #undef AD_UNARY_OP
 
-    This& operator += ( This const& sad )
+    This& operator+=( This const& sad )
     {
         M_val += sad.M_val;
         M_grad += sad.M_grad;
         return *this;
     }
-    This& operator -= ( This const& sad )
+    This& operator-=( This const& sad )
     {
         M_val -= sad.M_val;
         M_grad -= sad.M_grad;
         return *this;
     }
 
-
-    This& operator *= ( This const& sad )
+    This& operator*=( This const& sad )
     {
         M_val *= sad.M_val;
         M_grad = M_grad * sad.M_val + M_val * sad.M_grad;
         return *this;
     }
 
-    This& operator /= ( This const& sad )
+    This& operator/=( This const& sad )
     {
         M_val /= sad.M_val;
         M_grad = ( M_grad * sad.M_val - M_val * sad.M_grad ) / ( sad.M_val * sad.M_val );
         return *this;
     }
 
-    template<typename Expr>
-    This& operator += ( ADExpr<Expr> const& sad )
+    template <typename Expr>
+    This& operator+=( ADExpr<Expr> const& sad )
     {
         *this = *this + sad;
         return *this;
     }
 
-    template<typename Expr>
-    This& operator -= ( ADExpr<Expr> const& sad )
+    template <typename Expr>
+    This& operator-=( ADExpr<Expr> const& sad )
     {
         *this = *this - sad;
         return *this;
     }
 
-    template<typename Expr>
-    This& operator *= ( ADExpr<Expr> const& sad )
+    template <typename Expr>
+    This& operator*=( ADExpr<Expr> const& sad )
     {
         *this = *this * sad;
         return *this;
     }
 
-    template<typename Expr>
-    This& operator /= ( ADExpr<Expr> const& sad )
+    template <typename Expr>
+    This& operator/=( ADExpr<Expr> const& sad )
     {
         *this = *this / sad;
         return *this;
     }
     //@}
-protected:
-
-private:
+  protected:
+  private:
     value_type M_val;
     gradient_type M_grad;
 
@@ -280,7 +281,7 @@ private:
     dependency_type __deps;
 };
 
-template<typename T,int Nvar, int Var>
+template <typename T, int Nvar, int Var>
 ADType<T, Nvar, 1, Var>&
 ADType<T, Nvar, 1, Var>::operator=( value_type const& val )
 {
@@ -290,7 +291,7 @@ ADType<T, Nvar, 1, Var>::operator=( value_type const& val )
     return *this;
 }
 
-template<typename T,int Nvar, int Var>
+template <typename T, int Nvar, int Var>
 ADType<T, Nvar, 1, Var>&
 ADType<T, Nvar, 1, Var>::operator=( This const& sad )
 {
@@ -299,10 +300,10 @@ ADType<T, Nvar, 1, Var>::operator=( This const& sad )
     __dep = sad.__dep;
     return *this;
 }
-template<typename T,int Nvar, int Var>
+template <typename T, int Nvar, int Var>
 template <class ExprT>
-ADType<T,Nvar, 1, Var> &
-ADType<T,Nvar, 1, Var>::operator=( const ADExpr<ExprT>& expr )
+ADType<T, Nvar, 1, Var>&
+ADType<T, Nvar, 1, Var>::operator=( const ADExpr<ExprT>& expr )
 {
     M_val = expr.value();
 #if 0
@@ -342,10 +343,10 @@ ADType<T,Nvar, 1, Var>::operator=( const ADExpr<ExprT>& expr )
     {
 #endif
 
-        for ( int __i = 0; __i < nvar; ++__i )
-        {
-            M_grad( __i )= expr.grad( __i );
-        }
+    for ( int __i = 0; __i < nvar; ++__i )
+    {
+        M_grad( __i ) = expr.grad( __i );
+    }
 
 #if 0
     }
@@ -353,23 +354,18 @@ ADType<T,Nvar, 1, Var>::operator=( const ADExpr<ExprT>& expr )
 #endif
     return *this;
 }
-
-
-
 }
-
 
 //------------------------------- AD ostream operator ------------------------------------------
 template <class T, int Nvar, int Var>
 std::ostream&
-operator << ( std::ostream& os, const Feel::ADType<T, Nvar, 1, Var>& a )
+operator<<( std::ostream& os, const Feel::ADType<T, Nvar, 1, Var>& a )
 {
-    os.setf( std::ios::fixed,std::ios::floatfield );
+    os.setf( std::ios::fixed, std::ios::floatfield );
     os.width( 12 );
     os << "value    = " << a.value() << "  \n";
     os << "gradient = " << a.grad() << "\n";
     return os;
 }
-
 
 #endif /* __ADTypeOrder1_H */

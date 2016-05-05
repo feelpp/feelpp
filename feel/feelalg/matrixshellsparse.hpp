@@ -41,13 +41,12 @@ namespace Feel
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename T>
+template <typename T>
 class MatrixShellSparse : public MatrixShell<T>
 {
     typedef MatrixShell<T> super;
-public:
 
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -65,7 +64,8 @@ public:
      */
     //@{
 
-    MatrixShellSparse( sparse_matrix_ptrtype m ) : M_m( m ) {}
+    MatrixShellSparse( sparse_matrix_ptrtype m )
+        : M_m( m ) {}
     ~MatrixShellSparse() {}
 
     //@}
@@ -73,7 +73,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -85,7 +84,7 @@ public:
      * @returns \p m, the row-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    virtual size_type size1 () const
+    virtual size_type size1() const
     {
         return M_m->size1();
     }
@@ -94,7 +93,7 @@ public:
      * @returns \p n, the column-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    virtual size_type size2 () const
+    virtual size_type size2() const
     {
         return M_m->size2();
     }
@@ -104,7 +103,6 @@ public:
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -123,11 +121,8 @@ public:
 
     //@}
 
-
-
-protected:
-
-private:
+  protected:
+  private:
     sparse_matrix_ptrtype M_m;
 };
 }

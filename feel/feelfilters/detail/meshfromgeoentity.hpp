@@ -27,28 +27,26 @@
    \date 2013-12-24
  */
 
-namespace Feel {
+namespace Feel
+{
 
 /// \cond DETAIL
 namespace detail
 {
-template<typename Args, typename Tag=tag::geoentity>
+template <typename Args, typename Tag = tag::geoentity>
 struct meshFromGeoEntity
 {
     typedef typename boost::remove_pointer<
         typename boost::remove_const<
             typename boost::remove_reference<
-                typename parameter::binding<Args, Tag>::type
-                >::type
-            >::type
-    >::type _type;
+                typename parameter::binding<Args, Tag>::type>::type>::type>::type _type;
 
     typedef typename _type::GeoShape GeoShape;
-    typedef typename mpl::if_< mpl::bool_<GeoShape::is_simplex>,
-                               mpl::identity< Mesh< Simplex< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >,
-                               mpl::identity< Mesh< Hypercube< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >
-                               >::type::type type;
+    typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
+                              mpl::identity<Mesh<Simplex<GeoShape::nDim, GeoShape::nOrder, GeoShape::nRealDim>>>,
+                              mpl::identity<Mesh<Hypercube<GeoShape::nDim, GeoShape::nOrder, GeoShape::nRealDim>>>>::type::type type;
 
     typedef PointSet<GeoShape, typename type::value_type> pointset_type;
 };
-} }
+}
+}

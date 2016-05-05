@@ -29,10 +29,8 @@
 #include <feel/feelpartition/partitioner.hpp>
 #include <feel/feelpartition/partitionermetis.hpp>
 
-
-
-
-namespace Feel {
+namespace Feel
+{
 
 /**
  * partition a mesh and provide a helper data struct navigate in the newly
@@ -40,7 +38,7 @@ namespace Feel {
  *
  * @return a std::unique_ptr to a MeshPartitionSet
  */
-template<typename MeshType>
+template <typename MeshType>
 std::unique_ptr<MeshPartitionSet<MeshType>>
 partitionMesh( boost::shared_ptr<MeshType> mesh,
                rank_type nGlobalParts )
@@ -49,11 +47,8 @@ partitionMesh( boost::shared_ptr<MeshType> mesh,
     // partitioners
     PartitionerMetis<MeshType> metis;
     metis.partition( mesh, nGlobalParts );
-    std::set<rank_type> localPartitionIds (boost::counting_iterator<int>(0), boost::counting_iterator<int>(nGlobalParts));
+    std::set<rank_type> localPartitionIds( boost::counting_iterator<int>( 0 ), boost::counting_iterator<int>( nGlobalParts ) );
     return std::make_unique<MeshPartitionSet<MeshType>>( mesh, nGlobalParts, localPartitionIds );
 }
-
-
-
 }
 #endif

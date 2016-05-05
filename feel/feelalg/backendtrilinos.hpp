@@ -34,25 +34,23 @@
 #ifndef _BACKENDTRILINOS_HPP_
 #define _BACKENDTRILINOS_HPP_
 
-
 #include <boost/program_options/variables_map.hpp>
 #include <feel/feelconfig.h>
 
-#if defined ( FEELPP_HAS_TRILINOS_EPETRA )
+#if defined( FEELPP_HAS_TRILINOS_EPETRA )
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
 #undef PACKAGE_STRING
 #undef PACKAGE_TARNAME
 #undef PACKAGE_VERSION
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelalg/datamap.hpp>
 #include <feel/feelalg/matrixepetra.hpp>
-#include <feel/feelalg/vectorepetra.hpp>
+#include <feel/feelalg/operatortrilinos.hpp>
 #include <feel/feelalg/preconditionerifpack.hpp>
 #include <feel/feelalg/preconditionerml.hpp>
 #include <feel/feelalg/solverlineartrilinos.hpp>
-#include <feel/feelalg/operatortrilinos.hpp>
-#include <feel/feelalg/datamap.hpp>
-#include <feel/feelalg/backend.hpp>
-
+#include <feel/feelalg/vectorepetra.hpp>
 
 #include <Teuchos_ParameterList.hpp>
 
@@ -61,7 +59,8 @@ namespace Feel
 namespace po = boost::program_options;
 
 // forward declararion
-template<class T> class Backend;
+template <class T>
+class Backend;
 class OperatorMatrix;
 
 /**
@@ -72,8 +71,8 @@ class OperatorMatrix;
 class BackendTrilinos : public Backend<double>
 {
     typedef Backend<double> super;
-public:
 
+  public:
     // -- TYPEDEFS --
     typedef super::value_type value_type;
 
@@ -99,29 +98,25 @@ public:
     typedef super::solve_return_type solve_return_type;
     typedef super::nl_solve_return_type nl_solve_return_type;
 
-    typedef std::map< size_type, std::vector< size_type > > procdist_type;
+    typedef std::map<size_type, std::vector<size_type>> procdist_type;
 
     typedef Teuchos::ParameterList list_type;
 
-
     // -- CONSTRUCTOR --
-    BackendTrilinos( WorldComm const& worldComm=Environment::worldComm())
-        :
-        super( worldComm ),
-        M_options(),
-        M_prec_type( "" ),
-        M_Prec()
+    BackendTrilinos( WorldComm const& worldComm = Environment::worldComm() )
+        : super( worldComm ),
+          M_options(),
+          M_prec_type( "" ),
+          M_Prec()
     {
         this->M_backend = BackendType::BACKEND_TRILINOS;
         set_maxiter( 1000 );
         set_tol( 1e-10 );
     }
 
-
-    BackendTrilinos( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    BackendTrilinos( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm = Environment::worldComm() );
 
     BackendTrilinos( const BackendTrilinos& tc );
-
 
     // -- FACTORY METHODS --
     static Epetra_Map epetraMap( DataMap const& dmap )
@@ -133,14 +128,12 @@ public:
         return Epetra_Map( -1, dmap.nMyElements(), e.data(), 0, Epetra_MpiComm( dmap.comm() ) );
     }
 
-
     static Epetra_Map epetraMapStatic( DataMap const& dmap )
     {
         return Epetra_Map( dmap.nGlobalElements(), dmap.nMyElements(), 0, Epetra_MpiComm( dmap.comm() ) );
     }
 
-
-    template<typename DomainSpace, typename DualImageSpace>
+    template <typename DomainSpace, typename DualImageSpace>
     sparse_matrix_ptrtype newMatrix( DomainSpace const& Xh,
                                      DualImageSpace const& Yh,
                                      size_type matrix_properties = NON_HERMITIAN,
@@ -154,11 +147,11 @@ public:
                const size_type n,
                const size_type m_l,
                const size_type n_l,
-               const size_type nnz=30,
-               const size_type noz=10,
+               const size_type nnz = 30,
+               const size_type noz = 10,
                size_type matrix_properties = NON_HERMITIAN )
     {
-        sparse_matrix_ptrtype  mat( new epetra_sparse_matrix_type( m,n,m_l,n_l,nnz,noz ) );
+        sparse_matrix_ptrtype mat( new epetra_sparse_matrix_type( m, n, m_l, n_l, nnz, noz ) );
         mat->setMatrixProperties( matrix_properties );
         return mat;
     }
@@ -168,10 +161,10 @@ public:
                const size_type n,
                const size_type m_l,
                const size_type n_l,
-               graph_ptrtype const & graph,
+               graph_ptrtype const& graph,
                size_type matrix_properties = NON_HERMITIAN )
     {
-        sparse_matrix_ptrtype  mat( new epetra_sparse_matrix_type( m,n,m_l,n_l,30,10 ) );
+        sparse_matrix_ptrtype mat( new epetra_sparse_matrix_type( m, n, m_l, n_l, 30, 10 ) );
         mat->setMatrixProperties( matrix_properties );
         return mat;
     }
@@ -195,14 +188,14 @@ public:
         {
             Epetra_Map eimagemap = BackendTrilinos::epetraMap( domainmap );
             //std::cout << "Imagemap: " << eimagemap << "\n";
-            auto A= sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap, edomainmap, eimagemap ) );
+            auto A = sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap, edomainmap, eimagemap ) );
             A->setMatrixProperties( matrix_properties );
             return A;
         }
 
         else
         {
-            auto A= sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap ) );
+            auto A = sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap ) );
             A->setMatrixProperties( matrix_properties );
             return A;
         }
@@ -214,9 +207,8 @@ public:
                    const size_type m_l,
                    const size_type n_l )
     {
-        sparse_matrix_ptrtype  mat( new epetra_sparse_matrix_type( m,n,m_l,n_l,0,0 ) );
+        sparse_matrix_ptrtype mat( new epetra_sparse_matrix_type( m, n, m_l, n_l, 0, 0 ) );
         return mat;
-
     }
     sparse_matrix_ptrtype
     newZeroMatrix( DataMap const& domainmap, DataMap const& imagemap )
@@ -224,13 +216,12 @@ public:
         Epetra_Map erowmap = BackendTrilinos::epetraMap( imagemap );
         Epetra_Map ecolmap = BackendTrilinos::epetraMapStatic( domainmap );
 
-        auto A= sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap ) );
+        auto A = sparse_matrix_ptrtype( new epetra_sparse_matrix_type( erowmap, ecolmap ) );
         //A->setMatrixProperties( matrix_properties );
         return A;
     }
 
-
-    template<typename SpaceT>
+    template <typename SpaceT>
     vector_ptrtype newVector( SpaceT const& space )
     {
         return newVector( space->map() );
@@ -248,7 +239,6 @@ public:
 #warning to fix!
     }
 
-
     static operator_ptrtype IfpackPrec( sparse_matrix_ptrtype const& M, list_type options, std::string precType = "Amesos" )
     {
         PreconditionerIfpack P( options, precType );
@@ -257,7 +247,6 @@ public:
 
         return P.getPrec();
     }
-
 
     static operator_ptrtype MLPrec( sparse_matrix_ptrtype& M, list_type options )
     {
@@ -316,11 +305,11 @@ public:
     }
 #endif
 
-    template< int index, typename spaceT >
+    template <int index, typename spaceT>
     static Epetra_MultiVector getComponent( spaceT const& Xh, Epetra_MultiVector const& sol )
     {
-        Epetra_Map componentMap ( epetraMap( Xh->template functionSpace<index>()->map() ) );
-        Epetra_Map globalMap ( epetraMap( Xh->map() ) );
+        Epetra_Map componentMap( epetraMap( Xh->template functionSpace<index>()->map() ) );
+        Epetra_Map globalMap( epetraMap( Xh->map() ) );
 
         //DVLOG(2) << "Component map: " << componentMap << "\n";
 
@@ -330,7 +319,7 @@ public:
 
         int shift = Xh->nDofStart( index );
 
-        for ( int i=0; i < Length; i++ )
+        for ( int i = 0; i < Length; i++ )
         {
             int compGlobalID = componentMap.GID( i );
 
@@ -338,33 +327,32 @@ public:
             {
                 int compLocalID = componentMap.LID( compGlobalID );
 
-                int localID = globalMap.LID( compGlobalID+shift );
+                int localID = globalMap.LID( compGlobalID + shift );
                 //                         int globalID = globalMap.GID(localID);
 
-                DVLOG(2) << "[MyBackend] Copy entry sol[" << localID << "]=" <<  sol[0][localID]
-                               << " to component[" << compLocalID << "]\n";
+                DVLOG( 2 ) << "[MyBackend] Copy entry sol[" << localID << "]=" << sol[0][localID]
+                           << " to component[" << compLocalID << "]\n";
 
                 component[0][compLocalID] = sol[0][localID];
 
-                DVLOG(2) << component[0][compLocalID] << "\n";
+                DVLOG( 2 ) << component[0][compLocalID] << "\n";
             }
         }
 
         return component;
     }
 
-
-    template< int index, typename spaceT >
+    template <int index, typename spaceT>
     static void UpdateComponent( spaceT const& Xh, Epetra_MultiVector& sol, Epetra_MultiVector& comp )
     {
-        Epetra_Map componentMap ( epetraMap( Xh->template functionSpace<index>()->map() ) );
-        Epetra_Map globalMap ( epetraMap( Xh->map() ) );
+        Epetra_Map componentMap( epetraMap( Xh->template functionSpace<index>()->map() ) );
+        Epetra_Map globalMap( epetraMap( Xh->map() ) );
 
         int shift = Xh->nDofStart( index );
 
         int Length = comp.MyLength();
 
-        for ( int i=0; i < Length; i++ )
+        for ( int i = 0; i < Length; i++ )
         {
             int compGlobalID = componentMap.GID( i );
 
@@ -372,42 +360,40 @@ public:
             {
                 int compLocalID = componentMap.LID( compGlobalID );
 
-                int localID = globalMap.LID( compGlobalID+shift );
+                int localID = globalMap.LID( compGlobalID + shift );
                 //                         int globalID = globalMap.GID(localID);
 
-                DVLOG(2) << "Copy entry component[" << compLocalID << "] to sol[" << localID << "]="
-                               <<  sol[0][localID]
-                               << "]\n";
+                DVLOG( 2 ) << "Copy entry component[" << compLocalID << "] to sol[" << localID << "]="
+                           << sol[0][localID]
+                           << "]\n";
 
-                sol[0][localID] = comp[0][compLocalID] ;
+                sol[0][localID] = comp[0][compLocalID];
 
-                DVLOG(2) << comp[0][compLocalID] << "\n";
+                DVLOG( 2 ) << comp[0][compLocalID] << "\n";
             }
         }
     }
 
-
-
     // -- SETTING OF OPTIONS --
-    void set_maxiter ( int maxiter );
+    void set_maxiter( int maxiter );
 
-    void set_tol ( double tol );
+    void set_tol( double tol );
 
-    void set_drop ( double drop );
+    void set_drop( double drop );
 
-    void set_overlap ( int overlap );
+    void set_overlap( int overlap );
 
-    void set_restart ( int restart );
+    void set_restart( int restart );
 
-    void set_fillin ( int fillin );
+    void set_fillin( int fillin );
 
-    void set_order ( int order );
+    void set_order( int order );
 
     void set_overlap_type( std::string str );
 
-    void set_residual ( std::string str );
+    void set_residual( std::string str );
 
-    void set_localparts ( int localparts );
+    void set_localparts( int localparts );
 
     void set_solver( std::string str );
 
@@ -417,14 +403,13 @@ public:
 
     void set_prec( std::string str );
 
-    void set_verbose( const std::string verb="none" );
+    void set_verbose( const std::string verb = "none" );
 
     void set_options( list_type opts );
 
     list_type get_options();
 
     void set_symmetric( bool /*is_sym*/ ) {}
-
 
     // -- LINEAR ALGEBRA INTERFACE --
     static void
@@ -438,7 +423,8 @@ public:
                vector_type const& x,
                vector_type& b, bool transpose ) const
     {
-        FEELPP_ASSERT( !transpose ).warn( "not implemented yet" );
+        FEELPP_ASSERT( !transpose )
+            .warn( "not implemented yet" );
         epetra_sparse_matrix_type const& _A = dynamic_cast<epetra_sparse_matrix_type const&>( A );
         epetra_vector_type const& _x = dynamic_cast<epetra_vector_type const&>( x );
         epetra_vector_type& _b = dynamic_cast<epetra_vector_type&>( b );
@@ -455,8 +441,7 @@ public:
         return true;
     }
 
-private:
-
+  private:
     mpi::communicator M_comm;
 
     list_type M_options;
@@ -474,11 +459,8 @@ private:
  */
 po::options_description backendtrilinos_options( std::string const& prefix );
 
-
 } // Feel
 
 #endif // FEELPP_HAS_TRILINOS_EPETRA
 
-
 #endif /* _BACKENDTRILINOS_HPP_ */
-

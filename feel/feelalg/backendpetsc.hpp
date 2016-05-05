@@ -32,21 +32,15 @@
 
 #include <boost/program_options/variables_map.hpp>
 
+#include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
-#include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/solverlinearpetsc.hpp>
 #include <feel/feelalg/solvernonlinearpetsc.hpp>
-#include <feel/feelalg/backend.hpp>
-
-
+#include <feel/feelalg/vectorpetsc.hpp>
 
 namespace Feel
 {
 namespace po = boost::program_options;
-
-
-
-
 
 #if defined( FEELPP_HAS_PETSC_H )
 /**
@@ -54,12 +48,12 @@ namespace po = boost::program_options;
  *
  * this class provides an interface to the PETSC linear algebra library
  */
-template<typename T>
+template <typename T>
 class BackendPetsc : public Backend<T>
 {
     typedef Backend<T> super;
-public:
 
+  public:
     // -- TYPEDEFS --
     typedef typename super::value_type value_type;
 
@@ -88,23 +82,20 @@ public:
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
 
-
     // -- CONSTRUCTOR --
-    BackendPetsc( WorldComm const& worldComm=Environment::worldComm() )
-        :
-        super( worldComm ),
-        M_solver_petsc( worldComm )
-        //M_nl_solver_petsc( "",worldComm )
+    BackendPetsc( WorldComm const& worldComm = Environment::worldComm() )
+        : super( worldComm ),
+          M_solver_petsc( worldComm )
+    //M_nl_solver_petsc( "",worldComm )
     {
         this->M_backend = BackendType::BACKEND_PETSC;
     }
 
     BackendPetsc( po::variables_map const& vm, std::string const& prefix = "",
-                  WorldComm const& worldComm=Environment::worldComm() )
-        :
-        super( vm, prefix, worldComm ),
-        M_solver_petsc( vm, worldComm )
-        //M_nl_solver_petsc( prefix,worldComm )
+                  WorldComm const& worldComm = Environment::worldComm() )
+        : super( vm, prefix, worldComm ),
+          M_solver_petsc( vm, worldComm )
+    //M_nl_solver_petsc( prefix,worldComm )
     {
         this->M_backend = BackendType::BACKEND_PETSC;
 
@@ -116,23 +107,21 @@ public:
     ~BackendPetsc();
     void clear();
 
-
     /**
      * convert a vector into a backend pointer vector
      */
-    vector_ptrtype toBackendVectorPtr( vector_type const& v  );
+    vector_ptrtype toBackendVectorPtr( vector_type const& v );
 
     /**
      * convert a pointer vector into a backend pointer vector
      */
-    vector_ptrtype toBackendVectorPtr( vector_ptrtype const& v  );
-
+    vector_ptrtype toBackendVectorPtr( vector_ptrtype const& v );
 
     sparse_matrix_ptrtype
     newMatrix()
     {
         sparse_matrix_ptrtype mat;
-        if ( this->comm().globalSize()>1 )
+        if ( this->comm().globalSize() > 1 )
             mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( this->comm() ) );
         else // seq
             mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( this->comm() ) );
@@ -140,24 +129,24 @@ public:
     }
 
     // -- FACTORY METHODS --
-    template<typename DomainSpace, typename DualImageSpace>
+    template <typename DomainSpace, typename DualImageSpace>
     static sparse_matrix_ptrtype newMatrix( DomainSpace const& Xh,
                                             DualImageSpace const& Yh,
                                             size_type matrix_properties = NON_HERMITIAN )
     {
-        auto s = stencil( _test=Yh,_trial=Xh );
+        auto s = stencil( _test = Yh, _trial = Xh );
 
         sparse_matrix_ptrtype mat;
-        if ( Yh->worldComm().globalSize()>1 )
-            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( Yh->dof(),Xh->dof() ) );
+        if ( Yh->worldComm().globalSize() > 1 )
+            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( Yh->dof(), Xh->dof() ) );
         else // seq
-            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( Yh->dof(),Xh->dof() ) );
+            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( Yh->dof(), Xh->dof() ) );
 
         mat->setMatrixProperties( matrix_properties );
         mat->init( Yh->nDof(), Xh->nDof(),
                    Yh->nLocalDofWithoutGhost(), Xh->nLocalDofWithoutGhost(),
                    s->graph() );
-        //Yh->nLocalDof(), Xh->nLocalDof() );
+//Yh->nLocalDof(), Xh->nLocalDof() );
 #if 0
         auto nSpace = DomainSpace::nSpaces;
 
@@ -184,19 +173,19 @@ public:
                const size_type n,
                const size_type m_l,
                const size_type n_l,
-               const size_type nnz=30,
-               const size_type noz=10,
+               const size_type nnz = 30,
+               const size_type noz = 10,
                size_type matrix_properties = NON_HERMITIAN )
     {
         sparse_matrix_ptrtype mat;
 
-        if ( this->comm().globalSize()>1 )
+        if ( this->comm().globalSize() > 1 )
             mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
         else
             mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type );
 
         mat->setMatrixProperties( matrix_properties );
-        mat->init( m,n,m_l,n_l,nnz,noz );
+        mat->init( m, n, m_l, n_l, nnz, noz );
         return mat;
     }
 
@@ -208,10 +197,10 @@ public:
     {
         sparse_matrix_ptrtype mat;
 
-        if ( imagemap->worldComm().globalSize()>1 )
-            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( imagemap,domainmap,imagemap->worldComm() ) );
+        if ( imagemap->worldComm().globalSize() > 1 )
+            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( imagemap, domainmap, imagemap->worldComm() ) );
         else
-            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( imagemap,domainmap,imagemap->worldComm() ) );
+            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( imagemap, domainmap, imagemap->worldComm() ) );
 
         mat->setMatrixProperties( matrix_properties );
 
@@ -229,16 +218,16 @@ public:
                const size_type n,
                const size_type m_l,
                const size_type n_l,
-               graph_ptrtype const & graph,
+               graph_ptrtype const& graph,
                size_type matrix_properties = NON_HERMITIAN )
     {
         sparse_matrix_ptrtype mat;
         auto const& mapGraphRow = graph->mapRowPtr();
         auto const& mapGraphCol = graph->mapColPtr();
-        if ( this->comm().globalSize()>1 )
-            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( mapGraphRow,mapGraphCol,mapGraphRow->worldComm() ) );
+        if ( this->comm().globalSize() > 1 )
+            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( mapGraphRow, mapGraphCol, mapGraphRow->worldComm() ) );
         else
-            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( mapGraphRow,mapGraphCol,mapGraphRow->worldComm() ) ) ;
+            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( mapGraphRow, mapGraphCol, mapGraphRow->worldComm() ) );
 
         mat->setMatrixProperties( matrix_properties );
         //mat->init( m,n,m_l,n_l,graph );
@@ -246,23 +235,22 @@ public:
                    mapGraphRow->nLocalDofWithoutGhost(), mapGraphCol->nLocalDofWithoutGhost(),
                    graph );
 
-
         return mat;
     }
 
-   sparse_matrix_ptrtype
-   newZeroMatrix( datamap_ptrtype const& domainmap,
-                  datamap_ptrtype const& imagemap )
+    sparse_matrix_ptrtype
+    newZeroMatrix( datamap_ptrtype const& domainmap,
+                   datamap_ptrtype const& imagemap )
     {
         graph_ptrtype sparsity_graph( new graph_type( imagemap, domainmap ) );
         sparsity_graph->zero();
         sparsity_graph->close();
 
         sparse_matrix_ptrtype mat;
-        if ( imagemap->worldComm().globalSize()>1 )
-            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( imagemap,domainmap,imagemap->worldComm() ) );
+        if ( imagemap->worldComm().globalSize() > 1 )
+            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( imagemap, domainmap, imagemap->worldComm() ) );
         else
-            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( imagemap,domainmap,imagemap->worldComm() ) );
+            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( imagemap, domainmap, imagemap->worldComm() ) );
 
         mat->init( imagemap->nDof(), domainmap->nDof(),
                    imagemap->nLocalDofWithoutGhost(), domainmap->nLocalDofWithoutGhost(),
@@ -277,13 +265,13 @@ public:
                    const size_type m_l,
                    const size_type n_l )
     {
-        graph_ptrtype sparsity_graph( new graph_type( 0,0,m_l-1,0,n_l-1 ) );
+        graph_ptrtype sparsity_graph( new graph_type( 0, 0, m_l - 1, 0, n_l - 1 ) );
         sparsity_graph->zero();
         sparsity_graph->close();
 
         sparse_matrix_ptrtype mat;
 
-        if ( this->comm().globalSize()>1 )
+        if ( this->comm().globalSize() > 1 )
             mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
         else
             mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type );
@@ -294,10 +282,10 @@ public:
         return mat;
     }
 
-    template<typename SpaceT>
+    template <typename SpaceT>
     static vector_ptrtype newVector( SpaceT const& space )
     {
-        if ( space->worldComm().globalSize()>1 )
+        if ( space->worldComm().globalSize() > 1 )
             return vector_ptrtype( new petscMPI_vector_type( space->dof() ) );
         else
             return vector_ptrtype( new petsc_vector_type( space->dof() ) );
@@ -305,16 +293,17 @@ public:
 
     vector_ptrtype newVector( datamap_ptrtype const& dm )
     {
-        if ( this->comm().globalSize()>1 ) return vector_ptrtype( new petscMPI_vector_type( dm ) );
+        if ( this->comm().globalSize() > 1 )
+            return vector_ptrtype( new petscMPI_vector_type( dm ) );
 
-        else return vector_ptrtype( new petsc_vector_type( dm ) );
+        else
+            return vector_ptrtype( new petsc_vector_type( dm ) );
     }
 
     vector_ptrtype newVector( const size_type n, const size_type n_local )
     {
         return vector_ptrtype( new petsc_vector_type( n, n_local, this->comm() ) );
     }
-
 
     void set_symmetric( bool /*is_sym*/ ) {}
 
@@ -385,19 +374,15 @@ public:
     /**
      * @return the linear solver
      */
-    SolverLinearPetsc<double> & linearSolver() { return M_solver_petsc; }
+    SolverLinearPetsc<double>& linearSolver() { return M_solver_petsc; }
 
-private:
-
+  private:
     SolverLinearPetsc<double> M_solver_petsc;
     //SolverNonLinearPetsc<double> M_nl_solver_petsc;
 
 }; // class BackendPetsc
 
-
-
-
-#if !defined(FEELPP_BACKEND_PETSC_NOEXTERN)
+#if !defined( FEELPP_BACKEND_PETSC_NOEXTERN )
 extern template class BackendPetsc<double>;
 extern template class BackendPetsc<std::complex<double>>;
 #endif

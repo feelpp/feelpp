@@ -26,114 +26,97 @@
 
 #include <feel/feelmesh/filters.hpp>
 
-
-
-namespace Feel {
+namespace Feel
+{
 
 // Partitioner static data
-template<typename MeshType>
-const dof_id_type 
-Partitioner<MeshType>::communication_blocksize = 1000000;
+template <typename MeshType>
+const dof_id_type
+    Partitioner<MeshType>::communication_blocksize = 1000000;
 
 // Partitioner implementation
-template<typename MeshType>
-void 
-Partitioner<MeshType>::partition (mesh_ptrtype mesh)
+template <typename MeshType>
+void Partitioner<MeshType>::partition( mesh_ptrtype mesh )
 {
     this->partition( mesh, Environment::numberOfProcessors() );
 }
 
-
-template<typename MeshType>
-void 
-Partitioner<MeshType>::partition ( mesh_ptrtype mesh, rank_type n )
+template <typename MeshType>
+void Partitioner<MeshType>::partition( mesh_ptrtype mesh, rank_type n )
 {
-    LOG(INFO) << "Partitioner::partition starts";
+    LOG( INFO ) << "Partitioner::partition starts";
     // we cannot partition into more pieces than we have
     // elements!
-    size_type n_parts = std::min(mesh->numElements(), static_cast<dof_id_type>(n));
+    size_type n_parts = std::min( mesh->numElements(), static_cast<dof_id_type>( n ) );
 
     // Set the number of partitions in the mesh
-    mesh->setNumberOfPartitions(n_parts);
-    LOG(INFO) << "Partitioner::partition:: number of partitions=" << n_parts;
+    mesh->setNumberOfPartitions( n_parts );
+    LOG( INFO ) << "Partitioner::partition:: number of partitions=" << n_parts;
 
-    if (n_parts == 1)
+    if ( n_parts == 1 )
     {
-        this->singlePartition (mesh);
+        this->singlePartition( mesh );
         return;
     }
 
     // Call the partitioning function
-    this->partitionImpl(mesh,n_parts);
+    this->partitionImpl( mesh, n_parts );
 
     // Set the node's processor ids
-    Partitioner::setNodeProcessorIds(mesh);
-    LOG(INFO) << "Partitioner::partition done";
+    Partitioner::setNodeProcessorIds( mesh );
+    LOG( INFO ) << "Partitioner::partition done";
 }
 
-
-template<typename MeshType>
-void 
-Partitioner<MeshType>::repartition (mesh_ptrtype mesh)
+template <typename MeshType>
+void Partitioner<MeshType>::repartition( mesh_ptrtype mesh )
 {
     this->repartition( mesh, Environment::numberOfProcessors() );
 }
 
-
-template<typename MeshType>
-void 
-Partitioner<MeshType>::repartition ( mesh_ptrtype mesh, rank_type n )
+template <typename MeshType>
+void Partitioner<MeshType>::repartition( mesh_ptrtype mesh, rank_type n )
 {
-  // we cannot partition into more pieces than we have
-  // active elements!
-  size_type n_parts = std::min(mesh->numElements(), static_cast<dof_id_type>(n));
+    // we cannot partition into more pieces than we have
+    // active elements!
+    size_type n_parts = std::min( mesh->numElements(), static_cast<dof_id_type>( n ) );
 
-  // Set the number of partitions in the mesh
-  mesh.setNumberOfPartitions(n_parts);
-  LOG(INFO) << "Partitioner::partition:: number of partitions=" << n_parts;
+    // Set the number of partitions in the mesh
+    mesh.setNumberOfPartitions( n_parts );
+    LOG( INFO ) << "Partitioner::partition:: number of partitions=" << n_parts;
 
-  if (n_parts == 1)
+    if ( n_parts == 1 )
     {
-      this->singlePartition (mesh);
-      return;
+        this->singlePartition( mesh );
+        return;
     }
 
-  // Call the partitioning function
-  this->repartitionImpl(mesh,n_parts);
+    // Call the partitioning function
+    this->repartitionImpl( mesh, n_parts );
 
-  // Set the node's processor ids
-  this->setNodeProcessorIds(mesh);
+    // Set the node's processor ids
+    this->setNodeProcessorIds( mesh );
 }
 
-
-
-
-template<typename MeshType>
-void 
-Partitioner<MeshType>::singlePartition ( mesh_ptrtype mesh )
+template <typename MeshType>
+void Partitioner<MeshType>::singlePartition( mesh_ptrtype mesh )
 {
-    for( auto elt : elements(mesh) )
-        mesh->elements().modify( mesh->elementIterator(elt.id()), 
-                                 []( element_type & e) { e.setProcessId( 0 ); });
-    for( auto elt : faces(mesh) )
-        mesh->faces().modify( mesh->faceIterator(elt.id()), 
-                              []( face_type & e) { e.setProcessId( 0 ); });
-    for( auto elt : points(mesh) )
-        mesh->points().modify( mesh->pointIterator(elt.id()), 
-                               []( point_type & e) { e.setProcessId( 0 ); });
-
+    for ( auto elt : elements( mesh ) )
+        mesh->elements().modify( mesh->elementIterator( elt.id() ),
+                                 []( element_type& e ) { e.setProcessId( 0 ); } );
+    for ( auto elt : faces( mesh ) )
+        mesh->faces().modify( mesh->faceIterator( elt.id() ),
+                              []( face_type& e ) { e.setProcessId( 0 ); } );
+    for ( auto elt : points( mesh ) )
+        mesh->points().modify( mesh->pointIterator( elt.id() ),
+                               []( point_type& e ) { e.setProcessId( 0 ); } );
 }
 
-
-template<typename MeshType>
-void 
-Partitioner<MeshType>::setNodeProcessorIds(mesh_ptrtype mesh)
+template <typename MeshType>
+void Partitioner<MeshType>::setNodeProcessorIds( mesh_ptrtype mesh )
 {
-    LOG(INFO) << "setNodeProcessIds starts...";
-    LOG(INFO) << "setNodeProcessIds done.";
+    LOG( INFO ) << "setNodeProcessIds starts...";
+    LOG( INFO ) << "setNodeProcessIds done.";
 }
-
-
 
 } // Feel
 

@@ -26,24 +26,23 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-03-20
  */
-#if !defined(FEELPP_TIMING_NOW_HPP)
+#if !defined( FEELPP_TIMING_NOW_HPP )
 #define FEELPP_TIMING_NOW_HPP 1
 
 #include <chrono>
 
-#include <sys/time.h>
 #include <boost/cstdint.hpp>
 #include <feel/feelcore/feel.hpp>
-
+#include <sys/time.h>
 
 namespace Feel
 {
 using time_point = std::chrono::high_resolution_clock::time_point;
 namespace details
 {
-typedef Feel::uint64_type  cycles_t;
+typedef Feel::uint64_type cycles_t;
 
-inline time_point    now()
+inline time_point now()
 {
     return std::chrono::high_resolution_clock::now();
 }
@@ -51,6 +50,5 @@ inline time_point    now()
 //inline cycles_t read_cycles();
 } // details
 } // Feel
-
 
 #endif /* FEELPP_TIMING_NOW_HPP */

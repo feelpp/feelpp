@@ -26,27 +26,31 @@
 
 #include <feel/feelinfo.h>
 
-#define FEELPP_MAKE_VERSION( a,b,c ) (((a) << 16) | ((b) << 8) | (c))
-#define FEELPP_IS_VERSION(a,b,c) ( FEELPP_VERSION >= FEELPP_MAKE_VERSION(a,b,c) )
+#define FEELPP_MAKE_VERSION( a, b, c ) ( ( ( a ) << 16 ) | ( ( b ) << 8 ) | ( c ) )
+#define FEELPP_IS_VERSION( a, b, c ) ( FEELPP_VERSION >= FEELPP_MAKE_VERSION( a, b, c ) )
 
-#define FEELPP_VERSION_LESS_THAN(major,minor,micro)                   \
-    ((FEELPP_VERSION_MAJOR < (major) ||                                  \
-      (FEELPP_VERSION_MAJOR == (major) && (FEELPP_VERSION_MINOR < (minor) || \
-                                          (FEELPP_VERSION_MINOR == (minor) && \
-                                           FEELPP_VERSION_MICRO < (micro))))) ? 1 : 0)
+#define FEELPP_VERSION_LESS_THAN( major, minor, micro )                                     \
+    ( ( FEELPP_VERSION_MAJOR < ( major ) ||                                                 \
+        ( FEELPP_VERSION_MAJOR == ( major ) && ( FEELPP_VERSION_MINOR < ( minor ) ||        \
+                                                 ( FEELPP_VERSION_MINOR == ( minor ) &&     \
+                                                   FEELPP_VERSION_MICRO < ( micro ) ) ) ) ) \
+          ? 1                                                                               \
+          : 0 )
 
-#define FEELPP_VERSION_GREATER_THAN(major,minor,micro)                \
-    ((FEELPP_VERSION_MAJOR > (major) ||                                  \
-      (FEELPP_VERSION_MAJOR == (major) && (FEELPP_VERSION_MINOR > (minor) || \
-                                          (FEELPP_VERSION_MINOR == (minor) && \
-                                           FEELPP_VERSION_MICRO > (micro))))) ? 1 : 0)
+#define FEELPP_VERSION_GREATER_THAN( major, minor, micro )                                  \
+    ( ( FEELPP_VERSION_MAJOR > ( major ) ||                                                 \
+        ( FEELPP_VERSION_MAJOR == ( major ) && ( FEELPP_VERSION_MINOR > ( minor ) ||        \
+                                                 ( FEELPP_VERSION_MINOR == ( minor ) &&     \
+                                                   FEELPP_VERSION_MICRO > ( micro ) ) ) ) ) \
+          ? 1                                                                               \
+          : 0 )
 
-#define FEELPP_VERSION_GREATER_OR_EQUAL_THAN(major,minor,micro)       \
-    ((FEELPP_VERSION_MAJOR > (major) ||                                  \
-      (FEELPP_VERSION_MAJOR == (major) && (FEELPP_VERSION_MINOR > (minor) || \
-                                          (FEELPP_VERSION_MINOR == (minor) && \
-                                           FEELPP_VERSION_MICRO >= (micro))))) ? 1 : 0)
-
-
+#define FEELPP_VERSION_GREATER_OR_EQUAL_THAN( major, minor, micro )                          \
+    ( ( FEELPP_VERSION_MAJOR > ( major ) ||                                                  \
+        ( FEELPP_VERSION_MAJOR == ( major ) && ( FEELPP_VERSION_MINOR > ( minor ) ||         \
+                                                 ( FEELPP_VERSION_MINOR == ( minor ) &&      \
+                                                   FEELPP_VERSION_MICRO >= ( micro ) ) ) ) ) \
+          ? 1                                                                                \
+          : 0 )
 
 #endif

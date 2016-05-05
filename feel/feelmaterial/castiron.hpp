@@ -33,7 +33,6 @@
 #include <feel/feelmaterial/material.hpp>
 #include <feel/feelmaterial/materiallib.hpp>
 
-
 namespace Feel
 {
 
@@ -46,13 +45,10 @@ namespace Feel
  */
 class CastIron : public Material
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -60,8 +56,10 @@ public:
      */
     //@{
 
-    CastIron() : Material( "Cast Iron" ) {}
-    CastIron( CastIron const & m ): Material( m ) {}
+    CastIron()
+        : Material( "Cast Iron" ) {}
+    CastIron( CastIron const& m )
+        : Material( m ) {}
     ~CastIron() {}
 
     //@}
@@ -70,13 +68,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
-
 
     //! thermal conductivity in \f$ W/(m*K) \f$
     virtual double k() const
@@ -108,13 +104,11 @@ public:
         return 140e9;
     }
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -122,15 +116,10 @@ public:
      */
     //@{
 
-
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
 };
 
 } // Feel

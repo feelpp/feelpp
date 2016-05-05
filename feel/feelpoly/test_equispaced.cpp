@@ -33,12 +33,12 @@ int main()
 {
     using namespace Feel;
 
-    PointSetEquiSpaced<Simplex<2, 3, 2> , 3, double> pset3;
+    PointSetEquiSpaced<Simplex<2, 3, 2>, 3, double> pset3;
     pset3.toPython();
 
-    PointSetEquiSpaced<Simplex<2, 4, 2> , 4, double> pset4;
+    PointSetEquiSpaced<Simplex<2, 4, 2>, 4, double> pset4;
     pset4.toPython();
 
-    PointSetEquiSpaced<Simplex<2, 5, 2> , 5, double> pset5;
+    PointSetEquiSpaced<Simplex<2, 5, 2>, 5, double> pset5;
     pset5.toPython();
 }

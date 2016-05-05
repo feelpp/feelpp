@@ -3,26 +3,23 @@
 
 #include <feel/feelvf/vf.hpp>
 
-
 namespace Feel
 {
 namespace FeelModels
 {
 
-
-#define jumpgradt( u ) ::Feel::vf::leftfacet(dnt(u)) + ::Feel::vf::rightfacet(dnt(u))
-#define jumpgrad( u ) ::Feel::vf::leftface(dn(u)) + ::Feel::vf::rightface(dn(u))
+#define jumpgradt( u ) ::Feel::vf::leftfacet( dnt( u ) ) + ::Feel::vf::rightfacet( dnt( u ) )
+#define jumpgrad( u ) ::Feel::vf::leftface( dn( u ) ) + ::Feel::vf::rightface( dn( u ) )
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
-                                                                  sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart ) const
+void FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool _BuildCstPart,
+                                                                           sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart ) const
 {
 
     using namespace Feel::vf;
 
-    std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("FluidMechanics","updateLinearPDEStabilisation", "start"+sc );
+    std::string sc = ( _BuildCstPart ) ? " (build cst part)" : " (build non cst part)";
+    this->log( "FluidMechanics", "updateLinearPDEStabilisation", "start" + sc );
     boost::mpi::timer thetimer;
 
     //----------------------------------------------------------------------------------------------------//
@@ -32,7 +29,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( sparse_mat
     bool BuildExtendedPart = _BuildExtendedPart;
 
     bool BuildTermStabCIP = BuildNonCstPart;
-    if (this->isMoveDomain() /*this->useFSISemiImplicitScheme()*/)
+    if ( this->isMoveDomain() /*this->useFSISemiImplicitScheme()*/ )
     {
         BuildTermStabCIP = BuildCstPart;
     }
@@ -42,8 +39,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( sparse_mat
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
 
-    auto U = Xh->element("u");
-    auto V = Xh->element("v");
+    auto U = Xh->element( "u" );
+    auto V = Xh->element( "v" );
     auto u = U.template element<0>();
     auto v = V.template element<0>();
     auto p = U.template element<1>();
@@ -58,71 +55,71 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( sparse_mat
      _pattern=size_type(Pattern::DEFAULT),
      _rowstart=rowStartInMatrix,
      _colstart=colStartInMatrix );*/
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=rowStartInMatrix,
-                                              _colstart=colStartInMatrix );
+    auto bilinearForm_PatternCoupled = form2( _test = Xh, _trial = Xh, _matrix = A,
+                                              _pattern = size_type( Pattern::COUPLED ),
+                                              _rowstart = rowStartInMatrix,
+                                              _colstart = colStartInMatrix );
     // a detail very important (A is cst or not)
-    sparse_matrix_ptrtype A_extendedReal = (this->buildMatrixPrecond())?A_extended:A;
-    auto bilinearForm_PatternExtended = form2( _test=Xh,_trial=Xh,_matrix=A_extendedReal/*A_extended*/,
-                                               _pattern=size_type(Pattern::EXTENDED),
-                                               _rowstart=rowStartInMatrix,
-                                               _colstart=colStartInMatrix );
+    sparse_matrix_ptrtype A_extendedReal = ( this->buildMatrixPrecond() ) ? A_extended : A;
+    auto bilinearForm_PatternExtended = form2( _test = Xh, _trial = Xh, _matrix = A_extendedReal /*A_extended*/,
+                                               _pattern = size_type( Pattern::EXTENDED ),
+                                               _rowstart = rowStartInMatrix,
+                                               _colstart = colStartInMatrix );
 
     //----------------------------------------------------------------------------------------------------//
     // stabilisation-div-div
-    if ( this->doStabDivDiv() && BuildCstPart  )
+    if ( this->doStabDivDiv() && BuildCstPart )
     {
-        double beta = doption(_name="stabilisation-div-div-beta",_prefix=this->prefix());
+        double beta = doption( _name = "stabilisation-div-div-beta", _prefix = this->prefix() );
         bilinearForm_PatternCoupled +=
-            integrate( _range=elements(Xh->mesh()),
-                       _expr=/*vf::h()**/beta*divt(u)*div(v),
-                       _geomap=this->geomap() );
+            integrate( _range = elements( Xh->mesh() ),
+                       _expr = /*vf::h()**/ beta * divt( u ) * div( v ),
+                       _geomap = this->geomap() );
     }
     //----------------------------------------------------------------------------------------------------//
     // stabilisation-cip-convection
-    if ( this->doCIPStabConvection() && BuildTermStabCIP  )
+    if ( this->doCIPStabConvection() && BuildTermStabCIP )
     {
         double gamma = this->stabCIPConvectionGamma();
-        double order_scaling = math::pow( double(nOrderVelocity), 3.5 );
+        double order_scaling = math::pow( double( nOrderVelocity ), 3.5 );
         auto U_extrapoled = this->timeStepBDF()->poly();
         auto u_extrapoled = U_extrapoled.template element<0>();
 
-        if (M_isMoveDomain)
+        if ( M_isMoveDomain )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            auto cip_stab_coeff_ale_expr = (gamma/order_scaling)*abs( inner(idv(u_extrapoled)-idv(this->meshVelocity()),N() ) )*pow(hFace(),2.0);
+            auto cip_stab_coeff_ale_expr = ( gamma / order_scaling ) * abs( inner( idv( u_extrapoled ) - idv( this->meshVelocity() ), N() ) ) * pow( hFace(), 2.0 );
             bilinearForm_PatternExtended +=
-                integrate( _range=marked3faces(Xh->mesh(),1),
+                integrate( _range = marked3faces( Xh->mesh(), 1 ),
                            //_expr=val(cip_stab_coeff_ale_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
-                           _expr=val(cip_stab_coeff_ale_expr)*inner( jumpgradt(u), jumpgrad(v) ),
-                           _geomap=this->geomap() );
+                           _expr = val( cip_stab_coeff_ale_expr ) * inner( jumpgradt( u ), jumpgrad( v ) ),
+                           _geomap = this->geomap() );
 #endif
         }
         else
         {
-            auto cip_stab_coeff_expr = (gamma/order_scaling)*abs( trans(idv(u_extrapoled))*N() )*pow(hFace(),2.0);
+            auto cip_stab_coeff_expr = ( gamma / order_scaling ) * abs( trans( idv( u_extrapoled ) ) * N() ) * pow( hFace(), 2.0 );
             bilinearForm_PatternExtended +=
-                integrate( _range=marked3faces(Xh->mesh(),1),
+                integrate( _range = marked3faces( Xh->mesh(), 1 ),
                            //_expr=val(cip_stab_coeff_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
-                           _expr=val(cip_stab_coeff_expr)*inner( jumpgradt(u), jumpgrad(v) ),
-                           _geomap=this->geomap() );
+                           _expr = val( cip_stab_coeff_expr ) * inner( jumpgradt( u ), jumpgrad( v ) ),
+                           _geomap = this->geomap() );
         }
     }
     //----------------------------------------------------------------------------------------------------//
     // stabilisation-cip-divergence
-    if ( this->doCIPStabDivergence() && BuildTermStabCIP  )
+    if ( this->doCIPStabDivergence() && BuildTermStabCIP )
     {
         double gamma = this->stabCIPDivergenceGamma();
         auto U_extrapoled = this->timeStepBDF()->poly();
         auto u_extrapoled = U_extrapoled.template element<0>();
-        auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto Re = beta_abs*hFace()/idv(mu);
-        auto cip_div_coeff_expr = gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)*beta_abs;
+        auto beta_abs = vf::norm2( idv( u_extrapoled ) );
+        auto Re = beta_abs * hFace() / idv( mu );
+        auto cip_div_coeff_expr = gamma * min( cst( 1. ), Re ) * vf::pow( hFace(), 2.0 ) * beta_abs;
         bilinearForm_PatternExtended +=
-            integrate( _range=marked3faces(Xh->mesh(),1),
-                       _expr=val(cip_div_coeff_expr)*inner( jumpt(divt(u)),jump(div(v)) ),
-                       _geomap=this->geomap() );
+            integrate( _range = marked3faces( Xh->mesh(), 1 ),
+                       _expr = val( cip_div_coeff_expr ) * inner( jumpt( divt( u ) ), jump( div( v ) ) ),
+                       _geomap = this->geomap() );
     }
     //----------------------------------------------------------------------------------------------------//
     // stabilisation-cip-pressure
@@ -131,24 +128,23 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( sparse_mat
         double gamma = this->stabCIPPressureGamma();
         auto U_extrapoled = this->timeStepBDF()->poly();
         auto u_extrapoled = U_extrapoled.template element<0>();
-        auto beta_abs = vf::norm2(idv(u_extrapoled));
+        auto beta_abs = vf::norm2( idv( u_extrapoled ) );
 #if 1
         //double order_scaling = math::pow( double(nOrderPressure), 3.5 );
         //auto beta_abs = vf::sqrt( trans(idv(u_extrapoled))*idv(u_extrapoled));
         //auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(mu)) )/cst(order_scaling);
-        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(mu)) );
+        auto cip_stab_coeff_expr = gamma * ( vf::pow( hFace(), 3.0 ) / vf::max( hFace() * beta_abs, idv( mu ) ) );
 #else
-        auto Re = beta_abs*hFace()/idv(mu);
-        auto cip_stab_coeff_expr =  gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)/max(beta_abs,cst(1e-6)); //last max in order to not divide by 0
+        auto Re = beta_abs * hFace() / idv( mu );
+        auto cip_stab_coeff_expr = gamma * min( cst( 1. ), Re ) * vf::pow( hFace(), 2.0 ) / max( beta_abs, cst( 1e-6 ) ); //last max in order to not divide by 0
 #endif
         bilinearForm_PatternExtended +=
-            integrate( _range=marked3faces(Xh->mesh(),1),
-                       _expr=val(cip_stab_coeff_expr)*( jumpt(gradt(p))*jump(grad(q)) ),
-                       _geomap=this->geomap() );
+            integrate( _range = marked3faces( Xh->mesh(), 1 ),
+                       _expr = val( cip_stab_coeff_expr ) * ( jumpt( gradt( p ) ) * jump( grad( q ) ) ),
+                       _geomap = this->geomap() );
     }
 
-    //----------------------------------------------------------------------------------------------------//
-
+//----------------------------------------------------------------------------------------------------//
 
 #if 0
     if (this->application()->vm()[prefixvm(this->prefix(),"stabilisation-divergence")].as<bool>() ) //stab div
@@ -174,9 +170,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( sparse_mat
 #endif
 #endif
 
-
     double timeElapsed = thetimer.elapsed();
-    this->log("FluidMechanics","updateLinearPDEStabilisation",(boost::format("finish in %1% s") % timeElapsed).str() );
+    this->log( "FluidMechanics", "updateLinearPDEStabilisation", ( boost::format( "finish in %1% s" ) % timeElapsed ).str() );
 
 } // updateLinearPDEStabilisation
 
@@ -185,13 +180,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( sparse_mat
 //--------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_fluid_external_storage_type const& U, vector_ptrtype& R,
-                                                                    bool BuildCstPart, bool UseJacobianLinearTerms) const
+void FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( element_fluid_external_storage_type const& U, vector_ptrtype& R,
+                                                                          bool BuildCstPart, bool UseJacobianLinearTerms ) const
 {
     using namespace Feel::vf;
 
-    this->log("FluidMechanics","updateResidualStabilisation", "start" );
+    this->log( "FluidMechanics", "updateResidualStabilisation", "start" );
     boost::mpi::timer thetimer;
 
     bool BuildTermStabCIP = !BuildCstPart;
@@ -218,22 +212,22 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_flui
     /*auto linearForm_PatternDefault = form1( _test=Xh, _vector=R,
      _pattern=size_type(Pattern::DEFAULT),
      _rowstart=rowStartInVector );*/
-    auto linearForm_PatternCoupled = form1( _test=Xh, _vector=R,
-                                            _pattern=size_type(Pattern::COUPLED),
-                                            _rowstart=rowStartInVector );
-    auto linearForm_PatternExtended = form1( _test=Xh, _vector=R,
-                                             _pattern=size_type(Pattern::EXTENDED),
-                                             _rowstart=rowStartInVector );
+    auto linearForm_PatternCoupled = form1( _test = Xh, _vector = R,
+                                            _pattern = size_type( Pattern::COUPLED ),
+                                            _rowstart = rowStartInVector );
+    auto linearForm_PatternExtended = form1( _test = Xh, _vector = R,
+                                             _pattern = size_type( Pattern::EXTENDED ),
+                                             _rowstart = rowStartInVector );
 
-    if (!BuildCstPart && !UseJacobianLinearTerms )
+    if ( !BuildCstPart && !UseJacobianLinearTerms )
     {
-        if ( this->doStabDivDiv()  )
+        if ( this->doStabDivDiv() )
         {
-            double beta = doption(_name="stabilisation-div-div-beta",_prefix=this->prefix());
+            double beta = doption( _name = "stabilisation-div-div-beta", _prefix = this->prefix() );
             linearForm_PatternCoupled +=
-                integrate( _range=elements(Xh->mesh()),
-                           _expr=/*vf::h()**/beta*divv(u)*div(v),
-                           _geomap=this->geomap() );
+                integrate( _range = elements( Xh->mesh() ),
+                           _expr = /*vf::h()**/ beta * divv( u ) * div( v ),
+                           _geomap = this->geomap() );
         }
     }
 
@@ -241,44 +235,44 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_flui
     if ( this->doCIPStabConvection() && BuildTermStabCIP )
     {
         double gamma = this->stabCIPConvectionGamma();
-        auto order_scaling = std::pow( double(nOrderVelocity), 3.5 );
+        auto order_scaling = std::pow( double( nOrderVelocity ), 3.5 );
         auto U_extrapoled = this->timeStepBDF()->poly();
         auto u_extrapoled = U_extrapoled.template element<0>();
 
-        if (M_isMoveDomain)
+        if ( M_isMoveDomain )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            auto cip_stab_coeff_ale_expr = gamma*abs( trans(idv(u_extrapoled)-idv(this->meshVelocity()) )*N() )*pow(hFace(),2.0)/cst(order_scaling);
+            auto cip_stab_coeff_ale_expr = gamma * abs( trans( idv( u_extrapoled ) - idv( this->meshVelocity() ) ) * N() ) * pow( hFace(), 2.0 ) / cst( order_scaling );
             linearForm_PatternExtended +=
-                integrate( _range=marked3faces(mesh,1),
+                integrate( _range = marked3faces( mesh, 1 ),
                            //_expr= val( cip_stab_coeff_ale_expr*trans(jumpv(gradv(u))) )*jump(grad(v)), // this line not work!
-                           _expr= val( cip_stab_coeff_ale_expr )*inner( jumpv(gradv(u)),jump(grad(v)) ),
-                           _geomap=this->geomap() );
+                           _expr = val( cip_stab_coeff_ale_expr ) * inner( jumpv( gradv( u ) ), jump( grad( v ) ) ),
+                           _geomap = this->geomap() );
 #endif
         }
         else
         {
-            auto cip_stab_coeff_expr = gamma*abs( trans(idv(u_extrapoled) )*N() )*pow(hFace(),2.0)/cst(order_scaling);
+            auto cip_stab_coeff_expr = gamma * abs( trans( idv( u_extrapoled ) ) * N() ) * pow( hFace(), 2.0 ) / cst( order_scaling );
             linearForm_PatternExtended +=
-                integrate( _range=marked3faces(mesh,1),
+                integrate( _range = marked3faces( mesh, 1 ),
                            //_expr= val( cip_stab_coeff_expr*trans(jumpv(gradv(u))) )*jump(grad(v)), // this line not work!
-                           _expr= val( cip_stab_coeff_expr)*inner( jumpv(gradv(u)),jump(grad(v)) ),
-                           _geomap=this->geomap() );
+                           _expr = val( cip_stab_coeff_expr ) * inner( jumpv( gradv( u ) ), jump( grad( v ) ) ),
+                           _geomap = this->geomap() );
         }
     }
     // stabilisation-cip-divergence
-    if ( this->doCIPStabDivergence() && BuildTermStabCIP  )
+    if ( this->doCIPStabDivergence() && BuildTermStabCIP )
     {
         double gamma = this->stabCIPDivergenceGamma();
         auto U_extrapoled = this->timeStepBDF()->poly();
         auto u_extrapoled = U_extrapoled.template element<0>();
-        auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto Re = beta_abs*hFace()/idv(mu);
-        auto cip_div_coeff_expr = gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)*beta_abs;
+        auto beta_abs = vf::norm2( idv( u_extrapoled ) );
+        auto Re = beta_abs * hFace() / idv( mu );
+        auto cip_div_coeff_expr = gamma * min( cst( 1. ), Re ) * vf::pow( hFace(), 2.0 ) * beta_abs;
         linearForm_PatternExtended +=
-            integrate( _range=marked3faces(Xh->mesh(),1),
-                       _expr=val(cip_div_coeff_expr)*inner( jumpv(divv(u)),jump(div(v)) ),
-                       _geomap=this->geomap() );
+            integrate( _range = marked3faces( Xh->mesh(), 1 ),
+                       _expr = val( cip_div_coeff_expr ) * inner( jumpv( divv( u ) ), jump( div( v ) ) ),
+                       _geomap = this->geomap() );
     }
     // stabilisation-cip-pressure
     if ( this->doCIPStabPressure() && BuildTermStabCIP )
@@ -286,16 +280,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_flui
         double gamma = this->stabCIPPressureGamma();
         auto U_extrapoled = this->timeStepBDF()->poly();
         auto u_extrapoled = U_extrapoled.template element<0>();
-        auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(mu)) );
+        auto beta_abs = vf::norm2( idv( u_extrapoled ) );
+        auto cip_stab_coeff_expr = gamma * ( vf::pow( hFace(), 3.0 ) / vf::max( hFace() * beta_abs, idv( mu ) ) );
         linearForm_PatternExtended +=
-            integrate( _range=marked3faces(Xh->mesh(),1),
-                       _expr=val(cip_stab_coeff_expr)*( jumpv(gradv(p))*jump(grad(q)) ),
-                       _geomap=this->geomap() );
+            integrate( _range = marked3faces( Xh->mesh(), 1 ),
+                       _expr = val( cip_stab_coeff_expr ) * ( jumpv( gradv( p ) ) * jump( grad( q ) ) ),
+                       _geomap = this->geomap() );
     }
 
-
-    //------------------------------------------------------------------------------------//
+//------------------------------------------------------------------------------------//
 #if 0 // STAB_SUPG_PSPG
 
     auto BBuzz = M_bdf_fluid->polyDeriv();
@@ -333,7 +326,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_flui
                        val(time_supg + convec_supg + force_supg)*(val(tau_supg)*grad(v)*idv(u)+val(tau_pspg)*trans(grad(q))) );
     }
 #endif
-    //------------------------------------------------------------------------------------//
+//------------------------------------------------------------------------------------//
 #if 0 //STAB_FIC
     element_fluid_2_type c = U.element<2>();
     element_fluid_2_type d = V.element<2>();
@@ -350,29 +343,28 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_flui
     //------------------------------------------------------------------------------------//
 
     double timeElapsed = thetimer.elapsed();
-    this->log("FluidMechanics","updateResidualStabilisation",
-              (boost::format("finish in %1% s") % timeElapsed).str() );
+    this->log( "FluidMechanics", "updateResidualStabilisation",
+               ( boost::format( "finish in %1% s" ) % timeElapsed ).str() );
 
 } // updateResidualStabilisation
 
 //--------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_fluid_external_storage_type const& U,
-                                                                    sparse_matrix_ptrtype& J , vector_ptrtype& R,
-                                                                    bool BuildCstPart ) const
+void FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( element_fluid_external_storage_type const& U,
+                                                                          sparse_matrix_ptrtype& J, vector_ptrtype& R,
+                                                                          bool BuildCstPart ) const
 {
     using namespace Feel::vf;
 
-    this->log("FluidMechanics","updateJacobianStabilisation", "start" );
+    this->log( "FluidMechanics", "updateJacobianStabilisation", "start" );
     boost::mpi::timer thetimer;
 
     //--------------------------------------------------------------------------------------------------//
 
     bool BuildNonCstPart = !BuildCstPart;
     bool BuildTermStabCIP = BuildNonCstPart;
-    if (this->isMoveDomain() /*this->useFSISemiImplicitScheme()*/)
+    if ( this->isMoveDomain() /*this->useFSISemiImplicitScheme()*/ )
     {
         BuildTermStabCIP = BuildCstPart;
     }
@@ -393,30 +385,30 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_flui
 
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=J,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=rowStartInMatrix,
-                                              _colstart=colStartInMatrix );
-    auto bilinearForm_PatternExtended = form2( _test=Xh,_trial=Xh,_matrix=J,
-                                               _pattern=size_type(Pattern::EXTENDED),
-                                               _rowstart=rowStartInMatrix,
-                                               _colstart=colStartInMatrix );
+    auto bilinearForm_PatternCoupled = form2( _test = Xh, _trial = Xh, _matrix = J,
+                                              _pattern = size_type( Pattern::COUPLED ),
+                                              _rowstart = rowStartInMatrix,
+                                              _colstart = colStartInMatrix );
+    auto bilinearForm_PatternExtended = form2( _test = Xh, _trial = Xh, _matrix = J,
+                                               _pattern = size_type( Pattern::EXTENDED ),
+                                               _rowstart = rowStartInMatrix,
+                                               _colstart = colStartInMatrix );
 
     //--------------------------------------------------------------------------------------------------//
     if ( BuildCstPart && this->doStabDivDiv() )
     {
-        double beta = doption(_name="stabilisation-div-div-beta",_prefix=this->prefix());
+        double beta = doption( _name = "stabilisation-div-div-beta", _prefix = this->prefix() );
         bilinearForm_PatternCoupled +=
-            integrate( _range=elements(Xh->mesh()),
-                       _expr=/*vf::h()**/beta*divt(u)*div(v),
-                       _geomap=this->geomap() );
+            integrate( _range = elements( Xh->mesh() ),
+                       _expr = /*vf::h()**/ beta * divt( u ) * div( v ),
+                       _geomap = this->geomap() );
     }
 
     // stabilisation-cip-convection
     if ( this->doCIPStabConvection() && BuildTermStabCIP )
     {
         double gamma = this->stabCIPConvectionGamma();
-        auto order_scaling = std::pow( double(nOrderVelocity), 3.5 );
+        auto order_scaling = std::pow( double( nOrderVelocity ), 3.5 );
         auto U_extrapoled = this->timeStepBDF()->poly();
         auto u_extrapoled = U_extrapoled.template element<0>();
 #if 0
@@ -433,44 +425,44 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_flui
         if ( this->isMoveDomain() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            auto cip_stab_coeff_ale_expr = (gamma/order_scaling)*abs( trans(idv(u_extrapoled)-idv(this->meshVelocity()))*N() )*pow(hFace(),2.0);
+            auto cip_stab_coeff_ale_expr = ( gamma / order_scaling ) * abs( trans( idv( u_extrapoled ) - idv( this->meshVelocity() ) ) * N() ) * pow( hFace(), 2.0 );
             bilinearForm_PatternExtended +=
-                integrate( _range=marked3faces(Xh->mesh(),1),
+                integrate( _range = marked3faces( Xh->mesh(), 1 ),
                            //_expr= val(cip_stab_coeff_ale_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
-                           _expr=val(cip_stab_coeff_ale_expr)*inner( jumpgradt(u), jumpgrad(v) ),
-                           _geomap=this->geomap() );
+                           _expr = val( cip_stab_coeff_ale_expr ) * inner( jumpgradt( u ), jumpgrad( v ) ),
+                           _geomap = this->geomap() );
 #endif
         }
         else
         {
 #if 1
-            auto cip_stab_coeff_expr = (gamma/order_scaling)*abs( trans(idv(u_extrapoled))*N() )*pow(hFace(),2.0);
+            auto cip_stab_coeff_expr = ( gamma / order_scaling ) * abs( trans( idv( u_extrapoled ) ) * N() ) * pow( hFace(), 2.0 );
 #else
-            auto beta_abs = vf::norm2(idv(u_extrapoled));
-            auto Re = beta_abs*hFace()/idv(mu);
-            auto cip_stab_coeff_expr = gamma*min(cst(1.),Re)*abs( trans(idv(u_extrapoled))*N() )*pow(hFace(),2.0)/cst(order_scaling);
+            auto beta_abs = vf::norm2( idv( u_extrapoled ) );
+            auto Re = beta_abs * hFace() / idv( mu );
+            auto cip_stab_coeff_expr = gamma * min( cst( 1. ), Re ) * abs( trans( idv( u_extrapoled ) ) * N() ) * pow( hFace(), 2.0 ) / cst( order_scaling );
 #endif
             bilinearForm_PatternExtended +=
-                integrate( _range=marked3faces(Xh->mesh(),1),
+                integrate( _range = marked3faces( Xh->mesh(), 1 ),
                            //_expr= val(cip_stab_coeff_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
-                           _expr=val(cip_stab_coeff_expr)*inner( jumpgradt(u), jumpgrad(v) ),
-                           _geomap=this->geomap() );
+                           _expr = val( cip_stab_coeff_expr ) * inner( jumpgradt( u ), jumpgrad( v ) ),
+                           _geomap = this->geomap() );
         }
     }
 
     // stabilisation-cip-divergence
-    if ( this->doCIPStabDivergence() && BuildTermStabCIP  )
+    if ( this->doCIPStabDivergence() && BuildTermStabCIP )
     {
         double gamma = this->stabCIPDivergenceGamma();
         auto U_extrapoled = this->timeStepBDF()->poly();
         auto u_extrapoled = U_extrapoled.template element<0>();
-        auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto Re = beta_abs*hFace()/idv(mu);
-        auto cip_div_coeff_expr = gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)*beta_abs;
+        auto beta_abs = vf::norm2( idv( u_extrapoled ) );
+        auto Re = beta_abs * hFace() / idv( mu );
+        auto cip_div_coeff_expr = gamma * min( cst( 1. ), Re ) * vf::pow( hFace(), 2.0 ) * beta_abs;
         bilinearForm_PatternExtended +=
-            integrate( _range=marked3faces(Xh->mesh(),1),
-                       _expr=val(cip_div_coeff_expr)*inner( jumpt(divt(u)),jump(div(v)) ),
-                       _geomap=this->geomap() );
+            integrate( _range = marked3faces( Xh->mesh(), 1 ),
+                       _expr = val( cip_div_coeff_expr ) * inner( jumpt( divt( u ) ), jump( div( v ) ) ),
+                       _geomap = this->geomap() );
     }
     // stabilisation-cip-pressure
     if ( this->doCIPStabPressure() && BuildTermStabCIP )
@@ -478,26 +470,25 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_flui
         double gamma = this->stabCIPPressureGamma();
         auto U_extrapoled = this->timeStepBDF()->poly();
         auto u_extrapoled = U_extrapoled.template element<0>();
-        auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(mu)) );
+        auto beta_abs = vf::norm2( idv( u_extrapoled ) );
+        auto cip_stab_coeff_expr = gamma * ( vf::pow( hFace(), 3.0 ) / vf::max( hFace() * beta_abs, idv( mu ) ) );
 
         bilinearForm_PatternExtended +=
-            integrate( _range=marked3faces(Xh->mesh(),1),
-                       _expr=val(cip_stab_coeff_expr)*( jumpt(gradt(p))*jump(grad(q)) ),
-                       _geomap=this->geomap() );
+            integrate( _range = marked3faces( Xh->mesh(), 1 ),
+                       _expr = val( cip_stab_coeff_expr ) * ( jumpt( gradt( p ) ) * jump( grad( q ) ) ),
+                       _geomap = this->geomap() );
     }
     //----------------------------------------------------------------------------------------------------//
 
     double timeElapsed = thetimer.elapsed();
-    this->log("FluidMechanics","updateJacobianStabilisation",
-              (boost::format("finish in %1% s") % timeElapsed).str() );
+    this->log( "FluidMechanics", "updateJacobianStabilisation",
+               ( boost::format( "finish in %1% s" ) % timeElapsed ).str() );
 
 } // updateJacobianStabilisation
 
 //--------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------//
-
 
 } // end namespace FeelModels
 } // end namespace Feel

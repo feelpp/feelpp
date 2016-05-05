@@ -31,38 +31,33 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <stdexcept>
 
-#include <boost/numeric/ublas/matrix_sparse.hpp>
 #include <boost/numeric/ublas/io.hpp>
-
+#include <boost/numeric/ublas/matrix_sparse.hpp>
 
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/visitor.hpp>
 #include <feel/feelcore/traits.hpp>
+#include <feel/feelcore/visitor.hpp>
 
 #include <feel/feelalg/glas.hpp>
 
-#include <feel/feelmesh/refentity.hpp>
 #include <feel/feelmesh/geoelement.hpp>
+#include <feel/feelmesh/refentity.hpp>
 
 #include <feel/feelpoly/equispaced.hpp>
-
-
-
-
 
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
 
-template< typename element_type,
+template <typename element_type,
           class Convex,
           uint16_type Order,
-          typename T = double ,
-          template<class, uint16_type, class> class PointSetType = PointSetEquiSpaced>
+          typename T = double,
+          template <class, uint16_type, class> class PointSetType = PointSetEquiSpaced>
 class PointSetMapped : public PointSetType<Convex, Order, T>
 {
 
-public :
+  public:
     typedef PointSetType<Convex, Order, T> pointset_type;
 
     typedef T value_type;
@@ -84,9 +79,10 @@ public :
     typedef ublas::vector<uint16_type> permutation_vector_type;
     typedef ublas::mapped_matrix<uint16_type> permutation_matrix_type;
 
-    typedef mpl::if_< mpl::bool_< is_simplex >,
-            Simplex<Dim, Order, Dim> ,
-            Hypercube<Dim, Order, Dim> > conv_order_type;
+    typedef mpl::if_<mpl::bool_<is_simplex>,
+                     Simplex<Dim, Order, Dim>,
+                     Hypercube<Dim, Order, Dim>>
+        conv_order_type;
 
     static const uint32_type nbPtsPerVertex = conv_order_type::type::nbPtsPerVertex;
     static const uint32_type nbPtsPerEdge = conv_order_type::type::nbPtsPerEdge;
@@ -100,26 +96,25 @@ public :
     RefElem RefConv;
 
     PointSetMapped( element_type const& _elt )
-        :
-        M_elt( _elt )
+        : M_elt( _elt )
     {
         pointset_type pts;
 
-        points_type Gt = updatePoints<2>( updatePoints<1>( pts.points(), pts, mpl::bool_< ( Order > 2 ) >() ),
+        points_type Gt = updatePoints<2>( updatePoints<1>( pts.points(), pts, mpl::bool_<( Order > 2 )>() ),
                                           pts,
-                                          mpl::bool_< ( Dim == 3 && Order > 2+uint16_type( is_simplex ) ) >() );
+                                          mpl::bool_<( Dim == 3 && Order > 2 + uint16_type( is_simplex ) )>() );
 
         this->setPoints( Gt );
     }
 
     ~PointSetMapped() {}
 
-    permutation_vector_type getVectorPermutation ( face_permutation_type P )
+    permutation_vector_type getVectorPermutation( face_permutation_type P )
     {
         return vector_permutation[P];
     }
 
-    permutation_matrix_type getMatrixPermutation ( face_permutation_type P )
+    permutation_matrix_type getMatrixPermutation( face_permutation_type P )
     {
         return matrix_permutation[P];
     }
@@ -133,30 +128,30 @@ public :
         uint16_type matrix_size = 0;
 
         if ( index_list[0].size() != 0 )
-            matrix_size +=index_list[0].size()*nbPtsPerVertex;
+            matrix_size += index_list[0].size() * nbPtsPerVertex;
 
-        if ( ( top_dim>=1 ) && ( index_list[1].size() != 0 ) )
-            matrix_size +=index_list[1].size()*nbPtsPerEdge;
+        if ( ( top_dim >= 1 ) && ( index_list[1].size() != 0 ) )
+            matrix_size += index_list[1].size() * nbPtsPerEdge;
 
-        if ( ( top_dim>=2 ) && ( index_list[2].size() != 0 ) )
-            matrix_size +=index_list[2].size()*nbPtsPerFace;
+        if ( ( top_dim >= 2 ) && ( index_list[2].size() != 0 ) )
+            matrix_size += index_list[2].size() * nbPtsPerFace;
 
-        points_type G ( Dim, matrix_size );
+        points_type G( Dim, matrix_size );
 
-        for ( uint16_type i=0, p=0; i < top_dim+1; i++ )
+        for ( uint16_type i = 0, p = 0; i < top_dim + 1; i++ )
         {
             if ( index_list[i].size() )
             {
-                for ( uint16_type j=0; j < index_list[i].size(); j++ )
+                for ( uint16_type j = 0; j < index_list[i].size(); j++ )
                 {
                     //Something else needs to be done here: depending on the entity, and in the case
                     //we have boundary=1, the points in the boundary have to be reordered
 
                     points_type aux = this->interiorPointsById( i, index_list[i][j] );
 
-                    ublas::subrange( G, 0, Dim, p, p+aux.size2() ) = aux;
+                    ublas::subrange( G, 0, Dim, p, p + aux.size2() ) = aux;
 
-                    p+=aux.size2();
+                    p += aux.size2();
                 }
             }
         }
@@ -167,8 +162,7 @@ public :
         return G;
     }
 
-private:
-
+  private:
     element_type M_elt;
 
     std::map<face_permutation_type, permutation_vector_type> vector_permutation;
@@ -187,21 +181,21 @@ private:
 
         if ( top_dim == 2 )
         {
-            generateFacePermutations( Order - 1-uint16_type( is_simplex ),
-                                      mpl::int_<Dim>(), mpl::bool_< is_simplex >() );
+            generateFacePermutations( Order - 1 - uint16_type( is_simplex ),
+                                      mpl::int_<Dim>(), mpl::bool_<is_simplex>() );
         }
 
         for ( size_type e = RefConv.entityRange( top_dim ).begin();
-                e < RefConv.entityRange( top_dim ).end();
-                ++e )
+              e < RefConv.entityRange( top_dim ).end();
+              ++e )
         {
             points_type Gt = G.pointsBySubEntity( top_dim, e );
 
-            Gt = permutatePoints ( Gt, e, mpl::int_<top_dim>() );
+            Gt = permutatePoints( Gt, e, mpl::int_<top_dim>() );
 
             uint16_type pos = G.interiorRangeById( top_dim, e ).first;
 
-            ublas::subrange( pts, 0, Dim, pos, pos+Gt.size2() ) = Gt;
+            ublas::subrange( pts, 0, Dim, pos, pos + Gt.size2() ) = Gt;
         }
 
         return pts;
@@ -209,15 +203,15 @@ private:
 
     // Permutates points in the reference element that, when mapped to the
     // real one, match others generated in the same real edge
-    points_type permutatePoints ( nodes_type const& theGt, size_type entity_local_id, mpl::int_<1> )
+    points_type permutatePoints( nodes_type const& theGt, size_type entity_local_id, mpl::int_<1> )
     {
         nodes_type Gt( theGt );
         edge_permutation_type permutation = M_elt.edgePermutation( entity_local_id );
 
         if ( permutation != edge_permutation_type( edge_permutation_type::IDENTITY ) )
         {
-            for ( uint16_type i=0; i <= ( Gt.size2()-1 )/2 - Gt.size2()%2; i++ )
-                ublas::column( Gt, i ).swap( ublas::column( Gt, Gt.size2()-1-i ) );
+            for ( uint16_type i = 0; i <= ( Gt.size2() - 1 ) / 2 - Gt.size2() % 2; i++ )
+                ublas::column( Gt, i ).swap( ublas::column( Gt, Gt.size2() - 1 - i ) );
         }
 
         return Gt;
@@ -225,7 +219,7 @@ private:
 
     // Permutates points in the reference element that, when mapped to the
     // real one, match others generated in the same real face
-    points_type permutatePoints ( nodes_type const& Gt, size_type entity_local_id, mpl::int_<2> )
+    points_type permutatePoints( nodes_type const& Gt, size_type entity_local_id, mpl::int_<2> )
     {
         face_permutation_type permutation = M_elt.facePermutation( entity_local_id );
         nodes_type res( Gt );
@@ -236,25 +230,26 @@ private:
         return res;
     }
 
-    permutation_matrix_type vectorToMatrixPermutation ( permutation_vector_type const& v )
+    permutation_matrix_type vectorToMatrixPermutation( permutation_vector_type const& v )
     {
-        permutation_matrix_type P ( v.size(), v.size(), v.size()*v.size() );
+        permutation_matrix_type P( v.size(), v.size(), v.size() * v.size() );
 
         for ( uint16_type i = 0; i < v.size(); ++i )
-            P( i,v( i ) ) = 1;
+            P( i, v( i ) ) = 1;
 
         return P;
     }
 
-    permutation_vector_type matrixToVectorPermutation ( permutation_matrix_type const& P )
+    permutation_vector_type matrixToVectorPermutation( permutation_matrix_type const& P )
     {
-        FEELPP_ASSERT( P.size1() == P.size2() ).error( "invalid permutation" );
+        FEELPP_ASSERT( P.size1() == P.size2() )
+            .error( "invalid permutation" );
 
-        permutation_vector_type v ( P.size1() );
+        permutation_vector_type v( P.size1() );
 
         for ( uint16_type i = 0; i < v.size(); ++i )
             for ( uint16_type j = 0; j < v.size(); ++j )
-                if ( P( i,j ) == 1 )
+                if ( P( i, j ) == 1 )
                     v( i ) = j;
 
         return v;
@@ -263,7 +258,7 @@ private:
     void setPermutation( int out, int first, int second )
     {
         matrix_permutation[face_permutation_type( out )] = ublas::prod( matrix_permutation[face_permutation_type( first )],
-                matrix_permutation[face_permutation_type( second )] );
+                                                                        matrix_permutation[face_permutation_type( second )] );
 
         vector_permutation[face_permutation_type( out )] = matrixToVectorPermutation( matrix_permutation[face_permutation_type( out )] );
     }
@@ -274,7 +269,7 @@ private:
     //Permutations for tetrahedra
     void generateFacePermutations( uint16_type n_side_points, mpl::int_<3>, mpl::bool_<true> )
     {
-        uint16_type npoints = n_side_points*( n_side_points+1 )/2;
+        uint16_type npoints = n_side_points * ( n_side_points + 1 ) / 2;
 
         permutation_vector_type _vec( npoints );
 
@@ -283,8 +278,8 @@ private:
         {
             for ( uint16_type j = 0; j <= i; j++ )
             {
-                uint16_type _first = i + j*( j-1 )/2 + j*( n_side_points - j );
-                uint16_type _last = i + ( i-j )*( i-j-1 )/2 + ( i-j )*( n_side_points - ( i-j ) );
+                uint16_type _first = i + j * ( j - 1 ) / 2 + j * ( n_side_points - j );
+                uint16_type _last = i + ( i - j ) * ( i - j - 1 ) / 2 + ( i - j ) * ( n_side_points - ( i - j ) );
 
                 _vec( _first ) = _last;
             }
@@ -296,8 +291,8 @@ private:
         //define base reverse permutation
         for ( uint16_type i = 0; i < n_side_points; ++i )
         {
-            uint16_type _begin = i*n_side_points - i*( i-1 )/2;
-            uint16_type _end = ( i+1 )*n_side_points - ( i+1 )*i/2 - 1;
+            uint16_type _begin = i * n_side_points - i * ( i - 1 ) / 2;
+            uint16_type _end = ( i + 1 ) * n_side_points - ( i + 1 ) * i / 2 - 1;
 
             for ( uint16_type j = 0; j <= n_side_points - i - 1; j++ )
                 _vec( _begin + j ) = _end - j;
@@ -322,18 +317,18 @@ private:
     //Permutations for hexahedra
     void generateFacePermutations( uint16_type n_side_points, mpl::int_<3>, mpl::bool_<false> )
     {
-        uint16_type npoints = n_side_points*( n_side_points );
+        uint16_type npoints = n_side_points * ( n_side_points );
 
         permutation_vector_type _vec( npoints );
 
         //define base permutation (tau_2)
-        uint16_type p=0;
+        uint16_type p = 0;
 
-        for ( int16_type i = n_side_points-1; i >= 0; --i )
+        for ( int16_type i = n_side_points - 1; i >= 0; --i )
         {
-            uint16_type _first = i*n_side_points;
+            uint16_type _first = i * n_side_points;
 
-            for ( uint16_type j = 0; j <= n_side_points-1; j++ )
+            for ( uint16_type j = 0; j <= n_side_points - 1; j++ )
             {
                 _vec( p ) = _first + j;
                 p++;
@@ -344,13 +339,13 @@ private:
         matrix_permutation[face_permutation_type( face_permutation_type::REVERSE_BASE )] = vectorToMatrixPermutation( _vec );
 
         //define once anticlockwise permutation (tau_3)
-        p=0;
+        p = 0;
 
-        for ( int16_type i = n_side_points-1; i >= 0; --i )
+        for ( int16_type i = n_side_points - 1; i >= 0; --i )
         {
-            for ( uint16_type j = 0; j <= n_side_points-1; j++ )
+            for ( uint16_type j = 0; j <= n_side_points - 1; j++ )
             {
-                _vec( p ) = i + n_side_points*j;
+                _vec( p ) = i + n_side_points * j;
                 p++;
             }
         }

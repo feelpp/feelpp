@@ -29,34 +29,32 @@
 #ifndef Backend_H
 #define Backend_H 1
 
-#include <functional>
+#include <boost/fusion/include/fold.hpp>
+#include <boost/smart_ptr/enable_shared_from_this.hpp>
 #include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
-#include <boost/fusion/include/fold.hpp>
-#include <boost/smart_ptr/enable_shared_from_this.hpp>
+#include <functional>
 
-#include <feel/feelcore/feel.hpp>
-#include <feel/feeltiming/tic.hpp>
-#include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/singleton.hpp>
-#include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/enums.hpp>
-#include <feel/feelalg/vector.hpp>
-#include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/matrixblock.hpp>
+#include <feel/feelalg/matrixsparse.hpp>
+#include <feel/feelalg/vector.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/parameter.hpp>
+#include <feel/feelcore/singleton.hpp>
+#include <feel/feeltiming/tic.hpp>
 //#include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelalg/datamap.hpp>
 
+#include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelalg/solverlinear.hpp>
 #include <feel/feelalg/solvernonlinear.hpp>
-#include <feel/feelalg/preconditioner.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
 
 #include <feel/feelalg/matrixshell.hpp>
 #include <feel/feelalg/matrixshellsparse.hpp>
-
-
 
 //#include <feel/feelvf/vf.hpp>
 //#include <boost/fusion/support/pair.hpp>
@@ -67,8 +65,8 @@
 //namespace fusion = boost::fusion;
 
 //#include <feel/feelvf/bilinearform.hpp>
-#include <feel/feelvf/pattern.hpp>
 #include <feel/feelvf/block.hpp>
+#include <feel/feelvf/pattern.hpp>
 
 #include <feel/feelalg/nullspace.hpp>
 
@@ -85,25 +83,25 @@ SYMMETRIC = 1 << 3
 ///! \cond detail
 namespace detail
 {
-template<typename T>
+template <typename T>
 boost::shared_ptr<DataMap> datamap( T const& t, mpl::true_ )
 {
     return t->mapPtr();
 }
-template<typename T>
+template <typename T>
 boost::shared_ptr<DataMap> datamap( T const& t, mpl::false_ )
 {
     return t.mapPtr();
 }
-template<typename T>
+template <typename T>
 boost::shared_ptr<DataMap> datamap( T const& t )
 {
     return datamap( t, Feel::detail::is_shared_ptr<T>() );
 }
 
-template<typename T>
+template <typename T>
 #if BOOST_VERSION >= 105300
-typename boost::detail::sp_dereference< typename T::element_type >::type
+typename boost::detail::sp_dereference<typename T::element_type>::type
 #else
 typename T::reference
 #endif
@@ -111,18 +109,16 @@ ref( T t, mpl::true_ )
 {
     return *t;
 }
-template<typename T>
+template <typename T>
 T& ref( T& t, mpl::false_ )
 {
     return t;
 }
-template<typename T>
+template <typename T>
 auto ref( T& t ) -> decltype( ref( t, Feel::detail::is_shared_ptr<T>() ) )
 {
     return ref( t, Feel::detail::is_shared_ptr<T>() );
 }
-
-
 }
 ///! \endcond detail
 
@@ -131,17 +127,23 @@ auto ref( T& t ) -> decltype( ref( t, Feel::detail::is_shared_ptr<T>() ) )
  */
 inline void default_prepost_solve( vector_ptrtype rhs, vector_ptrtype sol )
 {
-
 }
 
-template<typename T> class MatrixBlockBase;
-template<int NR, int NC, typename T> class MatrixBlock;
-template<typename T> class VectorBlockBase;
-template<int NR, typename T> class VectorBlock;
+template <typename T>
+class MatrixBlockBase;
+template <int NR, int NC, typename T>
+class MatrixBlock;
+template <typename T>
+class VectorBlockBase;
+template <int NR, typename T>
+class VectorBlock;
 
-template<typename T> class BlocksBaseSparseMatrix;
+template <typename T>
+class BlocksBaseSparseMatrix;
 
-class BackendBase{};
+class BackendBase
+{
+};
 /**
  * \class Backend
  * \brief base class for all linear algebra backends
@@ -149,14 +151,11 @@ class BackendBase{};
  * @author Christophe Prud'homme
  * @see
  */
-template<typename T>
-class Backend:
-        public BackendBase,
-        public boost::enable_shared_from_this<Backend<T> >
+template <typename T>
+class Backend : public BackendBase,
+                public boost::enable_shared_from_this<Backend<T>>
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -190,20 +189,19 @@ public:
     typedef typename datamap_type::indexsplit_type indexsplit_type;
     typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
 
-    using pre_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
-    using post_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
+    using pre_solve_type = std::function<void( vector_ptrtype, vector_ptrtype )>;
+    using post_solve_type = std::function<void( vector_ptrtype, vector_ptrtype )>;
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
 
-    Backend( WorldComm const& worldComm=Environment::worldComm() );
-    Backend( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    Backend( WorldComm const& worldComm = Environment::worldComm() );
+    Backend( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm = Environment::worldComm() );
     Backend( Backend const& ) = default;
-    Backend( Backend && ) = default;
+    Backend( Backend&& ) = default;
     virtual ~Backend();
-
 
     /**
      * Builds a \p Backend, if Petsc is available, use Petsc by
@@ -215,8 +213,8 @@ public:
 #else
         BackendType = BACKEND_GMM
 #endif
-        , WorldComm const& worldComm=Environment::worldComm()
-    );
+        ,
+        WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * build a backend
@@ -225,10 +223,9 @@ public:
      * \param worldcomm the communicator
      * \return the backend
      */
-    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", WorldComm const& worldComm = Environment::worldComm() );
 
-
-    static FEELPP_DEPRECATED backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    static FEELPP_DEPRECATED backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * build a backend
@@ -237,12 +234,12 @@ public:
      * \param worldcomm the communicator
      * \return the backend
      */
-    static FEELPP_DEPRECATED backend_ptrtype build( BackendType bt, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    static FEELPP_DEPRECATED backend_ptrtype build( BackendType bt, std::string const& prefix = "", WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * convert a vector into a backend pointer vector
      */
-    virtual vector_ptrtype toBackendVectorPtr( vector_type const& v  )
+    virtual vector_ptrtype toBackendVectorPtr( vector_type const& v )
     {
         vector_ptrtype _newvec;
         return _newvec;
@@ -251,7 +248,7 @@ public:
     /**
      * convert a pointer vector into a backend pointer vector
      */
-    virtual vector_ptrtype toBackendVectorPtr( vector_ptrtype const& v  )
+    virtual vector_ptrtype toBackendVectorPtr( vector_ptrtype const& v )
     {
         vector_ptrtype _newvec;
         return _newvec;
@@ -260,10 +257,10 @@ public:
      * convert a pointer vector into a backend pointer vector
      * apply a dynamic_pointer_cast is necessary for shared<VectorUblas>
      */
-    template<typename VecType>
-    vector_ptrtype toBackendVectorPtr( boost::shared_ptr<VecType> const& v  )
+    template <typename VecType>
+    vector_ptrtype toBackendVectorPtr( boost::shared_ptr<VecType> const& v )
     {
-        vector_ptrtype vcast = boost::dynamic_pointer_cast< vector_type >( v );
+        vector_ptrtype vcast = boost::dynamic_pointer_cast<vector_type>( v );
         return this->toBackendVectorPtr( vcast );
     }
 
@@ -276,22 +273,22 @@ public:
      * instantiate a new sparse vector
      */
     virtual sparse_matrix_ptrtype newMatrix( const size_type m,
-            const size_type n,
-            const size_type m_l,
-            const size_type n_l,
-            const size_type nnz=30,
-            const size_type noz=10,
-            size_type prop = NON_HERMITIAN ) = 0;
+                                             const size_type n,
+                                             const size_type m_l,
+                                             const size_type n_l,
+                                             const size_type nnz = 30,
+                                             const size_type noz = 10,
+                                             size_type prop = NON_HERMITIAN ) = 0;
 
     /**
      * instantiate a new sparse vector
      */
     virtual sparse_matrix_ptrtype newMatrix( const size_type m,
-            const size_type n,
-            const size_type m_l,
-            const size_type n_l,
-            graph_ptrtype const & graph,
-            size_type matrix_properties = NON_HERMITIAN ) = 0;
+                                             const size_type n,
+                                             const size_type m_l,
+                                             const size_type n_l,
+                                             graph_ptrtype const& graph,
+                                             size_type matrix_properties = NON_HERMITIAN ) = 0;
 
     /**
      * instantiate a new sparse vector
@@ -300,15 +297,14 @@ public:
                                      const size_type n,
                                      const size_type m_l,
                                      const size_type n_l,
-                                     graph_ptrtype const & graph,
+                                     graph_ptrtype const& graph,
                                      indexsplit_ptrtype const& indexSplit,
                                      size_type matrix_properties = NON_HERMITIAN )
     {
-        auto mat = this->newMatrix( m,n,m_l,n_l,graph,matrix_properties );
+        auto mat = this->newMatrix( m, n, m_l, n_l, graph, matrix_properties );
         mat->setIndexSplit( indexSplit );
         return mat;
     }
-
 
     /**
      * instantiate a new sparse vector
@@ -323,15 +319,15 @@ public:
      */
     sparse_matrix_ptrtype newMatrix( datamap_ptrtype const& domainmap,
                                      datamap_ptrtype const& imagemap,
-                                     graph_ptrtype const & graph,
+                                     graph_ptrtype const& graph,
                                      size_type matrix_properties = NON_HERMITIAN,
                                      bool init = true )
     {
-        auto mat = this->newMatrix( domainmap,imagemap, matrix_properties, false );
+        auto mat = this->newMatrix( domainmap, imagemap, matrix_properties, false );
 
         if ( init ) mat->init( imagemap->nDof(), domainmap->nDof(),
-                                   imagemap->nLocalDofWithoutGhost(), domainmap->nLocalDofWithoutGhost(),
-                                   graph );
+                               imagemap->nLocalDofWithoutGhost(), domainmap->nLocalDofWithoutGhost(),
+                               graph );
 
         mat->zero();
         // todo!
@@ -339,16 +335,14 @@ public:
         return mat;
     }
 
-
     /**
      * instantiate a new sparse vector
      */
-    virtual
-    sparse_matrix_ptrtype
+    virtual sparse_matrix_ptrtype
     newZeroMatrix( const size_type m,
                    const size_type n,
                    const size_type m_l,
-                   const size_type n_l ) =0;
+                   const size_type n_l ) = 0;
 
     virtual sparse_matrix_ptrtype newZeroMatrix( datamap_ptrtype const& dm1, datamap_ptrtype const& dm2 ) = 0;
 
@@ -358,18 +352,7 @@ public:
     BOOST_PARAMETER_MEMBER_FUNCTION( ( sparse_matrix_ptrtype ),
                                      newMatrix,
                                      tag,
-                                     ( required
-                                       ( trial,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) ) )
-                                     ( optional
-                                       ( pattern,( size_type ),Pattern::COUPLED )
-                                       ( properties,( size_type ),NON_HERMITIAN )
-                                       ( buildGraphWithTranspose, ( bool ),false )
-                                       ( pattern_block,    *, ( BlocksStencilPattern(1,1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
-                                       ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
-                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
-                                       ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
-                                     ) )
+                                     ( required( trial, *(boost::is_convertible<mpl::_, boost::shared_ptr<FunctionSpaceBase>>))( test, *(boost::is_convertible<mpl::_, boost::shared_ptr<FunctionSpaceBase>>)) )( optional( pattern, ( size_type ), Pattern::COUPLED )( properties, ( size_type ), NON_HERMITIAN )( buildGraphWithTranspose, (bool), false )( pattern_block, *, ( BlocksStencilPattern( 1, 1, size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )( diag_is_nonzero, *(boost::is_integral<mpl::_>), true )( verbose, (bool), boption( _prefix = this->prefix(), _name = "backend.verbose" ) )( collect_garbage, *(boost::is_integral<mpl::_>), true ) ) )
     {
         if ( verbose )
         {
@@ -392,12 +375,12 @@ public:
             if ( !buildGraphWithTranspose )
             {
                 tic();
-                auto s = stencil( _test=test,
-                                  _trial=trial,
-                                  _pattern=pattern,
-                                  _pattern_block=pattern_block,
-                                  _diag_is_nonzero=diag_is_nonzero,
-                                  _collect_garbage=collect_garbage);
+                auto s = stencil( _test = test,
+                                  _trial = trial,
+                                  _pattern = pattern,
+                                  _pattern_block = pattern_block,
+                                  _diag_is_nonzero = diag_is_nonzero,
+                                  _collect_garbage = collect_garbage );
                 toc( "Backend::newMatrix:: build stencil", FLAGS_v > 0 );
                 tic();
                 mat->init( test->nDof(), trial->nDof(),
@@ -407,15 +390,15 @@ public:
             }
             else
             {
-                auto s = stencil( _test=trial,
-                                  _trial=test,
-                                  _pattern=pattern,
-                                  _pattern_block=pattern_block.transpose(),
-                                  _diag_is_nonzero=false,// because transpose(do just after)
-                                  _close=false,
-                                  _collect_garbage=collect_garbage );
+                auto s = stencil( _test = trial,
+                                  _trial = test,
+                                  _pattern = pattern,
+                                  _pattern_block = pattern_block.transpose(),
+                                  _diag_is_nonzero = false, // because transpose(do just after)
+                                  _close = false,
+                                  _collect_garbage = collect_garbage );
                 // get the good graph
-                auto graph = s->graph()->transpose(false);
+                auto graph = s->graph()->transpose( false );
                 if ( diag_is_nonzero )
                     graph->addMissingZeroEntriesDiagonal();
                 graph->close();
@@ -423,7 +406,7 @@ public:
                 //maybe do that
                 //stencilManagerGarbage(boost::make_tuple( trial, test, pattern, pattern_block.transpose().getSetOfBlocks(), false/*diag_is_nonzero*/));
                 //now save the good graph in the StencilManager(only if entry is empty)
-                stencilManagerAdd(boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero), graph);
+                stencilManagerAdd( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ), graph );
 
                 mat->init( test->nDof(), trial->nDof(),
                            test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
@@ -432,7 +415,7 @@ public:
             tic();
             mat->zero();
             mat->setIndexSplit( trial->dofIndexSplit() );
-            toc("Backend::newMatrix:: zero out matrix + set split", FLAGS_v > 0 );
+            toc( "Backend::newMatrix:: zero out matrix + set split", FLAGS_v > 0 );
         }
 
         if ( verbose )
@@ -442,10 +425,10 @@ public:
         return mat;
     }
 
-    template<typename DomainSpace, typename ImageSpace>
-    sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im, sparse_matrix_ptrtype const& M, size_type prop = NON_HERMITIAN  )
+    template <typename DomainSpace, typename ImageSpace>
+    sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im, sparse_matrix_ptrtype const& M, size_type prop = NON_HERMITIAN )
     {
-        sparse_matrix_ptrtype m = newMatrix( dm, im, prop  );
+        sparse_matrix_ptrtype m = newMatrix( dm, im, prop );
         m->init( im->nDof(), dm->nDof(), im->nLocalDof(), dm->nLocalDof(), M->graph() );
         return m;
     }
@@ -453,9 +436,9 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-    sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseSparseMatrix<value_type> const & b,
-                                              bool copy_values=true,
-                                              bool diag_is_nonzero=true )
+    sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseSparseMatrix<value_type> const& b,
+                                              bool copy_values = true,
+                                              bool diag_is_nonzero = true )
     {
         typedef MatrixBlockBase<value_type> matrix_block_type;
         typedef boost::shared_ptr<matrix_block_type> matrix_block_ptrtype;
@@ -474,9 +457,9 @@ public:
         return mb->getSparseMatrix();
     }
 
-    sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseGraphCSR const & b,
-                                              bool copy_values=true,
-                                              bool diag_is_nonzero=true )
+    sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseGraphCSR const& b,
+                                              bool copy_values = true,
+                                              bool diag_is_nonzero = true )
     {
         typedef MatrixBlockBase<value_type> matrix_block_type;
         typedef boost::shared_ptr<matrix_block_type> matrix_block_ptrtype;
@@ -501,24 +484,17 @@ public:
     BOOST_PARAMETER_MEMBER_FUNCTION( ( sparse_matrix_ptrtype ),
                                      newBlockMatrix,
                                      tag,
-                                     ( required
-                                       ( block,* )
-                                     )
-                                     ( optional
-                                       ( copy_values,*( boost::is_integral<mpl::_> ),true )
-                                       ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
-                                     )
-                                   )
+                                     ( required( block, * ) )( optional( copy_values, *(boost::is_integral<mpl::_>), true )( diag_is_nonzero, *(boost::is_integral<mpl::_>), true ) ) )
     {
-        return newBlockMatrixImpl( block,copy_values,diag_is_nonzero );
+        return newBlockMatrixImpl( block, copy_values, diag_is_nonzero );
     }
 
     /**
      * instantiate a new block matrix sparse
      */
-    template < typename BlockType=vector_ptrtype >
-    vector_ptrtype newBlockVectorImpl( vf::BlocksBase<BlockType> const & b,
-                                       bool copy_values=true )
+    template <typename BlockType = vector_ptrtype>
+    vector_ptrtype newBlockVectorImpl( vf::BlocksBase<BlockType> const& b,
+                                       bool copy_values = true )
     {
         typedef VectorBlockBase<typename BlockType::element_type::value_type> vector_block_type;
         boost::shared_ptr<vector_block_type> mb( new vector_block_type( b, *this, copy_values ) );
@@ -531,17 +507,10 @@ public:
     BOOST_PARAMETER_MEMBER_FUNCTION( ( vector_ptrtype ),
                                      newBlockVector,
                                      tag,
-                                     ( required
-                                       ( block,* )
-                                     )
-                                     ( optional
-                                       ( copy_values,*( boost::is_integral<mpl::_> ),true )
-                                     )
-                                   )
+                                     ( required( block, * ) )( optional( copy_values, *(boost::is_integral<mpl::_>), true ) ) )
     {
-        return newBlockVectorImpl( block,copy_values );
+        return newBlockVectorImpl( block, copy_values );
     }
-
 
     /**
      * instantiate a new zero matrix
@@ -549,11 +518,7 @@ public:
     BOOST_PARAMETER_MEMBER_FUNCTION( ( sparse_matrix_ptrtype ),
                                      newZeroMatrix,
                                      tag,
-                                     ( required
-                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
-                                       ( trial,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
-                                     )
-                                   )
+                                     ( required( test, *(boost::is_convertible<mpl::_, boost::shared_ptr<FunctionSpaceBase>>))( trial, *(boost::is_convertible<mpl::_, boost::shared_ptr<FunctionSpaceBase>>)) ) )
     {
         return this->newZeroMatrix( trial->dofOnOff(), test->dofOn() );
     }
@@ -574,10 +539,7 @@ public:
     BOOST_PARAMETER_MEMBER_FUNCTION( ( vector_ptrtype ),
                                      newVector,
                                      tag,
-                                     ( required
-                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
-                                     )
-                                   )
+                                     ( required( test, *(boost::is_convertible<mpl::_, boost::shared_ptr<FunctionSpaceBase>>)) ) )
     {
         if ( !this->comm().isActive() ) return vector_ptrtype();
 
@@ -589,7 +551,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -766,7 +727,6 @@ public:
         return M_maxitSNESReuse;
     }
 
-
     /**
      * \return the KSP relative tolerance in SNES
      */
@@ -774,7 +734,6 @@ public:
     {
         return M_rtoleranceKSPinSNES;
     }
-
 
     bool converged() const
     {
@@ -811,13 +770,13 @@ public:
     BackendType type() const { return M_backend; }
 
     static std::string enumToKind( BackendType bt )
-        {
-            if ( bt == BACKEND_EIGEN ) return "eigen";
-            if ( bt == BACKEND_EIGEN_DENSE ) return "eigen_dense";
-            if ( bt == BACKEND_PETSC ) return "petsc";
-            LOG(WARNING) << "Unknown backend, setting up for 'petsc'";
-            return "petsc";
-        }
+    {
+        if ( bt == BACKEND_EIGEN ) return "eigen";
+        if ( bt == BACKEND_EIGEN_DENSE ) return "eigen_dense";
+        if ( bt == BACKEND_PETSC ) return "petsc";
+        LOG( WARNING ) << "Unknown backend, setting up for 'petsc'";
+        return "petsc";
+    }
 
     /**
      * @return the current datamap of the backend
@@ -834,17 +793,10 @@ public:
      * set tolerances: relative tolerance \p rtol, divergence tolerance \p dtol
      * and absolute tolerance \p atol
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+    BOOST_PARAMETER_MEMBER_FUNCTION( (void),
                                      setTolerances,
                                      tag,
-                                     ( required
-                                       ( rtolerance, ( real_type ) )
-                                     )
-                                     ( optional
-                                       ( maxit,      ( size_type ), 1000 )
-                                       ( atolerance, ( real_type ),    1e-50 )
-                                       ( dtolerance, ( real_type ),    1e5 )
-                                     ) )
+                                     ( required( rtolerance, ( real_type ) ) )( optional( maxit, ( size_type ), 1000 )( atolerance, ( real_type ), 1e-50 )( dtolerance, ( real_type ), 1e5 ) ) )
     {
         M_rtolerance = rtolerance;
         M_dtolerance = dtolerance;
@@ -852,17 +804,10 @@ public:
         M_maxitKSP = maxit;
     }
 
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+    BOOST_PARAMETER_MEMBER_FUNCTION( (void),
                                      setTolerancesSNES,
                                      tag,
-                                     ( required
-                                       ( rtolerance, ( double ) )
-                                     )
-                                     ( optional
-                                       ( maxit,      ( size_type ), 50 )
-                                       ( atolerance, ( double ),    1e-50 )
-                                       ( stolerance, ( double ),    1e-8 )
-                                     ) )
+                                     ( required( rtolerance, (double)) )( optional( maxit, ( size_type ), 50 )( atolerance, (double), 1e-50 )( stolerance, (double), 1e-8 ) ) )
     {
         M_rtoleranceSNES = rtolerance;
         M_stoleranceSNES = stolerance;
@@ -873,17 +818,10 @@ public:
     /**
      * set solver: krylov subspace method and preconditioners
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+    BOOST_PARAMETER_MEMBER_FUNCTION( (void),
                                      setSolverType,
                                      tag,
-                                     ( required
-                                       ( ksp, ( std::string ) )
-                                     )
-                                     ( optional
-                                       ( pc,      ( std::string ), "lu" )
-                                       ( constant_null_space,      ( bool ), false )
-                                       ( pcfactormatsolverpackage,  ( std::string ), "petsc" )
-                                     ) )
+                                     ( required( ksp, ( std::string ) ) )( optional( pc, ( std::string ), "lu" )( constant_null_space, (bool), false )( pcfactormatsolverpackage, ( std::string ), "petsc" ) ) )
     {
         M_ksp = ksp;
         M_pc = pc;
@@ -916,14 +854,14 @@ public:
         M_transpose = transpose;
     }
 
-    void setShowKSPMonitor( bool b ) { M_showKSPMonitor=b; }
-    void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
+    void setShowKSPMonitor( bool b ) { M_showKSPMonitor = b; }
+    void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason = b; }
 
-    void setReusePrec( bool b ) { M_reuse_prec=b; }
-    void setReuseJac( bool b) { M_reuse_jac=b; }
+    void setReusePrec( bool b ) { M_reuse_prec = b; }
+    void setReuseJac( bool b ) { M_reuse_jac = b; }
 
-    void setReusePrecRebuildAtFirstNewtonStep(bool b) { M_reusePrecRebuildAtFirstNewtonStep=b; }
-    void setReuseJacRebuildAtFirstNewtonStep(bool b) { M_reuseJacRebuildAtFirstNewtonStep=b; }
+    void setReusePrecRebuildAtFirstNewtonStep( bool b ) { M_reusePrecRebuildAtFirstNewtonStep = b; }
+    void setReuseJacRebuildAtFirstNewtonStep( bool b ) { M_reuseJacRebuildAtFirstNewtonStep = b; }
 
     /**
      * @brief set the current datamap of the backend
@@ -947,7 +885,6 @@ public:
      * \return \f$ r = x^T * y \f$
      */
     virtual value_type dot( vector_type const& x, vector_type const& y ) const;
-
 
     /**
      * \return \f$ r = x^T * y \f$
@@ -973,34 +910,34 @@ public:
      * get the matrix \c M whose diagonal is \c v
      */
     virtual int diag( vector_ptrtype const& v, sparse_matrix_ptrtype& M ) const
-        {
-            return diag( *v, *M );
-        }
+    {
+        return diag( *v, *M );
+    }
 
     /**
      * get the matrix \c M whose diagonal is \c v
      */
     virtual int diag( vector_type const& v, sparse_matrix_type& M ) const
-        {
-            CHECK(0) << "Invalid call to diag(v,M). Not implemented in Backend base class";
-            return 0;
-        }
+    {
+        CHECK( 0 ) << "Invalid call to diag(v,M). Not implemented in Backend base class";
+        return 0;
+    }
 
     /**
      * @return the vector \c v with diagonal of \c M
      */
     virtual int diag( sparse_matrix_ptrtype const& M, vector_ptrtype& v ) const
-        {
-            return diag( *M, *v );
-        }
+    {
+        return diag( *M, *v );
+    }
     /**
      * @return the vector \c v with diagonal of \c M
      */
     virtual int diag( sparse_matrix_type const& M, vector_type& v ) const
-        {
-            CHECK(0) << "Invalid call to diag(M,v). Not implemented in Backend base class";
-            return 0;
-        }
+    {
+        CHECK( 0 ) << "Invalid call to diag(M,v). Not implemented in Backend base class";
+        return 0;
+    }
 
     /**
      * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation
@@ -1023,52 +960,32 @@ public:
                                      tag,
                                      ( required
                                        //( matrix,*(mpl::or_<sparse_matrix_ptrtype,shell_matrix_ptrtype>) )
-                                       ( matrix,(sparse_matrix_ptrtype) )
+                                       ( matrix, ( sparse_matrix_ptrtype ) )
                                        //( in_out( solution ),*( mpl::or_<mpl::or_<boost::is_convertible<mpl::_,vector_type&>,boost::is_convertible<mpl::_,vector_type> >,boost::is_convertible<mpl::_,vector_ptrtype> > ) )
-                                       ( in_out( solution ),* )
-                                       ( rhs,( vector_ptrtype ) ) )
-                                     ( optional
-                                       //(prec,(sparse_matrix_ptrtype), matrix )
-                                       ( prec,( preconditioner_ptrtype ), Feel::preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,
-                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this(),
-                                                                                          _worldcomm=this->comm() ) )
-                                       ( null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
-                                       ( near_null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
-                                       ( maxit,( size_type ), M_maxitKSP/*1000*/ )
-                                       ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
-                                       ( atolerance,( double ), M_atolerance/*1e-50*/ )
-                                       ( dtolerance,( double ), M_dtolerance/*1e5*/ )
-                                       ( reuse_prec,( bool ), M_reuse_prec )
-                                       ( transpose,( bool ), false )
-                                       ( close,( bool ), true )
-                                       ( constant_null_space,( bool ), M_constant_null_space/*false*/ )
-                                       ( pre, (pre_solve_type), pre_solve_type() )
-                                       ( post, (post_solve_type), post_solve_type() )
-                                       ( pc,( std::string ),M_pc/*"lu"*/ )
-                                       ( ksp,( std::string ),M_ksp/*"gmres"*/ )
-                                       ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
-                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
-                                     )
-                                   )
+                                       (in_out( solution ), *)( rhs, ( vector_ptrtype ) ) )( optional
+                                                                                             //(prec,(sparse_matrix_ptrtype), matrix )
+                                                                                             ( prec, ( preconditioner_ptrtype ), Feel::preconditioner( _prefix = this->prefix(), _matrix = matrix, _pc = this->pcEnumType() /*LU_PRECOND*/,
+                                                                                                                                                       _pcfactormatsolverpackage = this->matSolverPackageEnumType(), _backend = this->shared_from_this(),
+                                                                                                                                                       _worldcomm = this->comm() ) )( null_space, (NullSpace<value_type>), NullSpace<value_type>() )( near_null_space, (NullSpace<value_type>), NullSpace<value_type>() )( maxit, ( size_type ), M_maxitKSP /*1000*/ )( rtolerance, (double), M_rtolerance /*1e-13*/ )( atolerance, (double), M_atolerance /*1e-50*/ )( dtolerance, (double), M_dtolerance /*1e5*/ )( reuse_prec, (bool), M_reuse_prec )( transpose, (bool), false )( close, (bool), true )( constant_null_space, (bool), M_constant_null_space /*false*/ )( pre, ( pre_solve_type ), pre_solve_type() )( post, ( post_solve_type ), post_solve_type() )( pc, ( std::string ), M_pc /*"lu"*/ )( ksp, ( std::string ), M_ksp /*"gmres"*/ )( pcfactormatsolverpackage, ( std::string ), M_pcFactorMatSolverPackage )( verbose, (bool), boption( _prefix = this->prefix(), _name = "backend.verbose" ) ) ) )
     {
         if ( verbose )
         {
             Environment::logMemoryUsage( "backend::solve begin" );
         }
-        this->setTolerances( _dtolerance=dtolerance,
-                             _rtolerance=rtolerance,
-                             _atolerance=atolerance,
-                             _maxit=maxit );
+        this->setTolerances( _dtolerance = dtolerance,
+                             _rtolerance = rtolerance,
+                             _atolerance = atolerance,
+                             _maxit = maxit );
 
-        this->setSolverType( _pc=pc, _ksp=ksp,
-                             _constant_null_space=constant_null_space,
+        this->setSolverType( _pc = pc, _ksp = ksp,
+                             _constant_null_space = constant_null_space,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage );
 
         this->attachPreconditioner( prec );
 
         // attach null space (or near null space for multigrid) in backend
-        auto mynullspace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
-        auto myNearNullSpace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),near_null_space);
+        auto mynullspace = boost::make_shared<NullSpace<value_type>>( this->shared_from_this(), null_space );
+        auto myNearNullSpace = boost::make_shared<NullSpace<value_type>>( this->shared_from_this(), near_null_space );
         if ( mynullspace->size() > 0 )
         {
             this->attachNullSpace( mynullspace );
@@ -1092,8 +1009,8 @@ public:
         // print them in matlab format
         if ( !M_export.empty() )
         {
-            matrix->printMatlab( M_export+"_A.m" );
-            rhs->printMatlab( M_export+"_b.m" );
+            matrix->printMatlab( M_export + "_A.m" );
+            rhs->printMatlab( M_export + "_b.m" );
         }
         // set pre/post solve functions
         M_post_solve = post;
@@ -1103,7 +1020,7 @@ public:
 
         vector_ptrtype _sol( this->toBackendVectorPtr( solution ) );
         bool needToCopySolution = false;
-        if( !_sol )
+        if ( !_sol )
         {
             _sol = this->newVector( dm );
             *_sol = Feel::detail::ref( solution );
@@ -1153,8 +1070,7 @@ public:
     virtual solve_return_type solve( sparse_matrix_ptrtype const& A,
                                      sparse_matrix_ptrtype const& P,
                                      vector_ptrtype& x,
-                                     vector_ptrtype const& b
-                                   ) = 0;
+                                     vector_ptrtype const& b ) = 0;
 
     /**
      * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation
@@ -1175,9 +1091,7 @@ public:
                              sparse_matrix_ptrtype const& P,
                              vector_ptrtype& x,
                              vector_ptrtype const& b,
-                             bool reuse_prec
-                           );
-
+                             bool reuse_prec );
 
     /**
      * solve for \f$P F(x)=0 b\f$
@@ -1187,40 +1101,20 @@ public:
                                      tag,
                                      ( required
                                        //( in_out( solution ),*( mpl::or_<boost::is_convertible<mpl::_,vector_type&>,boost::is_convertible<mpl::_,vector_ptrtype> > ) ) )
-                                       ( in_out( solution ),*))
-                                     ( optional
-                                       ( jacobian,( sparse_matrix_ptrtype ), sparse_matrix_ptrtype() )
-                                       ( residual,( vector_ptrtype ), vector_ptrtype() )
-                                       //(prec,(sparse_matrix_ptrtype), jacobian )
-                                       ( prec,( preconditioner_ptrtype ), Feel::preconditioner( _prefix=this->prefix(),_pc=this->pcEnumType()/*LU_PRECOND*/,_backend=this->shared_from_this(),
-                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType() ) )
-                                       ( null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
-                                       ( near_null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
-                                       ( maxit,( size_type ), M_maxitSNES/*50*/ )
-                                       ( rtolerance,( double ), M_rtoleranceSNES/*1e-8*/ )
-                                       ( atolerance,( double ), M_atoleranceSNES/*1e-50*/ )
-                                       ( stolerance,( double ), M_stoleranceSNES/*1e-8*/ )
-                                       ( reuse_prec,( bool ), M_reuse_prec )
-                                       ( reuse_jac,( bool ), M_reuse_jac )
-                                       ( transpose,( bool ), false )
-                                       ( pre, (pre_solve_type), pre_solve_type() )
-                                       ( post, (post_solve_type), post_solve_type() )
-                                       ( pc,( std::string ),M_pc/*"lu"*/ )
-                                       ( ksp,( std::string ),M_ksp/*"gmres"*/ )
-                                       ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
-                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
-                                     )
-                                   )
+                                       ( in_out( solution ), * ) )( optional( jacobian, ( sparse_matrix_ptrtype ), sparse_matrix_ptrtype() )( residual, ( vector_ptrtype ), vector_ptrtype() )
+                                                                    //(prec,(sparse_matrix_ptrtype), jacobian )
+                                                                    ( prec, ( preconditioner_ptrtype ), Feel::preconditioner( _prefix = this->prefix(), _pc = this->pcEnumType() /*LU_PRECOND*/, _backend = this->shared_from_this(),
+                                                                                                                              _pcfactormatsolverpackage = this->matSolverPackageEnumType() ) )( null_space, (NullSpace<value_type>), NullSpace<value_type>() )( near_null_space, (NullSpace<value_type>), NullSpace<value_type>() )( maxit, ( size_type ), M_maxitSNES /*50*/ )( rtolerance, (double), M_rtoleranceSNES /*1e-8*/ )( atolerance, (double), M_atoleranceSNES /*1e-50*/ )( stolerance, (double), M_stoleranceSNES /*1e-8*/ )( reuse_prec, (bool), M_reuse_prec )( reuse_jac, (bool), M_reuse_jac )( transpose, (bool), false )( pre, ( pre_solve_type ), pre_solve_type() )( post, ( post_solve_type ), post_solve_type() )( pc, ( std::string ), M_pc /*"lu"*/ )( ksp, ( std::string ), M_ksp /*"gmres"*/ )( pcfactormatsolverpackage, ( std::string ), M_pcFactorMatSolverPackage )( verbose, (bool), boption( _prefix = this->prefix(), _name = "backend.verbose" ) ) ) )
     {
         if ( verbose )
         {
             Environment::logMemoryUsage( "backend::nlSolve begin" );
         }
-        this->setTolerancesSNES( _stolerance=stolerance,
-                                 _rtolerance=rtolerance,
-                                 _atolerance=atolerance,
-                                 _maxit=maxit );
-        this->setSolverType( _pc=pc, _ksp=ksp,
+        this->setTolerancesSNES( _stolerance = stolerance,
+                                 _rtolerance = rtolerance,
+                                 _atolerance = atolerance,
+                                 _maxit = maxit );
+        this->setSolverType( _pc = pc, _ksp = ksp,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage );
 
         auto dm = Feel::detail::datamap( solution );
@@ -1228,7 +1122,7 @@ public:
 
         vector_ptrtype _sol( this->toBackendVectorPtr( solution ) );
         bool needToCopySolution = false;
-        if( !_sol )
+        if ( !_sol )
         {
             _sol = this->newVector( dm );
             *_sol = Feel::detail::ref( solution );
@@ -1254,8 +1148,8 @@ public:
             this->nlSolver()->attachPreconditioner( prec );
 
         // attach null space (or near null space for multigrid) in backend
-        auto mynullspace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
-        auto myNearNullSpace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),near_null_space);
+        auto mynullspace = boost::make_shared<NullSpace<value_type>>( this->shared_from_this(), null_space );
+        auto myNearNullSpace = boost::make_shared<NullSpace<value_type>>( this->shared_from_this(), near_null_space );
         if ( mynullspace->size() > 0 )
         {
             this->attachNullSpace( mynullspace );
@@ -1311,9 +1205,8 @@ public:
      * assemble \f$C=P^T A P\f$
      */
     virtual int PtAP( sparse_matrix_ptrtype const& A,
-                       sparse_matrix_ptrtype const& P,
-                       sparse_matrix_ptrtype & C
-                       ) const;
+                      sparse_matrix_ptrtype const& P,
+                      sparse_matrix_ptrtype& C ) const;
 
     /**
      * assemble \f$C=P A P^T\f$
@@ -1347,12 +1240,11 @@ public:
         return M_preconditioner;
     }
 
-
-    void attachNullSpace( boost::shared_ptr<NullSpace<value_type> > nullSpace )
+    void attachNullSpace( boost::shared_ptr<NullSpace<value_type>> nullSpace )
     {
         M_nullSpace = nullSpace;
     }
-    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type> > nearNullSpace )
+    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type>> nearNullSpace )
     {
         M_nearNullSpace = nearNullSpace;
     }
@@ -1360,30 +1252,30 @@ public:
     /**
      * register a backend observer for the delete signal of backend
      */
-    template<typename Observer>
+    template <typename Observer>
     void
     addDeleteObserver( Observer const& obs )
-        {
-            M_deleteObservers.connect( obs );
-        }
+    {
+        M_deleteObservers.connect( obs );
+    }
     /**
      * register a backend observer for the delete signal of backend that is a
      * shared_ptr<>
      */
-    template<typename Observer>
+    template <typename Observer>
     void
     addDeleteObserver( boost::shared_ptr<Observer> const& obs )
-        {
-            M_deleteObservers.connect(boost::bind(&Observer::operator(), obs));
-        }
+    {
+        M_deleteObservers.connect( boost::bind( &Observer::operator(), obs ) );
+    }
     /**
      * send the delete signal to all observers
      */
     void
     sendDeleteSignal()
-        {
-            M_deleteObservers();
-        }
+    {
+        M_deleteObservers();
+    }
 
     /**
      * \return the pre solve function
@@ -1393,7 +1285,7 @@ public:
     /**
      * call the pre solve function with \p x as the rhs and \p y as the solution
      */
-    void preSolve(vector_ptrtype x, vector_ptrtype y) { return M_pre_solve(x,y); }
+    void preSolve( vector_ptrtype x, vector_ptrtype y ) { return M_pre_solve( x, y ); }
 
     /**
      * \return the post solve function
@@ -1403,32 +1295,30 @@ public:
     /**
      * call the post solve function with \p x as the rhs and \p y as the solution
      */
-    void postSolve(vector_ptrtype x, vector_ptrtype y) { return M_post_solve(x,y); }
+    void postSolve( vector_ptrtype x, vector_ptrtype y ) { return M_post_solve( x, y ); }
 
     //@}
 
-
-
-protected:
+  protected:
     preconditioner_ptrtype M_preconditioner;
-    boost::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
-private:
+    boost::shared_ptr<NullSpace<value_type>> M_nullSpace, M_nearNullSpace;
 
+  private:
     void start();
 
     void stop();
 
     void reset();
 
-private:
+  private:
     WorldComm M_worldComm;
 
     po::variables_map M_vm;
 
-protected:
+  protected:
     BackendType M_backend;
 
-private:
+  private:
     std::string M_prefix;
 
     solvernonlinear_ptrtype M_nlsolver;
@@ -1447,18 +1337,18 @@ private:
 
     bool M_reuse_prec;
     bool M_reuse_jac;
-    bool M_reusePrecIsBuild,M_reusePrecRebuildAtFirstNewtonStep;
-    bool M_reuseJacIsBuild,M_reuseJacRebuildAtFirstNewtonStep;
+    bool M_reusePrecIsBuild, M_reusePrecRebuildAtFirstNewtonStep;
+    bool M_reuseJacIsBuild, M_reuseJacRebuildAtFirstNewtonStep;
     size_t M_nUsePC;
-    bool   M_converged;
-    bool   M_reusePC;
-    bool   M_reusedPC;
-    bool   M_reuseFailed;
+    bool M_converged;
+    bool M_reusePC;
+    bool M_reusedPC;
+    bool M_reuseFailed;
     boost::timer M_timer;
-    bool   M_transpose;
-    size_type    M_maxitKSP, M_maxitKSPinSNES, M_maxitSNES;
-    size_type    M_maxitKSPReuse, M_maxitKSPinSNESReuse, M_maxitSNESReuse;
-    size_type    M_iteration;
+    bool M_transpose;
+    size_type M_maxitKSP, M_maxitKSPinSNES, M_maxitSNES;
+    size_type M_maxitKSPReuse, M_maxitKSPinSNESReuse, M_maxitSNESReuse;
+    size_type M_iteration;
     std::string M_export;
     std::string M_ksp;
     std::string M_pc;
@@ -1474,7 +1364,6 @@ private:
     boost::signals2::signal<void()> M_deleteObservers;
 };
 
-
 typedef Backend<double> backend_type;
 typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
@@ -1483,45 +1372,43 @@ typedef boost::shared_ptr<c_backend_type> c_backend_ptrtype;
 
 namespace detail
 {
-template<typename T>
-class BackendManagerImpl:
-        public std::map<boost::tuple<std::string,std::string,int>, typename Backend<T>::ptrtype >,
-        public boost::noncopyable
+template <typename T>
+class BackendManagerImpl : public std::map<boost::tuple<std::string, std::string, int>, typename Backend<T>::ptrtype>,
+                           public boost::noncopyable
 {
-public:
+  public:
     typedef typename Backend<T>::ptrtype value_type;
-    typedef boost::tuple<std::string,std::string,int> key_type;
+    typedef boost::tuple<std::string, std::string, int> key_type;
     typedef std::map<key_type, value_type> backend_manager_type;
-
 };
-template<typename T>
-struct BackendManager : public  Feel::Singleton<BackendManagerImpl<T>> {};
+template <typename T>
+struct BackendManager : public Feel::Singleton<BackendManagerImpl<T>>
+{
+};
 
-template<typename T>
+template <typename T>
 struct BackendManagerDeleterImpl
 {
     void operator()() const
-        {
-            VLOG(2) << "[BackendManagerDeleter] clear BackendManager Singleton: " << Feel::detail::BackendManager<T>::instance().size() << "\n";
-            Feel::detail::BackendManager<T>::instance().clear();
-            VLOG(2) << "[BackendManagerDeleter] clear BackendManager done\n";
-        }
+    {
+        VLOG( 2 ) << "[BackendManagerDeleter] clear BackendManager Singleton: " << Feel::detail::BackendManager<T>::instance().size() << "\n";
+        Feel::detail::BackendManager<T>::instance().clear();
+        VLOG( 2 ) << "[BackendManagerDeleter] clear BackendManager done\n";
+    }
 };
-template<typename T>
+template <typename T>
 struct BackendManagerDeleter
-    : public  Feel::Singleton<BackendManagerDeleterImpl<T>>
-{};
+    : public Feel::Singleton<BackendManagerDeleterImpl<T>>
+{
+};
 
-
-
-
-template<typename T>
+template <typename T>
 typename Backend<T>::ptrtype
 backend_impl( std::string const& name, std::string const& kind, bool rebuild, WorldComm const& worldcomm )
 {
     // register the BackendManager into Feel::Environment so that it gets the
     // BackendManager is cleared up when the Environment is deleted
-    static bool observed=false;
+    static bool observed = false;
     if ( !observed )
     {
         Environment::addDeleteObserver( Feel::detail::BackendManagerDeleter<T>::instance() );
@@ -1530,120 +1417,94 @@ backend_impl( std::string const& name, std::string const& kind, bool rebuild, Wo
 
     auto git = Feel::detail::BackendManager<T>::instance().find( boost::make_tuple( kind, name, worldcomm.globalSize() ) );
 
-    if (  git != Feel::detail::BackendManager<T>::instance().end() && ( rebuild == false ) )
+    if ( git != Feel::detail::BackendManager<T>::instance().end() && ( rebuild == false ) )
     {
-        DVLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
+        DVLOG( 2 ) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
         return git->second;
     }
 
     else
     {
-        if (  git != Feel::detail::BackendManager<T>::instance().end() && ( rebuild == true ) )
+        if ( git != Feel::detail::BackendManager<T>::instance().end() && ( rebuild == true ) )
             git->second->clear();
 
-        DVLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
+        DVLOG( 2 ) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
 
         typename Backend<T>::ptrtype b;
         b = Feel::Backend<T>::build( kind, name, worldcomm );
-        DVLOG(2) << "[backend] storing backend in singleton" << "\n";
+        DVLOG( 2 ) << "[backend] storing backend in singleton"
+                   << "\n";
         Feel::detail::BackendManager<T>::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
         return b;
     }
-
 }
 
 } // detail
 
 BOOST_PARAMETER_FUNCTION(
-                         ( backend_ptrtype ), // return type
-                         backend,           // 2. function name
-                         tag,               // 3. namespace of tag types
-                         ( optional
-                           ( name,           ( std::string ), "" )
-                           ( kind,           ( std::string ), soption(_prefix=name,_name="backend"))
-                           ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                           ( worldcomm,      (WorldComm), Environment::worldComm() )
-                           ) )
+    ( backend_ptrtype ), // return type
+    backend,             // 2. function name
+    tag,                 // 3. namespace of tag types
+    ( optional( name, ( std::string ), "" )( kind, ( std::string ), soption( _prefix = name, _name = "backend" ) )( rebuild, (bool), boption( _prefix = name, _name = "backend.rebuild" ) )( worldcomm, ( WorldComm ), Environment::worldComm() ) ) )
 {
-    return Feel::detail::backend_impl<double>( name, kind, rebuild, worldcomm);
+    return Feel::detail::backend_impl<double>( name, kind, rebuild, worldcomm );
 }
-
 
 /*
  * Complex backend
  */
 BOOST_PARAMETER_FUNCTION(
-                         ( c_backend_ptrtype ), // return type
-                         cbackend,           // 2. function name
-                         tag,               // 3. namespace of tag types
-                         ( optional
-                           ( name,           ( std::string ), "" )
-                           ( kind,           ( std::string ), soption(_prefix=name,_name="backend"))
-                           ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                           ( worldcomm,      (WorldComm), Environment::worldComm() )
-                           ) )
+    ( c_backend_ptrtype ), // return type
+    cbackend,              // 2. function name
+    tag,                   // 3. namespace of tag types
+    ( optional( name, ( std::string ), "" )( kind, ( std::string ), soption( _prefix = name, _name = "backend" ) )( rebuild, (bool), boption( _prefix = name, _name = "backend.rebuild" ) )( worldcomm, ( WorldComm ), Environment::worldComm() ) ) )
 {
-    return Feel::detail::backend_impl<std::complex<double>>( name, kind, rebuild, worldcomm);
+    return Feel::detail::backend_impl<std::complex<double>>( name, kind, rebuild, worldcomm );
 }
 
-template<typename T>
-bool isMatrixInverseSymmetric ( boost::shared_ptr<MatrixSparse<T> >& A, boost::shared_ptr<MatrixSparse<T> >& At, bool print=false  )
+template <typename T>
+bool isMatrixInverseSymmetric( boost::shared_ptr<MatrixSparse<T>>& A, boost::shared_ptr<MatrixSparse<T>>& At, bool print = false )
 {
-    auto u = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());
-    auto v = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());
+    auto u = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector( A->size1(), A->size1() );
+    auto v = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector( A->size1(), A->size1() );
 
-    auto res_u = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());
-    auto res_v = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());
+    auto res_u = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector( A->size1(), A->size1() );
+    auto res_v = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector( A->size1(), A->size1() );
 
-
-    for (size_type i = 0; i < u->size(); i++)
+    for ( size_type i = 0; i < u->size(); i++ )
     {
-        u->set(i,(double(std::rand())/double(RAND_MAX)));
+        u->set( i, ( double( std::rand() ) / double( RAND_MAX ) ) );
     }
 
-    for (size_type i = 0; i < v->size(); i++)
+    for ( size_type i = 0; i < v->size(); i++ )
     {
-        v->set(i,(double(std::rand())/double(RAND_MAX)));
+        v->set( i, ( double( std::rand() ) / double( RAND_MAX ) ) );
     }
 
-    Backend<T>::build( BACKEND_PETSC, A->comm() )->solve(_matrix=A,
-                                                         _solution=res_u,
-                                                         _rhs=u,
-                                                         _pcfactormatsolverpackage="mumps"
-                                                         );
+    Backend<T>::build( BACKEND_PETSC, A->comm() )->solve( _matrix = A, _solution = res_u, _rhs = u, _pcfactormatsolverpackage = "mumps" );
 
+    Backend<T>::build( BACKEND_PETSC, A->comm() )->solve( _matrix = At, _solution = res_v, _rhs = v, _pcfactormatsolverpackage = "mumps" );
 
+    T val1 = inner_product( res_u, v );
+    T val2 = inner_product( res_v, u );
 
-    Backend<T>::build( BACKEND_PETSC, A->comm() )->solve(_matrix=At,
-                                                         _solution=res_v,
-                                                         _rhs=v,
-                                                         _pcfactormatsolverpackage="mumps"
-                                                         );
+    T res = math::abs( val1 - val2 );
 
-
-
-    T val1 = inner_product(res_u,v);
-    T val2 = inner_product(res_v,u);
-
-    T res = math::abs(val1-val2);
-
-    if ((res >= 1e-12) && print)
+    if ( ( res >= 1e-12 ) && print )
     {
-        std::cout<<"-----------Subdomain "<< Environment::worldComm().rank() <<"-----------\n";
-        std::cout<<"--Val1= "<< val1 <<"\n";
-        std::cout<<"--Val2= "<< val2 <<"\n";
-        std::cout<<"--|Val1-val2|= "<< res <<"\n";
-        std::cout<<"---------------------------------\n";
+        std::cout << "-----------Subdomain " << Environment::worldComm().rank() << "-----------\n";
+        std::cout << "--Val1= " << val1 << "\n";
+        std::cout << "--Val2= " << val2 << "\n";
+        std::cout << "--|Val1-val2|= " << res << "\n";
+        std::cout << "---------------------------------\n";
     }
 
-    return  res < 1e-12;
-
+    return res < 1e-12;
 }
 
-#if !defined(FEELPP_BACKEND_NOEXTERN)
+#if !defined( FEELPP_BACKEND_NOEXTERN )
 extern template class Backend<double>;
 //extern template class Backend<std::complex<double>>;
 #endif
-
 }
 #endif /* Backend_H */

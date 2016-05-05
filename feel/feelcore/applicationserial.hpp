@@ -34,8 +34,8 @@
 
 #include <feel/feelconfig.h>
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
+#include <feel/feelcore/feel.hpp>
 
 namespace Feel
 {
@@ -50,13 +50,11 @@ namespace Feel
 class Application : public Application
 {
     typedef Application super;
-public:
 
-
+  public:
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -83,7 +81,7 @@ public:
      */
     Application( int argc, char** argv, AboutData const& ad, po::options_description const& od );
 
-    Application( Application const & );
+    Application( Application const& );
 
     ~Application();
 
@@ -92,7 +90,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -106,37 +103,27 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-    template<class T>
+    template <class T>
     static void Broadcast( T& /*obj*/, int /*root*/ = 0 )
-    {}
+    {
+    }
 
     /**
      * @return the barrier
      */
-    static void barrier() { }
+    static void barrier() {}
 
     //@}
 
-
-
-protected:
-
-
-private:
-
-
-
-private:
-
+  protected:
+  private:
+  private:
 };
-
-
 }
 #endif /* __Application_H */

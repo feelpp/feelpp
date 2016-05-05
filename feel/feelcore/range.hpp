@@ -26,7 +26,8 @@
 
 #include <vector>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
  \c range(stop) 
@@ -47,32 +48,30 @@ namespace Feel {
  range(1,10,2) : 1,3,5,7,9
  \endexample
  */
-template<typename T>
+template <typename T>
 std::vector<T>
-range( T && beg, T && end, T && step )
+range( T&& beg, T&& end, T&& step )
 {
-    std::vector<T> v( static_cast<size_type>((end-beg)/step) );
+    std::vector<T> v( static_cast<size_type>( ( end - beg ) / step ) );
 
     T n{beg};
-    std::generate(v.begin(), v.end(), [&n,&step]{ n+=step; return n-step; }); 
+    std::generate( v.begin(), v.end(), [&n, &step] { n+=step; return n-step; } );
 
-    return std::move(v);
+    return std::move( v );
 }
 
-template<typename T>
+template <typename T>
 std::vector<T>
-range( T && beg, T && end )
+range( T&& beg, T&& end )
 {
-    return range( std::forward<T>(beg), std::forward<T>(end), T(1) );
+    return range( std::forward<T>( beg ), std::forward<T>( end ), T( 1 ) );
 }
-template<typename T>
+template <typename T>
 std::vector<T>
-range( T && end )
+range( T&& end )
 {
-    return range( static_cast<T>(0), std::forward<T>(end) );
+    return range( static_cast<T>( 0 ), std::forward<T>( end ) );
 }
-
-
 }
 
 #endif

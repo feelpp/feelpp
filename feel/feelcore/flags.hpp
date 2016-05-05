@@ -38,7 +38,8 @@ namespace detail
 class Flag
 {
     int i;
-public:
+
+  public:
     inline Flag( int i );
     inline operator int() const
     {
@@ -46,53 +47,60 @@ public:
     }
 };
 
-inline Flag::Flag( int ai ) : i( ai ) {}
+inline Flag::Flag( int ai )
+    : i( ai )
+{
+}
 
-
-template<typename Enum>
+template <typename Enum>
 class Flags
 {
-    typedef void **Zero;
+    typedef void** Zero;
     int i;
-public:
+
+  public:
     typedef Enum enum_type;
 
-    inline Flags( const Flags &f ) : i( f.i ) {}
-    inline Flags( Enum f ) : i( f ) {}
-    inline Flags( Zero = 0 ) : i( 0 ) {}
-    inline Flags( Flag f ) : i( f ) {}
+    inline Flags( const Flags& f )
+        : i( f.i ) {}
+    inline Flags( Enum f )
+        : i( f ) {}
+    inline Flags( Zero = 0 )
+        : i( 0 ) {}
+    inline Flags( Flag f )
+        : i( f ) {}
 
-    inline Flags &operator=( const Flags &f )
+    inline Flags& operator=( const Flags& f )
     {
         i = f.i;
         return *this;
     }
-    inline Flags &operator&=( int mask )
+    inline Flags& operator&=( int mask )
     {
         i &= mask;
         return *this;
     }
-    inline Flags &operator&=( unsigned int mask )
+    inline Flags& operator&=( unsigned int mask )
     {
         i &= mask;
         return *this;
     }
-    inline Flags &operator|=( Flags f )
+    inline Flags& operator|=( Flags f )
     {
         i |= f.i;
         return *this;
     }
-    inline Flags &operator|=( Enum f )
+    inline Flags& operator|=( Enum f )
     {
         i |= f;
         return *this;
     }
-    inline Flags &operator^=( Flags f )
+    inline Flags& operator^=( Flags f )
     {
         i ^= f.i;
         return *this;
     }
-    inline Flags &operator^=( Enum f )
+    inline Flags& operator^=( Enum f )
     {
         i ^= f;
         return *this;
@@ -161,14 +169,12 @@ public:
     {
         return i & f;
     }
-
 };
 
 } // detail
 /// \endcond
 
-
-#define FEELPP_DECLARE_FLAGS(Flags, Enum)         \
+#define FEELPP_DECLARE_FLAGS( Flags, Enum ) \
     typedef detail::Flags<Enum> Flags;
 
 } // Feel

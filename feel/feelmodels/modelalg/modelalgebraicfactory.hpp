@@ -32,186 +32,183 @@
 
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 
-
 namespace Feel
 {
 namespace FeelModels
 {
 
-    class ModelAlgebraicFactory
+class ModelAlgebraicFactory
+{
+  public:
+    typedef ModelAlgebraicFactory self_type;
+
+    //typedef FeelModels::AppliBase appli_type;
+    typedef FeelModels::ModelAlgebraic appli_type;
+    typedef boost::shared_ptr<appli_type> appli_ptrtype;
+
+    typedef typename appli_type::value_type value_type;
+    typedef typename appli_type::backend_type backend_type;
+    typedef typename appli_type::backend_ptrtype backend_ptrtype;
+
+    typedef GraphCSR graph_type;
+    typedef boost::shared_ptr<graph_type> graph_ptrtype;
+
+    typedef typename appli_type::vector_ptrtype vector_ptrtype;
+    typedef typename appli_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    typedef typename sparse_matrix_ptrtype::element_type sparse_matrix_type;
+
+    typedef Preconditioner<value_type> preconditioner_type;
+    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+
+    typedef typename backend_type::solve_return_type solve_return_type;
+    typedef typename backend_type::nl_solve_return_type nl_solve_return_type;
+
+    typedef appli_type::indexsplit_type indexsplit_type;
+    typedef appli_type::indexsplit_ptrtype indexsplit_ptrtype;
+
+    typedef boost::function<void( sparse_matrix_ptrtype& A, vector_ptrtype& F )> linearAssembly_function_type;
+
+    //---------------------------------------------------------------------------------------------------------------//
+    //---------------------------------------------------------------------------------------------------------------//
+    //---------------------------------------------------------------------------------------------------------------//
+
+    ModelAlgebraicFactory( appli_ptrtype const& __app, backend_ptrtype const& __backend );
+
+    ModelAlgebraicFactory( appli_ptrtype const& __app,
+                           backend_ptrtype const& __backend,
+                           graph_ptrtype const& graph,
+                           indexsplit_ptrtype const& indexSplit );
+
+    //---------------------------------------------------------------------------------------------------------------//
+    //---------------------------------------------------------------------------------------------------------------//
+
+    template <typename SpaceType>
+    void
+    initFromFunctionSpace( boost::shared_ptr<SpaceType> const& space )
     {
-    public :
-        typedef ModelAlgebraicFactory self_type;
 
-        //typedef FeelModels::AppliBase appli_type;
-        typedef FeelModels::ModelAlgebraic appli_type;
-        typedef boost::shared_ptr<appli_type> appli_ptrtype;
+        if ( this->application()->verbose() ) Feel::FeelModels::Log( this->application()->prefix() + ".MethodNum", "initFromFunctionSpace", "start",
+                                                                     this->application()->worldComm(), this->application()->verboseAllProc() );
 
-        typedef typename appli_type::value_type value_type;
-        typedef typename appli_type::backend_type backend_type;
-        typedef typename appli_type::backend_ptrtype backend_ptrtype;
+        this->application()->timerTool( "Constructor" ).start();
+        auto graph = stencil( _test = space, _trial = space,
+                              _pattern_block = this->application()->blockPattern(),
+                              _diag_is_nonzero = true )
+                         ->graph();
+        auto indexSplit = space->dofIndexSplit();
+        this->application()->timerTool( "Constructor" ).elapsed( "graph" );
 
-        typedef GraphCSR graph_type;
-        typedef boost::shared_ptr<graph_type> graph_ptrtype;
+        this->application()->timerTool( "Constructor" ).restart();
+        this->buildMatrixVector( graph, indexSplit );
+        this->application()->timerTool( "Constructor" ).elapsed( "matrixVector" );
 
-        typedef typename appli_type::vector_ptrtype vector_ptrtype;
-        typedef typename appli_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-        typedef typename sparse_matrix_ptrtype::element_type sparse_matrix_type;
+        this->application()->timerTool( "Constructor" ).restart();
+        this->buildOthers();
+        this->application()->timerTool( "Constructor" ).elapsed( "algebraicOthers" );
 
-        typedef Preconditioner<value_type> preconditioner_type;
-        typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+        if ( this->application()->verbose() ) Feel::FeelModels::Log( this->application()->prefix() + ".MethodNum", "initFromFunctionSpace", "finish",
+                                                                     this->application()->worldComm(), this->application()->verboseAllProc() );
+    }
 
-        typedef typename backend_type::solve_return_type solve_return_type;
-        typedef typename backend_type::nl_solve_return_type nl_solve_return_type;
+    //---------------------------------------------------------------------------------------------------------------//
 
-        typedef appli_type::indexsplit_type indexsplit_type;
-        typedef appli_type::indexsplit_ptrtype indexsplit_ptrtype;
+    void
+    rebuildMatrixVector( graph_ptrtype const& graph,
+                         indexsplit_ptrtype const& indexSplit );
 
+    void reset( backend_ptrtype __backend,
+                graph_ptrtype const& graph,
+                indexsplit_ptrtype const& indexSplit );
 
-        typedef boost::function<void ( sparse_matrix_ptrtype& A,vector_ptrtype& F )> linearAssembly_function_type;
+    boost::shared_ptr<std::ostringstream> getInfo() const;
+    void printInfo() const;
 
+    //---------------------------------------------------------------------------------------------------------------//
+    //---------------------------------------------------------------------------------------------------------------//
+    //---------------------------------------------------------------------------------------------------------------//
 
-        //---------------------------------------------------------------------------------------------------------------//
-        //---------------------------------------------------------------------------------------------------------------//
-        //---------------------------------------------------------------------------------------------------------------//
+    appli_ptrtype const&
+    application() const { return M_appli; }
 
-        ModelAlgebraicFactory(appli_ptrtype const& __app, backend_ptrtype const& __backend);
+    backend_ptrtype
+    backend() { return M_backend; }
 
-        ModelAlgebraicFactory(appli_ptrtype const&__app,
-                              backend_ptrtype const& __backend,
-                              graph_ptrtype const& graph,
-                              indexsplit_ptrtype const& indexSplit );
+    backend_ptrtype const&
+    backend() const { return M_backend; }
 
-        //---------------------------------------------------------------------------------------------------------------//
-        //---------------------------------------------------------------------------------------------------------------//
+    preconditioner_ptrtype
+    preconditionerTool() { return M_PrecondManage; }
 
-        template <typename SpaceType>
-        void
-        initFromFunctionSpace(boost::shared_ptr<SpaceType> const& space )
-        {
+    preconditioner_ptrtype const&
+    preconditionerTool() const { return M_PrecondManage; }
 
-            if (this->application()->verbose()) Feel::FeelModels::Log(this->application()->prefix()+".MethodNum","initFromFunctionSpace", "start",
-                                                                      this->application()->worldComm(),this->application()->verboseAllProc());
+    graph_ptrtype const&
+    sparsityMatrixGraph() const
+    {
+        CHECK( M_J ) << "no matrix register";
+        return M_J->graph();
+    }
 
-            this->application()->timerTool("Constructor").start();
-            auto graph=stencil(_test=space,_trial=space,
-                               _pattern_block=this->application()->blockPattern(),
-                               _diag_is_nonzero=true)->graph();
-            auto indexSplit= space->dofIndexSplit();
-            this->application()->timerTool("Constructor").elapsed("graph");
+    void
+    attachNullSpace( NullSpace<value_type> const& nullSpace );
+    void
+    attachNearNullSpace( NullSpace<value_type> const& nearNullSpace );
+    void
+    attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace );
 
-            this->application()->timerTool("Constructor").restart();
-            this->buildMatrixVector(graph,indexSplit);
-            this->application()->timerTool("Constructor").elapsed("matrixVector");
+    //---------------------------------------------------------------------------------------------------------------//
+    //---------------------------------------------------------------------------------------------------------------//
+    //---------------------------------------------------------------------------------------------------------------//
+    void solve( std::string const& type, vector_ptrtype& sol );
+    void linearSolver( vector_ptrtype& U );
+    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J /*, vector_ptrtype& R*/ );
+    void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
+    void AlgoNewton2( vector_ptrtype& U );
+    void rebuildCstJacobian( vector_ptrtype U );
+    void rebuildCstLinearPDE( vector_ptrtype U );
 
-            this->application()->timerTool("Constructor").restart();
-            this->buildOthers();
-            this->application()->timerTool("Constructor").elapsed("algebraicOthers");
+    //---------------------------------------------------------------------------------------------------------------//
+    //---------------------------------------------------------------------------------------------------------------//
+    //---------------------------------------------------------------------------------------------------------------//
+    // fonctions obseletes
+    void AlgoPicard( vector_ptrtype U );
+    //OLD version (without petsc) : not up
+    void AlgoNewton( vector_ptrtype U );
 
-            if (this->application()->verbose()) Feel::FeelModels::Log(this->application()->prefix()+".MethodNum","initFromFunctionSpace", "finish",
-                                                                      this->application()->worldComm(),this->application()->verboseAllProc());
-        }
+    linearAssembly_function_type addFunctionLinearPostAssembly;
+    linearAssembly_function_type addFunctionLinearPreAssemblyNonCst;
 
-        //---------------------------------------------------------------------------------------------------------------//
+  private:
+    void
+    init( graph_ptrtype const& graph,
+          indexsplit_ptrtype const& indexSplit );
 
-        void
-        rebuildMatrixVector( graph_ptrtype const& graph,
-                             indexsplit_ptrtype const& indexSplit);
+    void
+    buildMatrixVector( graph_ptrtype const& graph,
+                       indexsplit_ptrtype const& indexSplit );
+    void
+    buildOthers();
 
-        void reset(backend_ptrtype __backend,
-                   graph_ptrtype const& graph,
-                   indexsplit_ptrtype const& indexSplit);
+  private:
+    appli_ptrtype M_appli;
 
-        boost::shared_ptr<std::ostringstream> getInfo() const;
-        void printInfo() const;
+    backend_ptrtype M_backend;
 
-        //---------------------------------------------------------------------------------------------------------------//
-        //---------------------------------------------------------------------------------------------------------------//
-        //---------------------------------------------------------------------------------------------------------------//
+    preconditioner_ptrtype M_PrecondManage;
 
-        appli_ptrtype const&
-        application() const { return M_appli; }
+    vector_ptrtype M_R;
+    vector_ptrtype M_CstR;
+    sparse_matrix_ptrtype M_J;
+    sparse_matrix_ptrtype M_CstJ;
+    sparse_matrix_ptrtype M_Prec;
+    sparse_matrix_ptrtype M_Extended;
 
-        backend_ptrtype
-        backend() { return M_backend; }
-
-        backend_ptrtype const&
-        backend() const { return M_backend; }
-
-        preconditioner_ptrtype
-        preconditionerTool() { return M_PrecondManage; }
-
-        preconditioner_ptrtype const&
-        preconditionerTool() const { return M_PrecondManage; }
-
-        graph_ptrtype const&
-        sparsityMatrixGraph() const { CHECK(M_J) << "no matrix register"; return M_J->graph(); }
-
-        void
-        attachNullSpace( NullSpace<value_type> const& nullSpace );
-        void
-        attachNearNullSpace( NullSpace<value_type> const& nearNullSpace );
-        void
-        attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace );
-
-
-        //---------------------------------------------------------------------------------------------------------------//
-        //---------------------------------------------------------------------------------------------------------------//
-        //---------------------------------------------------------------------------------------------------------------//
-        void solve( std::string const& type,vector_ptrtype& sol );
-        void linearSolver( vector_ptrtype &U );
-        void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J/*, vector_ptrtype& R*/ );
-        void updateResidual( const vector_ptrtype& X, vector_ptrtype& R);
-        void AlgoNewton2( vector_ptrtype &U );
-        void rebuildCstJacobian( vector_ptrtype U );
-        void rebuildCstLinearPDE( vector_ptrtype U );
-
-        //---------------------------------------------------------------------------------------------------------------//
-        //---------------------------------------------------------------------------------------------------------------//
-        //---------------------------------------------------------------------------------------------------------------//
-        // fonctions obseletes
-        void AlgoPicard(vector_ptrtype U);
-        //OLD version (without petsc) : not up
-        void AlgoNewton(vector_ptrtype U);
-
-        linearAssembly_function_type addFunctionLinearPostAssembly;
-        linearAssembly_function_type addFunctionLinearPreAssemblyNonCst;
-
-    private :
-
-        void
-        init(graph_ptrtype const& graph,
-             indexsplit_ptrtype const& indexSplit);
-
-        void
-        buildMatrixVector(graph_ptrtype const& graph,
-                          indexsplit_ptrtype const& indexSplit);
-        void
-        buildOthers();
-
-    private :
-
-        appli_ptrtype M_appli;
-
-        backend_ptrtype M_backend;
-
-        preconditioner_ptrtype M_PrecondManage;
-
-        vector_ptrtype M_R;
-        vector_ptrtype M_CstR;
-        sparse_matrix_ptrtype M_J;
-        sparse_matrix_ptrtype M_CstJ;
-        sparse_matrix_ptrtype M_Prec;
-        sparse_matrix_ptrtype M_Extended;
-
-        bool M_hasBuildLinearJacobian;
-        bool M_hasBuildResidualCst;
-        bool M_hasBuildLinearSystemCst;
-    };
-
+    bool M_hasBuildLinearJacobian;
+    bool M_hasBuildResidualCst;
+    bool M_hasBuildLinearSystemCst;
+};
 
 } // namespace FeelModels
 } // namespace Feel
-
 
 #endif //FEELPP_MODELSALGEBRAICFACTORY_HPP

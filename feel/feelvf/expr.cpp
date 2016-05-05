@@ -29,7 +29,6 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelvf/expr.hpp>
 
-
 namespace Feel
 {
 namespace vf

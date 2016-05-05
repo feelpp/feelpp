@@ -29,9 +29,9 @@
 #ifndef __PointSetInterpolation_H
 #define __PointSetInterpolation_H 1
 
-#include <feel/feelmesh/pointset.hpp>
-#include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/matrix.hpp>
+#include <feel/feelmesh/pointset.hpp>
 
 namespace Feel
 {
@@ -45,23 +45,22 @@ namespace ublas = boost::numeric::ublas;
  * @author Christophe Prud'homme
  * @see
  */
-template<uint16_type Dim,
-         uint16_type Order,
-         typename T,
-         template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
-class PointSetInterpolation : public PointSet<Convex<Dim,Order,Dim>,T>
+template <uint16_type Dim,
+          uint16_type Order,
+          typename T,
+          template <uint16_type, uint16_type, uint16_type> class Convex = Simplex>
+class PointSetInterpolation : public PointSet<Convex<Dim, Order, Dim>, T>
 {
-    typedef PointSet<Convex<Dim,Order,Dim>,T> super;
+    typedef PointSet<Convex<Dim, Order, Dim>, T> super;
 
-public:
-
+  public:
     /** @name Typedefs
      */
     //@{
 
     typedef typename super::return_type return_type;
     typedef T value_type;
-    typedef Convex<Dim,Order,Dim> convex_type;
+    typedef Convex<Dim, Order, Dim> convex_type;
 
     typedef typename super::nodes_type nodes_type;
     typedef typename matrix_node<value_type>::type points_type;
@@ -72,9 +71,10 @@ public:
     static const uint32_type convexOrder = convex_type::nOrder;
     static const uint32_type topological_dimension = convex_type::topological_dimension;
 
-    typedef mpl::if_< mpl::bool_< is_simplex >,
-            Simplex<Dim, Order, Dim> ,
-            Hypercube<Dim, Order, Dim> > conv_order_type;
+    typedef mpl::if_<mpl::bool_<is_simplex>,
+                     Simplex<Dim, Order, Dim>,
+                     Hypercube<Dim, Order, Dim>>
+        conv_order_type;
 
     typedef Reference<convex_type, Dim, convexOrder, Dim, value_type> RefElem;
 
@@ -88,8 +88,7 @@ public:
     RefElem RefConv;
 
     typedef std::pair<uint16_type, uint16_type> range_type;
-    typedef std::vector< std::vector<size_type> > index_map_type;
-
+    typedef std::vector<std::vector<size_type>> index_map_type;
 
     //@}
 
@@ -98,35 +97,34 @@ public:
     //@{
 
     PointSetInterpolation()
-        :
-        super()
+        : super()
     {
         M_eid.resize( topological_dimension + 1 );
         M_pt_to_entity.resize( numPoints );
     }
     PointSetInterpolation( size_type np )
-        :
-        super( np )
+        : super( np )
     {
         M_eid.resize( topological_dimension + 1 );
         M_pt_to_entity.resize( numPoints );
     }
-    PointSetInterpolation( PointSetInterpolation & psi )
-        :
-        super( psi ),
-        M_eid( psi.getEid() ),
-        M_pt_to_entity( psi.getPtE() )
+    PointSetInterpolation( PointSetInterpolation& psi )
+        : super( psi ),
+          M_eid( psi.getEid() ),
+          M_pt_to_entity( psi.getPtE() )
 
-    {}
+    {
+    }
 
     ~PointSetInterpolation() {}
 
     ublas::matrix_range<nodes_type const> pointsByEntity( uint16_type e ) const
     {
-        FEELPP_ASSERT( M_eid[e].size() )( e ).error( "no points defined on this entity" );
+        FEELPP_ASSERT( M_eid[e].size() )
+        ( e ).error( "no points defined on this entity" );
 
         return ublas::project( this->points(),
-                               ublas::range( 0,Dim ),
+                               ublas::range( 0, Dim ),
                                ublas::range( *M_eid[e].begin(), *M_eid[e].rbegin() + 1 ) );
     }
 
@@ -143,9 +141,9 @@ public:
         else if ( e == 2 )
             numEntities = convex_type::numFaces;
 
-        uint16_type N = M_eid[e].size()/numEntities;
+        uint16_type N = M_eid[e].size() / numEntities;
 
-        return std::make_pair( *M_eid[e].begin() + id*N, *M_eid[e].begin() + ( id+1 )*N );
+        return std::make_pair( *M_eid[e].begin() + id * N, *M_eid[e].begin() + ( id + 1 ) * N );
     }
 
     ublas::matrix_range<nodes_type const> interiorPointsById( uint16_type e, uint16_type id ) const
@@ -153,8 +151,8 @@ public:
         range_type position = interiorRangeById( e, id );
 
         ublas::matrix_range<nodes_type const> G = ublas::project( this->points(),
-                ublas::range( 0, Dim ),
-                ublas::range( position.first, position.second ) );
+                                                                  ublas::range( 0, Dim ),
+                                                                  ublas::range( position.first, position.second ) );
 
         return G;
     }
@@ -175,9 +173,9 @@ public:
     }
 
     //Returns the local indices of all the subentities that compose the entity
-    index_map_type entityToLocal ( uint16_type top_dim, uint16_type local_id, bool boundary = 0 ) const
+    index_map_type entityToLocal( uint16_type top_dim, uint16_type local_id, bool boundary = 0 ) const
     {
-        index_map_type indices( top_dim+1 );
+        index_map_type indices( top_dim + 1 );
 
         if ( top_dim == 0 && boundary )
         {
@@ -205,11 +203,11 @@ public:
                     //number of vertices, number of edges and number of faces in the volume
                     std::map<uint16_type, uint16_type> numPointsInEntity;
 
-                    numPointsInEntity[0] = ( is_simplex )?( top_dim+1 ):( 2 + ( top_dim-1 )*( 2+3*( top_dim-2 ) ) );
-                    numPointsInEntity[1] = ( 2 + ( top_dim-1 )*( 1+2*is_simplex + ( 5-4*is_simplex )*( top_dim-1 ) ) )/2;
-                    numPointsInEntity[2] = 6-2*is_simplex;
+                    numPointsInEntity[0] = ( is_simplex ) ? ( top_dim + 1 ) : ( 2 + ( top_dim - 1 ) * ( 2 + 3 * ( top_dim - 2 ) ) );
+                    numPointsInEntity[1] = ( 2 + ( top_dim - 1 ) * ( 1 + 2 * is_simplex + ( 5 - 4 * is_simplex ) * ( top_dim - 1 ) ) ) / 2;
+                    numPointsInEntity[2] = 6 - 2 * is_simplex;
 
-                    for ( uint16_type i=0; i < numPointsInEntity[0] ; i++ )
+                    for ( uint16_type i = 0; i < numPointsInEntity[0]; i++ )
                     {
                         if ( top_dim == 1 )
                             indices[0].push_back( RefConv.e2p( local_id, i ) );
@@ -220,15 +218,15 @@ public:
 
                     if ( ( top_dim == 2 ) && ( M_eid[1].size() != 0 ) )
                     {
-                        for ( uint16_type i=0; i < numPointsInEntity[1] ; i++ )
+                        for ( uint16_type i = 0; i < numPointsInEntity[1]; i++ )
                             indices[1].push_back( RefConv.f2e( local_id, i ) );
                     }
 
                     if ( top_dim == 3 )
                     {
-                        for ( uint16_type k=0; k<numPointsInEntity.size(); k++ )
+                        for ( uint16_type k = 0; k < numPointsInEntity.size(); k++ )
                         {
-                            for ( uint16_type i=0; i < numPointsInEntity[k]; i++ )
+                            for ( uint16_type i = 0; i < numPointsInEntity[k]; i++ )
                             {
                                 indices[k].push_back( i );
                             }
@@ -246,7 +244,6 @@ public:
         return indices;
     }
 
-
     points_type pointsBySubEntity( uint16_type top_dim, uint16_type local_id, bool boundary = 0 ) const
     {
         index_map_type index_list = entityToLocal( top_dim, local_id, boundary );
@@ -254,30 +251,30 @@ public:
         uint16_type matrix_size = 0;
 
         if ( index_list[0].size() != 0 )
-            matrix_size +=index_list[0].size()*nbPtsPerVertex;
+            matrix_size += index_list[0].size() * nbPtsPerVertex;
 
-        if ( ( top_dim>=1 ) && ( index_list[1].size() != 0 ) )
-            matrix_size +=index_list[1].size()*nbPtsPerEdge;
+        if ( ( top_dim >= 1 ) && ( index_list[1].size() != 0 ) )
+            matrix_size += index_list[1].size() * nbPtsPerEdge;
 
-        if ( ( top_dim >=2 ) && ( index_list[2].size() != 0 ) )
-            matrix_size +=index_list[2].size()*nbPtsPerFace;
+        if ( ( top_dim >= 2 ) && ( index_list[2].size() != 0 ) )
+            matrix_size += index_list[2].size() * nbPtsPerFace;
 
-        if ( ( top_dim ==3 ) && ( index_list[3].size() != 0 ) )
-            matrix_size +=nbPtsPerVolume;
+        if ( ( top_dim == 3 ) && ( index_list[3].size() != 0 ) )
+            matrix_size += nbPtsPerVolume;
 
-        points_type G ( Dim, matrix_size );
+        points_type G( Dim, matrix_size );
 
-        for ( uint16_type i=0, p=0; i < top_dim+1; i++ )
+        for ( uint16_type i = 0, p = 0; i < top_dim + 1; i++ )
         {
             if ( index_list[i].size() )
             {
-                for ( uint16_type j=0; j < index_list[i].size(); j++ )
+                for ( uint16_type j = 0; j < index_list[i].size(); j++ )
                 {
                     points_type aux = interiorPointsById( i, index_list[i][j] );
 
-                    ublas::subrange( G, 0, Dim, p, p+aux.size2() ) = aux;
+                    ublas::subrange( G, 0, Dim, p, p + aux.size2() ) = aux;
 
-                    p+=aux.size2();
+                    p += aux.size2();
                 }
             }
         }
@@ -285,7 +282,7 @@ public:
         return G;
     }
 
-    index_map_type getEid ()
+    index_map_type getEid()
     {
         return M_eid;
     }
@@ -295,33 +292,31 @@ public:
         return M_pt_to_entity;
     }
 
-    void setEid ( index_map_type eid )
+    void setEid( index_map_type eid )
     {
         M_eid = eid;
     }
 
-    void setPtE ( std::vector<range_type> pt_ent )
+    void setPtE( std::vector<range_type> pt_ent )
     {
         M_pt_to_entity = pt_ent;
     }
 
-    void addToEid ( uint16_type p, uint16_type q )
+    void addToEid( uint16_type p, uint16_type q )
     {
         M_eid[p].push_back( q );
     }
 
-    void addToPtE ( uint16_type p, range_type q )
+    void addToPtE( uint16_type p, range_type q )
     {
         M_pt_to_entity[p] = q;
     }
 
     FEELPP_DEFINE_VISITABLE();
 
-private:
-
+  private:
     index_map_type M_eid;
     std::vector<range_type> M_pt_to_entity;
-
 };
 }
 #endif /* __PointSetInterpolation_H */

@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_UNITSPHERE_HPP)
+#if !defined( FEELPP_UNITSPHERE_HPP )
 #define FEELPP_UNITSPHERE_HPP 1
 
 #include <feel/feelcore/feel.hpp>
@@ -34,25 +34,23 @@
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
 
-
-namespace Feel {
+namespace Feel
+{
 /**
  * build a mesh of the unit circle using triangles
  */
-template<int Ngeo=1>
-inline
-boost::shared_ptr<Mesh<Simplex<3,Ngeo> > >
-unitSphere( double h = doption(_name="gmsh.hsize") )
+template <int Ngeo = 1>
+inline boost::shared_ptr<Mesh<Simplex<3, Ngeo>>>
+unitSphere( double h = doption( _name = "gmsh.hsize" ) )
 {
-    return createGMSHMesh(_mesh=new Mesh<Simplex<3,Ngeo> >,
-                          _desc=domain( _name="sphere",
-                                        _shape="ellipsoid",
-                                        _dim=3,
-                                        _xmin=-1,
-                                        _ymin=-1,
-                                        _zmin=-1,
-                                        _h= h ) );
+    return createGMSHMesh( _mesh = new Mesh<Simplex<3, Ngeo>>,
+                           _desc = domain( _name = "sphere",
+                                           _shape = "ellipsoid",
+                                           _dim = 3,
+                                           _xmin = -1,
+                                           _ymin = -1,
+                                           _zmin = -1,
+                                           _h = h ) );
 }
-
 }
 #endif /* FEELPP_UNITSPHERE_HPP */

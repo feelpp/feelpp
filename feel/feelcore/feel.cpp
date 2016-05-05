@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-07-25
  */
-#include <feel/feelcore/feel.hpp>
 #include <boost/algorithm/string/trim_all.hpp>
+#include <feel/feelcore/feel.hpp>
 namespace Feel
 {
 
@@ -41,7 +41,7 @@ prefixvm( std::string const& prefix,
     if ( !o.empty() )
         o += sep;
 
-    return o+opt;
+    return o + opt;
 }
 
 /**
@@ -51,18 +51,15 @@ prefixvm( std::string const& prefix,
 std::string
 sanitize( std::string const& s )
 {
-    
-    
-    return algorithm::trim_fill_copy_if(s, "_", algorithm::is_any_of(" ;*,:()[]@$/+-#^") );
+
+    return algorithm::trim_fill_copy_if( s, "_", algorithm::is_any_of( " ;*,:()[]@$/+-#^" ) );
 }
 
 std::vector<std::string>
 sanitize( std::vector<std::string> const& s )
 {
-    std::vector<std::string> ss(s);
-    for_each(ss.begin(), ss.end(), []( std::string& n ) { algorithm::trim_fill_if(n, "_", algorithm::is_any_of(" ;*,:()[]@$/+-#^") ); } );
+    std::vector<std::string> ss( s );
+    for_each( ss.begin(), ss.end(), []( std::string& n ) { algorithm::trim_fill_if( n, "_", algorithm::is_any_of( " ;*,:()[]@$/+-#^" ) ); } );
     return ss;
 }
-
-
 }

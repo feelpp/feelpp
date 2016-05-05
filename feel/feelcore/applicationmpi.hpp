@@ -30,24 +30,22 @@
 #ifndef __Application_H
 #define __Application_H 1
 
-#include <iostream>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/serialization/string.hpp> // Needed to send/receive strings!
+#include <iostream>
 
 #include <boost/mpi.hpp>
 #include <feel/feelconfig.h>
 
-#if defined(FEELPP_HAS_MPI_H)
+#if defined( FEELPP_HAS_MPI_H )
 #include <mpi.h>
 #endif /* FEELPP_HAS_MPI_H */
 
-
-
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
+#include <feel/feelcore/feel.hpp>
 
 namespace Feel
 {
@@ -64,21 +62,19 @@ namespace mpi = boost::mpi;
 class Application : public Application
 {
     typedef Application super;
-public:
 
-
-    /** @name Typedefs
+  public:
+/** @name Typedefs
      */
-    //@{
+//@{
 
+//@}
 
-    //@}
-
-    /** @name Constructors, destructor
+/** @name Constructors, destructor
      */
-    //@{
+//@{
 
-    /**
+/**
      * Construct an MPI Application
      *
      * @param argc number of arguments on the command line
@@ -92,7 +88,7 @@ public:
     Application( int argc, char** argv, AboutData const& ad );
 #endif
 
-    /**
+/**
      * Construct an MPI Application
      *
      * @param argc number of arguments on the command line
@@ -107,7 +103,6 @@ public:
     Application( int argc, char** argv, AboutData const& ad, po::options_description const& od );
 #endif
 
-
     ~Application();
 
     //@}
@@ -115,7 +110,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -172,25 +166,20 @@ public:
 #endif
     }
 
+//@}
 
-    //@}
-
-    /** @name  Mutators
+/** @name  Mutators
      */
-    //@{
+//@{
 
+//@}
 
-    //@}
-
-    /** @name  Methods
+/** @name  Methods
      */
-    //@{
-
-
-
+//@{
 
 #if defined( FEELPP_HAS_MPI )
-    template<class T>
+    template <class T>
     static void Send( const T& obj, int proc, int tag, const MPI_Comm& comm = COMM_WORLD )
     {
         std::ostringstream oss;
@@ -203,16 +192,15 @@ public:
         MPI_Ssend( &str[0], size, MPI_CHAR, proc, tag, comm );
     }
 #else
-    template<class T>
+    template <class T>
     static void Send( const T& obj, int proc, int tag )
     {
         // dummy function, don't have to do anything
     }
 #endif // FEELPP_HAS_MPI
 
-
 #if defined( FEELPP_HAS_MPI )
-    template<class T>
+    template <class T>
     static void Broadcast( T& obj, int root = 0, const MPI_Comm& comm = COMM_WORLD )
     {
         std::ostringstream oss;
@@ -226,11 +214,11 @@ public:
         if ( Application::processId() != root )
             str.resize( size );
 
-        DVLOG(2) << "[Application::Broadcast] str.size = " << str.size() << "\n";
-        DVLOG(2) << "[Application::Broadcast] before str = " << str << "\n";
+        DVLOG( 2 ) << "[Application::Broadcast] str.size = " << str.size() << "\n";
+        DVLOG( 2 ) << "[Application::Broadcast] before str = " << str << "\n";
 
         MPI_Bcast( &str[0], size, MPI_CHAR, root, comm );
-        DVLOG(2) << "[Application::Broadcast] after str = " << str << "\n";
+        DVLOG( 2 ) << "[Application::Broadcast] after str = " << str << "\n";
 
         // deserialize for processId() != root
         if ( Application::processId() != root )
@@ -241,18 +229,15 @@ public:
         }
     }
 #else
-    template<class T>
+    template <class T>
     static void Broadcast( T& obj )
     {
         // dummy function, don't have to do anything
     }
 #endif // FEELPP_HAS_MP
 
-
-
-
 #if defined( FEELPP_HAS_MPI )
-    template<class T>
+    template <class T>
     static void Recv( T& obj, int proc, int tag, const MPI_Comm& comm = COMM_WORLD )
     {
 
@@ -267,13 +252,13 @@ public:
         ia >> obj;
     }
 #else
-    template<class T>
+    template <class T>
     static void Recv( T& obj, int proc, int tag )
     {
         // dummy function, don't have to do anything
     }
 #endif // FEELPP_HAS_MPI
-    //@}
+//@}
 
 #if defined( FEELPP_HAS_MPI )
     static MPI_Comm COMM_WORLD;
@@ -295,23 +280,14 @@ public:
         S_world.barrier();
     }
 
+  protected:
+  private:
+    Application( Application const& );
 
-protected:
-
-
-private:
-
-    Application( Application const & );
-
-private:
-
-
-
+  private:
     static bool _S_is_mpi_initialized;
     boost::shared_ptr<mpi::environment> M_env;
     static mpi::communicator S_world;
 };
-
-
 }
 #endif /* __Application_H */

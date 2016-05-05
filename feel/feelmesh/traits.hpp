@@ -30,9 +30,8 @@
 #define __FEELPP_MESH_TRAITS_HPP 1
 
 #include <feel/feelcore/traits.hpp>
-#include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/hypercube.hpp>
-
+#include <feel/feelmesh/simplex.hpp>
 
 namespace Feel
 {
@@ -42,7 +41,7 @@ namespace Feel
  *
  * @author Christophe Prud'homme
  */
-template<typename MeshType>
+template <typename MeshType>
 struct MeshTraits
 {
     /** @name Typedefs
@@ -50,7 +49,7 @@ struct MeshTraits
     //@{
 
     typedef MeshTraits<MeshType> self_type;
-    typedef typename boost::remove_pointer<typename remove_shared_ptr<MeshType>::type >::type mesh_type;
+    typedef typename boost::remove_pointer<typename remove_shared_ptr<MeshType>::type>::type mesh_type;
 
     typedef typename mesh_type::shape_type element_shape_type;
 
@@ -119,54 +118,92 @@ struct MeshTraits
     //@}
 };
 
+template <typename T>
+struct is_3d : mpl::bool_<decay_type<T>::nDim == 3 /*|| decay_type<T>::nRealDim ==3*/>
+{
+};
+template <typename T>
+struct is_2d : mpl::bool_<decay_type<T>::nDim == 2 /*|| decay_type<T>::nRealDim ==2*/>
+{
+};
+template <typename T>
+struct is_1d : mpl::bool_<decay_type<T>::nDim == 1 /*|| decay_type<T>::nRealDim ==1*/>
+{
+};
+template <typename T>
+struct is_0d : mpl::bool_<decay_type<T>::nDim == 0 /*|| decay_type<T>::nRealDim ==0*/>
+{
+};
 
-template<typename T>
-struct is_3d : mpl::bool_<decay_type<T>::nDim == 3 /*|| decay_type<T>::nRealDim ==3*/> {};
-template<typename T>
-struct is_2d : mpl::bool_<decay_type<T>::nDim == 2 /*|| decay_type<T>::nRealDim ==2*/> {};
-template<typename T>
-struct is_1d : mpl::bool_<decay_type<T>::nDim == 1 /*|| decay_type<T>::nRealDim ==1*/> {};
-template<typename T>
-struct is_0d : mpl::bool_<decay_type<T>::nDim == 0 /*|| decay_type<T>::nRealDim ==0*/> {};
+template <typename T>
+struct is_3d_real : mpl::bool_<decay_type<T>::nRealDim == 3>
+{
+};
+template <typename T>
+struct is_2d_real : mpl::bool_<decay_type<T>::nRealDim == 2>
+{
+};
+template <typename T>
+struct is_1d_real : mpl::bool_<decay_type<T>::nRealDim == 1>
+{
+};
+template <typename T>
+struct is_0d_real : mpl::bool_<decay_type<T>::nRealDim == 0>
+{
+};
 
-template<typename T>
-struct is_3d_real : mpl::bool_< decay_type<T>::nRealDim ==3 > {};
-template<typename T>
-struct is_2d_real : mpl::bool_< decay_type<T>::nRealDim ==2 > {};
-template<typename T>
-struct is_1d_real : mpl::bool_< decay_type<T>::nRealDim ==1 > {};
-template<typename T>
-struct is_0d_real : mpl::bool_< decay_type<T>::nRealDim ==0 > {};
+template <typename T>
+struct is_topological_face : mpl::bool_<( decay_type<T>::nDim == decay_type<T>::nRealDim - 1 )>
+{
+};
+template <typename T>
+struct is_face : mpl::bool_<( decay_type<T>::nDim == 2 && decay_type<T>::nRealDim == 3 )>
+{
+};
+template <typename T>
+struct is_edge : mpl::bool_<( decay_type<T>::nDim == 1 && decay_type<T>::nRealDim == 3 ) || ( decay_type<T>::nDim == 1 && decay_type<T>::nRealDim == 2 )>
+{
+};
+template <typename T>
+struct is_point : mpl::bool_<( decay_type<T>::nDim == 0 )>
+{
+};
 
+template <typename T>
+struct is_convex : std::is_convertible<T, ConvexBase>::type
+{
+};
 
-template<typename T>
-struct is_topological_face : mpl::bool_<(decay_type<T>::nDim==decay_type<T>::nRealDim-1)> {};
-template<typename T>
-struct is_face : mpl::bool_<(decay_type<T>::nDim == 2 && decay_type<T>::nRealDim == 3)> {};
-template<typename T>
-struct is_edge : mpl::bool_<(decay_type<T>::nDim==1 && decay_type<T>::nRealDim == 3)||(decay_type<T>::nDim==1 && decay_type<T>::nRealDim == 2)> {};
-template<typename T>
-struct is_point : mpl::bool_<(decay_type<T>::nDim == 0)> {};
+template <typename T>
+struct is_simplex : std::is_base_of<SimplexBase, T>::type
+{
+};
+template <typename T>
+struct is_triangle : mpl::and_<is_simplex<T>, is_2d<T>>
+{
+};
+template <typename T>
+struct is_tetrahedron : mpl::and_<is_simplex<T>, is_3d<T>>
+{
+};
 
-template<typename T>
-struct is_convex : std::is_convertible<T,ConvexBase>::type {};
+template <typename T>
+struct is_hypercube : std::is_base_of<HypercubeBase, T>::type
+{
+};
+template <typename T>
+struct is_square : mpl::and_<is_hypercube<T>, is_2d<T>>
+{
+};
+template <typename T>
+struct is_cube : mpl::and_<is_hypercube<T>, is_3d<T>>
+{
+};
 
-template<typename T>
-struct is_simplex : std::is_base_of<SimplexBase, T>::type {};
-template<typename T>
-struct is_triangle : mpl::and_<is_simplex<T>,is_2d<T>> {};
-template<typename T>
-struct is_tetrahedron : mpl::and_<is_simplex<T>,is_3d<T>> {};
-
-template<typename T>
-struct is_hypercube : std::is_base_of<HypercubeBase, T>::type {};
-template<typename T>
-struct is_square : mpl::and_<is_hypercube<T>,is_2d<T>> {};
-template<typename T>
-struct is_cube : mpl::and_<is_hypercube<T>,is_3d<T>> {};
-
-template<typename T>
-struct is_segment : mpl::and_<is_convex<T>,is_1d<T>> {};
+template <typename T>
+struct is_segment : mpl::and_<is_convex<T>, is_1d<T>>
+{
+};
 
 } // Feel
 #endif /* __Traits_H */

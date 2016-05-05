@@ -28,10 +28,8 @@
 #include <feel/feelcore/traits.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 
-
 namespace Feel
 {
-
 
 /**
  * The \p Partitioner class provides a uniform interface for
@@ -39,11 +37,10 @@ namespace Feel
  * object as input, which it will partition into a number of
  * subdomains.
  */
-template<typename MeshType>
+template <typename MeshType>
 class Partitioner
 {
-public:
-    
+  public:
     using mesh_type = decay_type<MeshType>;
     using mesh_ptrtype = boost::shared_ptr<mesh_type>;
     using partitioner_type = Partitioner<mesh_type>;
@@ -56,8 +53,9 @@ public:
     /**
      * Constructor.
      */
-    Partitioner (): M_weights() {}
-    
+    Partitioner()
+        : M_weights() {}
+
     /**
      * Destructor. Virtual so that we can derive from this class.
      */
@@ -69,8 +67,7 @@ public:
      * This is used when copying meshes, and must be overloaded in the
      * derived classes.
      */
-    virtual clone_ptrtype clone () const = 0;
-
+    virtual clone_ptrtype clone() const = 0;
 
     /**
      * Partition the \p Mesh into \p n parts.
@@ -78,73 +75,73 @@ public:
      * of each element.  \p marker1 is reserved for things like
      * material properties, etc.
      */
-    void partition ( mesh_ptrtype mesh, rank_type n);
-    
+    void partition( mesh_ptrtype mesh, rank_type n );
+
     /**
      * Partition the \p Mesh into \p Environment::numberOfProcessors() parts.
      * The partitioner currently does not modify the subdomain_id
      * of each element.  This number is reserved for things like
      * material properties, etc.
      */
-    void partition ( mesh_ptrtype mesh);
-    
+    void partition( mesh_ptrtype mesh );
+
     /**
      * Repartitions the \p Mesh into \p n parts.  This
      * is required since some partitoning algorithms can repartition
      * more efficiently than computing a new partitioning from scratch.
      * The default behavior is to simply call this->partition(mesh,n)
      */
-    void repartition ( mesh_ptrtype mesh, rank_type n );
+    void repartition( mesh_ptrtype mesh, rank_type n );
 
     /**
      * Repartitions the \p Mesh into \p Environment::numberOfProcessors() parts.
      * This is required since some partitoning algorithms can repartition more
      * efficiently than computing a new partitioning from scratch.
      */
-    void repartition (mesh_ptrtype mesh);
-    
-  
+    void repartition( mesh_ptrtype mesh );
+
     /**
      * This function is called after partitioning to set the processor IDs
      * for the nodes.  By definition, a Node's processor ID is the minimum
      * processor ID for all of the elements which share the node.
      */
-    static void setNodeProcessorIds(mesh_ptrtype mesh);
+    static void setNodeProcessorIds( mesh_ptrtype mesh );
 
     /**
      * Attach weights that can be used for partitioning.  This ErrorVector should be
      * _exactly_ the same on every processor and should have mesh->max_elem_id()
      * entries.
      */
-    virtual void attachWeights( std::vector<double> const& weights) 
-        { 
-            CHECK(0) << "attachWeights() not implemented in base class Partitioner";
-        }
+    virtual void attachWeights( std::vector<double> const& weights )
+    {
+        CHECK( 0 ) << "attachWeights() not implemented in base class Partitioner";
+    }
 
-protected:
-
+  protected:
     /**
      * Trivially "partitions" the mesh for one processor.
      * Simply loops through the elements and assigns all of them
      * to processor 0.  Is is provided as a separate function
      * so that derived classes may use it without reimplementing it.
      */
-    void singlePartition (mesh_ptrtype mesh);
+    void singlePartition( mesh_ptrtype mesh );
 
     /**
      * This is the actual partitioning method which must be overloaded
      * in derived classes.  It is called via the public partition()
      * method above by the user.
      */
-    virtual void partitionImpl(mesh_ptrtype mesh, rank_type n  ) = 0;
+    virtual void partitionImpl( mesh_ptrtype mesh, rank_type n ) = 0;
 
     /**
      * This is the actual re-partitioning method which can be overloaded
      * in derived classes.  Note that the default behavior is to simply
      * call the partition function.
      */
-    virtual void repartitionImpl (mesh_ptrtype mesh, rank_type n )
-        { this->partitionImpl (mesh, n); }
+    virtual void repartitionImpl( mesh_ptrtype mesh, rank_type n )
+    {
+        this->partitionImpl( mesh, n );
+    }
 
     /**
      * The blocksize to use when doing blocked parallel communication.  This limits the
@@ -158,11 +155,8 @@ protected:
     std::vector<double> M_weights;
 };
 
-
 } // namespace libMesh
 
 #include <feel/feelpartition/partitioner_impl.hpp>
-
-
 
 #endif

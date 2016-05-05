@@ -30,21 +30,18 @@
 #ifndef FEELPP_MODELS_AITKENRELAXATION_FSI_H
 #define FEELPP_MODELS_AITKENRELAXATION_FSI_H 1
 
-
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/aitken.hpp>
-
+#include <feel/feelcore/feel.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
 
-
-template <class SolidType >
+template <class SolidType>
 class AitkenRelaxationFSI
 {
-public :
+  public:
     typedef AitkenRelaxationFSI<SolidType> self_type;
     typedef SolidType solid_type;
     typedef boost::shared_ptr<solid_type> solid_ptrtype;
@@ -66,9 +63,9 @@ public :
     AitkenRelaxationFSI( solid_ptrtype solid,
                          std::string aitkenType = "method1",
                          double initialTheta = 1.0,
-                         double tolPtFixe =1.0e-6,
-                         double minTheta =1e-4 );
-    AitkenRelaxationFSI( self_type const & M ) = default;
+                         double tolPtFixe = 1.0e-6,
+                         double minTheta = 1e-4 );
+    AitkenRelaxationFSI( self_type const& M ) = default;
 
     //-----------------------------------------------------------------------------------//
 
@@ -88,10 +85,9 @@ public :
 
     double residualNorm();
 
-    void setTheta(double v);
+    void setTheta( double v );
 
-private :
-
+  private:
     solid_ptrtype M_solid;
 
     aitken_ptrtype M_aitken;
@@ -105,10 +101,10 @@ private :
     //double M_areaFSIinterface;
 };
 
-template <class SolidType >
+template <class SolidType>
 class FixPointConvergenceFSI
 {
-public :
+  public:
     typedef FixPointConvergenceFSI<SolidType> self_type;
     typedef SolidType solid_type;
     typedef boost::shared_ptr<solid_type> solid_ptrtype;
@@ -122,12 +118,12 @@ public :
     typedef typename solid_type::element_1dreduced_ptrtype element_disp_1dreduced_ptrtype;
 
     FixPointConvergenceFSI( solid_ptrtype solid );
-    FixPointConvergenceFSI( self_type const & M ) = default;
+    FixPointConvergenceFSI( self_type const& M ) = default;
 
     void saveOldSolution();
     double computeConvergence();
 
-private :
+  private:
     solid_ptrtype M_solid;
     element_disp_ptrtype M_oldSol;
     element_disp_ptrtype M_residual;

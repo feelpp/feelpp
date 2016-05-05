@@ -32,24 +32,21 @@
 
 #include <feel/feelconfig.h>
 
-#include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
+#include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 
-#if defined(FEELPP_HAS_PETSC_H)
+#if defined( FEELPP_HAS_PETSC_H )
 #include <feel/feelcore/application.hpp>
 
-
-extern "C"
-{
+extern "C" {
 #include <petscmat.h>
 }
 
-
-
 namespace Feel
 {
-template<typename T> class MatrixPetsc;
+template <typename T>
+class MatrixPetsc;
 
 /**
  * \class VectorPetsc
@@ -63,13 +60,12 @@ template<typename T> class MatrixPetsc;
  * @author Christophe Prud'homme
  * @see
  */
-template<typename T>
+template <typename T>
 class VectorPetsc : public Vector<T>
 {
     typedef Vector<T> super;
 
-public:
-
+  public:
     friend class boost::serialization::access;
 
     /** @name Typedefs
@@ -91,20 +87,18 @@ public:
     /**
      *  Dummy-Constructor. Dimension=0
      */
-    VectorPetsc ()
-        :
-        super(),
-        M_destroy_vec_on_exit( true )
+    VectorPetsc()
+        : super(),
+          M_destroy_vec_on_exit( true )
     {
     }
 
     /**
      * Constructor. Set dimension to \p n and initialize all elements with zero.
      */
-    VectorPetsc ( const size_type n, WorldComm const& _worldComm = Environment::worldComm() )
-        :
-        super( n, _worldComm ),
-        M_destroy_vec_on_exit( true )
+    VectorPetsc( const size_type n, WorldComm const& _worldComm = Environment::worldComm() )
+        : super( n, _worldComm ),
+          M_destroy_vec_on_exit( true )
     {
         this->init( n, n, false );
     }
@@ -113,25 +107,22 @@ public:
      * Constructor. Set local dimension to \p n_local, the global dimension
      * to \p n, and initialize all elements with zero.
      */
-    VectorPetsc ( const size_type n,
-                  const size_type n_local,
-                  WorldComm const& _worldComm = Environment::worldComm() )
-        :
-        super( n, n_local, _worldComm ),
-        M_destroy_vec_on_exit( true )
+    VectorPetsc( const size_type n,
+                 const size_type n_local,
+                 WorldComm const& _worldComm = Environment::worldComm() )
+        : super( n, n_local, _worldComm ),
+          M_destroy_vec_on_exit( true )
     {
         this->init( n, n_local, false );
     }
 
-    VectorPetsc ( datamap_ptrtype const& dm, bool doInit=true )
-        :
-        super( dm ),
-        M_destroy_vec_on_exit( true )
+    VectorPetsc( datamap_ptrtype const& dm, bool doInit = true )
+        : super( dm ),
+          M_destroy_vec_on_exit( true )
     {
         if ( doInit )
             this->init( dm->nDof(), dm->nLocalDofWithoutGhost(), false );
     }
-
 
     /**
      * Constructor.  Creates a VectorPetsc assuming you already have a
@@ -141,9 +132,8 @@ public:
      * and to simply provide additional functionality with the VectorPetsc.
      */
     VectorPetsc( Vec v, bool duplicate = false )
-        :
-        super(),
-        M_destroy_vec_on_exit( duplicate )
+        : super(),
+          M_destroy_vec_on_exit( duplicate )
     {
         if ( duplicate )
         {
@@ -157,9 +147,8 @@ public:
     }
 
     VectorPetsc( Vec v, datamap_ptrtype const& dm, bool duplicate = false )
-        :
-        super( dm ),
-        M_destroy_vec_on_exit( duplicate )
+        : super( dm ),
+          M_destroy_vec_on_exit( duplicate )
     {
         if ( duplicate )
         {
@@ -177,55 +166,53 @@ public:
      *
      * there is no copy, PETSc will use the storage of the VectorUblas
      */
-    template<typename Storage>
-    VectorPetsc( VectorUblas<T,Storage> const& v )
-        :
-        super( v.mapPtr() ),
-        M_destroy_vec_on_exit( true )
+    template <typename Storage>
+    VectorPetsc( VectorUblas<T, Storage> const& v )
+        : super( v.mapPtr() ),
+          M_destroy_vec_on_exit( true )
+    {
+        int ierr = 0;
+        PetscInt petsc_n_dof = static_cast<PetscInt>( this->map().nDof() );
+        PetscInt petsc_n_localWithoutGhost = static_cast<PetscInt>( this->map().nLocalDofWithoutGhost() );
+        PetscInt petsc_n_localGhost = static_cast<PetscInt>( this->map().nLocalGhosts() );
+        const PetscScalar* thearray = ( this->map().nLocalDofWithGhost() > 0 ) ? std::addressof( *v.begin() /*v[0]*/ ) : NULL;
+        PetscInt* idx = NULL;
+        if ( petsc_n_localGhost > 0 )
         {
-            int ierr=0;
-            PetscInt petsc_n_dof=static_cast<PetscInt>( this->map().nDof() );
-            PetscInt petsc_n_localWithoutGhost=static_cast<PetscInt>( this->map().nLocalDofWithoutGhost() );
-            PetscInt petsc_n_localGhost=static_cast<PetscInt>( this->map().nLocalGhosts() );
-            const PetscScalar* thearray = ( this->map().nLocalDofWithGhost() > 0 )? std::addressof( *v.begin()/*v[0]*/ ) : NULL;
-            PetscInt *idx = NULL;
-            if ( petsc_n_localGhost > 0 )
-            {
-                idx = new PetscInt[petsc_n_localGhost];
-                std::copy( this->map().mapGlobalProcessToGlobalCluster().begin()+petsc_n_localWithoutGhost,
-                           this->map().mapGlobalProcessToGlobalCluster().end(),
-                           idx );
-            }
-            ierr = VecCreateGhostWithArray( this->comm(),
-                                            petsc_n_localWithoutGhost, petsc_n_dof,
-                                            petsc_n_localGhost, idx,
-                                            thearray, &M_vec );
-            CHKERRABORT( this->comm(),ierr );
-
-            if ( petsc_n_localGhost > 0 )
-                delete[] idx;
-
-            this->M_is_initialized = true;
-            this->setIsClosed( true );
+            idx = new PetscInt[petsc_n_localGhost];
+            std::copy( this->map().mapGlobalProcessToGlobalCluster().begin() + petsc_n_localWithoutGhost,
+                       this->map().mapGlobalProcessToGlobalCluster().end(),
+                       idx );
         }
+        ierr = VecCreateGhostWithArray( this->comm(),
+                                        petsc_n_localWithoutGhost, petsc_n_dof,
+                                        petsc_n_localGhost, idx,
+                                        thearray, &M_vec );
+        CHKERRABORT( this->comm(), ierr );
+
+        if ( petsc_n_localGhost > 0 )
+            delete[] idx;
+
+        this->M_is_initialized = true;
+        this->setIsClosed( true );
+    }
 
     /**
      * Constructor,  extracts a subvector from 'v' using mapping 'is'
      * without copy.
      */
-    VectorPetsc( VectorPetsc<value_type> &v, IS &is )
-        :
-        super(),
-        M_destroy_vec_on_exit( false )
+    VectorPetsc( VectorPetsc<value_type>& v, IS& is )
+        : super(),
+          M_destroy_vec_on_exit( false )
     {
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+#if ( PETSC_VERSION_MAJOR == 3 ) && ( PETSC_VERSION_MINOR >= 2 )
         /* map */
         PetscInt n;
-        ISGetSize(is,&n);
-        datamap_ptrtype dm( new datamap_type(n, n, v.comm()) );
-        this->setMap(dm);
+        ISGetSize( is, &n );
+        datamap_ptrtype dm( new datamap_type( n, n, v.comm() ) );
+        this->setMap( dm );
         /* init */
-        VecGetSubVector(v.vec(), is, &this->M_vec);
+        VecGetSubVector( v.vec(), is, &this->M_vec );
         this->M_is_initialized = true;
         /* close */
         this->close(); /* no // assembly required */
@@ -233,40 +220,40 @@ public:
     }
 
     VectorPetsc( Vector<value_type> const& v, std::vector<int> const& index )
-        :
-        super(),
-        //super(v,index),
-        M_destroy_vec_on_exit( false )
+        : super(),
+          //super(v,index),
+          M_destroy_vec_on_exit( false )
     {
-#if defined(__clang__)
+#if defined( __clang__ )
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunsequenced"
 #endif
 
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+#if ( PETSC_VERSION_MAJOR == 3 ) && ( PETSC_VERSION_MINOR >= 2 )
 
-        VectorPetsc<T> const* V = dynamic_cast<VectorPetsc<T> const*> ( &v );
-        int ierr=0;
+        VectorPetsc<T> const* V = dynamic_cast<VectorPetsc<T> const*>( &v );
+        int ierr = 0;
         IS is;
-        PetscInt *map;
+        PetscInt* map;
         int n = index.size();
-        PetscMalloc(n*sizeof(PetscInt),&map);
-        for (int i=0; i<n; i++) map[i] = index[i];
-        ierr = ISCreateGeneral(Environment::worldComm(),n,map,PETSC_COPY_VALUES,&is);
-        CHKERRABORT( this->comm(),ierr );
-        PetscFree(map);
+        PetscMalloc( n * sizeof( PetscInt ), &map );
+        for ( int i = 0; i < n; i++ )
+            map[i] = index[i];
+        ierr = ISCreateGeneral( Environment::worldComm(), n, map, PETSC_COPY_VALUES, &is );
+        CHKERRABORT( this->comm(), ierr );
+        PetscFree( map );
 
-        datamap_ptrtype dm( new datamap_type(n, n, V->comm()) );
-        this->setMap(dm);
+        datamap_ptrtype dm( new datamap_type( n, n, V->comm() ) );
+        this->setMap( dm );
         /* init */
-        ierr = VecGetSubVector(V->vec(), is, &this->M_vec);
-        CHKERRABORT( this->comm(),ierr );
+        ierr = VecGetSubVector( V->vec(), is, &this->M_vec );
+        CHKERRABORT( this->comm(), ierr );
         this->M_is_initialized = true;
         /* close */
         this->close(); /* no // assembly required */
 #endif
 
-#if defined(__clang__)
+#if defined( __clang__ )
 #pragma clang diagnostic pop
 #endif
     }
@@ -275,7 +262,7 @@ public:
      * Destructor, deallocates memory. Made virtual to allow
      * for derived classes to behave properly.
      */
-    ~VectorPetsc ()
+    ~VectorPetsc()
     {
         this->clear();
     }
@@ -284,8 +271,7 @@ public:
      * Creates a copy of this vector and returns it in an \p
      * shared_ptr<>.  This must be overloaded in the derived classes.
      */
-    clone_ptrtype clone () const;
-
+    clone_ptrtype clone() const;
 
     /**
      * Change the dimension of the vector to \p N. The reserved memory for
@@ -299,23 +285,23 @@ public:
      * On \p fast==false, the vector is filled by
      * zeros.
      */
-    void init ( const size_type N,
-                const size_type n_local,
-                const bool         fast=false );
+    void init( const size_type N,
+               const size_type n_local,
+               const bool fast = false );
 
     /**
      * call init with n_local = N,
      */
-    void init ( const size_type N,
-                const bool         fast=false )
+    void init( const size_type N,
+               const bool fast = false )
     {
-        this->init( N,N,fast );
+        this->init( N, N, fast );
     }
 
     /**
      * call init with datamap,
      */
-    void init ( datamap_ptrtype const& dm );
+    void init( datamap_ptrtype const& dm );
 
     //@}
 
@@ -323,19 +309,19 @@ public:
      */
     //@{
 
-    value_type operator() ( const size_type i ) const;
-    value_type& operator() ( const size_type i );
+    value_type operator()( const size_type i ) const;
+    value_type& operator()( const size_type i );
 
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<value_type>& operator= ( const Vector<value_type> &V );
-    Vector<value_type>& operator= ( const VectorPetsc<value_type> &V );
+    Vector<value_type>& operator=( const Vector<value_type>& V );
+    Vector<value_type>& operator=( const VectorPetsc<value_type>& V );
     /**
      * Addition operator.
      * Fast equivalent to \p U.add(1, V).
      */
-    Vector<T> & operator += ( const Vector<value_type> &V )
+    Vector<T>& operator+=( const Vector<value_type>& V )
     {
         this->add( 1., V );
         return *this;
@@ -345,7 +331,7 @@ public:
      * Subtraction operator.
      * Fast equivalent to \p U.add(-1, V).
      */
-    Vector<T> & operator -= ( const Vector<value_type> &V )
+    Vector<T>& operator-=( const Vector<value_type>& V )
     {
         this->add( -1., V );
         return *this;
@@ -369,17 +355,16 @@ public:
      * closer to the C++ standard library's
      * \p std::vector container.
      */
-    size_type size () const
+    size_type size() const
     {
         DCHECK( this->isInitialized() ) << "VectorPetsc not initialized";
-
 
         if ( !this->isInitialized() )
             return 0;
 
-        int petsc_size=0;
+        int petsc_size = 0;
         int ierr = VecGetSize( M_vec, &petsc_size );
-        CHKERRABORT( this->comm(),ierr );
+        CHKERRABORT( this->comm(), ierr );
         return static_cast<size_type>( petsc_size );
     }
     /**
@@ -390,9 +375,9 @@ public:
     {
         DCHECK( this->isInitialized() ) << "VectorPetsc not initialized";
 
-        int petsc_size=0;
+        int petsc_size = 0;
         int ierr = VecGetLocalSize( M_vec, &petsc_size );
-        CHKERRABORT( this->comm(),ierr );
+        CHKERRABORT( this->comm(), ierr );
 
         return static_cast<size_type>( petsc_size );
     }
@@ -402,14 +387,16 @@ public:
      * not required in user-level code. Just don't do anything crazy like
      * calling VecDestroy()!
      */
-    Vec vec () const
+    Vec vec() const
     {
-        FEELPP_ASSERT ( M_vec != 0 ).error( "invalid petsc vector" );
+        FEELPP_ASSERT( M_vec != 0 )
+            .error( "invalid petsc vector" );
         return M_vec;
     }
-    Vec& vec ()
+    Vec& vec()
     {
-        FEELPP_ASSERT ( M_vec != 0 ).error( "invalid petsc vector" );
+        FEELPP_ASSERT( M_vec != 0 )
+            .error( "invalid petsc vector" );
         return M_vec;
     }
 
@@ -418,7 +405,6 @@ public:
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -429,12 +415,12 @@ public:
     /**
      *  \f$v = x*y\f$: coefficient-wise multiplication
      */
-    virtual void pointwiseMult ( Vector<T> const& x, Vector<T> const& y );
+    virtual void pointwiseMult( Vector<T> const& x, Vector<T> const& y );
 
     /**
      *  \f$v = x/y\f$: coefficient-wise divide
      */
-    virtual void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y );
+    virtual void pointwiseDivide( Vector<T> const& x, Vector<T> const& y );
 
     /**
      * Call the assemble functions
@@ -445,12 +431,12 @@ public:
      * Set all entries to zero. Equivalent to \p v = 0, but more obvious and
      * faster.
      */
-    void zero ();
+    void zero();
 
     /**
      * Set entries to zero between \p start and \p stop
      */
-    void zero ( size_type /*start*/,  size_type /*stop*/ )
+    void zero( size_type /*start*/, size_type /*stop*/ )
     {
         this->zero();
     }
@@ -466,7 +452,7 @@ public:
     /**
      * @returns the \p VectorPetsc<T> to a pristine state.
      */
-    FEELPP_DONT_INLINE void clear ();
+    FEELPP_DONT_INLINE void clear();
 
     /**
      * Update ghost values
@@ -476,7 +462,7 @@ public:
     /**
      *
      */
-    void localize( const Vector<T>& V);
+    void localize( const Vector<T>& V );
 
     /**
      * \f$ v(i) = \mathrm{value} \forall i\f$
@@ -508,13 +494,14 @@ public:
      * and you
      * want to specify WHERE to add it
      */
-    void addVector ( const std::vector<value_type>& v,
-                     const std::vector<size_type>& dof_indices )
+    void addVector( const std::vector<value_type>& v,
+                    const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT ( v.size() == dof_indices.size() ).error( "invalid dof indices" );
+        FEELPP_ASSERT( v.size() == dof_indices.size() )
+            .error( "invalid dof indices" );
 
-        for ( size_type i=0; i<v.size(); i++ )
-            this->add ( dof_indices[i], v[i] );
+        for ( size_type i = 0; i < v.size(); i++ )
+            this->add( dof_indices[i], v[i] );
     }
 
     /**
@@ -523,23 +510,22 @@ public:
      * want to specify WHERE to add
      * the \p NumericVector<T> V
      */
-    void addVector ( const Vector<value_type>& V,
-                     const std::vector<size_type>& dof_indices )
+    void addVector( const Vector<value_type>& V,
+                    const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
+        FEELPP_ASSERT( V.size() == dof_indices.size() )
+            .error( "invalid dof indices" );
 
-        for ( size_type i=0; i<V.size(); i++ )
-            this->add ( dof_indices[i], V( i ) );
+        for ( size_type i = 0; i < V.size(); i++ )
+            this->add( dof_indices[i], V( i ) );
     }
-
 
     /**
      * \f$ U+=A*V\f$, add the product of a \p MatrixSparse \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    void addVector ( const Vector<value_type>& V_in,
-                     const MatrixSparse<value_type>& A_in );
-
+    void addVector( const Vector<value_type>& V_in,
+                    const MatrixSparse<value_type>& A_in );
 
     /**
      * \f$U+=V \f$ where U and V are type
@@ -547,23 +533,25 @@ public:
      * want to specify WHERE to add
      * the DenseVector<T> V
      */
-    void addVector ( const ublas::vector<value_type>& V,
-                     const std::vector<size_type>& dof_indices )
+    void addVector( const ublas::vector<value_type>& V,
+                    const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
+        FEELPP_ASSERT( V.size() == dof_indices.size() )
+            .error( "invalid dof indices" );
 
-        for ( size_type i=0; i<V.size(); i++ )
-            this->add ( dof_indices[i], V( i ) );
+        for ( size_type i = 0; i < V.size(); i++ )
+            this->add( dof_indices[i], V( i ) );
     }
 
     /**
      * \f$ U=v \f$ where v is a DenseVector<T>
      * and you want to specify WHERE to insert it
      */
-    void insert ( const std::vector<T>& /*v*/,
-                  const std::vector<size_type>& /*dof_indices*/ )
+    void insert( const std::vector<T>& /*v*/,
+                 const std::vector<size_type>& /*dof_indices*/ )
     {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call, not implemented yet" );
     }
 
     /**
@@ -572,9 +560,8 @@ public:
      * want to specify WHERE to insert
      * the Vector<T> V
      */
-    void insert ( const Vector<T>& V,
-                  const std::vector<size_type>& dof_indices );
-
+    void insert( const Vector<T>& V,
+                 const std::vector<size_type>& dof_indices );
 
     /**
      * \f$ U+=V \f$ where U and V are type
@@ -582,36 +569,35 @@ public:
      * want to specify WHERE to insert
      * the DenseVector<T> V
      */
-    void insert ( const ublas::vector<T>& V,
-                  const std::vector<size_type>& dof_indices );
+    void insert( const ublas::vector<T>& V,
+                 const std::vector<size_type>& dof_indices );
 
     /**
      * Scale each element of the
      * vector by the given factor.
      */
-    void scale ( const T factor );
-
+    void scale( const T factor );
 
     /**
      * \f$ U(0-DIM)+=s\f$.
      * Addition of \p s to all components. Note
      * that \p s is a scalar and not a vector.
      */
-    virtual void add ( const value_type& v_in );
+    virtual void add( const value_type& v_in );
 
     /**
      * \f$ U+=V \f$ .
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add ( const Vector<value_type>& v );
+    void add( const Vector<value_type>& v );
 
     /**
      * \f$ U+=a*V \f$ .
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    virtual void add ( const value_type& a_in, const Vector<value_type>& v_in );
+    virtual void add( const value_type& a_in, const Vector<value_type>& v_in );
 
     /**
      * Replaces each component of a vector by its reciprocal.
@@ -623,7 +609,7 @@ public:
      * In case of complex numbers, this returns the minimum
      * Real part.
      */
-    real_type min () const;
+    real_type min() const;
 
     /**
      * @returns the maximum element in the vector.
@@ -636,69 +622,66 @@ public:
      * @return the \f$l_1\f$-norm of the vector, i.e.
      * the sum of the absolute values.
      */
-    real_type l1Norm () const;
+    real_type l1Norm() const;
 
     /**
      * @returns the \f$l_2\f$-norm of the vector, i.e.
      * the square root of the sum of the
      * squares of the elements.
      */
-    real_type l2Norm () const;
+    real_type l2Norm() const;
 
     /**
      * @return the sum of the vector components, i.e.
      * the sum of the values.
      */
-    value_type sum () const;
+    value_type sum() const;
 
     /**
      * @returns the maximum absolute value of the
      * elements of this vector, which is the
      * \f$l_\infty\f$-norm of a vector.
      */
-    real_type linftyNorm () const;
+    real_type linftyNorm() const;
 
     /**
      * @return the index of the first vector element
      * actually stored on this processor
      */
-    size_type firstLocalIndex () const
+    size_type firstLocalIndex() const
     {
-        assert ( this->isInitialized() );
+        assert( this->isInitialized() );
 
-        int ierr=0, petsc_first=0, petsc_last=0;
+        int ierr = 0, petsc_first = 0, petsc_last = 0;
 
-        ierr = VecGetOwnershipRange ( M_vec, &petsc_first, &petsc_last );
-        CHKERRABORT( this->comm(),ierr );
+        ierr = VecGetOwnershipRange( M_vec, &petsc_first, &petsc_last );
+        CHKERRABORT( this->comm(), ierr );
 
         return static_cast<size_type>( petsc_first );
     }
-
-
 
     /**
      * @return the index of the last vector element
      * actually stored on this processor
      */
-    size_type lastLocalIndex () const
+    size_type lastLocalIndex() const
     {
-        assert ( this->isInitialized() );
+        assert( this->isInitialized() );
 
-        int ierr=0, petsc_first=0, petsc_last=0;
+        int ierr = 0, petsc_first = 0, petsc_last = 0;
 
-        ierr = VecGetOwnershipRange ( M_vec, &petsc_first, &petsc_last );
-        CHKERRABORT( this->comm(),ierr );
+        ierr = VecGetOwnershipRange( M_vec, &petsc_first, &petsc_last );
+        CHKERRABORT( this->comm(), ierr );
 
         return static_cast<size_type>( petsc_last );
     }
-
 
     /**
      * Print the contents of the vector in Matlab's format. Optionally
      *  prints the vector to the file named \p name.  If \p name is
      *  not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL", bool renumber = false ) const;
+    void printMatlab( const std::string name = "NULL", bool renumber = false ) const;
 
     value_type dot( Vector<T> const& __v ) const;
 
@@ -706,53 +689,50 @@ public:
      * This function creates a vector which is defined
      * by the row indices given in the "rows" entries.
      */
-    boost::shared_ptr<Vector<T> >
+    boost::shared_ptr<Vector<T>>
     createSubVector( std::vector<size_type> const& rows,
-                     bool checkAndFixRange=true ) const;
+                     bool checkAndFixRange = true ) const;
 
     /**
      * Copy (default) or add (boolean init=false) entries of subvector (already built from a createSubVector)
      * into row indices given in the "rows" entries.
      */
     void
-    updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
+    updateSubVector( boost::shared_ptr<Vector<T>>& subvector,
                      std::vector<size_type> const& rows,
-                     bool init=true );
+                     bool init = true );
 
     /**
      * Serialization for PETSc VECSEQ
      */
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) const
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version ) const
     {
         value_type* array;
-        VecGetArray(this->vec(),&array);
+        VecGetArray( this->vec(), &array );
 
-        int n             = this->localSize();
-        int N             = this->size();
+        int n = this->localSize();
+        int N = this->size();
 
         int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        MPI_Comm_rank( MPI_COMM_WORLD, &rank );
 
-        FEELPP_ASSERT( n==N ).error( "wrong vector type for serialization (!=VECSEQ)" );
+        FEELPP_ASSERT( n == N )
+            .error( "wrong vector type for serialization (!=VECSEQ)" );
 
-        for (int i=0; i<n; i++)
-            ar & array[i];
+        for ( int i = 0; i < n; i++ )
+            ar& array[i];
 
-        VecRestoreArray(this->vec(), &array);
+        VecRestoreArray( this->vec(), &array );
     }
     //@}
 
-
-protected:
-
-public:
-
+  protected:
+  public:
     // disable
-    VectorPetsc( VectorPetsc const & v )
-        :
-        super( v ),
-        M_destroy_vec_on_exit( true )
+    VectorPetsc( VectorPetsc const& v )
+        : super( v ),
+          M_destroy_vec_on_exit( true )
     {
         //FEELPP_ASSERT( v.closed() ).error( "copied vector is not closed" );
         if ( !v.closed() )
@@ -766,14 +746,13 @@ public:
     }
 
     void getSubVectorPetsc( std::vector<size_type> const& rows,
-                            Vec &subvec,
-                            bool init=true ) const;
+                            Vec& subvec,
+                            bool init = true ) const;
 
-private :
+  private:
     void pointwiseOperationsImpl( Vector<T> const& x, Vector<T> const& y, int op );
 
-protected:
-
+  protected:
     /**
      * Petsc vector datatype to store values
      */
@@ -786,60 +765,59 @@ protected:
     bool M_destroy_vec_on_exit;
 };
 
-
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
 
-template<typename T>
+template <typename T>
 class VectorPetscMPI : public VectorPetsc<T>
 {
     typedef VectorPetsc<T> super;
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
-public:
+
+  public:
     typedef typename super::value_type value_type;
 
     VectorPetscMPI()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
 
     VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplicate = false );
 
-    VectorPetscMPI( datamap_ptrtype const& dm, bool doInit=true );
+    VectorPetscMPI( datamap_ptrtype const& dm, bool doInit = true );
 
-    template<typename Storage>
-    VectorPetscMPI( VectorUblas<T,Storage> const& v )
-        :
-        super( v )
-        {}
+    template <typename Storage>
+    VectorPetscMPI( VectorUblas<T, Storage> const& v )
+        : super( v )
+    {
+    }
 
     ~VectorPetscMPI()
     {
         this->clear();
     }
 
-
     FEELPP_DEPRECATED
     void init( const size_type N,
                const size_type n_local,
-               const bool fast=false );
+               const bool fast = false );
     /**
      * call init with datamap,
      */
     void init( datamap_ptrtype const& dm );
 
-    value_type operator() ( const size_type i ) const;
-    value_type& operator() ( const size_type i );
+    value_type operator()( const size_type i ) const;
+    value_type& operator()( const size_type i );
 
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<value_type>& operator= ( const Vector<value_type> &V );
-    Vector<value_type>& operator= ( const VectorPetscMPI<value_type> &V );
+    Vector<value_type>& operator=( const Vector<value_type>& V );
+    Vector<value_type>& operator=( const VectorPetscMPI<value_type>& V );
 
     /**
      * \f$ v(i) = \mathrm{value} \forall i\f$
@@ -894,7 +872,7 @@ public:
      * Set all entries to zero. Equivalent to \p v = 0.
      */
     virtual void zero();
-    void zero( size_type /*start*/,  size_type /*stop*/ )
+    void zero( size_type /*start*/, size_type /*stop*/ )
     {
         this->zero();
     }
@@ -925,37 +903,34 @@ public:
 
     void duplicateFromOtherPartition( Vector<T> const& vecInput );
 
-
-private :
-
+  private:
     void initImpl( const bool fast = false );
 
     void pointwiseOperationOthersPetscImpl( Vector<T> const& x, Vector<T> const& y, int op );
 
     void duplicateFromOtherPartition_run( Vector<T> const& vecInput );
-
 };
 
-template<typename T>
+template <typename T>
 class VectorPetscMPIRange : public VectorPetscMPI<T>
 {
     typedef VectorPetscMPI<T> super_type;
-public:
+
+  public:
     typedef typename super_type::value_type value_type;
 
     VectorPetscMPIRange( datamap_ptrtype const& dm );
 
     VectorPetscMPIRange( Vec v, datamap_ptrtype const& dm, bool duplicate = false );
 
-    template<typename Storage>
-    VectorPetscMPIRange( VectorUblas<T,Storage> const& v )
-        :
-        super_type( v.mapPtr(), false )
-        {
-            const PetscScalar* arrayActive = ( this->map().nLocalDofWithoutGhost() > 0 )? std::addressof( *v.begin() ) : NULL;
-            const PetscScalar* arrayGhost = ( this->map().nLocalGhosts() > 0 )? std::addressof( *v.beginGhost() ) : NULL;
-            this->initRangeView( arrayActive,arrayGhost );
-        }
+    template <typename Storage>
+    VectorPetscMPIRange( VectorUblas<T, Storage> const& v )
+        : super_type( v.mapPtr(), false )
+    {
+        const PetscScalar* arrayActive = ( this->map().nLocalDofWithoutGhost() > 0 ) ? std::addressof( *v.begin() ) : NULL;
+        const PetscScalar* arrayGhost = ( this->map().nLocalGhosts() > 0 ) ? std::addressof( *v.beginGhost() ) : NULL;
+        this->initRangeView( arrayActive, arrayGhost );
+    }
     ~VectorPetscMPIRange()
     {
         this->clear();
@@ -971,14 +946,14 @@ public:
      */
     void clear();
 
-    value_type operator() ( const size_type i ) const;
-    value_type& operator() ( const size_type i );
+    value_type operator()( const size_type i ) const;
+    value_type& operator()( const size_type i );
 
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<value_type>& operator= ( const Vector<value_type> &V );
-    Vector<value_type>& operator= ( const VectorPetscMPIRange<value_type> &V );
+    Vector<value_type>& operator=( const Vector<value_type>& V );
+    Vector<value_type>& operator=( const VectorPetscMPIRange<value_type>& V );
 
     /**
      * \f$ v(i) = \mathrm{value} \forall i\f$
@@ -1029,22 +1004,23 @@ public:
      */
     Vec vecGhost() const
     {
-        FEELPP_ASSERT ( M_vecGhost != 0 ).error( "invalid petsc vector" );
+        FEELPP_ASSERT( M_vecGhost != 0 )
+            .error( "invalid petsc vector" );
         return M_vecGhost;
     }
     Vec& vecGhost()
     {
-        FEELPP_ASSERT ( M_vecGhost != 0 ).error( "invalid petsc vector" );
+        FEELPP_ASSERT( M_vecGhost != 0 )
+            .error( "invalid petsc vector" );
         return M_vecGhost;
     }
 
-private :
+  private:
     void initRangeView( const PetscScalar arrayActive[], const PetscScalar arrayGhost[] );
 
-private :
+  private:
     Vec M_vecGhost;
     VecScatter M_vecScatterGhost;
-
 };
 /**
  * @addtogroup FreeFunctions
@@ -1062,7 +1038,6 @@ vector_uptrtype vec( Vec v, datamap_ptrtype d );
 /**
  * @}
  */
-
 
 } // Feel
 #endif /* FEELPP_HAS_PETSC */

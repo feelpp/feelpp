@@ -35,11 +35,7 @@ using namespace boost::python;
 BOOST_PYTHON_MODULE( heat1d )
 {
     using namespace Feel;
-    class_<CRBModel<Heat1D> >( "Heat1D" )
-    .def( init<>() )
-    .def( "thetaAq", &CRBModel<Heat1D>::thetaAq )
-    ;
-
-
+    class_<CRBModel<Heat1D>>( "Heat1D" )
+        .def( init<>() )
+        .def( "thetaAq", &CRBModel<Heat1D>::thetaAq );
 }
-

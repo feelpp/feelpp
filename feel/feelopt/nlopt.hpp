@@ -26,12 +26,12 @@
 
 #include <feel/feelconfig.h>
 
-#if defined(FEELPP_HAS_NLOPT)  
+#if defined( FEELPP_HAS_NLOPT )
 #include <nlopt.hpp>
 
 namespace Feel
 {
-  namespace nlopt = ::nlopt;
+namespace nlopt = ::nlopt;
 }
 #endif // FEELPP_HAS_NLOPT
 

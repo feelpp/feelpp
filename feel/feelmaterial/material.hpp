@@ -29,8 +29,8 @@
 #ifndef __Material_H
 #define __Material_H 1
 
-#include <string>
 #include <boost/shared_ptr.hpp>
+#include <string>
 
 namespace Feel
 {
@@ -43,13 +43,10 @@ namespace Feel
  */
 class Material
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -58,7 +55,7 @@ public:
     //@{
 
     Material( std::string const& name );
-    Material( Material const & );
+    Material( Material const& );
     virtual ~Material();
 
     //@}
@@ -66,7 +63,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -101,31 +97,24 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-
     //@}
 
-
-
-protected:
-
+  protected:
     //! name of the material
     std::string M_name;
 
-private:
-
+  private:
 };
 
 typedef Material material_type;
 typedef boost::shared_ptr<Material> material_ptrtype;
 
 } // Feel
-
 
 #endif /* __Material_H */

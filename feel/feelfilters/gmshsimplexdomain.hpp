@@ -29,13 +29,11 @@
 #ifndef __GmshSimplexDomain_H
 #define __GmshSimplexDomain_H 1
 
-
 #include <boost/parameter.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
-
 
 namespace Feel
 {
@@ -49,9 +47,8 @@ namespace Feel
 class GmshSimplexDomain : public Gmsh
 {
     typedef Gmsh super;
-public:
 
-
+  public:
     /** @name Constants and Typedefs
      */
     //@{
@@ -64,14 +61,14 @@ public:
 
     GmshSimplexDomain( int dim, int order, DomainType dt = GMSH_REAL_DOMAIN );
 
-    GmshSimplexDomain( GmshSimplexDomain const & td )
-        :
-        super( td ),
-        M_descr( td.M_descr )
+    GmshSimplexDomain( GmshSimplexDomain const& td )
+        : super( td ),
+          M_descr( td.M_descr )
     {
     }
     ~GmshSimplexDomain()
-    {}
+    {
+    }
 
     //@}
 
@@ -79,14 +76,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
-
-
 
     //@}
 
@@ -94,19 +88,15 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-
     //@}
 
-
-
-private:
+  private:
     std::string getDescription() const;
 
     // 1D
@@ -116,8 +106,7 @@ private:
     // 3D
     std::string getDescription3D() const;
 
-private:
-
+  private:
     std::string M_descr;
 };
 

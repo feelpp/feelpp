@@ -33,8 +33,8 @@
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 #include <feel/feelmodels/solid/solidmechanics.hpp>
 
-#include <feel/feelmodels/fsi/interpolationfsi.hpp>
 #include <feel/feelmodels/fsi/aitkenrelaxationfsi.hpp>
+#include <feel/feelmodels/fsi/interpolationfsi.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelts/tsbase.hpp>
 
@@ -43,19 +43,19 @@ namespace Feel
 namespace FeelModels
 {
 
-template< class FluidType, class SolidType >
+template <class FluidType, class SolidType>
 class FSI : public ModelNumerical
 {
-public :
+  public:
     typedef ModelNumerical super_type;
-    typedef FSI<FluidType,SolidType> self_type;
+    typedef FSI<FluidType, SolidType> self_type;
 
     typedef FluidType fluid_type;
     typedef SolidType solid_type;
     typedef boost::shared_ptr<fluid_type> fluid_ptrtype;
     typedef boost::shared_ptr<solid_type> solid_ptrtype;
 
-    typedef InterpolationFSI<fluid_type,solid_type> interpolationFSI_type;
+    typedef InterpolationFSI<fluid_type, solid_type> interpolationFSI_type;
     typedef boost::shared_ptr<interpolationFSI_type> interpolationFSI_ptrtype;
 
     typedef AitkenRelaxationFSI<solid_type> aitkenrelaxationFSI_type;
@@ -67,7 +67,7 @@ public :
 
     FSI( std::string const& prefix, WorldComm const& _worldComm = Environment::worldComm(),
          std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
-    FSI( self_type const & M ) = default;
+    FSI( self_type const& M ) = default;
 
     static std::string expandStringFromSpec( std::string const& expr );
 
@@ -77,8 +77,8 @@ public :
 
     fluid_ptrtype const& fluidModel() const { return M_fluidModel; }
     solid_ptrtype const& solidModel() const { return M_solidModel; }
-    void setFluidModel( fluid_ptrtype const& fm ) { M_fluidModel=fm; }
-    void setSolidModel( solid_ptrtype const& sm ) { M_solidModel=sm; }
+    void setFluidModel( fluid_ptrtype const& fm ) { M_fluidModel = fm; }
+    void setSolidModel( solid_ptrtype const& sm ) { M_solidModel = sm; }
 
     std::string fsiCouplingType() const { return M_fsiCouplingType; }
     std::string fsiCouplingBoundaryCondition() const { return M_fsiCouplingBoundaryCondition; }
@@ -106,7 +106,7 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    void updateTime(double time);
+    void updateTime( double time );
 
     boost::shared_ptr<TSBase> timeStepBase() const { return this->fluidTimeStepBase(); }
     boost::shared_ptr<TSBase> fluidTimeStepBase() const { return this->fluidModel()->timeStepBase(); }
@@ -116,11 +116,11 @@ public :
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time )
     {
-        this->fluidModel()->exportResults(time);
-        this->solidModel()->exportResults(time);
+        this->fluidModel()->exportResults( time );
+        this->solidModel()->exportResults( time );
     }
 
-private :
+  private:
     void updateBackendOptimisation( int iterationFSI, double lastErrorRelative );
     void solveImpl1();
     void solveImpl2();
@@ -128,18 +128,17 @@ private :
 
     //---------------------------------------------------------------------------------------------------------//
 
-private :
-
+  private:
     fluid_ptrtype M_fluidModel;
     solid_ptrtype M_solidModel;
 
     double M_meshSize;
-    fs::path M_mshfilepathFluidPart1,M_mshfilepathSolidPart1;
-    fs::path M_mshfilepathFluidPartN,M_mshfilepathSolidPartN;
-    std::set<std::string> M_markersNameFluid,M_markersNameSolid;
+    fs::path M_mshfilepathFluidPart1, M_mshfilepathSolidPart1;
+    fs::path M_mshfilepathFluidPartN, M_mshfilepathSolidPartN;
+    std::set<std::string> M_markersNameFluid, M_markersNameSolid;
     std::string M_tagFileNameMeshGenerated;
 
-    std::string M_fsiCouplingType; // implicit,semi-implicit
+    std::string M_fsiCouplingType;              // implicit,semi-implicit
     std::string M_fsiCouplingBoundaryCondition; // dirichlet-neumann, robin-robin, ...
     bool M_interfaceFSIisConforme;
     double M_fixPointTolerance, M_fixPointInitialTheta, M_fixPointMinTheta;
@@ -149,21 +148,18 @@ private :
     aitkenrelaxationFSI_ptrtype M_aitkenFSI;
     fixpointconvergenceFSI_ptrtype M_fixPointConvergenceFSI;
 
-    int M_previousTimeOrder,M_currentTimeOrder;
-    bool M_reusePrecOptFluid,M_reusePrecRebuildAtFirstFSIStepOptFluid,M_reuseJacOptFluid,M_reuseJacRebuildAtFirstNewtonStepOptFluid,M_reuseJacRebuildAtFirstFSIStepOptFluid;
-    bool M_reusePrecOptSolid,M_reusePrecRebuildAtFirstFSIStepOptSolid,M_reuseJacOptSolid,M_reuseJacRebuildAtFirstNewtonStepOptSolid,M_reuseJacRebuildAtFirstFSIStepOptSolid;
-    int M_reusePrecActivatedAfterNbFsiIterationFluid,M_reusePrecActivatedAfterNbFsiIterationSolid;
-    double M_reusePrecActivatedToleranceFluid,M_reusePrecActivatedToleranceSolid;
+    int M_previousTimeOrder, M_currentTimeOrder;
+    bool M_reusePrecOptFluid, M_reusePrecRebuildAtFirstFSIStepOptFluid, M_reuseJacOptFluid, M_reuseJacRebuildAtFirstNewtonStepOptFluid, M_reuseJacRebuildAtFirstFSIStepOptFluid;
+    bool M_reusePrecOptSolid, M_reusePrecRebuildAtFirstFSIStepOptSolid, M_reuseJacOptSolid, M_reuseJacRebuildAtFirstNewtonStepOptSolid, M_reuseJacRebuildAtFirstFSIStepOptSolid;
+    int M_reusePrecActivatedAfterNbFsiIterationFluid, M_reusePrecActivatedAfterNbFsiIterationSolid;
+    double M_reusePrecActivatedToleranceFluid, M_reusePrecActivatedToleranceSolid;
 
     double M_couplingNitscheFamily_gamma, M_couplingNitscheFamily_gamma0, M_couplingNitscheFamily_alpha;
     double M_couplingRNG_manualScaling;
     bool M_couplingRNG_useInterfaceOperator;
-
 };
 
 } // namespace FeelModels
 } // namespace Feel
-
-
 
 #endif // FEELPP_MODELS_FSI_H

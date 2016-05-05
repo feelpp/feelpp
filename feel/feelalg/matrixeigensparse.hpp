@@ -33,7 +33,7 @@
 #include <set>
 
 #include <boost/version.hpp>
-#if (BOOST_VERSION >= 103400)
+#if ( BOOST_VERSION >= 103400 )
 #include <boost/none.hpp>
 #else
 #include <boost/none_t.hpp>
@@ -45,10 +45,10 @@
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 
-
 namespace Feel
 {
-template<typename T, typename Storage> class VectorUblas;
+template <typename T, typename Storage>
+class VectorUblas;
 
 /*!
  *
@@ -68,13 +68,12 @@ template<typename T, typename Storage> class VectorUblas;
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename T>
+template <typename T>
 class MatrixEigenSparse : public MatrixSparse<T>
 {
     typedef MatrixSparse<T> super;
-public:
 
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -93,12 +92,11 @@ public:
 
     MatrixEigenSparse();
 
-    MatrixEigenSparse( size_type r, size_type c, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixEigenSparse( size_type r, size_type c, WorldComm const& worldComm = Environment::worldComm() );
 
-    MatrixEigenSparse( MatrixEigenSparse const & m );
+    MatrixEigenSparse( MatrixEigenSparse const& m );
 
     ~MatrixEigenSparse();
-
 
     //@}
 
@@ -106,13 +104,12 @@ public:
      */
     //@{
 
-    MatrixEigenSparse<T> & operator = ( MatrixSparse<value_type> const& M )
+    MatrixEigenSparse<T>& operator=( MatrixSparse<value_type> const& M )
     {
         return *this;
     }
 
-
-    value_type  operator()( size_type i, size_type j ) const
+    value_type operator()( size_type i, size_type j ) const
     {
         //return M_mat.row(i).col(j);
         return 0.;
@@ -128,7 +125,7 @@ public:
      * @returns \p m, the row-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    size_type size1 () const
+    size_type size1() const
     {
         return M_mat.rows();
     }
@@ -137,7 +134,7 @@ public:
      * @returns \p n, the column-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    size_type size2 () const
+    size_type size2() const
     {
         return M_mat.cols();
     }
@@ -147,14 +144,14 @@ public:
      */
     size_type nnz() const
     {
-        return M_mat.rows()*M_mat.cols();
+        return M_mat.rows() * M_mat.cols();
     }
 
     /**
      * return row_start, the index of the first
      * matrix row stored on this processor
      */
-    size_type rowStart () const
+    size_type rowStart() const
     {
         return 0;
     }
@@ -163,7 +160,7 @@ public:
      * return row_stop, the index of the last
      * matrix row (+1) stored on this processor
      */
-    size_type rowStop () const
+    size_type rowStop() const
     {
         return 0;
     }
@@ -180,13 +177,12 @@ public:
      * \c close the eigen matrix, that will copy the content of write
      * optimized matrix into a read optimized matrix
      */
-    void close () const;
-
+    void close() const;
 
     /**
      * Returns the read optimized eigen matrix.
      */
-    matrix_type const& mat () const
+    matrix_type const& mat() const
     {
         return M_mat;
     }
@@ -194,7 +190,7 @@ public:
     /**
      * Returns the read optimized eigen matrix.
      */
-    matrix_type & mat ()
+    matrix_type& mat()
     {
         return M_mat;
     }
@@ -204,7 +200,6 @@ public:
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -220,21 +215,21 @@ public:
      * \p noz is the number of on-processor
      * nonzeros per row (defaults to 30).
      */
-    void init ( const size_type m,
-                const size_type n,
-                const size_type m_l,
-                const size_type n_l,
-                const size_type nnz=30,
-                const size_type noz=10 );
+    void init( const size_type m,
+               const size_type n,
+               const size_type m_l,
+               const size_type n_l,
+               const size_type nnz = 30,
+               const size_type noz = 10 );
 
     /**
      * Initialize using sparsity structure computed by \p dof_map.
      */
-    void init ( const size_type m,
-                const size_type n,
-                const size_type m_l,
-                const size_type n_l,
-                graph_ptrtype const& graph );
+    void init( const size_type m,
+               const size_type n,
+               const size_type m_l,
+               const size_type n_l,
+               graph_ptrtype const& graph );
 
     /**
      * Release all memory and return
@@ -242,7 +237,7 @@ public:
      * having called the default
      * constructor.
      */
-    void clear ()
+    void clear()
     {
         //eigen::resize( M_mat, 0, 0 );
         M_mat.setZero();
@@ -252,12 +247,12 @@ public:
      * Set all entries to 0. This method retains
      * sparsity structure.
      */
-    void zero ()
+    void zero()
     {
         M_mat.setZero();
     }
 
-    void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 )
+    void zero( size_type start1, size_type stop1, size_type start2, size_type stop2 )
     {
     }
 
@@ -269,11 +264,11 @@ public:
      * store zero values in
      * non-existent fields.
      */
-    void add ( const size_type i,
-               const size_type j,
-               const value_type& value )
+    void add( const size_type i,
+              const size_type j,
+              const value_type& value )
     {
-        M_tripletList.push_back(triplet(i, j, value) );
+        M_tripletList.push_back( triplet( i, j, value ) );
     }
 
     /**
@@ -284,13 +279,12 @@ public:
       * store zero values in
       * non-existent fields.
       */
-    void set ( const size_type i,
-               const size_type j,
-               const value_type& value )
+    void set( const size_type i,
+              const size_type j,
+              const value_type& value )
     {
-        M_tripletList.push_back(triplet(i, j, value));
+        M_tripletList.push_back( triplet( i, j, value ) );
     }
-
 
     /**
      * Print the contents of the matrix in Matlab's
@@ -298,16 +292,14 @@ public:
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL" ) const;
-
-
+    void printMatlab( const std::string name = "NULL" ) const;
 
     void resize( size_type nr, size_type nc, bool /*preserve*/ = false );
 
     /**
      * Copies the diagonal part of the matrix into \p dest.
      */
-    void diagonal ( Vector<T>& dest ) const;
+    void diagonal( Vector<T>& dest ) const;
 
     /**
      * \return \f$ v^T M u \f$
@@ -356,9 +348,9 @@ public:
      * for adding an element matrix
      * at assembly time
      */
-    void addMatrix ( int* rows, int nrows,
-                     int* cols, int ncols,
-                     value_type* data );
+    void addMatrix( int* rows, int nrows,
+                    int* cols, int ncols,
+                    value_type* data );
 
     void scale( const T a );
 
@@ -400,16 +392,12 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type>> const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
 
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
     bool M_is_initialized;
 
     /**
@@ -423,7 +411,6 @@ private:
 extern template class MatrixEigenSparse<double>;
 extern template class MatrixEigenSparse<std::complex<double>>;
 #endif
-
 
 } // Feel
 #endif /* __MatrixEigenSparse_H */

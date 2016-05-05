@@ -27,21 +27,21 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-16
  */
-#if !defined(SMART_ASSERT_H)
+#if !defined( SMART_ASSERT_H )
 #define SMART_ASSERT_H
 
-#include <string>
 #include <iostream>
+#include <map>
 #include <sstream>
+#include <string>
 #include <utility>
 #include <vector>
-#include <map>
-#if defined(__INTEL_COMPILER)
+#if defined( __INTEL_COMPILER )
 #pragma warning push
-#pragma warning(disable:780)
+#pragma warning( disable : 780 )
 #endif
 #include <glog/logging.h>
-#if defined(__INTEL_COMPILER)
+#if defined( __INTEL_COMPILER )
 #pragma warning pop
 #endif
 
@@ -67,8 +67,6 @@ enum
     lvl_fatal = google::GLOG_FATAL
 };
 
-
-
 /**
    \class AssertContext
   *\ingroup Core
@@ -77,17 +75,20 @@ enum
 class AssertContext
 {
     typedef std::string string;
-public:
-    AssertContext() : M_level( lvl_info )
-    {}
+
+  public:
+    AssertContext()
+        : M_level( lvl_info )
+    {
+    }
 
     // where the assertion failed: file & line
-    void setFileLine( const char * file, int line )
+    void setFileLine( const char* file, int line )
     {
         M_file = file;
         M_line = line;
     }
-    const string & getContextFile() const
+    const string& getContextFile() const
     {
         return M_file;
     }
@@ -97,25 +98,25 @@ public:
     }
 
     // get/ set expression
-    void setExpression( const string & str )
+    void setExpression( const string& str )
     {
         M_expression = str;
     }
-    const string & expression() const
+    const string& expression() const
     {
         return M_expression;
     }
 
-    typedef std::pair< string, string> val_and_str;
-    typedef std::vector< val_and_str> vals_array;
+    typedef std::pair<string, string> val_and_str;
+    typedef std::vector<val_and_str> vals_array;
     // return values array as a vector of pairs:
     // [Value, corresponding string]
-    const vals_array & get_vals_array() const
+    const vals_array& get_vals_array() const
     {
         return M_vals;
     }
     // adds one value and its corresponding string
-    void add_val( const string & val, const string & str )
+    void add_val( const string& val, const string& str )
     {
         M_vals.push_back( val_and_str( val, str ) );
     }
@@ -131,7 +132,7 @@ public:
     }
 
     // get/set (user-friendly) message
-    void setLevelMsg( const char * strMsg )
+    void setLevelMsg( const char* strMsg )
     {
         if ( strMsg )
             M_msg = strMsg;
@@ -139,12 +140,12 @@ public:
         else
             M_msg.erase();
     }
-    const string & get_level_msg() const
+    const string& get_level_msg() const
     {
         return M_msg;
     }
 
-private:
+  private:
     // where the assertion occured
     string M_file;
     int M_line;
@@ -158,75 +159,72 @@ private:
     string M_msg;
 };
 
-
 namespace SmartAssert
 {
 
-typedef void ( *assert_function_type )( const AssertContext & context );
+typedef void ( *assert_function_type )( const AssertContext& context );
 
 // helpers
 std::string getTypeofLevel( int nLevel );
-void dumpContextSummary( const AssertContext & context, std::ostream & out );
-void dumpContextDetail( const AssertContext & context, std::ostream & out );
+void dumpContextSummary( const AssertContext& context, std::ostream& out );
+void dumpContextDetail( const AssertContext& context, std::ostream& out );
 
 // defaults
-void defaultWarnHandler( const AssertContext & context );
-void defaultDebugHandler( const AssertContext & context );
-void defaultErrorHandler( const AssertContext & context );
-void defaultFatalHandler( const AssertContext & context );
-void defaultLogger( const AssertContext & context );
+void defaultWarnHandler( const AssertContext& context );
+void defaultDebugHandler( const AssertContext& context );
+void defaultErrorHandler( const AssertContext& context );
+void defaultFatalHandler( const AssertContext& context );
+void defaultLogger( const AssertContext& context );
 
 } // namespace SmartAssert
 
 namespace Private
 {
 void initAssert();
-void setDefaultLogStream( std::ostream & out );
-void setDefaultLogName( const char * str );
+void setDefaultLogStream( std::ostream& out );
+void setDefaultLogName( const char* str );
 
 // allows finding if a value is of type 'const char *'
 // and is null; if so, we cannot print it to an ostream
 // directly!!!
-template< class T>
+template <class T>
 struct isNullFinder
 {
-    bool is( const T & ) const
+    bool is( const T& ) const
     {
         return false;
     }
 };
 
-template<>
-struct isNullFinder< char*>
+template <>
+struct isNullFinder<char*>
 {
-    bool is( char * const & val )
+    bool is( char* const& val )
     {
         return val == 0;
     }
 };
 
-template<>
-struct isNullFinder< const char*>
+template <>
+struct isNullFinder<const char*>
 {
-    bool is( const char * const & val )
+    bool is( const char* const& val )
     {
         return val == 0;
     }
 };
-
 
 } // namespace Private
-
 
 struct Assert
 {
     typedef SmartAssert::assert_function_type assert_function_type;
 
     // helpers, in order to be able to compile the code
-    Assert & SMART_ASSERT_A;
-    Assert & SMART_ASSERT_B;
+    Assert& SMART_ASSERT_A;
+    Assert& SMART_ASSERT_B;
 
-    Assert( const char * expr )
+    Assert( const char* expr )
         : SMART_ASSERT_A( *this ),
           SMART_ASSERT_B( *this ),
           M_needs_handling( true )
@@ -240,7 +238,7 @@ struct Assert
         }
     }
 
-    Assert( const Assert & other )
+    Assert( const Assert& other )
         : SMART_ASSERT_A( *this ),
           SMART_ASSERT_B( *this ),
           M_context( other.M_context ),
@@ -255,55 +253,55 @@ struct Assert
             handleAssert();
     }
 
-    template< class type>
-    Assert & printCurrentValue( const type & val, const char * msg );
+    template <class type>
+    Assert& printCurrentValue( const type& val, const char* msg );
 
-    Assert & printContext( const char * file, int line )
+    Assert& printContext( const char* file, int line )
     {
         M_context.setFileLine( file, line );
         return *this;
     }
 
-    Assert & msg( const char * strMsg )
+    Assert& msg( const char* strMsg )
     {
         M_context.setLevelMsg( strMsg );
         return *this;
     }
 
-    Assert & level( int nLevel, const char * strMsg = 0 )
+    Assert& level( int nLevel, const char* strMsg = 0 )
     {
         M_context.setLevel( nLevel );
         M_context.setLevelMsg( strMsg );
         return *this;
     }
 
-    Assert & info( const char * strMsg = 0 )
+    Assert& info( const char* strMsg = 0 )
     {
         return level( lvl_info, strMsg );
     }
-    Assert & warn( const char * strMsg = 0 )
+    Assert& warn( const char* strMsg = 0 )
     {
         return level( lvl_warn, strMsg );
     }
 
-    Assert & debug( const char * strMsg = 0 )
+    Assert& debug( const char* strMsg = 0 )
     {
         return level( lvl_debug, strMsg );
     }
 
-    Assert & error( const char * strMsg = 0 )
+    Assert& error( const char* strMsg = 0 )
     {
         return level( lvl_error, strMsg );
     }
 
-    Assert & fatal( const char * strMsg = 0 )
+    Assert& fatal( const char* strMsg = 0 )
     {
-        return  level( lvl_fatal, strMsg );
+        return level( lvl_fatal, strMsg );
     }
 
     // in this case, we set the default logger, and make it
     // write everything to this file
-    static void setLog( const char * strFileName )
+    static void setLog( const char* strFileName )
     {
         Private::setDefaultLogName( strFileName );
         logger() = &SmartAssert::defaultLogger;
@@ -311,7 +309,7 @@ struct Assert
 
     // in this case, we set the default logger, and make it
     // write everything to this log
-    static void setLog( std::ostream & out )
+    static void setLog( std::ostream& out )
     {
         Private::setDefaultLogStream( out );
         logger() = &SmartAssert::defaultLogger;
@@ -324,10 +322,10 @@ struct Assert
 
     static void setHandler( int nLevel, assert_function_type handler )
     {
-        handlers()[ nLevel] = handler;
+        handlers()[nLevel] = handler;
     }
 
-private:
+  private:
     // handles the current assertion.
     void handleAssert()
     {
@@ -346,15 +344,15 @@ private:
     */
 
     // the log
-    static assert_function_type & logger()
+    static assert_function_type& logger()
     {
         static assert_function_type inst;
         return inst;
     }
 
     // the handler
-    typedef std::map< int, assert_function_type> handlers_collection;
-    static handlers_collection & handlers()
+    typedef std::map<int, assert_function_type> handlers_collection;
+    static handlers_collection& handlers()
     {
         static handlers_collection inst;
         return inst;
@@ -372,19 +370,18 @@ private:
             return handlers().find( lvl_debug )->second;
     }
 
-private:
+  private:
     AssertContext M_context;
     mutable bool M_needs_handling;
-
 };
 
-template<class type>
-Assert &
-Assert::printCurrentValue( const type & _val, const char * _msg )
+template <class type>
+Assert&
+Assert::printCurrentValue( const type& _val, const char* _msg )
 {
     std::ostringstream out;
 
-    Private::isNullFinder< type> f;
+    Private::isNullFinder<type> f;
     bool bIsNull = f.is( _val );
 
     if ( !bIsNull )
@@ -398,10 +395,9 @@ Assert::printCurrentValue( const type & _val, const char * _msg )
     return *this;
 }
 
-
 namespace SmartAssert
 {
-inline ::Feel::Assert make_assert( const char * expr )
+inline ::Feel::Assert make_assert( const char* expr )
 {
     return ::Feel::Assert( expr );
 }
@@ -428,41 +424,38 @@ inline ::Feel::Assert make_assert( const char * expr )
 
 #endif
 
-
 #ifdef FEELPP_SMART_ASSERT_DEBUG
 // "debug" mode
-#define FEELPP_SMART_ASSERT( expr) \
-    if ( (expr) ) ; \
-    else ::Feel::SmartAssert::make_assert( #expr).printContext( __FILE__, __LINE__).SMART_ASSERT_A \
-    /**/
+#define FEELPP_SMART_ASSERT( expr ) \
+    if ( ( expr ) )                 \
+        ;                           \
+    else                            \
+    ::Feel::SmartAssert::make_assert( #expr ).printContext( __FILE__, __LINE__ ).SMART_ASSERT_A /**/
 
 #else
 // "release" mode
-#define FEELPP_SMART_ASSERT( expr) \
-    if ( true ) ; \
-    else ::Feel::SmartAssert::make_assert( "").SMART_ASSERT_A \
-    /**/
+#define FEELPP_SMART_ASSERT( expr ) \
+    if ( true )                     \
+        ;                           \
+    else                            \
+    ::Feel::SmartAssert::make_assert( "" ).SMART_ASSERT_A /**/
 
 #endif // ifdef FEELPP_SMART_ASSERT_DEBUG
 
 // FEELPP_ASSERT is a equivalent to FEELPP_SMART_ASSERT
-#define FEELPP_ASSERT( expr) FEELPP_SMART_ASSERT(expr)
+#define FEELPP_ASSERT( expr ) FEELPP_SMART_ASSERT( expr )
 
+#define FEELPP_SMART_VERIFY( expr ) \
+    if ( ( expr ) )                 \
+        ;                           \
+    else                            \
+    ::Feel::SmartAssert::make_assert( #expr ).error().printContext( __FILE__, __LINE__ ).SMART_ASSERT_A /**/
+#define FEELPP_VERIFY( expr ) FEELPP_SMART_VERIFY( expr )
 
-#define FEELPP_SMART_VERIFY( expr) \
-    if ( (expr) ) ; \
-    else ::Feel::SmartAssert::make_assert( #expr).error().printContext( __FILE__, __LINE__).SMART_ASSERT_A \
-    /**/
-#define FEELPP_VERIFY( expr) FEELPP_SMART_VERIFY(expr)
+#define SMART_ASSERT_A( x ) FEELPP_SMART_ASSERT_OP( x, B )
+#define SMART_ASSERT_B( x ) FEELPP_SMART_ASSERT_OP( x, A )
 
-
-#define SMART_ASSERT_A(x) FEELPP_SMART_ASSERT_OP(x, B)
-#define SMART_ASSERT_B(x) FEELPP_SMART_ASSERT_OP(x, A)
-
-#define FEELPP_SMART_ASSERT_OP(x, next)         \
-    SMART_ASSERT_A.printCurrentValue((x), #x).SMART_ASSERT_ ## next \
-    /**/
-
-
+#define FEELPP_SMART_ASSERT_OP( x, next ) \
+    SMART_ASSERT_A.printCurrentValue( ( x ), #x ).SMART_ASSERT_##next /**/
 
 #endif

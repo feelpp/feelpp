@@ -43,16 +43,16 @@ struct OseenDefaults
 {
     // Default constructor with default default values
     OseenDefaults()
-        :
-        BC_COEFF_DIFF( 100.0 ),
-        BC_COEFF_CONV( 100.0 ),
-        STAB_COEFF_DIV( 0.0 ),
-        STAB_COEFF_P( 0.0 ),
-        EPS_COMPRESS( 0.0 ),
-        DIVDIV_COEFF( 0.0 ),
-        WEAK_DIRICHLET( true ),
-        EXPORT_MATLAB( false )
-    {}
+        : BC_COEFF_DIFF( 100.0 ),
+          BC_COEFF_CONV( 100.0 ),
+          STAB_COEFF_DIV( 0.0 ),
+          STAB_COEFF_P( 0.0 ),
+          EPS_COMPRESS( 0.0 ),
+          DIVDIV_COEFF( 0.0 ),
+          WEAK_DIRICHLET( true ),
+          EXPORT_MATLAB( false )
+    {
+    }
 
     // coefficient for diffusive terms of weak Dirichlet conditions
     double BC_COEFF_DIFF;
@@ -72,8 +72,8 @@ struct OseenDefaults
     bool EXPORT_MATLAB;
 };
 
-po::options_description oseen_options( std::string const& prefix="",
-                                       OseenDefaults defaults=OseenDefaults() );
+po::options_description oseen_options( std::string const& prefix = "",
+                                       OseenDefaults defaults = OseenDefaults() );
 
 } // Feel
 #endif /* __OseenData_H */

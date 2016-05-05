@@ -44,11 +44,10 @@ namespace vf
  * @author Christophe Prud'homme
  * @see
  */
-template<typename T = double>
+template <typename T = double>
 class UnaryFunctor
 {
-public:
-
+  public:
     typedef T value_type;
     typedef FunctorDomain<value_type> functordomain_type;
     typedef boost::shared_ptr<functordomain_type> functordomain_ptrtype;
@@ -58,19 +57,20 @@ public:
 
     UnaryFunctor( std::string const& name,
                   functordomain_ptrtype const& domain = functordomain_ptrtype( new UnboundedDomain<value_type>() ) )
-        :
-        M_name( name ),
-        M_domain( domain )
-    {}
+        : M_name( name ),
+          M_domain( domain )
+    {
+    }
 
-    UnaryFunctor( UnaryFunctor const & uf )
-        :
-        M_name( uf.M_name ),
-        M_domain( uf.M_domain )
-    {}
+    UnaryFunctor( UnaryFunctor const& uf )
+        : M_name( uf.M_name ),
+          M_domain( uf.M_domain )
+    {
+    }
 
     virtual ~UnaryFunctor()
-    {}
+    {
+    }
 
     //@}
 
@@ -85,7 +85,6 @@ public:
     {
         return M_name;
     }
-
 
     /**
      * @return functor domain object
@@ -111,18 +110,13 @@ public:
      */
     virtual void eval( int nx, value_type const* x, value_type* f ) const = 0;
 
-
     //@}
 
-
-
-protected:
-
-private:
+  protected:
+  private:
     std::string M_name;
 
     functordomain_ptrtype M_domain;
-
 };
 /// \endcond
 }

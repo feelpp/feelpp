@@ -32,18 +32,16 @@
 #include <feel/feelcore/feelpetsc.hpp>
 
 #if defined( FEELPP_HAS_SLEPC )
-# include <slepc.h>
+#include <slepc.h>
 #endif /* FEELPP_HAS_SLEPC */
-
-
 
 namespace Feel
 {
 namespace SLEPc
 {
-FEELPP_STRONG_INLINE int EPSDestroy ( EPS& eps )
+FEELPP_STRONG_INLINE int EPSDestroy( EPS& eps )
 {
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+#if ( PETSC_VERSION_MAJOR == 3 ) && ( PETSC_VERSION_MINOR >= 2 )
     return ::EPSDestroy( &eps );
 #else
     return ::EPSDestroy( eps );
@@ -54,4 +52,3 @@ FEELPP_STRONG_INLINE int EPSDestroy ( EPS& eps )
 } // Feel
 
 #endif /* __FeelSLEPc_H */
-

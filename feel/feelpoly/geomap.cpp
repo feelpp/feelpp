@@ -20,47 +20,44 @@
 
 #include <boost/lambda/lambda.hpp>
 #include <boost/multi_array.hpp>
-#include <boost/numeric/ublas/banded.hpp>
 #include <boost/numeric/bindings/lapack/gesv.hpp>
+#include <boost/numeric/ublas/banded.hpp>
 
-#include <boost/numeric/bindings/traits/traits.hpp>
-#include <boost/numeric/bindings/traits/ublas_vector.hpp>
-#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
 #include <boost/numeric/bindings/blas/blas.hpp>
+#include <boost/numeric/bindings/traits/traits.hpp>
+#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
+#include <boost/numeric/bindings/traits/ublas_vector.hpp>
 
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelmesh/geoentity.hpp>
 
-#include <feel/feelpoly/geomap.hpp>
-#include <feel/feelmesh/geond.hpp>
 #include <feel/feelmesh/geo0d.hpp>
-
-
+#include <feel/feelmesh/geond.hpp>
+#include <feel/feelpoly/geomap.hpp>
 
 namespace Feel
 {
 
-template<typename Elem, typename T>
-RealToReference<Elem,T>::RealToReference( Elem const& elem )
-    :
-    M_gm( new gm_type ),
-    M_igm( M_gm, elem )
-{}
+template <typename Elem, typename T>
+RealToReference<Elem, T>::RealToReference( Elem const& elem )
+    : M_gm( new gm_type ),
+      M_igm( M_gm, elem )
+{
+}
 
-
-template<typename Elem, typename T>
-typename RealToReference<Elem,T>::points_type
-RealToReference<Elem,T>::operator()( points_type const& pts ) const
+template <typename Elem, typename T>
+typename RealToReference<Elem, T>::points_type
+RealToReference<Elem, T>::operator()( points_type const& pts ) const
 {
     return M_igm( pts );
 }
 
-template class RealToReference< GeoND<2,GeoEntity<Simplex<2,1> >, double>, double >;
-template class RealToReference< GeoND<3,GeoEntity<Simplex<3,1> >, double>, double >;
+template class RealToReference<GeoND<2, GeoEntity<Simplex<2, 1>>, double>, double>;
+template class RealToReference<GeoND<3, GeoEntity<Simplex<3, 1>>, double>, double>;
 
-#if defined( FEELPP_HAS_QD_REAL)
-template class RealToReference< GeoND<2,GeoEntity<Simplex<2,1> >, qd_real>, qd_real >;
-template class RealToReference< GeoND<2,GeoEntity<Simplex<2,1> >, dd_real>, dd_real >;
+#if defined( FEELPP_HAS_QD_REAL )
+template class RealToReference<GeoND<2, GeoEntity<Simplex<2, 1>>, qd_real>, qd_real>;
+template class RealToReference<GeoND<2, GeoEntity<Simplex<2, 1>>, dd_real>, dd_real>;
 #endif // FEELPP_HAS_QD_REAL
 
 } // Feel

@@ -26,31 +26,32 @@
 
 #include <feel/feelcore/traits.hpp>
 
+namespace Feel
+{
 
-namespace Feel {
+namespace detail
+{
 
-namespace detail {
-
-template<typename C>
-auto rank ( C const& c, mpl::bool_<true> ) -> decltype( c->worldComm().localRank() )
+template <typename C>
+auto rank( C const& c, mpl::bool_<true> ) -> decltype( c->worldComm().localRank() )
 {
     return c->worldComm().localRank();
 }
 
-template<typename C>
-auto rank ( C const& c, mpl::bool_<false> ) -> decltype( c.worldComm().localRank() )
+template <typename C>
+auto rank( C const& c, mpl::bool_<false> ) -> decltype( c.worldComm().localRank() )
 {
     return c.worldComm().localRank();
 }
 
-template<typename C>
-auto globalRank ( C const& c, mpl::bool_<true> ) -> decltype( c->worldComm().globalRank() )
+template <typename C>
+auto globalRank( C const& c, mpl::bool_<true> ) -> decltype( c->worldComm().globalRank() )
 {
     return c->worldComm().globalRank();
 }
 
-template<typename C>
-auto globalRank ( C const& c, mpl::bool_<false> ) -> decltype( c.worldComm().globalRank() )
+template <typename C>
+auto globalRank( C const& c, mpl::bool_<false> ) -> decltype( c.worldComm().globalRank() )
 {
     return c.worldComm().globalRank();
 }
@@ -60,15 +61,14 @@ auto globalRank ( C const& c, mpl::bool_<false> ) -> decltype( c.worldComm().glo
 /**
  * @return the local MPI rank of the data structure @p c 
  */
-template<typename C>
-auto rank ( C const& c ) -> decltype( detail::rank( c, is_ptr_or_shared_ptr<C>() ) )
+template <typename C>
+auto rank( C const& c ) -> decltype( detail::rank( c, is_ptr_or_shared_ptr<C>() ) )
 {
     return detail::rank( c, is_ptr_or_shared_ptr<C>() );
 }
 
-template<typename C>
-FEELPP_DEPRECATED 
-auto meshrank ( C const& c ) -> decltype( detail::rank( c, is_ptr_or_shared_ptr<C>() ) ) 
+template <typename C>
+FEELPP_DEPRECATED auto meshrank( C const& c ) -> decltype( detail::rank( c, is_ptr_or_shared_ptr<C>() ) )
 {
     return detail::rank( c, is_ptr_or_shared_ptr<C>() );
 }
@@ -76,8 +76,8 @@ auto meshrank ( C const& c ) -> decltype( detail::rank( c, is_ptr_or_shared_ptr<
 /**
  * @return the global MPI rank of the data structure @p c 
  */
-template<typename C>
-auto globalRank ( C const& c ) -> decltype( detail::globalRank( c, is_ptr_or_shared_ptr<C>() ) )
+template <typename C>
+auto globalRank( C const& c ) -> decltype( detail::globalRank( c, is_ptr_or_shared_ptr<C>() ) )
 {
     return detail::globalRank( c, is_ptr_or_shared_ptr<C>() );
 }

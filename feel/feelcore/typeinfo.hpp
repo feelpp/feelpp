@@ -46,9 +46,7 @@ namespace Feel
 */
 class TypeInfo
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -61,7 +59,7 @@ public:
 
     TypeInfo();
     TypeInfo( const std::type_info& ); // non-explicit
-    TypeInfo( TypeInfo const & );
+    TypeInfo( TypeInfo const& );
     ~TypeInfo();
 
     //@}
@@ -69,7 +67,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -89,22 +86,18 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-
     //! Compatibility functions
     bool before( const TypeInfo& rhs ) const;
 
-
     //@}
 
-private:
-
+  private:
     const std::type_info* M_info;
 };
 
@@ -138,6 +131,6 @@ inline bool operator>=( const TypeInfo& lhs, const TypeInfo& rhs )
     return !( lhs < rhs );
 }
 
-}// end namespace Feel
+} // end namespace Feel
 
 #endif /* __TypeInfo_H */

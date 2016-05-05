@@ -31,12 +31,11 @@
 
 namespace Feel
 {
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template <uint16_type Dim, uint16_type Order, uint16_type RDim, typename T>
 class Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>
-    :
-public Simplex<Dim, Order, RDim>
+    : public Simplex<Dim, Order, RDim>
 {
-public:
+  public:
     typedef Simplex<Dim, Order, RDim> super;
 
     /** @name Typedefs
@@ -58,12 +57,14 @@ public:
     typedef Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T> self_type;
 
     typedef typename mpl::if_<boost::is_same<typename super::element_type, boost::none_t>,
-            mpl::identity<boost::none_t>,
-            mpl::identity<Reference<typename super::element_type, nDim+1, nOrder, nRealDim, T> > >::type::type element_type;
+                              mpl::identity<boost::none_t>,
+                              mpl::identity<Reference<typename super::element_type, nDim + 1, nOrder, nRealDim, T>>>::type::type element_type;
     typedef Reference<typename super::topological_face_type,
-            super::topological_face_type::nDim, nOrder, nRealDim, T> topological_face_type;
+                      super::topological_face_type::nDim, nOrder, nRealDim, T>
+        topological_face_type;
     typedef Reference<typename super::edge_type,
-                      super::edge_type::nDim, nOrder, nRealDim, T> edge_type;
+                      super::edge_type::nDim, nOrder, nRealDim, T>
+        edge_type;
 
     typedef typename super::edge_to_point_t edge_to_point_t;
     typedef typename super::face_to_point_t face_to_point_t;
@@ -103,16 +104,15 @@ public:
     //@{
 
     Reference()
-        :
-        super(),
-        M_id( 0 ),
-        M_vertices( nRealDim, numVertices ),
-        M_points( nRealDim, numPoints ),
-        M_normals( numNormals ),
-        M_edge_tangents( numEdges ),
-        M_barycenter( nRealDim ),
-        M_barycenterfaces( nRealDim, numTopologicalFaces ),
-        M_meas( 0 )
+        : super(),
+          M_id( 0 ),
+          M_vertices( nRealDim, numVertices ),
+          M_points( nRealDim, numPoints ),
+          M_normals( numNormals ),
+          M_edge_tangents( numEdges ),
+          M_barycenter( nRealDim ),
+          M_barycenterfaces( nRealDim, numTopologicalFaces ),
+          M_meas( 0 )
     {
         M_vertices *= 0;
         M_points *= 0;
@@ -120,7 +120,7 @@ public:
         if ( nDim == 1 )
         {
             M_vertices( 0, 0 ) = -1.0;
-            M_vertices( 0, 1 ) =  1.0;
+            M_vertices( 0, 1 ) = 1.0;
 
             M_points = make_line_points();
         }
@@ -129,10 +129,10 @@ public:
         {
             M_vertices( 0, 0 ) = -1.0;
             M_vertices( 1, 0 ) = -1.0;
-            M_vertices( 0, 1 ) =  1.0;
+            M_vertices( 0, 1 ) = 1.0;
             M_vertices( 1, 1 ) = -1.0;
             M_vertices( 0, 2 ) = -1.0;
-            M_vertices( 1, 2 ) =  1.0;
+            M_vertices( 1, 2 ) = 1.0;
 
             M_points = make_triangle_points();
         }
@@ -142,15 +142,15 @@ public:
             M_vertices( 0, 0 ) = -1.0;
             M_vertices( 1, 0 ) = -1.0;
             M_vertices( 2, 0 ) = -1.0;
-            M_vertices( 0, 1 ) =  1.0;
+            M_vertices( 0, 1 ) = 1.0;
             M_vertices( 1, 1 ) = -1.0;
             M_vertices( 2, 1 ) = -1.0;
             M_vertices( 0, 2 ) = -1.0;
-            M_vertices( 1, 2 ) =  1.0;
+            M_vertices( 1, 2 ) = 1.0;
             M_vertices( 2, 2 ) = -1.0;
             M_vertices( 0, 3 ) = -1.0;
             M_vertices( 1, 3 ) = -1.0;
-            M_vertices( 2, 3 ) =  1.0;
+            M_vertices( 2, 3 ) = 1.0;
 
             M_points = make_tetrahedron_points();
         }
@@ -165,16 +165,15 @@ public:
     }
 
     Reference( element_type const& e, uint16_type __f, uint16_type __p = permutation_type::IDENTITY )
-        :
-        super(),
-        M_id( __f ),
-        M_vertices( nRealDim, numVertices ),
-        M_points( nRealDim, numPoints ),
-        M_normals( numNormals ),
-        M_edge_tangents( numNormals ),
-        M_barycenter( nRealDim ),
-        M_barycenterfaces( nRealDim, numTopologicalFaces ),
-        M_meas( 0 )
+        : super(),
+          M_id( __f ),
+          M_vertices( nRealDim, numVertices ),
+          M_points( nRealDim, numPoints ),
+          M_normals( numNormals ),
+          M_edge_tangents( numNormals ),
+          M_barycenter( nRealDim ),
+          M_barycenterfaces( nRealDim, numTopologicalFaces ),
+          M_meas( 0 )
     {
         if ( __f >= element_type::numTopologicalFaces )
         {
@@ -184,26 +183,23 @@ public:
             throw std::invalid_argument( str.str() );
         }
 
-
-
-        CHECK( nDim <3 ) << "nDim must be less than 3 here\n";
+        CHECK( nDim < 3 ) << "nDim must be less than 3 here\n";
         if ( nDim == 2 )
         {
 
-            std::map<uint16_type, std::vector<uint16_type> > permTriangles = {
-                {triangular_faces_type::IDENTITY, {0,1,2}},
-                {triangular_faces_type::ROTATION_ANTICLOCK, {1,2,0}},
-                {triangular_faces_type::ROTATION_CLOCKWISE, {2,0,1}},
-                {triangular_faces_type::REVERSE_BASE,{0,2,1}},
-                {triangular_faces_type::REVERSE_HYPOTENUSE,{1,0,2}},
-                {triangular_faces_type::REVERSE_HEIGHT,{2,1,0}}
-            };
+            std::map<uint16_type, std::vector<uint16_type>> permTriangles = {
+                {triangular_faces_type::IDENTITY, {0, 1, 2}},
+                {triangular_faces_type::ROTATION_ANTICLOCK, {1, 2, 0}},
+                {triangular_faces_type::ROTATION_CLOCKWISE, {2, 0, 1}},
+                {triangular_faces_type::REVERSE_BASE, {0, 2, 1}},
+                {triangular_faces_type::REVERSE_HYPOTENUSE, {1, 0, 2}},
+                {triangular_faces_type::REVERSE_HEIGHT, {2, 1, 0}}};
 
-            DCHECK( permTriangles.find( __p )!=permTriangles.end() ) << "invalid permutation :" << __p << "\n";
+            DCHECK( permTriangles.find( __p ) != permTriangles.end() ) << "invalid permutation :" << __p << "\n";
 
             for ( int i = 0; i < numVertices; ++i )
             {
-                const int iperm = permTriangles.find( __p )->second[ i ];
+                const int iperm = permTriangles.find( __p )->second[i];
                 ublas::column( M_vertices, iperm ) = e.vertex( element_type::f2p( __f, i ) );
             }
 
@@ -211,15 +207,15 @@ public:
         }
         else if ( nDim == 1 )
         {
-            std::map<uint16_type, std::vector<uint16_type> > permLines{
-                {line_permutations::IDENTITY, {0,1} },
-                {line_permutations::REVERSE_PERMUTATION, {1,0} } };
+            std::map<uint16_type, std::vector<uint16_type>> permLines{
+                {line_permutations::IDENTITY, {0, 1}},
+                {line_permutations::REVERSE_PERMUTATION, {1, 0}}};
 
-            DCHECK( permLines.find( __p )!=permLines.end() ) << "invalid permutation :" << __p << "\n";
+            DCHECK( permLines.find( __p ) != permLines.end() ) << "invalid permutation :" << __p << "\n";
 
             for ( int i = 0; i < numVertices; ++i )
             {
-                const int iperm = permLines.find( __p )->second[ i ];
+                const int iperm = permLines.find( __p )->second[i];
                 ublas::column( M_vertices, iperm ) = e.vertex( element_type::e2p( __f, i ) );
             }
 
@@ -231,17 +227,16 @@ public:
         computeMeasure();
     }
 
-    Reference( element_type const& e, uint16_type __f, mpl::int_<1>, uint16_type __p = edge_permutation_type::IDENTITY)
-        :
-        super(),
-        M_id( __f ),
-        M_vertices( nRealDim, numVertices ),
-        M_points( nRealDim, numPoints ),
-        M_normals( numNormals ),
-        M_edge_tangents( numNormals ),
-        M_barycenter( nRealDim ),
-        M_barycenterfaces( nRealDim, numTopologicalFaces ),
-        M_meas( 0 )
+    Reference( element_type const& e, uint16_type __f, mpl::int_<1>, uint16_type __p = edge_permutation_type::IDENTITY )
+        : super(),
+          M_id( __f ),
+          M_vertices( nRealDim, numVertices ),
+          M_points( nRealDim, numPoints ),
+          M_normals( numNormals ),
+          M_edge_tangents( numNormals ),
+          M_barycenter( nRealDim ),
+          M_barycenterfaces( nRealDim, numTopologicalFaces ),
+          M_meas( 0 )
     {
         if ( __f >= element_type::numEdges )
         {
@@ -251,28 +246,26 @@ public:
             throw std::invalid_argument( str.str() );
         }
 
-
-
         CHECK( nDim == 1 ) << "nDim equal to 1\n";
-        std::map<uint16_type, std::vector<uint16_type> > permLines{
-            {line_permutations::IDENTITY, {0,1} },
-            {line_permutations::REVERSE_PERMUTATION, {1,0} } };
-        
-        DCHECK( permLines.find( __p )!=permLines.end() ) << "invalid permutation :" << __p << "\n";
-        
+        std::map<uint16_type, std::vector<uint16_type>> permLines{
+            {line_permutations::IDENTITY, {0, 1}},
+            {line_permutations::REVERSE_PERMUTATION, {1, 0}}};
+
+        DCHECK( permLines.find( __p ) != permLines.end() ) << "invalid permutation :" << __p << "\n";
+
         for ( int i = 0; i < numVertices; ++i )
         {
-            const int iperm = permLines.find( __p )->second[ i ];
+            const int iperm = permLines.find( __p )->second[i];
             ublas::column( M_vertices, iperm ) = e.vertex( element_type::e2p( __f, i ) );
         }
-        
+
         M_points = make_line_points();
-        
+
         computeBarycenters();
         computeMeasure();
     }
 
-    Reference( Reference const & r ) = default;
+    Reference( Reference const& r ) = default;
 
     ~Reference() = default;
 
@@ -328,7 +321,7 @@ public:
 
     ublas::matrix_column<points_type const> edgeVertex( uint16_type __e, uint16_type __p ) const
     {
-        return ublas::column( M_vertices, edge_to_point_t::e2p( __e,__p ) );
+        return ublas::column( M_vertices, edge_to_point_t::e2p( __e, __p ) );
     }
 
     /**
@@ -336,7 +329,7 @@ public:
      */
     ublas::matrix_column<points_type const> faceVertex( uint16_type f, uint16_type p ) const
     {
-        return ublas::column( M_vertices, face_to_point_t::f2p( f,p ) );
+        return ublas::column( M_vertices, face_to_point_t::f2p( f, p ) );
     }
 
     /**
@@ -344,7 +337,7 @@ public:
      */
     matrix_node_type faceVertices( uint16_type f ) const
     {
-        matrix_node_type v( nRealDim, nDim  );
+        matrix_node_type v( nRealDim, nDim );
 
         // there is exactely nDim vertices on each face on a d-simplex
         for ( int p = 0; p < nDim; ++p )
@@ -353,11 +346,11 @@ public:
             {
             case 1:
             case 3:
-                ublas::column( v, p ) = ublas::column( M_vertices, face_to_point_t::f2p( f,p ) );
+                ublas::column( v, p ) = ublas::column( M_vertices, face_to_point_t::f2p( f, p ) );
                 break;
 
             case 2:
-                ublas::column( v, p ) = ublas::column( M_vertices, face_to_point_t::e2p( f,p ) );
+                ublas::column( v, p ) = ublas::column( M_vertices, face_to_point_t::e2p( f, p ) );
                 break;
             }
         }
@@ -446,7 +439,6 @@ public:
         return M_edge_tangents[__n];
     }
 
-
     /**
      * the first iterator of the normal vector
      *
@@ -534,10 +526,10 @@ public:
         // FIXME: should be computed once for all in constructor
         double __max = 0.0;
 
-        for ( int __e = 0; __e < numEdges; ++ __e )
+        for ( int __e = 0; __e < numEdges; ++__e )
         {
             double __len = ublas::norm_2( edgeVertex( __e, 1 ) - edgeVertex( __e, 0 ) );
-            __max = ( __max < __len )?__len:__max;
+            __max = ( __max < __len ) ? __len : __max;
         }
 
         return __max;
@@ -547,10 +539,10 @@ public:
         // FIXME: should be computed once for all in constructor
         double __min = 0.0;
 
-        for ( int __e = 0; __e < numEdges; ++ __e )
+        for ( int __e = 0; __e < numEdges; ++__e )
         {
             double __len = ublas::norm_2( edgeVertex( __e, 1 ) - edgeVertex( __e, 0 ) );
-            __min = ( __min > __len )?__len:__min;
+            __min = ( __min > __len ) ? __len : __min;
         }
 
         return __min;
@@ -559,7 +551,6 @@ public:
     {
         return ublas::norm_2( edgeVertex( e, 1 ) - edgeVertex( e, 0 ) );
     }
-
 
     double hFace( int /*__f*/ ) const
     {
@@ -626,7 +617,7 @@ public:
             {
                 Reference<Simplex<1, Order, 1>, 1, Order, 1, T> refline;
                 G = refline.template makeLattice<SHAPE_LINE>( interior );
-                pt_to_entity<Shape,1> p_to_e( __id );
+                pt_to_entity<Shape, 1> p_to_e( __id );
                 points_type Gret( nRealDim, G.size2() );
 
                 for ( size_type i = 0; i < G.size2(); ++i )
@@ -639,7 +630,7 @@ public:
             {
                 Reference<Simplex<2, Order, 2>, 2, Order, 2, T> refface;
                 G = refface.template makeLattice<SHAPE_TRIANGLE>( interior );
-                pt_to_entity<Shape,2> p_to_e( __id );
+                pt_to_entity<Shape, 2> p_to_e( __id );
                 points_type Gret( nRealDim, G.size2() );
 
                 for ( size_type i = 0; i < G.size2(); ++i )
@@ -652,7 +643,7 @@ public:
         return points_type();
     }
 
-    template<size_type shape>
+    template <size_type shape>
     points_type
     makeLattice( uint16_type interior = 0 ) const
     {
@@ -668,7 +659,7 @@ public:
                 return make_tetrahedron_points( interior );
         }
 
-        DCHECK ( nOrder == 0 ) << "Invalid polynomial order";
+        DCHECK( nOrder == 0 ) << "Invalid polynomial order";
         return glas::average( M_vertices );
     }
 
@@ -729,9 +720,9 @@ public:
     {
         //std::cout << "[isIn] pt =" << pt << "\n";
         ublas::vector<double> D( nDim + 1, 0 );
-        typename matrix_node<value_type>::type M( nDim+1,nDim+1 );
-        typename matrix_node<value_type>::type P( nDim,nDim+1 );
-        typename matrix_node<value_type>::type P0( nDim,nDim+1 );
+        typename matrix_node<value_type>::type M( nDim + 1, nDim + 1 );
+        typename matrix_node<value_type>::type P( nDim, nDim + 1 );
+        typename matrix_node<value_type>::type P0( nDim, nDim + 1 );
         std::fill( M.data().begin(), M.data().end(), value_type( 1.0 ) );
 
         for ( int p = 0; p < numVertices; ++p )
@@ -739,10 +730,8 @@ public:
             ublas::column( P0, p ) = this->vertex( p );
         }
 
-        ublas::subrange( M, 0, nDim, 0, nDim+1 ) = P0;
+        ublas::subrange( M, 0, nDim, 0, nDim + 1 ) = P0;
         //VLOG(1) << "M=" << M << "\n";
-
-
 
         // compute the measure(times 2) of the segments, triangles or
         // tetras formed by the point pt and the vertices of the
@@ -750,18 +739,18 @@ public:
         // point is in the simplex the measure are all
         // positive. In the case the point is outside the simplex
         // the measure is negative
-        double meas_times = details::det( M, mpl::int_<nDim+1>() );
+        double meas_times = details::det( M, mpl::int_<nDim + 1>() );
 
         for ( int n = 0; n < numVertices; ++n )
         {
             ublas::noalias( P ) = P0;
             ublas::column( P, n ) = pt;
-            ublas::subrange( M, 0, nDim, 0, nDim+1 ) = P;
+            ublas::subrange( M, 0, nDim, 0, nDim + 1 ) = P;
             //VLOG(1) << "M=" << M << "\n";
 
             // multiply by -1 such that the volume of the
             // reference is > 0
-            D( n )= meas_times*details::det( M, mpl::int_<nDim+1>() );
+            D( n ) = meas_times * details::det( M, mpl::int_<nDim + 1>() );
 
             //std::cout.setf( std::ios::scientific );
             //std::cout.precision( 10 );
@@ -780,25 +769,24 @@ public:
     }
     //@}
 
-private:
-
+  private:
     int n_line_points( int interior = 0 ) const
     {
-        return std::max( 0, int( Order )+1-2*interior );
+        return std::max( 0, int( Order ) + 1 - 2 * interior );
     }
     int n_triangle_points( int interior = 0 ) const
     {
         if ( interior == 1 )
-            return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )-2*interior )/2 );
+            return std::max( 0, ( int( Order ) + 1 - 2 * interior ) * ( int( Order ) - 2 * interior ) / 2 );
 
-        return ( Order+1 )*( Order+2 )/2;
+        return ( Order + 1 ) * ( Order + 2 ) / 2;
     }
     int n_tetrahedron_points( int interior = 0 ) const
     {
         if ( interior == 1 )
-            return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )-2*interior )*( int( Order )-1-2*interior )/6 );
+            return std::max( 0, ( int( Order ) + 1 - 2 * interior ) * ( int( Order ) - 2 * interior ) * ( int( Order ) - 1 - 2 * interior ) / 6 );
 
-        return ( Order+1 )*( Order+2 )*( Order+3 )/6;
+        return ( Order + 1 ) * ( Order + 2 ) * ( Order + 3 ) / 6;
     }
 
     points_type
@@ -806,14 +794,14 @@ private:
     {
         if ( nOrder > 0 )
         {
-            ublas::vector<node_type> h ( 1 );
+            ublas::vector<node_type> h( 1 );
             h( 0 ) = vertex( 1 ) - vertex( 0 );
 
             points_type p( nRealDim, n_line_points( interior ) );
 
-            for ( int i = interior, indp = 0; i < int( Order )+1-interior; ++i, ++indp )
+            for ( int i = interior, indp = 0; i < int( Order ) + 1 - interior; ++i, ++indp )
             {
-                ublas::column( p, indp ) = vertex( 0 ) + ( h( 0 ) * value_type( i ) )/value_type( Order );
+                ublas::column( p, indp ) = vertex( 0 ) + ( h( 0 ) * value_type( i ) ) / value_type( Order );
             }
 
             return p;
@@ -821,7 +809,6 @@ private:
 
         else
             return glas::average( M_vertices );
-
     }
 
     points_type
@@ -829,7 +816,7 @@ private:
     {
         if ( nOrder > 0 )
         {
-            ublas::vector<node_type> h ( 2 );
+            ublas::vector<node_type> h( 2 );
             h *= 0;
             h( 0 ) = vertex( 1 ) - vertex( 0 );
             h( 1 ) = vertex( 2 ) - vertex( 0 );
@@ -837,12 +824,11 @@ private:
             //DVLOG(2) << "n triangle pts = " << n_triangle_points( interior ) << "\n";
             points_type G( nRealDim, n_triangle_points( interior ) );
 
-            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            for ( int i = interior, p = 0; i < int( Order ) + 1 - interior; ++i )
             {
-                for ( int j = interior; j < int( Order ) + 1 - i-interior; ++j, ++p )
+                for ( int j = interior; j < int( Order ) + 1 - i - interior; ++j, ++p )
                 {
-                    ublas::column( G, p ) = vertex( 0 ) + ( value_type( j ) * h( 0 )+
-                                                            value_type( i ) * h( 1 ) )/ value_type( Order );
+                    ublas::column( G, p ) = vertex( 0 ) + ( value_type( j ) * h( 0 ) + value_type( i ) * h( 1 ) ) / value_type( Order );
                 }
             }
 
@@ -858,23 +844,20 @@ private:
     {
         if ( nOrder > 0 )
         {
-            ublas::vector<node_type> h ( 3 );
+            ublas::vector<node_type> h( 3 );
             h( 0 ) = vertex( 1 ) - vertex( 0 );
             h( 1 ) = vertex( 2 ) - vertex( 0 );
             h( 2 ) = vertex( 3 ) - vertex( 0 );
             points_type G( 3, n_tetrahedron_points( interior ) );
 
             //DVLOG(2) << "n tetra pts = " << n_tetrahedron_points( interior ) << "\n";
-            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            for ( int i = interior, p = 0; i < int( Order ) + 1 - interior; ++i )
             {
                 for ( int j = interior; j < int( Order ) + 1 - i - interior; ++j )
                 {
                     for ( int k = interior; k < int( Order ) + 1 - i - j - interior; ++k, ++p )
                     {
-                        ublas::column( G, p ) = vertex( 0 ) + ( value_type( i ) * h( 2 ) +
-                                                                value_type( j ) * h( 1 ) +
-                                                                value_type( k ) * h( 0 ) ) / value_type( Order );
-
+                        ublas::column( G, p ) = vertex( 0 ) + ( value_type( i ) * h( 2 ) + value_type( j ) * h( 1 ) + value_type( k ) * h( 0 ) ) / value_type( Order );
                     }
                 }
             }
@@ -887,24 +870,23 @@ private:
             return glas::average( M_vertices );
     }
 
-    template<size_type shape>
+    template <size_type shape>
     struct pt_to_edge
     {
         pt_to_edge( std::vector<uint16_type> vert_ids )
-            :
-            h( 1.0 ),
-            a( Entity<SHAPE_LINE, value_type>().vertex( 0 ) ),
-            b( Entity<SHAPE_LINE, value_type>().vertex( 1 ) ),
-            u( Entity<shape, value_type>().vertex( vert_ids[ 0 ] ) ),
-            v( Entity<shape, value_type>().vertex( vert_ids[ 1 ] ) ),
-            diff( v-u )
+            : h( 1.0 ),
+              a( Entity<SHAPE_LINE, value_type>().vertex( 0 ) ),
+              b( Entity<SHAPE_LINE, value_type>().vertex( 1 ) ),
+              u( Entity<shape, value_type>().vertex( vert_ids[0] ) ),
+              v( Entity<shape, value_type>().vertex( vert_ids[1] ) ),
+              diff( v - u )
         {
-            h = 1.0/( b[0]-a[0] );
+            h = 1.0 / ( b[0] - a[0] );
         }
         node_type
         operator()( node_type const& x ) const
         {
-            return u + h * ( x[ 0 ] - a[ 0 ] ) * diff;
+            return u + h * ( x[0] - a[0] ) * diff;
         }
         value_type h;
         node_type a, b;
@@ -914,29 +896,28 @@ private:
     //
     // pt_to_face tetrahedron
     //
-    template<size_type shape>
+    template <size_type shape>
     struct pt_to_face
     {
         pt_to_face( std::vector<uint16_type> vert_ids )
-            :
-            u( Entity<shape, value_type>().vertex( vert_ids[ 0 ] ) ),
-            v( Entity<shape, value_type>().vertex( vert_ids[ 1 ] ) ),
-            w( Entity<shape, value_type>().vertex( vert_ids[ 2 ] ) ),
-            diff( 2 )
+            : u( Entity<shape, value_type>().vertex( vert_ids[0] ) ),
+              v( Entity<shape, value_type>().vertex( vert_ids[1] ) ),
+              w( Entity<shape, value_type>().vertex( vert_ids[2] ) ),
+              diff( 2 )
         {
-            diff[0] = v-u;
-            diff[1] = w-u;
+            diff[0] = v - u;
+            diff[1] = w - u;
         }
         node_type
         operator()( node_type const& x ) const
         {
-            return u + 0.5*( x[ 0 ]+1.0 ) * diff[ 0 ] + 0.5*( x[ 1 ]+1.0 ) * diff[ 1 ];
+            return u + 0.5 * ( x[0] + 1.0 ) * diff[0] + 0.5 * ( x[1] + 1.0 ) * diff[1];
         }
         node_type u, v, w;
         ublas::vector<node_type> diff;
     };
 
-    template<size_type shape>
+    template <size_type shape>
     struct pt_to_element
     {
         pt_to_element() {}
@@ -947,23 +928,22 @@ private:
         }
     };
 
-    template<size_type shape,uint16_type topo_dim>
+    template <size_type shape, uint16_type topo_dim>
     struct pt_to_entity
     {
-        typedef typename mpl::if_<mpl::equal_to<mpl::size_t<shape>, mpl::size_t<SHAPE_LINE> >,
-                mpl::identity<mpl::vector<boost::none_t,pt_to_edge<shape>,pt_to_edge<shape> > >,
-                typename mpl::if_<mpl::equal_to<mpl::size_t<shape>, mpl::size_t<SHAPE_TRIANGLE> >,
-                mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_element<shape> > >,
-                mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_face<shape>, pt_to_element<shape> > >
-                >::type // 2
-                >::type::type _type;
-        typedef typename mpl::at<_type, mpl::int_<topo_dim> >::type mapping_type;
+        typedef typename mpl::if_<mpl::equal_to<mpl::size_t<shape>, mpl::size_t<SHAPE_LINE>>,
+                                  mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_edge<shape>>>,
+                                  typename mpl::if_<mpl::equal_to<mpl::size_t<shape>, mpl::size_t<SHAPE_TRIANGLE>>,
+                                                    mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_element<shape>>>,
+                                                    mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_face<shape>, pt_to_element<shape>>>>::type // 2
+                                  >::type::type _type;
+        typedef typename mpl::at<_type, mpl::int_<topo_dim>>::type mapping_type;
         typedef mpl::vector<boost::none_t, edge_to_point_t, face_to_point_t> list_v;
 
         pt_to_entity( uint16_type entity_id )
-            :
-            mapping( typename mpl::at<list_v, mpl::int_<topo_dim> >::type().entity( topo_dim, entity_id ) )
-        {}
+            : mapping( typename mpl::at<list_v, mpl::int_<topo_dim>>::type().entity( topo_dim, entity_id ) )
+        {
+        }
 
         node_type operator()( node_type const& x ) const
         {
@@ -974,19 +954,18 @@ private:
 
     void make_edge_tangents()
     {
-        uint16_type reindex1[][4] = { { 1, 0, 0, 0},
-            { 0, 1, 2, 0},
-            { 0, 1, 2, 3}
-        };
+        uint16_type reindex1[][4] = {{1, 0, 0, 0},
+                                     {0, 1, 2, 0},
+                                     {0, 1, 2, 3}};
 
         for ( uint16_type __n = 0; __n < numEdges; ++__n )
         {
             //const int ind_normal = reindex1[nDim-1][__n];
             M_edge_tangents[__n].resize( nDim );
         }
-        for(int edge = 0; edge < numEdges; ++edge )
+        for ( int edge = 0; edge < numEdges; ++edge )
         {
-            M_edge_tangents[edge] = edgeVertex(edge,1)-edgeVertex(edge,0);
+            M_edge_tangents[edge] = edgeVertex( edge, 1 ) - edgeVertex( edge, 0 );
             //M_edge_tangents[edge] /= ublas::norm_2( M_edge_tangents[edge] );
         }
 #if 0
@@ -1004,11 +983,9 @@ private:
                                      { 1, 2, 0, 0},
                                      { 2, 3, 1, 0} };
         */
-        uint16_type reindex1[][4] = { { 1, 0, 0, 0},
-            { 0, 1, 2, 0},
-            { 0, 1, 2, 3}
-        };
-
+        uint16_type reindex1[][4] = {{1, 0, 0, 0},
+                                     {0, 1, 2, 0},
+                                     {0, 1, 2, 3}};
 
 #if 0
         node_type zero = ublas::zero_vector<value_type>( nDim );
@@ -1022,21 +999,21 @@ private:
         for ( uint16_type __n = 0; __n < numNormals; ++__n )
         {
             //const uint16_type ind_normal = reindex[nDim-1][__n];
-            const int ind_normal = reindex1[nDim-1][__n];
+            const int ind_normal = reindex1[nDim - 1][__n];
             M_normals[ind_normal].resize( nDim );
-            M_normals[ind_normal].clear();// = ublas::zero_vector<value_type>( nDim );
+            M_normals[ind_normal].clear(); // = ublas::zero_vector<value_type>( nDim );
 
             if ( __n > 0 )
             {
-                M_normals[ind_normal][__n-1] = -1;
+                M_normals[ind_normal][__n - 1] = -1;
             }
 
             else
             {
-                typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<0> >,
-                        mpl::int_<1>,
-                        mpl::int_<nDim> >::type denom;
-                M_normals[ind_normal] = ublas::scalar_vector<value_type>( nDim, math::sqrt( value_type( 1.0 )/value_type( denom::value ) ) );
+                typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<0>>,
+                                          mpl::int_<1>,
+                                          mpl::int_<nDim>>::type denom;
+                M_normals[ind_normal] = ublas::scalar_vector<value_type>( nDim, math::sqrt( value_type( 1.0 ) / value_type( denom::value ) ) );
             }
 
             //DVLOG(2) << "normal[" << ind_normal << "]=" << M_normals[ind_normal] << "\n";
@@ -1045,8 +1022,8 @@ private:
 
     void computeBarycenters();
     void computeMeasure();
-private:
 
+  private:
     uint16_type M_id;
 
     points_type M_vertices;
@@ -1063,25 +1040,30 @@ private:
     value_type M_meas;
 };
 
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template <uint16_type Dim, uint16_type Order, uint16_type RDim, typename T>
 const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerVertex;
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template <uint16_type Dim, uint16_type Order, uint16_type RDim, typename T>
 const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerEdge;
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template <uint16_type Dim, uint16_type Order, uint16_type RDim, typename T>
 const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerFace;
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template <uint16_type Dim, uint16_type Order, uint16_type RDim, typename T>
 const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::numGeometricFaces;
 
+template <typename T>
+class Entity<SHAPE_LINE, T> : public Reference<Simplex<1, 1, 1>, 1, 1, 1, T>
+{
+};
+template <typename T>
+class Entity<SHAPE_TRIANGLE, T> : public Reference<Simplex<2, 1, 2>, 2, 1, 2, T>
+{
+};
+template <typename T>
+class Entity<SHAPE_TETRA, T> : public Reference<Simplex<3, 1, 3>, 3, 1, 3, T>
+{
+};
 
-
-template<typename T> class Entity<SHAPE_LINE, T>: public Reference<Simplex<1, 1, 1>,1,1, 1, T> {};
-template<typename T> class Entity<SHAPE_TRIANGLE, T>: public Reference<Simplex<2, 1, 2>,2,1, 2, T> {};
-template<typename T> class Entity<SHAPE_TETRA, T>: public Reference<Simplex<3, 1, 3>,3,1, 3, T> {};
-
-
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-void
-Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
+template <uint16_type Dim, uint16_type Order, uint16_type RDim, typename T>
+void Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
 {
     M_barycenter = ublas::column( glas::average( M_vertices ), 0 );
 
@@ -1091,26 +1073,25 @@ Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
         ublas::column( M_barycenterfaces, f ) = ublas::column( glas::average( faceVertices( f ) ), 0 );
     }
 }
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-void
-Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
+template <uint16_type Dim, uint16_type Order, uint16_type RDim, typename T>
+void Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
 {
     if ( nDim == nRealDim )
     {
 
-        typename matrix_node<value_type>::type M( nDim,nDim );
+        typename matrix_node<value_type>::type M( nDim, nDim );
         value_type factor( 1 );
 
         switch ( nDim )
         {
         case 1:
-            ublas::column( M, 0 ) = this->vertex( 1 )-this->vertex( 0 );
+            ublas::column( M, 0 ) = this->vertex( 1 ) - this->vertex( 0 );
             factor = 1;
             break;
 
         case 2:
-            ublas::column( M, 0 ) = this->vertex( 0 )-this->vertex( 1 );
-            ublas::column( M, 1 ) = this->vertex( 1 )-this->vertex( 2 );
+            ublas::column( M, 0 ) = this->vertex( 0 ) - this->vertex( 1 );
+            ublas::column( M, 1 ) = this->vertex( 1 ) - this->vertex( 2 );
             factor = 2;
             break;
 
@@ -1120,14 +1101,14 @@ Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
              * a = (a1, a2, a3), b = (b1, b2, b3), c = (c1, c2, c3), and d = (d1, d2, d3),
              * the volume is (1/6)·|det(a−b, b−c, c−d)|
              */
-            ublas::column( M, 0 ) = this->vertex( 0 )-this->vertex( 1 );
-            ublas::column( M, 1 ) = this->vertex( 1 )-this->vertex( 2 );
-            ublas::column( M, 2 ) = this->vertex( 2 )-this->vertex( 3 );
+            ublas::column( M, 0 ) = this->vertex( 0 ) - this->vertex( 1 );
+            ublas::column( M, 1 ) = this->vertex( 1 ) - this->vertex( 2 );
+            ublas::column( M, 2 ) = this->vertex( 2 ) - this->vertex( 3 );
             factor = 6;
             break;
         }
 
-        M_meas = math::abs( details::det( M, mpl::int_<nDim>() ) )/factor;
+        M_meas = math::abs( details::det( M, mpl::int_<nDim>() ) ) / factor;
     }
 
     else
@@ -1158,6 +1139,5 @@ Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
 #endif
     }
 }
-
 }
 #endif /* __refsimplex_H */

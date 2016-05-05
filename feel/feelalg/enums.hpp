@@ -29,7 +29,6 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/feelpetsc.hpp>
 
-
 namespace Feel
 {
 /**
@@ -39,37 +38,35 @@ struct ContextOn
 {
     enum Options
     {
-        PENALISATION                = 0x0,  /**< penalisation */
-        ELIMINATION                 = 0x1, /**< elimination */
-        KEEP_DIAGONAL   = 0x2, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
-        SYMMETRIC       = 0x4,  /**< enables elimination and make a symmetric elimination */
-        CHECK           = 0x6
+        PENALISATION = 0x0,  /**< penalisation */
+        ELIMINATION = 0x1,   /**< elimination */
+        KEEP_DIAGONAL = 0x2, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
+        SYMMETRIC = 0x4,     /**< enables elimination and make a symmetric elimination */
+        CHECK = 0x6
     };
 };
 extern std::map<std::string, size_type> ContextOnMap;
 
-
-enum   MatrixProperties
+enum MatrixProperties
 {
-    SYMMETRIC          = 1 << 1, /**< symmetric : \f$A^T = A */
-    STRUCTURALLY_SYMMETRIC = 1 << 2, 
-    HERMITIAN          = 1 << 3, /**< hermitian : \f$A^* = A\f$ */
-    NON_HERMITIAN      = 1 << 4, /**< non hermitian : \f$A^* != A\f$ */
-    POSITIVE_DEFINITE  = 1 << 5, /**< positive definite matrix : \f$v^* A v > 0 \f$ for all non-zero v */
-    NEGATIVE_DEFINITE  = 1 << 6, /**< negative definite matrix : \f$v^* A v < 0 \f$ for all non-zero v */
-    INDEFINITE         = 1 << 7, /**< negative and positive eigenvalues */
-    SPD                = SYMMETRIC | POSITIVE_DEFINITE,
-    SINGULAR           = 1 << 11,    /**< singular matrix : \f$det(A)=0\f$ and 0 is an eigenvalue */
-    DENSE              = 1 << 20,    /**< dense matrix */
+    SYMMETRIC = 1 << 1, /**< symmetric : \f$A^T = A */
+    STRUCTURALLY_SYMMETRIC = 1 << 2,
+    HERMITIAN = 1 << 3,         /**< hermitian : \f$A^* = A\f$ */
+    NON_HERMITIAN = 1 << 4,     /**< non hermitian : \f$A^* != A\f$ */
+    POSITIVE_DEFINITE = 1 << 5, /**< positive definite matrix : \f$v^* A v > 0 \f$ for all non-zero v */
+    NEGATIVE_DEFINITE = 1 << 6, /**< negative definite matrix : \f$v^* A v < 0 \f$ for all non-zero v */
+    INDEFINITE = 1 << 7,        /**< negative and positive eigenvalues */
+    SPD = SYMMETRIC | POSITIVE_DEFINITE,
+    SINGULAR = 1 << 11, /**< singular matrix : \f$det(A)=0\f$ and 0 is an eigenvalue */
+    DENSE = 1 << 20,    /**< dense matrix */
 };
 
 enum MatrixTranspose
 {
-    MATRIX_TRANSPOSE_ASSEMBLED   = 0x1,
+    MATRIX_TRANSPOSE_ASSEMBLED = 0x1,
     MATRIX_TRANSPOSE_UNASSEMBLED = 0x2,
-    MATRIX_TRANSPOSE_CHECK       = 0x4
+    MATRIX_TRANSPOSE_CHECK = 0x4
 };
-        
 
 /**
  * Backend types
@@ -88,61 +85,65 @@ enum BackendType
 /**
  * Defines an \p enum for iterative solver types
  */
-enum SolverType {CG=0,
-                 CGN,
-                 CGS,
-                 CR,
-                 QMR,
-                 TCQMR,
-                 TFQMR,
-                 BICG,
-                 BICGSTAB,
-                 MINRES,
-                 GMRES,
-                 FGMRES,
-                 LSQR,
-                 JACOBI,
-                 SOR_FORWARD,
-                 SOR_BACKWARD,
-                 SSOR,
-                 RICHARDSON,
-                 CHEBYSHEV,
-                 PREONLY,
-                 GCR,
-                 INVALID_SOLVER
-                };
+enum SolverType
+{
+    CG = 0,
+    CGN,
+    CGS,
+    CR,
+    QMR,
+    TCQMR,
+    TFQMR,
+    BICG,
+    BICGSTAB,
+    MINRES,
+    GMRES,
+    FGMRES,
+    LSQR,
+    JACOBI,
+    SOR_FORWARD,
+    SOR_BACKWARD,
+    SSOR,
+    RICHARDSON,
+    CHEBYSHEV,
+    PREONLY,
+    GCR,
+    INVALID_SOLVER
+};
 
 /**
  * Defines an \p enum for preconditioner types
  */
-enum PreconditionerType {IDENTITY_PRECOND =0,
-                         JACOBI_PRECOND,
-                         BLOCK_JACOBI_PRECOND,
-                         SOR_PRECOND,
-                         SSOR_PRECOND,
-                         EISENSTAT_PRECOND,
-                         ASM_PRECOND,
-                         GASM_PRECOND,
-                         CHOLESKY_PRECOND,
-                         ICC_PRECOND,
-                         ILU_PRECOND,
-                         LU_PRECOND,
-                         AMG_PRECOND,
-                         USER_PRECOND,
-                         SHELL_PRECOND,
-                         FIELDSPLIT_PRECOND,
-                         LSC_PRECOND,
-                         LSC2_PRECOND,
-                         FEELPP_BLOCKNS_PRECOND,
-                         FEELPP_BLOCKMS_PRECOND,
-                         ML_PRECOND,
-                         GAMG_PRECOND,
-                         BOOMERAMG_PRECOND,
-                         AMS_PRECOND,
-                         REDUNDANT_PRECOND,
-                         NONE_PRECOND,
-                         INVALID_PRECONDITIONER
-                        };
+enum PreconditionerType
+{
+    IDENTITY_PRECOND = 0,
+    JACOBI_PRECOND,
+    BLOCK_JACOBI_PRECOND,
+    SOR_PRECOND,
+    SSOR_PRECOND,
+    EISENSTAT_PRECOND,
+    ASM_PRECOND,
+    GASM_PRECOND,
+    CHOLESKY_PRECOND,
+    ICC_PRECOND,
+    ILU_PRECOND,
+    LU_PRECOND,
+    AMG_PRECOND,
+    USER_PRECOND,
+    SHELL_PRECOND,
+    FIELDSPLIT_PRECOND,
+    LSC_PRECOND,
+    LSC2_PRECOND,
+    FEELPP_BLOCKNS_PRECOND,
+    FEELPP_BLOCKMS_PRECOND,
+    ML_PRECOND,
+    GAMG_PRECOND,
+    BOOMERAMG_PRECOND,
+    AMS_PRECOND,
+    REDUNDANT_PRECOND,
+    NONE_PRECOND,
+    INVALID_PRECONDITIONER
+};
 
 ///**
 // * Defines an \p enum for norm type
@@ -156,10 +157,12 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
 /**
  * Defines an \p enum for field split types
  */
-enum FieldSplitType {ADDITIVE=0,
-                     MULTIPLICATIVE,
-                     SCHUR
-                    };
+enum FieldSplitType
+{
+    ADDITIVE = 0,
+    MULTIPLICATIVE,
+    SCHUR
+};
 
 /**
  * indicates the structure of the matrix versus preconditioner
@@ -177,7 +180,7 @@ enum MatrixStructure
  */
 enum EigenSolverType
 {
-    POWER=0,
+    POWER = 0,
     LAPACK,
     SUBSPACE,
     ARNOLDI,
@@ -197,39 +200,43 @@ enum EigenSolverType
  * generalized Hermitian (GHEP), non-Hermitian (NHEP), generalized non-Hermitian
  * (GNHEP) and Generalized Non-Hermitian GNHEP with positive (semi-)definite B
  */
-enum EigenProblemType {NHEP=0,
-                       HEP,
-                       GNHEP,
-                       GHEP,
-                       PGNHEP,
+enum EigenProblemType
+{
+    NHEP = 0,
+    HEP,
+    GNHEP,
+    GHEP,
+    PGNHEP,
 
-                       INVALID_EIGENPROBLEMTYPE
-                      };
-
-
+    INVALID_EIGENPROBLEMTYPE
+};
 
 /**
  * Defines an \p enum for the position of
  * the spectrum, i.e. the eigenvalues to be computed.
  */
-enum PositionOfSpectrum {LARGEST_MAGNITUDE=0,
-                         SMALLEST_MAGNITUDE,
-                         LARGEST_REAL,
-                         SMALLEST_REAL,
-                         LARGEST_IMAGINARY,
-                         SMALLEST_IMAGINARY,
+enum PositionOfSpectrum
+{
+    LARGEST_MAGNITUDE = 0,
+    SMALLEST_MAGNITUDE,
+    LARGEST_REAL,
+    SMALLEST_REAL,
+    LARGEST_IMAGINARY,
+    SMALLEST_IMAGINARY,
 
-                         INVALID_Postion_of_Spectrum
-                        };
+    INVALID_Postion_of_Spectrum
+};
 
 /**
  * Spectral transform type
  */
-enum SpectralTransformType {SHIFT=0,
-                            SINVERT,
-                            FOLD,
-                            CAYLEY
-                           };
+enum SpectralTransformType
+{
+    SHIFT = 0,
+    SINVERT,
+    FOLD,
+    CAYLEY
+};
 
 extern std::map<std::string, size_type> EigenMap;
 
@@ -240,7 +247,7 @@ extern std::map<std::string, size_type> EigenMap;
  */
 enum SolverPackage
 {
-    SOLVERS_FEEL=0,
+    SOLVERS_FEEL = 0,
     SOLVERS_GMM,
     SOLVERS_EIGEN,
     SOLVERS_PETSC,
@@ -255,7 +262,7 @@ enum SolverPackage
  */
 enum SolverNonLinearType
 {
-    SELECT_IN_ARGLIST=0,
+    SELECT_IN_ARGLIST = 0,
     LINE_SEARCH,
     TRUST_REGION,
     NRICHARDSON,
@@ -279,34 +286,34 @@ enum SolverNonLinearType
  */
 enum AitkenType
 {
-    AITKEN_STANDARD=0,
-    AITKEN_METHOD_1=1,
-    FIXED_RELAXATION_METHOD=2
+    AITKEN_STANDARD = 0,
+    AITKEN_METHOD_1 = 1,
+    FIXED_RELAXATION_METHOD = 2
 };
 /**
  *
  */
 enum DirichletType
 {
-    STRONG=0,
-    WEAK=1
+    STRONG = 0,
+    WEAK = 1
 };
 
 enum ProjectorType
 {
-    NODAL=-1,
-    L2=0,
-    H1=1,
-    DIFF=2,
-    HDIV=3,
-    HCURL=4,
-    LIFT=5,
-    CIP=6
+    NODAL = -1,
+    L2 = 0,
+    H1 = 1,
+    DIFF = 2,
+    HDIV = 3,
+    HCURL = 4,
+    LIFT = 5,
+    CIP = 6
 };
 
 enum MatSolverPackageType
 {
-    MATSOLVER_SPOOLES=0,
+    MATSOLVER_SPOOLES = 0,
     MATSOLVER_SUPERLU,
     MATSOLVER_SUPERLU_DIST,
     MATSOLVER_UMFPACK,
@@ -326,7 +333,7 @@ enum MatSolverPackageType
     MATSOLVER_PILUT,
 
 };
-#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+#if defined( FEELPP_HAS_MUMPS ) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 2, 0 )
 const auto MATSOLVER_DEFAULT = MATSOLVER_MUMPS;
 #else
 const auto MATSOLVER_DEFAULT = MATSOLVER_PETSC;
@@ -351,8 +358,6 @@ matSolverPackageConvertStrToEnum( std::string const& type );
 
 FieldSplitType
 fieldsplitTypeConvertStrToEnum( std::string const& type );
-
-
 
 } // Feel
 #endif /* FEELPP_ALG_ENUMS_HPP */

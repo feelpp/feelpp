@@ -30,8 +30,6 @@
 #ifndef __trilinos_linear_solver_H
 #define __trilinos_linear_solver_H 1
 
-
-
 #include <feel/feelalg/solverlinear.hpp>
 
 #include <feel/feelalg/backendtrilinos.hpp>
@@ -42,8 +40,8 @@
 #undef PACKAGE_STRING
 #undef PACKAGE_TARNAME
 #undef PACKAGE_VERSION
-#include <AztecOO_config.h>
 #include <AztecOO.h>
+#include <AztecOO_config.h>
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
 #undef PACKAGE_STRING
@@ -56,13 +54,12 @@ namespace Feel
 class BackendTrilinos;
 class OperatorMatrix;
 
-template< typename T = double >
+template <typename T = double>
 class SolverLinearTrilinos : public SolverLinear<T>
 {
     typedef SolverLinear<T> super;
 
-public:
-
+  public:
     typedef typename super::value_type value_type;
     typedef typename super::real_type real_type;
 
@@ -76,14 +73,12 @@ public:
     typedef Teuchos::ParameterList list_type;
     //typedef typename backend_type::list_type list_type;
 
-
     SolverLinearTrilinos()
     {
     }
 
     SolverLinearTrilinos( po::variables_map const& vm )
-        :
-        super( vm )
+        : super( vm )
     {
     }
 
@@ -126,15 +121,15 @@ public:
     }
 
     //std::pair<unsigned int, real_type>
-    boost::tuple<bool,unsigned int, real_type>
-    solve ( MatrixSparse<T>  const& matrix,
-            Vector<T> & solution,
-            Vector<T> const& rhs,
-            const double tol,
-            const unsigned int m_its,
-            bool transpose = false )
+    boost::tuple<bool, unsigned int, real_type>
+    solve( MatrixSparse<T> const& matrix,
+           Vector<T>& solution,
+           Vector<T> const& rhs,
+           const double tol,
+           const unsigned int m_its,
+           bool transpose = false )
     {
-        DVLOG(2) << "Matrix solver...\n";
+        DVLOG( 2 ) << "Matrix solver...\n";
 
         setRHS( rhs );
         setLHS( solution );
@@ -143,22 +138,22 @@ public:
         M_Solver.SetParameters( M_List, true );
         M_Solver.Iterate( m_its, tol );
 
-        //return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
+//return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
 #warning todo!
         return boost::make_tuple( true, M_Solver.NumIters(), M_Solver.TrueResidual() );
     }
 
     //std::pair<unsigned int, real_type>
-    boost::tuple<bool,unsigned int, real_type>
-    solve (  MatrixSparse<T> const& matrix,
-             MatrixSparse<T> const& preconditioner,
-             Vector<T>& solution,
-             Vector<T> const& rhs,
-             const double tol,
-             const unsigned int m_its,
-             bool transpose = false )
+    boost::tuple<bool, unsigned int, real_type>
+    solve( MatrixSparse<T> const& matrix,
+           MatrixSparse<T> const& preconditioner,
+           Vector<T>& solution,
+           Vector<T> const& rhs,
+           const double tol,
+           const unsigned int m_its,
+           bool transpose = false )
     {
-        DVLOG(2) << "Matrix solver with preconditioner...\n";
+        DVLOG( 2 ) << "Matrix solver with preconditioner...\n";
 
         setRHS( rhs );
         setLHS( solution );
@@ -167,21 +162,20 @@ public:
         M_Solver.SetParameters( M_List, true );
         M_Solver.Iterate( m_its, tol );
 
-        //return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
+//return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
 #warning todo!
         return boost::make_tuple( true, M_Solver.NumIters(), M_Solver.TrueResidual() );
-
     }
 
     std::pair<unsigned int, real_type>
-    solve ( boost::shared_ptr<OperatorMatrix>  const& op,
-            Vector<T> & solution,
-            Vector<T> const& rhs,
-            const double tol,
-            const unsigned int m_its,
-            bool transpose = false )
+    solve( boost::shared_ptr<OperatorMatrix> const& op,
+           Vector<T>& solution,
+           Vector<T> const& rhs,
+           const double tol,
+           const unsigned int m_its,
+           bool transpose = false )
     {
-        DVLOG(2) << "Operator solver...\n";
+        DVLOG( 2 ) << "Operator solver...\n";
 
         setRHS( rhs );
         setLHS( solution );
@@ -193,15 +187,15 @@ public:
         return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
     }
 
-    template< typename operator_type >
+    template <typename operator_type>
     std::pair<unsigned int, real_type>
-    solve ( operator_type  const& op,
-            Epetra_MultiVector & solution,
-            Epetra_MultiVector const& rhs,
-            const double tol,
-            const unsigned int m_its )
+    solve( operator_type const& op,
+           Epetra_MultiVector& solution,
+           Epetra_MultiVector const& rhs,
+           const double tol,
+           const unsigned int m_its )
     {
-        DVLOG(2) << "Operator solver...\n";
+        DVLOG( 2 ) << "Operator solver...\n";
 
         setRHS( rhs );
         setLHS( solution );
@@ -213,17 +207,16 @@ public:
         return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
     }
 
-
-    template< typename op1_type, typename op2_type >
+    template <typename op1_type, typename op2_type>
     std::pair<unsigned int, real_type>
-    solve ( op1_type const& op1,
-            op2_type const& op2,
-            Epetra_MultiVector & solution,
-            Epetra_MultiVector const& rhs,
-            const double tol,
-            const unsigned int m_its )
+    solve( op1_type const& op1,
+           op2_type const& op2,
+           Epetra_MultiVector& solution,
+           Epetra_MultiVector const& rhs,
+           const double tol,
+           const unsigned int m_its )
     {
-        DVLOG(2) << "Operator solver with preconditioner...\n";
+        DVLOG( 2 ) << "Operator solver with preconditioner...\n";
 
         setRHS( rhs );
         setLHS( solution );
@@ -238,58 +231,55 @@ public:
         return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
     }
 
-private:
-
+  private:
     AztecOO M_Solver;
 
     list_type M_List;
 
     // sets the user specified operator
-    template< typename operator_type >
+    template <typename operator_type>
     void setUserOperator( operator_type const& D )
     {
         setUserOperator( mpl::bool_<
-                         mpl::or_< boost::is_same< operator_type, MatrixSparse<T> >,
-                         boost::is_same< operator_type, MatrixEpetra > >::value >(),
+                             mpl::or_<boost::is_same<operator_type, MatrixSparse<T>>,
+                                      boost::is_same<operator_type, MatrixEpetra>>::value>(),
                          D );
     }
 
     void setUserOperator( mpl::bool_<true>, MatrixSparse<T> const& A )
     {
-        DVLOG(2) << "Set matrix operator...\n";
-        sparse_matrix_type* A_ptr = const_cast<sparse_matrix_type *>( dynamic_cast< sparse_matrix_type const*>( &A ) );
+        DVLOG( 2 ) << "Set matrix operator...\n";
+        sparse_matrix_type* A_ptr = const_cast<sparse_matrix_type*>( dynamic_cast<sparse_matrix_type const*>( &A ) );
 
         M_Solver.SetUserMatrix( &A_ptr->mat() );
     }
 
-
     // case the operator is passed as an Epetra_Operator
-    template< typename operator_type >
+    template <typename operator_type>
     void setUserOperator( mpl::bool_<false>, operator_type const& A )
     {
-        DVLOG(2) << "Set epetra operator...\n";
+        DVLOG( 2 ) << "Set epetra operator...\n";
 
         M_Solver.SetUserOperator( &( *A ) );
     }
 
-
     void setRHS( Vector<T> const& x )
     {
-        VectorEpetra<T>* aux = const_cast< VectorEpetra<T>* >( dynamic_cast<VectorEpetra<T> const*>( &x ) );
+        VectorEpetra<T>* aux = const_cast<VectorEpetra<T>*>( dynamic_cast<VectorEpetra<T> const*>( &x ) );
 
         M_Solver.SetRHS( &aux->vec() );
     }
 
     void setLHS( Vector<T>& x )
     {
-        VectorEpetra<T>* aux = dynamic_cast< VectorEpetra<T>* >( &x );
+        VectorEpetra<T>* aux = dynamic_cast<VectorEpetra<T>*>( &x );
 
         M_Solver.SetLHS( &aux->vec() );
     }
 
     void setRHS( Epetra_MultiVector const& x )
     {
-        Epetra_MultiVector* aux = const_cast< Epetra_MultiVector* >( dynamic_cast<Epetra_MultiVector const*>( &x ) );
+        Epetra_MultiVector* aux = const_cast<Epetra_MultiVector*>( dynamic_cast<Epetra_MultiVector const*>( &x ) );
 
         M_Solver.SetRHS( &( *aux ) );
     }
@@ -300,10 +290,7 @@ private:
     }
 };
 
-
 } // Feel
 
 #endif /* FEELPP_HAS_TRILINOS_AZTECOO */
 #endif /* __trilinos_linear_solver_H */
-
-

@@ -27,20 +27,18 @@
    \date 14-02-2008
 */
 
-
 #include <feel/feelalg/preconditionerifpack.hpp>
 
 namespace Feel
 {
 #if defined( FEELPP_HAS_TRILINOS_IFPACK )
-PreconditionerIfpack::PreconditionerIfpack( std::string str  )
-    :
-    M_Prec(),
-    M_List(),
-    M_precType( str )
+PreconditionerIfpack::PreconditionerIfpack( std::string str )
+    : M_Prec(),
+      M_List(),
+      M_precType( str )
 {
     M_List.set( "fact: drop tolerance", 1e-5 );
-    M_List.set( "fact: level-of-fill",  1 );
+    M_List.set( "fact: level-of-fill", 1 );
     M_List.set( "partitioner: local parts", 4 );
     M_List.set( "partitioner: overlap", 4 );
 
@@ -49,17 +47,15 @@ PreconditionerIfpack::PreconditionerIfpack( std::string str  )
     M_precType = str;
 
     M_List.set( "amesos: solver type", "Amesos_Klu" );
-
 }
 
-PreconditionerIfpack::PreconditionerIfpack( list_type options, std::string str  )
-    :
-    M_Prec(),
-    M_List(),
-    M_precType( str )
+PreconditionerIfpack::PreconditionerIfpack( list_type options, std::string str )
+    : M_Prec(),
+      M_List(),
+      M_precType( str )
 {
     M_List.set( "fact: drop tolerance", options.get( "fact: drop tolerance", 1e-5 ) );
-    M_List.set( "fact: level-of-fill",  options.get( "fact: level-of-fill" , 1   ) );
+    M_List.set( "fact: level-of-fill", options.get( "fact: level-of-fill", 1 ) );
     M_List.set( "partitioner: local parts", options.get( "partitioner: local parts", 4 ) );
     M_List.set( "partitioner: overlap", options.get( "partitioner: overlap", 4 ) );
 
@@ -68,41 +64,34 @@ PreconditionerIfpack::PreconditionerIfpack( list_type options, std::string str  
     M_precType = str;
 
     M_List.set( "amesos: solver type", "Amesos_Klu" );
-
 }
 
 PreconditionerIfpack::PreconditionerIfpack( PreconditionerIfpack const& tc )
-    :
-    M_Prec( tc.M_Prec ),
-    M_List( tc.M_List ),
-    M_precType( tc.M_precType ),
-    M_overlap( tc.M_overlap )
+    : M_Prec( tc.M_Prec ),
+      M_List( tc.M_List ),
+      M_precType( tc.M_precType ),
+      M_overlap( tc.M_overlap )
 {
 }
 
-
-void
-PreconditionerIfpack::setAmesosSolver( std::string str )
+void PreconditionerIfpack::setAmesosSolver( std::string str )
 {
     M_List.set( "amesos: solver type", str );
 }
 
-void
-PreconditionerIfpack::setOptions( list_type options )
+void PreconditionerIfpack::setOptions( list_type options )
 {
     //M_List = options;
 
     M_List.set( "fact: drop tolerance", options.get( "fact: drop tolerance", 1e-5 ) );
-    M_List.set( "fact: level-of-fill",  options.get( "fact: level-of-fill" , 3   ) );
+    M_List.set( "fact: level-of-fill", options.get( "fact: level-of-fill", 3 ) );
     M_List.set( "partitioner: local parts", options.get( "partitioner: local parts", 4 ) );
     M_List.set( "partitioner: overlap", options.get( "partitioner: overlap", 4 ) );
 
     M_overlap = options.get( "partitioner: overlap", 4 );
 }
 
-
-int
-PreconditionerIfpack::initializePreconditioner( sparse_matrix_ptrtype const& A )
+int PreconditionerIfpack::initializePreconditioner( sparse_matrix_ptrtype const& A )
 {
     Ifpack factory;
 
@@ -116,16 +105,14 @@ PreconditionerIfpack::initializePreconditioner( sparse_matrix_ptrtype const& A )
     return EXIT_SUCCESS;
 }
 
-int
-PreconditionerIfpack::computePreconditioner()
+int PreconditionerIfpack::computePreconditioner()
 {
     IFPACK_CHK_ERR( M_Prec->Compute() );
 
     return EXIT_SUCCESS;
 }
 
-int
-PreconditionerIfpack::buildPreconditioner( sparse_matrix_ptrtype const& A )
+int PreconditionerIfpack::buildPreconditioner( sparse_matrix_ptrtype const& A )
 {
     initializePreconditioner( A );
     int result = computePreconditioner();

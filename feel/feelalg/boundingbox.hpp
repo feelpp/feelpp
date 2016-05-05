@@ -45,12 +45,10 @@ namespace Feel
   @author Christophe Prud'homme
   @see
 */
-template<typename T = double>
+template <typename T = double>
 struct BoundingBox
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -66,17 +64,18 @@ public:
     //@{
 
     BoundingBox( bool is_lin = true )
-        :
-        is_linear( is_lin )
-    {}
-    BoundingBox( BoundingBox const & bb )
-        :
-        is_linear( bb.is_linear ),
-        min( bb.min ),
-        max( bb.max )
-    {}
+        : is_linear( is_lin )
+    {
+    }
+    BoundingBox( BoundingBox const& bb )
+        : is_linear( bb.is_linear ),
+          min( bb.min ),
+          max( bb.max )
+    {
+    }
     ~BoundingBox()
-    {}
+    {
+    }
 
     //@}
 
@@ -125,7 +124,7 @@ public:
             {
                 for ( size_type i = 0; i < P; ++i )
                 {
-                    value_type e = ( max[i]-min[i] ) * 0.2;
+                    value_type e = ( max[i] - min[i] ) * 0.2;
                     min[i] -= e;
                     max[i] += e;
                 }
@@ -133,9 +132,7 @@ public:
 
             ++it;
         }
-
     }
-
 
     //@}
 
@@ -154,21 +151,17 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-
     //@}
-
 
     node_type min;
     node_type max;
     bool is_linear;
-
 };
 }
 #endif /* __BoundingBox_H */

@@ -20,18 +20,18 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include <cstring>
 #include <cstdlib>
+#include <cstring>
 #include <errno.h>
 
 #include <list>
 #include <map>
 #include <vector>
 
-#include <iterator>
-#include <iostream>
-#include <fstream>
 #include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <iterator>
 #include <sstream>
 #include <string>
 
@@ -41,11 +41,11 @@
 #include <feel/feelconfig.h>
 
 #ifdef FEELPP_HAS_BACKTRACE
-# include <execinfo.h>
+#include <execinfo.h>
 #endif
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/debug.hpp>
+#include <feel/feelcore/feel.hpp>
 
 namespace Feel
 {
@@ -83,18 +83,18 @@ namespace posix_time = boost::posix_time;
 */
 enum DebugLevels
 {
-    DEBUG_INFO  = 0,
-    DEBUG_WARN  = 1,
+    DEBUG_INFO = 0,
+    DEBUG_WARN = 1,
     DEBUG_ERROR = 2,
     DEBUG_FATAL = 3
 };
 struct DebugStream::Private
 {
     Private()
-        :
-        debug( false ),
-        __flush_function( 0 )
-    {}
+        : debug( false ),
+          __flush_function( 0 )
+    {
+    }
     bool debug;
     std::ostringstream M_output;
 
@@ -103,7 +103,6 @@ struct DebugStream::Private
     static bool _S_attached;
     static std::ofstream _S_logfile;
     //static std::map<int, std::ostream*> _S_logfile_per_area;
-
 };
 //
 // getDescription
@@ -116,20 +115,19 @@ static std::string* DEBUG_AREA = 0;
 namespace
 {
 #define DEBUG_ADD_AREA( area, areastring ) \
- DebugAreas->insert( std::make_pair ( area, areastring ) )
+    DebugAreas->insert( std::make_pair( area, areastring ) )
 
 // this Function makes sure that the static variables are initialized
 // properly before being used
-void
-initDebugAreas ()
+void initDebugAreas()
 {
     static bool alloc = false;
 
     if ( alloc == false )
     {
-        DEBUG_AREA = new std::string ( "" );
+        DEBUG_AREA = new std::string( "" );
         AREAS = new std::list<int>;
-        StringNull = new std::string ( "" );
+        StringNull = new std::string( "" );
         DebugAreas = new std::map<unsigned int, std::string>;
         alloc = true;
 
@@ -216,38 +214,33 @@ initDebugAreas ()
         DEBUG_ADD_AREA( 8099, "Feel::FilterFromVtk" );
         DEBUG_ADD_AREA( 10000, "testsuite" );
 
-
-        char * __env = getenv( "DEBUG" );
+        char* __env = getenv( "DEBUG" );
 
         if ( __env )
         {
             *DEBUG_AREA = __env;
         }
 
-        std::istringstream __is ( *DEBUG_AREA );
+        std::istringstream __is( *DEBUG_AREA );
 
-
-        std::copy ( std::istream_iterator<int,char> ( __is ),
-                    std::istream_iterator<int,char> (),
-                    std::back_inserter ( *AREAS ) );
-
+        std::copy( std::istream_iterator<int, char>( __is ),
+                   std::istream_iterator<int, char>(),
+                   std::back_inserter( *AREAS ) );
     }
 }
 std::string
-getDescription ( unsigned int __area )
+getDescription( unsigned int __area )
 {
     if ( DebugAreas->empty() )
         return std::string( "Area " ) + boost::lexical_cast<std::string>( __area );
 
-    std::map<unsigned int, std::string>::iterator entry_it = DebugAreas->find ( __area );
+    std::map<unsigned int, std::string>::iterator entry_it = DebugAreas->find( __area );
 
     if ( entry_it != DebugAreas->end() )
         return entry_it->second;
 
     else
         return std::string( "Area " ) + boost::lexical_cast<std::string>( __area );
-
-
 }
 }
 
@@ -255,20 +248,19 @@ getDescription ( unsigned int __area )
 // DebugStream
 //
 DebugStream::DebugStream( int area, int level, bool print )
-    :
-    __p( new Private )
+    : __p( new Private )
 {
-    initDebugAreas ();
+    initDebugAreas();
 
-    if ( DEBUG_AREA && ! DEBUG_AREA->empty() )
+    if ( DEBUG_AREA && !DEBUG_AREA->empty() )
     {
-        __p->debug =  ( ( std::find ( AREAS->begin (), AREAS->end (), area ) != AREAS->end() && print ) ||
-                        !area );
+        __p->debug = ( ( std::find( AREAS->begin(), AREAS->end(), area ) != AREAS->end() && print ) ||
+                       !area );
     }
 
     else
     {
-        __p->debug =  ( print && !area );
+        __p->debug = ( print && !area );
     }
 
     if ( __p->debug && level == DEBUG_INFO )
@@ -276,27 +268,26 @@ DebugStream::DebugStream( int area, int level, bool print )
         posix_time::ptime __time( posix_time::second_clock::local_time() );
 
         if ( area )
-            __p->M_output << "[" << getDescription ( area ) << "] ";
+            __p->M_output << "[" << getDescription( area ) << "] ";
 
         //<< posix_time::to_simple_string( __time )<< ") : ";
     }
-
 }
 DebugStream::DebugStream( const char* initialString, int area, int level, bool print )
-    :
-    __p( new Private )
+    : __p( new Private )
 {
-    initDebugAreas ();
+    initDebugAreas();
 
-    if ( DEBUG_AREA && ! DEBUG_AREA->empty() )
+    if ( DEBUG_AREA && !DEBUG_AREA->empty() )
     {
-        __p->debug =  ( ( std::find ( AREAS->begin (), AREAS->end (), area ) != AREAS->end() &&
-                          print ) || !area );
+        __p->debug = ( ( std::find( AREAS->begin(), AREAS->end(), area ) != AREAS->end() &&
+                         print ) ||
+                       !area );
     }
 
     else
     {
-        __p->debug =  ( print && !area );
+        __p->debug = ( print && !area );
     }
 
     if ( __p->debug && level == DEBUG_INFO )
@@ -304,14 +295,13 @@ DebugStream::DebugStream( const char* initialString, int area, int level, bool p
         posix_time::ptime __time( posix_time::second_clock::local_time() );
 
         if ( area )
-            __p->M_output << "[" << getDescription ( area ) << "] "
-                           //<< posix_time::to_simple_string( __time )<< ") : "
-                           << initialString;
+            __p->M_output << "[" << getDescription( area ) << "] "
+                          //<< posix_time::to_simple_string( __time )<< ") : "
+                          << initialString;
     }
 }
 DebugStream::DebugStream( const DebugStream& sd )
-    :
-    __p( new Private )
+    : __p( new Private )
 {
     __p->debug = sd.__p->debug;
     __p->__flush_function = sd.__p->__flush_function;
@@ -321,8 +311,7 @@ DebugStream::~DebugStream()
     delete __p;
 }
 
-bool
-DebugStream::doPrint() const
+bool DebugStream::doPrint() const
 {
     return __p->debug;
 }
@@ -332,7 +321,7 @@ DebugStream::operator<<( double s )
 {
     if ( __p->debug )
     {
-        __p->M_output  << s;
+        __p->M_output << s;
         flush();
     }
 
@@ -343,19 +332,19 @@ DebugStream::operator<<( std::complex<double> s )
 {
     if ( __p->debug )
     {
-        __p->M_output  << s;
+        __p->M_output << s;
         flush();
     }
 
     return *this;
 }
-#if defined(FEELPP_HAS_QD_H)
+#if defined( FEELPP_HAS_QD_H )
 DebugStream&
 DebugStream::operator<<( dd_real s )
 {
     if ( __p->debug )
     {
-        __p->M_output  << s;
+        __p->M_output << s;
         flush();
     }
 
@@ -366,7 +355,7 @@ DebugStream::operator<<( qd_real s )
 {
     if ( __p->debug )
     {
-        __p->M_output  << s;
+        __p->M_output << s;
         flush();
     }
 
@@ -378,7 +367,7 @@ DebugStream::operator<<( bool s )
 {
     if ( __p->debug )
     {
-        __p->M_output  << s;
+        __p->M_output << s;
         flush();
     }
 
@@ -390,7 +379,7 @@ DebugStream::operator<<( uint16_type s )
 {
     if ( __p->debug )
     {
-        __p->M_output  << s;
+        __p->M_output << s;
         flush();
     }
 
@@ -402,19 +391,19 @@ DebugStream::operator<<( uint32_type s )
 {
     if ( __p->debug )
     {
-        __p->M_output  << s;
+        __p->M_output << s;
         flush();
     }
 
     return *this;
 }
-#if defined (__s390x__) || defined( __s390__ ) || defined( __APPLE__ )
+#if defined( __s390x__ ) || defined( __s390__ ) || defined( __APPLE__ )
 DebugStream&
 DebugStream::operator<<( size_type s )
 {
     if ( __p->debug )
     {
-        __p->M_output  << s;
+        __p->M_output << s;
         flush();
     }
 
@@ -427,7 +416,7 @@ DebugStream::operator<<( ptrdiff_t s )
 {
     if ( __p->debug )
     {
-        __p->M_output  << s;
+        __p->M_output << s;
         flush();
     }
 
@@ -439,7 +428,7 @@ DebugStream::operator<<( uint64_type s )
 {
     if ( __p->debug )
     {
-        __p->M_output  << s;
+        __p->M_output << s;
         flush();
     }
 
@@ -451,7 +440,7 @@ DebugStream::operator<<( int16_type s )
 {
     if ( __p->debug )
     {
-        __p->M_output  << s;
+        __p->M_output << s;
         flush();
     }
 
@@ -463,7 +452,7 @@ DebugStream::operator<<( int32_type s )
 {
     if ( __p->debug )
     {
-        __p->M_output  << s;
+        __p->M_output << s;
         flush();
     }
 
@@ -474,7 +463,7 @@ DebugStream::operator<<( int64_type s )
 {
     if ( __p->debug )
     {
-        __p->M_output  << s;
+        __p->M_output << s;
         flush();
     }
 
@@ -485,7 +474,7 @@ DebugStream&
 DebugStream::operator<<( const char* s )
 {
     if ( __p->debug )
-        __p->M_output  << s;
+        __p->M_output << s;
 
     flush();
     return *this;
@@ -494,7 +483,7 @@ DebugStream&
 DebugStream::operator<<( std::string const& s )
 {
     if ( __p->debug )
-        __p->M_output  << s;
+        __p->M_output << s;
 
     size_t found = s.find( '\n' );
 
@@ -503,7 +492,6 @@ DebugStream::operator<<( std::string const& s )
 
     return *this;
 }
-
 
 DebugStream&
 DebugStream::operator<<( Feel::LManipFunction __f )
@@ -516,13 +504,11 @@ DebugStream::operator<<( Feel::LManipFunction __f )
     return *this;
 }
 
-void
-DebugStream::setFlush( stprintf func )
+void DebugStream::setFlush( stprintf func )
 {
     __p->__flush_function = func;
 }
-void
-DebugStream::flush(  )
+void DebugStream::flush()
 {
     if ( !__p->M_output.str().empty() )
     {
@@ -544,29 +530,26 @@ DebugStream::flush(  )
 
         __p->M_output.str( "" );
     }
-
 }
-void
-DebugStream::addDebugArea( uint16_type area, std::string const& description )
+void DebugStream::addDebugArea( uint16_type area, std::string const& description )
 {
     DEBUG_ADD_AREA( area, description );
 }
-void
-DebugStream::showDebugAreas( std::string const& areas )
+void DebugStream::showDebugAreas( std::string const& areas )
 {
     // make sure that we get a space between each area when we concatenate
     *DEBUG_AREA += " ";
     *DEBUG_AREA += areas;
     std::cout << "DEBUG_AREA = " << *DEBUG_AREA << std::endl;
 
-    std::istringstream __is ( *DEBUG_AREA );
+    std::istringstream __is( *DEBUG_AREA );
 
     // clear first
     AREAS->clear();
     // inset in AREAS
-    std::copy ( std::istream_iterator<int,char> ( __is ),
-                std::istream_iterator<int,char> (),
-                std::back_inserter ( *AREAS ) );
+    std::copy( std::istream_iterator<int, char>( __is ),
+               std::istream_iterator<int, char>(),
+               std::back_inserter( *AREAS ) );
 }
 
 bool DebugStream::Private::_S_attached = false;
@@ -576,7 +559,7 @@ std::ofstream DebugStream::Private::_S_logfile;
 void DebugStream::attach( std::string const& __logfile )
 {
     std::ostringstream __filename;
-    __filename <<  __logfile;
+    __filename << __logfile;
 
     if ( Private::_S_logfile.is_open() )
     {
@@ -587,7 +570,7 @@ void DebugStream::attach( std::string const& __logfile )
 
     if ( Private::_S_logfile.fail() )
     {
-        Warning() << "DebugStream::attach( " << __logfile.c_str() << " ) failed to open "  << __filename.str() << "\n";
+        Warning() << "DebugStream::attach( " << __logfile.c_str() << " ) failed to open " << __filename.str() << "\n";
         Warning() << "Redirecting to default output\n";
         Private::_S_attached = false;
     }
@@ -598,17 +581,14 @@ void DebugStream::attach( std::string const& __logfile )
         Private::_S_attached = true;
     }
 }
-void
-DebugStream::attach( std::string const& /*__logfile*/, int /*__area*/ )
+void DebugStream::attach( std::string const& /*__logfile*/, int /*__area*/ )
 {
-
 }
-void
-DebugStream::detach( std::string const& /*__logfile*/, int /*__area*/ )
-{}
+void DebugStream::detach( std::string const& /*__logfile*/, int /*__area*/ )
+{
+}
 
-void
-DebugStream::detachAll()
+void DebugStream::detachAll()
 {
     if ( Private::_S_logfile.is_open() )
     {
@@ -669,7 +649,6 @@ Warning( bool cond, int area )
 
     else
         return DebugStream( 0, 0, false );
-
 }
 
 DebugStream
@@ -688,7 +667,6 @@ Error( bool cond, int area )
 
     else
         return DebugStream( 0, 0, false );
-
 }
 
 DebugStream
@@ -710,23 +688,23 @@ Fatal( bool cond, int area )
 }
 
 std::string
-backtrace ()
+backtrace()
 {
     // show all backtrace
     return backtrace( -1 );
 }
 std::string
-backtrace ( int /*__levels*/ )
+backtrace( int /*__levels*/ )
 {
     std::ostringstream os;
 #ifdef FEELPP_HAS_BACKTRACE
 
     void* trace[256];
-    int n = backtrace ( trace, 256 );
-    char** strings = backtrace_symbols ( trace, n );
+    int n = backtrace( trace, 256 );
+    char** strings = backtrace_symbols( trace, n );
 
     if ( __levels != -1 )
-        n = ( std::min ) ( n, __levels );
+        n = ( std::min )( n, __levels );
 
     os << "[\n";
 
@@ -734,7 +712,7 @@ backtrace ( int /*__levels*/ )
         os << i << ": " << strings[i] << "\n";
 
     os << "]\n";
-    free ( strings );
+    free( strings );
 #endif
     return os.str();
 }

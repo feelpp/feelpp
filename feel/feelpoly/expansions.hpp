@@ -35,16 +35,21 @@
 
 namespace Feel
 {
-enum TheShape { LINE = 1, TRIANGLE = 2, TETRAHEDRON = 3 };
+enum TheShape
+{
+    LINE = 1,
+    TRIANGLE = 2,
+    TETRAHEDRON = 3
+};
 
-template<TheShape sh>
+template <TheShape sh>
 struct DimFromShape
 {
-    static const uint16_type value = mpl::if_<mpl::equal_to<mpl::int_<sh>, mpl::int_<LINE> >,
-                             mpl::int_<1>,
-                             typename mpl::if_<mpl::equal_to<mpl::int_<sh>, mpl::int_<TRIANGLE> >,
-                             mpl::int_<2>,
-                             mpl::int_<3> >::type>::type::value;
+    static const uint16_type value = mpl::if_<mpl::equal_to<mpl::int_<sh>, mpl::int_<LINE>>,
+                                              mpl::int_<1>,
+                                              typename mpl::if_<mpl::equal_to<mpl::int_<sh>, mpl::int_<TRIANGLE>>,
+                                                                mpl::int_<2>,
+                                                                mpl::int_<3>>::type>::type::value;
 };
 
 /// \cond DETAIL
@@ -57,33 +62,32 @@ namespace details
 /**
  * collapsed coordinates
  */
-template<TheShape sh,  typename T = double>
+template <TheShape sh, typename T = double>
 struct xi
 {
 };
 
-template<typename T>
+template <typename T>
 struct xi<TRIANGLE, T>
 {
     typedef T value_type;
     typedef typename node<value_type>::type node_type;
 
     xi()
-        :
-        M_xi( 2 )
-    {}
+        : M_xi( 2 )
+    {
+    }
 
     xi( node_type const& eta )
-        :
-        M_xi( 2 )
+        : M_xi( 2 )
     {
-        M_xi[0] = 0.5*( 1.0 + eta[0] )*( 1.0 - eta[1] ) - 1.0;
+        M_xi[0] = 0.5 * ( 1.0 + eta[0] ) * ( 1.0 - eta[1] ) - 1.0;
         M_xi[1] = eta[1];
     }
 
     node_type const& operator()( node_type const& eta )
     {
-        M_xi[0] = 0.5*( 1.0 + eta[0] )*( 1.0 - eta[1] ) - 1.0;
+        M_xi[0] = 0.5 * ( 1.0 + eta[0] ) * ( 1.0 - eta[1] ) - 1.0;
         M_xi[1] = eta[1];
         return M_xi;
     }
@@ -94,30 +98,29 @@ struct xi<TRIANGLE, T>
     node_type M_xi;
 };
 
-template<typename T>
+template <typename T>
 struct xi<TETRAHEDRON, T>
 {
     typedef T value_type;
     typedef typename node<value_type>::type node_type;
 
     xi()
-        :
-        M_xi( 3 )
-    {}
+        : M_xi( 3 )
+    {
+    }
 
     xi( node_type const& eta )
-        :
-        M_xi( 3 )
+        : M_xi( 3 )
     {
-        M_xi[0] = 0.25*( 1.0 + eta[0] )*( 1.0 - eta[1] )*( 1.0 - eta[2] ) - 1.0;
-        M_xi[1] = 0.5*( 1.0 + eta[1] )*( 1.0 - eta[2] ) - 1.0;
+        M_xi[0] = 0.25 * ( 1.0 + eta[0] ) * ( 1.0 - eta[1] ) * ( 1.0 - eta[2] ) - 1.0;
+        M_xi[1] = 0.5 * ( 1.0 + eta[1] ) * ( 1.0 - eta[2] ) - 1.0;
         M_xi[2] = eta[2];
     }
 
     node_type const& operator()( node_type const& eta )
     {
-        M_xi[0] = 0.25*( 1.0 + eta[0] )*( 1.0 - eta[1] )*( 1.0 - eta[2] ) - 1.0;
-        M_xi[1] = 0.5*( 1.0 + eta[1] )*( 1.0 - eta[2] ) - 1.0;
+        M_xi[0] = 0.25 * ( 1.0 + eta[0] ) * ( 1.0 - eta[1] ) * ( 1.0 - eta[2] ) - 1.0;
+        M_xi[1] = 0.5 * ( 1.0 + eta[1] ) * ( 1.0 - eta[2] ) - 1.0;
         M_xi[2] = eta[2];
         return M_xi;
     }
@@ -128,33 +131,31 @@ struct xi<TETRAHEDRON, T>
     node_type M_xi;
 };
 
-
 /**
  * collapsed coordinates
  */
-template<TheShape sh,  typename T = double>
+template <TheShape sh, typename T = double>
 struct eta
 {
 };
-template<TheShape sh,  typename T = double>
+template <TheShape sh, typename T = double>
 struct etas
 {
 };
 
-template<typename T>
+template <typename T>
 struct eta<TRIANGLE, T>
 {
     typedef T value_type;
     typedef typename node<value_type>::type node_type;
 
     eta()
-        :
-        M_eta( 2 )
-    {}
+        : M_eta( 2 )
+    {
+    }
 
     eta( node_type const& xi )
-        :
-        M_eta( 2 )
+        : M_eta( 2 )
     {
         if ( xi[1] == 1.0 )
             M_eta[0] = -1.0;
@@ -182,20 +183,19 @@ struct eta<TRIANGLE, T>
     }
     node_type M_eta;
 };
-template<typename T>
+template <typename T>
 struct etas<TRIANGLE, T>
 {
     typedef T value_type;
     typedef typename matrix_node<value_type>::type matrix_node_type;
 
     etas()
-        :
-        M_eta()
-    {}
+        : M_eta()
+    {
+    }
 
     etas( matrix_node_type const& xi )
-        :
-        M_eta( xi.size1(), xi.size2() )
+        : M_eta( xi.size1(), xi.size2() )
     {
         for ( size_type i = 0; i < xi.size2(); ++i )
         {
@@ -207,7 +207,6 @@ struct etas<TRIANGLE, T>
 
             M_eta( 1, i ) = xi( 1, i );
         }
-
     }
 
     matrix_node_type const& operator()( matrix_node_type const& xi )
@@ -234,20 +233,19 @@ struct etas<TRIANGLE, T>
     matrix_node_type M_eta;
 };
 
-template<typename T>
+template <typename T>
 struct etas<TETRAHEDRON, T>
 {
     typedef T value_type;
     typedef typename matrix_node<value_type>::type matrix_node_type;
 
     etas()
-        :
-        M_eta()
-    {}
+        : M_eta()
+    {
+    }
 
     etas( matrix_node_type const& xi )
-        :
-        M_eta( xi.size1(), xi.size2() )
+        : M_eta( xi.size1(), xi.size2() )
     {
         for ( size_type i = 0; i < xi.size2(); ++i )
         {
@@ -309,33 +307,30 @@ struct etas<TETRAHEDRON, T>
  * The cordinates must be cartesian : in a simplex one must then
  * change from wrapped coordinates to cartesian coordinates
  */
-template<typename T>
+template <typename T>
 class psitilde
 {
-public:
+  public:
     typedef T value_type;
     typedef Feel::dyna::Jacobi<T> P;
     psitilde()
-        :
-        p( 0, 0.0, 0.0 ),
-        M_b( 0.0 )
-    {}
+        : p( 0, 0.0, 0.0 ),
+          M_b( 0.0 )
+    {
+    }
     psitilde( int i )
-        :
-        p( i, 0.0,  0.0 ),
-        M_b( i )
+        : p( i, 0.0, 0.0 ),
+          M_b( i )
     {
     }
     psitilde( int i, int j )
-        :
-        p( j, 2*i+1, 0.0 ),
-        M_b( i )
+        : p( j, 2 * i + 1, 0.0 ),
+          M_b( i )
     {
     }
     psitilde( int i, int j, int k )
-        :
-        p( k, 2*( i+j+1 ), 0.0 ),
-        M_b( i+j )
+        : p( k, 2 * ( i + j + 1 ), 0.0 ),
+          M_b( i + j )
     {
     }
     /**
@@ -354,7 +349,7 @@ public:
      */
     value_type b( value_type const& x ) const
     {
-        return math::pow( 0.5 *( 1.0-x ), M_b )*p( x );
+        return math::pow( 0.5 * ( 1.0 - x ), M_b ) * p( x );
     }
     /**
      * \brief 3D case
@@ -363,7 +358,7 @@ public:
      */
     value_type c( value_type const& x ) const
     {
-        return math::pow( 0.5 *( 1.0-x ), M_b )*p( x );
+        return math::pow( 0.5 * ( 1.0 - x ), M_b ) * p( x );
     }
     P p;
     value_type M_b;
@@ -375,7 +370,7 @@ public:
  *
  * \author Christophe Prud'homme
  */
-template<uint16_type N, typename T = double>
+template <uint16_type N, typename T = double>
 struct scalings
 {
     typedef T value_type;
@@ -388,8 +383,7 @@ struct scalings
      * pts are coordinates in [-1;1]
      */
     scalings( ublas::vector<value_type> const& pts )
-        :
-        M_s( N+1,  pts.size() )
+        : M_s( N + 1, pts.size() )
     {
 #if 0
         ublas::vector<value_type> one( ublas::scalar_vector<value_type>( pts.size(), 1.0 ) );
@@ -402,10 +396,10 @@ struct scalings
         {
             ublas::row( M_s, 1 ) = 0.5 * ( ublas::row( M_s, 0 ) - pts );
 
-            for ( uint16_type k = 2; k < N+1; ++k )
+            for ( uint16_type k = 2; k < N + 1; ++k )
             {
-                ublas::row( M_s, k ) = ublas::element_prod( ublas::row( M_s, k-1 ),
-                                        ublas::row( M_s, 1 ) );
+                ublas::row( M_s, k ) = ublas::element_prod( ublas::row( M_s, k - 1 ),
+                                                            ublas::row( M_s, 1 ) );
             }
         }
     }
@@ -418,8 +412,6 @@ struct scalings
 };
 } // details
 /// \endcond
-
-
 }
 
 #endif /* __expansions_H */

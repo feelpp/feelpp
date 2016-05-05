@@ -26,22 +26,22 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_UNITSQUARE_HPP)
+#if !defined( FEELPP_UNITSQUARE_HPP )
 #define FEELPP_UNITSQUARE_HPP 1
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/periodicentities.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
  * build a mesh of the unit square [0,1]^2 using triangles
  */
 boost::shared_ptr<Mesh<Simplex<2>>>
-unitSquare( double h = option(_name="gmsh.hsize").as<double>(),
+unitSquare( double h = option( _name = "gmsh.hsize" ).as<double>(),
             PeriodicEntities pe = PeriodicEntities() );
-
 }
 
 #endif /* FEELPP_UNITSQUARE_HPP */

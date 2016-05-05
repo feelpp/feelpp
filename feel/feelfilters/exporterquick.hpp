@@ -39,43 +39,40 @@ namespace Feel
  * \brief simple interface to exporter
  *
  */
-template<typename MeshType>
+template <typename MeshType>
 class ExporterQuick
 {
-public:
+  public:
     typedef MeshType mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef Exporter<mesh_type,1> export_type;
+    typedef Exporter<mesh_type, 1> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
     typedef typename export_type::timeset_type timeset_type;
     typedef typename export_type::timeset_ptrtype timeset_ptrtype;
 
     ExporterQuick( std::string const& name, po::variables_map& vm )
-        :
-        exporter( new ExporterEnsight<mesh_type,1> ( vm )),//Exporter<mesh_type>::New( vm["exporter"].template as<std::string>() )->setOptions( vm ) ),
-        timeSet( new timeset_type( name ) )
+        : exporter( new ExporterEnsight<mesh_type, 1>( vm ) ), //Exporter<mesh_type>::New( vm["exporter"].template as<std::string>() )->setOptions( vm ) ),
+          timeSet( new timeset_type( name ) )
     {
         exporter->setOptions( vm );
         timeSet->setTimeIncrement( 1.0 );
         exporter->addTimeSet( timeSet );
         exporter->setPrefix( name );
-
     }
     ExporterQuick( std::string const& name, std::string const& exp )
-        :
-        exporter( new ExporterEnsight<mesh_type,1> ( exp,1 ) ),//Exporter<mesh_type>::New( exp ) ),
-        timeSet( new timeset_type( name ) )
+        : exporter( new ExporterEnsight<mesh_type, 1>( exp, 1 ) ), //Exporter<mesh_type>::New( exp ) ),
+          timeSet( new timeset_type( name ) )
     {
         timeSet->setTimeIncrement( 1.0 );
         exporter->addTimeSet( timeSet );
         exporter->setPrefix( name );
-
     }
     void save( mesh_ptrtype const& mesh )
     {
         if ( !mesh )
         {
-            FEELPP_ASSERT( mesh ).error( "[ExporterQuick] invalid mesh (=0)" );
+            FEELPP_ASSERT( mesh )
+                .error( "[ExporterQuick] invalid mesh (=0)" );
             return;
         }
 
@@ -85,7 +82,7 @@ public:
         exporter->save();
     }
 
-    template<typename F1>
+    template <typename F1>
     void save( double time, F1 const& f1 )
     {
         typename timeset_type::step_ptrtype timeStep = timeSet->step( time );
@@ -96,7 +93,7 @@ public:
         exporter->save();
     }
 
-    template<typename F1, typename F2>
+    template <typename F1, typename F2>
     void save( double time, F1 const& f1, F2 const& f2 )
     {
         typename timeset_type::step_ptrtype timeStep = timeSet->step( time );
@@ -108,8 +105,7 @@ public:
         exporter->save();
     }
 
-
-    template<typename F1, typename F2, typename F3>
+    template <typename F1, typename F2, typename F3>
     void save( double time, F1 const& f1, F2 const& f2, F3 const& f3 )
     {
         typename timeset_type::step_ptrtype timeStep = timeSet->step( time );
@@ -122,10 +118,9 @@ public:
         exporter->save();
     }
 
-private:
+  private:
     export_ptrtype exporter;
     timeset_ptrtype timeSet;
 };
-
 }
 #endif // __FEELPP_EXPORTERQUICK_HPP__

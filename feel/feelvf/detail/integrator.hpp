@@ -35,16 +35,16 @@
 #include <feel/feelmesh/elements.hpp>
 #include <feel/feelvf/integrator.hpp>
 
-#if defined(FEELPP_HAS_HARTS)
-#include "RunTimeSystem/Model/RunTimeSysEnv.h"
+#if defined( FEELPP_HAS_HARTS )
 #include "RunTimeSystem/DataMng/DataHandler.h"
-#include "RunTimeSystem/TaskMng/TaskMng.h"
+#include "RunTimeSystem/Model/RunTimeSysEnv.h"
 #include "RunTimeSystem/TaskMng/AsynchTask.h"
-#include "RunTimeSystem/TaskMng/StdScheduler.h"
-#include "RunTimeSystem/TaskMng/StdDriver.h"
-#include "RunTimeSystem/TaskMng/TBBScheduler.h"
-#include "RunTimeSystem/TaskMng/TBBDriver.h"
 #include "RunTimeSystem/TaskMng/PTHDriver.h"
+#include "RunTimeSystem/TaskMng/StdDriver.h"
+#include "RunTimeSystem/TaskMng/StdScheduler.h"
+#include "RunTimeSystem/TaskMng/TBBDriver.h"
+#include "RunTimeSystem/TaskMng/TBBScheduler.h"
+#include "RunTimeSystem/TaskMng/TaskMng.h"
 
 #include "RunTimeSystem/DataMng/DataArgs.h"
 
@@ -63,41 +63,41 @@ namespace integrator
 
 namespace parallel
 {
-    template<typename ExprType, typename IMType, typename ElementIterator, typename Eval>
-    class HartsContextEvaluate
-    {
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        //
-        // some typedefs
-        //
+template <typename ExprType, typename IMType, typename ElementIterator, typename Eval>
+class HartsContextEvaluate
+{
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    //
+    // some typedefs
+    //
 
-        typedef Eval eval;
-        typedef typename eval::the_element_type EltType;
-        typedef ElementIterator element_iterator;
+    typedef Eval eval;
+    typedef typename eval::the_element_type EltType;
+    typedef ElementIterator element_iterator;
 
-        typedef ExprType expression_type;
-        typedef typename eval::gm_type gm_type;
-        typedef boost::shared_ptr<gm_type> gm_ptrtype;
-        typedef typename eval::gmc_type gmc_type;
-        typedef typename eval::gmpc_type gmpc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-        typedef boost::shared_ptr<gmpc_type> gmpc_ptrtype;
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-        typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
-        typedef typename eval_expr_type::shape shape;
-        typedef IMType im_type;
-        typedef typename eval::matrix_type value_type;
+    typedef ExprType expression_type;
+    typedef typename eval::gm_type gm_type;
+    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef typename eval::gmc_type gmc_type;
+    typedef typename eval::gmpc_type gmpc_type;
+    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef boost::shared_ptr<gmpc_type> gmpc_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>> map_gmc_type;
+    typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
+    typedef typename eval_expr_type::shape shape;
+    typedef IMType im_type;
+    typedef typename eval::matrix_type value_type;
 
-#if defined(FEELPP_HAS_HARTS)
-        typedef RunTimeSystem::DataHandler                               DataHandlerType ;
-        typedef RunTimeSystem::DataArgs<DataHandlerType>                 DataArgsType ;
+#if defined( FEELPP_HAS_HARTS )
+    typedef RunTimeSystem::DataHandler DataHandlerType;
+    typedef RunTimeSystem::DataArgs<DataHandlerType> DataArgsType;
 #endif
-        HartsContextEvaluate()
-            :
-            M_ret(eval::matrix_type::Zero()),
-            M_cpuTime(0.0)
-        { }
+    HartsContextEvaluate()
+        : M_ret( eval::matrix_type::Zero() ),
+          M_cpuTime( 0.0 )
+    {
+    }
 
 #if 0 
         HartsContextEvaluate( int threadId, ExprType const& _expr,
@@ -127,7 +127,7 @@ namespace parallel
         { }
 #endif
 
-#if defined(FEELPP_HAS_HARTS)
+#if defined( FEELPP_HAS_HARTS )
 
 #if 0
         void computeCPU(DataArgsType& args)
@@ -172,18 +172,18 @@ namespace parallel
         }
 
 #else
-        void computeCPU(DataArgsType& args)
-        {
-            char * a;
-            int cid;
-            hwloc_cpuset_t set = nullptr;
-            std::ostringstream oss;
-            
-            /* This initialization takes some time */
-            /* When using hartsi, the object instanciation is done when creating tasks */
-            /* and this is not a parallel section, thus we lose time in initialization */
-            /* doing it the computation step allows to incorporate this init time in the parallel section */
-            /*
+    void computeCPU( DataArgsType& args )
+    {
+        char* a;
+        int cid;
+        hwloc_cpuset_t set = nullptr;
+        std::ostringstream oss;
+
+/* This initialization takes some time */
+/* When using hartsi, the object instanciation is done when creating tasks */
+/* and this is not a parallel section, thus we lose time in initialization */
+/* doing it the computation step allows to incorporate this init time in the parallel section */
+/*
             M_threadId( threadId ),
             M_gm( new gm_type( *_elt.gm() ) ),
             M_geopc( new gmpc_type( M_gm, _im.points() ) ),
@@ -231,88 +231,88 @@ namespace parallel
             std::cout << Environment::worldComm().rank() << "|" << M_threadId << " " << oss.str() << std::endl;
 #endif
 
-            perf_mng.init("1.1") ;
-            perf_mng.init("1.1") ;
-            perf_mng.init("2.1") ;
-            perf_mng.init("2.2") ;
-            perf_mng.init("3") ;
+        perf_mng.init( "1.1" );
+        perf_mng.init( "1.1" );
+        perf_mng.init( "2.1" );
+        perf_mng.init( "2.2" );
+        perf_mng.init( "3" );
 
-            /* free memory */
-            if(set != nullptr)
-            {
-                hwloc_bitmap_free(set);
-            }
-
-            //perf_mng.init("data") ;
-            //perf_mng.start("data") ;
-
-            // DEFINE the range to be iterated on
-            std::vector<std::pair<element_iterator, element_iterator> > * elts =
-                args.get("elements")->get<std::vector<std::pair<element_iterator, element_iterator> > >();
-
-            int * threadId = args.get("threadId")->get<int>();
-            expression_type * expr = args.get("expr")->get<expression_type>();
-            im_type * im = args.get("im")->get<im_type>();
-            element_iterator * elt_it = args.get("elt")->get<element_iterator>();
-            
-            //M_gm((*elt_it)->gm());
-            gm_ptrtype gm = (*elt_it)->gm();
-            //M_geopc(new typename eval::gmpc_type( M_gm, im->points() ));
-            typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type(gm, im->points()) );
-            //M_c(new gmc_type( M_gm, *(*elt_it), M_geopc ));
-            gmc_ptrtype __c( new gmc_type( gm, *(*elt_it), __geopc ) );
-            //M_expr( (*expr), map_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( M_c ) ) );
-            eval_expr_type __expr( (*expr), map_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( __c ) ) );
-
-            //perf_mng.stop("data");
-
-            perf_mng.init("cpu") ;
-            perf_mng.start("cpu") ;
-
-            for (int i = 0; i < elts->size(); i++)
-            {
-                //std::cout << Environment::worldComm().rank() <<  " nbItems: " << elts->size() << " nbElts " << std::distance(elts->at(i), elts->at(i+1)) << std::endl;
-                for ( auto _elt = elts->at(i).first; _elt != elts->at(i).second; ++_elt )
-                {
-                    //perf_mng.start("1.1") ;
-                    //M_c->update( *_elt );
-                    __c->update( *_elt );
-                    //perf_mng.stop("1.1") ;
-                    //perf_mng.start("1.2") ;
-                    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-                    //perf_mng.stop("1.2") ;
-
-                    //perf_mng.start("2.1") ;
-                    __expr.update( mapgmc );
-                    //perf_mng.stop("2.1") ;
-                    //perf_mng.start("2.2") ;
-                    im->update( *__c );
-                    //perf_mng.stop("2.2") ;
-
-                    //perf_mng.start("3") ;
-                    for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                    {
-                        for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                        {
-                            M_ret( c1,c2 ) += (*im)( __expr, c1, c2 );
-                        }
-                    }
-                    //perf_mng.stop("3") ;
-                }
-            }
-
-            perf_mng.stop("cpu") ;
-            M_cpuTime = perf_mng.getValueInSeconds("cpu");
-        }
-#endif
-
-#endif
-
-        void computeCPUOMP(int threadId, expression_type * expr, im_type * im, element_iterator * elt_it, std::vector<std::pair<element_iterator, element_iterator> > * elts)
+        /* free memory */
+        if ( set != nullptr )
         {
-            char * a;
-            int cid;
-            std::ostringstream oss;
+            hwloc_bitmap_free( set );
+        }
+
+        //perf_mng.init("data") ;
+        //perf_mng.start("data") ;
+
+        // DEFINE the range to be iterated on
+        std::vector<std::pair<element_iterator, element_iterator>>* elts =
+            args.get( "elements" )->get<std::vector<std::pair<element_iterator, element_iterator>>>();
+
+        int* threadId = args.get( "threadId" )->get<int>();
+        expression_type* expr = args.get( "expr" )->get<expression_type>();
+        im_type* im = args.get( "im" )->get<im_type>();
+        element_iterator* elt_it = args.get( "elt" )->get<element_iterator>();
+
+        //M_gm((*elt_it)->gm());
+        gm_ptrtype gm = ( *elt_it )->gm();
+        //M_geopc(new typename eval::gmpc_type( M_gm, im->points() ));
+        typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm, im->points() ) );
+        //M_c(new gmc_type( M_gm, *(*elt_it), M_geopc ));
+        gmc_ptrtype __c( new gmc_type( gm, *( *elt_it ), __geopc ) );
+        //M_expr( (*expr), map_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( M_c ) ) );
+        eval_expr_type __expr( ( *expr ), map_gmc_type( fusion::make_pair<vf::detail::gmc<0>>( __c ) ) );
+
+        //perf_mng.stop("data");
+
+        perf_mng.init( "cpu" );
+        perf_mng.start( "cpu" );
+
+        for ( int i = 0; i < elts->size(); i++ )
+        {
+            //std::cout << Environment::worldComm().rank() <<  " nbItems: " << elts->size() << " nbElts " << std::distance(elts->at(i), elts->at(i+1)) << std::endl;
+            for ( auto _elt = elts->at( i ).first; _elt != elts->at( i ).second; ++_elt )
+            {
+                //perf_mng.start("1.1") ;
+                //M_c->update( *_elt );
+                __c->update( *_elt );
+                //perf_mng.stop("1.1") ;
+                //perf_mng.start("1.2") ;
+                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( __c ) );
+                //perf_mng.stop("1.2") ;
+
+                //perf_mng.start("2.1") ;
+                __expr.update( mapgmc );
+                //perf_mng.stop("2.1") ;
+                //perf_mng.start("2.2") ;
+                im->update( *__c );
+                //perf_mng.stop("2.2") ;
+
+                //perf_mng.start("3") ;
+                for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                {
+                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                    {
+                        M_ret( c1, c2 ) += ( *im )( __expr, c1, c2 );
+                    }
+                }
+                //perf_mng.stop("3") ;
+            }
+        }
+
+        perf_mng.stop( "cpu" );
+        M_cpuTime = perf_mng.getValueInSeconds( "cpu" );
+    }
+#endif
+
+#endif
+
+    void computeCPUOMP( int threadId, expression_type* expr, im_type* im, element_iterator* elt_it, std::vector<std::pair<element_iterator, element_iterator>>* elts )
+    {
+        char* a;
+        int cid;
+        std::ostringstream oss;
 
 #if 0
             hwloc_cpuset_t set = nullptr;
@@ -353,84 +353,83 @@ namespace parallel
             std::cout << Environment::worldComm().rank() << "|" << M_threadId << " " << oss.str() << std::endl;
 #endif
 
-#if defined(FEELPP_HAS_HARTS)
-            perf_mng.init("cpu") ;
-            perf_mng.start("cpu") ;
-            perf_mng.init("1.1") ;
-            perf_mng.init("1.2") ;
-            perf_mng.init("2.1") ;
-            perf_mng.init("2.2") ;
-            perf_mng.init("3") ;
+#if defined( FEELPP_HAS_HARTS )
+        perf_mng.init( "cpu" );
+        perf_mng.start( "cpu" );
+        perf_mng.init( "1.1" );
+        perf_mng.init( "1.2" );
+        perf_mng.init( "2.1" );
+        perf_mng.init( "2.2" );
+        perf_mng.init( "3" );
 #endif
-            
-            //M_gm((*elt_it)->gm());
-            gm_ptrtype gm = (*elt_it)->gm();
-            //M_geopc(new typename eval::gmpc_type( M_gm, im->points() ));
-            typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type(gm, im->points()) );
-            //M_c(new gmc_type( M_gm, *(*elt_it), M_geopc ));
-            gmc_ptrtype __c( new gmc_type( gm, *(*elt_it), __geopc ) );
-            //M_expr( (*expr), map_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( M_c ) ) );
-            eval_expr_type __expr( (*expr), map_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( __c ) ) );
 
+        //M_gm((*elt_it)->gm());
+        gm_ptrtype gm = ( *elt_it )->gm();
+        //M_geopc(new typename eval::gmpc_type( M_gm, im->points() ));
+        typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm, im->points() ) );
+        //M_c(new gmc_type( M_gm, *(*elt_it), M_geopc ));
+        gmc_ptrtype __c( new gmc_type( gm, *( *elt_it ), __geopc ) );
+        //M_expr( (*expr), map_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( M_c ) ) );
+        eval_expr_type __expr( ( *expr ), map_gmc_type( fusion::make_pair<vf::detail::gmc<0>>( __c ) ) );
 
-            for (int i = 0; i < elts->size(); i++)
-            {
-                /*
+        for ( int i = 0; i < elts->size(); i++ )
+        {
+            /*
                 std::cout << Environment::worldComm().rank() <<  " nbItems: " << elts->size() 
                           << " nbElts " << std::distance(elts->at(i), elts->at(i+1))
                           << " 1st id " << elts->at(i)->id() << std::endl;
                 */
 
-                //std::cout << Environment::worldComm().rank() << "|" << theadId << " fid=" elts.at(i).first.id() << std::endl;
-                for ( auto _elt = elts->at(i).first; _elt != elts->at(i).second; ++_elt )
+            //std::cout << Environment::worldComm().rank() << "|" << theadId << " fid=" elts.at(i).first.id() << std::endl;
+            for ( auto _elt = elts->at( i ).first; _elt != elts->at( i ).second; ++_elt )
+            {
+                //perf_mng.start("1.1") ;
+                __c->update( *_elt );
+                //perf_mng.stop("1.1") ;
+                //perf_mng.start("1.2") ;
+                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( __c ) );
+                //perf_mng.stop("1.2") ;
+
+                //perf_mng.start("2.1") ;
+                __expr.update( mapgmc );
+                //perf_mng.stop("2.1") ;
+                //perf_mng.start("2.2") ;
+                im->update( *__c );
+                //perf_mng.stop("2.2") ;
+
+                //perf_mng.start("3") ;
+                for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                 {
-                    //perf_mng.start("1.1") ;
-                    __c->update( *_elt );
-                    //perf_mng.stop("1.1") ;
-                    //perf_mng.start("1.2") ;
-                    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-                    //perf_mng.stop("1.2") ;
-
-                    //perf_mng.start("2.1") ;
-                    __expr.update( mapgmc );
-                    //perf_mng.stop("2.1") ;
-                    //perf_mng.start("2.2") ;
-                    im->update( *__c );
-                    //perf_mng.stop("2.2") ;
-
-                    //perf_mng.start("3") ;
-                    for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                     {
-                        for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                        {
-                            M_ret( c1,c2 ) += (*im)( __expr, c1, c2 );
-                        }
+                        M_ret( c1, c2 ) += ( *im )( __expr, c1, c2 );
                     }
-                    //perf_mng.stop("3") ;
                 }
+                //perf_mng.stop("3") ;
             }
+        }
 
-#if defined(FEELPP_HAS_HARTS)
-            perf_mng.stop("cpu") ;
-            M_cpuTime = perf_mng.getValueInSeconds("cpu");
+#if defined( FEELPP_HAS_HARTS )
+        perf_mng.stop( "cpu" );
+        M_cpuTime = perf_mng.getValueInSeconds( "cpu" );
 #endif
-        }
+    }
 
-        value_type result() const
-        {
-            return M_ret;
-        }
+    value_type result() const
+    {
+        return M_ret;
+    }
 
-        double elapsed()
-        {
-            return M_cpuTime;
-        }
+    double elapsed()
+    {
+        return M_cpuTime;
+    }
 
-#if defined(FEELPP_HAS_HARTS)
-        void printPerfInfo()
-        {
-            perf_mng.printInfo();
-        }
+#if defined( FEELPP_HAS_HARTS )
+    void printPerfInfo()
+    {
+        perf_mng.printInfo();
+    }
 #endif
 
 #if 0
@@ -442,19 +441,18 @@ namespace parallel
         eval_expr_type M_expr;
         im_type M_im;
 #endif
-        value_type M_ret;
+    value_type M_ret;
 
-#if defined(FEELPP_HAS_HARTS)
-        RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
+#if defined( FEELPP_HAS_HARTS )
+    RunTimeSystem::PerfCounterMng<std::string> perf_mng;
 #endif
 
-        double M_cpuTime;
-    };
+    double M_cpuTime;
+};
 } //parallel
-    
+
 } // integrator
 } // vf
 } // Feel
-
 
 #endif //FEELPP_DETAIL_INTEGRATOR_HPP

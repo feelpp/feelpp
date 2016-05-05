@@ -62,7 +62,7 @@ struct PolicyCreationUsingNew
 template <class T>
 struct PolicyFeelTimeDefault
 {
-    static void scheduleDestruction( T*, void ( *pFun ) () )
+    static void scheduleDestruction( T*, void ( *pFun )() )
     {
         std::atexit( pFun );
     }
@@ -72,7 +72,6 @@ struct PolicyFeelTimeDefault
         throw std::logic_error( "Dead Reference Detected" );
     }
 };
-
 }
 
 #endif /* FEELPP_FEELCORE_POLICY_HPP */

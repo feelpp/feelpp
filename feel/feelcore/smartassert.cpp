@@ -36,20 +36,19 @@
 
 #include <feel/feelcore/smartassert.hpp>
 
-
 void breakIntoDebugger()
 {
-    // Disabled for now, it is never used anyway.
+// Disabled for now, it is never used anyway.
 #if 0
     // MSVC, BCB,
-#if (defined _MSC_VER) || (defined __BORLANDC__)
+#if ( defined _MSC_VER ) || ( defined __BORLANDC__ )
     __asm { int 3 };
-#elif defined(__GNUC__)
+#elif defined( __GNUC__ )
     // GCC
     // works only on x86 and x86_64 architectures
     __asm ( "int $0x3" );
 #else
-#  error Please supply instruction to break into code
+#error Please supply instruction to break into code
 #endif
 #endif // 0
 }
@@ -62,31 +61,30 @@ namespace
 // in case we're logging using the default logger...
 struct stream_holder
 {
-    stream_holder() : out_( 0 ), owns_( false ) {}
+    stream_holder()
+        : out_( 0 ), owns_( false ) {}
     ~stream_holder()
-        {
-            if ( owns_ )
-                delete out_;
+    {
+        if ( owns_ )
+            delete out_;
 
-            out_ = 0;
-        }
-    std::ostream * out_;
+        out_ = 0;
+    }
+    std::ostream* out_;
     bool owns_;
 };
 // information about the stream we write to, in case
 // we're using the default logger
 stream_holder default_logger_info;
 
-
 // intitializes the SMART_ASSERT library
 struct assert_initializer
 {
     assert_initializer()
-        {
-            Private::initAssert();
-        }
-}
-    init;
+    {
+        Private::initAssert();
+    }
+} init;
 } // anonymous namespace
 
 namespace Private
@@ -102,20 +100,19 @@ void initAssert()
 }
 
 // sets the default logger to write to this stream
-void setDefaultLogStream( std::ostream & out )
+void setDefaultLogStream( std::ostream& out )
 {
     default_logger_info.out_ = &out;
     default_logger_info.owns_ = false;
 }
 
 // sets the default logger to write to this file
-void setDefaultLogName( const char * str )
+void setDefaultLogName( const char* str )
 {
     default_logger_info.owns_ = false;
     default_logger_info.out_ = new std::ofstream( str );
     default_logger_info.owns_ = true;
 }
-
 
 } // namespace Private
 
@@ -149,7 +146,7 @@ std::string getTypeofLevel( int nLevel )
 }
 
 // helpers, for dumping the assertion context
-void dumpContextSummary( const AssertContext & context, std::ostream & out )
+void dumpContextSummary( const AssertContext& context, std::ostream& out )
 {
     out
         << " in " << context.getContextFile() << ":" << context.getContextLine() << '\n';
@@ -163,7 +160,7 @@ void dumpContextSummary( const AssertContext & context, std::ostream & out )
     out << std::endl;
 }
 
-void dumpContextDetail( const AssertContext & context, std::ostream & out )
+void dumpContextDetail( const AssertContext& context, std::ostream& out )
 {
     out
         << " in " << context.getContextFile() << ":" << context.getContextLine() << '\n';
@@ -175,7 +172,7 @@ void dumpContextDetail( const AssertContext & context, std::ostream & out )
     out << "\nExpression: '" << context.expression() << "'\n";
 
     typedef AssertContext::vals_array vals_array;
-    const vals_array & aVals = context.get_vals_array();
+    const vals_array& aVals = context.get_vals_array();
 
     if ( !aVals.empty() )
     {
@@ -206,42 +203,41 @@ void dumpContextDetail( const AssertContext & context, std::ostream & out )
 ///////////////////////////////////////////////////////
 // logger
 
-void defaultLogger( const AssertContext & context )
+void defaultLogger( const AssertContext& context )
 {
     if ( default_logger_info.out_ == 0 )
         return;
 
     //dumpContextDetail( context, *( default_logger_info.out_ ) );
     if ( context.get_level() == google::INFO )
-        dumpContextSummary( context, LOG(INFO) );
+        dumpContextSummary( context, LOG( INFO ) );
     if ( context.get_level() == google::WARNING )
-        dumpContextSummary( context, LOG(WARNING) );
+        dumpContextSummary( context, LOG( WARNING ) );
     if ( context.get_level() == google::ERROR )
-        dumpContextSummary( context, LOG(ERROR) );
+        dumpContextSummary( context, LOG( ERROR ) );
     if ( context.get_level() == google::FATAL )
-        dumpContextSummary( context, LOG(FATAL) );
+        dumpContextSummary( context, LOG( FATAL ) );
 }
 
 ///////////////////////////////////////////////////////
 // handlers
 
 // warn : just dump summary to console
-void defaultWarnHandler( const AssertContext & context )
+void defaultWarnHandler( const AssertContext& context )
 {
     // dumpContextSummary( context, std::cout );
     if ( context.get_level() == google::INFO )
-        dumpContextSummary( context, LOG(INFO) );
+        dumpContextSummary( context, LOG( INFO ) );
     if ( context.get_level() == google::WARNING )
-        dumpContextSummary( context, LOG(WARNING) );
+        dumpContextSummary( context, LOG( WARNING ) );
     if ( context.get_level() == google::ERROR )
-        dumpContextSummary( context, LOG(ERROR) );
+        dumpContextSummary( context, LOG( ERROR ) );
     if ( context.get_level() == google::FATAL )
-        dumpContextSummary( context, LOG(FATAL) );
+        dumpContextSummary( context, LOG( FATAL ) );
 }
 
-
 // debug: ask user what to do
-void defaultDebugHandler( const AssertContext & context )
+void defaultDebugHandler( const AssertContext& context )
 {
     static bool ignore_all = false;
 
@@ -249,8 +245,8 @@ void defaultDebugHandler( const AssertContext & context )
         // ignore All asserts
         return;
 
-    typedef std::pair< std::string, int> file_and_line;
-    static std::set< file_and_line> ignorer;
+    typedef std::pair<std::string, int> file_and_line;
+    static std::set<file_and_line> ignorer;
 
     if ( ignorer.find( file_and_line( context.getContextFile(), context.getContextLine() ) ) != ignorer.end() )
         // this is Ignored Forever
@@ -304,26 +300,20 @@ void defaultDebugHandler( const AssertContext & context )
     }
 }
 
-
 // error : throw a runtime exception
-void defaultErrorHandler( const AssertContext & context )
+void defaultErrorHandler( const AssertContext& context )
 {
     //std::ostringstream out;
-    dumpContextSummary( context, LOG(ERROR) );
+    dumpContextSummary( context, LOG( ERROR ) );
     //throw std::runtime_error( out.str() );
 }
 
-
 // fatal : dump error and abort
-void defaultFatalHandler( const AssertContext & context )
+void defaultFatalHandler( const AssertContext& context )
 {
-    dumpContextDetail( context, LOG(FATAL) );
+    dumpContextDetail( context, LOG( FATAL ) );
     //abort();
 }
 
-
 } // namespace SmartAssert
-
-
-
 }

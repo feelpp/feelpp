@@ -46,45 +46,44 @@
   -# #FEELPP_ISLIKELY and #FEELPP_ISUNLIKELY
 */
 #ifdef __GNUC__
-#define FEELPP_GNUC_AT_LEAST(x,y) ((__GNUC__>=x && __GNUC_MINOR__>=y) || __GNUC__>x)
+#define FEELPP_GNUC_AT_LEAST( x, y ) ( ( __GNUC__ >= x && __GNUC_MINOR__ >= y ) || __GNUC__ > x )
 #else
-#define FEELPP_GNUC_AT_LEAST(x,y) 0
+#define FEELPP_GNUC_AT_LEAST( x, y ) 0
 #endif
 
 #ifdef __clang__
-#define FEELPP_CLANG_AT_LEAST(x,y) ((__clang_major__>=x && __clang_minor__>=y) || __clang_major__>x)
+#define FEELPP_CLANG_AT_LEAST( x, y ) ( ( __clang_major__ >= x && __clang_minor__ >= y ) || __clang_major__ > x )
 #else
-#define FEELPP_CLANG_AT_LEAST(x,y) 0
+#define FEELPP_CLANG_AT_LEAST( x, y ) 0
 #endif
 
 /**
    \def FEELPP_CONSTRUCTOR_BEGIN(x)
    Inform that the constructor of the class x has started
  */
-#define FEELPP_CONSTRUCTOR_BEGIN(A) DVLOG(3) << "Constructor of " << A << " begins\n";
-#define FEELPP_CONSTRUCTOR(A) FEELPP_CONSTRUCTOR_BEGIN(A)
-#define CONSTRUCTOR(A) FEELPP_CONSTRUCTOR_BEGIN(A)
+#define FEELPP_CONSTRUCTOR_BEGIN( A ) DVLOG( 3 ) << "Constructor of " << A << " begins\n";
+#define FEELPP_CONSTRUCTOR( A ) FEELPP_CONSTRUCTOR_BEGIN( A )
+#define CONSTRUCTOR( A ) FEELPP_CONSTRUCTOR_BEGIN( A )
 
 /**
    \def FEELPP_CONSTRUCTOR_END(x)
    Inform that the constructor of the class x has ended
  */
-#define FEELPP_CONSTRUCTOR_END(A) DVLOG(3) << "Constructor of " << A << " ends\n";
+#define FEELPP_CONSTRUCTOR_END( A ) DVLOG( 3 ) << "Constructor of " << A << " ends\n";
 
 /**
    \def FEELPP_DESTRUCTOR_BEGIN(x)
    Inform that the destructor of the class x has started
  */
-#define FEELPP_DESTRUCTOR_BEGIN(A) DVLOG(3) << "Destructor of " << A << " begins\n";
-#define FEELPP_DESTRUCTOR(A) FEELPP_DESTRUCTOR_END(A)
-#define DESTRUCTOR(A) FEELPP_DESTRUCTOR_BEGIN(A)
+#define FEELPP_DESTRUCTOR_BEGIN( A ) DVLOG( 3 ) << "Destructor of " << A << " begins\n";
+#define FEELPP_DESTRUCTOR( A ) FEELPP_DESTRUCTOR_END( A )
+#define DESTRUCTOR( A ) FEELPP_DESTRUCTOR_BEGIN( A )
 
 /**
    \def FEELPP_DESTRUCTOR_END(x)
    Inform that the destructor of the class x has started
  */
-#define FEELPP_DESTRUCTOR_END(A) DVLOG(3) << "Destructor of " << A << " ends\n";
-
+#define FEELPP_DESTRUCTOR_END( A ) DVLOG( 3 ) << "Destructor of " << A << " ends\n";
 
 /**
    \def INLINE
@@ -146,10 +145,6 @@
  */
 #define FEELPP_RESTRICT __restrict__
 
-
-
-
-
 /**
    \def FEELPP_EXPORT
    \brief Load time improvements for DSO libraries
@@ -208,10 +203,10 @@
 
    Counterpart to #FEELPP_EXPORT.
  */
-#if __GNUC__ - 0 > 3 || (__GNUC__ - 0 == 3 && __GNUC_MINOR__ - 0 > 2)
-#define FEELPP_EXPORT __attribute__ ((visibility("default")))
+#if __GNUC__ - 0 > 3 || ( __GNUC__ - 0 == 3 && __GNUC_MINOR__ - 0 > 2 )
+#define FEELPP_EXPORT __attribute__( ( visibility( "default" ) ) )
 
-#define FEELPP_NO_EXPORT __attribute__ ((visibility("hidden")))
+#define FEELPP_NO_EXPORT __attribute__( ( visibility( "hidden" ) ) )
 #else
 #define FEELPP_EXPORT
 #define FEELPP_NO_EXPORT
@@ -309,7 +304,7 @@
    of memory and manipulate it through the fields of a structure.
  */
 #ifdef __GNUC__
-#define FEELPP_PACKED __attribute__((__packed__))
+#define FEELPP_PACKED __attribute__( ( __packed__ ) )
 #else
 #define FEELPP_PACKED
 #endif
@@ -346,10 +341,10 @@
    struct FEELPP_DEPRECATED DeprecatedStruct { };
    \endcode
 */
-#if __GNUC__ - 0 > 3 || (__GNUC__ - 0 == 3 && __GNUC_MINOR__ - 0 >= 2)
-# define FEELPP_DEPRECATED __attribute__ ((deprecated))
+#if __GNUC__ - 0 > 3 || ( __GNUC__ - 0 == 3 && __GNUC_MINOR__ - 0 >= 2 )
+#define FEELPP_DEPRECATED __attribute__( ( deprecated ) )
 #else
-# define FEELPP_DEPRECATED
+#define FEELPP_DEPRECATED
 #endif
 
 /**
@@ -384,11 +379,11 @@
    The FEELPP_ISUNLIKELY macro tags an expression as unlikely evaluating to 'true'.
  */
 #if __GNUC__ - 0 >= 3
-# define FEELPP_ISLIKELY( x )    __builtin_expect(!!(x),1)
-# define FEELPP_ISUNLIKELY( x )  __builtin_expect(!!(x),0)
+#define FEELPP_ISLIKELY( x ) __builtin_expect( !!( x ), 1 )
+#define FEELPP_ISUNLIKELY( x ) __builtin_expect( !!( x ), 0 )
 #else
-# define FEELPP_ISLIKELY( x )   ( x )
-# define FEELPP_ISUNLIKELY( x )  ( x )
+#define FEELPP_ISLIKELY( x ) ( x )
+#define FEELPP_ISUNLIKELY( x ) ( x )
 #endif
 
 /**
@@ -453,9 +448,9 @@
  \endcode
  */
 #if __GNUC__ - 0 >= 3
-# define FEELPP_PREFETCH( x, rw, locality )   __builtin_prefetch( (x), rw, locality )
+#define FEELPP_PREFETCH( x, rw, locality ) __builtin_prefetch( ( x ), rw, locality )
 #else
-# define FEELPP_PREFETCH( x, rw, locality )
+#define FEELPP_PREFETCH( x, rw, locality )
 #endif // __GNUC__
 
 /**
@@ -499,38 +494,38 @@
 \endcode
  */
 #if __GNUC__ - 0 >= 3
-# define FEELPP_IS_CONSTANT( n ) __builtin_constant_p( n )
+#define FEELPP_IS_CONSTANT( n ) __builtin_constant_p( n )
 #else
-# define FEELPP_IS_CONSTANT( n )
+#define FEELPP_IS_CONSTANT( n )
 #endif // __GNUC__
 
-#define FEELPP_DEBUG_VAR(x) std::cerr << #x << " = " << x << std::endl;
+#define FEELPP_DEBUG_VAR( x ) std::cerr << #x << " = " << x << std::endl;
 
 #ifdef NDEBUG
-# ifndef FEELPP_NO_DEBUG
-#  define FEELPP_NO_DEBUG
-# endif
+#ifndef FEELPP_NO_DEBUG
+#define FEELPP_NO_DEBUG
+#endif
 #endif
 
 // FEELPP_ALWAYS_INLINE_ATTRIB should be use in the declaration of function
 // which should be inlined even in debug mode.
-#if FEELPP_GNUC_AT_LEAST(4,0)
-#define FEELPP_ALWAYS_INLINE_ATTRIB __attribute__((always_inline))
+#if FEELPP_GNUC_AT_LEAST( 4, 0 )
+#define FEELPP_ALWAYS_INLINE_ATTRIB __attribute__( ( always_inline ) )
 #else
 #define FEELPP_ALWAYS_INLINE_ATTRIB
 #endif
 
 // FEELPP_FORCE_INLINE means "inline as much as possible"
-#if (defined _MSC_VER) || (defined __intel_compiler)
+#if ( defined _MSC_VER ) || ( defined __intel_compiler )
 #define FEELPP_STRONG_INLINE __forceinline
 #else
 #define FEELPP_STRONG_INLINE inline
 #endif
 
-#if (defined __GNUC__)
-#define FEELPP_DONT_INLINE __attribute__((noinline))
-#elif (defined _MSC_VER)
-#define FEELPP_DONT_INLINE __declspec(noinline)
+#if ( defined __GNUC__ )
+#define FEELPP_DONT_INLINE __attribute__( ( noinline ) )
+#elif ( defined _MSC_VER )
+#define FEELPP_DONT_INLINE __declspec( noinline )
 #else
 #define FEELPP_DONT_INLINE
 #endif

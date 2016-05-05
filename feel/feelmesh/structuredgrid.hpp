@@ -28,12 +28,12 @@
  */
 #ifndef __StructuredGrid_H
 #define __StructuredGrid_H 1
-#include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 
-#include <boost/multi_array.hpp>
 #include <boost/array.hpp>
+#include <boost/multi_array.hpp>
 #include <feel/feelalg/glas.hpp>
 
 namespace Feel
@@ -46,16 +46,15 @@ namespace Feel
  * @author Christophe Prud'homme
  * @sa StructuredGrid
  */
-template<uint Dim>
+template <uint Dim>
 struct bbox
 {
     /**
      * default bounding box contructor
      */
     bbox()
-        :
-        min( Dim ),
-        max( Dim )
+        : min( Dim ),
+          max( Dim )
     {
         min = ublas::scalar_vector<double>( Dim, -1 );
         max = ublas::scalar_vector<double>( Dim, 1 );
@@ -67,10 +66,9 @@ struct bbox
      * @param __cp cloud of nodes
      */
     bbox( ublas::vector<node_type> const& __cp )
-        :
-        min( Dim ),
-        max( Dim ),
-        eps( ublas::scalar_vector<double>( min.size(), 1e-10 ) )
+        : min( Dim ),
+          max( Dim ),
+          eps( ublas::scalar_vector<double>( min.size(), 1e-10 ) )
     {
         min = __cp( 0 );
         max = __cp( 0 );
@@ -79,8 +77,8 @@ struct bbox
         {
             for ( int __d = 0; __d < Dim; ++__d )
             {
-                min[__d] = ( __cp( __i )[__d] > min[__d] )?min[__d]: __cp( __i )[__d];
-                max[__d] = ( __cp( __i )[__d] < max[__d] )?max[__d]: __cp( __i )[__d];
+                min[__d] = ( __cp( __i )[__d] > min[__d] ) ? min[__d] : __cp( __i )[__d];
+                max[__d] = ( __cp( __i )[__d] < max[__d] ) ? max[__d] : __cp( __i )[__d];
             }
         }
 
@@ -94,11 +92,10 @@ struct bbox
      *
      * @param bboxes set of bounding boxes
      */
-    bbox( std::vector<boost::shared_ptr<bbox<Dim> > > const& bboxes )
-        :
-        min( Dim ),
-        max( Dim ),
-        eps( ublas::scalar_vector<double>( min.size(), 1e-10 ) )
+    bbox( std::vector<boost::shared_ptr<bbox<Dim>>> const& bboxes )
+        : min( Dim ),
+          max( Dim ),
+          eps( ublas::scalar_vector<double>( min.size(), 1e-10 ) )
     {
         min = bboxes[0]->min;
         max = bboxes[0]->max;
@@ -107,8 +104,8 @@ struct bbox
         {
             for ( int __d = 0; __d < Dim; ++__d )
             {
-                min[__d] = ( bboxes[__i]->min[__d] > min[__d] )?min[__d]: bboxes[ __i ]->min[__d];
-                max[__d] = ( bboxes[__i]->max[__d] < max[__d] )?max[__d]: bboxes[ __i ]->max[__d];
+                min[__d] = ( bboxes[__i]->min[__d] > min[__d] ) ? min[__d] : bboxes[__i]->min[__d];
+                max[__d] = ( bboxes[__i]->max[__d] < max[__d] ) ? max[__d] : bboxes[__i]->max[__d];
             }
         }
 
@@ -139,12 +136,10 @@ struct bbox
  *
  * @author Christophe Prud'homme
  */
-template<uint16_type Dim, uint16_type Order = 1>
+template <uint16_type Dim, uint16_type Order = 1>
 class StructuredGrid
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -155,18 +150,18 @@ public:
     typedef boost::array<index_type, Dim> shape_type;
     typedef boost::array<index_type, Dim> idx_type;
 
-    typedef typename mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<1> >,
-            mpl::identity<GeoElement1D<Dim, LinearLine, DefMarkerCommon> >,
-            mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<2> >,
-            mpl::identity<GeoElement2D<Dim, LinearQuad, DefMarkerCommon> >,
-            mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<3> >,
-            mpl::identity<GeoElement3D<Dim, LinearHexa, DefMarkerCommon> > >::type::type element_type;
-    typedef typename mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<1> >,
-            mpl::identity<GeoElement0D<Dim, DefMarkerCommon> >,
-            mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<2> >,
-            mpl::identity<GeoElement1D<Dim, LinearLine, DefMarkerCommon> >,
-            mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<3> >,
-            mpl::identity<GeoElement2D<Dim, LinearQuad, DefMarkerCommon> > >::type::type face_type;
+    typedef typename mpl::if_ < mpl::equal<mpl::int_<Dim>, mpl::int_<1>>,
+        mpl::identity<GeoElement1D<Dim, LinearLine, DefMarkerCommon>>,
+        mpl::if_ < mpl::equal<mpl::int_<Dim>, mpl::int_<2>>,
+        mpl::identity<GeoElement2D<Dim, LinearQuad, DefMarkerCommon>>,
+        mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<3>>,
+                 mpl::identity<GeoElement3D<Dim, LinearHexa, DefMarkerCommon>>>::type::type element_type;
+    typedef typename mpl::if_ < mpl::equal<mpl::int_<Dim>, mpl::int_<1>>,
+        mpl::identity<GeoElement0D<Dim, DefMarkerCommon>>,
+        mpl::if_ < mpl::equal<mpl::int_<Dim>, mpl::int_<2>>,
+        mpl::identity<GeoElement1D<Dim, LinearLine, DefMarkerCommon>>,
+        mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<3>>,
+                 mpl::identity<GeoElement2D<Dim, LinearQuad, DefMarkerCommon>>>::type::type face_type;
 
     //@}
 
@@ -174,10 +169,9 @@ public:
      */
     //@{
 
-    StructuredGrid( bbox<Dim> const& __bbox,  shape_type const& __shape )
-        :
-        M_shape( __shape ),
-        M_coord( __shape )
+    StructuredGrid( bbox<Dim> const& __bbox, shape_type const& __shape )
+        : M_shape( __shape ),
+          M_coord( __shape )
     {
 #if 0
         std::for_each( M_coord.begin(), M_coord.end(), lambda::bind( &node_type::resize,
@@ -190,17 +184,17 @@ public:
         for ( index_type i = 0; i < M_shape[0]; ++i )
         {
             __idx[0] = i;
-            __pt[0] = __bbox.min[0]+i*( __bbox.max[0]-__bbox.min[0] )/( M_shape[0]-1 );
+            __pt[0] = __bbox.min[0] + i * ( __bbox.max[0] - __bbox.min[0] ) / ( M_shape[0] - 1 );
 
             for ( index_type j = 0; j < M_shape[1]; ++j )
             {
                 __idx[1] = j;
-                __pt[1] = __bbox.min[1]+j*( __bbox.max[1]-__bbox.min[1] )/( M_shape[1]-1 );
+                __pt[1] = __bbox.min[1] + j * ( __bbox.max[1] - __bbox.min[1] ) / ( M_shape[1] - 1 );
 
                 for ( index_type k = 0; k < M_shape[2]; ++k )
                 {
                     __idx[2] = k;
-                    __pt[2] = __bbox.min[2]+k*( __bbox.max[2]-__bbox.min[2] )/( M_shape[2]-1 );
+                    __pt[2] = __bbox.min[2] + k * ( __bbox.max[2] - __bbox.min[2] ) / ( M_shape[2] - 1 );
                     M_coord( __idx ).resize( Dim );
                     M_coord( __idx ) = __pt;
                 }
@@ -210,14 +204,14 @@ public:
 #endif
     }
     ~StructuredGrid()
-    {}
+    {
+    }
 
     //@}
 
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -283,7 +277,6 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
@@ -296,40 +289,34 @@ public:
      * @param __f
      */
     void save( std::string const& prefix,
-               std::vector<boost::shared_ptr<f_type> > const& __f );
+               std::vector<boost::shared_ptr<f_type>> const& __f );
 
     //@}
 
-protected:
-
+  protected:
     shape_type M_shape;
 
     coord_type M_coord;
 
-private:
-
+  private:
     StructuredGrid();
-    StructuredGrid( StructuredGrid const & );
-
+    StructuredGrid( StructuredGrid const& );
 };
-template<uint16_type Dim,  uint16_type Order>
-void
-StructuredGrid<Dim, Order>::save( std::string const& prefix,
-                                  std::vector<boost::shared_ptr<f_type> > const& __f )
+template <uint16_type Dim, uint16_type Order>
+void StructuredGrid<Dim, Order>::save( std::string const& prefix,
+                                       std::vector<boost::shared_ptr<f_type>> const& __f )
 {
     std::ofstream __ofs( ( prefix + ".geo" ).c_str() );
-    __ofs <<
-          "Structured grid\n"
-          "Structured grid\n"
-          "node id off\n"
-          "element id off\n"
-          "coordinates\n"
+    __ofs << "Structured grid\n"
+             "Structured grid\n"
+             "node id off\n"
+             "element id off\n"
+             "coordinates\n"
           << std::setw( 8 ) << 0 << "\n";
 
-    __ofs <<
-          "part 1\n"
-          "structured block\n"
-          "block\n"
+    __ofs << "part 1\n"
+             "structured block\n"
+             "block\n"
           << std::setw( 8 ) << M_shape[0]
           << std::setw( 8 ) << M_shape[1]
           << std::setw( 8 ) << M_shape[2];
@@ -349,7 +336,7 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
             {
                 __idx[2] = k;
 
-                if ( __count ++ % 6 == 0 )
+                if ( __count++ % 6 == 0 )
                     __ofs << "\n";
 
                 __ofs.precision( 5 );
@@ -375,7 +362,7 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
             {
                 __idx[2] = k;
 
-                if ( __count ++ % 6 == 0 )
+                if ( __count++ % 6 == 0 )
                     __ofs << "\n";
 
                 __ofs.precision( 5 );
@@ -401,7 +388,7 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
             {
                 __idx[2] = k;
 
-                if ( __count ++ % 6 == 0 )
+                if ( __count++ % 6 == 0 )
                     __ofs << "\n";
 
                 __ofs.precision( 5 );
@@ -415,12 +402,11 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
 
     __ofs.close();
     __ofs.open( ( prefix + ".case" ).c_str() );
-    __ofs <<
-          "FORMAT\n"
-          "type: ensight\n"
-          "GEOMETRY\n"
-          "model: toto.geo\n"
-          "VARIABLE\n";
+    __ofs << "FORMAT\n"
+             "type: ensight\n"
+             "GEOMETRY\n"
+             "model: toto.geo\n"
+             "VARIABLE\n";
 
     for ( int i = 0; i < __f.size(); ++i )
     {
@@ -454,7 +440,7 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
                 {
                     __idx[2] = k;
 
-                    if ( __count ++ % 6 == 0 )
+                    if ( __count++ % 6 == 0 )
                         __ofs << "\n";
 
                     __ofs << std::setw( 12 ) << __f[l]->operator()( __idx );
@@ -465,6 +451,5 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
         __ofs.close();
     }
 } // end StructuredGrid<>::save
-
 }
 #endif /* __StructuredGrid_H */

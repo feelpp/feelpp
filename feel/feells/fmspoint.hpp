@@ -36,61 +36,62 @@ namespace Feel
 namespace details
 {
 
-template<typename T, uint16_type Dim>
+template <typename T, uint16_type Dim>
 class FmsPoint
     : public boost::numeric::ublas::bounded_array<T, Dim>
 {
-public:
+  public:
     typedef T value_type;
     static const uint16_type dim = Dim;
     typedef boost::numeric::ublas::bounded_array<T, Dim> super;
     FmsPoint()
-        : super( dim, value_type(0.0) ) {}
+        : super( dim, value_type( 0.0 ) ) {}
     FmsPoint( FmsPoint const& init )
         : super( init )
-    {}
+    {
+    }
     FmsPoint<T, Dim>& operator=( FmsPoint<T, Dim> r )
     {
-        ((super*)this)->operator=( (super)r );
+        ( (super*)this )->operator=( (super)r );
         return *this;
     }
     void operator+=( FmsPoint<T, Dim> const& s )
     {
-        for (uint16_type i=0; i<dim; ++i)
+        for ( uint16_type i = 0; i < dim; ++i )
             this->operator[]( i ) += s[i];
     }
     void operator-=( FmsPoint<T, Dim> const& s )
     {
-        for (uint16_type i=0; i<dim; ++i)
+        for ( uint16_type i = 0; i < dim; ++i )
             this->operator[]( i ) -= s[i];
     }
     void operator*=( value_type f )
     {
-        for (uint16_type i=0; i<dim; ++i)
+        for ( uint16_type i = 0; i < dim; ++i )
             this->operator[]( i ) *= f;
     }
 }; // class FmsPoint
 
-template<typename T, uint16_type Dim>
+template <typename T, uint16_type Dim>
 FmsPoint<T, Dim> operator-( FmsPoint<T, Dim> const& m,
                             FmsPoint<T, Dim> const& s )
 {
-    FmsPoint<T, Dim> d(m);
+    FmsPoint<T, Dim> d( m );
     d -= s;
     return d;
 }
 
-template<typename T, uint16_type Dim>
+template <typename T, uint16_type Dim>
 T dot( FmsPoint<T, Dim> const& a,
        FmsPoint<T, Dim> const& b )
 {
-    T retval(0.0);
-    for (uint16_type i=0; i<Dim; ++i)
-        retval += a[i]*b[i];
+    T retval( 0.0 );
+    for ( uint16_type i = 0; i < Dim; ++i )
+        retval += a[i] * b[i];
     return retval;
 }
 
-template<typename T, uint16_type Dim>
+template <typename T, uint16_type Dim>
 FmsPoint<T, Dim> operator*( FmsPoint<T, Dim> const& a, T f )
 {
     FmsPoint<T, Dim> retval( a );
@@ -98,7 +99,7 @@ FmsPoint<T, Dim> operator*( FmsPoint<T, Dim> const& a, T f )
     return retval;
 }
 
-template<typename T, uint16_type Dim>
+template <typename T, uint16_type Dim>
 FmsPoint<T, Dim> operator*( T f, FmsPoint<T, Dim> const& a )
 {
     FmsPoint<T, Dim> retval( a );
@@ -106,10 +107,10 @@ FmsPoint<T, Dim> operator*( T f, FmsPoint<T, Dim> const& a )
     return retval;
 }
 
-template<typename T, uint16_type Dim>
+template <typename T, uint16_type Dim>
 T norm( FmsPoint<T, Dim> const& a )
 {
-    T norm2( dot(a,a) );
+    T norm2( dot( a, a ) );
     return std::sqrt( norm2 );
 }
 
@@ -117,6 +118,4 @@ T norm( FmsPoint<T, Dim> const& a )
 
 } // namespace Feel
 
-
 #endif /* __Fms_Point_H */
-

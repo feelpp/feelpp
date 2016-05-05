@@ -26,10 +26,11 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_EXPANSION_HPP)
+#if !defined( FEELPP_EXPANSION_HPP )
 #define FEELPP_EXPANSION_HPP 1
 
-namespace Feel {
+namespace Feel
+{
 
 /**
    Given a set of coefficient \p c and a set of finite element function \p b, build
@@ -38,24 +39,23 @@ namespace Feel {
    \f]
    The last argument \p M allows to build only a subset of the expansion
  */
-template<typename ElementType, typename CoeffType>
+template <typename ElementType, typename CoeffType>
 ElementType
 expansion( std::vector<ElementType> const& b, CoeffType const& c, int M = -1 )
 {
     auto res = b[0].functionSpace()->element();
     res.zero();
-    if ( ( M == -1 ) || M > c.size() ) M = c.size() ;
-    CHECK( (c.size() <= M) )
+    if ( ( M == -1 ) || M > c.size() ) M = c.size();
+    CHECK( ( c.size() <= M ) )
         << "Invalid coefficient or basis function elements "
         << "M=" << M << " coeff: " << b.size() << " elements: " << c.size();
-    for( int i = 0; i < M; ++i )
+    for ( int i = 0; i < M; ++i )
     {
         res.add( c[i], b[i] );
     }
 
     return res;
 }
-
 }
 
 #endif /* FEELPP_EXPANSION_HPP */

@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-06-15
  */
-#include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
 //#include <boost/assign/std/vector.hpp>
 
 #include <feel/feelcore/environment.hpp>
@@ -36,53 +36,49 @@
 namespace Feel
 {
 CRBDB::CRBDB()
-    :
-    M_name( "noname" ),
-    M_vm(),
-    M_isloaded( false )
-{}
+    : M_name( "noname" ),
+      M_vm(),
+      M_isloaded( false )
+{
+}
 
 //! constructor from command line options
 CRBDB::CRBDB( std::string prefixdir,
               std::string name,
               std::string dbprefix,
               po::variables_map const& vm )
-    :
-    M_prefixdir( prefixdir ),
-    M_name( name ),
-    M_vm( vm ),
-    M_isloaded( false )
+    : M_prefixdir( prefixdir ),
+      M_name( name ),
+      M_vm( vm ),
+      M_isloaded( false )
 {
-    LOG(INFO) << prefixdir << "," << name << "\n";
+    LOG( INFO ) << prefixdir << "," << name << "\n";
 
     this->setDBFilename( ( boost::format( "%1%.crbdb" ) % dbprefix ).str() );
-    LOG(INFO) << "database name " << dbFilename() << "\n";
-
-
+    LOG( INFO ) << "database name " << dbFilename() << "\n";
 }
 
 //! copy constructor
-CRBDB::CRBDB( CRBDB const & o )
-    :
-    M_name( o.M_name ),
-    M_vm( o.M_vm ),
-    M_isloaded( o.M_isloaded )
-{}
+CRBDB::CRBDB( CRBDB const& o )
+    : M_name( o.M_name ),
+      M_vm( o.M_vm ),
+      M_isloaded( o.M_isloaded )
+{
+}
 
 //! destructor
 CRBDB::~CRBDB()
-{}
+{
+}
 
 fs::path
 CRBDB::dbSystemPath() const
 {
     std::vector<std::string> sysdir{Feel::Info::prefix(), "/usr", "/usr/local", "/opt/local"};
-    BOOST_FOREACH( auto dir, sysdir )
+    BOOST_FOREACH ( auto dir, sysdir )
     {
         // generate the local repository db path
-        std::string syspath = ( boost::format( "%1%/share/feel/db/crb/%2%/" )
-                                % dir
-                                % M_prefixdir ).str();
+        std::string syspath = ( boost::format( "%1%/share/feel/db/crb/%2%/" ) % dir % M_prefixdir ).str();
 
         //std::cout << "Look for " << syspath  << "\n";
         if ( fs::exists( syspath ) )
@@ -94,26 +90,22 @@ fs::path
 CRBDB::dbLocalPath() const
 {
 
-    int proc_number =  Environment::worldComm().globalRank();
+    int proc_number = Environment::worldComm().globalRank();
     int nb_proc = Environment::worldComm().globalSize();
     std::string suf;
-    if( M_vm.count( "crb.results-repo-name" ) )
-        {
-            std::string database_name = M_vm["crb.results-repo-name"].as<std::string>();
-            suf = database_name + ( boost::format("_proc%1%on%2%") %proc_number %nb_proc ).str() ;
-        }
+    if ( M_vm.count( "crb.results-repo-name" ) )
+    {
+        std::string database_name = M_vm["crb.results-repo-name"].as<std::string>();
+        suf = database_name + ( boost::format( "_proc%1%on%2%" ) % proc_number % nb_proc ).str();
+    }
     else
-        {
-            std::string database_name = "default_repo";
-            suf = database_name + ( boost::format("_proc%1%on%2%") %proc_number %nb_proc ).str() ;
-        }
-
+    {
+        std::string database_name = "default_repo";
+        suf = database_name + ( boost::format( "_proc%1%on%2%" ) % proc_number % nb_proc ).str();
+    }
 
     // generate the local repository db path
-    std::string localpath = ( boost::format( "%1%/db/crb/%2%/%3%" )
-                              % Feel::Environment::rootRepository()
-                              % M_prefixdir
-                              % suf ).str();
+    std::string localpath = ( boost::format( "%1%/db/crb/%2%/%3%" ) % Feel::Environment::rootRepository() % M_prefixdir % suf ).str();
     fs::path rep_path = localpath;
     fs::create_directories( rep_path );
 
@@ -140,14 +132,11 @@ CRBDB::lookForDB() const
 
     return fs::path();
 }
-void
-CRBDB::saveDB()
+void CRBDB::saveDB()
 {
 }
-bool
-CRBDB::loadDB()
+bool CRBDB::loadDB()
 {
     return false;
 }
-
 }

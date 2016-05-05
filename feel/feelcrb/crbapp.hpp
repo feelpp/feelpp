@@ -32,7 +32,6 @@
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
 
-
 namespace Feel
 {
 /**
@@ -41,47 +40,38 @@ namespace Feel
  *
  * @author Christophe Prud'homme
  */
-template<typename ModelType>
-class CRBApp   : public Application
+template <typename ModelType>
+class CRBApp : public Application
 {
     typedef Application super;
-public:
 
+  public:
     typedef CRBModel<ModelType> crbmodel_type;
     typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
     typedef CRB<crbmodel_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
 
     CRBApp( AboutData const& ad, po::options_description const& od )
-        :
-        super( ad, crbOptions().add( od ) )
+        : super( ad, crbOptions().add( od ) )
     {
         this->init();
     }
 
     CRBApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
-        :
-        super( argc, argv, ad, crbOptions().add( od ) )
+        : super( argc, argv, ad, crbOptions().add( od ) )
     {
         this->init();
     }
     void init()
     {
         std::srand( static_cast<unsigned>( std::time( 0 ) ) );
-        std::cerr << "[CRBApp] constructor " << this->about().appName()  << std::endl;
+        std::cerr << "[CRBApp] constructor " << this->about().appName() << std::endl;
 
         if ( this->vm().count( "crb.output-index" ) )
-            this->changeRepository( boost::format( "%1%/h_%2%/s_%3%" )
-                                    % this->about().appName()
-                                    % this->vm()["hsize"].template as<double>()
-                                    % this->vm()["crb.output-index"].template as<int>()
-                                  );
+            this->changeRepository( boost::format( "%1%/h_%2%/s_%3%" ) % this->about().appName() % this->vm()["hsize"].template as<double>() % this->vm()["crb.output-index"].template as<int>() );
 
         else
-            this->changeRepository( boost::format( "%1%/h_%2%/" )
-                                    % this->about().appName()
-                                    % this->vm()["hsize"].template as<double>()
-                                  );
+            this->changeRepository( boost::format( "%1%/h_%2%/" ) % this->about().appName() % this->vm()["hsize"].template as<double>() );
 
         std::cerr << "[CRBApp] ch repo" << std::endl;
         this->setLogs();
@@ -94,11 +84,10 @@ public:
         std::cerr << "[CRBApp] get crb done" << std::endl;
         crb->setTruthModel( opus );
         std::cerr << "[CRBApp] constructor done" << std::endl;
-
     }
-    void setOutput( int i = 0, CRBErrorType error_type = ( int )CRB_RESIDUAL , int maxiter = 10 )
+    void setOutput( int i = 0, CRBErrorType error_type = (int)CRB_RESIDUAL, int maxiter = 10 )
     {
-        auto  ckconv = crb->offline();
+        auto ckconv = crb->offline();
 
         if ( ckconv.size() )
         {
@@ -110,7 +99,7 @@ public:
 
             for ( auto it = ckconv.left.begin(); it != ckconv.left.end(); ++it )
             {
-                LOG(INFO) << "ckconv[" << it->first <<"]=" << it->second << "\n";
+                LOG( INFO ) << "ckconv[" << it->first << "]=" << it->second << "\n";
             }
         }
     }
@@ -132,7 +121,7 @@ public:
         Sampling->randomize( 10 );
         int crb_error_type = crb->errorType();
         int output_index = crb->outputIndex();
-        BOOST_FOREACH( auto mu, *Sampling )
+        BOOST_FOREACH ( auto mu, *Sampling )
         {
             double sfem = opus->output( output_index, mu );
             int size = mu.size();
@@ -140,28 +129,29 @@ public:
             std::cout << "tolerance : " << this->vm()["crb.online-tolerance"].template as<double>() << "\n";
             std::cout << "mu = [ ";
 
-            for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
+            for ( int i = 0; i < size - 1; i++ )
+                std::cout << mu[i] << " , ";
 
-            std::cout<< mu[size-1]<<" ] \n";
-            auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
+            std::cout << mu[size - 1] << " ] \n";
+            auto o = crb->run( mu, this->vm()["crb.online-tolerance"].template as<double>() );
 
-            if ( crb_error_type==2 )
+            if ( crb_error_type == 2 )
             {
                 std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions\n";
-                std::cout << "output obtained using FEM : "<<sfem<<std::endl;
+                std::cout << "output obtained using FEM : " << sfem << std::endl;
             }
 
             else
             {
-                std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions  (error estimation on this output : " << o.get<1>()<<") \n";
-                std::cout << "output obtained using FEM : "<<sfem<<std::endl;
+                std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions  (error estimation on this output : " << o.get<1>() << ") \n";
+                std::cout << "output obtained using FEM : " << sfem << std::endl;
             }
 
             std::cout << "------------------------------------------------------------\n";
         }
     }
-    void run( const double * X, unsigned long N,
-              double * Y, unsigned long P )
+    void run( const double* X, unsigned long N,
+              double* Y, unsigned long P )
     {
         crb->run( X, N, Y, P );
     }

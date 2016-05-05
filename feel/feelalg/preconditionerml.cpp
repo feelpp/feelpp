@@ -27,7 +27,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
    \date 14-02-2008
 */
 
-
 #include <feel/feelalg/preconditionerml.hpp>
 
 namespace Feel
@@ -35,10 +34,9 @@ namespace Feel
 #if defined( FEELPP_HAS_TRILINOS_ML )
 
 PreconditionerML::PreconditionerML( list_type options )
-    :
-    M_Prec(),
-    M_List(),
-    M_precType( "MultiGrid" )
+    : M_Prec(),
+      M_List(),
+      M_precType( "MultiGrid" )
 {
     ML_Epetra::SetDefaults( "SA", M_List );
     /*
@@ -54,20 +52,19 @@ PreconditionerML::PreconditionerML( list_type options )
 }
 
 PreconditionerML::PreconditionerML( PreconditionerML const& tc )
-    :
-    M_Prec( tc.M_Prec ),
-    M_List( tc.M_List ),
-    M_precType( tc.M_precType )
-{}
+    : M_Prec( tc.M_Prec ),
+      M_List( tc.M_List ),
+      M_precType( tc.M_precType )
+{
+}
 
-int
-PreconditionerML::buildPreconditioner( sparse_matrix_ptrtype& A )
+int PreconditionerML::buildPreconditioner( sparse_matrix_ptrtype& A )
 {
     epetra_sparse_matrix_type* A_ptr = dynamic_cast<epetra_sparse_matrix_type*>( A.get() );
 
     M_Prec = boost::shared_ptr<prec_type>( new prec_type( A_ptr->mat(),
-                                           M_List,
-                                           true ) );
+                                                          M_List,
+                                                          true ) );
 
     return 0;
 }

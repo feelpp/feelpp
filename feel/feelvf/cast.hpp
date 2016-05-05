@@ -30,13 +30,14 @@ namespace Feel
 {
 namespace vf
 {
-class CastBase {};
+class CastBase
+{
+};
 
-template < typename T, class ExprT>
+template <typename T, class ExprT>
 class Cast : public CastBase
 {
-public:
-
+  public:
     //BOOST_STATIC_ASSERT( ::boost::is_arithmetic<T>::value );
 
     static const size_type context = vm::JACOBIAN;
@@ -45,19 +46,19 @@ public:
     static const uint16_type imorder = 0;
     static const bool imIsPoly = true;
 
-    template<typename Func>
+    template <typename Func>
     struct HasTestFunction
     {
         static const bool result = false;
     };
-    template<typename Func>
+    template <typename Func>
     struct HasTrialFunction
     {
         static const bool result = false;
     };
-    template<typename Func>
+    template <typename Func>
     static const bool has_test_basis = false;
-    template<typename Func>
+    template <typename Func>
     static const bool has_trial_basis = false;
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
@@ -65,25 +66,23 @@ public:
     using value_type = T;
     using evaluate_type = value_type;
     using expression_type = ExprT;
-    using this_type = Cast<T,ExprT>;
+    using this_type = Cast<T, ExprT>;
 
     Cast() = delete;
 
     constexpr explicit Cast( ExprT&& value )
-        :
-        M_expr( std::move( value ) )
+        : M_expr( std::move( value ) )
     {
     }
     constexpr explicit Cast( ExprT const& value )
-        :
-        M_expr( value )
+        : M_expr( value )
     {
     }
     Cast( Cast const& c ) = default;
     Cast& operator=( Cast const& c ) = default;
 
     expression_type const& expression() const { return M_expr; }
-    expression_type & expression()  { return M_expr; }
+    expression_type& expression() { return M_expr; }
 
     constexpr value_type evaluate() const
     {
@@ -100,28 +99,27 @@ public:
         return (value_type)M_expr.evaluate();
     }
 
-    template<typename... TheExpr>
+    template <typename... TheExpr>
     struct Lambda
     {
         typedef expression_type type;
     };
-    template<typename... TheExpr>
+    template <typename... TheExpr>
     typename Lambda<TheExpr...>::type
-    operator()( TheExpr... e  ) { return typename Lambda<TheExpr...>::type(M_expr); }
+    operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr ); }
 
-    template<typename Geo_t, typename Basis_i_t=mpl::void_, typename Basis_j_t = Basis_i_t>
+    template <typename Geo_t, typename Basis_i_t = mpl::void_, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
         typedef typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
-        using value_type = typename Cast<T,ExprT>::value_type;
+        using value_type = typename Cast<T, ExprT>::value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0>>, mpl::identity<vf::detail::gmc<0>>, mpl::identity<vf::detail::gmc<1>>>::type::type key_type;
+        typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type* gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::nDim, Scalar, false, false> shape;
 
-
-        template<typename Indq, typename Indi, typename Indj>
+        template <typename Indq, typename Indi, typename Indj>
         struct expr
         {
             typedef value_type type;
@@ -134,29 +132,26 @@ public:
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            :
-            M_expr( expr.expression(), geom, fev, feu )
+            : M_expr( expr.expression(), geom, fev, feu )
         {
         }
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
-            :
-            M_expr( expr.expression(), geom, fev )
+            : M_expr( expr.expression(), geom, fev )
         {
         }
         tensor( this_type const& expr, Geo_t const& geom )
-            :
-            M_expr( expr.expression(), geom )
+            : M_expr( expr.expression(), geom )
         {
         }
-        template<typename IM>
+        template <typename IM>
         void init( IM const& /*im*/ )
         {
         }
-        void update( Geo_t const&, Basis_i_t const& , Basis_j_t const&  )
+        void update( Geo_t const&, Basis_i_t const&, Basis_j_t const& )
         {
         }
-        void update( Geo_t const& , Basis_i_t const&  )
+        void update( Geo_t const&, Basis_i_t const& )
         {
         }
         void update( Geo_t const& )
@@ -165,7 +160,7 @@ public:
         void update( Geo_t const&, uint16_type )
         {
         }
-        template<typename CTX>
+        template <typename CTX>
         void updateContext( CTX const& ctx )
         {
         }
@@ -176,13 +171,12 @@ public:
             return (value_type)M_expr.evalij( i, j );
         }
 
-
         constexpr value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q  ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return (value_type)M_expr.evalijq( i, j, c1, c2, q );
         }
-        template<int PatternContext>
+        template <int PatternContext>
         constexpr value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
@@ -191,7 +185,7 @@ public:
         }
 
         constexpr value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q  ) const
+        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return (value_type)M_expr.evaliq( i, c1, c2, q );
         }
@@ -202,28 +196,26 @@ public:
         }
         tensor_expr_type M_expr;
     };
-protected:
+
+  protected:
     ExprT M_expr;
 };
 
-template<typename ExprT>
-inline
-Expr<Cast<int,ExprT>>
+template <typename ExprT>
+inline Expr<Cast<int, ExprT>>
 to_int( ExprT&& v )
 {
-    typedef Cast<int,ExprT> cast_t;
-    return Expr< cast_t >(  cast_t( v ) );
+    typedef Cast<int, ExprT> cast_t;
+    return Expr<cast_t>( cast_t( v ) );
 }
 
-template<typename T, typename ExprT>
-inline
-Expr<Cast<T,ExprT>>
+template <typename T, typename ExprT>
+inline Expr<Cast<T, ExprT>>
 cast( ExprT&& v )
 {
-    typedef Cast<T,ExprT> cast_t;
-    return Expr< cast_t >(  cast_t( v ) );
+    typedef Cast<T, ExprT> cast_t;
+    return Expr<cast_t>( cast_t( v ) );
 }
-
 
 } // vf
 } // Feel

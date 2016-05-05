@@ -26,14 +26,15 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_LOADGMSHMESH_HPP)
+#if !defined( FEELPP_LOADGMSHMESH_HPP )
 #define FEELPP_LOADGMSHMESH_HPP 1
 
-#include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/detail/mesh.hpp>
+#include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/importergmsh.hpp>
 
-namespace Feel {
+namespace Feel
+{
 /**
  *
  * \brief load a mesh data structure (hold in a shared_ptr<>) using GMSH
@@ -46,30 +47,13 @@ namespace Feel {
  */
 BOOST_PARAMETER_FUNCTION(
     ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
-    loadGMSHMesh,    // 2. function name
+    loadGMSHMesh,                                   // 2. function name
 
-    tag,           // 3. namespace of tag types
+    tag, // 3. namespace of tag types
 
-    ( required
-      ( mesh, * )
-      ( filename, * )
-        ) // 4. one required parameter, and
+    ( required( mesh, * )( filename, * ) ) // 4. one required parameter, and
 
-    ( optional
-      ( prefix,(std::string), "" )
-      ( straighten,          *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.straighten") )
-      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
-      ( update,          *( boost::is_integral<mpl::_> ), 0 )
-      ( physical_are_elementary_regions,		   *, boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions") )
-      ( worldcomm,       *, Environment::worldComm() )
-      ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition") )
-      ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition") )
-      ( rebuild_partitions_filename,	*, filename )
-      ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
-      ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
-      ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
-        )
-    )
+    ( optional( prefix, ( std::string ), "" )( straighten, *(boost::is_integral<mpl::_>), boption( _prefix = prefix, _name = "gmsh.straighten" ) )( refine, *(boost::is_integral<mpl::_>), ioption( _prefix = prefix, _name = "gmsh.refine" ) )( update, *(boost::is_integral<mpl::_>), 0 )( physical_are_elementary_regions, *, boption( _prefix = prefix, _name = "gmsh.physical_are_elementary_regions" ) )( worldcomm, *, Environment::worldComm() )( respect_partition, (bool), boption( _prefix = prefix, _name = "gmsh.respect_partition" ) )( rebuild_partitions, (bool), boption( _prefix = prefix, _name = "gmsh.partition" ) )( rebuild_partitions_filename, *, filename )( partitions, *(boost::is_integral<mpl::_>), worldcomm.globalSize() )( partitioner, *(boost::is_integral<mpl::_>), ioption( _prefix = prefix, _name = "gmsh.partitioner" ) )( partition_file, *(boost::is_integral<mpl::_>), 0 ) ) )
 {
     typedef typename Feel::detail::mesh<Args>::type _mesh_type;
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
@@ -86,12 +70,11 @@ BOOST_PARAMETER_FUNCTION(
         CHECK( !filename_with_path.empty() ) << "File " << filename << " cannot be found in the following paths list:\n " << ostr.str();
     }
 
-    Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
+    Gmsh gmsh( _mesh_type::nDim, _mesh_type::nOrder, worldcomm );
     gmsh.setRefinementLevels( refine );
     gmsh.setNumberOfPartitions( partitions );
     gmsh.setPartitioner( (GMSH_PARTITIONER)partitioner );
     gmsh.setMshFileByPartition( partition_file );
-
 
     // refinement if option is enabled to a value greater or equal to 1
     if ( refine )
@@ -100,8 +83,8 @@ BOOST_PARAMETER_FUNCTION(
     }
     else if ( rebuild_partitions )
     {
-        gmsh.rebuildPartitionMsh(filename_with_path,rebuild_partitions_filename);
-        filename_with_path=rebuild_partitions_filename;
+        gmsh.rebuildPartitionMsh( filename_with_path, rebuild_partitions_filename );
+        filename_with_path = rebuild_partitions_filename;
     }
 
     ImporterGmsh<_mesh_type> import( filename_with_path, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
@@ -131,6 +114,5 @@ BOOST_PARAMETER_FUNCTION(
 
     return _mesh;
 }
-
 }
 #endif /* FEELPP_LOADGMSHMESH_HPP */

@@ -43,17 +43,19 @@ namespace vf
 
   @author Christophe Prud'homme
 */
-template<typename T = double>
+template <typename T = double>
 class FunctorDomain
 {
-public:
+  public:
     typedef T value_type;
 
     FunctorDomain()
-    {}
+    {
+    }
 
     virtual ~FunctorDomain()
-    {}
+    {
+    }
 
     virtual bool hasLowerBound() const
     {
@@ -62,8 +64,9 @@ public:
 
     virtual value_type lowerBound() const
     {
-        FEELPP_ASSERT( true )( "FunctorDomain::lowerBound() called for a domain without "
-                               "a lower bound" );
+        FEELPP_ASSERT( true )
+        ( "FunctorDomain::lowerBound() called for a domain without "
+          "a lower bound" );
         return 0.0;
     }
 
@@ -74,8 +77,9 @@ public:
 
     virtual value_type upperBound() const
     {
-        FEELPP_ASSERT( true )( "FunctorDomain::upperBound() called for a domain without "
-                               "a upper bound" );
+        FEELPP_ASSERT( true )
+        ( "FunctorDomain::upperBound() called for a domain without "
+          "a upper bound" );
         return 0.0;
     }
 
@@ -86,40 +90,38 @@ public:
 
     virtual value_type excludedPoint() const
     {
-        FEELPP_ASSERT( true )( "FunctorDomain::excludedPoint() called for a domain without "
-                               "an excluded point" );
+        FEELPP_ASSERT( true )
+        ( "FunctorDomain::excludedPoint() called for a domain without "
+          "an excluded point" );
         return 0.0;
     }
-
 };
-template<typename T = double>
+template <typename T = double>
 class UnboundedDomain : public FunctorDomain<T>
 {
     typedef FunctorDomain<T> super;
-public:
 
-
+  public:
     typedef typename super::value_type value_type;
 
     UnboundedDomain()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
 };
 
-template<typename T = double>
+template <typename T = double>
 class PositiveDomain : public FunctorDomain<T>
 {
     typedef FunctorDomain<T> super;
 
-public:
-
+  public:
     typedef typename super::value_type value_type;
 
     PositiveDomain()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
 
     virtual bool hasLowerBound() const
     {
@@ -132,21 +134,20 @@ public:
     }
 };
 
-template<typename T = double>
+template <typename T = double>
 class BoundedDomain : public FunctorDomain<T>
 {
     typedef FunctorDomain<T> super;
 
-public:
-
+  public:
     typedef typename super::value_type value_type;
 
     BoundedDomain( const value_type& lower, const value_type& upper )
-        :
-        super(),
-        lower_( lower ),
-        upper_( upper )
-    {}
+        : super(),
+          lower_( lower ),
+          upper_( upper )
+    {
+    }
 
     virtual bool hasLowerBound() const
     {
@@ -168,26 +169,25 @@ public:
         return upper_;
     }
 
-private:
+  private:
     value_type lower_;
 
     value_type upper_;
 };
 
-template<typename T = double>
+template <typename T = double>
 class LowerBoundedDomain : public FunctorDomain<T>
 {
     typedef FunctorDomain<T> super;
 
-public:
-
+  public:
     typedef typename super::value_type value_type;
 
     LowerBoundedDomain( const value_type& lower )
-        :
-        super(),
-        lower_( lower )
-    {}
+        : super(),
+          lower_( lower )
+    {
+    }
 
     virtual bool hasLowerBound() const
     {
@@ -199,23 +199,22 @@ public:
         return lower_;
     }
 
-private:
+  private:
     value_type lower_;
 };
 
-template<typename T = double>
+template <typename T = double>
 class NonzeroDomain : public FunctorDomain<T>
 {
     typedef FunctorDomain<T> super;
 
-public:
-
+  public:
     typedef typename super::value_type value_type;
 
     NonzeroDomain()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
 
     virtual bool hasExcludedPoint() const
     {

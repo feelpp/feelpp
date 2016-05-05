@@ -22,13 +22,11 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-
 #ifndef __AitkenExtrapolation2
 #define __AitkenExtrapolation2 1
 
-#include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelalg/vector.hpp>
-
+#include <feel/feeldiscr/functionspace.hpp>
 
 namespace Feel
 {
@@ -61,20 +59,19 @@ namespace Feel
  *
  * \author Vincent Chabannes
  */
-template< typename fs_type >
+template <typename fs_type>
 class Aitken
 {
 
-public:
-
+  public:
     typedef fs_type functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
 
     typedef typename functionspace_type::template Element<typename functionspace_type::value_type,
-            typename VectorUblas<typename functionspace_type::value_type>::range::type > element_range_type;
-
+                                                          typename VectorUblas<typename functionspace_type::value_type>::range::type>
+        element_range_type;
 
     /**
      * Constructor
@@ -86,15 +83,14 @@ public:
      * \param _Xh the function space from which the element will be used
      * \param _failsafeParameter fail safe parameter value
      */
-    Aitken( functionspace_ptrtype _Xh, double _failsafeParameter = 0.1  )
-        :
-        Xh( _Xh ),
-        failsafeParameter( _failsafeParameter ),
-        previousParameter( _failsafeParameter ),
-        previousResidual( Xh, "previous residual" ),
-        previousElement( Xh, "previous element" ),
-        currentResidual( Xh, "current residual" ),
-        currentElement( Xh, "current element" )
+    Aitken( functionspace_ptrtype _Xh, double _failsafeParameter = 0.1 )
+        : Xh( _Xh ),
+          failsafeParameter( _failsafeParameter ),
+          previousParameter( _failsafeParameter ),
+          previousResidual( Xh, "previous residual" ),
+          previousElement( Xh, "previous element" ),
+          currentResidual( Xh, "current residual" ),
+          currentElement( Xh, "current element" )
     {
     }
 
@@ -102,14 +98,13 @@ public:
      * copy constructor
      */
     Aitken( Aitken const& tc )
-        :
-        Xh( tc.Xh ),
-        failsafeParameter( tc.failsafeParameter ),
-        previousParameter( tc.previousParameter ),
-        previousResidual( tc.previousResidual ),
-        previousElement( tc.previousElement ),
-        currentResidual( tc.currentResidual ),
-        currentElement( tc.currentElement )
+        : Xh( tc.Xh ),
+          failsafeParameter( tc.failsafeParameter ),
+          previousParameter( tc.previousParameter ),
+          previousResidual( tc.previousResidual ),
+          previousElement( tc.previousElement ),
+          currentResidual( tc.currentResidual ),
+          currentElement( tc.currentElement )
     {
     }
 
@@ -133,7 +128,7 @@ public:
     {
         previousResidual = residual;
         previousElement.zero();
-        previousElement.add( 1.,elem );
+        previousElement.add( 1., elem );
         /*previousElement = vf::project(previousElement.functionSpace(),
                                       elements(previousElement.mesh()),
                                       vf::idv(elem) );*/
@@ -154,12 +149,11 @@ public:
     {
         currentResidual = residual;
         currentElement.zero();
-        currentElement.add( 1.,elem );
+        currentElement.add( 1., elem );
         /*currentElement = vf::project(currentElement.functionSpace(),
                                      elements(currentElement.mesh()),
                                      vf::idv(elem) );*/
     }
-
 
     /**
      * \return the Aitken parameter
@@ -196,8 +190,7 @@ public:
         previousParameter = failsafeParameter;
     }
 
-private:
-
+  private:
     /**
      * function space
      */
@@ -206,11 +199,9 @@ private:
     double failsafeParameter, previousParameter;
 
     element_type previousResidual, previousElement, currentResidual, currentElement;
-
 };
 
-
-template< typename fs_type >
+template <typename fs_type>
 double
 Aitken<fs_type>::calculateParameter()
 {
@@ -221,19 +212,19 @@ Aitken<fs_type>::calculateParameter()
 
     double scalar = inner_product( aux, aux );
 
-    aux.scale( 1.0/scalar );
+    aux.scale( 1.0 / scalar );
 
     element_type aux2( Xh, "aux2" );
 
     aux2 = currentElement;
     aux2 -= previousElement;
 
-    scalar = inner_product( previousResidual , aux );
-    scalar = -previousParameter*scalar;
+    scalar = inner_product( previousResidual, aux );
+    scalar = -previousParameter * scalar;
 #if 1
 
     if ( scalar > 1 )
-        scalar = 1;//-failsafeParameter;
+        scalar = 1; //-failsafeParameter;
 
     if ( scalar < 0 )
         scalar = failsafeParameter;
@@ -243,7 +234,6 @@ Aitken<fs_type>::calculateParameter()
 
     return scalar;
 }
-
 
 } // End namespace Feel
 

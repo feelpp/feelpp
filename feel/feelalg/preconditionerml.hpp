@@ -41,9 +41,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #undef PACKAGE_TARNAME
 #undef PACKAGE_VERSION
 #include <feel/feelalg/matrixepetra.hpp>
-#include <ml_config.h>
-#include <ml_RowMatrix.h>
 #include <ml_MultiLevelPreconditioner.h>
+#include <ml_RowMatrix.h>
+#include <ml_config.h>
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
 #undef PACKAGE_STRING
@@ -53,8 +53,7 @@ namespace Feel
 {
 class PreconditionerML
 {
-public:
-
+  public:
     typedef ML_Epetra::MultiLevelPreconditioner prec_type;
     typedef boost::shared_ptr<prec_type> prec_ptrtype;
 
@@ -74,14 +73,12 @@ public:
 
     prec_ptrtype getPrec();
 
-private:
-
+  private:
     prec_ptrtype M_Prec;
 
     Teuchos::ParameterList M_List;
 
     std::string M_precType;
-
 };
 
 } // Feel

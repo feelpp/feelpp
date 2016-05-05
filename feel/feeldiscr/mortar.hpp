@@ -31,21 +31,21 @@
 
 namespace Feel
 {
-namespace detail{
-class mortar_base {};
+namespace detail
+{
+class mortar_base
+{
+};
 }
 class Mortar : public Feel::detail::mortar_base
 {
-public:
+  public:
     static const bool is_mortar = true;
-
 };
 class NoMortar : public Feel::detail::mortar_base
 {
-public:
+  public:
     static const bool is_mortar = false;
-
 };
-
 }
 #endif /* FEELPP_Mortar_H */

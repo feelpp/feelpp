@@ -31,7 +31,6 @@
 
 #include <feel/feelsystem/systemimplicit.hpp>
 
-
 namespace Feel
 {
 /**
@@ -41,17 +40,15 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-template<typename SpaceType>
+template <typename SpaceType>
 class SystemImplicitNonLinear : public SystemImplicit<SpaceType>
 {
     typedef SystemImplicit<SpaceType> super;
-public:
 
-
+  public:
     /** @name Constants
      */
     //@{
-
 
     //@}
 
@@ -83,7 +80,7 @@ public:
     //! default constructor
     SystemImplicitNonLinear( functionspace_ptrtype const& Xh, po::variables_map const& vm );
     //! copy constructor
-    SystemImplicitNonLinear( SystemImplicitNonLinear const & );
+    SystemImplicitNonLinear( SystemImplicitNonLinear const& );
     //! destructor
     ~SystemImplicitNonLinear();
 
@@ -94,7 +91,7 @@ public:
     //@{
 
     //! copy operator
-    SystemImplicitNonLinear& operator=( SystemImplicitNonLinear const & o )
+    SystemImplicitNonLinear& operator=( SystemImplicitNonLinear const& o )
     {
         if ( this != &o )
         {
@@ -130,7 +127,7 @@ public:
     }
 
     //! \return the residual
-    vector_ptrtype & residual()
+    vector_ptrtype& residual()
     {
         return M_R;
     }
@@ -140,7 +137,6 @@ public:
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -168,38 +164,30 @@ public:
     }
     //@}
 
-
-
-protected:
-
+  protected:
     sparse_matrix_ptrtype M_J;
     vector_ptrtype M_R;
 
-private:
-
+  private:
 };
-template<typename SpaceType>
+template <typename SpaceType>
 SystemImplicitNonLinear<SpaceType>::SystemImplicitNonLinear( functionspace_ptrtype const& Xh,
-        po::variables_map const& vm )
-    :
-    super( Xh, vm ),
-    M_J( M_backend->newMatrix( Xh, Xh ) ),
-    M_R( M_backend->newVector( Xh ) )
+                                                             po::variables_map const& vm )
+    : super( Xh, vm ),
+      M_J( M_backend->newMatrix( Xh, Xh ) ),
+      M_R( M_backend->newVector( Xh ) )
 
 {
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
-
 }
-template<typename SpaceType>
+template <typename SpaceType>
 SystemImplicitNonLinear<SpaceType>::SystemImplicitNonLinear( SystemImplicitNonLinear const& sil )
-    :
-    super( sil ),
-    M_J( sil.M_J ),
-    M_R( sil.M_R )
+    : super( sil ),
+      M_J( sil.M_J ),
+      M_R( sil.M_R )
 
-{}
-
-
+{
+}
 }
 #endif /* __SystemImplicitNonLinear_H */

@@ -38,26 +38,25 @@ namespace Feel
  * On the simplicies we use the Dubiner basis
  *
  */
-template<uint16_type Dim,
-         uint16_type Order,
-         template<uint16_type> class PolySetType = Scalar,
-         typename T = double,
-         template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
+template <uint16_type Dim,
+          uint16_type Order,
+          template <uint16_type> class PolySetType = Scalar,
+          typename T = double,
+          template <uint16_type, uint16_type, uint16_type> class Convex = Simplex>
 class OrthogonalPolynomialSet
-{};
-
-
-template<uint16_type Dim,
-         uint16_type Order,
-         template<uint16_type> class PolySetType,
-         typename T>
-class OrthogonalPolynomialSet<Dim, Order, PolySetType, T, Simplex>
-    :
-public PolynomialSet<Dubiner<Dim, Order, Normalized<false>, T, StorageUBlas>, PolySetType >
 {
-    typedef PolynomialSet<Dubiner<Dim, Order, Normalized<false>, T, StorageUBlas>, PolySetType > super;
-public:
+};
 
+template <uint16_type Dim,
+          uint16_type Order,
+          template <uint16_type> class PolySetType,
+          typename T>
+class OrthogonalPolynomialSet<Dim, Order, PolySetType, T, Simplex>
+    : public PolynomialSet<Dubiner<Dim, Order, Normalized<false>, T, StorageUBlas>, PolySetType>
+{
+    typedef PolynomialSet<Dubiner<Dim, Order, Normalized<false>, T, StorageUBlas>, PolySetType> super;
+
+  public:
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
     static const bool isTransformationEquivalent = true;
@@ -97,21 +96,20 @@ public:
 
     static const uint16_type nDof = nLocalDof;
     static const uint16_type nNodes = nDof;
-    static const uint16_type nDofGrad = super::nDim*nDof;
-    static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
+    static const uint16_type nDofGrad = super::nDim * nDof;
+    static const uint16_type nDofHess = super::nDim * super::nDim * nDof;
 
     OrthogonalPolynomialSet()
-        :
-        super( basis_type() )
+        : super( basis_type() )
 
     {
-        ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
+        ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents * convex_type::polyDims( nOrder ) ) );
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
-    OrthogonalPolynomialSet<Dim, Order, Scalar,T, Simplex > toScalar() const
+    OrthogonalPolynomialSet<Dim, Order, Scalar, T, Simplex> toScalar() const
     {
-        return OrthogonalPolynomialSet<Dim, Order, Scalar,T, Simplex >();
+        return OrthogonalPolynomialSet<Dim, Order, Scalar, T, Simplex>();
     }
 
     std::string familyName() const
@@ -119,23 +117,22 @@ public:
         return "dubiner";
     }
 };
-template<uint16_type Dim,
-         uint16_type Order,
-         template<uint16_type> class PolySetType,
-         typename T>
-const uint16_type OrthogonalPolynomialSet<Dim, Order,PolySetType,T, Simplex>::nLocalDof;
+template <uint16_type Dim,
+          uint16_type Order,
+          template <uint16_type> class PolySetType,
+          typename T>
+const uint16_type OrthogonalPolynomialSet<Dim, Order, PolySetType, T, Simplex>::nLocalDof;
 
-template<uint16_type Dim,
-         uint16_type Order,
-         template<uint16_type> class PolySetType,
-         typename T>
+template <uint16_type Dim,
+          uint16_type Order,
+          template <uint16_type> class PolySetType,
+          typename T>
 class OrthogonalPolynomialSet<Dim, Order, PolySetType, T, Hypercube>
-    :
-public PolynomialSet<Legendre<Dim, Order, Normalized<false>, T>, PolySetType >
+    : public PolynomialSet<Legendre<Dim, Order, Normalized<false>, T>, PolySetType>
 {
-    typedef PolynomialSet<Legendre<Dim, Order, Normalized<false>, T>, PolySetType > super;
-public:
+    typedef PolynomialSet<Legendre<Dim, Order, Normalized<false>, T>, PolySetType> super;
 
+  public:
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
     static const bool isTransformationEquivalent = true;
@@ -175,21 +172,20 @@ public:
 
     static const uint16_type nDof = nLocalDof;
     static const uint16_type nNodes = nDof;
-    static const uint16_type nDofGrad = super::nDim*nDof;
-    static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
+    static const uint16_type nDofGrad = super::nDim * nDof;
+    static const uint16_type nDofHess = super::nDim * super::nDim * nDof;
 
     OrthogonalPolynomialSet()
-        :
-        super( basis_type() )
+        : super( basis_type() )
 
     {
-        ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
+        ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents * convex_type::polyDims( nOrder ) ) );
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
-    OrthogonalPolynomialSet<Dim, Order, Scalar,T, Hypercube > toScalar() const
+    OrthogonalPolynomialSet<Dim, Order, Scalar, T, Hypercube> toScalar() const
     {
-        return OrthogonalPolynomialSet<Dim, Order, Scalar,T, Hypercube >();
+        return OrthogonalPolynomialSet<Dim, Order, Scalar, T, Hypercube>();
     }
 
     std::string familyName() const
@@ -198,10 +194,10 @@ public:
     }
 };
 
-template<uint16_type Dim,
-         uint16_type Order,
-         template<uint16_type> class PolySetType,
-         typename T>
-const uint16_type OrthogonalPolynomialSet<Dim, Order,PolySetType,T, Hypercube>::nLocalDof;
+template <uint16_type Dim,
+          uint16_type Order,
+          template <uint16_type> class PolySetType,
+          typename T>
+const uint16_type OrthogonalPolynomialSet<Dim, Order, PolySetType, T, Hypercube>::nLocalDof;
 }
 #endif /* __OrthogonalPolynomialSet_H */

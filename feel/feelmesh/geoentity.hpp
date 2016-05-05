@@ -29,9 +29,9 @@
 #ifndef __GeoEntity_H
 #define __GeoEntity_H 1
 
-#include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelmesh/refentity.hpp>
+#include <feel/feelmesh/simplex.hpp>
 
 namespace Feel
 {
@@ -43,17 +43,14 @@ namespace Feel
    @author Christophe Prud'homme
    @see
 */
-template<typename Entity>
+template <typename Entity>
 class GeoEntity
-    :
-    boost::equality_comparable<GeoEntity<Entity> >,
-    boost::less_than_comparable<GeoEntity<Entity> >,
-    boost::less_than_comparable<GeoEntity<Entity>, size_type>,
-    public Entity
+    : boost::equality_comparable<GeoEntity<Entity>>,
+      boost::less_than_comparable<GeoEntity<Entity>>,
+      boost::less_than_comparable<GeoEntity<Entity>, size_type>,
+      public Entity
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -72,7 +69,6 @@ public:
     static const uint16_type nDim = super::nDim;
     static const uint16_type nOrder = super::nOrder;
     static const uint16_type nRealDim = super::nRealDim;
-
 
     static const uint16_type numVertices = super::numVertices;
     static const uint16_type numFaces = super::numFaces;
@@ -95,13 +91,13 @@ public:
     /**
      * helper class to construct the associated reference convex.
      */
-    template<typename T = double>
+    template <typename T = double>
     struct reference_convex
     {
         typedef Reference<Entity, nDim, nOrder, nRealDim, T> type;
     };
-    template<typename T = double>
-    using reference_convex_type =  Reference<Entity, nDim, nOrder, nRealDim, T>;
+    template <typename T = double>
+    using reference_convex_type = Reference<Entity, nDim, nOrder, nRealDim, T>;
 
     //@}
 
@@ -110,47 +106,48 @@ public:
     //@{
 
     GeoEntity()
-        :
-        super(),
-        M_id( 0 ),
-        M_entity( MESH_ENTITY_INTERNAL ),
-        M_geometry( Geometry ),
-        M_shape( Shape ),
-        M_boundaryEntityDimension( invalid_uint16_type_value ),
-        M_pid( invalid_rank_type_value ),
-        M_pidInPartition( invalid_rank_type_value ),
-        M_neighor_pids(),
-        M_idInOtherPartitions(),
-        M_elist(),
-        M_elistGhost()
-    {}
+        : super(),
+          M_id( 0 ),
+          M_entity( MESH_ENTITY_INTERNAL ),
+          M_geometry( Geometry ),
+          M_shape( Shape ),
+          M_boundaryEntityDimension( invalid_uint16_type_value ),
+          M_pid( invalid_rank_type_value ),
+          M_pidInPartition( invalid_rank_type_value ),
+          M_neighor_pids(),
+          M_idInOtherPartitions(),
+          M_elist(),
+          M_elistGhost()
+    {
+    }
 
     explicit GeoEntity( size_type i,
                         size_type geometry = Geometry,
                         size_type shape = Shape,
                         size_type context = MESH_ENTITY_INTERNAL )
-        :
-        super(),
-        M_id( i ),
-        M_entity( context ),
-        M_geometry( geometry ),
-        M_shape( shape ),
-        M_boundaryEntityDimension( invalid_uint16_type_value ),
-        M_pid( invalid_rank_type_value ),
-        M_pidInPartition( invalid_rank_type_value ),
-        M_neighor_pids(),
-        M_idInOtherPartitions(),
-        M_elist(),
-        M_elistGhost()
-    {}
+        : super(),
+          M_id( i ),
+          M_entity( context ),
+          M_geometry( geometry ),
+          M_shape( shape ),
+          M_boundaryEntityDimension( invalid_uint16_type_value ),
+          M_pid( invalid_rank_type_value ),
+          M_pidInPartition( invalid_rank_type_value ),
+          M_neighor_pids(),
+          M_idInOtherPartitions(),
+          M_elist(),
+          M_elistGhost()
+    {
+    }
 
     GeoEntity( GeoEntity const& __me ) = default;
-    GeoEntity( GeoEntity && __me ) = default;
+    GeoEntity( GeoEntity&& __me ) = default;
     GeoEntity& operator=( GeoEntity const& __me ) = default;
-    GeoEntity& operator=( GeoEntity && __me ) = default;
+    GeoEntity& operator=( GeoEntity&& __me ) = default;
 
     virtual ~GeoEntity()
-    {}
+    {
+    }
 
     //@}
 
@@ -181,7 +178,6 @@ public:
     {
         return M_id;
     }
-
 
     /**
      * the dimension of the reference shape
@@ -263,7 +259,6 @@ public:
     {
         return super::numNormals;
     }
-
 
     /**
      *
@@ -388,7 +383,6 @@ public:
         return M_entity.test( MESH_ENTITY_INTERNAL );
     }
 
-
     /**
      * Tells if  item is on the boundary
      * @return true if on boundary, false otherwise
@@ -413,7 +407,7 @@ public:
         //return (this->worldComm().localRank()!=M_pid);
         //mpi::communicator world;
         //return (world.rank()!=M_pid);
-        return ( M_pidInPartition!=M_pid );
+        return ( M_pidInPartition != M_pid );
     }
 
     /**
@@ -430,7 +424,7 @@ public:
      */
     void setProcessId( rank_type pid ) noexcept
     {
-        M_pid = pid ;
+        M_pid = pid;
     }
 
     /**
@@ -446,7 +440,7 @@ public:
      */
     void setProcessIdInPartition( rank_type pid ) noexcept
     {
-        M_pidInPartition = pid ;
+        M_pidInPartition = pid;
     }
 
     /**
@@ -463,7 +457,7 @@ public:
      */
     rank_type numberOfPartitions() const noexcept
     {
-        return static_cast<rank_type>(M_neighor_pids.size()+1);
+        return static_cast<rank_type>( M_neighor_pids.size() + 1 );
     }
 
     /**
@@ -471,7 +465,7 @@ public:
      */
     rank_type numberOfNeighborPartitions() const
     {
-        return static_cast<rank_type>(M_neighor_pids.size());
+        return static_cast<rank_type>( M_neighor_pids.size() );
     }
 
     /**
@@ -493,7 +487,7 @@ public:
     /**
      * \return the number of partition the element is linked to
      */
-    std::vector<rank_type> & neighborPartitionIds()
+    std::vector<rank_type>& neighborPartitionIds()
     {
         return M_neighor_pids;
     }
@@ -520,26 +514,25 @@ public:
     /**
      * set (partition,id) in other partitions of the entity
      */
-    void setIdInOtherPartitions( std::map<rank_type,size_type> const& iop )
-        {
-            M_idInOtherPartitions = iop;
-        }
+    void setIdInOtherPartitions( std::map<rank_type, size_type> const& iop )
+    {
+        M_idInOtherPartitions = iop;
+    }
 
-    
     /**
      * set (partition,id) in other partitions of the entity
      */
-    void setIdInOtherPartitions( std::map<rank_type,size_type>&& iop )
-        {
-            M_idInOtherPartitions = iop;
-        }
+    void setIdInOtherPartitions( std::map<rank_type, size_type>&& iop )
+    {
+        M_idInOtherPartitions = iop;
+    }
 
     /**
      * \return the id of the entity in a partition pid
      */
     size_type idInOthersPartitions( rank_type pid ) const
     {
-        DCHECK( M_idInOtherPartitions.find( pid )!=M_idInOtherPartitions.end() ) 
+        DCHECK( M_idInOtherPartitions.find( pid ) != M_idInOtherPartitions.end() )
             << " local id " << this->id() << " is unknown for this partition " << pid << "\n";
         return M_idInOtherPartitions.find( pid )->second;
     }
@@ -631,9 +624,9 @@ public:
 
     void addNeighborPartitionId( rank_type p )
     {
-        if ( std::find( M_neighor_pids.begin(), M_neighor_pids.end(), p) == M_neighor_pids.end() )
+        if ( std::find( M_neighor_pids.begin(), M_neighor_pids.end(), p ) == M_neighor_pids.end() )
         {
-            M_neighor_pids.push_back(p);
+            M_neighor_pids.push_back( p );
         }
     }
 
@@ -672,7 +665,7 @@ public:
      */
     self_type& addElement( size_type e, int id_in_element = 0 )
     {
-        M_elist.insert( std::make_pair(e,id_in_element) );
+        M_elist.insert( std::make_pair( e, id_in_element ) );
         return *this;
     }
 
@@ -687,22 +680,21 @@ public:
     /**
      * \return the set of ids of elements whom the point belongs to
      */
-    std::set<std::pair<size_type,uint16_type>> const& elements() const
+    std::set<std::pair<size_type, uint16_type>> const& elements() const
     {
         return M_elist;
     }
-    std::set<std::pair<size_type,uint16_type>> & elements()
+    std::set<std::pair<size_type, uint16_type>>& elements()
     {
         return M_elist;
     }
-
 
     /**
      * add a new ghost element to which the point belongs
      */
-    self_type& addElementGhost( rank_type proc, size_type e  )
+    self_type& addElementGhost( rank_type proc, size_type e )
     {
-        M_elistGhost[proc].insert(e);
+        M_elistGhost[proc].insert( e );
         return *this;
     }
 
@@ -717,7 +709,7 @@ public:
     /**
      * \return the set of ids of ghost elements whom the point belongs to
      */
-    std::map<rank_type,std::set<size_type> > const& elementsGhost() const
+    std::map<rank_type, std::set<size_type>> const& elementsGhost() const
     {
         return M_elistGhost;
     }
@@ -737,40 +729,34 @@ public:
 
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
     friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-        {
-            DVLOG(2) << "Serializing GeoEntity...\n";
-            DVLOG(2) << "  - id...\n";
-            ar & M_id;
-            DVLOG(2) << "  - id:" << M_id << "\n";
-            DVLOG(2) << "  - entity...\n";
-            ar & M_entity;
-            DVLOG(2) << "  - entity:" << M_entity.context() << "\n";
-            DVLOG(2) << "  - geometry...\n";
-            ar & M_geometry;
-            DVLOG(2) << "  - geometry:" << M_geometry.context() << "\n";
-            DVLOG(2) << "  - shape...\n";
-            ar & M_shape;
-            DVLOG(2) << "  - shape:" << M_shape.context() << "\n";
-            DVLOG(2) << "  - pid...\n";
-            ar & M_pid;
-            DVLOG(2) << "  - pid:" << M_pid << "\n";
-            ar & M_pidInPartition;
-            ar & M_neighor_pids;
-            ar & M_idInOtherPartitions;
-        }
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version )
+    {
+        DVLOG( 2 ) << "Serializing GeoEntity...\n";
+        DVLOG( 2 ) << "  - id...\n";
+        ar& M_id;
+        DVLOG( 2 ) << "  - id:" << M_id << "\n";
+        DVLOG( 2 ) << "  - entity...\n";
+        ar& M_entity;
+        DVLOG( 2 ) << "  - entity:" << M_entity.context() << "\n";
+        DVLOG( 2 ) << "  - geometry...\n";
+        ar& M_geometry;
+        DVLOG( 2 ) << "  - geometry:" << M_geometry.context() << "\n";
+        DVLOG( 2 ) << "  - shape...\n";
+        ar& M_shape;
+        DVLOG( 2 ) << "  - shape:" << M_shape.context() << "\n";
+        DVLOG( 2 ) << "  - pid...\n";
+        ar& M_pid;
+        DVLOG( 2 ) << "  - pid:" << M_pid << "\n";
+        ar& M_pidInPartition;
+        ar& M_neighor_pids;
+        ar& M_idInOtherPartitions;
+    }
 
-private:
-
-
+  private:
     size_type M_id;
 
     Context M_entity;
@@ -786,27 +772,26 @@ private:
     std::map<rank_type, size_type> M_idInOtherPartitions;
 
     //! element list to which the point belongs
-    std::set<std::pair<size_type,uint16_type>>  M_elist;
+    std::set<std::pair<size_type, uint16_type>> M_elist;
     //! ghost elements which share the entity
-    std::map<rank_type,std::set<size_type > > M_elistGhost;
-
+    std::map<rank_type, std::set<size_type>> M_elistGhost;
 };
 
-typedef GeoEntity<Simplex<0, 1> > GeoPoint;
+typedef GeoEntity<Simplex<0, 1>> GeoPoint;
 
 // simplices
-typedef GeoEntity<Simplex<1, 1> > LinearLine;
-typedef GeoEntity<Simplex<2, 1> > LinearTriangle;
-typedef GeoEntity<Simplex<3, 1> > LinearTetra;
-typedef GeoEntity<Simplex<1, 2> > QuadraticLine;
-typedef GeoEntity<Simplex<2, 2> > QuadraticTriangle;
-typedef GeoEntity<Simplex<3, 2> > QuadraticTetra;
+typedef GeoEntity<Simplex<1, 1>> LinearLine;
+typedef GeoEntity<Simplex<2, 1>> LinearTriangle;
+typedef GeoEntity<Simplex<3, 1>> LinearTetra;
+typedef GeoEntity<Simplex<1, 2>> QuadraticLine;
+typedef GeoEntity<Simplex<2, 2>> QuadraticTriangle;
+typedef GeoEntity<Simplex<3, 2>> QuadraticTetra;
 
 // tensor products
-typedef GeoEntity<Hypercube<2, 1> > LinearQuad;
-typedef GeoEntity<Hypercube<3, 1> > LinearHexa;
-typedef GeoEntity<Hypercube<2, 2> > QuadraticQuad;
-typedef GeoEntity<Hypercube<3, 2> > QuadraticHexa;
+typedef GeoEntity<Hypercube<2, 1>> LinearQuad;
+typedef GeoEntity<Hypercube<3, 1>> LinearHexa;
+typedef GeoEntity<Hypercube<2, 2>> QuadraticQuad;
+typedef GeoEntity<Hypercube<3, 2>> QuadraticHexa;
 
 } // Feel
 

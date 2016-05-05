@@ -33,34 +33,32 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 //#include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmesh/meshmover.hpp>
 #include <feel/feelts/bdf.hpp>
-#include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feelvf/expr.hpp>
-#include <feel/feelvf/projectors.hpp>
-#include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/geometricdata.hpp>
-
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/projectors.hpp>
 
 #include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelmesh/ale.hpp>
 
-
-#include <feel/feelmodels/modelmesh/dofrelationshipmap.hpp>
 #include <feel/feelmodels/modelalg/functionSup.cpp>
+#include <feel/feelmodels/modelmesh/dofrelationshipmap.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
 
-template< class Convex >
+template <class Convex>
 class MeshALE : public ModelBase
 {
 
-public :
+  public:
     typedef ModelBase super_type;
 
     typedef Backend<double> backend_type;
@@ -70,18 +68,18 @@ public :
      * Moving mesh typedefs
      */
     typedef Convex convex_type;
-    typedef Mesh< convex_type > mesh_type;
+    typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*
      * Reference mesh typedefs
      */
-    typedef typename mesh_type::P1_mesh_type  mesh_ref_type;
+    typedef typename mesh_type::P1_mesh_type mesh_ref_type;
     typedef boost::shared_ptr<mesh_ref_type> mesh_ref_ptrtype;
     typedef typename mesh_ref_type::shape_type convex_ref_type;
 
-    typedef ALE< convex_ref_type, mesh_type::nOrder > ale_map_type;
-    typedef boost::shared_ptr< ale_map_type > ale_map_ptrtype;
+    typedef ALE<convex_ref_type, mesh_type::nOrder> ale_map_type;
+    typedef boost::shared_ptr<ale_map_type> ale_map_ptrtype;
 
     typedef typename ale_map_type::ale_map_functionspace_type ale_map_functionspace_ref_type;
     typedef boost::shared_ptr<ale_map_functionspace_ref_type> ale_map_functionspace_ref_ptrtype;
@@ -95,42 +93,39 @@ public :
     typedef typename ale_map_functionspace_type::element_type ale_map_element_type;
     typedef boost::shared_ptr<ale_map_element_type> ale_map_element_ptrtype;
 
-    typedef FunctionSpace< mesh_type, bases<Lagrange< mesh_type::nOrder/*-1*/,Vectorial,Discontinuous> > > ale_map_functionspacedisc_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<mesh_type::nOrder /*-1*/, Vectorial, Discontinuous>>> ale_map_functionspacedisc_type;
     typedef boost::shared_ptr<ale_map_functionspacedisc_type> ale_map_functionspacedisc_ptrtype;
     typedef typename ale_map_functionspacedisc_type::element_type ale_map_elementdisc_type;
     typedef boost::shared_ptr<ale_map_elementdisc_type> ale_map_elementdisc_ptrtype;
 
-
-    typedef Bdf< ale_map_functionspace_ref_type > bdf_ale_displacement_ref_type;
+    typedef Bdf<ale_map_functionspace_ref_type> bdf_ale_displacement_ref_type;
     typedef boost::shared_ptr<bdf_ale_displacement_ref_type> bdf_ale_displacement_ref_ptrtype;
 
-    typedef Bdf< ale_map_functionspace_type > bdf_ale_displacement_type;
+    typedef Bdf<ale_map_functionspace_type> bdf_ale_displacement_type;
     typedef boost::shared_ptr<bdf_ale_displacement_type> bdf_ale_displacement_ptrtype;
 
-    typedef Exporter<mesh_type,mesh_type::nOrder> exporter_type;
+    typedef Exporter<mesh_type, mesh_type::nOrder> exporter_type;
     typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
 
-    typedef Exporter<mesh_ref_type,mesh_ref_type::nOrder> exporter_ref_type;
+    typedef Exporter<mesh_ref_type, mesh_ref_type::nOrder> exporter_ref_type;
     typedef boost::shared_ptr<exporter_ref_type> exporter_ref_ptrtype;
 
-    typedef DofRelationshipMap<ale_map_functionspace_ref_type,ale_map_functionspace_type > DofRelationshipMap_type;
+    typedef DofRelationshipMap<ale_map_functionspace_ref_type, ale_map_functionspace_type> DofRelationshipMap_type;
     typedef boost::shared_ptr<DofRelationshipMap_type> DofRelationshipMap_ptrtype;
 
-
-    MeshALE(mesh_ptrtype mesh_moving,
-            //po::variables_map const& vm=Environment::vm(),
-            std::string const& prefix="",
-            //std::string exportName="ExportMeshALE",
-            WorldComm const& worldcomm=Environment::worldComm(),
-            bool moveGhostEltFromExtendedStencil=false,
-            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+    MeshALE( mesh_ptrtype mesh_moving,
+             //po::variables_map const& vm=Environment::vm(),
+             std::string const& prefix = "",
+             //std::string exportName="ExportMeshALE",
+             WorldComm const& worldcomm = Environment::worldComm(),
+             bool moveGhostEltFromExtendedStencil = false,
+             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
     void init();
 
     boost::shared_ptr<std::ostringstream> getInfo() const;
 
-
-    void addBoundaryFlags(std::string __type, std::string __marker);
+    void addBoundaryFlags( std::string __type, std::string __marker );
 
     /**
      * \return the reference mesh
@@ -215,13 +210,12 @@ public :
 
     //bool doExport() const { return M_doExport; }
 
-
     /**
      * \Compute ale map and move the mesh
      */
-    template< typename elem_type >
+    template <typename elem_type>
     void update( std::vector<elem_type> const& polyDisplacementSet );
-    template< typename elem_type >
+    template <typename elem_type>
     void update( elem_type const& polyDisplacementSet );
 
     void updateImpl( Vector<double> const& dispInput );
@@ -244,15 +238,12 @@ public :
     /**
      * \Export
      */
-    void exportResults(double time=0);
+    void exportResults( double time = 0 );
 
-private :
-
+  private:
     void updateIdentityMap();
 
-private :
-
-
+  private:
     //backend_ptrtype M_backend;
 
     MeshMover<mesh_type> M_mesh_mover;
@@ -296,20 +287,18 @@ private :
 
 //------------------------------------------------------------------------------------------------//
 
-template< class Convex >
-template< typename elem_type >
-void
-MeshALE<Convex>::update( std::vector<elem_type> const& polyDisplacementSet )
+template <class Convex>
+template <typename elem_type>
+void MeshALE<Convex>::update( std::vector<elem_type> const& polyDisplacementSet )
 {
     CHECK( polyDisplacementSet.size() == 1 ) << "invalid size";
     this->update( polyDisplacementSet[0] );
 }
-template< class Convex >
-template< typename elem_type >
-void
-MeshALE<Convex>::update( elem_type/*std::vector<elem_type>*/ const& polyDisplacementSet )
+template <class Convex>
+template <typename elem_type>
+void MeshALE<Convex>::update( elem_type /*std::vector<elem_type>*/ const& polyDisplacementSet )
 {
-    this->log(prefixvm(this->prefix(),"MeshALE"),"update", "start");
+    this->log( prefixvm( this->prefix(), "MeshALE" ), "update", "start" );
 
     CHECK( this->isOnMovingMesh() ) << "meshALE must be on moving mesh\n";
 
@@ -320,15 +309,15 @@ MeshALE<Convex>::update( elem_type/*std::vector<elem_type>*/ const& polyDisplace
     //---------------------------------------------------------------------------------------------//
     // interp disp to ref_ho
     auto vecDisp = backend()->newVector( M_displacementOnMovingBoundary_HO_ref->functionSpace() );
-    for ( uint16_type i=0; i < this->aleFactory()->flagSet("moving").size(); ++i )
+    for ( uint16_type i = 0; i < this->aleFactory()->flagSet( "moving" ).size(); ++i )
     {
 #if 1
-        modifVec(markedfaces( M_movingMesh, this->aleFactory()->flagSet("moving",i) ),
-                 *M_displacementOnMovingBoundary_HO_ref,
-                 vecDisp/*M_displacementOnMovingBoundary_HO_ref*/,
-                 vf::idv(polyDisplacementSet/*[i]*/) );
+        modifVec( markedfaces( M_movingMesh, this->aleFactory()->flagSet( "moving", i ) ),
+                  *M_displacementOnMovingBoundary_HO_ref,
+                  vecDisp /*M_displacementOnMovingBoundary_HO_ref*/,
+                  vf::idv( polyDisplacementSet /*[i]*/ ) );
 #else
-        //M_displacementOnMovingBoundary_HO_ref->on(_range=markedfaces( M_movingMesh, this->aleFactory()->flagSet("moving",i) ),_expr=vf::idv(polyDisplacementSet) );
+//M_displacementOnMovingBoundary_HO_ref->on(_range=markedfaces( M_movingMesh, this->aleFactory()->flagSet("moving",i) ),_expr=vf::idv(polyDisplacementSet) );
 #endif
     }
     vecDisp->close();
@@ -336,15 +325,12 @@ MeshALE<Convex>::update( elem_type/*std::vector<elem_type>*/ const& polyDisplace
 
     this->updateImpl( *vecDisp );
 
-    this->log(prefixvm(this->prefix(),"MeshALE"),"update", "finish");
+    this->log( prefixvm( this->prefix(), "MeshALE" ), "update", "finish" );
 }
 
 //------------------------------------------------------------------------------------------------//
 
-
-
-
-template<typename Args>
+template <typename Args>
 struct compute_meshale_return
 {
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::mesh>::type>::type::element_type mesh_type;
@@ -354,25 +340,17 @@ struct compute_meshale_return
 };
 
 BOOST_PARAMETER_FUNCTION(
-    ( typename compute_meshale_return<Args>::ptrtype ), // 1. return type
-    meshale,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( mesh,    *( boost::is_convertible<mpl::_,boost::shared_ptr<MeshBase> > ) )
-      ) // required
-    ( optional
-      ( prefix,            (std::string), std::string("") )
-      ( worldcomm,         (WorldComm), Environment::worldComm() )
-      ( extended_doftable, (bool), true )
-      ( directory,         (std::string),  fs::current_path().string() )
-      ) // optionnal
-                         )
+    ( typename compute_meshale_return<Args>::ptrtype ),                                                                                                                                                            // 1. return type
+    meshale,                                                                                                                                                                                                       // 2. name of the function template
+    tag,                                                                                                                                                                                                           // 3. namespace of tag types
+    ( required( mesh, *(boost::is_convertible<mpl::_, boost::shared_ptr<MeshBase>>)) )                                                                                                                             // required
+    ( optional( prefix, ( std::string ), std::string( "" ) )( worldcomm, ( WorldComm ), Environment::worldComm() )( extended_doftable, (bool), true )( directory, ( std::string ), fs::current_path().string() ) ) // optionnal
+    )
 {
     typedef typename compute_meshale_return<Args>::ptrtype meshale_ptrtype;
     typedef typename compute_meshale_return<Args>::type meshale_type;
-    return meshale_ptrtype( new meshale_type(mesh,prefix,worldcomm,extended_doftable,directory) );
+    return meshale_ptrtype( new meshale_type( mesh, prefix, worldcomm, extended_doftable, directory ) );
 }
-
 
 } // namespace FeelModels
 } // namespace Feel

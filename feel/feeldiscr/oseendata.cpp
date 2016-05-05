@@ -44,40 +44,39 @@ po::options_description oseen_options( std::string const& prefix,
         _prefix += "-";
 
     po::options_description _oseen( "Oseen " + prefix + " options" );
-    _oseen.add_options()
-    ( ( _prefix+"oseen-bc-coeff-diff" ).c_str(),
-      po::value<double>()->default_value( defaults.BC_COEFF_DIFF ),
-      "coefficient for diffusive terms of weak Dirichlet conditions" )
+    _oseen.add_options()( ( _prefix + "oseen-bc-coeff-diff" ).c_str(),
+                          po::value<double>()->default_value( defaults.BC_COEFF_DIFF ),
+                          "coefficient for diffusive terms of weak Dirichlet conditions" )
 
-    ( ( _prefix+"oseen-bc-coeff-conv" ).c_str(),
-      po::value<double>()->default_value( defaults.BC_COEFF_CONV ),
-      "coefficient for convective terms of weak Dirichlet conditions" )
+        ( ( _prefix + "oseen-bc-coeff-conv" ).c_str(),
+          po::value<double>()->default_value( defaults.BC_COEFF_CONV ),
+          "coefficient for convective terms of weak Dirichlet conditions" )
 
-    ( ( _prefix+"oseen-stab-coeff-div" ).c_str(),
-      po::value<double>()->default_value( defaults.STAB_COEFF_DIV ),
-      "coefficient for convective terms of weak Dirichlet conditions" )
+            ( ( _prefix + "oseen-stab-coeff-div" ).c_str(),
+              po::value<double>()->default_value( defaults.STAB_COEFF_DIV ),
+              "coefficient for convective terms of weak Dirichlet conditions" )
 
-    ( ( _prefix+"oseen-stab-coeff-p" ).c_str(),
-      po::value<double>()->default_value( defaults.STAB_COEFF_P ),
-      "coefficient for convective terms of weak Dirichlet conditions" )
+                ( ( _prefix + "oseen-stab-coeff-p" ).c_str(),
+                  po::value<double>()->default_value( defaults.STAB_COEFF_P ),
+                  "coefficient for convective terms of weak Dirichlet conditions" )
 
-    ( ( _prefix+"oseen-eps-compress" ).c_str(),
-      po::value<double>()->default_value( defaults.EPS_COMPRESS ),
-      "coefficient for convective terms of weak Dirichlet conditions" )
+                    ( ( _prefix + "oseen-eps-compress" ).c_str(),
+                      po::value<double>()->default_value( defaults.EPS_COMPRESS ),
+                      "coefficient for convective terms of weak Dirichlet conditions" )
 
-    ( ( _prefix+"oseen-divdiv-coeff" ).c_str(),
-      po::value<double>()->default_value( defaults.DIVDIV_COEFF ),
-      "coefficient for convective terms of weak Dirichlet conditions" )
+                        ( ( _prefix + "oseen-divdiv-coeff" ).c_str(),
+                          po::value<double>()->default_value( defaults.DIVDIV_COEFF ),
+                          "coefficient for convective terms of weak Dirichlet conditions" )
 
-    ( ( _prefix+"oseen-weak-dirichlet" ).c_str(),
-      po::value<bool>()->default_value( defaults.WEAK_DIRICHLET ),
-      "use weak Dirichlet BC imposition (0=strong, 1=weak)" )
+                            ( ( _prefix + "oseen-weak-dirichlet" ).c_str(),
+                              po::value<bool>()->default_value( defaults.WEAK_DIRICHLET ),
+                              "use weak Dirichlet BC imposition (0=strong, 1=weak)" )
 
-    ( ( _prefix+"oseen-export-matlab" ).c_str(),
-      po::value<bool>()->default_value( defaults.EXPORT_MATLAB ),
-      "export left and right hand side in matlab format" )
+                                ( ( _prefix + "oseen-export-matlab" ).c_str(),
+                                  po::value<bool>()->default_value( defaults.EXPORT_MATLAB ),
+                                  "export left and right hand side in matlab format" )
 
-    ;
+        ;
     return _oseen;
 }
 

@@ -32,29 +32,29 @@ namespace Feel
 {
 
 MeshBase::MeshBase( WorldComm const& worldComm )
-    :
-    M_components( MESH_ALL_COMPONENTS ),
-    M_is_updated( false ),
-    M_is_parametric( false ),
-    M_n_vertices( 0 ),
-    M_n_parts( 1 ),
-    M_worldComm( worldComm )
+    : M_components( MESH_ALL_COMPONENTS ),
+      M_is_updated( false ),
+      M_is_parametric( false ),
+      M_n_vertices( 0 ),
+      M_n_parts( 1 ),
+      M_worldComm( worldComm )
 {
-    DVLOG(2) << "[MeshBase] constructor...\n";
+    DVLOG( 2 ) << "[MeshBase] constructor...\n";
 }
 
 MeshBase::MeshBase( MeshBase const& m )
-    :
-    M_components( m.M_components ),
-    M_is_updated( m.M_is_updated ),
-    M_is_parametric( m.M_is_parametric ),
-    M_n_vertices( m.M_n_vertices ),
-    M_n_parts( m.M_n_parts ),
-    M_worldComm( m.M_worldComm )
-{}
+    : M_components( m.M_components ),
+      M_is_updated( m.M_is_updated ),
+      M_is_parametric( m.M_is_parametric ),
+      M_n_vertices( m.M_n_vertices ),
+      M_n_parts( m.M_n_parts ),
+      M_worldComm( m.M_worldComm )
+{
+}
 
 MeshBase::~MeshBase()
-{}
+{
+}
 
 MeshBase&
 MeshBase::operator=( MeshBase const& m )
@@ -72,8 +72,7 @@ MeshBase::operator=( MeshBase const& m )
     return *this;
 }
 
-void
-MeshBase::clear()
+void MeshBase::clear()
 {
     M_is_updated = false;
 
@@ -84,15 +83,13 @@ MeshBase::clear()
 
     M_components = MESH_ALL_COMPONENTS;
 }
-void
-MeshBase::updateForUse( size_type components )
+void MeshBase::updateForUse( size_type components )
 {
     this->setComponents( components );
     this->updateForUse();
 }
 
-bool
-MeshBase::isPartitioned() const
+bool MeshBase::isPartitioned() const
 {
     if ( mpi::environment::initialized() )
         return M_n_parts == M_worldComm.localSize();

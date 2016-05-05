@@ -27,15 +27,14 @@
    \date 2007-08-21
 */
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/solverlineartrilinos.hpp>
+#include <feel/feelcore/feel.hpp>
 
 namespace Feel
 {
 
 template <typename T>
-void
-SolverLinearTrilinos<T>::init()
+void SolverLinearTrilinos<T>::init()
 {
     if ( !this->initialized() )
     {
@@ -51,8 +50,7 @@ SolverLinearTrilinos<T>::init()
 }
 
 template <typename T>
-void
-SolverLinearTrilinos<T>::setOptions( list_type _list )
+void SolverLinearTrilinos<T>::setOptions( list_type _list )
 {
     M_List = _list;
 }
@@ -66,13 +64,13 @@ SolverLinearTrilinos<T>::getOptions()
 
 template <typename T>
 std::pair<unsigned int, real_type>
-SolverLinearTrilinos<T>::solve ( MatrixSparse<T>  const& matrix,
-                                 Vector<T> & solution,
-                                 Vector<T> const& rhs,
-                                 const double tol,
-                                 const unsigned int m_its )
+SolverLinearTrilinos<T>::solve( MatrixSparse<T> const& matrix,
+                                Vector<T>& solution,
+                                Vector<T> const& rhs,
+                                const double tol,
+                                const unsigned int m_its )
 {
-    DVLOG(2) << "Matrix solver...\n";
+    DVLOG( 2 ) << "Matrix solver...\n";
 
     setRHS( rhs );
     setLHS( solution );
@@ -86,12 +84,12 @@ SolverLinearTrilinos<T>::solve ( MatrixSparse<T>  const& matrix,
 
 template <typename T>
 std::pair<unsigned int, real_type>
-SolverLinearTrilinos<T>::solve (  MatrixSparse<T> const& matrix,
-                                  MatrixSparse<T> const& preconditioner,
-                                  Vector<T>& solution,
-                                  Vector<T> const& rhs,
-                                  const double tol,
-                                  const unsigned int m_its )
+SolverLinearTrilinos<T>::solve( MatrixSparse<T> const& matrix,
+                                MatrixSparse<T> const& preconditioner,
+                                Vector<T>& solution,
+                                Vector<T> const& rhs,
+                                const double tol,
+                                const unsigned int m_its )
 {
     std::cout << "Matrix solver with preconditioner...\n";
 
@@ -104,6 +102,5 @@ SolverLinearTrilinos<T>::solve (  MatrixSparse<T> const& matrix,
 
     return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
 }
-
 
 } // Feel

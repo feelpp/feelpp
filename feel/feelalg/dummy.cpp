@@ -31,6 +31,8 @@ namespace Feel
 {
 namespace
 {
-void f() {}
+void f()
+{
+}
 }
 }

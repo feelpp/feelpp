@@ -24,11 +24,11 @@
 #ifndef FEELPP_COMPLEMENT_HPP
 #define FEELPP_COMPLEMENT_HPP 1
 
-#include <utility>
 #include <feel/feelmesh/filters.hpp>
+#include <utility>
 
-
-namespace Feel {
+namespace Feel
+{
 
 /**
  * Provides the complement of the set of entities given by \c
@@ -39,15 +39,15 @@ namespace Feel {
  * auto set = complement( faces(mesh), [&mesh]( auto const& e ) { return e.marker() == mesh->markerName( "R" ); });
  * \endcode
  */
-template<typename IteratorType, typename Predicate>
+template <typename IteratorType, typename Predicate>
 ext_entities_from_iterator_t<IteratorType>
 complement( IteratorType&& it, Predicate pred )
 {
     using entity_t = filter_entity_t<IteratorType>;
-    typedef std::vector<boost::reference_wrapper<entity_t const> > cont_range_type;
+    typedef std::vector<boost::reference_wrapper<entity_t const>> cont_range_type;
     boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
-    auto append = [&myelts,&pred]( entity_t const& e ) { if ( !pred( e ) ) myelts->push_back( boost::cref(e) ); };
+    auto append = [&myelts, &pred]( entity_t const& e ) { if ( !pred( e ) ) myelts->push_back( boost::cref(e) ); };
     std::for_each( begin( it ), end( it ), append );
     return boost::make_tuple( filter_enum_t<IteratorType>(),
                               myelts->begin(),

@@ -30,31 +30,36 @@
 #include <Gmsh.h>
 #include <GmshVersion.h>
 
+#define GMSH_VERSION_LESS_THAN( major, minor, subminor )                                   \
+    ( ( GMSH_MAJOR_VERSION < ( major ) ||                                                  \
+        ( GMSH_MAJOR_VERSION == ( major ) && ( GMSH_MINOR_VERSION < ( minor ) ||           \
+                                               ( GMSH_MINOR_VERSION == ( minor ) &&        \
+                                                 GMSH_PATCH_VERSION < ( subminor ) ) ) ) ) \
+          ? 1                                                                              \
+          : 0 )
 
-#define GMSH_VERSION_LESS_THAN(major,minor,subminor)                   \
-    ((GMSH_MAJOR_VERSION < (major) ||                                  \
-      (GMSH_MAJOR_VERSION == (major) && (GMSH_MINOR_VERSION < (minor) || \
-                                          (GMSH_MINOR_VERSION == (minor) && \
-                                           GMSH_PATCH_VERSION < (subminor))))) ? 1 : 0)
+#define GMSH_VERSION_GREATER_THAN( major, minor, subminor )                                \
+    ( ( GMSH_MAJOR_VERSION > ( major ) ||                                                  \
+        ( GMSH_MAJOR_VERSION == ( major ) && ( GMSH_MINOR_VERSION > ( minor ) ||           \
+                                               ( GMSH_MINOR_VERSION == ( minor ) &&        \
+                                                 GMSH_PATCH_VERSION > ( subminor ) ) ) ) ) \
+          ? 1                                                                              \
+          : 0 )
 
-#define GMSH_VERSION_GREATER_THAN(major,minor,subminor)                \
-    ((GMSH_MAJOR_VERSION > (major) ||                                  \
-      (GMSH_MAJOR_VERSION == (major) && (GMSH_MINOR_VERSION > (minor) || \
-                                          (GMSH_MINOR_VERSION == (minor) && \
-                                           GMSH_PATCH_VERSION > (subminor))))) ? 1 : 0)
-
-#define GMSH_VERSION_GREATER_OR_EQUAL_THAN(major,minor,subminor)       \
-    ((GMSH_MAJOR_VERSION > (major) ||                                  \
-      ((GMSH_MAJOR_VERSION == (major)) && ((GMSH_MINOR_VERSION > (minor)) || \
-                                         ((GMSH_MINOR_VERSION == (minor)) && \
-                                          ( GMSH_PATCH_VERSION >= (subminor))) ))) ? 1 : 0)
+#define GMSH_VERSION_GREATER_OR_EQUAL_THAN( major, minor, subminor )                                \
+    ( ( GMSH_MAJOR_VERSION > ( major ) ||                                                           \
+        ( ( GMSH_MAJOR_VERSION == ( major ) ) && ( ( GMSH_MINOR_VERSION > ( minor ) ) ||            \
+                                                   ( ( GMSH_MINOR_VERSION == ( minor ) ) &&         \
+                                                     ( GMSH_PATCH_VERSION >= ( subminor ) ) ) ) ) ) \
+          ? 1                                                                                       \
+          : 0 )
 #else
 
-#define GMSH_VERSION_LESS_THAN(major,minor,subminor)
+#define GMSH_VERSION_LESS_THAN( major, minor, subminor )
 
-#define GMSH_VERSION_GREATER_THAN(major,minor,subminor)
+#define GMSH_VERSION_GREATER_THAN( major, minor, subminor )
 
-#define GMSH_VERSION_GREATER_OR_EQUAL_THAN(major,minor,subminor)
+#define GMSH_VERSION_GREATER_OR_EQUAL_THAN( major, minor, subminor )
 
 #endif /* FEELPP_HAS_GMSH_H */
 

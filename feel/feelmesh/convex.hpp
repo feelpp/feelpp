@@ -31,7 +31,9 @@
 
 namespace Feel
 {
-class ConvexBase {};
+class ConvexBase
+{
+};
 /**
  * \class Convex
  * \brief Convex base class
@@ -39,12 +41,10 @@ class ConvexBase {};
  * @author Christophe Prud'homme
  * @see
  */
-template<uint16_type Dim, uint16_type Order, uint16_type RDim = Dim>
+template <uint16_type Dim, uint16_type Order, uint16_type RDim = Dim>
 class Convex : public ConvexBase
 {
-public:
-
-
+  public:
     /** @name Constants
      */
     //@{
@@ -52,13 +52,11 @@ public:
     static const uint16_type nOrder = Order;
     static const uint16_type nRealDim = RDim;
 
-
     //@}
 
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -70,7 +68,7 @@ public:
     Convex() {}
 
     //! copy constructor
-    Convex( Convex const & ) {}
+    Convex( Convex const& ) {}
 
     //! destructor
     virtual ~Convex() {}
@@ -82,7 +80,7 @@ public:
     //@{
 
     //! copy operator
-    Convex& operator=( Convex const & o )
+    Convex& operator=( Convex const& o )
     {
         if ( this != &o )
         {
@@ -96,13 +94,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -110,15 +106,10 @@ public:
      */
     //@{
 
-
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
 };
 } // Feel
 #endif /* __Convex_H */

@@ -30,13 +30,13 @@
 #ifndef __Basis_H
 #define __Basis_H 1
 
-#include <boost/numeric/ublas/vector.hpp>
-#include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/numeric/ublas/fwd.hpp>
-#include <boost/numeric/ublas/triangular.hpp>
+#include <boost/numeric/ublas/lu.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/operation.hpp>
-#include <boost/numeric/ublas/lu.hpp>
+#include <boost/numeric/ublas/triangular.hpp>
+#include <boost/numeric/ublas/vector.hpp>
+#include <boost/numeric/ublas/vector_proxy.hpp>
 
 namespace Feel
 {
@@ -48,17 +48,15 @@ namespace Feel
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename tag, typename T>
+template <typename tag, typename T>
 class Basis
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
     typedef T value_type;
-    typedef ublas::matrix<value_type,ublas::row_major> matrix_type;
+    typedef ublas::matrix<value_type, ublas::row_major> matrix_type;
 #if 0
     static const uint16_type nDim = PTraits::nDim;
     static const uint16_type nOrder = PTraits::nOrder;
@@ -82,7 +80,6 @@ public:
     typedef typename traits_type::points_type points_type;
     typedef typename traits_type::node_type node_type;
 
-
 #if defined( FEELPP_HAS_QD_REAL )
     typedef typename traits_type::template ChangeValueType<qd_real>::type qd_basis_type;
     typedef typename traits_type::template ChangeValueType<qd_real>::traits_type::diff_pointset_type qd_diff_pointset_type;
@@ -98,7 +95,7 @@ public:
      * default constructor
      * call differentiation matrix static construction
      */
-    template<typename PrimalBasis>
+    template <typename PrimalBasis>
     Basis( PrimalBasis const& p )
     {
         initDerivation( p );
@@ -108,15 +105,16 @@ public:
      * copy constructor
      * no need to do something, everything is static
      */
-    Basis( Basis const & b )
-    {}
+    Basis( Basis const& b )
+    {
+    }
 
     /**
      * destructor, nothing to do
      */
     virtual ~Basis()
-    {}
-
+    {
+    }
 
     //@}
 
@@ -124,13 +122,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
-
 
     //@}
 
@@ -138,14 +134,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
-
-
 
     /**
      * \brief derivatives of Dubiner polynomials
@@ -169,24 +162,18 @@ public:
         return _S_D[i];
     }
 
-
-
     //@}
 
-
-
-protected:
-
-    template<typename PrimalBasis>
+  protected:
+    template <typename PrimalBasis>
     static void initDerivation( PrimalBasis const& basis );
 
-private:
-
+  private:
     /**
      * \c true if differentation matrix initialized, \c false
      * otherwise
      */
-    static  bool _S_has_derivation;
+    static bool _S_has_derivation;
 
     /**
      * Derivation matrix
@@ -196,22 +183,20 @@ private:
     static std::vector<matrix_type> _S_D;
 };
 
-template<typename Tag, typename T>
+template <typename Tag, typename T>
 bool Basis<Tag, T>::_S_has_derivation = false;
 
-template<typename Tag, typename T>
-std::vector<typename Basis<Tag, T>::matrix_type>  Basis<Tag, T>::_S_D;
+template <typename Tag, typename T>
+std::vector<typename Basis<Tag, T>::matrix_type> Basis<Tag, T>::_S_D;
 
-
-
-#if defined( FEELPP_HAS_QD_REAL)
-template<typename PrimalBasis>
+#if defined( FEELPP_HAS_QD_REAL )
+template <typename PrimalBasis>
 static void initDerivation( PrimalBasis const& basis )
 {
-    initDerivation( basis, mpl::bool_<boost::is_same<value_type,double>::value>() );
+    initDerivation( basis, mpl::bool_<boost::is_same<value_type, double>::value>() );
 }
 
-template<typename PrimalBasis>
+template <typename PrimalBasis>
 static void initDerivation( PrimalBasis const& basis, mpl::bool_<false> )
 {
 
@@ -227,13 +212,13 @@ static void initDerivation( PrimalBasis const& basis, mpl::bool_<false> )
 
         matrix_type A( sub_type::evaluate( diff_pts.points() ) );
 #if 1
-        matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
+        matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
 
         LU<matrix_type> lu( A );
 
         matrix_type C = lu.solve( D );
 
-        vector_matrix_type d ( sub_type::derivate( diff_pts.points() ) );
+        vector_matrix_type d( sub_type::derivate( diff_pts.points() ) );
         _S_D.resize( d.size() );
 
         for ( size_type i = 0; i < d.size(); ++i )
@@ -254,11 +239,10 @@ static void initDerivation( PrimalBasis const& basis, mpl::bool_<false> )
         }
 
 #endif
-
     }
 }
 
-template<typename PrimalBasis>
+template <typename PrimalBasis>
 static void initDerivation( PrimalBasis const& basis, mpl::bool_<true> )
 {
     if ( _S_has_derivation == false )
@@ -271,11 +255,11 @@ static void initDerivation( PrimalBasis const& basis, mpl::bool_<true> )
 
         typename qd_basis_type::matrix_type A( qd_basis_type::evaluate( diff_pts.points() ) );
 #if 1
-        typename qd_basis_type::matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
+        typename qd_basis_type::matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
         LU<typename qd_basis_type::matrix_type> lu( A );
         typename qd_basis_type::matrix_type C = lu.solve( D );
 
-        typename qd_basis_type::vector_matrix_type d ( qd_basis_type::derivate( diff_pts.points() ) );
+        typename qd_basis_type::vector_matrix_type d( qd_basis_type::derivate( diff_pts.points() ) );
         std::vector<typename qd_basis_type::matrix_type> _qd_derivatives_matrix;
 
         _qd_derivatives_matrix.resize( d.size() );
@@ -286,11 +270,11 @@ static void initDerivation( PrimalBasis const& basis, mpl::bool_<true> )
             _qd_derivatives_matrix[i] = ublas::prod( d[i], C );
             glas::clean( _qd_derivatives_matrix[i] );
 
-            _S_D[i].resize( _qd_derivatives_matrix[i].size1(),_qd_derivatives_matrix[i].size2() );
+            _S_D[i].resize( _qd_derivatives_matrix[i].size1(), _qd_derivatives_matrix[i].size2() );
 
             for ( size_type j = 0; j < _S_D[i].size1(); ++j )
                 for ( size_type k = 0; k < _S_D[i].size2(); ++k )
-                    _S_D[i]( j,k ) = value_type( _qd_derivatives_matrix[i]( j,k ) );
+                    _S_D[i]( j, k ) = value_type( _qd_derivatives_matrix[i]( j, k ) );
 
             glas::clean( _S_D[i] );
         }
@@ -298,7 +282,7 @@ static void initDerivation( PrimalBasis const& basis, mpl::bool_<true> )
 #else
         ublas::permutation_matrix<typename qd_basis_type::value_type> perm( A.size1() );
         ublas::lu_factorize( A );
-        typename qd_basis_type::vector_matrix_type d ( qd_basis_type::derivate( diff_pts.points() ) );
+        typename qd_basis_type::vector_matrix_type d( qd_basis_type::derivate( diff_pts.points() ) );
 
         _S_D.resize( d.size() );
 
@@ -306,11 +290,11 @@ static void initDerivation( PrimalBasis const& basis, mpl::bool_<true> )
         {
             ublas::lu_substitute( ublas::matrix_expression<matrix_type>( d[i] ), A );
 
-            _S_D[i].resize( d[i].size1(),d[i].size2() );
+            _S_D[i].resize( d[i].size1(), d[i].size2() );
 
             for ( size_type j = 0; j < _S_D[i].size1(); ++j )
                 for ( size_type k = 0; k < _S_D[i].size2(); ++k )
-                    _S_D[i]( j,k ) = value_type( d[i]( j,k ) );
+                    _S_D[i]( j, k ) = value_type( d[i]( j, k ) );
 
             glas::clean( _S_D[i] );
         }
@@ -320,10 +304,9 @@ static void initDerivation( PrimalBasis const& basis, mpl::bool_<true> )
 }
 
 #else
-template<typename Tag, typename T>
-template<typename PrimalBasis>
-void
-Basis<Tag, T>::initDerivation( PrimalBasis const& basis )
+template <typename Tag, typename T>
+template <typename PrimalBasis>
+void Basis<Tag, T>::initDerivation( PrimalBasis const& basis )
 {
     typedef typename PrimalBasis::traits_type traits_type;
     typedef typename traits_type::value_type value_type;
@@ -351,11 +334,11 @@ Basis<Tag, T>::initDerivation( PrimalBasis const& basis )
         matrix_type A( basis.evaluate( diff_pts.points() ) );
 
 #if 1
-        matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
+        matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
         LU<matrix_type> lu( A );
         matrix_type C = lu.solve( D );
 
-        vector_matrix_type d ( basis.derivate( diff_pts.points() ) );
+        vector_matrix_type d( basis.derivate( diff_pts.points() ) );
         _S_D.resize( d.size() );
 
         for ( size_type i = 0; i < d.size(); ++i )
@@ -379,7 +362,6 @@ Basis<Tag, T>::initDerivation( PrimalBasis const& basis )
     }
 }
 #endif // FEELPP_HAS_QD_REAL
-
 
 } // Feel
 #endif /* __Basis_H */

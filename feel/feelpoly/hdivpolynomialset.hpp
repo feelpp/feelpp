@@ -25,21 +25,23 @@
 #define FEELPP_HDIV_POLYNOMIALSET_HPP 1
 #include <boost/type_traits/is_base_of.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
  * HDiv conforming polynomialset base class
  */
-class HDivPolynomialSet {};
+class HDivPolynomialSet
+{
+};
 
 /**
  * type traits for hdiv conforming polynomialset
  * @return true_type if hdiv conforming polynomialset, false_type otherwise
  */
-template<typename P>
-class is_hdiv_conforming : public boost::is_base_of<HDivPolynomialSet,P>
+template <typename P>
+class is_hdiv_conforming : public boost::is_base_of<HDivPolynomialSet, P>
 {
 };
-
 }
 #endif // FEELPP_HDIV_POLYNOMIALSET_HPP

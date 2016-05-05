@@ -56,25 +56,24 @@ Preconditioner<std::complex<double>>::build( std::string const& name,
                                              BackendType backend,
                                              WorldComm const& worldComm )
 {
-#if defined(PETSC_HAS_COMPLEX_SUPPORT ) 
+#if defined( PETSC_HAS_COMPLEX_SUPPORT )
     switch ( backend )
     {
     default:
     case BACKEND_PETSC:
-        {
-            return preconditioner_ptrtype( new PreconditionerPetsc<T>( name, worldComm ) );
-        }
+    {
+        return preconditioner_ptrtype( new PreconditionerPetsc<T>( name, worldComm ) );
+    }
     }
 #endif
     return preconditioner_ptrtype();
 }
-    
+
 template <typename T>
-FEELPP_STRONG_INLINE
-void
+FEELPP_STRONG_INLINE void
 Preconditioner<T>::setMatrix( sparse_matrix_ptrtype mat )
 {
-    if (M_is_initialized)
+    if ( M_is_initialized )
     {
         M_mat_has_changed = true;
         //this->clear();
@@ -85,39 +84,33 @@ Preconditioner<T>::setMatrix( sparse_matrix_ptrtype mat )
 }
 
 template <typename T>
-void
-Preconditioner<T>::setType ( const PreconditionerType pct )
+void Preconditioner<T>::setType( const PreconditionerType pct )
 {
-    if (M_is_initialized && M_preconditioner_type!=pct)
+    if ( M_is_initialized && M_preconditioner_type != pct )
     {
         this->clear();
     }
 
     M_preconditioner_type = pct;
-
 }
 
 template <typename T>
-void
-Preconditioner<T>::setMatSolverPackageType ( const MatSolverPackageType mspt )
+void Preconditioner<T>::setMatSolverPackageType( const MatSolverPackageType mspt )
 {
-    if (M_is_initialized && M_matSolverPackage_type!=mspt )
+    if ( M_is_initialized && M_matSolverPackage_type != mspt )
     {
         this->clear();
     }
 
-    M_matSolverPackage_type  = mspt;
+    M_matSolverPackage_type = mspt;
     //M_is_initialized = false;
 }
 
 template <typename T>
-void
-Preconditioner<T>::setPrecMatrixStructure( MatrixStructure mstruct  )
+void Preconditioner<T>::setPrecMatrixStructure( MatrixStructure mstruct )
 {
     M_prec_matrix_structure = mstruct;
 }
-
-
 
 template class Preconditioner<double>;
 template class Preconditioner<std::complex<double>>;

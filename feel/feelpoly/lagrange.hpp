@@ -32,25 +32,20 @@
 
 #include <boost/ptr_container/ptr_vector.hpp>
 
+#include <feel/feelalg/lu.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>
-#include <feel/feelalg/lu.hpp>
 
-#include <feel/feelmesh/refentity.hpp>
 #include <feel/feelmesh/pointset.hpp>
+#include <feel/feelmesh/refentity.hpp>
 #include <feel/feelpoly/equispaced.hpp>
 
-
 #include <feel/feelpoly/dualbasis.hpp>
-#include <feel/feelpoly/polynomialset.hpp>
-#include <feel/feelpoly/functionalset.hpp>
-#include <feel/feelpoly/functionals.hpp>
 #include <feel/feelpoly/fe.hpp>
+#include <feel/feelpoly/functionals.hpp>
+#include <feel/feelpoly/functionalset.hpp>
 #include <feel/feelpoly/isp0continuous.hpp>
-
-
-
-
+#include <feel/feelpoly/polynomialset.hpp>
 
 namespace Feel
 {
@@ -61,16 +56,15 @@ namespace fem
 /// \cond detail
 namespace details
 {
-template<typename Basis, template<class, uint16_type, class> class PointSetType>
+template <typename Basis, template <class, uint16_type, class> class PointSetType>
 class LagrangeDual
-    :
-public DualBasis<Basis>
+    : public DualBasis<Basis>
 {
     typedef DualBasis<Basis> super;
-public:
 
+  public:
     static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder= super::nOrder;
+    static const uint16_type nOrder = super::nOrder;
 
     typedef typename super::primal_space_type primal_space_type;
     typedef typename primal_space_type::value_type value_type;
@@ -106,7 +100,6 @@ public:
     static const uint16_type nEdges = reference_convex_type::numEdges;
     static const uint16_type nNormals = reference_convex_type::numNormals;
 
-
     /** Number of degrees of freedom per vertex */
     static const uint16_type nDofPerVertex = nbPtsPerVertex;
 
@@ -122,51 +115,50 @@ public:
     /** Total number of degrees of freedom (equal to refEle::nDof) */
     static const uint16_type nLocalDof = numPoints;
 
-    static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
-                             mpl::int_<nVertices>,
-                             typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-                             mpl::int_<nEdges>,
-                             mpl::int_<nFaces> >::type >::type::value;
+    static const uint16_type nFacesInConvex = mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1>>,
+                                                       mpl::int_<nVertices>,
+                                                       typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2>>,
+                                                                         mpl::int_<nEdges>,
+                                                                         mpl::int_<nFaces>>::type>::type::value;
 
     LagrangeDual( LagrangeDual const& d )
-        :
-        super( d ),
-        M_convex_ref(),
-        M_eid( d.M_eid ),
-        M_pts( d.M_pts ),
-        M_points_face( d.M_points_face ),
-        M_fset( d.M_fset )
-        {}
-
-    LagrangeDual( LagrangeDual && d ) = default;
-    LagrangeDual( primal_space_type const& primal )
-        :
-        super( primal ),
-        M_convex_ref(),
-        M_eid( M_convex_ref.topologicalDimension()+1 ),
-        M_pts( nDim, numPoints ),
-        M_points_face( nFacesInConvex ),
-        M_fset( primal )
+        : super( d ),
+          M_convex_ref(),
+          M_eid( d.M_eid ),
+          M_pts( d.M_pts ),
+          M_points_face( d.M_points_face ),
+          M_fset( d.M_fset )
     {
-        DVLOG(2) << "Lagrange finite element: \n";
-        DVLOG(2) << " o- dim   = " << nDim << "\n";
-        DVLOG(2) << " o- order = " << nOrder << "\n";
-        DVLOG(2) << " o- numPoints      = " << numPoints << "\n";
-        DVLOG(2) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
-        DVLOG(2) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
-        DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
-        DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
+    }
+
+    LagrangeDual( LagrangeDual&& d ) = default;
+    LagrangeDual( primal_space_type const& primal )
+        : super( primal ),
+          M_convex_ref(),
+          M_eid( M_convex_ref.topologicalDimension() + 1 ),
+          M_pts( nDim, numPoints ),
+          M_points_face( nFacesInConvex ),
+          M_fset( primal )
+    {
+        DVLOG( 2 ) << "Lagrange finite element: \n";
+        DVLOG( 2 ) << " o- dim   = " << nDim << "\n";
+        DVLOG( 2 ) << " o- order = " << nOrder << "\n";
+        DVLOG( 2 ) << " o- numPoints      = " << numPoints << "\n";
+        DVLOG( 2 ) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
+        DVLOG( 2 ) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
+        DVLOG( 2 ) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
+        DVLOG( 2 ) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
 
         M_pts = M_pset.points();
 
         if ( nOrder > 0 )
         {
-            for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
-                    e < M_convex_ref.entityRange( nDim-1 ).end();
-                    ++e )
+            for ( uint16_type e = M_convex_ref.entityRange( nDim - 1 ).begin();
+                  e < M_convex_ref.entityRange( nDim - 1 ).end();
+                  ++e )
             {
-                M_points_face[e] = M_pset.pointsBySubEntity( nDim-1, e, 1 );
-                DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
+                M_points_face[e] = M_pset.pointsBySubEntity( nDim - 1, e, 1 );
+                DVLOG( 2 ) << "face " << e << " pts " << M_points_face[e] << "\n";
             }
         }
 
@@ -174,32 +166,31 @@ public:
     }
 
     LagrangeDual( primal_space_type const& primal, pointset_type const& pts )
-        :
-        super( primal ),
-        M_convex_ref(),
-        M_eid( M_convex_ref.topologicalDimension()+1 ),
-        M_pts( pts.points() ),
-        M_points_face( nFacesInConvex ),
-        M_fset( primal ),
-        M_pset( pts )
+        : super( primal ),
+          M_convex_ref(),
+          M_eid( M_convex_ref.topologicalDimension() + 1 ),
+          M_pts( pts.points() ),
+          M_points_face( nFacesInConvex ),
+          M_fset( primal ),
+          M_pset( pts )
     {
-        DVLOG(2) << "Lagrange finite element: \n";
-        DVLOG(2) << " o- dim   = " << nDim << "\n";
-        DVLOG(2) << " o- order = " << nOrder << "\n";
-        DVLOG(2) << " o- numPoints      = " << numPoints << "\n";
-        DVLOG(2) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
-        DVLOG(2) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
-        DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
-        DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
+        DVLOG( 2 ) << "Lagrange finite element: \n";
+        DVLOG( 2 ) << " o- dim   = " << nDim << "\n";
+        DVLOG( 2 ) << " o- order = " << nOrder << "\n";
+        DVLOG( 2 ) << " o- numPoints      = " << numPoints << "\n";
+        DVLOG( 2 ) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
+        DVLOG( 2 ) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
+        DVLOG( 2 ) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
+        DVLOG( 2 ) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
 
         if ( nOrder > 0 )
         {
-            for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
-                    e < M_convex_ref.entityRange( nDim-1 ).end();
-                    ++e )
+            for ( uint16_type e = M_convex_ref.entityRange( nDim - 1 ).begin();
+                  e < M_convex_ref.entityRange( nDim - 1 ).end();
+                  ++e )
             {
-                M_points_face[e] = M_pset.pointsBySubEntity( nDim-1, e, 1 );
-                DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
+                M_points_face[e] = M_pset.pointsBySubEntity( nDim - 1, e, 1 );
+                DVLOG( 2 ) << "face " << e << " pts " << M_points_face[e] << "\n";
             }
         }
 
@@ -208,7 +199,7 @@ public:
 
     ~LagrangeDual() = default;
     LagrangeDual& operator=( LagrangeDual const& ) = default;
-    
+
     points_type const& points() const
     {
         return M_pts;
@@ -240,39 +231,37 @@ public:
             return M_pset.pointsBySubEntity( topodim, edge, 1 );
         }
 #endif
-     points_type points( int topodim, int entity ) const
-            {
-                return M_pset.pointsBySubEntity( topodim, entity, 1 );
-            }
-            
-    
-    points_type edgePoints(int edge) const
-        {
-            return M_pset.pointsBySubEntity( 1, edge, 1 );
-        }
+    points_type points( int topodim, int entity ) const
+    {
+        return M_pset.pointsBySubEntity( topodim, entity, 1 );
+    }
 
-    
-    points_type vertexPoints(int vertex) const
-        {
-            return M_pset.pointsBySubEntity( 0, vertex, 1 );
-        }
+    points_type edgePoints( int edge ) const
+    {
+        return M_pset.pointsBySubEntity( 1, edge, 1 );
+    }
+
+    points_type vertexPoints( int vertex ) const
+    {
+        return M_pset.pointsBySubEntity( 0, vertex, 1 );
+    }
 
     matrix_type operator()( primal_space_type const& pset ) const
     {
         return M_fset( pset );
     }
-private:
 
+  private:
     void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<true> )
     {
         M_fset.setFunctionalSet( functional::PointsEvaluation<primal_space_type>( primal,
-                                  __pts ) );
+                                                                                  __pts ) );
     }
 
     void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<false> )
     {
         M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
-                                  __pts ) );
+                                                                                            __pts ) );
     }
 
     /**
@@ -284,16 +273,15 @@ private:
         M_points_face[f] = n;
     }
 
-private:
+  private:
     reference_convex_type M_convex_ref;
-    std::vector<std::vector<uint16_type> > M_eid;
+    std::vector<std::vector<uint16_type>> M_eid;
     points_type M_pts;
     std::vector<points_type> M_points_face;
     FunctionalSet<primal_space_type> M_fset;
     pointset_type M_pset;
-
 };
-}// details
+} // details
 /// \endcond detail
 
 /**
@@ -311,25 +299,24 @@ private:
  * @author Christophe Prud'homme
  * @see
  */
-template<uint16_type N,
-         uint16_type RealDim,
-         uint16_type O,
-         template<uint16_type Dim> class PolySetType,
-         typename ContinuityType = Continuous,
-         typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
-         uint16_type TheTAG = 0 >
+template <uint16_type N,
+          uint16_type RealDim,
+          uint16_type O,
+          template <uint16_type Dim> class PolySetType,
+          typename ContinuityType = Continuous,
+          typename T = double,
+          template <uint16_type, uint16_type, uint16_type> class Convex = Simplex,
+          template <class, uint16_type, class> class Pts = PointSetEquiSpaced,
+          uint16_type TheTAG = 0>
 class Lagrange
-    :
-    public FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts >
+    : public FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts>
 {
-    typedef FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts > super;
-public:
+    typedef FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts> super;
 
-    BOOST_STATIC_ASSERT( ( boost::is_same<PolySetType<N>, Scalar<N> >::value ||
-                           boost::is_same<PolySetType<N>, Vectorial<N> >::value ||
-                           boost::is_same<PolySetType<N>, Tensor2<N> >::value ) );
+  public:
+    BOOST_STATIC_ASSERT( ( boost::is_same<PolySetType<N>, Scalar<N>>::value ||
+                           boost::is_same<PolySetType<N>, Vectorial<N>>::value ||
+                           boost::is_same<PolySetType<N>, Tensor2<N>>::value ) );
 
     /** @name Typedefs
      */
@@ -337,7 +324,7 @@ public:
 
     static const uint16_type nDim = N;
     static const uint16_type nRealDim = RealDim;
-    static const uint16_type nOrder =  O;
+    static const uint16_type nOrder = O;
     static const bool isTransformationEquivalent = true;
     static const bool isContinuous = ContinuityType::is_continuous;
     typedef typename super::value_type value_type;
@@ -357,19 +344,19 @@ public:
     static const uint16_type nComponents1 = polyset_type::nComponents1;
     static const uint16_type nComponents2 = polyset_type::nComponents2;
     static const bool is_product = true;
-    static constexpr int Nm2 = (N>2)?N-2:0;
+    static constexpr int Nm2 = ( N > 2 ) ? N - 2 : 0;
 
-    typedef Lagrange<N, RealDim, O, PolySetType, ContinuityType, T, Convex,  Pts, TheTAG> this_type;
-    typedef Lagrange<N, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> component_basis_type;
+    typedef Lagrange<N, RealDim, O, PolySetType, ContinuityType, T, Convex, Pts, TheTAG> this_type;
+    typedef Lagrange<N, RealDim, O, Scalar, continuity_type, T, Convex, Pts, TheTAG> component_basis_type;
 
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
-            mpl::identity<boost::none_t>,
-            mpl::identity< Lagrange<N-1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type face_basis_type;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1>>,
+                              mpl::identity<boost::none_t>,
+                              mpl::identity<Lagrange<N - 1, RealDim, O, Scalar, continuity_type, T, Convex, Pts, TheTAG>>>::type::type face_basis_type;
 
     typedef boost::shared_ptr<face_basis_type> face_basis_ptrtype;
-    typedef typename mpl::if_<mpl::less_equal<mpl::int_<nDim>, mpl::int_<2> >,
+    typedef typename mpl::if_<mpl::less_equal<mpl::int_<nDim>, mpl::int_<2>>,
                               mpl::identity<boost::none_t>,
-                              mpl::identity< Lagrange<Nm2, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type edge_basis_type;
+                              mpl::identity<Lagrange<Nm2, RealDim, O, Scalar, continuity_type, T, Convex, Pts, TheTAG>>>::type::type edge_basis_type;
 
     typedef boost::shared_ptr<edge_basis_type> edge_basis_ptrtype;
 
@@ -395,27 +382,26 @@ public:
                                                face_type::numEdges * nDofPerEdge +
                                                face_type::numFaces * nDofPerFace );
     static const uint16_type nLocalEdgeDof = ( edge_type::numVertices * nDofPerVertex +
-                                               edge_type::numEdges * nDofPerEdge);
+                                               edge_type::numEdges * nDofPerEdge );
     static const uint16_type nLocalVertexDof = nDofPerVertex;
-    template<int subN>
+    template <int subN>
     struct SubSpace
     {
-        typedef Lagrange<N-1, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
+        typedef Lagrange<N - 1, RealDim, O, PolySetType, continuity_type, T, Convex, Pts, TheTAG> type;
     };
 
     struct SSpace
     {
-        static constexpr uint16_type TheOrder = (O > 1)?O-1:0;
-        typedef typename mpl::if_<mpl::less_equal<mpl::int_<O>, mpl::int_<1> >,
-                                  mpl::identity<Lagrange<N, RealDim, 0, PolySetType, Discontinuous, T, Convex,  Pts, TheTAG> >,
-                                  mpl::identity<Lagrange<N, RealDim, TheOrder, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type type;
-
+        static constexpr uint16_type TheOrder = ( O > 1 ) ? O - 1 : 0;
+        typedef typename mpl::if_<mpl::less_equal<mpl::int_<O>, mpl::int_<1>>,
+                                  mpl::identity<Lagrange<N, RealDim, 0, PolySetType, Discontinuous, T, Convex, Pts, TheTAG>>,
+                                  mpl::identity<Lagrange<N, RealDim, TheOrder, PolySetType, continuity_type, T, Convex, Pts, TheTAG>>>::type::type type;
     };
 
-    template<uint16_type NewDim>
+    template <uint16_type NewDim>
     struct ChangeDim
     {
-        typedef Lagrange<NewDim, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
+        typedef Lagrange<NewDim, RealDim, O, PolySetType, continuity_type, T, Convex, Pts, TheTAG> type;
     };
 
     static const bool isLagrangeP0Continuous = isP0Continuous<this_type>::result;
@@ -427,13 +413,10 @@ public:
     //@{
 
     Lagrange()
-        :
-        super( dual_space_type( primal_space_type() ) ),
-        M_refconvex()
-        // M_bdylag( new face_basis_type )
+        : super( dual_space_type( primal_space_type() ) ),
+          M_refconvex()
+    // M_bdylag( new face_basis_type )
     {
-
-
 
         // std::cout << "[LagrangeDual] points= " << M_pts << "\n";
     }
@@ -445,7 +428,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -475,7 +457,6 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
@@ -484,93 +465,90 @@ public:
     typedef Eigen::MatrixXd local_interpolant_type;
     local_interpolant_type
     localInterpolant() const
-        {
-            return local_interpolant_type::Zero( nComponents*nLocalDof, 1 );
-        }
+    {
+        return local_interpolant_type::Zero( nComponents * nLocalDof, 1 );
+    }
 
-    template<typename ExprType>
+    template <typename ExprType>
     void
     interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
-        {
-            BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
-                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
-                                  (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
-            BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
-                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
-                                  (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
-            for( int q = 0; q < nLocalDof; ++q )
-                for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c2+nComponents2*c1)*nLocalDof+q ) = expr.evalq( c1, c2, q );
-        }
+    {
+        BOOST_MPL_ASSERT_MSG( nComponents1 == ExprType::shape::M,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents1>, mpl::int_<ExprType::shape::M>));
+        BOOST_MPL_ASSERT_MSG( nComponents2 == ExprType::shape::N,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents2>, mpl::int_<ExprType::shape::N>));
+        for ( int q = 0; q < nLocalDof; ++q )
+            for ( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                for ( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                    Ihloc( ( c2 + nComponents2 * c1 ) * nLocalDof + q ) = expr.evalq( c1, c2, q );
+    }
     local_interpolant_type
     faceLocalInterpolant() const
-        {
-            return local_interpolant_type::Zero( nComponents*nLocalFaceDof, 1 );
-        }
-    template<typename ExprType>
+    {
+        return local_interpolant_type::Zero( nComponents * nLocalFaceDof, 1 );
+    }
+    template <typename ExprType>
     void
     faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
-        {
-            BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
-                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
-                                  (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
-            BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
-                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
-                                  (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
-            for( int q = 0; q < nLocalFaceDof; ++q )
-                for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c2+nComponents2*c1)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
-
-        }
+    {
+        BOOST_MPL_ASSERT_MSG( nComponents1 == ExprType::shape::M,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents1>, mpl::int_<ExprType::shape::M>));
+        BOOST_MPL_ASSERT_MSG( nComponents2 == ExprType::shape::N,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents2>, mpl::int_<ExprType::shape::N>));
+        for ( int q = 0; q < nLocalFaceDof; ++q )
+            for ( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                for ( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                    Ihloc( ( c2 + nComponents2 * c1 ) * nLocalFaceDof + q ) = expr.evalq( c1, c2, q );
+    }
 
     local_interpolant_type
     edgeLocalInterpolant() const
-        {
-            return local_interpolant_type::Zero( nComponents*nLocalEdgeDof, 1 );
-        }
-    template<typename ExprType>
+    {
+        return local_interpolant_type::Zero( nComponents * nLocalEdgeDof, 1 );
+    }
+    template <typename ExprType>
     void
     edgeInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
-        {
-            BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
-                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
-                                  (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
-            BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
-                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
-                                  (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
-            for( int q = 0; q < nLocalEdgeDof; ++q )
-                for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c2+nComponents2*c1)*nLocalEdgeDof+q ) = expr.evalq( c1, c2, q );
-
-        }
+    {
+        BOOST_MPL_ASSERT_MSG( nComponents1 == ExprType::shape::M,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents1>, mpl::int_<ExprType::shape::M>));
+        BOOST_MPL_ASSERT_MSG( nComponents2 == ExprType::shape::N,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents2>, mpl::int_<ExprType::shape::N>));
+        for ( int q = 0; q < nLocalEdgeDof; ++q )
+            for ( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                for ( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                    Ihloc( ( c2 + nComponents2 * c1 ) * nLocalEdgeDof + q ) = expr.evalq( c1, c2, q );
+    }
     local_interpolant_type
     vertexLocalInterpolant() const
-        {
-            return local_interpolant_type::Zero( nComponents*nLocalVertexDof, 1 );
-        }
-    template<typename ExprType>
+    {
+        return local_interpolant_type::Zero( nComponents * nLocalVertexDof, 1 );
+    }
+    template <typename ExprType>
     void
     vertexInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
-        {
-            BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
-                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
-                                  (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
-            BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
-                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
-                                  (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
-            for( int q = 0; q < nLocalVertexDof; ++q )
-                for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c2+nComponents2*c1)*nLocalVertexDof+q ) = expr.evalq( c1, c2, q );
+    {
+        BOOST_MPL_ASSERT_MSG( nComponents1 == ExprType::shape::M,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents1>, mpl::int_<ExprType::shape::M>));
+        BOOST_MPL_ASSERT_MSG( nComponents2 == ExprType::shape::N,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents2>, mpl::int_<ExprType::shape::N>));
+        for ( int q = 0; q < nLocalVertexDof; ++q )
+            for ( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                for ( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                    Ihloc( ( c2 + nComponents2 * c1 ) * nLocalVertexDof + q ) = expr.evalq( c1, c2, q );
+    }
 
-        }
-
-    template<typename ExprType>
+    template <typename ExprType>
     void
-    interpolateBasisFunction( ExprType&& expr, local_interpolant_type & Ihloc ) const
+    interpolateBasisFunction( ExprType&& expr, local_interpolant_type& Ihloc ) const
     {
         using shape = typename std::decay_t<ExprType>::shape;
         /*
@@ -584,20 +562,20 @@ public:
         //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
         using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
 
-        for( int q = 0; q < nLocalDof; ++q )
+        for ( int q = 0; q < nLocalDof; ++q )
         {
-            for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
+            for ( int i = 0; i < expr_basis_t::nLocalDof; ++i )
             {
-                int ncomp1= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
-                
+                int ncomp1 = ( expr_basis_t::is_product ? expr_basis_t::nComponents1 : 1 );
+
                 for ( uint16_type c = 0; c < ncomp1; ++c )
                 {
-                    uint16_type I = expr_basis_t::nLocalDof*c + i;
-                    for( int c1 = 0; c1 < shape::M; ++c1 )
-                        for( int c2 = 0; c2 < shape::N; ++c2 )
+                    uint16_type I = expr_basis_t::nLocalDof * c + i;
+                    for ( int c1 = 0; c1 < shape::M; ++c1 )
+                        for ( int c2 = 0; c2 < shape::N; ++c2 )
                         {
-                            int ldof = (c2+nComponents2*c1)*nLocalDof + q;
-                            Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
+                            int ldof = ( c2 + nComponents2 * c1 ) * nLocalDof + q;
+                            Ihloc( I, ldof ) = expr.evaliq( I, c1, c2, q );
                         }
                 }
             }
@@ -605,83 +583,81 @@ public:
     }
     //@}
 
-private:
-
+  private:
     reference_convex_type M_refconvex;
     face_basis_ptrtype M_bdylag;
 };
-template<uint16_type N,
-         uint16_type RealDim,
-         uint16_type O,
-         template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts,
-         uint16_type TheTAG >
-const uint16_type Lagrange<N,RealDim,O,PolySetType,ContinuityType,T,Convex,Pts,TheTAG>::nDim;
+template <uint16_type N,
+          uint16_type RealDim,
+          uint16_type O,
+          template <uint16_type Dim> class PolySetType,
+          typename ContinuityType,
+          typename T,
+          template <uint16_type, uint16_type, uint16_type> class Convex,
+          template <class, uint16_type, class> class Pts,
+          uint16_type TheTAG>
+const uint16_type Lagrange<N, RealDim, O, PolySetType, ContinuityType, T, Convex, Pts, TheTAG>::nDim;
 
-template<uint16_type N,
-         uint16_type RealDim,
-         uint16_type O,
-         template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts,
-         uint16_type TheTAG >
-const uint16_type Lagrange<N,RealDim,O,PolySetType,ContinuityType,T,Convex,Pts,TheTAG>::nOrder;
+template <uint16_type N,
+          uint16_type RealDim,
+          uint16_type O,
+          template <uint16_type Dim> class PolySetType,
+          typename ContinuityType,
+          typename T,
+          template <uint16_type, uint16_type, uint16_type> class Convex,
+          template <class, uint16_type, class> class Pts,
+          uint16_type TheTAG>
+const uint16_type Lagrange<N, RealDim, O, PolySetType, ContinuityType, T, Convex, Pts, TheTAG>::nOrder;
 
-template<uint16_type N,
-         uint16_type RealDim,
-         uint16_type O,
-         template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts,
-         uint16_type TheTAG >
-const uint16_type Lagrange<N,RealDim,O,PolySetType,ContinuityType,T,Convex,Pts,TheTAG>::nLocalDof;
+template <uint16_type N,
+          uint16_type RealDim,
+          uint16_type O,
+          template <uint16_type Dim> class PolySetType,
+          typename ContinuityType,
+          typename T,
+          template <uint16_type, uint16_type, uint16_type> class Convex,
+          template <class, uint16_type, class> class Pts,
+          uint16_type TheTAG>
+const uint16_type Lagrange<N, RealDim, O, PolySetType, ContinuityType, T, Convex, Pts, TheTAG>::nLocalDof;
 
 } // namespace fem
-template<uint16_type Order,
-         template<uint16_type Dim> class PolySetType = Scalar,
-         typename ContinuityType = Continuous,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
-         uint16_type TheTAG=0 >
+template <uint16_type Order,
+          template <uint16_type Dim> class PolySetType = Scalar,
+          typename ContinuityType = Continuous,
+          template <class, uint16_type, class> class Pts = PointSetEquiSpaced,
+          uint16_type TheTAG = 0>
 class Lagrange
 {
-public:
-    template<uint16_type N,
-             uint16_type RealDim,
-             typename T = double,
-             typename Convex = Simplex<N> >
+  public:
+    template <uint16_type N,
+              uint16_type RealDim,
+              typename T = double,
+              typename Convex = Simplex<N>>
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                mpl::identity<fem::Lagrange<N,RealDim,Order,PolySetType,ContinuityType,T,Simplex, Pts, TheTAG > >,
-                mpl::identity<fem::Lagrange<N,RealDim,Order,PolySetType,ContinuityType,T,Hypercube, Pts, TheTAG> > >::type::type result_type;
+                                  mpl::identity<fem::Lagrange<N, RealDim, Order, PolySetType, ContinuityType, T, Simplex, Pts, TheTAG>>,
+                                  mpl::identity<fem::Lagrange<N, RealDim, Order, PolySetType, ContinuityType, T, Hypercube, Pts, TheTAG>>>::type::type result_type;
         typedef result_type type;
     };
 
-    template<uint16_type TheNewTAG>
+    template <uint16_type TheNewTAG>
     struct ChangeTag
     {
-        typedef Lagrange<Order,PolySetType,ContinuityType,Pts,TheNewTAG> type;
+        typedef Lagrange<Order, PolySetType, ContinuityType, Pts, TheNewTAG> type;
     };
 
-    typedef Lagrange<Order,Scalar,ContinuityType,Pts,TheTAG> component_basis_type;
+    typedef Lagrange<Order, Scalar, ContinuityType, Pts, TheTAG> component_basis_type;
 
-    static const uint16_type nOrder =  Order;
+    static const uint16_type nOrder = Order;
     static const uint16_type TAG = TheTAG;
-
 };
-template<uint16_type Order,
-         template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
-         template<class, uint16_type, class> class Pts,
-         uint16_type TheTAG>
-const uint16_type Lagrange<Order,PolySetType,ContinuityType,Pts,TheTAG>::nOrder;
+template <uint16_type Order,
+          template <uint16_type Dim> class PolySetType,
+          typename ContinuityType,
+          template <class, uint16_type, class> class Pts,
+          uint16_type TheTAG>
+const uint16_type Lagrange<Order, PolySetType, ContinuityType, Pts, TheTAG>::nOrder;
 
 } // namespace Feel
 #endif /* __lagrange_H */

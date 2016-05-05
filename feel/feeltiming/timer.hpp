@@ -26,13 +26,12 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-03-20
  */
-#if !defined( FEELPP_TIMING_TIMER_HPP)
+#if !defined( FEELPP_TIMING_TIMER_HPP )
 #define FEELPP_TIMING_TIMER_HPP 1
 
-
-#include <stack>
-#include <chrono>
 #include <boost/assert.hpp>
+#include <chrono>
+#include <stack>
 
 namespace Feel
 {
@@ -42,33 +41,34 @@ namespace details
 // counter<R,T> is an implementation detail that gather and store cycles or
 // seconds measures between tic and toc calls.
 //////////////////////////////////////////////////////////////////////////////
-template<class R,class T> class counter
+template <class R, class T>
+class counter
 {
-public :
+  public:
     typedef T timer_type;
     typedef R type;
 
-    void  tic() const
+    void tic() const
     {
         times().push( time() );
     }
 
-    std::pair<double,int> toc( std::string const& msg, bool display ) const
+    std::pair<double, int> toc( std::string const& msg, bool display ) const
     {
         BOOST_ASSERT_MSG( !empty(), "Unbalanced timing calls" );
-        std::chrono::duration<double> t = std::chrono::duration_cast<std::chrono::duration<double>>(time()-times().top());
+        std::chrono::duration<double> t = std::chrono::duration_cast<std::chrono::duration<double>>( time() - times().top() );
         times().pop();
-        auto r = std::make_pair( t.count(), times().size());
+        auto r = std::make_pair( t.count(), times().size() );
         if ( display ) timer_type::print( msg, r );
 
         return r;
     }
 
-    bool  empty() const
+    bool empty() const
     {
         return times().empty();
     }
-    type  time()  const
+    type time() const
     {
         return timer_type::time();
     }

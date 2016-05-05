@@ -24,30 +24,37 @@
 #ifndef FEELPP_FEELMESH_ITERATOR_HPP
 #define FEELPP_FEELMESH_ITERATOR_HPP 1
 
-namespace Feel {
+namespace Feel
+{
 
-enum class EntityProcessType {LOCAL_ONLY,GHOST_ONLY,ALL,IGNORE_ENTITY_ON_INTERPROCESS_FACE};
+enum class EntityProcessType
+{
+    LOCAL_ONLY,
+    GHOST_ONLY,
+    ALL,
+    IGNORE_ENTITY_ON_INTERPROCESS_FACE
+};
 using entity_process_t = EntityProcessType;
 
-template<size_t S, class ITERATOR>
-ITERATOR begin( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR> &range )
+template <size_t S, class ITERATOR>
+ITERATOR begin( boost::tuple<mpl::size_t<S>, ITERATOR, ITERATOR>& range )
 {
     return range.template get<1>();
 }
 
-template<size_t S, class ITERATOR>
-ITERATOR end( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR> &range )
+template <size_t S, class ITERATOR>
+ITERATOR end( boost::tuple<mpl::size_t<S>, ITERATOR, ITERATOR>& range )
 {
     return range.template get<2>();
 }
-template<size_t S, class ITERATOR, class CONTAINER>
-ITERATOR begin( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> &range )
+template <size_t S, class ITERATOR, class CONTAINER>
+ITERATOR begin( boost::tuple<mpl::size_t<S>, ITERATOR, ITERATOR, CONTAINER>& range )
 {
     return range.template get<1>();
 }
 
-template<size_t S, class ITERATOR, class CONTAINER>
-ITERATOR end( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> &range )
+template <size_t S, class ITERATOR, class CONTAINER>
+ITERATOR end( boost::tuple<mpl::size_t<S>, ITERATOR, ITERATOR, CONTAINER>& range )
 {
     return range.template get<2>();
 }
@@ -57,14 +64,12 @@ ITERATOR end( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> &range )
  */
 enum ElementsType
 {
-    MESH_ELEMENTS = 0,           /**< elements */
-    MESH_FACES = 1,              /**< faces */
-    MESH_INTERNAL_FACES = 2,     /**< internal faces */
-    MESH_EDGES = 3,              /**< edges */
-    MESH_INTERNAL_EDGES = 4,     /**< internal edges */
-    MESH_POINTS = 5              /**< points */
+    MESH_ELEMENTS = 0,       /**< elements */
+    MESH_FACES = 1,          /**< faces */
+    MESH_INTERNAL_FACES = 2, /**< internal faces */
+    MESH_EDGES = 3,          /**< edges */
+    MESH_INTERNAL_EDGES = 4, /**< internal edges */
+    MESH_POINTS = 5          /**< points */
 };
-
-
 }
 #endif

@@ -24,33 +24,31 @@
 
 #include <feel/feelmodels/modelfunctions.hpp>
 
-namespace Feel {
-
+namespace Feel
+{
 
 ModelFunction::ModelFunction( std::string const& name, std::string const& expression,
                               std::string const& dirLibExpr, WorldComm const& world )
-    :
-    M_name( name )
+    : M_name( name )
 {
-    auto parseExpr = GiNaC::parse(expression);
+    auto parseExpr = GiNaC::parse( expression );
 
     auto ginacEvalm = parseExpr.first.evalm();
-    bool isLst = GiNaC::is_a<GiNaC::lst>(  ginacEvalm );
+    bool isLst = GiNaC::is_a<GiNaC::lst>( ginacEvalm );
     int nComp = 1;
     if ( isLst )
         nComp = ginacEvalm.nops();
 
     //M_exprScalar.emplace( expr<expr_order>( expression,"",world,dirLibExpr ) );
     if ( nComp == 1 )
-        M_exprScalar =  boost::optional<expr_scalar_type>( expr<expr_order>( expression,"",world,dirLibExpr ) );
+        M_exprScalar = boost::optional<expr_scalar_type>( expr<expr_order>( expression, "", world, dirLibExpr ) );
     else if ( nComp == 2 )
-        M_exprVectorial2 = boost::optional<expr_vectorial2_type>( expr<2,1,expr_order>( expression,"",world,dirLibExpr ) );
+        M_exprVectorial2 = boost::optional<expr_vectorial2_type>( expr<2, 1, expr_order>( expression, "", world, dirLibExpr ) );
     else if ( nComp == 3 )
-        M_exprVectorial3 = boost::optional<expr_vectorial3_type>( expr<3,1,expr_order>( expression,"",world,dirLibExpr ) );
+        M_exprVectorial3 = boost::optional<expr_vectorial3_type>( expr<3, 1, expr_order>( expression, "", world, dirLibExpr ) );
 }
 
-bool
-ModelFunction::hasSymbol( std::string const& symb ) const
+bool ModelFunction::hasSymbol( std::string const& symb ) const
 {
     if ( this->isScalar() )
         return M_exprScalar->expression().hasSymbol( symb );
@@ -61,8 +59,7 @@ ModelFunction::hasSymbol( std::string const& symb ) const
     return false;
 }
 
-void
-ModelFunction::setParameterValues( std::map<std::string,double> const& mp )
+void ModelFunction::setParameterValues( std::map<std::string, double> const& mp )
 {
     if ( this->isScalar() )
         M_exprScalar->setParameterValues( mp );
@@ -72,56 +69,47 @@ ModelFunction::setParameterValues( std::map<std::string,double> const& mp )
         M_exprVectorial3->setParameterValues( mp );
 }
 
-
 ModelFunctions::ModelFunctions( WorldComm const& world )
-    :
-    M_worldComm( world )
-{}
+    : M_worldComm( world )
+{
+}
 
 ModelFunctions::~ModelFunctions()
-{}
+{
+}
 
-void
-ModelFunctions::setPTree( pt::ptree const& p )
+void ModelFunctions::setPTree( pt::ptree const& p )
 {
     M_p = p;
     setup();
 }
 
-
-void
-ModelFunctions::setup()
+void ModelFunctions::setup()
 {
-    for( auto const& v : M_p )
+    for ( auto const& v : M_p )
     {
         std::string funcName = v.first;
         if ( funcName.empty() )
         {
-            LOG(WARNING) << "ignore function because no name given";
+            LOG( WARNING ) << "ignore function because no name given";
             continue;
         }
 
         try
         {
-            std::string exprStr = v.second.get<std::string>("expr");
-            this->operator[](funcName) = ModelFunction( funcName, exprStr, M_directoryLibExpr, M_worldComm );
+            std::string exprStr = v.second.get<std::string>( "expr" );
+            this->operator[]( funcName ) = ModelFunction( funcName, exprStr, M_directoryLibExpr, M_worldComm );
         }
-        catch( ... )
+        catch ( ... )
         {
-            LOG(WARNING) << "ignore function " << funcName << " because no expression given";
+            LOG( WARNING ) << "ignore function " << funcName << " because no expression given";
         }
     }
 }
 
-
-void
-ModelFunctions::setParameterValues( std::map<std::string,double> const& mp )
+void ModelFunctions::setParameterValues( std::map<std::string, double> const& mp )
 {
-    for( auto & p : *this )
+    for ( auto& p : *this )
         p.second.setParameterValues( mp );
 }
-
-
-
-
 }

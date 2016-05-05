@@ -29,45 +29,45 @@
 #ifndef __PointSetToMesh_H
 #define __PointSetToMesh_H 1
 
-#include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <feel/feelcore/feel.hpp>
 
 #include <stdlib.h>
 
-#if defined(FEELPP_HAS_VTK)
+#if defined( FEELPP_HAS_VTK )
 
-#if defined(__GNUC__) && !(defined(__clang__))
+#if defined( __GNUC__ ) && !( defined( __clang__ ) )
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
-#if defined(__clang__)
+#if defined( __clang__ )
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-W#warnings"
 #endif
 
-#include <vtkVersion.h>
-#include <vtkPointSet.h>
+#include <vtkCellArray.h>
+#include <vtkDataSetMapper.h>
 #include <vtkDelaunay2D.h>
 #include <vtkDelaunay3D.h>
-#include <vtkPolyData.h>
-#include <vtkCellArray.h>
 #include <vtkExtractEdges.h>
+#include <vtkPointSet.h>
+#include <vtkPolyData.h>
 #include <vtkPolyDataMapper.h>
-#include <vtkDataSetMapper.h>
+#include <vtkVersion.h>
 
-#if defined(__clang__)
+#if defined( __clang__ )
 #pragma clang diagnostic pop
 #endif
-#if defined(__GNUC__) && !(defined(__clang__))
+#if defined( __GNUC__ ) && !( defined( __clang__ ) )
 #pragma GCC diagnostic pop
 #endif
 
 #endif /* FEELPP_HAS_VTK */
 
-#include <feel/feelmesh/pointset.hpp>
 #include <feel/feelfilters/filterfromvtk.hpp>
+#include <feel/feelmesh/pointset.hpp>
 
 namespace Feel
 {
@@ -81,16 +81,15 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-template<typename Convex, typename T>
+template <typename Convex, typename T>
 class PointSetToMesh
-    :
-public VisitorBase,
-public Visitor<PointSet<Convex, T> >
+    : public VisitorBase,
+      public Visitor<PointSet<Convex, T>>
 {
     typedef VisitorBase super1;
-    typedef Visitor<PointSet<Convex, T> > super2;
+    typedef Visitor<PointSet<Convex, T>> super2;
 
-public:
+  public:
     /** @name Constants
      */
     //@{
@@ -127,29 +126,29 @@ public:
     //@{
 
     PointSetToMesh()
-        :
-        super1(),
-        super2(),
-        M_mesh( new mesh_type( Environment::worldCommSeq() ) ),
-        M_vertices()
-    {}
-    PointSetToMesh( PointSetToMesh const & p )
-        :
-        super1( p ),
-        super2( p ),
-        M_mesh( p.M_mesh ),
-        M_vertices( p.M_vertices )
-    {}
+        : super1(),
+          super2(),
+          M_mesh( new mesh_type( Environment::worldCommSeq() ) ),
+          M_vertices()
+    {
+    }
+    PointSetToMesh( PointSetToMesh const& p )
+        : super1( p ),
+          super2( p ),
+          M_mesh( p.M_mesh ),
+          M_vertices( p.M_vertices )
+    {
+    }
 
     ~PointSetToMesh()
-    {}
+    {
+    }
 
     //@}
 
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -188,29 +187,23 @@ public:
         visit( pset, mpl::int_<nDim>() );
     }
 
-
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
     void visit( pointset_type* pset, mpl::int_<1> );
     void visit( pointset_type* pset, mpl::int_<2> );
     void visit( pointset_type* pset, mpl::int_<3> );
-private:
 
+  private:
     mesh_ptrtype M_mesh;
     boost::optional<points_type> M_vertices;
 };
 
-template<typename Convex, typename T>
-void
-PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
+template <typename Convex, typename T>
+void PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
 {
-    DVLOG(2) << "[PointSetToMesh::visit(<1>)] pointset to mesh\n";
+    DVLOG( 2 ) << "[PointSetToMesh::visit(<1>)] pointset to mesh\n";
     M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeq() ) );
 
     size_type __npts = pset->nPoints();
@@ -220,7 +213,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
         node_type __nd( 1 );
         __nd = pset->point( __i );
 
-        point_type __pt( __i,__nd, false );
+        point_type __pt( __i, __nd, false );
         __pt.marker() = 0;
 
         if ( __nd[0] == -1 || __nd[0] == 1 )
@@ -231,14 +224,12 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
         else
         {
             __pt.setOnBoundary( false );
-
         }
 
         M_mesh->addPoint( __pt );
     }
 
     size_type n_faces = 0;
-
 
     // Add Boundary faces
 
@@ -264,11 +255,11 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
 
     delete pf1;
 
-    size_type __nele = __npts-1;
+    size_type __nele = __npts - 1;
 
     for ( uint __i = 0; __i < __nele; ++__i )
     {
-        element_type  pf;
+        element_type pf;
 
         pf.setId( __i );
         pf.marker() = 0;
@@ -276,63 +267,62 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
         if ( __nele == 1 )
         {
             pf.setPoint( 0, M_mesh->point( __i ) );
-            pf.setPoint( 1, M_mesh->point( __i+1 ) );
+            pf.setPoint( 1, M_mesh->point( __i + 1 ) );
         }
 
         else if ( __i == 0 )
         {
             pf.setPoint( 0, M_mesh->point( __i ) );
-            pf.setPoint( 1, M_mesh->point( __i+2 ) );
+            pf.setPoint( 1, M_mesh->point( __i + 2 ) );
         }
 
-        else if ( __i == __nele-1 )
+        else if ( __i == __nele - 1 )
         {
-            pf.setPoint( 0, M_mesh->point( __i+1 ) );
+            pf.setPoint( 0, M_mesh->point( __i + 1 ) );
             pf.setPoint( 1, M_mesh->point( 1 ) );
         }
 
         else
         {
-            pf.setPoint( 0, M_mesh->point( __i+1 ) );
-            pf.setPoint( 1, M_mesh->point( __i+2 ) );
+            pf.setPoint( 0, M_mesh->point( __i + 1 ) );
+            pf.setPoint( 1, M_mesh->point( __i + 2 ) );
         }
 
-        element_type const& e  = M_mesh->addElement( pf );
-        DVLOG(2) << "o element " << e.id() << "\n"
-                      << "  p1 = " << e.point( 0 ).node() << "\n"
-                      << "  p2 = " << e.point( 1 ).node() << "\n";
+        element_type const& e = M_mesh->addElement( pf );
+        DVLOG( 2 ) << "o element " << e.id() << "\n"
+                   << "  p1 = " << e.point( 0 ).node() << "\n"
+                   << "  p2 = " << e.point( 1 ).node() << "\n";
     }
 
+    FEELPP_ASSERT( n_faces == M_mesh->numFaces() )
+    ( n_faces )( M_mesh->numFaces() ).error( "invalid face container size" );
 
-    FEELPP_ASSERT( n_faces == M_mesh->numFaces() )( n_faces )( M_mesh->numFaces() ).error( "invalid face container size" );
-
-    DVLOG(2) <<"[PointSetToMesh<1>] done with element accumulation !\n";
+    DVLOG( 2 ) << "[PointSetToMesh<1>] done with element accumulation !\n";
 
     M_mesh->setNumVertices( __npts );
 
-    DVLOG(2) <<"[PointSetToMesh<1>] Face Update !\n";
+    DVLOG( 2 ) << "[PointSetToMesh<1>] Face Update !\n";
 
     //// do not renumber the M_mesh entities
     //M_mesh->updateForUse( MESH_ALL_COMPONENTS & (~MESH_RENUMBER) );
 
-    DVLOG(2) <<"[PointSetToMesh<1>] Face Update Successful !\n";
+    DVLOG( 2 ) << "[PointSetToMesh<1>] Face Update Successful !\n";
 
-
-    DVLOG(2) << "[PointSetToMesh::visit(<1>)] done\n";
+    DVLOG( 2 ) << "[PointSetToMesh::visit(<1>)] done\n";
 }
-template<typename Convex, typename T>
-void
-PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
+template <typename Convex, typename T>
+void PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
 {
-#if defined(FEELPP_HAS_VTK)
+#if defined( FEELPP_HAS_VTK )
     // reinitialize mesh
     M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeq() ) );
 
-    vtkPoints *newPoints = vtkPoints::New();
+    vtkPoints* newPoints = vtkPoints::New();
 
     if ( M_vertices )
     {
-        DVLOG(2) << "adding vertices\n" << M_vertices.get() << "\n";
+        DVLOG( 2 ) << "adding vertices\n"
+                   << M_vertices.get() << "\n";
 
         for ( size_type i = 0; i < M_vertices->size2(); ++i )
         {
@@ -342,18 +332,18 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
 
     std::vector<double> perturbation( pset->nPoints() );
 
-    for ( size_type i=0 ; i< pset->nPoints() ; ++i )
+    for ( size_type i = 0; i < pset->nPoints(); ++i )
     {
-        perturbation[i] = std::rand()*1e-6/RAND_MAX;
-        uint16_type index = newPoints->InsertNextPoint( pset->points()( 0,i )+perturbation[i], pset->points()( 1,i ), 0 );
-        DVLOG(2) << "Inserting point with id " << index << "\n";
-        DVLOG(2) << "pset.point( " << i << " )= " << pset->point( i ) << "\n";
+        perturbation[i] = std::rand() * 1e-6 / RAND_MAX;
+        uint16_type index = newPoints->InsertNextPoint( pset->points()( 0, i ) + perturbation[i], pset->points()( 1, i ), 0 );
+        DVLOG( 2 ) << "Inserting point with id " << index << "\n";
+        DVLOG( 2 ) << "pset.point( " << i << " )= " << pset->point( i ) << "\n";
     }
 
-    vtkPolyData *polyData = vtkPolyData::New();
+    vtkPolyData* polyData = vtkPolyData::New();
     polyData->SetPoints( newPoints );
 
-    vtkDelaunay2D *delaunay2D = vtkDelaunay2D::New();
+    vtkDelaunay2D* delaunay2D = vtkDelaunay2D::New();
 
 #if VTK_MAJOR_VERSION <= 5
     delaunay2D->SetInput( polyData );
@@ -369,7 +359,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
     //delaunay2D->SetOffset( 8 ) ;
     delaunay2D->Update();
 
-    vtkPolyData* outMesh = delaunay2D->GetOutput( );
+    vtkPolyData* outMesh = delaunay2D->GetOutput();
 
     /** General informations about vtkPolyData **/
 
@@ -378,80 +368,79 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
     int Nelem = outMesh->GetNumberOfPolys();
     int Npts = outMesh->GetNumberOfPoints();
 
-    DVLOG(2) << "Number of cells  = " << Nelem   << "\n";
-    DVLOG(2) << "Number of points  = " << Npts   << "\n";
+    DVLOG( 2 ) << "Number of cells  = " << Nelem << "\n";
+    DVLOG( 2 ) << "Number of points  = " << Npts << "\n";
 
-    for ( int i=0; i< Npts; ++i )
+    for ( int i = 0; i < Npts; ++i )
     {
         // revert back the perturbation
         outMesh->GetPoints()->SetPoint( i,
-                                        outMesh->GetPoints()->GetPoint( i )[0]- perturbation[i],
+                                        outMesh->GetPoints()->GetPoint( i )[0] - perturbation[i],
                                         outMesh->GetPoints()->GetPoint( i )[1],
                                         outMesh->GetPoints()->GetPoint( i )[2] );
     }
 
-    for ( int i=0; i< Nelem; ++i )
+    for ( int i = 0; i < Nelem; ++i )
     {
         //  std::cout << "\nLa cellule num�ro : " << i << " compte " << outMesh->GetCell(i)->GetNumberOfPoints() << " points." << "\n";
-        DVLOG(2) << "Element Id = " << i << "\n";
-        DVLOG(2) << "Point 0 (" <<  ( int )outMesh->GetCell( i )->GetPointId( 0 ) <<") =" ;
-        DVLOG(2) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 0 )[0] << " , "
-                      << outMesh->GetCell( i )->GetPoints()->GetPoint( 0 )[1]<< ")" << "\n";
-        DVLOG(2) << "Point 1 (" <<  ( int )outMesh->GetCell( i )->GetPointId( 1 ) <<") =" ;
-        DVLOG(2) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 1 )[0] << " , "
-                      << outMesh->GetCell( i )->GetPoints()->GetPoint( 1 )[1]<< ")" << "\n";
-        DVLOG(2) << "Point 2 (" <<  ( int )outMesh->GetCell( i )->GetPointId( 2 ) <<") =" ;
-        DVLOG(2) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 2 )[0] << " , "
-                      << outMesh->GetCell( i )->GetPoints()->GetPoint( 2 )[1]<< ")" << "\n";
+        DVLOG( 2 ) << "Element Id = " << i << "\n";
+        DVLOG( 2 ) << "Point 0 (" << (int)outMesh->GetCell( i )->GetPointId( 0 ) << ") =";
+        DVLOG( 2 ) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 0 )[0] << " , "
+                   << outMesh->GetCell( i )->GetPoints()->GetPoint( 0 )[1] << ")"
+                   << "\n";
+        DVLOG( 2 ) << "Point 1 (" << (int)outMesh->GetCell( i )->GetPointId( 1 ) << ") =";
+        DVLOG( 2 ) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 1 )[0] << " , "
+                   << outMesh->GetCell( i )->GetPoints()->GetPoint( 1 )[1] << ")"
+                   << "\n";
+        DVLOG( 2 ) << "Point 2 (" << (int)outMesh->GetCell( i )->GetPointId( 2 ) << ") =";
+        DVLOG( 2 ) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 2 )[0] << " , "
+                   << outMesh->GetCell( i )->GetPoints()->GetPoint( 2 )[1] << ")"
+                   << "\n";
 
-        DVLOG(2) << outMesh->GetCell( i )->GetNumberOfEdges() << "\n";
-        DVLOG(2) << ( int )outMesh->GetCell( i )->GetEdge( 0 )->GetPointId( 0 ) << "\n";
-        DVLOG(2) << ( int )outMesh->GetCell( i )->GetEdge( 0 )->GetPointId( 1 ) << "\n";
+        DVLOG( 2 ) << outMesh->GetCell( i )->GetNumberOfEdges() << "\n";
+        DVLOG( 2 ) << (int)outMesh->GetCell( i )->GetEdge( 0 )->GetPointId( 0 ) << "\n";
+        DVLOG( 2 ) << (int)outMesh->GetCell( i )->GetEdge( 0 )->GetPointId( 1 ) << "\n";
     }
 
-
-
-    DVLOG(2) << "[PointSetToMesh::visit(<2>)] delaunay done, now vtk to Mesh<>\n";
+    DVLOG( 2 ) << "[PointSetToMesh::visit(<2>)] delaunay done, now vtk to Mesh<>\n";
     FilterFromVtk<mesh_type> meshfromvtk( outMesh );
     meshfromvtk.visit( M_mesh.get() );
-    DVLOG(2) << "[PointSetToMesh::visit(<2>)] done\n";
+    DVLOG( 2 ) << "[PointSetToMesh::visit(<2>)] done\n";
 
 #else
     std::cerr << "The library was not compiled with vtk support\n";
 #endif /* FEELPP_HAS_VTK */
-
 }
 
-template<typename Convex, typename T>
-void
-PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
+template <typename Convex, typename T>
+void PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
 {
-#if defined(FEELPP_HAS_VTK)
+#if defined( FEELPP_HAS_VTK )
     // reinitialize mesh
     M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeq() ) );
 
-    vtkPoints *newPoints = vtkPoints::New();
+    vtkPoints* newPoints = vtkPoints::New();
 
     //if ( M_add_bdy_pts )
     if ( 0 )
     {
         newPoints->InsertNextPoint( -1, -1, -1 );
-        newPoints->InsertNextPoint(  1, -1, -1 );
-        newPoints->InsertNextPoint( -1,  1, -1 );
-        newPoints->InsertNextPoint( -1, -1,  1 );
+        newPoints->InsertNextPoint( 1, -1, -1 );
+        newPoints->InsertNextPoint( -1, 1, -1 );
+        newPoints->InsertNextPoint( -1, -1, 1 );
     }
 
-    for ( size_type i=0 ; i< pset->nPoints() ; ++i )
+    for ( size_type i = 0; i < pset->nPoints(); ++i )
     {
-        newPoints->InsertNextPoint( pset->points()( 0,i ), pset->points()( 1,i ), pset->points()( 2,i ) );
+        newPoints->InsertNextPoint( pset->points()( 0, i ), pset->points()( 1, i ), pset->points()( 2, i ) );
     }
 
     // create more points
 
-    vtkPolyData *polyData = vtkPolyData::New();
+    vtkPolyData* polyData = vtkPolyData::New();
     polyData->SetPoints( newPoints );
 
-    vtkDelaunay3D *delaunay3D = vtkDelaunay3D::New();
+    vtkDelaunay3D* delaunay3D = vtkDelaunay3D::New();
 #if VTK_MAJOR_VERSION <= 5
     delaunay3D->SetInput( polyData );
 #else
@@ -459,17 +448,15 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
 #endif
     delaunay3D->SetOffset( 5 );
 
-    DVLOG(2) <<"[PointSetToMesh::visit(<3>)] Offset = " << delaunay3D->GetOffset() << "\n";
+    DVLOG( 2 ) << "[PointSetToMesh::visit(<3>)] Offset = " << delaunay3D->GetOffset() << "\n";
     delaunay3D->Update();
 
-    vtkUnstructuredGrid* outMesh = delaunay3D->GetOutput( );
+    vtkUnstructuredGrid* outMesh = delaunay3D->GetOutput();
 
-
-    DVLOG(2) << "[PointSetToMesh::visit(<3>)] delaunay done, now vtk to Mesh<>\n";
+    DVLOG( 2 ) << "[PointSetToMesh::visit(<3>)] delaunay done, now vtk to Mesh<>\n";
     FilterFromVtk3D<mesh_type> meshfromvtk( outMesh );
     meshfromvtk.visit( M_mesh.get() );
-    DVLOG(2) << "[PointSetToMesh::visit(<3>)] done\n";
-
+    DVLOG( 2 ) << "[PointSetToMesh::visit(<3>)] done\n";
 
 #else
     std::cerr << "The library was not compiled with vtk support\n";

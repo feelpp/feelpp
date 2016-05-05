@@ -29,18 +29,16 @@
 #ifndef __MaterialLib_H
 #define __MaterialLib_H 1
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/factory.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelmaterial/material.hpp>
-
-
 
 namespace Feel
 {
 namespace detail
 {
-template<typename T>
+template <typename T>
 Material* createMaterial()
 {
     return new T;
@@ -55,14 +53,12 @@ Material* createMaterial()
  */
 class MaterialLib
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
 
-    typedef Singleton< Feel::Factory< Material, std::string > > factory_type;
+    typedef Singleton<Feel::Factory<Material, std::string>> factory_type;
 
     //@}
 
@@ -72,7 +68,7 @@ public:
 
     MaterialLib();
     MaterialLib( po::variables_map const& vm );
-    MaterialLib( MaterialLib const & );
+    MaterialLib( MaterialLib const& );
     ~MaterialLib();
 
     //@}
@@ -81,7 +77,6 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
@@ -89,7 +84,6 @@ public:
     //@{
 
     static material_ptrtype material( std::string const& name );
-
 
     //@}
 
@@ -103,20 +97,13 @@ public:
      */
     //@{
 
-
     //@}
 
-
-
-protected:
-
-private:
-
-
-
+  protected:
+  private:
 };
 
-typedef Singleton< Feel::Factory< Material, std::string > > MaterialFactory;
+typedef Singleton<Feel::Factory<Material, std::string>> MaterialFactory;
 
 } // Feel
 #endif /* __MaterialLib_H */

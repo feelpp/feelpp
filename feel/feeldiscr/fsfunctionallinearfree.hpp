@@ -37,12 +37,11 @@
 namespace Feel
 {
 
-template<class Space, class ExprType>
+template <class Space, class ExprType>
 class FsFunctionalLinearFree : public FsFunctionalLinear<Space>
 {
-public:
-
-    typedef FsFunctionalLinearFree<Space,ExprType> this_type;
+  public:
+    typedef FsFunctionalLinearFree<Space, ExprType> this_type;
     typedef FsFunctionalLinear<Space> super_type;
 
     typedef Space space_type;
@@ -60,17 +59,19 @@ public:
 
     typedef ExprType expr_type;
 
-    FsFunctionalLinearFree( space_ptrtype space , expr_type expr ) :
-        super_type( space ),
-        M_backend( backend_type::build( BACKEND_PETSC ) ),
-        M_expr( expr )
-    {}
+    FsFunctionalLinearFree( space_ptrtype space, expr_type expr )
+        : super_type( space ),
+          M_backend( backend_type::build( BACKEND_PETSC ) ),
+          M_expr( expr )
+    {
+    }
 
-    FsFunctionalLinearFree( space_ptrtype space, backend_ptrtype backend , expr_type expr ) :
-        super_type( space ),
-        M_backend( backend ),
-        M_expr( expr )
-    {}
+    FsFunctionalLinearFree( space_ptrtype space, backend_ptrtype backend, expr_type expr )
+        : super_type( space ),
+          M_backend( backend ),
+          M_expr( expr )
+    {
+    }
 
     virtual ~FsFunctionalLinearFree() {}
 
@@ -85,26 +86,26 @@ public:
     operator()( const element_type& x ) const
     {
         auto vector = M_backend->newVector( this->space() );
-        form1( _test=this->space(),_vector=vector) = M_expr;
+        form1( _test = this->space(), _vector = vector ) = M_expr;
         vector->close();
 
         return M_backend->dot( *vector, x.container() );
     }
 
     //fill a vector to have the container
-    virtual void containerPtr( vector_ptrtype & vector_to_fill )
+    virtual void containerPtr( vector_ptrtype& vector_to_fill )
     {
         auto vector = M_backend->newVector( this->space() );
-        form1( _test=this->space(),_vector=vector) = M_expr;
+        form1( _test = this->space(), _vector = vector ) = M_expr;
         vector->close();
         vector_to_fill = vector;
     }
 
     //fill a vector to have the container
-    virtual void container( vector_type & vector_to_fill )
+    virtual void container( vector_type& vector_to_fill )
     {
         auto vector = M_backend->newVector( this->space() );
-        form1( _test=this->space(),_vector=vector) = M_expr;
+        form1( _test = this->space(), _vector = vector ) = M_expr;
         vector->close();
 
         vector_to_fill = *vector;
@@ -117,49 +118,42 @@ public:
         return *this;
     }
 
-
-private:
+  private:
     backend_ptrtype M_backend;
     expr_type M_expr;
-};//FsFunctionalLinearFree
-
+}; //FsFunctionalLinearFree
 
 namespace detail
 {
 
-template<typename Args>
+template <typename Args>
 struct compute_functionalLinearFree_return
 {
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::expr>::type>::type expr_type;
 
     typedef FsFunctionalLinearFree<space_type, expr_type> type;
-    typedef boost::shared_ptr<FsFunctionalLinearFree<space_type,expr_type> > ptrtype;
+    typedef boost::shared_ptr<FsFunctionalLinearFree<space_type, expr_type>> ptrtype;
 };
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::compute_functionalLinearFree_return<Args>::ptrtype ), // 1. return type
-    functionalLinearFree,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( space,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( expr ,   * )
-    ) // required
-    ( optional
-      ( backend,        *, backend() )
-    ) // optionnal
-)
+    ( typename Feel::detail::compute_functionalLinearFree_return<Args>::ptrtype ),                          // 1. return type
+    functionalLinearFree,                                                                                   // 2. name of the function template
+    tag,                                                                                                    // 3. namespace of tag types
+    ( required( space, *(boost::is_convertible<mpl::_, boost::shared_ptr<FunctionSpaceBase>>))( expr, * ) ) // required
+    ( optional( backend, *, backend() ) )                                                                   // optionnal
+    )
 {
 #if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
 #endif
     typedef typename Feel::detail::compute_functionalLinearFree_return<Args>::type functionalfree_type;
     typedef typename Feel::detail::compute_functionalLinearFree_return<Args>::ptrtype functionalfree_ptrtype;
-    return functionalfree_ptrtype ( new functionalfree_type( space , backend , expr ) );
+    return functionalfree_ptrtype( new functionalfree_type( space, backend, expr ) );
 
 } // functionalLinearFree
 
-}//Feel
+} //Feel
 
 #endif /* _FSFUNCTIONALLINEARFREE_HPP_ */

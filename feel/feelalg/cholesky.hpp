@@ -28,9 +28,7 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 
-
 namespace ublas = boost::numeric::ublas;
-
 
 /** \brief decompose the symmetric positive definit matrix A into product L L^T.
  *
@@ -41,7 +39,7 @@ namespace ublas = boost::numeric::ublas;
  * \param L lower triangular output matrix
  * \return nonzero if decompositon fails (the value ist 1 + the numer of the failing row)
  */
-template < class MATRIX, class TRIA >
+template <class MATRIX, class TRIA>
 size_t cholesky_decompose( const MATRIX& A, TRIA& L )
 {
     using namespace ublas;
@@ -54,11 +52,11 @@ size_t cholesky_decompose( const MATRIX& A, TRIA& L )
 
     const size_t n = A.size1();
 
-    for ( size_t k=0 ; k < n; k++ )
+    for ( size_t k = 0; k < n; k++ )
     {
 
-        double qL_kk = A( k,k ) - inner_prod( project( row( L, k ), range( 0, k ) ),
-                                              project( row( L, k ), range( 0, k ) ) );
+        double qL_kk = A( k, k ) - inner_prod( project( row( L, k ), range( 0, k ) ),
+                                               project( row( L, k ), range( 0, k ) ) );
 
         if ( qL_kk <= 0 )
         {
@@ -68,13 +66,12 @@ size_t cholesky_decompose( const MATRIX& A, TRIA& L )
         else
         {
             double L_kk = sqrt( qL_kk );
-            L( k,k ) = L_kk;
+            L( k, k ) = L_kk;
 
             matrix_column<TRIA> cLk( L, k );
-            project( cLk, range( k+1, n ) )
-                = ( project( column( A, k ), range( k+1, n ) )
-                    - prod( project( L, range( k+1, n ), range( 0, k ) ),
-                            project( row( L, k ), range( 0, k ) ) ) ) / L_kk;
+            project( cLk, range( k + 1, n ) ) = ( project( column( A, k ), range( k + 1, n ) ) - prod( project( L, range( k + 1, n ), range( 0, k ) ),
+                                                                                                       project( row( L, k ), range( 0, k ) ) ) ) /
+                                                L_kk;
         }
     }
 

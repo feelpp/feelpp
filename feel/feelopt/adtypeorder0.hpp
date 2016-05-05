@@ -48,13 +48,18 @@ namespace Feel
   @see
   @version $Id: ADType.hpp,v 1.7 2002/06/06 02:22:52 prudhomm Exp $
 */
-template<typename T, int Nvar, int Var>
+template <typename T, int Nvar, int Var>
 class ADType<T, Nvar, 0, Var>
 {
-public:
-
-    enum { nvar = Nvar };
-    enum { order = 1 };
+  public:
+    enum
+    {
+        nvar = Nvar
+    };
+    enum
+    {
+        order = 1
+    };
 
     typedef ADVariable<Var> variable_type;
 
@@ -62,30 +67,28 @@ public:
 
     typedef T value_type;
 
-    template<typename NumT, int NumVar, int Order, int VarNum> friend class ADType;
+    template <typename NumT, int NumVar, int Order, int VarNum>
+    friend class ADType;
 
     operator T()
     {
         return M_val;
     }
 
-    ADType (  T __v = 0 )
-        :
-        M_val (  __v )
+    ADType( T __v = 0 )
+        : M_val( __v )
     {
     }
 
-    template<int VarNum>
-    ADType( ADType<T,Nvar,0,VarNum> const& sad )
-        :
-        M_val( sad.M_val )
+    template <int VarNum>
+    ADType( ADType<T, Nvar, 0, VarNum> const& sad )
+        : M_val( sad.M_val )
     {
     }
 
-    template<typename ExprT>
-    ADType ( const ADExpr<ExprT>& expr )
-        :
-        M_val( 0 )
+    template <typename ExprT>
+    ADType( const ADExpr<ExprT>& expr )
+        : M_val( 0 )
     {
         *this = expr;
     }
@@ -98,7 +101,6 @@ public:
     {
         return M_val;
     }
-
 
     //@}
 
@@ -118,27 +120,28 @@ public:
 
     This& operator=( T const& );
     This& operator=( This const& );
-    template <class ExprT> This& operator=( const ADExpr<ExprT>& expr );
+    template <class ExprT>
+    This& operator=( const ADExpr<ExprT>& expr );
 
     //! implements unary + \f$ +x \f$
-    ADExpr< ADUnaryPlus< This > > operator+ () const
+    ADExpr<ADUnaryPlus<This>> operator+() const
     {
         typedef ADUnaryPlus<This> expr_t;
-        return ADExpr<expr_t> ( expr_t ( *this ) );
+        return ADExpr<expr_t>( expr_t( *this ) );
     }
 
     //! implements unary - \f$ -x \f$
-    ADExpr< ADUnaryMinus< This > > operator- () const
+    ADExpr<ADUnaryMinus<This>> operator-() const
     {
         typedef ADUnaryMinus<This> expr_t;
-        return ADExpr<expr_t> ( expr_t ( *this ) );
+        return ADExpr<expr_t>( expr_t( *this ) );
     }
 
-#define AD_UNARY_OP( op )                       \
-    This& operator op ( value_type val )        \
-    {                                           \
-        M_val op val;                          \
-        return *this;                           \
+#define AD_UNARY_OP( op )               \
+    This& operator op( value_type val ) \
+    {                                   \
+        M_val op val;                   \
+        return *this;                   \
     }
     AD_UNARY_OP( += );
     AD_UNARY_OP( -= );
@@ -147,64 +150,61 @@ public:
 
 #undef AD_UNARY_OP
 
-    This& operator += ( This const& sad )
+    This& operator+=( This const& sad )
     {
         M_val += sad.M_val;
         return *this;
     }
-    This& operator -= ( This const& sad )
+    This& operator-=( This const& sad )
     {
         M_val -= sad.M_val;
         return *this;
     }
 
-
-    This& operator *= ( This const& sad )
+    This& operator*=( This const& sad )
     {
         M_val *= sad.M_val;
         return *this;
     }
 
-    This& operator /= ( This const& sad )
+    This& operator/=( This const& sad )
     {
         M_val /= sad.M_val;
         return *this;
     }
 
-    template<typename Expr>
-    This& operator += ( ADExpr<Expr> const& sad )
+    template <typename Expr>
+    This& operator+=( ADExpr<Expr> const& sad )
     {
         *this = *this + sad;
         return *this;
     }
 
-    template<typename Expr>
-    This& operator -= ( ADExpr<Expr> const& sad )
+    template <typename Expr>
+    This& operator-=( ADExpr<Expr> const& sad )
     {
         *this = *this - sad;
         return *this;
     }
 
-    template<typename Expr>
-    This& operator *= ( ADExpr<Expr> const& sad )
+    template <typename Expr>
+    This& operator*=( ADExpr<Expr> const& sad )
     {
         *this = *this * sad;
         return *this;
     }
 
-    template<typename Expr>
-    This& operator /= ( ADExpr<Expr> const& sad )
+    template <typename Expr>
+    This& operator/=( ADExpr<Expr> const& sad )
     {
         *this = *this / sad;
         return *this;
     }
     //@}
-private:
-
+  private:
     value_type M_val;
-
 };
-template<typename T,int Nvar, int Var>
+template <typename T, int Nvar, int Var>
 ADType<T, Nvar, 0, Var>&
 ADType<T, Nvar, 0, Var>::operator=( value_type const& val )
 {
@@ -212,30 +212,28 @@ ADType<T, Nvar, 0, Var>::operator=( value_type const& val )
     return *this;
 }
 
-template<typename T,int Nvar, int Var>
+template <typename T, int Nvar, int Var>
 ADType<T, Nvar, 0, Var>&
 ADType<T, Nvar, 0, Var>::operator=( This const& sad )
 {
     M_val = sad.M_val;
     return *this;
 }
-template<typename T,int Nvar, int Var>
+template <typename T, int Nvar, int Var>
 template <class ExprT>
-ADType<T,Nvar, 0, Var> &
-ADType<T,Nvar, 0, Var>::operator=( const ADExpr<ExprT>& expr )
+ADType<T, Nvar, 0, Var>&
+ADType<T, Nvar, 0, Var>::operator=( const ADExpr<ExprT>& expr )
 {
     M_val = expr.value();
     return *this;
 }
-
-
 }
 //------------------------------- AD ostream operator ------------------------------------------
 template <class T, int Nvar, int Var>
 std::ostream&
-operator << ( std::ostream& os, const Feel::ADType<T, Nvar, 0, Var>& a )
+operator<<( std::ostream& os, const Feel::ADType<T, Nvar, 0, Var>& a )
 {
-    os.setf( std::ios::fixed,std::ios::floatfield );
+    os.setf( std::ios::fixed, std::ios::floatfield );
     os.width( 12 );
     os << "value    = " << a.value() << "  \n";
     return os;

@@ -29,23 +29,25 @@
 #ifndef __ADType_H
 #define __ADType_H 1
 
-#include <set>
 #include <boost/type_traits.hpp>
 #include <boost/type_traits/is_fundamental.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelopt/adexpr.hpp>
 #include <feel/feelopt/adtraits.hpp>
+#include <set>
 
 namespace Feel
 {
-template< typename Expr > class ADExpr;
+template <typename Expr>
+class ADExpr;
 
-template<int var_>
+template <int var_>
 struct ADVariable
 {
-    enum { var = var_ };
-
-
+    enum
+    {
+        var = var_
+    };
 };
 #if 0
 template<int N, template<int> class T>
@@ -88,15 +90,12 @@ struct SListGenerator<0, T>
   @author Christophe Prud'homme
   @see
 */
-template<typename T, int Nvar, int Order = 1, int Var = -1>
+template <typename T, int Nvar, int Order = 1, int Var = -1>
 class ADType
 {
-public:
-
-protected:
-
-private:
-
+  public:
+  protected:
+  private:
 };
 
 } // Feel
@@ -104,9 +103,8 @@ private:
 #include <feel/feelopt/adtypeorder1.hpp>
 #include <feel/feelopt/adtypeorder2.hpp>
 
-#include <feel/feelopt/adoperators.hpp>
-#include <feel/feelopt/adfunctions.hpp>
 #include <feel/feelopt/adbinaryfunctions.hpp>
+#include <feel/feelopt/adfunctions.hpp>
+#include <feel/feelopt/adoperators.hpp>
 
 #endif /* __ADType_H */
-

@@ -24,46 +24,43 @@
 #ifndef FEELPP_PARTITIONERLINEAR_IMPL_HPP
 #define FEELPP_PARTITIONERLINEAR_IMPL_HPP 1
 
-
 #include <feel/feelpartition/partitionerlinear.hpp>
 
-
-namespace Feel {
-
-template<typename MeshType>
-void PartitionerLinear<MeshType>::partitionImpl ( mesh_ptrtype& mesh, 
-                                                  rank_type n)
+namespace Feel
 {
-    CHECK( n != invalid_rank_type_value ) 
-        << "Invalid number of partitions : " 
-        << n << " must be != " << invalid_rank_type_value;
-  
 
-  // Check for an easy return
-  if (n == 1)
+template <typename MeshType>
+void PartitionerLinear<MeshType>::partitionImpl( mesh_ptrtype& mesh,
+                                                 rank_type n )
+{
+    CHECK( n != invalid_rank_type_value )
+        << "Invalid number of partitions : "
+        << n << " must be != " << invalid_rank_type_value;
+
+    // Check for an easy return
+    if ( n == 1 )
     {
-      this->singlePartition (mesh);
-      return;
+        this->singlePartition( mesh );
+        return;
     }
 
-  LOG(INFO) << "linear partition mesh starts...";
-  tic();
+    LOG( INFO ) << "linear partition mesh starts...";
+    tic();
 
-  dof_id_type blksize       = mesh->numElements()/n;
-  
-  dof_id_type e = 0;
-  
-  for( auto elt : elements( mesh ) )
-  {
-      auto pid = ((e/blksize) < n)?:(e/blksize):0;
-      auto it = mesh->elementIterator( elt );
-      mesh->modify( it, []( element_type& e ){ e.setProcessId(pid); });
-      e++;
-  }
-  auto t = toc("linear partition",FLAGS_v > 0);
-  LOG(INFO) << "linear partition mesh done in " << t << "s";
+    dof_id_type blksize = mesh->numElements() / n;
+
+    dof_id_type e = 0;
+
+    for ( auto elt : elements( mesh ) )
+    {
+        auto pid = ( ( e / blksize ) < n ) ?: ( e / blksize ) : 0;
+        auto it = mesh->elementIterator( elt );
+        mesh->modify( it, []( element_type& e ) { e.setProcessId( pid ); } );
+        e++;
+    }
+    auto t = toc( "linear partition", FLAGS_v > 0 );
+    LOG( INFO ) << "linear partition mesh done in " << t << "s";
 }
-
 
 } // Feel
 

@@ -26,49 +26,52 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_DETAIL_GMC_HPP)
+#if !defined( FEELPP_DETAIL_GMC_HPP )
 #define FEELPP_DETAIL_GMC_HPP 1
 
 #include <boost/fusion/sequence.hpp>
 #include <boost/fusion/support/pair.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 //namespace blas = boost::numeric::bindings::blas;
 //namespace traits = boost::numeric::bindings::traits;
 namespace fusion = boost::fusion;
 
+namespace vf
+{
 
-namespace vf { 
-
-
-namespace detail {
+namespace detail
+{
 
 /// \cond detail
-template<int Index> struct gmc
+template <int Index>
+struct gmc
 {
     static const int value = Index;
     typedef mpl::void_ reference_element_type;
-} ;
+};
 
 } // detail
 
-template<typename Geo_t>
-using key_t = typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,mpl::identity<vf::detail::gmc<0> >,mpl::identity<vf::detail::gmc<1> > >::type::type;
+template <typename Geo_t>
+using key_t = typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0>>, mpl::identity<vf::detail::gmc<0>>, mpl::identity<vf::detail::gmc<1>>>::type::type;
 
-template<typename Geo_t>
-using gmc_t = typename fusion::result_of::value_at_key<Geo_t,key_t<Geo_t>>::type::element_type;
-template<typename Geo_t>
-using gmc_ptr_t = typename fusion::result_of::value_at_key<Geo_t,key_t<Geo_t>>::type::element_type*;
+template <typename Geo_t>
+using gmc_t = typename fusion::result_of::value_at_key<Geo_t, key_t<Geo_t>>::type::element_type;
+template <typename Geo_t>
+using gmc_ptr_t = typename fusion::result_of::value_at_key<Geo_t, key_t<Geo_t>>::type::element_type*;
 
-namespace detail {
+namespace detail
+{
 
-template<typename Geo_t>
+template <typename Geo_t>
 struct ExtractGm
 {
     using key_type = key_t<Geo_t>;
-    typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-    typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+    typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type* gmc_ptrtype;
+    typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type gmc_type;
 
     static gmc_ptrtype get( Geo_t const& geom )
     {
@@ -77,48 +80,47 @@ struct ExtractGm
     static Geo_t clone( Geo_t const& geom )
     {
         Geo_t geom2( geom );
-        fusion::at_key<key_type>( geom2 )  = fusion::at_key<key_type>( geom )->clone();
+        fusion::at_key<key_type>( geom2 ) = fusion::at_key<key_type>( geom )->clone();
         return geom2;
     }
 };
 /// \endcond
 } // detail
-template<typename GmcT>
+template <typename GmcT>
 fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>>
 mapgmc( boost::shared_ptr<GmcT>& ctx )
 {
-    return { fusion::make_pair<vf::detail::gmc<0> >( ctx ) };
+    return {fusion::make_pair<vf::detail::gmc<0>>( ctx )};
 }
-template<typename GmcT> using map_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>>;
+template <typename GmcT>
+using map_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>>;
 
-template<typename GmcT>
-fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<GmcT>> >
+template <typename GmcT>
+fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<GmcT>>>
 mapgmc( boost::shared_ptr<GmcT>& ctx1, boost::shared_ptr<GmcT>& ctx2 )
 {
-    return { fusion::make_pair<vf::detail::gmc<0> >( ctx1 ), fusion::make_pair<vf::detail::gmc<1> >( ctx2 ) };
+    return {fusion::make_pair<vf::detail::gmc<0>>( ctx1 ), fusion::make_pair<vf::detail::gmc<1>>( ctx2 )};
 }
-template<typename GmcT> using map2_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<GmcT>> >;
+template <typename GmcT>
+using map2_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<GmcT>>>;
 
-
-template<typename FecT>
+template <typename FecT>
 fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<FecT>>>
-    mapfec( boost::shared_ptr<FecT>& ctx )
+mapfec( boost::shared_ptr<FecT>& ctx )
 {
-    return { fusion::make_pair<vf::detail::gmc<0> >( ctx ) };
+    return {fusion::make_pair<vf::detail::gmc<0>>( ctx )};
 }
-template<typename FecT> using map_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<FecT>>>;
+template <typename FecT>
+using map_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<FecT>>>;
 
-template<typename FecT>
-fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<FecT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<FecT>> >
-    mapfec( boost::shared_ptr<FecT>& ctx1, boost::shared_ptr<FecT>& ctx2 )
+template <typename FecT>
+fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<FecT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<FecT>>>
+mapfec( boost::shared_ptr<FecT>& ctx1, boost::shared_ptr<FecT>& ctx2 )
 {
-    return { fusion::make_pair<vf::detail::gmc<0> >( ctx1 ), fusion::make_pair<vf::detail::gmc<1> >( ctx2 ) };
+    return {fusion::make_pair<vf::detail::gmc<0>>( ctx1 ), fusion::make_pair<vf::detail::gmc<1>>( ctx2 )};
 }
-template<typename FecT> using map2_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<FecT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<FecT>> >;
-
-
-
-} 
-
+template <typename FecT>
+using map2_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<FecT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<FecT>>>;
+}
 }
 #endif /* FEELPP_DETAIL_GMC_HPP */

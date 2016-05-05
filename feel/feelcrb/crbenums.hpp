@@ -26,10 +26,11 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_CRBENUMS_HPP)
+#if !defined( FEELPP_CRBENUMS_HPP )
 #define FEELPP_CRBENUMS_HPP 1
 
-namespace Feel {
+namespace Feel
+{
 
 /**
  * CRBErrorType
@@ -39,9 +40,13 @@ namespace Feel {
  * - CRB_NO_RESIDUAL : in this case we don't compute error estimation
  * - CRB_EMPIRICAL : compute |S_n - S_{n-1}| where S_n is the output obtained by using a reduced basis with n elements
  */
-enum CRBErrorType { CRB_RESIDUAL = 0, CRB_RESIDUAL_SCM=1, CRB_NO_RESIDUAL=2 , CRB_EMPIRICAL=3};
-
-
+enum CRBErrorType
+{
+    CRB_RESIDUAL = 0,
+    CRB_RESIDUAL_SCM = 1,
+    CRB_NO_RESIDUAL = 2,
+    CRB_EMPIRICAL = 3
+};
 }
 
 #endif /* FEELPP_CRBENUMS_HPP */

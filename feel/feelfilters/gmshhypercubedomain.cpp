@@ -33,28 +33,29 @@
 
 namespace Feel
 {
-GmshHypercubeDomain::GmshHypercubeDomain( int dim, int order  )
-    :
-    super( dim, order ),
-    M_rdim( dim ),
-    M_use_hypercube( false )
-{}
+GmshHypercubeDomain::GmshHypercubeDomain( int dim, int order )
+    : super( dim, order ),
+      M_rdim( dim ),
+      M_use_hypercube( false )
+{
+}
 
-GmshHypercubeDomain::GmshHypercubeDomain( int dim, int order, int rdim, bool use_hypercube  )
-    :
-    super( dim, order ),
-    M_rdim( rdim ),
-    M_use_hypercube( use_hypercube )
-{}
+GmshHypercubeDomain::GmshHypercubeDomain( int dim, int order, int rdim, bool use_hypercube )
+    : super( dim, order ),
+      M_rdim( rdim ),
+      M_use_hypercube( use_hypercube )
+{
+}
 
 GmshHypercubeDomain::GmshHypercubeDomain( GmshHypercubeDomain const& d )
-    :
-    super( d ),
-    M_rdim( d.M_rdim ),
-    M_use_hypercube( d.M_use_hypercube )
-{}
+    : super( d ),
+      M_rdim( d.M_rdim ),
+      M_use_hypercube( d.M_use_hypercube )
+{
+}
 GmshHypercubeDomain::~GmshHypercubeDomain()
-{}
+{
+}
 std::string
 GmshHypercubeDomain::getDescription() const
 {
@@ -100,10 +101,10 @@ GmshHypercubeDomain::getDescription1D() const
 
     if ( this->addMidPoint() )
     {
-        ostr << "Point(3) = {" << ( this->M_I[0].second+this->M_I[0].first )/2 << ",";
+        ostr << "Point(3) = {" << ( this->M_I[0].second + this->M_I[0].first ) / 2 << ",";
 
         if ( M_rdim == this->dimension() + 1 )
-            ostr << ( this->M_I[1].second+this->M_I[1].first )/2;
+            ostr << ( this->M_I[1].second + this->M_I[1].first ) / 2;
 
         else
             ostr << 0;
@@ -114,20 +115,20 @@ GmshHypercubeDomain::getDescription1D() const
 
         if ( this->usePhysicalNames() == false )
         {
-            ostr  << "Physical Point(1) = {1};\n"
-                  << "Physical Point(3) = {2};\n"
-                  << "Physical Point(2) = {3};\n"
-                  << "Physical Line(\"Mat1\") = {1};\n"
-                  << "Physical Line(\"Mat2\") = {2};\n";
+            ostr << "Physical Point(1) = {1};\n"
+                 << "Physical Point(3) = {2};\n"
+                 << "Physical Point(2) = {3};\n"
+                 << "Physical Line(\"Mat1\") = {1};\n"
+                 << "Physical Line(\"Mat2\") = {2};\n";
         }
 
         else
         {
-            ostr  << "Physical Point(\"Dirichlet\") = {1};\n"
-                  << "Physical Point(\"Neumann\") = {2};\n"
-                  << "Physical Point(3) = {3};\n"
-                  << "Physical Line(\"Mat1\") = {1};\n"
-                  << "Physical Line(\"Mat2\") = {2};\n";
+            ostr << "Physical Point(\"Dirichlet\") = {1};\n"
+                 << "Physical Point(\"Neumann\") = {2};\n"
+                 << "Physical Point(3) = {3};\n"
+                 << "Physical Line(\"Mat1\") = {1};\n"
+                 << "Physical Line(\"Mat2\") = {2};\n";
         }
     }
 
@@ -160,16 +161,15 @@ GmshHypercubeDomain::getDescription2D() const
     std::ostringstream ostr;
     ostr << this->preamble();
 
-
     ostr << "xmin=" << this->M_I[0].first << ";\n"
          << "xmax=" << this->M_I[0].second << ";\n"
          << "ymin=" << this->M_I[1].first << ";\n"
          << "ymax=" << this->M_I[1].second << ";\n";
 
     ostr << "Point(1) = {xmin,ymin,0.0,h};\n"
-         << "Point(2) = {xmax,ymin+"<<this->shear()<<",0.0,h};\n"
+         << "Point(2) = {xmax,ymin+" << this->shear() << ",0.0,h};\n"
          << "Point(3) = {xmax+" << this->shear() << ",ymax,0.0,h};\n"
-         << "Point(4) = {xmin+" << this->shear() << ",ymax+"<<this->shear()<<",0.0,h};\n"
+         << "Point(4) = {xmin+" << this->shear() << ",ymax+" << this->shear() << ",0.0,h};\n"
          << "Line(1) = {4,1};\n"
          << "Line(2) = {1,2};\n"
          << "Line(3) = {2,3};\n"
@@ -180,12 +180,11 @@ GmshHypercubeDomain::getDescription2D() const
     if ( !this->periodic().empty() )
     {
         std::for_each( this->periodic().begin(),
-                      this->periodic().end(),
-                       [&ostr]( std::pair<int,std::pair<int,int> > const& p )
-                       {
+                       this->periodic().end(),
+                       [&ostr]( std::pair<int, std::pair<int, int>> const& p ) {
                            CHECK( p.first == 1 ) << "Invalid periodic entity dimension : " << p.first << ",  should be 1";
                            ostr << "Periodic Line ( " << p.second.first << " ) = { " << p.second.second << " };\n";
-                      } );
+                       } );
     }
 
     if ( this->subStructuring() == true )
@@ -196,7 +195,6 @@ GmshHypercubeDomain::getDescription2D() const
              << "Physical Line(\"SOUTH\") = {2};\n"
              << "Physical Line(\"EAST\") = {3};\n"
              << "Physical Surface(\"Omega\") = {6};\n";
-
     }
     else if ( this->usePhysicalNames() == false )
     {
@@ -229,13 +227,11 @@ GmshHypercubeDomain::getDescription2D() const
             ostr << "nx = (xmax-xmin)/h;\n"
                  << "ny = (ymax-ymin)/h;\n";
 
-
         ostr << "\n"
              << "Transfinite Line {1,3} = ny + 1 Using Progression 1.0;\n"
              << "Transfinite Line {2,4} = nx + 1 Using Progression 1.0;\n"
              << "\n"
              << "Transfinite Surface {6} = {1,2,3,4};\n";
-
     }
     if ( M_use_hypercube )
     {
@@ -271,8 +267,6 @@ GmshHypercubeDomain::getDescription3D() const
          << "Extrude Surface {6, {0,0,zmax-zmin} } {\n"
          << "  Layers { {(zmax-zmin)/h}, {1.0} };\n";
 
-
-
     if ( M_use_hypercube )
         ostr << "  Recombine;\n";
 
@@ -302,7 +296,6 @@ GmshHypercubeDomain::getDescription3D() const
                  << "ny = (ymax-ymin)/h;\n"
                  << "nz = (zmax-zmin)/h;\n";
     }
-
 
     if ( M_use_hypercube )
         ostr << "Transfinite Line {4,10,2,8} = nx + 1  Using Progression 1;\n"
@@ -341,7 +334,7 @@ GmshHypercubeDomain::getDescription3D() const
              << "Physical Surface(\"EAST\") = {27};\n"
              << "Physical Surface(\"BOTTOM\") = {28};\n"
              << "Physical Volume(\"Omega\") = {1};\n";
-            //<< "Physical Volume(30) = {1};\n";
+        //<< "Physical Volume(30) = {1};\n";
     }
     else
     {
@@ -368,7 +361,6 @@ GmshHypercubeDomain::getDescription3D() const
 
     return ostr.str();
 }
-
 
 } // Feel
 

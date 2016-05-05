@@ -24,7 +24,7 @@
 #ifndef FEELPP_POLY_HPP
 #define FEELPP_POLY_HPP 1
 
-#include <feel/feelpoly/lagrange.hpp>
 #include <feel/feelpoly/crouzeixraviart.hpp>
+#include <feel/feelpoly/lagrange.hpp>
 
 #endif

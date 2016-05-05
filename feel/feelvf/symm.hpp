@@ -41,11 +41,10 @@ namespace vf
  * @author Christophe Prud'homme
  * @see
  */
-template<typename ExprT, int Part = 1>
+template <typename ExprT, int Part = 1>
 class Sym
 {
-public:
-
+  public:
     static const size_type context = ExprT::context;
     static const bool is_symetric = Part;
     static const bool is_terminal = false;
@@ -53,20 +52,20 @@ public:
     static const uint16_type imorder = ExprT::imorder;
     static const bool imIsPoly = ExprT::imIsPoly;
 
-    template<typename Func>
+    template <typename Func>
     struct HasTestFunction
     {
         static const bool result = ExprT::template HasTestFunction<Func>::result;
     };
 
-    template<typename Func>
+    template <typename Func>
     struct HasTrialFunction
     {
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
-    template<typename Func>
+    template <typename Func>
     static const bool has_test_basis = ExprT::template has_test_basis<Func>;
-    template<typename Func>
+    template <typename Func>
     static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
     using test_basis = typename ExprT::test_basis;
     using trial_basis = typename ExprT::trial_basis;
@@ -78,8 +77,7 @@ public:
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
     typedef value_type evaluate_type;
-    typedef Sym<ExprT,Part> this_type;
-
+    typedef Sym<ExprT, Part> this_type;
 
     //@}
 
@@ -87,16 +85,17 @@ public:
      */
     //@{
 
-    explicit Sym( expression_type const & __expr )
-        :
-        M_expr( __expr )
-    {}
-    Sym( Sym const & te )
-        :
-        M_expr( te.M_expr )
-    {}
+    explicit Sym( expression_type const& __expr )
+        : M_expr( __expr )
+    {
+    }
+    Sym( Sym const& te )
+        : M_expr( te.M_expr )
+    {
+    }
     ~Sym()
-    {}
+    {
+    }
 
     //@}
 
@@ -104,20 +103,17 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -132,7 +128,7 @@ public:
 
     //@}
 
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
+    template <typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
@@ -140,7 +136,8 @@ public:
 
         typedef typename tensor_expr_type::shape shape;
 
-        template <class Args> struct sig
+        template <class Args>
+        struct sig
         {
             typedef value_type type;
         };
@@ -152,25 +149,22 @@ public:
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            :
-            M_tensor_expr( expr.expression(), geom, fev, feu )
+            : M_tensor_expr( expr.expression(), geom, fev, feu )
         {
         }
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
-            :
-            M_tensor_expr( expr.expression(), geom, fev )
+            : M_tensor_expr( expr.expression(), geom, fev )
         {
         }
 
         tensor( this_type const& expr, Geo_t const& geom )
-            :
-            M_tensor_expr( expr.expression(), geom )
+            : M_tensor_expr( expr.expression(), geom )
         {
         }
 
-        template<typename IM>
+        template <typename IM>
         void init( IM const& im )
         {
             M_tensor_expr.init( im );
@@ -199,10 +193,10 @@ public:
             value_type at = M_tensor_expr.evalijq( i, j, c2, c1, q );
 
             if ( Part == 1 )
-                return 0.5*( a+at );
+                return 0.5 * ( a + at );
 
             else
-                return 0.5*( a-at );
+                return 0.5 * ( a - at );
         }
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -211,10 +205,10 @@ public:
             value_type at = M_tensor_expr.evaliq( i, c2, c1, q );
 
             if ( Part == 1 )
-                return 0.5*( a+at );
+                return 0.5 * ( a + at );
 
             else
-                return 0.5*( a-at );
+                return 0.5 * ( a - at );
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -223,45 +217,42 @@ public:
             value_type at = M_tensor_expr.evalq( c2, c1, q );
 
             if ( Part == 1 )
-                return 0.5*( a+at );
+                return 0.5 * ( a + at );
 
             else
-                return 0.5*( a-at );
+                return 0.5 * ( a - at );
         }
 
-    private:
+      private:
         tensor_expr_type M_tensor_expr;
     };
 
-private:
-    mutable expression_type  M_expr;
+  private:
+    mutable expression_type M_expr;
 };
 /// \endcond
 
 /**
  * \brief symetric part of a matricial expression
  */
-template<typename ExprT>
-inline
-Expr< Sym<ExprT,1> >
+template <typename ExprT>
+inline Expr<Sym<ExprT, 1>>
 sym( ExprT v )
 {
-    typedef Sym<ExprT,1> sym_t;
-    return Expr< sym_t >(  sym_t( v ) );
+    typedef Sym<ExprT, 1> sym_t;
+    return Expr<sym_t>( sym_t( v ) );
 }
 
 /**
  * \brief symetric part of a matricial expression
  */
-template<typename ExprT>
-inline
-Expr< Sym<ExprT,0> >
+template <typename ExprT>
+inline Expr<Sym<ExprT, 0>>
 antisym( ExprT v )
 {
-    typedef Sym<ExprT,0> sym_t;
-    return Expr< sym_t >(  sym_t( v ) );
+    typedef Sym<ExprT, 0> sym_t;
+    return Expr<sym_t>( sym_t( v ) );
 }
-
 }
 }
 #endif /* __Unsym_H */

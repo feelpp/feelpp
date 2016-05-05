@@ -40,17 +40,15 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-template<class DomainSpace, class DualImageSpace>
+template <class DomainSpace, class DualImageSpace>
 class OperatorLinearParametrized : public OperatorLinear<DomainSpace, DualImageSpace>
 {
-    typedef OperatorLinearParametrized<DomainSpace,DualImageSpace> super;
-public:
+    typedef OperatorLinearParametrized<DomainSpace, DualImageSpace> super;
 
-
+  public:
     /** @name Constants
      */
     //@{
-
 
     //@}
 
@@ -62,9 +60,9 @@ public:
     typedef OperatorLinear<DomainSpace, DualImageSpace> super_type;
 
     typedef typename super::domain_space_type domain_space_type;
-    typedef typename super::dual_image_space_type  dual_image_space_type;
+    typedef typename super::dual_image_space_type dual_image_space_type;
     typedef typename super::domain_space_ptrtype domain_space_ptrtype;
-    typedef typename super::dual_image_space_ptrtype  dual_image_space_ptrtype;
+    typedef typename super::dual_image_space_ptrtype dual_image_space_ptrtype;
     typedef typename domain_space_type::element_type domain_element_type;
 
     typedef typename super::backend_type backend_type;
@@ -74,8 +72,10 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
     typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
 
-    template<typename T, typename Storage>
-    struct domain_element: public super::domain_space_type::template Element<T,Storage> {};
+    template <typename T, typename Storage>
+    struct domain_element : public super::domain_space_type::template Element<T, Storage>
+    {
+    };
 
     typedef FsFunctionalLinear<DualImageSpace> image_element_type;
 
@@ -97,15 +97,15 @@ public:
 
     //! default constructor
     OperatorLinearParametrized()
-        :
-        super_type()
-    {}
+        : super_type()
+    {
+    }
 
     //! copy constructor
-    OperatorLinearParametrized( OperatorLinearParametrized const & olp, bool deep_copy = false )
-        :
-        super_type( olp, deep_copy )
-    {}
+    OperatorLinearParametrized( OperatorLinearParametrized const& olp, bool deep_copy = false )
+        : super_type( olp, deep_copy )
+    {
+    }
 
     /**
      * Constructor from domain and image space
@@ -113,22 +113,22 @@ public:
      * \param dualImageSpace
      * \param backend associated linear algebra backend
      */
-    OperatorLinearParametrized( domain_space_ptrtype     domainSpace,
+    OperatorLinearParametrized( domain_space_ptrtype domainSpace,
                                 dual_image_space_ptrtype dualImageSpace,
-                                backend_ptrtype          backend )
-        :
-        super_type( domainSpace, dualImageSpace, backend )
+                                backend_ptrtype backend )
+        : super_type( domainSpace, dualImageSpace, backend )
     {
     }
 
     //! destructor
     ~OperatorLinearParametrized()
-    {}
+    {
+    }
 
     void
-    init( domain_space_ptrtype     domainSpace,
+    init( domain_space_ptrtype domainSpace,
           dual_image_space_ptrtype dualImageSpace,
-          backend_ptrtype          backend )
+          backend_ptrtype backend )
     {
         super::init( domainSpace, dualImageSpace, backend );
     }
@@ -139,7 +139,7 @@ public:
     //@{
 
     //! copy operator
-    OperatorLinearParametrized& operator=( OperatorLinearParametrized const & o )
+    OperatorLinearParametrized& operator=( OperatorLinearParametrized const& o )
     {
         if ( this != &o )
         {
@@ -182,7 +182,6 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
@@ -196,27 +195,27 @@ public:
     virtual theta_vector_type computeThetaq( parameter_type const& mu ) = 0;
 
     // fill underlying matrix
-    template<class ExprT>
+    template <class ExprT>
     this_type& add( int q, ExprT const& e )
     {
         //         M_matrix->clear();
         form2( this->domainSpace(),
                this->dualImageSpace(),
                M_Aq[q],
-               _init=true
+               _init = true
 
-             ) = e;
+               ) = e;
         return *this;
     }
 
     // add to underlying matrix
-    template<class ExprT>
+    template <class ExprT>
     this_type& operator+=( ExprT const& e )
     {
         form2( this->domainSpace(),
                this->dualImageSpace(),
                M_matrix,
-               _init=false ) += e;
+               _init = false ) += e;
         return *this;
     }
 
@@ -237,10 +236,7 @@ public:
 
     //@}
 
-
-
-protected:
-
+  protected:
     /**
      * matrix storing the parameter independent matrices (affine
      * decomposition)
@@ -256,13 +252,13 @@ protected:
     theta_vector_type M_thetaq;
 };
 
-template<class DomainSpace, class DualImageSpace>
-typename OperatorLinearParametrized<DomainSpace,DualImageSpace>::sparse_matrix_ptrtype
-OperatorLinearParametrized<DomainSpace,DualImageSpace>::merge( parameter_type const& mu );
+template <class DomainSpace, class DualImageSpace>
+typename OperatorLinearParametrized<DomainSpace, DualImageSpace>::sparse_matrix_ptrtype
+OperatorLinearParametrized<DomainSpace, DualImageSpace>::merge( parameter_type const& mu );
 {
     sparse_matrix_ptrtype A( M_backend->newMatrix( domainSpace(), dualImageSpace() ) )
 
-    A->close();
+        A->close();
     *A = *M_Aq[0];
     A->scale( this->thetaq( 0 ) );
 

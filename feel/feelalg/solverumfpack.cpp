@@ -33,36 +33,35 @@
 
 #include <feel/feelalg/solverumfpack.hpp>
 
-#include <boost/numeric/ublas/matrix_sparse.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/matrix_sparse.hpp>
 
-#if defined(FEELPP_HAS_UMFPACK)
+#if defined( FEELPP_HAS_UMFPACK )
 
 namespace Feel
 {
 class SolverUMFPACK::Pimpl
 {
-public:
-
+  public:
     typedef boost::numeric::ublas::compressed_matrix<double, boost::numeric::ublas::column_major> matrix_type;
 
     Pimpl()
-        :
-        nr( 0 ),
-        nc( 0 ),
-        Ap(),
-        Ai(),
-        Ax()
-    {}
+        : nr( 0 ),
+          nc( 0 ),
+          Ap(),
+          Ai(),
+          Ax()
+    {
+    }
 
     Pimpl( Pimpl const& __p )
-        :
-        nr( __p.nr ),
-        nc( __p.nc ),
-        Ap( __p.Ap ),
-        Ai( __p.Ai ),
-        Ax( __p.Ax )
-    {}
+        : nr( __p.nr ),
+          nc( __p.nc ),
+          Ap( __p.Ap ),
+          Ai( __p.Ai ),
+          Ax( __p.Ax )
+    {
+    }
 
     int nr;
     int nc;
@@ -71,31 +70,28 @@ public:
     std::vector<double> Ax;
 };
 SolverUMFPACK::SolverUMFPACK()
-    :
-    M_p( new Pimpl ),
-    M_matrix_reset( true ),
-    M_matrix_values_reset( true ),
-    M_symbolic( 0 ),
-    M_numeric( 0 ),
-    M_Control( new double[UMFPACK_CONTROL] ),
-    M_Info( new double[UMFPACK_INFO] )
+    : M_p( new Pimpl ),
+      M_matrix_reset( true ),
+      M_matrix_values_reset( true ),
+      M_symbolic( 0 ),
+      M_numeric( 0 ),
+      M_Control( new double[UMFPACK_CONTROL] ),
+      M_Info( new double[UMFPACK_INFO] )
 {
     ::umfpack_di_defaults( M_Control );
     M_Control[UMFPACK_PRL] = 6;
     //M_Control[UMFPACK_STRATEGY] = UMFPACK_STRATEGY_UNSYMMETRIC;
     //M_Control[UMFPACK_AMD_DENSE] = 1;
 }
-SolverUMFPACK::SolverUMFPACK( SolverUMFPACK const & umfpackSolver )
-    :
-    M_p( umfpackSolver.M_p ),
-    M_matrix_reset( umfpackSolver.M_matrix_reset ),
-    M_matrix_values_reset( umfpackSolver.M_matrix_values_reset ),
-    M_symbolic( 0 ),
-    M_numeric( 0 ),
-    M_Control( umfpackSolver.M_Control ),
-    M_Info( umfpackSolver.M_Info )
+SolverUMFPACK::SolverUMFPACK( SolverUMFPACK const& umfpackSolver )
+    : M_p( umfpackSolver.M_p ),
+      M_matrix_reset( umfpackSolver.M_matrix_reset ),
+      M_matrix_values_reset( umfpackSolver.M_matrix_values_reset ),
+      M_symbolic( 0 ),
+      M_numeric( 0 ),
+      M_Control( umfpackSolver.M_Control ),
+      M_Info( umfpackSolver.M_Info )
 {
-
 }
 SolverUMFPACK::~SolverUMFPACK()
 {
@@ -104,71 +100,63 @@ SolverUMFPACK::~SolverUMFPACK()
 
     if ( M_symbolic )
         ::umfpack_di_free_symbolic( &M_symbolic );
-
 }
 
-void
-SolverUMFPACK::reportInfo()
+void SolverUMFPACK::reportInfo()
 {
     umfpack_di_report_info( M_Control, M_Info );
 }
-void
-SolverUMFPACK::reportStatus( int status )
+void SolverUMFPACK::reportStatus( int status )
 {
     umfpack_di_report_status( M_Control, status );
 }
-void
-SolverUMFPACK::setStrategy( int strategy )
+void SolverUMFPACK::setStrategy( int strategy )
 {
-    if  ( strategy == ( UMFPACK_STRATEGY_AUTO ||
-                        UMFPACK_STRATEGY_UNSYMMETRIC ||
-                        UMFPACK_STRATEGY_SYMMETRIC ||
-                        UMFPACK_STRATEGY_2BY2 ) )
-        M_Control [UMFPACK_STRATEGY] = strategy;
+    if ( strategy == ( UMFPACK_STRATEGY_AUTO ||
+                       UMFPACK_STRATEGY_UNSYMMETRIC ||
+                       UMFPACK_STRATEGY_SYMMETRIC ||
+                       UMFPACK_STRATEGY_2BY2 ) )
+        M_Control[UMFPACK_STRATEGY] = strategy;
 
     else
-        M_Control [UMFPACK_STRATEGY] = UMFPACK_STRATEGY_AUTO;
+        M_Control[UMFPACK_STRATEGY] = UMFPACK_STRATEGY_AUTO;
 }
-void
-SolverUMFPACK::setMatrix( const matrix_type& m )
+void SolverUMFPACK::setMatrix( const matrix_type& m )
 {
-    DVLOG(2) << "[SolverUMFPACK::setMatrix] set matrix (nr="
-                  << m.nrows() << ", nc=" << m.ncols() << ", nz=" << m.nz() << ")\n";
+    DVLOG( 2 ) << "[SolverUMFPACK::setMatrix] set matrix (nr="
+               << m.nrows() << ", nc=" << m.ncols() << ", nz=" << m.nz() << ")\n";
     boost::timer ti;
-    int *Map = 0;
+    int* Map = 0;
     M_p->nr = m.nrows();
     M_p->nc = m.ncols();
 
-
-    M_p->Ap.resize( m.ncols()+1 );
+    M_p->Ap.resize( m.ncols() + 1 );
     M_p->Ai.resize( m.nz() );
     M_p->Ax.resize( m.nz() );
 
-    int status = umfpack_di_triplet_to_col ( m.nrows(), m.ncols(), m.nz(),
-                 m.Ti(), m.Tj(), m.Tx(),
-                 &M_p->Ap[0], &M_p->Ai[0], &M_p->Ax[0],
-                 Map ) ;
+    int status = umfpack_di_triplet_to_col( m.nrows(), m.ncols(), m.nz(),
+                                            m.Ti(), m.Tj(), m.Tx(),
+                                            &M_p->Ap[0], &M_p->Ai[0], &M_p->Ax[0],
+                                            Map );
 
     if ( status != UMFPACK_OK )
     {
         reportInfo();
         reportStatus( status );
         Error() << "[SolverUMFPACK::setMatrix] set matrix failed\n";
-
     }
 
-    DVLOG(2) << "[SolverUMFPACK::setMatrix] set matrix done in " << ti.elapsed() << "\n";
+    DVLOG( 2 ) << "[SolverUMFPACK::setMatrix] set matrix done in " << ti.elapsed() << "\n";
 }
 
-void
-SolverUMFPACK::solve( array_type& __X, array_type const& __B )
+void SolverUMFPACK::solve( array_type& __X, array_type const& __B )
 {
 
     prepareSolve();
 
     boost::timer ti;
 
-    DVLOG(2) << "[SolverUMFPACK::solve] solve A x = b using UMFPACK version " << UMFPACK_VERSION << "\n";
+    DVLOG( 2 ) << "[SolverUMFPACK::solve] solve A x = b using UMFPACK version " << UMFPACK_VERSION << "\n";
     int status = umfpack_di_solve( UMFPACK_A,
                                    &M_p->Ap[0],
                                    &M_p->Ai[0],
@@ -186,24 +174,24 @@ SolverUMFPACK::solve( array_type& __X, array_type const& __B )
         Error() << "[SolverUMFPACK::solve] solve failed\n";
     }
 
-    DVLOG(2) << "[SolverUMFPACK::solve] solve in " << ti.elapsed() << "\n";
+    DVLOG( 2 ) << "[SolverUMFPACK::solve] solve in " << ti.elapsed() << "\n";
 }
 void SolverUMFPACK::prepareSolve()
 {
     boost::timer ti;
-    DVLOG(2) << "[SolverUMFPACK::solve] preparesolve starts\n";
+    DVLOG( 2 ) << "[SolverUMFPACK::solve] preparesolve starts\n";
 
     if ( M_matrix_reset )
     {
         if ( M_symbolic )
         {
-            DVLOG(2) << "[SolverUMFPACK::prepareSolve] Destroying symbolic factorization\n";
+            DVLOG( 2 ) << "[SolverUMFPACK::prepareSolve] Destroying symbolic factorization\n";
 
             umfpack_di_free_symbolic( &M_symbolic );
             M_symbolic = 0;
         }
 
-        DVLOG(2) << "[SolverUMFPACK::prepareSolve] computing symbolic factorization\n";
+        DVLOG( 2 ) << "[SolverUMFPACK::prepareSolve] computing symbolic factorization\n";
         int status = umfpack_di_symbolic( M_p->nr,
                                           M_p->nc,
                                           &M_p->Ap[0],
@@ -225,12 +213,12 @@ void SolverUMFPACK::prepareSolve()
     {
         if ( M_numeric )
         {
-            DVLOG(2) << "[SolverUMFPACK::prepareSolve] Destroying numeric factorization\n";
+            DVLOG( 2 ) << "[SolverUMFPACK::prepareSolve] Destroying numeric factorization\n";
             umfpack_di_free_numeric( &M_numeric );
             M_numeric = 0;
         }
 
-        DVLOG(2) << "[SolverUMFPACK::prepareSolve] computing numeric factorization\n";
+        DVLOG( 2 ) << "[SolverUMFPACK::prepareSolve] computing numeric factorization\n";
         int status = umfpack_di_numeric( &M_p->Ap[0],
                                          &M_p->Ai[0],
                                          &M_p->Ax[0],
@@ -248,8 +236,7 @@ void SolverUMFPACK::prepareSolve()
 
     M_matrix_reset = false;
     M_matrix_values_reset = false;
-    DVLOG(2) << "[SolverUMFPACK::solve] preparesolve done in " << ti.elapsed() << "\n";
+    DVLOG( 2 ) << "[SolverUMFPACK::solve] preparesolve done in " << ti.elapsed() << "\n";
 }
-
 }
 #endif // FEELPP_HAS_UMFPACK

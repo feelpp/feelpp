@@ -31,12 +31,13 @@
 
 #include <feel/feelalg/glas.hpp>
 
-
 namespace Feel
 {
 namespace detail
 {
-struct periodicity_base {};
+struct periodicity_base
+{
+};
 }
 
 /**
@@ -81,11 +82,10 @@ struct periodicity_base {};
  * @author Christophe Prud'homme
  * @see
  */
-template<typename T = double >
+template <typename T = double>
 class Periodic : public Feel::detail::periodicity_base
 {
-public:
-
+  public:
     /** @name Constants
      */
     //@{
@@ -106,9 +106,12 @@ public:
      */
     //@{
 
-    Periodic() : M_tag1(invalid_uint16_type_value), M_tag2(invalid_uint16_type_value), M_trans() {}
-    Periodic( uint16_type tag1, uint16_type tag2, node_type const& trans ) : M_tag1( tag1 ), M_tag2( tag2 ), M_trans( trans ) {}
-    Periodic( Periodic const & p ) : M_tag1( p.M_tag1 ), M_tag2( p.M_tag2 ), M_trans( p.M_trans ) {}
+    Periodic()
+        : M_tag1( invalid_uint16_type_value ), M_tag2( invalid_uint16_type_value ), M_trans() {}
+    Periodic( uint16_type tag1, uint16_type tag2, node_type const& trans )
+        : M_tag1( tag1 ), M_tag2( tag2 ), M_trans( trans ) {}
+    Periodic( Periodic const& p )
+        : M_tag1( p.M_tag1 ), M_tag2( p.M_tag2 ), M_trans( p.M_trans ) {}
     ~Periodic() {}
 
     //@}
@@ -116,7 +119,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -126,22 +128,21 @@ public:
 
     //! return whether the condition is periodic or not
     static bool isPeriodic()
-        {
-            return is_periodic;
-        }
+    {
+        return is_periodic;
+    }
 
     //! return the translation condition that should be applied on Tag2
     node_type const& translation()
-        {
-            return M_trans;
-        }
+    {
+        return M_trans;
+    }
 
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -154,11 +155,8 @@ public:
 
     //@}
 
-
-
-protected:
-
-private:
+  protected:
+  private:
     uint16_type M_tag1;
     uint16_type M_tag2;
     node_type M_trans;
@@ -176,8 +174,7 @@ private:
  */
 class NoPeriodicity : public Feel::detail::periodicity_base
 {
-public:
-
+  public:
     /** @name Constants
      */
     //@{
@@ -206,21 +203,20 @@ public:
 
     //! return whether the condition is periodic or not
     static bool isPeriodic()
-        {
-            return is_periodic;
-        }
+    {
+        return is_periodic;
+    }
 
     //! return the translation condition that should be applied on Tag2
     node_type translation()
-        {
-            return node_type();
-        }
+    {
+        return node_type();
+    }
 
     uint16_type tag1() const { return invalid_uint16_type_value; }
     uint16_type tag2() const { return invalid_uint16_type_value; }
 
     //@}
 };
-
 }
 #endif /* __Periodic_H */

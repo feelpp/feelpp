@@ -36,20 +36,20 @@ namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
 
-template< class Convex,
+template <class Convex,
           uint16_type Order,
-          template<class, uint16_type, class> class PointSetType,
-          typename value_type >
+          template <class, uint16_type, class> class PointSetType,
+          typename value_type>
 value_type lebesgueConstant()
 {
     static const uint16_type Dim = Convex::nDim;
 
-    typedef typename mpl::if_< mpl::bool_< Convex::is_simplex >, Simplex<Dim, 1>, Hypercube<Dim, 1> >::type convex_type;
+    typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>, Simplex<Dim, 1>, Hypercube<Dim, 1>>::type convex_type;
 
-    typedef Lagrange<Order,Scalar,PointSetType>::template apply<Dim, value_type, Convex>::type basis_type;
+    typedef Lagrange<Order, Scalar, PointSetType>::template apply<Dim, value_type, Convex>::type basis_type;
     basis_type M_basis;
 
-    PointSetEquiSpaced<convex_type, 100 - 80*( Dim-2 ), value_type> test;
+    PointSetEquiSpaced<convex_type, 100 - 80 * ( Dim - 2 ), value_type> test;
 
     return ublas::norm_1( M_basis.evaluate( test.points() ) );
 };

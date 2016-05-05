@@ -24,15 +24,13 @@
  \date 2010-10-12
  */
 
-
 #ifndef FEELPP_MODELS_ALE_IMPL_H
 #define FEELPP_MODELS_ALE_IMPL_H 1
 
 #define ALE_WITH_BOUNDARYELEMENT 0
 
-
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backend.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 //#include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/interpolate.hpp>
@@ -58,13 +56,13 @@ namespace FeelModels
 namespace ALE_IMPL
 {
 
-template< class Convex, int Order = 1 >
-class ALE : public Feel::FeelModels::ALE<Convex,Order>
+template <class Convex, int Order = 1>
+class ALE : public Feel::FeelModels::ALE<Convex, Order>
 {
-public :
-    typedef Feel::FeelModels::ALE<Convex,Order> super_type;
+  public:
+    typedef Feel::FeelModels::ALE<Convex, Order> super_type;
 
-    typedef ALE< Convex,Order> self_type;
+    typedef ALE<Convex, Order> self_type;
     /*
      * Reference mesh typedefs
      */
@@ -73,20 +71,20 @@ public :
     static const uint16_type Dim = convex_type::nDim;
     static const uint16_type Order_low = convex_type::nOrder;
 
-    typedef Mesh< convex_type > mesh_type;
+    typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    static const bool isEqualOrderAndOrderLow = boost::is_same<mpl::int_<Order>,mpl::int_<Order_low> >::type::value;
+    static const bool isEqualOrderAndOrderLow = boost::is_same<mpl::int_<Order>, mpl::int_<Order_low>>::type::value;
 
     typedef typename super_type::template MyReferenceFunctionSpace<Order_low>::type space_low_type;
     typedef typename super_type::template MyReferenceFunctionSpace<Order>::type space_high_type;
     typedef typename super_type::template MyReferenceFunctionSpace<Order_low>::ptrtype space_low_ptrtype;
     typedef typename super_type::template MyReferenceFunctionSpace<Order>::ptrtype space_high_ptrtype;
 
-    typedef typename  super_type::template MyReferenceFunctionSpace<Order_low>::elt_type element_low_type;
-    typedef typename  super_type::template MyReferenceFunctionSpace<Order>::elt_type element_high_type;
-    typedef typename  super_type::template MyReferenceFunctionSpace<Order_low>::elt_ptrtype element_low_ptrtype;
-    typedef typename  super_type::template MyReferenceFunctionSpace<Order>::elt_ptrtype element_high_ptrtype;
+    typedef typename super_type::template MyReferenceFunctionSpace<Order_low>::elt_type element_low_type;
+    typedef typename super_type::template MyReferenceFunctionSpace<Order>::elt_type element_high_type;
+    typedef typename super_type::template MyReferenceFunctionSpace<Order_low>::elt_ptrtype element_low_ptrtype;
+    typedef typename super_type::template MyReferenceFunctionSpace<Order>::elt_ptrtype element_high_ptrtype;
 
     typedef typename super_type::ale_map_basis_type ale_map_basis_type;
     typedef typename super_type::ale_map_functionspace_type ale_map_functionspace_type;
@@ -104,20 +102,19 @@ public :
     typedef Preconditioner<double> preconditioner_type;
     typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
-
 #if defined( FEELPP_MODELS_HAS_MESHALE_HARMONICEXTENSION )
-    typedef HarmonicExtension<mesh_type,Order_low> harmonicextension_type;
+    typedef HarmonicExtension<mesh_type, Order_low> harmonicextension_type;
     typedef boost::shared_ptr<harmonicextension_type> harmonicextension_ptrtype;
 #endif
 #if defined( FEELPP_MODELS_HAS_MESHALE_WINSLOW )
-    typedef Winslow<mesh_type,Order_low+1 > winslow_type;
+    typedef Winslow<mesh_type, Order_low + 1> winslow_type;
     typedef boost::shared_ptr<winslow_type> winslow_ptrtype;
 #endif
     /**
      * constructor
      *
      */
-    ALE( mesh_ptrtype mesh, std::string prefix="", WorldComm const& worldcomm = WorldComm(), bool moveGhostEltFromExtendedStencil=false );
+    ALE( mesh_ptrtype mesh, std::string prefix = "", WorldComm const& worldcomm = WorldComm(), bool moveGhostEltFromExtendedStencil = false );
 
     /**
      * copy constructor
@@ -145,8 +142,8 @@ public :
     /**
      * \calculates the high order ALE map given the boundary's displacement
      */
-    void generateMap( ale_map_element_type const & dispOnBoundary,
-                      ale_map_element_type const & oldDisp );
+    void generateMap( ale_map_element_type const& dispOnBoundary,
+                      ale_map_element_type const& oldDisp );
 
     /**
      * \return the low order displacement
@@ -156,28 +153,28 @@ public :
     /**
      * \return the high order ALE map
      */
-    ale_map_element_type const& map() const { return map( mpl::bool_< (Order>Order_low) >() ); }
+    ale_map_element_type const& map() const { return map( mpl::bool_<( Order > Order_low )>() ); }
     element_high_type const& map( mpl::bool_<true> ) const { return *M_aleHigh; }
     element_low_type const& map( mpl::bool_<false> ) const { return *M_aleLow; }
 
     /**
      * \return the high order displacement
      */
-    ale_map_element_type const& displacement() const { return displacement( mpl::bool_< (Order>Order_low) >() ); }
+    ale_map_element_type const& displacement() const { return displacement( mpl::bool_<( Order > Order_low )>() ); }
     element_high_type const& displacement( mpl::bool_<true> ) const { return *M_displacementHigh; }
     element_low_type const& displacement( mpl::bool_<false> ) const { return *M_displacementLow; }
 
     /**
      * \returns an element containing the position of the points in the reference mesh
      */
-    ale_map_element_type const& identity() const { return displacement( mpl::bool_< (Order>Order_low) >() ); }
+    ale_map_element_type const& identity() const { return displacement( mpl::bool_<( Order > Order_low )>() ); }
     element_high_type const& identity( mpl::bool_<true> ) const { return *M_identityHigh; }
     element_low_type const& identity( mpl::bool_<false> ) const { return *M_identityLow; }
 
     /**
      * \return the functionspace that contains the high order ALE map
      */
-    ale_map_functionspace_ptrtype const& functionSpace() const { return functionSpace( mpl::bool_< (Order>Order_low) >() ); }
+    ale_map_functionspace_ptrtype const& functionSpace() const { return functionSpace( mpl::bool_<( Order > Order_low )>() ); }
     space_high_ptrtype const& functionSpace( mpl::bool_<true> ) const { return M_fspaceHigh; }
     space_low_ptrtype const& functionSpace( mpl::bool_<false> ) const { return M_fspaceLow; }
 
@@ -186,8 +183,7 @@ public :
      */
     void restart( mesh_ptrtype mesh );
 
-private:
-
+  private:
     void createALE();
     void createALEHO( mpl::true_ );
     void createALEHO( mpl::false_ );
@@ -211,9 +207,9 @@ private:
     /**
      * Creates the low order ALE map, given the boundary's displacement
      */
-    void generateLowOrderMap_HARMONIC( ale_map_element_type const & dispOnBoundary );
-    void generateLowOrderMap_WINSLOW( ale_map_element_type const & dispOnBoundary,
-                                      ale_map_element_type const & oldDisp );
+    void generateLowOrderMap_HARMONIC( ale_map_element_type const& dispOnBoundary );
+    void generateLowOrderMap_WINSLOW( ale_map_element_type const& dispOnBoundary,
+                                      ale_map_element_type const& oldDisp );
 
     /**
      * Pass information from low order maps to high order ones
@@ -225,30 +221,29 @@ private:
     //-----------------------------------------------------------------------------------------//
     //-----------------------------------------------------------------------------------------//
     // compute ho correction
-    void updateBoundaryElements( ale_map_element_type const & dispOnBoundary,
+    void updateBoundaryElements( ale_map_element_type const& dispOnBoundary,
                                  mpl::bool_<true> /**/ );
     //-----------------------------------------------------------------------------------------//
     // compute ho correction : method 0 (problem on whole mesh)
-    void updateBoundaryElements( ale_map_element_type const & dispOnBoundary,
+    void updateBoundaryElements( ale_map_element_type const& dispOnBoundary,
                                  mpl::bool_<true> /**/, mpl::int_<0> /**/ );
     // with degree of in volume(3d) or face(2d) : order > 2
-    void updateBoundaryElements( ale_map_element_type const & dispOnBoundary,
+    void updateBoundaryElements( ale_map_element_type const& dispOnBoundary,
                                  mpl::bool_<true> /**/, mpl::int_<0> /**/, mpl::bool_<true> /**/ );
     // with no degree of in volume(3d) or face(2d) : order == 2
-    void updateBoundaryElements( ale_map_element_type const & dispOnBoundary,
+    void updateBoundaryElements( ale_map_element_type const& dispOnBoundary,
                                  mpl::bool_<true> /**/, mpl::int_<0> /**/, mpl::bool_<false> /**/ );
     //-----------------------------------------------------------------------------------------//
     // compute ho correction : method 1 (problem only on boundary elements)
-    void updateBoundaryElements( ale_map_element_type const & dispOnBoundary,
+    void updateBoundaryElements( ale_map_element_type const& dispOnBoundary,
                                  mpl::bool_<true> /**/, mpl::int_<1> /**/ );
     //-----------------------------------------------------------------------------------------//
     // no ho correction
-    void updateBoundaryElements( ale_map_element_type const & dispOnBoundary,
+    void updateBoundaryElements( ale_map_element_type const& dispOnBoundary,
                                  mpl::bool_<false> /**/ );
 
-private :
-    bool M_verboseSolverTimer,M_verboseSolverTimerAllProc;
-
+  private:
+    bool M_verboseSolverTimer, M_verboseSolverTimerAllProc;
 
     mesh_ptrtype M_reference_mesh;
 
@@ -277,7 +272,6 @@ private :
     bool M_isInitHarmonicExtension, M_isInitWinslow;
 
     bool M_moveGhostEltFromExtendedStencil;
-
 };
 
 } // namespace ALE_IMPL

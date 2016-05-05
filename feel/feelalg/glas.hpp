@@ -30,9 +30,9 @@
 #ifndef __FEELPP_GLAS_HPP
 #define __FEELPP_GLAS_HPP 1
 
-#include <string>
-#include <sstream>
 #include <fstream>
+#include <sstream>
+#include <string>
 
 #include <Eigen/Core>
 
@@ -41,21 +41,21 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/variate_generator.hpp>
 
-#include <boost/lambda/lambda.hpp>
 #include <boost/lambda/algorithm.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/if.hpp>
+#include <boost/lambda/lambda.hpp>
 
-#include <boost/numeric/ublas/vector.hpp>
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/matrix_sparse.hpp>
-#include <boost/numeric/ublas/symmetric.hpp>
-#include <boost/numeric/ublas/operation.hpp>
-#include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <boost/numeric/ublas/matrix_sparse.hpp>
+#include <boost/numeric/ublas/operation.hpp>
+#include <boost/numeric/ublas/symmetric.hpp>
+#include <boost/numeric/ublas/vector.hpp>
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/debug.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>
 
 namespace Feel
@@ -66,58 +66,56 @@ const double TGV = 1e20;
 /**
  * @return true is the matrix has no Inf, false otherwise
  */
-template<typename Derived>
-inline bool is_finite(const Eigen::MatrixBase<Derived>& x)
+template <typename Derived>
+inline bool is_finite( const Eigen::MatrixBase<Derived>& x )
 {
-    return ( (x - x).array() == (x - x).array()).all();
+    return ( ( x - x ).array() == ( x - x ).array() ).all();
 }
 
 /**
  * @return true is matrix has no NaN, false otherwise
  */
-template<typename Derived>
-inline bool is_nan(const Eigen::MatrixBase<Derived>& x)
+template <typename Derived>
+inline bool is_nan( const Eigen::MatrixBase<Derived>& x )
 {
-    return ((x.array() == x.array())).all();
+    return ( ( x.array() == x.array() ) ).all();
 }
 
 template <class T>
-inline T Min ( const T &a, const T &b )
+inline T Min( const T& a, const T& b )
 {
     return a < b ? a : b;
 }
 template <class T>
-inline T Max ( const T &a, const T & b )
+inline T Max( const T& a, const T& b )
 {
     return a > b ? a : b;
 }
 template <class T>
-inline T Abs ( const T &a )
+inline T Abs( const T& a )
 {
     return a < 0 ? -a : a;
 }
 
 template <class T>
-inline void Exchange ( T& a, T& b )
+inline void Exchange( T& a, T& b )
 {
     T c = a;
     a = b;
     b = c;
 }
 template <class T>
-inline T Max ( const T &a, const T & b, const T & c )
+inline T Max( const T& a, const T& b, const T& c )
 {
     return Max( Max( a, b ), c );
 }
 template <class T>
-inline T Min ( const T &a, const T & b, const T & c )
+inline T Min( const T& a, const T& b, const T& c )
 {
     return Min( Min( a, b ), c );
 }
 
 namespace ublas = boost::numeric::ublas;
-
-
 
 /* reduce operations */
 using ublas::sum;
@@ -132,7 +130,7 @@ using ublas::inner_prod;
 
 struct norm_inf_adaptor
 {
-    template<typename E>
+    template <typename E>
     Real operator()( E const& __v ) const
     {
         return norm_inf( __v );
@@ -146,16 +144,15 @@ template <typename T = double, uint16_type S = 3>
 struct node
 {
     //typedef ublas::vector<T, ublas::bounded_array<T, S> >  type;
-    typedef ublas::vector<T>  type;
+    typedef ublas::vector<T> type;
 };
 
 /*!
   hessian type
 */
-typedef ublas::symmetric_matrix<double, ublas::lower, ublas::row_major, ublas::bounded_array<double, 9> >  hessian_node_type;
+typedef ublas::symmetric_matrix<double, ublas::lower, ublas::row_major, ublas::bounded_array<double, 9>> hessian_node_type;
 
-
-typedef ublas::matrix<double, ublas::column_major, ublas::bounded_array<double, 9> >  lapack_matrix_type;
+typedef ublas::matrix<double, ublas::column_major, ublas::bounded_array<double, 9>> lapack_matrix_type;
 typedef ublas::symmetric_adaptor<lapack_matrix_type, ublas::lower> symmetric_matrix_type;
 
 typedef lapack_matrix_type transformation_matrix_type;
@@ -167,22 +164,21 @@ template <typename T = double, uint16_type S = 256>
 struct matrix_node
 {
     //typedef ublas::matrix<T, ublas::column_major, ublas::bounded_array<T, S> >  type;
-    typedef ublas::matrix<T, ublas::column_major>  type;
+    typedef ublas::matrix<T, ublas::column_major> type;
 };
 
 //! Eigen type to map matrix_type (row major)
-using em_matrix_row_type = Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>>;
+using em_matrix_row_type = Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>;
 
 //! Eigen type to map matrix_node<>::type
-using em_matrix_col_type = Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>>;
+using em_matrix_col_type = Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>>;
 
 //! Eigen type to map node_type
-using em_node_type = Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>>;
-
+using em_node_type = Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>>;
 
 inline FEELPP_DEPRECATED
-DebugStream&
-operator<<( DebugStream& __os, node<real64_type>::type const& __n ) 
+    DebugStream&
+    operator<<( DebugStream& __os, node<real64_type>::type const& __n )
 {
     if ( __os.doPrint() )
     {
@@ -196,17 +192,15 @@ operator<<( DebugStream& __os, node<real64_type>::type const& __n )
     return __os;
 }
 inline FEELPP_DEPRECATED
-NdebugStream&
-operator<<( NdebugStream& os, node<real64_type>::type const& /*n*/ ) 
+    NdebugStream&
+    operator<<( NdebugStream& os, node<real64_type>::type const& /*n*/ )
 {
     return os;
 }
 
-
 #if defined( FEELPP_HAS_QD_QD_H )
-inline
-DebugStream& FEELPP_DEPRECATED
-operator<<( DebugStream& __os, node<dd_real>::type const& __n ) 
+inline DebugStream& FEELPP_DEPRECATED
+operator<<( DebugStream& __os, node<dd_real>::type const& __n )
 {
     if ( __os.doPrint() )
     {
@@ -220,15 +214,14 @@ operator<<( DebugStream& __os, node<dd_real>::type const& __n )
     return __os;
 }
 inline FEELPP_DEPRECATED
-NdebugStream&
-operator<<( NdebugStream& __os, node<dd_real>::type const& __n ) 
+    NdebugStream&
+    operator<<( NdebugStream& __os, node<dd_real>::type const& __n )
 {
     return __os;
 }
 
-inline
-DebugStream& FEELPP_DEPRECATED
-operator<<( DebugStream& __os, node<qd_real>::type const& __n ) 
+inline DebugStream& FEELPP_DEPRECATED
+operator<<( DebugStream& __os, node<qd_real>::type const& __n )
 {
     if ( __os.doPrint() )
     {
@@ -242,19 +235,18 @@ operator<<( DebugStream& __os, node<qd_real>::type const& __n )
     return __os;
 }
 inline FEELPP_DEPRECATED
-NdebugStream&
-operator<<( NdebugStream& __os, node<qd_real>::type const& __n ) 
+    NdebugStream&
+    operator<<( NdebugStream& __os, node<qd_real>::type const& __n )
 {
     return __os;
 }
-
 
 #endif /* FEELPP_HAS_QD_QD_H */
 
-template<typename T>
+template <typename T>
 inline FEELPP_DEPRECATED
-DebugStream&
-operator<<( DebugStream& __os, ublas::vector<T> const& __n ) 
+    DebugStream&
+    operator<<( DebugStream& __os, ublas::vector<T> const& __n )
 {
     if ( __os.doPrint() )
     {
@@ -267,17 +259,17 @@ operator<<( DebugStream& __os, ublas::vector<T> const& __n )
 
     return __os;
 }
-template<typename T>
+template <typename T>
 inline FEELPP_DEPRECATED
-NdebugStream&
-operator<<( NdebugStream& __os, ublas::vector<T> const& /*__n*/ ) 
+    NdebugStream&
+    operator<<( NdebugStream& __os, ublas::vector<T> const& /*__n*/ )
 {
     return __os;
 }
-template<typename T, typename Orient>
+template <typename T, typename Orient>
 inline FEELPP_DEPRECATED
-DebugStream&
-operator<<( DebugStream& __os, ublas::matrix<T, Orient> const& __n ) 
+    DebugStream&
+    operator<<( DebugStream& __os, ublas::matrix<T, Orient> const& __n )
 {
     if ( __os.doPrint() )
     {
@@ -290,40 +282,43 @@ operator<<( DebugStream& __os, ublas::matrix<T, Orient> const& __n )
 
     return __os;
 }
-template<typename T,typename Orient>
+template <typename T, typename Orient>
 inline FEELPP_DEPRECATED
-NdebugStream&
-operator<<( NdebugStream& __os, ublas::matrix<T,Orient> const& /*__n*/ ) 
+    NdebugStream&
+    operator<<( NdebugStream& __os, ublas::matrix<T, Orient> const& /*__n*/ )
 {
     return __os;
 }
-
 
 //
 // sparse matrices
 //
 #if defined( FEELPP_SIZET_SAME_AS_UINT )
 typedef ublas::compressed_matrix<double,
-        ublas::row_major > csr_matrix_type;
+                                 ublas::row_major>
+    csr_matrix_type;
 typedef ublas::compressed_matrix<double,
-        ublas::column_major > csc_matrix_type;
+                                 ublas::column_major>
+    csc_matrix_type;
 #else
 typedef ublas::compressed_matrix<double,
-        ublas::row_major, 0,
-        ublas::unbounded_array<int>,
-        ublas::unbounded_array<double> > csr_matrix_type;
+                                 ublas::row_major, 0,
+                                 ublas::unbounded_array<int>,
+                                 ublas::unbounded_array<double>>
+    csr_matrix_type;
 typedef ublas::compressed_matrix<double,
-        ublas::column_major, 0,
-        ublas::unbounded_array<int>,
-        ublas::unbounded_array<double> > csc_matrix_type;
+                                 ublas::column_major, 0,
+                                 ublas::unbounded_array<int>,
+                                 ublas::unbounded_array<double>>
+    csc_matrix_type;
 #endif
 
 /**
  * Dump vector to file in Matlab format and spy
  *
  */
-template<typename MatrixType>
-void spy( MatrixType const& __m, std::string const &filename )
+template <typename MatrixType>
+void spy( MatrixType const& __m, std::string const& filename )
 {
     std::string name = filename;
     std::string separator = " , ";
@@ -336,8 +331,8 @@ void spy( MatrixType const& __m, std::string const &filename )
 
     else
     {
-        if ( ( unsigned int ) i != filename.size() - 2 ||
-                filename[ i + 1 ] != 'm' )
+        if ( (unsigned int)i != filename.size() - 2 ||
+             filename[i + 1] != 'm' )
         {
             std::cerr << "Wrong file name ";
             name = filename + ".m";
@@ -346,18 +341,19 @@ void spy( MatrixType const& __m, std::string const &filename )
 
     std::ofstream file_out( name.c_str() );
 
-    FEELPP_ASSERT( file_out )( filename ).error( "[Feel::spy] ERROR: File cannot be opened for writing." );
+    FEELPP_ASSERT( file_out )
+    ( filename ).error( "[Feel::spy] ERROR: File cannot be opened for writing." );
 
     file_out << "S = [ ";
 
-    for ( typename MatrixType::const_iterator1 i1=__m.begin1();
-            i1!=__m.end1(); ++i1 )
+    for ( typename MatrixType::const_iterator1 i1 = __m.begin1();
+          i1 != __m.end1(); ++i1 )
     {
-        for ( typename MatrixType::const_iterator2 i2=i1.begin();
-                i2!=i1.end(); ++i2 )
+        for ( typename MatrixType::const_iterator2 i2 = i1.begin();
+              i2 != i1.end(); ++i2 )
             file_out << i2.index1() + 1 << separator
                      << i2.index2() + 1 << separator
-                     << *i2  << std::endl;
+                     << *i2 << std::endl;
     }
 
     file_out << "];" << std::endl;
@@ -369,9 +365,8 @@ namespace glas
 {
 namespace ublas = boost::numeric::ublas;
 
-template<typename T, typename Orien>
-inline
-ublas::matrix<T,Orien>
+template <typename T, typename Orien>
+inline ublas::matrix<T, Orien>
 average( ublas::matrix<T, Orien> const& m )
 {
     ublas::matrix<T, Orien> v( m.size1(), 1 );
@@ -379,33 +374,31 @@ average( ublas::matrix<T, Orien> const& m )
     T n_val = int( m.size2() );
 
     for ( size_type i = 0; i < v.size1(); ++i )
-        v( i, 0 ) = ublas::inner_prod( ublas::row( m, i ), avg )/n_val;
+        v( i, 0 ) = ublas::inner_prod( ublas::row( m, i ), avg ) / n_val;
 
     return v;
 }
-template<typename T>
-inline
-void
+template <typename T>
+inline void
 clean( T& t,
        typename T::value_type const& treshold = type_traits<typename T::value_type>::epsilon(),
        typename T::value_type const& new_value = typename T::value_type( 0.0 ) )
 {
     std::for_each( t.data().begin(),
                    t.data().end(),
-                   lambda::if_then( lambda::_1  < lambda::constant( treshold ) && lambda::_1  > -lambda::constant( treshold ),
+                   lambda::if_then( lambda::_1 < lambda::constant( treshold ) && lambda::_1 > -lambda::constant( treshold ),
                                     lambda::_1 = lambda::constant( new_value ) ) );
 }
 
-template<typename T>
-inline
-ublas::vector<T>
+template <typename T>
+inline ublas::vector<T>
 linspace( T const& __a, T const& __b, size_type __N, int interior = 0 )
 {
-    size_type N = __N-2*interior;
+    size_type N = __N - 2 * interior;
     ublas::vector<T> v( N );
-    T h = ( __b-__a )/T( __N-1 );
-    T a = __a+T( interior )*h;
-    //T b = __b-T(interior)*h;
+    T h = ( __b - __a ) / T( __N - 1 );
+    T a = __a + T( interior ) * h;
+//T b = __b-T(interior)*h;
 #if 0
     size_type i = 0;
     std::for_each( v.begin(),
@@ -414,28 +407,26 @@ linspace( T const& __a, T const& __b, size_type __N, int interior = 0 )
 #else
 
     for ( size_type i = 0; i < N; ++i )
-        v[i]=a+T( i )*h;
+        v[i] = a + T( i ) * h;
 
 #endif
     return v;
 }
 
-template<typename T>
-inline
-void
+template <typename T>
+inline void
 randomize( T& t )
 {
     typedef typename T::value_type value_type;
     typedef boost::minstd_rand base_generator_type;
     base_generator_type generator( 42u );
-    boost::uniform_real<value_type> uni_dist( 0.0,1.0 );
-    typedef boost::variate_generator<base_generator_type&, boost::uniform_real<value_type> >  rand_type;
+    boost::uniform_real<value_type> uni_dist( 0.0, 1.0 );
+    typedef boost::variate_generator<base_generator_type&, boost::uniform_real<value_type>> rand_type;
     rand_type uni( generator, uni_dist );
 
     std::for_each( t.data().begin(),
                    t.data().end(),
                    lambda::_1 = lambda::bind<value_type>( uni ) );
-
 }
 
 //

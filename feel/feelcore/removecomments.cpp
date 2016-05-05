@@ -27,28 +27,28 @@
 
 //  Copyright (c) 2001-2010 Hartmut Kaiser
 //  Copyright (c) 2001-2007 Joel de Guzman
-// 
-//  Distributed under the Boost Software License, Version 1.0. (See accompanying 
+//
+//  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 #include <boost/config/warning_disable.hpp>
-#include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/lex_lexertl.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/spirit/include/qi.hpp>
 
 #include <iostream>
 #include <string>
 
-namespace Feel 
+namespace Feel
 {
 
 namespace spirit = boost::spirit;
 
 ///////////////////////////////////////////////////////////////////////////////
-//  Token definition: We use the lexertl based lexer engine as the underlying 
+//  Token definition: We use the lexertl based lexer engine as the underlying
 //                    lexer type.
 ///////////////////////////////////////////////////////////////////////////////
-enum tokenids 
+enum tokenids
 {
     IDANY = spirit::lex::min_token_id + 10
 };
@@ -56,32 +56,27 @@ enum tokenids
 template <typename Lexer>
 struct strip_comments_tokens : spirit::lex::lexer<Lexer>
 {
-    strip_comments_tokens() 
-        : strip_comments_tokens::base_type(spirit::lex::match_flags::match_default)
-        {
-            // define tokens and associate them with the lexer
-            cppcomment = "\"//\"[^\n]*";    // '//[^\n]*'
-            ccomment = "\"/*\"";            // '/*'
-            endcomment = "\"*/\"";          // '*/'
+    strip_comments_tokens()
+        : strip_comments_tokens::base_type( spirit::lex::match_flags::match_default )
+    {
+        // define tokens and associate them with the lexer
+        cppcomment = "\"//\"[^\n]*"; // '//[^\n]*'
+        ccomment = "\"/*\"";         // '/*'
+        endcomment = "\"*/\"";       // '*/'
 
-            // The following tokens are associated with the default lexer state 
-            // (the "INITIAL" state). Specifying 'INITIAL' as a lexer state is 
-            // strictly optional.
-        this->self.add
-            (cppcomment)    // no explicit token id is associated
-            (ccomment)
-            (".", IDANY)    // IDANY is the token id associated with this token 
+        // The following tokens are associated with the default lexer state
+        // (the "INITIAL" state). Specifying 'INITIAL' as a lexer state is
+        // strictly optional.
+        this->self.add( cppcomment )   // no explicit token id is associated
+            ( ccomment )( ".", IDANY ) // IDANY is the token id associated with this token
             // definition
             ;
 
         // The following tokens are associated with the lexer state "COMMENT".
-        // We switch lexer states from inside the parsing process using the 
+        // We switch lexer states from inside the parsing process using the
         // in_state("COMMENT")[] parser component as shown below.
-        this->self("COMMENT").add
-            (endcomment)
-            (".", IDANY)
-            ;
-        }
+        this->self( "COMMENT" ).add( endcomment )( ".", IDANY );
+    }
 
     spirit::lex::token_def<> cppcomment, ccomment, endcomment;
 };
@@ -93,24 +88,19 @@ template <typename Iterator>
 struct strip_comments_grammar : spirit::qi::grammar<Iterator>
 {
     template <typename TokenDef>
-    strip_comments_grammar(TokenDef const& tok, std::ostringstream& ostr )
-        : strip_comments_grammar::base_type(start)
-        {
-            using namespace spirit;
-            // The in_state("COMMENT")[...] parser component switches the lexer 
-            // state to be 'COMMENT' during the matching of the embedded parser.
-            start =  *(   tok.ccomment 
-                          >>  spirit::qi::in_state("COMMENT") 
-                          [
-                              // the lexer is in the 'COMMENT' state during
-                              // matching of the following parser components
-                              *token(IDANY) >> tok.endcomment 
-                          ]
-                  |   tok.cppcomment
-                          |   qi::token(IDANY)   [ ostr << _1 ]
-                          )
-                ;
-        }
+    strip_comments_grammar( TokenDef const& tok, std::ostringstream& ostr )
+        : strip_comments_grammar::base_type( start )
+    {
+        using namespace spirit;
+        // The in_state("COMMENT")[...] parser component switches the lexer
+        // state to be 'COMMENT' during the matching of the embedded parser.
+        start = *( tok.ccomment >> spirit::qi::in_state( "COMMENT" )
+                                       [
+                                           // the lexer is in the 'COMMENT' state during
+                                           // matching of the following parser components
+                                           *token( IDANY ) >> tok.endcomment] |
+                   tok.cppcomment | qi::token( IDANY )[ostr << _1] );
+    }
 
     spirit::qi::rule<Iterator> start;
 };
@@ -123,39 +113,36 @@ removeComments( std::string str )
     typedef std::string::iterator base_iterator_type;
 
     // lexer type
-    typedef 
-        lex::lexertl::lexer<lex::lexertl::token<base_iterator_type> > 
+    typedef lex::lexertl::lexer<lex::lexertl::token<base_iterator_type>>
         lexer_type;
 
-    // iterator type exposed by the lexer 
+    // iterator type exposed by the lexer
     typedef strip_comments_tokens<lexer_type>::iterator_type iterator_type;
 
     // now we use the types defined above to create the lexer and grammar
     // object instances needed to invoke the parsing process
-    strip_comments_tokens<lexer_type> strip_comments;        
+    strip_comments_tokens<lexer_type> strip_comments;
     std::ostringstream ostr;
-    strip_comments_grammar<iterator_type> g ( strip_comments, ostr );   
+    strip_comments_grammar<iterator_type> g( strip_comments, ostr );
 
-    // Parsing is done based on the token stream, not the character 
+    // Parsing is done based on the token stream, not the character
     // stream read from the input.
     base_iterator_type first = str.begin();
 
-    bool r = lex::tokenize_and_parse(first, str.end(), strip_comments, g);
+    bool r = lex::tokenize_and_parse( first, str.end(), strip_comments, g );
 
-    if (r) {
+    if ( r )
+    {
         //std::cout << "removecomments parsing succeeded\n";
     }
-    else {
-        std::string rest(first, str.end());
-        LOG(INFO) << "removecomments parsing failed\n";
-        LOG(INFO) << "stopped at: \"" << rest << "\"\n";
+    else
+    {
+        std::string rest( first, str.end() );
+        LOG( INFO ) << "removecomments parsing failed\n";
+        LOG( INFO ) << "stopped at: \"" << rest << "\"\n";
     }
 
     return ostr.str();
 }
 
-
-
 } // Feel
-
-

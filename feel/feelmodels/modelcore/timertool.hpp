@@ -3,8 +3,8 @@
 #ifndef FEELMODELS_TIMERTOOL_HPP
 #define FEELMODELS_TIMERTOOL_HPP 1
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <unordered_map>
 //#include <boost/timer/timer.hpp>
 
@@ -12,7 +12,7 @@ namespace Feel
 {
 class TimerToolBase
 {
-public:
+  public:
     virtual bool isActive() = 0;
 
     virtual void start() = 0;
@@ -20,15 +20,15 @@ public:
     virtual double elapsed( std::string const& key = "" ) = 0;
     virtual void restart() = 0;
     virtual void save() = 0;
-    virtual void setDataValue(std::string const& key,double val) = 0;
-    virtual void addDataValue(std::string const& key,double val) = 0;
+    virtual void setDataValue( std::string const& key, double val ) = 0;
+    virtual void addDataValue( std::string const& key, double val ) = 0;
     virtual double accumulateTime() = 0;
-    virtual void setAdditionalParameter(std::string const& keyParam,boost::any const& d ) = 0;
+    virtual void setAdditionalParameter( std::string const& keyParam, boost::any const& d ) = 0;
 };
 
 class TimerTool : public TimerToolBase
 {
-public:
+  public:
     typedef boost::mpi::timer timer_type;
     //typedef boost::timer::cpu_timer timer_type;
 
@@ -54,19 +54,18 @@ public:
 
     double accumulateTime();
 
-    void setDataValue(std::string const& key,double val);
-    void addDataValue(std::string const& key,double val);
-    double dataRegister(std::string const& key) const;
-    void setAdditionalParameter(std::string const& keyParam,boost::any const& d );
+    void setDataValue( std::string const& key, double val );
+    void addDataValue( std::string const& key, double val );
+    double dataRegister( std::string const& key ) const;
+    void setAdditionalParameter( std::string const& keyParam, boost::any const& d );
 
     int maxIdActiveTimer() const;
     void resize( int newsize );
 
-private :
+  private:
     void saveImpl( std::string const& filename );
 
-private :
-
+  private:
     WorldComm M_worldComm;
     //boost::timer M_timer;
     std::vector<bool> M_activeTimers;
@@ -74,31 +73,27 @@ private :
     std::vector<double> M_tElapsedCurrent, M_tElapsedAccumulate;
     std::unordered_map<std::string, double> M_dataRegister;
     std::list<std::string> M_orderingData;
-    std::unordered_map<std::string,std::tuple<boost::any> > M_additionalParameters;// time,...
+    std::unordered_map<std::string, std::tuple<boost::any>> M_additionalParameters; // time,...
     std::string M_fileName;
     bool M_reinitSaveFile;
     bool M_saveFileMasterRank, M_saveFileMax, M_saveFileMin, M_saveFileMean;
-
 };
 
 class TimerToolNull : public TimerToolBase
 {
-public:
-
+  public:
     bool isActive() { return false; }
 
-    void start() {};
+    void start(){};
     double stop( std::string const& key = "" ) { return 0; }
     double elapsed( std::string const& key = "" ) { return 0; }
     void restart() {}
     void save() {}
-    void setDataValue(std::string const& key,double val) {};
-    void addDataValue(std::string const& key,double val) {};
+    void setDataValue( std::string const& key, double val ){};
+    void addDataValue( std::string const& key, double val ){};
     double accumulateTime() { return 0; }
-    void setAdditionalParameter(std::string const& keyParam,boost::any const& d ) {};
+    void setAdditionalParameter( std::string const& keyParam, boost::any const& d ){};
 };
 
 } // Feel
 #endif /* FEELMODELS_TIMERTOOL_HPP */
-
-

@@ -21,77 +21,76 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <iostream>
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <iostream>
 
 #include <feel/feelmodels/modelparameters.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 ModelParameters::ModelParameters( WorldComm const& world )
-    :
-    M_worldComm( world )
-{}
+    : M_worldComm( world )
+{
+}
 
 ModelParameters::ModelParameters( pt::ptree const& p, WorldComm const& world )
-    :
-    M_worldComm( world )
-{}
+    : M_worldComm( world )
+{
+}
 
 ModelParameters::~ModelParameters()
-{}
+{
+}
 
-void
-ModelParameters::setPTree( pt::ptree const& p )
+void ModelParameters::setPTree( pt::ptree const& p )
 {
     M_p = p;
     setup();
 }
 
-
-void
-ModelParameters::setup()
+void ModelParameters::setup()
 {
-    for( auto const& v : M_p )
+    for ( auto const& v : M_p )
     {
-        LOG(INFO) << "reading parameter " << v.first  << "\n";
+        LOG( INFO ) << "reading parameter " << v.first << "\n";
         std::string t = v.first; // parameter name
-        auto f= v.second;
+        auto f = v.second;
         {
             try
             {
-                auto val= M_p.get<double>(v.first);
-                LOG(INFO) << "adding parameter " << t << " with value " << val;
-                this->operator[](t) = ModelParameter( t, val, val, val );
+                auto val = M_p.get<double>( v.first );
+                LOG( INFO ) << "adding parameter " << t << " with value " << val;
+                this->operator[]( t ) = ModelParameter( t, val, val, val );
             }
-            catch( ... )
+            catch ( ... )
             {
                 try
                 {
-                    auto val= M_p.get<std::string>(v.first);
-                    LOG(INFO) << "adding parameter " << t << " with value " << val;
-                    this->operator[](t) = ModelParameter( t, val, M_directoryLibExpr, M_worldComm );
+                    auto val = M_p.get<std::string>( v.first );
+                    LOG( INFO ) << "adding parameter " << t << " with value " << val;
+                    this->operator[]( t ) = ModelParameter( t, val, M_directoryLibExpr, M_worldComm );
                 }
-                catch( ... )
+                catch ( ... )
                 {
                     try
                     {
-                        auto val= f.get<double>("value");
-                        LOG(INFO) << "adding parameter " << t << " with value " << val;
-                        this->operator[](t) = ModelParameter( t, val, val, val );
+                        auto val = f.get<double>( "value" );
+                        LOG( INFO ) << "adding parameter " << t << " with value " << val;
+                        this->operator[]( t ) = ModelParameter( t, val, val, val );
                     }
-                    catch( ... )
+                    catch ( ... )
                     {
                         try
                         {
-                            auto val= f.get<std::string>("value");
-                            LOG(INFO) << "adding parameter " << t << " with value " << val;
-                            this->operator[](t) = ModelParameter( t, val, M_directoryLibExpr, M_worldComm );
+                            auto val = f.get<std::string>( "value" );
+                            LOG( INFO ) << "adding parameter " << t << " with value " << val;
+                            this->operator[]( t ) = ModelParameter( t, val, M_directoryLibExpr, M_worldComm );
                         }
-                        catch( ... )
+                        catch ( ... )
                         {
-                            this->operator[](t) = ModelParameter( t, 0., 0., 0. );
+                            this->operator[]( t ) = ModelParameter( t, 0., 0., 0. );
                         }
                     }
                 }
@@ -100,26 +99,23 @@ ModelParameters::setup()
     }
 }
 
-void
-ModelParameters::saveMD(std::ostream &os)
+void ModelParameters::saveMD( std::ostream& os )
 {
-  auto myMap = toParameterValues();
-  os << "### Parameters\n";
-  os << "|Name|Value|Min|Max|\n";
-  os << "|---|---|---|---|\n";
-  for(auto it =this->begin(); it != this->end(); it++)
-  {
-    os << "|**" << it->first << "**|" 
-      << it->second.value() << "|" 
-      << it->second.min() << "|" 
-      << it->second.max() << "|\n";
-  }
-  os << "\n";
+    auto myMap = toParameterValues();
+    os << "### Parameters\n";
+    os << "|Name|Value|Min|Max|\n";
+    os << "|---|---|---|---|\n";
+    for ( auto it = this->begin(); it != this->end(); it++ )
+    {
+        os << "|**" << it->first << "**|"
+           << it->second.value() << "|"
+           << it->second.min() << "|"
+           << it->second.max() << "|\n";
+    }
+    os << "\n";
 }
 
-
-void
-ModelParameters::updateParameterValues()
+void ModelParameters::updateParameterValues()
 {
 #if 0
     for( auto const& p : *this )
@@ -127,29 +123,25 @@ ModelParameters::updateParameterValues()
             for ( auto const& mysymb : p.second.expression().expression().symbols() )
                 std::cout << "p.first " << p.first << " mysymb " << mysymb.get_name() << "\n";
 #endif
-    std::map<std::string,double> mp;
-    for( auto const& p : *this )
+    std::map<std::string, double> mp;
+    for ( auto const& p : *this )
         if ( !p.second.hasExpression() || p.second.expression().expression().symbols().empty() )
             mp[p.first] = p.second.value();
     // update all parameters with expression which not depends of symbols (can be improved)
     this->setParameterValues( mp );
 }
-void
-ModelParameters::setParameterValues( std::map<std::string,double> const& mp )
+void ModelParameters::setParameterValues( std::map<std::string, double> const& mp )
 {
-    for( auto & p : *this )
+    for ( auto& p : *this )
         p.second.setParameterValues( mp );
 }
 
-std::map<std::string,double>
+std::map<std::string, double>
 ModelParameters::toParameterValues() const
 {
-    std::map<std::string,double> pv;
-    for( auto const& p : *this )
-        pv[p.first]=p.second.value();
+    std::map<std::string, double> pv;
+    for ( auto const& p : *this )
+        pv[p.first] = p.second.value();
     return pv;
 }
-
-
-
 }

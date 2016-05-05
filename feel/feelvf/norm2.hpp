@@ -24,8 +24,8 @@
 #ifndef FEELPP_FEELVF_NORM2_HPP
 #define FEELPP_FEELVF_NORM2_HPP 1
 
-#include <feel/feelvf/stdmathfunctors.hpp>
 #include <feel/feelvf/inner.hpp>
+#include <feel/feelvf/stdmathfunctors.hpp>
 
 namespace Feel
 {
@@ -38,17 +38,14 @@ namespace vf
  *
  * \return the norm 2 of the expression \f$\sqrt{\operatorname{tr}(v^T * v)}\f$
  */
-template<typename ExprT>
-inline
-auto
-norm2( ExprT v ) -> decltype( inner( v, v, mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() ) )
+template <typename ExprT>
+inline auto
+norm2( ExprT v ) -> decltype( inner( v, v, mpl::int_<InnerProperties::IS_SAME | InnerProperties::SQRT>() ) )
 {
-    return inner( v, v, mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
+    return inner( v, v, mpl::int_<InnerProperties::IS_SAME | InnerProperties::SQRT>() );
 }
 
-
 } // vf
-
 
 } // Feel
 #endif /* FEELPP_FEELVF_NORM2_HPP */

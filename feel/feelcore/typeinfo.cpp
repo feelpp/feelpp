@@ -36,22 +36,21 @@ namespace Feel
 {
 TypeInfo::TypeInfo()
 {
-    class Nil {};
+    class Nil
+    {
+    };
     M_info = &typeid( Nil );
     assert( M_info != 0 );
-
 }
 
 TypeInfo::TypeInfo( const std::type_info& ti )
-    :
-    M_info( &ti )
+    : M_info( &ti )
 {
     assert( M_info != 0 );
 }
 
 TypeInfo::TypeInfo( TypeInfo const& ti )
-    :
-    M_info( ti.M_info )
+    : M_info( ti.M_info )
 {
     assert( M_info != 0 );
 }
@@ -61,8 +60,7 @@ TypeInfo::~TypeInfo()
     ; // do nothing here
 }
 
-bool
-TypeInfo::before( const TypeInfo& rhs ) const
+bool TypeInfo::before( const TypeInfo& rhs ) const
 {
     assert( M_info != 0 );
     return M_info->before( *rhs.M_info );
@@ -83,6 +81,4 @@ TypeInfo::name() const
 }
 
 // Comparison operators
-
-
 }

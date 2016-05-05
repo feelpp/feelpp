@@ -29,27 +29,25 @@
 #ifndef __SolverNonLinearPetsc_H
 #define __SolverNonLinearPetsc_H 1
 
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelalg/solvernonlinear.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
+#include <feel/feelalg/solvernonlinear.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
+#include <feel/feelcore/feel.hpp>
 
 // Petsc include files.
 #if defined( FEELPP_HAS_PETSC_H )
 
 #ifndef USE_COMPLEX_NUMBERS
 extern "C" {
-# include <petscversion.h>
-# include <petsc.h>
-# include <petscsnes.h>
+#include <petsc.h>
+#include <petscsnes.h>
+#include <petscversion.h>
 }
 #else
-# include <petscversion.h>
-# include <petsc.h>
-# include <petscsnes.h>
+#include <petsc.h>
+#include <petscsnes.h>
+#include <petscversion.h>
 #endif
-
-
 
 /**
 
@@ -69,15 +67,13 @@ namespace Feel
  *
  * @author Christophe Prud'homme
  */
-template<typename T>
+template <typename T>
 class SolverNonLinearPetsc
-    :
-public SolverNonLinear<T>
+    : public SolverNonLinear<T>
 {
     typedef SolverNonLinear<T> super;
-public:
 
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -110,8 +106,8 @@ public:
     /**
      *  Constructor. Initializes Petsc data structures
      */
-    SolverNonLinearPetsc( std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
-    SolverNonLinearPetsc( SolverNonLinearPetsc const & );
+    SolverNonLinearPetsc( std::string const& prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    SolverNonLinearPetsc( SolverNonLinearPetsc const& );
 
     /**
      * Destructor.
@@ -121,14 +117,13 @@ public:
     /**
      * Initialize data structures if not done so already.
      */
-    virtual void init ();
+    virtual void init();
 
     //@}
 
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -141,7 +136,7 @@ public:
     /** @name  Mutators
      */
     //@{
-    void setReuse( int jac=1, int prec=1 );
+    void setReuse( int jac = 1, int prec = 1 );
     //@}
 
     /** @name  Methods
@@ -151,32 +146,30 @@ public:
     /**
      * Release all memory and clear data structures.
      */
-    virtual void clear ();
+    virtual void clear();
 
     /**
      * Call the Petsc solver.  It calls the method below, using the
      * same matrix for the system and preconditioner matrices.
      */
-    virtual solve_return_type solve ( sparse_matrix_ptrtype&,    // System Jacobian Matrix
-            vector_ptrtype&,          // Solution vector
-            vector_ptrtype&,          // Residual vector
-            const double,        // Stopping tolerance
-            const unsigned int ); // N. Iterations
+    virtual solve_return_type solve( sparse_matrix_ptrtype&, // System Jacobian Matrix
+                                     vector_ptrtype&,        // Solution vector
+                                     vector_ptrtype&,        // Residual vector
+                                     const double,           // Stopping tolerance
+                                     const unsigned int );   // N. Iterations
 
-    virtual std::pair<unsigned int, real_type> solve ( dense_matrix_type&,    // System Jacobian Matrix
-            dense_vector_type&,          // Solution vector
-            dense_vector_type&,          // Residual vector
-            const double,        // Stopping tolerance
-            const unsigned int ); // N. Iterations
+    virtual std::pair<unsigned int, real_type> solve( dense_matrix_type&,   // System Jacobian Matrix
+                                                      dense_vector_type&,   // Solution vector
+                                                      dense_vector_type&,   // Residual vector
+                                                      const double,         // Stopping tolerance
+                                                      const unsigned int ); // N. Iterations
 
     //use eigen
-    virtual std::pair<unsigned int, real_type> solve ( map_dense_matrix_type&,    // System Jacobian Matrix
-            map_dense_vector_type&,          // Solution vector
-            map_dense_vector_type&,          // Residual vector
-            const double,        // Stopping tolerance
-            const unsigned int ); // N. Iterations
-
-
+    virtual std::pair<unsigned int, real_type> solve( map_dense_matrix_type&, // System Jacobian Matrix
+                                                      map_dense_vector_type&, // Solution vector
+                                                      map_dense_vector_type&, // Residual vector
+                                                      const double,           // Stopping tolerance
+                                                      const unsigned int );   // N. Iterations
 
     //@}
     datamap_type const& mapRow() const
@@ -198,33 +191,33 @@ public:
 
     void setMapRow( datamap_ptrtype const& d )
     {
-        M_mapRow=d;
+        M_mapRow = d;
     }
     void setMapCol( datamap_ptrtype const& d )
     {
-        M_mapCol=d;
+        M_mapCol = d;
     }
-protected:
+
+  protected:
     void check( int err ) { CHKERRABORT( this->worldComm().globalComm(), err ); }
-private:
+  private:
     /**
      * Tells PETSC to use the user-specified solver stored in
      * \p _solver_type
      */
-    void setPetscNlSolverType ();
+    void setPetscNlSolverType();
 
     /**
      * Tells PETSC to use the user-specified solver stored in
      * \p _solver_type
      */
-    void setPetscKspSolverType ();
+    void setPetscKspSolverType();
 
     /**
      * Tells PETSC to use the user-specified preconditioner stored in
      * \p _preconditioner_type
      */
-    void setPetscPreconditionerType ();
-
+    void setPetscPreconditionerType();
 
     /**
      * Tells PETSC to attach NullSpace or NearNullSpace in matrix
@@ -249,27 +242,21 @@ private:
      */
     KSP M_ksp;
 
-
-    datamap_ptrtype M_mapRow,M_mapCol;
-
+    datamap_ptrtype M_mapRow, M_mapCol;
 };
 
 template <typename T>
-inline
-SolverNonLinearPetsc<T>::SolverNonLinearPetsc( std::string const& prefix, WorldComm const& worldComm )
-:
-    super( prefix,worldComm ),
-    M_mapRow(new datamap_type(worldComm)),
-    M_mapCol(new datamap_type(worldComm))
-{}
-
-
+inline SolverNonLinearPetsc<T>::SolverNonLinearPetsc( std::string const& prefix, WorldComm const& worldComm )
+    : super( prefix, worldComm ),
+      M_mapRow( new datamap_type( worldComm ) ),
+      M_mapCol( new datamap_type( worldComm ) )
+{
+}
 
 template <typename T>
-inline
-SolverNonLinearPetsc<T>::~SolverNonLinearPetsc ()
+inline SolverNonLinearPetsc<T>::~SolverNonLinearPetsc()
 {
-    this->clear ();
+    this->clear();
 }
 
 } // Feel

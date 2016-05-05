@@ -27,39 +27,40 @@
    \date 2015-06-09
  */
 
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 ) && PETSC_VERSION_LESS_THAN( 3,6,0 )
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 3, 0 ) && PETSC_VERSION_LESS_THAN( 3, 6, 0 )
 #include <petsc-private/pcimpl.h>
-#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 3, 0 )
 #include <petsc/private/pcimpl.h>
 #else
 #include <private/pcimpl.h>
 #endif
 
-typedef struct {
-    boost::shared_ptr<Feel::Preconditioner<double> > M_inHousePrec;
+typedef struct
+{
+    boost::shared_ptr<Feel::Preconditioner<double>> M_inHousePrec;
 } PC_FEELPP;
 
 #undef __FUNCT__
 #define __FUNCT__ "PCSetUp_FEELPP"
-static PetscErrorCode PCSetUp_FEELPP(PC pc)
+static PetscErrorCode PCSetUp_FEELPP( PC pc )
 {
-    PC_FEELPP         *pcfeelpp = (PC_FEELPP*)pc->data;
-    PetscFunctionReturn(0);
+    PC_FEELPP* pcfeelpp = (PC_FEELPP*)pc->data;
+    PetscFunctionReturn( 0 );
 }
 
 #undef __FUNCT__
 #define __FUNCT__ "PCApply_FEELPP"
-static PetscErrorCode PCApply_FEELPP(PC pc,Vec x,Vec y)
+static PetscErrorCode PCApply_FEELPP( PC pc, Vec x, Vec y )
 {
-    PC_FEELPP         *pcfeelpp = (PC_FEELPP*)pc->data;
+    PC_FEELPP* pcfeelpp = (PC_FEELPP*)pc->data;
 
-    boost::shared_ptr<Feel::Preconditioner<double> > preconditioner = pcfeelpp->M_inHousePrec;
+    boost::shared_ptr<Feel::Preconditioner<double>> preconditioner = pcfeelpp->M_inHousePrec;
     // convert petsc Vec into feelpp Vector
-    boost::shared_ptr<Feel::VectorPetsc<double> > x_vec;
-    boost::shared_ptr<Feel::VectorPetsc<double> > y_vec;
+    boost::shared_ptr<Feel::VectorPetsc<double>> x_vec;
+    boost::shared_ptr<Feel::VectorPetsc<double>> y_vec;
     if ( preconditioner->worldComm().localSize() > 1 )
     {
-        CHECK ( preconditioner->matrix() ) << "matrix is not defined";
+        CHECK( preconditioner->matrix() ) << "matrix is not defined";
         x_vec.reset( new Feel::VectorPetscMPI<double>( x, preconditioner->matrix()->mapColPtr() ) );
         y_vec.reset( new Feel::VectorPetscMPI<double>( y, preconditioner->matrix()->mapRowPtr() ) );
     }
@@ -68,75 +69,76 @@ static PetscErrorCode PCApply_FEELPP(PC pc,Vec x,Vec y)
         x_vec.reset( new Feel::VectorPetsc<double>( x ) );
         y_vec.reset( new Feel::VectorPetsc<double>( y ) );
     }
-    preconditioner->apply( *x_vec,*y_vec );
+    preconditioner->apply( *x_vec, *y_vec );
 
-    PetscFunctionReturn(0);
+    PetscFunctionReturn( 0 );
 }
 
 #undef __FUNCT__
 #define __FUNCT__ "PCReset_FEELPP"
-static PetscErrorCode PCReset_FEELPP(PC pc)
+static PetscErrorCode PCReset_FEELPP( PC pc )
 {
-    PetscFunctionReturn(0);
+    PetscFunctionReturn( 0 );
 }
 
 #undef __FUNCT__
 #define __FUNCT__ "PCDestroy_FEELPP"
-static PetscErrorCode PCDestroy_FEELPP(PC pc)
+static PetscErrorCode PCDestroy_FEELPP( PC pc )
 {
-    PetscFunctionReturn(0);
+    PetscFunctionReturn( 0 );
 }
 
 #undef __FUNCT__
 #define __FUNCT__ "PCSetFromOptions_FEELPP"
-#if PETSC_VERSION_LESS_THAN(3,6,0)
-static PetscErrorCode PCSetFromOptions_FEELPP(PC pc)
+#if PETSC_VERSION_LESS_THAN( 3, 6, 0 )
+static PetscErrorCode PCSetFromOptions_FEELPP( PC pc )
 #else
-static PetscErrorCode PCSetFromOptions_FEELPP(PetscOptions*, PC pc)
+static PetscErrorCode PCSetFromOptions_FEELPP( PetscOptions*, PC pc )
 #endif
 {
-    PetscFunctionReturn(0);
+    PetscFunctionReturn( 0 );
 }
 
 #undef __FUNCT__
 #define __FUNCT__ "PCView_FEELPP"
-static PetscErrorCode PCView_FEELPP(PC pc,PetscViewer viewer)
+static PetscErrorCode PCView_FEELPP( PC pc, PetscViewer viewer )
 {
-    PetscFunctionReturn(0);
+    PetscFunctionReturn( 0 );
 }
 
 #undef __FUNCT__
 #define __FUNCT__ "PCSetPrecond_FEELPP"
-static PetscErrorCode PCSetPrecond_FEELPP(PC pc, boost::shared_ptr<Feel::Preconditioner<double> > const& pcInHouse )
+static PetscErrorCode PCSetPrecond_FEELPP( PC pc, boost::shared_ptr<Feel::Preconditioner<double>> const& pcInHouse )
 {
-    PC_FEELPP         *pcfeelpp = (PC_FEELPP*)pc->data;
+    PC_FEELPP* pcfeelpp = (PC_FEELPP*)pc->data;
     pcfeelpp->M_inHousePrec = pcInHouse;
-    PetscFunctionReturn(0);
+    PetscFunctionReturn( 0 );
 }
-
 
 #undef __FUNCT__
 #define __FUNCT__ "PCCreate_FEELPP"
-PETSC_EXTERN PetscErrorCode PCCreate_FEELPP(PC pc)
+PETSC_EXTERN PetscErrorCode PCCreate_FEELPP( PC pc )
 {
-  PC_FEELPP         *pcfeelpp;
-  PetscErrorCode ierr;
+    PC_FEELPP* pcfeelpp;
+    PetscErrorCode ierr;
 
-  PetscFunctionBegin;
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
-  ierr     = PetscNewLog(pc,&pcfeelpp);CHKERRQ(ierr);
+    PetscFunctionBegin;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 5, 0 )
+    ierr = PetscNewLog( pc, &pcfeelpp );
+    CHKERRQ( ierr );
 #else
-  ierr     = PetscNewLog(pc,PC_FEELPP,&pcfeelpp);CHKERRQ(ierr);
+    ierr = PetscNewLog( pc, PC_FEELPP, &pcfeelpp );
+    CHKERRQ( ierr );
 #endif
-  pc->data = (void*)pcfeelpp;
+    pc->data = (void*)pcfeelpp;
 
-  pc->ops->apply           = PCApply_FEELPP;
-  pc->ops->applytranspose  = 0;
-  pc->ops->setup           = PCSetUp_FEELPP;
-  pc->ops->reset           = PCReset_FEELPP;
-  pc->ops->destroy         = PCDestroy_FEELPP;
-  pc->ops->setfromoptions  = PCSetFromOptions_FEELPP;
-  pc->ops->view            = PCView_FEELPP;
-  pc->ops->applyrichardson = 0;
-  PetscFunctionReturn(0);
+    pc->ops->apply = PCApply_FEELPP;
+    pc->ops->applytranspose = 0;
+    pc->ops->setup = PCSetUp_FEELPP;
+    pc->ops->reset = PCReset_FEELPP;
+    pc->ops->destroy = PCDestroy_FEELPP;
+    pc->ops->setfromoptions = PCSetFromOptions_FEELPP;
+    pc->ops->view = PCView_FEELPP;
+    pc->ops->applyrichardson = 0;
+    PetscFunctionReturn( 0 );
 }

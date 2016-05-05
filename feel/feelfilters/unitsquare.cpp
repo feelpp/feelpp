@@ -32,17 +32,17 @@
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
-boost::shared_ptr<Mesh<Simplex<2> > >
+boost::shared_ptr<Mesh<Simplex<2>>>
 unitSquare( double h, PeriodicEntities pe )
 {
-    return createGMSHMesh(_mesh=new Mesh<Simplex<2> >,
-                          _desc=domain( _name="square",
-                                        _shape="hypercube",
-                                        _dim=2,
-                                        _h=h),
-                          _periodic = pe );
+    return createGMSHMesh( _mesh = new Mesh<Simplex<2>>,
+                           _desc = domain( _name = "square",
+                                           _shape = "hypercube",
+                                           _dim = 2,
+                                           _h = h ),
+                           _periodic = pe );
 }
-
 }

@@ -27,168 +27,169 @@
 #ifndef FEELPP_MULTISCALEIMAGE_HPP
 #define FEELPP_MULTISCALEIMAGE_HPP 1
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
-#include <boost/numeric/ublas/vector.hpp>
 #include <boost/math/special_functions/round.hpp>
+#include <boost/numeric/ublas/vector.hpp>
 #include <feel/feeldiscr/fftmultiscale.hpp>
 using namespace boost::numeric;
 
 #if defined( FEELPP_HAS_FFTW )
 namespace Feel
 {
-enum { ComputeGradient = 1 << 0  };
+enum
+{
+    ComputeGradient = 1 << 0
+};
 
-
-
-template<typename T, int _Options = 0>
+template <typename T, int _Options = 0>
 class MultiScaleImage
 {
-public :
+  public:
     using value_type = T;
     static const int Options = _Options;
-    using needs_gradient_t = mpl::bool_<Options&ComputeGradient>;
+    using needs_gradient_t = mpl::bool_<Options & ComputeGradient>;
     using do_compute_gradient_t = mpl::bool_<true>;
-    using no_compute_gradient_t = mpl::bool_<false>;    
+    using no_compute_gradient_t = mpl::bool_<false>;
     // true if must compute gradient, false otherwise.
     static const bool needs_gradient = needs_gradient_t::value;
 
-    // constructor which will estimate gradient image by the FFT method and store it 
-    MultiScaleImage(holo3_image<value_type> const& im, float L)
-        :
-        dx(doption("msi.pixelsize")),dy(doption("msi.pixelsize")),image(im),level(L)
+    // constructor which will estimate gradient image by the FFT method and store it
+    MultiScaleImage( holo3_image<value_type> const& im, float L )
+        : dx( doption( "msi.pixelsize" ) ), dy( doption( "msi.pixelsize" ) ), image( im ), level( L )
     {
-        
+
         FFTFeel fft;
-        // print for test  
-        std::ofstream fichierInit ("vinit.txt",std::ios::out|std::ios::trunc );
-        std::ofstream fichierX ("vfinalX.txt",std::ios::out|std::ios::trunc);
-        std::ofstream fichierY ("vfinalY.txt",std::ios::out|std::ios::trunc);
-        if (fichierInit)
+        // print for test
+        std::ofstream fichierInit( "vinit.txt", std::ios::out | std::ios::trunc );
+        std::ofstream fichierX( "vfinalX.txt", std::ios::out | std::ios::trunc );
+        std::ofstream fichierY( "vfinalY.txt", std::ios::out | std::ios::trunc );
+        if ( fichierInit )
         {
             // for (int i=0;i<std::pow(2,ioption("msi.level"))+1;i++)
-            for (int i=im.rows()-1-std::pow(2,ioption("msi.level"));i<im.rows();i++)
+            for ( int i = im.rows() - 1 - std::pow( 2, ioption( "msi.level" ) ); i < im.rows(); i++ )
             {
                 //for (int j=0;j<std::pow(2,ioption("msi.level"))+1;j++)
-                for (int j=im.cols()-1-std::pow(2,ioption("msi.level"));j<im.cols();j++)
+                for ( int j = im.cols() - 1 - std::pow( 2, ioption( "msi.level" ) ); j < im.cols(); j++ )
                 {
-                    fichierInit << im(i,j ) << " " ;
+                    fichierInit << im( i, j ) << " ";
                 }
-                fichierInit << "\n" ;
+                fichierInit << "\n";
             }
             fichierInit.close();
         }
-        fft.gradImage(im);
-        gradFFTX=fft.getFFTX();
-        if (fichierX)
+        fft.gradImage( im );
+        gradFFTX = fft.getFFTX();
+        if ( fichierX )
         {
-            for (int i=0;i<std::pow(2,ioption("msi.level"))+1;i++)
+            for ( int i = 0; i < std::pow( 2, ioption( "msi.level" ) ) + 1; i++ )
             {
-                for (int j=0;j<std::pow(2,ioption("msi.level"))+1;j++)
+                for ( int j = 0; j < std::pow( 2, ioption( "msi.level" ) ) + 1; j++ )
                 {
-                    fichierX << gradFFTX[1][0](i,j) << " " ;
+                    fichierX << gradFFTX[1][0]( i, j ) << " ";
                 }
-                fichierX << "\n" ;
+                fichierX << "\n";
             }
             fichierX.close();
         }
-        gradFFTY=fft.getFFTY();
-         if (fichierY)
+        gradFFTY = fft.getFFTY();
+        if ( fichierY )
         {
-        for (int i=0;i<std::pow(2,ioption("msi.level"))+1;i++)
+            for ( int i = 0; i < std::pow( 2, ioption( "msi.level" ) ) + 1; i++ )
             {
-                for (int j=0;j<std::pow(2,ioption("msi.level"))+1;j++)
+                for ( int j = 0; j < std::pow( 2, ioption( "msi.level" ) ) + 1; j++ )
                 {
-                    fichierY << gradFFTY[0][0](i,j) << " " ;
+                    fichierY << gradFFTY[0][0]( i, j ) << " ";
                 }
-                fichierY << "\n" ;
+                fichierY << "\n";
             }
 
             fichierY.close();
         }
 
-        for (int i =0;i< std::pow(2,ioption("msi.level"))+1;i++)
-        std::cout << "mat:" << gradFFTX[0][0](1,i) << std::endl; 
+        for ( int i = 0; i < std::pow( 2, ioption( "msi.level" ) ) + 1; i++ )
+            std::cout << "mat:" << gradFFTX[0][0]( 1, i ) << std::endl;
     }
 
-    // Allow us to acces to value of the gradient at coordinate store in real 
-    value_type 
-    operator()(int c, ublas::vector<double> const& real,ublas::vector<double> const& ref ) const
+    // Allow us to acces to value of the gradient at coordinate store in real
+    value_type
+    operator()( int c, ublas::vector<double> const& real, ublas::vector<double> const& ref ) const
+    {
+        double x = real[0];
+        double y = real[1];
+        int meshp = std::pow( 2, ioption( "msi.level" ) );
+
+        bool testX = true;
+        bool testY = true;
+
+        //int i = boost::math::iround(x/dx);
+        //int j = image.cols()-1-boost::math::iround(y/dy);
+        //int j = boost::math::iround(y/dy);
+
+        int Ax = boost::math::iround( x / dx );
+        int Ay = image.cols() - 1 - boost::math::iround( y / dy );
+
+        int Bx = Ax / meshp;
+        int By = Ay / meshp;
+
+        // Define on which element we are when nodes belong to multiple elments
+        if ( Ax % meshp == 0 )
         {
-            double x = real[0];
-            double y = real[1];
-            int meshp= std::pow(2,ioption("msi.level"));
-
-            bool testX=true;
-            bool testY=true;
-            
-            //int i = boost::math::iround(x/dx);
-            //int j = image.cols()-1-boost::math::iround(y/dy);
-            //int j = boost::math::iround(y/dy);
-            
-            int Ax = boost::math::iround(x/dx);
-            int Ay = image.cols()-1-boost::math::iround(y/dy);
-
-            int Bx=Ax/meshp;
-            int By=Ay/meshp;
-            
-            // Define on which element we are when nodes belong to multiple elments
-            if (Ax%meshp==0)
-                {
-                    if (ref[0]==1)
-                        {
-                            Bx--;
-                            Ax=meshp;
-                            testX=false;
-                        }
-                }
-
-            if (Ay%meshp==0)
-               {
-                   if (ref[1]==-1)
-                        {
-                            By--;
-                            Ay=meshp;
-                            testY=false;
-                        }
-               }
-            
-            // x component
-            if (c==0)
+            if ( ref[0] == 1 )
             {
-               
-               if (testX && testY){
+                Bx--;
+                Ax = meshp;
+                testX = false;
+            }
+        }
+
+        if ( Ay % meshp == 0 )
+        {
+            if ( ref[1] == -1 )
+            {
+                By--;
+                Ay = meshp;
+                testY = false;
+            }
+        }
+
+        // x component
+        if ( c == 0 )
+        {
+
+            if ( testX && testY )
+            {
 
                 //std::cout <<"ay0:" << Ay << "  ax0:" << Ax << "  By:" << By << "  Bx:" << Bx << "  Ay:" << Ay%meshp << "  Ax:" << Ax%meshp << std::endl;
 
-                   return gradFFTX[By][Bx](Ay%meshp,Ax%meshp);
-               }
-               else if (testX && !testY)
-                        return gradFFTX[By][Bx](Ay,Ax%meshp);
-                    else if (!testX && testY)
-                            return gradFFTX[By][Bx](Ay%meshp,Ax);
-                        else return gradFFTX[By][Bx](Ay,Ax);
-                        
+                return gradFFTX[By][Bx]( Ay % meshp, Ax % meshp );
             }
-            // y component
-            else 
-            {
-                if (testX && testY)
-                    return gradFFTY[By][Bx](Ay%meshp,Ax%meshp);
-                else if (testX && !testY)
-                        return gradFFTY[By][Bx](Ay,Ax%meshp);
-                     else if (!testX && testY)
-                            return gradFFTY[By][Bx](Ay%meshp,Ax);
-                          else return gradFFTY[By][Bx](Ay,Ax);
- 
-            }
-         testX=true;
-         testY=true;   
+            else if ( testX && !testY )
+                return gradFFTX[By][Bx]( Ay, Ax % meshp );
+            else if ( !testX && testY )
+                return gradFFTX[By][Bx]( Ay % meshp, Ax );
+            else
+                return gradFFTX[By][Bx]( Ay, Ax );
         }
+        // y component
+        else
+        {
+            if ( testX && testY )
+                return gradFFTY[By][Bx]( Ay % meshp, Ax % meshp );
+            else if ( testX && !testY )
+                return gradFFTY[By][Bx]( Ay, Ax % meshp );
+            else if ( !testX && testY )
+                return gradFFTY[By][Bx]( Ay % meshp, Ax );
+            else
+                return gradFFTY[By][Bx]( Ay, Ax );
+        }
+        testX = true;
+        testY = true;
+    }
 
-// method using  base functions
-/*
+    // method using  base functions
+    /*
     value_type 
     operator()(int c, ublas::vector<double> const& real,ublas::vector<double> const& ref ) const
         {
@@ -307,40 +308,39 @@ public :
             // note that it would be differently handled if we use the fft and ifft
             return v2;
         }
-        */ 
+        */
 
-    
-     //return the value of the image at point \c real in the coarse grid  
-    value_type 
-    operator()(ublas::vector<double> const& real,ublas::vector<double> const& ref ) const
-        {
-            double x = real[0];
-            double y = real[1];
-             
-            int i = boost::math::iround(x/dx);
-            int j = image.cols()-1-boost::math::iround(y/dy);
-            //int j = boost::math::iround(y/dy);
-            
-            double v=image(j,i);
+    //return the value of the image at point \c real in the coarse grid
+    value_type
+    operator()( ublas::vector<double> const& real, ublas::vector<double> const& ref ) const
+    {
+        double x = real[0];
+        double y = real[1];
+
+        int i = boost::math::iround( x / dx );
+        int j = image.cols() - 1 - boost::math::iround( y / dy );
+        //int j = boost::math::iround(y/dy);
+
+        double v = image( j, i );
 #if 0
             std::cout << "Value " << v << " Coarse real (" << x <<"," << y 
                       << ") Ref : ("<< ref[0] << "," << ref[1]  
                       << ") Fine image coord. i =" << i <<", j =" << j << std::endl;
 #endif
 
-            return v;
-        }
+        return v;
+    }
 
-private :
+  private:
     // size between pixels in each direction
     double dx;
     double dy;
-    // store the image we work on 
+    // store the image we work on
     holo3_image<value_type> image;
     // store gradient obtain by FFT
     holo3_image<value_type>** gradFFTX;
     holo3_image<value_type>** gradFFTY;
-    // level we work on 
+    // level we work on
     int level;
 };
 

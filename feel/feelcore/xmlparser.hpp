@@ -29,19 +29,19 @@
    \author Florent Vielfaure <florent.vielfaure@gmail.com>
    \date 2009-02-22
  */
-#if !defined(XML_PARSER_H)
+#if !defined( XML_PARSER_H )
 #define XML_PARSER_H 1
 
-#include <vector>
 #include <cstdio>
-#include <iostream>
-#include <string>
 #include <cstring>
+#include <iostream>
 #include <sstream>
+#include <string>
+#include <vector>
 
+#include <libxml/encoding.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
-#include <libxml/encoding.h>
 #include <libxml/xmlwriter.h>
 
 #include <boost/parameter.hpp>
@@ -58,25 +58,23 @@ namespace Feel
 
 class Parameter_impl
 {
-private:
+  private:
     std::string* name;
     int type;
     std::string* cmdName;
     std::string* latex;
     std::string* values;
 
-public:
+  public:
     Parameter_impl() {}
     template <class ArgumentPack>
     Parameter_impl( ArgumentPack const& args )
     {
-        name = new std::string( ( const char* )args[_name] );
-        type = ( int )args[_type];
-        cmdName = ( args[_cmdName | 0] ?
-                    new std::string( ( const char* )args[_cmdName | ( const char* )0] ) :
-                    new std::string( *name ) );
-        latex = ( args[_latex | 0] ? new std::string( ( const char* )args[_latex | ( const char* )0] ) : ( std::string* )0 );
-        values = ( args[_values | 0] ? new std::string( ( const char* )args[_values | ( const char* )0] ) : ( std::string* )0 );
+        name = new std::string( (const char*)args[_name] );
+        type = (int)args[_type];
+        cmdName = ( args[_cmdName | 0] ? new std::string( (const char*)args[_cmdName | (const char*)0] ) : new std::string( *name ) );
+        latex = ( args[_latex | 0] ? new std::string( (const char*)args[_latex | (const char*)0] ) : (std::string*)0 );
+        values = ( args[_values | 0] ? new std::string( (const char*)args[_values | (const char*)0] ) : (std::string*)0 );
     }
     /**
      * \brief Function used to know the attributes available in the parameter
@@ -142,29 +140,27 @@ public:
  */
 class Parameter : public Parameter_impl
 {
-public:
+  public:
     Parameter() {}
     BOOST_PARAMETER_CONSTRUCTOR(
-        Parameter, ( Parameter_impl ), tag
-        , ( required ( name,* ) ) ( required ( type,* ) ) ( optional ( cmdName,* ) ) ( optional ( latex,* ) ) ( optional ( values,* ) ) )
+        Parameter, ( Parameter_impl ), tag, ( required( name, * ) )( required( type, * ) )( optional( cmdName, * ) )( optional( latex, * ) )( optional( values, * ) ) )
 };
 
 class Output_impl : public Parameter
 {
-private:
+  private:
     std::vector<Parameter> dependencies;
     std::vector<std::string> funcs;
 
-public:
+  public:
     template <class ArgumentPack>
     Output_impl( ArgumentPack const& args )
-        :
-        Parameter( _name=args[_name],
-                   _type=0,
-                   _latex=args[_latex ] )
+        : Parameter( _name = args[_name],
+                     _type = 0,
+                     _latex = args[_latex] )
     {
-        dependencies=args[_dependencies | std::vector<Parameter>() ];
-        funcs=args[_funcs | std::vector<std::string>() ];
+        dependencies = args[_dependencies | std::vector<Parameter>()];
+        funcs = args[_funcs | std::vector<std::string>()];
     }
     /**
      * \return the dependencies of the output
@@ -188,53 +184,49 @@ public:
  */
 class Output : public Output_impl
 {
-public:
+  public:
     BOOST_PARAMETER_CONSTRUCTOR(
         Output,
         ( Output_impl ),
         tag,
-        ( required ( name,* ) )
-        ( optional ( latex,* ) )
-        ( optional ( dependencies,* ) )
-        ( optional ( funcs,* ) )
-    )
+        ( required( name, * ) )( optional( latex, * ) )( optional( dependencies, * ) )( optional( funcs, * ) ) )
 };
 
 class xmlParser
 {
-public:
+  public:
     /**
      * writeResponse
      *
      * Writes the options available in the c++ code.
      **/
-    static void writeResponse( std::string filename,std::string name,std::vector<Parameter> params,std::vector<Output> Outputs )
+    static void writeResponse( std::string filename, std::string name, std::vector<Parameter> params, std::vector<Output> Outputs )
     {
-        xmlDocPtr doc = xmlNewDoc( ( xmlChar* ) "1.0" );
-        xmlNodePtr rootNode = xmlNewNode( 0, ( xmlChar* ) "response" );
+        xmlDocPtr doc = xmlNewDoc( (xmlChar*)"1.0" );
+        xmlNodePtr rootNode = xmlNewNode( 0, (xmlChar*)"response" );
         xmlDocSetRootElement( doc, rootNode );
-        xmlNodePtr progNode = createNode( "program_name",name );
-        xmlAddChild( rootNode,progNode );
+        xmlNodePtr progNode = createNode( "program_name", name );
+        xmlAddChild( rootNode, progNode );
 
-        for ( unsigned int i=0; i<params.size(); ++i )
+        for ( unsigned int i = 0; i < params.size(); ++i )
         {
-            xmlNodePtr paramNode = createNode( "param",params[i].getAttrNames(),params[i].getAttrValues(),params[i].getValues() );
-            xmlAddChild( rootNode,paramNode );
+            xmlNodePtr paramNode = createNode( "param", params[i].getAttrNames(), params[i].getAttrValues(), params[i].getValues() );
+            xmlAddChild( rootNode, paramNode );
         }
 
-        for ( unsigned int i=0; i<Outputs.size(); ++i )
+        for ( unsigned int i = 0; i < Outputs.size(); ++i )
         {
-            xmlNodePtr paramNode = createNode( "output",Outputs[i].getAttrNames(),Outputs[i].getAttrValues() );
+            xmlNodePtr paramNode = createNode( "output", Outputs[i].getAttrNames(), Outputs[i].getAttrValues() );
 
-            for ( unsigned int j=0; j<Outputs[i].getDependencies().size(); ++j )
+            for ( unsigned int j = 0; j < Outputs[i].getDependencies().size(); ++j )
             {
-                xmlNode* aNewNode = xmlNewNode( 0,( xmlChar* ) "depend" );
-                xmlSetProp( aNewNode, ( xmlChar* ) "value", ( xmlChar* ) Outputs[i].getDependencies()[j].getName().c_str() );
-                xmlNodeSetContent( aNewNode,( xmlChar* ) Outputs[i].getFuncs()[j].c_str() );
-                xmlAddChild( paramNode,aNewNode );
+                xmlNode* aNewNode = xmlNewNode( 0, (xmlChar*)"depend" );
+                xmlSetProp( aNewNode, (xmlChar*)"value", (xmlChar*)Outputs[i].getDependencies()[j].getName().c_str() );
+                xmlNodeSetContent( aNewNode, (xmlChar*)Outputs[i].getFuncs()[j].c_str() );
+                xmlAddChild( paramNode, aNewNode );
             }
 
-            xmlAddChild( rootNode,paramNode );
+            xmlAddChild( rootNode, paramNode );
         }
 
         xmlSaveFileEnc( filename.c_str(), doc, MY_ENCODING );
@@ -255,15 +247,15 @@ public:
                              std::vector<std::string> paramValues,
                              std::vector<std::string> OutputValues )
     {
-        xmlDoc *doc = 0;
-        xmlNode *root_element = 0;
+        xmlDoc* doc = 0;
+        xmlNode* root_element = 0;
 
         doc = xmlReadFile( filename.c_str(), 0, 0 );
 
         if ( doc == 0 )
         {
-            doc = xmlNewDoc( ( xmlChar* ) "1.0" );
-            root_element = xmlNewNode( 0, ( xmlChar* ) "result" );
+            doc = xmlNewDoc( (xmlChar*)"1.0" );
+            root_element = xmlNewNode( 0, (xmlChar*)"result" );
             xmlDocSetRootElement( doc, root_element );
             printf( "[xmlParser] warning : the file %s has been generated\n", filename.c_str() );
         }
@@ -276,85 +268,86 @@ public:
             return;
         }
 
-        xmlNode* aNode=findNode( root_element,"program", name.c_str() );
+        xmlNode* aNode = findNode( root_element, "program", name.c_str() );
         xmlNode* aNewNode;
 
-        for ( unsigned int i=0; i<params.size(); ++i )
+        for ( unsigned int i = 0; i < params.size(); ++i )
         {
-            aNewNode=findNode( aNode, params[i].getName(), paramValues[i] );
-            aNode=aNewNode;
+            aNewNode = findNode( aNode, params[i].getName(), paramValues[i] );
+            aNode = aNewNode;
         }
 
-        for ( unsigned int i=0; i<Outputs.size(); ++i )
+        for ( unsigned int i = 0; i < Outputs.size(); ++i )
         {
-            xmlNode *cur_node=0;
+            xmlNode* cur_node = 0;
 
             for ( cur_node = aNode->children; cur_node; cur_node = cur_node->next )
             {
                 if ( ( cur_node->type == XML_ELEMENT_NODE ) &&
-                        ( std::strcmp( ( char* )cur_node->name,Outputs[i].getName().c_str() )==0 ) )
+                     ( std::strcmp( (char*)cur_node->name, Outputs[i].getName().c_str() ) == 0 ) )
                 {
                     xmlUnlinkNode( cur_node );
                     xmlFreeNode( cur_node );
                 }
             }
 
-            aNewNode=createNode( Outputs[i].getName(), OutputValues[i] );
-            xmlAddChild( aNode,aNewNode );
+            aNewNode = createNode( Outputs[i].getName(), OutputValues[i] );
+            xmlAddChild( aNode, aNewNode );
         }
 
         xmlSaveFileEnc( filename.c_str(), doc, MY_ENCODING );
     }
-private:
+
+  private:
     static xmlNode* findNode( xmlNode* aNode, std::string nodeName, std::string attrVal )
     {
-        xmlNode *cur_node = 0;
+        xmlNode* cur_node = 0;
 
         for ( cur_node = aNode->children; cur_node; cur_node = cur_node->next )
         {
             if ( ( cur_node->type == XML_ELEMENT_NODE ) &&
-                    ( std::strcmp( ( char* )cur_node->name,nodeName.c_str() )==0 ) )
+                 ( std::strcmp( (char*)cur_node->name, nodeName.c_str() ) == 0 ) )
             {
-                xmlChar* val=xmlGetProp( cur_node,( xmlChar* ) "value" );
+                xmlChar* val = xmlGetProp( cur_node, (xmlChar*)"value" );
 
-                if ( ( val!=0 ) && ( std::strcmp( ( char* )val,attrVal.c_str() )==0 ) )
+                if ( ( val != 0 ) && ( std::strcmp( (char*)val, attrVal.c_str() ) == 0 ) )
                 {
                     return cur_node;
                 }
             }
         }
 
-        xmlNode* aNewNode = xmlNewNode( 0,( xmlChar* ) nodeName.c_str() );
-        xmlSetProp( aNewNode, ( xmlChar* ) "value", ( xmlChar* ) attrVal.c_str() );
-        xmlAddChild( aNode,aNewNode );
+        xmlNode* aNewNode = xmlNewNode( 0, (xmlChar*)nodeName.c_str() );
+        xmlSetProp( aNewNode, (xmlChar*)"value", (xmlChar*)attrVal.c_str() );
+        xmlAddChild( aNode, aNewNode );
         return aNewNode;
     }
 
-    static xmlNode* createNode( std::string nodeName, std::vector<std::string> attrNames, std::vector<std::string> attrValues, std::string value="" )
+    static xmlNode* createNode( std::string nodeName, std::vector<std::string> attrNames, std::vector<std::string> attrValues, std::string value = "" )
     {
-        if ( attrNames.size()!=attrValues.size() )
+        if ( attrNames.size() != attrValues.size() )
         {
             printf( "[xmlParser] error : attributes names list size != attributes values list size\n" );
             return 0;
         }
 
-        xmlNode* aNewNode = xmlNewNode( 0,( xmlChar* ) nodeName.c_str() );
+        xmlNode* aNewNode = xmlNewNode( 0, (xmlChar*)nodeName.c_str() );
 
-        for ( unsigned int i=0; i<attrNames.size(); ++i )
-            xmlSetProp( aNewNode, ( xmlChar* ) attrNames[i].c_str(), ( xmlChar* ) attrValues[i].c_str() );
+        for ( unsigned int i = 0; i < attrNames.size(); ++i )
+            xmlSetProp( aNewNode, (xmlChar*)attrNames[i].c_str(), (xmlChar*)attrValues[i].c_str() );
 
-        if ( std::strcmp( value.c_str(),"" )!=0 )
-            xmlNodeSetContent( aNewNode,( xmlChar* ) value.c_str() );
+        if ( std::strcmp( value.c_str(), "" ) != 0 )
+            xmlNodeSetContent( aNewNode, (xmlChar*)value.c_str() );
 
         return aNewNode;
     }
 
-    static xmlNode* createNode( std::string nodeName, std::string value="" )
+    static xmlNode* createNode( std::string nodeName, std::string value = "" )
     {
-        xmlNode* aNewNode = xmlNewNode( 0,( xmlChar* ) nodeName.c_str() );
+        xmlNode* aNewNode = xmlNewNode( 0, (xmlChar*)nodeName.c_str() );
 
-        if ( std::strcmp( value.c_str(),"" )!=0 )
-            xmlNodeSetContent( aNewNode,( xmlChar* ) value.c_str() );
+        if ( std::strcmp( value.c_str(), "" ) != 0 )
+            xmlNodeSetContent( aNewNode, (xmlChar*)value.c_str() );
 
         return aNewNode;
     }

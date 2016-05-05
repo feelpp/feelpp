@@ -29,129 +29,127 @@
 #ifndef __FEM_Context_HPP
 #define __FEM_Context_HPP 1
 
-#include <feel/feelcore/context.hpp>
 #include <boost/mpl/vector_c.hpp>
+#include <feel/feelcore/context.hpp>
 
 namespace Feel
 {
 namespace vm
 {
 
-const size_type JACOBIAN                 = ( 1<<0 );
-const size_type KB                       = ( 1<<1 );
-const size_type KB2                      = ( 1<<2 );
-const size_type FIRST_DERIVATIVE         = ( 1<<3 );
-const size_type GRAD                     = ( 1<<4 );
-const size_type SECOND_DERIVATIVE        = ( 1<<5 );
-const size_type HESSIAN                  = ( 1<<6 );
-const size_type LAPLACIAN                = ( 1<<7 );
-const size_type MEASURE                  = ( 1<<8 );
-const size_type NORMAL                   = ( 1<<9 );
-const size_type TANGENT                  = ( 1<<10 );
-const size_type FIRST_DERIVATIVE_NORMAL  = ( 1<<11 );
-const size_type POINT                    = ( 1<<12 );
-const size_type SYMM                     = ( 1<<13 );
-const size_type UNSYMM                   = ( 1<<14 );
-const size_type DIV                      = ( 1<<15 );
-const size_type CURL                     = ( 1<<16 );
-const size_type MASS                     = ( 1<<20 );
-const size_type STIFFNESS                = ( 1<<21 );
-
-
+const size_type JACOBIAN = ( 1 << 0 );
+const size_type KB = ( 1 << 1 );
+const size_type KB2 = ( 1 << 2 );
+const size_type FIRST_DERIVATIVE = ( 1 << 3 );
+const size_type GRAD = ( 1 << 4 );
+const size_type SECOND_DERIVATIVE = ( 1 << 5 );
+const size_type HESSIAN = ( 1 << 6 );
+const size_type LAPLACIAN = ( 1 << 7 );
+const size_type MEASURE = ( 1 << 8 );
+const size_type NORMAL = ( 1 << 9 );
+const size_type TANGENT = ( 1 << 10 );
+const size_type FIRST_DERIVATIVE_NORMAL = ( 1 << 11 );
+const size_type POINT = ( 1 << 12 );
+const size_type SYMM = ( 1 << 13 );
+const size_type UNSYMM = ( 1 << 14 );
+const size_type DIV = ( 1 << 15 );
+const size_type CURL = ( 1 << 16 );
+const size_type MASS = ( 1 << 20 );
+const size_type STIFFNESS = ( 1 << 21 );
 
 typedef mpl::vector_c<size_type,
                       JACOBIAN, KB, KB2, FIRST_DERIVATIVE, GRAD, SECOND_DERIVATIVE, HESSIAN, LAPLACIAN,
                       MEASURE, NORMAL, TANGENT, FIRST_DERIVATIVE_NORMAL, POINT,
                       SYMM, UNSYMM,
-                      DIV,CURL,
-                      MASS, STIFFNESS> contexts;
+                      DIV, CURL,
+                      MASS, STIFFNESS>
+    contexts;
 
-template<size_type Context>
+template <size_type Context>
 using has_jacobian = has_value<Context, JACOBIAN>;
 
-template<size_type Context>
+template <size_type Context>
 using has_kb = has_value<Context, KB>;
 
-template<size_type Context>
+template <size_type Context>
 using has_kb2 = has_value<Context, KB2>;
 
-template<size_type Context>
+template <size_type Context>
 using has_first_derivative = has_value<Context, FIRST_DERIVATIVE>;
 
-template<size_type Context>
+template <size_type Context>
 using has_grad = has_value<Context, GRAD>;
 
-template<size_type Context>
+template <size_type Context>
 struct has_second_derivative
 {
     static const bool value = has_value<Context, SECOND_DERIVATIVE>::value;
 };
-template<size_type Context>
+template <size_type Context>
 struct has_hessian
 {
     static const bool value = has_value<Context, HESSIAN>::value;
 };
-template<size_type Context>
+template <size_type Context>
 struct has_laplacian
 {
     static const bool value = has_value<Context, LAPLACIAN>::value;
 };
 
-template<size_type Context>
+template <size_type Context>
 struct has_normal
 {
     static const bool value = has_value<Context, NORMAL>::value;
 };
-template<size_type Context>
+template <size_type Context>
 struct has_tangent
 {
     static const bool value = has_value<Context, TANGENT>::value;
 };
 
-template<size_type Context>
+template <size_type Context>
 struct has_first_derivative_normal
 {
     static const bool value = has_value<Context, FIRST_DERIVATIVE_NORMAL>::value;
 };
 
-template<size_type Context>
+template <size_type Context>
 struct has_point
 {
     static const bool value = has_value<Context, POINT>::value;
 };
-template<size_type Context>
+template <size_type Context>
 struct has_symm
 {
     static const bool value = has_value<Context, SYMM>::value;
 };
-template<size_type Context>
+template <size_type Context>
 struct has_unsymm
 {
     static const bool value = has_value<Context, UNSYMM>::value;
 };
-template<size_type Context>
+template <size_type Context>
 using has_div = has_value<Context, DIV>;
 
-template<size_type Context>
+template <size_type Context>
 using has_curl = has_value<Context, CURL>;
 
-template<size_type Context>
+template <size_type Context>
 struct has_mass
 {
     static const bool value = has_value<Context, MASS>::value;
 };
-template<size_type Context>
+template <size_type Context>
 struct has_stifness
 {
     static const bool value = has_value<Context, STIFFNESS>::value;
 };
 
-template<size_type Context>
+template <size_type Context>
 struct has_measure
 {
     static const bool value = has_value<Context, MEASURE>::value;
 };
-
 
 } // vm
 

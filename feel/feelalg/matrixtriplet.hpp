@@ -39,12 +39,10 @@ namespace Feel
   @see
   @version $Id: devel.el,v 1.1.1.1 2001/05/23 21:11:14 prudhomm Exp $
 */
-template<typename T>
+template <typename T>
 class MatrixTriplet
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -59,32 +57,32 @@ public:
 
     MatrixTriplet( int nr, int nc,
                    std::vector<int> const& _Ti, std::vector<int> const& _Tj, std::vector<double> const& _Tx )
-        :
-        M_nr( nr ),
-        M_nc( nc ),
-        M_Ti( _Ti ),
-        M_Tj( _Tj ),
-        M_Tx( _Tx )
-    {}
+        : M_nr( nr ),
+          M_nc( nc ),
+          M_Ti( _Ti ),
+          M_Tj( _Tj ),
+          M_Tx( _Tx )
+    {
+    }
 
-    MatrixTriplet( MatrixTriplet const & mt )
-        :
-        M_nr( mt.M_nr ),
-        M_nc( mt.M_nc ),
-        M_Ti ( mt.M_Ti ),
-        M_Tj ( mt.M_Tj ),
-        M_Tx ( mt.M_Tx )
-    {}
+    MatrixTriplet( MatrixTriplet const& mt )
+        : M_nr( mt.M_nr ),
+          M_nc( mt.M_nc ),
+          M_Ti( mt.M_Ti ),
+          M_Tj( mt.M_Tj ),
+          M_Tx( mt.M_Tx )
+    {
+    }
 
     ~MatrixTriplet()
-    {}
+    {
+    }
 
     //@}
 
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -123,21 +121,16 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-
     //@}
 
-
-
-protected:
-
-private:
+  protected:
+  private:
     int M_nr;
     int M_nc;
     std::vector<int> M_Ti;

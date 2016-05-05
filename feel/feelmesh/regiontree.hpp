@@ -35,10 +35,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-
+#include <feel/feelalg/glas.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>
-#include <feel/feelalg/glas.hpp>
 
 namespace Feel
 {
@@ -50,9 +49,7 @@ namespace Feel
 */
 class RegionTree
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -71,7 +68,6 @@ public:
 
     struct element_base;
 
-
     //@}
 
     /** @name Constructors, destructor
@@ -79,9 +75,9 @@ public:
     //@{
 
     RegionTree()
-        :
-        M_root( 0 )
-    {}
+        : M_root( 0 )
+    {
+    }
 
     ~RegionTree()
     {
@@ -94,7 +90,6 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
@@ -106,13 +101,11 @@ public:
         return M_boxes.size();
     }
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -126,7 +119,7 @@ public:
      * \param max max coordinates for bounding box
      * \param id id of the element stored in the bounding box
      */
-    void addBox( node_type min, node_type max, size_type id=size_type( -1 ) );
+    void addBox( node_type min, node_type max, size_type id = size_type( -1 ) );
 
     /**
        clear the tree
@@ -136,7 +129,6 @@ public:
         destroy();
         M_boxes.clear();
     }
-
 
     void findIntersectingBoxes( const node_type& bmin, const node_type& bmax, pbox_set_type& boxlst );
     void findContainingBoxes( const node_type& bmin, const node_type& bmax, pbox_set_type& boxlst );
@@ -151,17 +143,10 @@ public:
 
     //@}
 
-
-
-protected:
-
-private:
-
-
-
-
+  protected:
+  private:
     void operator=( const RegionTree& ) {} /* non-copiable */
-    RegionTree( const RegionTree& ) {} /*non-copiable */
+    RegionTree( const RegionTree& ) {}     /*non-copiable */
 
     void build();
     void destroy();
@@ -186,6 +171,5 @@ typedef RegionTree region_tree_type;
    pointer type for Region Tree.
  */
 typedef boost::shared_ptr<region_tree_type> region_tree_ptrtype;
-
 }
 #endif /* __RegionTree_H */

@@ -29,18 +29,19 @@
 #ifndef FEELPP_NULLSPACE_HPP
 #define FEELPP_NULLSPACE_HPP 1
 
-#include <feel/feeldiscr/functionspacebase.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
 #include <feel/feelalg/vector.hpp>
+#include <feel/feeldiscr/functionspacebase.hpp>
 
 namespace Feel
 {
-template<typename T> class Backend;
+template <typename T>
+class Backend;
 
-template <typename T=double>
+template <typename T = double>
 class NullSpace
 {
-public :
+  public:
     typedef T value_type;
     typedef Vector<value_type> vector_type;
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
@@ -51,16 +52,14 @@ public :
 
     template <typename EltType>
     NullSpace( std::vector<EltType> const& vecBasis )
-        :
-        M_basisVector( vecBasis.size() )
+        : M_basisVector( vecBasis.size() )
     {
         this->updateForUse( vecBasis );
     }
 
     template <typename EltType>
     NullSpace( std::initializer_list<EltType> const& listBasis )
-        :
-        M_basisVector( listBasis.size() )
+        : M_basisVector( listBasis.size() )
     {
         this->updateForUse( listBasis );
     }
@@ -68,31 +67,30 @@ public :
     NullSpace( std::vector<vector_ptrtype> const& vecBasis, backend_ptrtype const& mybackend );
 
     NullSpace( backend_ptrtype const& mybackend, boost::shared_ptr<NullSpace> const& ns, bool redoOrthonormalization = false )
-        :
-        NullSpace( mybackend, *ns, redoOrthonormalization )
-        {
-        }
+        : NullSpace( mybackend, *ns, redoOrthonormalization )
+    {
+    }
     NullSpace( backend_ptrtype const& mybackend, NullSpace const& ns, bool redoOrthonormalization = false );
 
     NullSpace( NullSpace const& ns );
 
     int size() const { return M_basisVector.size(); }
-    vector_ptrtype const& basisVectorPtr(int k) const { return M_basisVector[k]; }
-    vector_type const& basisVector(int k) const { return *M_basisVector[k]; }
+    vector_ptrtype const& basisVectorPtr( int k ) const { return M_basisVector[k]; }
+    vector_type const& basisVector( int k ) const { return *M_basisVector[k]; }
     void push_back( vector_ptrtype v ) { M_basisVector.push_back( v ); }
     void close();
-private :
 
+  private:
     template <typename EltType>
     void updateForUse( std::vector<EltType> const& vecBasis )
     {
-        this->updateForUse( vecBasis, mpl::bool_<boost::is_base_of<FunctionSpaceBase::ElementBase,EltType>::value >() );
+        this->updateForUse( vecBasis, mpl::bool_<boost::is_base_of<FunctionSpaceBase::ElementBase, EltType>::value>() );
     }
     template <typename EltType>
     void updateForUse( std::vector<EltType> const& vecBasis, mpl::true_ )
     {
         // copy vectors
-        for ( int k=0;k<vecBasis.size();++k )
+        for ( int k = 0; k < vecBasis.size(); ++k )
         {
             M_basisVector[k] = vecBasis[k].functionSpace()->elementPtr();
             *M_basisVector[k] = vecBasis[k];
@@ -110,15 +108,15 @@ private :
     template <typename EltType>
     void updateForUse( std::initializer_list<EltType> const& listBasis )
     {
-        this->updateForUse( listBasis, mpl::bool_<boost::is_base_of<FunctionSpaceBase::ElementBase,EltType>::value >() );
+        this->updateForUse( listBasis, mpl::bool_<boost::is_base_of<FunctionSpaceBase::ElementBase, EltType>::value>() );
     }
     template <typename EltType>
     void updateForUse( std::initializer_list<EltType> const& listBasis, mpl::true_ )
     {
         M_basisVector.resize( listBasis.size() );
         // copy vectors
-        int k=0;
-        for (  auto const& vec : listBasis )
+        int k = 0;
+        for ( auto const& vec : listBasis )
         {
             M_basisVector[k] = vec.functionSpace()->elementPtr();
             *M_basisVector[k] = vec;
@@ -140,40 +138,39 @@ private :
 
     bool hasOrthonormalBasisVectors();
 
-
-private :
+  private:
     std::vector<vector_ptrtype> M_basisVector;
 };
 
-template<typename SpaceType, typename ExprType>
+template <typename SpaceType, typename ExprType>
 void nullspace( NullSpace<double>& K, boost::shared_ptr<SpaceType> Xh, ExprType&& e )
 {
-    auto u = Xh->elementPtr(e);
+    auto u = Xh->elementPtr( e );
     K.push_back( u );
     K.close();
 }
 
-template<typename SpaceType, typename ExprType, typename... Args>
+template <typename SpaceType, typename ExprType, typename... Args>
 void nullspace( NullSpace<double>& K, boost::shared_ptr<SpaceType> Xh, ExprType&& e, Args... args )
 {
-    auto u = Xh->elementPtr(e);
+    auto u = Xh->elementPtr( e );
     K.push_back( u );
-    nullspace( K, Xh, args...);
+    nullspace( K, Xh, args... );
 }
 
-template<typename SpaceType, typename ExprType, typename... Args>
-NullSpace<double> nullspace( boost::shared_ptr<SpaceType> Xh, ExprType&& e,  Args... args )
+template <typename SpaceType, typename ExprType, typename... Args>
+NullSpace<double> nullspace( boost::shared_ptr<SpaceType> Xh, ExprType&& e, Args... args )
 {
     NullSpace<double> K;
-    nullspace( K, Xh, e, args...);
+    nullspace( K, Xh, e, args... );
     return K;
 }
 
-template<typename SpaceType, typename ExprType, typename... Args>
-boost::shared_ptr<NullSpace<double>>  nullspace_ptr( boost::shared_ptr<SpaceType> Xh, ExprType&& e, Args... args )
+template <typename SpaceType, typename ExprType, typename... Args>
+boost::shared_ptr<NullSpace<double>> nullspace_ptr( boost::shared_ptr<SpaceType> Xh, ExprType&& e, Args... args )
 {
     boost::shared_ptr<NullSpace<double>> K( boost::make_shared<NullSpace<double>>() );
-    nullspace( *K, Xh, e, args...);
+    nullspace( *K, Xh, e, args... );
     return K;
 }
 

@@ -70,7 +70,7 @@ namespace Feel
 */
 class HDF5
 {
-public:
+  public:
     //! @name Public Types
     //@{
     typedef WorldComm comm_type;
@@ -244,7 +244,7 @@ public:
 
     //@}
 
-private:
+  private:
     // typedef for internal use
     typedef struct
     {
@@ -254,13 +254,13 @@ private:
     } tableHandle;
 
     // Copy constructor and assignment operator are disabled
-    HDF5 (const HDF5&);
-    HDF5& operator= (const HDF5&);
+    HDF5( const HDF5& );
+    HDF5& operator=( const HDF5& );
 
     //! Private Data Members
     //@{
     // HDF5 handles
-    std::map<std::string, hid_t> M_groupList ;
+    std::map<std::string, hid_t> M_groupList;
     std::map<std::string, tableHandle> M_tableList;
     hid_t M_fileId;
     //@}

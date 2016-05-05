@@ -26,23 +26,24 @@
 
 #include <boost/type_traits/is_base_of.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
  * H1 conforming polynomialset base class
  */
-class H1PolynomialSet {};
+class H1PolynomialSet
+{
+};
 
 /**
  * type traits for H1 conforming polynomialset
  * @return true_type if H1 conforming polynomialset, false_type otherwise
  */
-template<typename P>
-class is_h1_conforming : public boost::is_base_of<H1PolynomialSet,P>
+template <typename P>
+class is_h1_conforming : public boost::is_base_of<H1PolynomialSet, P>
 {
 };
-
 }
-
 
 #endif

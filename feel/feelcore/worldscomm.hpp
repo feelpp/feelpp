@@ -33,7 +33,8 @@
 
 #include <feel/feelcore/worldcomm.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
  * a set of worlds communicator
@@ -43,11 +44,13 @@ namespace Feel {
  */
 class WorldsComm : public std::vector<WorldComm>
 {
-public:
+  public:
     typedef std::vector<WorldComm> super;
 
-    WorldsComm( std::vector<WorldComm> const& s ) : super(s) {}
-    WorldsComm( std::vector<WorldComm>&& s ) : super(s) {}
+    WorldsComm( std::vector<WorldComm> const& s )
+        : super( s ) {}
+    WorldsComm( std::vector<WorldComm>&& s )
+        : super( s ) {}
 };
 
 inline WorldsComm
@@ -55,7 +58,5 @@ worldsComm( WorldComm const& wc )
 {
     return WorldsComm( std::vector<WorldComm>( 1, wc ) );
 }
-
-
 }
 #endif /* FEELPP_WORLDSCOMM_HPP */

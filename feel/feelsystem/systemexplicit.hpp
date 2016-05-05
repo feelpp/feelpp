@@ -40,13 +40,12 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-template<typename SpaceType>
+template <typename SpaceType>
 class SystemExplicit : public System<SpaceType>
 {
     typedef System<SpaceType> super;
-public:
 
-
+  public:
     /** @name Constants
      */
     //@{
@@ -71,8 +70,10 @@ public:
      */
     //@{
 
-    SystemExplicit( functionspace_ptrtype Xh, po::variables_map const& vm ) : super( Xh, vm ) {}
-    SystemExplicit( SystemExplicit const & se ) : super( se ) {}
+    SystemExplicit( functionspace_ptrtype Xh, po::variables_map const& vm )
+        : super( Xh, vm ) {}
+    SystemExplicit( SystemExplicit const& se )
+        : super( se ) {}
     ~SystemExplicit() {}
 
     //@}
@@ -81,13 +82,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
-
 
     //@}
 
@@ -95,22 +94,16 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
 };
 } // Feel
 #endif /* __SystemExplicit_H */

@@ -21,26 +21,24 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#define FEELPP_INSTANTIATE_STRAIGHTENMESH 
+#define FEELPP_INSTANTIATE_STRAIGHTENMESH
 #include <feel/feelfilters/straightenmesh_impl.hpp>
-
 
 namespace Feel
 {
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
-template boost::shared_ptr<Mesh<Simplex<2,3>>>
-straightenMesh<Mesh<Simplex<2,3>>>( boost::shared_ptr<Mesh<Simplex<2,3>>>,
-                                    WorldComm const& , bool, bool  );
+template boost::shared_ptr<Mesh<Simplex<2, 3>>>
+    straightenMesh<Mesh<Simplex<2, 3>>>( boost::shared_ptr<Mesh<Simplex<2, 3>>>,
+                                         WorldComm const&, bool, bool );
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 4 )
-template boost::shared_ptr<Mesh<Simplex<2,4>>>
-straightenMesh<Mesh<Simplex<2,4>>>( boost::shared_ptr<Mesh<Simplex<2,4>>>,
-                                        WorldComm const& , bool, bool  );
+template boost::shared_ptr<Mesh<Simplex<2, 4>>>
+    straightenMesh<Mesh<Simplex<2, 4>>>( boost::shared_ptr<Mesh<Simplex<2, 4>>>,
+                                         WorldComm const&, bool, bool );
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 5 )
-template boost::shared_ptr<Mesh<Simplex<2,5>>>
-straightenMesh<Mesh<Simplex<2,5>>>( boost::shared_ptr<Mesh<Simplex<2,5>>>,
-                                    WorldComm const& , bool, bool  );
+template boost::shared_ptr<Mesh<Simplex<2, 5>>>
+    straightenMesh<Mesh<Simplex<2, 5>>>( boost::shared_ptr<Mesh<Simplex<2, 5>>>,
+                                         WorldComm const&, bool, bool );
 #endif
-
 }

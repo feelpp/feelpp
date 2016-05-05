@@ -41,61 +41,60 @@ namespace detail
 struct UpdateMesh
 {
     UpdateMesh( MeshBase const* m )
-        :
-        M_mesh( m )
-    {}
-    template<typename ElementType>
-    void operator()( ElementType& element  ) const
+        : M_mesh( m )
+    {
+    }
+    template <typename ElementType>
+    void operator()( ElementType& element ) const
     {
         element.setMesh( M_mesh );
     }
-private:
-    MeshBase const* M_mesh;
 
+  private:
+    MeshBase const* M_mesh;
 };
 
 struct OnBoundary
 {
     OnBoundary( bool is_on_bdy = false )
-        :
-        M_bdy( is_on_bdy )
-    {}
-    template<typename ElementType>
-    void operator()( ElementType& element  ) const
+        : M_bdy( is_on_bdy )
+    {
+    }
+    template <typename ElementType>
+    void operator()( ElementType& element ) const
     {
         element.setOnBoundary( M_bdy );
     }
-private:
-    bool M_bdy;
 
+  private:
+    bool M_bdy;
 };
 
 struct ApplyDisplacement
 {
     ApplyDisplacement( uint16_type l, ublas::vector<double> const& displ )
-        :
-        M_l( l ),
-        M_displ( displ )
-    {}
-    template<typename ElementType>
+        : M_l( l ),
+          M_displ( displ )
+    {
+    }
+    template <typename ElementType>
     void operator()( ElementType& elt )
     {
         elt.applyDisplacement( M_l, M_displ );
     }
     uint16_type M_l;
     ublas::vector<double> const& M_displ;
-
 };
 
-template<typename FaceType>
+template <typename FaceType>
 struct UpdateFace
 {
     UpdateFace( FaceType const& face )
-        :
-        M_face( face )
-    {}
-    template<typename ElementType>
-    void operator()( ElementType& element  ) const
+        : M_face( face )
+    {
+    }
+    template <typename ElementType>
+    void operator()( ElementType& element ) const
     {
         if ( M_face.ad_first() == element.id() )
         {
@@ -105,8 +104,7 @@ struct UpdateFace
                 element.setNeighbor( M_face.pos_first(), M_face.ad_second(), M_face.proc_second() );
 
             FEELPP_ASSERT( element.facePtr( M_face.pos_first() ) )
-            ( M_face.pos_first() )
-            ( M_face.ad_first() ).error( "invalid face" );
+            ( M_face.pos_first() )( M_face.ad_first() ).error( "invalid face" );
         }
 
         else if ( M_face.ad_second() == element.id() )
@@ -114,70 +112,67 @@ struct UpdateFace
             element.setFace( M_face.pos_second(), M_face );
             element.setNeighbor( M_face.pos_second(), M_face.ad_first(), M_face.proc_first() );
             FEELPP_ASSERT( element.facePtr( M_face.pos_second() ) )
-            ( M_face.pos_second() )
-            ( M_face.ad_second() ).error( "invalid face" );
+            ( M_face.pos_second() )( M_face.ad_second() ).error( "invalid face" );
         }
 
         else
         {
             FEELPP_ASSERT( 0 )
-            ( M_face.ad_first() )( M_face.pos_first() )
-            ( M_face.ad_second() )( M_face.pos_second() )
-            ( element.id() ).error( "invalid face " );
+            ( M_face.ad_first() )( M_face.pos_first() )( M_face.ad_second() )( M_face.pos_second() )( element.id() ).error( "invalid face " );
         }
     }
-private:
-    FaceType const& M_face;
 
+  private:
+    FaceType const& M_face;
 };
 
-template<typename PermutationType>
+template <typename PermutationType>
 struct UpdateFacePermutation
 {
     UpdateFacePermutation( uint16_type j, PermutationType const& perm )
-        :
-        M_localfaceid( j ),
-        M_perm( perm )
-    {}
-    template<typename ElementType>
-    void operator()( ElementType& element  ) const
+        : M_localfaceid( j ),
+          M_perm( perm )
+    {
+    }
+    template <typename ElementType>
+    void operator()( ElementType& element ) const
     {
         element.setFacePermutation( M_localfaceid, M_perm );
     }
-private:
+
+  private:
     uint16_type M_localfaceid;
     PermutationType const& M_perm;
-
 };
 
-template<typename ConnectionType>
+template <typename ConnectionType>
 struct UpdateFaceConnection0
 {
     UpdateFaceConnection0( ConnectionType const& conn )
-        :
-        M_conn( conn )
-    {}
-    template<typename FaceType>
-    void operator()( FaceType& face  ) const
+        : M_conn( conn )
+    {
+    }
+    template <typename FaceType>
+    void operator()( FaceType& face ) const
     {
         face.setConnection0( M_conn );
         face.setProcessId( boost::get<3>( M_conn ) );
         face.setOnBoundary( true, FaceType::nDim );
     }
-private:
-    ConnectionType const& M_conn;
 
+  private:
+    ConnectionType const& M_conn;
 };
-template<typename ConnectionType>
+template <typename ConnectionType>
 struct UpdateFaceConnection1
 {
     UpdateFaceConnection1( ConnectionType const& conn, rank_type currentPid )
-        :
-        M_conn( conn ),
-        M_currentPid( currentPid )
-    {}
-    template<typename FaceType>
-    void operator()( FaceType& face  ) const
+        : M_conn( conn ),
+          M_currentPid( currentPid )
+    {
+    }
+    template <typename FaceType>
+    void operator()( FaceType& face ) const
     {
         //element.setOnBoundary( false );
         face.setConnection1( M_conn );
@@ -189,109 +184,108 @@ struct UpdateFaceConnection1
         face.setOnBoundary( false );
 
         // force processId equal to M_comm.rank() if face on interprocessfaces
-        if ( face.processId()!=M_currentPid )
+        if ( face.processId() != M_currentPid )
         {
-            if ( ( face.element0().processId()==M_currentPid ) || ( face.element1().processId()==M_currentPid ) )
+            if ( ( face.element0().processId() == M_currentPid ) || ( face.element1().processId() == M_currentPid ) )
                 face.setProcessId( M_currentPid );
         }
-
-
     }
-private:
+
+  private:
     ConnectionType const& M_conn;
     rank_type M_currentPid;
-
 };
 
 struct UpdateFaceOnBoundary
 {
     UpdateFaceOnBoundary( bool onbdy )
-        :
-        M_onbdy( onbdy )
-    {}
-    template<typename FaceType>
-    void operator()( FaceType& element  ) const
+        : M_onbdy( onbdy )
+    {
+    }
+    template <typename FaceType>
+    void operator()( FaceType& element ) const
     {
         element.setOnBoundary( M_onbdy );
     }
-private:
-    bool M_onbdy;
 
+  private:
+    bool M_onbdy;
 };
 
-template<typename EdgeType>
+template <typename EdgeType>
 struct UpdateEdge
 {
     UpdateEdge( uint16_type j, EdgeType const& edge )
-        :
-        M_localedgeid( j ),
-        M_edge( edge )
-    {}
-    template<typename ElementType>
-    void operator()( ElementType& element  ) const
+        : M_localedgeid( j ),
+          M_edge( edge )
+    {
+    }
+    template <typename ElementType>
+    void operator()( ElementType& element ) const
     {
         element.setEdge( M_localedgeid, M_edge );
     }
-private:
+
+  private:
     uint16_type M_localedgeid;
     EdgeType const& M_edge;
-
 };
 
-template<typename PermutationType>
+template <typename PermutationType>
 struct UpdateEdgePermutation
 {
     UpdateEdgePermutation( uint16_type j, PermutationType const& perm )
-        :
-        M_localedgeid( j ),
-        M_perm( perm )
-    {}
-    template<typename ElementType>
-    void operator()( ElementType& element  ) const
+        : M_localedgeid( j ),
+          M_perm( perm )
+    {
+    }
+    template <typename ElementType>
+    void operator()( ElementType& element ) const
     {
         element.setEdgePermutation( M_localedgeid, M_perm );
     }
-private:
+
+  private:
     uint16_type M_localedgeid;
     PermutationType const& M_perm;
-
 };
 
-template<typename EdgeIteratorType,typename PermutationType>
+template <typename EdgeIteratorType, typename PermutationType>
 struct UpdateEdgeAndEdgePermutation
 {
-    UpdateEdgeAndEdgePermutation( std::vector< std::pair< EdgeIteratorType,PermutationType> > const& eltToEdgeDatas )
-        :
-        M_eltToEdgeDatas( eltToEdgeDatas )
-    {}
-    template<typename ElementType>
-    void operator()( ElementType& element  ) const
+    UpdateEdgeAndEdgePermutation( std::vector<std::pair<EdgeIteratorType, PermutationType>> const& eltToEdgeDatas )
+        : M_eltToEdgeDatas( eltToEdgeDatas )
     {
-        for ( uint16_type eid=0;eid< M_eltToEdgeDatas.size();++eid )
+    }
+    template <typename ElementType>
+    void operator()( ElementType& element ) const
+    {
+        for ( uint16_type eid = 0; eid < M_eltToEdgeDatas.size(); ++eid )
         {
             auto const& eltToEdgeData = M_eltToEdgeDatas[eid];
             element.setEdge( eid, *eltToEdgeData.first );
             element.setEdgePermutation( eid, eltToEdgeData.second );
         }
     }
-private:
-    std::vector< std::pair< EdgeIteratorType,PermutationType> > const& M_eltToEdgeDatas;
-};
 
+  private:
+    std::vector<std::pair<EdgeIteratorType, PermutationType>> const& M_eltToEdgeDatas;
+};
 
 struct updateIdInOthersPartitions
 {
     updateIdInOthersPartitions( rank_type pid, size_type id )
-        :
-        M_pid( pid ),
-        M_id( id )
-    {}
-    template<typename ElementType>
+        : M_pid( pid ),
+          M_id( id )
+    {
+    }
+    template <typename ElementType>
     void operator()( ElementType& element )
     {
         element.setIdInOtherPartitions( M_pid, M_id );
     }
-private:
+
+  private:
     rank_type M_pid;
     size_type M_id;
 };
@@ -299,70 +293,70 @@ private:
 struct UpdateProcessId
 {
     UpdateProcessId( rank_type pid )
-        :
-        M_pid( pid )
-    {}
-    template<typename ElementType>
+        : M_pid( pid )
+    {
+    }
+    template <typename ElementType>
     void operator()( ElementType& element )
     {
         element.setProcessId( M_pid );
     }
-private:
+
+  private:
     rank_type M_pid;
 };
 
 struct UpdateNeighborPartition
 {
     UpdateNeighborPartition( rank_type pid )
-        :
-        M_pid( pid )
-    {}
-    template<typename ElementType>
+        : M_pid( pid )
+    {
+    }
+    template <typename ElementType>
     void operator()( ElementType& element )
     {
         element.addNeighborPartitionId( M_pid );
     }
-private:
+
+  private:
     rank_type M_pid;
 };
-
-
 
 struct UpdateMarker
 {
     UpdateMarker( flag_type v )
-        :
-        M_v( v )
-    {}
+        : M_v( v )
+    {
+    }
 
-    template<typename ElementType>
+    template <typename ElementType>
     void operator()( ElementType& element )
     {
         element.setMarker( M_v );
     }
-private:
+
+  private:
     flag_type M_v;
 };
 
-
-template<typename PointType>
+template <typename PointType>
 struct UpdateEltPoint
 {
     UpdateEltPoint( uint16_type k, PointType const& pt )
-        :
-        M_idx( k ),
-        M_pt( pt )
-    {}
-    template<typename EltType>
-    void operator()( EltType& element  ) const
+        : M_idx( k ),
+          M_pt( pt )
+    {
+    }
+    template <typename EltType>
+    void operator()( EltType& element ) const
     {
         element.setPoint( M_idx, M_pt );
     }
-private:
+
+  private:
     uint16_type M_idx;
     PointType const& M_pt;
 };
-
 
 } // detail
 /// \endcond detail

@@ -33,14 +33,13 @@
 
 #include <vector>
 
-#include <feel/feelmesh/hypercube.hpp>
-#include <feel/feelmesh/simplex.hpp>
-#include <feel/feelmesh/refentity.hpp>
 #include <feel/feelalg/lu.hpp>
+#include <feel/feelmesh/hypercube.hpp>
+#include <feel/feelmesh/refentity.hpp>
+#include <feel/feelmesh/simplex.hpp>
 #include <feel/feelpoly/expansions.hpp>
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
-
 
 #include <feel/feelpoly/continuity.hpp>
 #include <feel/feelpoly/discontinuous.hpp>
@@ -63,22 +62,21 @@ namespace Feel
  * @author Gilles Steiner
  * @see
  */
-template<uint16_type Dim,
-         uint16_type Degree,
-         //         typename NormalizationPolicy = Normalized<false>,
-         typename TheConvex=Simplex<Dim>,
-         typename T = double,
-         template<class> class StoragePolicy = StorageUBlas>
+template <uint16_type Dim,
+          uint16_type Degree,
+          //         typename NormalizationPolicy = Normalized<false>,
+          typename TheConvex = Simplex<Dim>,
+          typename T = double,
+          template <class> class StoragePolicy = StorageUBlas>
 class Moment
 {
-public:
-
+  public:
     static const uint16_type nDim = Dim;
     static const uint16_type nRealDim = Dim;
     static const uint16_type nOrder = Degree;
     static const uint16_type nConvexOrder = mpl::if_<mpl::bool_<TheConvex::is_simplex>,
-                             mpl::int_<nDim+nOrder+1>,
-                             mpl::int_<nOrder+2> >::type::value;
+                                                     mpl::int_<nDim + nOrder + 1>,
+                                                     mpl::int_<nOrder + 2>>::type::value;
     //    static const bool is_normalized = NormalizationPolicy::is_normalized;
     static const uint16_type convex_is_simplex = TheConvex::is_simplex;
     static const uint16_type convex_is_hypercube = TheConvex::is_hypercube;
@@ -88,7 +86,7 @@ public:
      */
     //@{
 
-    typedef Moment<Dim, Degree,TheConvex,T, StoragePolicy> self_type;
+    typedef Moment<Dim, Degree, TheConvex, T, StoragePolicy> self_type;
 
     typedef self_type basis_type;
 
@@ -97,15 +95,15 @@ public:
      */
     typedef T value_type;
 
-    template<uint16_type order, typename V = value_type>
+    template <uint16_type order, typename V = value_type>
     struct Convex
     {
         typedef typename mpl::if_<mpl::bool_<TheConvex::is_simplex>,
-                mpl::identity<Simplex<nDim, order, /*nRealDim*/nDim> >,
-                mpl::identity<Hypercube<nDim, order, /*nRealDim*/nDim> > >::type::type type;
+                                  mpl::identity<Simplex<nDim, order, /*nRealDim*/ nDim>>,
+                                  mpl::identity<Hypercube<nDim, order, /*nRealDim*/ nDim>>>::type::type type;
         typedef typename mpl::if_<mpl::bool_<TheConvex::is_simplex>,
-                mpl::identity<Reference<Simplex<nDim, order, /*nRealDim*/nDim>, nDim, order, nDim/*nRealDim*/, V > >,
-                mpl::identity<Reference<Hypercube<nDim, order, /*nRealDim*/nDim>, nDim, order, nDim/*nRealDim*/, V > > >::type::type reference_type;
+                                  mpl::identity<Reference<Simplex<nDim, order, /*nRealDim*/ nDim>, nDim, order, nDim /*nRealDim*/, V>>,
+                                  mpl::identity<Reference<Hypercube<nDim, order, /*nRealDim*/ nDim>, nDim, order, nDim /*nRealDim*/, V>>>::type::type reference_type;
     };
 
     /*
@@ -132,15 +130,14 @@ public:
     //@{
 
     Moment()
-        :
-        M_refconvex(),
-        M_pts( M_refconvex.points() ),//M_refconvex.makePoints( nDim, 0 ) ),
-        M_coord( convex_type::polyDims( nOrder ),nDim )
+        : M_refconvex(),
+          M_pts( M_refconvex.points() ), //M_refconvex.makePoints( nDim, 0 ) ),
+          M_coord( convex_type::polyDims( nOrder ), nDim )
     {
         //std::cout << "[polydims: " << convex_type::polyDims( nOrder ) << "\n";
         if ( nDim == 1 )
-            for ( uint32_type i=0; i < M_coord.size1(); ++i )
-                M_coord( i,0 ) = i;
+            for ( uint32_type i = 0; i < M_coord.size1(); ++i )
+                M_coord( i, 0 ) = i;
 
         else if ( nDim == 2 )
         {
@@ -148,22 +145,22 @@ public:
 
             if ( convex_is_simplex )
             {
-                for ( int32_type n = 0; n < nOrder+1; ++n )
+                for ( int32_type n = 0; n < nOrder + 1; ++n )
                     for ( int32_type i = n; i >= 0; --i )
                     {
-                        M_coord( G_i,0 ) = i;
-                        M_coord( G_i,1 ) = n-i;
+                        M_coord( G_i, 0 ) = i;
+                        M_coord( G_i, 1 ) = n - i;
                         ++G_i;
                     }
             }
 
             else if ( convex_is_hypercube )
             {
-                for ( int32_type n = 0; n < nOrder+1; ++n )
-                    for ( int32_type i = 0; i < nOrder+1; ++i )
+                for ( int32_type n = 0; n < nOrder + 1; ++n )
+                    for ( int32_type i = 0; i < nOrder + 1; ++i )
                     {
-                        M_coord( G_i,0 ) = i;
-                        M_coord( G_i,1 ) = n;
+                        M_coord( G_i, 0 ) = i;
+                        M_coord( G_i, 1 ) = n;
                         ++G_i;
                     }
             }
@@ -175,26 +172,26 @@ public:
 
             if ( convex_is_simplex )
             {
-                for ( int32_type n = 0; n < nOrder+1; ++n )
-                    for ( int32_type i = n; i >= 0; --i )	   // x id
-                        for ( int32_type j = n-i; j >= 0 ; --j )
+                for ( int32_type n = 0; n < nOrder + 1; ++n )
+                    for ( int32_type i = n; i >= 0; --i ) // x id
+                        for ( int32_type j = n - i; j >= 0; --j )
                         {
-                            M_coord( G_i,0 ) = i;
-                            M_coord( G_i,1 ) = j;
-                            M_coord( G_i,2 ) = n-i-j;
+                            M_coord( G_i, 0 ) = i;
+                            M_coord( G_i, 1 ) = j;
+                            M_coord( G_i, 2 ) = n - i - j;
                             ++G_i;
                         }
             }
 
             else if ( convex_is_hypercube )
             {
-                for ( int32_type n = 0; n < nOrder+1; ++n )
-                    for ( int32_type i = 0; i < nOrder+1; ++i )
-                        for ( int32_type j = 0; j < nOrder+1; ++j )
+                for ( int32_type n = 0; n < nOrder + 1; ++n )
+                    for ( int32_type i = 0; i < nOrder + 1; ++i )
+                        for ( int32_type j = 0; j < nOrder + 1; ++j )
                         {
-                            M_coord( G_i,0 ) = j;
-                            M_coord( G_i,1 ) = i;
-                            M_coord( G_i,1 ) = n;
+                            M_coord( G_i, 0 ) = j;
+                            M_coord( G_i, 1 ) = i;
+                            M_coord( G_i, 1 ) = n;
                             ++G_i;
                         }
             }
@@ -204,15 +201,14 @@ public:
         //std::cout << "orders: " << M_coord << "\n";
         //std::cout << "pts: " << M_pts << "\n";
 
-
         matrix_type A( ublas::trans( evaluate( M_pts ) ) );
         //std::cout << "A=" << A << "\n";
-        matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
+        matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
         //std::cout << "D=" << D << "\n";
         LU<matrix_type> lu( A );
         matrix_type C = lu.solve( D );
         //std::cout << "C=" << C << "\n";
-        vector_matrix_type d ( derivate( M_pts ) );
+        vector_matrix_type d( derivate( M_pts ) );
         M_D.resize( d.size() );
 
         for ( size_type i = 0; i < d.size(); ++i )
@@ -221,16 +217,17 @@ public:
             //std::cout << "DM=" << M_D[i] << "\n";
         }
     }
-    Moment( Moment const & d )
-        :
-        M_refconvex(),
-        M_pts( d.M_pts ),
-        M_coord( d.M_coord ),
-        M_D( d.M_D )
-    {}
+    Moment( Moment const& d )
+        : M_refconvex(),
+          M_pts( d.M_pts ),
+          M_coord( d.M_coord ),
+          M_D( d.M_D )
+    {
+    }
 
     ~Moment()
-    {}
+    {
+    }
 
     //@}
 
@@ -242,7 +239,6 @@ public:
     {
         return M_pts;
     }
-
 
     /** @name Operator overloads
      */
@@ -324,7 +320,6 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
@@ -350,7 +345,6 @@ public:
         return ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), M_pts.size2() );
     }
 
-
     /**
      * evaluate the Moment polynomials at a set of points \p __pts
      *
@@ -361,12 +355,11 @@ public:
         return evaluate( __pts, mpl::int_<nDim>() );
     }
 
-    template<typename AE>
-    vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts ) const
+    template <typename AE>
+    vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts ) const
     {
         return derivate( __pts, mpl::int_<nDim>() );
     }
-
 
     /**
      * \brief derivatives of Moment polynomials
@@ -379,8 +372,8 @@ public:
         return M_D[i];
     }
 
-    template<template<uint16_type> class PolySetType = Scalar>
-    Polynomial<self_type,PolySetType> pick( int i, int c = 0 ) const
+    template <template <uint16_type> class PolySetType = Scalar>
+    Polynomial<self_type, PolySetType> pick( int i, int c = 0 ) const
     {
         size_type dim_p = convex_type::polyDims( nDim );
         int nComponents = PolySetType<Dim>::nComponents;
@@ -405,7 +398,6 @@ public:
         return SP_integrate( __Comp, mpl::int_<nDim>() );
     }
 
-
     /**
      * S_integrate provide the integration of the \f$ \prod_i Comp(i,:)  \f$
      * where \f$ Comp(i,j) \f$ is the \f$j^e\f$ coefficient of the \f$i^e\f$
@@ -417,27 +409,23 @@ public:
         return S_integrate( __Comp, mpl::int_<nDim>() );
     }
 
-
-
-
     //@}
 
-private:
-
+  private:
     /**
      * Evaluation at a set of points of the expansion basis in 1D
      */
     matrix_type
     evaluate( points_type const& __pts, mpl::int_<1> ) const
     {
-        matrix_type m ( nOrder+1 ,__pts.size2()  );
-        ublas::vector<value_type> pts( ublas::row( __pts,0 ) );
+        matrix_type m( nOrder + 1, __pts.size2() );
+        ublas::vector<value_type> pts( ublas::row( __pts, 0 ) );
 
         for ( uint32_type i = 0; i < m.size2(); ++i )
-            m( 0,i ) = 1;
+            m( 0, i ) = 1;
 
         for ( uint32_type i = 1; i < m.size1(); ++i )
-            ublas::row( m,i ) = ublas::element_prod( ublas::row( m,i-1 ), pts );
+            ublas::row( m, i ) = ublas::element_prod( ublas::row( m, i - 1 ), pts );
 
         return m;
     }
@@ -449,13 +437,13 @@ private:
     matrix_type
     evaluate( ublas::vector<value_type> const& __pts ) const
     {
-        matrix_type m ( nOrder+1 ,__pts.size()  );
+        matrix_type m( nOrder + 1, __pts.size() );
 
         for ( uint32_type i = 0; i < m.size2(); ++i )
-            m( 0,i ) = 1;
+            m( 0, i ) = 1;
 
         for ( uint32_type i = 1; i < m.size1(); ++i )
-            ublas::row( m,i ) = ublas::element_prod( ublas::row( m,i-1 ), __pts );
+            ublas::row( m, i ) = ublas::element_prod( ublas::row( m, i - 1 ), __pts );
 
         return m;
     }
@@ -463,21 +451,22 @@ private:
     /**
      * derivation at a set of points of the expansion basis in 1D
      */
-    template<typename AE>
+    template <typename AE>
     vector_matrix_type
     derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> ) const
     {
-        FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error( "invalid points" );
+        FEELPP_ASSERT( __pts().size1() == 1 )
+        ( __pts().size1() )( __pts().size2() ).error( "invalid points" );
         vector_matrix_type D( 1 );
 
-        D[0].resize( nOrder+1, __pts().size2() );
-        matrix_type E ( evaluate( __pts ) );
+        D[0].resize( nOrder + 1, __pts().size2() );
+        matrix_type E( evaluate( __pts ) );
 
         for ( uint32_type i = 0; i < E.size2(); ++i )
             ublas::row( D[0], 0 )( i ) = value_type( 0.0 );
 
         for ( uint32_type i = 1; i < E.size1(); ++i )
-            ublas::row( D[0], i ) = value_type( i )*ublas::row( E,i-1 );
+            ublas::row( D[0], i ) = value_type( i ) * ublas::row( E, i - 1 );
 
         return D;
     }
@@ -490,14 +479,14 @@ private:
     {
         vector_matrix_type D( 1 );
 
-        D[0].resize( nOrder+1, __pts.size() );
-        matrix_type E ( evaluate( __pts ) );
+        D[0].resize( nOrder + 1, __pts.size() );
+        matrix_type E( evaluate( __pts ) );
 
         for ( uint32_type i = 0; i < E.size2(); ++i )
             ublas::row( D[0], 0 )( i ) = value_type( 0.0 );
 
         for ( int32_type i = 1; i < E.size1(); ++i )
-            ublas::row( D[0], i ) = value_type( i )*ublas::row( E,i-1 );
+            ublas::row( D[0], i ) = value_type( i ) * ublas::row( E, i - 1 );
 
         return D;
     }
@@ -512,7 +501,7 @@ private:
      * derivation at a set of points of the expansion basis in 2D on
      * the triangle
      */
-    template<typename AE>
+    template <typename AE>
     vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> ) const;
 
     /**
@@ -525,7 +514,7 @@ private:
      * derivation at a set of points of the expansion basis in 3D on
      * the tetrahedron
      */
-    template<typename AE>
+    template <typename AE>
     vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> ) const;
 
     /**
@@ -538,36 +527,35 @@ private:
 
         if ( __Comp.size1() == 1 ) // Only 1 function to integrate : \f$ \int u \f$
         {
-            for ( int ki = 0; ki <__Comp.size2(); ki += 2 )
+            for ( int ki = 0; ki < __Comp.size2(); ki += 2 )
             {
-                res+= 2.0*__Comp( 0,ki ) / value_type( ki+1 );
+                res += 2.0 * __Comp( 0, ki ) / value_type( ki + 1 );
             }
         }
 
         else if ( __Comp.size1() == 2 ) // 2 functions to integrate : \f$ \int uv \f$
         {
-            for ( int k1 = 0; k1 <__Comp.size2(); ++k1 )
-                for ( int k2 = 0; k2 <__Comp.size2(); ++k2 )
+            for ( int k1 = 0; k1 < __Comp.size2(); ++k1 )
+                for ( int k2 = 0; k2 < __Comp.size2(); ++k2 )
                 {
-                    if ( ( k1+k2 )%2 == 0 )
-                        res+= 2.0 * __Comp( 0,k1 ) * __Comp( 1,k2 )  / value_type( k1+k2+1 );
+                    if ( ( k1 + k2 ) % 2 == 0 )
+                        res += 2.0 * __Comp( 0, k1 ) * __Comp( 1, k2 ) / value_type( k1 + k2 + 1 );
                 }
         }
 
         else if ( __Comp.size1() == 3 ) // 3 functions to integrate : \f$ \int uvw \f$
         {
-            for ( int k1 = 0; k1 <__Comp.size2(); ++k1 )
-                for ( int k2 = 0; k2 <__Comp.size2(); ++k2 )
-                    for ( int k3 = 0; k3 <__Comp.size2(); ++k3 )
+            for ( int k1 = 0; k1 < __Comp.size2(); ++k1 )
+                for ( int k2 = 0; k2 < __Comp.size2(); ++k2 )
+                    for ( int k3 = 0; k3 < __Comp.size2(); ++k3 )
                     {
-                        if ( ( k1+k2+k3 )%2 == 0 )
-                            res+= 2.0 * __Comp( 0,k1 ) * __Comp( 1,k2 )* __Comp( 2,k3 )  / value_type( k1+k2+k3+1 );
+                        if ( ( k1 + k2 + k3 ) % 2 == 0 )
+                            res += 2.0 * __Comp( 0, k1 ) * __Comp( 1, k2 ) * __Comp( 2, k3 ) / value_type( k1 + k2 + k3 + 1 );
                     }
         }
 
         return res;
     }
-
 
     /**
      * Exact integration on a simplex product in the moment basis in 2D.
@@ -579,40 +567,40 @@ private:
 
         if ( __Comp.size1() == 1 ) // Only 1 function to integrate : \f$ \int u \f$
         {
-            for ( int ki = 0; ki <__Comp.size2(); ++ki )
+            for ( int ki = 0; ki < __Comp.size2(); ++ki )
             {
-                int a( this->coord()( ki,0 ) );
-                int b( this->coord()( ki,1 ) );
+                int a( this->coord()( ki, 0 ) );
+                int b( this->coord()( ki, 1 ) );
 
-                if ( ( a%2 == 0 ) && ( b%2 == 0 ) )
-                    res+= 4.0*__Comp( 0,ki ) / value_type( a+1 ) / value_type( b+1 );
+                if ( ( a % 2 == 0 ) && ( b % 2 == 0 ) )
+                    res += 4.0 * __Comp( 0, ki ) / value_type( a + 1 ) / value_type( b + 1 );
             }
         }
 
         else if ( __Comp.size1() == 2 ) // 2 functions to integrate : \f$ \int uv \f$
         {
-            for ( int k1 = 0; k1 <__Comp.size2(); ++k1 )
-                for ( int k2 = 0; k2 <__Comp.size2(); ++k2 )
+            for ( int k1 = 0; k1 < __Comp.size2(); ++k1 )
+                for ( int k2 = 0; k2 < __Comp.size2(); ++k2 )
                 {
-                    int a( this->coord()( k1,0 ) + this->coord()( k2,0 ) );
-                    int b( this->coord()( k2,1 ) + this->coord()( k2,1 ) );
+                    int a( this->coord()( k1, 0 ) + this->coord()( k2, 0 ) );
+                    int b( this->coord()( k2, 1 ) + this->coord()( k2, 1 ) );
 
-                    if ( ( a%2 == 0 ) && ( b%2 == 0 ) )
-                        res+= 4.0 * __Comp( 0,k1 ) * __Comp( 1,k2 )  / value_type( a+1 ) / value_type( b+1 );
+                    if ( ( a % 2 == 0 ) && ( b % 2 == 0 ) )
+                        res += 4.0 * __Comp( 0, k1 ) * __Comp( 1, k2 ) / value_type( a + 1 ) / value_type( b + 1 );
                 }
         }
 
         else if ( __Comp.size1() == 3 ) // 3 functions to integrate : \f$ \int uvw \f$
         {
-            for ( int k1 = 0; k1 <__Comp.size2(); ++k1 )
-                for ( int k2 = 0; k2 <__Comp.size2(); ++k2 )
-                    for ( int k3 = 0; k3 <__Comp.size2(); ++k3 )
+            for ( int k1 = 0; k1 < __Comp.size2(); ++k1 )
+                for ( int k2 = 0; k2 < __Comp.size2(); ++k2 )
+                    for ( int k3 = 0; k3 < __Comp.size2(); ++k3 )
                     {
-                        int a( this->coord()( k1,0 ) + this->coord()( k2,0 ) + this->coord()( k3,0 ) );
-                        int b( this->coord()( k1,1 ) + this->coord()( k2,1 ) + this->coord()( k3,1 ) );
+                        int a( this->coord()( k1, 0 ) + this->coord()( k2, 0 ) + this->coord()( k3, 0 ) );
+                        int b( this->coord()( k1, 1 ) + this->coord()( k2, 1 ) + this->coord()( k3, 1 ) );
 
-                        if ( ( a%2 == 0 ) && ( b%2 == 0 ) )
-                            res+= 4.0 * __Comp( 0,k1 ) * __Comp( 1,k2 ) * __Comp( 2,k3 ) / value_type( a+1 ) / value_type( b+1 );
+                        if ( ( a % 2 == 0 ) && ( b % 2 == 0 ) )
+                            res += 4.0 * __Comp( 0, k1 ) * __Comp( 1, k2 ) * __Comp( 2, k3 ) / value_type( a + 1 ) / value_type( b + 1 );
                     }
         }
 
@@ -628,43 +616,43 @@ private:
 
         if ( __Comp.size1() == 1 ) // Only 1 function to integrate : \f$ \int u \f$
         {
-            for ( int ki = 0; ki <__Comp.size2(); ++ki )
+            for ( int ki = 0; ki < __Comp.size2(); ++ki )
             {
-                int a( this->coord()( ki,0 ) );
-                int b( this->coord()( ki,1 ) );
-                int c( this->coord()( ki,2 ) );
+                int a( this->coord()( ki, 0 ) );
+                int b( this->coord()( ki, 1 ) );
+                int c( this->coord()( ki, 2 ) );
 
-                if ( ( a%2 == 0 ) && ( b%2 == 0 ) && ( c%2 == 0 ) )
-                    res+= 8.0*__Comp( 0,ki ) / value_type( a+1 ) / value_type( b+1 ) / value_type( c+1 );
+                if ( ( a % 2 == 0 ) && ( b % 2 == 0 ) && ( c % 2 == 0 ) )
+                    res += 8.0 * __Comp( 0, ki ) / value_type( a + 1 ) / value_type( b + 1 ) / value_type( c + 1 );
             }
         }
 
         else if ( __Comp.size1() == 2 ) // 2 functions to integrate : \f$ \int uv \f$
         {
-            for ( int k1 = 0; k1 <__Comp.size2(); ++k1 )
-                for ( int k2 = 0; k2 <__Comp.size2(); ++k2 )
+            for ( int k1 = 0; k1 < __Comp.size2(); ++k1 )
+                for ( int k2 = 0; k2 < __Comp.size2(); ++k2 )
                 {
-                    int a( this->coord()( k1,0 ) + this->coord()( k2,0 ) );
-                    int b( this->coord()( k1,1 ) + this->coord()( k2,1 ) );
-                    int c( this->coord()( k1,2 ) + this->coord()( k2,2 ) );
+                    int a( this->coord()( k1, 0 ) + this->coord()( k2, 0 ) );
+                    int b( this->coord()( k1, 1 ) + this->coord()( k2, 1 ) );
+                    int c( this->coord()( k1, 2 ) + this->coord()( k2, 2 ) );
 
-                    if ( ( a%2 == 0 ) && ( b%2 == 0 ) && ( c%2 == 0 ) )
-                        res+= 8.0*__Comp( 0,k1 )* __Comp( 1,k2 ) / value_type( a+1 ) / value_type( b+1 ) / value_type( c+1 );
+                    if ( ( a % 2 == 0 ) && ( b % 2 == 0 ) && ( c % 2 == 0 ) )
+                        res += 8.0 * __Comp( 0, k1 ) * __Comp( 1, k2 ) / value_type( a + 1 ) / value_type( b + 1 ) / value_type( c + 1 );
                 }
         }
 
         else if ( __Comp.size1() == 3 ) // 3 functions to integrate : \f$ \int uvw \f$
         {
-            for ( int k1 = 0; k1 <__Comp.size2(); ++k1 )
-                for ( int k2 = 0; k2 <__Comp.size2(); ++k2 )
-                    for ( int k3 = 0; k3 <__Comp.size2(); ++k3 )
+            for ( int k1 = 0; k1 < __Comp.size2(); ++k1 )
+                for ( int k2 = 0; k2 < __Comp.size2(); ++k2 )
+                    for ( int k3 = 0; k3 < __Comp.size2(); ++k3 )
                     {
-                        int a( this->coord()( k1,0 ) + this->coord()( k2,0 ) + this->coord()( k3,0 ) );
-                        int b( this->coord()( k1,1 ) + this->coord()( k2,1 ) + this->coord()( k3,1 ) );
-                        int c( this->coord()( k1,2 ) + this->coord()( k2,2 ) + this->coord()( k3,2 ) );
+                        int a( this->coord()( k1, 0 ) + this->coord()( k2, 0 ) + this->coord()( k3, 0 ) );
+                        int b( this->coord()( k1, 1 ) + this->coord()( k2, 1 ) + this->coord()( k3, 1 ) );
+                        int c( this->coord()( k1, 2 ) + this->coord()( k2, 2 ) + this->coord()( k3, 2 ) );
 
-                        if ( ( a%2 == 0 ) && ( b%2 == 0 ) && ( c%2 == 0 ) )
-                            res+= 8.0*__Comp( 0,k1 )* __Comp( 1,k2 )* __Comp( 2,k3 )/value_type( a+1 )/value_type( b+1 )/value_type( c+1 );
+                        if ( ( a % 2 == 0 ) && ( b % 2 == 0 ) && ( c % 2 == 0 ) )
+                            res += 8.0 * __Comp( 0, k1 ) * __Comp( 1, k2 ) * __Comp( 2, k3 ) / value_type( a + 1 ) / value_type( b + 1 ) / value_type( c + 1 );
                     }
         }
 
@@ -677,7 +665,7 @@ private:
 
     value_type S_integrate( ublas::matrix<value_type> const& __Comp, mpl::int_<1> )
     {
-        return SP_integrate(  __Comp, mpl::int_<nDim>() );
+        return SP_integrate( __Comp, mpl::int_<nDim>() );
     }
 
     /**
@@ -690,81 +678,81 @@ private:
 
         if ( __Comp.size1() == 1 ) // Only 1 function to integrate : \f$ \int u \f$
         {
-            for ( uint32_type ki = 0; ki <__Comp.size2(); ++ki )
+            for ( uint32_type ki = 0; ki < __Comp.size2(); ++ki )
             {
-                int i( this->coord()( ki,0 ) );
-                int j( this->coord()( ki,1 ) );
+                int i( this->coord()( ki, 0 ) );
+                int j( this->coord()( ki, 1 ) );
 
                 // i and j parity
 
-                int pi = i%2;
-                int pj = j%2;
+                int pi = i % 2;
+                int pj = j % 2;
 
-                if ( ( i%2 == 0 ) || ( ( i+j )%2 != 0 ) )
+                if ( ( i % 2 == 0 ) || ( ( i + j ) % 2 != 0 ) )
                 {
-                    if ( pi==0 && pj==0 ) // (-1)/(j+1)*(-2/(i+1))
-                        res+= __Comp( 0,ki )/value_type( j+1 ) * ( 2.0/value_type( i+1 ) ) ;
+                    if ( pi == 0 && pj == 0 ) // (-1)/(j+1)*(-2/(i+1))
+                        res += __Comp( 0, ki ) / value_type( j + 1 ) * ( 2.0 / value_type( i + 1 ) );
 
-                    else if ( pi==0 && pj==1 ) // 1/(j+1)*(2/(i+j+1)-2/(i+1))
-                        res+= __Comp( 0,ki )/value_type( j+1 ) * ( 2.0/value_type( i+j+2 )-2.0/value_type( i+1 ) ) ;
+                    else if ( pi == 0 && pj == 1 ) // 1/(j+1)*(2/(i+j+1)-2/(i+1))
+                        res += __Comp( 0, ki ) / value_type( j + 1 ) * ( 2.0 / value_type( i + j + 2 ) - 2.0 / value_type( i + 1 ) );
 
-                    else if ( pi==1 && pj==0 ) // (-1)/(j+1)*(2/(i+j+1))
-                        res-= __Comp( 0,ki )/value_type( j+1 ) * ( 2.0/value_type( i+j+2 ) ) ;
+                    else if ( pi == 1 && pj == 0 ) // (-1)/(j+1)*(2/(i+j+1))
+                        res -= __Comp( 0, ki ) / value_type( j + 1 ) * ( 2.0 / value_type( i + j + 2 ) );
                 }
             }
         }
 
         else if ( __Comp.size1() == 2 ) // 2 function2 to integrate : \f$ \int uv \f$
         {
-            for ( uint32_type k1 = 0; k1 <__Comp.size2(); ++k1 )
-                for ( uint32_type k2 = 0; k2 <__Comp.size2(); ++k2 )
+            for ( uint32_type k1 = 0; k1 < __Comp.size2(); ++k1 )
+                for ( uint32_type k2 = 0; k2 < __Comp.size2(); ++k2 )
                 {
-                    int i( this->coord()( k1,0 ) + this->coord()( k2,0 ) );
-                    int j( this->coord()( k1,1 ) + this->coord()( k2,1 ) );
+                    int i( this->coord()( k1, 0 ) + this->coord()( k2, 0 ) );
+                    int j( this->coord()( k1, 1 ) + this->coord()( k2, 1 ) );
 
                     // i and j parity
 
-                    int pi = i%2;
-                    int pj = j%2;
+                    int pi = i % 2;
+                    int pj = j % 2;
 
-                    if ( ( i%2 == 0 ) || ( ( i+j )%2 != 0 ) )
+                    if ( ( i % 2 == 0 ) || ( ( i + j ) % 2 != 0 ) )
                     {
-                        if ( pi==0 && pj==0 ) // (-1)/(j+1)*(-2/(i+1))
-                            res+= __Comp( 0,k1 ) * __Comp( 1,k2 )/value_type( j+1 ) * ( 2.0/value_type( i+1 ) ) ;
+                        if ( pi == 0 && pj == 0 ) // (-1)/(j+1)*(-2/(i+1))
+                            res += __Comp( 0, k1 ) * __Comp( 1, k2 ) / value_type( j + 1 ) * ( 2.0 / value_type( i + 1 ) );
 
-                        else if ( pi==0 && pj==1 ) // 1/(j+1)*(2/(i+j+1)-2/(i+1))
-                            res+= __Comp( 0,k1 ) * __Comp( 1,k2 )/value_type( j+1 ) * ( 2.0/value_type( i+j+2 )-2.0/value_type( i+1 ) ) ;
+                        else if ( pi == 0 && pj == 1 ) // 1/(j+1)*(2/(i+j+1)-2/(i+1))
+                            res += __Comp( 0, k1 ) * __Comp( 1, k2 ) / value_type( j + 1 ) * ( 2.0 / value_type( i + j + 2 ) - 2.0 / value_type( i + 1 ) );
 
-                        else if ( pi==1 && pj==0 ) // (-1)/(j+1)*(2/(i+j+1))
-                            res-= __Comp( 0,k1 ) * __Comp( 1,k2 )/value_type( j+1 ) * ( 2.0/value_type( i+j+2 ) ) ;
+                        else if ( pi == 1 && pj == 0 ) // (-1)/(j+1)*(2/(i+j+1))
+                            res -= __Comp( 0, k1 ) * __Comp( 1, k2 ) / value_type( j + 1 ) * ( 2.0 / value_type( i + j + 2 ) );
                     }
                 }
         }
 
         else if ( __Comp.size1() == 3 ) // 3 functions to integrate : \f$ \int uvw \f$
         {
-            for ( uint32_type k1 = 0; k1 <__Comp.size2(); ++k1 )
-                for ( uint32_type k2 = 0; k2 <__Comp.size2(); ++k2 )
-                    for ( uint32_type k3 = 0; k3 <__Comp.size2(); ++k3 )
+            for ( uint32_type k1 = 0; k1 < __Comp.size2(); ++k1 )
+                for ( uint32_type k2 = 0; k2 < __Comp.size2(); ++k2 )
+                    for ( uint32_type k3 = 0; k3 < __Comp.size2(); ++k3 )
                     {
-                        int i( this->coord()( k1,0 ) + this->coord()( k2,0 )+ this->coord()( k3,0 ) );
-                        int j( this->coord()( k1,1 ) + this->coord()( k2,1 )+ this->coord()( k3,1 ) );
+                        int i( this->coord()( k1, 0 ) + this->coord()( k2, 0 ) + this->coord()( k3, 0 ) );
+                        int j( this->coord()( k1, 1 ) + this->coord()( k2, 1 ) + this->coord()( k3, 1 ) );
 
                         // i and j parity
 
-                        int pi = i%2;
-                        int pj = j%2;
+                        int pi = i % 2;
+                        int pj = j % 2;
 
-                        if ( ( i%2 == 0 ) || ( ( i+j )%2 != 0 ) )
+                        if ( ( i % 2 == 0 ) || ( ( i + j ) % 2 != 0 ) )
                         {
-                            if ( pi==0 && pj==0 ) // (-1)/(j+1)*(-2/(i+1))
-                                res+= __Comp( 0,k1 ) * __Comp( 1,k2 ) * __Comp( 2,k3 )/value_type( j+1 ) * ( 2.0/value_type( i+1 ) ) ;
+                            if ( pi == 0 && pj == 0 ) // (-1)/(j+1)*(-2/(i+1))
+                                res += __Comp( 0, k1 ) * __Comp( 1, k2 ) * __Comp( 2, k3 ) / value_type( j + 1 ) * ( 2.0 / value_type( i + 1 ) );
 
-                            else if ( pi==0 && pj==1 ) // 1/(j+1)*(2/(i+j+1)-2/(i+1))
-                                res+= __Comp( 0,k1 ) * __Comp( 1,k2 ) * __Comp( 2,k3 )/value_type( j+1 ) * ( 2.0/value_type( i+j+2 )-2.0/value_type( i+1 ) ) ;
+                            else if ( pi == 0 && pj == 1 ) // 1/(j+1)*(2/(i+j+1)-2/(i+1))
+                                res += __Comp( 0, k1 ) * __Comp( 1, k2 ) * __Comp( 2, k3 ) / value_type( j + 1 ) * ( 2.0 / value_type( i + j + 2 ) - 2.0 / value_type( i + 1 ) );
 
-                            else if ( pi==1 && pj==0 ) // (-1)/(j+1)*(2/(i+j+1))
-                                res-= __Comp( 0,k1 ) * __Comp( 1,k2 ) * __Comp( 2,k3 )/value_type( j+1 ) * ( 2.0/value_type( i+j+2 ) ) ;
+                            else if ( pi == 1 && pj == 0 ) // (-1)/(j+1)*(2/(i+j+1))
+                                res -= __Comp( 0, k1 ) * __Comp( 1, k2 ) * __Comp( 2, k3 ) / value_type( j + 1 ) * ( 2.0 / value_type( i + j + 2 ) );
                         }
                     }
         }
@@ -781,9 +769,7 @@ private:
         return 0.0;
     }
 
-
-
-private:
+  private:
     reference_convex_type M_refconvex;
     points_type M_pts;
 
@@ -800,13 +786,13 @@ private:
     std::vector<matrix_type> M_D;
 };
 
-template<uint16_type Dim,
-         uint16_type Degree,
-         typename TheConvex,
-         typename T,
-         template<class> class StoragePolicy>
-typename Moment<Dim, Degree,TheConvex, T, StoragePolicy>::matrix_type
-Moment<Dim, Degree,TheConvex, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<2> ) const
+template <uint16_type Dim,
+          uint16_type Degree,
+          typename TheConvex,
+          typename T,
+          template <class> class StoragePolicy>
+typename Moment<Dim, Degree, TheConvex, T, StoragePolicy>::matrix_type
+Moment<Dim, Degree, TheConvex, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<2> ) const
 {
     matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
 
@@ -820,24 +806,24 @@ Moment<Dim, Degree,TheConvex, T, StoragePolicy>::evaluate( points_type const& __
     //  std::cout << "\nDimensions E_y = " << E_y.size1() << " x " << E_y.size2() << std::endl;
     //  std::cout << "Order = " << nOrder+1 << std::endl;
 
-    uint32_type G_i=0; // Global indice
+    uint32_type G_i = 0; // Global indice
 
     if ( convex_is_hypercube )
     {
-        for ( int32_type n = 0; n < nOrder+1; ++n )
-            for ( int32_type i = 0; i < nOrder+1; ++i )
+        for ( int32_type n = 0; n < nOrder + 1; ++n )
+            for ( int32_type i = 0; i < nOrder + 1; ++i )
 
             {
-                ublas::row( res, G_i )=ublas::element_prod( ublas::row( E_x, i ) , ublas::row( E_y, n ) );
+                ublas::row( res, G_i ) = ublas::element_prod( ublas::row( E_x, i ), ublas::row( E_y, n ) );
                 ++G_i;
             }
     }
     else if ( convex_is_simplex )
     {
-        for ( int32_type n = 0; n < nOrder+1; ++n )
+        for ( int32_type n = 0; n < nOrder + 1; ++n )
             for ( int32_type i = n; i >= 0; --i )
             {
-                ublas::row( res, G_i )=ublas::element_prod( ublas::row( E_x, i ) , ublas::row( E_y, n-i ) );
+                ublas::row( res, G_i ) = ublas::element_prod( ublas::row( E_x, i ), ublas::row( E_y, n - i ) );
                 ++G_i;
             }
     }
@@ -845,14 +831,14 @@ Moment<Dim, Degree,TheConvex, T, StoragePolicy>::evaluate( points_type const& __
     return res;
 }
 
-template<uint16_type Dim,
-         uint16_type Degree,
-         typename TheConvex,
-         typename T,
-         template<class> class StoragePolicy>
-template<typename AE>
-typename Moment<Dim, Degree, TheConvex,  T, StoragePolicy>::vector_matrix_type
-Moment<Dim, Degree, TheConvex,  T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> ) const
+template <uint16_type Dim,
+          uint16_type Degree,
+          typename TheConvex,
+          typename T,
+          template <class> class StoragePolicy>
+template <typename AE>
+typename Moment<Dim, Degree, TheConvex, T, StoragePolicy>::vector_matrix_type
+Moment<Dim, Degree, TheConvex, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> ) const
 {
     vector_matrix_type res( 2 );
     res[0].resize( convex_type::polyDims( nOrder ), __pts().size2() );
@@ -867,25 +853,25 @@ Moment<Dim, Degree, TheConvex,  T, StoragePolicy>::derivate( ublas::matrix_expre
     vector_matrix_type D_x( derivate( pts_x ) );
     vector_matrix_type D_y( derivate( pts_y ) );
 
-    uint32_type G_i=0;
+    uint32_type G_i = 0;
 
     if ( convex_is_simplex )
     {
-        for ( int32_type n = 0; n < nOrder+1; ++n )
+        for ( int32_type n = 0; n < nOrder + 1; ++n )
             for ( int32_type i = n; i >= 0; --i )
             {
-                ublas::row( res[0], G_i )=ublas::element_prod( ublas::row( D_x[0], i ) , ublas::row( E_y, n-i ) );
-                ublas::row( res[1], G_i )=ublas::element_prod( ublas::row( E_x, i ) , ublas::row( D_y[0], n-i ) );
+                ublas::row( res[0], G_i ) = ublas::element_prod( ublas::row( D_x[0], i ), ublas::row( E_y, n - i ) );
+                ublas::row( res[1], G_i ) = ublas::element_prod( ublas::row( E_x, i ), ublas::row( D_y[0], n - i ) );
                 ++G_i;
             }
     }
     else if ( convex_is_hypercube )
     {
-        for ( int32_type n = 0; n < nOrder+1; ++n )
-            for ( int32_type i = 0; i < nOrder+1; ++i )
+        for ( int32_type n = 0; n < nOrder + 1; ++n )
+            for ( int32_type i = 0; i < nOrder + 1; ++i )
             {
-                ublas::row( res[0], G_i )=ublas::element_prod( ublas::row( D_x[0], i ) , ublas::row( E_y, n ) );
-                ublas::row( res[1], G_i )=ublas::element_prod( ublas::row( E_x, i ) , ublas::row( D_y[0], n ) );
+                ublas::row( res[0], G_i ) = ublas::element_prod( ublas::row( D_x[0], i ), ublas::row( E_y, n ) );
+                ublas::row( res[1], G_i ) = ublas::element_prod( ublas::row( E_x, i ), ublas::row( D_y[0], n ) );
                 ++G_i;
             }
     }
@@ -893,17 +879,18 @@ Moment<Dim, Degree, TheConvex,  T, StoragePolicy>::derivate( ublas::matrix_expre
     return res;
 }
 
-template<uint16_type Dim,
-         uint16_type Degree,
-         typename TheConvex,
-         typename T,
-         template<class> class StoragePolicy>
-typename Moment<Dim, Degree, TheConvex,  T, StoragePolicy>::matrix_type
+template <uint16_type Dim,
+          uint16_type Degree,
+          typename TheConvex,
+          typename T,
+          template <class> class StoragePolicy>
+typename Moment<Dim, Degree, TheConvex, T, StoragePolicy>::matrix_type
 Moment<Dim, Degree, TheConvex, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<3> ) const
 {
     matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
 
-    FEELPP_ASSERT( __pts.size1() == 3 )( __pts.size1() ).error( "invalid space dimension" );
+    FEELPP_ASSERT( __pts.size1() == 3 )
+    ( __pts.size1() ).error( "invalid space dimension" );
 
     ublas::vector<value_type> pts_x = ublas::row( __pts, 0 );
     ublas::vector<value_type> pts_y = ublas::row( __pts, 1 );
@@ -913,35 +900,36 @@ Moment<Dim, Degree, TheConvex, T, StoragePolicy>::evaluate( points_type const& _
     matrix_type E_y( evaluate( pts_y ) );
     matrix_type E_z( evaluate( pts_z ) );
 
-    uint32_type G_i=0; // Global indice
+    uint32_type G_i = 0; // Global indice
 
-    for ( int32_type n = 0; n < nOrder+1; ++n )
-        for ( int32_type i = n; i >= 0; --i )	   // x id
-            for ( int32_type j = n-i; j >= 0 ; --j )
+    for ( int32_type n = 0; n < nOrder + 1; ++n )
+        for ( int32_type i = n; i >= 0; --i ) // x id
+            for ( int32_type j = n - i; j >= 0; --j )
             {
-                ublas::vector<value_type> tmp( ublas::element_prod( ublas::row( E_x, i ) , ublas::row( E_y, j ) ) );
-                ublas::row( res, G_i )=ublas::element_prod( tmp , ublas::row( E_z, n-i-j ) );
+                ublas::vector<value_type> tmp( ublas::element_prod( ublas::row( E_x, i ), ublas::row( E_y, j ) ) );
+                ublas::row( res, G_i ) = ublas::element_prod( tmp, ublas::row( E_z, n - i - j ) );
                 ++G_i;
             }
 
     return res;
 }
 
-template<uint16_type Dim,
-         uint16_type Degree,
-         typename TheConvex,
-         typename T,
-         template<class> class StoragePolicy>
-template<typename AE>
-typename Moment<Dim, Degree, TheConvex,  T, StoragePolicy>::vector_matrix_type
-Moment<Dim, Degree, TheConvex,  T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> ) const
+template <uint16_type Dim,
+          uint16_type Degree,
+          typename TheConvex,
+          typename T,
+          template <class> class StoragePolicy>
+template <typename AE>
+typename Moment<Dim, Degree, TheConvex, T, StoragePolicy>::vector_matrix_type
+Moment<Dim, Degree, TheConvex, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> ) const
 {
     vector_matrix_type res( 3 );
     res[0].resize( convex_type::polyDims( nOrder ), __pts().size2() );
     res[1].resize( convex_type::polyDims( nOrder ), __pts().size2() );
     res[2].resize( convex_type::polyDims( nOrder ), __pts().size2() );
 
-    FEELPP_ASSERT( __pts().size1() == 3 )( __pts().size1() ).error( "invalid space dimension" );
+    FEELPP_ASSERT( __pts().size1() == 3 )
+    ( __pts().size1() ).error( "invalid space dimension" );
 
     ublas::vector<value_type> pts_x = ublas::row( __pts(), 0 );
     ublas::vector<value_type> pts_y = ublas::row( __pts(), 1 );
@@ -955,20 +943,20 @@ Moment<Dim, Degree, TheConvex,  T, StoragePolicy>::derivate( ublas::matrix_expre
     vector_matrix_type D_y( derivate( pts_y ) );
     vector_matrix_type D_z( derivate( pts_z ) );
 
-    uint32_type G_i=0;
+    uint32_type G_i = 0;
 
-    for ( int32_type n = 0; n < nOrder+1; ++n )
-        for ( int32_type i = n; i >= 0; --i )	   // x id
-            for ( int32_type j = n-i; j >=0 ; --j )
+    for ( int32_type n = 0; n < nOrder + 1; ++n )
+        for ( int32_type i = n; i >= 0; --i ) // x id
+            for ( int32_type j = n - i; j >= 0; --j )
             {
-                ublas::vector<value_type> tmp( ublas::element_prod( ublas::row( D_x[0], i ) , ublas::row( E_y, j ) ) );
-                ublas::row( res[0], G_i )=ublas::element_prod( tmp , ublas::row( E_z, n-i-j ) );
+                ublas::vector<value_type> tmp( ublas::element_prod( ublas::row( D_x[0], i ), ublas::row( E_y, j ) ) );
+                ublas::row( res[0], G_i ) = ublas::element_prod( tmp, ublas::row( E_z, n - i - j ) );
 
-                tmp = ublas::element_prod( ublas::row( E_x, i ) , ublas::row( D_y[0], j ) );
-                ublas::row( res[1], G_i )=ublas::element_prod( tmp , ublas::row( E_z, n-i-j ) );
+                tmp = ublas::element_prod( ublas::row( E_x, i ), ublas::row( D_y[0], j ) );
+                ublas::row( res[1], G_i ) = ublas::element_prod( tmp, ublas::row( E_z, n - i - j ) );
 
-                tmp = ublas::element_prod( ublas::row( E_x, i ) , ublas::row( E_y, j ) );
-                ublas::row( res[2], G_i )=ublas::element_prod( tmp , ublas::row( D_z[0], n-i-j ) );
+                tmp = ublas::element_prod( ublas::row( E_x, i ), ublas::row( E_y, j ) );
+                ublas::row( res[2], G_i ) = ublas::element_prod( tmp, ublas::row( D_z[0], n - i - j ) );
 
                 ++G_i;
             }
@@ -989,24 +977,23 @@ namespace detail
  * On the simplicies we use the Dubiner basis
  *
  */
-template<uint16_type Dim,
-         uint16_type Order,
-         uint16_type RealDim,
-         template<uint16_type> class PolySetType = Scalar,
-         typename T = double,
-         template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
+template <uint16_type Dim,
+          uint16_type Order,
+          uint16_type RealDim,
+          template <uint16_type> class PolySetType = Scalar,
+          typename T = double,
+          template <uint16_type, uint16_type, uint16_type> class Convex = Simplex>
 class MomentPolynomialSet
-    :
-public PolynomialSet<Moment<Dim, Order, Convex<Dim,1,Dim>, T, StorageUBlas>, PolySetType >
+    : public PolynomialSet<Moment<Dim, Order, Convex<Dim, 1, Dim>, T, StorageUBlas>, PolySetType>
 {
-    typedef PolynomialSet<Moment<Dim, Order, Convex<Dim,1,Dim>, T, StorageUBlas>, PolySetType > super;
-public:
+    typedef PolynomialSet<Moment<Dim, Order, Convex<Dim, 1, Dim>, T, StorageUBlas>, PolySetType> super;
 
+  public:
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
     static const uint16_type nRealDim = RealDim;
     static const bool isTransformationEquivalent = true;
-    typedef MomentPolynomialSet<Dim, Order,RealDim, PolySetType, T, Simplex> self_type;
+    typedef MomentPolynomialSet<Dim, Order, RealDim, PolySetType, T, Simplex> self_type;
     typedef self_type component_basis_type;
 
     typedef typename super::polyset_type polyset_type;
@@ -1023,14 +1010,14 @@ public:
     typedef typename super::component_type component_type;
 
     typedef T value_type;
-    typedef Moment<Dim, Order, Convex<Dim,1,Dim>, T, StorageUBlas> basis_type;
-    typedef Convex<Dim, Order, /*RealDim*/Dim> convex_type;
-    template<int O>
+    typedef Moment<Dim, Order, Convex<Dim, 1, Dim>, T, StorageUBlas> basis_type;
+    typedef Convex<Dim, Order, /*RealDim*/ Dim> convex_type;
+    template <int O>
     struct convex
     {
-        typedef Convex<Dim, O, /*RealDim*/Dim> type;
+        typedef Convex<Dim, O, /*RealDim*/ Dim> type;
     };
-    typedef Reference<convex_type, nDim, nOrder, nDim/*nRealDim*/, value_type> reference_convex_type;
+    typedef Reference<convex_type, nDim, nOrder, nDim /*nRealDim*/, value_type> reference_convex_type;
 
     typedef typename super::polynomial_type polynomial_type;
 
@@ -1048,8 +1035,8 @@ public:
 
     static const uint16_type nDof = nLocalDof;
     static const uint16_type nNodes = nDof;
-    static const uint16_type nDofGrad = super::nDim*nDof;
-    static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
+    static const uint16_type nDofGrad = super::nDim * nDof;
+    static const uint16_type nDofHess = super::nDim * super::nDim * nDof;
     //typedef typename matrix_node<value_type>::type points_type;
     typedef StorageUBlas<value_type> storage_policy;
     typedef typename storage_policy::matrix_type matrix_type;
@@ -1058,11 +1045,10 @@ public:
     typedef typename storage_policy::points_type points_type;
     typedef typename storage_policy::node_type node_type;
     MomentPolynomialSet()
-        :
-        super( basis_type() )
+        : super( basis_type() )
 
     {
-        ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
+        ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents * convex_type::polyDims( nOrder ) ) );
 
         if ( is_tensor2 )
             std::cout << "[orthonormalpolynomialset] m = " << m << "\n";
@@ -1074,13 +1060,15 @@ public:
                       << ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) - m ) << "\n";
 
         FEELPP_ASSERT( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
-                                              m ) < 1e-10 )( m ).warn ( "invalid transformation" );
+                                              m ) < 1e-10 )
+        ( m )
+            .warn( "invalid transformation" );
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
-    MomentPolynomialSet<Dim, Order, RealDim, Scalar,T, Simplex > toScalar() const
+    MomentPolynomialSet<Dim, Order, RealDim, Scalar, T, Simplex> toScalar() const
     {
-        return MomentPolynomialSet<Dim, Order, RealDim, Scalar,T, Simplex >();
+        return MomentPolynomialSet<Dim, Order, RealDim, Scalar, T, Simplex>();
     }
 
     /**
@@ -1090,7 +1078,6 @@ public:
     {
         return "dubiner";
     }
-
 
     points_type points() const
     {
@@ -1102,37 +1089,35 @@ public:
     }
 };
 
-template<uint16_type Dim,
-         uint16_type Order,
-         uint16_type RealDim,
-         template<uint16_type> class PolySetType,
-         typename T,
-         template<uint16_type,uint16_type,uint16_type> class Convex>
-const uint16_type MomentPolynomialSet<Dim, Order, RealDim, PolySetType,T, Convex>::nLocalDof;
+template <uint16_type Dim,
+          uint16_type Order,
+          uint16_type RealDim,
+          template <uint16_type> class PolySetType,
+          typename T,
+          template <uint16_type, uint16_type, uint16_type> class Convex>
+const uint16_type MomentPolynomialSet<Dim, Order, RealDim, PolySetType, T, Convex>::nLocalDof;
 
 } // detail
 /// \encond
 
-template<uint16_type Order,
-         template<uint16_type Dim> class PolySetType = Scalar>
+template <uint16_type Order,
+          template <uint16_type Dim> class PolySetType = Scalar>
 class MomentPolynomialSet
 {
-public:
-    template<uint16_type N,
-             typename T = double,
-             typename Convex = Simplex<N> >
+  public:
+    template <uint16_type N,
+              typename T = double,
+              typename Convex = Simplex<N>>
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                mpl::identity<detail::MomentPolynomialSet<N,Order,N,PolySetType,T,Simplex> >,
-                mpl::identity<detail::MomentPolynomialSet<N,Order,N,PolySetType,T,Hypercube> > >::type::type result_type;
+                                  mpl::identity<detail::MomentPolynomialSet<N, Order, N, PolySetType, T, Simplex>>,
+                                  mpl::identity<detail::MomentPolynomialSet<N, Order, N, PolySetType, T, Hypercube>>>::type::type result_type;
         typedef result_type type;
     };
 
-    typedef MomentPolynomialSet<Order,Scalar> component_basis_type;
+    typedef MomentPolynomialSet<Order, Scalar> component_basis_type;
 };
 }
-
-
 }
 #endif /* __Moment_H */

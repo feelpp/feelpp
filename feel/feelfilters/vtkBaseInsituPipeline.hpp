@@ -2,71 +2,72 @@
 #ifndef FEELPP_VTKBASEINSITUPIPELINE_HPP
 #define FEELPP_VTKBASEINSITUPIPELINE_HPP 1
 
-#include <string>
 #include <map>
+#include <string>
 
 #include <feel/feelcore/environment.hpp>
 
-#if defined(__GNUC__) && !(defined(__clang__))
+#if defined( __GNUC__ ) && !( defined( __clang__ ) )
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 
-#include <vtkStdString.h>
 #include <vtkMultiBlockDataSet.h>
 #include <vtkObjectFactory.h>
+#include <vtkStdString.h>
 
-#include <vtkSMProxy.h>
-#include <vtkSMSourceProxy.h>
-#include <vtkSMProxyManager.h>
-#include <vtkSMSessionProxyManager.h>
 #include <vtkCPDataDescription.h>
 #include <vtkCPInputDataDescription.h>
 #include <vtkCPPipeline.h>
-#include <vtkPVTrivialProducer.h>
 #include <vtkLiveInsituLink.h>
+#include <vtkPVTrivialProducer.h>
+#include <vtkSMProxy.h>
+#include <vtkSMProxyManager.h>
+#include <vtkSMSessionProxyManager.h>
+#include <vtkSMSourceProxy.h>
 
 namespace Feel
 {
 
 class vtkBaseInsituPipeline : public vtkCPPipeline
 {
-    public:
-        static vtkBaseInsituPipeline* New();
-        vtkTypeMacro(vtkBaseInsituPipeline,vtkCPPipeline);
-        virtual void PrintSelf(ostream& os, vtkIndent indent);
-        virtual void Initialize();
+  public:
+    static vtkBaseInsituPipeline* New();
+    vtkTypeMacro( vtkBaseInsituPipeline, vtkCPPipeline );
+    virtual void PrintSelf( ostream& os, vtkIndent indent );
+    virtual void Initialize();
 
-        virtual int RequestDataDescription(vtkCPDataDescription* dataDescription);
-        virtual int CoProcess(vtkCPDataDescription* dataDescription);
-    protected:
-        vtkBaseInsituPipeline();
-        virtual ~vtkBaseInsituPipeline();
-    private:
-        void CreatePipeline(vtkCPDataDescription* dataDescription, std::string inname);
-        void UpdateProducers(vtkCPDataDescription* dataDescription);
-        void DoLiveVisualization(vtkCPDataDescription* dataDescription);
+    virtual int RequestDataDescription( vtkCPDataDescription* dataDescription );
+    virtual int CoProcess( vtkCPDataDescription* dataDescription );
 
-        vtkBaseInsituPipeline(const vtkBaseInsituPipeline&); // Not implemented
-        void operator=(const vtkBaseInsituPipeline&); // Not implemented
-        int OutputFrequency;
-        std::string FileName;
+  protected:
+    vtkBaseInsituPipeline();
+    virtual ~vtkBaseInsituPipeline();
 
-        bool pipelineCreated;
+  private:
+    void CreatePipeline( vtkCPDataDescription* dataDescription, std::string inname );
+    void UpdateProducers( vtkCPDataDescription* dataDescription );
+    void DoLiveVisualization( vtkCPDataDescription* dataDescription );
 
-        vtkSMProxyManager* M_pxm;
-        vtkSMSessionProxyManager* M_spxm;
+    vtkBaseInsituPipeline( const vtkBaseInsituPipeline& ); // Not implemented
+    void operator=( const vtkBaseInsituPipeline& );        // Not implemented
+    int OutputFrequency;
+    std::string FileName;
 
-        std::map<std::string, vtkSmartPointer<vtkSMSourceProxy>> M_producerMap;
-        //std::map<std::string, vtkSmartPointer<vtkSMSourceProxy>> M_producerMap;
+    bool pipelineCreated;
 
-        vtkSmartPointer<vtkLiveInsituLink> M_insituLink;
-        vtkSmartPointer<vtkSMProxy> M_proxy;
+    vtkSMProxyManager* M_pxm;
+    vtkSMSessionProxyManager* M_spxm;
+
+    std::map<std::string, vtkSmartPointer<vtkSMSourceProxy>> M_producerMap;
+    //std::map<std::string, vtkSmartPointer<vtkSMSourceProxy>> M_producerMap;
+
+    vtkSmartPointer<vtkLiveInsituLink> M_insituLink;
+    vtkSmartPointer<vtkSMProxy> M_proxy;
 };
-
 }
 
-#if defined(__GNUC__) && !(defined(__clang__))
+#if defined( __GNUC__ ) && !( defined( __clang__ ) )
 #pragma GCC diagnostic pop
 #endif
 

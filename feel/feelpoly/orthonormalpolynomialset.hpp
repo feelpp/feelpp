@@ -41,35 +41,35 @@ namespace detail
  * On the simplicies we use the Dubiner basis
  *
  */
-template<uint16_type Dim,
-         uint16_type Order,
-         uint16_type RealDim,
-         template<uint16_type> class PolySetType = Scalar,
-         typename T = double,
-         uint16_type TheTAG = 0,
-         template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
+template <uint16_type Dim,
+          uint16_type Order,
+          uint16_type RealDim,
+          template <uint16_type> class PolySetType = Scalar,
+          typename T = double,
+          uint16_type TheTAG = 0,
+          template <uint16_type, uint16_type, uint16_type> class Convex = Simplex>
 class OrthonormalPolynomialSet
-{};
-
-template<uint16_type Dim,
-         uint16_type Order,
-         uint16_type RealDim,
-         template<uint16_type> class PolySetType,
-         typename T,
-         uint16_type TheTAG>
-class OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Simplex>
-    :
-public PolynomialSet<Dubiner<Dim, RealDim, Order, Normalized<true>, T, StorageUBlas>, PolySetType >
 {
-    typedef PolynomialSet<Dubiner<Dim, RealDim, Order, Normalized<true>, T, StorageUBlas>, PolySetType > super;
-public:
+};
 
+template <uint16_type Dim,
+          uint16_type Order,
+          uint16_type RealDim,
+          template <uint16_type> class PolySetType,
+          typename T,
+          uint16_type TheTAG>
+class OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Simplex>
+    : public PolynomialSet<Dubiner<Dim, RealDim, Order, Normalized<true>, T, StorageUBlas>, PolySetType>
+{
+    typedef PolynomialSet<Dubiner<Dim, RealDim, Order, Normalized<true>, T, StorageUBlas>, PolySetType> super;
+
+  public:
     static const uint16_type TAG = TheTAG;
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
     static const uint16_type nRealDim = RealDim;
     static const bool isTransformationEquivalent = true;
-    typedef OrthonormalPolynomialSet<Dim, Order,RealDim, PolySetType, T, TheTAG, Simplex> self_type;
+    typedef OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Simplex> self_type;
     typedef self_type component_basis_type;
 
     typedef typename super::polyset_type polyset_type;
@@ -87,13 +87,13 @@ public:
 
     typedef T value_type;
     typedef Dubiner<Dim, RealDim, Order, Normalized<true>, T, StorageUBlas> basis_type;
-    typedef Simplex<Dim, Order, /*RealDim*/Dim> convex_type;
-    template<int O>
+    typedef Simplex<Dim, Order, /*RealDim*/ Dim> convex_type;
+    template <int O>
     struct convex
     {
-        typedef Simplex<Dim, O, /*RealDim*/Dim> type;
+        typedef Simplex<Dim, O, /*RealDim*/ Dim> type;
     };
-    typedef Reference<convex_type, nDim, nOrder, nDim/*nRealDim*/, value_type> reference_convex_type;
+    typedef Reference<convex_type, nDim, nOrder, nDim /*nRealDim*/, value_type> reference_convex_type;
 
     typedef typename super::polynomial_type polynomial_type;
 
@@ -111,8 +111,8 @@ public:
 
     static const uint16_type nDof = nLocalDof;
     static const uint16_type nNodes = nDof;
-    static const uint16_type nDofGrad = super::nDim*nDof;
-    static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
+    static const uint16_type nDofGrad = super::nDim * nDof;
+    static const uint16_type nDofHess = super::nDim * super::nDim * nDof;
     typedef typename matrix_node<value_type>::type points_type;
 
     /**
@@ -122,24 +122,22 @@ public:
 
     struct SSpace
     {
-        static constexpr uint16_type TheOrder = (Order > 1)?Order-1:0;
-        typedef typename mpl::if_<mpl::less_equal<mpl::int_<Order>, mpl::int_<1> >,
-                                  mpl::identity<OrthonormalPolynomialSet<Dim, 0, RealDim, PolySetType, T, TheTAG,Simplex> >,
-                                  mpl::identity<OrthonormalPolynomialSet<Dim, TheOrder, RealDim, PolySetType, T, TheTAG,Simplex> > >::type::type type;
-
+        static constexpr uint16_type TheOrder = ( Order > 1 ) ? Order - 1 : 0;
+        typedef typename mpl::if_<mpl::less_equal<mpl::int_<Order>, mpl::int_<1>>,
+                                  mpl::identity<OrthonormalPolynomialSet<Dim, 0, RealDim, PolySetType, T, TheTAG, Simplex>>,
+                                  mpl::identity<OrthonormalPolynomialSet<Dim, TheOrder, RealDim, PolySetType, T, TheTAG, Simplex>>>::type::type type;
     };
-    template<int OtherOrder>
+    template <int OtherOrder>
     struct ChangeOrder
     {
-        typedef OrthonormalPolynomialSet<Dim, OtherOrder, RealDim, PolySetType, T, TheTAG,Simplex> type;
+        typedef OrthonormalPolynomialSet<Dim, OtherOrder, RealDim, PolySetType, T, TheTAG, Simplex> type;
     };
 
     OrthonormalPolynomialSet()
-        :
-        super( basis_type() )
+        : super( basis_type() )
 
     {
-        ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
+        ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents * convex_type::polyDims( nOrder ) ) );
 
 #if 0
         if ( !( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
@@ -154,9 +152,9 @@ public:
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
-    OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, TheTAG, Simplex > toScalar() const
+    OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar, T, TheTAG, Simplex> toScalar() const
     {
-        return OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, TheTAG, Simplex >();
+        return OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar, T, TheTAG, Simplex>();
     }
 
     /**
@@ -166,7 +164,6 @@ public:
     {
         return "dubiner";
     }
-
 
     points_type points() const
     {
@@ -178,28 +175,26 @@ public:
     }
 };
 
-template<uint16_type Dim,
-         uint16_type Order,
-         uint16_type RealDim,
-         template<uint16_type> class PolySetType,
-         typename T,
-         uint16_type TheTAG>
-const uint16_type OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType,T, TheTAG, Simplex>::nLocalDof;
+template <uint16_type Dim,
+          uint16_type Order,
+          uint16_type RealDim,
+          template <uint16_type> class PolySetType,
+          typename T,
+          uint16_type TheTAG>
+const uint16_type OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Simplex>::nLocalDof;
 
-
-template<uint16_type Dim,
-         uint16_type Order,
-         uint16_type RealDim,
-         template<uint16_type> class PolySetType,
-         typename T,
-         uint16_type TheTAG>
+template <uint16_type Dim,
+          uint16_type Order,
+          uint16_type RealDim,
+          template <uint16_type> class PolySetType,
+          typename T,
+          uint16_type TheTAG>
 class OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Hypercube>
-    :
-public PolynomialSet<Legendre<Dim, RealDim, Order, Normalized<true>, T>, PolySetType >
+    : public PolynomialSet<Legendre<Dim, RealDim, Order, Normalized<true>, T>, PolySetType>
 {
-    typedef PolynomialSet<Legendre<Dim, RealDim, Order, Normalized<true>, T>, PolySetType > super;
-public:
+    typedef PolynomialSet<Legendre<Dim, RealDim, Order, Normalized<true>, T>, PolySetType> super;
 
+  public:
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
     static const uint16_type nRealDim = RealDim;
@@ -222,7 +217,7 @@ public:
     typedef typename super::component_type component_type;
     typedef T value_type;
     typedef Legendre<Dim, RealDim, Order, Normalized<true>, T> basis_type;
-    typedef Hypercube<Dim, Order, /*RealDim*/Dim> convex_type;
+    typedef Hypercube<Dim, Order, /*RealDim*/ Dim> convex_type;
     typedef typename matrix_node<value_type>::type points_type;
 
     /**
@@ -230,12 +225,12 @@ public:
      */
     typedef boost::none_t local_interpolant_type;
 
-    template<int O>
+    template <int O>
     struct convex
     {
-        typedef Hypercube<Dim, O, nDim/*RealDim*/> type;
+        typedef Hypercube<Dim, O, nDim /*RealDim*/> type;
     };
-    typedef Reference<convex_type, nDim, nOrder, nDim/*nRealDim*/, value_type> reference_convex_type;
+    typedef Reference<convex_type, nDim, nOrder, nDim /*nRealDim*/, value_type> reference_convex_type;
 
     typedef typename super::polynomial_type polynomial_type;
 
@@ -253,15 +248,14 @@ public:
 
     static const uint16_type nDof = nLocalDof;
     static const uint16_type nNodes = nDof;
-    static const uint16_type nDofGrad = super::nDim*nDof;
-    static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
+    static const uint16_type nDofGrad = super::nDim * nDof;
+    static const uint16_type nDofHess = super::nDim * super::nDim * nDof;
 
     OrthonormalPolynomialSet()
-        :
-        super( basis_type() )
+        : super( basis_type() )
 
     {
-        ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
+        ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents * convex_type::polyDims( nOrder ) ) );
 #if 0
         if ( is_tensor2 )
             std::cout << "[orthonormalpolynomialset] m = " << m << "\n";
@@ -272,9 +266,9 @@ public:
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
-    OrthonormalPolynomialSet<Dim, Order, RealDim,Scalar,T, TheTAG, Hypercube > toScalar() const
+    OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar, T, TheTAG, Hypercube> toScalar() const
     {
-        return OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, TheTAG, Hypercube >();
+        return OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar, T, TheTAG, Hypercube>();
     }
     std::string familyName() const
     {
@@ -290,43 +284,43 @@ public:
     }
 };
 
-template<uint16_type Dim,
-         uint16_type Order,
-         uint16_type RealDim,
-         template<uint16_type> class PolySetType,
-         typename T,
-         uint16_type TheTAG>
-const uint16_type OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType,T, TheTAG, Hypercube>::nLocalDof;
+template <uint16_type Dim,
+          uint16_type Order,
+          uint16_type RealDim,
+          template <uint16_type> class PolySetType,
+          typename T,
+          uint16_type TheTAG>
+const uint16_type OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Hypercube>::nLocalDof;
 } // detail
 /// \encond
 
-template<uint16_type Order,
-         template<uint16_type Dim> class PolySetType = Scalar,
-         uint16_type TheTAG=0 >
+template <uint16_type Order,
+          template <uint16_type Dim> class PolySetType = Scalar,
+          uint16_type TheTAG = 0>
 class OrthonormalPolynomialSet
 {
-public:
-    template<uint16_type N,
-             uint16_type RealDim,
-             typename T = double,
-             typename Convex = Simplex<N> >
+  public:
+    template <uint16_type N,
+              uint16_type RealDim,
+              typename T = double,
+              typename Convex = Simplex<N>>
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<Feel::detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Simplex> >,
-                                  mpl::identity<Feel::detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Hypercube> > >::type::type result_type;
-    typedef result_type type;
+                                  mpl::identity<Feel::detail::OrthonormalPolynomialSet<N, Order, RealDim, PolySetType, T, TheTAG, Simplex>>,
+                                  mpl::identity<Feel::detail::OrthonormalPolynomialSet<N, Order, RealDim, PolySetType, T, TheTAG, Hypercube>>>::type::type result_type;
+        typedef result_type type;
     };
 
-    template<uint16_type TheNewTAG>
+    template <uint16_type TheNewTAG>
     struct ChangeTag
     {
-        typedef OrthonormalPolynomialSet<Order,PolySetType,TheNewTAG> type;
+        typedef OrthonormalPolynomialSet<Order, PolySetType, TheNewTAG> type;
     };
 
-    typedef OrthonormalPolynomialSet<Order,Scalar,TheTAG> component_basis_type;
+    typedef OrthonormalPolynomialSet<Order, Scalar, TheTAG> component_basis_type;
 
-    static const uint16_type nOrder =  Order;
+    static const uint16_type nOrder = Order;
     static const uint16_type TAG = TheTAG;
 };
 

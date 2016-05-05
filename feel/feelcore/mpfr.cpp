@@ -1,18 +1,14 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/mpfr.hpp>
 
-
-
 namespace Feel
 {
 namespace mpfr
 {
-MpfrClass::PrecisionType &MpfrClass::CurrPrecision = __gmpfr_default_fp_bit_precision;
+MpfrClass::PrecisionType& MpfrClass::CurrPrecision = __gmpfr_default_fp_bit_precision;
 //MpfrClass::PrecisionType &MpfrClass::CurrPrecision = ( uint )mpfr_get_default_prec();
 // ??? MpfrClass::PrecisionType &MpfrClass::CurrPrecision = mpfr_get_default_prec(); does not do what is wanted?
-RoundingMode &MpfrClass::CurrRndMode = __gmpfr_default_rounding_mode;
-
-
+RoundingMode& MpfrClass::CurrRndMode = __gmpfr_default_rounding_mode;
 
 //--------------------------------------------------------------
 //
@@ -20,127 +16,127 @@ RoundingMode &MpfrClass::CurrRndMode = __gmpfr_default_rounding_mode;
 //
 //--------------------------------------------------------------
 
-MpfrClass::MpfrClass ()
+MpfrClass::MpfrClass()
 {
     mpfr_init2( mpfr_rep, CurrPrecision );
     nbref = new RefCounter( 0 );
-    inexact=new InexactFlag();
+    inexact = new InexactFlag();
 }
 
-MpfrClass::MpfrClass ( double d,
-                       RoundingMode rnd,
-                       PrecisionType prec )
+MpfrClass::MpfrClass( double d,
+                      RoundingMode rnd,
+                      PrecisionType prec )
 {
     mpfr_init2( mpfr_rep, prec );
 
-    nbref=new RefCounter( 1 );
-    inexact=new InexactFlag();
+    nbref = new RefCounter( 1 );
+    inexact = new InexactFlag();
     inexact->refvalue() = mpfr_set_d( mpfr_rep, d, rnd );
 }
 
-MpfrClass::MpfrClass ( long double d,
-                       RoundingMode rnd,
-                       PrecisionType prec )
+MpfrClass::MpfrClass( long double d,
+                      RoundingMode rnd,
+                      PrecisionType prec )
 {
     mpfr_init2( mpfr_rep, prec );
 
-    nbref=new RefCounter( 1 );
-    inexact=new InexactFlag();
+    nbref = new RefCounter( 1 );
+    inexact = new InexactFlag();
     inexact->refvalue() = mpfr_set_ld( mpfr_rep, d, rnd );
 }
 
-MpfrClass::MpfrClass ( int i,
-                       RoundingMode rnd,
-                       PrecisionType prec )
+MpfrClass::MpfrClass( int i,
+                      RoundingMode rnd,
+                      PrecisionType prec )
 {
     mpfr_init2( mpfr_rep, prec );
-    nbref=new RefCounter( 1 );
-    inexact=new InexactFlag();
-    inexact->refvalue() = mpfr_set_si( mpfr_rep, ( long )( i ), rnd );
+    nbref = new RefCounter( 1 );
+    inexact = new InexactFlag();
+    inexact->refvalue() = mpfr_set_si( mpfr_rep, (long)( i ), rnd );
 }
 
-MpfrClass::MpfrClass ( unsigned int i,
-                       RoundingMode rnd,
-                       PrecisionType prec )
+MpfrClass::MpfrClass( unsigned int i,
+                      RoundingMode rnd,
+                      PrecisionType prec )
 {
     mpfr_init2( mpfr_rep, prec );
-    nbref=new RefCounter( 1 );
-    inexact=new InexactFlag();
-    inexact->refvalue() = mpfr_set_ui( mpfr_rep, ( unsigned long int )i, rnd );
+    nbref = new RefCounter( 1 );
+    inexact = new InexactFlag();
+    inexact->refvalue() = mpfr_set_ui( mpfr_rep, (unsigned long int)i, rnd );
 }
 
-MpfrClass::MpfrClass ( long int i,
-                       RoundingMode rnd,
-                       PrecisionType prec )
+MpfrClass::MpfrClass( long int i,
+                      RoundingMode rnd,
+                      PrecisionType prec )
 {
     mpfr_init2( mpfr_rep, prec );
-    nbref=new RefCounter( 1 );
-    inexact=new InexactFlag();
+    nbref = new RefCounter( 1 );
+    inexact = new InexactFlag();
     inexact->refvalue() = mpfr_set_si( mpfr_rep, i, rnd );
 }
 
-MpfrClass::MpfrClass ( unsigned long int i,
-                       RoundingMode rnd,
-                       PrecisionType prec )
+MpfrClass::MpfrClass( unsigned long int i,
+                      RoundingMode rnd,
+                      PrecisionType prec )
 {
     mpfr_init2( mpfr_rep, prec );
-    nbref=new RefCounter( 1 );
-    inexact=new InexactFlag();
+    nbref = new RefCounter( 1 );
+    inexact = new InexactFlag();
     inexact->refvalue() = mpfr_set_ui( mpfr_rep, i, rnd );
 }
 
 MpfrClass::MpfrClass( string s )
 {
-    mpfr_init2( mpfr_rep,MpfrClass::CurrPrecision );
-    nbref=new RefCounter( 1 );
-    inexact=new InexactFlag();
+    mpfr_init2( mpfr_rep, MpfrClass::CurrPrecision );
+    nbref = new RefCounter( 1 );
+    inexact = new InexactFlag();
 
-    if ( mpfr_set_str( mpfr_rep, const_cast<char *>( s.c_str() ), 10, MpfrClass::CurrRndMode ) )
+    if ( mpfr_set_str( mpfr_rep, const_cast<char*>( s.c_str() ), 10, MpfrClass::CurrRndMode ) )
     {
-        cerr << "Pb while reading " << s << endl ;
+        cerr << "Pb while reading " << s << endl;
         // maybe throw an exception...
     }
 }
 
-MpfrClass::MpfrClass ( mpz_srcptr z,
-                       RoundingMode rnd,
-                       PrecisionType prec )
-{
-    mpfr_init2( mpfr_rep, prec );
-    nbref=new RefCounter( 1 );
-    inexact=new InexactFlag();
-    inexact->refvalue() = mpfr_set_z( mpfr_rep, z, rnd );
-}
-
-MpfrClass::MpfrClass ( mpq_srcptr q,
-                       RoundingMode rnd,
-                       PrecisionType prec )
-{
-    mpfr_init2( mpfr_rep, prec );
-    nbref=new RefCounter( 1 );
-    inexact=new InexactFlag();
-    inexact->refvalue() = mpfr_set_q( mpfr_rep, q, rnd );
-}
-
-MpfrClass::MpfrClass ( mpfr_t r,
-                       RoundingMode rnd,
-                       PrecisionType prec )
+MpfrClass::MpfrClass( mpz_srcptr z,
+                      RoundingMode rnd,
+                      PrecisionType prec )
 {
     mpfr_init2( mpfr_rep, prec );
     nbref = new RefCounter( 1 );
-    inexact=new InexactFlag();
-    inexact->refvalue() = mpfr_set ( mpfr_rep, r, rnd );
+    inexact = new InexactFlag();
+    inexact->refvalue() = mpfr_set_z( mpfr_rep, z, rnd );
 }
 
-MpfrClass::MpfrClass ( const MpfrClass& r )
+MpfrClass::MpfrClass( mpq_srcptr q,
+                      RoundingMode rnd,
+                      PrecisionType prec )
 {
-    mpfr_rep[0]=r.mpfr_rep[0];
+    mpfr_init2( mpfr_rep, prec );
+    nbref = new RefCounter( 1 );
+    inexact = new InexactFlag();
+    inexact->refvalue() = mpfr_set_q( mpfr_rep, q, rnd );
+}
+
+MpfrClass::MpfrClass( mpfr_t r,
+                      RoundingMode rnd,
+                      PrecisionType prec )
+{
+    mpfr_init2( mpfr_rep, prec );
+    nbref = new RefCounter( 1 );
+    inexact = new InexactFlag();
+    inexact->refvalue() = mpfr_set( mpfr_rep, r, rnd );
+}
+
+MpfrClass::MpfrClass( const MpfrClass& r )
+{
+    mpfr_rep[0] = r.mpfr_rep[0];
     inexact = r.inexact;
-    nbref=r.nbref;
+    nbref = r.nbref;
     nbref->incr();
 }
 
-MpfrClass::~MpfrClass ()
+MpfrClass::~MpfrClass()
 {
     if ( nbref->decr() <= 0 )
     {
@@ -150,7 +146,6 @@ MpfrClass::~MpfrClass ()
     }
 }
 
-
 //--------------------------------------------------------------
 //
 // Assignment and physical copy
@@ -158,7 +153,7 @@ MpfrClass::~MpfrClass ()
 //--------------------------------------------------------------
 
 // Assignment is a logical copy
-MpfrClass& MpfrClass::operator = ( const MpfrClass& r )
+MpfrClass& MpfrClass::operator=( const MpfrClass& r )
 {
     //(*this).copy(r);
     if ( this == &r )
@@ -171,15 +166,15 @@ MpfrClass& MpfrClass::operator = ( const MpfrClass& r )
         delete inexact;
     }
 
-    mpfr_rep[0]=r.mpfr_rep[0];
-    nbref=r.nbref;
+    mpfr_rep[0] = r.mpfr_rep[0];
+    nbref = r.nbref;
     nbref->incr();
     inexact = r.inexact;
     return *this;
 }
 
 // Physical copy
-MpfrClass& MpfrClass::copy ( const MpfrClass& r, RoundingMode rnd, PrecisionType prec )
+MpfrClass& MpfrClass::copy( const MpfrClass& r, RoundingMode rnd, PrecisionType prec )
 {
     if ( nbref->decr() <= 0 )
     {
@@ -188,7 +183,7 @@ MpfrClass& MpfrClass::copy ( const MpfrClass& r, RoundingMode rnd, PrecisionType
         delete inexact;
     }
 
-    nbref=new RefCounter( 1 );
+    nbref = new RefCounter( 1 );
     inexact = new InexactFlag();
 
     // If the desired precision is different from the current one
@@ -204,48 +199,47 @@ MpfrClass& MpfrClass::copy ( const MpfrClass& r, RoundingMode rnd, PrecisionType
     return *this;
 }
 
-
 //--------------------------------------------------------------
 //
 // Precision and rounding: consultation, modification
 //
 //--------------------------------------------------------------
 
-void MpfrClass::SetDefaultPrecision ( MpfrClass::PrecisionType newprec )
+void MpfrClass::SetDefaultPrecision( MpfrClass::PrecisionType newprec )
 {
     mpfr_set_default_prec( newprec );
 }
 
 // ??? Rien sur les flags inexact ?
-void MpfrClass::SetPrecision ( MpfrClass::PrecisionType newprec )
+void MpfrClass::SetPrecision( MpfrClass::PrecisionType newprec )
 {
     nbref->refvalue() = 0;
     inexact->refvalue() = UNAFFECTED_INEXACT_FLAG;
     mpfr_set_prec( mpfr_rep, newprec );
 }
 
-const MpfrClass::PrecisionType MpfrClass::GetDefaultPrecision ()
+const MpfrClass::PrecisionType MpfrClass::GetDefaultPrecision()
 {
     return CurrPrecision;
 }
 // idem: { return mpfr_get_default_prec(); }
 
-MpfrClass::PrecisionType MpfrClass::GetPrecision () const
+MpfrClass::PrecisionType MpfrClass::GetPrecision() const
 {
     return mpfr_get_prec( mpfr_rep );
 }
 
-void MpfrClass::SetDefaultRndMode ( RoundingMode newrndmode )
+void MpfrClass::SetDefaultRndMode( RoundingMode newrndmode )
 {
     mpfr_set_default_rounding_mode( newrndmode );
 }
 
-const RoundingMode MpfrClass::GetDefaultRndMode ()
+const RoundingMode MpfrClass::GetDefaultRndMode()
 {
     return MpfrClass::CurrRndMode;
 }
 
-void MpfrClass::ChangePrec ( RoundingMode rnd, PrecisionType prec )
+void MpfrClass::ChangePrec( RoundingMode rnd, PrecisionType prec )
 // { inexact->refvalue() = mpfr_round_prec(mpfr_rep, rnd, prec); }
 // above: old version for mpfr < 2.0.2
 {
@@ -256,7 +250,7 @@ void MpfrClass::ChangePrec ( RoundingMode rnd, PrecisionType prec )
 
     else
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter();
         inexact = new InexactFlag();
@@ -265,16 +259,14 @@ void MpfrClass::ChangePrec ( RoundingMode rnd, PrecisionType prec )
     }
 }
 
-
 // Rounding in the direction of rnd2 when the result is computed
 // in the direction of rnd1, with a number of wrong bits given as argument.
 // Should be in place or not? In place
-int MpfrClass::CanRound ( mp_prec_t nb_wrong_bits, RoundingMode rnd1,
-                          RoundingMode rnd2, PrecisionType prec )
+int MpfrClass::CanRound( mp_prec_t nb_wrong_bits, RoundingMode rnd1,
+                         RoundingMode rnd2, PrecisionType prec )
 {
     return mpfr_can_round( mpfr_rep, nb_wrong_bits, rnd1, rnd2, prec );
 }
-
 
 //--------------------------------------------------------------
 //
@@ -282,30 +274,29 @@ int MpfrClass::CanRound ( mp_prec_t nb_wrong_bits, RoundingMode rnd1,
 //
 //--------------------------------------------------------------
 
-MpfrClass MpfrClass::Pi ( RoundingMode rnd, PrecisionType prec )
+MpfrClass MpfrClass::Pi( RoundingMode rnd, PrecisionType prec )
 {
-    MpfrClass res( 0,MpfrClass::CurrRndMode, prec );
+    MpfrClass res( 0, MpfrClass::CurrRndMode, prec );
     res.nbref->refvalue() = 1;
     res.inexact->refvalue() = mpfr_const_pi( res.mpfr_rep, rnd );
     return res;
 }
 
-MpfrClass MpfrClass::Log2 ( RoundingMode rnd, PrecisionType prec )
+MpfrClass MpfrClass::Log2( RoundingMode rnd, PrecisionType prec )
 {
-    MpfrClass res( 0,MpfrClass::CurrRndMode, prec );
+    MpfrClass res( 0, MpfrClass::CurrRndMode, prec );
     res.nbref->refvalue() = 1;
     res.inexact->refvalue() = mpfr_const_log2( res.mpfr_rep, rnd );
     return res;
 }
 
-MpfrClass MpfrClass::Euler ( RoundingMode rnd, PrecisionType prec )
+MpfrClass MpfrClass::Euler( RoundingMode rnd, PrecisionType prec )
 {
-    MpfrClass res( 0,MpfrClass::CurrRndMode, prec );
+    MpfrClass res( 0, MpfrClass::CurrRndMode, prec );
     res.nbref->refvalue() = 1;
     res.inexact->refvalue() = mpfr_const_euler( res.mpfr_rep, rnd );
     return res;
 }
-
 
 //--------------------------------------------------------------
 //
@@ -319,7 +310,7 @@ ostream& MpfrClass::put( ostream& o,
                          RoundingMode rnd, PrecisionType /*prec*/,
                          int base, int nb_digits ) const
 {
-    bool neg = ( sign( *this )<0 );
+    bool neg = ( sign( *this ) < 0 );
 
     if ( isinf( *this ) )
     {
@@ -375,18 +366,18 @@ ostream& MpfrClass::put( ostream& o,
     //free(s, size_s);
     if ( --e )
     {
-        o << "E" << e ;
+        o << "E" << e;
     }
 
     return o;
 }
 
-ostream& operator << ( ostream& o, const MpfrClass& r )
+ostream& operator<<( ostream& o, const MpfrClass& r )
 {
     return r.put( o );
 }
 
-istream& operator >> ( istream& i, MpfrClass& r )
+istream& operator>>( istream& i, MpfrClass& r )
 // Mimicking mpfr_set_str and Integer::>> of Givaro
 {
     if ( !i.good() )
@@ -404,9 +395,9 @@ istream& operator >> ( istream& i, MpfrClass& r )
     // reading the string,
     // the conversion from a string to a mpfr is done by mpfr_set_str
     bool noend = true;
-    int nread=0;
-    size_t alloc_size=100;
-    char c, *str=( char * )( *__gmp_allocate_func )( alloc_size );
+    int nread = 0;
+    size_t alloc_size = 100;
+    char c, *str = (char *)( *__gmp_allocate_func )( alloc_size );
 
     // read the characters on i until a white space is read
     while ( noend )
@@ -418,12 +409,12 @@ istream& operator >> ( istream& i, MpfrClass& r )
 
             if ( i.eof() )
             {
-                noend=false;
+                noend = false;
             }
 
             else if ( isspace( c ) )
             {
-                noend=false;
+                noend = false;
                 i.putback( c );
             }
 
@@ -437,7 +428,7 @@ istream& operator >> ( istream& i, MpfrClass& r )
         {
             size_t old_alloc_size = alloc_size;
             alloc_size = alloc_size * 3 / 2;
-            str = ( char * )( *__gmp_reallocate_func )( str, old_alloc_size, alloc_size );
+            str = (char*)( *__gmp_reallocate_func )( str, old_alloc_size, alloc_size );
         }
     }
 
@@ -452,375 +443,374 @@ istream& operator >> ( istream& i, MpfrClass& r )
     return i;
 }
 
-
 //--------------------------------------------------------------
 //
 // Comparisons
 //
 //--------------------------------------------------------------
 
-int compare ( const MpfrClass& r1, const MpfrClass& r2 )
+int compare( const MpfrClass& r1, const MpfrClass& r2 )
 {
     return mpfr_cmp( r1.mpfr_rep, r2.mpfr_rep );
 }
 
-int compare ( const MpfrClass& r1, const double r2 )
+int compare( const MpfrClass& r1, const double r2 )
 {
     return mpfr_cmp_d( r1.mpfr_rep, r2 );
 }
 
-int compare ( const MpfrClass& r1, const int r2 )
+int compare( const MpfrClass& r1, const int r2 )
 {
     return mpfr_cmp_si( r1.mpfr_rep, long( r2 ) );
 }
 
-int compare ( const MpfrClass& r1, const unsigned int r2 )
+int compare( const MpfrClass& r1, const unsigned int r2 )
 {
-    return mpfr_cmp_ui( r1.mpfr_rep, ( unsigned long ) r2 ) ;
+    return mpfr_cmp_ui( r1.mpfr_rep, (unsigned long)r2 );
 }
 
-int compare ( const MpfrClass& r1, const long int r2 )
+int compare( const MpfrClass& r1, const long int r2 )
 {
     return mpfr_cmp_si( r1.mpfr_rep, r2 );
 }
 
-int compare ( const MpfrClass& r1, const unsigned long r2 )
+int compare( const MpfrClass& r1, const unsigned long r2 )
 {
     return mpfr_cmp_ui( r1.mpfr_rep, r2 );
 }
 
-bool operator == ( const MpfrClass& r1, const MpfrClass& r2 )
+bool operator==( const MpfrClass& r1, const MpfrClass& r2 )
 {
-    return ( compare( r1,r2 ) == 0 );
+    return ( compare( r1, r2 ) == 0 );
 }
 
-bool operator == ( const double r1, const MpfrClass& r2 )
+bool operator==( const double r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) == 0 );
+    return ( compare( r2, r1 ) == 0 );
 }
 
-bool operator == ( const int r1, const MpfrClass& r2 )
+bool operator==( const int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) == 0 );
+    return ( compare( r2, r1 ) == 0 );
 }
 
-bool operator == ( const unsigned int r1, const MpfrClass& r2 )
+bool operator==( const unsigned int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) == 0 );
+    return ( compare( r2, r1 ) == 0 );
 }
 
-bool operator == ( const long int r1, const MpfrClass& r2 )
+bool operator==( const long int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) == 0 );
+    return ( compare( r2, r1 ) == 0 );
 }
 
-bool operator == ( const unsigned long int r1, const MpfrClass& r2 )
+bool operator==( const unsigned long int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) == 0 );
+    return ( compare( r2, r1 ) == 0 );
 }
 
-bool operator == ( const MpfrClass& r1, const double r2 )
+bool operator==( const MpfrClass& r1, const double r2 )
 {
-    return ( compare( r1,r2 ) == 0 );
+    return ( compare( r1, r2 ) == 0 );
 }
 
-bool operator == ( const MpfrClass& r1, const int r2 )
+bool operator==( const MpfrClass& r1, const int r2 )
 {
-    return ( compare( r1,r2 ) == 0 );
+    return ( compare( r1, r2 ) == 0 );
 }
 
-bool operator == ( const MpfrClass& r1, const unsigned int r2 )
+bool operator==( const MpfrClass& r1, const unsigned int r2 )
 {
-    return ( compare( r1,r2 ) == 0 );
+    return ( compare( r1, r2 ) == 0 );
 }
 
-bool operator == ( const MpfrClass& r1, const long int r2 )
+bool operator==( const MpfrClass& r1, const long int r2 )
 {
-    return ( compare( r1,r2 ) == 0 );
+    return ( compare( r1, r2 ) == 0 );
 }
 
-bool operator == ( const MpfrClass& r1, const unsigned long int r2 )
+bool operator==( const MpfrClass& r1, const unsigned long int r2 )
 {
-    return ( compare( r1,r2 ) == 0 );
+    return ( compare( r1, r2 ) == 0 );
 }
 
-bool operator != ( const MpfrClass& r1, const MpfrClass& r2 )
+bool operator!=( const MpfrClass& r1, const MpfrClass& r2 )
 {
-    return ( compare( r1,r2 ) != 0 );
+    return ( compare( r1, r2 ) != 0 );
 }
 
-bool operator != ( const double r1, const MpfrClass& r2 )
+bool operator!=( const double r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) != 0 );
+    return ( compare( r2, r1 ) != 0 );
 }
 
-bool operator != ( const int r1, const MpfrClass& r2 )
+bool operator!=( const int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) != 0 );
+    return ( compare( r2, r1 ) != 0 );
 }
 
-bool operator != ( const unsigned int r1, const MpfrClass& r2 )
+bool operator!=( const unsigned int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) != 0 );
+    return ( compare( r2, r1 ) != 0 );
 }
 
-bool operator != ( const long int r1, const MpfrClass& r2 )
+bool operator!=( const long int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) != 0 );
+    return ( compare( r2, r1 ) != 0 );
 }
 
-bool operator != ( const unsigned long int r1, const MpfrClass& r2 )
+bool operator!=( const unsigned long int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) != 0 );
+    return ( compare( r2, r1 ) != 0 );
 }
 
-bool operator != ( const MpfrClass& r1, const double r2 )
+bool operator!=( const MpfrClass& r1, const double r2 )
 {
-    return ( compare( r1,r2 ) != 0 );
+    return ( compare( r1, r2 ) != 0 );
 }
 
-bool operator != ( const MpfrClass& r1, const int r2 )
+bool operator!=( const MpfrClass& r1, const int r2 )
 {
-    return ( compare( r1,r2 ) != 0 );
+    return ( compare( r1, r2 ) != 0 );
 }
 
-bool operator != ( const MpfrClass& r1, const unsigned int r2 )
+bool operator!=( const MpfrClass& r1, const unsigned int r2 )
 {
-    return ( compare( r1,r2 ) != 0 );
+    return ( compare( r1, r2 ) != 0 );
 }
 
-bool operator != ( const MpfrClass& r1, const long int r2 )
+bool operator!=( const MpfrClass& r1, const long int r2 )
 {
-    return ( compare( r1,r2 ) != 0 );
+    return ( compare( r1, r2 ) != 0 );
 }
 
-bool operator != ( const MpfrClass& r1, const unsigned long int r2 )
+bool operator!=( const MpfrClass& r1, const unsigned long int r2 )
 {
-    return ( compare( r1,r2 ) != 0 );
+    return ( compare( r1, r2 ) != 0 );
 }
 
-bool operator <  ( const MpfrClass& r1, const MpfrClass& r2 )
+bool operator<( const MpfrClass& r1, const MpfrClass& r2 )
 {
-    return ( compare( r1,r2 ) < 0 );
+    return ( compare( r1, r2 ) < 0 );
 }
 
-bool operator <  ( const double r1, const MpfrClass& r2 )
+bool operator<( const double r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) >  0 );
+    return ( compare( r2, r1 ) > 0 );
 }
 
-bool operator <  ( const int r1, const MpfrClass& r2 )
+bool operator<( const int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) >  0 );
+    return ( compare( r2, r1 ) > 0 );
 }
 
-bool operator <  ( const unsigned int r1, const MpfrClass& r2 )
+bool operator<( const unsigned int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) >  0 );
+    return ( compare( r2, r1 ) > 0 );
 }
 
-bool operator <  ( const long int r1, const MpfrClass& r2 )
+bool operator<( const long int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) >  0 );
+    return ( compare( r2, r1 ) > 0 );
 }
 
-bool operator <  ( const unsigned long int r1, const MpfrClass& r2 )
+bool operator<( const unsigned long int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) >  0 );
+    return ( compare( r2, r1 ) > 0 );
 }
 
-bool operator <  ( const MpfrClass& r1, const double r2 )
+bool operator<( const MpfrClass& r1, const double r2 )
 {
-    return ( compare( r1,r2 ) <  0 );
+    return ( compare( r1, r2 ) < 0 );
 }
 
-bool operator <  ( const MpfrClass& r1, const int r2 )
+bool operator<( const MpfrClass& r1, const int r2 )
 {
-    return ( compare( r1,r2 ) <  0 );
+    return ( compare( r1, r2 ) < 0 );
 }
 
-bool operator <  ( const MpfrClass& r1, const unsigned int r2 )
+bool operator<( const MpfrClass& r1, const unsigned int r2 )
 {
-    return ( compare( r1,r2 ) <  0 );
+    return ( compare( r1, r2 ) < 0 );
 }
 
-bool operator <  ( const MpfrClass& r1, const long int r2 )
+bool operator<( const MpfrClass& r1, const long int r2 )
 {
-    return ( compare( r1,r2 ) <  0 );
+    return ( compare( r1, r2 ) < 0 );
 }
 
-bool operator <  ( const MpfrClass& r1, const unsigned long int r2 )
+bool operator<( const MpfrClass& r1, const unsigned long int r2 )
 {
-    return ( compare( r1,r2 ) <  0 );
+    return ( compare( r1, r2 ) < 0 );
 }
 
-bool operator <= ( const MpfrClass& r1, const MpfrClass& r2 )
+bool operator<=( const MpfrClass& r1, const MpfrClass& r2 )
 {
-    return ( compare( r1,r2 ) <= 0 );
+    return ( compare( r1, r2 ) <= 0 );
 }
 
-bool operator <= ( const double r1, const MpfrClass& r2 )
+bool operator<=( const double r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) >= 0 );
+    return ( compare( r2, r1 ) >= 0 );
 }
 
-bool operator <= ( const int r1, const MpfrClass& r2 )
+bool operator<=( const int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) >= 0 );
+    return ( compare( r2, r1 ) >= 0 );
 }
 
-bool operator <= ( const unsigned int r1, const MpfrClass& r2 )
+bool operator<=( const unsigned int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) >= 0 );
+    return ( compare( r2, r1 ) >= 0 );
 }
 
-bool operator <= ( const long int r1, const MpfrClass& r2 )
+bool operator<=( const long int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) >= 0 );
+    return ( compare( r2, r1 ) >= 0 );
 }
 
-bool operator <= ( const unsigned long int r1, const MpfrClass& r2 )
+bool operator<=( const unsigned long int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) >= 0 );
+    return ( compare( r2, r1 ) >= 0 );
 }
 
-bool operator <= ( const MpfrClass& r1, const double r2 )
+bool operator<=( const MpfrClass& r1, const double r2 )
 {
-    return ( compare( r1,r2 ) <= 0 );
+    return ( compare( r1, r2 ) <= 0 );
 }
 
-bool operator <= ( const MpfrClass& r1, const int r2 )
+bool operator<=( const MpfrClass& r1, const int r2 )
 {
-    return ( compare( r1,r2 ) <= 0 );
+    return ( compare( r1, r2 ) <= 0 );
 }
 
-bool operator <= ( const MpfrClass& r1, const unsigned int r2 )
+bool operator<=( const MpfrClass& r1, const unsigned int r2 )
 {
-    return ( compare( r1,r2 ) <= 0 );
+    return ( compare( r1, r2 ) <= 0 );
 }
 
-bool operator <= ( const MpfrClass& r1, const long int r2 )
+bool operator<=( const MpfrClass& r1, const long int r2 )
 {
-    return ( compare( r1,r2 ) <= 0 );
+    return ( compare( r1, r2 ) <= 0 );
 }
 
-bool operator <= ( const MpfrClass& r1, const unsigned long int r2 )
+bool operator<=( const MpfrClass& r1, const unsigned long int r2 )
 {
-    return ( compare( r1,r2 ) <= 0 );
+    return ( compare( r1, r2 ) <= 0 );
 }
 
-bool operator >  ( const MpfrClass& r1, const MpfrClass& r2 )
+bool operator>( const MpfrClass& r1, const MpfrClass& r2 )
 {
-    return ( compare( r1,r2 ) > 0 );
+    return ( compare( r1, r2 ) > 0 );
 }
 
-bool operator >  ( const double r1, const MpfrClass& r2 )
+bool operator>( const double r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) < 0 );
+    return ( compare( r2, r1 ) < 0 );
 }
 
-bool operator >  ( const int r1, const MpfrClass& r2 )
+bool operator>( const int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) < 0 );
+    return ( compare( r2, r1 ) < 0 );
 }
 
-bool operator >  ( const unsigned int r1, const MpfrClass& r2 )
+bool operator>( const unsigned int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) < 0 );
+    return ( compare( r2, r1 ) < 0 );
 }
 
-bool operator >  ( const long int r1, const MpfrClass& r2 )
+bool operator>( const long int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) < 0 );
+    return ( compare( r2, r1 ) < 0 );
 }
 
-bool operator >  ( const unsigned long int r1, const MpfrClass& r2 )
+bool operator>( const unsigned long int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) < 0 );
+    return ( compare( r2, r1 ) < 0 );
 }
 
-bool operator >  ( const MpfrClass& r1, const double r2 )
+bool operator>( const MpfrClass& r1, const double r2 )
 {
-    return ( compare( r1,r2 ) >  0 );
+    return ( compare( r1, r2 ) > 0 );
 }
 
-bool operator >  ( const MpfrClass& r1, const int r2 )
+bool operator>( const MpfrClass& r1, const int r2 )
 {
-    return ( compare( r1,r2 ) >  0 );
+    return ( compare( r1, r2 ) > 0 );
 }
 
-bool operator >  ( const MpfrClass& r1, const unsigned int r2 )
+bool operator>( const MpfrClass& r1, const unsigned int r2 )
 {
-    return ( compare( r1,r2 ) >  0 );
+    return ( compare( r1, r2 ) > 0 );
 }
 
-bool operator >  ( const MpfrClass& r1, const long int r2 )
+bool operator>( const MpfrClass& r1, const long int r2 )
 {
-    return ( compare( r1,r2 ) >  0 );
+    return ( compare( r1, r2 ) > 0 );
 }
 
-bool operator >  ( const MpfrClass& r1, const unsigned long int r2 )
+bool operator>( const MpfrClass& r1, const unsigned long int r2 )
 {
-    return ( compare( r1,r2 ) >  0 );
+    return ( compare( r1, r2 ) > 0 );
 }
 
-bool operator >= ( const MpfrClass& r1, const MpfrClass& r2 )
+bool operator>=( const MpfrClass& r1, const MpfrClass& r2 )
 {
-    return ( compare( r1,r2 ) >= 0 );
+    return ( compare( r1, r2 ) >= 0 );
 }
 
-bool operator >= ( const double r1, const MpfrClass& r2 )
+bool operator>=( const double r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) <= 0 );
+    return ( compare( r2, r1 ) <= 0 );
 }
 
-bool operator >= ( const int r1, const MpfrClass& r2 )
+bool operator>=( const int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) <= 0 );
+    return ( compare( r2, r1 ) <= 0 );
 }
 
-bool operator >= ( const unsigned int r1, const MpfrClass& r2 )
+bool operator>=( const unsigned int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) <= 0 );
+    return ( compare( r2, r1 ) <= 0 );
 }
 
-bool operator >= ( const long int r1, const MpfrClass& r2 )
+bool operator>=( const long int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) <= 0 );
+    return ( compare( r2, r1 ) <= 0 );
 }
 
-bool operator >= ( const unsigned long int r1, const MpfrClass& r2 )
+bool operator>=( const unsigned long int r1, const MpfrClass& r2 )
 {
-    return ( compare( r2,r1 ) <= 0 );
+    return ( compare( r2, r1 ) <= 0 );
 }
 
-bool operator >= ( const MpfrClass& r1, const double r2 )
+bool operator>=( const MpfrClass& r1, const double r2 )
 {
-    return ( compare( r1,r2 ) >= 0 );
+    return ( compare( r1, r2 ) >= 0 );
 }
 
-bool operator >= ( const MpfrClass& r1, const int r2 )
+bool operator>=( const MpfrClass& r1, const int r2 )
 {
-    return ( compare( r1,r2 ) >= 0 );
+    return ( compare( r1, r2 ) >= 0 );
 }
 
-bool operator >= ( const MpfrClass& r1, const unsigned int r2 )
+bool operator>=( const MpfrClass& r1, const unsigned int r2 )
 {
-    return ( compare( r1,r2 ) >= 0 );
+    return ( compare( r1, r2 ) >= 0 );
 }
 
-bool operator >= ( const MpfrClass& r1, const long int r2 )
+bool operator>=( const MpfrClass& r1, const long int r2 )
 {
-    return ( compare( r1,r2 ) >= 0 );
+    return ( compare( r1, r2 ) >= 0 );
 }
 
-bool operator >= ( const MpfrClass& r1, const unsigned long int r2 )
+bool operator>=( const MpfrClass& r1, const unsigned long int r2 )
 {
-    return ( compare( r1,r2 ) >= 0 );
+    return ( compare( r1, r2 ) >= 0 );
 }
 
 // To be checked: IEEE recommendation when one operand is an exception
-MpfrClass min ( const MpfrClass& a, MpfrClass& b )
+MpfrClass min( const MpfrClass& a, MpfrClass& b )
 {
     //MpfrClass res;
     //res.nbref->refvalue() = 1;
@@ -834,19 +824,19 @@ MpfrClass min ( const MpfrClass& a, MpfrClass& b )
         return b;
 }
 
-MpfrClass max ( const MpfrClass& a, MpfrClass& b )
+MpfrClass max( const MpfrClass& a, MpfrClass& b )
 //const MpfrClass max (const MpfrClass& a, MpfrClass& b, RoundingMode rnd)
 {
     //MpfrClass res;
     //res.nbref->refvalue() = 1;
     //res.inexact->refvalue() = mpfr_max(res.mpfr_rep, a.mpfr_rep, b.mpfr_rep, rnd);
     //return res;
-    if ( a >= b ) return a;
+    if ( a >= b )
+        return a;
 
-    else return b;
+    else
+        return b;
 }
-
-
 
 //--------------------------------------------------------------
 //
@@ -858,7 +848,7 @@ MpfrClass max ( const MpfrClass& a, MpfrClass& b )
 //--------------------------------------------------------------
 
 // Addition-----------------------------------------------------
-MpfrClass MpfrClass::operator + ( const MpfrClass& b ) const
+MpfrClass MpfrClass::operator+( const MpfrClass& b ) const
 {
 
     if ( iszero( *this ) )
@@ -873,7 +863,7 @@ MpfrClass MpfrClass::operator + ( const MpfrClass& b ) const
         return *this;
     }
 
-    else          // no need to check nbref counter: res has just been created
+    else // no need to check nbref counter: res has just been created
     {
         MpfrClass res;
         res.nbref->refvalue() = 1;
@@ -900,12 +890,12 @@ MpfrClass operator + (const MpfrClass& a, const MpfrClass& b)
   }
 */
 
-MpfrClass operator + ( const MpfrClass& a, const double b )
+MpfrClass operator+( const MpfrClass& a, const double b )
 {
     return a + MpfrClass( b, MpfrClass::CurrRndMode, 53 );
 }
 
-MpfrClass operator + ( const MpfrClass& a, const int b )
+MpfrClass operator+( const MpfrClass& a, const int b )
 {
     if ( b == 0 )
     {
@@ -916,7 +906,7 @@ MpfrClass operator + ( const MpfrClass& a, const int b )
     else if ( iszero( a ) )
         return MpfrClass( b, MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() );
 
-    else          //use the efficient mpfr_<add,sub>_ui
+    else //use the efficient mpfr_<add,sub>_ui
     {
         // no need to check nbref counter: res has just been created
         MpfrClass res;
@@ -924,17 +914,17 @@ MpfrClass operator + ( const MpfrClass& a, const int b )
 
         if ( b >= 0 )
             res.inexact->refvalue() = mpfr_add_ui( res.mpfr_rep, a.mpfr_rep,
-                                                   ( unsigned long int )( b ), MpfrClass::CurrRndMode );
+                                                   (unsigned long int)( b ), MpfrClass::CurrRndMode );
 
         else
             res.inexact->refvalue() = mpfr_sub_ui( res.mpfr_rep, a.mpfr_rep,
-                                                   ( unsigned long int )( -b ), MpfrClass::CurrRndMode );
+                                                   (unsigned long int)( -b ), MpfrClass::CurrRndMode );
 
         return res;
     }
 }
 
-MpfrClass operator + ( const MpfrClass& a, const unsigned int b )
+MpfrClass operator+( const MpfrClass& a, const unsigned int b )
 {
     if ( b == 0 )
     {
@@ -943,18 +933,18 @@ MpfrClass operator + ( const MpfrClass& a, const unsigned int b )
     }
 
     else if ( iszero( a ) )
-        return MpfrClass( ( unsigned long int ) b, MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() );
+        return MpfrClass( (unsigned long int)b, MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() );
 
-    else          // no need to check nbref counter: res has just been created
+    else // no need to check nbref counter: res has just been created
     {
         MpfrClass res;
         res.nbref->refvalue() = 1;
-        res.inexact->refvalue() = mpfr_add_ui( res.mpfr_rep, a.mpfr_rep, ( unsigned long int )( b ), MpfrClass::CurrRndMode );
+        res.inexact->refvalue() = mpfr_add_ui( res.mpfr_rep, a.mpfr_rep, (unsigned long int)( b ), MpfrClass::CurrRndMode );
         return res;
     }
 }
 
-MpfrClass operator + ( const MpfrClass& a, const long int b )
+MpfrClass operator+( const MpfrClass& a, const long int b )
 {
     if ( b == 0 )
     {
@@ -965,7 +955,7 @@ MpfrClass operator + ( const MpfrClass& a, const long int b )
     else if ( iszero( a ) )
         return MpfrClass( b, MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() );
 
-    else          //use the efficient mpfr_<add,sub>_ui
+    else //use the efficient mpfr_<add,sub>_ui
     {
         // no need to check nbref counter: res has just been created
         MpfrClass res;
@@ -973,17 +963,17 @@ MpfrClass operator + ( const MpfrClass& a, const long int b )
 
         if ( b >= 0 )
             res.inexact->refvalue() = mpfr_add_ui( res.mpfr_rep, a.mpfr_rep,
-                                                   ( unsigned long int )( b ), MpfrClass::CurrRndMode );
+                                                   (unsigned long int)( b ), MpfrClass::CurrRndMode );
 
         else
             res.inexact->refvalue() = mpfr_sub_ui( res.mpfr_rep, a.mpfr_rep,
-                                                   ( unsigned long int )( -b ), MpfrClass::CurrRndMode );
+                                                   (unsigned long int)( -b ), MpfrClass::CurrRndMode );
 
         return res;
     }
 }
 
-MpfrClass operator + ( const MpfrClass& a, const mpz_srcptr b )
+MpfrClass operator+( const MpfrClass& a, const mpz_srcptr b )
 {
     if ( mpz_cmp_si( b, 0 ) == 0 )
     {
@@ -994,7 +984,7 @@ MpfrClass operator + ( const MpfrClass& a, const mpz_srcptr b )
     else if ( iszero( a ) )
         return MpfrClass( b, MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() );
 
-    else          // no need to check nbref counter: res has just been created
+    else // no need to check nbref counter: res has just been created
     {
         MpfrClass res;
         res.nbref->refvalue() = 1;
@@ -1003,9 +993,9 @@ MpfrClass operator + ( const MpfrClass& a, const mpz_srcptr b )
     }
 }
 
-MpfrClass operator + ( const MpfrClass& a, const mpq_srcptr b )
+MpfrClass operator+( const MpfrClass& a, const mpq_srcptr b )
 {
-    if ( mpq_cmp_ui( b,0,1 ) == 0 )
+    if ( mpq_cmp_ui( b, 0, 1 ) == 0 )
     {
         a.nbref->incr();
         return a;
@@ -1014,7 +1004,7 @@ MpfrClass operator + ( const MpfrClass& a, const mpq_srcptr b )
     else if ( iszero( a ) )
         return MpfrClass( b, MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() );
 
-    else          // no need to check nbref counter: res has just been created
+    else // no need to check nbref counter: res has just been created
     {
         MpfrClass res;
         res.nbref->refvalue() = 1;
@@ -1023,7 +1013,7 @@ MpfrClass operator + ( const MpfrClass& a, const mpq_srcptr b )
     }
 }
 
-MpfrClass operator + ( const MpfrClass& a, const unsigned long int b )
+MpfrClass operator+( const MpfrClass& a, const unsigned long int b )
 {
     if ( b == 0 )
     {
@@ -1034,7 +1024,7 @@ MpfrClass operator + ( const MpfrClass& a, const unsigned long int b )
     else if ( iszero( a ) )
         return MpfrClass( b, MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() );
 
-    else          // no need to check nbref counter: res has just been created
+    else // no need to check nbref counter: res has just been created
     {
         MpfrClass res;
         res.nbref->refvalue() = 1;
@@ -1043,42 +1033,42 @@ MpfrClass operator + ( const MpfrClass& a, const unsigned long int b )
     }
 }
 
-MpfrClass operator + ( const double a, const MpfrClass& b )
+MpfrClass operator+( const double a, const MpfrClass& b )
 {
-    return b+a;
+    return b + a;
 }
 
-MpfrClass operator + ( const int a, const MpfrClass& b )
+MpfrClass operator+( const int a, const MpfrClass& b )
 {
-    return b+a;
+    return b + a;
 }
 
-MpfrClass operator + ( const unsigned int a, const MpfrClass& b )
+MpfrClass operator+( const unsigned int a, const MpfrClass& b )
 {
-    return b+a;
+    return b + a;
 }
 
-MpfrClass operator + ( const long int a, const MpfrClass& b )
+MpfrClass operator+( const long int a, const MpfrClass& b )
 {
-    return b+a;
+    return b + a;
 }
 
-MpfrClass operator + ( const unsigned long int a, const MpfrClass& b )
+MpfrClass operator+( const unsigned long int a, const MpfrClass& b )
 {
-    return b+a;
+    return b + a;
 }
 
-MpfrClass operator + ( const mpz_srcptr a, const MpfrClass& b )
+MpfrClass operator+( const mpz_srcptr a, const MpfrClass& b )
 {
-    return b+a;
+    return b + a;
 }
 
-MpfrClass operator + ( const mpq_srcptr a, const MpfrClass& b )
+MpfrClass operator+( const mpq_srcptr a, const MpfrClass& b )
 {
-    return b+a;
+    return b + a;
 }
 
-MpfrClass& MpfrClass::operator += ( const MpfrClass& b )
+MpfrClass& MpfrClass::operator+=( const MpfrClass& b )
 {
     if ( iszero( b ) )
         return *this;
@@ -1087,7 +1077,7 @@ MpfrClass& MpfrClass::operator += ( const MpfrClass& b )
     {
         if ( GetPrecision() == b.GetPrecision() )
         {
-            if ( nbref->decr() <= 0 )		  // no other ref. on the value of *this
+            if ( nbref->decr() <= 0 ) // no other ref. on the value of *this
             {
                 mpfr_clear( mpfr_rep );
                 delete nbref;
@@ -1102,16 +1092,16 @@ MpfrClass& MpfrClass::operator += ( const MpfrClass& b )
 
         else
         {
-            if ( nbref->decr() <= 0 )			// no other ref. on the value of *this
+            if ( nbref->decr() <= 0 ) // no other ref. on the value of *this
             {
                 // the memory can be reused
                 nbref->refvalue() = 1;
                 inexact->refvalue() = mpfr_set( mpfr_rep, b.mpfr_rep, MpfrClass::CurrRndMode );
             }
 
-            else						// the value and memory used must be preserved
+            else // the value and memory used must be preserved
             {
-                MpfrClass tmp ( *this );
+                MpfrClass tmp( *this );
                 PrecisionType prec = GetPrecision();
                 mpfr_init2( mpfr_rep, prec );
                 nbref = new RefCounter( 1 );
@@ -1124,16 +1114,16 @@ MpfrClass& MpfrClass::operator += ( const MpfrClass& b )
     }
 
     // none of the operands is zero
-    if ( nbref->decr() <= 0 )			// no other ref. on the value of *this
+    if ( nbref->decr() <= 0 ) // no other ref. on the value of *this
     {
         // the memory can be reused
         nbref->refvalue() = 1;
         inexact->refvalue() = mpfr_add( mpfr_rep, mpfr_rep, b.mpfr_rep, MpfrClass::CurrRndMode );
     }
 
-    else						// the value and memory used must be preserved
+    else // the value and memory used must be preserved
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
@@ -1144,12 +1134,12 @@ MpfrClass& MpfrClass::operator += ( const MpfrClass& b )
     return *this;
 }
 
-MpfrClass& MpfrClass::operator += ( const double b )
+MpfrClass& MpfrClass::operator+=( const double b )
 {
     return ( *this ) += MpfrClass( b, MpfrClass::CurrRndMode, 53 );
 }
 
-MpfrClass& MpfrClass::operator += ( const long int b ) 	// using the more efficient mpfr_add_ui
+MpfrClass& MpfrClass::operator+=( const long int b ) // using the more efficient mpfr_add_ui
 {
     if ( b == 0 )
         return *this;
@@ -1161,36 +1151,36 @@ MpfrClass& MpfrClass::operator += ( const long int b ) 	// using the more effici
     }
 
     // none of the operands is zero
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
 
         if ( b > 0 )
-            inexact->refvalue() = mpfr_add_ui( mpfr_rep, mpfr_rep, ( unsigned long int )b, MpfrClass::CurrRndMode );
+            inexact->refvalue() = mpfr_add_ui( mpfr_rep, mpfr_rep, (unsigned long int)b, MpfrClass::CurrRndMode );
 
         else
-            inexact->refvalue() = mpfr_sub_ui( mpfr_rep, mpfr_rep, ( unsigned long int )( -b ), MpfrClass::CurrRndMode );
+            inexact->refvalue() = mpfr_sub_ui( mpfr_rep, mpfr_rep, (unsigned long int)( -b ), MpfrClass::CurrRndMode );
     }
 
-    else						// the previous value and memory must be preserved
+    else // the previous value and memory must be preserved
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
         inexact = new InexactFlag();
 
         if ( b > 0 )
-            inexact->refvalue() = mpfr_add_ui( mpfr_rep, tmp.mpfr_rep, ( unsigned long int )b, MpfrClass::CurrRndMode );
+            inexact->refvalue() = mpfr_add_ui( mpfr_rep, tmp.mpfr_rep, (unsigned long int)b, MpfrClass::CurrRndMode );
 
         else
-            inexact->refvalue() = mpfr_sub_ui( mpfr_rep, tmp.mpfr_rep, ( unsigned long int )( -b ), MpfrClass::CurrRndMode );
+            inexact->refvalue() = mpfr_sub_ui( mpfr_rep, tmp.mpfr_rep, (unsigned long int)( -b ), MpfrClass::CurrRndMode );
     }
 
     return *this;
 }
 
-MpfrClass& MpfrClass::operator += ( const unsigned long int b ) 	// using mpfr_add_ui
+MpfrClass& MpfrClass::operator+=( const unsigned long int b ) // using mpfr_add_ui
 {
     if ( b == 0 )
         return *this;
@@ -1202,38 +1192,38 @@ MpfrClass& MpfrClass::operator += ( const unsigned long int b ) 	// using mpfr_a
     }
 
     // none of the operands is zero
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
-        inexact->refvalue() = mpfr_add_ui( mpfr_rep, mpfr_rep, ( unsigned long int )b, MpfrClass::CurrRndMode );
+        inexact->refvalue() = mpfr_add_ui( mpfr_rep, mpfr_rep, (unsigned long int)b, MpfrClass::CurrRndMode );
         nbref->refvalue() = 1;
     }
 
     else
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
         inexact = new InexactFlag();
-        inexact->refvalue() = mpfr_add_ui( mpfr_rep, tmp.mpfr_rep, ( unsigned long int )b, MpfrClass::CurrRndMode );
+        inexact->refvalue() = mpfr_add_ui( mpfr_rep, tmp.mpfr_rep, (unsigned long int)b, MpfrClass::CurrRndMode );
     }
 
     return *this;
 }
 
-MpfrClass& MpfrClass::operator += ( const int b ) 	// using the efficient mpfr_add_ui
+MpfrClass& MpfrClass::operator+=( const int b ) // using the efficient mpfr_add_ui
 {
-    return ( *this )+= long( b );
+    return ( *this ) += long( b );
 }
 
-MpfrClass& MpfrClass::operator += ( const unsigned int b ) // using mpfr_add_ui
+MpfrClass& MpfrClass::operator+=( const unsigned int b ) // using mpfr_add_ui
 {
-    return ( *this )+= ( unsigned long int )( b );
+    return ( *this ) += (unsigned long int)( b );
 }
 
-MpfrClass& MpfrClass::operator += ( const mpz_srcptr b ) 	// using mpfr_add_z
+MpfrClass& MpfrClass::operator+=( const mpz_srcptr b ) // using mpfr_add_z
 {
-    if ( mpz_cmp_si( b,0 ) == 0 )
+    if ( mpz_cmp_si( b, 0 ) == 0 )
         return *this;
 
     if ( iszero( *this ) )
@@ -1243,7 +1233,7 @@ MpfrClass& MpfrClass::operator += ( const mpz_srcptr b ) 	// using mpfr_add_z
     }
 
     // none of the operands is zero
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
         inexact->refvalue() = mpfr_add_z( mpfr_rep, mpfr_rep, b, MpfrClass::CurrRndMode );
@@ -1251,7 +1241,7 @@ MpfrClass& MpfrClass::operator += ( const mpz_srcptr b ) 	// using mpfr_add_z
 
     else
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
@@ -1262,9 +1252,9 @@ MpfrClass& MpfrClass::operator += ( const mpz_srcptr b ) 	// using mpfr_add_z
     return *this;
 }
 
-MpfrClass& MpfrClass::operator += ( const mpq_srcptr b ) 	// using mpfr_add_q
+MpfrClass& MpfrClass::operator+=( const mpq_srcptr b ) // using mpfr_add_q
 {
-    if ( mpq_cmp_si( b,0,1 ) == 0 )
+    if ( mpq_cmp_si( b, 0, 1 ) == 0 )
         return *this;
 
     if ( iszero( *this ) )
@@ -1274,7 +1264,7 @@ MpfrClass& MpfrClass::operator += ( const mpq_srcptr b ) 	// using mpfr_add_q
     }
 
     // none of the operands is zero
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
         inexact->refvalue() = mpfr_add_q( mpfr_rep, mpfr_rep, b, MpfrClass::CurrRndMode );
@@ -1282,7 +1272,7 @@ MpfrClass& MpfrClass::operator += ( const mpq_srcptr b ) 	// using mpfr_add_q
 
     else
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
@@ -1293,7 +1283,7 @@ MpfrClass& MpfrClass::operator += ( const mpq_srcptr b ) 	// using mpfr_add_q
     return *this;
 }
 
-void MpfrClass::add ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, RoundingMode rnd )
+void MpfrClass::add( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, RoundingMode rnd )
 // This function is the one where the philosophy of MPFR is preserved:
 // in this function the result is computed with the precision of the result.
 {
@@ -1301,9 +1291,9 @@ void MpfrClass::add ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, 
     {
         if ( res.GetPrecision() == r2.GetPrecision() )
         {
-            if ( res.nbref->decr() <= 0 )			// the memory can be reused
+            if ( res.nbref->decr() <= 0 ) // the memory can be reused
             {
-                mpfr_clear ( res.mpfr_rep );
+                mpfr_clear( res.mpfr_rep );
                 delete res.nbref;
                 delete res.inexact;
             }
@@ -1314,19 +1304,19 @@ void MpfrClass::add ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, 
             res.inexact = r2.inexact;
         }
 
-        else 		// The result does not have the same precision as r2
+        else // The result does not have the same precision as r2
         {
             // it must be converted and possibly rounded.
-            if ( res.nbref->decr() <= 0 )			// the memory can be reused
+            if ( res.nbref->decr() <= 0 ) // the memory can be reused
             {
                 res.nbref->refvalue() = 1;
                 res.inexact->refvalue() = mpfr_set( res.mpfr_rep, r2.mpfr_rep, rnd );
             }
 
-            else						// the previous memory must be preserved
+            else // the previous memory must be preserved
             {
                 PrecisionType prec = res.GetPrecision();
-                mpfr_init2( res.mpfr_rep,prec );
+                mpfr_init2( res.mpfr_rep, prec );
                 res.nbref = new RefCounter( 1 );
                 res.inexact = new InexactFlag( 1 );
                 res.inexact->refvalue() = mpfr_set( res.mpfr_rep, r2.mpfr_rep, rnd );
@@ -1338,9 +1328,9 @@ void MpfrClass::add ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, 
     {
         if ( res.GetPrecision() == r1.GetPrecision() )
         {
-            if ( res.nbref->decr() <= 0 )			// the memory can be reused
+            if ( res.nbref->decr() <= 0 ) // the memory can be reused
             {
-                mpfr_clear ( res.mpfr_rep );
+                mpfr_clear( res.mpfr_rep );
                 delete res.nbref;
                 delete res.inexact;
             }
@@ -1351,19 +1341,19 @@ void MpfrClass::add ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, 
             res.inexact = r1.inexact;
         }
 
-        else 		// The result does not have the same precision as r1
+        else // The result does not have the same precision as r1
         {
             // it must be converted and possibly rounded.
-            if ( res.nbref->decr() <= 0 )			// the memory can be reused
+            if ( res.nbref->decr() <= 0 ) // the memory can be reused
             {
                 res.nbref->refvalue() = 1;
                 res.inexact->refvalue() = mpfr_set( res.mpfr_rep, r1.mpfr_rep, rnd );
             }
 
-            else						// the previous memory must be preserved
+            else // the previous memory must be preserved
             {
                 PrecisionType prec = res.GetPrecision();
-                mpfr_init2( res.mpfr_rep,prec );
+                mpfr_init2( res.mpfr_rep, prec );
                 res.nbref = new RefCounter( 1 );
                 res.inexact = new InexactFlag( 1 );
                 res.inexact->refvalue() = mpfr_set( res.mpfr_rep, r1.mpfr_rep, rnd );
@@ -1372,16 +1362,16 @@ void MpfrClass::add ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, 
     } // r2 == 0
 
     // none of the operands is zero
-    if ( res.nbref->decr() <= 0 )			// the memory can be reused
+    if ( res.nbref->decr() <= 0 ) // the memory can be reused
     {
         res.nbref->refvalue() = 1;
         res.inexact->refvalue() = mpfr_add( res.mpfr_rep, r1.mpfr_rep, r2.mpfr_rep, MpfrClass::CurrRndMode );
     }
 
-    else						// the previous memory must be preserved
+    else // the previous memory must be preserved
     {
         PrecisionType prec = res.GetPrecision();
-        mpfr_init2( res.mpfr_rep,prec );
+        mpfr_init2( res.mpfr_rep, prec );
         res.nbref = new RefCounter( 1 );
         res.inexact = new InexactFlag( 1 );
         res.inexact->refvalue() = mpfr_add( res.mpfr_rep, r1.mpfr_rep, r2.mpfr_rep, MpfrClass::CurrRndMode );
@@ -1389,7 +1379,7 @@ void MpfrClass::add ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, 
 }
 
 // Subtraction --------------------------------------------------------
-MpfrClass MpfrClass::operator - ( const MpfrClass& b ) const
+MpfrClass MpfrClass::operator-( const MpfrClass& b ) const
 {
     MpfrClass res;
     res.nbref->refvalue() = 1;
@@ -1397,12 +1387,12 @@ MpfrClass MpfrClass::operator - ( const MpfrClass& b ) const
     return res;
 }
 
-MpfrClass operator - ( const MpfrClass& a, const double b )
+MpfrClass operator-( const MpfrClass& a, const double b )
 {
     return a - MpfrClass( b, MpfrClass::CurrRndMode, 53 );
 }
 
-MpfrClass operator - ( const MpfrClass &a, const int b )
+MpfrClass operator-( const MpfrClass& a, const int b )
 {
     if ( b == 0 )
     {
@@ -1413,7 +1403,7 @@ MpfrClass operator - ( const MpfrClass &a, const int b )
     else if ( iszero( a ) )
         return MpfrClass( ( -b ), MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() );
 
-    else          //use the efficient mpfr_<add,sub>_ui
+    else //use the efficient mpfr_<add,sub>_ui
     {
         // no need to check nbref counter: res has just been created
         MpfrClass res;
@@ -1421,17 +1411,17 @@ MpfrClass operator - ( const MpfrClass &a, const int b )
 
         if ( b >= 0 )
             res.inexact->refvalue() = mpfr_sub_ui( res.mpfr_rep, a.mpfr_rep,
-                                                   ( unsigned long int )( b ), MpfrClass::CurrRndMode );
+                                                   (unsigned long int)( b ), MpfrClass::CurrRndMode );
 
         else
             res.inexact->refvalue() = mpfr_add_ui( res.mpfr_rep, a.mpfr_rep,
-                                                   ( unsigned long int )( -b ), MpfrClass::CurrRndMode );
+                                                   (unsigned long int)( -b ), MpfrClass::CurrRndMode );
 
         return res;
     }
 }
 
-MpfrClass operator - ( const MpfrClass &a, const unsigned int b )
+MpfrClass operator-( const MpfrClass& a, const unsigned int b )
 {
     if ( b == 0 )
     {
@@ -1446,18 +1436,18 @@ MpfrClass operator - ( const MpfrClass &a, const unsigned int b )
         return MpfrClass( ( -tmp ), MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() );
     }
 
-    else          //use the efficient mpfr_<add,sub>_ui
+    else //use the efficient mpfr_<add,sub>_ui
     {
         // no need to check nbref counter: res has just been created
         MpfrClass res;
         res.nbref->refvalue() = 1;
         res.inexact->refvalue() = mpfr_sub_ui( res.mpfr_rep, a.mpfr_rep,
-                                               ( unsigned long int )( b ), MpfrClass::CurrRndMode );
+                                               (unsigned long int)( b ), MpfrClass::CurrRndMode );
         return res;
     }
 }
 
-MpfrClass operator - ( const MpfrClass &a, const long int b )
+MpfrClass operator-( const MpfrClass& a, const long int b )
 {
     if ( b == 0 )
     {
@@ -1468,7 +1458,7 @@ MpfrClass operator - ( const MpfrClass &a, const long int b )
     else if ( iszero( a ) )
         return MpfrClass( ( -b ), MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() );
 
-    else          //use the efficient mpfr_<add,sub>_ui
+    else //use the efficient mpfr_<add,sub>_ui
     {
         // no need to check nbref counter: res has just been created
         MpfrClass res;
@@ -1476,17 +1466,17 @@ MpfrClass operator - ( const MpfrClass &a, const long int b )
 
         if ( b >= 0 )
             res.inexact->refvalue() = mpfr_sub_ui( res.mpfr_rep, a.mpfr_rep,
-                                                   ( unsigned long int )( b ), MpfrClass::CurrRndMode );
+                                                   (unsigned long int)( b ), MpfrClass::CurrRndMode );
 
         else
             res.inexact->refvalue() = mpfr_add_ui( res.mpfr_rep, a.mpfr_rep,
-                                                   ( unsigned long int )( -b ), MpfrClass::CurrRndMode );
+                                                   (unsigned long int)( -b ), MpfrClass::CurrRndMode );
 
         return res;
     }
 }
 
-MpfrClass operator - ( const MpfrClass &a, const unsigned long int b )
+MpfrClass operator-( const MpfrClass& a, const unsigned long int b )
 {
     if ( b == 0 )
     {
@@ -1501,18 +1491,18 @@ MpfrClass operator - ( const MpfrClass &a, const unsigned long int b )
         return MpfrClass( ( -tmp ), MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() );
     }
 
-    else          //use the efficient mpfr_<add,sub>_ui
+    else //use the efficient mpfr_<add,sub>_ui
     {
         // no need to check nbref counter: res has just been created
         MpfrClass res;
         res.nbref->refvalue() = 1;
         res.inexact->refvalue() = mpfr_sub_ui( res.mpfr_rep, a.mpfr_rep,
-                                               ( unsigned long int )( b ), MpfrClass::CurrRndMode );
+                                               (unsigned long int)( b ), MpfrClass::CurrRndMode );
         return res;
     }
 }
 
-MpfrClass operator - ( const MpfrClass& a, const mpz_srcptr b )
+MpfrClass operator-( const MpfrClass& a, const mpz_srcptr b )
 {
     if ( mpz_cmp_si( b, 0 ) == 0 )
     {
@@ -1523,7 +1513,7 @@ MpfrClass operator - ( const MpfrClass& a, const mpz_srcptr b )
     else if ( iszero( a ) )
         return ( -MpfrClass( b, MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() ) );
 
-    else          // no need to check nbref counter: res has just been created
+    else // no need to check nbref counter: res has just been created
     {
         MpfrClass res;
         res.nbref->refvalue() = 1;
@@ -1532,9 +1522,9 @@ MpfrClass operator - ( const MpfrClass& a, const mpz_srcptr b )
     }
 }
 
-MpfrClass operator - ( const MpfrClass& a, const mpq_srcptr b )
+MpfrClass operator-( const MpfrClass& a, const mpq_srcptr b )
 {
-    if ( mpq_cmp_ui( b,0,1 ) == 0 )
+    if ( mpq_cmp_ui( b, 0, 1 ) == 0 )
     {
         a.nbref->incr();
         return a;
@@ -1543,7 +1533,7 @@ MpfrClass operator - ( const MpfrClass& a, const mpq_srcptr b )
     else if ( iszero( a ) )
         return ( -MpfrClass( b, MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() ) );
 
-    else          // no need to check nbref counter: res has just been created
+    else // no need to check nbref counter: res has just been created
     {
         MpfrClass res;
         res.nbref->refvalue() = 1;
@@ -1552,44 +1542,43 @@ MpfrClass operator - ( const MpfrClass& a, const mpq_srcptr b )
     }
 }
 
-MpfrClass operator - ( const double a, const MpfrClass&  b )
+MpfrClass operator-( const double a, const MpfrClass& b )
 {
     return MpfrClass( a, MpfrClass::CurrRndMode, 53 ) - b;
 }
 
-MpfrClass operator - ( const int a, const MpfrClass&  b )
+MpfrClass operator-( const int a, const MpfrClass& b )
 {
     return ( MpfrClass( a, MpfrClass::CurrRndMode, sizeof( int ) ) - b );
 }
 
-
-MpfrClass operator - ( const unsigned int a, const MpfrClass&  b )
+MpfrClass operator-( const unsigned int a, const MpfrClass& b )
 {
     if ( a == 0 )
         return ( -b );
 
     else if ( iszero( b ) )
     {
-        return MpfrClass( ( unsigned long int )( a ), MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() );
+        return MpfrClass( (unsigned long int)( a ), MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() );
     }
 
-    else          //use the efficient mpfr_ui_sub
+    else //use the efficient mpfr_ui_sub
     {
         // no need to check nbref counter: res has just been created
         MpfrClass res;
         res.nbref->refvalue() = 1;
-        res.inexact->refvalue() = mpfr_ui_sub( res.mpfr_rep, ( unsigned long int )( a ),
+        res.inexact->refvalue() = mpfr_ui_sub( res.mpfr_rep, (unsigned long int)( a ),
                                                b.mpfr_rep, MpfrClass::CurrRndMode );
         return res;
     }
 }
 
-MpfrClass operator - ( const long int a, const MpfrClass&  b )
+MpfrClass operator-( const long int a, const MpfrClass& b )
 {
     return ( MpfrClass( a, MpfrClass::CurrRndMode, sizeof( long int ) ) - b );
 }
 
-MpfrClass operator - ( const unsigned long int a, const MpfrClass&  b )
+MpfrClass operator-( const unsigned long int a, const MpfrClass& b )
 {
     if ( a == 0 )
         return ( -b );
@@ -1599,7 +1588,7 @@ MpfrClass operator - ( const unsigned long int a, const MpfrClass&  b )
         return MpfrClass( a, MpfrClass::CurrRndMode, MpfrClass::GetDefaultPrecision() );
     }
 
-    else          //use the efficient mpfr_<add,sub>_ui
+    else //use the efficient mpfr_<add,sub>_ui
     {
         // no need to check nbref counter: res has just been created
         MpfrClass res;
@@ -1610,17 +1599,17 @@ MpfrClass operator - ( const unsigned long int a, const MpfrClass&  b )
     }
 }
 
-MpfrClass operator - ( const mpz_srcptr a, const MpfrClass&  b )
+MpfrClass operator-( const mpz_srcptr a, const MpfrClass& b )
 {
     return ( MpfrClass( a, MpfrClass::CurrRndMode, sizeof( int ) ) - b );
 }
 
-MpfrClass operator - ( const mpq_srcptr a, const MpfrClass&  b )
+MpfrClass operator-( const mpq_srcptr a, const MpfrClass& b )
 {
     return ( MpfrClass( a, MpfrClass::CurrRndMode, sizeof( int ) ) - b );
 }
 
-MpfrClass MpfrClass::operator - () const
+MpfrClass MpfrClass::operator-() const
 {
     MpfrClass res;
 
@@ -1629,12 +1618,12 @@ MpfrClass MpfrClass::operator - () const
     return res;
 }
 
-MpfrClass& MpfrClass::operator -= ( const MpfrClass& b )
+MpfrClass& MpfrClass::operator-=( const MpfrClass& b )
 {
     if ( iszero( b ) )
         return *this;
 
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
 
@@ -1645,11 +1634,11 @@ MpfrClass& MpfrClass::operator -= ( const MpfrClass& b )
             inexact->refvalue() = mpfr_sub( mpfr_rep, mpfr_rep, b.mpfr_rep, MpfrClass::CurrRndMode );
     }
 
-    else						// the previous value must be preserved
+    else // the previous value must be preserved
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
-        mpfr_init2( mpfr_rep,prec );
+        mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
         inexact = new InexactFlag();
 
@@ -1663,37 +1652,37 @@ MpfrClass& MpfrClass::operator -= ( const MpfrClass& b )
     return *this;
 }
 
-MpfrClass& MpfrClass::operator -= ( const double b )
+MpfrClass& MpfrClass::operator-=( const double b )
 {
     return ( *this ) -= MpfrClass( b, MpfrClass::CurrRndMode, 53 );
 }
 
-MpfrClass& MpfrClass::operator -= ( const int b )
+MpfrClass& MpfrClass::operator-=( const int b )
 {
     ( *this ) += -b;
     return *this;
 }
 
-MpfrClass& MpfrClass::operator -= ( const long int b )
+MpfrClass& MpfrClass::operator-=( const long int b )
 {
     ( *this ) += -b;
     return *this;
 }
 
-MpfrClass& MpfrClass::operator -= ( const unsigned long int b ) 	// using the more efficient mpfr_sub_ui
+MpfrClass& MpfrClass::operator-=( const unsigned long int b ) // using the more efficient mpfr_sub_ui
 {
     if ( b == 0 )
         return *this;
 
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
         inexact->refvalue() = mpfr_sub_ui( mpfr_rep, mpfr_rep, b, MpfrClass::CurrRndMode );
     }
 
-    else						// the previous value must be preserved
+    else // the previous value must be preserved
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
@@ -1704,25 +1693,25 @@ MpfrClass& MpfrClass::operator -= ( const unsigned long int b ) 	// using the mo
     return *this;
 }
 
-MpfrClass& MpfrClass::operator -= ( const unsigned int b )
+MpfrClass& MpfrClass::operator-=( const unsigned int b )
 {
-    ( *this ) -= ( unsigned long int )b;
+    ( *this ) -= (unsigned long int)b;
     return *this;
 }
 
-MpfrClass& MpfrClass::operator -= ( const mpz_srcptr b ) 	// using mpfr_sub_z
+MpfrClass& MpfrClass::operator-=( const mpz_srcptr b ) // using mpfr_sub_z
 {
-    if ( mpz_cmp_si( b,0 ) == 0 )
+    if ( mpz_cmp_si( b, 0 ) == 0 )
         return *this;
 
     if ( iszero( *this ) )
     {
-        *this = - MpfrClass( b, MpfrClass::CurrRndMode, GetPrecision() );
+        *this = -MpfrClass( b, MpfrClass::CurrRndMode, GetPrecision() );
         return *this;
     }
 
     // none of the operands is zero
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
         inexact->refvalue() = mpfr_sub_z( mpfr_rep, mpfr_rep, b, MpfrClass::CurrRndMode );
@@ -1730,7 +1719,7 @@ MpfrClass& MpfrClass::operator -= ( const mpz_srcptr b ) 	// using mpfr_sub_z
 
     else
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
@@ -1741,19 +1730,19 @@ MpfrClass& MpfrClass::operator -= ( const mpz_srcptr b ) 	// using mpfr_sub_z
     return *this;
 }
 
-MpfrClass& MpfrClass::operator -= ( const mpq_srcptr b ) 	// using mpfr_sub_q
+MpfrClass& MpfrClass::operator-=( const mpq_srcptr b ) // using mpfr_sub_q
 {
-    if ( mpq_cmp_si( b,0,1 ) == 0 )
+    if ( mpq_cmp_si( b, 0, 1 ) == 0 )
         return *this;
 
     if ( iszero( *this ) )
     {
-        *this = - MpfrClass( b, MpfrClass::CurrRndMode, GetPrecision() );
+        *this = -MpfrClass( b, MpfrClass::CurrRndMode, GetPrecision() );
         return *this;
     }
 
     // none of the operands is zero
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
         inexact->refvalue() = mpfr_sub_q( mpfr_rep, mpfr_rep, b, MpfrClass::CurrRndMode );
@@ -1761,7 +1750,7 @@ MpfrClass& MpfrClass::operator -= ( const mpq_srcptr b ) 	// using mpfr_sub_q
 
     else
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
@@ -1772,15 +1761,15 @@ MpfrClass& MpfrClass::operator -= ( const mpq_srcptr b ) 	// using mpfr_sub_q
     return *this;
 }
 
-void MpfrClass::neg ( MpfrClass& res, const MpfrClass& r, RoundingMode /*rnd*/ )
+void MpfrClass::neg( MpfrClass& res, const MpfrClass& r, RoundingMode /*rnd*/ )
 {
-    if ( res.nbref->decr() <= 0 )			// the memory can be reused
+    if ( res.nbref->decr() <= 0 ) // the memory can be reused
     {
         res.nbref->refvalue() = 1;
-        res.inexact->refvalue() = mpfr_neg( res.mpfr_rep, r.mpfr_rep,  MpfrClass::CurrRndMode );
+        res.inexact->refvalue() = mpfr_neg( res.mpfr_rep, r.mpfr_rep, MpfrClass::CurrRndMode );
     }
 
-    else						// the previous value must be preserved
+    else // the previous value must be preserved
     {
         PrecisionType prec = res.GetPrecision();
         mpfr_init2( res.mpfr_rep, prec );
@@ -1790,7 +1779,7 @@ void MpfrClass::neg ( MpfrClass& res, const MpfrClass& r, RoundingMode /*rnd*/ )
     }
 }
 
-void MpfrClass::sub ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, RoundingMode /*rnd*/ )
+void MpfrClass::sub( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, RoundingMode /*rnd*/ )
 {
     if ( res.nbref->decr() <= 0 )
     {
@@ -1798,7 +1787,7 @@ void MpfrClass::sub ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, 
         res.inexact->refvalue() = mpfr_sub( res.mpfr_rep, r1.mpfr_rep, r2.mpfr_rep, MpfrClass::CurrRndMode );
     }
 
-    else						// the previous value must be preserved
+    else // the previous value must be preserved
     {
         PrecisionType prec = res.GetPrecision();
         mpfr_init2( res.mpfr_rep, prec );
@@ -1809,7 +1798,7 @@ void MpfrClass::sub ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, 
 }
 
 // Multiplication-----------------------------------------------
-MpfrClass MpfrClass::operator * ( const MpfrClass& b ) const
+MpfrClass MpfrClass::operator*( const MpfrClass& b ) const
 {
     MpfrClass res;
 
@@ -1818,32 +1807,32 @@ MpfrClass MpfrClass::operator * ( const MpfrClass& b ) const
     return res;
 }
 
-MpfrClass operator * ( const MpfrClass& a, const double b )
+MpfrClass operator*( const MpfrClass& a, const double b )
 {
     return a * MpfrClass( b, MpfrClass::CurrRndMode, 53 );
 }
 
-MpfrClass operator * ( const MpfrClass& a, const int b )
+MpfrClass operator*( const MpfrClass& a, const int b )
 {
     return a * MpfrClass( b, MpfrClass::CurrRndMode, sizeof( int ) );
 }
 
-MpfrClass operator * ( const MpfrClass& a, const unsigned int b )
+MpfrClass operator*( const MpfrClass& a, const unsigned int b )
 {
-    MpfrClass res ;
+    MpfrClass res;
 
     res.nbref->refvalue() = 1;
     res.inexact->refvalue() = mpfr_mul_ui( res.mpfr_rep, a.mpfr_rep,
-                                           ( unsigned long int )( b ), MpfrClass::CurrRndMode );
+                                           (unsigned long int)( b ), MpfrClass::CurrRndMode );
     return res;
 }
 
-MpfrClass operator * ( const MpfrClass& a, const long int b )
+MpfrClass operator*( const MpfrClass& a, const long int b )
 {
     return a * MpfrClass( b, MpfrClass::CurrRndMode, sizeof( long int ) );
 }
 
-MpfrClass operator * ( const MpfrClass& a, const unsigned long int b )
+MpfrClass operator*( const MpfrClass& a, const unsigned long int b )
 {
     MpfrClass res;
 
@@ -1853,7 +1842,7 @@ MpfrClass operator * ( const MpfrClass& a, const unsigned long int b )
     return res;
 }
 
-MpfrClass operator * ( const MpfrClass& a, const mpz_srcptr b )
+MpfrClass operator*( const MpfrClass& a, const mpz_srcptr b )
 {
     MpfrClass res;
 
@@ -1862,7 +1851,7 @@ MpfrClass operator * ( const MpfrClass& a, const mpz_srcptr b )
     return res;
 }
 
-MpfrClass operator * ( const MpfrClass& a, const mpq_srcptr b )
+MpfrClass operator*( const MpfrClass& a, const mpq_srcptr b )
 {
     MpfrClass res;
 
@@ -1871,42 +1860,42 @@ MpfrClass operator * ( const MpfrClass& a, const mpq_srcptr b )
     return res;
 }
 
-MpfrClass operator * ( const double a, const MpfrClass& b )
+MpfrClass operator*( const double a, const MpfrClass& b )
 {
     return MpfrClass( a, MpfrClass::CurrRndMode, 53 ) * b;
 }
 
-MpfrClass operator * ( const int a, const MpfrClass& b )
+MpfrClass operator*( const int a, const MpfrClass& b )
 {
     return MpfrClass( a, MpfrClass::CurrRndMode, sizeof( int ) ) * b;
 }
 
-MpfrClass operator * ( const unsigned int a, const MpfrClass& b )
+MpfrClass operator*( const unsigned int a, const MpfrClass& b )
 {
     MpfrClass res;
 
     res.nbref->refvalue() = 1;
     res.inexact->refvalue() = mpfr_mul_ui( res.mpfr_rep, b.mpfr_rep,
-                                           ( unsigned long int )( a ), MpfrClass::CurrRndMode );
+                                           (unsigned long int)( a ), MpfrClass::CurrRndMode );
     return res;
 }
 
-MpfrClass operator * ( const long int a, const MpfrClass& b )
+MpfrClass operator*( const long int a, const MpfrClass& b )
 {
     return MpfrClass( a, MpfrClass::CurrRndMode, sizeof( long int ) ) * b;
 }
 
-MpfrClass operator * ( const mpz_srcptr a, const MpfrClass& b )
+MpfrClass operator*( const mpz_srcptr a, const MpfrClass& b )
 {
-    return b*a;
+    return b * a;
 }
 
-MpfrClass operator * ( const mpq_srcptr a, const MpfrClass& b )
+MpfrClass operator*( const mpq_srcptr a, const MpfrClass& b )
 {
-    return b*a;
+    return b * a;
 }
 
-MpfrClass operator * ( const unsigned long int a, const MpfrClass& b )
+MpfrClass operator*( const unsigned long int a, const MpfrClass& b )
 {
     MpfrClass res;
 
@@ -1916,17 +1905,17 @@ MpfrClass operator * ( const unsigned long int a, const MpfrClass& b )
     return res;
 }
 
-MpfrClass& MpfrClass::operator *= ( const MpfrClass& b )
+MpfrClass& MpfrClass::operator*=( const MpfrClass& b )
 {
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
         inexact->refvalue() = mpfr_mul( mpfr_rep, mpfr_rep, b.mpfr_rep, MpfrClass::CurrRndMode );
     }
 
-    else						// the previous value must be preserved
+    else // the previous value must be preserved
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
@@ -1937,32 +1926,32 @@ MpfrClass& MpfrClass::operator *= ( const MpfrClass& b )
     return *this;
 }
 
-MpfrClass& MpfrClass::operator *= ( const double b )
+MpfrClass& MpfrClass::operator*=( const double b )
 {
     return ( *this ) *= MpfrClass( b, MpfrClass::CurrRndMode, 53 );
 }
 
-MpfrClass& MpfrClass::operator *= ( const long int b ) 	// using the more efficient mpfr_mul_ui
+MpfrClass& MpfrClass::operator*=( const long int b ) // using the more efficient mpfr_mul_ui
 {
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
 
         if ( b >= 0 )
-            inexact->refvalue() = mpfr_mul_ui( mpfr_rep, mpfr_rep, ( unsigned long int )( b ), MpfrClass::CurrRndMode );
+            inexact->refvalue() = mpfr_mul_ui( mpfr_rep, mpfr_rep, (unsigned long int)( b ), MpfrClass::CurrRndMode );
 
         else
         {
             int dummy;
-            inexact->refvalue() = mpfr_mul_ui( mpfr_rep, mpfr_rep, ( unsigned long int )( -b ), MpfrClass::CurrRndMode );
+            inexact->refvalue() = mpfr_mul_ui( mpfr_rep, mpfr_rep, (unsigned long int)( -b ), MpfrClass::CurrRndMode );
             dummy = mpfr_neg( mpfr_rep, mpfr_rep, MpfrClass::CurrRndMode );
-            inexact->refvalue() = - inexact->getvalue();
+            inexact->refvalue() = -inexact->getvalue();
         }
     }
 
-    else						// the previous value must be preserved
+    else // the previous value must be preserved
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         int dummy;
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
@@ -1970,37 +1959,37 @@ MpfrClass& MpfrClass::operator *= ( const long int b ) 	// using the more effici
         inexact = new InexactFlag();
 
         if ( b >= 0 )
-            inexact->refvalue() = mpfr_mul_ui( mpfr_rep, tmp.mpfr_rep, ( unsigned long int )( b ), MpfrClass::CurrRndMode );
+            inexact->refvalue() = mpfr_mul_ui( mpfr_rep, tmp.mpfr_rep, (unsigned long int)( b ), MpfrClass::CurrRndMode );
 
         else
         {
-            inexact->refvalue() = mpfr_mul_ui( mpfr_rep, tmp.mpfr_rep, ( unsigned long int )( -b ), MpfrClass::CurrRndMode );
+            inexact->refvalue() = mpfr_mul_ui( mpfr_rep, tmp.mpfr_rep, (unsigned long int)( -b ), MpfrClass::CurrRndMode );
             dummy = mpfr_neg( mpfr_rep, mpfr_rep, MpfrClass::CurrRndMode );
-            inexact->refvalue() = - inexact->getvalue();
+            inexact->refvalue() = -inexact->getvalue();
         }
     }
 
     return *this;
 }
 
-MpfrClass& MpfrClass::operator *= ( const int b )
+MpfrClass& MpfrClass::operator*=( const int b )
 {
-    ( *this )*= ( long int ) ( b );
+    ( *this ) *= (long int)( b );
     return *this;
 }
 
-MpfrClass& MpfrClass::operator *= ( const unsigned long int b ) 	// the efficient mpfr_mul_ui is used
+MpfrClass& MpfrClass::operator*=( const unsigned long int b ) // the efficient mpfr_mul_ui is used
 {
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
         inexact->refvalue() = mpfr_mul_ui( mpfr_rep, mpfr_rep, b, MpfrClass::CurrRndMode );
     }
 
-    else						// the previous value must be preserved
+    else // the previous value must be preserved
     {
-        MpfrClass tmp ( *this );
-        PrecisionType prec = GetPrecision ();
+        MpfrClass tmp( *this );
+        PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
         inexact = new InexactFlag();
@@ -2010,15 +1999,15 @@ MpfrClass& MpfrClass::operator *= ( const unsigned long int b ) 	// the efficien
     return *this;
 }
 
-MpfrClass& MpfrClass::operator *= ( const unsigned int b )
+MpfrClass& MpfrClass::operator*=( const unsigned int b )
 {
-    ( *this )*= ( unsigned long int ) ( b );
+    ( *this ) *= (unsigned long int)( b );
     return *this;
 }
 
-MpfrClass& MpfrClass::operator *= ( const mpz_srcptr b ) 	// using mpfr_mul_z
+MpfrClass& MpfrClass::operator*=( const mpz_srcptr b ) // using mpfr_mul_z
 {
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
         inexact->refvalue() = mpfr_mul_z( mpfr_rep, mpfr_rep, b, MpfrClass::CurrRndMode );
@@ -2026,7 +2015,7 @@ MpfrClass& MpfrClass::operator *= ( const mpz_srcptr b ) 	// using mpfr_mul_z
 
     else
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
@@ -2037,9 +2026,9 @@ MpfrClass& MpfrClass::operator *= ( const mpz_srcptr b ) 	// using mpfr_mul_z
     return *this;
 }
 
-MpfrClass& MpfrClass::operator *= ( const mpq_srcptr b ) 	// using mpfr_mul_q
+MpfrClass& MpfrClass::operator*=( const mpq_srcptr b ) // using mpfr_mul_q
 {
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
         inexact->refvalue() = mpfr_mul_q( mpfr_rep, mpfr_rep, b, MpfrClass::CurrRndMode );
@@ -2047,7 +2036,7 @@ MpfrClass& MpfrClass::operator *= ( const mpq_srcptr b ) 	// using mpfr_mul_q
 
     else
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
@@ -2058,15 +2047,15 @@ MpfrClass& MpfrClass::operator *= ( const mpq_srcptr b ) 	// using mpfr_mul_q
     return *this;
 }
 
-void MpfrClass::mul ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, RoundingMode rnd )
+void MpfrClass::mul( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, RoundingMode rnd )
 {
-    if ( res.nbref->decr() <= 0 )			// the memory can be reused
+    if ( res.nbref->decr() <= 0 ) // the memory can be reused
     {
         res.nbref->refvalue() = 1;
         res.inexact->refvalue() = mpfr_mul( res.mpfr_rep, r1.mpfr_rep, r2.mpfr_rep, MpfrClass::CurrRndMode );
     }
 
-    else						// the previous value must be preserved
+    else // the previous value must be preserved
     {
         PrecisionType prec = res.GetPrecision();
         mpfr_init2( res.mpfr_rep, prec );
@@ -2077,7 +2066,7 @@ void MpfrClass::mul ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, 
 }
 
 // Division-----------------------------------------------------
-MpfrClass MpfrClass::operator / ( const MpfrClass& b ) const
+MpfrClass MpfrClass::operator/( const MpfrClass& b ) const
 {
 
     MpfrClass res;
@@ -2086,31 +2075,31 @@ MpfrClass MpfrClass::operator / ( const MpfrClass& b ) const
     return res;
 }
 
-MpfrClass operator / ( const MpfrClass& a, const double b )
+MpfrClass operator/( const MpfrClass& a, const double b )
 {
     return a / MpfrClass( b, MpfrClass::CurrRndMode, 53 );
 }
 
-MpfrClass operator / ( const MpfrClass& a, const int b )
+MpfrClass operator/( const MpfrClass& a, const int b )
 {
     return a / MpfrClass( b, MpfrClass::CurrRndMode, sizeof( int ) );
 }
 
-MpfrClass operator / ( const MpfrClass& a, const unsigned int b )
+MpfrClass operator/( const MpfrClass& a, const unsigned int b )
 {
     MpfrClass res;
     res.nbref->refvalue() = 1;
     res.inexact->refvalue() = mpfr_div_ui( res.mpfr_rep, a.mpfr_rep,
-                                           ( unsigned long int )( b ), MpfrClass::CurrRndMode );
+                                           (unsigned long int)( b ), MpfrClass::CurrRndMode );
     return res;
 }
 
-MpfrClass operator / ( const MpfrClass& a, const long int b )
+MpfrClass operator/( const MpfrClass& a, const long int b )
 {
     return a / MpfrClass( b, MpfrClass::CurrRndMode, sizeof( long int ) );
 }
 
-MpfrClass operator / ( const MpfrClass& a, const unsigned long int b )
+MpfrClass operator/( const MpfrClass& a, const unsigned long int b )
 {
     MpfrClass res;
     res.nbref->refvalue() = 1;
@@ -2119,7 +2108,7 @@ MpfrClass operator / ( const MpfrClass& a, const unsigned long int b )
     return res;
 }
 
-MpfrClass operator / ( const MpfrClass& a, const mpz_srcptr b )
+MpfrClass operator/( const MpfrClass& a, const mpz_srcptr b )
 {
     MpfrClass res;
 
@@ -2128,7 +2117,7 @@ MpfrClass operator / ( const MpfrClass& a, const mpz_srcptr b )
     return res;
 }
 
-MpfrClass operator / ( const MpfrClass& a, const mpq_srcptr b )
+MpfrClass operator/( const MpfrClass& a, const mpq_srcptr b )
 {
     MpfrClass res;
 
@@ -2137,22 +2126,22 @@ MpfrClass operator / ( const MpfrClass& a, const mpq_srcptr b )
     return res;
 }
 
-MpfrClass operator / ( const double a, const MpfrClass& b )
+MpfrClass operator/( const double a, const MpfrClass& b )
 {
-    return MpfrClass( a, MpfrClass::CurrRndMode, 53 )/b;
+    return MpfrClass( a, MpfrClass::CurrRndMode, 53 ) / b;
 }
 
-MpfrClass operator / ( const long int a, const MpfrClass& b )
+MpfrClass operator/( const long int a, const MpfrClass& b )
 {
     return MpfrClass( a, MpfrClass::CurrRndMode, sizeof( long int ) ) / b;
 }
 
-MpfrClass operator / ( const int a, const MpfrClass& b )
+MpfrClass operator/( const int a, const MpfrClass& b )
 {
-    return ( long ) a / b;
+    return (long)a / b;
 }
 
-MpfrClass operator / ( const unsigned long int a, const MpfrClass& b )	// using mpfr_ui_div
+MpfrClass operator/( const unsigned long int a, const MpfrClass& b ) // using mpfr_ui_div
 {
     MpfrClass res;
     res.nbref->refvalue() = 1;
@@ -2160,36 +2149,36 @@ MpfrClass operator / ( const unsigned long int a, const MpfrClass& b )	// using 
     return res;
 }
 
-MpfrClass operator / ( const unsigned int a, const MpfrClass& b )
+MpfrClass operator/( const unsigned int a, const MpfrClass& b )
 {
     MpfrClass res;
     res.nbref->refvalue() = 1;
-    res.inexact->refvalue() = mpfr_ui_div( res.mpfr_rep, ( unsigned long int )( a ),
+    res.inexact->refvalue() = mpfr_ui_div( res.mpfr_rep, (unsigned long int)( a ),
                                            b.mpfr_rep, MpfrClass::CurrRndMode );
     return res;
 }
 
-MpfrClass operator / ( const mpz_srcptr a, const MpfrClass& b )
+MpfrClass operator/( const mpz_srcptr a, const MpfrClass& b )
 {
     return MpfrClass( a ) / b;
 }
 
-MpfrClass operator / ( const mpq_srcptr a, const MpfrClass& b )
+MpfrClass operator/( const mpq_srcptr a, const MpfrClass& b )
 {
     return MpfrClass( a ) / b;
 }
 
-MpfrClass& MpfrClass::operator /= ( const MpfrClass& b )
+MpfrClass& MpfrClass::operator/=( const MpfrClass& b )
 {
-    if ( nbref->decr() <= 0 )				// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
         inexact->refvalue() = mpfr_div( mpfr_rep, mpfr_rep, b.mpfr_rep, MpfrClass::CurrRndMode );
     }
 
-    else							// the previous value must be preserved
+    else // the previous value must be preserved
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
@@ -2200,57 +2189,57 @@ MpfrClass& MpfrClass::operator /= ( const MpfrClass& b )
     return *this;
 }
 
-MpfrClass& MpfrClass::operator /= ( const double b )
+MpfrClass& MpfrClass::operator/=( const double b )
 {
     return ( *this ) /= MpfrClass( b, MpfrClass::CurrRndMode, GetPrecision() );
 }
 
-MpfrClass& MpfrClass::operator /= ( const long int b ) 	// using the more efficient mpfr_div_ui
+MpfrClass& MpfrClass::operator/=( const long int b ) // using the more efficient mpfr_div_ui
 {
-    if ( nbref->decr() <= 0 )				// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
 
         if ( b > 0 )
-            inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, ( unsigned long int )b, MpfrClass::CurrRndMode );
+            inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, (unsigned long int)b, MpfrClass::CurrRndMode );
 
         else
         {
             if ( MpfrClass::CurrRndMode == RoundDown )
-                inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, ( unsigned long int )( -b ), RoundUp );
+                inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, (unsigned long int)( -b ), RoundUp );
 
             else if ( MpfrClass::CurrRndMode == RoundUp )
-                inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, ( unsigned long int )( -b ), RoundDown );
+                inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, (unsigned long int)( -b ), RoundDown );
 
             else
-                inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, ( unsigned long int )( -b ), MpfrClass::CurrRndMode );
+                inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, (unsigned long int)( -b ), MpfrClass::CurrRndMode );
 
             int dummy = mpfr_neg( mpfr_rep, mpfr_rep, MpfrClass::CurrRndMode );
             inexact->refvalue() = -inexact->getvalue();
         }
     }
 
-    else							// the previous value must be preserved
+    else // the previous value must be preserved
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
         inexact = new InexactFlag();
 
         if ( b > 0 )
-            inexact->refvalue() = mpfr_div_ui( mpfr_rep, tmp.mpfr_rep, ( unsigned long int )b, MpfrClass::CurrRndMode );
+            inexact->refvalue() = mpfr_div_ui( mpfr_rep, tmp.mpfr_rep, (unsigned long int)b, MpfrClass::CurrRndMode );
 
         else
         {
             if ( MpfrClass::CurrRndMode == RoundDown )
-                inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, ( unsigned long int )( -b ), RoundUp );
+                inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, (unsigned long int)( -b ), RoundUp );
 
             else if ( MpfrClass::CurrRndMode == RoundUp )
-                inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, ( unsigned long int )( -b ), RoundDown );
+                inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, (unsigned long int)( -b ), RoundDown );
 
             else
-                inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, ( unsigned long int )( -b ), MpfrClass::CurrRndMode );
+                inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, (unsigned long int)( -b ), MpfrClass::CurrRndMode );
 
             int dummy = mpfr_neg( mpfr_rep, mpfr_rep, MpfrClass::CurrRndMode );
             inexact->refvalue() = -inexact->getvalue();
@@ -2260,23 +2249,23 @@ MpfrClass& MpfrClass::operator /= ( const long int b ) 	// using the more effici
     return *this;
 }
 
-MpfrClass& MpfrClass::operator /= ( const int b )
+MpfrClass& MpfrClass::operator/=( const int b )
 {
-    ( *this ) /= ( long int ) b;
+    ( *this ) /= (long int)b;
     return *this;
 }
 
-MpfrClass& MpfrClass::operator /= ( const unsigned long int b ) 	// using mpfr_div_ui
+MpfrClass& MpfrClass::operator/=( const unsigned long int b ) // using mpfr_div_ui
 {
-    if ( nbref->decr() <= 0 )				// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
         inexact->refvalue() = mpfr_div_ui( mpfr_rep, mpfr_rep, b, MpfrClass::CurrRndMode );
     }
 
-    else							// the previous value must be preserved
+    else // the previous value must be preserved
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
@@ -2286,15 +2275,15 @@ MpfrClass& MpfrClass::operator /= ( const unsigned long int b ) 	// using mpfr_d
     return *this;
 }
 
-MpfrClass& MpfrClass::operator /= ( const unsigned int b )
+MpfrClass& MpfrClass::operator/=( const unsigned int b )
 {
-    ( *this ) /= ( unsigned long int ) b;
+    ( *this ) /= (unsigned long int)b;
     return *this;
 }
 
-MpfrClass& MpfrClass::operator /= ( const mpz_srcptr b ) 	// using mpfr_div_z
+MpfrClass& MpfrClass::operator/=( const mpz_srcptr b ) // using mpfr_div_z
 {
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
         inexact->refvalue() = mpfr_div_z( mpfr_rep, mpfr_rep, b, MpfrClass::CurrRndMode );
@@ -2302,7 +2291,7 @@ MpfrClass& MpfrClass::operator /= ( const mpz_srcptr b ) 	// using mpfr_div_z
 
     else
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
@@ -2313,9 +2302,9 @@ MpfrClass& MpfrClass::operator /= ( const mpz_srcptr b ) 	// using mpfr_div_z
     return *this;
 }
 
-MpfrClass& MpfrClass::operator /= ( const mpq_srcptr b ) 	// using mpfr_div_q
+MpfrClass& MpfrClass::operator/=( const mpq_srcptr b ) // using mpfr_div_q
 {
-    if ( nbref->decr() <= 0 )			// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
         inexact->refvalue() = mpfr_div_q( mpfr_rep, mpfr_rep, b, MpfrClass::CurrRndMode );
@@ -2323,7 +2312,7 @@ MpfrClass& MpfrClass::operator /= ( const mpq_srcptr b ) 	// using mpfr_div_q
 
     else
     {
-        MpfrClass tmp ( *this );
+        MpfrClass tmp( *this );
         PrecisionType prec = GetPrecision();
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
@@ -2334,15 +2323,15 @@ MpfrClass& MpfrClass::operator /= ( const mpq_srcptr b ) 	// using mpfr_div_q
     return *this;
 }
 
-void MpfrClass::div ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, RoundingMode /*rnd*/ )
+void MpfrClass::div( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, RoundingMode /*rnd*/ )
 {
-    if ( res.nbref->decr() <= 0 )				// the memory can be reused
+    if ( res.nbref->decr() <= 0 ) // the memory can be reused
     {
         res.nbref->refvalue() = 1;
         res.inexact->refvalue() = mpfr_div( res.mpfr_rep, r1.mpfr_rep, r2.mpfr_rep, MpfrClass::CurrRndMode );
     }
 
-    else							// the previous value must be preserved
+    else // the previous value must be preserved
     {
         PrecisionType prec = res.GetPrecision();
         mpfr_init2( res.mpfr_rep, prec );
@@ -2352,15 +2341,15 @@ void MpfrClass::div ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, 
     }
 }
 
-void MpfrClass::fma ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, const MpfrClass& r3, RoundingMode /*rnd*/ )
+void MpfrClass::fma( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, const MpfrClass& r3, RoundingMode /*rnd*/ )
 {
-    if ( res.nbref->decr() <= 0 )				// the memory can be reused
+    if ( res.nbref->decr() <= 0 ) // the memory can be reused
     {
         res.nbref->refvalue() = 1;
         res.inexact->refvalue() = mpfr_fma( res.mpfr_rep, r1.mpfr_rep, r2.mpfr_rep, r3.mpfr_rep, MpfrClass::CurrRndMode );
     }
 
-    else							// the previous value must be preserved
+    else // the previous value must be preserved
     {
         PrecisionType prec = res.GetPrecision();
         mpfr_init2( res.mpfr_rep, prec );
@@ -2369,7 +2358,6 @@ void MpfrClass::fma ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, 
         res.inexact->refvalue() = mpfr_fma( res.mpfr_rep, r1.mpfr_rep, r2.mpfr_rep, r3.mpfr_rep, MpfrClass::CurrRndMode );
     }
 }
-
 
 //--------------------------------------------------------------
 //
@@ -2378,15 +2366,15 @@ void MpfrClass::fma ( MpfrClass& res, const MpfrClass& r1, const MpfrClass& r2, 
 //--------------------------------------------------------------
 // NaN of infinity handled by MPFR
 // => no test on the value (sign...) of the operand
-void MpfrClass::random ( PrecisionType prec )		// member to avoid conflict with GMP random
+void MpfrClass::random( PrecisionType prec ) // member to avoid conflict with GMP random
 {
-    if ( nbref->decr() <= 0 )				// the memory can be reused
+    if ( nbref->decr() <= 0 ) // the memory can be reused
     {
         nbref->refvalue() = 1;
         mpfr_set_prec( mpfr_rep, prec );
     }
 
-    else							// the previous value must be preserved
+    else // the previous value must be preserved
     {
         mpfr_init2( mpfr_rep, prec );
         nbref = new RefCounter( 1 );
@@ -2397,18 +2385,17 @@ void MpfrClass::random ( PrecisionType prec )		// member to avoid conflict with 
     inexact->refvalue() = EXACT_FLAG;
 }
 
-
-MpfrClass abs ( const MpfrClass& r, RoundingMode /*rnd*/ )
+MpfrClass abs( const MpfrClass& r, RoundingMode /*rnd*/ )
 {
     if ( r >= 0 )
-        return r+0;	// changes the precision of r
+        return r + 0; // changes the precision of r
 
     // if CurrPrecision != prec of r
     else
         return -r;
 }
 
-MpfrClass agm ( const MpfrClass& r1, const MpfrClass& r2, RoundingMode rnd )
+MpfrClass agm( const MpfrClass& r1, const MpfrClass& r2, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2417,7 +2404,7 @@ MpfrClass agm ( const MpfrClass& r1, const MpfrClass& r2, RoundingMode rnd )
     return res;
 }
 
-MpfrClass sqrt ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass sqrt( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2427,7 +2414,7 @@ MpfrClass sqrt ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass exp ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass exp( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2436,7 +2423,7 @@ MpfrClass exp ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass expm1 ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass expm1( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2445,10 +2432,7 @@ MpfrClass expm1 ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-
-
-
-MpfrClass log ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass log( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2458,7 +2442,7 @@ MpfrClass log ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass log2 ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass log2( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2468,7 +2452,7 @@ MpfrClass log2 ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass log10 ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass log10( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2478,7 +2462,7 @@ MpfrClass log10 ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass log1p ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass log1p( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2488,7 +2472,7 @@ MpfrClass log1p ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass sin ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass sin( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2497,7 +2481,7 @@ MpfrClass sin ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass cos ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass cos( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2506,7 +2490,7 @@ MpfrClass cos ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-void sin_cos ( MpfrClass& res_sin, MpfrClass& res_cos, const MpfrClass& r, RoundingMode rnd )
+void sin_cos( MpfrClass& res_sin, MpfrClass& res_cos, const MpfrClass& r, RoundingMode rnd )
 {
     int inexact;
 
@@ -2549,10 +2533,9 @@ void sin_cos ( MpfrClass& res_sin, MpfrClass& res_cos, const MpfrClass& r, Round
     }
 }
 
-
 // new functions 10/04/03
 
-MpfrClass tan ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass tan( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2561,8 +2544,7 @@ MpfrClass tan ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-
-MpfrClass acos ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass acos( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2571,8 +2553,7 @@ MpfrClass acos ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-
-MpfrClass asin ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass asin( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2581,8 +2562,7 @@ MpfrClass asin ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-
-MpfrClass atan ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass atan( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2591,7 +2571,7 @@ MpfrClass atan ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass cosh ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass cosh( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2600,7 +2580,7 @@ MpfrClass cosh ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass sinh ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass sinh( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2609,8 +2589,7 @@ MpfrClass sinh ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-
-MpfrClass tanh ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass tanh( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2619,8 +2598,7 @@ MpfrClass tanh ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-
-MpfrClass asinh ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass asinh( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2629,8 +2607,7 @@ MpfrClass asinh ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-
-MpfrClass acosh ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass acosh( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2639,7 +2616,7 @@ MpfrClass acosh ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass atanh ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass atanh( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2648,7 +2625,7 @@ MpfrClass atanh ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass MpfrClass::pow ( const unsigned long int e, RoundingMode rnd ) const
+MpfrClass MpfrClass::pow( const unsigned long int e, RoundingMode rnd ) const
 {
     MpfrClass res;
 
@@ -2657,7 +2634,7 @@ MpfrClass MpfrClass::pow ( const unsigned long int e, RoundingMode rnd ) const
     return res;
 }
 
-MpfrClass MpfrClass::pow ( const long int e, RoundingMode rnd ) const
+MpfrClass MpfrClass::pow( const long int e, RoundingMode rnd ) const
 {
     MpfrClass res;
 
@@ -2666,7 +2643,7 @@ MpfrClass MpfrClass::pow ( const long int e, RoundingMode rnd ) const
     return res;
 }
 
-MpfrClass MpfrClass::pow ( const MpfrClass& e, RoundingMode rnd ) const
+MpfrClass MpfrClass::pow( const MpfrClass& e, RoundingMode rnd ) const
 {
     MpfrClass res;
 
@@ -2675,8 +2652,7 @@ MpfrClass MpfrClass::pow ( const MpfrClass& e, RoundingMode rnd ) const
     return res;
 }
 
-
-MpfrClass cbrt ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass cbrt( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2685,7 +2661,7 @@ MpfrClass cbrt ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass exp2 ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass exp2( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2694,7 +2670,7 @@ MpfrClass exp2 ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass gamma ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass gamma( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2703,7 +2679,7 @@ MpfrClass gamma ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass erf ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass erf( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2712,7 +2688,7 @@ MpfrClass erf ( const MpfrClass& r, RoundingMode rnd )
     return res;
 }
 
-MpfrClass factorial ( const unsigned long int n, RoundingMode rnd )
+MpfrClass factorial( const unsigned long int n, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2721,7 +2697,7 @@ MpfrClass factorial ( const unsigned long int n, RoundingMode rnd )
     return res;
 }
 
-MpfrClass hypot ( const MpfrClass& r1, const MpfrClass& r2, RoundingMode rnd )
+MpfrClass hypot( const MpfrClass& r1, const MpfrClass& r2, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2730,8 +2706,7 @@ MpfrClass hypot ( const MpfrClass& r1, const MpfrClass& r2, RoundingMode rnd )
     return res;
 }
 
-
-MpfrClass zeta ( const MpfrClass& r, RoundingMode rnd )
+MpfrClass zeta( const MpfrClass& r, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2744,7 +2719,7 @@ MpfrClass zeta ( const MpfrClass& r, RoundingMode rnd )
 //
 //
 
-MpfrClass round ( const MpfrClass& r )
+MpfrClass round( const MpfrClass& r )
 {
     MpfrClass res;
 
@@ -2753,7 +2728,7 @@ MpfrClass round ( const MpfrClass& r )
     return res;
 }
 
-MpfrClass floor ( const MpfrClass& r )
+MpfrClass floor( const MpfrClass& r )
 {
     MpfrClass res;
 
@@ -2762,7 +2737,7 @@ MpfrClass floor ( const MpfrClass& r )
     return res;
 }
 
-MpfrClass trunc ( const MpfrClass& r )
+MpfrClass trunc( const MpfrClass& r )
 {
     MpfrClass res;
 
@@ -2771,7 +2746,7 @@ MpfrClass trunc ( const MpfrClass& r )
     return res;
 }
 
-MpfrClass ceil ( const MpfrClass& r )
+MpfrClass ceil( const MpfrClass& r )
 {
     MpfrClass res;
 
@@ -2780,7 +2755,7 @@ MpfrClass ceil ( const MpfrClass& r )
     return res;
 }
 
-MpfrClass frac ( const MpfrClass& r )
+MpfrClass frac( const MpfrClass& r )
 {
     MpfrClass res;
 
@@ -2789,27 +2764,27 @@ MpfrClass frac ( const MpfrClass& r )
     return res;
 }
 
-long int to_int ( const MpfrClass& r, RoundingMode rnd )
+long int to_int( const MpfrClass& r, RoundingMode rnd )
 {
-    return mpfr_get_si( r.mpfr_rep,rnd );
+    return mpfr_get_si( r.mpfr_rep, rnd );
 }
 
-unsigned long int to_uint ( const MpfrClass& r, RoundingMode rnd )
+unsigned long int to_uint( const MpfrClass& r, RoundingMode rnd )
 {
-    return mpfr_get_ui( r.mpfr_rep,rnd );
+    return mpfr_get_ui( r.mpfr_rep, rnd );
 }
 
-double to_double ( const MpfrClass& r, RoundingMode rnd )
+double to_double( const MpfrClass& r, RoundingMode rnd )
 {
-    return mpfr_get_d( r.mpfr_rep,rnd );
+    return mpfr_get_d( r.mpfr_rep, rnd );
 }
 
-long double to_ldouble ( const MpfrClass& r, RoundingMode rnd )
+long double to_ldouble( const MpfrClass& r, RoundingMode rnd )
 {
-    return mpfr_get_ld( r.mpfr_rep,rnd );
+    return mpfr_get_ld( r.mpfr_rep, rnd );
 }
 
-MpfrClass reldiff ( const MpfrClass& r1, const MpfrClass& r2, RoundingMode rnd )
+MpfrClass reldiff( const MpfrClass& r1, const MpfrClass& r2, RoundingMode rnd )
 {
     MpfrClass res;
 
@@ -2817,7 +2792,7 @@ MpfrClass reldiff ( const MpfrClass& r1, const MpfrClass& r2, RoundingMode rnd )
     return res;
 }
 
-MpfrClass nextabove ( const MpfrClass& r )
+MpfrClass nextabove( const MpfrClass& r )
 {
     MpfrClass res;
 
@@ -2826,7 +2801,7 @@ MpfrClass nextabove ( const MpfrClass& r )
     return res;
 }
 
-MpfrClass nextbelow ( const MpfrClass& r )
+MpfrClass nextbelow( const MpfrClass& r )
 {
     MpfrClass res;
 
@@ -2835,7 +2810,7 @@ MpfrClass nextbelow ( const MpfrClass& r )
     return res;
 }
 
-MpfrClass nexttoward ( const MpfrClass& r, const MpfrClass& dir )
+MpfrClass nexttoward( const MpfrClass& r, const MpfrClass& dir )
 {
     MpfrClass res;
 
@@ -2843,6 +2818,5 @@ MpfrClass nexttoward ( const MpfrClass& r, const MpfrClass& dir )
     mpfr_nexttoward( res.mpfr_rep, dir.mpfr_rep );
     return res;
 }
-
 }
 }

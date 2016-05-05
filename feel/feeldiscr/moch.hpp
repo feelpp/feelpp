@@ -26,35 +26,34 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_MOCH_HPP)
+#if !defined( FEELPP_MOCH_HPP )
 #define FEELPP_MOCH_HPP 1
 
 #include <feel/feeldiscr/functionspace.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
  * build a function space of continuous function which are piecewise polynomial
  * of degree (total or in each variable) less than k.
  */
-template<int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
-         typename MeshType>
-inline
-boost::shared_ptr<FunctionSpace<MeshType,
-                                bases<Lagrange<Order,Scalar,Continuous,Pts>>,
-                                Periodicity <NoPeriodicity>,
-                                mortars<Mortar>>>
-Moch( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+template <int Order,
+          template <class, uint16_type, class> class Pts = PointSetEquiSpaced,
+          typename MeshType>
+inline boost::shared_ptr<FunctionSpace<MeshType,
+                                       bases<Lagrange<Order, Scalar, Continuous, Pts>>,
+                                       Periodicity<NoPeriodicity>,
+                                       mortars<Mortar>>>
+Moch( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable = false )
 {
     return FunctionSpace<MeshType,
-                         bases<Lagrange<Order,Scalar,Continuous,Pts>>,
-                         Periodicity <NoPeriodicity>,
-                         mortars<Mortar>>::New( _mesh=mesh,
-                                                _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                                _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+                         bases<Lagrange<Order, Scalar, Continuous, Pts>>,
+                         Periodicity<NoPeriodicity>,
+                         mortars<Mortar>>::New( _mesh = mesh,
+                                                _worldscomm = std::vector<WorldComm>( 1, mesh->worldComm() ),
+                                                _extended_doftable = std::vector<bool>( 1, buildExtendedDofTable ) );
 }
-
 }
 
 #endif /* FEELPP_MOCH_HPP */

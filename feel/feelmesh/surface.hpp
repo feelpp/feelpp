@@ -47,13 +47,10 @@ namespace Feel
  */
 class Surface
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -64,17 +61,17 @@ public:
     /**
      * Constructor.  Does nothing at the moment.
      */
-    Surface () {}
+    Surface() {}
 
     /**
      * Copy-constructor.
      */
-    Surface ( const Surface& ) {}
+    Surface( const Surface& ) {}
 
     /**
      * Destructor.
      */
-    virtual ~Surface () {}
+    virtual ~Surface() {}
 
     //@}
 
@@ -82,20 +79,17 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -107,13 +101,13 @@ public:
      * @returns true if the point p is above the surface,
      * false otherwise.
      */
-    virtual bool aboveSurface ( const Point& p ) const = 0;
+    virtual bool aboveSurface( const Point& p ) const = 0;
 
     /**
      * @returns true if the point p is below the surface,
      * false otherwise.
      */
-    virtual bool belowSurface ( const Point& p ) const = 0;
+    virtual bool belowSurface( const Point& p ) const = 0;
 
     /**
      * @returns true if the point p is on the surface,
@@ -121,18 +115,18 @@ public:
      * the surface really means "very close" to account
      * for roundoff error.
      */
-    virtual bool onSurface ( const Point& p ) const = 0;
+    virtual bool onSurface( const Point& p ) const = 0;
 
     /**
      * @returns the closest point on the surface to point p.
      */
-    virtual Point closestPoint ( const Point& p ) const = 0;
+    virtual Point closestPoint( const Point& p ) const = 0;
 
     /**
      * @returns a unit vector normal to the surface at
      * point p.
      */
-    virtual Point unitNormal ( const Point& p ) const = 0;
+    virtual Point unitNormal( const Point& p ) const = 0;
 
     /**
      * @returns the \p Point \p world_coords in the
@@ -142,13 +136,11 @@ public:
      * that do not have an own coordinate system.  These
      * simply do not have to overload this method.
      */
-    virtual Point surfaceCoords ( const Point& world_coords ) const
+    virtual Point surfaceCoords( const Point& world_coords ) const
     {
-        Point p ( world_coords );
+        Point p( world_coords );
         return p;
     }
-
-
 
     /**
      * @returns the world (cartesian) coordinates for the
@@ -157,20 +149,16 @@ public:
      * that do not have an own coordinate system.  These
      * simply do not have to overload this method.
      */
-    virtual Point worldCoords ( const Point& surf_coords ) const
+    virtual Point worldCoords( const Point& surf_coords ) const
     {
-        Point p ( surf_coords );
+        Point p( surf_coords );
         return p;
     }
 
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
 };
 } // Feel
 #endif /* __Surface_H */

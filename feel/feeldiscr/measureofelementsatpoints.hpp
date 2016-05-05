@@ -26,20 +26,20 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_MEASURE_OF_ELEMENTS_AT_POINTS_HPP)
+#if !defined( FEELPP_MEASURE_OF_ELEMENTS_AT_POINTS_HPP )
 
 #include <feel/feeldiscr/functionspace.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
    Given a function space \p Xh, compute the sum of of the measure of the
    elements shared by a point in the mesh. This is helfpul for example for a
    posteriori error estimation.
  */
-template<typename MeshType>
-auto
-measurePointElements( boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<MeshType::nOrder,Scalar> > > >& Xh ) -> decltype( Xh->element() )
+template <typename MeshType>
+auto measurePointElements( boost::shared_ptr<FunctionSpace<MeshType, bases<Lagrange<MeshType::nOrder, Scalar>>>>& Xh ) -> decltype( Xh->element() )
 {
     auto _fn = Xh->element( "measurePointElements" );
     _fn.setZero();
@@ -47,13 +47,13 @@ measurePointElements( boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Me
     auto elit = Xh->mesh()->beginElement();
     auto elen = Xh->mesh()->endElement();
 
-    for ( ; elit != elen; ++ elit )
+    for ( ; elit != elen; ++elit )
     {
         for ( int p = 0; p < elit->numPoints; ++p )
         {
             if ( ptdone[elit->point( p ).id()] == false )
             {
-                BOOST_FOREACH( auto pt, elit->point( p ).elements() )
+                BOOST_FOREACH ( auto pt, elit->point( p ).elements() )
                 {
                     _fn.plus_assign( elit->id(), p, 0, elit->measure() );
                 }
@@ -64,7 +64,6 @@ measurePointElements( boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Me
 
     return _fn;
 }
-
 }
 
 #endif /* FEELPP_MEASURE_OF_ELEMENTS_AT_POINTS_HPP */
