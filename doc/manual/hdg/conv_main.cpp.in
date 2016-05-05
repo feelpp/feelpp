@@ -6,8 +6,8 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "conv-mixed-poisson-model" ,
-                     "conv-mixed-poisson-model" ,
+    AboutData about( "conv-mixed-poisson_@D@D_P@P@" ,
+                     "conv-mixed-poisson_@D@D_P@P@" ,
                      "0.1",
                      "Convergence Mixed Poisson Model",
                      AboutData::License_GPL,

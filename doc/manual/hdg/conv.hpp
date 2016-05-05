@@ -39,6 +39,11 @@ public:
     using flux_ptrtype = typename mixed_poisson_type::Vh_element_ptr_t;
     using potential_ptrtype = typename mixed_poisson_type::Wh_element_ptr_t;
 
+    //! the exporter factory type
+    typedef Exporter<mesh_type> export_type;
+    //! the exporter factory (shared_ptr<> type)
+    typedef boost::shared_ptr<export_type> export_ptrtype;
+
 private:
     mesh_ptrtype M_mesh;
 
@@ -77,41 +82,53 @@ ConvergenceTest<Dim,Order>::run()
     cvg_p.open( "convergence_p.dat", std::ios::out | std::ios::trunc);
     cvg_u << "h" << "\t" << "nDof" << "\t" << "l2err" << std::endl;
     cvg_p << "h" << "\t" << "nDof" << "\t" << "l2err" << std::endl;
-    cout << "h" << "\t" << "nDofU" << "\t" << "errU"
-         << "\t" << "DofP" << "\t" << "errP" << std::endl;
 
-    M_mesh = loadMesh( _mesh=new mesh_type, _h=h);
-    auto e = exporter(M_mesh);
+    export_ptrtype e( export_type::New( "convergence") );
 
     for ( int i = 0; i < ioption("nb_refine"); i++)
     {
         M_mesh = loadMesh( _mesh=new mesh_type, _h=h);
         M_model.init(M_mesh);
+
         auto nDofU = M_model.fluxSpace()->nDof();
         auto nDofP = M_model.potentialSpace()->nDof();
+        auto u_ex = M_model.fluxSpace()->element();
+        auto p_ex = M_model.potentialSpace()->element();
+        auto p_mean = M_model.potentialSpace()->element();
 
         M_model.solve();
+
         M_u = M_model.fluxField();
         M_p = M_model.potentialField();
 
-        e->step(i)->setMesh(M_mesh);
-        e->step(i)->add("u", *M_u);
-        e->step(i)->add("p", *M_p);
-        e->save();
-
         double errU = normL2(_range=elements(M_mesh), _expr=idv(*M_u)-M_u_exact);
-        double errP = normL2(_range=elements(M_mesh), _expr=idv(*M_p)-M_p_exact);
+        double mean_p_exact = mean( elements(M_mesh), M_p_exact)(0,0);
+        double mean_p = mean( elements(M_mesh), idv(*M_p))(0,0);
+        double errP = normL2(_range=elements(M_mesh), _expr=idv(*M_p)-cst(mean_p)-M_p_exact+cst(mean_p_exact));
 
+        cout << "h" << "\t" << "nDofU" << "\t" << "errU"
+             << "\t" << "DofP" << "\t" << "errP" << std::endl;
         cout << h << "\t" << nDofU << "\t" << errU << "\t"
              << nDofP << "\t" << errP << std::endl;
         cvg_u << h << "\t" << nDofU << "\t" << errU << std::endl;
         cvg_p << h << "\t" << nDofP << "\t" << errP << std::endl;
 
+        u_ex.on( elements(M_mesh), M_u_exact);
+        p_ex.on( elements(M_mesh), M_p_exact-cst(mean_p_exact));
+        p_mean.on( elements(M_mesh), idv(*M_p)-cst(mean_p));
+
+        e->step(i)->setMesh(M_mesh);
+        e->step(i)->add("u", *M_u);
+        e->step(i)->add("p", p_mean);
+        e->step(i)->add("u_ex", u_ex);
+        e->step(i)->add("p_ex", p_ex);
+        e->save();
+
         h/=2.;
     }
+
     cvg_u.close();
     cvg_p.close();
-
 }
 
 }
