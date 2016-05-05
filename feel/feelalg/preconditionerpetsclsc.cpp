@@ -197,7 +197,11 @@ static PetscErrorCode PCDestroy_LSC2(PC pc)
 #if PETSC_VERSION_LESS_THAN(3,6,0)
 static PetscErrorCode PCSetFromOptions_LSC2(PC pc)
 #else
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+static PetscErrorCode PCSetFromOptions_LSC2(PetscOptionItems*, PC pc)
+#else
 static PetscErrorCode PCSetFromOptions_LSC2(PetscOptions*, PC pc)
+#endif
 #endif
 {
 #if 0
