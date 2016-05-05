@@ -27,6 +27,7 @@ makeMixedPoissonOptions( std::string prefix = "" )
         ( prefixvm( prefix, "picard.itmax").c_str(), po::value<int>()->default_value( 10 ), "iterations max" )
         ( prefixvm( prefix, "hface").c_str(), po::value<int>()->default_value( 0 ), "hface" )
         ( prefixvm( prefix, "conductivity_json").c_str(), po::value<std::string>()->default_value( "cond" ), "key for conductivity in json" )
+        ( prefixvm( prefix, "conductivityNL_json").c_str(), po::value<std::string>()->default_value( "cond" ), "key for non linear conductivity in json (depends on potential p)" )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ;
     return mpOptions;
@@ -137,7 +138,6 @@ private:
     void initGraphsWithIntegralCond();
     void assembleACst();
     void assembleA();
-    void assembleF();
 
 public:
     linearAssembly_function_type M_updateAssembly;
@@ -145,10 +145,11 @@ public:
     MixedPoisson( std::string prefix = "" );
     void init( mesh_ptrtype mesh = NULL);
     void solve();
-    void assembleLinear();
+    void assembleF();
     void solveNL();
     template<typename ExprT>
-    void updateConductivity( Expr<ExprT> expr, std::string marker = "");
+    void updateConductivityTerm( Expr<ExprT> expr, std::string marker = "");
+    void updateConductivityTerm( bool isNL = false);
     template<typename ExprT>
     void updatePotentialRHS( Expr<ExprT> expr, std::string marker = "");
     template<typename ExprT>
@@ -292,6 +293,11 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
     if ( M_integralCondition )
         cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
 
+    if ( M_prefix.empty())
+        M_backend = backend( _rebuild=true);
+    else
+        M_backend = backend( _name=M_prefix, _rebuild=true);
+
     M_up = M_Vh->elementPtr( "u" );
     M_pp = M_Wh->elementPtr( "p" );
 
@@ -303,8 +309,8 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
     toc("graphs",true);
 
     tic();
-    assembleACst();
-    toc("assemble A cst", true);
+    assembleA();
+    toc("assemble A", true);
 }
 
 template<int Dim, int Order>
@@ -393,8 +399,7 @@ void
 MixedPoisson<Dim, Order>::solve()
 {
     tic();
-    assembleA();
-    M_F->zero();
+    updateConductivityTerm();
     assembleF();
 
     if ( M_updateAssembly != NULL )
@@ -402,16 +407,6 @@ MixedPoisson<Dim, Order>::solve()
     M_backend->solve( _matrix=M_A, _rhs=M_F, _solution=M_U);
     M_hdg_sol.localize(M_U);
     toc("solve", true);
-}
-
-template<int Dim, int Order>
-void
-MixedPoisson<Dim, Order>::assembleLinear()
-{
-    M_A->zero();
-    M_A->addMatrix(1,M_A_cst);
-    M_F->zero();
-    assembleF();
 }
 
 template<int Dim, int Order>
@@ -428,23 +423,12 @@ MixedPoisson<Dim, Order>::solveNL()
 
 template<int Dim, int Order>
 void
-MixedPoisson<Dim, Order>::assembleACst()
+MixedPoisson<Dim, Order>::assembleA()
 {
-    M_A_cst->zero();
-    auto gammaMinusIntegral = complement(boundaryfaces(M_mesh),[this]( auto const& e ) {
-            for( auto marker : this->M_integralMarkersList)
-            {
-                if ( e.marker().value() == this->M_mesh->markerName( marker ) )
-                    return true;
-            }
-            return false; });
-
-    // stabilisation parameter
-    auto tau_constant = cst(doption(prefixvm(M_prefix, "tau_constant")));
-
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
     auto p = M_Wh->element( "p" );
+    auto q = M_Wh->element( "p" );
     auto w = M_Wh->element( "w" );
     auto nu = M_Ch->element( "nu" );
     auto phat = M_Mh->element( "phat" );
@@ -458,129 +442,146 @@ MixedPoisson<Dim, Order>::assembleACst()
         H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
     else
         H.on( _range=elements(M_M0h->mesh()), _expr=h() );
+    // stabilisation parameter
+    auto tau_constant = cst(doption(prefixvm(M_prefix, "tau_constant")));
 
+    auto gammaMinusIntegral = complement(boundaryfaces(M_mesh),[this]( auto const& e ) {
+            for( auto marker : this->M_integralMarkersList)
+            {
+                if ( e.marker().value() == this->M_mesh->markerName( marker ) )
+                    return true;
+            }
+            return false; });
 
-    // Building the LHS
     auto a12 = form2( _trial=M_Wh, _test=M_Vh,_matrix=M_A_cst,
-                      _rowstart=0,
-                      _colstart=1 );
+                      _rowstart=0, _colstart=1 );
     auto a13 = form2( _trial=M_Mh, _test=M_Vh,_matrix=M_A_cst,
-                      _rowstart=0,
-                      _colstart=2);
+                      _rowstart=0, _colstart=2);
     auto a21 = form2( _trial=M_Vh, _test=M_Wh,_matrix=M_A_cst,
-                      _rowstart=1,
-                      _colstart=0);
+                      _rowstart=1, _colstart=0);
     auto a22 = form2( _trial=M_Wh, _test=M_Wh,_matrix=M_A_cst,
-                      _rowstart=1,
-                      _colstart=1 );
+                      _rowstart=1, _colstart=1 );
     auto a23 = form2( _trial=M_Mh, _test=M_Wh,_matrix=M_A_cst,
-                      _rowstart=1,
-                      _colstart=2);
+                      _rowstart=1, _colstart=2);
     auto a31 = form2( _trial=M_Vh, _test=M_Mh,_matrix=M_A_cst,
-                      _rowstart=2,
-                      _colstart=0);
+                      _rowstart=2, _colstart=0);
     auto a32 = form2( _trial=M_Wh, _test=M_Mh,_matrix=M_A_cst,
-                      _rowstart=2,
-                      _colstart=1);
+                      _rowstart=2, _colstart=1);
     auto a33 = form2(_trial=M_Mh, _test=M_Mh,_matrix=M_A_cst,
-                     _rowstart=2,
-                     _colstart=2);
+                     _rowstart=2, _colstart=2);
 
     // -(p,div(v))_Omega
-    a12 += integrate(_range=elements(M_mesh), _expr=-idt(p)*div(v) );
+    a12 += integrate(_range=elements(M_mesh),_expr=-(idt(p)*div(v)));
 
     // <phat,v.n>_Gamma\Gamma_I
     a13 += integrate(_range=internalfaces(M_mesh),
-                     // _expr=idt(phat)*jump(v) );
-                     _expr=idt(phat)*(leftface(trans(id(v))*N())
-                                      + rightface(trans(id(v))*N()) ) );
+                     _expr=( idt(phat)*leftface(trans(id(v))*N())+
+                             idt(phat)*rightface(trans(id(v))*N())) );
     a13 += integrate(_range=gammaMinusIntegral,
                      _expr=idt(phat)*trans(id(v))*N());
 
+
     // -(j, grad(w))
-    a21 += integrate(_range=elements(M_mesh), _expr=-grad(w)*idt(u) );
+    a21 += integrate(_range=elements(M_mesh),_expr=(-grad(w)*idt(u)));
     // <j.n,w>_Gamma
     a21 += integrate(_range=internalfaces(M_mesh),
-                     _expr=leftface(id(w))*leftfacet(trans(idt(u))*N())
-                     + rightface(id(w))*rightfacet(trans(idt(u))*N()) );
+                     _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N()) ) );
+    a21 += integrate(_range=internalfaces(M_mesh),
+                     _expr=(rightface(id(w))*rightfacet(trans(idt(u))*N())) );
     a21 += integrate(_range=boundaryfaces(M_mesh),
-                     _expr=id(w)*trans(idt(u))*N());
+                     _expr=(id(w)*trans(idt(u))*N()));
+
 
     // <tau p, w>_Gamma
     a22 += integrate(_range=internalfaces(M_mesh),
                      _expr=tau_constant *
-                     ( leftfacet( pow(idv(H),M_tau_order)*idt(p))*leftface(id(w))
-                       + rightfacet( pow(idv(H),M_tau_order)*idt(p))*rightface(id(w) )));
+                     ( leftfacet( pow(idv(H),M_tau_order)*idt(p))*leftface(id(w)) +
+                       rightfacet( pow(idv(H),M_tau_order)*idt(p))*rightface(id(w) )));
     a22 += integrate(_range=boundaryfaces(M_mesh),
-                     _expr=tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p) );
+                     _expr=(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
+
 
     // <-tau phat, w>_Gamma\Gamma_I
     a23 += integrate(_range=internalfaces(M_mesh),
                      _expr=-tau_constant * idt(phat) *
-                     ( leftface( pow(idv(H),M_tau_order)*id(w) )
-                       + rightface( pow(idv(H),M_tau_order)*id(w) )));
+                     ( leftface( pow(idv(H),M_tau_order)*id(w) )+
+                       rightface( pow(idv(H),M_tau_order)*id(w) )));
     a23 += integrate(_range=gammaMinusIntegral,
                      _expr=-tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
 
 
     // <j.n,mu>_Omega/Gamma
     a31 += integrate(_range=internalfaces(M_mesh),
-    //                  _expr=id(l)*jumpt(idt(u)) );
-                     _expr=id(l)*(leftfacet(trans(idt(u))*N())
-                                  + rightfacet(trans(idt(u))*N())) );
-    // <j.n,mu>_Gamma_N
-    a31 += integrate(_range=markedfaces(M_mesh,M_neumannMarkersList),
-                     _expr=id(l)*(trans(idt(u))*N()) );
-    // <j.n,mu>_Gamma_R
-    a31 += integrate(_range=markedfaces(M_mesh,M_robinMarkersList),
-                     _expr=id(l)*(trans(idt(u))*N()) );
+                     _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
+                                    rightfacet(trans(idt(u))*N())) ) );
 
-    // <tau p, mu>_Omega/Gamma
-    a32 += integrate(_range=internalfaces(M_mesh),
-                     _expr=tau_constant * id(l) *
-                     ( leftfacet( pow(idv(H),M_tau_order) * idt(p))
-                       + rightfacet( pow(idv(H),M_tau_order) * idt(p))) );
+
     // <tau p, mu>_Gamma_N
-    a32 += integrate(_range=markedfaces(M_mesh,M_neumannMarkersList),
-                     _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
-    // <tau p, mu>_Gamma_R
-    a32 += integrate(_range=markedfaces(M_mesh,M_robinMarkersList),
-                     _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
+    a32 += integrate(_range=internalfaces(M_mesh),
+                     _expr=tau_constant * id(l) * ( leftfacet( pow(idv(H),M_tau_order)*idt(p) )+
+                                                    rightfacet( pow(idv(H),M_tau_order)*idt(p) )));
+
 
     // <-tau phat, mu>_Omega/Gamma
     a33 += integrate(_range=internalfaces(M_mesh),
-                     _expr=-tau_constant * idt(phat) * id(l) *
-                     ( leftface( pow(idv(H),M_tau_order) )+
-                       rightface( pow(idv(H),M_tau_order) )));
-    // <-tau phat, mu>_Gamma_N
-    a33 += integrate(_range=markedfaces(M_mesh,M_neumannMarkersList),
-                     _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
-    // <-tau phat, mu>_Gamma_R
-    a33 += integrate(_range=markedfaces(M_mesh,M_robinMarkersList),
-                     _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
+                     _expr=-tau_constant * idt(phat) * id(l) * ( leftface( pow(idv(H),M_tau_order) )+
+                                                                 rightface( pow(idv(H),M_tau_order) )));
 
-    // <phat, mu>_Gamma_D
-    a33 += integrate(_range=markedfaces(M_mesh,M_dirichletMarkersList),
-                     _expr=idt(phat) * id(l) );
+    // BC
     auto itField = M_modelProperties->boundaryConditions().find( "potential");
     if ( itField != M_modelProperties->boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
-        auto itType = mapField.find( "Robin" );
+        auto itType = mapField.find( "Dirichlet" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                // <phat, mu>_Gamma_D
+                a33 += integrate(_range=markedfaces(M_mesh,marker),
+                                 _expr=idt(phat) * id(l) );
+            }
+        }
+        itType = mapField.find( "Neumann" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                // <j.n,mu>_Gamma_N
+                a31 += integrate(_range=markedfaces(M_mesh,marker),
+                                 _expr=( id(l)*(trans(idt(u))*N()) ));
+                // <tau p, mu>_Gamma_N
+                a32 += integrate(_range=markedfaces(M_mesh,marker),
+                                 _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
+                // <-tau phat, mu>_Gamma_N
+                a33 += integrate(_range=markedfaces(M_mesh,marker),
+                                 _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
+            }
+        }
+        itType = mapField.find( "Robin" );
         if ( itType != mapField.end() )
         {
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 auto g = expr(exAtMarker.expression1());
+                // <j.n,mu>_Gamma_R
+                a31 += integrate(_range=markedfaces(M_mesh,marker),
+                                 _expr=( id(l)*(trans(idt(u))*N()) ));
+                // <tau p, mu>_Gamma_R
+                a32 += integrate(_range=markedfaces(M_mesh,marker),
+                                 _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
+                // <-tau phat, mu>_Gamma_R
+                a33 += integrate(_range=markedfaces(M_mesh,marker),
+                                 _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
                 // <g_R^1 phat, mu>_Gamma_R
-                a33 += integrate(_range=markedfaces(M_mesh,M_robinMarkersList),
+                a33 += integrate(_range=markedfaces(M_mesh,marker),
                                  _expr=g*idt(phat) * id(l) );
             }
         }
     }
-
-    // BC
 
     if ( M_integralCondition )
     {
@@ -606,44 +607,36 @@ MixedPoisson<Dim, Order>::assembleACst()
                          _rowstart=3,
                          _colstart=3);
 
-        // <lambda, v.n>_Gamma_I
-        a14 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList), _expr=trans(id(u))*N()*idt(nu) );
+        auto itField = M_modelProperties->boundaryConditions().find( "potential");
+        if ( itField != M_modelProperties->boundaryConditions().end() )
+        {
+            auto mapField = (*itField).second;
+            auto itType = mapField.find( "Dirichlet" );
+            if ( itType != mapField.end() )
+            {
+                for ( auto const& exAtMarker : (*itType).second )
+                {
+                    std::string marker = exAtMarker.marker();
+                    // <lambda, v.n>_Gamma_I
+                    a14 += integrate( _range=markedfaces(M_mesh,marker),
+                                      _expr=trans(id(u))*N()*idt(nu) );
 
-        // <lambda, tau w>_Gamma_I
-        a24 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList),
-                          _expr=-tau_constant * ( pow(idv(H),M_tau_order)*id(w) ) * idt(nu) );
+                    // <lambda, tau w>_Gamma_I
+                    a24 += integrate( _range=markedfaces(M_mesh,marker),
+                                      _expr=-tau_constant * ( pow(idv(H),M_tau_order)*id(w) ) * idt(nu) );
 
-        // <j.n, m>_Gamma_I
-        a41 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList), _expr=trans(idt(u))*N()*id(nu) );
+                    // <j.n, m>_Gamma_I
+                    a41 += integrate( _range=markedfaces(M_mesh,marker), _expr=trans(idt(u))*N()*id(nu) );
 
-        // <tau p, m>_Gamma_I
-        a42 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList), _expr=tau_constant *
+                    // <tau p, m>_Gamma_I
+                    a42 += integrate( _range=markedfaces(M_mesh,marker), _expr=tau_constant *
                           ( pow(idv(H),M_tau_order)*idt(p) ) * id(nu) );
 
-        // -<lambda2, m>_Gamma_I
-        a44 += integrate( _range=markedfaces(M_mesh,M_integralMarkersList), _expr=-pow(idv(H),M_tau_order)*id(nu)*idt(nu) );
-    }
-}
-
-template<int Dim, int Order>
-void
-MixedPoisson<Dim, Order>::assembleA()
-{
-    M_A->zero();
-    M_A->addMatrix(1,M_A_cst);
-
-    auto u = M_Vh->element( "u" );
-    auto v = M_Vh->element( "v" );
-
-    auto a11 = form2( _trial=M_Vh, _test=M_Vh,_matrix=M_A );
-
-    for( auto const& pairMat : M_modelProperties->materials() )
-    {
-        auto marker = pairMat.first;
-        auto material = pairMat.second;
-
-        // (sigma^-1 j, v)
-        a11 += integrate(_range=markedelements(M_mesh,marker), _expr=(trans(idt(u))*id(v))/material.getScalar(soption(prefixvm(M_prefix,"conductivity_json"))) );
+                    // -<lambda2, m>_Gamma_I
+                    a44 += integrate( _range=markedfaces(M_mesh,marker), _expr=-pow(idv(H),M_tau_order)*id(nu)*idt(nu) );
+                }
+            }
+        }
     }
 }
 
@@ -651,6 +644,8 @@ template<int Dim, int Order>
 void
 MixedPoisson<Dim, Order>::assembleF()
 {
+    M_F->zero();
+
     auto nu = M_Ch->element( "nu" );
     auto l = M_Mh->element( "lambda" );
     auto w = M_Wh->element();
@@ -762,13 +757,51 @@ MixedPoisson<Dim, Order>::assembleF()
 template<int Dim, int Order>
 template<typename ExprT>
 void
-MixedPoisson<Dim, Order>::updateConductivity( Expr<ExprT> expr, std::string marker)
+MixedPoisson<Dim, Order>::updateConductivityTerm( Expr<ExprT> expr, std::string marker)
 {
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
 
+    M_A->zero();
+    M_A->addMatrix(1.,M_A_cst);
+
     auto a11 = form2( _trial=M_Vh, _test=M_Vh,_matrix=M_A );
-    a11 += integrate( _range=markedelements(M_mesh, marker), _expr=inner(idt(u),id(v))/expr);
+    if ( marker.empty() )
+        a11 += integrate( _range=elements(M_mesh), _expr=inner(idt(u),id(v))/expr);
+    else
+        a11 += integrate( _range=markedelements(M_mesh, marker), _expr=inner(idt(u),id(v))/expr);
+}
+
+template<int Dim, int Order>
+void
+MixedPoisson<Dim, Order>::updateConductivityTerm( bool isNL)
+{
+    auto u = M_Vh->element( "u" );
+    auto v = M_Vh->element( "v" );
+
+    M_A->zero();
+    M_A->addMatrix(1.,M_A_cst);
+
+    auto a11 = form2( _trial=M_Vh, _test=M_Vh, _matrix=M_A );
+    for( auto const& pairMat : M_modelProperties->materials() )
+    {
+        auto marker = pairMat.first;
+        auto material = pairMat.second;
+        if ( !isNL )
+        {
+            auto cond = material.getScalar(soption(prefixvm(M_prefix,"conductivity_json")));
+            // (sigma^-1 j, v)
+            a11 += integrate(_range=markedelements(M_mesh,marker),
+                             _expr=(trans(idt(u))*id(v))/cond );
+        }
+        else
+        {
+            auto cond = material.getScalar(soption(prefixvm(M_prefix,"conductivityNL_json")), "p", idv(*M_pp));
+            // (sigma(p)^-1 j, v)
+            a11 += integrate(_range=markedelements(M_mesh,marker),
+                             _expr=(trans(idt(u))*id(v))/cond );
+        }
+    }
 }
 
 template<int Dim, int Order>
@@ -823,7 +856,3 @@ MixedPoisson<Dim, Order>::exportResults()
 
 } // Namespace Feel
 
-/* TODO:
- * - bind function to update Mat and Vec
- * - solvePicard nl just on potential/flux
- */
