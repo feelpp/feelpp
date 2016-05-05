@@ -414,7 +414,7 @@ public:
                 M_N = 0; //Re-init M_N
             }
         }
-
+#if 0
         M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                                  _backend= M_backend_primal,
                                                  _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
@@ -427,6 +427,7 @@ public:
                                                _worldcomm=M_backend_dual->comm(),
                                                _prefix=M_backend_dual->prefix() ,
                                                _rebuild=false/*true*/);
+#endif
     }
 
 
@@ -1500,11 +1501,11 @@ protected:
     //int M_SER_groupsize;
     mutable bool M_SER_adapt;
     mutable double M_SER_maxerr;
-
+#if 0
     preconditioner_ptrtype M_preconditioner;
     preconditioner_ptrtype M_preconditioner_primal;
     preconditioner_ptrtype M_preconditioner_dual;
-
+#endif
     //true if the model is executed in steady mode
     bool M_model_executed_in_steady_mode;
 
@@ -1666,9 +1667,12 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
             uold = u;
 
             //solve
+#if 0
             M_preconditioner_primal->setMatrix( Apr );
-
             auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs,  _prec=M_preconditioner_primal, _reuse_prec=( bdf_iter >= 2 ) );
+#else
+            auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs, _reuse_prec=( bdf_iter >= 2 ) );
+#endif
             if  ( !ret.template get<0>() )
                 LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
 
@@ -1826,8 +1830,12 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
         *Rhs=*F[M_output_index];
         //Rhs->scale( 1./dt );
         //M->scale(1./dt);
+#if 0
         M_preconditioner_dual->setMatrix( M );
         M_backend_dual->solve( _matrix=M, _solution=dual_initial_field, _rhs=Rhs, _prec=M_preconditioner_dual );
+#else
+        M_backend_dual->solve( _matrix=M, _solution=dual_initial_field, _rhs=Rhs );
+#endif
 #endif
         udu=*dual_initial_field;
     }
@@ -1907,8 +1915,12 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
             uold = udu;
 
             //solve
+#if 0
             M_preconditioner_dual->setMatrix( Adu );
             auto ret = M_backend_dual->solve( _matrix=Adu, _solution=udu, _rhs=Rhs,  _prec=M_preconditioner_dual, _reuse_prec=( bdf_iter >=2 ) );
+#else
+            auto ret = M_backend_dual->solve( _matrix=Adu, _solution=udu, _rhs=Rhs, _reuse_prec=( bdf_iter >=2 ) );
+#endif
             if  ( !ret.template get<0>() )
                 LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
 

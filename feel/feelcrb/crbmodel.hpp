@@ -334,7 +334,7 @@ public:
             return;
 
         M_has_eim=false;
-
+#if 0
         M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                                  _backend= M_backend_primal,
                                                  _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
@@ -353,6 +353,7 @@ public:
                                              _worldcomm=M_backend_l2->comm(),
                                              _prefix=M_backend_l2->prefix() ,
                                              _rebuild=M_useSER);
+#endif
         M_is_initialized=true;
 
         if( ! M_model->isInitialized() )
@@ -418,7 +419,9 @@ public:
             M_inner_product_matrix = M_model->energyMatrix();
             CHECK( symmetric )<< "You use energy matrix as inner product but you specified that bilinear form a() is not symmetric !\n";
         }
+#if 0
         M_preconditioner_l2->setMatrix( M_inner_product_matrix );
+#endif
 
 
         if ( this->isSteady() )
@@ -2442,7 +2445,11 @@ public:
      */
     void l2solve( vector_ptrtype& u, vector_ptrtype const& f )
     {
+#if 0
         M_backend_l2->solve( _matrix=M_inner_product_matrix,  _solution=u, _rhs=f , _prec=M_preconditioner_l2 );
+#else
+        M_backend_l2->solve( _matrix=M_inner_product_matrix,  _solution=u, _rhs=f);
+#endif
         //return M_model->l2solve( u, f );
     }
 
@@ -2632,11 +2639,11 @@ private:
     void assembleInitialGuessV( initial_guess_type & initial_guess, mpl::bool_<true> );
     void assembleInitialGuessV( initial_guess_type & initial_guess, mpl::bool_<false> );
     element_type M_u, M_v;
-
+#if 0
     preconditioner_ptrtype M_preconditioner_primal;
     preconditioner_ptrtype M_preconditioner_dual;
     preconditioner_ptrtype M_preconditioner_l2;
-
+#endif
     //number of terms in affine decomposition
     int M_Qa; //A
     int M_Qm; //M
@@ -3235,8 +3242,12 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
             A->addMatrix( bdf_coeff, M );
             Rhs->addVector( *vec_bdf_poly, *M );
         }
+#if 0
         M_preconditioner_primal->setMatrix( A );
         M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
+#else
+        M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs );
+#endif
         mybdf->shiftRight(u);
     }
 
@@ -3316,8 +3327,12 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
                 F[0]->addVector( *vec_bdf_poly, *M );
             }
             uold=u;
+#if 0
             M_preconditioner_primal->setMatrix( A );
             M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+#else
+            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] );
+#endif
 
             mybdf->shiftRight(u);
 
@@ -3401,8 +3416,12 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                 Rhs->addVector( *vec_bdf_poly, *M );
             }
             uold = u;
+#if 0
             M_preconditioner_primal->setMatrix( A );
             M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
+#else
+            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs );
+#endif
 
             if( is_linear )
                 norm = 0;
@@ -3558,8 +3577,12 @@ CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type cons
     {
         boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
         *Rhs=*F[output_index];
+#if 0
         M_preconditioner_dual->setMatrix( M );
         M_backend_dual->solve( _matrix=M, _solution=dual_initial_field, _rhs=Rhs, _prec=M_preconditioner_dual );
+#else
+        M_backend_dual->solve( _matrix=M, _solution=dual_initial_field, _rhs=Rhs );
+#endif
         udu=*dual_initial_field;
     }
 
@@ -3589,10 +3612,12 @@ CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type cons
             Adu = A;
         else
             A->transpose( Adu );
-
+#if 0
         M_preconditioner_dual->setMatrix( Adu );
-
         M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual);
+#else
+        M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs );
+#endif
 
         mybdf->shiftRight(udu);
     }
@@ -3653,8 +3678,12 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     {
         boost::tie( M, A, F) = this->update( mu , mybdf->timeInitial() );
         *Rhs=*F[output_index];
+#if 0
         M_preconditioner_dual->setMatrix( M );
         M_backend_dual->solve( _matrix=M, _solution=dual_initial_field, _rhs=Rhs, _prec=M_preconditioner_dual );
+#else
+        M_backend_dual->solve( _matrix=M, _solution=dual_initial_field, _rhs=Rhs );
+#endif
         udu=*dual_initial_field;
     }
 
@@ -3693,8 +3722,12 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
                 A->transpose( Adu );
 
             uold = udu;
+#if 0
             M_preconditioner_dual->setMatrix( Adu );
             M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual);
+#else
+            M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs );
+#endif
 
             if( boption(_name="crb.use-linear-model") )
                 norm = 0;
