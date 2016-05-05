@@ -83,7 +83,11 @@ private:
     void updateThermalAssembly( sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
 
 public:
-    ElectroThermal();
+    ElectroThermal() : M_ElectroModel("E"), M_ThermalModel("T") {
+        M_mesh = loadMesh( new mesh_type );
+        M_ElectroModel.init( M_mesh);
+        M_ThermalModel.init( M_mesh);
+    }
     void run();
 };
 
@@ -155,17 +159,6 @@ ElectroThermal<Dim, Order>::updateThermalAssembly( sparse_matrix_ptrtype& A, vec
 }
 
 template<int Dim, int Order>
-ElectroThermal<Dim, Order>::ElectroThermal()
-{
-    M_mesh = loadMesh( new mesh_type );
-
-    M_ElectroModel = electro_type( "E" );
-    M_ThermalModel = thermal_type( "T" );
-    M_ElectroModel.init( M_mesh);
-    M_ThermalModel.init( M_mesh);
-}
-
-template<int Dim, int Order>
 void
 ElectroThermal<Dim, Order>::run()
 {
@@ -185,7 +178,7 @@ ElectroThermal<Dim, Order>::run()
     M_j = M_ElectroModel.fluxField();
     M_V = M_ElectroModel.potentialField();
 
-    M_ThermalModel.assembleLinear();
+    M_ThermalModel.assembleF();
     for( auto const& pairMat : electroModelProp.materials() )
     {
         auto marker = pairMat.first;
@@ -200,7 +193,7 @@ ElectroThermal<Dim, Order>::run()
         auto material = pairMat.second;
 
         auto expr = material.getScalar("k0");
-        M_ThermalModel.updateConductivity(expr, marker);
+        M_ThermalModel.updateConductivityTerm(expr, marker);
     }
 
     M_ThermalModel.solveNL();
@@ -250,12 +243,12 @@ ElectroThermal<Dim, Order>::run()
 
     while ( ( incrV > tol || incrT > tol ) && ( ++i < itmax ) )
     {
-        M_ElectroModel.assembleLinear();
+        M_ElectroModel.assembleF();
         M_ElectroModel.solveNL();
         M_j = M_ElectroModel.fluxField();
         M_V = M_ElectroModel.potentialField();
 
-        M_ThermalModel.assembleLinear();
+        M_ThermalModel.assembleF();
         M_ThermalModel.solveNL();
         M_T = M_ThermalModel.potentialField();
         M_GT = M_ThermalModel.fluxField();
