@@ -2439,9 +2439,9 @@ public:
     /**
      * Post process a finite element solution
      */
-    virtual void postPro( std::string s, element_type &u, parameter_type const &mu)
+    virtual void postProcess( std::string s, element_type &u, parameter_type const &mu)
     {
-      LOG(INFO) << "No postPro function provided\n";
+      LOG(INFO) << "No postProcess function provided\n";
     }
 
     /**
