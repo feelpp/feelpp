@@ -66,8 +66,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_elements, T, dim_t )
 {
     BOOST_MESSAGE( "test_elements starts for dim=" << T::value);
     auto mesh = unitHypercube<T::value>();
-    BOOST_CHECK( nelements(elementsWithMarkedFaces(mesh,flag_type(1))) > 0 );
-    auto submesh = createSubmesh( mesh, elementsWithMarkedFaces(mesh,flag_type(1)), EXTRACTION_KEEP_MESH_RELATION );
+    int flag = 1;
+    if ( T::value == 3 ) 
+        flag=15;
+    auto submesh = createSubmesh( mesh, elementsWithMarkedFaces(mesh,flag_type(flag)), EXTRACTION_KEEP_MESH_RELATION );
     auto len1=measure(_range=markedfaces(mesh,flag_type(1)));
     auto len2=measure(_range=markedfaces(submesh,flag_type(1)));
     BOOST_CHECK( len1 > 0 );
