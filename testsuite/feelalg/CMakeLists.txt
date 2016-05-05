@@ -14,3 +14,4 @@ feelpp_add_test( eigenmode CLI "--gmsh.hsize 0.2 -eps_target 20 -st_pc_factor_ma
 
 feelpp_add_test( matrix_block )
 feelpp_add_test( prepost_solve CFG test_prepost_solve.cfg )
+feelpp_add_test( add_matrix )
