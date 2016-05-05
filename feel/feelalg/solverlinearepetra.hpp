@@ -29,12 +29,10 @@
 #ifndef __epetra_linear_solver_h__
 #define __epetra_linear_solver_h__
 
-
 #include <feel/feelcore/feel.hpp>
 
-
-#include <feel/feelalg/solverlinear.hpp>
 #include <feel/feelalg/matrixepetra.hpp>
+#include <feel/feelalg/solverlinear.hpp>
 #include <feel/feelalg/vectorepetra.hpp>
 
 // AztexOO
@@ -44,11 +42,10 @@
 #include <Ifpack_CrsIct.h>
 
 // ml
-#include <ml_config.h>
-#include <ml_RowMatrix.h>
-#include <ml_MultiLevelPreconditioner.h>
 #include <Teuchos_ParameterList.hpp>
-
+#include <ml_MultiLevelPreconditioner.h>
+#include <ml_RowMatrix.h>
+#include <ml_config.h>
 
 namespace Feel
 {
@@ -61,20 +58,18 @@ createMLPreconditioner( Epetra_RowMatrix const& mat, po::variables_map const& vm
     // solver is an AztecOO object
     Teuchos::ParameterList MList;
     // default values for smoothed aggregation
-    ML_Epetra::SetDefaults( "SA",MList );
+    ML_Epetra::SetDefaults( "SA", MList );
     MList.set( "max levels", vm["max-levels"].as<int>() );
-    MList.set( "increasing or decreasing",vm["increasing-or-decreasing"].as<std::string>() );
+    MList.set( "increasing or decreasing", vm["increasing-or-decreasing"].as<std::string>() );
     MList.set( "aggregation: type", vm["aggregation-type"].as<std::string>() );
-    MList.set( "coarse: type",vm["coarse-type"].as<std::string>() );
+    MList.set( "coarse: type", vm["coarse-type"].as<std::string>() );
 
     return boost::shared_ptr<ML_Epetra::MultiLevelPreconditioner>( new ML_Epetra::MultiLevelPreconditioner( mat,
-            MList,
-            true ) );
+                                                                                                            MList,
+                                                                                                            true ) );
 }
 
 } // trilinos
 } // Feel
 
-
 #endif // #ifdef __epetra_linear_solver_h__
-

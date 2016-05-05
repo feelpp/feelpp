@@ -31,10 +31,10 @@
 #ifndef __Exporter_H
 #define __Exporter_H 1
 
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/visitor.hpp>
 #include <feel/feelcore/factory.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/singleton.hpp>
+#include <feel/feelcore/visitor.hpp>
 
 #include <feel/feeldiscr/timeset.hpp>
 
@@ -52,7 +52,7 @@ enum ExporterGeometry
  */
 enum file_type
 {
-    ASCII  = 0,
+    ASCII = 0,
     BINARY = 1
 };
 
@@ -82,24 +82,21 @@ enum file_type
  *
  * @author Christophe Prud'homme
  */
-template<typename MeshType, int N = 1>
+template <typename MeshType, int N = 1>
 class Exporter
-    :
-public VisitorBase,
-public Visitor<MeshType>
+    : public VisitorBase,
+      public Visitor<MeshType>
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
     typedef VisitorBase super1;
     typedef Visitor<MeshType> super2;
 
-    typedef Exporter<MeshType,N> etype;
+    typedef Exporter<MeshType, N> etype;
     typedef boost::shared_ptr<etype> ptrtype;
-    typedef Feel::detail::TimeSet<MeshType,N> timeset_type;
+    typedef Feel::detail::TimeSet<MeshType, N> timeset_type;
     typedef typename timeset_type::mesh_type mesh_type;
     typedef typename timeset_type::mesh_ptrtype mesh_ptrtype;
     typedef boost::shared_ptr<timeset_type> timeset_ptrtype;
@@ -111,7 +108,7 @@ public:
 
     struct Factory
     {
-        typedef Feel::Singleton< Feel::Factory< Exporter<MeshType,N>, std::string > > type;
+        typedef Feel::Singleton<Feel::Factory<Exporter<MeshType, N>, std::string>> type;
     };
     //@}
 
@@ -156,7 +153,7 @@ public:
     /**
      * copy constructor
      */
-    Exporter( Exporter const & exporter );
+    Exporter( Exporter const& exporter );
 
     /**
      * destructor
@@ -168,7 +165,7 @@ public:
      * of the \p exportername and using \p prefix for the prefix of the data
      * files.
      */
-    static boost::shared_ptr<Exporter<MeshType,N> > New( std::string const& exportername,
+    static boost::shared_ptr<Exporter<MeshType, N>> New( std::string const& exportername,
                                                          std::string prefix,
                                                          WorldComm const& worldComm = Environment::worldComm() );
 
@@ -177,14 +174,14 @@ public:
      * of the variables_map \p vm and using \p prefix for the prefix of the data
      * files.
      */
-    static boost::shared_ptr<Exporter<MeshType,N> > New( po::variables_map const& vm = Environment::vm(),
+    static boost::shared_ptr<Exporter<MeshType, N>> New( po::variables_map const& vm = Environment::vm(),
                                                          std::string prefix = Environment::about().appName(),
                                                          WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
     /**
      * Static function instantiating from the Exporter Factory an exporter using
      * \p prefix for the prefix of the data files.
      */
-    static boost::shared_ptr<Exporter<MeshType,N> > New( std::string prefix,
+    static boost::shared_ptr<Exporter<MeshType, N>> New( std::string prefix,
                                                          WorldComm const& worldComm = Environment::worldComm() );
 
     //@}
@@ -192,7 +189,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -231,7 +227,6 @@ public:
     {
         return M_freq;
     }
-
 
     /**
      * \return the frequency at which the results are saved
@@ -275,19 +270,18 @@ public:
      * set the options from the \p variables_map \p vm as well as the prefix \p
      * exp_prefix
      */
-    virtual Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" );
+    virtual Exporter<MeshType, N>* setOptions( std::string const& exp_prefix = "" );
 
     /**
      * set the options from the \p variables_map \p vm as well as the prefix \p
      * exp_prefix
      */
-    virtual Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED { return setOptions( exp_prefix ); }
-
+    virtual Exporter<MeshType, N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED { return setOptions( exp_prefix ); }
 
     /**
      * set to \p __type the type of exporter (gmsh, ensight...)
      */
-    Exporter<MeshType,N>* setType( std::string const& __type )
+    Exporter<MeshType, N>* setType( std::string const& __type )
     {
         M_type = __type;
         return this;
@@ -297,14 +291,14 @@ public:
      * add an extra path to the current directory to save the data using the \p
      * boost::format object \p fmt
      */
-    Exporter<MeshType,N>* addPath( boost::format fmt );
+    Exporter<MeshType, N>* addPath( boost::format fmt );
 
     /**
      * set the path
      */
     void setPath( std::string path )
     {
-        if ( !fs::exists(path) && this->worldComm().isMasterRank() )
+        if ( !fs::exists( path ) && this->worldComm().isMasterRank() )
             fs::create_directories( path );
         // be sure that all process can find the path after
         this->worldComm().barrier();
@@ -315,11 +309,11 @@ public:
     /**
      * set the prefix to \p __prefix
      */
-    Exporter<MeshType,N>* setPrefix( std::string const& __prefix )
+    Exporter<MeshType, N>* setPrefix( std::string const& __prefix )
     {
         M_prefix = __prefix;
 
-        if(M_ts_set.size() > 0)
+        if ( M_ts_set.size() > 0 )
         {
             M_ts_set.back()->setName( M_prefix );
         }
@@ -338,7 +332,7 @@ public:
     /**
      * set the save frequency to \p __freq
      */
-    Exporter<MeshType,N>* setFreq( int __freq )
+    Exporter<MeshType, N>* setFreq( int __freq )
     {
         M_freq = __freq;
         return this;
@@ -347,7 +341,7 @@ public:
     /**
      * set the \p file type to \p __ft (binary or ascii)
      */
-    Exporter<MeshType,N>* setFileType( file_type __ft )
+    Exporter<MeshType, N>* setFileType( file_type __ft )
     {
         M_ft = __ft;
         return this;
@@ -371,31 +365,30 @@ public:
         return M_ts_set.end();
     }
 
-
     timeset_ptrtype defaultTimeSet()
     {
         return M_ts_set.front();
     }
     timeset_ptrtype timeSet( int ts )
-        {
-            return M_ts_set[ts];
-        }
+    {
+        return M_ts_set[ts];
+    }
 
     bool useSingleTransientFile() const
-        {
-            return M_use_single_transient_file;
-        }
+    {
+        return M_use_single_transient_file;
+    }
     void setUseSingleTransientFile( bool s )
-        {
-            M_use_single_transient_file = s;
-        }
+    {
+        M_use_single_transient_file = s;
+    }
     void
     setMesh( mesh_ptrtype mesh, ExporterGeometry exgeo = EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
-        {
-            M_ex_geometry = exgeo;
-            M_ts_set.back()->setMesh( mesh );
-            //this->step( 0 )->setMesh( mesh );
-        }
+    {
+        M_ex_geometry = exgeo;
+        M_ts_set.back()->setMesh( mesh );
+        //this->step( 0 )->setMesh( mesh );
+    }
 
     /**
      * export a scalar quantity \p u with name \p name
@@ -403,37 +396,37 @@ public:
      * \param u scalar quantity to be exported
      * \param cst true if the scalar is constant over time, false otherwise
      */
-    template<typename T>
+    template <typename T>
     void
     add( std::string const& name, T const& u, bool cst = false,
          typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr )
-        {
-            this->step( 0 )->add( name, u, cst );
-        }
+    {
+        this->step( 0 )->add( name, u, cst );
+    }
 
     /**
      * export field \p u with name \p name
      */
-    template<typename F>
+    template <typename F>
     void
     add( std::string const& name, F const& u,
          typename std::enable_if<is_functionspace_element_v<F>>::type* = nullptr )
-        {
-            this->step( 0 )->add( name, u );
-        }
+    {
+        this->step( 0 )->add( name, u );
+    }
 
     void
     addRegions()
-        {
-            this->step( 0 )->addRegions( "" );
-        }
+    {
+        this->step( 0 )->addRegions( "" );
+    }
 
     /**
      * @return the step shared_ptr at time \p time
      */
     step_ptrtype step( double time )
     {
-        if ( this->cptOfSave() % this->freq()  )
+        if ( this->cptOfSave() % this->freq() )
             return M_ts_set.back()->step( time, true );
 
         else
@@ -441,7 +434,7 @@ public:
     }
     step_ptrtype step( double time, int s )
     {
-        if ( M_cptOfSave % this->freq()  )
+        if ( M_cptOfSave % this->freq() )
             return M_ts_set[s]->step( time, true );
 
         else
@@ -463,7 +456,6 @@ public:
             M_ts_set.push_back( __ts );
     }
 
-
     /**
      * this p save function is defined by the Exporter subclasses and implement
      * saving the data to files
@@ -475,18 +467,18 @@ public:
      */
     void saveTimeSet() const
     {
-        if ( ! this->worldComm().isMasterRank() )
-            {
-                ++M_cptOfSave;
-                return;
-            }
+        if ( !this->worldComm().isMasterRank() )
+        {
+            ++M_cptOfSave;
+            return;
+        }
 
         auto __ts_it = this->beginTimeSet();
         auto __ts_en = this->endTimeSet();
 
-        for ( ; __ts_it != __ts_en ; ++__ts_it )
+        for ( ; __ts_it != __ts_en; ++__ts_it )
         {
-            auto filename = this->path()+"/"+prefix()+".timeset";
+            auto filename = this->path() + "/" + prefix() + ".timeset";
             ( *__ts_it )->save( filename );
         }
 
@@ -501,28 +493,27 @@ public:
         auto __ts_it = this->beginTimeSet();
         auto __ts_en = this->endTimeSet();
 
-        for ( ; __ts_it != __ts_en ; ++__ts_it )
+        for ( ; __ts_it != __ts_en; ++__ts_it )
         {
-            auto filename = this->path()+"/"+prefix()+".timeset";
-            ( *__ts_it )->load( filename,__time );
+            auto filename = this->path() + "/" + prefix() + ".timeset";
+            ( *__ts_it )->load( filename, __time );
 
-            M_cptOfSave = ( *__ts_it )->numberOfTotalSteps()+1;
+            M_cptOfSave = ( *__ts_it )->numberOfTotalSteps() + 1;
         }
     }
 
     void setWorldComm( WorldComm const& wc )
-        {
-            M_worldComm = wc;
-        }
+    {
+        M_worldComm = wc;
+    }
     WorldComm const& worldComm() const
-        {
-            return M_worldComm;
-        }
+    {
+        return M_worldComm;
+    }
 
     ExporterGeometry exporterGeometry() const { return M_ex_geometry; }
     //@}
-protected:
-
+  protected:
     WorldComm M_worldComm;
 
     bool M_do_export;
@@ -538,51 +529,38 @@ protected:
     mutable timeset_set_type M_ts_set;
 };
 
-
-
-
 namespace detail
 {
-template<typename Args>
+template <typename Args>
 struct compute_exporter_return
 {
     typedef typename boost::remove_pointer<
         typename boost::remove_const<
             typename boost::remove_reference<
-                typename parameter::binding<Args, tag::mesh>::type
-                >::type
-            >::type
-        >::type::element_type mesh_type;
+                typename parameter::binding<Args, tag::mesh>::type>::type>::type>::type::element_type mesh_type;
     //typename Feel::vf::detail::clean_type<Args, tag::mesh>::type::element_type mesh_type;
     //typedef typename parameter::value_type<Args, tag::order>::type order_type;
     //typedef boost::shared_ptr<Exporter<mesh_type,order_type::value> > type;
-    typedef Exporter<mesh_type,mesh_type::nOrder> type;
+    typedef Exporter<mesh_type, mesh_type::nOrder> type;
     typedef boost::shared_ptr<type> ptrtype;
     //typedef boost::shared_ptr<Exporter<Mesh<Simplex<2> >,1> > type;
-
 };
 }
 BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>::ptrtype ),
-                          exporter,                                       // 2. name of the function template
-                          tag,                                        // 3. namespace of tag types
-                          ( required                                  // 4. one required parameter, and
-                            ( mesh, * )
-                          ) // required
-                          ( optional                                  // 4. one required parameter, and
-                            ( fileset, *, boption(_name="exporter.fileset") )
-                            ( order, *, mpl::int_<1>() )
-                            ( name,  *, Environment::about().appName() )
-                            ( geo,   *, soption(_name="exporter.geometry") )
-                            ( path, *( boost::is_convertible<mpl::_,std::string> ), soption("exporter.format")+"/"+name )
-                          ) )
+                          exporter,       // 2. name of the function template
+                          tag,            // 3. namespace of tag types
+                          ( required      // 4. one required parameter, and
+                            ( mesh, * ) ) // required
+                          ( optional      // 4. one required parameter, and
+                            ( fileset, *, boption( _name = "exporter.fileset" ) )( order, *, mpl::int_<1>() )( name, *, Environment::about().appName() )( geo, *, soption( _name = "exporter.geometry" ) )( path, *(boost::is_convertible<mpl::_, std::string>), soption( "exporter.format" ) + "/" + name ) ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
-    auto e =  exporter_type::New( name,mesh->worldComm() );
+    auto e = exporter_type::New( name, mesh->worldComm() );
     e->setPrefix( name );
     e->setUseSingleTransientFile( fileset );
-    if ( std::string(geo).compare("change_coords_only") == 0 )
+    if ( std::string( geo ).compare( "change_coords_only" ) == 0 )
         e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY );
-    else if ( std::string(geo).compare("change") == 0 )
+    else if ( std::string( geo ).compare( "change" ) == 0 )
         e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE );
     else // default
         e->setMesh( mesh, EXPORTER_GEOMETRY_STATIC );
@@ -595,19 +573,17 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
 
 namespace meta
 {
-template<typename MeshType, int N = 1>
+template <typename MeshType, int N = 1>
 struct Exporter
 {
-    typedef Feel::Exporter<MeshType,N> type;
+    typedef Feel::Exporter<MeshType, N> type;
     typedef boost::shared_ptr<type> ptrtype;
 };
-
 }
 } // Feel
 
 //#if !defined( FEELPP_INSTANTIATION_MODE )
-# include <feel/feelfilters/exporterimpl.hpp>
+#include <feel/feelfilters/exporterimpl.hpp>
 //#endif // FEELPP_INSTANTIATION_MODE
-
 
 #endif /* __Exporter_H */

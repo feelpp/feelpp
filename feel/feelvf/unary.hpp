@@ -37,31 +37,30 @@ namespace vf
    \class UnaryPlus
    \brief handler for unary plus expression
 */
-template < class ExprT >
+template <class ExprT>
 class UnaryPlus
 {
-public:
-
+  public:
     static const size_type context = ExprT::context;
     static const bool is_terminal = false;
 
     static const uint16_type imorder = ExprT::imorder;
     static const bool imIsPoly = ExprT::imIsPoly;
 
-    template<typename Func>
+    template <typename Func>
     struct HasTestFunction
     {
         static const bool result = ExprT::template HasTestFunction<Func>::result;
     };
 
-    template<typename Func>
+    template <typename Func>
     struct HasTrialFunction
     {
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
-    template<typename Func>
+    template <typename Func>
     static const bool has_test_basis = ExprT::template has_test_basis<Func>;
-    template<typename Func>
+    template <typename Func>
     static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
     using test_basis = typename ExprT::test_basis;
     using trial_basis = typename ExprT::trial_basis;
@@ -72,13 +71,11 @@ public:
     typedef UnaryPlus<ExprT> this_type;
 
     UnaryPlus( const ExprT& expr )
-        :
-        M_expr( expr )
+        : M_expr( expr )
     {
     }
     UnaryPlus( UnaryPlus const& e )
-        :
-        M_expr( e.M_expr )
+        : M_expr( e.M_expr )
     {
     }
 
@@ -87,7 +84,7 @@ public:
         return M_expr;
     }
 
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
+    template <typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
@@ -103,30 +100,30 @@ public:
                 Geo_t const& geom,
                 Basis_i_t const& fev,
                 Basis_j_t const& feu )
-            :
-            M_t_expr( expr.expression(), geom, fev, feu )
-        {}
+            : M_t_expr( expr.expression(), geom, fev, feu )
+        {
+        }
         tensor( this_type const& expr,
                 Geo_t const& geom,
                 Basis_i_t const& fev )
-            :
-            M_t_expr( expr.expression(), geom, fev )
-        {}
+            : M_t_expr( expr.expression(), geom, fev )
+        {
+        }
         tensor( this_type const& expr,
                 Geo_t const& geom )
-            :
-            M_t_expr( expr.expression(), geom )
-        {}
-        template<typename IM>
+            : M_t_expr( expr.expression(), geom )
+        {
+        }
+        template <typename IM>
         void init( IM const& im )
         {
             M_t_expr.init( im );
         }
-        void update( Geo_t const& geom, Basis_i_t const& fev , Basis_j_t const& feu )
+        void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             M_t_expr.update( geom, fev, feu );
         }
-        void update( Geo_t const& geom, Basis_i_t const& fev  )
+        void update( Geo_t const& geom, Basis_i_t const& fev )
         {
             M_t_expr.update( geom, fev );
         }
@@ -138,7 +135,7 @@ public:
         {
             M_t_expr.update( geom, face );
         }
-        template<typename CTX>
+        template <typename CTX>
         void updateContext( CTX const& ctx )
         {
             M_t_expr.updateContext( ctx );
@@ -155,7 +152,7 @@ public:
         {
             return M_t_expr.evalijq( i, j, c1, c2, q );
         }
-        template<int PatternContext>
+        template <int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
@@ -175,7 +172,8 @@ public:
         }
         tensor_expr_type M_t_expr;
     };
-protected:
+
+  protected:
     UnaryPlus() {}
 
     expression_type M_expr;
@@ -191,44 +189,43 @@ protected:
    \return (unary) plus an expression
 */
 
-template <class T> inline
-Expr< UnaryPlus< Expr<T> > >
-operator + ( const Expr<T>& expr )
+template <class T>
+inline Expr<UnaryPlus<Expr<T>>>
+operator+( const Expr<T>& expr )
 {
-    typedef UnaryPlus< Expr<T> > expr_t;
+    typedef UnaryPlus<Expr<T>> expr_t;
 
-    return Expr< expr_t >( expr_t( expr ) );
+    return Expr<expr_t>( expr_t( expr ) );
 }
 
 /**
    \class UnaryMinus
    \brief handler for unary minus expression
 */
-template < class ExprT >
+template <class ExprT>
 class UnaryMinus
 {
-public:
-
+  public:
     static const size_type context = ExprT::context;
     static const bool is_terminal = false;
 
     static const uint16_type imorder = ExprT::imorder;
     static const bool imIsPoly = ExprT::imIsPoly;
 
-    template<typename Func>
+    template <typename Func>
     struct HasTestFunction
     {
         static const bool result = ExprT::template HasTestFunction<Func>::result;
     };
 
-    template<typename Func>
+    template <typename Func>
     struct HasTrialFunction
     {
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
-    template<typename Func>
+    template <typename Func>
     static const bool has_test_basis = ExprT::template has_test_basis<Func>;
-    template<typename Func>
+    template <typename Func>
     static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
     using test_basis = typename ExprT::test_basis;
     using trial_basis = typename ExprT::trial_basis;
@@ -239,22 +236,19 @@ public:
     typedef UnaryMinus<ExprT> this_type;
 
     UnaryMinus( const ExprT& expr )
-        :
-        M_expr( expr )
+        : M_expr( expr )
     {
         ;
     }
 
     UnaryMinus( UnaryMinus const& u )
-        :
-        M_expr( u.M_expr )
+        : M_expr( u.M_expr )
     {
         ;
     }
 
     UnaryMinus( UnaryMinus&& u )
-        :
-        M_expr( u.M_expr )
+        : M_expr( u.M_expr )
     {
     }
 
@@ -271,7 +265,7 @@ public:
         return M_expr;
     }
 
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
+    template <typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
@@ -287,30 +281,30 @@ public:
                 Geo_t const& geom,
                 Basis_i_t const& fev,
                 Basis_j_t const& feu )
-            :
-            M_t_expr( expr.expression(), geom, fev, feu )
-        {}
+            : M_t_expr( expr.expression(), geom, fev, feu )
+        {
+        }
         tensor( this_type const& expr,
                 Geo_t const& geom,
                 Basis_i_t const& fev )
-            :
-            M_t_expr( expr.expression(), geom, fev )
-        {}
+            : M_t_expr( expr.expression(), geom, fev )
+        {
+        }
         tensor( this_type const& expr,
                 Geo_t const& geom )
-            :
-            M_t_expr( expr.expression(), geom )
-        {}
-        template<typename IM>
+            : M_t_expr( expr.expression(), geom )
+        {
+        }
+        template <typename IM>
         void init( IM const& im )
         {
             M_t_expr.init( im );
         }
-        void update( Geo_t const& geom, Basis_i_t const& fev , Basis_j_t const& feu )
+        void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             M_t_expr.update( geom, fev, feu );
         }
-        void update( Geo_t const& geom, Basis_i_t const& fev  )
+        void update( Geo_t const& geom, Basis_i_t const& fev )
         {
             M_t_expr.update( geom, fev );
         }
@@ -323,7 +317,7 @@ public:
             M_t_expr.update( geom, face );
         }
 
-        template<typename CTX>
+        template <typename CTX>
         void updateContext( CTX const& ctx )
         {
             M_t_expr.updateContext( ctx );
@@ -340,7 +334,7 @@ public:
         {
             return -M_t_expr.evalijq( i, j, c1, c2, q );
         }
-        template<int PatternContext>
+        template <int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
@@ -360,7 +354,8 @@ public:
         }
         tensor_expr_type M_t_expr;
     };
-protected:
+
+  protected:
     UnaryMinus() {}
 
     expression_type M_expr;
@@ -376,13 +371,13 @@ protected:
 
    \return (unary) minus an expression
 */
-template <class T> inline
-Expr< UnaryMinus< Expr<T> > >
-operator - ( const Expr<T>& expr )
+template <class T>
+inline Expr<UnaryMinus<Expr<T>>>
+operator-( const Expr<T>& expr )
 {
-    typedef UnaryMinus< Expr<T> > expr_t;
+    typedef UnaryMinus<Expr<T>> expr_t;
 
-    return Expr< expr_t >( expr_t( expr ) );
+    return Expr<expr_t>( expr_t( expr ) );
 }
 } // vf
 } // Feel

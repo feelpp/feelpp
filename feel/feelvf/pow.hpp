@@ -33,12 +33,11 @@ namespace Feel
 {
 namespace vf
 {
-template < typename ExprT1, typename ExprT2 >
+template <typename ExprT1, typename ExprT2>
 class Pow
 {
-public:
-
-    static const size_type context = ExprT1::context|ExprT2::context;
+  public:
+    static const size_type context = ExprT1::context | ExprT2::context;
     static const bool is_terminal = false;
 
     /**
@@ -48,20 +47,20 @@ public:
     static const uint16_type imorder = ExprT1::imorder;
     static const bool imIsPoly = ExprT1::imIsPoly && ExprT2::imIsPoly;
 
-    template<typename Func>
+    template <typename Func>
     struct HasTestFunction
     {
         static const bool result = false;
     };
 
-    template<typename Func>
+    template <typename Func>
     struct HasTrialFunction
     {
         static const bool result = false;
     };
-    template<typename Func>
+    template <typename Func>
     static const bool has_test_basis = false;
-    template<typename Func>
+    template <typename Func>
     static const bool has_trial_basis = false;
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
@@ -75,23 +74,20 @@ public:
     typedef value_type evaluate_type;
 
     // verify that all returning types are integral or floating types
-    BOOST_STATIC_ASSERT( ::boost::is_arithmetic<value_1_type>::value  &&
-                         ::boost::is_arithmetic<value_2_type>::value );
+    BOOST_STATIC_ASSERT(::boost::is_arithmetic<value_1_type>::value&& ::boost::is_arithmetic<value_2_type>::value );
 
-    explicit Pow( expression_1_type const& __expr1, expression_2_type const& __expr2  )
-        :
-        M_expr_1( __expr1 ),
-        M_expr_2( __expr2 )
+    explicit Pow( expression_1_type const& __expr1, expression_2_type const& __expr2 )
+        : M_expr_1( __expr1 ),
+          M_expr_2( __expr2 )
     {
-        DVLOG(2) << "Pow::Pow default constructor\n";
+        DVLOG( 2 ) << "Pow::Pow default constructor\n";
     }
 
-    Pow( Pow const& __vfp  )
-        :
-        M_expr_1( __vfp.M_expr_1 ),
-        M_expr_2( __vfp.M_expr_2 )
+    Pow( Pow const& __vfp )
+        : M_expr_1( __vfp.M_expr_1 ),
+          M_expr_2( __vfp.M_expr_2 )
     {
-        DVLOG(2) << "Pow::Pow copy constructor\n";
+        DVLOG( 2 ) << "Pow::Pow copy constructor\n";
     }
 
     bool isSymetric() const
@@ -108,7 +104,7 @@ public:
         return M_expr_2;
     }
 
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
+    template <typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
         typedef this_type expression_type;
@@ -116,15 +112,14 @@ public:
         typedef typename expression_2_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> r_type;
 
         typedef typename strongest_numeric_type<typename l_type::value_type,
-                typename r_type::value_type>::type value_type;
-
+                                                typename r_type::value_type>::type value_type;
 
         using key_type = key_t<Geo_t>;
         using gmc_type = gmc_t<Geo_t>;
         using gmc_ptrtype = gmc_ptr_t<Geo_t>;
         typedef typename l_type::shape shape;
 
-        typedef typename Eigen::Matrix<value_type,shape::M,shape::N> loc_type;
+        typedef typename Eigen::Matrix<value_type, shape::M, shape::N> loc_type;
 
         struct is_zero
         {
@@ -133,34 +128,31 @@ public:
 
         tensor( expression_type const& expr, Geo_t const& geom,
                 Basis_i_t const& fev, Basis_j_t const& feu )
-            :
-            M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_left( expr.left(),  geom, fev, feu ),
-            M_right( expr.right(), geom, fev, feu ),
-            M_loc( boost::extents[M_gmc->nPoints()]  )
+            : M_gmc( fusion::at_key<key_type>( geom ).get() ),
+              M_left( expr.left(), geom, fev, feu ),
+              M_right( expr.right(), geom, fev, feu ),
+              M_loc( boost::extents[M_gmc->nPoints()] )
         {
             update( geom );
         }
         tensor( expression_type const& expr, Geo_t const& geom,
                 Basis_i_t const& fev )
-            :
-            M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_left( expr.left(),  geom, fev ),
-            M_right( expr.right(), geom, fev ),
-            M_loc( boost::extents[M_gmc->nPoints()] )
+            : M_gmc( fusion::at_key<key_type>( geom ).get() ),
+              M_left( expr.left(), geom, fev ),
+              M_right( expr.right(), geom, fev ),
+              M_loc( boost::extents[M_gmc->nPoints()] )
         {
             update( geom );
         }
         tensor( expression_type const& expr, Geo_t const& geom )
-            :
-            M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_left( expr.left(),  geom ),
-            M_right( expr.right(), geom ),
-            M_loc(  boost::extents[M_gmc->nPoints()] )
+            : M_gmc( fusion::at_key<key_type>( geom ).get() ),
+              M_left( expr.left(), geom ),
+              M_right( expr.right(), geom ),
+              M_loc( boost::extents[M_gmc->nPoints()] )
         {
             update( geom );
         }
-        template<typename IM>
+        template <typename IM>
         void init( IM const& im )
         {
             M_left.init( im );
@@ -176,7 +168,7 @@ public:
         }
         void update( Geo_t const& geom )
         {
-            const int npts =  fusion::at_key<key_type>( geom ).get()->nPoints();
+            const int npts = fusion::at_key<key_type>( geom ).get()->nPoints();
             M_left.update( geom );
             M_right.update( geom );
 
@@ -186,7 +178,7 @@ public:
                     {
                         value_type left = M_left.evalq( c1, c2, q );
                         value_type right = M_right.evalq( c1, c2, q );
-                        M_loc[q]( c1,c2 ) = std::pow( left, right );
+                        M_loc[q]( c1, c2 ) = std::pow( left, right );
                     }
         }
         void update( Geo_t const& geom, uint16_type face )
@@ -201,16 +193,16 @@ public:
                     {
                         value_type left = M_left.evalq( c1, c2, q );
                         value_type right = M_right.evalq( c1, c2, q );
-                        M_loc[q]( c1,c2 ) = std::pow( left, right );
+                        M_loc[q]( c1, c2 ) = std::pow( left, right );
                     }
         }
 
         value_type
-        evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q  ) const
+        evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return evalq( c1, c2, q );
         }
-        template<int PatternContext>
+        template <int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
@@ -221,7 +213,7 @@ public:
         }
 
         value_type
-        evaliq( uint16_type /*i*/, uint16_type c1, uint16_type c2, uint16_type q  ) const
+        evaliq( uint16_type /*i*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return evalq( c1, c2, q );
         }
@@ -236,81 +228,78 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            return M_loc[q]( 0,0 );
+            return M_loc[q]( 0, 0 );
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const
         {
             if ( shape::M > shape::N )
-                return M_loc[q]( c1,0 );
+                return M_loc[q]( c1, 0 );
 
-            return M_loc[q]( 0,c2 );
+            return M_loc[q]( 0, c2 );
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> ) const
         {
-            return M_loc[q]( c1,c2 );
+            return M_loc[q]( c1, c2 );
         }
 
-    private:
+      private:
         gmc_ptrtype M_gmc;
         l_type M_left;
         r_type M_right;
         //ublas::vector<double> M_loc;
-        boost::multi_array<loc_type,1> M_loc;
+        boost::multi_array<loc_type, 1> M_loc;
     };
 
-protected:
+  protected:
     Pow() {}
 
     expression_1_type M_expr_1;
     expression_2_type M_expr_2;
 };
 
-template<typename ExprT1,  typename ExprT2>
-inline
-Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-      mpl::identity<Cst<ExprT1> >,
-      mpl::identity<ExprT1> >::type::type,
-      typename mpl::if_<boost::is_arithmetic<ExprT2>,
-      mpl::identity<Cst<ExprT2> >,
-      mpl::identity<ExprT2> >::type::type> >
-      pow( ExprT1 const& __e1, ExprT2 const& __e2 )
+template <typename ExprT1, typename ExprT2>
+inline Expr<Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
+                                  mpl::identity<Cst<ExprT1>>,
+                                  mpl::identity<ExprT1>>::type::type,
+                typename mpl::if_<boost::is_arithmetic<ExprT2>,
+                                  mpl::identity<Cst<ExprT2>>,
+                                  mpl::identity<ExprT2>>::type::type>>
+pow( ExprT1 const& __e1, ExprT2 const& __e2 )
 {
     typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
-            mpl::identity<Cst<ExprT1> >,
-            mpl::identity<ExprT1> >::type::type t1;
+                              mpl::identity<Cst<ExprT1>>,
+                              mpl::identity<ExprT1>>::type::type t1;
     typedef typename mpl::if_<boost::is_arithmetic<ExprT2>,
-            mpl::identity<Cst<ExprT2> >,
-            mpl::identity<ExprT2> >::type::type t2;
+                              mpl::identity<Cst<ExprT2>>,
+                              mpl::identity<ExprT2>>::type::type t2;
     typedef Pow<t1, t2> expr_t;
-    return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );
+    return Expr<expr_t>( expr_t( t1( __e1 ), t2( __e2 ) ) );
 }
 
-
-template<typename ExprT1,  typename ExprT2>
-inline
-Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-                            mpl::identity<Cst<ExprT1> >,
-                            mpl::identity<Expr<ExprT1> > >::type::type,
-          typename mpl::if_<boost::is_arithmetic<ExprT2>,
-                            mpl::identity<Cst<ExprT2> >,
-                            mpl::identity<Expr<ExprT2> > >::type::type> >
+template <typename ExprT1, typename ExprT2>
+inline Expr<Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
+                                  mpl::identity<Cst<ExprT1>>,
+                                  mpl::identity<Expr<ExprT1>>>::type::type,
+                typename mpl::if_<boost::is_arithmetic<ExprT2>,
+                                  mpl::identity<Cst<ExprT2>>,
+                                  mpl::identity<Expr<ExprT2>>>::type::type>>
 operator^( typename mpl::if_<boost::is_arithmetic<ExprT1>,
                              mpl::identity<ExprT1>,
-                             mpl::identity<Expr<ExprT1> > >::type::type const& __e1,
+                             mpl::identity<Expr<ExprT1>>>::type::type const& __e1,
            typename mpl::if_<boost::is_arithmetic<ExprT2>,
                              mpl::identity<ExprT2>,
-                             mpl::identity<Expr<ExprT2> > >::type::type const& __e2 )
+                             mpl::identity<Expr<ExprT2>>>::type::type const& __e2 )
 {
     typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
-            mpl::identity<Cst<ExprT1> >,
-            mpl::identity<ExprT1> >::type::type t1;
+                              mpl::identity<Cst<ExprT1>>,
+                              mpl::identity<ExprT1>>::type::type t1;
     typedef typename mpl::if_<boost::is_arithmetic<ExprT2>,
-            mpl::identity<Cst<ExprT2> >,
-            mpl::identity<ExprT2> >::type::type t2;
+                              mpl::identity<Cst<ExprT2>>,
+                              mpl::identity<ExprT2>>::type::type t2;
     typedef Pow<t1, t2> expr_t;
-    return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );
+    return Expr<expr_t>( expr_t( t1( __e1 ), t2( __e2 ) ) );
 }
 } // vf
 } //Feel

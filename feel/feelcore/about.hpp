@@ -30,13 +30,10 @@
 #ifndef __about_H
 #define __about_H 1
 
-#include <vector>
 #include <string>
+#include <vector>
 
 #include <feel/feelcore/parameter.hpp>
-
-
-
 
 namespace Feel
 {
@@ -63,7 +60,7 @@ class AboutDataPrivate;
  */
 class AboutPerson
 {
-public:
+  public:
     /**
      * Convenience constructor
      *
@@ -80,11 +77,10 @@ public:
                  std::string _task,
                  std::string _emailAddress,
                  std::string _webAddress )
-        :
-        M_Name( _name ),
-        M_Task( _task ),
-        M_EmailAddress( _emailAddress ),
-        M_WebAddress( _webAddress )
+        : M_Name( _name ),
+          M_Task( _task ),
+          M_EmailAddress( _emailAddress ),
+          M_WebAddress( _webAddress )
     {
     }
     /**
@@ -92,28 +88,28 @@ public:
      * Don't use.
      */
     AboutPerson()
-        :
-        M_Name(),
-        M_Task(),
-        M_EmailAddress(),
-        M_WebAddress()
-    {}
+        : M_Name(),
+          M_Task(),
+          M_EmailAddress(),
+          M_WebAddress()
+    {
+    }
 
     /**
      * @internal
      * Don't use.
      */
     AboutPerson( AboutPerson const& ap )
-        :
-        M_Name( ap.M_Name ),
-        M_Task( ap.M_Task ),
-        M_EmailAddress( ap.M_EmailAddress ),
-        M_WebAddress( ap.M_WebAddress )
-    {}
+        : M_Name( ap.M_Name ),
+          M_Task( ap.M_Task ),
+          M_EmailAddress( ap.M_EmailAddress ),
+          M_WebAddress( ap.M_WebAddress )
+    {
+    }
 
     AboutPerson& operator=( AboutPerson const& __ap )
     {
-        if ( this != & __ap )
+        if ( this != &__ap )
         {
             M_Name = __ap.M_Name;
             M_Task = __ap.M_Task;
@@ -151,13 +147,13 @@ public:
      */
     std::string webAddress() const;
 
-private:
-    std::string  M_Name;
-    std::string  M_Task;
-    std::string  M_EmailAddress;
-    std::string  M_WebAddress;
+  private:
+    std::string M_Name;
+    std::string M_Task;
+    std::string M_EmailAddress;
+    std::string M_WebAddress;
 
-    AboutPersonPrivate *d;
+    AboutPersonPrivate* d;
 };
 
 /**
@@ -172,7 +168,7 @@ private:
  */
 class AboutData
 {
-public:
+  public:
     /**
      * Descibes the license of the software.
      */
@@ -181,19 +177,19 @@ public:
         License_Custom = -2,
         License_File = -1,
         License_Unknown = 0,
-        License_GPL  = 1,
+        License_GPL = 1,
         License_GPL_V2 = 1,
         License_GPL_V3 = 1,
         License_LGPL = 2,
         License_LGPL_V2 = 2,
         License_LGPL_V3 = 2,
-        License_BSD  = 3,
+        License_BSD = 3,
         License_Artistic = 4,
         License_QPL = 5,
         License_QPL_V1_0 = 5
     };
 
-public:
+  public:
     /**
      * Constructor.
      *
@@ -228,16 +224,15 @@ public:
      *        This defaults to the feelpp-dev@feelpp.org mailing list.
      *
      */
-    AboutData( std::string const & appName = "feel++",
-               std::string const & programName = "feel++",
-               std::string const & version = Info::versionString(),
-               std::string const & shortDescription = "",
+    AboutData( std::string const& appName = "feel++",
+               std::string const& programName = "feel++",
+               std::string const& version = Info::versionString(),
+               std::string const& shortDescription = "",
                int licenseType = License_GPL_V3,
-               std::string const & copyrightStatement = "",
-               std::string const & text = "",
-               std::string const & homePageAddress = "",
-               std::string const & bugsEmailAddress = "feelpp-devel@feelpp.org"
-             );
+               std::string const& copyrightStatement = "",
+               std::string const& text = "",
+               std::string const& homePageAddress = "",
+               std::string const& bugsEmailAddress = "feelpp-devel@feelpp.org" );
 
     AboutData( AboutData const& ad );
 
@@ -262,10 +257,10 @@ public:
      *        is correct, "some.domain" is not. Can be 0.
      *
      */
-    void addAuthor( std::string const & name,
-                    std::string const & task=0,
-                    std::string const & emailAddress=0,
-                    std::string const & webAddress=0 );
+    void addAuthor( std::string const& name,
+                    std::string const& task = 0,
+                    std::string const& emailAddress = 0,
+                    std::string const& webAddress = 0 );
 
     /**
      * Defines a person that deserves credit. You can call this function
@@ -286,10 +281,10 @@ public:
      *        is correct, "some.domain" is not. Can be 0.
      *
      */
-    void addCredit( std::string const & name,
-                    std::string const & task=0,
-                    std::string const & emailAddress=0,
-                    std::string const & webAddress=0 );
+    void addCredit( std::string const& name,
+                    std::string const& task = 0,
+                    std::string const& emailAddress = 0,
+                    std::string const& webAddress = 0 );
 
     /**
      * Defines a license text.
@@ -306,14 +301,14 @@ public:
      *
      * @param license The license text in utf8 encoding.
      */
-    void setLicenseText( std::string const & license );
+    void setLicenseText( std::string const& license );
 
     /**
      * Defines the program name used internally.
      *
      * @param appName The application name. Example: "kate".
      */
-    void setAppName( std::string const & appName );
+    void setAppName( std::string const& appName );
 
     /**
      * Defines the displayable program name string.
@@ -322,14 +317,14 @@ public:
      *        marked for translation.
      *        Example: I18N_NOOP("Advanced Text Editor").
      */
-    void setProgramName( std::string const & programName );
+    void setProgramName( std::string const& programName );
 
     /**
      * Defines the program version string.
      *
      * @param version The program version.
      */
-    void setVersion( std::string const & version );
+    void setVersion( std::string const& version );
 
     /**
      * Defines a short description of what the program does.
@@ -338,7 +333,7 @@ public:
      *        for translation. Example: I18N_NOOP("An advanced text editor
      *        with syntax highlithing support.").
      */
-    void setShortDescription( std::string const & shortDescription );
+    void setShortDescription( std::string const& shortDescription );
 
     /**
      * Defines the license identifier.
@@ -355,7 +350,7 @@ public:
      *        modified in any manner. The author information from addAuthor
      *        is not used.
      */
-    void setCopyrightStatement( std::string const & copyrightStatement );
+    void setCopyrightStatement( std::string const& copyrightStatement );
 
     /**
      * Defines the additional text to show in the about dialog.
@@ -364,7 +359,7 @@ public:
      *        information. The text can contain newlines. This string
      *        should be marked for translation.
      */
-    void setOtherText( std::string const & otherText );
+    void setOtherText( std::string const& otherText );
 
     /**
      * Defines the program homepage.
@@ -373,7 +368,7 @@ public:
      *        Start the address with "http://". "http://www.feel.org" is
      *        is correct, "www.feel.org" is not.
      */
-    void setHomepage( std::string const & homepage );
+    void setHomepage( std::string const& homepage );
 
     /**
      * Defines the address where bug reports should be sent.
@@ -381,7 +376,7 @@ public:
      * @param bugAddress The bug report email address string.
      *        This defaults to the feel-dev@ mailing list.
      */
-    void setBugAddress( std::string const & bugAddress );
+    void setBugAddress( std::string const& bugAddress );
 
     /**
      * Defines the product name wich will be used in the KBugReport dialog.
@@ -391,8 +386,7 @@ public:
      *
      * @param name The name of product
      */
-    void setProductName( std::string const & name );
-
+    void setProductName( std::string const& name );
 
     /**
      * Returns the application's internal name.
@@ -473,9 +467,7 @@ public:
      */
     std::string copyrightStatement() const;
 
-
-
-private:
+  private:
     std::string M_AppName;
     std::string M_ProgramName;
     std::string M_ProductName;
@@ -490,7 +482,7 @@ private:
     std::vector<AboutPerson> M_CreditList;
     std::string M_LicenseText;
 
-    AboutDataPrivate *d;
+    AboutDataPrivate* d;
 };
 
 /**
@@ -504,25 +496,13 @@ private:
 std::ostream& operator<<( std::ostream& os, AboutData const& about );
 
 BOOST_PARAMETER_FUNCTION(
-    (AboutData), about, tag,
-    ( required (name, *  ) )
-    ( optional
-      ( author,  *, "Feel++ Consortium"  )
-      ( task,  *, "developer"  )
-      ( email,  *, "feelpp-devel@feelpp.org"  )
-      ( desc, *, "Feel++ application" )
-      ( license, (int), AboutData::License_GPL_V3 )
-      ( copyright, *, "Copyright (C) Feel++ Consortium" )
-      ( home, *, "http://www.feelpp.org" )
-      ( bugs, *, "feelpp-devel@feelpp.org" )
-      ( version, *, Feel::Info::versionString() )
-        ))
+    ( AboutData ), about, tag,
+    ( required( name, * ) )( optional( author, *, "Feel++ Consortium" )( task, *, "developer" )( email, *, "feelpp-devel@feelpp.org" )( desc, *, "Feel++ application" )( license, (int), AboutData::License_GPL_V3 )( copyright, *, "Copyright (C) Feel++ Consortium" )( home, *, "http://www.feelpp.org" )( bugs, *, "feelpp-devel@feelpp.org" )( version, *, Feel::Info::versionString() ) ) )
 {
     AboutData a( name, name, version, desc,
                  license, copyright, "", home, bugs );
     a.addAuthor( author, task, email, home );
     return a;
 }
-
 }
 #endif /* __about_H */

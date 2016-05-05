@@ -29,7 +29,6 @@
 #ifndef __MeshMover_H
 #define __MeshMover_H 1
 
-
 namespace Feel
 {
 /**
@@ -38,12 +37,10 @@ namespace Feel
  *
  *  @author Christophe Prud'homme
  */
-template<typename MeshType>
+template <typename MeshType>
 class MeshMover
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -65,21 +62,23 @@ public:
     //@{
 
     MeshMover()
-        :
-        M_updateMeshMeasures( true )
-    {}
+        : M_updateMeshMeasures( true )
+    {
+    }
 
     MeshMover( mesh_ptrtype const& mesh )
-        :
-        M_mesh( mesh ),
-        M_updateMeshMeasures( true )
-    {}
+        : M_mesh( mesh ),
+          M_updateMeshMeasures( true )
+    {
+    }
 
-    MeshMover( MeshMover const & )
-    {}
+    MeshMover( MeshMover const& )
+    {
+    }
 
     virtual ~MeshMover()
-    {}
+    {
+    }
 
     //@}
 
@@ -87,13 +86,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
-
 
     //@}
 
@@ -102,49 +99,43 @@ public:
     //@{
     void setUpdateMeshMeasures( bool b ) { M_updateMeshMeasures = b; }
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-    template<typename DisplType>
+    template <typename DisplType>
     value_type tryit( DisplType const& u );
 
-    template<typename DisplType>
+    template <typename DisplType>
     //boost::tuple<mesh_ptrtype,value_type> apply( mesh_ptrtype const& imesh, DisplType const& u );
     void apply( mesh_ptrtype& imesh, DisplType const& u );
 
     //@}
-private:
+  private:
     mesh_ptrtype M_mesh;
     bool M_updateMeshMeasures;
 };
 
-
-
-template<typename MeshType>
-template<typename DisplType>
+template <typename MeshType>
+template <typename DisplType>
 typename MeshMover<MeshType>::value_type
 MeshMover<MeshType>::tryit( DisplType const& u )
 {
     // check that the displacement function is vectorial
     //BOOST_MPL_ASSERT_MSG( DisplType::is_vectorial, INVALID_DISPLACEMENT_TYPE, DisplType );
-
-
 }
-template<typename MeshType>
-template<typename DisplType>
+template <typename MeshType>
+template <typename DisplType>
 //boost::tuple<typename MeshMover<MeshType>::mesh_ptrtype,
 //             typename MeshMover<MeshType>::value_type>
-void
-MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
+void MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 {
     // check that the displacement function is vectorial
     //BOOST_MPL_ASSERT_MSG( DisplType::is_vectorial, INVALID_DISPLACEMENT_TYPE, DisplType );
 
-    DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
+    DVLOG( 2 ) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename mesh_type::element_type element_type;
     typedef typename mesh_type::face_type face_type;
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
@@ -152,7 +143,6 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 
     typedef typename DisplType::functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
-
 
     gm_ptrtype gm( new gm_type );
     fe_type fe;
@@ -167,16 +157,17 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     //mesh_ptrtype omesh( new mesh_type );
     //*omesh = *imesh;
 
-    bool addExtendedMPIElt =  (imesh->worldComm().localSize() > 1) && u.functionSpace()->dof()->buildDofTableMPIExtended();
-    EntityProcessType entityProcess = (addExtendedMPIElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+    bool addExtendedMPIElt = ( imesh->worldComm().localSize() > 1 ) && u.functionSpace()->dof()->buildDofTableMPIExtended();
+    EntityProcessType entityProcess = ( addExtendedMPIElt ) ? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
     auto rangeElt = elements( imesh, entityProcess );
     auto it_elt = rangeElt.template get<1>();
     auto en_elt = rangeElt.template get<2>();
-    if ( std::distance(it_elt,en_elt)==0 )
+    if ( std::distance( it_elt, en_elt ) == 0 )
     {
         // call updateMeasures in parallel here because this function is called ( at the end of this function)
         // by others proc which have elements and need collective comm
-        if ( imesh->worldComm().localSize() > 1 ) {
+        if ( imesh->worldComm().localSize() > 1 )
+        {
             //imesh->updateForUse();
             imesh->updateMeasures();
         }
@@ -189,25 +180,23 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     gm_context_ptrtype __c( new gm_context_type( gm, *it_elt, __geopc ) );
 
     typedef typename mesh_type::element_type geoelement_type;
-    typedef typename fe_type::template Context<0, fe_type, gm_type, geoelement_type,gm_context_type::context> fectx_type;
+    typedef typename fe_type::template Context<0, fe_type, gm_type, geoelement_type, gm_context_type::context> fectx_type;
     typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( u.functionSpace()->fe(),
                                          __c,
                                          __pc ) );
     typedef typename fectx_type::id_type m_type;
-    typedef boost::multi_array<m_type,1> array_type;
+    typedef boost::multi_array<m_type, 1> array_type;
     array_type uvalues( u.idExtents( *__ctx ) );
-    std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m_type::Zero() );
+    std::fill( uvalues.data(), uvalues.data() + uvalues.num_elements(), m_type::Zero() );
     u.id( *__ctx, uvalues );
 
     //const uint16_type ndofv = fe_type::nDof;
 
-
-    std::map<int,bool> points_done;
+    std::map<int, bool> points_done;
 
     //if ( !u.areGlobalValuesUpdated() )
     u.updateGlobalValues();
-
 
     uint16_type nptsperelem = gm->points().size2();
     ublas::vector<value_type> val( fe_type::nComponents );
@@ -218,14 +207,14 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 
         __c->update( *it_elt );
         __ctx->update( __c );
-        std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m_type::Zero() );
+        std::fill( uvalues.data(), uvalues.data() + uvalues.num_elements(), m_type::Zero() );
         u.id( *__ctx, uvalues );
 
-        for ( uint16_type l =0; l < nptsperelem; ++l )
+        for ( uint16_type l = 0; l < nptsperelem; ++l )
         {
             for ( uint16_type comp = 0; comp < fe_type::nComponents; ++comp )
             {
-                val[ comp ] = uvalues[l]( comp,0 );
+                val[comp] = uvalues[l]( comp, 0 );
             }
 
             if ( points_done.find( curElt.point( l ).id() ) == points_done.end() )
@@ -258,11 +247,11 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 
             for ( int f = 0; f < face_type::numPoints; ++f )
             {
-                uint16_type ptLocalId = ( MeshType::nDim==1 )?j:curElt.fToP( j, f );
+                uint16_type ptLocalId = ( MeshType::nDim == 1 ) ? j : curElt.fToP( j, f );
                 auto const& curPoint = curElt.point( ptLocalId );
                 for ( uint16_type comp = 0; comp < fe_type::nComponents; ++comp )
                 {
-                    val[ comp ] = curPoint( comp );
+                    val[comp] = curPoint( comp );
                 }
                 imesh->faces().modify( imesh->faceIterator( curFace ),
                                        lambda::bind( &face_type::setPointCoordG,
@@ -289,12 +278,12 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 
 #if !defined( __INTEL_COMPILER )
     // notify observers that the mesh has changed
-    LOG(INFO) << "Notify observers that the mesh has changed\n"; 
-    imesh->meshChanged(MESH_CHANGES_POINTS_COORDINATES );
+    LOG( INFO ) << "Notify observers that the mesh has changed\n";
+    imesh->meshChanged( MESH_CHANGES_POINTS_COORDINATES );
 #endif
 }
 
-template<typename MeshType, typename DisplType>
+template <typename MeshType, typename DisplType>
 boost::shared_ptr<MeshType>
 meshMove( boost::shared_ptr<MeshType>& m, DisplType const& u )
 {

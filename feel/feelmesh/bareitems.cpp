@@ -94,12 +94,12 @@ std::pair<BareFace, bool>
 makeBareFace( size_type const i, size_type const j, size_type const k, size_type const l )
 {
     std::vector<size_type> helper( 4 );
-    helper[ 0 ] = i;
-    helper[ 1 ] = j;
-    helper[ 2 ] = k;
-    helper[ 3 ] = l;
+    helper[0] = i;
+    helper[1] = j;
+    helper[2] = k;
+    helper[3] = l;
     std::vector<size_type>::iterator vi = std::max_element( helper.begin(), helper.end() );
     std::rotate( helper.begin(), vi, helper.end() );
-    return makeBareFace( helper[ 1 ], helper[ 2 ], helper[ 3 ] );
+    return makeBareFace( helper[1], helper[2], helper[3] );
 }
 }

@@ -38,12 +38,10 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-template<typename SpaceType, bool IsTest = true>
+template <typename SpaceType, bool IsTest = true>
 class BasisFunctions
 {
-public:
-
-
+  public:
     /** @name Constants
      */
     //@{
@@ -70,20 +68,19 @@ public:
     //@{
 
     //! default constructor
-    BasisFunctions(boost::shared_ptr<space_type> const& X )
-        :
-        M_space( X )
-        {}
+    BasisFunctions( boost::shared_ptr<space_type> const& X )
+        : M_space( X )
+    {
+    }
     //! copy constructor
-    BasisFunctions( BasisFunctions const & bf )
-        :
-        M_space( bf.M_space )
-        {}
+    BasisFunctions( BasisFunctions const& bf )
+        : M_space( bf.M_space )
+    {
+    }
     //! destructor
     virtual ~BasisFunctions() {}
 
     //@}
-
 
     /** @name Accessors
      */
@@ -92,24 +89,24 @@ public:
     basis_type const& basis() const { return M_space->fe(); }
     //@}
 
-protected:
-
+  protected:
     space_ptrtype M_space;
 };
-template<typename SpaceType> using Test = BasisFunctions<SpaceType,0>;
+template <typename SpaceType>
+using Test = BasisFunctions<SpaceType, 0>;
 
-template<typename SpaceType>
+template <typename SpaceType>
 Test<SpaceType> test( boost::shared_ptr<SpaceType> const& X )
 {
     return Test<SpaceType>( X );
 }
 
-template<typename SpaceType> using Trial = BasisFunctions<SpaceType,1>;
-template<typename SpaceType>
+template <typename SpaceType>
+using Trial = BasisFunctions<SpaceType, 1>;
+template <typename SpaceType>
 Trial<SpaceType> trial( boost::shared_ptr<SpaceType> const& X )
 {
     return Trial<SpaceType>( X );
 }
-
 }
 #Endif /* FEELPP_BASISFUNCTIONS_HPP */

@@ -34,54 +34,51 @@
 
 namespace Feel
 {
-template<typename MeshType>
+template <typename MeshType>
 ExporterGnuplot<MeshType>::ExporterGnuplot( std::string const& __p, int freq, int properties )
-    :
-    super( "gnuplot", __p, freq ),
-    M_grid( properties & GRID_ON ),
-    M_png_output( properties & PNG_OUTPUT )
+    : super( "gnuplot", __p, freq ),
+      M_grid( properties & GRID_ON ),
+      M_png_output( properties & PNG_OUTPUT )
 {
-
 }
-template<typename MeshType>
+template <typename MeshType>
 ExporterGnuplot<MeshType>::ExporterGnuplot( po::variables_map const& vm,
-        std::string const& exp_prefix,
-        int properties )
-    :
-    super( vm, exp_prefix ),
-    M_grid( properties & GRID_ON ),
-    M_png_output( properties & PNG_OUTPUT )
-{}
-template<typename MeshType>
-ExporterGnuplot<MeshType>::ExporterGnuplot( ExporterGnuplot const & __ex )
-    :
-    super( __ex ),
-    M_grid( __ex.M_grid ),
-    M_png_output( __ex.M_png_output )
-{}
-template<typename MeshType>
-ExporterGnuplot<MeshType>::~ExporterGnuplot()
-{}
-
-template<typename MeshType>
-void
-ExporterGnuplot<MeshType>::visit( mesh_type* mesh )
+                                            std::string const& exp_prefix,
+                                            int properties )
+    : super( vm, exp_prefix ),
+      M_grid( properties & GRID_ON ),
+      M_png_output( properties & PNG_OUTPUT )
 {
 }
-template<typename MeshType>
-void
-ExporterGnuplot<MeshType>::save() const
+template <typename MeshType>
+ExporterGnuplot<MeshType>::ExporterGnuplot( ExporterGnuplot const& __ex )
+    : super( __ex ),
+      M_grid( __ex.M_grid ),
+      M_png_output( __ex.M_png_output )
+{
+}
+template <typename MeshType>
+ExporterGnuplot<MeshType>::~ExporterGnuplot()
+{
+}
+
+template <typename MeshType>
+void ExporterGnuplot<MeshType>::visit( mesh_type* mesh )
+{
+}
+template <typename MeshType>
+void ExporterGnuplot<MeshType>::save() const
 {
     static int freq = 0;
 
-    DVLOG(2) << "[ExporterGnuplot] checking if frequency is ok\n";
+    DVLOG( 2 ) << "[ExporterGnuplot] checking if frequency is ok\n";
 
-    if ( freq++ % this->freq()  )
+    if ( freq++ % this->freq() )
         return;
 
-    DVLOG(2) << "[ExporterGnuplot] frequency is ok\n";
+    DVLOG( 2 ) << "[ExporterGnuplot] frequency is ok\n";
 
-    DVLOG(2) << "[ExporterGnuplot] save()...\n";
+    DVLOG( 2 ) << "[ExporterGnuplot] save()...\n";
 
     std::stringstream data_stream_name;
     data_stream_name << this->prefix() << "_data";
@@ -100,7 +97,7 @@ ExporterGnuplot<MeshType>::save() const
     {
         std::cerr << "ERROR: opening output file " << this->prefix()
                   << std::endl;
-        throw std::logic_error( "invalid filename" ) ;
+        throw std::logic_error( "invalid filename" );
         //error();
     }
 
@@ -163,19 +160,16 @@ ExporterGnuplot<MeshType>::save() const
 
     //out << "plot \"" << data_file_name << "\" using 1:2 title \"" << (*names)[0] << "\" with lines";
 
-
     out.close();
 
-    DVLOG(2) << "[ExporterGnuplot] saving done\n";
+    DVLOG( 2 ) << "[ExporterGnuplot] saving done\n";
 }
-
 
 #if defined( FEELPP_INSTANTIATION_MODE )
 //
 // explicit instances
 //
-template class ExporterGnuplot<Mesh<Simplex<1,1> > >;
+template class ExporterGnuplot<Mesh<Simplex<1, 1>>>;
 #endif // FEELPP_INSTANTIATION_MODE
-
 }
 #endif // __EXPORTERGNUPLOT_CPP

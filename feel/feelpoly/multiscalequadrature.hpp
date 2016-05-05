@@ -29,8 +29,6 @@
 
 #include <feel/feelpoly/quadpoint.hpp>
 
-
-
 namespace Feel
 {
 /*!
@@ -46,16 +44,18 @@ namespace Feel
  * @author Thomas Lantz
  */
 
-template<class Convex, uint16_type Integration_Degree, typename T>
-class MultiScaleQuadrature : public PointSetQuadrature<Convex, Integration_Degree, T>  {};
-
-template< uint16_type Integration_Degree, typename T>
-class MultiScaleQuadrature<Simplex<0,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<0,1> , Integration_Degree, T>
+template <class Convex, uint16_type Integration_Degree, typename T>
+class MultiScaleQuadrature : public PointSetQuadrature<Convex, Integration_Degree, T>
 {
-public :
+};
+
+template <uint16_type Integration_Degree, typename T>
+class MultiScaleQuadrature<Simplex<0, 1>, Integration_Degree, T> : public PointSetQuadrature<Simplex<0, 1>, Integration_Degree, T>
+{
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<0,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<0, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -65,10 +65,8 @@ public :
     static const uint32_type Npoints = 1;
 
     MultiScaleQuadrature()
-        :
-        super( Npoints )
+        : super( Npoints )
     {
-
     }
 
     ~MultiScaleQuadrature() {}
@@ -78,15 +76,14 @@ public :
 
 /** Multi Scale Quadrature on the segment [-1,1] **/
 
-template< uint16_type Integration_Degree, typename T>
-class MultiScaleQuadrature<Hypercube<1,1>, Integration_Degree ,T >
-    :
-public PointSetQuadrature<Hypercube<1,1>, Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class MultiScaleQuadrature<Hypercube<1, 1>, Integration_Degree, T>
+    : public PointSetQuadrature<Hypercube<1, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<1,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<1, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -95,36 +92,33 @@ public :
     static const uint16_type Degree = 1;
     static const uint32_type Npoints = Integration_Degree;
 
-    typedef MultiScaleQuadrature<Simplex<0,1>,Integration_Degree, T> face_quad_type;
-
+    typedef MultiScaleQuadrature<Simplex<0, 1>, Integration_Degree, T> face_quad_type;
 
     MultiScaleQuadrature()
-        :
-        super( std::pow(2,ioption("msi.level"))+1  )
+        : super( std::pow( 2, ioption( "msi.level" ) ) + 1 )
     {
 
-        int  gridsize = std::pow(2,ioption("msi.level"));
+        int gridsize = std::pow( 2, ioption( "msi.level" ) );
 
         // build rules in x and y direction
-        weights_type wx( gridsize+1  );
-        weights_type px( gridsize+1  );
+        weights_type wx( gridsize + 1 );
+        weights_type px( gridsize + 1 );
 
-        double tmp=-1;
-        for ( int i = 0; i <=gridsize ; i++ )
+        double tmp = -1;
+        for ( int i = 0; i <= gridsize; i++ )
         {
             // computes the weight of the k-th node
-            this->M_w( i ) = 2./(gridsize+1) ;// wx( i );
-            this->M_points( 0, i ) = tmp ;
-            tmp+=2./gridsize ;
+            this->M_w( i ) = 2. / ( gridsize + 1 ); // wx( i );
+            this->M_points( 0, i ) = tmp;
+            tmp += 2. / gridsize;
         }
 
-        boost::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
+        boost::shared_ptr<GT_Lagrange<1, 1, 1, Hypercube, T>> gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<1, 1>, 1, 1>(), gm, face_qr );
-
     }
-/*
+    /*
     MultiScaleQuadrature()
         :
         super( Npoints )
@@ -166,64 +160,59 @@ public :
     FEELPP_DEFINE_VISITABLE();
 };
 
-
 /** Multi Scale Quadrature on the quadrangle [-1,1]x[-1,1] **/
 
-template< uint16_type Integration_Degree, typename T>
-class MultiScaleQuadrature<Hypercube<2,1>, Integration_Degree ,T >
-    :
-public PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class MultiScaleQuadrature<Hypercube<2, 1>, Integration_Degree, T>
+    : public PointSetQuadrature<Hypercube<2, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<2, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    typedef MultiScaleQuadrature<Hypercube<1,1>,Integration_Degree, T> face_quad_type;
+    typedef MultiScaleQuadrature<Hypercube<1, 1>, Integration_Degree, T> face_quad_type;
 
     static const uint16_type Degree = Integration_Degree;
-    static const uint32_type Npoints =Integration_Degree*Integration_Degree;
+    static const uint32_type Npoints = Integration_Degree * Integration_Degree;
 
-
-    MultiScaleQuadrature( )
-        :
-        super( (1+std::pow(2,ioption("msi.level")))*(std::pow(2,ioption("msi.level"))+1) )
+    MultiScaleQuadrature()
+        : super( ( 1 + std::pow( 2, ioption( "msi.level" ) ) ) * ( std::pow( 2, ioption( "msi.level" ) ) + 1 ) )
     {
 
-        int gridsize=std::pow(2,ioption("msi.level"));
+        int gridsize = std::pow( 2, ioption( "msi.level" ) );
 
         // build rules in x and y direction
-        weights_type wx( (gridsize+1)*(gridsize+1) );
+        weights_type wx( ( gridsize + 1 ) * ( gridsize + 1 ) );
         //weights_type px( (gridsize*gridsize );
-        
-        double tmpx=-1.;
-        double tmpy=1.;
-        for ( int i = 0,  k = 0; i <= gridsize; i++ )
+
+        double tmpx = -1.;
+        double tmpy = 1.;
+        for ( int i = 0, k = 0; i <= gridsize; i++ )
         {
-            for ( int j = 0; j <=  gridsize; j++, ++k )
+            for ( int j = 0; j <= gridsize; j++, ++k )
             {
                 // computes the weight of the k-th node
-                this->M_w( k ) = 4./( (gridsize+1)*(gridsize+1)) ;//wx( i ) * wx( j );
-                this->M_points( 0, k ) = tmpx ;
-                this->M_points( 1, k ) = tmpy ;
-                tmpx+=2./gridsize;
+                this->M_w( k ) = 4. / ( ( gridsize + 1 ) * ( gridsize + 1 ) ); //wx( i ) * wx( j );
+                this->M_points( 0, k ) = tmpx;
+                this->M_points( 1, k ) = tmpy;
+                tmpx += 2. / gridsize;
             }
-            tmpx=-1.;
-            tmpy-=2./gridsize;
+            tmpx = -1.;
+            tmpy -= 2. / gridsize;
         }
-        std::cout << "quadrature points:" << this->M_points << std::endl; 
-        boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type());
+        std::cout << "quadrature points:" << this->M_points << std::endl;
+        boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T>> gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
+        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type() );
         // construct face quadratures
-        this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );
-
+        this->constructQROnFace( Reference<Hypercube<2, 1>, 2, 1>(), gm, face_qr );
     }
 
-/*
+    /*
 
     MultiScaleQuadrature()
         :

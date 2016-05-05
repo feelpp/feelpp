@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_BDF2_HPP)
+#if !defined( FEELPP_BDF2_HPP )
 #define FEELPP_BDF2_HPP 1
 
 #warning This file includes at least one deprecated or antiquated header \

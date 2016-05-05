@@ -33,14 +33,12 @@
 
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
 
-
 namespace Feel
 {
 
 GmshSimplexDomain::GmshSimplexDomain( int dim, int order, DomainType dt )
-    :
-    super( dim,order ),
-    M_descr()
+    : super( dim, order ),
+      M_descr()
 {
     switch ( dt )
     {
@@ -101,26 +99,26 @@ GmshSimplexDomain::getDescription1D() const
 
     if ( this->addMidPoint() )
     {
-        ostr << "Point(3) = {" << ( this->M_I[0].second+this->M_I[0].first )/2 << ",0,0,h};\n"
+        ostr << "Point(3) = {" << ( this->M_I[0].second + this->M_I[0].first ) / 2 << ",0,0,h};\n"
              << "Line(1) = {1,3};\n"
              << "Line(2) = {3,2};\n";
 
         if ( this->usePhysicalNames() == false )
         {
-            ostr    << "Physical Point(1) = {1};\n"
-                    << "Physical Point(3) = {2};\n"
-                    << "Physical Point(2) = {3};\n"
-                    << "Physical Line(\"Mat1\") = {1};\n"
-                    << "Physical Line(\"Mat2\") = {2};\n";
+            ostr << "Physical Point(1) = {1};\n"
+                 << "Physical Point(3) = {2};\n"
+                 << "Physical Point(2) = {3};\n"
+                 << "Physical Line(\"Mat1\") = {1};\n"
+                 << "Physical Line(\"Mat2\") = {2};\n";
         }
 
         else
         {
-            ostr    << "Physical Point(\"Dirichlet\") = {1};\n"
-                    << "Physical Point(\"Neumann\") = {2};\n"
-                    << "Physical Point(3) = {3};\n"
-                    << "Physical Line(\"Mat1\") = {1};\n"
-                    << "Physical Line(\"Mat2\") = {2};\n";
+            ostr << "Physical Point(\"Dirichlet\") = {1};\n"
+                 << "Physical Point(\"Neumann\") = {2};\n"
+                 << "Physical Point(3) = {3};\n"
+                 << "Physical Line(\"Mat1\") = {1};\n"
+                 << "Physical Line(\"Mat2\") = {2};\n";
         }
     }
 
@@ -159,10 +157,10 @@ GmshSimplexDomain::getDescription2D() const
          << "Line(3) = {3,1};\n";
 
     //if ( this->isReference() )
-    if ( this->h() >= ( this->M_I[0].second-this->M_I[0].first ) )
-        ostr <<"Transfinite Line{1} = 1;\n"
-             <<"Transfinite Line{2} = 1;\n"
-             <<"Transfinite Line{3} = 1;\n";
+    if ( this->h() >= ( this->M_I[0].second - this->M_I[0].first ) )
+        ostr << "Transfinite Line{1} = 1;\n"
+             << "Transfinite Line{2} = 1;\n"
+             << "Transfinite Line{3} = 1;\n";
 
     ostr << "Line Loop(4) = {3,1,2};\n";
 
@@ -195,23 +193,37 @@ GmshSimplexDomain::getDescription3D() const
          << "Point(2) = {" << this->M_I[0].second << "," << this->M_I[1].first << "," << this->M_I[2].first << ",h};\n"
          << "Point(3) = {" << this->M_I[0].first << "," << this->M_I[1].second << "," << this->M_I[2].first << ",h};\n"
          << "Point(4) = {" << this->M_I[0].first << "," << this->M_I[1].first << "," << this->M_I[2].second << ",h};\n"
-         << "Line(1) = {1,2};" << "\n"
-         << "Line(2) = {2,3};" << "\n"
-         << "Line(3) = {3,1};" << "\n"
-         << "Line(4) = {1,4};" << "\n"
-         << "Line(5) = {2,4};" << "\n"
-         << "Line(6) = {3,4};" << "\n"
-         << "Line Loop(4) = {3,1,2};" << "\n"
-         << "Plane Surface(5) = {4};" << "\n"
-         << "Line Loop(10) = {6, -4, -3};" << "\n"
-         << "Plane Surface(11) = {10};" << "\n"
-         << "Line Loop(12) = {6, -5, 2};" << "\n"
-         << "Plane Surface(13) = {12};" << "\n"
-         << "Line Loop(14) = {4, -5, -1};" << "\n"
-         << "Plane Surface(15) = {14};" << "\n";
+         << "Line(1) = {1,2};"
+         << "\n"
+         << "Line(2) = {2,3};"
+         << "\n"
+         << "Line(3) = {3,1};"
+         << "\n"
+         << "Line(4) = {1,4};"
+         << "\n"
+         << "Line(5) = {2,4};"
+         << "\n"
+         << "Line(6) = {3,4};"
+         << "\n"
+         << "Line Loop(4) = {3,1,2};"
+         << "\n"
+         << "Plane Surface(5) = {4};"
+         << "\n"
+         << "Line Loop(10) = {6, -4, -3};"
+         << "\n"
+         << "Plane Surface(11) = {10};"
+         << "\n"
+         << "Line Loop(12) = {6, -5, 2};"
+         << "\n"
+         << "Plane Surface(13) = {12};"
+         << "\n"
+         << "Line Loop(14) = {4, -5, -1};"
+         << "\n"
+         << "Plane Surface(15) = {14};"
+         << "\n";
 
     //if ( this->isReference() )
-    if ( this->h() >= ( this->M_I[0].second-this->M_I[0].first ) )
+    if ( this->h() >= ( this->M_I[0].second - this->M_I[0].first ) )
     {
         ostr << "Transfinite Line(1) = 1;\n"
              << "Transfinite Line(2) = 1;\n"
@@ -226,29 +238,39 @@ GmshSimplexDomain::getDescription3D() const
              << "Transfinite Surface(15)=1;\n";
     }
 
-    ostr << "Surface Loop(20) = {11, 13, 15, 5};" << "\n"
-         << "Volume(21) = {20};" << "\n"
-         << "" << "\n";
+    ostr << "Surface Loop(20) = {11, 13, 15, 5};"
+         << "\n"
+         << "Volume(21) = {20};"
+         << "\n"
+         << ""
+         << "\n";
 
     if ( this->usePhysicalNames() == false )
     {
-        ostr << "Physical Surface(16) = {11};" << "\n"
-             << "Physical Surface(17) = {15};" << "\n"
-             << "Physical Surface(18) = {5};" << "\n"
-             << "Physical Surface(19) = {13};" << "\n"
-             << "Physical Volume(22) = {21};" << "\n";
+        ostr << "Physical Surface(16) = {11};"
+             << "\n"
+             << "Physical Surface(17) = {15};"
+             << "\n"
+             << "Physical Surface(18) = {5};"
+             << "\n"
+             << "Physical Surface(19) = {13};"
+             << "\n"
+             << "Physical Volume(22) = {21};"
+             << "\n";
     }
 
     else
     {
-        ostr << "Physical Surface(\"Neumann\") = {11,15,13};" << "\n"
-             << "Physical Surface(\"Dirichlet\") = {5};" << "\n"
-             << "Physical Volume(\"Mat1\") = {21};" << "\n";
+        ostr << "Physical Surface(\"Neumann\") = {11,15,13};"
+             << "\n"
+             << "Physical Surface(\"Dirichlet\") = {5};"
+             << "\n"
+             << "Physical Volume(\"Mat1\") = {21};"
+             << "\n";
     }
 
     return ostr.str();
 }
-
 
 } // Feel
 #endif // __GMSHSIMPLEXDOMAIN_CPP

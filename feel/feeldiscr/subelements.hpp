@@ -26,7 +26,8 @@
 
 #include <feel/feeldiscr/detail/createelementvector.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
    extract subelements from an element of a product of spaces
@@ -35,16 +36,15 @@ namespace Feel {
    @param n a vector of string to name the sub elements
    @return a vector of subelements
  */
-template<typename EltType>
+template <typename EltType>
 typename fusion::result_of::accumulate<typename EltType::functionspace_type::functionspace_vector_type,
                                        fusion::vector<>,
-                                       Feel::detail::CreateElementVector<EltType> >::type
+                                       Feel::detail::CreateElementVector<EltType>>::type
 subelements( EltType const& e, std::vector<std::string> const& n )
 {
     return fusion::accumulate( e.functionSpaces(), fusion::vector<>(), Feel::detail::CreateElementVector<EltType>( e, n ) );
 }
 
 } // Feel
-
 
 #endif /* FEELPP_SUBELEMENTS_HPP */

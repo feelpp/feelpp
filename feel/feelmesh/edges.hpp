@@ -29,11 +29,10 @@
 #ifndef __edges_H
 #define __edges_H 1
 
-
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
 #include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index_container.hpp>
 
 #include <feel/feelmesh/geoelement.hpp>
 
@@ -49,52 +48,46 @@ namespace multi_index = boost::multi_index;
   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   @see
 */
-template<typename EdgeType,typename FaceType>
+template <typename EdgeType, typename FaceType>
 class Edges
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
 
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<EdgeType::nRealDim>, mpl::int_<3> >,
-                              mpl::identity<GeoElement1D<3, EdgeType,SubFaceOfMany<FaceType> > >,
-                              mpl::identity<boost::none_t> >::type::type edge_type;
-
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<EdgeType::nRealDim>, mpl::int_<3>>,
+                              mpl::identity<GeoElement1D<3, EdgeType, SubFaceOfMany<FaceType>>>,
+                              mpl::identity<boost::none_t>>::type::type edge_type;
 
     typedef multi_index::multi_index_container<
         edge_type,
         multi_index::indexed_by<
             // sort by employee::operator<
-            multi_index::ordered_unique<multi_index::identity<edge_type> >,
+            multi_index::ordered_unique<multi_index::identity<edge_type>>,
             // sort by less<int> on marker
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
                                             multi_index::composite_key<
-                                            edge_type,
-                                            multi_index::const_mem_fun<edge_type,
-                                                                       Marker1 const&,
-                                                                       &edge_type::marker>,
-                                            multi_index::const_mem_fun<edge_type,
-                                                                       rank_type,
-                                                                       &edge_type::processId>
-                                            > >,
+                                                edge_type,
+                                                multi_index::const_mem_fun<edge_type,
+                                                                           Marker1 const&,
+                                                                           &edge_type::marker>,
+                                                multi_index::const_mem_fun<edge_type,
+                                                                           rank_type,
+                                                                           &edge_type::processId>>>,
 
             // sort by less<int> on processId
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
                                             multi_index::const_mem_fun<edge_type,
                                                                        rank_type,
-                                                                       &edge_type::processId> >,
+                                                                       &edge_type::processId>>,
 
             // sort by less<int> on boundary
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
                                             multi_index::const_mem_fun<edge_type,
                                                                        bool,
-                                                                       &edge_type::isOnBoundary> >
-            >
-        > edges_type;
-
+                                                                       &edge_type::isOnBoundary>>>>
+        edges_type;
 
     typedef typename edges_type::iterator edge_iterator;
     typedef typename edges_type::const_iterator edge_const_iterator;
@@ -118,26 +111,26 @@ public:
     //@{
 
     Edges( WorldComm const& worldComm = Environment::worldComm() )
-        :
-        M_worldCommEdges( worldComm ),
-        M_edges()
-    {}
+        : M_worldCommEdges( worldComm ),
+          M_edges()
+    {
+    }
 
-    Edges( Edges const & f )
-        :
-        M_worldCommEdges( f.M_worldCommEdges ),
-        M_edges( f.M_edges )
-    {}
+    Edges( Edges const& f )
+        : M_worldCommEdges( f.M_worldCommEdges ),
+          M_edges( f.M_edges )
+    {
+    }
 
     ~Edges()
-    {}
+    {
+    }
 
     //@}
 
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -148,7 +141,7 @@ public:
     /**
      * \return the points container
      */
-    edges_type & edges()
+    edges_type& edges()
     {
         return M_edges;
     }
@@ -177,11 +170,11 @@ public:
         return M_edges.empty();
     }
 
-    bool isBoundaryEdge( edge_type const & e ) const
+    bool isBoundaryEdge( edge_type const& e ) const
     {
         return M_edges.find( e )->isOnBoundary();
     }
-    bool isBoundaryEdge( size_type const & id ) const
+    bool isBoundaryEdge( size_type const& id ) const
     {
         return M_edges.find( edge_type( id ) )->isOnBoundary();
     }
@@ -202,7 +195,7 @@ public:
 
     edge_iterator edgeIterator( size_type i ) const
     {
-        return  M_edges.find( edge_type( i ) );
+        return M_edges.find( edge_type( i ) );
     }
 
     edge_iterator beginEdge()
@@ -226,34 +219,34 @@ public:
      * \return the range of iterator \c (begin,end) over the faces
      * with marker \p m on processor \p p
      */
-    
+
     std::pair<marker_edge_iterator, marker_edge_iterator>
     edgesWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommEdges().localRank() : p;
         return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) );
     }
 
     marker_edge_iterator beginEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value )
-        {
-            const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
-        }
+    {
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommEdges().localRank() : p;
+        return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
+    }
     marker_edge_const_iterator beginEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
-        {
-            const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
-        }
+    {
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommEdges().localRank() : p;
+        return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
+    }
     marker_edge_iterator endEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value )
-        {
-            const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
-        }
+    {
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommEdges().localRank() : p;
+        return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
+    }
     marker_edge_const_iterator endEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
-        {
-            const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
-        }
+    {
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommEdges().localRank() : p;
+        return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
+    }
 
     /**
      * get the edges container by id
@@ -261,7 +254,7 @@ public:
      *
      * @return the edge container by id
      */
-    typename edges_type::template nth_index<0>::type &
+    typename edges_type::template nth_index<0>::type&
     edgesById()
     {
         return M_edges.template get<0>();
@@ -285,7 +278,7 @@ public:
      *
      * @return the edge container using marker view
      */
-    marker_edges &
+    marker_edges&
     edgesByMarker()
     {
         return M_edges.template get<Feel::detail::by_marker>();
@@ -308,7 +301,7 @@ public:
      *
      * @return the edge container using location view
      */
-    location_edges &
+    location_edges&
     edgesByLocation()
     {
         return M_edges.template get<Feel::detail::by_location>();
@@ -421,32 +414,30 @@ public:
 
     pid_edge_iterator beginEdgeWithProcessId( rank_type p = invalid_rank_type_value )
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommEdges().localRank() : p;
         return M_edges.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
     }
     pid_edge_const_iterator beginEdgeWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommEdges().localRank() : p;
         return M_edges.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
     }
     pid_edge_iterator endEdgeWithProcessId( rank_type p = invalid_rank_type_value )
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommEdges().localRank() : p;
         return M_edges.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
     }
     pid_edge_const_iterator endEdgeWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+        const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommEdges().localRank() : p;
         return M_edges.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
     }
-
 
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -472,16 +463,15 @@ public:
 
     //@}
 
-private:
-
+  private:
     friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-        {
-            ar & M_edges;
-        }
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version )
+    {
+        ar& M_edges;
+    }
 
-private:
+  private:
     WorldComm M_worldCommEdges;
     edges_type M_edges;
 };

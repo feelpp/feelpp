@@ -75,13 +75,10 @@ class Sphere : public Surface
 {
     typedef Surface super;
 
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -90,41 +87,36 @@ public:
     //@{
 
     Sphere()
-        :
-        super(),
-        M_radius( -1 )
-    {}
-
-    Sphere( Sphere const & s )
-        :
-        super(),
-        M_center( s.M_center ),
-        M_radius( s.M_radius )
+        : super(),
+          M_radius( -1 )
     {
     }
 
-    Sphere ( const Point& c,
-             const double   r )
-        :
-        super(),
-        M_center( c ),
-        M_radius( r )
+    Sphere( Sphere const& s )
+        : super(),
+          M_center( s.M_center ),
+          M_radius( s.M_radius )
     {
-        assert ( r > 0. );
-
     }
 
-
+    Sphere( const Point& c,
+            const double r )
+        : super(),
+          M_center( c ),
+          M_radius( r )
+    {
+        assert( r > 0. );
+    }
 
     ~Sphere()
-    {}
+    {
+    }
 
     //@}
 
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -140,7 +132,6 @@ public:
         return M_radius;
     }
 
-
     /**
      * @returns the center of the sphere.
      */
@@ -148,9 +139,6 @@ public:
     {
         return M_center;
     }
-
-
-
 
     //@}
 
@@ -171,9 +159,8 @@ public:
      */
     void setRadius( double r )
     {
-        M_radius = r ;
+        M_radius = r;
     }
-
 
     //@}
 
@@ -184,22 +171,24 @@ public:
     /**
      * Defines a sphere of radius r centered at c.
      */
-    void createFromCenterRadius ( const Point& c, const double r )
+    void createFromCenterRadius( const Point& c, const double r )
     {
-        FEELPP_ASSERT( r > 0 )( r ).error( "radius negative" );
+        FEELPP_ASSERT( r > 0 )
+        ( r ).error( "radius negative" );
         this->setCenter( c );
         this->setRadius( r );
-
     }
 
     /**
      * @returns true if other_sphere intersects this sphere,
      * false otherwise.
      */
-    bool intersects ( const Sphere& other_sphere ) const
+    bool intersects( const Sphere& other_sphere ) const
     {
-        FEELPP_ASSERT( M_radius > 0 )( M_radius ).error( "radius negative" );
-        FEELPP_ASSERT( other_sphere.radius() > 0 )( other_sphere.radius() ).error( "radius negative" );
+        FEELPP_ASSERT( M_radius > 0 )
+        ( M_radius ).error( "radius negative" );
+        FEELPP_ASSERT( other_sphere.radius() > 0 )
+        ( other_sphere.radius() ).error( "radius negative" );
 
         if ( Feel::distance( this->center(), other_sphere.center() ) < ( this->radius() + other_sphere.radius() ) )
             return true;
@@ -207,14 +196,14 @@ public:
         return false;
     }
 
-
     /**
      * @returns true if the point p is above the surface,
      * false otherwise.
      */
-    bool aboveSurface ( const Point& p ) const
+    bool aboveSurface( const Point& p ) const
     {
-        FEELPP_ASSERT( M_radius > 0 )( M_radius ).error( "radius negative" );
+        FEELPP_ASSERT( M_radius > 0 )
+        ( M_radius ).error( "radius negative" );
 
         if ( Feel::distance( p, this->center() ) > this->radius() )
             return true;
@@ -222,16 +211,14 @@ public:
         return false;
     }
 
-
     /**
      * @returns true if the point p is below the surface,
      * false otherwise.
      */
-    bool belowSurface ( const Point& p ) const
+    bool belowSurface( const Point& p ) const
     {
-        return ( !this->aboveSurface ( p ) );
+        return ( !this->aboveSurface( p ) );
     }
-
 
     /**
      * @returns true if the point p is on the surface,
@@ -239,10 +226,10 @@ public:
      * the surface really means "very close" to account
      * for roundoff error.
      */
-    bool onSurface ( const Point& p ) const
+    bool onSurface( const Point& p ) const
     {
-        FEELPP_ASSERT( M_radius > 0 )( M_radius ).error( "radius negative" );
-
+        FEELPP_ASSERT( M_radius > 0 )
+        ( M_radius ).error( "radius negative" );
 
         if ( std::abs( Feel::distance( p, this->center() ) - this->radius() ) < 1.e-10 )
             return true;
@@ -250,90 +237,79 @@ public:
         return false;
     }
 
-
     /**
      * @return the closest point on the surface to point p.
      */
-    Point closestPoint ( const Point& p ) const
+    Point closestPoint( const Point& p ) const
     {
-        FEELPP_ASSERT( M_radius > 0 )( M_radius ).error( "radius negative" );
+        FEELPP_ASSERT( M_radius > 0 )
+        ( M_radius ).error( "radius negative" );
 
         // get the normal from the surface in the direction
         // of p
-        Point normal = this->unitNormal ( p );
+        Point normal = this->unitNormal( p );
 
         // The closest point on the sphere is in the direction
         // of the normal a distance r from the center.
-        const Point cp = this->center().node() + normal.node()*this->radius();
+        const Point cp = this->center().node() + normal.node() * this->radius();
 
         return cp;
     }
-
 
     /**
      * @return a unit vector normal to the surface at
      * point p.
      */
-    Point unitNormal ( const Point& p ) const
+    Point unitNormal( const Point& p ) const
     {
-        FEELPP_ASSERT( M_radius > 0 )( M_radius ).error( "radius negative" );
+        FEELPP_ASSERT( M_radius > 0 )
+        ( M_radius ).error( "radius negative" );
 
         //assert ( !(p == this->center()) );
 
         // Create a vector from the center to the point
         Point n = p.node() - this->center().node();
-        Point unit_n( n.node()/ ublas::norm_2( n.node() ) );
+        Point unit_n( n.node() / ublas::norm_2( n.node() ) );
 
         return unit_n;
     }
-
-
 
     /**
      * @returns the spherical coordinates for the
      * cartesian coordinates \p cart.
      */
-    Point surfaceCoords ( const Point& cart ) const
+    Point surfaceCoords( const Point& cart ) const
     {
         // constant translation in the origin
-        const Point c ( cart.node() - this->center().node() );
+        const Point c( cart.node() - this->center().node() );
 
         // phi: special care, so that it gives 0..2pi results
         const double phi = std::atan2( c( 1 ), c( 0 ) );
 
         return Point( /* radius */ ublas::norm_2( c.node() ),
-                                   /* theta  */ std::atan2( std::sqrt( c( 0 )*c( 0 ) + c( 1 )*c( 1 ) ), c( 2 ) ),
-                                   /* phi    */ ( ( phi < 0 )  ?  2.*M_PI+phi  :  phi ) );
+                      /* theta  */ std::atan2( std::sqrt( c( 0 ) * c( 0 ) + c( 1 ) * c( 1 ) ), c( 2 ) ),
+                      /* phi    */ ( ( phi < 0 ) ? 2. * M_PI + phi : phi ) );
     }
-
 
     /**
      * @returns the cartesian coordinates for the
      * spherical coordinates \p sph.
      */
-    Point worldCoords ( const Point& sph ) const
+    Point worldCoords( const Point& sph ) const
     {
-        const double r     = sph( 0 );
+        const double r = sph( 0 );
         const double theta = sph( 1 );
-        const double phi   = sph( 2 );
+        const double phi = sph( 2 );
 
         // constant translation out of the origin
-        return Point ( /* x */ r*std::sin( theta )*std::cos( phi ) + this->center()( 0 ),
-                               /* y */ r*std::sin( theta )*std::sin( phi ) + this->center()( 1 ),
-                               /* z */ r*std::cos( theta )               + this->center()( 2 ) );
+        return Point( /* x */ r * std::sin( theta ) * std::cos( phi ) + this->center()( 0 ),
+                      /* y */ r * std::sin( theta ) * std::sin( phi ) + this->center()( 1 ),
+                      /* z */ r * std::cos( theta ) + this->center()( 2 ) );
     }
-
-
-
 
     //@}
 
-
-
-
-private:
-
-
+  private:
     /**
      * The center of the sphere.
      */
@@ -342,7 +318,7 @@ private:
     /**
      * The radius of the sphere.
      */
-    Real  M_radius;
+    Real M_radius;
 };
 } // Feel
 #endif /* __Sphere_H */

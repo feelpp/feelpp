@@ -29,46 +29,48 @@
 #ifndef FEELPP_NED1H_H
 #define FEELPP_NED1H_H 1
 
-#include <feel/feelpoly/nedelec.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/nedelec.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
-namespace meta {
-template<typename MeshType,int Order>
+namespace meta
+{
+template <typename MeshType, int Order>
 struct Ned1h
 {
     typedef FunctionSpace<MeshType,
-                          bases<Nedelec<Order,NedelecKind::NED1>>,
+                          bases<Nedelec<Order, NedelecKind::NED1>>,
                           double,
-                          Periodicity <NoPeriodicity>,
-                          mortars<NoMortar>> type;
+                          Periodicity<NoPeriodicity>,
+                          mortars<NoMortar>>
+        type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 
 } // meta
 
-template<typename MeshType,int Order>
-using Ned1h_type = typename meta::Ned1h<MeshType,Order>::type;
+template <typename MeshType, int Order>
+using Ned1h_type = typename meta::Ned1h<MeshType, Order>::type;
 
-template<typename MeshType,int Order>
-using Ned1h_ptrtype = typename meta::Ned1h<MeshType,Order>::ptrtype;
+template <typename MeshType, int Order>
+using Ned1h_ptrtype = typename meta::Ned1h<MeshType, Order>::ptrtype;
 
 /**
  * \fn Ned1h<k,MeshType>
  *
  */
-template<int Order,typename MeshType>
+template <int Order, typename MeshType>
 inline
-typename meta::Ned1h<MeshType,Order>::ptrtype
-Ned1h( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+    typename meta::Ned1h<MeshType, Order>::ptrtype
+    Ned1h( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable = false )
 {
-    typedef typename meta::Ned1h<MeshType,Order>::type space_type;
-    return space_type::New( _mesh=mesh,
-                            _worldscomm=worldsComm( mesh->worldComm() ),
-                            _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+    typedef typename meta::Ned1h<MeshType, Order>::type space_type;
+    return space_type::New( _mesh = mesh,
+                            _worldscomm = worldsComm( mesh->worldComm() ),
+                            _extended_doftable = std::vector<bool>( 1, buildExtendedDofTable ) );
 }
-
 
 } // Feel
 

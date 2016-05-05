@@ -29,17 +29,16 @@
 #ifndef __SVD_HPP
 #define __SVD_HPP 1
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
-#include <algorithm>
 
+#include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/vector.hpp>
-#include <boost/numeric/ublas/io.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>
-
 
 namespace Feel
 {
@@ -69,12 +68,10 @@ namespace ublas = boost::numeric::ublas;
   @author Christophe Prud'homme
   @see
 */
-template<typename MatrixA>
+template <typename MatrixA>
 class SVD
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -97,7 +94,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -131,7 +127,7 @@ public:
     */
     value_type conditionNumber() const
     {
-        return max( M_S )/min( M_S );
+        return max( M_S ) / min( M_S );
     }
 
     void conditionNumber( value_type& __max, value_type& __min ) const
@@ -146,21 +142,17 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-
     //@}
 
-protected:
-
-private:
-
-    SVD( SVD const & );
+  protected:
+  private:
+    SVD( SVD const& );
 
     /**
        \brief Left Householder Transformations
@@ -231,7 +223,6 @@ private:
 
     */
     value_type leftHouseholder( MatrixA& A, const int i );
-
 
     /**
        \brief Right Householder Transformations
@@ -395,22 +386,19 @@ private:
     /** main algorithm */
     void diagonalize( vector_type& super_diag, const double eps );
 
-private:
-
+  private:
     uint M_rows;
     uint M_cols;
 
     matrix_type M_U;
     matrix_type M_V;
     vector_type M_S;
-
 };
 
-template<typename MatrixA>
+template <typename MatrixA>
 class SOrth
 {
-public:
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -434,7 +422,6 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
@@ -453,17 +440,14 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-
     //@}
-private:
-
+  private:
     uint M_rows;
     uint M_cols;
     matrix_type M_Q;
@@ -472,12 +456,11 @@ private:
 /**
    \todo unfinished implementation: need to extract
 */
-template<typename MatrixA>
+template <typename MatrixA>
 SOrth<MatrixA>::SOrth( MatrixA const& A )
-    :
-    M_rows( A.size1() ),
-    M_cols( A.size2() ),
-    M_Q()
+    : M_rows( A.size1() ),
+      M_cols( A.size2() ),
+      M_Q()
 {
     using namespace boost::numeric::ublas;
 
@@ -490,7 +473,7 @@ SOrth<MatrixA>::SOrth( MatrixA const& A )
     else if ( M_rows == 1 )
         __S( 0 ) = __svd.S()( 0 );
 
-    const value_type eps = std::numeric_limits<value_type>::epsilon() * *std::max_element( __S.begin(), __S.end() )* std::max( M_rows, M_cols );
+    const value_type eps = std::numeric_limits<value_type>::epsilon() * *std::max_element( __S.begin(), __S.end() ) * std::max( M_rows, M_cols );
 
     /*[m,n] = size(A);
       if m > 1, s = diag(S);
@@ -500,20 +483,18 @@ SOrth<MatrixA>::SOrth( MatrixA const& A )
       tol = max(m,n) * max(s) * eps;
       r = sum(s > tol);
       Q = U(:,1:r);*/
-
 }
 /*
  * SVD
  */
 
-template<typename MatrixA>
+template <typename MatrixA>
 SVD<MatrixA>::SVD( MatrixA const& A )
-    :
-    M_rows( A.size1() ),
-    M_cols( A.size2() ),
-    M_U( M_rows, M_rows ),
-    M_V( M_cols, M_cols ),
-    M_S( M_cols )
+    : M_rows( A.size1() ),
+      M_cols( A.size2() ),
+      M_U( M_rows, M_rows ),
+      M_V( M_cols, M_cols ),
+      M_S( M_cols )
 {
     //FEELPP_ASSERT( M_rows >= M_cols ).error("The Matrix A should have at least as many rows as it has columns");
 
@@ -537,12 +518,12 @@ SVD<MatrixA>::SVD( MatrixA const& A )
 
     vector_type super_diag( M_cols );
 
-    const value_type bidiag_norm = bidiagonalize( super_diag,B );
+    const value_type bidiag_norm = bidiagonalize( super_diag, B );
 
     // define Significance threshold
     const value_type eps = std::numeric_limits<value_type>::epsilon() * bidiag_norm;
 
-    diagonalize( super_diag,eps );
+    diagonalize( super_diag, eps );
 
     if ( do_transpose )
     {
@@ -556,121 +537,120 @@ SVD<MatrixA>::SVD( MatrixA const& A )
   Bidiagonalization
 */
 
-
-template<typename MatrixA>
+template <typename MatrixA>
 typename SVD<MatrixA>::value_type
 SVD<MatrixA>::leftHouseholder( matrix_type& A, const int i )
 {
-    value_type scale = 0;                 // Compute the scaling factor
+    value_type scale = 0; // Compute the scaling factor
 
-    for ( int k=i; k< M_rows; k++ )
-        scale += math::abs( A( k,i ) );
+    for ( int k = i; k < M_rows; k++ )
+        scale += math::abs( A( k, i ) );
 
-    if ( scale == 0 )                    // If A[,i] is a null vector, no
-        return 0;                          // transform is required
+    if ( scale == 0 ) // If A[,i] is a null vector, no
+        return 0;     // transform is required
 
-    value_type Norm_sqr = 0;                 // Scale UPi (that is, A[,i])
+    value_type Norm_sqr = 0; // Scale UPi (that is, A[,i])
 
-    for ( int k=i; k< M_rows; k++ )                // and compute its norm, Norm^2
+    for ( int k = i; k < M_rows; k++ ) // and compute its norm, Norm^2
     {
-        A( k,i ) /= scale;
-        Norm_sqr +=  A( k,i )*A( k,i );
+        A( k, i ) /= scale;
+        Norm_sqr += A( k, i ) * A( k, i );
     }
 
-    value_type new_Aii = math::sqrt( Norm_sqr );   // new_Aii = -Norm, Norm has the
+    value_type new_Aii = math::sqrt( Norm_sqr ); // new_Aii = -Norm, Norm has the
 
-    if ( A( i,i ) > 0 ) new_Aii = -new_Aii; // same sign as Aii (that is, UPi[i])
+    if ( A( i, i ) > 0 ) new_Aii = -new_Aii; // same sign as Aii (that is, UPi[i])
 
-    const value_type beta = - A( i,i )*new_Aii + Norm_sqr;
-    A( i,i ) -= new_Aii;                 // UPi[i] = A[i,i] - (-Norm)
+    const value_type beta = -A( i, i ) * new_Aii + Norm_sqr;
+    A( i, i ) -= new_Aii; // UPi[i] = A[i,i] - (-Norm)
 
-    for ( int j=i+1; j<M_cols; j++ )      // Transform i+1:N columns of A
-    {
-        value_type factor = 0;
-
-        for ( int k=i; k< M_rows; k++ )
-            factor += A( k,i ) * A( k,j );
-
-        factor /= beta;
-
-        for ( int k=i; k< M_rows; k++ )
-            A( k,j ) -= A( k,i ) * factor;
-    }
-
-    for ( size_type j=0; j< M_rows; j++ )                // Accumulate the transform in U
+    for ( int j = i + 1; j < M_cols; j++ ) // Transform i+1:N columns of A
     {
         value_type factor = 0;
 
-        for ( size_type k=i; k< M_rows; k++ )
-            factor += A( k,i ) * M_U( j,k );  // Compute  U[j,] * UPi
+        for ( int k = i; k < M_rows; k++ )
+            factor += A( k, i ) * A( k, j );
 
         factor /= beta;
 
-        for ( size_type k=i; k< M_rows; k++ )
-            M_U( j,k ) -= A( k,i ) * factor;
+        for ( int k = i; k < M_rows; k++ )
+            A( k, j ) -= A( k, i ) * factor;
     }
 
-    return new_Aii * scale;              // Scale new Aii back (our new Sig[i])
+    for ( size_type j = 0; j < M_rows; j++ ) // Accumulate the transform in U
+    {
+        value_type factor = 0;
+
+        for ( size_type k = i; k < M_rows; k++ )
+            factor += A( k, i ) * M_U( j, k ); // Compute  U[j,] * UPi
+
+        factor /= beta;
+
+        for ( size_type k = i; k < M_rows; k++ )
+            M_U( j, k ) -= A( k, i ) * factor;
+    }
+
+    return new_Aii * scale; // Scale new Aii back (our new Sig[i])
 }
 
-template<typename MatrixA>
+template <typename MatrixA>
 typename SVD<MatrixA>::value_type
 SVD<MatrixA>::rightHouseholder( matrix_type& A, const int i )
 {
-    value_type scale = 0;                 // Compute the scaling factor
+    value_type scale = 0; // Compute the scaling factor
 
-    for ( uint16_type k=i+1; k<M_cols; k++ )
-        scale += math::abs( A( i,k ) );
+    for ( uint16_type k = i + 1; k < M_cols; k++ )
+        scale += math::abs( A( i, k ) );
 
-    if ( scale == 0 )                    // If A[i,] is a null vector, no
-        return 0;                          // transform is required
+    if ( scale == 0 ) // If A[i,] is a null vector, no
+        return 0;     // transform is required
 
-    value_type Norm_sqr = 0;                 // Scale VPi (that is, A[i,])
+    value_type Norm_sqr = 0; // Scale VPi (that is, A[i,])
 
-    for ( uint16_type k=i+1; k<M_cols; k++ )      // and compute its norm, Norm^2
+    for ( uint16_type k = i + 1; k < M_cols; k++ ) // and compute its norm, Norm^2
     {
-        A( i,k ) /= scale;
-        Norm_sqr += A( i,k )*A( i,k );
+        A( i, k ) /= scale;
+        Norm_sqr += A( i, k ) * A( i, k );
     }
 
-    value_type new_Aii1 = math::sqrt( Norm_sqr );  // new_Aii1 = -Norm, Norm has the
+    value_type new_Aii1 = math::sqrt( Norm_sqr ); // new_Aii1 = -Norm, Norm has the
 
-    if ( A( i,i+1 ) > 0 )                // same sign as
-        new_Aii1 = -new_Aii1;              // Aii1 (that is, VPi[i+1])
+    if ( A( i, i + 1 ) > 0 )  // same sign as
+        new_Aii1 = -new_Aii1; // Aii1 (that is, VPi[i+1])
 
-    const value_type beta = - A( i,i+1 )*new_Aii1 + Norm_sqr;
-    A( i,i+1 ) -= new_Aii1;              // VPi[i+1] = A[i,i+1] - (-Norm)
+    const value_type beta = -A( i, i + 1 ) * new_Aii1 + Norm_sqr;
+    A( i, i + 1 ) -= new_Aii1; // VPi[i+1] = A[i,i+1] - (-Norm)
 
-    for ( uint16_type j=i+1; j<M_rows; j++ )      // Transform i+1:M rows of A
-    {
-        value_type factor = 0;
-
-        for ( uint16_type k=i+1; k<M_cols; k++ )
-            factor += A( i,k ) * A( j,k );   // Compute A[j,] * VPi
-
-        factor /= beta;
-
-        for ( uint16_type k=i+1; k<M_cols; k++ )
-            A( j,k ) -= A( i,k ) * factor;
-    }
-
-    for ( uint16_type j=0; j<M_cols; j++ )                // Accumulate the transform in V
+    for ( uint16_type j = i + 1; j < M_rows; j++ ) // Transform i+1:M rows of A
     {
         value_type factor = 0;
 
-        for ( uint16_type k=i+1; k<M_cols; k++ )
-            factor += A( i,k ) * M_V( j,k );  // Compute  V[j,] * VPi
+        for ( uint16_type k = i + 1; k < M_cols; k++ )
+            factor += A( i, k ) * A( j, k ); // Compute A[j,] * VPi
 
         factor /= beta;
 
-        for ( uint16_type k=i+1; k<M_cols; k++ )
-            M_V( j,k ) -= A( i,k ) * factor;
+        for ( uint16_type k = i + 1; k < M_cols; k++ )
+            A( j, k ) -= A( i, k ) * factor;
     }
 
-    return new_Aii1 * scale;             // Scale new Aii1 back
+    for ( uint16_type j = 0; j < M_cols; j++ ) // Accumulate the transform in V
+    {
+        value_type factor = 0;
+
+        for ( uint16_type k = i + 1; k < M_cols; k++ )
+            factor += A( i, k ) * M_V( j, k ); // Compute  V[j,] * VPi
+
+        factor /= beta;
+
+        for ( uint16_type k = i + 1; k < M_cols; k++ )
+            M_V( j, k ) -= A( i, k ) * factor;
+    }
+
+    return new_Aii1 * scale; // Scale new Aii1 back
 }
 
-template<typename MatrixA>
+template <typename MatrixA>
 typename SVD<MatrixA>::value_type
 SVD<MatrixA>::bidiagonalize( vector_type& super_diag, const matrix_type& _A )
 {
@@ -684,12 +664,12 @@ SVD<MatrixA>::bidiagonalize( vector_type& super_diag, const matrix_type& _A )
 
     for ( uint16_type __i = 0; __i < M_cols; ++__i )
     {
-        M_S( __i ) = leftHouseholder( A,__i );
+        M_S( __i ) = leftHouseholder( A, __i );
         //std::cout << "S=" << M_S << "\n";
         const value_type& diagi = M_S( __i );
 
-        if ( __i < M_cols-1 )
-            super_diag( __i+1 ) = rightHouseholder( A,__i );
+        if ( __i < M_cols - 1 )
+            super_diag( __i + 1 ) = rightHouseholder( A, __i );
 
         __norm_acc = std::max( __norm_acc, math::abs( diagi ) + math::abs( super_diag( __i ) ) );
     }
@@ -697,30 +677,26 @@ SVD<MatrixA>::bidiagonalize( vector_type& super_diag, const matrix_type& _A )
     return __norm_acc;
 }
 
-
-template<typename MatrixA>
-void
-SVD<MatrixA>::rotate( matrix_type& U, const int i, const int j,
-                      const value_type cos_ph,  const value_type sin_ph )
+template <typename MatrixA>
+void SVD<MatrixA>::rotate( matrix_type& U, const int i, const int j,
+                           const value_type cos_ph, const value_type sin_ph )
 {
     using namespace boost::numeric::ublas;
 
-    matrix_column<matrix_type> Ui ( U, i );
-    matrix_column<matrix_type> Uj ( U, j );
+    matrix_column<matrix_type> Ui( U, i );
+    matrix_column<matrix_type> Uj( U, j );
 
-    for ( unsigned __k = 0; __k < Ui.size(); ++ __k )
+    for ( unsigned __k = 0; __k < Ui.size(); ++__k )
     {
         const value_type Ujk_was = Uj( __k );
 
-        Uj( __k ) = cos_ph  * Ujk_was + sin_ph * Ui( __k );
+        Uj( __k ) = cos_ph * Ujk_was + sin_ph * Ui( __k );
         Ui( __k ) = -sin_ph * Ujk_was + cos_ph * Ui( __k );
     }
 }
 
-
-template<typename MatrixA>
-void
-SVD<MatrixA>::ripThrough( vector_type& super_diag, const int k, const int l, const double eps )
+template <typename MatrixA>
+void SVD<MatrixA>::ripThrough( vector_type& super_diag, const int k, const int l, const double eps )
 {
     // Accumulate cos,sin of Ph
     value_type cos_ph = 0, sin_ph = 1;
@@ -733,7 +709,7 @@ SVD<MatrixA>::ripThrough( vector_type& super_diag, const int k, const int l, con
     // The following steps eliminate these
     // until they fall below
     // significance
-    for (  int i=l; i<=k; i++ )
+    for ( int i = l; i <= k; i++ )
     {
         const value_type f = sin_ph * super_diag( i );
 
@@ -748,20 +724,19 @@ SVD<MatrixA>::ripThrough( vector_type& super_diag, const int k, const int l, con
         sin_ph = -f;
 
         // sqrt(sin^2+cos^2)
-        const value_type norm = ( M_S( i ) = hypot( cos_ph,sin_ph ) );
+        const value_type norm = ( M_S( i ) = hypot( cos_ph, sin_ph ) );
 
         // Normalize sin/cos
         cos_ph /= norm;
         sin_ph /= norm;
 
-        rotate( M_U, i, l-1, cos_ph, sin_ph );
+        rotate( M_U, i, l - 1, cos_ph, sin_ph );
     }
 }
-template<typename MatrixA>
-int
-SVD<MatrixA>::getWorkSubmatrix( vector_type& super_diag, const int k, const double eps )
+template <typename MatrixA>
+int SVD<MatrixA>::getWorkSubmatrix( vector_type& super_diag, const int k, const double eps )
 {
-    for ( int l=k; l > 0; --l )
+    for ( int l = k; l > 0; --l )
     {
         if ( math::abs( super_diag( l ) ) <= eps )
         {
@@ -769,12 +744,12 @@ SVD<MatrixA>::getWorkSubmatrix( vector_type& super_diag, const int k, const doub
             return l;
         }
 
-        else if ( math::abs( M_S( l-1 ) ) <= eps )
+        else if ( math::abs( M_S( l - 1 ) ) <= eps )
         {
             // Diagonal J[l,l] turns out 0
             // meaning J[l-1,l] _can_ be made
             // zero after some rotations
-            ripThrough( super_diag,k,l,eps );
+            ripThrough( super_diag, k, l, eps );
             return l;
         }
     }
@@ -783,11 +758,10 @@ SVD<MatrixA>::getWorkSubmatrix( vector_type& super_diag, const int k, const doub
     return 0;
 }
 
-template<typename MatrixA>
-void
-SVD<MatrixA>::diagonalize( vector_type& super_diag, const double eps )
+template <typename MatrixA>
+void SVD<MatrixA>::diagonalize( vector_type& super_diag, const double eps )
 {
-    for ( int k=M_cols-1; k >= 0; --k )	// QR-iterate upon J[l:k,l:k]
+    for ( int k = M_cols - 1; k >= 0; --k ) // QR-iterate upon J[l:k,l:k]
     {
         //std::cerr << "k = " << k << "\n";
         int l;
@@ -795,51 +769,51 @@ SVD<MatrixA>::diagonalize( vector_type& super_diag, const double eps )
         // until superdiag J[k-1,k] becomes 0
         while ( math::abs( super_diag( k ) ) > eps )
         {
-            l=getWorkSubmatrix( super_diag,k,eps );
+            l = getWorkSubmatrix( super_diag, k, eps );
             //std::cerr << "l = " << l << "\n";
-            value_type shift;			// Compute a QR-shift from a bottom
+            value_type shift; // Compute a QR-shift from a bottom
             {
                 // corner minor of J[l:k,l:k] order 2
-                value_type Jk2k1 = super_diag( k-1 ),	// J[k-2,k-1]
-                           Jk1k  = super_diag( k ),
-                           Jk1k1 = M_S( k-1 ),		// J[k-1,k-1]
-                           Jkk   = M_S( k ),
-                           Jll   = M_S( l );		// J[l,l]
-                shift = ( Jk1k1-Jkk )*( Jk1k1+Jkk ) + ( Jk2k1-Jk1k )*( Jk2k1+Jk1k );
-                shift /= 2*Jk1k*Jk1k1;
-                shift += ( shift < 0 ? -1 : 1 ) * math::sqrt( shift*shift+1 );
-                shift = ( ( Jll-Jkk )*( Jll+Jkk ) + Jk1k*( Jk1k1/shift-Jk1k ) )/Jll;
+                value_type Jk2k1 = super_diag( k - 1 ), // J[k-2,k-1]
+                    Jk1k = super_diag( k ),
+                           Jk1k1 = M_S( k - 1 ), // J[k-1,k-1]
+                    Jkk = M_S( k ),
+                           Jll = M_S( l ); // J[l,l]
+                shift = ( Jk1k1 - Jkk ) * ( Jk1k1 + Jkk ) + ( Jk2k1 - Jk1k ) * ( Jk2k1 + Jk1k );
+                shift /= 2 * Jk1k * Jk1k1;
+                shift += ( shift < 0 ? -1 : 1 ) * math::sqrt( shift * shift + 1 );
+                shift = ( ( Jll - Jkk ) * ( Jll + Jkk ) + Jk1k * ( Jk1k1 / shift - Jk1k ) ) / Jll;
             }
             // Carry on multiplications by T2, S2, T3...
             value_type cos_th = 1;
             value_type sin_th = 1;
-            value_type Ji1i1 = M_S( l );	// J[i-1,i-1] at i=l+1...k
+            value_type Ji1i1 = M_S( l ); // J[i-1,i-1] at i=l+1...k
 
-            for ( int i=l+1; i<=k; i++ )
+            for ( int i = l + 1; i <= k; i++ )
             {
                 value_type Ji1i = super_diag( i ); // J[i-1,i]
-                value_type Jii = M_S( i ); //  J[i,i]
+                value_type Jii = M_S( i );         //  J[i,i]
 
                 sin_th *= Ji1i;
                 Ji1i *= cos_th;
                 cos_th = shift;
 
-                value_type norm_f = ( super_diag( i-1 ) = hypot( cos_th,sin_th ) );
+                value_type norm_f = ( super_diag( i - 1 ) = hypot( cos_th, sin_th ) );
                 cos_th /= norm_f, sin_th /= norm_f;
 
                 // Rotate J[i-1:i,i-1:i] by Ti
-                shift = cos_th*Ji1i1 + sin_th*Ji1i;	// new J[i-1,i-1]
-                Ji1i = -sin_th*Ji1i1 + cos_th*Ji1i;	// J[i-1,i] after rotation
-                const value_type Jii1 = Jii*sin_th;		// Emerged J[i,i-1]
-                Jii *= cos_th;				// new J[i,i]
+                shift = cos_th * Ji1i1 + sin_th * Ji1i; // new J[i-1,i-1]
+                Ji1i = -sin_th * Ji1i1 + cos_th * Ji1i; // J[i-1,i] after rotation
+                const value_type Jii1 = Jii * sin_th;   // Emerged J[i,i-1]
+                Jii *= cos_th;                          // new J[i,i]
 
                 // Accumulate T rotations in V
-                rotate( M_V, i, i-1, cos_th, sin_th );
+                rotate( M_V, i, i - 1, cos_th, sin_th );
 
-                value_type cos_ph = shift, sin_ph = Jii1;// Make Si to get rid of J[i,i-1]
-                M_S( i-1 ) = ( norm_f = hypot( cos_ph,sin_ph ) );	// New J[i-1,i-1]
+                value_type cos_ph = shift, sin_ph = Jii1;            // Make Si to get rid of J[i,i-1]
+                M_S( i - 1 ) = ( norm_f = hypot( cos_ph, sin_ph ) ); // New J[i-1,i-1]
 
-                if ( norm_f == 0 )		// If norm =0, rotation angle
+                if ( norm_f == 0 ) // If norm =0, rotation angle
                 {
                     cos_ph = cos_th;
                     sin_ph = sin_th; // can be anything now
@@ -852,11 +826,11 @@ SVD<MatrixA>::diagonalize( vector_type& super_diag, const double eps )
                 }
 
                 // Rotate J[i-1:i,i-1:i] by Si
-                shift = cos_ph * Ji1i + sin_ph*Jii;	// New J[i-1,i]
-                Ji1i1 = -sin_ph*Ji1i + cos_ph*Jii;	// New Jii, would carry over as J[i-1,i-1] for next i
+                shift = cos_ph * Ji1i + sin_ph * Jii;  // New J[i-1,i]
+                Ji1i1 = -sin_ph * Ji1i + cos_ph * Jii; // New Jii, would carry over as J[i-1,i-1] for next i
 
                 // Accumulate S rotations in U
-                rotate( M_U, i, i-1, cos_ph, sin_ph );
+                rotate( M_U, i, i - 1, cos_ph, sin_ph );
 
                 // Jii1 disappears, sin_th would
                 cos_th = cos_ph, sin_th = sin_ph; // carry over a (scaled) J[i-1,i+1]
@@ -864,27 +838,25 @@ SVD<MatrixA>::diagonalize( vector_type& super_diag, const double eps )
                 // would carry over a scaled J[i,i+1]
             }
 
-            super_diag( l ) = 0;		// Supposed to be eliminated by now
+            super_diag( l ) = 0; // Supposed to be eliminated by now
             super_diag( k ) = shift;
             M_S( k ) = Ji1i1;
-        }		// --- end-of-QR-iterations
+        } // --- end-of-QR-iterations
 
-        if ( M_S( k ) < 0 )		// Correct the sign of the sing number
+        if ( M_S( k ) < 0 ) // Correct the sign of the sing number
         {
             M_S( k ) = -M_S( k );
 
             using namespace boost::numeric::ublas;
             //matrix_column<matrix<value_type> > Vk ( M_V, k);
-            matrix_column<matrix_type> Vk ( M_V, k );
+            matrix_column<matrix_type> Vk( M_V, k );
 
-            for ( unsigned l = 0; l < Vk.size(); ++ l )
+            for ( unsigned l = 0; l < Vk.size(); ++l )
             {
                 Vk( l ) = -Vk( l );
             }
         }
     }
 }
-
-
 }
-#endif  /* __SVD_HPP  */
+#endif /* __SVD_HPP  */

@@ -29,12 +29,12 @@
 #ifndef __SubMeshData_H
 #define __SubMeshData_H 1
 
-#if defined(__clang__)
+#if defined( __clang__ )
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wredeclared-class-member"
 #endif
 #include <boost/bimap.hpp>
-#if defined(__clang__)
+#if defined( __clang__ )
 #pragma clang diagnostic pop
 #endif
 
@@ -51,39 +51,39 @@ class MeshBase;
  */
 class SubMeshData
 {
-public:
+  public:
     /** @name Typedefs
      */
     //@{
     typedef const MeshBase mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef boost::bimap< size_type, size_type > bm_type;
+    typedef boost::bimap<size_type, size_type> bm_type;
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
-    template<typename MeshType>
-    SubMeshData( boost::shared_ptr<MeshType> m ) : mesh( m )
-        {}
+    template <typename MeshType>
+    SubMeshData( boost::shared_ptr<MeshType> m )
+        : mesh( m )
+    {
+    }
 
     ~SubMeshData()
-        {
-            VLOG(2) << "delete sub mesh data\n";
-        }
+    {
+        VLOG( 2 ) << "delete sub mesh data\n";
+    }
 
     //MeshBase* meshBase() { return dynamic_cast<MeshBase *>( mesh.get() ); }
     //MeshBase const* meshBase() const { return dynamic_cast<MeshBase const*>( mesh.get() ); }
 
     //@}
 
-
     // parent mesh
     mesh_ptrtype mesh;
 
     // bi-directional map
     bm_type bm;
-
 };
 } // Feel
 #endif /* __SubMeshData_H */

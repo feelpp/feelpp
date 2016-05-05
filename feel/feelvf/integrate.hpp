@@ -32,39 +32,27 @@
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/integrator.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 BOOST_PARAMETER_FUNCTION(
     ( typename vf::detail::integrate_type<Args>::expr_type ), // return type
-    integrate,    // 2. function name
+    integrate,                                                // 2. function name
 
-    tag,           // 3. namespace of tag types
+    tag, // 3. namespace of tag types
 
-    ( required
-      ( range, *  )
-      ( expr,   * )
-    ) // 4. one required parameter, and
+    ( required( range, * )( expr, * ) ) // 4. one required parameter, and
 
-    ( optional
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
-      ( geomap, *, (vf::detail::integrate_type<Args>::geoOrder > 1 )?GeomapStrategyType::GEOMAP_OPT:GeomapStrategyType::GEOMAP_HO )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-      ( quadptloc, *, typename vf::detail::integrate_type<Args>::_quadptloc_ptrtype() )
-    )
-)
+    ( optional( quad, *, typename vf::detail::integrate_type<Args>::_quad_type() )( geomap, *, ( vf::detail::integrate_type<Args>::geoOrder > 1 ) ? GeomapStrategyType::GEOMAP_OPT : GeomapStrategyType::GEOMAP_HO )( quad1, *, typename vf::detail::integrate_type<Args>::_quad1_type() )( use_tbb, (bool), false )( use_harts, (bool), false )( grainsize, (int), 100 )( partitioner, *, "auto" )( verbose, (bool), false )( quadptloc, *, typename vf::detail::integrate_type<Args>::_quadptloc_ptrtype() ) ) )
 {
 
-    auto ret =  integrate_impl( range, quad, expr, geomap, quad1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
+    auto ret = integrate_impl( range, quad, expr, geomap, quad1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
 
     if ( verbose )
     {
         std::cout << " -- integrate: size(range) = " << std::distance( ret.expression().beginElement(),
-                  ret.expression().endElement() ) << "\n";
+                                                                       ret.expression().endElement() )
+                  << "\n";
         std::cout << " -- integrate: quad = " << ret.expression().im().nPoints() << "\n";
         std::cout << " -- integrate: quad1 = " << ret.expression().im2().nPoints() << "\n";
         //std::cout << " -- integrate: geomap = " << geomap << "\n";
@@ -72,7 +60,6 @@ BOOST_PARAMETER_FUNCTION(
 
     return ret;
 }
-
 }
 
 #endif

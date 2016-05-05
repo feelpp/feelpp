@@ -23,18 +23,12 @@
  */
 #include <feel/feelcore/environment.hpp>
 
-
 namespace Feel
 {
 po::options_description
-stvenantkirchhoff_options(std::string prefix)
+stvenantkirchhoff_options( std::string prefix )
 {
     po::options_description stvenantkirchhoffoptions( "StVenantKirchhoff problem options" );
-    stvenantkirchhoffoptions.add_options()
-        ( prefixvm( prefix, "young-modulus"), Feel::po::value<double>()->default_value( 1.4e6 ), "young-modulus" )
-        ( prefixvm( prefix, "poisson-coeff"), Feel::po::value<double>()->default_value( 0.4 ), "poisson-coeff" )
-        ( prefixvm( prefix, "rho"), Feel::po::value<double>()->default_value( 1000 ), "density [kg/m^3]" )
-        ( prefixvm( prefix, "gravity"), Feel::po::value<std::string>()->default_value( "{0,0}" ), "gravity force expression" )
-        ( prefixvm( prefix, "gravity-cst"), Feel::po::value<double>()->default_value( 2 ), "gravity-cst" )
-        } 
+    stvenantkirchhoffoptions.add_options()( prefixvm( prefix, "young-modulus" ), Feel::po::value<double>()->default_value( 1.4e6 ), "young-modulus" )( prefixvm( prefix, "poisson-coeff" ), Feel::po::value<double>()->default_value( 0.4 ), "poisson-coeff" )( prefixvm( prefix, "rho" ), Feel::po::value<double>()->default_value( 1000 ), "density [kg/m^3]" )( prefixvm( prefix, "gravity" ), Feel::po::value<std::string>()->default_value( "{0,0}" ), "gravity force expression" )( prefixvm( prefix, "gravity-cst" ), Feel::po::value<double>()->default_value( 2 ), "gravity-cst" )
+}
 }

@@ -26,16 +26,18 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-04-21
  */
-#include <typeinfo>
 #include <feel/feelvf/exprbase.hpp>
+#include <typeinfo>
 
 namespace Feel
 {
 ExprBase::ExprBase()
-{}
+{
+}
 
 ExprBase::~ExprBase()
-{}
+{
+}
 
 std::string
 ExprBase::typeName() const

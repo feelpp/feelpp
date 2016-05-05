@@ -27,7 +27,8 @@
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelpoly/traits.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
  * \addtogroup Traits
@@ -38,52 +39,52 @@ namespace Feel {
  * if \p T has base class \p ScalarBase then @return the member constant value equal
  * to true, false otherwise
  */
-template<typename T>
+template <typename T>
 using is_scalar_field = typename std::is_base_of<ScalarBase, T>::type;
 
 /**
  * helper variable template for is_scalar_field
  */
-template<typename T>
+template <typename T>
 constexpr bool is_scalar_field_v = is_scalar_field<T>::value;
 
 /**
  * if \p T has base class \p VectorialBase then @return the member constant value equal
  * to true, false otherwise
  */
-template<typename T>
+template <typename T>
 using is_vector_field = typename std::is_base_of<VectorialBase, T>::type;
 
 /**
  * helper variable template for is_vector_field
  */
-template<typename T>
+template <typename T>
 constexpr bool is_vector_field_v = is_vector_field<T>::value;
 
 /**
  * if \p T has base class \p Tensor2Base then @return the member constant value equal
  * to true, false otherwise
  */
-template<typename T>
-using is_tensor2_field  =typename std::is_base_of<Tensor2Base, T>::type;
+template <typename T>
+using is_tensor2_field = typename std::is_base_of<Tensor2Base, T>::type;
 
 /**
  * helper variable template for is_tensor2_field
  */
-template<typename T>
+template <typename T>
 constexpr bool is_tensor2_field_v = is_tensor2_field<T>::value;
 
 /**
  * if \p T has base class \p FunctionSpaceBase (hense if it is a function space)
  * then provides the member constant value equal to true, false otherwise
  */
-template<typename FuncSpaceType>
-using is_functionspace = typename std::is_base_of<FunctionSpaceBase,FuncSpaceType>::type;
+template <typename FuncSpaceType>
+using is_functionspace = typename std::is_base_of<FunctionSpaceBase, FuncSpaceType>::type;
 
 /**
  * helper variable template for is_functionspace
  */
-template<typename FuncSpaceType>
+template <typename FuncSpaceType>
 constexpr bool is_functionspace_v = is_functionspace<FuncSpaceType>::value;
 
 /**
@@ -91,35 +92,33 @@ constexpr bool is_functionspace_v = is_functionspace<FuncSpaceType>::value;
  * if \p FESpace is a shared_ptr of a function space then provides the function space type
  * \note it checks that FESpace is indeed a functionspace type and return void if it is not the case.
  */
-template<typename FESpace>
-using functionspace_type = typename mpl::if_<is_functionspace<decay_type<FESpace> >,
+template <typename FESpace>
+using functionspace_type = typename mpl::if_<is_functionspace<decay_type<FESpace>>,
                                              mpl::identity<decay_type<FESpace>>,
-                                             mpl::identity<void> >::type::type;
-
+                                             mpl::identity<void>>::type::type;
 
 /**
  * if \p T has base class \p ElementBase (hense if it is an element of a function space)
  * then provides the member constant value equal to true, false otherwise
  */
-template<typename ElementType>
-using is_functionspace_element = typename std::is_base_of<FunctionSpaceBase::ElementBase,ElementType>::type;
+template <typename ElementType>
+using is_functionspace_element = typename std::is_base_of<FunctionSpaceBase::ElementBase, ElementType>::type;
 
 /**
  * helper variable template for is_functionspace_element
  */
-template<typename ElementType>
+template <typename ElementType>
 constexpr bool is_functionspace_element_v = is_functionspace_element<ElementType>::value;
-
 
 /**
  * provides the function space type
  * if \p FESpace is a shared_ptr of a function space then provides the function space type
  * \note it checks that FESpace is indeed a functionspace type and return void if it is not the case.
  */
-template<typename ElementT>
-using functionspace_element_type = typename mpl::if_<is_functionspace_element<decay_type<ElementT> >,
+template <typename ElementT>
+using functionspace_element_type = typename mpl::if_<is_functionspace_element<decay_type<ElementT>>,
                                                      mpl::identity<decay_type<ElementT>>,
-                                                     mpl::identity<void> >::type::type;
+                                                     mpl::identity<void>>::type::type;
 
 /**
  * @} // end Traits group

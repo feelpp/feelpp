@@ -26,36 +26,35 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_DETAIL_CLEAN_HPP)
+#if !defined( FEELPP_DETAIL_CLEAN_HPP )
 #define FEELPP_DETAIL_CLEAN_HPP 1
 
-namespace Feel { namespace vf {
+namespace Feel
+{
+namespace vf
+{
 
 /// \cond DETAIL
 namespace detail
 {
-template<typename TheArgs, typename Tag>
+template <typename TheArgs, typename Tag>
 struct clean_type
 {
     typedef typename boost::remove_pointer<
-    typename boost::remove_const<
-    typename boost::remove_reference<
-    typename parameter::binding<TheArgs, Tag>::type
-    >::type
-    >::type
-    >::type type;
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<TheArgs, Tag>::type>::type>::type>::type type;
 };
-template<typename TheArgs, typename Tag, typename Default>
+template <typename TheArgs, typename Tag, typename Default>
 struct clean2_type
 {
     typedef typename boost::remove_pointer<
-    typename boost::remove_const<
-    typename boost::remove_reference<
-    typename parameter::binding<TheArgs, Tag, Default>::type
-    >::type
-    >::type
-    >::type type;
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<TheArgs, Tag, Default>::type>::type>::type>::type type;
 };
-} } }
+}
+}
+}
 
 #endif /* FEELPP_DETAIL_CLEAN_HPP */

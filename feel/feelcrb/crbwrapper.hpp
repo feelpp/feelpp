@@ -29,26 +29,28 @@
 #ifndef __CrbWrapper_H
 #define __CrbWrapper_H 1
 
-#define CRB_FUNC_EXEC_BODY_IN_TEMPDIR( classname, dirname )            \
-{                                                                       \
-char* currentWorkingDirectory = getCurrentWorkingDirectory (0) ;        \
-char* temporaryDirectory=createTemporaryDirectory(#dirname,p_exchangedData,0); \
-                                                                        \
-int rc = 0;                                                             \
-try                                                                     \
-{                                                                       \
-    CAST(classname*,p_state)->run( INPOINT_ARRAY, INPOINT_SIZE, OUTPOINT_ARRAY, OUTPOINT_SIZE ); \
-}                                                                       \
-catch( ... )                                                            \
-{                                                                       \
-    rc = 1;                                                             \
-}                                                                       \
-if (rc) {                                                               \
-    PRINT( "Error in class "#classname );                               \
-    return WRAPPER_EXECUTION_ERROR;                                     \
-}                                                                       \
-deleteTemporaryDirectory ( temporaryDirectory , rc, 0 ) ;               \
-free ( currentWorkingDirectory ) ;                                      \
-}
+#define CRB_FUNC_EXEC_BODY_IN_TEMPDIR( classname, dirname )                                  \
+    {                                                                                        \
+        char* currentWorkingDirectory = getCurrentWorkingDirectory( 0 );                     \
+        char* temporaryDirectory = createTemporaryDirectory( #dirname, p_exchangedData, 0 ); \
+                                                                                             \
+        int rc = 0;                                                                          \
+        try                                                                                  \
+        {                                                                                    \
+            CAST( classname*, p_state )                                                      \
+                ->run( INPOINT_ARRAY, INPOINT_SIZE, OUTPOINT_ARRAY, OUTPOINT_SIZE );         \
+        }                                                                                    \
+        catch ( ... )                                                                        \
+        {                                                                                    \
+            rc = 1;                                                                          \
+        }                                                                                    \
+        if ( rc )                                                                            \
+        {                                                                                    \
+            PRINT( "Error in class " #classname );                                           \
+            return WRAPPER_EXECUTION_ERROR;                                                  \
+        }                                                                                    \
+        deleteTemporaryDirectory( temporaryDirectory, rc, 0 );                               \
+        free( currentWorkingDirectory );                                                     \
+    }
 
 #endif /* __CrbWrapper_H */

@@ -39,80 +39,80 @@ namespace FeelModels
 
 class ModelMeasuresIO
 {
-public :
+  public:
     ModelMeasuresIO( std::string const& pathFile, WorldComm const& worldComm /*= Environment::worldComm()*/ );
     ModelMeasuresIO( ModelMeasuresIO const& app ) = default;
     void clear();
     void start();
     void restart( std::string const& paramKey, double val );
     void exportMeasures();
-    void setParameter(std::string const& key,double val);
-    void setMeasure(std::string const& key,double val);
-    void setMeasureComp( std::string const& key,std::vector<double> const& values );
-    bool hasParameter( std::string const& key ) const { return M_mapParameterData.find( key ) != M_mapParameterData.end() ; }
-    bool hasMeasure( std::string const& key ) const { return M_mapMeasureData.find( key ) != M_mapMeasureData.end() ; }
+    void setParameter( std::string const& key, double val );
+    void setMeasure( std::string const& key, double val );
+    void setMeasureComp( std::string const& key, std::vector<double> const& values );
+    bool hasParameter( std::string const& key ) const { return M_mapParameterData.find( key ) != M_mapParameterData.end(); }
+    bool hasMeasure( std::string const& key ) const { return M_mapMeasureData.find( key ) != M_mapMeasureData.end(); }
 
     std::string const& pathFile() const { return M_pathFile; }
     void setPathFile( std::string const& s ) { M_pathFile = s; }
-private :
+  private:
     WorldComm M_worldComm;
     std::string M_pathFile;
-    std::map<std::string,double> M_mapParameterData;
-    std::map<std::string,double> M_mapMeasureData;
+    std::map<std::string, double> M_mapParameterData;
+    std::map<std::string, double> M_mapMeasureData;
 };
 
 class ModelMeasuresEvaluatorContext
 {
-public :
+  public:
     ModelMeasuresEvaluatorContext() = default;
     ModelMeasuresEvaluatorContext( ModelMeasuresEvaluatorContext const& ) = default;
 
-    std::map<std::string, std::map<int,std::string> > const& mapFieldToMapCtxIdToName() const { return M_mapFieldToMapCtxIdToName; }
+    std::map<std::string, std::map<int, std::string>> const& mapFieldToMapCtxIdToName() const { return M_mapFieldToMapCtxIdToName; }
     void add( std::string const& field, int ctxId, std::string const& name );
     bool has( std::string const& field ) const;
     bool has( std::string const& field, int ctxId ) const;
     std::string const& name( std::string const& field, int ctxId ) const;
     int ctxId( std::string const& field, std::string const& name ) const;
-private :
+
+  private:
     // for each field, store data names evaluted : field -> ( (ctxId1->dataName1), (ctxId2->dataName2),...)
-    std::map<std::string, std::map<int,std::string> > M_mapFieldToMapCtxIdToName;
+    std::map<std::string, std::map<int, std::string>> M_mapFieldToMapCtxIdToName;
     std::string M_emptyString;
 };
 
 class ModelMeasuresForces
 {
-public :
+  public:
     ModelMeasuresForces() = default;
     ModelMeasuresForces( ModelMeasuresForces const& ) = default;
     ModelMeasuresForces( ModelMeasuresForces&& ) = default;
     ModelMeasuresForces& operator=( ModelMeasuresForces const& ) = default;
-    ModelMeasuresForces& operator=( ModelMeasuresForces && ) = default;
+    ModelMeasuresForces& operator=( ModelMeasuresForces&& ) = default;
 
     std::string const& name() const { return M_name; }
     std::list<std::string> const& meshMarkers() const { return M_meshMarkers; }
 
     void setName( std::string const& s ) { M_name = s; }
     void addMarker( std::string const& mark )
-        {
-            if ( std::find( M_meshMarkers.begin(),M_meshMarkers.end(), mark ) == M_meshMarkers.end() )
-                M_meshMarkers.push_back( mark );
-        }
+    {
+        if ( std::find( M_meshMarkers.begin(), M_meshMarkers.end(), mark ) == M_meshMarkers.end() )
+            M_meshMarkers.push_back( mark );
+    }
 
-private :
+  private:
     std::string M_name;
     std::list<std::string> M_meshMarkers;
     std::string M_direction;
 };
 
-
 class ModelMeasuresFlowRate
 {
-public :
+  public:
     ModelMeasuresFlowRate();
     ModelMeasuresFlowRate( ModelMeasuresFlowRate const& ) = default;
     ModelMeasuresFlowRate( ModelMeasuresFlowRate&& ) = default;
     ModelMeasuresFlowRate& operator=( ModelMeasuresFlowRate const& ) = default;
-    ModelMeasuresFlowRate& operator=( ModelMeasuresFlowRate && ) = default;
+    ModelMeasuresFlowRate& operator=( ModelMeasuresFlowRate&& ) = default;
 
     std::string const& name() const { return M_name; }
     std::list<std::string> const& meshMarkers() const { return M_meshMarkers; }
@@ -125,7 +125,7 @@ public :
 
     void setup( pt::ptree const& _pt, std::string const& name );
 
-private :
+  private:
     std::string M_name;
     std::list<std::string> M_meshMarkers;
     std::string M_direction;

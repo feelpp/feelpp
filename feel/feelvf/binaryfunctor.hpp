@@ -44,11 +44,10 @@ namespace vf
  * @author Christophe Prud'homme
  * @see
  */
-template<typename T1 = double,typename T2 = double>
+template <typename T1 = double, typename T2 = double>
 class BinaryFunctor
 {
-public:
-
+  public:
     typedef T1 value_1_type;
     typedef T2 value_2_type;
     typedef FunctorDomain<value_1_type> functordomain_1_type;
@@ -59,21 +58,22 @@ public:
     //@{
 
     BinaryFunctor( std::string const& name,
-                   std::pair<functordomain_1_type,functordomain_2_type> const& domain = std::make_pair( UnboundedDomain<value_1_type>(),
-                                                                                                        UnboundedDomain<value_2_type>() ) )
-        :
-        M_name( name ),
-        M_domain( domain )
-    {}
+                   std::pair<functordomain_1_type, functordomain_2_type> const& domain = std::make_pair( UnboundedDomain<value_1_type>(),
+                                                                                                         UnboundedDomain<value_2_type>() ) )
+        : M_name( name ),
+          M_domain( domain )
+    {
+    }
 
-    BinaryFunctor( BinaryFunctor const & uf )
-        :
-        M_name( uf.M_name ),
-        M_domain( uf.M_domain )
-    {}
+    BinaryFunctor( BinaryFunctor const& uf )
+        : M_name( uf.M_name ),
+          M_domain( uf.M_domain )
+    {
+    }
 
     virtual ~BinaryFunctor()
-    {}
+    {
+    }
 
     //@}
 
@@ -89,11 +89,10 @@ public:
         return M_name;
     }
 
-
     /**
      * @return functor domain object
      */
-    std::pair<functordomain_1_type,functordomain_2_type> const& domain() const
+    std::pair<functordomain_1_type, functordomain_2_type> const& domain() const
     {
         return M_domain;
     }
@@ -114,18 +113,13 @@ public:
      */
     virtual void eval( int nx, value_1_type const* x, value_2_type const* y, value_1_type* f ) const = 0;
 
-
     //@}
 
-
-
-protected:
-
-private:
+  protected:
+  private:
     std::string M_name;
 
-    std::pair<functordomain_1_type,functordomain_2_type> M_domain;
-
+    std::pair<functordomain_1_type, functordomain_2_type> M_domain;
 };
 /// \endcond
 }

@@ -26,16 +26,14 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-05-22
  */
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backendeigen.hpp>
+#include <feel/feelcore/feel.hpp>
 #undef MatType
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
 namespace Feel
 {
-
-
 
 /**
  * \return the command lines options of the eigen backend
@@ -46,7 +44,6 @@ po::options_description backendeigen_options( std::string const& prefix )
 
     if ( !_prefix.empty() )
         _prefix += "-";
-
 
     po::options_description _options( "BackendEigen " + prefix + " solver options" );
 #if 0

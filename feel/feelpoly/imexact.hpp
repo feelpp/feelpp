@@ -38,12 +38,10 @@ namespace Feel
  *  \ingroup Polynomial
  *  @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
-template<typename T = double>
+template <typename T = double>
 class IMExact
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -52,7 +50,7 @@ public:
     static const bool is_face_im = false;
 
     typedef T value_type;
-    typedef ublas::matrix<value_type,ublas::column_major> points_type;
+    typedef ublas::matrix<value_type, ublas::column_major> points_type;
 
     typedef IMExact<value_type> face_quadrature_type;
 
@@ -63,7 +61,7 @@ public:
     //@{
 
     IMExact() {}
-    IMExact( IMExact const & ) {}
+    IMExact( IMExact const& ) {}
     ~IMExact() {}
 
     //@}
@@ -71,7 +69,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -101,7 +98,6 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
@@ -112,8 +108,8 @@ public:
      * the integration has already been calculated elsewhere
      * @see feel/feelf/operators2.hpp
      */
-    template<typename Expression>
-    value_type integrate( Expression  const&  f ) const
+    template <typename Expression>
+    value_type integrate( Expression const& f ) const
     {
         uint32_type k = 0;
         return value_type( f( k ) );
@@ -121,12 +117,8 @@ public:
 
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
 };
 } // Feel
 #endif /* __IMExact_H */

@@ -34,11 +34,10 @@ namespace Feel
 {
 
 // Functional on function space
-template<class Space>
+template <class Space>
 class FsFunctional
 {
-public:
-
+  public:
     // -- TYPEDEFS --
     typedef Space space_type;
 
@@ -47,8 +46,8 @@ public:
 
     typedef typename space_type::value_type value_type;
 
-    FsFunctional( space_ptrtype space ) :
-        M_space( space )
+    FsFunctional( space_ptrtype space )
+        : M_space( space )
     {
     }
 
@@ -63,8 +62,7 @@ public:
         return M_space;
     }
 
-private:
-
+  private:
     space_ptrtype M_space;
 
 }; // class FsFunctional

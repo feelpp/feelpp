@@ -31,13 +31,12 @@
 #ifndef __ExporterEnsightGold_H
 #define __ExporterEnsightGold_H 1
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
-
-#include <boost/lambda/lambda.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/lambda/lambda.hpp>
 
 #include <feel/feelmesh/filters.hpp>
 
@@ -53,15 +52,13 @@ namespace fs = boost::filesystem;
  * @author Christophe Prud'homme
  * @author Alexandre Ancel
  */
-template<typename MeshType, int N>
+template <typename MeshType, int N>
 class ExporterEnsightGold
-    :
-public Exporter<MeshType, N>
+    : public Exporter<MeshType, N>
 {
     typedef Exporter<MeshType, N> super;
-public:
 
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -124,20 +121,18 @@ public:
     */
     ExporterEnsightGold( WorldComm const& worldComm = Environment::worldComm() );
     ExporterEnsightGold( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterEnsightGold( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    ExporterEnsightGold( po::variables_map const& vm = Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
     ExporterEnsightGold( std::string const& exp_prefix, WorldComm const& worldComm = Environment::worldComm() );
 
-    ExporterEnsightGold( ExporterEnsightGold const & __ex );
+    ExporterEnsightGold( ExporterEnsightGold const& __ex );
 
     ~ExporterEnsightGold();
-
 
     //@}
 
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -161,27 +156,25 @@ public:
         return M_worldCommBase;
     }
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
 
-    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
+    Exporter<MeshType, N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
     {
         super::setOptions( exp_prefix );
 
         return this;
     }
 
-    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
+    Exporter<MeshType, N>* setOptions( std::string const& exp_prefix = "" )
     {
         super::setOptions( exp_prefix );
 
         return this;
     }
-
 
     //@}
 
@@ -198,12 +191,8 @@ public:
 
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
     /**
      * init the ensight exporter
      */
@@ -222,30 +211,29 @@ private:
     /**
        updates the markers to be written by he exporters
     */
-    void computeMarkersToWrite(mesh_ptrtype mesh) const;
+    void computeMarkersToWrite( mesh_ptrtype mesh ) const;
 
     /**
        write the 'geo' file for ensight
     */
     void writeGeoFiles() const;
-    void writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh) const;
-    void writeGeoHeader(MPI_File fh) const;
-    void writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<size_type> > & m) const;
-    void writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, size_type markerid) const;
+    void writeGeoMarkers( MPI_File fh, mesh_ptrtype mesh ) const;
+    void writeGeoHeader( MPI_File fh ) const;
+    void writeGeoMarkedFaces( MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<size_type>>& m ) const;
+    void writeGeoMarkedElements( MPI_File fh, mesh_ptrtype mesh, size_type markerid ) const;
 
     /**
        write the variables file for ensight
     */
     void writeVariableFiles() const;
 
-    template<typename Iterator>
+    template <typename Iterator>
     void saveNodal( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const;
 
-    template<typename Iterator>
+    template <typename Iterator>
     void saveElement( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __evar, Iterator __evaren ) const;
 
-private:
-
+  private:
     /* The purpose of this variable is to keep track */
     /* of the initial woldcomm that is given through the constructor */
     /* This is useful, when we don't want to merge the markers, */
@@ -265,11 +253,10 @@ private:
     mutable MPI_Offset posInFile;
 };
 
-
 } // Feel
 
 //#if !defined( FEELPP_INSTANTIATION_MODE )
-# include <feel/feelfilters/exporterensightgold_impl.hpp>
+#include <feel/feelfilters/exporterensightgold_impl.hpp>
 //#endif // FEELPP_INSTANTIATION_MODE
 
 #endif /* __ExporterEnsightGold_H */

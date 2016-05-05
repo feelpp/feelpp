@@ -31,9 +31,9 @@
 
 namespace Feel
 {
-template<typename T, int N1=Eigen::Dynamic, int N2=Eigen::Dynamic>
+template <typename T, int N1 = Eigen::Dynamic, int N2 = Eigen::Dynamic>
 DebugStream&
-operator<<( DebugStream& __os, Eigen::Matrix<T,N1,N2> const& __n )
+operator<<( DebugStream& __os, Eigen::Matrix<T, N1, N2> const& __n )
 {
 
     if ( __os.doPrint() )
@@ -48,12 +48,11 @@ operator<<( DebugStream& __os, Eigen::Matrix<T,N1,N2> const& __n )
     return __os;
 }
 
-template<typename T, int N1=Eigen::Dynamic, int N2=Eigen::Dynamic>
+template <typename T, int N1 = Eigen::Dynamic, int N2 = Eigen::Dynamic>
 NdebugStream&
-operator<<( NdebugStream& __os, Eigen::Matrix<T,N1,N2> const&  )
+operator<<( NdebugStream& __os, Eigen::Matrix<T, N1, N2> const& )
 {
     return __os;
 }
-
 
 } //  Feel

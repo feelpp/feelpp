@@ -42,8 +42,7 @@ namespace Feel
 */
 class SolverBase
 {
-public:
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -107,6 +106,5 @@ public:
     virtual void setOptionsFromGetPot( GetPot const& dataFile,
                                        std::string section ) = 0;
 };
-
 }
 #endif /* SolverBase_H */

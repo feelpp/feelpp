@@ -35,8 +35,7 @@ namespace Feel
 
 template <typename T>
 NullSpace<T>::NullSpace( std::vector<vector_ptrtype> const& vecBasis, backend_ptrtype const& mybackend )
-    :
-    M_basisVector( vecBasis.size() )
+    : M_basisVector( vecBasis.size() )
 {
     this->updateForUse( vecBasis, mybackend );
 }
@@ -45,14 +44,13 @@ NullSpace<T>::NullSpace( std::vector<vector_ptrtype> const& vecBasis, backend_pt
 
 template <typename T>
 NullSpace<T>::NullSpace( backend_ptrtype const& mybackend, NullSpace const& ns, bool redoOrthonormalization )
-    :
-    M_basisVector( ns.size() )
+    : M_basisVector( ns.size() )
 {
     // copy vectors
-    for ( int k=0;k<ns.size();++k )
+    for ( int k = 0; k < ns.size(); ++k )
     {
-        M_basisVector[k] = mybackend->newVector( ns.basisVector(k).mapPtr() );
-        *M_basisVector[k] = ns.basisVector(k);
+        M_basisVector[k] = mybackend->newVector( ns.basisVector( k ).mapPtr() );
+        *M_basisVector[k] = ns.basisVector( k );
         M_basisVector[k]->close();
     }
     // we assume that nullspace has an orthonormal basis, so do nothing if not forced
@@ -62,33 +60,30 @@ NullSpace<T>::NullSpace( backend_ptrtype const& mybackend, NullSpace const& ns, 
 
 template <typename T>
 NullSpace<T>::NullSpace( NullSpace const& ns )
-    :
-    M_basisVector( ns.M_basisVector )
-{}
+    : M_basisVector( ns.M_basisVector )
+{
+}
 
 template <typename T>
-void
-NullSpace<T>::close()
+void NullSpace<T>::close()
 {
     if ( M_basisVector.size() )
     {
-        LOG(INFO) << "Close NullSpace";
+        LOG( INFO ) << "Close NullSpace";
         // orthonormalise basis if necessary
         if ( !this->hasOrthonormalBasisVectors() )
         {
-            LOG(INFO) << "NullSpace: orthonormalize basis functions";
+            LOG( INFO ) << "NullSpace: orthonormalize basis functions";
             this->orthonormalizeBasisVector();
         }
     }
 }
 
-
 template <typename T>
-void
-NullSpace<T>::updateForUse( std::vector<vector_ptrtype> const& vecBasis, backend_ptrtype const& mybackend )
+void NullSpace<T>::updateForUse( std::vector<vector_ptrtype> const& vecBasis, backend_ptrtype const& mybackend )
 {
     // copy vectors
-    for ( int k=0;k<vecBasis.size();++k )
+    for ( int k = 0; k < vecBasis.size(); ++k )
     {
         M_basisVector[k] = mybackend->newVector( vecBasis[k]->mapPtr() );
         *M_basisVector[k] = *vecBasis[k];
@@ -101,59 +96,56 @@ NullSpace<T>::updateForUse( std::vector<vector_ptrtype> const& vecBasis, backend
 }
 
 template <typename T>
-void
-NullSpace<T>::orthonormalizeBasisVector()
+void NullSpace<T>::orthonormalizeBasisVector()
 {
     int dimNullSpace = this->size();
-    std::vector<double> dots(dimNullSpace);
-    for ( int k = 0 ; k<dimNullSpace ; ++k )
+    std::vector<double> dots( dimNullSpace );
+    for ( int k = 0; k < dimNullSpace; ++k )
     {
-        auto const& myvec = this->basisVector(k);
-        for ( int k2 = 0 ; k2 < k ; ++k2 )
+        auto const& myvec = this->basisVector( k );
+        for ( int k2 = 0; k2 < k; ++k2 )
         {
-            auto const& myvec2 = this->basisVector(k2);
-            dots[k2] = dot(myvec,myvec2);
+            auto const& myvec2 = this->basisVector( k2 );
+            dots[k2] = dot( myvec, myvec2 );
         }
-        for (int k2=0; k2<k; k2++)
+        for ( int k2 = 0; k2 < k; k2++ )
             dots[k2] *= -1.;
 
-        for ( int k2 = 0 ; k2<k ; ++k2 )
-            this->basisVectorPtr(k)->add( dots[k2],this->basisVector(k2) );
+        for ( int k2 = 0; k2 < k; ++k2 )
+            this->basisVectorPtr( k )->add( dots[k2], this->basisVector( k2 ) );
 
         // normalize
-        double normL2 = this->basisVector(k).l2Norm();
+        double normL2 = this->basisVector( k ).l2Norm();
         if ( normL2 > 1e-9 )
-            this->basisVectorPtr(k)->scale(1.0/normL2 );
+            this->basisVectorPtr( k )->scale( 1.0 / normL2 );
     }
     CHECK( this->hasOrthonormalBasisVectors() ) << "basis vectors are not orthonormal\n";
 }
 
 template <typename T>
-bool
-NullSpace<T>::hasOrthonormalBasisVectors()
+bool NullSpace<T>::hasOrthonormalBasisVectors()
 {
     int dimNullSpace = this->size();
-    for ( int k = 0 ; k<dimNullSpace ; ++k )
+    for ( int k = 0; k < dimNullSpace; ++k )
     {
-        auto const& myvec = this->basisVector(k);
-        for ( int k2 = 0 ; k2<dimNullSpace ; ++k2 )
+        auto const& myvec = this->basisVector( k );
+        for ( int k2 = 0; k2 < dimNullSpace; ++k2 )
         {
-            auto const& myvec2 = this->basisVector(k2);
+            auto const& myvec2 = this->basisVector( k2 );
             if ( k == k2 )
             {
                 double dotEval = myvec.l2Norm();
-                if ( math::abs(dotEval-1.0) > 1e-11 ) return false;
+                if ( math::abs( dotEval - 1.0 ) > 1e-11 ) return false;
             }
             else
             {
-                double dotEval = dot(myvec,myvec2);
-                if ( math::abs(dotEval) > 1e-11 ) return false;
+                double dotEval = dot( myvec, myvec2 );
+                if ( math::abs( dotEval ) > 1e-11 ) return false;
             }
         }
     }
     return true;
 }
-
 
 template class NullSpace<double>;
 

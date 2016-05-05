@@ -34,16 +34,17 @@
 
 namespace Feel
 {
-template<typename Poly, template<uint16_type> class PolySetType > class PolynomialSet;
+template <typename Poly, template <uint16_type> class PolySetType>
+class PolynomialSet;
 namespace detail
 {
-template<uint16_type Dim,
-         uint16_type Order,
-         uint16_type RealDim,
-         template<uint16_type> class PolySetType,
-         typename T,
-         uint16_type TheTAG,
-         template<uint16_type,uint16_type,uint16_type> class Convex>
+template <uint16_type Dim,
+          uint16_type Order,
+          uint16_type RealDim,
+          template <uint16_type> class PolySetType,
+          typename T,
+          uint16_type TheTAG,
+          template <uint16_type, uint16_type, uint16_type> class Convex>
 class OrthonormalPolynomialSet;
 }
 /**
@@ -54,24 +55,22 @@ class OrthonormalPolynomialSet;
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename P,
-         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
-         template<class,uint16_type,class> class Pts>
-class FiniteElement :
-    public mpl::if_<mpl::bool_<P::is_scalar>,
-                    mpl::identity<PolynomialSet<P, Scalar> >,
-                    typename mpl::if_<mpl::bool_<P::is_vectorial>,
-                                      mpl::identity<PolynomialSet<P, Vectorial> >,
-                                      mpl::identity<PolynomialSet<P, Tensor2>   > >::type>::type::type
+template <typename P,
+          template <class Pr, template <class, uint16_type, class> class Pt> class PDual,
+          template <class, uint16_type, class> class Pts>
+class FiniteElement : public mpl::if_<mpl::bool_<P::is_scalar>,
+                                      mpl::identity<PolynomialSet<P, Scalar>>,
+                                      typename mpl::if_<mpl::bool_<P::is_vectorial>,
+                                                        mpl::identity<PolynomialSet<P, Vectorial>>,
+                                                        mpl::identity<PolynomialSet<P, Tensor2>>>::type>::type::type
 {
     using super = typename mpl::if_<mpl::bool_<P::is_scalar>,
-                                    mpl::identity<PolynomialSet<P, Scalar> >,
+                                    mpl::identity<PolynomialSet<P, Scalar>>,
                                     typename mpl::if_<mpl::bool_<P::is_vectorial>,
-                                                      mpl::identity<PolynomialSet<P, Vectorial> >,
-                                                      mpl::identity<PolynomialSet<P, Tensor2>   > >::type>::type::type;
+                                                      mpl::identity<PolynomialSet<P, Vectorial>>,
+                                                      mpl::identity<PolynomialSet<P, Tensor2>>>::type>::type::type;
 
-public:
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -111,14 +110,14 @@ public:
 
     static const uint16_type nDof = nLocalDof;
     static const uint16_type nNodes = nDof;
-    static const uint16_type nDofGrad = super::nDim*nDof;
-    static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
-    static const bool islinear_simplex = P::convex_type::is_simplex && (super::nOrder == 1);
-    static const bool islinear_hypercube = P::convex_type::is_hypercube && (super::nDim==1)  && (super::nOrder == 1);
-    static const bool islinear  = islinear_hypercube || islinear_simplex;
-    static const fem::transformation_type trans = ( fem::transformation_type )mpl::if_<mpl::bool_<islinear>,
-                                                                                       mpl::int_<fem::LINEAR>,
-                                                                                       mpl::int_<fem::NONLINEAR> >::type::value;
+    static const uint16_type nDofGrad = super::nDim * nDof;
+    static const uint16_type nDofHess = super::nDim * super::nDim * nDof;
+    static const bool islinear_simplex = P::convex_type::is_simplex && ( super::nOrder == 1 );
+    static const bool islinear_hypercube = P::convex_type::is_hypercube && ( super::nDim == 1 ) && ( super::nOrder == 1 );
+    static const bool islinear = islinear_hypercube || islinear_simplex;
+    static const fem::transformation_type trans = (fem::transformation_type)mpl::if_<mpl::bool_<islinear>,
+                                                                                     mpl::int_<fem::LINEAR>,
+                                                                                     mpl::int_<fem::NONLINEAR>>::type::value;
     //@}
 
     /** @name Constructors, destructor
@@ -126,23 +125,22 @@ public:
     //@{
 
     FiniteElement( dual_space_type const& pdual )
-        :
-        super( pdual.primalSpace() ),
-        M_dual( pdual ),
-        M_primal( M_dual.primalSpace() )
+        : super( pdual.primalSpace() ),
+          M_dual( pdual ),
+          M_primal( M_dual.primalSpace() )
     {
-        DVLOG(2) << "============================================================\n";
-        DVLOG(2) << "New FE \n";
+        DVLOG( 2 ) << "============================================================\n";
+        DVLOG( 2 ) << "New FE \n";
         ublas::matrix<value_type> A( M_dual( M_primal ) );
         //std::cout << "[FiniteElement] A = " << A << "\n";
 
         ublas::matrix<value_type> D = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
-        LU<ublas::matrix<value_type> > lu( A );
+        LU<ublas::matrix<value_type>> lu( A );
         ublas::matrix<value_type> C = lu.solve( D );
         //std::cout << "[FiniteElement] D = " << D << "\n";
         //std::cout << "[FiniteElement] C = " << C << "\n";
-        DVLOG(2) << "is singular : " << lu.isNonsingular() << "\n"
-                      << "det(A) =  " << lu.det() << "\n";
+        DVLOG( 2 ) << "is singular : " << lu.isNonsingular() << "\n"
+                   << "det(A) =  " << lu.det() << "\n";
 #if 0
 
         if ( !lu.isNonsingular() )
@@ -153,7 +151,8 @@ public:
         }
 
 #endif
-        FEELPP_ASSERT( lu.isNonsingular() )( A )( D )( C ).error( "vandermonde matrix is singular" );
+        FEELPP_ASSERT( lu.isNonsingular() )
+        ( A )( D )( C ).error( "vandermonde matrix is singular" );
 
         this->setCoefficient( ublas::trans( C ) );
 
@@ -163,17 +162,18 @@ public:
         //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
         //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
         //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
-        DVLOG(2) << "============================================================\n";
+        DVLOG( 2 ) << "============================================================\n";
     }
-    FiniteElement( FiniteElement const & fe )
-        :
-        super( fe ),
-        M_dual( fe.M_dual ),
-        M_primal( fe.M_primal )
-    {}
+    FiniteElement( FiniteElement const& fe )
+        : super( fe ),
+          M_dual( fe.M_dual ),
+          M_primal( fe.M_primal )
+    {
+    }
 
     ~FiniteElement()
-    {}
+    {
+    }
 
     //@}
 
@@ -193,13 +193,13 @@ public:
         return *this;
     }
 
-    template<typename AE>
+    template <typename AE>
     value_type operator()( uint16_type i, ublas::vector_expression<AE> const& pt ) const
     {
         return this->evaluate( i, pt );
     }
 
-    template<typename AE>
+    template <typename AE>
     value_type operator()( ublas::vector_expression<AE> const& pt ) const
     {
         matrix_type m( pt().size(), 1 );
@@ -207,7 +207,6 @@ public:
         ublas::vector<value_type> r( ublas::column( this->evaluate( m ), 0 ) );
         return ublas::inner_prod( r, ublas::scalar_vector<value_type>( r.size(), 1.0 ) );
     }
-
 
     matrix_type operator()( points_type const& pts ) const
     {
@@ -219,7 +218,6 @@ public:
     /** @name Accessors
      */
     //@{
-
 
     /**
      * \return the domain shape of the finite element
@@ -279,15 +277,15 @@ public:
     }
 
     points_type edgePoints( uint16_type e ) const
-        {
-            return M_dual.edgePoints( e );
-        }
-    
+    {
+        return M_dual.edgePoints( e );
+    }
+
     points_type vertexPoints( uint16_type v ) const
-        {
-            return M_dual.vertexPoints( v );
-        }
-    
+    {
+        return M_dual.vertexPoints( v );
+    }
+
     /**
      * \return the family name of the finite element
      */
@@ -295,37 +293,34 @@ public:
 
     //@}
 
-
-private:
-
+  private:
     dual_space_type M_dual;
     primal_space_type const& M_primal;
-
 };
 
-template<typename P,
-         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
-         template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,Pts>::nLocalDof;
+template <typename P,
+          template <class Pr, template <class, uint16_type, class> class Pt> class PDual,
+          template <class, uint16_type, class> class Pts>
+const uint16_type FiniteElement<P, PDual, Pts>::nLocalDof;
 
-template<typename P,
-         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
-         template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,Pts>::nDofPerVertex;
+template <typename P,
+          template <class Pr, template <class, uint16_type, class> class Pt> class PDual,
+          template <class, uint16_type, class> class Pts>
+const uint16_type FiniteElement<P, PDual, Pts>::nDofPerVertex;
 
-template<typename P,
-         template<class Pr, template<class,uint16_type,class> class Pt> class PDual,
-         template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,Pts>::nDofPerEdge;
+template <typename P,
+          template <class Pr, template <class, uint16_type, class> class Pt> class PDual,
+          template <class, uint16_type, class> class Pts>
+const uint16_type FiniteElement<P, PDual, Pts>::nDofPerEdge;
 
-template<typename P,
-         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
-         template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,Pts>::nDofPerFace;
+template <typename P,
+          template <class Pr, template <class, uint16_type, class> class Pt> class PDual,
+          template <class, uint16_type, class> class Pts>
+const uint16_type FiniteElement<P, PDual, Pts>::nDofPerFace;
 
-template<typename P,
-         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
-         template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,Pts>::nDofPerVolume;
+template <typename P,
+          template <class Pr, template <class, uint16_type, class> class Pt> class PDual,
+          template <class, uint16_type, class> class Pts>
+const uint16_type FiniteElement<P, PDual, Pts>::nDofPerVolume;
 }
 #endif /* __FiniteElement_H */

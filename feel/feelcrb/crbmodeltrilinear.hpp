@@ -33,13 +33,11 @@
 
 #include <vector>
 
-
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
-
+#include <feel/feelcrb/parameterspace.hpp>
 
 namespace Feel
 {
@@ -59,14 +57,12 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see crb
  */
-template<typename ModelType>
+template <typename ModelType>
 class CRBModelTrilinear : public CRBModel<ModelType>
 {
-    typedef  CRBModel<ModelType> super;
+    typedef CRBModel<ModelType> super;
 
-public:
-
-
+  public:
     /** @name Constants
      */
     //@{
@@ -122,36 +118,29 @@ public:
     typedef typename model_type::sampling_type sampling_type;
     typedef typename model_type::sampling_ptrtype sampling_ptrtype;
 
-
     typedef Eigen::VectorXd vectorN_type;
-    typedef std::vector< std::vector< double > > beta_vector_type;
+    typedef std::vector<std::vector<double>> beta_vector_type;
 
     typedef typename boost::tuple<sparse_matrix_ptrtype,
                                   sparse_matrix_ptrtype,
-                                  std::vector<vector_ptrtype>
-                                  > offline_merge_type;
+                                  std::vector<vector_ptrtype>>
+        offline_merge_type;
 
+    typedef typename boost::tuple<std::vector<std::vector<sparse_matrix_ptrtype>>,
+                                  std::vector<std::vector<sparse_matrix_ptrtype>>,
+                                  std::vector<std::vector<std::vector<vector_ptrtype>>>>
+        affine_decomposition_type;
 
-
-    typedef typename boost::tuple<std::vector< std::vector<sparse_matrix_ptrtype> >,
-                                  std::vector< std::vector<sparse_matrix_ptrtype> >,
-                                  std::vector< std::vector< std::vector<vector_ptrtype> > >
-                                  > affine_decomposition_type;
-
-
-    typedef typename boost::tuple< beta_vector_type,
-                                   beta_vector_type,
-                                   std::vector<beta_vector_type>
-                                   > betaqm_type;
-
+    typedef typename boost::tuple<beta_vector_type,
+                                  beta_vector_type,
+                                  std::vector<beta_vector_type>>
+        betaqm_type;
 
     static const int nb_spaces = functionspace_type::nSpaces;
-    typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
-                       typename mpl::if_ < boost::is_same< mpl::int_<nb_spaces> , mpl::int_<3> > , fusion::vector < mpl::int_<0> , mpl::int_<1> , mpl::int_<2> > ,
-                                  typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<4> >, fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3> >,
-                                                     fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
-                                                     >::type >::type >::type index_vector_type;
-
+    typedef typename mpl::if_<boost::is_same<mpl::int_<nb_spaces>, mpl::int_<2>>, fusion::vector<mpl::int_<0>, mpl::int_<1>>,
+                              typename mpl::if_<boost::is_same<mpl::int_<nb_spaces>, mpl::int_<3>>, fusion::vector<mpl::int_<0>, mpl::int_<1>, mpl::int_<2>>,
+                                                typename mpl::if_<boost::is_same<mpl::int_<nb_spaces>, mpl::int_<4>>, fusion::vector<mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>>,
+                                                                  fusion::vector<mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4>>>::type>::type>::type index_vector_type;
 
     //@}
 
@@ -160,15 +149,13 @@ public:
     //@{
 
     CRBModelTrilinear()
-        :
-        super()
+        : super()
     {
         this->init();
     }
 
-    CRBModelTrilinear( po::variables_map const& vm, CRBModelMode mode = CRBModelMode::PFEM  )
-        :
-        super( vm, mode )
+    CRBModelTrilinear( po::variables_map const& vm, CRBModelMode mode = CRBModelMode::PFEM )
+        : super( vm, mode )
     {
         this->init();
     }
@@ -176,9 +163,8 @@ public:
     /**
      * \param model the model to be used
      */
-    CRBModelTrilinear( model_ptrtype & model )
-        :
-        super( model )
+    CRBModelTrilinear( model_ptrtype& model )
+        : super( model )
     {
         this->init();
     }
@@ -186,17 +172,16 @@ public:
     /**
      * copy constructor
      */
-    CRBModelTrilinear( CRBModelTrilinear const & o )
-        :
-        super( o )
+    CRBModelTrilinear( CRBModelTrilinear const& o )
+        : super( o )
     {
         this->init();
     }
 
     //! destructor
     virtual ~CRBModelTrilinear()
-    {}
-
+    {
+    }
 
     //@}
 
@@ -204,18 +189,15 @@ public:
      */
     //@{
 
-
     /** @name Accessors
      */
     //@{
-
 
     //! return the number of \f$\mu\f$ independent terms for the bilinear form
     size_type Qa() const
     {
         return this->M_model->Qa();
     }
-
 
     //! return the number of \f$\mu\f$ independent terms for the trilinear form
     size_type QaTri() const
@@ -227,7 +209,6 @@ public:
     {
         return this->M_model->Ql( l );
     }
-
 
     sparse_matrix_ptrtype computeTrilinearForm( element_type const& xi )
     {
@@ -244,8 +225,6 @@ public:
         return this->M_model->residual( xi );
     }
 
-
-
     /**
      * solve the model for a given parameter \p mu
      */
@@ -254,19 +233,12 @@ public:
         return this->M_model->solve( mu );
     }
 
-
-
-protected:
-
+  protected:
     //! affine decomposition terms for the left hand side ( bilinear )
     //std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
 
     //! affine decomposition terms for the right hand side
     //std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
-
-
 };
-
-
 }
 #endif /* __CRBModelTrilinear_H */

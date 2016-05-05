@@ -32,8 +32,8 @@
 #include <feel/feelvf/vf.hpp>
 /*#include <feel/feelvf/form.hpp>
 #include <feel/feelvf/on.hpp>
-#include <feel/feelvf/operators.hpp>
  #include <feel/feelvf/operations.hpp>*/
+#include <feel/feelvf/operators.hpp>
 
 namespace Feel
 {
@@ -46,12 +46,11 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::ThermoDynamics( std::string const& prefix,
                                                     WorldComm const& worldComm,
                                                     std::string const& subPrefix,
                                                     std::string const& rootRepository )
-    :
-    super_type( prefix, worldComm, buildMesh, subPrefix, rootRepository )
+    : super_type( prefix, worldComm, buildMesh, subPrefix, rootRepository )
 {
-    this->log("ThermoDynamics","constructor", "start" );
+    this->log( "ThermoDynamics", "constructor", "start" );
 
-    this->setFilenameSaveInfo( prefixvm(this->prefix(),"ThermoDynamics.info") );
+    this->setFilenameSaveInfo( prefixvm( this->prefix(), "ThermoDynamics.info" ) );
     //-----------------------------------------------------------------------------//
     // load info from .bc file
     this->loadConfigBCFile();
@@ -62,78 +61,72 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::ThermoDynamics( std::string const& prefix,
     // build mesh, space, exporter,...
     if ( buildMesh ) this->build();
     //-----------------------------------------------------------------------------//
-    this->log("ThermoDynamics","constructor", "finish");
+    this->log( "ThermoDynamics", "constructor", "finish" );
 }
 
 THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMODYNAMICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
+void THERMODYNAMICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 {
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
 
     this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Dirichlet" );
-    for( auto const& d : this->M_bcDirichlet )
-        this->addMarkerDirichletBC("elimination", marker(d) );
+    for ( auto const& d : this->M_bcDirichlet )
+        this->addMarkerDirichletBC( "elimination", marker( d ) );
     this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Neumann" );
-    for( auto const& d : this->M_bcNeumann )
-        this->addMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d));
+    for ( auto const& d : this->M_bcNeumann )
+        this->addMarkerNeumannBC( super_type::NeumannBCShape::SCALAR, marker( d ) );
 
     this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "temperature", "Robin" );
-    for( auto const& d : this->M_bcRobin )
-        this->addMarkerRobinBC( marker(d) );
+    for ( auto const& d : this->M_bcRobin )
+        this->addMarkerRobinBC( marker( d ) );
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
 }
 
 THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMODYNAMICS_CLASS_TEMPLATE_TYPE::loadConfigMeshFile(std::string const& geofilename)
+void THERMODYNAMICS_CLASS_TEMPLATE_TYPE::loadConfigMeshFile( std::string const& geofilename )
 {
     CHECK( false ) << "not allow";
 }
 
-
 THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMODYNAMICS_CLASS_TEMPLATE_TYPE::init(bool buildMethodNum)
+void THERMODYNAMICS_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum )
 {
     super_type::init( buildMethodNum, this->shared_from_this() );
 }
 
 THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+void THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
 {
     if ( this->M_bcDirichlet.empty() ) return;
 
-    this->log("ThermoDynamics","updateBCStrongDirichletLinearPDE","start" );
+    this->log( "ThermoDynamics", "updateBCStrongDirichletLinearPDE", "start" );
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
     auto const& u = this->fieldTemperature();
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix(),
-                                              _colstart=this->colStartInMatrix() );
+    auto bilinearForm_PatternCoupled = form2( _test = Xh, _trial = Xh, _matrix = A,
+                                              _pattern = size_type( Pattern::COUPLED ),
+                                              _rowstart = this->rowStartInMatrix(),
+                                              _colstart = this->colStartInMatrix() );
 
-    for( auto const& d : this->M_bcDirichlet )
+    for ( auto const& d : this->M_bcDirichlet )
     {
         bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
-                _element=u,_rhs=F,_expr=expression(d) );
+            on( _range = markedfaces( mesh, this->markerDirichletBCByNameId( "elimination", marker( d ) ) ),
+                _element = u, _rhs = F, _expr = expression( d ) );
     }
 
-    this->log("ThermoDynamics","updateBCStrongDirichletLinearPDE","finish" );
+    this->log( "ThermoDynamics", "updateBCStrongDirichletLinearPDE", "finish" );
 }
 
 THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F, bool buildCstPart ) const
+void THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F, bool buildCstPart ) const
 {
     if ( this->M_overwritemethod_updateSourceTermLinearPDE != NULL )
     {
-        this->M_overwritemethod_updateSourceTermLinearPDE(F,buildCstPart);
+        this->M_overwritemethod_updateSourceTermLinearPDE( F, buildCstPart );
         return;
     }
 
@@ -141,29 +134,28 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F
 
     if ( !buildCstPart )
     {
-        auto myLinearForm = form1( _test=this->spaceTemperature(), _vector=F,
-                                   _rowstart=this->rowStartInVector() );
+        auto myLinearForm = form1( _test = this->spaceTemperature(), _vector = F,
+                                   _rowstart = this->rowStartInVector() );
         auto const& v = this->fieldTemperature();
 
-        for( auto const& d : this->M_volumicForcesProperties )
+        for ( auto const& d : this->M_volumicForcesProperties )
         {
-            if ( marker(d).empty() )
+            if ( marker( d ).empty() )
                 myLinearForm +=
-                    integrate( _range=elements(this->mesh()),
-                               _expr= expression(d)*id(v),
-                               _geomap=this->geomap() );
+                    integrate( _range = elements( this->mesh() ),
+                               _expr = expression( d ) * id( v ),
+                               _geomap = this->geomap() );
             else
                 myLinearForm +=
-                    integrate( _range=markedelements(this->mesh(),marker(d)),
-                               _expr= expression(d)*id(v),
-                               _geomap=this->geomap() );
+                    integrate( _range = markedelements( this->mesh(), marker( d ) ),
+                               _expr = expression( d ) * id( v ),
+                               _geomap = this->geomap() );
         }
     }
 }
 
 THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const
+void THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart ) const
 {
     if ( this->M_bcNeumann.empty() && this->M_bcRobin.empty() ) return;
 
@@ -173,35 +165,33 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype&
         auto Xh = this->spaceTemperature();
         auto const& v = this->fieldTemperature();
 
-        auto myLinearForm = form1( _test=Xh, _vector=F,
-                                   _rowstart=this->rowStartInVector() );
-        for( auto const& d : this->M_bcNeumann )
+        auto myLinearForm = form1( _test = Xh, _vector = F,
+                                   _rowstart = this->rowStartInVector() );
+        for ( auto const& d : this->M_bcNeumann )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
-                           _expr= expression(d)*id(v),
-                           _geomap=this->geomap() );
+                integrate( _range = markedfaces( this->mesh(), this->markerNeumannBC( super_type::NeumannBCShape::SCALAR, marker( d ) ) ),
+                           _expr = expression( d ) * id( v ),
+                           _geomap = this->geomap() );
         }
 
-        auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
-                                                  _pattern=size_type(Pattern::COUPLED),
-                                                  _rowstart=this->rowStartInMatrix(),
-                                                  _colstart=this->colStartInMatrix() );
-        for( auto const& d : this->M_bcRobin )
+        auto bilinearForm_PatternCoupled = form2( _test = Xh, _trial = Xh, _matrix = A,
+                                                  _pattern = size_type( Pattern::COUPLED ),
+                                                  _rowstart = this->rowStartInMatrix(),
+                                                  _colstart = this->colStartInMatrix() );
+        for ( auto const& d : this->M_bcRobin )
         {
             bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
-                           _expr= expression1(d)*idt(v)*id(v),
-                           _geomap=this->geomap() );
+                integrate( _range = markedfaces( this->mesh(), marker( d ) ),
+                           _expr = expression1( d ) * idt( v ) * id( v ),
+                           _geomap = this->geomap() );
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
-                           _expr= expression1(d)*expression2(d)*id(v),
-                           _geomap=this->geomap() );
+                integrate( _range = markedfaces( this->mesh(), marker( d ) ),
+                           _expr = expression1( d ) * expression2( d ) * id( v ),
+                           _geomap = this->geomap() );
         }
-
     }
 }
-
 
 } // end namespace FeelModels
 } // end namespace Feel

@@ -40,16 +40,17 @@ namespace Feel
   @author Christophe Prud'homme
   @see
 */
-template< typename Expr>
+template <typename Expr>
 class ADExpr
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
-    enum { nvar = Expr::nvar };
+    enum
+    {
+        nvar = Expr::nvar
+    };
 
     typedef Expr expression_type;
     typedef typename expression_type::value_type value_type;
@@ -62,11 +63,9 @@ public:
      */
     //@{
 
-    explicit ADExpr( expression_type const & expr )
-        :
-        __expression( expr )
+    explicit ADExpr( expression_type const& expr )
+        : __expression( expr )
     {
-
     }
     ~ADExpr() {}
 
@@ -75,7 +74,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -114,20 +112,15 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-
     //@}
 
-
-
-protected:
-
+  protected:
     ADExpr()
     {
         ;
@@ -135,30 +128,29 @@ protected:
 
     expression_type __expression;
 
-private:
-
+  private:
 };
 
 //------------------------------- AD constant ------------------------------------------
-template < class T >
+template <class T>
 class ADCst
 {
-public:
-
+  public:
     typedef T value_type;
 
-protected:
+  protected:
     ADCst() {}
 
     const T constant_;
 
-public:
-    explicit ADCst( const T& value ) : constant_( value )
+  public:
+    explicit ADCst( const T& value )
+        : constant_( value )
     {
         ;
     }
 
-    value_type value()     const
+    value_type value() const
     {
         return constant_;
     }
@@ -175,30 +167,32 @@ public:
     {
         return false;
     }
-
 };
 
 //------------------------------- AD unary + ------------------------------------------
-template < class T >
+template <class T>
 class ADUnaryPlus
 {
-public:
-
-    enum { nvar = T::nvar };
+  public:
+    enum
+    {
+        nvar = T::nvar
+    };
     typedef typename T::value_type value_type;
 
-protected:
+  protected:
     ADUnaryPlus() {}
 
     const T& expr_;
 
-public:
-    ADUnaryPlus( const T& value ) : expr_( value )
+  public:
+    ADUnaryPlus( const T& value )
+        : expr_( value )
     {
         ;
     }
 
-    value_type value()     const
+    value_type value() const
     {
         return expr_.value();
     }
@@ -216,45 +210,49 @@ public:
         return expr_.deps( i );
     }
 };
-template <class T> inline
-ADExpr< ADUnaryPlus< ADExpr<T> > >
-operator + ( const ADExpr<T>& expr )
+template <class T>
+inline ADExpr<ADUnaryPlus<ADExpr<T>>>
+operator+( const ADExpr<T>& expr )
 {
-    typedef ADUnaryPlus< ADExpr<T> > expr_t;
+    typedef ADUnaryPlus<ADExpr<T>> expr_t;
 
-    return ADExpr< expr_t >( expr_t( expr ) );
+    return ADExpr<expr_t>( expr_t( expr ) );
 }
 
-
 //------------------------------- AD unary - ------------------------------------------
-template < class T >
+template <class T>
 class ADUnaryMinus
 {
-public:
-    enum { nvar = T::nvar };
+  public:
+    enum
+    {
+        nvar = T::nvar
+    };
     typedef typename T::value_type value_type;
-protected:
+
+  protected:
     ADUnaryMinus() {}
 
     const T& expr_;
 
-public:
-    ADUnaryMinus( const T& value ) : expr_( value )
+  public:
+    ADUnaryMinus( const T& value )
+        : expr_( value )
     {
         ;
     }
 
-    value_type value()     const
+    value_type value() const
     {
-        return - expr_.value();
+        return -expr_.value();
     }
     value_type grad( int __i ) const
     {
-        return - expr_.grad( __i );
+        return -expr_.grad( __i );
     }
     value_type hessian( int __i, int __j ) const
     {
-        return - expr_.hessian( __i, __j );
+        return -expr_.hessian( __i, __j );
     }
 
     bool deps( int i ) const
@@ -263,20 +261,14 @@ public:
     }
 };
 
-
-
-template <class T> inline
-ADExpr< ADUnaryMinus< ADExpr<T> > >
-operator - ( const ADExpr<T>& expr )
+template <class T>
+inline ADExpr<ADUnaryMinus<ADExpr<T>>>
+operator-( const ADExpr<T>& expr )
 {
-    typedef ADUnaryMinus< ADExpr<T> > expr_t;
+    typedef ADUnaryMinus<ADExpr<T>> expr_t;
 
-    return ADExpr< expr_t >( expr_t( expr ) );
+    return ADExpr<expr_t>( expr_t( expr ) );
 }
-
 }
-
-
 
 #endif /* __ADExpr_H */
-

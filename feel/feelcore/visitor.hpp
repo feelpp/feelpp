@@ -31,15 +31,15 @@
 #define __Visitor_H 1
 
 #include <boost/mpl/assert.hpp>
-#include <boost/mpl/list.hpp>
 #include <boost/mpl/front.hpp>
+#include <boost/mpl/list.hpp>
 #include <boost/mpl/pop_front.hpp>
 
 #include <feel/feelcore/feel.hpp>
 
 namespace Feel
 {
-namespace mpl=boost::mpl;
+namespace mpl = boost::mpl;
 /**
  * \class VisitorBase
  *\ingroup Core
@@ -51,7 +51,7 @@ namespace mpl=boost::mpl;
  */
 class VisitorBase
 {
-public:
+  public:
     virtual ~VisitorBase() {}
 };
 
@@ -82,14 +82,12 @@ public:
  *  Design Patterns
  *  Pub: Addison Wesley
  */
-template<
-class T,
-      typename R = void
-      >
+template <
+    class T,
+    typename R = void>
 class Visitor
 {
-public:
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -119,16 +117,14 @@ public:
     //@}
 };
 
-template<
-class TList,
-      typename R = void
-      >
+template <
+    class TList,
+    typename R = void>
 class VisitorList
-    :
-public Visitor<typename mpl::front<TList>::type, R>,
-public mpl::if_<mpl::greater<mpl::size<TList>,mpl::long_<1l> >,
-    mpl::identity<VisitorList<mpl::pop_front<TList>,R> >,
-    mpl::identity<mpl::identity<VisitorBase> > >::type::type
+    : public Visitor<typename mpl::front<TList>::type, R>,
+      public mpl::if_<mpl::greater<mpl::size<TList>, mpl::long_<1l>>,
+                      mpl::identity<VisitorList<mpl::pop_front<TList>, R>>,
+                      mpl::identity<mpl::identity<VisitorBase>>>::type::type
 {
 #if 0
     typedef typename mpl::if_<mpl::equal_to<mpl::size<TList>,mpl::int_<2> >,
@@ -138,7 +134,6 @@ public mpl::if_<mpl::greater<mpl::size<TList>,mpl::long_<1l> >,
     //BOOST_MPL_ASSERT( ( boost::is_same<the_type, A> ) );
 #endif
 };
-
 
 #if 0
 /**
@@ -203,55 +198,46 @@ public:
    functions)
 */
 template <
-class TList,
-      typename R = void
-      >
+    class TList,
+    typename R = void>
 class VisitorBaseImpl;
 
-
 template <
-class Head,
-      class Tail,
-      typename R
-      >
-class VisitorBaseImpl< mpl::list<Head, Tail>, R >
-    :
-public Visitor<Head, R>,
-public VisitorBaseImpl<Tail, R>
+    class Head,
+    class Tail,
+    typename R>
+class VisitorBaseImpl<mpl::list<Head, Tail>, R>
+    : public Visitor<Head, R>,
+      public VisitorBaseImpl<Tail, R>
 {
-public:
+  public:
     // using BaseVisitorImpl<Tail, R>::Visit;
 
     virtual R visit( Head* )
     {
         return R();
     }
-
 };
 
 template <
-class Head,
-      typename R
-      >
-class VisitorBaseImpl< mpl::list<Head>, R >
-    :
-public Visitor<Head, R>
+    class Head,
+    typename R>
+class VisitorBaseImpl<mpl::list<Head>, R>
+    : public Visitor<Head, R>
 {
-public:
+  public:
     virtual R visit( Head* )
     {
         return R();
     }
 };
 
-
 /**
  * \class VisitableCatchAllDefault
  */
 template <
-typename R,
-         typename Visited
-         >
+    typename R,
+    typename Visited>
 struct VisitableCatchAllDefault
 {
     static R onUnknownVisitor( Visited&, VisitorBase& )
@@ -263,21 +249,17 @@ struct VisitableCatchAllDefault
     {
         return R();
     }
-
 };
 
 /**
  * \class VisitableBase
  */
-template
-<
-typename R = void,
-         template <class, class> class CatchAll = VisitableCatchAllDefault
-         >
+template <
+    typename R = void,
+    template <class, class> class CatchAll = VisitableCatchAllDefault>
 class VisitableBase
 {
-public:
-
+  public:
     typedef R return_type;
 
     virtual ~VisitableBase() {}
@@ -288,20 +270,18 @@ public:
     //! accept visitor: use S_DEFINE_VISITABLE() to redefine it
     virtual return_type accept( VisitorBase* ) = 0;
 
-protected:
-
+  protected:
     /**
      * give access only to the hierarchy
      *
      * @return the return type object of the visitor
      */
     template <class T>
-    static
-    return_type
+    static return_type
     acceptImpl( T* visited, VisitorBase* guest )
     {
         // Apply the Acyclic Visitor
-        if ( Visitor<T>* p = dynamic_cast< Visitor<T>* >( guest ) )
+        if ( Visitor<T>* p = dynamic_cast<Visitor<T>*>( guest ) )
         {
             return p->visit( visited );
         }
@@ -316,14 +296,14 @@ protected:
  * Put it in every class that you want to make visitable (in
  * addition to deriving it from VisitableBase<R>
  */
-#define FEELPP_DEFINE_VISITABLE()                          \
-    virtual return_type accept( VisitorBase& guest )         \
-    {                                                        \
-        return this->acceptImpl( this, &guest );             \
-    }                                                        \
-    virtual return_type accept( VisitorBase* guest )         \
-    {                                                        \
-        return this->acceptImpl( this, guest );              \
+#define FEELPP_DEFINE_VISITABLE()                    \
+    virtual return_type accept( VisitorBase& guest ) \
+    {                                                \
+        return this->acceptImpl( this, &guest );     \
+    }                                                \
+    virtual return_type accept( VisitorBase* guest ) \
+    {                                                \
+        return this->acceptImpl( this, guest );      \
     }
 
 /**
@@ -332,14 +312,12 @@ protected:
  *   deriving it from VisitableBase<R>
  */
 template <
-typename R,
-         class TList
-         >
+    typename R,
+    class TList>
 class VisitorCyclic
-    :
-public Visitor<TList, R>
+    : public Visitor<TList, R>
 {
-public:
+  public:
     typedef R return_type;
     // using Visitor<TList, R>::Visit;
 
@@ -356,7 +334,6 @@ public:
         Visitor<Visited, return_type>& subObj = *this;
         return subObj.visit( host );
     }
-
 };
 
 /**
@@ -364,15 +341,14 @@ public:
  *
  * Put it in every class that you want to make visitable by a cyclic visitor
  */
-#define FEELPP__DEFINE_CYCLIC_VISITABLE(SomeVisitor)                    \
-  virtual SomeVisitor::return_type Accept(SomeVisitor& guest)     \
-  {                                                               \
-    return guest.genericVisit(*this);                             \
-  }                                                               \
-  virtual SomeVisitor::return_type Accept(SomeVisitor* guest)     \
-  {                                                               \
-    return guest->genericVisit(*this);                            \
-  }
-
+#define FEELPP__DEFINE_CYCLIC_VISITABLE( SomeVisitor )            \
+    virtual SomeVisitor::return_type Accept( SomeVisitor& guest ) \
+    {                                                             \
+        return guest.genericVisit( *this );                       \
+    }                                                             \
+    virtual SomeVisitor::return_type Accept( SomeVisitor* guest ) \
+    {                                                             \
+        return guest->genericVisit( *this );                      \
+    }
 }
 #endif /* __Visitor_H */

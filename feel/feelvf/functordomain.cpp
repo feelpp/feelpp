@@ -36,22 +36,25 @@ namespace vf
 /// \cond detail
 double FunctorDomain::lowerBound() const
 {
-    FEELPP_ASSERT( true )( "FunctorDomain::lowerBound() called for a domain without "
-                           "a lower bound" );
+    FEELPP_ASSERT( true )
+    ( "FunctorDomain::lowerBound() called for a domain without "
+      "a lower bound" );
     return 0.0;
 }
 
 double FunctorDomain::upperBound() const
 {
-    FEELPP_ASSERT( true )( "FunctorDomain::upperBound() called for a domain without "
-                           "a upper bound" );
+    FEELPP_ASSERT( true )
+    ( "FunctorDomain::upperBound() called for a domain without "
+      "a upper bound" );
     return 0.0;
 }
 
 double FunctorDomain::excludedPoint() const
 {
-    FEELPP_ASSERT( true )( "FunctorDomain::excludedPoint() called for a domain without "
-                           "an excluded point" );
+    FEELPP_ASSERT( true )
+    ( "FunctorDomain::excludedPoint() called for a domain without "
+      "an excluded point" );
     return 0.0;
 }
 /// \endcond

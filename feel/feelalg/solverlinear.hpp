@@ -22,17 +22,19 @@
 
 #include <boost/mpi/communicator.hpp>
 
-#include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/enums.hpp>
-#include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelalg/nullspace.hpp>
+#include <feel/feelalg/preconditioner.hpp>
+#include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/traits.hpp>
 
 namespace Feel
 {
-namespace mpi=boost::mpi;
-template<typename T> class Vector;
-template<typename T> class MatrixSparse;
+namespace mpi = boost::mpi;
+template <typename T>
+class Vector;
+template <typename T>
+class MatrixSparse;
 
 /**
  * This class provides a uniform interface for linear solvers.  This base
@@ -46,31 +48,31 @@ template <typename T>
 class SolverLinear
 {
 
-public:
-
+  public:
     typedef SolverLinear<T> self_type;
-    typedef boost::shared_ptr<SolverLinear<T> >  self_ptrtype;
+    typedef boost::shared_ptr<SolverLinear<T>> self_ptrtype;
 
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
 
-    typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
+    typedef boost::shared_ptr<Preconditioner<T>> preconditioner_ptrtype;
 
-    class SolveData : public boost::tuple<bool,size_type,value_type>
+    class SolveData : public boost::tuple<bool, size_type, value_type>
     {
-        typedef boost::tuple<bool,size_type,value_type> super_type;
-    public:
+        typedef boost::tuple<bool, size_type, value_type> super_type;
+
+      public:
         SolveData() {}
         // rvalue: move constructor (fast)
-        SolveData( super_type && i )
-            :
-            super_type( i )
-        {}
+        SolveData( super_type&& i )
+            : super_type( i )
+        {
+        }
         // copie
         SolveData( super_type const& i )
-            :
-            super_type( i )
-        {}
+            : super_type( i )
+        {
+        }
         bool isConverged() const { return this->template get<0>(); }
         size_type nIterations() const { return this->template get<1>(); }
         value_type residual() const { return this->template get<2>(); }
@@ -82,17 +84,17 @@ public:
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverLinear ( WorldComm const& worldComm = Environment::worldComm() );
+    SolverLinear( WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverLinear ( po::variables_map const& vm, WorldComm const& worldComm = Environment::worldComm() );
+    SolverLinear( po::variables_map const& vm, WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * Destructor.
      */
-    virtual ~SolverLinear ();
+    virtual ~SolverLinear();
 
     WorldComm const& worldComm() const
     {
@@ -100,28 +102,27 @@ public:
     }
     void setWorldComm( WorldComm const& worldComm )
     {
-        M_worldComm=worldComm;
+        M_worldComm = worldComm;
     }
 
     /**
      * @returns true if the data structures are
      * initialized, false otherwise.
      */
-    bool initialized () const
+    bool initialized() const
     {
         return M_is_initialized;
     }
 
-
     /**
      * Release all memory and clear data structures.
      */
-    virtual void clear () {}
+    virtual void clear() {}
 
     /**
      * Initialize data structures if not done so already.
      */
-    virtual void init () = 0;
+    virtual void init() = 0;
 
     /**
      * return variables_map
@@ -158,7 +159,7 @@ public:
     /**
      * Returns the type of solver to use.
      */
-    SolverType solverType () const
+    SolverType solverType() const
     {
         return M_solver_type;
     }
@@ -174,7 +175,7 @@ public:
     /**
      * \return the prefix
      */
-    std::string const& prefix() const{ return M_prefix; }
+    std::string const& prefix() const { return M_prefix; }
 
     /**
      * set the prefix of the solver (typically for command line options)
@@ -185,28 +186,21 @@ public:
      * set tolerances: relative tolerance \p rtol, divergence tolerance \p dtol
      * and absolute tolerance \p atol
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+    BOOST_PARAMETER_MEMBER_FUNCTION( (void),
                                      setTolerances,
                                      tag,
-                                     ( required
-                                       ( rtolerance,( double ) )
-                                     )
-                                     ( optional
-                                       ( maxit,( size_type ), 1000 )
-                                       ( atolerance,( double ), 1e-50 )
-                                       ( dtolerance,( double ), 1e5 )
-                                     ) )
+                                     ( required( rtolerance, (double)) )( optional( maxit, ( size_type ), 1000 )( atolerance, (double), 1e-50 )( dtolerance, (double), 1e5 ) ) )
     {
         M_rtolerance = rtolerance;
         M_dtolerance = dtolerance;
         M_atolerance = atolerance;
-        M_maxit=maxit;
+        M_maxit = maxit;
     }
 
     /**
      * Sets the type of solver to use.
      */
-    void setSolverType ( const SolverType st )
+    void setSolverType( const SolverType st )
     {
         M_solver_type = st;
     }
@@ -214,7 +208,7 @@ public:
     /**
      * Returns the type of preconditioner to use.
      */
-    PreconditionerType preconditionerType () const
+    PreconditionerType preconditionerType() const
     {
         if ( M_preconditioner )
             return M_preconditioner->type();
@@ -225,7 +219,7 @@ public:
     /**
      * Sets the type of preconditioner to use.
      */
-    void setPreconditionerType ( const PreconditionerType pct )
+    void setPreconditionerType( const PreconditionerType pct )
     {
         if ( M_preconditioner )
             M_preconditioner->setType( pct );
@@ -241,18 +235,18 @@ public:
     {
         if ( this->M_is_initialized )
         {
-            std::cerr<<"Preconditioner must be attached before the solver is initialized!"<<std::endl;
+            std::cerr << "Preconditioner must be attached before the solver is initialized!" << std::endl;
         }
 
         M_preconditioner_type = SHELL_PRECOND;
         M_preconditioner = preconditioner;
     }
 
-    void attachNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    void attachNullSpace( boost::shared_ptr<NullSpace<value_type>> const& ns )
     {
         M_nullSpace = ns;
     }
-    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type>> const& ns )
     {
         M_nearNullSpace = ns;
     }
@@ -270,14 +264,14 @@ public:
     /**
      * Sets the type of preconditioner to use.
      */
-    void setMatSolverPackageType ( const MatSolverPackageType mspackt )
+    void setMatSolverPackageType( const MatSolverPackageType mspackt )
     {
         M_matSolverPackage_type = mspackt;
     }
     /**
      * Returns the type of preconditioner to use.
      */
-    MatSolverPackageType matSolverPackageType () const
+    MatSolverPackageType matSolverPackageType() const
     {
         return M_matSolverPackage_type;
     }
@@ -295,11 +289,11 @@ public:
      * \return the preconditioner matrix structure
      * it may not be relevant to all non linear solvers
      */
-    virtual void setPrecMatrixStructure( MatrixStructure mstruct  )
+    virtual void setPrecMatrixStructure( MatrixStructure mstruct )
     {
         // warning : in boths cases!
         if ( M_preconditioner )
-            M_preconditioner->setPrecMatrixStructure(mstruct);
+            M_preconditioner->setPrecMatrixStructure( mstruct );
 
         M_prec_matrix_structure = mstruct;
     }
@@ -308,13 +302,13 @@ public:
      * show KSP monitor
      */
     bool showKSPMonitor() const { return M_showKSPMonitor; }
-    void setShowKSPMonitor( bool b ) { M_showKSPMonitor=b; }
+    void setShowKSPMonitor( bool b ) { M_showKSPMonitor = b; }
 
     /**
      * show KSP converged reason
      */
     bool showKSPConvergedReason() const { return M_showKSPConvergedReason; }
-    void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
+    void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason = b; }
 
     /**
      * This function calls the solver "M_solver_type" preconditioned
@@ -330,17 +324,13 @@ public:
      * \param maxit maximum Number of Iterations
      * \param transpose true to solve the transpose system, false otherwise
      */
-    virtual
-    solve_return_type
-    solve ( MatrixSparse<T> const& mat,
-            Vector<T>& x,
-            Vector<T> const& b,
-            const double tolerance,
-            const unsigned int maxit,
-            bool transpose
-          ) = 0;
-
-
+    virtual solve_return_type
+    solve( MatrixSparse<T> const& mat,
+           Vector<T>& x,
+           Vector<T> const& b,
+           const double tolerance,
+           const unsigned int maxit,
+           bool transpose ) = 0;
 
     /**
      * This function calls the solver
@@ -356,20 +346,16 @@ public:
      * \param maxit maximum Number of Iterations
      * \param transpose true to solve the transpose system, false otherwise
      */
-    virtual
-    solve_return_type
-    solve ( MatrixSparse<T> const& mat,
-            MatrixSparse<T> const& prec,
-            Vector<T>& x,
-            Vector<T> const& b,
-            const double tolerance,
-            const unsigned int maxit,
-            bool transpose
-          ) = 0;
+    virtual solve_return_type
+    solve( MatrixSparse<T> const& mat,
+           MatrixSparse<T> const& prec,
+           Vector<T>& x,
+           Vector<T> const& b,
+           const double tolerance,
+           const unsigned int maxit,
+           bool transpose ) = 0;
 
-
-protected:
-
+  protected:
     /**
      * set initialized only for subclasses
      */
@@ -378,13 +364,11 @@ protected:
         M_is_initialized = init;
     }
 
-private:
-
+  private:
     //mpi communicator
     WorldComm M_worldComm;
 
-protected:
-
+  protected:
     ///
     po::variables_map M_vm;
 
@@ -420,7 +404,7 @@ protected:
     /**
      * Near Null Space
      */
-    boost::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
+    boost::shared_ptr<NullSpace<value_type>> M_nullSpace, M_nearNullSpace;
 
     FieldSplitType M_fieldSplit_type;
 
@@ -428,7 +412,6 @@ protected:
      * Enum the software that is used to perform the factorization
      */
     MatSolverPackageType M_matSolverPackage_type;
-
 
     /**
      * Flag indicating if the data structures have been initialized.
@@ -441,47 +424,38 @@ protected:
     bool M_showKSPConvergedReason;
 };
 
-
-
-
 /*----------------------- inline functions ----------------------------------*/
 template <typename T>
-inline
-SolverLinear<T>::SolverLinear ( WorldComm const& worldComm ) :
-    M_worldComm( worldComm ),
-    M_solver_type         ( GMRES ),
-    M_preconditioner_type ( LU_PRECOND ),
-    M_preconditioner(),
-    M_is_initialized      ( false ),
-    M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
-    M_showKSPMonitor( false ),
-    M_showKSPConvergedReason( false )
+inline SolverLinear<T>::SolverLinear( WorldComm const& worldComm )
+    : M_worldComm( worldComm ),
+      M_solver_type( GMRES ),
+      M_preconditioner_type( LU_PRECOND ),
+      M_preconditioner(),
+      M_is_initialized( false ),
+      M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
+      M_showKSPMonitor( false ),
+      M_showKSPConvergedReason( false )
 {
 }
 
 template <typename T>
-inline
-SolverLinear<T>::SolverLinear ( po::variables_map const& vm, WorldComm const& worldComm ) :
-    M_worldComm( worldComm ),
-    M_vm( vm ),
-    M_solver_type         ( GMRES ),
-    M_preconditioner_type ( LU_PRECOND ),
-    M_is_initialized      ( false ),
-    M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
-    M_showKSPMonitor( false ),
-    M_showKSPConvergedReason( false )
+inline SolverLinear<T>::SolverLinear( po::variables_map const& vm, WorldComm const& worldComm )
+    : M_worldComm( worldComm ),
+      M_vm( vm ),
+      M_solver_type( GMRES ),
+      M_preconditioner_type( LU_PRECOND ),
+      M_is_initialized( false ),
+      M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
+      M_showKSPMonitor( false ),
+      M_showKSPConvergedReason( false )
 {
 }
-
-
 
 template <typename T>
-inline
-SolverLinear<T>::~SolverLinear ()
+inline SolverLinear<T>::~SolverLinear()
 {
-    this->clear ();
+    this->clear();
 }
-
 
 } // Feel
 

@@ -27,14 +27,13 @@
 #include <complex>
 #include <feel/feelcore/feel.hpp>
 
-namespace Feel 
+namespace Feel
 {
 
 typedef std::complex<double> complex_type;
 typedef std::complex<double> complex64_type;
 typedef std::complex<float64_t> complex128_type;
 typedef complex128_type complex128_t;
-
 }
 
 #endif

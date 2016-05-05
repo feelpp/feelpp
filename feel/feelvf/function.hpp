@@ -41,35 +41,32 @@ namespace vf
  * @author Christophe Prud'homme
  * @see
  */
-template<typename Func>
+template <typename Func>
 class Function
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
-
 
     static const size_type context = vm::POINT;
     static const bool is_terminal = false;
     static const uint16_type imorder = Func::imorder;
     static const bool imIsPoly = Func::imIsPoly;
 
-    template<typename Funct>
+    template <typename Funct>
     struct HasTestFunction
     {
         static const bool result = false;
     };
-    template<typename Funct>
+    template <typename Funct>
     struct HasTrialFunction
     {
         static const bool result = false;
     };
-    template<typename Funct>
+    template <typename Funct>
     static const bool has_test_basis = false;
-    template<typename Funct>
+    template <typename Funct>
     static const bool has_trial_basis = false;
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
@@ -84,16 +81,17 @@ public:
      */
     //@{
 
-    explicit Function( expression_type const & fun )
-        :
-        M_fun( fun )
-    {}
-    Function( Function const & fun )
-        :
-        M_fun( fun.M_fun )
-    {}
+    explicit Function( expression_type const& fun )
+        : M_fun( fun )
+    {
+    }
+    Function( Function const& fun )
+        : M_fun( fun.M_fun )
+    {
+    }
     ~Function()
-    {}
+    {
+    }
 
     //@}
 
@@ -101,20 +99,17 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -129,20 +124,19 @@ public:
 
     //@}
 
-
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
+    template <typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {
         typedef typename expression_type::value_type value_type;
 
         using key_type = key_t<Geo_t>;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-        typedef typename mpl::if_<mpl::equal_to<mpl::int_<Func::rank>,mpl::int_<0> >,
-                mpl::identity<Shape<gmc_type::nDim, Scalar, false, false> >,
-                typename mpl::if_<mpl::equal_to<mpl::int_<Func::rank>,mpl::int_<1> >,
-                mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false> >,
-                mpl::identity<Shape<gmc_type::nDim, Tensor2, false, false> > >::type >::type::type shape;
+        typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type* gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type gmc_type;
+        typedef typename mpl::if_<mpl::equal_to<mpl::int_<Func::rank>, mpl::int_<0>>,
+                                  mpl::identity<Shape<gmc_type::nDim, Scalar, false, false>>,
+                                  typename mpl::if_<mpl::equal_to<mpl::int_<Func::rank>, mpl::int_<1>>,
+                                                    mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false>>,
+                                                    mpl::identity<Shape<gmc_type::nDim, Tensor2, false, false>>>::type>::type::type shape;
 
         struct is_zero
         {
@@ -151,29 +145,27 @@ public:
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
-            :
-            M_fun( expr.fun() ),
-            M_gmc( fusion::at_key<key_type>( geom ).get() )
-        {}
-
-        tensor( this_type const& expr,
-                Geo_t const& geom, Basis_i_t const& /*fev*/ )
-            :
-            M_fun( expr.fun() ),
-            M_gmc( fusion::at_key<key_type>( geom ).get() )
-        {}
-
-        tensor( this_type const& expr, Geo_t const& geom )
-            :
-            M_fun( expr.fun() ),
-            M_gmc( fusion::at_key<key_type>( geom ).get() )
+            : M_fun( expr.fun() ),
+              M_gmc( fusion::at_key<key_type>( geom ).get() )
         {
         }
 
-        template<typename IM>
+        tensor( this_type const& expr,
+                Geo_t const& geom, Basis_i_t const& /*fev*/ )
+            : M_fun( expr.fun() ),
+              M_gmc( fusion::at_key<key_type>( geom ).get() )
+        {
+        }
+
+        tensor( this_type const& expr, Geo_t const& geom )
+            : M_fun( expr.fun() ),
+              M_gmc( fusion::at_key<key_type>( geom ).get() )
+        {
+        }
+
+        template <typename IM>
         void init( IM const& im )
         {
-
         }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
@@ -185,14 +177,13 @@ public:
         }
         void update( Geo_t const& geom )
         {
-            M_gmc =  fusion::at_key<key_type>( geom ).get();
+            M_gmc = fusion::at_key<key_type>( geom ).get();
         }
 
         void update( Geo_t const& geom, uint16_type /*face*/ )
         {
-            M_gmc =  fusion::at_key<key_type>( geom ).get();
+            M_gmc = fusion::at_key<key_type>( geom ).get();
         }
-
 
         value_type
         evalij( uint16_type i, uint16_type j ) const
@@ -200,21 +191,18 @@ public:
             return 0;
         }
 
-
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return M_fun( c1, c2, M_gmc->xReal( q ), M_gmc->unitNormal( q ) );
         }
-        template<int PatternContext>
+        template <int PatternContext>
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
             return M_fun( c1, c2, M_gmc->xReal( q ), M_gmc->unitNormal( q ) );
         }
-
-
 
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -232,8 +220,8 @@ public:
         gmc_ptrtype M_gmc;
     };
 
-private:
-    mutable expression_type  M_fun;
+  private:
+    mutable expression_type M_fun;
 };
 /// \endcond
 
@@ -241,13 +229,12 @@ private:
  * \brief functor enabling function
  *
  */
-template<typename Func>
-inline
-Expr< Function<Func> >
+template <typename Func>
+inline Expr<Function<Func>>
 idf( Func f )
 {
     typedef Function<Func> func_t;
-    return Expr< func_t >(  func_t( f ) );
+    return Expr<func_t>( func_t( f ) );
 }
 
 } // vf

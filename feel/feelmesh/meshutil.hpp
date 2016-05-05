@@ -19,16 +19,15 @@
 #ifndef __MESH_UTIL_BASE__
 #define __MESH_UTIL_BASE__
 
-#include <vector>
 #include <algorithm>
 #include <set>
+#include <vector>
 
 #include <feel/feelcore/feel.hpp>
 
-#include <feel/feelmesh/entities.hpp>
 #include <feel/feelmesh/bareitems.hpp>
+#include <feel/feelmesh/entities.hpp>
 #include <feel/feelmesh/marker.hpp>
-
 
 /// \cond disabled
 namespace Feel
@@ -42,32 +41,33 @@ namespace Feel
 */
 
 //! A locally used structure, not meant for general use
-typedef std::map<BareFace, std::pair<size_type, size_type >, cmpBareItem<BareFace> > TempFaceContainer;
+typedef std::map<BareFace, std::pair<size_type, size_type>, cmpBareItem<BareFace>> TempFaceContainer;
 
 //! A locally used structure, not meant for general use
-typedef std::map<BareEdge, std::pair<size_type, size_type>, cmpBareItem<BareEdge> > TempEdgeContainer;
+typedef std::map<BareEdge, std::pair<size_type, size_type>, cmpBareItem<BareEdge>> TempEdgeContainer;
 
-template<typename MeshType>
+template <typename MeshType>
 struct TempEntityContainer
 {
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<3> >,
-            mpl::identity<BareFace>,
-            mpl::identity<BareEdge> >::type::type entity_type;
-    typedef std::map<entity_type, std::pair<size_type, size_type >, cmpBareItem<entity_type> > type;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<3>>,
+                              mpl::identity<BareFace>,
+                              mpl::identity<BareEdge>>::type::type entity_type;
+    typedef std::map<entity_type, std::pair<size_type, size_type>, cmpBareItem<entity_type>> type;
 };
-template<typename Ele, int Dim>
+template <typename Ele, int Dim>
 struct MakeBareEntity
-{};
-template<typename Ele>
+{
+};
+template <typename Ele>
 struct MakeBareEntity<Ele, 3>
 {
     typedef BareFace entity_type;
-    static const int numVertices =  Ele::GeoBShape::numVertices;
+    static const int numVertices = Ele::GeoBShape::numVertices;
 
     MakeBareEntity( Ele const& ele )
-        :
-        M_element( ele )
-    {}
+        : M_element( ele )
+    {
+    }
     entity_type
     operator()() const
     {
@@ -119,15 +119,15 @@ struct MakeBareEntity<Ele, 3>
     Ele const& M_element;
 };
 
-template<typename Ele>
+template <typename Ele>
 struct MakeBareEntity<Ele, 2>
 {
     typedef BareEdge entity_type;
 
     MakeBareEntity( Ele const& ele )
-        :
-        M_element( ele )
-    {}
+        : M_element( ele )
+    {
+    }
 
     entity_type
     operator()() const
@@ -154,21 +154,21 @@ struct MakeBareEntity<Ele, 2>
     Ele const& M_element;
 };
 
-template<typename Ele>
+template <typename Ele>
 struct MakeBareEntity<Ele, 1>
 {
     typedef BarePoint entity_type;
 
     MakeBareEntity( Ele const& ele )
-        :
-        M_element( ele )
-    {}
+        : M_element( ele )
+    {
+    }
 
     entity_type
     operator()() const
     {
         size_type i1 = ( M_element.point( 0 ) ).id();
-        DVLOG(2)  << "[mesh1d::updateFaces] point index in face " << i1 << "\n";
+        DVLOG( 2 ) << "[mesh1d::updateFaces] point index in face " << i1 << "\n";
         entity_type bface;
         bface = makeBarePoint( i1 ).first;
         return bface;
@@ -184,21 +184,21 @@ struct MakeBareEntity<Ele, 1>
     Ele const& M_element;
 };
 
-
-template<typename Ele, int Dim>
+template <typename Ele, int Dim>
 struct MakeBareEntityFromFace
-{};
+{
+};
 
-template<typename Ele>
+template <typename Ele>
 struct MakeBareEntityFromFace<Ele, 3>
 {
     typedef BareFace entity_type;
-    static const int numVertices =  Ele::numVertices;
+    static const int numVertices = Ele::numVertices;
 
     MakeBareEntityFromFace( Ele const& ele )
-        :
-        M_element( ele )
-    {}
+        : M_element( ele )
+    {
+    }
 
     entity_type
     operator()() const
@@ -225,16 +225,16 @@ struct MakeBareEntityFromFace<Ele, 3>
     Ele const& M_element;
 };
 
-template<typename Ele>
+template <typename Ele>
 struct MakeBareEntityFromFace<Ele, 2>
 {
     typedef BareEdge entity_type;
-    static const int numVertices =  Ele::numVertices;
+    static const int numVertices = Ele::numVertices;
 
     MakeBareEntityFromFace( Ele const& ele )
-        :
-        M_element( ele )
-    {}
+        : M_element( ele )
+    {
+    }
 
     entity_type
     operator()() const
@@ -266,32 +266,28 @@ typedef std::pair<Point, Point> MeshBoundingBox;
  * mesh.  The first entry in the pair is the mininum, the second
  * is the maximim.
  */
-template<typename MeshType>
-inline
-MeshBoundingBox
-boundingBox ( const MeshType& mesh )
+template <typename MeshType>
+inline MeshBoundingBox
+boundingBox( const MeshType& mesh )
 {
     // processor bounding box with no arguments
     // computes the global bounding box
     return processorBoundingBox( mesh );
 }
 
-
 /**
  * Same, but returns a sphere instead of a box.
  */
-template<typename MeshType>
-inline
-Sphere
-boundingSphere ( const MeshType& mesh )
+template <typename MeshType>
+inline Sphere
+boundingSphere( const MeshType& mesh )
 {
     MeshBoundingBox bbox = boundingBox( mesh );
 
     const double diag = Feel::distance( bbox.second, bbox.first );
     const Point cent = Feel::middle( bbox.second, bbox.first );
 
-    return Sphere ( cent, .5*diag );
-
+    return Sphere( cent, .5 * diag );
 }
 
 /**
@@ -299,25 +295,25 @@ boundingSphere ( const MeshType& mesh )
  * elements belonging to processor pid.  If no processor id is specified
  * the bounding box for the whole mesh is returned.
  */
-template<typename MeshType>
-inline
-MeshBoundingBox
-processorBoundingBox ( const MeshType& mesh,
-                       const size_type pid = invalid_size_type_value )
+template <typename MeshType>
+inline MeshBoundingBox
+processorBoundingBox( const MeshType& mesh,
+                      const size_type pid = invalid_size_type_value )
 {
-    FEELPP_ASSERT ( mesh.numPoints() != 0 ).error( "mesh has no points" );
+    FEELPP_ASSERT( mesh.numPoints() != 0 )
+        .error( "mesh has no points" );
 
-    Point min( 1.e30,   1.e30,  1.e30 );
+    Point min( 1.e30, 1.e30, 1.e30 );
     Point max( -1.e30, -1.e30, -1.e30 );
 
     // By default no processor is specified and we compute
     // the bounding box for the whole domain.
     if ( pid == invalid_size_type_value )
     {
-        DVLOG(2) << "[processorBoundingBox] np pid given\n";
+        DVLOG( 2 ) << "[processorBoundingBox] np pid given\n";
 
-        for ( unsigned int n=0; n<mesh.numPoints(); n++ )
-            for ( unsigned int i=0; i<mesh.dimension(); i++ )
+        for ( unsigned int n = 0; n < mesh.numPoints(); n++ )
+            for ( unsigned int i = 0; i < mesh.dimension(); i++ )
             {
                 min( i ) = std::min( min( i ), mesh.point( n )( i ) );
                 max( i ) = std::max( max( i ), mesh.point( n )( i ) );
@@ -328,27 +324,27 @@ processorBoundingBox ( const MeshType& mesh,
     // to only consider those elements living on that processor
     else
     {
-        DVLOG(2) << "[processorBoundingBox] process bounding box on pid " << pid << "\n";
+        DVLOG( 2 ) << "[processorBoundingBox] process bounding box on pid " << pid << "\n";
         typename MeshType::element_iterator it = mesh.beginElementWithProcessId( pid );
         typename MeshType::element_iterator en = mesh.endElementWithProcessId( pid );
 
         for ( ; it != en; ++it )
-            for ( unsigned int n=0; n< MeshType::element_type::numPoints; n++ )
-                for ( unsigned int i=0; i<mesh.dimension(); i++ )
+            for ( unsigned int n = 0; n < MeshType::element_type::numPoints; n++ )
+                for ( unsigned int i = 0; i < mesh.dimension(); i++ )
                 {
                     min( i ) = std::min( min( i ), mesh.point( n )( i ) );
                     max( i ) = std::max( max( i ), mesh.point( n )( i ) );
                 }
     }
 
-    for ( unsigned int i=mesh.dimension(); i< min.node().size(); i++ )
+    for ( unsigned int i = mesh.dimension(); i < min.node().size(); i++ )
     {
         min( i ) = 0;
         max( i ) = 0;
     }
 
-    DVLOG(2) << "[processorBoundingBox] min= " << min << "\n";
-    DVLOG(2) << "[processorBoundingBox] max= " << max << "\n";
+    DVLOG( 2 ) << "[processorBoundingBox] min= " << min << "\n";
+    DVLOG( 2 ) << "[processorBoundingBox] max= " << max << "\n";
     const MeshBoundingBox ret_val( min, max );
 
     return ret_val;
@@ -357,23 +353,21 @@ processorBoundingBox ( const MeshType& mesh,
 /**
  * Same, but returns a sphere instead of a box.
  */
-template<typename MeshType>
-inline
-Sphere
-processorBoundingSphere ( const MeshType& mesh,
-                          const size_type pid = invalid_size_type_value )
+template <typename MeshType>
+inline Sphere
+processorBoundingSphere( const MeshType& mesh,
+                         const size_type pid = invalid_size_type_value )
 {
-    MeshBoundingBox bbox = processorBoundingBox( mesh,pid );
+    MeshBoundingBox bbox = processorBoundingBox( mesh, pid );
 
-    const Real  diag = Feel::distance( bbox.second, bbox.first );
+    const Real diag = Feel::distance( bbox.second, bbox.first );
     const Point cent = Feel::middle( bbox.second, bbox.first );
 
-    DVLOG(2) << "[processorBoundingSphere] processor " << mesh.comm().rank() << "\n";
-    DVLOG(2) << "[processorBoundingSphere] center " << cent << "\n";
-    DVLOG(2) << "[processorBoundingSphere] radius " << 0.5*diag << "\n";
-    return Sphere ( cent, .5*diag );
+    DVLOG( 2 ) << "[processorBoundingSphere] processor " << mesh.comm().rank() << "\n";
+    DVLOG( 2 ) << "[processorBoundingSphere] center " << cent << "\n";
+    DVLOG( 2 ) << "[processorBoundingSphere] radius " << 0.5 * diag << "\n";
+    return Sphere( cent, .5 * diag );
 }
-
 
 } // Feel
 

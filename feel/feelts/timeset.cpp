@@ -21,32 +21,29 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelts/timeset.hpp>
-
 
 namespace Feel
 {
-void
-TimeSet::print()
+void TimeSet::print()
 {
     if ( Environment::isMasterRank() )
     {
-        std::cout <<    "------------------------------------------------------------\n";
-        std::cout << "Time " << t() << "s, step=" << this->index() << ", k_{n+1}=" << k() << " k_n=" << kprev(1) << "\n";
+        std::cout << "------------------------------------------------------------\n";
+        std::cout << "Time " << t() << "s, step=" << this->index() << ", k_{n+1}=" << k() << " k_n=" << kprev( 1 ) << "\n";
     }
 }
-void
-TimeSet::save( std::string const& fname )
+void TimeSet::save( std::string const& fname )
 {
-    std::ofstream ofs(fname);
-    for(auto i : range(this->size()))
+    std::ofstream ofs( fname );
+    for ( auto i : range( this->size() ) )
     {
         ofs << std::setw( 5 ) << std::right << i << " "
-            << std::setw( 11 ) << std::scientific << std::setprecision( 2 ) << std::right << this->at(i).timeStep() << " "
-            << std::setw( 11 ) << std::scientific << std::setprecision( 2 ) << std::right << this->at(i).time()
-            << std::setw( 11 ) << std::scientific << std::setprecision( 2 ) << std::right << this->at(i).error();
+            << std::setw( 11 ) << std::scientific << std::setprecision( 2 ) << std::right << this->at( i ).timeStep() << " "
+            << std::setw( 11 ) << std::scientific << std::setprecision( 2 ) << std::right << this->at( i ).time()
+            << std::setw( 11 ) << std::scientific << std::setprecision( 2 ) << std::right << this->at( i ).error();
     }
 }
 } /* Feel */

@@ -39,8 +39,5 @@ namespace Feel
 {
 namespace
 {
-
-
 }
 } // Feel
-

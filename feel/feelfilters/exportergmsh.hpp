@@ -30,9 +30,8 @@
 #ifndef __ExporterGmsh_H
 #define __ExporterGmsh_H 1
 
-#include <iostream>
 #include <fstream>
-
+#include <iostream>
 
 #include <boost/lambda/lambda.hpp>
 
@@ -50,14 +49,11 @@ extern const char* FEELPP_GMSH_FORMAT_VERSION;
  * \ingroup Exporter
  * @author Christophe Prud'homme
  */
-template<typename MeshType, int N>
+template <typename MeshType, int N>
 class ExporterGmsh
-    :
-public Exporter<MeshType,N>
+    : public Exporter<MeshType, N>
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -66,7 +62,7 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename mesh_type::point_const_iterator point_const_iterator;
 
-    typedef Exporter<MeshType,N> super;
+    typedef Exporter<MeshType, N> super;
     typedef typename mesh_type::value_type value_type;
     typedef typename super::timeset_type timeset_type;
     typedef typename super::timeset_ptrtype timeset_ptrtype;
@@ -88,7 +84,7 @@ public:
     ExporterGmsh( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
     ExporterGmsh( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
 
-    ExporterGmsh( ExporterGmsh const & __ex );
+    ExporterGmsh( ExporterGmsh const& __ex );
 
     ~ExporterGmsh();
 
@@ -98,13 +94,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
-
 
     //@}
 
@@ -112,13 +106,13 @@ public:
      */
     //@{
 
-    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
+    Exporter<MeshType, N>* setOptions( std::string const& exp_prefix = "" )
     {
         super::setOptions( exp_prefix );
 
         return this;
     }
-    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
+    Exporter<MeshType, N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
     {
         super::setOptions( exp_prefix );
 
@@ -156,43 +150,41 @@ public:
     void gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, bool parametric = false ) const;
     void gmshSaveNodesEnd( std::ostream& out, mesh_ptrtype mesh, bool parametric = false ) const;
 
-    void gmshSaveElementsStart( std::ostream& out,size_type nGlobElt ) const;
+    void gmshSaveElementsStart( std::ostream& out, size_type nGlobElt ) const;
     void gmshSaveElements( std::ostream& out, mesh_ptrtype __mesh, size_type indexEltStart ) const;
     void gmshSaveElementsEnd( std::ostream& out ) const;
 
     void gmshSaveNodeData( std::ostream& out, step_ptrtype __step ) const;
 
-    void computeMinMax(step_ptrtype __step, std::map<std::string, std::vector<double> > & minMaxValues) const;
-    void gmshSaveElementNodeData( std::ostream& out, step_ptrtype __step, size_type indexEltStart) const;
+    void computeMinMax( step_ptrtype __step, std::map<std::string, std::vector<double>>& minMaxValues ) const;
+    void gmshSaveElementNodeData( std::ostream& out, step_ptrtype __step, size_type indexEltStart ) const;
 
-    template<typename ConvexType=typename mesh_type::shape_type>
+    template <typename ConvexType = typename mesh_type::shape_type>
     void gmshSaveOneElementAsMesh( std::string const& filename,
                                    typename mesh_type::element_type::super const& elt,
-                                   PointSet<ConvexType,typename MeshType::value_type> const& ptset
+                                   PointSet<ConvexType, typename MeshType::value_type> const& ptset
                                    //=PointSet<ConvexType/*typename mesh_type::shape_type*/,typename MeshType::value_type>()
                                    ) const;
 
-    template<typename ConvexRefType, typename ConvexPtSetType>
+    template <typename ConvexRefType, typename ConvexPtSetType>
     void gmshSaveOneElementAsMesh( std::string const& filename,
-                                   Reference<ConvexRefType,ConvexRefType::nDim,ConvexRefType::nOrder,ConvexRefType::nRealDim >  const& elt,
-                                   PointSet<ConvexPtSetType,typename MeshType::value_type> const& ptset ) const;
+                                   Reference<ConvexRefType, ConvexRefType::nDim, ConvexRefType::nOrder, ConvexRefType::nRealDim> const& elt,
+                                   PointSet<ConvexPtSetType, typename MeshType::value_type> const& ptset ) const;
 
     //@}
 
-private:
-
+  private:
     size_type numberOfGlobalPtAndIndex( mesh_ptrtype mesh ) const;
 
-    boost::tuple<size_type,size_type> numberOfGlobalEltAndIndex( mesh_ptrtype mesh ) const;
+    boost::tuple<size_type, size_type> numberOfGlobalEltAndIndex( mesh_ptrtype mesh ) const;
 
     std::string M_element_type;
-
 };
 
 } // Feel
 
 //#if !defined( FEELPP_INSTANTIATION_MODE )
-# include <feel/feelfilters/exportergmsh_impl.hpp>
+#include <feel/feelfilters/exportergmsh_impl.hpp>
 //#endif // FEELPP_INSTANTIATION_MODE
 
 #endif /* __ExporterGmsh_H */

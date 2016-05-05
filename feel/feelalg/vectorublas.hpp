@@ -31,21 +31,22 @@
 #ifndef __VectorUblas_H
 #define __VectorUblas_H 1
 
-#include <set>
-#include <boost/operators.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
-#include <feel/feelcore/application.hpp>
+#include <boost/operators.hpp>
 #include <feel/feelalg/vector.hpp>
-
-
+#include <feel/feelcore/application.hpp>
+#include <set>
 
 namespace Feel
 {
-template<typename T> class VectorPetsc;
-template<typename T> class VectorPetscMPI;
-template<typename T> class VectorPetscMPIRange;
+template <typename T>
+class VectorPetsc;
+template <typename T>
+class VectorPetscMPI;
+template <typename T>
+class VectorPetscMPIRange;
 
 namespace ublas = boost::numeric::ublas;
 
@@ -53,24 +54,27 @@ namespace detail
 {
 // patch for shallow_array_adaptor from
 // http://stackoverflow.com/questions/1735841/initializing-a-ublas-vector-from-a-c-array
-template<typename T>
+template <typename T>
 class shallow_array_adaptor
-    :
-        public boost::numeric::ublas::shallow_array_adaptor<T>
+    : public boost::numeric::ublas::shallow_array_adaptor<T>
 {
-public:
+  public:
     typedef boost::numeric::ublas::shallow_array_adaptor<T> base_type;
-    typedef typename base_type::size_type                   size_type;
-    typedef typename base_type::pointer                     pointer;
+    typedef typename base_type::size_type size_type;
+    typedef typename base_type::pointer pointer;
 
-    shallow_array_adaptor(size_type n) : base_type(n) {}
-    shallow_array_adaptor(size_type n, pointer data) : base_type(n,data) {}
-    shallow_array_adaptor(const shallow_array_adaptor& c) : base_type(c) {}
+    shallow_array_adaptor( size_type n )
+        : base_type( n ) {}
+    shallow_array_adaptor( size_type n, pointer data )
+        : base_type( n, data ) {}
+    shallow_array_adaptor( const shallow_array_adaptor& c )
+        : base_type( c ) {}
 
     // This function must swap the values of the items, not the data pointers.
-    void swap(shallow_array_adaptor& a) {
-        if (base_type::begin() != a.begin())
-            std::swap_ranges(base_type::begin(), base_type::end(), a.begin());
+    void swap( shallow_array_adaptor& a )
+    {
+        if ( base_type::begin() != a.begin() )
+            std::swap_ranges( base_type::begin(), base_type::end(), a.begin() );
     }
 };
 
@@ -87,17 +91,16 @@ public:
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename T, typename Storage = ublas::vector<T> >
+template <typename T, typename Storage = ublas::vector<T>>
 class VectorUblas
-    : public Vector<T>
-    , boost::addable<VectorUblas<T,Storage> >
-    , boost::subtractable<VectorUblas<T,Storage> >
-    , boost::multipliable<VectorUblas<T,Storage>, T >
+    : public Vector<T>,
+      boost::addable<VectorUblas<T, Storage>>,
+      boost::subtractable<VectorUblas<T, Storage>>,
+      boost::multipliable<VectorUblas<T, Storage>, T>
 {
     typedef Vector<T> super1;
-public:
 
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -118,37 +121,36 @@ public:
 
     struct shallow_array_adaptor
     {
-        typedef ublas::vector<value_type, Feel::detail::shallow_array_adaptor<value_type> > subtype;
+        typedef ublas::vector<value_type, Feel::detail::shallow_array_adaptor<value_type>> subtype;
         typedef ublas::vector_range<subtype> rangesubtype;
         typedef ublas::vector_slice<subtype> slicesubtype;
-        typedef VectorUblas<value_type,subtype> type;
+        typedef VectorUblas<value_type, subtype> type;
     };
     static const bool is_shallow_array_adaptor_vector =
-        boost::is_same<vector_type,typename this_type::shallow_array_adaptor::subtype>::value ||
-        boost::is_same<vector_type,typename this_type::shallow_array_adaptor::rangesubtype>::value ||
-        boost::is_same<vector_type,typename this_type::shallow_array_adaptor::slicesubtype>::value;
+        boost::is_same<vector_type, typename this_type::shallow_array_adaptor::subtype>::value ||
+        boost::is_same<vector_type, typename this_type::shallow_array_adaptor::rangesubtype>::value ||
+        boost::is_same<vector_type, typename this_type::shallow_array_adaptor::slicesubtype>::value;
     static const bool is_extarray_vector = is_shallow_array_adaptor_vector;
 
     struct range
     {
-        typedef typename mpl::if_< mpl::bool_< is_shallow_array_adaptor_vector >,
-                                   typename this_type::shallow_array_adaptor::rangesubtype,
-                                   ublas::vector_range<ublas::vector<value_type> > >::type subtype;
-        typedef VectorUblas<value_type,subtype> type;
+        typedef typename mpl::if_<mpl::bool_<is_shallow_array_adaptor_vector>,
+                                  typename this_type::shallow_array_adaptor::rangesubtype,
+                                  ublas::vector_range<ublas::vector<value_type>>>::type subtype;
+        typedef VectorUblas<value_type, subtype> type;
     };
 
     struct slice
     {
-        typedef typename mpl::if_< mpl::bool_< is_shallow_array_adaptor_vector >,
-                                   typename this_type::shallow_array_adaptor::slicesubtype,
-                                   ublas::vector_slice<ublas::vector<value_type> > >::type subtype;
-        typedef VectorUblas<value_type,subtype> type;
+        typedef typename mpl::if_<mpl::bool_<is_shallow_array_adaptor_vector>,
+                                  typename this_type::shallow_array_adaptor::slicesubtype,
+                                  ublas::vector_slice<ublas::vector<value_type>>>::type subtype;
+        typedef VectorUblas<value_type, subtype> type;
     };
 
-    static const bool is_range_vector = boost::is_same<vector_type,typename this_type::range::subtype>::value;
-    static const bool is_slice_vector = boost::is_same<vector_type,typename this_type::slice::subtype>::value;
+    static const bool is_range_vector = boost::is_same<vector_type, typename this_type::range::subtype>::value;
+    static const bool is_slice_vector = boost::is_same<vector_type, typename this_type::slice::subtype>::value;
     static const bool has_non_contiguous_ghosts = is_range_vector || is_slice_vector || is_shallow_array_adaptor_vector;
-
 
     typedef typename super1::datamap_type datamap_type;
     typedef typename super1::datamap_ptrtype datamap_ptrtype;
@@ -167,7 +169,7 @@ public:
 
     VectorUblas( size_type __s, size_type __n_local );
 
-    VectorUblas( VectorUblas const & m );
+    VectorUblas( VectorUblas const& m );
 
     FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
     VectorUblas( VectorUblas<value_type>& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
@@ -207,21 +209,20 @@ public:
      *
      * On \p fast==false, the vector is filled by zeros.
      */
-    void init ( const size_type N,
-                const size_type n_local,
-                const bool      fast=false );
+    void init( const size_type N,
+               const size_type n_local,
+               const bool fast = false );
 
     /**
      * call init with n_local = N,
      */
-    void init ( const size_type n,
-                const bool      fast=false );
+    void init( const size_type n,
+               const bool fast = false );
 
     /**
      * init from a \p DataMap
      */
     void init( datamap_ptrtype const& dm );
-
 
     /**
      * Creates a copy of this vector and returns it in an
@@ -241,10 +242,10 @@ public:
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<value_type>& operator= ( const Vector<value_type> &V );
-    Vector<value_type>& operator= ( const this_type &V );
+    Vector<value_type>& operator=( const Vector<value_type>& V );
+    Vector<value_type>& operator=( const this_type& V );
 
-    template<typename AE>
+    template <typename AE>
     VectorUblas<value_type, Storage>& operator=( ublas::vector_expression<AE> const& e )
     {
         M_vec.operator=( e );
@@ -256,7 +257,7 @@ public:
      */
     T operator()( size_type i ) const
     {
-        checkIndex(i);
+        checkIndex( i );
         if ( has_non_contiguous_ghosts )
         {
             auto const& dm = this->map();
@@ -264,10 +265,10 @@ public:
             if ( i < nLocalActiveDof )
                 return M_vec.operator()( i );
             else
-                return M_vecNonContiguousGhosts.operator()( i-nLocalActiveDof );
+                return M_vecNonContiguousGhosts.operator()( i - nLocalActiveDof );
         }
         else
-            return M_vec.operator()( i-this->firstLocalIndex() );
+            return M_vec.operator()( i - this->firstLocalIndex() );
     }
 
     /**
@@ -275,7 +276,7 @@ public:
      */
     T& operator()( size_type i )
     {
-        checkIndex(i);
+        checkIndex( i );
         if ( has_non_contiguous_ghosts )
         {
             auto const& dm = this->map();
@@ -283,10 +284,10 @@ public:
             if ( i < nLocalActiveDof )
                 return M_vec.operator()( i );
             else
-                return M_vecNonContiguousGhosts.operator()( i-nLocalActiveDof );
+                return M_vecNonContiguousGhosts.operator()( i - nLocalActiveDof );
         }
         else
-            return M_vec.operator()( i-this->firstLocalIndex() );
+            return M_vec.operator()( i - this->firstLocalIndex() );
     }
 
     /**
@@ -399,7 +400,7 @@ public:
      * return row_start, the index of the first
      * vector row stored on this processor
      */
-    unsigned int rowStart () const
+    unsigned int rowStart() const
     {
         checkInvariant();
         return 0;
@@ -409,7 +410,7 @@ public:
      * return row_stop, the index of the last
      * vector row (+1) stored on this processor
      */
-    size_type rowStop () const
+    size_type rowStop() const
     {
         checkInvariant();
         return 0;
@@ -427,8 +428,7 @@ public:
      * \c close the ublas vector, that will copy the content of write
      * optimized vector into a read optimized vector
      */
-    void close () const;
-
+    void close() const;
 
     /**
      * see if vector has been closed
@@ -439,11 +439,10 @@ public:
         return true;
     }
 
-
     /**
      * Returns the read optimized ublas vector.
      */
-    vector_type const& vec () const
+    vector_type const& vec() const
     {
         return M_vec;
     }
@@ -451,7 +450,7 @@ public:
     /**
      * Returns the read optimized ublas vector.
      */
-    vector_type & vec ()
+    vector_type& vec()
     {
         return M_vec;
     }
@@ -467,7 +466,7 @@ public:
     /**
      * Return ghost ublas vector (can be not used)
      */
-    vector_type & vecNonContiguousGhosts()
+    vector_type& vecNonContiguousGhosts()
     {
         return M_vecNonContiguousGhosts;
     }
@@ -500,7 +499,6 @@ public:
     //{ return M_global_values( i ); }
 
     //@
-
 
     /** @name  Mutators
      */
@@ -541,20 +539,20 @@ public:
      * having called the default
      * constructor.
      */
-    void clear ();
+    void clear();
 
     /**
      * Set all entries to 0. This method retains
      * sparsity structure.
      */
-    void zero ()
+    void zero()
     {
         std::fill( this->begin(), this->end(), value_type( 0 ) );
         if ( has_non_contiguous_ghosts )
             std::fill( this->beginGhost(), this->endGhost(), value_type( 0 ) );
     }
 
-    void zero ( size_type /*start1*/, size_type /*stop1*/ )
+    void zero( size_type /*start1*/, size_type /*stop1*/ )
     {
         this->zero();
         //ublas::project( (*this), ublas::range( start1, stop1 ) ) = ublas::zero_vector<value_type>( stop1 );
@@ -563,7 +561,7 @@ public:
     /**
      * Add \p value to the value already accumulated
      */
-    void add ( const size_type i, const value_type& value )
+    void add( const size_type i, const value_type& value )
     {
         checkInvariant();
         ( *this )( i ) += value;
@@ -572,7 +570,7 @@ public:
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
      */
-    void addVector ( int* i, int n, value_type* v )
+    void addVector( int* i, int n, value_type* v )
     {
         for ( int j = 0; j < n; ++j )
             ( *this )( i[j] ) += v[j];
@@ -581,7 +579,7 @@ public:
     /**
      * set to \p value
      */
-    void set ( size_type i, const value_type& value )
+    void set( size_type i, const value_type& value )
     {
         checkInvariant();
         ( *this )( i ) = value;
@@ -590,7 +588,7 @@ public:
     /**
      * v([i1,i2,...,in]) = [value1,...,valuen]
      */
-    void setVector ( int* i, int n, value_type* v )
+    void setVector( int* i, int n, value_type* v )
     {
         for ( int j = 0; j < n; ++j )
             ( *this )( i[j] ) = v[j];
@@ -601,13 +599,14 @@ public:
      * and you
      * want to specify WHERE to add it
      */
-    void addVector ( const std::vector<value_type>& v,
-                     const std::vector<size_type>& dof_indices )
+    void addVector( const std::vector<value_type>& v,
+                    const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT ( v.size() == dof_indices.size() ).error( "invalid dof indices" );
+        FEELPP_ASSERT( v.size() == dof_indices.size() )
+            .error( "invalid dof indices" );
 
-        for ( size_type i=0; i<v.size(); i++ )
-            this->add ( dof_indices[i], v[i] );
+        for ( size_type i = 0; i < v.size(); i++ )
+            this->add( dof_indices[i], v[i] );
     }
 
     /**
@@ -616,24 +615,25 @@ public:
      * want to specify WHERE to add
      * the \p NumericVector<T> V
      */
-    void addVector ( const Vector<value_type>& V,
-                     const std::vector<size_type>& dof_indices )
+    void addVector( const Vector<value_type>& V,
+                    const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
+        FEELPP_ASSERT( V.size() == dof_indices.size() )
+            .error( "invalid dof indices" );
 
-        for ( size_type i=0; i<V.size(); i++ )
-            this->add ( dof_indices[i], V( i ) );
+        for ( size_type i = 0; i < V.size(); i++ )
+            this->add( dof_indices[i], V( i ) );
     }
-
 
     /**
      * \f$ U+=A*V\f$, add the product of a \p MatrixSparse \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    void addVector ( const Vector<value_type>& /*V_in*/,
-                     const MatrixSparse<value_type>& /*A_in*/ )
+    void addVector( const Vector<value_type>& /*V_in*/,
+                    const MatrixSparse<value_type>& /*A_in*/ )
     {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call, not implemented yet" );
     }
 
     /**
@@ -642,23 +642,25 @@ public:
      * want to specify WHERE to add
      * the DenseVector<T> V
      */
-    void addVector ( const ublas::vector<value_type>& V,
-                     const std::vector<size_type>& dof_indices )
+    void addVector( const ublas::vector<value_type>& V,
+                    const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
+        FEELPP_ASSERT( V.size() == dof_indices.size() )
+            .error( "invalid dof indices" );
 
-        for ( size_type i=0; i<V.size(); i++ )
-            this->add ( dof_indices[i], V( i ) );
+        for ( size_type i = 0; i < V.size(); i++ )
+            this->add( dof_indices[i], V( i ) );
     }
 
     /**
      * \f$ U=v \f$ where v is a DenseVector<T>
      * and you want to specify WHERE to insert it
      */
-    void insert ( const std::vector<T>& /*v*/,
-                  const std::vector<size_type>& /*dof_indices*/ )
+    void insert( const std::vector<T>& /*v*/,
+                 const std::vector<size_type>& /*dof_indices*/ )
     {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call, not implemented yet" );
     }
 
     /**
@@ -667,12 +669,12 @@ public:
      * want to specify WHERE to insert
      * the Vector<T> V
      */
-    void insert ( const Vector<T>& /*V*/,
-                  const std::vector<size_type>& /*dof_indices*/ )
+    void insert( const Vector<T>& /*V*/,
+                 const std::vector<size_type>& /*dof_indices*/ )
     {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call, not implemented yet" );
     }
-
 
     /**
      * \f$ U+=V \f$ where U and V are type
@@ -680,22 +682,22 @@ public:
      * want to specify WHERE to insert
      * the DenseVector<T> V
      */
-    void insert ( const ublas::vector<T>& /*V*/,
-                  const std::vector<size_type>& /*dof_indices*/ )
+    void insert( const ublas::vector<T>& /*V*/,
+                 const std::vector<size_type>& /*dof_indices*/ )
     {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call, not implemented yet" );
     }
 
     /**
      * Scale each element of the
      * vector by the given factor.
      */
-    void scale ( const T factor )
+    void scale( const T factor )
     {
-        M_vec.operator *=( factor );
+        M_vec.operator*=( factor );
         if ( has_non_contiguous_ghosts )
-            M_vecNonContiguousGhosts.operator *=( factor );
-
+            M_vecNonContiguousGhosts.operator*=( factor );
     }
 
     /**
@@ -704,7 +706,7 @@ public:
      * vector to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL", bool renumber = false ) const;
+    void printMatlab( const std::string name = "NULL", bool renumber = false ) const;
 
     void close() {}
 
@@ -722,16 +724,14 @@ public:
 
         size_type nActiveDof = this->map().nLocalDofWithoutGhost();
         size_type nGhostDof = this->map().nLocalGhosts();
-        real_type local_min = (nActiveDof>0)?
-            *std::min_element( M_vec.begin(), ( has_non_contiguous_ghosts || ( nGhostDof == 0 ) )? M_vec.end() : M_vec.begin()+nActiveDof ) :
-            std::numeric_limits<real_type>::max() ;
+        real_type local_min = ( nActiveDof > 0 ) ? *std::min_element( M_vec.begin(), ( has_non_contiguous_ghosts || ( nGhostDof == 0 ) ) ? M_vec.end() : M_vec.begin() + nActiveDof ) : std::numeric_limits<real_type>::max();
         real_type global_min = local_min;
 
 #ifdef FEELPP_HAS_MPI
         if ( parallel && this->comm().size() > 1 )
         {
-            MPI_Allreduce ( &local_min, &global_min, 1,
-                            MPI_DOUBLE, MPI_MIN, this->comm() );
+            MPI_Allreduce( &local_min, &global_min, 1,
+                           MPI_DOUBLE, MPI_MIN, this->comm() );
         }
 #endif
         return global_min;
@@ -750,16 +750,14 @@ public:
 
         size_type nActiveDof = this->map().nLocalDofWithoutGhost();
         size_type nGhostDof = this->map().nLocalGhosts();
-        real_type local_max = (nActiveDof>0)?
-            *std::max_element( M_vec.begin(), ( has_non_contiguous_ghosts || ( nGhostDof == 0 ) )? M_vec.end() : M_vec.begin()+nActiveDof ) :
-            std::numeric_limits<real_type>::min() ;
+        real_type local_max = ( nActiveDof > 0 ) ? *std::max_element( M_vec.begin(), ( has_non_contiguous_ghosts || ( nGhostDof == 0 ) ) ? M_vec.end() : M_vec.begin() + nActiveDof ) : std::numeric_limits<real_type>::min();
         real_type global_max = local_max;
 
 #ifdef FEELPP_HAS_MPI
         if ( parallel && this->comm().size() > 1 )
         {
-            MPI_Allreduce ( &local_max, &global_max, 1,
-                            MPI_DOUBLE, MPI_MAX, this->comm() );
+            MPI_Allreduce( &local_max, &global_max, 1,
+                           MPI_DOUBLE, MPI_MAX, this->comm() );
         }
 #endif
         return global_max;
@@ -777,7 +775,7 @@ public:
         if ( has_non_contiguous_ghosts || this->comm().size() == 1 )
             local_l1 = ublas::norm_1( M_vec );
         else
-            local_l1 = ublas::norm_1( ublas::project( M_vec, ublas::range( 0,this->map().nLocalDofWithoutGhost() ) ) );
+            local_l1 = ublas::norm_1( ublas::project( M_vec, ublas::range( 0, this->map().nLocalDofWithoutGhost() ) ) );
 
         double global_l1 = local_l1;
 
@@ -791,7 +789,6 @@ public:
 #endif
 
         return global_l1;
-
     }
 
     /**
@@ -809,8 +806,8 @@ public:
         }
         else
         {
-            auto vecActiveDof = ublas::project( M_vec, ublas::range( 0,this->map().nLocalDofWithoutGhost() ) );
-            local_norm2 = ublas::inner_prod( vecActiveDof,vecActiveDof );
+            auto vecActiveDof = ublas::project( M_vec, ublas::range( 0, this->map().nLocalDofWithoutGhost() ) );
+            local_norm2 = ublas::inner_prod( vecActiveDof, vecActiveDof );
         }
         real_type global_norm2 = local_norm2;
 
@@ -833,7 +830,7 @@ public:
         if ( has_non_contiguous_ghosts || this->comm().size() == 1 )
             local_norminf = ublas::norm_inf( M_vec );
         else
-            local_norminf = ublas::norm_inf( ublas::project( M_vec, ublas::range( 0,this->map().nLocalDofWithoutGhost() ) ) );
+            local_norminf = ublas::norm_inf( ublas::project( M_vec, ublas::range( 0, this->map().nLocalDofWithoutGhost() ) ) );
 
         real_type global_norminf = local_norminf;
 
@@ -845,7 +842,6 @@ public:
 #endif
         return global_norminf;
     }
-
 
     /**
      * @return the sum of the vector.
@@ -861,7 +857,7 @@ public:
         }
         else
         {
-            local_sum = ublas::sum( ublas::project( M_vec, ublas::range( 0,this->map().nLocalDofWithoutGhost() ) ) );
+            local_sum = ublas::sum( ublas::project( M_vec, ublas::range( 0, this->map().nLocalDofWithoutGhost() ) ) );
         }
         value_type global_sum = local_sum;
 #ifdef FEELPP_HAS_MPI
@@ -877,12 +873,10 @@ public:
      */
     FEELPP_DONT_INLINE this_type sqrt() const;
 
-
     /**
      *@compute pow on each element of the vector.
      */
     this_type pow( int n ) const;
-
 
     /**
      * \f$U(0-DIM)+=s\f$.
@@ -899,7 +893,7 @@ public:
 
         return;
 #else
-        M_vec += a*ublas::unit_vector<value_type>();
+        M_vec += a * ublas::unit_vector<value_type>();
         if ( has_non_contiguous_ghosts )
             M_vecNonContiguousGhosts += a;
 #endif
@@ -927,53 +921,54 @@ public:
      * Creates a copy of the global vector in the
      * local vector \p v_local.
      */
-    void localize ( std::vector<value_type>& /*v_local*/ ) const
+    void localize( std::vector<value_type>& /*v_local*/ ) const
     {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call, not implemented yet" );
     }
 
     /**
      * Creates a copy of the global vector in the
      * local vector \p v_local.
      */
-    void localize ( ublas::vector<value_type>& v_local ) const;
-    void localize ( ublas::vector<value_type,Feel::detail::shallow_array_adaptor<T> >& v_local ) const {}
+    void localize( ublas::vector<value_type>& v_local ) const;
+    void localize( ublas::vector<value_type, Feel::detail::shallow_array_adaptor<T>>& v_local ) const {}
 
     /**
      * Creates a copy of the global vector in the
      * local vector \p v_local.
      */
-    void localize ( ublas::vector_range<ublas::vector<value_type> >& v_local ) const;
-    void localize ( ublas::vector_range<ublas::vector<value_type,Feel::detail::shallow_array_adaptor<T> > >& v_local ) const {}
+    void localize( ublas::vector_range<ublas::vector<value_type>>& v_local ) const;
+    void localize( ublas::vector_range<ublas::vector<value_type, Feel::detail::shallow_array_adaptor<T>>>& v_local ) const {}
 
     /**
      * Creates a copy of the global vector in the
      * local vector \p v_local.
      */
-    void localize ( ublas::vector_slice<ublas::vector<value_type> >& v_local ) const;
-    void localize ( ublas::vector_slice<ublas::vector<value_type,Feel::detail::shallow_array_adaptor<T> > >& v_local ) const {}
+    void localize( ublas::vector_slice<ublas::vector<value_type>>& v_local ) const;
+    void localize( ublas::vector_slice<ublas::vector<value_type, Feel::detail::shallow_array_adaptor<T>>>& v_local ) const {}
 
     /**
      * Same, but fills a \p NumericVector<T> instead of
      * a \p std::vector.
      */
-    void localize ( Vector<T>& v_local ) const;
+    void localize( Vector<T>& v_local ) const;
 
     /**
      * Creates a local vector \p v_local containing
      * only information relevant to this processor, as
      * defined by the \p send_list.
      */
-    void localize ( Vector<T>& v_local,
-                    const std::vector<size_type>& send_list ) const;
+    void localize( Vector<T>& v_local,
+                   const std::vector<size_type>& send_list ) const;
 
     /**
      * Updates a local vector with selected values from neighboring
      * processors, as defined by \p send_list.
      */
-    void localize ( const size_type first_local_idx,
-                    const size_type last_local_idx,
-                    const std::vector<size_type>& send_list );
+    void localize( const size_type first_local_idx,
+                   const size_type last_local_idx,
+                   const std::vector<size_type>& send_list );
 
     /**
      * Creates a local copy of the global vector in
@@ -981,8 +976,8 @@ public:
      * default the data is sent to processor 0.  This method
      * is useful for outputting data from one processor.
      */
-    void localizeToOneProcessor ( ublas::vector<T>& v_local,
-                                  const size_type proc_id = 0 ) const;
+    void localizeToOneProcessor( ublas::vector<T>& v_local,
+                                 const size_type proc_id = 0 ) const;
 
     /**
      * Creates a local copy of the global vector in
@@ -990,12 +985,11 @@ public:
      * default the data is sent to processor 0.  This method
      * is useful for outputting data from one processor.
      */
-    void localizeToOneProcessor ( std::vector<T>& v_local,
-                                  const size_type proc_id = 0 ) const;
-
+    void localizeToOneProcessor( std::vector<T>& v_local,
+                                 const size_type proc_id = 0 ) const;
 
     value_type dot( Vector<T> const& __v ) const;
-    //@}
+//@}
 
 #ifdef FEELPP_HAS_HDF5
     void saveHDF5( std::string const& filename );
@@ -1003,17 +997,14 @@ public:
     void ioHDF5( bool isLoad, std::string const& filename );
 #endif
 
-
-protected:
-
-private:
-
+  protected:
+  private:
     template <typename OtherStorage>
-    void assignWithUblasImpl( VectorUblas<T,OtherStorage> const& v );
+    void assignWithUblasImpl( VectorUblas<T, OtherStorage> const& v );
     template <typename OtherStorage>
-    void addWithUblasImpl( const T& a, VectorUblas<T,OtherStorage> const& v );
+    void addWithUblasImpl( const T& a, VectorUblas<T, OtherStorage> const& v );
     template <typename OtherStorage>
-    value_type dotWithUblasImpl( VectorUblas<T,OtherStorage> const& v ) const;
+    value_type dotWithUblasImpl( VectorUblas<T, OtherStorage> const& v ) const;
 
     /**
      * check vector consistency
@@ -1021,38 +1012,33 @@ private:
     void checkInvariant() const;
 
     inline void checkIndex( size_type i ) const
-        {
-            #if 0
+    {
+#if 0
             DCHECK(  this->isInitialized() ) << "vector not initialized";
             DCHECK (( i >= this->firstLocalIndex() ) &&
                     ( i <=  this->lastLocalIndex() ) )
                 << "invalid index " << i << " min=" <<  this->firstLocalIndex() << " max=" << this->lastLocalIndex() ;
-            #endif
-        }
+#endif
+    }
 
-
-private:
-
+  private:
     //! vector with in first active dofs and then ghost, all dofs is contiguous, if Storage is not a view
     //! else is Storage is a view, the vector represent only the active dofs contiguous
     vector_type M_vec;
     //! non contiguous ghost values : defined only with range view vector
     vector_type M_vecNonContiguousGhosts;
-
 };
 
-
-template<typename T, typename Storage>
+template <typename T, typename Storage>
 template <typename OtherStorage>
-void
-VectorUblas<T,Storage>::assignWithUblasImpl( VectorUblas<T,OtherStorage> const& v )
+void VectorUblas<T, Storage>::assignWithUblasImpl( VectorUblas<T, OtherStorage> const& v )
 {
     size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
     size_type nLocalGhosts = this->map().nLocalGhosts();
     size_type nLocalDofWithoutGhostV = v.map().nLocalDofWithoutGhost();
     size_type nLocalGhostsV = v.map().nLocalGhosts();
 
-    static const bool otherstorage_has_non_contiguous_ghosts = VectorUblas<T,OtherStorage>::has_non_contiguous_ghosts;
+    static const bool otherstorage_has_non_contiguous_ghosts = VectorUblas<T, OtherStorage>::has_non_contiguous_ghosts;
 
     if ( this->comm().localSize() == 1 )
     {
@@ -1072,7 +1058,7 @@ VectorUblas<T,Storage>::assignWithUblasImpl( VectorUblas<T,OtherStorage> const& 
             if ( nLocalDofWithoutGhostV > 0 )
                 this->vec() = ublas::project( v.vec(), ublas::range( 0, nLocalDofWithoutGhostV ) );
             if ( nLocalGhostsV > 0 )
-                this->vecNonContiguousGhosts() = ublas::project( v.vec(), ublas::range( nLocalDofWithoutGhostV, nLocalDofWithoutGhostV+nLocalGhostsV ) );
+                this->vecNonContiguousGhosts() = ublas::project( v.vec(), ublas::range( nLocalDofWithoutGhostV, nLocalDofWithoutGhostV + nLocalGhostsV ) );
         }
     }
     else
@@ -1082,48 +1068,45 @@ VectorUblas<T,Storage>::assignWithUblasImpl( VectorUblas<T,OtherStorage> const& 
             if ( nLocalDofWithoutGhost > 0 )
                 ublas::project( this->vec(), ublas::range( 0, nLocalDofWithoutGhost ) ) = v.vec();
             if ( nLocalGhosts > 0 )
-                ublas::project( this->vec(), ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost+nLocalGhosts ) ) = v.vecNonContiguousGhosts();
+                ublas::project( this->vec(), ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost + nLocalGhosts ) ) = v.vecNonContiguousGhosts();
         }
         else
         {
             this->vec() = v.vec();
         }
     }
-
 }
 
-
-template<typename T, typename Storage>
+template <typename T, typename Storage>
 template <typename OtherStorage>
-void
-VectorUblas<T,Storage>::addWithUblasImpl( const T& a, VectorUblas<T,OtherStorage> const& v )
+void VectorUblas<T, Storage>::addWithUblasImpl( const T& a, VectorUblas<T, OtherStorage> const& v )
 {
     size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
     size_type nLocalGhosts = this->map().nLocalGhosts();
     size_type nLocalDofWithoutGhostV = v.map().nLocalDofWithoutGhost();
     size_type nLocalGhostsV = v.map().nLocalGhosts();
 
-    static const bool otherstorage_has_non_contiguous_ghosts = VectorUblas<T,OtherStorage>::has_non_contiguous_ghosts;
+    static const bool otherstorage_has_non_contiguous_ghosts = VectorUblas<T, OtherStorage>::has_non_contiguous_ghosts;
 
     if ( this->comm().localSize() == 1 )
     {
-        this->vec() += a*v.vec();
+        this->vec() += a * v.vec();
     }
     else if ( has_non_contiguous_ghosts )
     {
         if ( otherstorage_has_non_contiguous_ghosts )
         {
             if ( nLocalDofWithoutGhost > 0 )
-                this->vec() += a*v.vec();
+                this->vec() += a * v.vec();
             if ( nLocalGhosts > 0 )
-                this->vecNonContiguousGhosts() += a*v.vecNonContiguousGhosts();
+                this->vecNonContiguousGhosts() += a * v.vecNonContiguousGhosts();
         }
         else
         {
             if ( nLocalDofWithoutGhostV > 0 )
-                this->vec() += a*ublas::project( v.vec(), ublas::range( 0, nLocalDofWithoutGhostV ) );
+                this->vec() += a * ublas::project( v.vec(), ublas::range( 0, nLocalDofWithoutGhostV ) );
             if ( nLocalGhostsV > 0 )
-                this->vecNonContiguousGhosts() += a*ublas::project( v.vec(), ublas::range( nLocalDofWithoutGhostV, nLocalDofWithoutGhostV+nLocalGhostsV ) );
+                this->vecNonContiguousGhosts() += a * ublas::project( v.vec(), ublas::range( nLocalDofWithoutGhostV, nLocalDofWithoutGhostV + nLocalGhostsV ) );
         }
     }
     else
@@ -1131,23 +1114,23 @@ VectorUblas<T,Storage>::addWithUblasImpl( const T& a, VectorUblas<T,OtherStorage
         if ( otherstorage_has_non_contiguous_ghosts )
         {
             if ( nLocalDofWithoutGhost > 0 )
-                ublas::project( this->vec(), ublas::range( 0, nLocalDofWithoutGhost ) ) += a*v.vec();
+                ublas::project( this->vec(), ublas::range( 0, nLocalDofWithoutGhost ) ) += a * v.vec();
             if ( nLocalGhosts > 0 )
-                ublas::project( this->vec(), ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost+nLocalGhosts ) ) += a*v.vecNonContiguousGhosts();
+                ublas::project( this->vec(), ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost + nLocalGhosts ) ) += a * v.vecNonContiguousGhosts();
         }
         else
         {
-            this->vec() += a*v.vec();
+            this->vec() += a * v.vec();
         }
     }
 }
 
-template<typename T, typename Storage>
+template <typename T, typename Storage>
 template <typename OtherStorage>
-typename VectorUblas<T,Storage>::value_type
-VectorUblas<T,Storage>::dotWithUblasImpl( VectorUblas<T,OtherStorage> const& v ) const
+typename VectorUblas<T, Storage>::value_type
+VectorUblas<T, Storage>::dotWithUblasImpl( VectorUblas<T, OtherStorage> const& v ) const
 {
-    static const bool otherstorage_has_non_contiguous_ghosts = VectorUblas<T,OtherStorage>::has_non_contiguous_ghosts;
+    static const bool otherstorage_has_non_contiguous_ghosts = VectorUblas<T, OtherStorage>::has_non_contiguous_ghosts;
     value_type localResult = 0;
     size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
     size_type nLocalDofWithoutGhostV = v.map().nLocalDofWithoutGhost();
@@ -1191,7 +1174,6 @@ VectorUblas<T,Storage>::dotWithUblasImpl( VectorUblas<T,OtherStorage> const& v )
     return globalResult;
 }
 
-
 /**
  * Computes the element wise product of two vectors and eventually in parallel
  * \param v1 vector (eventually distributed)
@@ -1201,17 +1183,16 @@ VectorUblas<T,Storage>::dotWithUblasImpl( VectorUblas<T,OtherStorage> const& v )
  */
 template <typename T, typename Storage1, typename Storage2>
 VectorUblas<T>
-element_product( VectorUblas<T,Storage1> const& v1, VectorUblas<T,Storage2> const& v2 )
+element_product( VectorUblas<T, Storage1> const& v1, VectorUblas<T, Storage2> const& v2 )
 {
     FEELPP_ASSERT( v1.localSize() == v2.localSize() &&
                    v1.size() == v2.size() )
-    ( v1.localSize() )( v2.localSize() )
-    ( v1.size() )( v2.size() ).error( "incompatible vector sizes" );
+    ( v1.localSize() )( v2.localSize() )( v1.size() )( v2.size() ).error( "incompatible vector sizes" );
 
     typedef typename type_traits<T>::real_type real_type;
 
-    static const bool storage1_has_non_contiguous_ghosts = VectorUblas<T,Storage1>::has_non_contiguous_ghosts;
-    static const bool storage2_has_non_contiguous_ghosts = VectorUblas<T,Storage2>::has_non_contiguous_ghosts;
+    static const bool storage1_has_non_contiguous_ghosts = VectorUblas<T, Storage1>::has_non_contiguous_ghosts;
+    static const bool storage2_has_non_contiguous_ghosts = VectorUblas<T, Storage2>::has_non_contiguous_ghosts;
 
     VectorUblas<real_type> _t( v1.mapPtr() );
 
@@ -1220,7 +1201,7 @@ element_product( VectorUblas<T,Storage1> const& v1, VectorUblas<T,Storage2> cons
 
     if ( _t.comm().localSize() == 1 )
     {
-        _t.vec() = ublas::element_prod( v1.vec(),v2.vec() );
+        _t.vec() = ublas::element_prod( v1.vec(), v2.vec() );
     }
     else if ( storage1_has_non_contiguous_ghosts == storage2_has_non_contiguous_ghosts )
     {
@@ -1228,14 +1209,14 @@ element_product( VectorUblas<T,Storage1> const& v1, VectorUblas<T,Storage2> cons
         {
             if ( nLocalDofWithoutGhost > 0 )
                 ublas::project( _t.vec(), ublas::range( 0, nLocalDofWithoutGhost ) ) =
-                    ublas::element_prod( v1.vec(),v2.vec() );
+                    ublas::element_prod( v1.vec(), v2.vec() );
             if ( nLocalGhosts > 0 )
-                ublas::project( _t.vec(), ublas::range( nLocalDofWithoutGhost,nLocalDofWithoutGhost+nLocalGhosts ) ) =
-                    ublas::element_prod( v1.vecNonContiguousGhosts(),v2.vecNonContiguousGhosts() );
+                ublas::project( _t.vec(), ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost + nLocalGhosts ) ) =
+                    ublas::element_prod( v1.vecNonContiguousGhosts(), v2.vecNonContiguousGhosts() );
         }
         else
         {
-            _t.vec() = ublas::element_prod( v1.vec(),v2.vec() );
+            _t.vec() = ublas::element_prod( v1.vec(), v2.vec() );
         }
     }
     else if ( storage1_has_non_contiguous_ghosts )
@@ -1244,13 +1225,13 @@ element_product( VectorUblas<T,Storage1> const& v1, VectorUblas<T,Storage2> cons
         size_type nLocalGhostsV2 = v1.map().nLocalGhosts();
 
         if ( nLocalDofWithoutGhost > 0 )
-            ublas::project( _t.vec(), ublas::range( 0,nLocalDofWithoutGhost ) ) =
+            ublas::project( _t.vec(), ublas::range( 0, nLocalDofWithoutGhost ) ) =
                 ublas::element_prod( v1.vec(),
                                      ublas::project( v2.vec(), ublas::range( 0, nLocalDofWithoutGhostV2 ) ) );
         if ( nLocalGhosts > 0 )
-            ublas::project( _t.vec(), ublas::range( nLocalDofWithoutGhost,nLocalDofWithoutGhost+nLocalGhosts ) ) =
+            ublas::project( _t.vec(), ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost + nLocalGhosts ) ) =
                 ublas::element_prod( v1.vecNonContiguousGhosts(),
-                                     ublas::project( v2.vec(), ublas::range( nLocalDofWithoutGhostV2,nLocalDofWithoutGhostV2+nLocalGhostsV2 ) ) );
+                                     ublas::project( v2.vec(), ublas::range( nLocalDofWithoutGhostV2, nLocalDofWithoutGhostV2 + nLocalGhostsV2 ) ) );
     }
     else if ( storage2_has_non_contiguous_ghosts )
     {
@@ -1258,12 +1239,12 @@ element_product( VectorUblas<T,Storage1> const& v1, VectorUblas<T,Storage2> cons
         size_type nLocalGhostsV1 = v1.map().nLocalGhosts();
 
         if ( nLocalDofWithoutGhost > 0 )
-            ublas::project( _t.vec(), ublas::range( 0,nLocalDofWithoutGhost ) ) =
+            ublas::project( _t.vec(), ublas::range( 0, nLocalDofWithoutGhost ) ) =
                 ublas::element_prod( ublas::project( v1.vec(), ublas::range( 0, nLocalDofWithoutGhostV1 ) ),
                                      v2.vec() );
         if ( nLocalGhosts > 0 )
-            ublas::project( _t.vec(), ublas::range( nLocalDofWithoutGhost,nLocalDofWithoutGhost+nLocalGhosts ) ) =
-                ublas::element_prod( ublas::project( v1.vec(), ublas::range( nLocalDofWithoutGhostV1,nLocalDofWithoutGhostV1+nLocalGhostsV1 ) ),
+            ublas::project( _t.vec(), ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost + nLocalGhosts ) ) =
+                ublas::element_prod( ublas::project( v1.vec(), ublas::range( nLocalDofWithoutGhostV1, nLocalDofWithoutGhostV1 + nLocalGhostsV1 ) ),
                                      v2.vecNonContiguousGhosts() );
     }
     else
@@ -1271,7 +1252,7 @@ element_product( VectorUblas<T,Storage1> const& v1, VectorUblas<T,Storage2> cons
         size_type s = v1.localSize();
         size_type start = v1.firstLocalIndex();
         for ( size_type i = 0; i < s; ++i )
-            _t.operator()( start+i ) = v1.operator()( start + i )* v2.operator()( start + i );
+            _t.operator()( start + i ) = v1.operator()( start + i ) * v2.operator()( start + i );
     }
 
     return _t;
@@ -1286,8 +1267,8 @@ element_product( VectorUblas<T,Storage1> const& v1, VectorUblas<T,Storage2> cons
  */
 template <typename T, typename Storage1, typename Storage2>
 VectorUblas<T>
-element_product( boost::shared_ptr<VectorUblas<T,Storage1> > const& v1,
-                 boost::shared_ptr<VectorUblas<T,Storage2> > const& v2 )
+element_product( boost::shared_ptr<VectorUblas<T, Storage1>> const& v1,
+                 boost::shared_ptr<VectorUblas<T, Storage2>> const& v2 )
 {
     return element_product( *v1, *v2 );
 }
@@ -1298,11 +1279,10 @@ element_product( boost::shared_ptr<VectorUblas<T,Storage1> > const& v1,
  * instantiation to the strict minimum
  */
 #if !defined( FEELPP_INSTANTIATE_VECTORUBLAS )
-extern template class VectorUblas<double,ublas::vector<double> >;
-extern template class VectorUblas<double,ublas::vector_range<ublas::vector<double> > >;
-extern template class VectorUblas<double,ublas::vector_slice<ublas::vector<double> > >;
+extern template class VectorUblas<double, ublas::vector<double>>;
+extern template class VectorUblas<double, ublas::vector_range<ublas::vector<double>>>;
+extern template class VectorUblas<double, ublas::vector_slice<ublas::vector<double>>>;
 #endif
-
 }
 #include <feel/feelalg/vectorpetsc.hpp>
 
@@ -1322,13 +1302,13 @@ namespace Feel
  * \warning one must be careful that the VectorUblas will provide contiguous
  * data access.
  */
-template<typename T,typename Storage>
+template <typename T, typename Storage>
 inline VectorPetsc<T>
-toPETSc( VectorUblas<T,Storage> & v )
+toPETSc( VectorUblas<T, Storage>& v )
 {
     if ( v.comm().size() > 1 )
     {
-        if ( VectorUblas<T,Storage>::is_range_vector || VectorUblas<T,Storage>::is_extarray_vector )
+        if ( VectorUblas<T, Storage>::is_range_vector || VectorUblas<T, Storage>::is_extarray_vector )
             return VectorPetscMPIRange<T>( v );
         else
             return VectorPetscMPI<T>( v );
@@ -1351,13 +1331,13 @@ toPETSc( VectorUblas<T,Storage> & v )
  * \warning one must be careful that the VectorUblas will provide contiguous
  * data access.
  */
-template<typename T,typename Storage>
+template <typename T, typename Storage>
 inline boost::shared_ptr<VectorPetsc<T>>
-toPETScPtr( VectorUblas<T,Storage> const& v )
+toPETScPtr( VectorUblas<T, Storage> const& v )
 {
     if ( v.comm().size() > 1 )
     {
-        if ( VectorUblas<T,Storage>::is_range_vector || VectorUblas<T,Storage>::is_extarray_vector )
+        if ( VectorUblas<T, Storage>::is_range_vector || VectorUblas<T, Storage>::is_extarray_vector )
             return boost::make_shared<VectorPetscMPIRange<T>>( v );
         else
             return boost::make_shared<VectorPetscMPI<T>>( v );
@@ -1380,13 +1360,13 @@ toPETScPtr( VectorUblas<T,Storage> const& v )
  * \warning one must be careful that the VectorUblas will provide contiguous
  * data access.
  */
-template<typename T,typename Storage>
+template <typename T, typename Storage>
 inline boost::shared_ptr<VectorPetsc<T>>
-toPETSc( boost::shared_ptr<VectorUblas<T,Storage>> & v )
+toPETSc( boost::shared_ptr<VectorUblas<T, Storage>>& v )
 {
     if ( v->comm().size() > 1 )
     {
-        if ( VectorUblas<T,Storage>::is_range_vector || VectorUblas<T,Storage>::is_extarray_vector )
+        if ( VectorUblas<T, Storage>::is_range_vector || VectorUblas<T, Storage>::is_extarray_vector )
             return boost::make_shared<VectorPetscMPIRange<T>>( *v );
         else
             return boost::make_shared<VectorPetscMPI<T>>( *v );
@@ -1395,9 +1375,6 @@ toPETSc( boost::shared_ptr<VectorUblas<T,Storage>> & v )
         return boost::make_shared<VectorPetsc<T>>( *v );
 }
 
-
-
 } // Feel
-
 
 #endif /* __VectorUblas_H */

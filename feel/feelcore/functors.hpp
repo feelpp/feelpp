@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2014-06-11
  */
-#if !defined(FEELPP_CORE_FUNCTORS_HPP)
+#if !defined( FEELPP_CORE_FUNCTORS_HPP )
 #define FEELPP_CORE_FUNCTORS_HPP 1
 
 #include <vector>
@@ -35,17 +35,17 @@ namespace Feel
 {
 namespace Functor
 {
-template<typename T, typename C>
-static inline void AvgMinMax(const T* const in, T* const inout, const int* const len, C* type)
+template <typename T, typename C>
+static inline void AvgMinMax( const T* const in, T* const inout, const int* const len, C* type )
 {
-    for(int i = 0; i < *len; i += 3) {
+    for ( int i = 0; i < *len; i += 3 )
+    {
         inout[0 + 3 * i] += in[0 + 3 * i];
-        inout[1 + 3 * i] = std::min(in[1 + 3 * i], inout[1 + 3 * i]);
-        inout[2 + 3 * i] = std::max(in[2 + 3 * i], inout[2 + 3 * i]);
+        inout[1 + 3 * i] = std::min( in[1 + 3 * i], inout[1 + 3 * i] );
+        inout[2 + 3 * i] = std::max( in[2 + 3 * i], inout[2 + 3 * i] );
     }
 }
 } // Functor
 } // Feel
-
 
 #endif /* FEELPP_FUNCTORS_HPP */

@@ -30,9 +30,10 @@
 
 #include <feel/feelvf/ginac.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
-namespace pt =  boost::property_tree;
+namespace pt = boost::property_tree;
 
 struct ModelParameter
 {
@@ -40,25 +41,24 @@ struct ModelParameter
     ModelParameter( ModelParameter const& ) = default;
     ModelParameter( ModelParameter&& ) = default;
     ModelParameter& operator=( ModelParameter const& ) = default;
-    ModelParameter& operator=( ModelParameter && ) = default;
+    ModelParameter& operator=( ModelParameter&& ) = default;
     ModelParameter( std::string const& name, double value, double min = 0., double max = 0. )
-        :
-        M_name( name ),
-        M_value( value ),
-        M_min( min ),
-        M_max( max )
-        {}
+        : M_name( name ),
+          M_value( value ),
+          M_min( min ),
+          M_max( max )
+    {
+    }
     ModelParameter( std::string const& name, std::string const& expression,
                     std::string const& dirLibExpr = "", WorldComm const& world = Environment::worldComm() )
-        :
-        M_name( name ),
-        M_value( 0. ),
-        M_min( 0. ),
-        M_max( 0. ),
-        M_expr( expr<2>( expression,"",world,dirLibExpr ) )
-        {
-            M_value = M_expr->evaluate();
-        }
+        : M_name( name ),
+          M_value( 0. ),
+          M_min( 0. ),
+          M_max( 0. ),
+          M_expr( expr<2>( expression, "", world, dirLibExpr ) )
+    {
+        M_value = M_expr->evaluate();
+    }
     std::string const& name() const { return M_name; }
     void setName( std::string const& name ) { M_name = name; }
 
@@ -70,24 +70,27 @@ struct ModelParameter
     void setMax( double v ) { M_max = v; }
 
     bool hasExpression() const { return M_expr.get_ptr() != 0; } //M_expr != boost::none; }
-    void setParameterValues( std::map<std::string,double> const& mp )
-        {
-            if ( !this->hasExpression() )
-                return;
-            M_expr->setParameterValues( mp );
-            M_value = M_expr->evaluate();
-        }
-    scalar_field_expression<2> const& expression() const { CHECK( this->hasExpression() ) << "no expression defined"; return *M_expr; }
+    void setParameterValues( std::map<std::string, double> const& mp )
+    {
+        if ( !this->hasExpression() )
+            return;
+        M_expr->setParameterValues( mp );
+        M_value = M_expr->evaluate();
+    }
+    scalar_field_expression<2> const& expression() const
+    {
+        CHECK( this->hasExpression() ) << "no expression defined";
+        return *M_expr;
+    }
 
-private:
+  private:
     std::string M_name;
     double M_value, M_min, M_max;
     boost::optional<scalar_field_expression<2>> M_expr;
-
 };
-class ModelParameters: public std::map<std::string,ModelParameter>
+class ModelParameters : public std::map<std::string, ModelParameter>
 {
-public:
+  public:
     ModelParameters( WorldComm const& world = Environment::worldComm() );
     ModelParameters( pt::ptree const& p, WorldComm const& world = Environment::worldComm() );
     ModelParameters( ModelParameters const& ) = default;
@@ -96,18 +99,18 @@ public:
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
 
     void updateParameterValues();
-    void setParameterValues( std::map<std::string,double> const& mp );
-    std::map<std::string,double> toParameterValues() const;
+    void setParameterValues( std::map<std::string, double> const& mp );
+    std::map<std::string, double> toParameterValues() const;
 
-   void saveMD(std::ostream &os);
-private:
+    void saveMD( std::ostream& os );
+
+  private:
     void setup();
-private:
+
+  private:
     WorldComm const& M_worldComm;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
 };
-
-
 }
 #endif

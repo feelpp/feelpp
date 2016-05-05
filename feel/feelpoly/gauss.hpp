@@ -33,7 +33,8 @@
 
 namespace Feel
 {
-template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
+template <int Dim, int Order, int RealDim, template <uint16_type, uint16_type, uint16_type> class Entity, typename T>
+struct GT_Lagrange;
 
 /*!
  * \class Gauss
@@ -49,16 +50,18 @@ template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint1
  * @author Gilles Steiner
  * @author Christophe Prud'homme
  */
-template<class Convex, uint16_type Integration_Degree, typename T>
-class Gauss : public PointSetQuadrature<Convex, Integration_Degree, T>  {};
-
-template< uint16_type Integration_Degree, typename T>
-class Gauss<Simplex<0,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<0,1> , Integration_Degree, T>
+template <class Convex, uint16_type Integration_Degree, typename T>
+class Gauss : public PointSetQuadrature<Convex, Integration_Degree, T>
 {
-public :
+};
+
+template <uint16_type Integration_Degree, typename T>
+class Gauss<Simplex<0, 1>, Integration_Degree, T> : public PointSetQuadrature<Simplex<0, 1>, Integration_Degree, T>
+{
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<0,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<0, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -68,10 +71,8 @@ public :
     static const uint32_type Npoints = 1;
 
     Gauss()
-        :
-        super( Npoints )
+        : super( Npoints )
     {
-
     }
 
     ~Gauss() {}
@@ -80,38 +81,35 @@ public :
 };
 
 /// \cond detail
-template< uint16_type Integration_Degree, typename T>
-class Gauss<Simplex<1,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<1,1> , Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class Gauss<Simplex<1, 1>, Integration_Degree, T> : public PointSetQuadrature<Simplex<1, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<1,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<1, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
+    static const uint16_type Degree = ( Integration_Degree + 1 ) / 2 + 1;
     static const uint32_type Npoints = Degree;
 
-    typedef Gauss<Simplex<0,1>,Integration_Degree, T> face_quad_type;
+    typedef Gauss<Simplex<0, 1>, Integration_Degree, T> face_quad_type;
 
     Gauss()
-        :
-        super( Npoints )
+        : super( Npoints )
     {
         ublas::vector<T> px( Npoints );
 
-        details::gaussjacobi<Npoints, T, ublas::vector<T>, ublas::vector<T> >( this->M_w, px );
+        details::gaussjacobi<Npoints, T, ublas::vector<T>, ublas::vector<T>>( this->M_w, px );
         ublas::row( this->M_points, 0 ) = px;
 
-        boost::shared_ptr<GT_Lagrange<1,1,1,Simplex,T> > gm( new GT_Lagrange<1, 1, 1, Simplex, T> );
+        boost::shared_ptr<GT_Lagrange<1, 1, 1, Simplex, T>> gm( new GT_Lagrange<1, 1, 1, Simplex, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Simplex<1, 1>, 1, 1>(), gm, face_qr );
-
-
     }
 
     ~Gauss() {}
@@ -121,39 +119,37 @@ public :
 
 /** Gauss Quadrature on a triangle **/
 
-template< uint16_type Integration_Degree, typename T>
-class Gauss<Simplex<2,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<2,1> , Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class Gauss<Simplex<2, 1>, Integration_Degree, T> : public PointSetQuadrature<Simplex<2, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<2,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<2, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
 
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    typedef Gauss<Simplex<1,1>,Integration_Degree, T> face_quad_type;
+    typedef Gauss<Simplex<1, 1>, Integration_Degree, T> face_quad_type;
 
-
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    static const uint32_type Npoints = Degree*Degree;
+    static const uint16_type Degree = ( Integration_Degree + 1 ) / 2 + 1;
+    static const uint32_type Npoints = Degree * Degree;
 
     Gauss()
-        :
-        super( Npoints )
+        : super( Npoints )
     {
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        details::gaussjacobi<Degree, T, ublas::vector<T>, ublas::vector<T>>( wx, px, 0.0, 0.0 );
 
         weights_type wy( Degree );
         weights_type py( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wy, py, 1.0, 0.0 );
+        details::gaussjacobi<Degree, T, ublas::vector<T>, ublas::vector<T>>( wy, py, 1.0, 0.0 );
 
-        // coordinate in cartesian space
+// coordinate in cartesian space
 
 #if 0
         std::cout<<"[Debug quadpoint] Npoints = " << Npoints << std::endl ;
@@ -164,7 +160,7 @@ public :
         node_type eta( 2 );
         details::xi<TRIANGLE, value_type> to_xi;
 
-        for ( int i = 0,  k = 0; i < Degree; ++i )
+        for ( int i = 0, k = 0; i < Degree; ++i )
         {
             for ( int j = 0; j < Degree; ++j, ++k )
             {
@@ -186,11 +182,10 @@ public :
             }
         }
 
-        boost::shared_ptr<GT_Lagrange<2,1,2,Simplex,T> > gm( new GT_Lagrange<2, 1, 2, Simplex, T> );
+        boost::shared_ptr<GT_Lagrange<2, 1, 2, Simplex, T>> gm( new GT_Lagrange<2, 1, 2, Simplex, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Simplex<2, 1>, 2, 1>(), gm, face_qr );
-
     }
 
     ~Gauss() {}
@@ -198,50 +193,47 @@ public :
     FEELPP_DEFINE_VISITABLE();
 };
 
-
 /** Gauss Quadrature on a tetrahedra **/
 
-template< uint16_type Integration_Degree, typename T>
-class Gauss<Simplex<3,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<3,1> , Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class Gauss<Simplex<3, 1>, Integration_Degree, T> : public PointSetQuadrature<Simplex<3, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<3,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<3, 1>, Integration_Degree, T> super;
 
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    typedef Gauss<Simplex<2,1>,Integration_Degree, T> face_quad_type;
+    typedef Gauss<Simplex<2, 1>, Integration_Degree, T> face_quad_type;
 
-
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    static const uint32_type Npoints = Degree*Degree*Degree;
+    static const uint16_type Degree = ( Integration_Degree + 1 ) / 2 + 1;
+    static const uint32_type Npoints = Degree * Degree * Degree;
 
     Gauss()
-        :
-        super( Npoints )
+        : super( Npoints )
     {
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        details::gaussjacobi<Degree, T, ublas::vector<T>, ublas::vector<T>>( wx, px, 0.0, 0.0 );
 
         weights_type wy( Degree );
         weights_type py( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wy, py, 1.0, 0.0 );
+        details::gaussjacobi<Degree, T, ublas::vector<T>, ublas::vector<T>>( wy, py, 1.0, 0.0 );
 
         weights_type wz( Degree );
         weights_type pz( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wz, pz, 2.0, 0.0 );
+        details::gaussjacobi<Degree, T, ublas::vector<T>, ublas::vector<T>>( wz, pz, 2.0, 0.0 );
 
         // coordinate in cartesian space
         node_type eta( 3 );
         details::xi<TETRAHEDRON, value_type> to_xi;
 
-        for ( int i = 0,  k = 0; i < Degree; ++i )
+        for ( int i = 0, k = 0; i < Degree; ++i )
         {
             for ( int j = 0; j < Degree; ++j )
             {
@@ -259,10 +251,10 @@ public :
             }
         }
 
-        boost::shared_ptr<GT_Lagrange<3, 1, 3, Simplex, T> > gm( new GT_Lagrange<3, 1, 3, Simplex, T> );
+        boost::shared_ptr<GT_Lagrange<3, 1, 3, Simplex, T>> gm( new GT_Lagrange<3, 1, 3, Simplex, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
-        this->constructQROnFace( Reference<Simplex<3, 1>,3,1>(), gm, face_qr );
+        this->constructQROnFace( Reference<Simplex<3, 1>, 3, 1>(), gm, face_qr );
     }
 
     ~Gauss() {}
@@ -272,33 +264,31 @@ public :
 
 /** Gauss Quadrature on Simplex Product **/
 
-template< uint16_type Integration_Degree, typename T>
-class Gauss<Hypercube<1,1>, Integration_Degree ,T >
-    :
-public PointSetQuadrature<Hypercube<1,1>, Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class Gauss<Hypercube<1, 1>, Integration_Degree, T>
+    : public PointSetQuadrature<Hypercube<1, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<1,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<1, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
+    static const uint16_type Degree = ( Integration_Degree + 1 ) / 2 + 1;
     static const uint32_type Npoints = Degree;
 
-    typedef Gauss<Simplex<0,1>,Integration_Degree, T> face_quad_type;
+    typedef Gauss<Simplex<0, 1>, Integration_Degree, T> face_quad_type;
 
-    Gauss(  )
-        :
-        super( Npoints )
+    Gauss()
+        : super( Npoints )
     {
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        details::gaussjacobi<Degree, T, ublas::vector<T>, ublas::vector<T>>( wx, px, 0.0, 0.0 );
 #if 0
         VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
         VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
@@ -311,18 +301,15 @@ public :
             this->M_points( 0, i ) = px( i );
         }
 
-
 #if 0
         VLOG(1) << "[gauss<SP<2,1>] p = " << this->M_points << "\n";
         VLOG(1) << "[gauss<SP<2,1>] w = " << this->M_w << "\n";
 #endif
 
-
-        boost::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
+        boost::shared_ptr<GT_Lagrange<1, 1, 1, Hypercube, T>> gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<1, 1>, 1, 1>(), gm, face_qr );
-
     }
 
     ~Gauss() {}
@@ -331,39 +318,37 @@ public :
 };
 /** Gauss Quadrature on the quadrangle [-1,1]x[-1,1] **/
 
-template< uint16_type Integration_Degree, typename T>
-class Gauss<Hypercube<2,1>, Integration_Degree ,T >
-    :
-public PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class Gauss<Hypercube<2, 1>, Integration_Degree, T>
+    : public PointSetQuadrature<Hypercube<2, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<2, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    typedef Gauss<Hypercube<1,1>,Integration_Degree, T> face_quad_type;
+    typedef Gauss<Hypercube<1, 1>, Integration_Degree, T> face_quad_type;
 
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    static const uint32_type Npoints = Degree*Degree;
+    static const uint16_type Degree = ( Integration_Degree + 1 ) / 2 + 1;
+    static const uint32_type Npoints = Degree * Degree;
 
     Gauss()
-        :
-        super( Npoints )
+        : super( Npoints )
     {
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        details::gaussjacobi<Degree, T, ublas::vector<T>, ublas::vector<T>>( wx, px, 0.0, 0.0 );
 #if 0
         VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
         VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
 #endif
 
-        for ( int i = 0,  k = 0; i < Degree; ++i )
+        for ( int i = 0, k = 0; i < Degree; ++i )
         {
             for ( int j = 0; j < Degree; ++j, ++k )
             {
@@ -378,11 +363,10 @@ public :
         VLOG(1) << "[gauss<SP<2,1>] p = " << this->M_points << "\n";
         VLOG(1) << "[gauss<SP<2,1>] w = " << this->M_w << "\n";
 #endif
-        boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
+        boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T>> gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
-        this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );
-
+        this->constructQROnFace( Reference<Hypercube<2, 1>, 2, 1>(), gm, face_qr );
     }
 
     ~Gauss() {}
@@ -392,37 +376,35 @@ public :
 
 /** Gauss Quadrature on the hexahedra [-1,1]x[-1,1]x[-1,1] **/
 
-template< uint16_type Integration_Degree, typename T>
-class Gauss<Hypercube<3,1>, Integration_Degree ,T >
-    :
-public PointSetQuadrature<Hypercube<3,1>, Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class Gauss<Hypercube<3, 1>, Integration_Degree, T>
+    : public PointSetQuadrature<Hypercube<3, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<3,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<3, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
-    typedef Gauss<Hypercube<2,1>,Integration_Degree, T> face_quad_type;
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    static const uint32_type Npoints = Degree*Degree*Degree;
+    typedef Gauss<Hypercube<2, 1>, Integration_Degree, T> face_quad_type;
+    static const uint16_type Degree = ( Integration_Degree + 1 ) / 2 + 1;
+    static const uint32_type Npoints = Degree * Degree * Degree;
 
     Gauss()
-        :
-        super( Npoints )
+        : super( Npoints )
     {
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        details::gaussjacobi<Degree, T, ublas::vector<T>, ublas::vector<T>>( wx, px, 0.0, 0.0 );
 
-        for ( int i = 0,  k = 0; i < Degree; ++i )
+        for ( int i = 0, k = 0; i < Degree; ++i )
         {
             for ( int j = 0; j < Degree; ++j )
             {
-                for ( int l = 0; l < Degree ; ++l, ++k )
+                for ( int l = 0; l < Degree; ++l, ++k )
                 {
                     // computes the weight of the k-th node
                     this->M_w( k ) = wx( i ) * wx( j ) * wx( l );
@@ -433,11 +415,10 @@ public :
             }
         }
 
-        boost::shared_ptr<GT_Lagrange<3, 1, 3, Hypercube, T> > gm( new GT_Lagrange<3, 1, 3, Hypercube, T> );
+        boost::shared_ptr<GT_Lagrange<3, 1, 3, Hypercube, T>> gm( new GT_Lagrange<3, 1, 3, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
-        this->constructQROnFace( Reference<Hypercube<3, 1>,3,1>(), gm, face_qr );
-
+        this->constructQROnFace( Reference<Hypercube<3, 1>, 3, 1>(), gm, face_qr );
     }
 
     ~Gauss() {}
@@ -445,40 +426,37 @@ public :
     FEELPP_DEFINE_VISITABLE();
 };
 
-
-template< uint16_type Integration_Degree, typename T>
-class Gauss<Hypercube<4,1>, Integration_Degree ,T >
-    :
-public PointSetQuadrature<Hypercube<4,1>, Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class Gauss<Hypercube<4, 1>, Integration_Degree, T>
+    : public PointSetQuadrature<Hypercube<4, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<4,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<4, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    static const uint32_type Npoints = Degree*Degree*Degree*Degree;
+    static const uint16_type Degree = ( Integration_Degree + 1 ) / 2 + 1;
+    static const uint32_type Npoints = Degree * Degree * Degree * Degree;
 
     Gauss()
-        :
-        super( Npoints )
+        : super( Npoints )
     {
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        details::gaussjacobi<Degree, T, ublas::vector<T>, ublas::vector<T>>( wx, px, 0.0, 0.0 );
 
-        for ( int i = 0,  k = 0; i < Degree; ++i )
+        for ( int i = 0, k = 0; i < Degree; ++i )
         {
             for ( int j = 0; j < Degree; ++j )
             {
-                for ( int l = 0; l < Degree ; ++l )
+                for ( int l = 0; l < Degree; ++l )
                 {
-                    for ( int r = 0; r < Degree ; ++r, ++k )
+                    for ( int r = 0; r < Degree; ++r, ++k )
                     {
                         // computes the weight of the k-th node
                         this->M_w( k ) = wx( i ) * wx( j ) * wx( l ) * wx( r );
@@ -497,45 +475,42 @@ public :
     FEELPP_DEFINE_VISITABLE();
 };
 
-
-template< uint16_type Integration_Degree, typename T>
-class Gauss<Hypercube<5,1>, Integration_Degree ,T >
-    :
-public PointSetQuadrature<Hypercube<5,1>, Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class Gauss<Hypercube<5, 1>, Integration_Degree, T>
+    : public PointSetQuadrature<Hypercube<5, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<5,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<5, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    static const uint32_type Npoints = Degree*Degree*Degree*Degree*Degree;
+    static const uint16_type Degree = ( Integration_Degree + 1 ) / 2 + 1;
+    static const uint32_type Npoints = Degree * Degree * Degree * Degree * Degree;
 
     Gauss()
-        :
-        super( Npoints )
+        : super( Npoints )
     {
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        details::gaussjacobi<Degree, T, ublas::vector<T>, ublas::vector<T>>( wx, px, 0.0, 0.0 );
 
-        for ( int i = 0,  k = 0; i < Degree; ++i )
+        for ( int i = 0, k = 0; i < Degree; ++i )
         {
             for ( int j = 0; j < Degree; ++j )
             {
-                for ( int l = 0; l < Degree ; ++l )
+                for ( int l = 0; l < Degree; ++l )
                 {
-                    for ( int r = 0; r < Degree ; ++r )
+                    for ( int r = 0; r < Degree; ++r )
                     {
-                        for ( int s = 0; s < Degree ; ++s, ++k )
+                        for ( int s = 0; s < Degree; ++s, ++k )
                         {
                             // computes the weight of the k-th node
-                            this->M_w( k ) = wx( i ) * wx( j ) * wx( l ) * wx( r ) * wx ( s );
+                            this->M_w( k ) = wx( i ) * wx( j ) * wx( l ) * wx( r ) * wx( s );
                             this->M_points( 0, k ) = px( i );
                             this->M_points( 1, k ) = px( j );
                             this->M_points( 2, k ) = px( l );

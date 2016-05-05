@@ -29,7 +29,7 @@
 #ifndef _COMPAT_MPI_H
 #define _COMPAT_MPI_H
 
-#if defined(OPEN_MPI)
+#if defined( OPEN_MPI )
 
 #ifndef OPENMPI_DLOPEN_LIBMPI
 #define OPENMPI_DLOPEN_LIBMPI 1
@@ -41,33 +41,33 @@
 #if FEELPP_HAS_DLFCN_H
 #include <dlfcn.h>
 #else
-#if defined(__CYGWIN__)
-#define RTLD_LAZY     1
-#define RTLD_NOW      2
-#define RTLD_LOCAL    0
-#define RTLD_GLOBAL   4
-#define RTLD_NOLOAD   0
+#if defined( __CYGWIN__ )
+#define RTLD_LAZY 1
+#define RTLD_NOW 2
+#define RTLD_LOCAL 0
+#define RTLD_GLOBAL 4
+#define RTLD_NOLOAD 0
 #define RTLD_NODELETE 0
-#elif defined(__APPLE__)
-#define RTLD_LAZY     0x1
-#define RTLD_NOW      0x2
-#define RTLD_LOCAL    0x4
-#define RTLD_GLOBAL   0x8
-#define RTLD_NOLOAD   0x10
+#elif defined( __APPLE__ )
+#define RTLD_LAZY 0x1
+#define RTLD_NOW 0x2
+#define RTLD_LOCAL 0x4
+#define RTLD_GLOBAL 0x8
+#define RTLD_NOLOAD 0x10
 #define RTLD_NODELETE 0x80
-#elif defined(__linux__)
-#define RTLD_LAZY     0x00001
-#define RTLD_NOW      0x00002
-#define RTLD_LOCAL    0x00000
-#define RTLD_GLOBAL   0x00100
-#define RTLD_NOLOAD   0x00004
+#elif defined( __linux__ )
+#define RTLD_LAZY 0x00001
+#define RTLD_NOW 0x00002
+#define RTLD_LOCAL 0x00000
+#define RTLD_GLOBAL 0x00100
+#define RTLD_NOLOAD 0x00004
 #define RTLD_NODELETE 0x01000
 #endif
-#if defined(c_plusplus) || defined(__cplusplus)
+#if defined( c_plusplus ) || defined( __cplusplus )
 extern "C" {
 #endif
-    extern void *dlopen( const char *, int );
-#if defined(c_plusplus) || defined(__cplusplus)
+extern void* dlopen( const char*, int );
+#if defined( c_plusplus ) || defined( __cplusplus )
 }
 #endif
 #endif
@@ -118,8 +118,8 @@ static void * my_dlopen(const char *name, int mode) {
 static void OPENMPI_dlopen_libmpi( void )
 {
     int mode = RTLD_NOW | RTLD_GLOBAL | RTLD_NOLOAD;
-    void *handle = 0;
-#if defined(__CYGWIN__)
+    void* handle = 0;
+#if defined( __CYGWIN__ )
 
     if ( !handle )
         handle = dlopen( "cygmpi.dll", mode );
@@ -127,7 +127,7 @@ static void OPENMPI_dlopen_libmpi( void )
     if ( !handle )
         handle = dlopen( "mpi.dll", mode );
 
-#elif defined(__APPLE__)
+#elif defined( __APPLE__ )
 
     /* Mac OS X */
     if ( !handle )
@@ -162,7 +162,7 @@ PyPetsc_PetscInitialize( int *argc,char ***args,
     OPENMPI_dlopen_libmpi();
     return PetscInitialize( argc,args,file,help );
 }
-#undef  PetscInitialize
+#undef PetscInitialize
 #define PetscInitialize PyPetsc_PetscInitialize
 #endif
 

@@ -27,7 +27,6 @@
 #ifndef FEELPP_INFO_HPP
 #define FEELPP_INFO_HPP 1
 
-
 /**
  * Namespace for general FEEL functions.
  */
@@ -41,11 +40,11 @@ namespace Feel
  */
 class Info
 {
-public:
+  public:
     Info() = delete;
     Info( Info const& ) = delete;
     Info& operator=( Info const& ) = delete;
-    
+
     /**
      * Build id is the Feel compilation date/time (e.g 2005/12/07 - 18:18:09)
      *
@@ -58,7 +57,7 @@ public:
     /**
      * Revision number (Subversion revision).
      */
-    static char const*  revision();
+    static char const* revision();
 
     /**
      * Returns the encoded number of FEEL's version, see the FEELPP_VERSION macro.
@@ -124,4 +123,3 @@ public:
 } // Feel
 
 #endif
-

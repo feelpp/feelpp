@@ -34,8 +34,8 @@
 #include <stdexcept>
 #include <string>
 
-#include <boost/function.hpp>
 #include <boost/bind.hpp>
+#include <boost/function.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/typeinfo.hpp>
@@ -46,27 +46,24 @@ namespace Feel
   Manages the "Unknown Type" error in an object Factory.
 */
 template <
-typename IdentifierType,
-         class AbstractProduct
-         >
+    typename IdentifierType,
+    class AbstractProduct>
 struct FactoryDefaultError
 {
     class Exception
-        :
-    public std::exception
+        : public std::exception
     {
-    public:
+      public:
         Exception( IdentifierType id )
-            :
-            std::exception(),
-            M_ex()
+            : std::exception(),
+              M_ex()
         {
             M_ex = this->getEx( id );
-
         }
         ~Exception() throw()
-        {}
-        const char* what() const throw ()
+        {
+        }
+        const char* what() const throw()
         {
             return M_ex.c_str();
         }
@@ -76,14 +73,15 @@ struct FactoryDefaultError
             __ex_str << "[Factory] Unknown Type : " << id;
             return __ex_str.str();
         }
-        template<typename T>
+        template <typename T>
         std::string getEx( T const& id )
         {
             std::ostringstream __ex_str;
             __ex_str << "[Factory] Unknown Type : ";
             return __ex_str.str();
         }
-    private:
+
+      private:
         std::string M_ex;
     };
 
@@ -102,20 +100,15 @@ struct FactoryDefaultError
 
   @author Christophe Prud'homme
 */
-template
-<
-class AbstractProduct,
-      typename IdentifierType,
-      typename ProductCreator = boost::function<AbstractProduct*()>,
-      template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
-      >
+template <
+    class AbstractProduct,
+    typename IdentifierType,
+    typename ProductCreator = boost::function<AbstractProduct*()>,
+    template <typename, class> class FactoryErrorPolicy = FactoryDefaultError>
 class Factory
-    :
-public FactoryErrorPolicy<IdentifierType,AbstractProduct>
+    : public FactoryErrorPolicy<IdentifierType, AbstractProduct>
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -123,10 +116,9 @@ public:
     typedef AbstractProduct product_type;
     typedef ProductCreator creator_type;
 
-    typedef FactoryErrorPolicy<identifier_type,product_type> super;
+    typedef FactoryErrorPolicy<identifier_type, product_type> super;
 
     //@}
-
 
     /** @name  Methods
      */
@@ -147,7 +139,7 @@ public:
      */
     bool registerProduct( const identifier_type& id, creator_type creator )
     {
-        DVLOG(2) << "Registered type with id : " << id << "\n";
+        DVLOG( 2 ) << "Registered type with id : " << id << "\n";
         return M_associations.insert( typename id_to_product_type::value_type( id, creator ) ).second;
     }
 
@@ -160,7 +152,7 @@ public:
      */
     bool unregisterProduct( const identifier_type& id )
     {
-        DVLOG(2) << "Unregistered type with id : " << id << "\n";
+        DVLOG( 2 ) << "Unregistered type with id : " << id << "\n";
         return M_associations.erase( id ) == 1;
     }
 
@@ -178,21 +170,18 @@ public:
 
         if ( i != M_associations.end() )
         {
-            DVLOG(2) << "Creating type with id : " << id << "\n";
+            DVLOG( 2 ) << "Creating type with id : " << id << "\n";
             return ( i->second )();
         }
 
-        DVLOG(2) << "Unknown type with id : " << id << "\n";
+        DVLOG( 2 ) << "Unknown type with id : " << id << "\n";
         return super::onUnknownType( id );
     }
 
-
-
     //@}
-private:
+  private:
     typedef std::map<identifier_type, creator_type> id_to_product_type;
     id_to_product_type M_associations;
-
 };
 
 /*!
@@ -205,22 +194,18 @@ private:
   \author Christophe Prud'homme
 */
 template <
-class AbstractProduct,
-      class ProductCreator = boost::function<AbstractProduct* ( const AbstractProduct* )>,
-      template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
-      >
+    class AbstractProduct,
+    class ProductCreator = boost::function<AbstractProduct*( const AbstractProduct* )>,
+    template <typename, class> class FactoryErrorPolicy = FactoryDefaultError>
 class FactoryClone
-    :
-public FactoryErrorPolicy<TypeInfo, AbstractProduct>
+    : public FactoryErrorPolicy<TypeInfo, AbstractProduct>
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
 
-    typedef FactoryErrorPolicy<TypeInfo,AbstractProduct> super;
+    typedef FactoryErrorPolicy<TypeInfo, AbstractProduct> super;
 
     //@}
 
@@ -234,20 +219,17 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -281,11 +263,9 @@ public:
 
     //@}
 
-private:
+  private:
     typedef std::map<TypeInfo, ProductCreator> id_to_product_type;
     id_to_product_type M_associations;
 };
-
-
 }
 #endif /* __Factory_H */

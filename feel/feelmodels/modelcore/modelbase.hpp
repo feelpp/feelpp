@@ -30,25 +30,23 @@
 #ifndef FEELPP_MODELBASE_HPP
 #define FEELPP_MODELBASE_HPP 1
 
-#include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/pslogger.hpp>
 #include <feel/feelcore/worldcomm.hpp>
+#include <feel/options.hpp>
 
 #include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
 #include <feel/feelmodels/modelcore/log.hpp>
 #include <feel/feelmodels/modelcore/timertool.hpp>
-
 
 namespace Feel
 {
 namespace FeelModels
 {
 
-
 class ModelBase
 {
-public :
+  public:
     ModelBase( std::string const& prefix,
                WorldComm const& worldComm = Environment::worldComm(),
                std::string const& subPrefix = "",
@@ -60,9 +58,9 @@ public :
     // worldcomm
     WorldComm const& worldComm() const;
     std::vector<WorldComm> const& worldsComm() const;
-    void setWorldsComm(std::vector<WorldComm> const& _worldsComm);
+    void setWorldsComm( std::vector<WorldComm> const& _worldsComm );
     std::vector<WorldComm> const& localNonCompositeWorldsComm() const;
-    void setLocalNonCompositeWorldsComm(std::vector<WorldComm> const& _worldsComm);
+    void setLocalNonCompositeWorldsComm( std::vector<WorldComm> const& _worldsComm );
     virtual void createWorldsComm();
     // prefix
     std::string const& prefix() const;
@@ -78,27 +76,27 @@ public :
     // verbose
     bool verbose() const;
     bool verboseAllProc() const;
-    void log( std::string const& _className,std::string const& _functionName,std::string const& _msg ) const;
+    void log( std::string const& _className, std::string const& _functionName, std::string const& _msg ) const;
     // info
     std::string filenameSaveInfo() const;
-    void setFilenameSaveInfo(std::string const& s);
+    void setFilenameSaveInfo( std::string const& s );
     virtual boost::shared_ptr<std::ostringstream> getInfo() const;
     virtual void printInfo() const;
     virtual void saveInfo() const;
     virtual void printAndSaveInfo() const;
     // timer
-    TimerToolBase & timerTool( std::string const& s ) const;
+    TimerToolBase& timerTool( std::string const& s ) const;
     void addTimerTool( std::string const& s, std::string const& fileName ) const;
     // save assembly/solver scalability
     bool scalabilitySave() const;
     bool scalabilityReinitSaveFile() const;
     void setScalabilitySave( bool b );
     std::string scalabilityPath() const;
-    void setScalabilityPath(std::string const& s);
+    void setScalabilityPath( std::string const& s );
     std::string scalabilityFilename() const;
-    void setScalabilityFilename(std::string const& s);
+    void setScalabilityFilename( std::string const& s );
 
-private :
+  private:
     // worldcomm
     WorldComm M_worldComm;
     std::vector<WorldComm> M_worldsComm;
@@ -109,11 +107,11 @@ private :
     // short repository name
     std::string M_rootRepositoryWithNumProc, M_rootRepositoryWithoutNumProc;
     // verbose
-    bool M_verbose,M_verboseAllProc;
+    bool M_verbose, M_verboseAllProc;
     // filename for save info
     std::string M_filenameSaveInfo;
     // timertool register by a name id
-    mutable std::map<std::string,std::shared_ptr<TimerToolBase> > M_mapTimerTool;
+    mutable std::map<std::string, std::shared_ptr<TimerToolBase>> M_mapTimerTool;
     bool M_timersActivated;
     bool M_timersSaveFileMasterRank, M_timersSaveFileMax, M_timersSaveFileMin, M_timersSaveFileMean, M_timersSaveFileAll;
     // save assembly/solver scalability
@@ -128,9 +126,7 @@ struct ModelBaseNull
     static const bool is_class_null = true;
 };
 
-
 } // namespace FeelModels
 } // namespace feel
-
 
 #endif //endif FEELPP_MODELBASE_HPP

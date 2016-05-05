@@ -30,7 +30,7 @@
 #if !defined( __FEELPP_VF_OPERATORS2_HPP )
 #define __FEELPP_VF_OPERATORS2_HPP 1
 
-# include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/stringize.hpp>
 
 namespace Feel
 {
@@ -40,11 +40,10 @@ namespace vf
 template <class Element1, class Element2>
 class OpMass
 {
-public:
-
+  public:
     static const size_type context = vm::JACOBIAN;
 
-    static const uint16_type imorder = Element1::functionspace_type::basis_type::nOrder+Element2::functionspace_type::basis_type::nOrder;
+    static const uint16_type imorder = Element1::functionspace_type::basis_type::nOrder + Element2::functionspace_type::basis_type::nOrder;
     static const bool imIsPoly = true;
 
     typedef Element1 test_element_type;
@@ -54,32 +53,28 @@ public:
 
     typedef typename test_element_type::return_value_type return_value_type;
     typedef typename strongest_numeric_type<typename test_element_type::value_type,
-            typename trial_element_type::value_type>::type value_type;
+                                            typename trial_element_type::value_type>::type value_type;
 
     typedef ublas::matrix<value_type> matrix_type;
 
-    OpMass ( test_element_type const& v,
-             trial_element_type const& u )
-        :
-        M_v ( v ),
-        M_u ( u ),
-        M_exact_mass( M_v.functionSpace()->basis()->coeff() )
+    OpMass( test_element_type const& v,
+            trial_element_type const& u )
+        : M_v( v ),
+          M_u( u ),
+          M_exact_mass( M_v.functionSpace()->basis()->coeff() )
     {
-        DVLOG(2) << "[" BOOST_PP_STRINGIZE( OpMass ) "] default constructorn";
+        DVLOG( 2 ) << "[" BOOST_PP_STRINGIZE( OpMass ) "] default constructorn";
 
         M_exact_mass = ublas::prod( return_value_type::toMatrix( M_v.functionSpace()->basis()->coeff() ),
-                                     ublas::trans( return_value_type::toMatrix( M_v.functionSpace()->basis()->coeff() ) ) );
-
+                                    ublas::trans( return_value_type::toMatrix( M_v.functionSpace()->basis()->coeff() ) ) );
     }
     OpMass( OpMass const& op )
-        :
-        M_v ( op.M_v ),
-        M_u ( op.M_u ),
-        M_exact_mass( op.M_exact_mass )
-        //M_quad_mass() TO BE USED IF QUADRATURE IS NEEDED (transformation order >= 2)
+        : M_v( op.M_v ),
+          M_u( op.M_u ),
+          M_exact_mass( op.M_exact_mass )
+    //M_quad_mass() TO BE USED IF QUADRATURE IS NEEDED (transformation order >= 2)
     {
-        DVLOG(2) << "[" BOOST_PP_STRINGIZE( OpMass ) "] copy constructorn";
-
+        DVLOG( 2 ) << "[" BOOST_PP_STRINGIZE( OpMass ) "] copy constructorn";
     }
 
     test_element_type const& testFunction() const
@@ -100,7 +95,7 @@ public:
         return M_exact_mass;
     }
 
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
+    template <typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
         typedef this_type expression_type;
@@ -116,16 +111,15 @@ public:
                 Geo_t const& /*geom*/,
                 Basis_i_t const& fev,
                 Basis_j_t const& feu )
-            :
-            M_mat( expr.exactMass() ),
-            M_fev( fev ),
-            M_feu( feu )
-        {}
+            : M_mat( expr.exactMass() ),
+              M_fev( fev ),
+              M_feu( feu )
+        {
+        }
 
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             // no need to update in case of exact integration
-
         }
 
         value_type
@@ -133,7 +127,6 @@ public:
         {
             return M_mat( i, j );
         }
-
 
         value_type
         operator()( uint16_type i, uint16_type j, int q ) const
@@ -148,8 +141,8 @@ public:
         matrix_type const& M_mat;
     };
 
-protected:
-    OpMass () {}
+  protected:
+    OpMass() {}
 
     test_element_type const& M_v;
     trial_element_type const& M_u;
@@ -160,11 +153,11 @@ protected:
  * \brief mass term
  */
 template <class Element1, class Element2>
-inline Expr< OpMass< Element1, Element2> >
+inline Expr<OpMass<Element1, Element2>>
 mass( Element1 const& el1, Element2 const& el2 )
 {
-    typedef OpMass< Element1, Element2> expr_t;
-    return Expr< expr_t >(  expr_t( el1, el2 ) );
+    typedef OpMass<Element1, Element2> expr_t;
+    return Expr<expr_t>( expr_t( el1, el2 ) );
 }
 
 } // vf

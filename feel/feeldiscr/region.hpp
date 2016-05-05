@@ -30,12 +30,12 @@
 #ifndef FEELPP_REGION_HPP
 #define FEELPP_REGION_HPP 1
 
-#include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
 
-#include <feel/feelpoly/lagrange.hpp>
-#include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feelpoly/lagrange.hpp>
 
 /**/
 namespace Feel
@@ -45,7 +45,7 @@ namespace lambda = boost::lambda;
  *
  * \ingroup SpaceTime
  */
-template<typename SpaceType, typename Expr>
+template <typename SpaceType, typename Expr>
 typename SpaceType::element_type
 region( boost::shared_ptr<SpaceType> const& space,
         Expr const& expr )
@@ -53,19 +53,19 @@ region( boost::shared_ptr<SpaceType> const& space,
     BOOST_STATIC_ASSERT( SpaceType::fe_type::nOrder == 0 );
     typedef typename SpaceType::element_type element_type;
     element_type v( space, "field" );
-    VLOG(1) << "[region] saving region with pid:\n";
+    VLOG( 1 ) << "[region] saving region with pid:\n";
     int pid = space->mesh()->comm().rank();
-    VLOG(1) << "[region] saving region with pid: " << pid << "\n";
+    VLOG( 1 ) << "[region] saving region with pid: " << pid << "\n";
     auto it = space->mesh()->beginElementWithProcessId( pid );
     auto en = space->mesh()->endElementWithProcessId( pid );
-    VLOG(1) << "[region] nb elements in region: " << std::distance( it, en ) << "\n";
+    VLOG( 1 ) << "[region] nb elements in region: " << std::distance( it, en ) << "\n";
     for ( ; it != en; ++it )
     {
-        size_type dof_id = boost::get<0>( space->dof()->localToGlobal( it->id(),0, 0 ) );
+        size_type dof_id = boost::get<0>( space->dof()->localToGlobal( it->id(), 0, 0 ) );
 
         if ( dof_id >= v.firstLocalIndex() &&
-                dof_id < v.lastLocalIndex() )
-            v ( dof_id ) = expr( *it );
+             dof_id < v.lastLocalIndex() )
+            v( dof_id ) = expr( *it );
     }
 
     return v;
@@ -79,7 +79,7 @@ struct Region
  *
  * \ingroup SpaceTime
  */
-template<typename SpaceType, typename Expr>
+template <typename SpaceType, typename Expr>
 typename SpaceType::element_type
 regionv( boost::shared_ptr<SpaceType> const& space,
          Expr const& expr )
@@ -94,11 +94,11 @@ regionv( boost::shared_ptr<SpaceType> const& space,
 
     for ( ; it != en; ++it )
     {
-        size_type dof_id = boost::get<0>( space->dof()->localToGlobal( it->id(),0, 0 ) );
+        size_type dof_id = boost::get<0>( space->dof()->localToGlobal( it->id(), 0, 0 ) );
 
         if ( dof_id >= v.firstLocalIndex() &&
-                dof_id < v.lastLocalIndex() )
-            v ( dof_id ) = expr( *it ).value();
+             dof_id < v.lastLocalIndex() )
+            v( dof_id ) = expr( *it ).value();
     }
 
     return v;
@@ -108,12 +108,11 @@ regionv( boost::shared_ptr<SpaceType> const& space,
  *
  * \ingroup SpaceTime
  */
-template<typename SpaceType>
+template <typename SpaceType>
 typename SpaceType::element_type
 regionProcess( boost::shared_ptr<SpaceType> const& space )
 {
     return region( space, lambda::bind( &SpaceType::mesh_type::element_type::processId, lambda::_1 ) );
-
 }
 
 /**
@@ -121,7 +120,7 @@ regionProcess( boost::shared_ptr<SpaceType> const& space )
  */
 struct RegionProcess : public Region
 {
-    template<typename SpaceType>
+    template <typename SpaceType>
     typename SpaceType::element_type
     apply( boost::shared_ptr<SpaceType> const& space )
     {
@@ -133,19 +132,18 @@ struct RegionProcess : public Region
  *
  * \ingroup SpaceTime
  */
-template<typename SpaceType>
+template <typename SpaceType>
 typename SpaceType::element_type
 regionMarker( boost::shared_ptr<SpaceType> const& space )
 {
     return region( space, lambda::bind( &SpaceType::mesh_type::element_type::marker, lambda::_1 ) );
-
 }
 /**
  * class for RegionMarker
  */
 struct RegionMarkre : public Region
 {
-    template<typename SpaceType>
+    template <typename SpaceType>
     typename SpaceType::element_type
     apply( boost::shared_ptr<SpaceType> const& space )
     {
@@ -157,12 +155,11 @@ struct RegionMarkre : public Region
  *
  * \ingroup SpaceTime
  */
-template<typename SpaceType>
+template <typename SpaceType>
 typename SpaceType::element_type
 regionMarker2( boost::shared_ptr<SpaceType> const& space )
 {
     return region( space, lambda::bind( &SpaceType::mesh_type::element_type::marker2, lambda::_1 ) );
-
 }
 
 /**
@@ -170,7 +167,7 @@ regionMarker2( boost::shared_ptr<SpaceType> const& space )
  */
 struct RegionMarker2 : public Region
 {
-    template<typename SpaceType>
+    template <typename SpaceType>
     typename SpaceType::element_type
     apply( boost::shared_ptr<SpaceType> const& space )
     {
@@ -182,12 +179,11 @@ struct RegionMarker2 : public Region
  *
  * \ingroup SpaceTime
  */
-template<typename SpaceType>
+template <typename SpaceType>
 typename SpaceType::element_type
 regionMarker3( boost::shared_ptr<SpaceType> const& space )
 {
     return region( space, lambda::bind( &SpaceType::mesh_type::element_type::marker3, lambda::_1 ) );
-
 }
 
 /**
@@ -195,7 +191,7 @@ regionMarker3( boost::shared_ptr<SpaceType> const& space )
  */
 struct RegionMarker3 : public Region
 {
-    template<typename SpaceType>
+    template <typename SpaceType>
     typename SpaceType::element_type
     apply( boost::shared_ptr<SpaceType> const& space )
     {

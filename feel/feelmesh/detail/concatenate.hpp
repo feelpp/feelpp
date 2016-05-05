@@ -30,42 +30,38 @@ namespace Feel
 namespace detail
 {
 
-
 /**
  * implementation for faces
  */
-template<typename ContainerType, typename IteratorType>
-void
-concatenate_entities( boost::shared_ptr<ContainerType>& elts, IteratorType it )
+template <typename ContainerType, typename IteratorType>
+void concatenate_entities( boost::shared_ptr<ContainerType>& elts, IteratorType it )
 {
     using face_t = filter_entity_t<IteratorType>;
-    auto append = [&elts]( face_t const& e ) { elts->push_back( boost::cref(e) ); };
+    auto append = [&elts]( face_t const& e ) { elts->push_back( boost::cref( e ) ); };
     std::for_each( begin( it ), end( it ), append );
 }
 
-template<typename ContainerType, typename IteratorType, typename ...Args>
-void
-concatenate_entities( boost::shared_ptr<ContainerType>& elts, IteratorType it, Args... args )
+template <typename ContainerType, typename IteratorType, typename... Args>
+void concatenate_entities( boost::shared_ptr<ContainerType>& elts, IteratorType it, Args... args )
 {
     using face_t = filter_entity_t<IteratorType>;
-    auto append = [&elts]( face_t const& e ) { elts->push_back( boost::cref(e) ); };
+    auto append = [&elts]( face_t const& e ) { elts->push_back( boost::cref( e ) ); };
     std::for_each( begin( it ), end( it ), append );
     concatenate_entities( elts, args... );
 }
 
-template<typename IteratorType, typename ...Args>
+template <typename IteratorType, typename... Args>
 using concatenate_impl_t = ext_entities_from_iterator_t<IteratorType>;
 
-
-template<typename IteratorType, typename ...Args>
+template <typename IteratorType, typename... Args>
 ext_entities_from_iterator_t<IteratorType>
 concatenate_impl( IteratorType it, Args... args )
 {
     using face_t = filter_entity_t<IteratorType>;
-    typedef std::vector<boost::reference_wrapper<face_t const> > cont_range_type;
+    typedef std::vector<boost::reference_wrapper<face_t const>> cont_range_type;
     boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
-    auto append = [&myelts]( face_t const& e ) { myelts->push_back( boost::cref(e) ); };
+    auto append = [&myelts]( face_t const& e ) { myelts->push_back( boost::cref( e ) ); };
     std::for_each( begin( it ), end( it ), append );
     concatenate_entities( myelts, args... );
     return boost::make_tuple( filter_enum_t<IteratorType>(),
@@ -75,6 +71,5 @@ concatenate_impl( IteratorType it, Args... args )
 }
 
 } // detail
-
 }
 #endif

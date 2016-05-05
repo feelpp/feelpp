@@ -33,28 +33,26 @@
 #include <Eigen/Eigen>
 #include <Eigen/StdVector>
 
-
 #include <set>
 
-#include <boost/smart_ptr/make_shared.hpp>
-#include <boost/parameter.hpp>
-#include <boost/fusion/support/pair.hpp>
+#include <boost/fusion/algorithm.hpp>
 #include <boost/fusion/container.hpp>
 #include <boost/fusion/sequence.hpp>
-#include <boost/fusion/algorithm.hpp>
+#include <boost/fusion/support/pair.hpp>
+#include <boost/parameter.hpp>
+#include <boost/smart_ptr/make_shared.hpp>
 //#include <boost/spirit/home/phoenix.hpp>
 //#include <boost/spirit/home/phoenix/core/argument.hpp>
-#include <feel/feelcore/context.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/matrixvalue.hpp>
 #include <feel/feelalg/vectorublas.hpp>
-#include <feel/feelalg/backend.hpp>
+#include <feel/feelcore/context.hpp>
 #include <feel/feeldiscr/stencil.hpp>
 
-#include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/block.hpp>
+#include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/fec.hpp>
 #include <feel/feelvf/formcontextbase.hpp>
-
 
 namespace Feel
 {
@@ -64,31 +62,31 @@ namespace vf
 {
 
 /// \cond detail
-template<typename FE1,typename FE2,typename ElemContType> class BilinearForm;
+template <typename FE1, typename FE2, typename ElemContType>
+class BilinearForm;
 namespace detail
 {
 
-
-template<typename BFType, typename ExprType>
+template <typename BFType, typename ExprType>
 struct BFAssign2
 {
     typedef typename BFType::matrix_type matrix_type;
     BFAssign2( BFAssign2 const& lfa )
-        :
-        M_bf( lfa.M_bf ),
-        M_expr( lfa.M_expr ),
-        M_test_index( lfa.M_test_index )
-    {}
+        : M_bf( lfa.M_bf ),
+          M_expr( lfa.M_expr ),
+          M_test_index( lfa.M_test_index )
+    {
+    }
     BFAssign2( BFType& lf, ExprType const& expr )
-        :
-        M_bf( lf ),
-        M_expr( expr ),
-        M_test_index( 0 )
-    {}
-    template<typename SpaceType>
+        : M_bf( lf ),
+          M_expr( expr ),
+          M_test_index( 0 )
+    {
+    }
+    template <typename SpaceType>
     void operator()( boost::shared_ptr<SpaceType> const& X ) const
     {
-        DVLOG(2) << "[BFAssign2::operator()] start loop on trial spaces against test space index: " << M_test_index << "\n";
+        DVLOG( 2 ) << "[BFAssign2::operator()] start loop on trial spaces against test space index: " << M_test_index << "\n";
 
         if ( M_bf.testSpace()->worldsComm()[M_test_index].isActive() )
         {
@@ -96,110 +94,111 @@ struct BFAssign2
                               make_bfassign1( M_bf, M_expr, X, M_test_index ) );
         }
 
-        DVLOG(2) << "[BFAssign2::operator()] stop loop on trial spaces against test space index: " << M_test_index << "\n";
+        DVLOG( 2 ) << "[BFAssign2::operator()] stop loop on trial spaces against test space index: " << M_test_index << "\n";
         ++M_test_index;
-
     }
-private:
+
+  private:
     BFType& M_bf;
     ExprType const& M_expr;
     mutable size_type M_test_index;
 };
-template<typename BFType, typename ExprType>
-BFAssign2<BFType,ExprType>
+template <typename BFType, typename ExprType>
+BFAssign2<BFType, ExprType>
 make_bfassign2( BFType& lf, ExprType const& expr )
 {
-    return BFAssign2<BFType,ExprType>( lf, expr );
+    return BFAssign2<BFType, ExprType>( lf, expr );
 }
 
-template<typename BFType, typename ExprType, typename TestSpaceType>
+template <typename BFType, typename ExprType, typename TestSpaceType>
 struct BFAssign1
 {
     typedef typename BFType::matrix_type matrix_type;
     BFAssign1( BFAssign1 const& lfa )
-        :
-        M_bf( lfa.M_bf ),
-        M_test( lfa.M_test ),
-        M_expr( lfa.M_expr ),
-        M_trial_index( lfa.M_trial_index ),
-        M_test_index( lfa.M_test_index )
-    {}
+        : M_bf( lfa.M_bf ),
+          M_test( lfa.M_test ),
+          M_expr( lfa.M_expr ),
+          M_trial_index( lfa.M_trial_index ),
+          M_test_index( lfa.M_test_index )
+    {
+    }
     BFAssign1( BFType& lf,
                ExprType const& expr,
                boost::shared_ptr<TestSpaceType> const& Testh,
                size_type test_index )
-        :
-        M_bf( lf ),
-        M_test( Testh ),
-        M_expr( expr ),
-        M_trial_index( 0 ),
-        M_test_index( test_index )
-    {}
-    template<typename SpaceType>
+        : M_bf( lf ),
+          M_test( Testh ),
+          M_expr( expr ),
+          M_trial_index( 0 ),
+          M_test_index( test_index )
+    {
+    }
+    template <typename SpaceType>
     void operator()( boost::shared_ptr<SpaceType> const& trial ) const;
 
-private:
+  private:
     BFType& M_bf;
     boost::shared_ptr<TestSpaceType> M_test;
     ExprType const& M_expr;
     mutable size_type M_trial_index;
     size_type M_test_index;
 };
-template<typename BFType, typename ExprType, typename TestSpaceType>
-BFAssign1<BFType,ExprType,TestSpaceType>
+template <typename BFType, typename ExprType, typename TestSpaceType>
+BFAssign1<BFType, ExprType, TestSpaceType>
 make_bfassign1( BFType& lf,
                 ExprType const& expr,
                 boost::shared_ptr<TestSpaceType> const& test_space,
                 size_type test_index )
 {
-    return BFAssign1<BFType,ExprType,TestSpaceType>( lf, expr, test_space, test_index );
+    return BFAssign1<BFType, ExprType, TestSpaceType>( lf, expr, test_space, test_index );
 }
 
-
-template<typename BFType, typename ExprType, typename TrialSpaceType>
+template <typename BFType, typename ExprType, typename TrialSpaceType>
 struct BFAssign3
 {
     typedef typename BFType::matrix_type matrix_type;
     BFAssign3( BFAssign3 const& lfa )
-        :
-        M_bf( lfa.M_bf ),
-        M_trial( lfa.M_trial ),
-        M_expr( lfa.M_expr ),
-        M_trial_index( lfa.M_trial_index ),
-        M_test_index( lfa.M_test_index )
-    {}
+        : M_bf( lfa.M_bf ),
+          M_trial( lfa.M_trial ),
+          M_expr( lfa.M_expr ),
+          M_trial_index( lfa.M_trial_index ),
+          M_test_index( lfa.M_test_index )
+    {
+    }
     BFAssign3( BFType& lf,
                ExprType const& expr,
                boost::shared_ptr<TrialSpaceType> const& Trialh,
                size_type trial_index )
-        :
-        M_bf( lf ),
-        M_trial( Trialh ),
-        M_expr( expr ),
-        M_trial_index( trial_index ),
-        M_test_index( 0 )
-    {}
-    template<typename SpaceType>
+        : M_bf( lf ),
+          M_trial( Trialh ),
+          M_expr( expr ),
+          M_trial_index( trial_index ),
+          M_test_index( 0 )
+    {
+    }
+    template <typename SpaceType>
     void operator()( boost::shared_ptr<SpaceType> const& test ) const;
 
-private:
+  private:
     BFType& M_bf;
     boost::shared_ptr<TrialSpaceType> M_trial;
     ExprType const& M_expr;
     size_type M_trial_index;
     mutable size_type M_test_index;
 };
-template<typename BFType, typename ExprType, typename TrialSpaceType>
-BFAssign3<BFType,ExprType,TrialSpaceType>
+template <typename BFType, typename ExprType, typename TrialSpaceType>
+BFAssign3<BFType, ExprType, TrialSpaceType>
 make_bfassign3( BFType& lf,
                 ExprType const& expr,
                 boost::shared_ptr<TrialSpaceType> const& trial_space,
                 size_type trial_index )
 {
-    return BFAssign3<BFType,ExprType,TrialSpaceType>( lf, expr, trial_space, trial_index );
+    return BFAssign3<BFType, ExprType, TrialSpaceType>( lf, expr, trial_space, trial_index );
 }
 
-class BilinearFormBase {};
+class BilinearFormBase
+{
+};
 
 /*!
   \class BilinearForm
@@ -208,17 +207,19 @@ class BilinearFormBase {};
   @author Christophe Prud'homme
   @see
 */
-template<typename FE1,
-         typename FE2,
-         typename ElemContType = VectorUblas<typename FE1::value_type> >
+template <typename FE1,
+          typename FE2,
+          typename ElemContType = VectorUblas<typename FE1::value_type>>
 class BilinearForm : public BilinearFormBase
 {
-public:
-
+  public:
     /** @name Typedefs
      */
     //@{
-    enum { nDim = FE1::nDim };
+    enum
+    {
+        nDim = FE1::nDim
+    };
 
     using space_1_type = functionspace_type<FE1>;
     typedef boost::shared_ptr<space_1_type> space_1_ptrtype;
@@ -231,9 +232,9 @@ public:
     typedef boost::shared_ptr<space_2_type> trial_space_ptrtype;
 
     typedef typename space_1_type::value_type value_type;
-    typedef typename space_1_type::template Element<value_type,ElemContType> element_1_type;
+    typedef typename space_1_type::template Element<value_type, ElemContType> element_1_type;
 
-    typedef typename space_2_type::template Element<value_type,ElemContType> element_2_type;
+    typedef typename space_2_type::template Element<value_type, ElemContType> element_2_type;
 
     using self_type = BilinearForm<FE1, FE2, ElemContType>;
 
@@ -272,54 +273,52 @@ public:
     //typedef ublas::compressed_matrix<value_type, ublas::row_major> csr_matrix_type;
     typedef MatrixSparse<value_type> matrix_type;
     typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
-    static const bool is_row_major = true;//matrix_type::is_row_major;
+    static const bool is_row_major = true; //matrix_type::is_row_major;
 
-    typedef typename mpl::if_<mpl::equal_to<mpl::bool_<is_row_major>, mpl::bool_<true> >,
-            mpl::identity<ublas::row_major>,
-            mpl::identity<ublas::column_major> >::type::type layout_type;
+    typedef typename mpl::if_<mpl::equal_to<mpl::bool_<is_row_major>, mpl::bool_<true>>,
+                              mpl::identity<ublas::row_major>,
+                              mpl::identity<ublas::column_major>>::type::type layout_type;
 
-    template<typename SpaceType, bool UseMortar = false>
+    template <typename SpaceType, bool UseMortar = false>
     struct finite_element
     {
-        typedef  typename mpl::if_<mpl::bool_<UseMortar&&SpaceType::is_mortar>,
-                                   mpl::identity<typename SpaceType::mortar_fe_type>,
-                                   mpl::identity<typename SpaceType::fe_type> >::type::type type;
+        typedef typename mpl::if_<mpl::bool_<UseMortar && SpaceType::is_mortar>,
+                                  mpl::identity<typename SpaceType::mortar_fe_type>,
+                                  mpl::identity<typename SpaceType::fe_type>>::type::type type;
         typedef boost::shared_ptr<type> ptrtype;
     };
 
-    template<int _N = 0, bool UseMortar = false>
+    template <int _N = 0, bool UseMortar = false>
     struct test_precompute
     {
         //typedef typename space_1_type::basis_0_type::template precompute<_N>::type type;
-        typedef typename finite_element<space_1_type,UseMortar>::type::PreCompute type;
+        typedef typename finite_element<space_1_type, UseMortar>::type::PreCompute type;
         typedef boost::shared_ptr<type> ptrtype;
     };
-    template<int _N = 0, bool UseMortar = false>
+    template <int _N = 0, bool UseMortar = false>
     struct trial_precompute
     {
         //typedef typename space_2_type::basis_0_type::template precompute<_N>::type type;
         //typedef typename space_2_type::basis_0_type::PreCompute type;
-        typedef typename finite_element<space_2_type,UseMortar>::type::PreCompute type;
+        typedef typename finite_element<space_2_type, UseMortar>::type::PreCompute type;
         typedef boost::shared_ptr<type> ptrtype;
     };
 
-
     // return test finite element
-    template<bool UseMortar=false>
-    typename finite_element<space_1_type,UseMortar>::ptrtype
+    template <bool UseMortar = false>
+    typename finite_element<space_1_type, UseMortar>::ptrtype
     testFiniteElement() const
-        {
-            return boost::make_shared<typename finite_element<space_1_type,UseMortar>::type>();
-        }
+    {
+        return boost::make_shared<typename finite_element<space_1_type, UseMortar>::type>();
+    }
     // return trial finite element
-    template<bool UseMortar=false>
-    typename finite_element<space_2_type,UseMortar>::ptrtype
+    template <bool UseMortar = false>
+    typename finite_element<space_2_type, UseMortar>::ptrtype
     trialFiniteElement() const
-        {
-            return boost::make_shared<typename finite_element<space_2_type,UseMortar>::type>();
-        }
+    {
+        return boost::make_shared<typename finite_element<space_2_type, UseMortar>::type>();
+    }
     //@}
-
 
     /**
      * @name Inner Structures
@@ -338,30 +337,28 @@ public:
      *
      *
      */
-    template<typename GeomapTestContext,
-             typename ExprT,
-             typename IM,
-             typename GeomapExprContext = GeomapTestContext,
-             typename GeomapTrialContext = GeomapTestContext,
-             int UseMortarType = 0
-             >
+    template <typename GeomapTestContext,
+              typename ExprT,
+              typename IM,
+              typename GeomapExprContext = GeomapTestContext,
+              typename GeomapTrialContext = GeomapTestContext,
+              int UseMortarType = 0>
     class Context //: public FormContextBase<GeomapTestContext,IM,GeomapExprContext>
     {
-        typedef FormContextBase<GeomapTestContext,IM,GeomapExprContext> super;
+        typedef FormContextBase<GeomapTestContext, IM, GeomapExprContext> super;
 
-    public:
+      public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        typedef Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType> form_context_type;
+        typedef Context<GeomapTestContext, ExprT, IM, GeomapExprContext, GeomapTrialContext, UseMortarType> form_context_type;
         static const bool UseMortar = UseMortarType > 0;
-        static const bool UseMortarTest = (UseMortarType == 1) || (UseMortarType == 3);
-        static const bool UseMortarTrial = (UseMortarType == 2) || (UseMortarType == 3);
+        static const bool UseMortarTest = ( UseMortarType == 1 ) || ( UseMortarType == 3 );
+        static const bool UseMortarTrial = ( UseMortarType == 2 ) || ( UseMortarType == 3 );
         using form_type = self_type;
         typedef typename space_1_type::dof_type dof_1_type;
         typedef typename space_2_type::dof_type dof_2_type;
 
         typedef typename form_type::value_type value_type;
-
 
         typedef typename super::map_geometric_mapping_context_type map_test_geometric_mapping_context_type;
         typedef typename super::geometric_mapping_context_ptrtype test_geometric_mapping_context_ptrtype;
@@ -374,8 +371,7 @@ public:
         typedef typename super::map_left_gmc_type test_map_left_gmc_type;
         typedef typename super::map_right_gmc_type test_map_right_gmc_type;
 
-
-        typedef FormContextBase<GeomapTrialContext,IM,GeomapExprContext> super2;
+        typedef FormContextBase<GeomapTrialContext, IM, GeomapExprContext> super2;
 
         typedef typename super2::map_geometric_mapping_context_type map_trial_geometric_mapping_context_type;
         typedef typename super2::geometric_mapping_context_ptrtype trial_geometric_mapping_context_ptrtype;
@@ -388,82 +384,83 @@ public:
         typedef typename super2::map_left_gmc_type trial_map_left_gmc_type;
         typedef typename super2::map_right_gmc_type trial_map_right_gmc_type;
 
-
-
-
-
         static const uint16_type nDim = test_geometric_mapping_type::nDim;
 
         static const uint16_type nDimTest = test_space_type::mesh_type::nDim;
         static const uint16_type nDimTrial = trial_space_type::mesh_type::nDim;
-        static const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
+        static const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial ) ? nDimTest - nDimTrial : nDimTrial - nDimTest;
 
         typedef ExprT expression_type;
 
-        typedef typename test_precompute<0,UseMortar>::type test_precompute_type;
-        typedef typename test_precompute<0,UseMortar>::ptrtype test_precompute_ptrtype;
-        typedef typename trial_precompute<0,UseMortar>::type trial_precompute_type;
-        typedef typename trial_precompute<0,UseMortar>::ptrtype trial_precompute_ptrtype;
+        typedef typename test_precompute<0, UseMortar>::type test_precompute_type;
+        typedef typename test_precompute<0, UseMortar>::ptrtype test_precompute_ptrtype;
+        typedef typename trial_precompute<0, UseMortar>::type trial_precompute_type;
+        typedef typename trial_precompute<0, UseMortar>::ptrtype trial_precompute_ptrtype;
 
-        typedef typename mpl::if_<mpl::bool_<UseMortar&&space_2_type::is_mortar>,
+        typedef typename mpl::if_<mpl::bool_<UseMortar && space_2_type::is_mortar>,
                                   mpl::identity<typename space_2_type::mortar_fe_type>,
-                                  mpl::identity<typename space_2_type::fe_type> >::type::type trial_fe_type;
+                                  mpl::identity<typename space_2_type::fe_type>>::type::type trial_fe_type;
         typedef boost::shared_ptr<trial_fe_type> trial_fe_ptrtype;
-        typedef typename trial_fe_type::template Context< trial_geometric_mapping_context_type::context,
-                trial_fe_type,
-                trial_geometric_mapping_type,
-                mesh_element_2_type> trial_fecontext_type;
+        typedef typename trial_fe_type::template Context<trial_geometric_mapping_context_type::context,
+                                                         trial_fe_type,
+                                                         trial_geometric_mapping_type,
+                                                         mesh_element_2_type>
+            trial_fecontext_type;
         typedef boost::shared_ptr<trial_fecontext_type> trial_fecontext_ptrtype;
-        typedef typename mpl::if_<mpl::equal_to<trial_map_size, mpl::int_<1> >,
-                mpl::identity<fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype> > >,
-                mpl::identity<fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype>,
-                fusion::pair<gmc<1>, trial_fecontext_ptrtype> > > >::type::type map_trial_fecontext_type;
+        typedef typename mpl::if_<mpl::equal_to<trial_map_size, mpl::int_<1>>,
+                                  mpl::identity<fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype>>>,
+                                  mpl::identity<fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype>,
+                                                            fusion::pair<gmc<1>, trial_fecontext_ptrtype>>>>::type::type map_trial_fecontext_type;
 
-        typedef fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype> > map_left_trial_fecontext_type;
-        typedef fusion::map<fusion::pair<trial_gmc1, trial_fecontext_ptrtype> > map_right_trial_fecontext_type;
+        typedef fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype>> map_left_trial_fecontext_type;
+        typedef fusion::map<fusion::pair<trial_gmc1, trial_fecontext_ptrtype>> map_right_trial_fecontext_type;
 
-        typedef typename mpl::if_<mpl::bool_<UseMortar&&space_1_type::is_mortar>,
+        typedef typename mpl::if_<mpl::bool_<UseMortar && space_1_type::is_mortar>,
                                   mpl::identity<typename space_1_type::mortar_fe_type>,
-                                  mpl::identity<typename space_1_type::fe_type> >::type::type test_fe_type;
+                                  mpl::identity<typename space_1_type::fe_type>>::type::type test_fe_type;
         typedef boost::shared_ptr<test_fe_type> test_fe_ptrtype;
-        typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
-                test_fe_type,
-                test_geometric_mapping_type,
-                mesh_element_1_type> test_fecontext_type;
+        typedef typename test_fe_type::template Context<test_geometric_mapping_context_type::context,
+                                                        test_fe_type,
+                                                        test_geometric_mapping_type,
+                                                        mesh_element_1_type>
+            test_fecontext_type;
         typedef boost::shared_ptr<test_fecontext_type> test_fecontext_ptrtype;
-        typedef typename mpl::if_<mpl::equal_to<test_map_size, mpl::int_<1> >,
-                mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > >,
-                mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype>,
-                fusion::pair<gmc<1>, test_fecontext_ptrtype> > > >::type::type map_test_fecontext_type;
-        typedef fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > map_left_test_fecontext_type;
-        typedef fusion::map<fusion::pair<test_gmc1, test_fecontext_ptrtype> > map_right_test_fecontext_type;
+        typedef typename mpl::if_<mpl::equal_to<test_map_size, mpl::int_<1>>,
+                                  mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype>>>,
+                                  mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype>,
+                                                            fusion::pair<gmc<1>, test_fecontext_ptrtype>>>>::type::type map_test_fecontext_type;
+        typedef fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype>> map_left_test_fecontext_type;
+        typedef fusion::map<fusion::pair<test_gmc1, test_fecontext_ptrtype>> map_right_test_fecontext_type;
 
         //--------------------------------------------------------------------------------------//
 
         typedef typename super::map_geometric_mapping_expr_context_type map_geometric_mapping_expr_context_type;
 
         typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type,
-                map_left_test_fecontext_type,
-                map_left_trial_fecontext_type> eval00_expr_type;
+                                                map_left_test_fecontext_type,
+                                                map_left_trial_fecontext_type>
+            eval00_expr_type;
         typedef boost::shared_ptr<eval00_expr_type> eval00_expr_ptrtype;
 
         typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type,
-                map_left_test_fecontext_type,
-                map_right_trial_fecontext_type> eval01_expr_type;
+                                                map_left_test_fecontext_type,
+                                                map_right_trial_fecontext_type>
+            eval01_expr_type;
         typedef boost::shared_ptr<eval01_expr_type> eval01_expr_ptrtype;
 
         typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type,
-                map_right_test_fecontext_type,
-                map_left_trial_fecontext_type> eval10_expr_type;
+                                                map_right_test_fecontext_type,
+                                                map_left_trial_fecontext_type>
+            eval10_expr_type;
         typedef boost::shared_ptr<eval10_expr_type> eval10_expr_ptrtype;
 
         typedef typename ExprT::template tensor<map_geometric_mapping_expr_context_type,
-                map_right_test_fecontext_type,
-                map_right_trial_fecontext_type> eval11_expr_type;
+                                                map_right_test_fecontext_type,
+                                                map_right_trial_fecontext_type>
+            eval11_expr_type;
         typedef boost::shared_ptr<eval11_expr_type> eval11_expr_ptrtype;
 
-
-        static const int rep_shape = 4;//2+(eval_expr_type::shape::M-1>0)+(eval_expr_type::shape::N-1>0);
+        static const int rep_shape = 4; //2+(eval_expr_type::shape::M-1>0)+(eval_expr_type::shape::N-1>0);
         //typedef boost::multi_array<value_type, rep_shape> local_matrix_type;
 
         typedef typename space_1_type::dof_type test_dof_type;
@@ -472,21 +469,21 @@ public:
         static const int nDofPerElementTrial = space_2_type::dof_type::nDofPerElement;
         static const int nDofPerComponentTest = test_fe_type::nLocalDof;
         static const int nDofPerComponentTrial = trial_fe_type::nLocalDof;
-        static const int local_mat_traits = mpl::if_<mpl::equal_to<mpl::int_<nDofPerElementTrial>,mpl::int_<1> >,
+        static const int local_mat_traits = mpl::if_<mpl::equal_to<mpl::int_<nDofPerElementTrial>, mpl::int_<1>>,
                                                      mpl::int_<Eigen::ColMajor>,
-                                                     mpl::int_<Eigen::RowMajor> >::type::value;
+                                                     mpl::int_<Eigen::RowMajor>>::type::value;
 
-        static const int local_mat_traits_per_component = mpl::if_<mpl::equal_to<mpl::int_<nDofPerComponentTrial>,mpl::int_<1> >,
+        static const int local_mat_traits_per_component = mpl::if_<mpl::equal_to<mpl::int_<nDofPerComponentTrial>, mpl::int_<1>>,
                                                                    mpl::int_<Eigen::ColMajor>,
-                                                                   mpl::int_<Eigen::RowMajor> >::type::value;
+                                                                   mpl::int_<Eigen::RowMajor>>::type::value;
 
-        static const int local_mat_m1_traits = mpl::if_<mpl::equal_to<mpl::int_<nDofPerElementTrial>,mpl::int_<2> >,
-                                                     mpl::int_<Eigen::ColMajor>,
-                                                     mpl::int_<Eigen::RowMajor> >::type::value;
+        static const int local_mat_m1_traits = mpl::if_<mpl::equal_to<mpl::int_<nDofPerElementTrial>, mpl::int_<2>>,
+                                                        mpl::int_<Eigen::ColMajor>,
+                                                        mpl::int_<Eigen::RowMajor>>::type::value;
 
-        static const int local_mat_m1_traits_per_component = mpl::if_<mpl::equal_to<mpl::int_<nDofPerComponentTrial>,mpl::int_<2> >,
-                                                                   mpl::int_<Eigen::ColMajor>,
-                                                                   mpl::int_<Eigen::RowMajor> >::type::value;
+        static const int local_mat_m1_traits_per_component = mpl::if_<mpl::equal_to<mpl::int_<nDofPerComponentTrial>, mpl::int_<2>>,
+                                                                      mpl::int_<Eigen::ColMajor>,
+                                                                      mpl::int_<Eigen::RowMajor>>::type::value;
 
 #if 0
         // Eigen::Matrix allocation on stack
@@ -499,110 +496,108 @@ public:
 #else
         // Eigen::Matrix allocation on stack or dynamic
         // local_matrix
-        static const bool useEigenDynamicAlloc = nDofPerElementTest*nDofPerElementTrial*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenLocalMatrix = ( useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerElementTest;
-        static const int nColEigenLocalMatrix = ( useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerElementTrial;
-        typedef Eigen::Matrix<value_type, nRowEigenLocalMatrix, nColEigenLocalMatrix,local_mat_traits> local_matrix_type;
+        static const bool useEigenDynamicAlloc = nDofPerElementTest * nDofPerElementTrial * sizeof( value_type ) > 128 * 128 * 8;
+        static const int nRowEigenLocalMatrix = ( useEigenDynamicAlloc ) ? Eigen::Dynamic : nDofPerElementTest;
+        static const int nColEigenLocalMatrix = ( useEigenDynamicAlloc ) ? Eigen::Dynamic : nDofPerElementTrial;
+        typedef Eigen::Matrix<value_type, nRowEigenLocalMatrix, nColEigenLocalMatrix, local_mat_traits> local_matrix_type;
         // mortar_test_local_matrix
-        static const bool useEigenDynamicAllocMortarTest = (nDofPerElementTest-1)*nDofPerElementTrial*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenMortarTestLocalMatrix = ( useEigenDynamicAllocMortarTest )? Eigen::Dynamic : nDofPerElementTest-1;
-        static const int nColEigenMortarTestLocalMatrix = ( useEigenDynamicAllocMortarTest )? Eigen::Dynamic : nDofPerElementTrial;
+        static const bool useEigenDynamicAllocMortarTest = ( nDofPerElementTest - 1 ) * nDofPerElementTrial * sizeof( value_type ) > 128 * 128 * 8;
+        static const int nRowEigenMortarTestLocalMatrix = ( useEigenDynamicAllocMortarTest ) ? Eigen::Dynamic : nDofPerElementTest - 1;
+        static const int nColEigenMortarTestLocalMatrix = ( useEigenDynamicAllocMortarTest ) ? Eigen::Dynamic : nDofPerElementTrial;
         typedef Eigen::Matrix<value_type, nRowEigenMortarTestLocalMatrix, nColEigenMortarTestLocalMatrix, local_mat_traits> mortar_test_local_matrix_type;
 #if 1
         // mortar_trial_local_matrix
-        static const bool useEigenDynamicAllocMortarTrial = nDofPerElementTest*(nDofPerElementTrial-1)*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenMortarTrialLocalMatrix = ( useEigenDynamicAllocMortarTrial )? Eigen::Dynamic : nDofPerElementTest;
-        static const int nColEigenMortarTrialLocalMatrix = ( useEigenDynamicAllocMortarTrial )? Eigen::Dynamic : nDofPerElementTrial-1;
+        static const bool useEigenDynamicAllocMortarTrial = nDofPerElementTest * ( nDofPerElementTrial - 1 ) * sizeof( value_type ) > 128 * 128 * 8;
+        static const int nRowEigenMortarTrialLocalMatrix = ( useEigenDynamicAllocMortarTrial ) ? Eigen::Dynamic : nDofPerElementTest;
+        static const int nColEigenMortarTrialLocalMatrix = ( useEigenDynamicAllocMortarTrial ) ? Eigen::Dynamic : nDofPerElementTrial - 1;
         typedef Eigen::Matrix<value_type, nRowEigenMortarTrialLocalMatrix, nColEigenMortarTrialLocalMatrix, local_mat_m1_traits> mortar_trial_local_matrix_type;
 #endif
         // local2_matrix
-        static const bool useEigenDynamicAlloc2 = 4*nDofPerElementTest*nDofPerElementTrial*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenLocal2Matrix = ( useEigenDynamicAlloc2 )? Eigen::Dynamic : 2*nDofPerElementTest;
-        static const int nColEigenLocal2Matrix = ( useEigenDynamicAlloc2 )? Eigen::Dynamic : 2*nDofPerElementTrial;
-        typedef Eigen::Matrix<value_type, nRowEigenLocal2Matrix, nColEigenLocal2Matrix,Eigen::RowMajor> local2_matrix_type;
+        static const bool useEigenDynamicAlloc2 = 4 * nDofPerElementTest * nDofPerElementTrial * sizeof( value_type ) > 128 * 128 * 8;
+        static const int nRowEigenLocal2Matrix = ( useEigenDynamicAlloc2 ) ? Eigen::Dynamic : 2 * nDofPerElementTest;
+        static const int nColEigenLocal2Matrix = ( useEigenDynamicAlloc2 ) ? Eigen::Dynamic : 2 * nDofPerElementTrial;
+        typedef Eigen::Matrix<value_type, nRowEigenLocal2Matrix, nColEigenLocal2Matrix, Eigen::RowMajor> local2_matrix_type;
         // c_local matrix
-        static const bool c_useEigenDynamicAlloc = nDofPerComponentTest*nDofPerComponentTrial*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenCompLocalMatrix = ( c_useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerComponentTest;
-        static const int nColEigenCompLocalMatrix = ( c_useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerComponentTrial;
-        typedef Eigen::Matrix<value_type, nRowEigenCompLocalMatrix, nColEigenCompLocalMatrix,local_mat_traits_per_component> c_local_matrix_type;
+        static const bool c_useEigenDynamicAlloc = nDofPerComponentTest * nDofPerComponentTrial * sizeof( value_type ) > 128 * 128 * 8;
+        static const int nRowEigenCompLocalMatrix = ( c_useEigenDynamicAlloc ) ? Eigen::Dynamic : nDofPerComponentTest;
+        static const int nColEigenCompLocalMatrix = ( c_useEigenDynamicAlloc ) ? Eigen::Dynamic : nDofPerComponentTrial;
+        typedef Eigen::Matrix<value_type, nRowEigenCompLocalMatrix, nColEigenCompLocalMatrix, local_mat_traits_per_component> c_local_matrix_type;
         // c_mortar_test_local
-        static const bool c_useEigenDynamicAllocMortarTest = (nDofPerComponentTest-1)*nDofPerComponentTrial*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenCompMortarTestLocalMatrix = ( c_useEigenDynamicAllocMortarTest )? Eigen::Dynamic : nDofPerComponentTest-1;
-        static const int nColEigenCompMortarTestLocalMatrix = ( c_useEigenDynamicAllocMortarTest )? Eigen::Dynamic : nDofPerComponentTrial;
-        typedef Eigen::Matrix<value_type, nRowEigenCompMortarTestLocalMatrix, nColEigenCompMortarTestLocalMatrix,local_mat_traits_per_component> c_mortar_test_local_matrix_type;
+        static const bool c_useEigenDynamicAllocMortarTest = ( nDofPerComponentTest - 1 ) * nDofPerComponentTrial * sizeof( value_type ) > 128 * 128 * 8;
+        static const int nRowEigenCompMortarTestLocalMatrix = ( c_useEigenDynamicAllocMortarTest ) ? Eigen::Dynamic : nDofPerComponentTest - 1;
+        static const int nColEigenCompMortarTestLocalMatrix = ( c_useEigenDynamicAllocMortarTest ) ? Eigen::Dynamic : nDofPerComponentTrial;
+        typedef Eigen::Matrix<value_type, nRowEigenCompMortarTestLocalMatrix, nColEigenCompMortarTestLocalMatrix, local_mat_traits_per_component> c_mortar_test_local_matrix_type;
 #if 1
         // c_mortar_trial_local
-        static const bool c_useEigenDynamicAllocMortarTrial = nDofPerComponentTest*(nDofPerComponentTrial-1)*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenCompMortarTrialLocalMatrix = ( c_useEigenDynamicAllocMortarTrial )? Eigen::Dynamic : nDofPerComponentTest;
-        static const int nColEigenCompMortarTrialLocalMatrix = ( c_useEigenDynamicAllocMortarTrial )? Eigen::Dynamic : nDofPerComponentTrial-1;
-        typedef Eigen::Matrix<value_type, nRowEigenCompMortarTrialLocalMatrix, nColEigenCompMortarTrialLocalMatrix,local_mat_m1_traits_per_component> c_mortar_trial_local_matrix_type;
+        static const bool c_useEigenDynamicAllocMortarTrial = nDofPerComponentTest * ( nDofPerComponentTrial - 1 ) * sizeof( value_type ) > 128 * 128 * 8;
+        static const int nRowEigenCompMortarTrialLocalMatrix = ( c_useEigenDynamicAllocMortarTrial ) ? Eigen::Dynamic : nDofPerComponentTest;
+        static const int nColEigenCompMortarTrialLocalMatrix = ( c_useEigenDynamicAllocMortarTrial ) ? Eigen::Dynamic : nDofPerComponentTrial - 1;
+        typedef Eigen::Matrix<value_type, nRowEigenCompMortarTrialLocalMatrix, nColEigenCompMortarTrialLocalMatrix, local_mat_m1_traits_per_component> c_mortar_trial_local_matrix_type;
 #endif
         // c_local2_matrix
-        static const bool c_useEigenDynamicAlloc2 = 4*nDofPerComponentTest*nDofPerComponentTrial*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenCompLocal2Matrix = ( c_useEigenDynamicAlloc2 )? Eigen::Dynamic : 2*nDofPerComponentTest;
-        static const int nColEigenCompLocal2Matrix = ( c_useEigenDynamicAlloc2 )? Eigen::Dynamic : 2*nDofPerComponentTrial;
-        typedef Eigen::Matrix<value_type, nRowEigenCompLocal2Matrix, nColEigenCompLocal2Matrix,Eigen::RowMajor> c_local2_matrix_type;
+        static const bool c_useEigenDynamicAlloc2 = 4 * nDofPerComponentTest * nDofPerComponentTrial * sizeof( value_type ) > 128 * 128 * 8;
+        static const int nRowEigenCompLocal2Matrix = ( c_useEigenDynamicAlloc2 ) ? Eigen::Dynamic : 2 * nDofPerComponentTest;
+        static const int nColEigenCompLocal2Matrix = ( c_useEigenDynamicAlloc2 ) ? Eigen::Dynamic : 2 * nDofPerComponentTrial;
+        typedef Eigen::Matrix<value_type, nRowEigenCompLocal2Matrix, nColEigenCompLocal2Matrix, Eigen::RowMajor> c_local2_matrix_type;
         // local_row_sign_type and local_col_sign_type
-        static const bool c_useEigenDynamicAllocSign = nDofPerElementTest*nDofPerElementTrial*sizeof(int) > 128*128*8;
-        static const int nRowEigenLocalRowSign = ( c_useEigenDynamicAllocSign )? Eigen::Dynamic : nDofPerElementTest;
-        static const int nRowEigenLocalColSign = ( c_useEigenDynamicAllocSign )? Eigen::Dynamic : nDofPerElementTrial;
+        static const bool c_useEigenDynamicAllocSign = nDofPerElementTest * nDofPerElementTrial * sizeof( int ) > 128 * 128 * 8;
+        static const int nRowEigenLocalRowSign = ( c_useEigenDynamicAllocSign ) ? Eigen::Dynamic : nDofPerElementTest;
+        static const int nRowEigenLocalColSign = ( c_useEigenDynamicAllocSign ) ? Eigen::Dynamic : nDofPerElementTrial;
         typedef Eigen::Matrix<int, nRowEigenLocalRowSign, 1> local_row_sign_type;
         typedef Eigen::Matrix<int, nRowEigenLocalColSign, 1> local_col_sign_type;
         // local2_row_sign_type and local2_col_sign_type
-        static const bool c_useEigenDynamicAllocSign2 = 4*nDofPerElementTest*nDofPerElementTrial*sizeof(int) > 128*128*8;
-        static const int nRowEigenLocal2RowSign = ( c_useEigenDynamicAllocSign2 )? Eigen::Dynamic : 2*nDofPerElementTest;
-        static const int nRowEigenLocal2ColSign = ( c_useEigenDynamicAllocSign2 )? Eigen::Dynamic : 2*nDofPerElementTrial;
+        static const bool c_useEigenDynamicAllocSign2 = 4 * nDofPerElementTest * nDofPerElementTrial * sizeof( int ) > 128 * 128 * 8;
+        static const int nRowEigenLocal2RowSign = ( c_useEigenDynamicAllocSign2 ) ? Eigen::Dynamic : 2 * nDofPerElementTest;
+        static const int nRowEigenLocal2ColSign = ( c_useEigenDynamicAllocSign2 ) ? Eigen::Dynamic : 2 * nDofPerElementTrial;
         typedef Eigen::Matrix<int, nRowEigenLocal2RowSign, 1> local2_row_sign_type;
         typedef Eigen::Matrix<int, nRowEigenLocal2ColSign, 1> local2_col_sign_type;
 #endif
         typedef Eigen::Matrix<int, nDofPerElementTest, 1> local_row_type;
-        typedef Eigen::Matrix<int, nDofPerElementTest-1, 1> mortar_test_local_row_type;
-        typedef Eigen::Matrix<int, nDofPerElementTrial-1, 1> mortar_trial_local_col_type;
-        typedef Eigen::Matrix<int, 2*nDofPerElementTest, 1> local2_row_type;
+        typedef Eigen::Matrix<int, nDofPerElementTest - 1, 1> mortar_test_local_row_type;
+        typedef Eigen::Matrix<int, nDofPerElementTrial - 1, 1> mortar_trial_local_col_type;
+        typedef Eigen::Matrix<int, 2 * nDofPerElementTest, 1> local2_row_type;
         typedef Eigen::Matrix<int, nDofPerElementTrial, 1> local_col_type;
-        typedef Eigen::Matrix<int, 2*nDofPerElementTrial, 1> local2_col_type;
+        typedef Eigen::Matrix<int, 2 * nDofPerElementTrial, 1> local2_col_type;
 
         typedef Eigen::Matrix<int, nDofPerComponentTest, 1> c_local_row_type;
-        typedef Eigen::Matrix<int, nDofPerComponentTest-1, 1> c_mortar_test_local_row_type;
-        typedef Eigen::Matrix<int, 2*nDofPerComponentTest, 1> c_local2_row_type;
+        typedef Eigen::Matrix<int, nDofPerComponentTest - 1, 1> c_mortar_test_local_row_type;
+        typedef Eigen::Matrix<int, 2 * nDofPerComponentTest, 1> c_local2_row_type;
         typedef Eigen::Matrix<int, nDofPerComponentTrial, 1> c_local_col_type;
-        typedef Eigen::Matrix<int, 2*nDofPerComponentTrial, 1> c_local2_col_type;
+        typedef Eigen::Matrix<int, 2 * nDofPerComponentTrial, 1> c_local2_col_type;
 
-
-    public:
-
-        template<typename Left, typename Right>
-        map_trial_fecontext_type getMap( Left  left, Right right, bool same_mesh = true )
+      public:
+        template <typename Left, typename Right>
+        map_trial_fecontext_type getMap( Left left, Right right, bool same_mesh = true )
         {
             if ( same_mesh )
                 return getMap( left, right, std::is_same<Left, map_trial_fecontext_type>() );
             return getMap( left, right, std::integral_constant<bool, false>() );
         }
-        template<typename Left, typename Right>
-        map_trial_fecontext_type getMap( Left  left, Right /*right*/, std::true_type )
+        template <typename Left, typename Right>
+        map_trial_fecontext_type getMap( Left left, Right /*right*/, std::true_type )
         {
             return left;
         }
-        template<typename Left, typename Right>
-        map_trial_fecontext_type getMap( Left  /*left*/, Right right, std::false_type )
+        template <typename Left, typename Right>
+        map_trial_fecontext_type getMap( Left /*left*/, Right right, std::false_type )
         {
             return map_trial_fecontext_type( right );
         }
 
-        template<typename Left, typename Right>
-        map_left_trial_fecontext_type getMapL( Left  left, Right right, bool same_mesh = true )
+        template <typename Left, typename Right>
+        map_left_trial_fecontext_type getMapL( Left left, Right right, bool same_mesh = true )
         {
             if ( same_mesh )
                 return getMapL( left, right, std::is_same<Left, map_left_trial_fecontext_type>() );
             return getMapL( left, right, std::integral_constant<bool, false>() );
         }
-        template<typename Left, typename Right>
-        map_left_trial_fecontext_type getMapL( Left  left, Right /*right*/, std::true_type )
+        template <typename Left, typename Right>
+        map_left_trial_fecontext_type getMapL( Left left, Right /*right*/, std::true_type )
         {
             return left;
         }
-        template<typename Left, typename Right>
-        map_left_trial_fecontext_type getMapL( Left  /*left*/, Right right, std::false_type )
+        template <typename Left, typename Right>
+        map_left_trial_fecontext_type getMapL( Left /*left*/, Right right, std::false_type )
         {
             return right;
         }
@@ -610,143 +605,142 @@ public:
         Context( form_type& __form,
                  map_test_geometric_mapping_context_type const& gmcTest,
                  map_trial_geometric_mapping_context_type const& _gmcTrial,
-                 map_geometric_mapping_expr_context_type const & gmcExpr,
+                 map_geometric_mapping_expr_context_type const& gmcExpr,
                  ExprT const& expr,
                  IM const& im );
 
-        template<typename IMTest,typename IMTrial>
+        template <typename IMTest, typename IMTrial>
         Context( form_type& __form,
                  map_test_geometric_mapping_context_type const& gmcTest,
                  map_trial_geometric_mapping_context_type const& _gmcTrial,
-                 map_geometric_mapping_expr_context_type const & gmcExpr,
+                 map_geometric_mapping_expr_context_type const& gmcExpr,
                  ExprT const& expr,
                  IM const& im, IMTest const& imTest, IMTrial const& imTrial );
 
-        template<typename IM2>
+        template <typename IM2>
         Context( form_type& __form,
                  map_test_geometric_mapping_context_type const& gmcTest,
                  map_trial_geometric_mapping_context_type const& _gmcTrial,
-                 map_geometric_mapping_expr_context_type const & gmcExpr,
+                 map_geometric_mapping_expr_context_type const& gmcExpr,
                  ExprT const& expr,
                  IM const& im,
                  IM2 const& im2 );
 
-        template<typename IM2,typename IMTest,typename IMTrial>
+        template <typename IM2, typename IMTest, typename IMTrial>
         Context( form_type& __form,
                  map_test_geometric_mapping_context_type const& gmcTest,
                  map_trial_geometric_mapping_context_type const& _gmcTrial,
-                 map_geometric_mapping_expr_context_type const & gmcExpr,
+                 map_geometric_mapping_expr_context_type const& gmcExpr,
                  ExprT const& expr,
                  IM const& im,
                  IM2 const& im2, IMTest const& imTest, IMTrial const& imTrial );
 
-        template<typename IM2>
+        template <typename IM2>
         Context( form_type& __form,
                  map_test_geometric_mapping_context_type const& gmcTest,
                  map_trial_geometric_mapping_context_type const& _gmcTrial,
-                 map_geometric_mapping_expr_context_type const & gmcExpr,
+                 map_geometric_mapping_expr_context_type const& gmcExpr,
                  ExprT const& expr,
                  IM const& im,
                  IM2 const& im2,
                  mpl::int_<2> );
-
 
         void initDynamicEigenMatrix()
         {
             if ( useEigenDynamicAlloc )
                 M_rep.resize( nDofPerElementTest, nDofPerElementTrial );
             if ( useEigenDynamicAllocMortarTest )
-                M_mortarTest_rep.resize( nDofPerElementTest-1,nDofPerElementTrial );
+                M_mortarTest_rep.resize( nDofPerElementTest - 1, nDofPerElementTrial );
             if ( useEigenDynamicAllocMortarTrial )
-                M_mortarTrial_rep.resize( nDofPerElementTest,nDofPerElementTrial-1 );
+                M_mortarTrial_rep.resize( nDofPerElementTest, nDofPerElementTrial - 1 );
             if ( useEigenDynamicAlloc2 )
-                M_rep_2.resize( 2*nDofPerElementTest, 2*nDofPerElementTrial );
+                M_rep_2.resize( 2 * nDofPerElementTest, 2 * nDofPerElementTrial );
         }
 
         bool trialElementIsOnBoundary( size_type test_eid ) const { return M_form.trialSpace()->mesh()->element( this->trialElementId( test_eid ) ).isOnBoundary(); }
 
         size_type trialElementId( size_type trial_eid ) const
+        {
+            return trialElementId( trial_eid, mpl::int_<nDimDiffBetweenTestTrial>() );
+        }
+        size_type trialElementId( size_type trial_eid, mpl::int_<0> ) const
+        {
+            size_type idElem = trial_eid;
+            size_type domain_eid = idElem;
+            const bool test_related_to_trial = M_form.testSpace()->mesh()->isSubMeshFrom( M_form.trialSpace()->mesh() );
+            const bool trial_related_to_test = M_form.trialSpace()->mesh()->isSubMeshFrom( M_form.testSpace()->mesh() );
+            const bool test_sibling_of_trial = M_form.testSpace()->mesh()->isSiblingOf( M_form.trialSpace()->mesh() );
+            if ( test_related_to_trial )
             {
-                return trialElementId( trial_eid,mpl::int_<nDimDiffBetweenTestTrial>() );
+                domain_eid = M_form.testSpace()->mesh()->subMeshToMesh( idElem );
+                DVLOG( 2 ) << "[test_related_to_trial] test element id: " << idElem << " trial element id : " << domain_eid << "\n";
             }
-        size_type trialElementId( size_type trial_eid,mpl::int_<0> ) const
+            if ( trial_related_to_test )
             {
-                size_type idElem = trial_eid;
-                size_type domain_eid = idElem;
-                const bool test_related_to_trial = M_form.testSpace()->mesh()->isSubMeshFrom( M_form.trialSpace()->mesh() );
-                const bool trial_related_to_test = M_form.trialSpace()->mesh()->isSubMeshFrom( M_form.testSpace()->mesh() );
-                const bool test_sibling_of_trial = M_form.testSpace()->mesh()->isSiblingOf( M_form.trialSpace()->mesh() );
-                if ( test_related_to_trial )
-                {
-                    domain_eid = M_form.testSpace()->mesh()->subMeshToMesh( idElem );
-                    DVLOG(2) << "[test_related_to_trial] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
-                }
-                if( trial_related_to_test )
-                {
-                    domain_eid = M_form.trialSpace()->mesh()->meshToSubMesh( idElem );
-                    DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
-                }
-                if ( test_sibling_of_trial )
-                {
-                    domain_eid = M_form.testSpace()->mesh()->meshToSubMesh( M_form.trialSpace()->mesh(), trial_eid );
-                    DVLOG(2) << "[trial_sibling_of_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
-                }
-                return domain_eid;
+                domain_eid = M_form.trialSpace()->mesh()->meshToSubMesh( idElem );
+                DVLOG( 2 ) << "[trial_related_to_test] test element id: " << idElem << " trial element id : " << domain_eid << "\n";
             }
-        size_type trialElementId( size_type trial_eid,mpl::int_<1> ) const
+            if ( test_sibling_of_trial )
             {
-                size_type idElem = trial_eid;
-                size_type domain_eid = idElem;
-                const bool test_related_to_trial = M_form.testSpace()->mesh()->isSubMeshFrom( M_form.trialSpace()->mesh() );
-                const bool trial_related_to_test = M_form.trialSpace()->mesh()->isSubMeshFrom( M_form.testSpace()->mesh() );
-                if ( test_related_to_trial )
+                domain_eid = M_form.testSpace()->mesh()->meshToSubMesh( M_form.trialSpace()->mesh(), trial_eid );
+                DVLOG( 2 ) << "[trial_sibling_of_test] test element id: " << idElem << " trial element id : " << domain_eid << "\n";
+            }
+            return domain_eid;
+        }
+        size_type trialElementId( size_type trial_eid, mpl::int_<1> ) const
+        {
+            size_type idElem = trial_eid;
+            size_type domain_eid = idElem;
+            const bool test_related_to_trial = M_form.testSpace()->mesh()->isSubMeshFrom( M_form.trialSpace()->mesh() );
+            const bool trial_related_to_test = M_form.trialSpace()->mesh()->isSubMeshFrom( M_form.testSpace()->mesh() );
+            if ( test_related_to_trial )
+            {
+                domain_eid = M_form.trialSpace()->mesh()->face( M_form.testSpace()->mesh()->subMeshToMesh( idElem ) ).element0().id();
+                DVLOG( 2 ) << "[test_related_to_trial] test element id: " << idElem << " trial element id : " << domain_eid << "\n";
+            }
+            if ( trial_related_to_test )
+            {
+                auto const& eltTest = M_form.testSpace()->mesh()->element( idElem );
+                std::set<size_type> idsFind;
+                for ( uint16_type f = 0; f < M_form.testSpace()->mesh()->numLocalFaces(); ++f )
                 {
-                    domain_eid = M_form.trialSpace()->mesh()->face( M_form.testSpace()->mesh()->subMeshToMesh( idElem )).element0().id();
-                    DVLOG(2) << "[test_related_to_trial] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                    const size_type idFind = M_form.trialSpace()->mesh()->meshToSubMesh( eltTest.face( f ).id() );
+                    if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
                 }
-                if( trial_related_to_test )
-                {
-                    auto const& eltTest = M_form.testSpace()->mesh()->element(idElem);
-                    std::set<size_type> idsFind;
-                    for (uint16_type f=0;f< M_form.testSpace()->mesh()->numLocalFaces();++f)
-                        {
-                            const size_type idFind = M_form.trialSpace()->mesh()->meshToSubMesh( eltTest.face(f).id() );
-                            if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
-                        }
-                    if ( idsFind.size()>1 ) std::cout << " TODO trialElementId " << std::endl;
+                if ( idsFind.size() > 1 ) std::cout << " TODO trialElementId " << std::endl;
 
-                    if ( idsFind.size()>0 )
-                        domain_eid = *idsFind.begin();
-                    else
-                        domain_eid = invalid_size_type_value;
+                if ( idsFind.size() > 0 )
+                    domain_eid = *idsFind.begin();
+                else
+                    domain_eid = invalid_size_type_value;
 
-                    DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
-                }
-                return domain_eid;
+                DVLOG( 2 ) << "[trial_related_to_test] test element id: " << idElem << " trial element id : " << domain_eid << "\n";
             }
+            return domain_eid;
+        }
         size_type trialElementId( typename mesh_1_type::element_iterator it ) const
-            {
-                return trialElementId( it->id() );
-            }
+        {
+            return trialElementId( it->id() );
+        }
         size_type trialElementId( typename mesh_1_type::element_type const& e ) const
-            {
-                return trialElementId( e.id() );
-            }
+        {
+            return trialElementId( e.id() );
+        }
         bool isZero( size_type i ) const
-            {
-                size_type domain_eid = trialElementId( i );
-                if ( domain_eid == invalid_size_type_value )
-                    return true;
-                return false;
-            }
+        {
+            size_type domain_eid = trialElementId( i );
+            if ( domain_eid == invalid_size_type_value )
+                return true;
+            return false;
+        }
         bool isZero( typename mesh_1_type::element_iterator it ) const
-            {
-                return this->isZero( it->id() );
-            }
+        {
+            return this->isZero( it->id() );
+        }
         bool isZero( typename mesh_1_type::element_type const& e ) const
-            {
-                return this->isZero( e.id() );
-            }
+        {
+            return this->isZero( e.id() );
+        }
 
         void update( map_test_geometric_mapping_context_type const& gmcTest,
                      map_trial_geometric_mapping_context_type const& _gmcTrial,
@@ -755,7 +749,7 @@ public:
         void updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& gmcTest,
                                         map_trial_geometric_mapping_context_type const& gmcTrial,
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
-                                        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad );
+                                        std::vector<boost::tuple<size_type, size_type>> const& indexLocalToQuad );
 
         void update( map_test_geometric_mapping_context_type const& gmcTest,
                      map_trial_geometric_mapping_context_type const& _gmcTrial,
@@ -775,7 +769,7 @@ public:
                                         map_trial_geometric_mapping_context_type const& gmcTrial,
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
                                         IM const& im,
-                                        std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
+                                        std::vector<boost::tuple<size_type, size_type>> const& indexLocalToQuad )
         {
             M_integrator = im;
             updateInCaseOfInterpolate( gmcTest, gmcTrial, gmcExpr, indexLocalToQuad );
@@ -794,7 +788,7 @@ public:
         {
             integrate( mpl::int_<fusion::result_of::size<GeomapTestContext>::type::value>() );
         }
-        void integrateInCaseOfInterpolate( std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+        void integrateInCaseOfInterpolate( std::vector<boost::tuple<size_type, size_type>> const& indexLocalToQuad,
                                            bool isFirstExperience )
         {
             integrateInCaseOfInterpolate( mpl::int_<fusion::result_of::size<GeomapTestContext>::type::value>(),
@@ -802,48 +796,45 @@ public:
                                           isFirstExperience );
         }
 
-
         void assemble()
         {
-            assemble( fusion::at_key<gmc<0> >( M_test_gmc )->id() );
+            assemble( fusion::at_key<gmc<0>>( M_test_gmc )->id() );
         }
         void assemble( size_type elt_0 );
 
         void assemble( mpl::int_<2> )
         {
-            assemble( fusion::at_key<gmc<0> >( M_test_gmc )->id(),
+            assemble( fusion::at_key<gmc<0>>( M_test_gmc )->id(),
                       fusion::at_key<test_gmc1>( M_test_gmc )->id() );
         }
-        void assemble( size_type elt_0, size_type elt_1  );
+        void assemble( size_type elt_0, size_type elt_1 );
 
         void assembleInCaseOfInterpolate();
-
 
         /**
          * precompute the basis function associated with the test and
          * trial space at a set of points
          */
-        template<typename Pts>
+        template <typename Pts>
         void precomputeBasisAtPoints( Pts const& pts )
         {
             M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortarTest>(), pts ) );
             M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortarTrial>(), pts ) );
         }
 
-        template<typename PtsTest,typename PtsTrial>
-        void precomputeBasisAtPoints( PtsTest const& pts1,PtsTrial const& pts2  )
+        template <typename PtsTest, typename PtsTrial>
+        void precomputeBasisAtPoints( PtsTest const& pts1, PtsTrial const& pts2 )
         {
             M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortarTest>(), pts1 ) );
             M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortarTrial>(), pts2 ) );
         }
-
 
         /**
          * precompute the basis function associated with the test and
          * trial space at a set of points on the face of
          * the reference element
          */
-        template<typename Pts>
+        template <typename Pts>
         void precomputeBasisAtPoints( uint16_type __f, permutation_1_type const& __p, Pts const& pts )
         {
             M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortarTest>(), pts ) );
@@ -853,78 +844,78 @@ public:
             //FEELPP_ASSERT( M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
         }
 
-        template<typename PtsSet>
-        std::map<uint16_type, std::map<permutation_1_type,test_precompute_ptrtype> >
+        template <typename PtsSet>
+        std::map<uint16_type, std::map<permutation_1_type, test_precompute_ptrtype>>
         precomputeTestBasisAtPoints( PtsSet const& pts )
         {
-            typedef typename boost::is_same< permutation_1_type, typename QuadMapped<PtsSet>::permutation_type>::type is_same_permuation_type;
+            typedef typename boost::is_same<permutation_1_type, typename QuadMapped<PtsSet>::permutation_type>::type is_same_permuation_type;
             return precomputeTestBasisAtPoints( pts, mpl::bool_<is_same_permuation_type::value>() );
         }
 
-        template<typename PtsSet>
-        std::map<uint16_type, std::map<permutation_1_type,test_precompute_ptrtype> >
+        template <typename PtsSet>
+        std::map<uint16_type, std::map<permutation_1_type, test_precompute_ptrtype>>
         precomputeTestBasisAtPoints( PtsSet const& pts, mpl::bool_<false> )
         {
-            std::map<uint16_type, std::map<permutation_1_type,test_precompute_ptrtype> > testpc;
+            std::map<uint16_type, std::map<permutation_1_type, test_precompute_ptrtype>> testpc;
             return testpc;
         }
 
-        template<typename PtsSet>
-        std::map<uint16_type, std::map<permutation_1_type,test_precompute_ptrtype> >
+        template <typename PtsSet>
+        std::map<uint16_type, std::map<permutation_1_type, test_precompute_ptrtype>>
         precomputeTestBasisAtPoints( PtsSet const& pts, mpl::bool_<true> )
         {
             //QuadMapped<PtsSet> qm;
             typedef typename QuadMapped<PtsSet>::permutation_type permutation_type;
             //typename QuadMapped<PtsSet>::permutation_points_type ppts( qm( pts ) );
 
-            std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > testpc;
+            std::map<uint16_type, std::map<permutation_type, test_precompute_ptrtype>> testpc;
 
             for ( uint16_type __f = 0; __f < pts.nFaces(); ++__f )
             {
                 for ( permutation_type __p( permutation_type::IDENTITY );
-                        __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                      __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
                     //testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), ppts[__f].find( __p )->second ) );
-                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortarTest>(), pts.fpoints( __f,__p.value() ) ) );
+                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortarTest>(), pts.fpoints( __f, __p.value() ) ) );
                 }
             }
 
             return testpc;
         }
 
-        template<typename PtsSet>
-        std::map<uint16_type, std::map<permutation_2_type,trial_precompute_ptrtype> >
+        template <typename PtsSet>
+        std::map<uint16_type, std::map<permutation_2_type, trial_precompute_ptrtype>>
         precomputeTrialBasisAtPoints( PtsSet const& pts )
         {
-            typedef typename boost::is_same< permutation_2_type, typename QuadMapped<PtsSet>::permutation_type>::type is_same_permuation_type;
+            typedef typename boost::is_same<permutation_2_type, typename QuadMapped<PtsSet>::permutation_type>::type is_same_permuation_type;
             return precomputeTrialBasisAtPoints( pts, mpl::bool_<is_same_permuation_type::value>() );
         }
 
-        template<typename PtsSet>
-        std::map<uint16_type, std::map<permutation_2_type,trial_precompute_ptrtype> >
-        precomputeTrialBasisAtPoints( PtsSet const& pts,  mpl::bool_<false> )
+        template <typename PtsSet>
+        std::map<uint16_type, std::map<permutation_2_type, trial_precompute_ptrtype>>
+        precomputeTrialBasisAtPoints( PtsSet const& pts, mpl::bool_<false> )
         {
-            std::map<uint16_type, std::map<permutation_2_type,trial_precompute_ptrtype> > trialpc;
+            std::map<uint16_type, std::map<permutation_2_type, trial_precompute_ptrtype>> trialpc;
             return trialpc;
         }
 
-        template<typename PtsSet>
-        std::map<uint16_type, std::map<permutation_2_type,trial_precompute_ptrtype> >
+        template <typename PtsSet>
+        std::map<uint16_type, std::map<permutation_2_type, trial_precompute_ptrtype>>
         precomputeTrialBasisAtPoints( PtsSet const& pts, mpl::bool_<true> )
         {
             //QuadMapped<PtsSet> qm;
             typedef typename QuadMapped<PtsSet>::permutation_type permutation_type;
             //typename QuadMapped<PtsSet>::permutation_points_type ppts( qm( pts ) );
 
-            std::map<uint16_type, std::map<permutation_type,trial_precompute_ptrtype> > trialpc;
+            std::map<uint16_type, std::map<permutation_type, trial_precompute_ptrtype>> trialpc;
 
             for ( uint16_type __f = 0; __f < pts.nFaces(); ++__f )
             {
                 for ( permutation_type __p( permutation_type::IDENTITY );
-                        __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                      __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
                     //trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), ppts[__f].find( __p )->second ) );
-                    trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortarTrial>(), pts.fpoints(__f, __p.value() ) ) );
+                    trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortarTrial>(), pts.fpoints( __f, __p.value() ) ) );
                 }
             }
 
@@ -942,7 +933,7 @@ public:
                                                permutation_1_type __p = permutation_1_type( permutation_1_type::NO_PERMUTATION ) ) const
         {
             if ( __f == invalid_uint16_type_value )
-                return  M_test_pc;
+                return M_test_pc;
 
             //FEELPP_ASSERT( M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
             return M_test_pc_face.find( __f )->second.find( __p )->second;
@@ -955,18 +946,16 @@ public:
          * \see precomputeBasisAtPoints()
          */
         trial_precompute_ptrtype const& trialPc( uint16_type __f,
-                permutation_2_type __p = permutation_2_type( permutation_2_type::NO_PERMUTATION ) ) const
+                                                 permutation_2_type __p = permutation_2_type( permutation_2_type::NO_PERMUTATION ) ) const
         {
             if ( __f == invalid_uint16_type_value )
-                return  M_trial_pc;
+                return M_trial_pc;
 
             //FEELPP_ASSERT( M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
             return M_trial_pc_face.find( __f )->second.find( __p )->second;
         }
 
-
-    private:
-
+      private:
         void update( map_test_geometric_mapping_context_type const& gmcTest,
                      map_trial_geometric_mapping_context_type const& gmcTrial,
                      map_geometric_mapping_expr_context_type const& gmcExpr,
@@ -987,26 +976,24 @@ public:
                                         map_geometric_mapping_expr_context_type const& gmcExpr,
                                         mpl::bool_<true> );
 
-
         void integrate( mpl::int_<1> );
 
         void integrate( mpl::int_<2> );
 
         void integrateInCaseOfInterpolate( mpl::int_<1>,
-                                           std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                                           std::vector<boost::tuple<size_type, size_type>> const& indexLocalToQuad,
                                            bool isFirstExperience );
-    private:
 
+      private:
         form_type& M_form;
         const list_block_type& M_lb;
         dof_1_type* M_test_dof;
         dof_2_type* M_trial_dof;
 
         test_precompute_ptrtype M_test_pc;
-        std::map<uint16_type, std::map<permutation_1_type,test_precompute_ptrtype> > M_test_pc_face;
+        std::map<uint16_type, std::map<permutation_1_type, test_precompute_ptrtype>> M_test_pc_face;
         trial_precompute_ptrtype M_trial_pc;
-        std::map<uint16_type, std::map<permutation_2_type, trial_precompute_ptrtype> > M_trial_pc_face;
-
+        std::map<uint16_type, std::map<permutation_2_type, trial_precompute_ptrtype>> M_trial_pc_face;
 
         map_test_geometric_mapping_context_type M_test_gmc;
         map_trial_geometric_mapping_context_type M_trial_gmc;
@@ -1017,7 +1004,6 @@ public:
         map_trial_fecontext_type M_trial_fec;
         map_left_trial_fecontext_type M_trial_fec0;
         map_right_trial_fecontext_type M_trial_fec1;
-
 
         local_matrix_type M_rep;
         mortar_test_local_matrix_type M_mortarTest_rep;
@@ -1030,10 +1016,10 @@ public:
         local_col_type M_local_cols;
         local2_col_type M_local_cols_2;
 
-        local_row_sign_type/*local_row_type*/ M_local_rowsigns;
-        local2_row_sign_type/*local2_row_type*/ M_local_rowsigns_2;
-        local_col_sign_type/*local_col_type*/ M_local_colsigns;
-        local2_col_sign_type/*local2_col_type*/ M_local_colsigns_2;
+        local_row_sign_type /*local_row_type*/ M_local_rowsigns;
+        local2_row_sign_type /*local2_row_type*/ M_local_rowsigns_2;
+        local_col_sign_type /*local_col_type*/ M_local_colsigns;
+        local2_col_sign_type /*local2_col_type*/ M_local_colsigns_2;
 
         c_local_matrix_type M_c_rep;
         c_mortar_test_local_matrix_type M_c_mortarTest_rep;
@@ -1063,8 +1049,7 @@ public:
      */
     //@{
 
-
-    BilinearForm(){}
+    BilinearForm() {}
     /**
 
 
@@ -1090,25 +1075,24 @@ public:
                   size_type graph_hints = Pattern::COUPLED );
 
     BilinearForm( BilinearForm const& __vf )
-        :
-        M_pattern( __vf.M_pattern ),
-        M_X1( __vf.M_X1 ),
-        M_X2( __vf.M_X2 ),
-        M_matrix( __vf.M_matrix ),
-        M_lb( __vf.M_lb ),
-        M_row_startInMatrix( __vf.M_row_startInMatrix ),
-        M_col_startInMatrix( __vf.M_col_startInMatrix ),
-        M_do_threshold( __vf.M_do_threshold ),
-        M_threshold( __vf.M_threshold ),
-        M_dofIdToContainerIdTest( __vf.M_dofIdToContainerIdTest ),
-        M_dofIdToContainerIdTrial( __vf.M_dofIdToContainerIdTrial )
+        : M_pattern( __vf.M_pattern ),
+          M_X1( __vf.M_X1 ),
+          M_X2( __vf.M_X2 ),
+          M_matrix( __vf.M_matrix ),
+          M_lb( __vf.M_lb ),
+          M_row_startInMatrix( __vf.M_row_startInMatrix ),
+          M_col_startInMatrix( __vf.M_col_startInMatrix ),
+          M_do_threshold( __vf.M_do_threshold ),
+          M_threshold( __vf.M_threshold ),
+          M_dofIdToContainerIdTest( __vf.M_dofIdToContainerIdTest ),
+          M_dofIdToContainerIdTrial( __vf.M_dofIdToContainerIdTrial )
 
-    {}
+    {
+    }
 
     ~BilinearForm()
-    {}
-
-
+    {
+    }
 
     //@}
 
@@ -1150,20 +1134,20 @@ public:
     BilinearForm& operator+=( Expr<ExprT> const& expr );
 
     BilinearForm& operator+=( BilinearForm& a )
-        {
-            if ( this == &a )
-                return *this;
-
-            M_matrix->addMatrix( 1.0, a.M_matrix );
-
+    {
+        if ( this == &a )
             return *this;
-        }
 
-    BilinearForm& add( double alpha, BilinearForm&  a )
-        {
-            M_matrix->addMatrix( alpha, a.M_matrix );
-            return *this;
-        }
+        M_matrix->addMatrix( 1.0, a.M_matrix );
+
+        return *this;
+    }
+
+    BilinearForm& add( double alpha, BilinearForm& a )
+    {
+        M_matrix->addMatrix( alpha, a.M_matrix );
+        return *this;
+    }
     /**
      * Computes the energy norm associated with the bilinear form
      *
@@ -1171,7 +1155,7 @@ public:
      * @param __u element of Space 2 (trial space)
      * @return the energy norm
      */
-    value_type operator()( element_1_type const& __v,  element_2_type const& __u ) const
+    value_type operator()( element_1_type const& __v, element_2_type const& __u ) const
     {
         return M_matrix->energy( __v, __u );
     }
@@ -1280,7 +1264,6 @@ public:
     {
         return M_X2->gm1();
     }
-
 
     /**
      * \return the matrix associated to the bilinear form
@@ -1399,10 +1382,8 @@ public:
      */
     //@{
 
-
     // close matrix
     void close() { M_matrix->close(); }
-
 
     /**
      * Diagonalize representation(matrix) associated to the \p
@@ -1423,21 +1404,20 @@ public:
      * add value \p v at position (\p i, \p j) of the matrix
      * associated with the bilinear form
      */
-    void add( size_type i,  size_type j,  value_type const& v )
+    void add( size_type i, size_type j, value_type const& v )
     {
         if ( M_do_threshold )
         {
             if ( doThreshold( v ) )
-                M_matrix->add( i+this->rowStartInMatrix(),
-                                j+this->colStartInMatrix(),
-                                v );
+                M_matrix->add( i + this->rowStartInMatrix(),
+                               j + this->colStartInMatrix(),
+                               v );
         }
 
         else
-            M_matrix->add( i+this->rowStartInMatrix(),
-                            j+this->colStartInMatrix(),
-                            v );
-
+            M_matrix->add( i + this->rowStartInMatrix(),
+                           j + this->colStartInMatrix(),
+                           v );
     }
     /**
      * add value \p v at position (\p i, \p j) of the matrix
@@ -1460,13 +1440,11 @@ public:
         M_matrix->addMatrix( rows, nrows, cols, ncols, data );
     }
 
-
-
     /**
      * set value \p v at position (\p i, \p j) of the matrix
      * associated with the bilinear form
      */
-    void set( size_type i,  size_type j,  value_type const& v )
+    void set( size_type i, size_type j, value_type const& v )
     {
         M_matrix->set( i, j, v );
     }
@@ -1488,64 +1466,51 @@ public:
         return M_n_nz[i];
     }
 
-
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
                                      solve,
                                      tag,
-                                     ( required
-                                       ( in_out( solution ),* )
-                                       ( rhs, * ) )
-                                     ( optional
-                                       ( name,           ( std::string ), "" )
-                                       ( kind,           ( std::string ), soption(_prefix=name,_name="backend") )
-                                       ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                                       ( pre, (pre_solve_type), pre_solve_type() )
-                                       ( post, (post_solve_type), post_solve_type() )
-                                         ) )
-        {
-            return backend( _name=name, _kind=kind, _rebuild=rebuild,
-                            _worldcomm=this->M_X1->worldComm() )->solve( _matrix=this->matrixPtr(),
-                                                                         _rhs=rhs.vectorPtr(),
-                                                                         _solution=solution,
-                                                                         _pre=pre,
-                                                                         _post=post
-                                                                         );
-        }
+                                     ( required( in_out( solution ), * )( rhs, * ) )( optional( name, ( std::string ), "" )( kind, ( std::string ), soption( _prefix = name, _name = "backend" ) )( rebuild, (bool), boption( _prefix = name, _name = "backend.rebuild" ) )( pre, ( pre_solve_type ), pre_solve_type() )( post, ( post_solve_type ), post_solve_type() ) ) )
+    {
+        return backend( _name = name, _kind = kind, _rebuild = rebuild,
+                        _worldcomm = this->M_X1->worldComm() )
+            ->solve( _matrix = this->matrixPtr(),
+                     _rhs = rhs.vectorPtr(),
+                     _solution = solution,
+                     _pre = pre,
+                     _post = post );
+    }
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
                                      solveb,
                                      tag,
-                                     ( required
-                                       ( in_out( solution ),* )
-                                       ( rhs, * )
-                                       ( backend, *) )
-                                     ( optional
-                                       ( prec,           ( preconditioner_ptrtype ),
-                                         preconditioner( _prefix=backend->prefix(),
-                                                         _matrix=this->matrixPtr(),
-                                                         _pc=backend->pcEnumType()/*LU_PRECOND*/,
-                                                         _pcfactormatsolverpackage=backend->matSolverPackageEnumType(),
-                                                         _backend=backend ) )
-                                         ) )
-        {
-            return backend->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
-                                   _solution=solution, _prec = prec );
-        }
+                                     ( required( in_out( solution ), * )( rhs, * )(backend, *))( optional( prec, ( preconditioner_ptrtype ),
+                                                                                                           preconditioner( _prefix = backend->prefix(),
+                                                                                                                           _matrix = this->matrixPtr(),
+                                                                                                                           _pc = backend->pcEnumType() /*LU_PRECOND*/,
+                                                                                                                           _pcfactormatsolverpackage = backend->matSolverPackageEnumType(),
+                                                                                                                           _backend = backend ) ) ) )
+    {
+        return backend->solve( _matrix = this->matrixPtr(), _rhs = rhs.vectorPtr(),
+                               _solution = solution, _prec = prec );
+    }
 
     //@}
 
-private:
+  private:
+    template <class ExprT>
+    void assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<false> );
+    template <class ExprT>
+    void assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<true> );
+    template <class ExprT>
+    void assign( Expr<ExprT> const& __expr, mpl::bool_<true>, mpl::bool_<true> );
+    template <class ExprT>
+    void assign( Expr<ExprT> const& __expr, mpl::bool_<true>, mpl::bool_<false> );
+    template <class ExprT>
+    void assign( Expr<ExprT> const& __expr, mpl::bool_<true>, mpl::bool_<false>, mpl::bool_<true> );
+    template <class ExprT>
+    void assign( Expr<ExprT> const& __expr, mpl::bool_<true>, mpl::bool_<false>, mpl::bool_<false> );
 
-
-    template <class ExprT> void assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<false> );
-    template <class ExprT> void assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<true> );
-    template <class ExprT> void assign( Expr<ExprT> const& __expr, mpl::bool_<true>, mpl::bool_<true> );
-    template <class ExprT> void assign( Expr<ExprT> const& __expr, mpl::bool_<true>, mpl::bool_<false> );
-    template <class ExprT> void assign( Expr<ExprT> const& __expr, mpl::bool_<true>, mpl::bool_<false>, mpl::bool_<true> );
-    template <class ExprT> void assign( Expr<ExprT> const& __expr, mpl::bool_<true>, mpl::bool_<false>, mpl::bool_<false> );
-
-private:
-
+  private:
     size_type M_pattern;
 
     space_1_ptrtype M_X1;
@@ -1556,7 +1521,7 @@ private:
     bool M_do_build;
 
     list_block_type M_lb;
-    size_type M_row_startInMatrix,M_col_startInMatrix;
+    size_type M_row_startInMatrix, M_col_startInMatrix;
 
     bool M_do_threshold;
     value_type M_threshold;
@@ -1567,79 +1532,76 @@ private:
     std::vector<size_type> const* M_dofIdToContainerIdTest;
     std::vector<size_type> const* M_dofIdToContainerIdTrial;
 };
-template<typename FE1,  typename FE2, typename ElemContType>
+template <typename FE1, typename FE2, typename ElemContType>
 BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
-        space_2_ptrtype const& Yh,
-        matrix_ptrtype& __M,
-        size_type rowstart,
-        size_type colstart,
-        bool build,
-        bool do_threshold,
-        value_type threshold,
-        size_type graph_hints )
-    :
-    M_pattern( graph_hints ),
-    M_X1( Xh ),
-    M_X2( Yh ),
-    M_matrix( __M ),
-    M_do_build( build ),
-    M_lb(),
-    M_row_startInMatrix( rowstart ),
-    M_col_startInMatrix( colstart ),
-    M_do_threshold( do_threshold ),
-    M_threshold( threshold )
+                                                    space_2_ptrtype const& Yh,
+                                                    matrix_ptrtype& __M,
+                                                    size_type rowstart,
+                                                    size_type colstart,
+                                                    bool build,
+                                                    bool do_threshold,
+                                                    value_type threshold,
+                                                    size_type graph_hints )
+    : M_pattern( graph_hints ),
+      M_X1( Xh ),
+      M_X2( Yh ),
+      M_matrix( __M ),
+      M_do_build( build ),
+      M_lb(),
+      M_row_startInMatrix( rowstart ),
+      M_col_startInMatrix( colstart ),
+      M_do_threshold( do_threshold ),
+      M_threshold( threshold )
 {
     boost::timer tim;
-    DVLOG(2) << "begin constructor with default listblock\n";
+    DVLOG( 2 ) << "begin constructor with default listblock\n";
 
     if ( !this->M_X1->worldComm().isActive() ) return;
 
-    if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=M_X1, _trial=M_X2 );
-    M_lb.push_back( Block ( 0, 0, 0, 0 ) );
-    datamap_ptrtype dmTest = (true)? M_matrix->mapRowPtr() : M_X1->dof();
-    datamap_ptrtype dmTrial = (true)? M_matrix->mapColPtr() : M_X2->dof();
+    if ( !M_matrix ) M_matrix = backend()->newMatrix( _test = M_X1, _trial = M_X2 );
+    M_lb.push_back( Block( 0, 0, 0, 0 ) );
+    datamap_ptrtype dmTest = ( true ) ? M_matrix->mapRowPtr() : M_X1->dof();
+    datamap_ptrtype dmTrial = ( true ) ? M_matrix->mapColPtr() : M_X2->dof();
     this->setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_row_startInMatrix ) );
     this->setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_col_startInMatrix ) );
 
-    DVLOG(2) << " - form init in " << tim.elapsed() << "\n";
-    DVLOG(2) << "begin constructor with default listblock done\n";
+    DVLOG( 2 ) << " - form init in " << tim.elapsed() << "\n";
+    DVLOG( 2 ) << "begin constructor with default listblock done\n";
 }
 
-template<typename FE1,  typename FE2, typename ElemContType>
+template <typename FE1, typename FE2, typename ElemContType>
 BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
-        space_2_ptrtype const& Yh,
-        matrix_ptrtype& __M,
-        list_block_type const& __lb,
-        size_type rowstart,
-        size_type colstart,
-        bool do_threshold ,
-        value_type threshold,
-        size_type graph_hints )
-    :
-    M_pattern( graph_hints ),
-    M_X1( Xh ),
-    M_X2( Yh ),
-    M_matrix( __M ),
-    M_do_build( false ),
-    M_lb( __lb ),
-    M_row_startInMatrix( rowstart ),
-    M_col_startInMatrix( colstart ),
-    M_do_threshold( do_threshold ),
-    M_threshold( threshold )
+                                                    space_2_ptrtype const& Yh,
+                                                    matrix_ptrtype& __M,
+                                                    list_block_type const& __lb,
+                                                    size_type rowstart,
+                                                    size_type colstart,
+                                                    bool do_threshold,
+                                                    value_type threshold,
+                                                    size_type graph_hints )
+    : M_pattern( graph_hints ),
+      M_X1( Xh ),
+      M_X2( Yh ),
+      M_matrix( __M ),
+      M_do_build( false ),
+      M_lb( __lb ),
+      M_row_startInMatrix( rowstart ),
+      M_col_startInMatrix( colstart ),
+      M_do_threshold( do_threshold ),
+      M_threshold( threshold )
 {
     // do nothing if process not active for this space
     if ( !this->M_X1->worldComm().isActive() )
         return;
 
-    if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=M_X1, _trial=M_X2 );
+    if ( !M_matrix ) M_matrix = backend()->newMatrix( _test = M_X1, _trial = M_X2 );
 }
 
-template<typename FE1,  typename FE2,  typename ElemContType>
-template<typename ExprT>
-void
-BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
-        bool init,
-        mpl::bool_<false> )
+template <typename FE1, typename FE2, typename ElemContType>
+template <typename ExprT>
+void BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
+                                                   bool init,
+                                                   mpl::bool_<false> )
 {
     // do nothing if process not active for this space
     if ( !this->M_X1->worldComm().isActive() )
@@ -1666,119 +1628,108 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
 
     __expr.assemble( M_X1, M_X2, *this );
 
-    DVLOG(2) << "[BilinearForm::assign<false>] stop\n";
-
+    DVLOG( 2 ) << "[BilinearForm::assign<false>] stop\n";
 }
-template<typename FE1,  typename FE2,  typename ElemContType>
-template<typename ExprT>
-void
-BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
-        bool init,
-        mpl::bool_<true> )
+template <typename FE1, typename FE2, typename ElemContType>
+template <typename ExprT>
+void BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
+                                                   bool init,
+                                                   mpl::bool_<true> )
 {
     // do nothing if process not active for this space
     if ( !this->M_X1->worldComm().isActive() )
         return;
 
-    DVLOG(2) << "BilinearForm::assign() start loop on test spaces\n";
+    DVLOG( 2 ) << "BilinearForm::assign() start loop on test spaces\n";
 
     if ( init ) M_matrix->zero();
 
     assign( __expr, mpl::bool_<true>(), mpl::bool_<( space_1_type::nSpaces > 1 && space_2_type::nSpaces > 1 )>() );
-    DVLOG(2) << "BilinearForm::assign() stop loop on test spaces\n";
-
+    DVLOG( 2 ) << "BilinearForm::assign() stop loop on test spaces\n";
 }
-template<typename FE1,  typename FE2,  typename ElemContType>
-template<typename ExprT>
-void
-BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
-        mpl::bool_<true>,
-        mpl::bool_<true> )
+template <typename FE1, typename FE2, typename ElemContType>
+template <typename ExprT>
+void BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
+                                                   mpl::bool_<true>,
+                                                   mpl::bool_<true> )
 {
     fusion::for_each( M_X1->functionSpaces(), make_bfassign2( *this, __expr ) );
 }
-template<typename FE1,  typename FE2,  typename ElemContType>
-template<typename ExprT>
-void
-BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
-        mpl::bool_<true>,
-        mpl::bool_<false> )
+template <typename FE1, typename FE2, typename ElemContType>
+template <typename ExprT>
+void BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
+                                                   mpl::bool_<true>,
+                                                   mpl::bool_<false> )
 {
     assign( __expr, mpl::bool_<true>(), mpl::bool_<false>(), mpl::bool_<( space_1_type::nSpaces > 1 )>() );
 }
 
-template<typename FE1,  typename FE2,  typename ElemContType>
-template<typename ExprT>
-void
-BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
-        mpl::bool_<true>,
-        mpl::bool_<false>,
-        mpl::bool_<true> )
+template <typename FE1, typename FE2, typename ElemContType>
+template <typename ExprT>
+void BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
+                                                   mpl::bool_<true>,
+                                                   mpl::bool_<false>,
+                                                   mpl::bool_<true> )
 {
     fusion::for_each( M_X1->functionSpaces(), make_bfassign3( *this, __expr, M_X2, 0 ) );
 }
-template<typename FE1,  typename FE2,  typename ElemContType>
-template<typename ExprT>
-void
-BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
-        mpl::bool_<true>,
-        mpl::bool_<false>,
-        mpl::bool_<false> )
+template <typename FE1, typename FE2, typename ElemContType>
+template <typename ExprT>
+void BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
+                                                   mpl::bool_<true>,
+                                                   mpl::bool_<false>,
+                                                   mpl::bool_<false> )
 {
     fusion::for_each( M_X2->functionSpaces(), make_bfassign1( *this, __expr, M_X1, 0 ) );
-
 }
-template<typename FE1,  typename FE2,  typename ElemContType>
-template<typename ExprT>
+template <typename FE1, typename FE2, typename ElemContType>
+template <typename ExprT>
 BilinearForm<FE1, FE2, ElemContType>&
 BilinearForm<FE1, FE2, ElemContType>::operator=( Expr<ExprT> const& __expr )
 {
     // loop(fusion::for_each) over sub-functionspaces in SpaceType
     // pass expression and initialize
-    this->assign( __expr, true, mpl::bool_<mpl::or_< mpl::bool_< ( space_1_type::nSpaces > 1 )>,
-                  mpl::bool_< ( space_2_type::nSpaces > 1 )> >::type::value >() );
+    this->assign( __expr, true, mpl::bool_<mpl::or_<mpl::bool_<( space_1_type::nSpaces > 1 )>,
+                                                    mpl::bool_<( space_2_type::nSpaces > 1 )>>::type::value>() );
     return *this;
 }
 
-template<typename FE1,  typename FE2,  typename ElemContType>
-template<typename ExprT>
+template <typename FE1, typename FE2, typename ElemContType>
+template <typename ExprT>
 BilinearForm<FE1, FE2, ElemContType>&
 BilinearForm<FE1, FE2, ElemContType>::operator+=( Expr<ExprT> const& __expr )
 {
-    DVLOG(2) << "[BilinearForm::operator+=] start\n";
-    this->assign( __expr, false, mpl::bool_<mpl::or_< mpl::bool_< ( space_1_type::nSpaces > 1 )>,
-                  mpl::bool_< ( space_2_type::nSpaces > 1 )> >::type::value >() );
-    DVLOG(2) << "[BilinearForm::operator+=] stop\n";
+    DVLOG( 2 ) << "[BilinearForm::operator+=] start\n";
+    this->assign( __expr, false, mpl::bool_<mpl::or_<mpl::bool_<( space_1_type::nSpaces > 1 )>,
+                                                     mpl::bool_<( space_2_type::nSpaces > 1 )>>::type::value>() );
+    DVLOG( 2 ) << "[BilinearForm::operator+=] stop\n";
     return *this;
 }
 
-
-template<typename FE1,  typename FE2, typename ElemContType>
-void
-BilinearForm<FE1,FE2,ElemContType>::zeroRows( std::vector<int> const& __dofs,
-                                              Vector<value_type> const&__values,
-                                              Vector<value_type>& rhs,
-                                              Feel::Context const& on_context,
-                                              double value_on_diagonal )
+template <typename FE1, typename FE2, typename ElemContType>
+void BilinearForm<FE1, FE2, ElemContType>::zeroRows( std::vector<int> const& __dofs,
+                                                     Vector<value_type> const& __values,
+                                                     Vector<value_type>& rhs,
+                                                     Feel::Context const& on_context,
+                                                     double value_on_diagonal )
 {
     M_matrix->zeroRows( __dofs, __values, rhs, on_context, value_on_diagonal );
 }
 
-
-template<typename BFType, typename ExprType, typename TestSpaceType>
-template<typename SpaceType>
-void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<SpaceType> const& trial ) const
+template <typename BFType, typename ExprType, typename TestSpaceType>
+template <typename SpaceType>
+void BFAssign1<BFType, ExprType, TestSpaceType>::operator()( boost::shared_ptr<SpaceType> const& trial ) const
 {
     if ( M_bf.testSpace()->worldsComm()[M_test_index].isActive() )
     {
-        DVLOG(2) << "[BFAssign1::operator()] expression has test functions index "
-                      << M_test_index << " : "
-                 << ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n"
-                 << ExprType::template HasTestFunction<typename TestSpaceType::component_basis_type>::result << " (0:no, 1:yes)\n";
-        DVLOG(2) << "[BFAssign1::operator()] expression has trial functions index "
-                 << M_trial_index << " :"
-                 << ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n"
-                 << ExprType::template HasTrialFunction<typename SpaceType::component_basis_type>::result << " (0:no, 1:yes)\n";
+        DVLOG( 2 ) << "[BFAssign1::operator()] expression has test functions index "
+                   << M_test_index << " : "
+                   << ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n"
+                   << ExprType::template HasTestFunction<typename TestSpaceType::component_basis_type>::result << " (0:no, 1:yes)\n";
+        DVLOG( 2 ) << "[BFAssign1::operator()] expression has trial functions index "
+                   << M_trial_index << " :"
+                   << ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n"
+                   << ExprType::template HasTrialFunction<typename SpaceType::component_basis_type>::result << " (0:no, 1:yes)\n";
 
         if ( !ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result ||
              //!ExprType::template HasTestFunction<typename TestSpaceType::component_basis_type>::result ||
@@ -1790,8 +1741,8 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
             return;
         }
 
-        DVLOG(2) << "[BFAssign1::operator()] terms found with "
-                      << "testindex: " << M_test_index << " trialindex: " << M_trial_index << "\n";
+        DVLOG( 2 ) << "[BFAssign1::operator()] terms found with "
+                   << "testindex: " << M_test_index << " trialindex: " << M_trial_index << "\n";
         typedef SpaceType trial_space_type;
         typedef TestSpaceType test_space_type;
 #if 0
@@ -1819,8 +1770,9 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
 #endif
         typedef typename BFType::matrix_type matrix_type;
         typedef Feel::vf::detail::BilinearForm<test_space_type,
-                trial_space_type,
-                ublas::vector_range<ublas::vector<double> > > bf_type;
+                                               trial_space_type,
+                                               ublas::vector_range<ublas::vector<double>>>
+            bf_type;
 #if 0
         bf_type bf( M_test,trial, M_bf.matrixPtr(), list_block,  M_bf.rowStartInMatrix(), M_bf.colStartInMatrix(), M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern()  );
         datamap_ptrtype dmTest = M_bf.matrixPtr()->mapRowPtr();//M_bf.testSpace()->dof()
@@ -1839,22 +1791,21 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
     ++M_trial_index;
 }
 
-template<typename BFType, typename ExprType, typename TrialSpaceType>
-template<typename SpaceType>
-void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<SpaceType> const& test ) const
+template <typename BFType, typename ExprType, typename TrialSpaceType>
+template <typename SpaceType>
+void BFAssign3<BFType, ExprType, TrialSpaceType>::operator()( boost::shared_ptr<SpaceType> const& test ) const
 {
     if ( M_bf.testSpace()->worldsComm()[M_test_index].isActive() )
     {
 
-        DVLOG(2) << "[BFAssign3::operator()] expression has trial functions index "
-                 << M_test_index << " : "
-                 << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n"
-                 << ExprType::template HasTestFunction<typename SpaceType::component_basis_type>::result << " (0:no, 1:yes)\n";
-        DVLOG(2) << "[BFAssign3::operator()] expression has test functions index "
-                 << M_trial_index << " :"
-                 << ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n"
-                 << ExprType::template HasTrialFunction<typename TrialSpaceType::component_basis_type>::result << " (0:no, 1:yes)\n";
-
+        DVLOG( 2 ) << "[BFAssign3::operator()] expression has trial functions index "
+                   << M_test_index << " : "
+                   << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n"
+                   << ExprType::template HasTestFunction<typename SpaceType::component_basis_type>::result << " (0:no, 1:yes)\n";
+        DVLOG( 2 ) << "[BFAssign3::operator()] expression has test functions index "
+                   << M_trial_index << " :"
+                   << ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n"
+                   << ExprType::template HasTrialFunction<typename TrialSpaceType::component_basis_type>::result << " (0:no, 1:yes)\n";
 
         if ( !ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result ||
              //!ExprType::template HasTrialFunction<typename TrialSpaceType::component_basis_type>::result ||
@@ -1866,8 +1817,8 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
             return;
         }
 
-        DVLOG(2) << "[BFAssign3::operator()] terms found with "
-                      << "testindex: " << M_test_index << " trialindex: " << M_trial_index << "\n";
+        DVLOG( 2 ) << "[BFAssign3::operator()] terms found with "
+                   << "testindex: " << M_test_index << " trialindex: " << M_trial_index << "\n";
         typedef SpaceType test_space_type;
         typedef TrialSpaceType trial_space_type;
 
@@ -1877,30 +1828,30 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
         Feel::vf::list_block_type list_block;
 
         // with mpi, dof start to 0 (thanks to the LocalToGlobal mapping).
-        if ( M_bf.testSpace()->worldsComm()[M_test_index].globalSize()>1 )
+        if ( M_bf.testSpace()->worldsComm()[M_test_index].globalSize() > 1 )
         {
             //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
-            if (M_bf.testSpace()->hasEntriesForAllSpaces())
+            if ( M_bf.testSpace()->hasEntriesForAllSpaces() )
                 list_block.push_back( Feel::vf::Block( 0, 0,
-                                                       0/*M_bf.testSpace()->nLocalDofStart( M_test_index )*/,
-                                                       0/*M_bf.trialSpace()->nLocalDofStart( M_trial_index )*/ ) );
+                                                       0 /*M_bf.testSpace()->nLocalDofStart( M_test_index )*/,
+                                                       0 /*M_bf.trialSpace()->nLocalDofStart( M_trial_index )*/ ) );
             else
                 list_block.push_back( Feel::vf::Block( 0, 0, 0, M_bf.trialSpace()->nLocalDofStart( M_trial_index ) ) );
-
         }
 
         else
         {
             //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
-            list_block.push_back( Feel::vf::Block( 0,0,
-                                                   0/*M_bf.testSpace()->nDofStart( M_test_index )*/,
-                                                   0/*M_bf.trialSpace()->nDofStart( M_trial_index )*/ ) );
+            list_block.push_back( Feel::vf::Block( 0, 0,
+                                                   0 /*M_bf.testSpace()->nDofStart( M_test_index )*/,
+                                                   0 /*M_bf.trialSpace()->nDofStart( M_trial_index )*/ ) );
         }
 
         typedef typename BFType::matrix_type matrix_type;
         typedef Feel::vf::detail::BilinearForm<test_space_type,
-                trial_space_type,
-                ublas::vector_range<ublas::vector<double> > > bf_type;
+                                               trial_space_type,
+                                               ublas::vector_range<ublas::vector<double>>>
+            bf_type;
 #if 0
         bf_type bf( test, M_trial, M_bf.matrixPtr(), list_block, M_bf.rowStartInMatrix(), M_bf.colStartInMatrix(), M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
         datamap_ptrtype dmTest = M_bf.matrixPtr()->mapRowPtr(); //M_bf.testSpace()->dof()
@@ -1909,7 +1860,7 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
         bf.setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_bf.colStartInMatrix() + M_trial_index ) );
 #else
         bf_type bf( test, M_trial, M_bf.matrixPtr(),
-                    M_bf.rowStartInMatrix() + M_test_index, M_bf.colStartInMatrix()+ M_trial_index,
+                    M_bf.rowStartInMatrix() + M_test_index, M_bf.colStartInMatrix() + M_trial_index,
                     false, M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
 #endif
 
@@ -1919,28 +1870,25 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
     ++M_test_index;
 }
 
-
 } // detail
 } // vf
 
 namespace meta
 {
-template<typename FE1,
-         typename FE2,
-         typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type> >
+template <typename FE1,
+          typename FE2,
+          typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type>>
 struct BilinearForm
 {
-    typedef Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> type;
+    typedef Feel::vf::detail::BilinearForm<FE1, FE2, ElemContType> type;
 };
-
-
 }
 
 /// \endcond
-template<typename FE1,
-         typename FE2,
-         typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type> >
-using form2_type = Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType>;
+template <typename FE1,
+          typename FE2,
+          typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type>>
+using form2_type = Feel::vf::detail::BilinearForm<FE1, FE2, ElemContType>;
 } // feel
 
 #include <feel/feelvf/bilinearformcontext.hpp>

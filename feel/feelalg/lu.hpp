@@ -30,9 +30,9 @@
 #define __DenseLU_H 1
 
 #include <boost/mpl/int.hpp>
+#include <feel/feelalg/glas.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>
-#include <feel/feelalg/glas.hpp>
 
 namespace Feel
 {
@@ -40,31 +40,31 @@ namespace mpl = boost::mpl;
 
 namespace details
 {
-template<typename Matrix>
+template <typename Matrix>
 inline typename Matrix::value_type
 det( Matrix const& M, mpl::int_<1> )
 {
     return M( 0, 0 );
 }
-template<typename Matrix>
+template <typename Matrix>
 inline typename Matrix::value_type
 det( Matrix const& M, mpl::int_<2> )
 {
-    return  M( 0, 0 )*M( 1, 1 )-M( 0, 1 )*M( 1, 0 );
+    return M( 0, 0 ) * M( 1, 1 ) - M( 0, 1 ) * M( 1, 0 );
 }
-template<typename Matrix>
+template <typename Matrix>
 inline typename Matrix::value_type
 det( Matrix const& M, mpl::int_<3> )
 {
-    return ( M( 0, 0 )*M( 1, 1 )*M( 2, 2 )-
-             M( 0, 0 )*M( 1, 2 )*M( 2, 1 )-
-             M( 1, 0 )*M( 0, 1 )*M( 2, 2 )+
-             M( 1, 0 )*M( 0, 2 )*M( 2, 1 )+
-             M( 2, 0 )*M( 0, 1 )*M( 1, 2 )-
-             M( 2, 0 )*M( 0, 2 )*M( 1, 1 ) );
+    return ( M( 0, 0 ) * M( 1, 1 ) * M( 2, 2 ) -
+             M( 0, 0 ) * M( 1, 2 ) * M( 2, 1 ) -
+             M( 1, 0 ) * M( 0, 1 ) * M( 2, 2 ) +
+             M( 1, 0 ) * M( 0, 2 ) * M( 2, 1 ) +
+             M( 2, 0 ) * M( 0, 1 ) * M( 1, 2 ) -
+             M( 2, 0 ) * M( 0, 2 ) * M( 1, 1 ) );
 }
 
-template<typename Matrix>
+template <typename Matrix>
 inline typename Matrix::value_type
 det( Matrix const& M, mpl::int_<4> )
 {
@@ -92,116 +92,112 @@ det( Matrix const& M, mpl::int_<4> )
              M( 3, 0 ) * M( 1, 1 ) * M( 0, 3 ) * M( 2, 2 ) -
              M( 3, 0 ) * M( 2, 1 ) * M( 0, 2 ) * M( 1, 3 ) +
              M( 3, 0 ) * M( 2, 1 ) * M( 0, 3 ) * M( 1, 2 ) );
-
 }
 
-
-template<typename Matrix>
+template <typename Matrix>
 inline void
 inverse( Matrix const& M, Matrix& Minv, mpl::int_<1> )
 {
-    Minv( 0, 0 ) = 1.0/M( 0, 0 );
+    Minv( 0, 0 ) = 1.0 / M( 0, 0 );
 }
-template<typename Matrix>
+template <typename Matrix>
 inline void
 inverse( Matrix const& M, Matrix& Minv, mpl::int_<2> )
 {
-    typename Matrix::value_type J = M( 0, 0 )*M( 1, 1 )-M( 0, 1 )*M( 1, 0 );
-    Minv( 0, 0 ) = M( 1, 1 )/J;
-    Minv( 1, 0 ) = -M( 1, 0 )/J;
-    Minv( 0, 1 ) = -M( 0, 1 )/J;
-    Minv( 1, 1 ) = M( 0, 0 )/J;
+    typename Matrix::value_type J = M( 0, 0 ) * M( 1, 1 ) - M( 0, 1 ) * M( 1, 0 );
+    Minv( 0, 0 ) = M( 1, 1 ) / J;
+    Minv( 1, 0 ) = -M( 1, 0 ) / J;
+    Minv( 0, 1 ) = -M( 0, 1 ) / J;
+    Minv( 1, 1 ) = M( 0, 0 ) / J;
 }
-template<typename Matrix>
+template <typename Matrix>
 inline void
 inverse( Matrix const& M, Matrix& Minv, mpl::int_<3> )
 {
     typedef typename Matrix::value_type value_type;
 
-    value_type t4 = M( 0, 0 )*M( 1, 1 );
-    value_type t6 = M( 0, 0 )*M( 1, 2 );
-    value_type t8 = M( 0, 1 )*M( 1, 0 );
-    value_type t10 = M( 0, 2 )*M( 1, 0 );
+    value_type t4 = M( 0, 0 ) * M( 1, 1 );
+    value_type t6 = M( 0, 0 ) * M( 1, 2 );
+    value_type t8 = M( 0, 1 ) * M( 1, 0 );
+    value_type t10 = M( 0, 2 ) * M( 1, 0 );
 
-    value_type t12 = M( 0, 1 )*M( 2, 0 );
-    value_type t14 = M( 0, 2 )*M( 2, 0 );
-    value_type t17 = 1.0/( M( 2, 2 )*t4-t6*M( 2, 1 )-t8*M( 2, 2 )+t10*M( 2, 1 )+t12*M( 1, 2 )-t14*M( 1, 1 ) );
+    value_type t12 = M( 0, 1 ) * M( 2, 0 );
+    value_type t14 = M( 0, 2 ) * M( 2, 0 );
+    value_type t17 = 1.0 / ( M( 2, 2 ) * t4 - t6 * M( 2, 1 ) - t8 * M( 2, 2 ) + t10 * M( 2, 1 ) + t12 * M( 1, 2 ) - t14 * M( 1, 1 ) );
 
-    Minv( 0, 0 ) = ( M( 1, 1 )*M( 2, 2 )-M( 1, 2 )*M( 2, 1 ) )*t17;
-    Minv( 0, 1 ) = -( M( 0, 1 )*M( 2, 2 )-M( 0, 2 )*M( 2, 1 ) )*t17;
-    Minv( 0, 2 ) = -( -M( 0, 1 )*M( 1, 2 )+M( 0, 2 )*M( 1, 1 ) )*t17;
-    Minv( 1, 0 ) = -( M( 1, 0 )*M( 2, 2 )-M( 1, 2 )*M( 2, 0 ) )*t17;
-    Minv( 1, 1 ) = ( M( 0, 0 )*M( 2, 2 )-t14 )*t17;
-    Minv( 1, 2 ) = -( t6-t10 )*t17;
-    Minv( 2, 0 ) = -( -M( 1, 0 )*M( 2, 1 )+M( 1, 1 )*M( 2, 0 ) )*t17;
-    Minv( 2, 1 ) = -( M( 0, 0 )*M( 2, 1 )-t12 )*t17;
-    Minv( 2, 2 ) = ( t4-t8 )*t17;
+    Minv( 0, 0 ) = ( M( 1, 1 ) * M( 2, 2 ) - M( 1, 2 ) * M( 2, 1 ) ) * t17;
+    Minv( 0, 1 ) = -( M( 0, 1 ) * M( 2, 2 ) - M( 0, 2 ) * M( 2, 1 ) ) * t17;
+    Minv( 0, 2 ) = -( -M( 0, 1 ) * M( 1, 2 ) + M( 0, 2 ) * M( 1, 1 ) ) * t17;
+    Minv( 1, 0 ) = -( M( 1, 0 ) * M( 2, 2 ) - M( 1, 2 ) * M( 2, 0 ) ) * t17;
+    Minv( 1, 1 ) = ( M( 0, 0 ) * M( 2, 2 ) - t14 ) * t17;
+    Minv( 1, 2 ) = -( t6 - t10 ) * t17;
+    Minv( 2, 0 ) = -( -M( 1, 0 ) * M( 2, 1 ) + M( 1, 1 ) * M( 2, 0 ) ) * t17;
+    Minv( 2, 1 ) = -( M( 0, 0 ) * M( 2, 1 ) - t12 ) * t17;
+    Minv( 2, 2 ) = ( t4 - t8 ) * t17;
 }
 
-template<typename Matrix>
+template <typename Matrix>
 inline void
 inverse( Matrix const& __restrict__ M, Matrix& __restrict__ Minv, typename Matrix::value_type const& J, mpl::int_<1> )
 {
-    Minv( 0, 0 ) = typename Matrix::value_type( 1.0 )/J;
+    Minv( 0, 0 ) = typename Matrix::value_type( 1.0 ) / J;
 }
-template<typename Matrix>
+template <typename Matrix>
 inline void
 inverse( Matrix const& __restrict__ M, Matrix& __restrict__ Minv, typename Matrix::value_type const& J, mpl::int_<2> )
 {
-    Minv( 0, 0 ) = M( 1, 1 )/J;
-    Minv( 1, 0 ) = -M( 1, 0 )/J;
-    Minv( 0, 1 ) = -M( 0, 1 )/J;
-    Minv( 1, 1 ) = M( 0, 0 )/J;
+    Minv( 0, 0 ) = M( 1, 1 ) / J;
+    Minv( 1, 0 ) = -M( 1, 0 ) / J;
+    Minv( 0, 1 ) = -M( 0, 1 ) / J;
+    Minv( 1, 1 ) = M( 0, 0 ) / J;
 }
-template<typename Matrix>
+template <typename Matrix>
 inline void
 inverse( Matrix const& __restrict__ M, Matrix& __restrict__ Minv, typename Matrix::value_type const& J, mpl::int_<3> )
 {
     typedef typename Matrix::value_type value_type;
 
-    value_type t4 = M( 0, 0 )*M( 1, 1 );
-    value_type t6 = M( 0, 0 )*M( 1, 2 );
-    value_type t8 = M( 0, 1 )*M( 1, 0 );
-    value_type t10 = M( 0, 2 )*M( 1, 0 );
+    value_type t4 = M( 0, 0 ) * M( 1, 1 );
+    value_type t6 = M( 0, 0 ) * M( 1, 2 );
+    value_type t8 = M( 0, 1 ) * M( 1, 0 );
+    value_type t10 = M( 0, 2 ) * M( 1, 0 );
 
-    value_type t12 = M( 0, 1 )*M( 2, 0 );
-    value_type t14 = M( 0, 2 )*M( 2, 0 );
+    value_type t12 = M( 0, 1 ) * M( 2, 0 );
+    value_type t14 = M( 0, 2 ) * M( 2, 0 );
 
-    Minv( 0, 0 ) = ( M( 1, 1 )*M( 2, 2 )-M( 1, 2 )*M( 2, 1 ) )/J;
-    Minv( 0, 1 ) = -( M( 0, 1 )*M( 2, 2 )-M( 0, 2 )*M( 2, 1 ) )/J;
-    Minv( 0, 2 ) = -( -M( 0, 1 )*M( 1, 2 )+M( 0, 2 )*M( 1, 1 ) )/J;
-    Minv( 1, 0 ) = -( M( 1, 0 )*M( 2, 2 )-M( 1, 2 )*M( 2, 0 ) )/J;
-    Minv( 1, 1 ) = ( M( 0, 0 )*M( 2, 2 )-t14 )/J;
-    Minv( 1, 2 ) = -( t6-t10 )/J;
-    Minv( 2, 0 ) = -( -M( 1, 0 )*M( 2, 1 )+M( 1, 1 )*M( 2, 0 ) )/J;
-    Minv( 2, 1 ) = -( M( 0, 0 )*M( 2, 1 )-t12 )/J;
-    Minv( 2, 2 ) = ( t4-t8 )/J;
+    Minv( 0, 0 ) = ( M( 1, 1 ) * M( 2, 2 ) - M( 1, 2 ) * M( 2, 1 ) ) / J;
+    Minv( 0, 1 ) = -( M( 0, 1 ) * M( 2, 2 ) - M( 0, 2 ) * M( 2, 1 ) ) / J;
+    Minv( 0, 2 ) = -( -M( 0, 1 ) * M( 1, 2 ) + M( 0, 2 ) * M( 1, 1 ) ) / J;
+    Minv( 1, 0 ) = -( M( 1, 0 ) * M( 2, 2 ) - M( 1, 2 ) * M( 2, 0 ) ) / J;
+    Minv( 1, 1 ) = ( M( 0, 0 ) * M( 2, 2 ) - t14 ) / J;
+    Minv( 1, 2 ) = -( t6 - t10 ) / J;
+    Minv( 2, 0 ) = -( -M( 1, 0 ) * M( 2, 1 ) + M( 1, 1 ) * M( 2, 0 ) ) / J;
+    Minv( 2, 1 ) = -( M( 0, 0 ) * M( 2, 1 ) - t12 ) / J;
+    Minv( 2, 2 ) = ( t4 - t8 ) / J;
 }
-
 
 } // details
 
-template<int Dim, typename Matrix>
+template <int Dim, typename Matrix>
 inline typename Matrix::value_type
 det( Matrix const& M )
 {
     return details::det( M, mpl::int_<Dim>() );
 }
 
-template<int Dim, typename Matrix>
+template <int Dim, typename Matrix>
 inline void
 inverse( Matrix const& M, Matrix& Minv )
 {
     details::inverse( M, Minv, mpl::int_<Dim>() );
 }
 
-template<int Dim, typename Matrix>
+template <int Dim, typename Matrix>
 inline void
 inverse( Matrix const& __restrict__ M, Matrix& __restrict__ Minv, typename Matrix::value_type const& J )
 {
     details::inverse( M, Minv, J, mpl::int_<Dim>() );
 }
-
 
 /** LU Decomposition.
     <P>
@@ -218,7 +214,7 @@ inverse( Matrix const& __restrict__ M, Matrix& __restrict__ Minv, typename Matri
 template <typename MatrixType>
 class LU
 {
-public :
+  public:
     //typedef Real value_type;
     //typedef boost::numeric::ublas::matrix<value_type> matrix_type;
     typedef typename MatrixType::value_type value_type;
@@ -231,20 +227,18 @@ public :
     	@return     LU Decomposition object to access L, U and piv.
     */
 
-    LU ( const matrix_type &A )
-        :
-        __LU( A.size1(), A.size2() ),
-        m( A.size1() ),
-        n( A.size2() ),
-        pivsign( 1 ),
-        piv( A.size1() )
+    LU( const matrix_type& A )
+        : __LU( A.size1(), A.size2() ),
+          m( A.size1() ),
+          n( A.size2() ),
+          pivsign( 1 ),
+          piv( A.size1() )
 
     {
-        __LU.assign(  A );
+        __LU.assign( A );
 
-        DVLOG(2) << "LU m = "<< m << "\n";
-        DVLOG(2) << "LU n = "<< n << "\n";
-
+        DVLOG( 2 ) << "LU m = " << m << "\n";
+        DVLOG( 2 ) << "LU n = " << n << "\n";
 
         // Use a "left-looking", dot-product, Crout/Doolittle algorithm.
         for ( uint i = 0; i < m; i++ )
@@ -266,24 +260,24 @@ public :
             //matrix_column<matrix<value_type> > mc (m, j);
             for ( uint i = 0; i < m; i++ )
             {
-                LUcolj( i ) = __LU( i,j );
+                LUcolj( i ) = __LU( i, j );
             }
 
             // Apply previous transformations.
 
             for ( uint i = 0; i < m; i++ )
             {
-                boost::numeric::ublas::matrix_row<matrix_type> LUrowi ( __LU, i );
+                boost::numeric::ublas::matrix_row<matrix_type> LUrowi( __LU, i );
                 //LUrowi = __LU(i);
 
                 // Most of the time is spent in the following dot product.
 
-                uint kmax = std::min( i,j );
+                uint kmax = std::min( i, j );
                 value_type s = value_type( 0 );
 
                 for ( uint k = 0; k < kmax; k++ )
                 {
-                    s += LUrowi( k )*LUcolj( k );
+                    s += LUrowi( k ) * LUcolj( k );
                 }
 
                 LUrowi( j ) = LUcolj( i ) -= s;
@@ -293,7 +287,7 @@ public :
 
             uint p = j;
 
-            for ( uint i = j+1; i < m; i++ )
+            for ( uint i = j + 1; i < m; i++ )
             {
                 if ( math::abs( LUcolj( i ) ) > math::abs( LUcolj( p ) ) )
                 {
@@ -305,9 +299,9 @@ public :
             {
                 for ( uint k = 0; k < n; k++ )
                 {
-                    value_type t = __LU( p,k );
-                    __LU( p,k ) = __LU( j,k );
-                    __LU( j,k ) = t;
+                    value_type t = __LU( p, k );
+                    __LU( p, k ) = __LU( j, k );
+                    __LU( j, k ) = t;
                 }
 
                 uint k = piv( p );
@@ -318,27 +312,26 @@ public :
 
             // Compute multipliers.
 
-            if ( ( j < m ) && ( __LU( j,j ) != value_type( 0.0 ) ) )
+            if ( ( j < m ) && ( __LU( j, j ) != value_type( 0.0 ) ) )
             {
-                for ( uint i = j+1; i < m; i++ )
+                for ( uint i = j + 1; i < m; i++ )
                 {
-                    __LU( i,j ) /= __LU( j,j );
+                    __LU( i, j ) /= __LU( j, j );
                 }
             }
         }
     }
-
 
     /** Is the matrix nonsingular?
     	@return     1 (true)  if upper triangular factor U (and hence A)
     	is nonsingular, 0 otherwise.
     */
 
-    uint isNonsingular ()
+    uint isNonsingular()
     {
         for ( uint j = 0; j < n; j++ )
         {
-            if ( __LU( j,j ) == value_type( 0.0 ) )
+            if ( __LU( j, j ) == value_type( 0.0 ) )
                 return 0;
         }
 
@@ -350,9 +343,9 @@ public :
        @return     L
     */
 
-    matrix_type getL ()
+    matrix_type getL()
     {
-        matrix_type L_( m,n );
+        matrix_type L_( m, n );
 
         for ( uint i = 0; i < m; i++ )
         {
@@ -360,17 +353,17 @@ public :
             {
                 if ( i > j )
                 {
-                    L_( i,j ) = __LU( i,j );
+                    L_( i, j ) = __LU( i, j );
                 }
 
                 else if ( i == j )
                 {
-                    L_( i,j ) = 1.0;
+                    L_( i, j ) = 1.0;
                 }
 
                 else
                 {
-                    L_( i,j ) = 0.0;
+                    L_( i, j ) = 0.0;
                 }
             }
         }
@@ -382,9 +375,9 @@ public :
     	@return     U portion of LU factorization.
     */
 
-    matrix_type getU ()
+    matrix_type getU()
     {
-        matrix_type U_( n,n );
+        matrix_type U_( n, n );
 
         for ( uint i = 0; i < n; i++ )
         {
@@ -392,12 +385,12 @@ public :
             {
                 if ( i <= j )
                 {
-                    U_( i,j ) = __LU( i,j );
+                    U_( i, j ) = __LU( i, j );
                 }
 
                 else
                 {
-                    U_( i,j ) = 0.0;
+                    U_( i, j ) = 0.0;
                 }
             }
         }
@@ -408,16 +401,15 @@ public :
     /** Return pivot permutation vector
     	@return     piv
     */
-    vector_uint_type getPivot ()
+    vector_uint_type getPivot()
     {
         return piv;
     }
 
-
     /** Compute determinant using LU factors.
     	@return     determinant of A, or 0 if A is not square.
     */
-    value_type det ()
+    value_type det()
     {
         if ( m != n )
         {
@@ -429,7 +421,7 @@ public :
         //DVLOG(2) << "LU::det() d= " << pivsign << "\n";
         for ( uint j = 0; j < n; j++ )
         {
-            d *= __LU( j,j );
+            d *= __LU( j, j );
         }
 
         return d;
@@ -456,59 +448,57 @@ public :
     	@return     X so that L*U*X = B(piv,:), if B is nonconformant, returns
     	0x0 (null) array.
     */
-    matrix_type solve ( const matrix_type &B )
+    matrix_type solve( const matrix_type& B )
     {
 
         /* Dimensions: A is mxn, X is nxk, B is mxk */
 
         if ( B.size1() != m )
         {
-            return matrix_type( 0,0 );
+            return matrix_type( 0, 0 );
         }
 
         if ( !isNonsingular() )
         {
-            return matrix_type( 0,0 );
+            return matrix_type( 0, 0 );
         }
 
         // Copy right hand side with pivoting
         uint nx = B.size2();
 
-
-        matrix_type X ( permute_copy( B, piv, 0, nx-1 ) );
+        matrix_type X( permute_copy( B, piv, 0, nx - 1 ) );
 
         // Solve L*Y = B(piv,:)
         for ( uint k = 0; k < n; k++ )
         {
-            for ( uint i = k+1; i < n; i++ )
+            for ( uint i = k + 1; i < n; i++ )
             {
                 for ( uint j = 0; j < nx; j++ )
                 {
-                    X( i,j ) -= X( k,j )*__LU( i,k );
+                    X( i, j ) -= X( k, j ) * __LU( i, k );
                 }
             }
         }
 
         // Solve U*X = Y;
-        for ( int k = ( int )n-1; k >= 0; k-- )
+        for ( int k = (int)n - 1; k >= 0; k-- )
         {
             for ( uint j = 0; j < nx; j++ )
             {
-                X( k,j ) /= __LU( k,k );
+                X( k, j ) /= __LU( k, k );
             }
 
             for ( int i = 0; i < k; i++ )
             {
                 for ( uint j = 0; j < nx; j++ )
                 {
-                    X( i,j ) -= X( k,j )*__LU( i,k );
+                    X( i, j ) -= X( k, j ) * __LU( i, k );
                 }
             }
         }
 
         return X;
     }
-
 
     /** Solve A*x = b, where x and b are vectors of length equal
     	to the number of rows in A.
@@ -519,7 +509,7 @@ public :
     	returns 0x0 (null) array.
     */
 
-    vector_type solve ( const vector_type &b )
+    vector_type solve( const vector_type& b )
     {
 
         /* Dimensions: A is mxn, X is nxk, B is mxk */
@@ -534,58 +524,54 @@ public :
             return vector_type();
         }
 
-
         vector_type x = permute_copy( b, piv );
 
         // Solve L*Y = B(piv)
         for ( uint k = 0; k < n; k++ )
         {
-            for ( uint i = k+1; i < n; i++ )
+            for ( uint i = k + 1; i < n; i++ )
             {
-                x( i ) -= x( k )*__LU( i,k );
+                x( i ) -= x( k ) * __LU( i, k );
             }
         }
 
         // Solve U*X = Y;
-        for ( int k = ( int )n-1; k >= 0; k-- )
+        for ( int k = (int)n - 1; k >= 0; k-- )
         {
-            x( k ) /= __LU( k,k );
+            x( k ) /= __LU( k, k );
 
             for ( int i = 0; i < k; i++ )
             {
-                x( i ) -= x( k )*__LU( i,k );
+                x( i ) -= x( k ) * __LU( i, k );
             }
         }
-
 
         return x;
     }
 
-private:
+  private:
     /* Array for internal storage of decomposition.  */
     matrix_type __LU;
     size_type m, n;
     int pivsign;
     vector_uint_type piv;
 
-
     matrix_type
-    permute_copy( const matrix_type &A, const vector_uint_type &piv, uint j0, uint j1 )
+    permute_copy( const matrix_type& A, const vector_uint_type& piv, uint j0, uint j1 )
     {
         uint piv_length = piv.size();
 
-        matrix_type X( piv_length, j1-j0+1 );
-
+        matrix_type X( piv_length, j1 - j0 + 1 );
 
         for ( uint i = 0; i < piv_length; i++ )
             for ( uint j = j0; j <= j1; j++ )
-                X( i,j-j0 ) = A( piv( i ),j );
+                X( i, j - j0 ) = A( piv( i ), j );
 
         return X;
     }
 
     vector_type
-    permute_copy( const vector_type &A, const vector_uint_type &piv )
+    permute_copy( const vector_type& A, const vector_uint_type& piv )
     {
         uint piv_length = piv.size();
 
@@ -594,7 +580,6 @@ private:
 
         vector_type x( piv_length );
 
-
         for ( uint i = 0; i < piv_length; i++ )
             x( i ) = A( piv( i ) );
 
@@ -602,6 +587,5 @@ private:
     }
 
 }; /* class LU */
-
 }
 #endif /* __DenseLU_H */

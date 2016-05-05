@@ -24,64 +24,68 @@
 #ifndef FEELPP_CREATE_ELEMENT_VECTOR_HPP
 #define FEELPP_CREATE_ELEMENT_VECTOR_HPP 1
 
-namespace Feel { namespace detail {
+namespace Feel
+{
+namespace detail
+{
 
-template<typename ElementType>
+template <typename ElementType>
 struct CreateElementVector
 {
-public:
-    template<typename Sig>
+  public:
+    template <typename Sig>
     struct result;
 
-    template<typename Lhs, typename Rhs>
-    struct result<CreateElementVector( Lhs,Rhs )>
+    template <typename Lhs, typename Rhs>
+    struct result<CreateElementVector( Lhs, Rhs )>
     {
-	    typedef typename boost::remove_const<typename boost::remove_reference<Lhs>::type>::type lhs_noref_type;
-	    typedef typename boost::remove_const<typename boost::remove_reference<Rhs>::type>::type::element_type rhs_noref_type;
+        typedef typename boost::remove_const<typename boost::remove_reference<Lhs>::type>::type lhs_noref_type;
+        typedef typename boost::remove_const<typename boost::remove_reference<Rhs>::type>::type::element_type rhs_noref_type;
         typedef typename boost::remove_const<typename boost::remove_reference<ElementType>::type>::type ElementType_noref_type;
-	    typedef typename boost::fusion::result_of::size<lhs_noref_type>::type index;
+        typedef typename boost::fusion::result_of::size<lhs_noref_type>::type index;
         typedef typename ElementType_noref_type::template sub_element<index::value>::type elt_type;
-        BOOST_MPL_ASSERT( ( boost::is_same<typename elt_type::functionspace_type,rhs_noref_type> ) );
+        BOOST_MPL_ASSERT( (boost::is_same<typename elt_type::functionspace_type, rhs_noref_type>));
         typedef typename boost::fusion::result_of::make_vector<elt_type>::type v_elt_type;
 
-	    typedef typename boost::fusion::result_of::push_back<lhs_noref_type, elt_type>::type ptype;
+        typedef typename boost::fusion::result_of::push_back<lhs_noref_type, elt_type>::type ptype;
         typedef typename boost::fusion::result_of::as_vector<ptype>::type type;
     };
-    CreateElementVector( ElementType const& e ) : M_e( e ), M_names() {}
-    CreateElementVector( ElementType const& e, std::vector<std::string> const& names ) : M_e( e ), M_names( names ) {}
+    CreateElementVector( ElementType const& e )
+        : M_e( e ), M_names() {}
+    CreateElementVector( ElementType const& e, std::vector<std::string> const& names )
+        : M_e( e ), M_names( names ) {}
     ElementType const& M_e;
     std::vector<std::string> M_names;
 
-    template<typename Lhs, typename Rhs>
-    typename result<CreateElementVector( Lhs,Rhs )>::type
-    operator()( Lhs const&  lhs, Rhs const& rhs ) const
+    template <typename Lhs, typename Rhs>
+    typename result<CreateElementVector( Lhs, Rhs )>::type
+    operator()( Lhs const& lhs, Rhs const& rhs ) const
     {
         typedef typename boost::remove_const<typename boost::remove_reference<Lhs>::type>::type lhs_noref_type;
         typedef typename boost::remove_const<typename boost::remove_reference<Rhs>::type>::type rhs_noref_type;
         typedef typename boost::remove_const<typename boost::remove_reference<ElementType>::type>::type ElementType_noref_type;
-	    typedef typename boost::fusion::result_of::size<lhs_noref_type>::type index;
+        typedef typename boost::fusion::result_of::size<lhs_noref_type>::type index;
         typename ElementType_noref_type::template sub_element<index::value>::type elt = M_e.template element<index::value>();
         static const int s = mpl::size<typename ElementType::functionspace_type::bases_list>::type::value;
-        BOOST_STATIC_ASSERT( (boost::is_same<decltype(elt), typename ElementType::template sub_element<index::value>::type>::value ) );
+        BOOST_STATIC_ASSERT( ( boost::is_same<decltype( elt ), typename ElementType::template sub_element<index::value>::type>::value ) );
         if ( !M_names.empty() && M_names.size() > index::value )
         {
 
-            FEELPP_ASSERT( M_names.size() == s  )
-                ( M_names.size() )( s ).error( "incompatible number of function names and functions");
-            elt.setName( sanitize(M_names[index::value]) );
+            FEELPP_ASSERT( M_names.size() == s )
+            ( M_names.size() )( s ).error( "incompatible number of function names and functions" );
+            elt.setName( sanitize( M_names[index::value] ) );
         }
-        else if  ( ( M_names.size() == 1 )  && s > 1 )
+        else if ( ( M_names.size() == 1 ) && s > 1 )
         {
-            elt.setName( (boost::format( "%1%-%2%" ) % sanitize(M_names[0]) % index::value ).str() );
+            elt.setName( ( boost::format( "%1%-%2%" ) % sanitize( M_names[0] ) % index::value ).str() );
         }
         else
         {
-            elt.setName( (boost::format( "%1%-%2%" ) % sanitize(M_e.name()) % index::value ).str() );
+            elt.setName( ( boost::format( "%1%-%2%" ) % sanitize( M_e.name() ) % index::value ).str() );
         }
         return boost::fusion::as_vector( boost::fusion::push_back( lhs, elt ) );
     }
 };
-
-
-} } // Feel / detail
+}
+} // Feel / detail
 #endif // FEELPP_CREATE_ELEMENT_VECTOR_HPP

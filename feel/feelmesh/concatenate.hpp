@@ -24,13 +24,12 @@
 #ifndef FEELPP_CONCATENATE_HPP
 #define FEELPP_CONCATENATE_HPP 1
 
-#include <utility>
-#include <feel/feelmesh/filters.hpp>
 #include <feel/feelmesh/detail/concatenate.hpp>
+#include <feel/feelmesh/filters.hpp>
+#include <utility>
 
-
-
-namespace Feel {
+namespace Feel
+{
 
 /**
  * this function takes a set of iterators over geometrical entities of the same
@@ -45,16 +44,11 @@ namespace Feel {
  * auto submesh = createSubmesh( mesh, subset );
  * \endcode
  */
-template<typename IteratorType, typename... Args>
+template <typename IteratorType, typename... Args>
 Feel::detail::concatenate_impl_t<IteratorType>
 concatenate( IteratorType&& it, Args&&... args )
 {
-    return Feel::detail::concatenate_impl( std::forward<IteratorType>(it), std::forward<Args>(args)... );
+    return Feel::detail::concatenate_impl( std::forward<IteratorType>( it ), std::forward<Args>( args )... );
 }
-
-
-
-
-
 }
 #endif

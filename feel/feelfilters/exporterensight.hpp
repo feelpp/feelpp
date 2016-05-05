@@ -30,13 +30,12 @@
 #ifndef __ExporterEnsight_H
 #define __ExporterEnsight_H 1
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
-
-#include <boost/lambda/lambda.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/lambda/lambda.hpp>
 
 #include <feel/feelmesh/filters.hpp>
 
@@ -51,15 +50,13 @@ namespace fs = boost::filesystem;
  * \ingroup Exporter
  * @author Christophe Prud'homme
  */
-template<typename MeshType, int N>
+template <typename MeshType, int N>
 class ExporterEnsight
-    :
-public Exporter<MeshType, N>
+    : public Exporter<MeshType, N>
 {
     typedef Exporter<MeshType, N> super;
-public:
 
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -122,20 +119,18 @@ public:
     */
     ExporterEnsight( WorldComm const& worldComm = Environment::worldComm() );
     ExporterEnsight( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterEnsight( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
-    ExporterEnsight( std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) ;
+    ExporterEnsight( po::variables_map const& vm = Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    ExporterEnsight( std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
 
-    ExporterEnsight( ExporterEnsight const & __ex );
+    ExporterEnsight( ExporterEnsight const& __ex );
 
     ~ExporterEnsight();
-
 
     //@}
 
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -151,27 +146,25 @@ public:
         return M_element_type;
     }
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
 
-    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
+    Exporter<MeshType, N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
     {
         super::setOptions( exp_prefix );
 
         return this;
     }
 
-    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
+    Exporter<MeshType, N>* setOptions( std::string const& exp_prefix = "" )
     {
         super::setOptions( exp_prefix );
 
         return this;
     }
-
 
     //@}
 
@@ -188,12 +181,8 @@ public:
 
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
     /**
      * init the ensight exporter
      */
@@ -219,23 +208,21 @@ private:
     */
     void _F_writeVariableFiles() const;
 
-    template<typename Iterator>
+    template <typename Iterator>
     void saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
 
-    template<typename Iterator>
+    template <typename Iterator>
     void saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const;
 
-private:
-
+  private:
     mutable std::string M_filename;
     std::string M_element_type;
 };
 
-
 } // Feel
 
 //#if !defined( FEELPP_INSTANTIATION_MODE )
-# include <feel/feelfilters/exporterensight_impl.hpp>
+#include <feel/feelfilters/exporterensight_impl.hpp>
 //#endif // FEELPP_INSTANTIATION_MODE
 
 #endif /* __ExporterEnsight_H */

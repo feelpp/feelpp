@@ -38,28 +38,26 @@ namespace Feel
 
   \author Ivan Oliveira and Christophe Prud'homme
 */
-template<
-typename Data,
-         template<class> class Problem = problem
-         >
+template <
+    typename Data,
+    template <class> class Problem = problem>
 class SolverConstrained
 {
-public:
-
+  public:
     //! this solver type
-    typedef SolverConstrained<Data,Problem> solver_type;
+    typedef SolverConstrained<Data, Problem> solver_type;
 
     //! problem data type
     typedef Problem<Data> problem_type;
 
     enum
     {
-        _E_n   = problem_type::_E_n,  //!< number of control variables
-        _E_f   = problem_type::_E_f,  //!< number of objective functions
-        _E_g   = problem_type::_E_g,  //!< number of inequality constraints
-        _E_h   = problem_type::_E_h,  //!< number of equality constraints
-        _E_nA  = problem_type::_E_nA,  //!< size of the matrix
-        _E_nL  = problem_type::_E_nL, //!< number of multipliers
+        _E_n = problem_type::_E_n,    //!< number of control variables
+        _E_f = problem_type::_E_f,    //!< number of objective functions
+        _E_g = problem_type::_E_g,    //!< number of inequality constraints
+        _E_h = problem_type::_E_h,    //!< number of equality constraints
+        _E_nA = problem_type::_E_nA,  //!< size of the matrix
+        _E_nL = problem_type::_E_nL,  //!< number of multipliers
         _E_nAL = problem_type::_E_nAL //!< size of the multipliers matrix
     };
 
@@ -87,30 +85,29 @@ public:
     struct COptions
     {
         COptions()
-            :
-            eta ( 1e-8 ),
-            tau ( 0.995 ),
-            theta_N ( 0.2 ),
-            zeta_N ( 0.8 ),
-            eTOL ( 1e-6 ),
-            rho_N ( 0.3 ),
+            : eta( 1e-8 ),
+              tau( 0.995 ),
+              theta_N( 0.2 ),
+              zeta_N( 0.8 ),
+              eTOL( 1e-6 ),
+              rho_N( 0.3 ),
 
-            Delta_init ( 1 ),
-            s_theta_init ( 10 ),
-            eMU_init ( 1e-1 ),
-            MU_init ( 1e-1 ),
-            nu0_init ( 10 ),
+              Delta_init( 1 ),
+              s_theta_init( 10 ),
+              eMU_init( 1e-1 ),
+              MU_init( 1e-1 ),
+              nu0_init( 10 ),
 
-            rho_decrease ( 0.1 ),
-            rho_big ( 0.9 ),
-            rho_increase_big ( 5.0 ),
-            rho_small ( 0.3 ),
-            rho_increase_small ( 2.0 ),
+              rho_decrease( 0.1 ),
+              rho_big( 0.9 ),
+              rho_increase_big( 5.0 ),
+              rho_small( 0.3 ),
+              rho_increase_small( 2.0 ),
 
-            Primal_Dual ( true ),
+              Primal_Dual( true ),
 
-            max_TR_iter ( 4 ),
-            max_hom_iter ( 8 )
+              max_TR_iter( 4 ),
+              max_hom_iter( 8 )
 
         {
             // nothing to do here
@@ -128,8 +125,6 @@ public:
         double MU_init;
         double nu0_init;
 
-
-
         double rho_decrease;
         double rho_big;
         double rho_increase_big;
@@ -140,7 +135,6 @@ public:
 
         int max_TR_iter;
         int max_hom_iter;
-
     };
 
     //! option data type
@@ -157,9 +151,8 @@ public:
          * \param \c __c true if collect statistics, false otherwise
          */
         Stats( solver_type* __s, bool __c = false )
-            :
-            M_s( __s ),
-            M_collect( __c )
+            : M_s( __s ),
+              M_collect( __c )
         {
             // nothing to do here
         }
@@ -174,7 +167,7 @@ public:
         void clear();
 
         //! insert x in statistics
-        void push_x( const double *__x );
+        void push_x( const double* __x );
 
         //! insert all statistics
         void push_all( double mu, double E, double E0,
@@ -188,13 +181,11 @@ public:
         */
         void show( bool verbose = false ) const;
 
-    private:
+      private:
         //! make it private to avoid being used
         Stats();
 
-    private:
-
-
+      private:
         solver_type* M_s;
 
         bool M_collect;
@@ -244,71 +235,70 @@ public:
         return M_solver_stats;
     }
 
-private:
-
+  private:
     //! read options from file if it exists
     void read_options();
 
-    void initialize_solver_with_x( double *_x, double *_s, double *_lambda_h, double *_lambda_g, double MU );
+    void initialize_solver_with_x( double* _x, double* _s, double* _lambda_h, double* _lambda_g, double MU );
 
-    void update_opt_objs( double *_x, double *_s, double *_lambda_h,
-                          double *_lambda_g, double MU, bool update_Hess );
+    void update_opt_objs( double* _x, double* _s, double* _lambda_h,
+                          double* _lambda_g, double MU, bool update_Hess );
 
-    void solve_AtA_system( double _r[  _E_n + _E_g+2*_E_n ], double _b[ _E_h + _E_g+2*_E_n ],
-                           double _g[ _E_n + _E_g+2*_E_n ], double _l[ _E_h + _E_g+2*_E_n ] );
+    void solve_AtA_system( double _r[_E_n + _E_g + 2 * _E_n], double _b[_E_h + _E_g + 2 * _E_n],
+                           double _g[_E_n + _E_g + 2 * _E_n], double _l[_E_h + _E_g + 2 * _E_n] );
 
-    void dogleg_solve( double *_vCP_til, double *_vN_til, double *_s, double Delta,
-                       double *_v_til );
+    void dogleg_solve( double* _vCP_til, double* _vN_til, double* _s, double Delta,
+                       double* _v_til );
 
-    double model_m( double *_s, double *_v_til );
+    double model_m( double* _s, double* _v_til );
 
-    double get_vpred( double *_s, double *_v_til );
+    double get_vpred( double* _s, double* _v_til );
 
     //! returns vpred( v_til )
-    double get_normal_steps( double *_s, double Delta,
-                             double *_dx_normal, double *_ds_normal, double *_v_til );
+    double get_normal_steps( double* _s, double Delta,
+                             double* _dx_normal, double* _ds_normal, double* _v_til );
 
-    void get_Pr( double *_r, double *_Pr );
+    void get_Pr( double* _r, double* _Pr );
 
-    bool slack_feasible( double *_w_til, double *_v_til );
+    bool slack_feasible( double* _w_til, double* _v_til );
 
-    double get_q( double *_v_til, double *_w_til, double MU );
+    double get_q( double* _v_til, double* _w_til, double MU );
 
     //! returns q( v_til + w_til )
-    double get_tangen_steps( double *_s, double Delta, double *_v_til, double MU,
-                             double *_dx_tangen, double *_ds_tangen,
-                             bool &truss_exit, int &n_CGiter );
+    double get_tangen_steps( double* _s, double Delta, double* _v_til, double MU,
+                             double* _dx_tangen, double* _ds_tangen,
+                             bool& truss_exit, int& n_CGiter );
 
-    double get_steps( double *_s, double _Delta, double MU,
-                      double *_dx, double *_ds, double &_vpred, double &_q,
-                      bool &truss_exit, int &n_CGiter );
+    double get_steps( double* _s, double _Delta, double MU,
+                      double* _dx, double* _ds, double& _vpred, double& _q,
+                      bool& truss_exit, int& n_CGiter );
 
-    double get_phi( double *_x, double *_s, double MU, double nu, double *rhs );
-    double get_phi( double *_x, double *_s, double MU, double nu );
-    double get_phi( double *_s, double MU, double nu );
+    double get_phi( double* _x, double* _s, double MU, double nu, double* rhs );
+    double get_phi( double* _x, double* _s, double MU, double nu );
+    double get_phi( double* _s, double MU, double nu );
 
-    double get_SOC( double *_s, double *_rhs_xs_p_d, double *_xy, double *_sy );
+    double get_SOC( double* _s, double* _rhs_xs_p_d, double* _xy, double* _sy );
 
     //
     // Evaluations
     //
 
     //!
-    void evaluate_Ag( double *x );
+    void evaluate_Ag( double* x );
     //!
-    void evaluate_Ah( double *x );
+    void evaluate_Ah( double* x );
     //!
-    void evaluate_A_hat( double *_x, double *_s );
+    void evaluate_A_hat( double* _x, double* _s );
     //!
-    void evaluate_Hessian_L( double *_x, double *_lambda_h, double *_lambda_g );
+    void evaluate_Hessian_L( double* _x, double* _lambda_h, double* _lambda_g );
     //!
-    void evaluate_G( double *_x, double *_s, double *_lambda_h, double *_lambda_g,
+    void evaluate_G( double* _x, double* _s, double* _lambda_h, double* _lambda_g,
                      double MU, bool evaluate__Hessians_flag );
-    double evaluate_E_current( double *_s, double *_lambda_h, double *_lambda_g, double MU );
+    double evaluate_E_current( double* _s, double* _lambda_h, double* _lambda_g, double MU );
     //!
-    void evaluate_gradf( double *_x );
+    void evaluate_gradf( double* _x );
     //!
-    void evaluate_fxgxhx( double *_x );
+    void evaluate_fxgxhx( double* _x );
 
     //
     // Print
@@ -319,7 +309,7 @@ private:
     //!
     void print_Ah();
     //!
-    void print_lambda_LS( double *_lambda_g, double *_lambda_h );
+    void print_lambda_LS( double* _lambda_g, double* _lambda_h );
     //!
     void print_G();
     //!
@@ -330,8 +320,7 @@ private:
     //! make it private to disable it (force developer to use other constructor)
     SolverConstrained();
 
-private:
-
+  private:
     problem_type M_prob;
 
     //! options data
@@ -340,19 +329,18 @@ private:
     //! statistics data
     statistics_type M_solver_stats;
 
-    double fx, gradf[ _E_n ];
-    double gx[ _E_g+2*_E_n ];
-    double hx[ _E_h ];
-    double Ag[ _E_n ][ _E_g+2*_E_n ];
-    double Ah[ _E_n ][ _E_h ];
-    double A_hat[ _E_n + _E_g+2*_E_n ][ _E_h + _E_g+2*_E_n ];
+    double fx, gradf[_E_n];
+    double gx[_E_g + 2 * _E_n];
+    double hx[_E_h];
+    double Ag[_E_n][_E_g + 2 * _E_n];
+    double Ah[_E_n][_E_h];
+    double A_hat[_E_n + _E_g + 2 * _E_n][_E_h + _E_g + 2 * _E_n];
 
-    double Hessian_L[ _E_n ][ _E_n ];
-    double G[ _E_n+_E_g+2*_E_n ][ _E_n+_E_g+2*_E_n ];
+    double Hessian_L[_E_n][_E_n];
+    double G[_E_n + _E_g + 2 * _E_n][_E_n + _E_g + 2 * _E_n];
 
     static const double Max_Allowed_Delta = 1e8;
 };
-
 
 // SolverConstrained
 
@@ -361,32 +349,31 @@ private:
 //#define DEBUG_OUT_HM
 //#define DEBUG_x_OUT
 
-template<typename Data,template<class> class Problem>
-SolverConstrained<Data,Problem>::SolverConstrained( double x_definitions[_E_n][3] )
-    :
-    M_prob( x_definitions ),
-    M_solver_stats( this, true ),
-    fx( 0 ),
-    gradf(),
-    gx(),
-    hx(),
-    Ag(),
-    Ah(),
-    A_hat(),
-    Hessian_L(),
-    G()
+template <typename Data, template <class> class Problem>
+SolverConstrained<Data, Problem>::SolverConstrained( double x_definitions[_E_n][3] )
+    : M_prob( x_definitions ),
+      M_solver_stats( this, true ),
+      fx( 0 ),
+      gradf(),
+      gx(),
+      hx(),
+      Ag(),
+      Ah(),
+      A_hat(),
+      Hessian_L(),
+      G()
 {
     std::cerr << "SolverConstrained::SolverConstrained()\n";
     read_options();
 }
 
-template<typename Data,template<class> class Problem>
-SolverConstrained<Data,Problem>::~SolverConstrained()
+template <typename Data, template <class> class Problem>
+SolverConstrained<Data, Problem>::~SolverConstrained()
 {
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::read_options()
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::read_options()
 {
     double num;
     char str[20];
@@ -401,51 +388,50 @@ void SolverConstrained<Data,Problem>::read_options()
     {
         fin >> str >> num;
 
-        if ( !strcmp( str, "Delta_init" ) )                      options.Delta_init = num;
+        if ( !strcmp( str, "Delta_init" ) ) options.Delta_init = num;
 
-        if ( !strcmp( str, "eta" ) )                             options.eta = num;
+        if ( !strcmp( str, "eta" ) ) options.eta = num;
 
-        if ( !strcmp( str, "tau" ) )                             options.tau = num;
+        if ( !strcmp( str, "tau" ) ) options.tau = num;
 
-        if ( !strcmp( str, "theta_N" ) )                         options.theta_N = num;
+        if ( !strcmp( str, "theta_N" ) ) options.theta_N = num;
 
-        if ( !strcmp( str, "zeta_N" ) )                          options.zeta_N = num;
+        if ( !strcmp( str, "zeta_N" ) ) options.zeta_N = num;
 
-        if ( !strcmp( str, "eTOL" ) )                            options.eTOL = num;
+        if ( !strcmp( str, "eTOL" ) ) options.eTOL = num;
 
-        if ( !strcmp( str, "rho_N" ) )                           options.rho_N = num;
+        if ( !strcmp( str, "rho_N" ) ) options.rho_N = num;
 
-        if ( !strcmp( str, "s_theta_init" ) )                    options.s_theta_init = num;
+        if ( !strcmp( str, "s_theta_init" ) ) options.s_theta_init = num;
 
-        if ( !strcmp( str, "eMU_init" ) )                        options.eMU_init = num;
+        if ( !strcmp( str, "eMU_init" ) ) options.eMU_init = num;
 
-        if ( !strcmp( str, "MU_init" ) )                         options.MU_init = num;
+        if ( !strcmp( str, "MU_init" ) ) options.MU_init = num;
 
-        if ( !strcmp( str, "nu0_init" ) )                        options.nu0_init = num;
+        if ( !strcmp( str, "nu0_init" ) ) options.nu0_init = num;
 
-        if ( !strcmp( str, "Primal_Dual" ) )                     options.Primal_Dual = ( bool )num;
+        if ( !strcmp( str, "Primal_Dual" ) ) options.Primal_Dual = (bool)num;
 
-        if ( !strcmp( str, "max_TR_iter" ) )                     options.max_TR_iter = ( int )num;
+        if ( !strcmp( str, "max_TR_iter" ) ) options.max_TR_iter = (int)num;
 
-        if ( !strcmp( str, "max_hom_iter" ) )                    options.max_hom_iter = ( int )num;
+        if ( !strcmp( str, "max_hom_iter" ) ) options.max_hom_iter = (int)num;
 
-        if ( !strcmp( str, "rho_decrease" ) )                    options.rho_decrease = num;
+        if ( !strcmp( str, "rho_decrease" ) ) options.rho_decrease = num;
 
-        if ( !strcmp( str, "rho_big" ) )                         options.rho_big = num;
+        if ( !strcmp( str, "rho_big" ) ) options.rho_big = num;
 
-        if ( !strcmp( str, "rho_increase_big" ) )                options.rho_increase_big = num;
+        if ( !strcmp( str, "rho_increase_big" ) ) options.rho_increase_big = num;
 
-        if ( !strcmp( str, "rho_small" ) )                       options.rho_small = num;
+        if ( !strcmp( str, "rho_small" ) ) options.rho_small = num;
 
-        if ( !strcmp( str, "rho_increase_small" ) )              options.rho_increase_small = num;
+        if ( !strcmp( str, "rho_increase_small" ) ) options.rho_increase_small = num;
     }
 
     fin.close();
-
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::print_Hessian_L()
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::print_Hessian_L()
 {
     int n = M_prob.n();
 
@@ -460,15 +446,15 @@ void SolverConstrained<Data,Problem>::print_Hessian_L()
     std::cerr << "\n";
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::evaluate_Hessian_L( double *_x, double *_lambda_h, double *_lambda_g )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::evaluate_Hessian_L( double* _x, double* _lambda_h, double* _lambda_g )
 {
     f_type __fx;
     g_type __gx;
     h_type __hx;
-    M_prob.evaluate ( _x, __fx, diff_order<2>() );
-    M_prob.evaluate ( _x, __gx, diff_order<2>() );
-    M_prob.evaluate ( _x, __hx, diff_order<2>() );
+    M_prob.evaluate( _x, __fx, diff_order<2>() );
+    M_prob.evaluate( _x, __gx, diff_order<2>() );
+    M_prob.evaluate( _x, __hx, diff_order<2>() );
 
     for ( int i = 0; i < _E_n; i++ )
     {
@@ -484,24 +470,24 @@ void SolverConstrained<Data,Problem>::evaluate_Hessian_L( double *_x, double *_l
 
             for ( int m = 0; m < _E_h; m++ )
             {
-                val += _lambda_h[ m ] * __hx.hessian( m,i,j );
+                val += _lambda_h[m] * __hx.hessian( m, i, j );
             }
 
             for ( int m = 0; m < _E_g; m++ )
             {
-                val += _lambda_g[ m ] * __gx.hessian( m,i,j );
+                val += _lambda_g[m] * __gx.hessian( m, i, j );
             }
 
-            Hessian_L[ i ][ j ] = val;
-            Hessian_L[ j ][ i ] = val;
+            Hessian_L[i][j] = val;
+            Hessian_L[j][i] = val;
         }
     }
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::print_G()
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::print_G()
 {
-    int n = M_prob.n(), nv = n+_E_g+2*n;
+    int n = M_prob.n(), nv = n + _E_g + 2 * n;
 
     for ( int i = 0; i < nv; i++ )
     {
@@ -514,30 +500,30 @@ void SolverConstrained<Data,Problem>::print_G()
     std::cerr << "\n";
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::evaluate_G( double *_x, double *_s, double *_lambda_h,
-        double *_lambda_g, double MU, bool evaluate_Hessians_flag )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::evaluate_G( double* _x, double* _s, double* _lambda_h,
+                                                   double* _lambda_g, double MU, bool evaluate_Hessians_flag )
 {
     int n = M_prob.n();
-    int nv = n+_E_g+2*n;
+    int nv = n + _E_g + 2 * n;
 
     if ( evaluate_Hessians_flag )
         this->evaluate_Hessian_L( _x, _lambda_h, _lambda_g );
 
     for ( int i = 0; i < nv; i++ )
         for ( int j = 0; j < nv; j++ )
-            G[ i ][ j ] = 0;
+            G[i][j] = 0;
 
     for ( int i = 0; i < n; i++ )
         for ( int j = 0; j < n; j++ )
-            G[ i ][ j ] = Hessian_L[ i ][ j ];
+            G[i][j] = Hessian_L[i][j];
 
-    for ( int i = 0; i < _E_g+2*n; i++ )
-        if ( options.Primal_Dual && _lambda_g[ i ] > 0 )
-            G[ n+i ][ n+i ] = _lambda_g[ i ] * _s[ i ];
+    for ( int i = 0; i < _E_g + 2 * n; i++ )
+        if ( options.Primal_Dual && _lambda_g[i] > 0 )
+            G[n + i][n + i] = _lambda_g[i] * _s[i];
 
         else
-            G[ n+i ][ n+i ] = MU;
+            G[n + i][n + i] = MU;
 
     //this->print_G(); exit(0);
 
@@ -554,56 +540,54 @@ void SolverConstrained<Data,Problem>::evaluate_G( double *_x, double *_s, double
     */
 }
 
-
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::evaluate_Ag( double *_x )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::evaluate_Ag( double* _x )
 {
     g_type __gx;
-    M_prob.evaluate ( _x, __gx, diff_order<1>() );
+    M_prob.evaluate( _x, __gx, diff_order<1>() );
 
     int n = M_prob.n();
 
-    assert ( n == _E_n );
+    assert( n == _E_n );
 
     // Ag = [  g_0 ... g_n  -I  I  ]
     for ( int i = 0; i < _E_n; i++ )
-        for ( int m = 0; m < _E_g+2*_E_n; m++ )
-            Ag[ i ][ m ] = 0;
+        for ( int m = 0; m < _E_g + 2 * _E_n; m++ )
+            Ag[i][m] = 0;
 
     for ( int i = 0; i < _E_n; i++ )
     {
         for ( int m = 0; m < _E_g; m++ )
         {
-            Ag[ i ][ m ] = __gx.gradient( m,i );
+            Ag[i][m] = __gx.gradient( m, i );
         }
 
-        int __index = _E_g+i;
-        Ag[ i ][ __index ]  = -1.0;
-        Ag[ i ][ __index + n] = +1.0;
+        int __index = _E_g + i;
+        Ag[i][__index] = -1.0;
+        Ag[i][__index + n] = +1.0;
     }
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::evaluate_Ah( double *_x )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::evaluate_Ah( double* _x )
 {
     h_type __hx;
-    M_prob.evaluate ( _x, __hx, diff_order<1>() );
+    M_prob.evaluate( _x, __hx, diff_order<1>() );
 
     int n = M_prob.n();
 
     // Ah = [  h_0 ... h_n  ]
     for ( int i = 0; i < n; i++ )
         for ( int m = 0; m < _E_h; m++ )
-            Ah[ i ][ m ] = 0;
+            Ah[i][m] = 0;
 
     for ( int i = 0; i < n; i++ )
         for ( int m = 0; m < _E_h; m++ )
-            Ah[ i ][ m ] = __hx.gradient( m,i );
+            Ah[i][m] = __hx.gradient( m, i );
 }
 
-
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::print_Ag()
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::print_Ag()
 {
     int n = M_prob.n();
 
@@ -611,15 +595,15 @@ void SolverConstrained<Data,Problem>::print_Ag()
     {
         printf( "\n" );
 
-        for ( int j = 0; j < _E_g+2*n; j++ )
+        for ( int j = 0; j < _E_g + 2 * n; j++ )
             fprintf( stderr, "%10.1f", Ag[i][j] );
     }
 
     std::cerr << "\n";
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::print_Ah()
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::print_Ah()
 {
     int n = M_prob.n();
 
@@ -634,17 +618,17 @@ void SolverConstrained<Data,Problem>::print_Ah()
     std::cerr << "\n";
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::evaluate_fxgxhx( double *_x )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::evaluate_fxgxhx( double* _x )
 {
     f_type __fx;
     g_type __gx;
     h_type __hx;
 
     // get the order 0 information only
-    M_prob.evaluate ( _x, __fx, diff_order<0>() );
-    M_prob.evaluate ( _x, __gx, diff_order<0>() );
-    M_prob.evaluate ( _x, __hx, diff_order<0>() );
+    M_prob.evaluate( _x, __fx, diff_order<0>() );
+    M_prob.evaluate( _x, __gx, diff_order<0>() );
+    M_prob.evaluate( _x, __hx, diff_order<0>() );
 
     fx = __fx.value( 0 );
 
@@ -655,21 +639,19 @@ void SolverConstrained<Data,Problem>::evaluate_fxgxhx( double *_x )
         hx[__i] = __hx.value( __i );
 }
 
-
-template<typename Data,template<class> class Problem>
-void
-SolverConstrained<Data,Problem>::initialize_solver_with_x( double *_x,
-        double *_s,
-        double *_lambda_h, double *_lambda_g,
-        double MU )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::initialize_solver_with_x( double* _x,
+                                                                 double* _s,
+                                                                 double* _lambda_h, double* _lambda_g,
+                                                                 double MU )
 {
     g_type __gx;
-    M_prob.evaluate ( _x, __gx, diff_order<0>() );
+    M_prob.evaluate( _x, __gx, diff_order<0>() );
 
     for ( uint __i = 0; __i < __gx.value().size(); ++__i )
     {
         gx[__i] = __gx.value( __i );
-        _s[ __i ] = std::max( -gx[ __i ], options.s_theta_init );
+        _s[__i] = std::max( -gx[__i], options.s_theta_init );
     }
 
     /*
@@ -678,12 +660,10 @@ SolverConstrained<Data,Problem>::initialize_solver_with_x( double *_x,
     */
 
     this->update_opt_objs( _x, _s, _lambda_h, _lambda_g, MU, true );
-
 }
 
-template<typename Data,template<class> class Problem>
-void
-SolverConstrained<Data,Problem>::evaluate_A_hat( double *_x, double *_s )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::evaluate_A_hat( double* _x, double* _s )
 {
     int n = M_prob.n();
 
@@ -691,60 +671,59 @@ SolverConstrained<Data,Problem>::evaluate_A_hat( double *_x, double *_s )
     this->evaluate_Ah( _x );
 
     // A_hat = [ Ah Ag ; 0 S ]
-    for ( int i = 0; i < n+_E_g+2*n; i++ )
-        for ( int m = 0; m < _E_h+_E_g+2*n; m++ )
-            A_hat[ i ][ m ] = 0;
+    for ( int i = 0; i < n + _E_g + 2 * n; i++ )
+        for ( int m = 0; m < _E_h + _E_g + 2 * n; m++ )
+            A_hat[i][m] = 0;
 
     for ( int i = 0; i < n; i++ )
     {
         for ( int m = 0; m < _E_h; m++ )
-            A_hat[ i ][ m ] = Ah[ i ][ m ];
+            A_hat[i][m] = Ah[i][m];
 
-        for ( int m = 0; m < _E_g+2*n; m++ )
-            A_hat[ i ][ _E_h+m ] = Ag[ i ][ m ];
+        for ( int m = 0; m < _E_g + 2 * n; m++ )
+            A_hat[i][_E_h + m] = Ag[i][m];
     }
 
-    for ( int m = 0; m < _E_g+2*n; m++ )
-        A_hat[ n+m ][ _E_h+m ] = _s[ m ];
-
+    for ( int m = 0; m < _E_g + 2 * n; m++ )
+        A_hat[n + m][_E_h + m] = _s[m];
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::print_A_hat()
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::print_A_hat()
 {
     int n = M_prob.n();
 
-    for ( int i = 0; i < n+_E_g+2*n; i++ )
+    for ( int i = 0; i < n + _E_g + 2 * n; i++ )
     {
         printf( "\n" );
 
-        for ( int j = 0; j < _E_h+_E_g+2*n; j++ )
+        for ( int j = 0; j < _E_h + _E_g + 2 * n; j++ )
             fprintf( stderr, "%14.9f", A_hat[i][j] );
     }
 
     std::cerr << "\n";
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::solve_AtA_system( double _r[  _E_n + _E_g+2*_E_n ], double _b[ _E_h + _E_g+2*_E_n ],
-        double _g[ _E_n + _E_g+2*_E_n], double _l[ _E_h + _E_g+2*_E_n ] )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::solve_AtA_system( double _r[_E_n + _E_g + 2 * _E_n], double _b[_E_h + _E_g + 2 * _E_n],
+                                                         double _g[_E_n + _E_g + 2 * _E_n], double _l[_E_h + _E_g + 2 * _E_n] )
 {
 
     int n = M_prob.n();
-    int n_A_hat = n + _E_g+2*n;
-    int m_A_hat = _E_h + _E_g+2*n;
+    int n_A_hat = n + _E_g + 2 * n;
+    int m_A_hat = _E_h + _E_g + 2 * n;
     int n_big = n_A_hat + m_A_hat;
-    int big_N = _E_n + _E_g+2*_E_n + _E_h + _E_g+2*_E_n;
+    int big_N = _E_n + _E_g + 2 * _E_n + _E_h + _E_g + 2 * _E_n;
 
-    double bigA[ big_N*big_N ], rhs[ big_N ];
+    double bigA[big_N * big_N], rhs[big_N];
 
-    for ( int i = 0; i < n_big*n_big; i++ )
-        bigA[ i ] = 0;
+    for ( int i = 0; i < n_big * n_big; i++ )
+        bigA[i] = 0;
 
     for ( int i = 0; i < n_A_hat; i++ )
     {
-        bigA[ i + i*n_big ] = 1;
-        rhs[ i ] = _r[ i ];
+        bigA[i + i * n_big] = 1;
+        rhs[i] = _r[i];
     }
 
     double val;
@@ -753,14 +732,14 @@ void SolverConstrained<Data,Problem>::solve_AtA_system( double _r[  _E_n + _E_g+
     {
         for ( int j = 0; j < m_A_hat; j++ )
         {
-            val = A_hat[ i ][ j ];
-            bigA[ ( i ) + ( n_A_hat+j )*n_big ] = val;
-            bigA[ ( n_A_hat+j ) + ( i )*n_big ] = val;
+            val = A_hat[i][j];
+            bigA[( i ) + ( n_A_hat + j ) * n_big] = val;
+            bigA[( n_A_hat + j ) + (i)*n_big] = val;
         }
     }
 
     for ( int j = 0; j < m_A_hat; j++ )
-        rhs[ n_A_hat + j ] = -_b[ j ];
+        rhs[n_A_hat + j] = -_b[j];
 
     /*
       this->print_A_hat();
@@ -776,24 +755,23 @@ void SolverConstrained<Data,Problem>::solve_AtA_system( double _r[  _E_n + _E_g+
       cerr << "]\n";
     */
 
-    double sol[ big_N ];
+    double sol[big_N];
 
 #warning disabled Lusolve
     //__LUSolve( n_big, bigA, rhs, sol, STORAGE_GENERAL );
 
     for ( int i = 0; i < n_A_hat; i++ )
-        _g[ i ] = sol[ i ];
+        _g[i] = sol[i];
 
     for ( int i = 0; i < m_A_hat; i++ )
-        _l[ i ] = sol[ n_A_hat+i ];
-
+        _l[i] = sol[n_A_hat + i];
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::evaluate_gradf( double *_x )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::evaluate_gradf( double* _x )
 {
     f_type __fx;
-    M_prob.evaluate ( _x, __fx, diff_order<1>() );
+    M_prob.evaluate( _x, __fx, diff_order<1>() );
 
     for ( uint __i = 0; __i < _E_n; ++__i )
     {
@@ -801,37 +779,37 @@ void SolverConstrained<Data,Problem>::evaluate_gradf( double *_x )
     }
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::update_opt_objs( double *_x, double *_s,
-        double *_lambda_h, double *_lambda_g,
-        double MU, bool update_Hess )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::update_opt_objs( double* _x, double* _s,
+                                                        double* _lambda_h, double* _lambda_g,
+                                                        double MU, bool update_Hess )
 {
     int n = M_prob.n();
-    double _r[ _E_n + _E_g+2*_E_n ], _b[ _E_h + _E_g+2*_E_n ],
-           _dummy[ _E_n + _E_g+2*_E_n ];
-    double _lambda_LS[ _E_h + _E_g+2*_E_n ];
+    double _r[_E_n + _E_g + 2 * _E_n], _b[_E_h + _E_g + 2 * _E_n],
+        _dummy[_E_n + _E_g + 2 * _E_n];
+    double _lambda_LS[_E_h + _E_g + 2 * _E_n];
 
     this->evaluate_fxgxhx( _x );
     this->evaluate_gradf( _x );
 
     for ( int i = 0; i < n; i++ )
-        _r[ i ] = -gradf[ i ];
+        _r[i] = -gradf[i];
 
-    for ( int i = n; i < n+_E_g+2*n; i++ )
-        _r[ i ] = MU;
+    for ( int i = n; i < n + _E_g + 2 * n; i++ )
+        _r[i] = MU;
 
-    for ( int i = 0; i < _E_h + _E_g+2*n; i++ )
-        _b[ i ] = 0;
+    for ( int i = 0; i < _E_h + _E_g + 2 * n; i++ )
+        _b[i] = 0;
 
     this->evaluate_A_hat( _x, _s );
 
     this->solve_AtA_system( _r, _b, _dummy, _lambda_LS );
 
     for ( int i = 0; i < _E_h; i++ )
-        _lambda_h[ i ] = _lambda_LS[ i ];
+        _lambda_h[i] = _lambda_LS[i];
 
-    for ( int i = 0; i < _E_g+2*n; i++ )
-        _lambda_g[ i ] = _lambda_LS[ _E_h+i ];
+    for ( int i = 0; i < _E_g + 2 * n; i++ )
+        _lambda_g[i] = _lambda_LS[_E_h + i];
 
     this->evaluate_G( _x, _s, _lambda_h, _lambda_g, MU, update_Hess );
 
@@ -841,55 +819,54 @@ void SolverConstrained<Data,Problem>::update_opt_objs( double *_x, double *_s,
       std::cerr << "\nlambda_g = ";
       __print_vec( _E_g+2*n, _lambda_g );
     */
-
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::print_lambda_LS( double *_lambda_h, double *_lambda_g )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::print_lambda_LS( double* _lambda_h, double* _lambda_g )
 {
     int n = M_prob.n();
     std::cerr << "\nlambda_h = ";
     __print_vec( _E_h, _lambda_h );
     std::cerr << "\nlambda_g = ";
-    __print_vec( _E_g+2*n, _lambda_g );
+    __print_vec( _E_g + 2 * n, _lambda_g );
     std::cerr << "\n";
 }
 
-template<typename Data,template<class> class Problem>
-double SolverConstrained<Data,Problem>::evaluate_E_current( double *_s, double *_lambda_h, double *_lambda_g, double MU )
+template <typename Data, template <class> class Problem>
+double SolverConstrained<Data, Problem>::evaluate_E_current( double* _s, double* _lambda_h, double* _lambda_g, double MU )
 {
     int n = M_prob.n();
-    double Ahlh[ _E_n ], Aglg[ _E_n ], dfAhlhAglg[ _E_n ], Slg_mue[ _E_g+2*_E_n], gps[ _E_g+2*_E_n];
+    double Ahlh[_E_n], Aglg[_E_n], dfAhlhAglg[_E_n], Slg_mue[_E_g + 2 * _E_n], gps[_E_g + 2 * _E_n];
     double E = 0;
 
     for ( int i = 0; i < n; i++ )
     {
-        Ahlh[ i ] = 0;
+        Ahlh[i] = 0;
 
         for ( int m = 0; m < _E_h; m++ )
-            Ahlh[ i ] += Ah[ i ][ m ] * _lambda_h[ m ];
+            Ahlh[i] += Ah[i][m] * _lambda_h[m];
 
-        Aglg[ i ] = 0;
+        Aglg[i] = 0;
 
-        for ( int m = 0; m < _E_g+2*n; m++ )
-            Aglg[ i ] += Ag[ i ][ m ] * _lambda_g[ m ];
+        for ( int m = 0; m < _E_g + 2 * n; m++ )
+            Aglg[i] += Ag[i][m] * _lambda_g[m];
 
-        dfAhlhAglg[ i ] = gradf[ i ] + Ahlh[ i ] + Aglg[ i ];
+        dfAhlhAglg[i] = gradf[i] + Ahlh[i] + Aglg[i];
     }
 
     E = std::max( E, __Norm_infty( n, dfAhlhAglg ) );
 
-    for ( int m = 0; m < _E_g+2*n; m++ )
-        Slg_mue[ m ] = _s[ m ] * _lambda_g[ m ] - MU;
+    for ( int m = 0; m < _E_g + 2 * n; m++ )
+        Slg_mue[m] = _s[m] * _lambda_g[m] - MU;
 
-    E = std::max( E, __Norm_infty( _E_g+2*n, Slg_mue ) );
+    E = std::max( E, __Norm_infty( _E_g + 2 * n, Slg_mue ) );
 
     E = std::max( E, __Norm_infty( _E_h, hx ) );
 
-    for ( int m = 0; m < _E_g+2*n; m++ )
-        gps[ m ] = gx[ m ] + _s[ m ];
+    for ( int m = 0; m < _E_g + 2 * n; m++ )
+        gps[m] = gx[m] + _s[m];
 
-    E = std::max( E, __Norm_infty( _E_g+2*n, gps ) );
+    E = std::max( E, __Norm_infty( _E_g + 2 * n, gps ) );
 
     /*
       this->print_Ah();
@@ -906,32 +883,30 @@ double SolverConstrained<Data,Problem>::evaluate_E_current( double *_s, double *
       std::cerr << "\n";
     */
 
-
     return E;
 }
 
-template<typename Data,template<class> class Problem>
-double SolverConstrained<Data,Problem>::model_m( double *_s, double *_v_til )
+template <typename Data, template <class> class Problem>
+double SolverConstrained<Data, Problem>::model_m( double* _s, double* _v_til )
 {
-    int n = M_prob.n(), nv = n+_E_g+2*n;
-    double A_hatTxv_til[ _E_h + _E_g+2*_E_n ], rhs[ _E_h + _E_g+2*_E_n ];
+    int n = M_prob.n(), nv = n + _E_g + 2 * n;
+    double A_hatTxv_til[_E_h + _E_g + 2 * _E_n], rhs[_E_h + _E_g + 2 * _E_n];
 
-    for ( int i = 0; i < _E_h+_E_g+2*n; i++ )
+    for ( int i = 0; i < _E_h + _E_g + 2 * n; i++ )
     {
-        A_hatTxv_til[ i ] = 0;
+        A_hatTxv_til[i] = 0;
 
         for ( int j = 0; j < nv; j++ )
-            A_hatTxv_til[ i ] += A_hat[ j ][ i ] * _v_til[ j ];
+            A_hatTxv_til[i] += A_hat[j][i] * _v_til[j];
     }
 
     for ( int m = 0; m < _E_h; m++ )
-        rhs[ m ] = hx[ m ];
+        rhs[m] = hx[m];
 
-    for ( int m = 0; m < _E_g+2*n; m++ )
-        rhs[ _E_h + m ] = gx[ m ] + _s[ m ];
+    for ( int m = 0; m < _E_g + 2 * n; m++ )
+        rhs[_E_h + m] = gx[m] + _s[m];
 
-    double model = 2. * __Dot( _E_h+_E_g+2*n, rhs, A_hatTxv_til )
-                   + __Dot( _E_h+_E_g+2*n, A_hatTxv_til, A_hatTxv_til );
+    double model = 2. * __Dot( _E_h + _E_g + 2 * n, rhs, A_hatTxv_til ) + __Dot( _E_h + _E_g + 2 * n, A_hatTxv_til, A_hatTxv_til );
 
     /*
       this->print_A_hat();
@@ -941,45 +916,44 @@ double SolverConstrained<Data,Problem>::model_m( double *_s, double *_v_til )
       exit(0);
     */
 
-
     return model;
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::dogleg_solve( double *_vCP_til, double *_vN_til, double *_s, double _Delta,
-        double *_v_til )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::dogleg_solve( double* _vCP_til, double* _vN_til, double* _s, double _Delta,
+                                                     double* _v_til )
 {
-    int n = M_prob.n(), nv = n+_E_g+2*n;
-    double v_diff[ _E_n+_E_g+2*_E_n ];
+    int n = M_prob.n(), nv = n + _E_g + 2 * n;
+    double v_diff[_E_n + _E_g + 2 * _E_n];
     double zeta_N = options.zeta_N, tau = options.tau;
     double theta1 = 1, theta2 = 1, theta3 = 1;
 
     theta1 = std::min( theta1, zeta_N * _Delta / __Norm_2( nv, _vN_til ) );
 
     for ( int i = n; i < nv; i++ )
-        if ( _vN_til[ i ] < 0 )
-            theta1 = std::min( theta1, -tau/2./_vN_til[ i ] );
+        if ( _vN_til[i] < 0 )
+            theta1 = std::min( theta1, -tau / 2. / _vN_til[i] );
 
     assert( theta1 > 0 );
 
     if ( theta1 == 1 )
         for ( int i = 0; i < nv; i++ )
-            _v_til[ i ] = theta1*_vN_til[ i ];
+            _v_til[i] = theta1 * _vN_til[i];
 
     else
     {
         for ( int i = 0; i < nv; i++ )
-            v_diff[ i ] = _vN_til[ i ] - _vCP_til[ i ];
+            v_diff[i] = _vN_til[i] - _vCP_til[i];
 
         double a = __Dot( nv, v_diff, v_diff );
         double b = 2. * __Dot( nv, v_diff, _vCP_til );
-        double c = __Dot( nv, _vCP_til, _vCP_til ) - ( zeta_N*_Delta )*( zeta_N*_Delta );
-        double root = b*b - 4.*a*c;
+        double c = __Dot( nv, _vCP_til, _vCP_til ) - ( zeta_N * _Delta ) * ( zeta_N * _Delta );
+        double root = b * b - 4. * a * c;
         bool exist = false;
 
         if ( root >= 0 )
         {
-            double r2 = ( ( -b + std::sqrt( root ) ) / ( 2.*a ) );
+            double r2 = ( ( -b + std::sqrt( root ) ) / ( 2. * a ) );
 
             if ( r2 > 1 )
             {
@@ -995,8 +969,8 @@ void SolverConstrained<Data,Problem>::dogleg_solve( double *_vCP_til, double *_v
 
             if ( exist )
                 for ( int i = n; i < nv; i++ )
-                    if ( v_diff[ i ] < 0 )
-                        theta2 = std::min( theta2, ( -tau/2. - _vCP_til[ i ] ) / ( v_diff[ i ] ) );
+                    if ( v_diff[i] < 0 )
+                        theta2 = std::min( theta2, ( -tau / 2. - _vCP_til[i] ) / ( v_diff[i] ) );
 
             if ( theta2 < 0 )
                 exist = false;
@@ -1007,27 +981,27 @@ void SolverConstrained<Data,Problem>::dogleg_solve( double *_vCP_til, double *_v
             theta3 = std::min( theta3, zeta_N * _Delta / __Norm_2( nv, _vCP_til ) );
 
             for ( int i = n; i < nv; i++ )
-                if ( _vCP_til[ i ] < 0 )
-                    theta3 = std::min( theta3, -tau/2./_vCP_til[ i ] );
+                if ( _vCP_til[i] < 0 )
+                    theta3 = std::min( theta3, -tau / 2. / _vCP_til[i] );
 
             assert( theta3 > 0 );
 
             for ( int i = 0; i < nv; i++ )
-                _v_til[ i ] = theta3 * _vCP_til[ i ];
+                _v_til[i] = theta3 * _vCP_til[i];
         }
 
         else
             for ( int i = 0; i < nv; i++ )
-                _v_til[ i ] = ( 1-theta2 ) * _vCP_til[ i ] + theta2 * _vN_til[ i ];
+                _v_til[i] = ( 1 - theta2 ) * _vCP_til[i] + theta2 * _vN_til[i];
 
-        double theta1xvN_til[ _E_n+_E_g+2*_E_n ];
+        double theta1xvN_til[_E_n + _E_g + 2 * _E_n];
 
         for ( int i = 0; i < nv; i++ )
-            theta1xvN_til[ i ] = theta1 * _vN_til[ i ];
+            theta1xvN_til[i] = theta1 * _vN_til[i];
 
         if ( this->model_m( _s, _v_til ) >= this->model_m( _s, theta1xvN_til ) )
             for ( int i = 0; i < nv; i++ )
-                _v_til[ i ] = theta1xvN_til[ i ];
+                _v_til[i] = theta1xvN_til[i];
     }
 
     /*
@@ -1040,111 +1014,110 @@ void SolverConstrained<Data,Problem>::dogleg_solve( double *_vCP_til, double *_v
       std::cerr << "\ndx_n = ";
       exit(0);
     */
-
 }
 
-template<typename Data,template<class> class Problem>
-double SolverConstrained<Data,Problem>::get_vpred( double *_rhs, double *_v_til )
+template <typename Data, template <class> class Problem>
+double SolverConstrained<Data, Problem>::get_vpred( double* _rhs, double* _v_til )
 {
-    int n = M_prob.n(), nv = n + _E_g+2*n;
-    double A_hatTxv_til[ _E_h+_E_g+2*_E_n ], rhspAv[ _E_h + _E_g+2*_E_n ];
+    int n = M_prob.n(), nv = n + _E_g + 2 * n;
+    double A_hatTxv_til[_E_h + _E_g + 2 * _E_n], rhspAv[_E_h + _E_g + 2 * _E_n];
 
-    for ( int i = 0; i < _E_h+_E_g+2*n; i++ )
+    for ( int i = 0; i < _E_h + _E_g + 2 * n; i++ )
     {
-        A_hatTxv_til[ i ] = 0;
+        A_hatTxv_til[i] = 0;
 
         for ( int j = 0; j < nv; j++ )
-            A_hatTxv_til[ i ] += A_hat[ j ][ i ] * _v_til[ j ];
+            A_hatTxv_til[i] += A_hat[j][i] * _v_til[j];
 
-        rhspAv[ i ] = _rhs[ i ] + A_hatTxv_til[ i ];
+        rhspAv[i] = _rhs[i] + A_hatTxv_til[i];
     }
 
-    return __Norm_2( _E_h+_E_g+2*n, _rhs ) - __Norm_2( _E_h+_E_g+2*n, rhspAv );
+    return __Norm_2( _E_h + _E_g + 2 * n, _rhs ) - __Norm_2( _E_h + _E_g + 2 * n, rhspAv );
 }
 
-template<typename Data,template<class> class Problem>
-double SolverConstrained<Data,Problem>::get_normal_steps( double *_s, double _Delta,
-        double *_dx_normal, double *_ds_normal,
-        double *_v_til )
+template <typename Data, template <class> class Problem>
+double SolverConstrained<Data, Problem>::get_normal_steps( double* _s, double _Delta,
+                                                           double* _dx_normal, double* _ds_normal,
+                                                           double* _v_til )
 {
-    int n = M_prob.n(), nv = n + _E_g+2*n;
-    double vCP_til[ _E_n + _E_g+2*_E_n ], vN_til[ _E_n + _E_g+2*_E_n ],
-           rhs[ _E_h + _E_g+2*_E_n ], A_hatxrhs[ _E_n + _E_g+2*_E_n ],
-           A_hatTxA_hat[ _E_h + _E_g+2*_E_n ][ _E_h + _E_g+2*_E_n ],
-           A_hatTxA_hat2[ _E_h + _E_g+2*_E_n ][ _E_h + _E_g+2*_E_n ],
-           A_hat2xrhs [ _E_h+_E_g+2*_E_n ];
-    double zeros[ _E_n + _E_g+2*_E_n ], dummy[ _E_n + _E_g+2*_E_n ], x_til[ _E_h + _E_g+2*_E_n ];
+    int n = M_prob.n(), nv = n + _E_g + 2 * n;
+    double vCP_til[_E_n + _E_g + 2 * _E_n], vN_til[_E_n + _E_g + 2 * _E_n],
+        rhs[_E_h + _E_g + 2 * _E_n], A_hatxrhs[_E_n + _E_g + 2 * _E_n],
+        A_hatTxA_hat[_E_h + _E_g + 2 * _E_n][_E_h + _E_g + 2 * _E_n],
+        A_hatTxA_hat2[_E_h + _E_g + 2 * _E_n][_E_h + _E_g + 2 * _E_n],
+        A_hat2xrhs[_E_h + _E_g + 2 * _E_n];
+    double zeros[_E_n + _E_g + 2 * _E_n], dummy[_E_n + _E_g + 2 * _E_n], x_til[_E_h + _E_g + 2 * _E_n];
 
     for ( int m = 0; m < _E_h; m++ )
-        rhs[ m ] = hx[ m ];
+        rhs[m] = hx[m];
 
-    for ( int m = 0; m < _E_g+2*n; m++ )
-        rhs[ _E_h + m ] = gx[ m ] + _s[ m ];
+    for ( int m = 0; m < _E_g + 2 * n; m++ )
+        rhs[_E_h + m] = gx[m] + _s[m];
 
     // A^T * A
-    for ( int mi = 0; mi < _E_h+_E_g+2*n; mi++ )
+    for ( int mi = 0; mi < _E_h + _E_g + 2 * n; mi++ )
     {
-        for ( int mj = 0; mj < _E_h+_E_g+2*n; mj++ )
+        for ( int mj = 0; mj < _E_h + _E_g + 2 * n; mj++ )
         {
-            A_hatTxA_hat[ mi ][ mj ] = 0;
+            A_hatTxA_hat[mi][mj] = 0;
 
             for ( int i = 0; i < nv; i++ )
-                A_hatTxA_hat[ mi ][ mj ] += A_hat[ i ][ mi ] * A_hat[ i ][ mj ];
+                A_hatTxA_hat[mi][mj] += A_hat[i][mi] * A_hat[i][mj];
         }
     }
 
     // (A^T * A )^2
-    for ( int mi = 0; mi < _E_h+_E_g+2*n; mi++ )
+    for ( int mi = 0; mi < _E_h + _E_g + 2 * n; mi++ )
     {
-        for ( int mj = 0; mj < _E_h+_E_g+2*n; mj++ )
+        for ( int mj = 0; mj < _E_h + _E_g + 2 * n; mj++ )
         {
-            A_hatTxA_hat2[ mi ][ mj ] = 0;
+            A_hatTxA_hat2[mi][mj] = 0;
 
-            for ( int i = 0; i < _E_h+_E_g+2*n; i++ )
-                A_hatTxA_hat2[ mi ][ mj ] += A_hatTxA_hat[ i ][ mi ] * A_hatTxA_hat[ i ][ mj ];
+            for ( int i = 0; i < _E_h + _E_g + 2 * n; i++ )
+                A_hatTxA_hat2[mi][mj] += A_hatTxA_hat[i][mi] * A_hatTxA_hat[i][mj];
         }
     }
 
     for ( int i = 0; i < nv; i++ )
     {
-        zeros[ i ] = 0;
-        A_hatxrhs[ i ] = 0;
+        zeros[i] = 0;
+        A_hatxrhs[i] = 0;
 
-        for ( int m = 0; m < _E_h+_E_g+2*n; m++ )
-            A_hatxrhs[ i ] += A_hat[ i ][ m ] * rhs[ m ];
+        for ( int m = 0; m < _E_h + _E_g + 2 * n; m++ )
+            A_hatxrhs[i] += A_hat[i][m] * rhs[m];
     }
 
-    for ( int i = 0; i < _E_h+_E_g+2*n; i++ )
+    for ( int i = 0; i < _E_h + _E_g + 2 * n; i++ )
     {
-        A_hat2xrhs[ i ] = 0;
+        A_hat2xrhs[i] = 0;
 
-        for ( int m = 0; m < _E_h+_E_g+2*n; m++ )
-            A_hat2xrhs[ i ] += A_hatTxA_hat2[ i ][ m ] * rhs[ m ];
+        for ( int m = 0; m < _E_h + _E_g + 2 * n; m++ )
+            A_hat2xrhs[i] += A_hatTxA_hat2[i][m] * rhs[m];
     }
 
     double norm = __Norm_2( nv, A_hatxrhs );
-    double alpha = norm*norm / __Dot( _E_h+_E_g+2*n, rhs, A_hat2xrhs );
+    double alpha = norm * norm / __Dot( _E_h + _E_g + 2 * n, rhs, A_hat2xrhs );
 
     for ( int i = 0; i < nv; i++ )
-        vCP_til[ i ] = -alpha * A_hatxrhs[ i ];
+        vCP_til[i] = -alpha * A_hatxrhs[i];
 
     this->solve_AtA_system( zeros, rhs, dummy, x_til );
 
-    for ( int i = 0; i < n+_E_g+2*n; i++ )
+    for ( int i = 0; i < n + _E_g + 2 * n; i++ )
     {
-        vN_til[ i ] = 0;
+        vN_til[i] = 0;
 
-        for ( int m = 0; m < _E_h+_E_g+2*n; m++ )
-            vN_til[ i ] += -A_hat[ i ][ m ] * x_til[ m ];
+        for ( int m = 0; m < _E_h + _E_g + 2 * n; m++ )
+            vN_til[i] += -A_hat[i][m] * x_til[m];
     }
 
     this->dogleg_solve( vCP_til, vN_til, _s, _Delta, _v_til );
 
     for ( int i = 0; i < n; i++ )
-        _dx_normal[ i ] = _v_til[ i ];
+        _dx_normal[i] = _v_til[i];
 
-    for ( int i = 0; i < _E_g+2*n; i++ )
-        _ds_normal[ i ] = _s[ i ] * _v_til[ n+i ];
+    for ( int i = 0; i < _E_g + 2 * n; i++ )
+        _ds_normal[i] = _s[i] * _v_til[n + i];
 
     /*
       std::cerr << "\nalpha = " << alpha;
@@ -1181,75 +1154,74 @@ double SolverConstrained<Data,Problem>::get_normal_steps( double *_s, double _De
     */
 
     return this->get_vpred( rhs, _v_til );
-
 }
 
-template<typename Data,template<class> class Problem>
-double SolverConstrained<Data,Problem>::get_q( double *_v_til, double *_w_til, double MU )
+template <typename Data, template <class> class Problem>
+double SolverConstrained<Data, Problem>::get_q( double* _v_til, double* _w_til, double MU )
 {
-    int n = M_prob.n(), nd = n + _E_g+2*n;
-    double d_til[ _E_n+_E_g+2*_E_n ], gr[ _E_n+_E_g+2*_E_n ], Gd_til[ _E_n+_E_g+2*_E_n ];
+    int n = M_prob.n(), nd = n + _E_g + 2 * n;
+    double d_til[_E_n + _E_g + 2 * _E_n], gr[_E_n + _E_g + 2 * _E_n], Gd_til[_E_n + _E_g + 2 * _E_n];
 
     __SumVecs( nd, _v_til, _w_til, d_til );
 
     for ( int i = 0; i < n; i++ )
-        gr[ i ] = gradf[ i ];
+        gr[i] = gradf[i];
 
     for ( int i = n; i < nd; i++ )
-        gr[ i ] = -MU;
+        gr[i] = -MU;
 
     for ( int i = 0; i < nd; i++ )
     {
-        Gd_til[ i ] = 0;
+        Gd_til[i] = 0;
 
         for ( int j = 0; j < nd; j++ )
-            Gd_til[ i ] += G[ i ][ j ] * d_til[ j ];
+            Gd_til[i] += G[i][j] * d_til[j];
     }
 
     return __Dot( nd, gr, d_til ) + 0.5 * __Dot( nd, d_til, Gd_til );
 }
 
-template<typename Data,template<class> class Problem>
-void SolverConstrained<Data,Problem>::get_Pr( double *_r, double *_Pr )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::get_Pr( double* _r, double* _Pr )
 {
-    int n = M_prob.n(), nw = n + _E_g+2*n;
-    double zeros[ _E_n + _E_g+2*_E_n ], dummy[ _E_n + _E_g+2*_E_n ],
-           Atr[ _E_h + _E_g+2*_E_n ], x_Atr[ _E_h + _E_g+2*_E_n ];
+    int n = M_prob.n(), nw = n + _E_g + 2 * n;
+    double zeros[_E_n + _E_g + 2 * _E_n], dummy[_E_n + _E_g + 2 * _E_n],
+        Atr[_E_h + _E_g + 2 * _E_n], x_Atr[_E_h + _E_g + 2 * _E_n];
 
     for ( int i = 0; i < nw; i++ )
     {
-        zeros[ i ] = 0;
+        zeros[i] = 0;
     }
 
-    for ( int i = 0; i < _E_h+_E_g+2*n; i++ )
+    for ( int i = 0; i < _E_h + _E_g + 2 * n; i++ )
     {
-        Atr[ i ] = 0;
+        Atr[i] = 0;
 
         for ( int j = 0; j < nw; j++ )
-            Atr[ i ] += A_hat[ j ][ i ] * _r[ j ];
+            Atr[i] += A_hat[j][i] * _r[j];
     }
 
     this->solve_AtA_system( zeros, Atr, dummy, x_Atr );
 
     for ( int i = 0; i < nw; i++ )
     {
-        _Pr[ i ] = _r[i];
+        _Pr[i] = _r[i];
 
-        for ( int m = 0; m < _E_h+_E_g+2*n; m++ )
-            _Pr[ i ] += -A_hat[ i ][ m ] * x_Atr[ m ];
+        for ( int m = 0; m < _E_h + _E_g + 2 * n; m++ )
+            _Pr[i] += -A_hat[i][m] * x_Atr[m];
     }
 }
 
-template<typename Data,template<class> class Problem>
-bool SolverConstrained<Data,Problem>::slack_feasible( double *_w_til, double *_v_til )
+template <typename Data, template <class> class Problem>
+bool SolverConstrained<Data, Problem>::slack_feasible( double* _w_til, double* _v_til )
 {
     int n = M_prob.n();
     double tau = options.tau;
     bool feasible = true;
 
-    for ( int i = n; i < n+_E_g+2*n; i++ )
+    for ( int i = n; i < n + _E_g + 2 * n; i++ )
     {
-        if ( _w_til[ i ] + _v_til[ i ] + tau < 1e-13 )
+        if ( _w_til[i] + _v_til[i] + tau < 1e-13 )
             feasible = false;
 
         //std::cerr << "\n" << i << ": " << _w_til[ i ] + _v_til[ i ] + tau;
@@ -1258,37 +1230,37 @@ bool SolverConstrained<Data,Problem>::slack_feasible( double *_w_til, double *_v
     return feasible;
 }
 
-template<typename Data,template<class> class Problem>
-double SolverConstrained<Data,Problem>::get_tangen_steps( double *_s, double _Delta, double *_v_til, double MU,
-        double *_dx_tangen, double *_ds_tangen,
-        bool &truss_exit, int &n_CGiter  )
+template <typename Data, template <class> class Problem>
+double SolverConstrained<Data, Problem>::get_tangen_steps( double* _s, double _Delta, double* _v_til, double MU,
+                                                           double* _dx_tangen, double* _ds_tangen,
+                                                           bool& truss_exit, int& n_CGiter )
 {
     int n = M_prob.n();
-    int nw = n + _E_g+2*n;
+    int nw = n + _E_g + 2 * n;
     double last_slack_feasible_rg;
-    double w_til[ _E_n+_E_g+2*_E_n ], wP_til[ _E_n+_E_g+2*_E_n ],
-           last_slack_feasible_w_til[ _E_n+_E_g+2*_E_n ],
-           r[ _E_n+_E_g+2*_E_n ], rP[ _E_n+_E_g+2*_E_n ], Gp[ _E_n+_E_g+2*_E_n ],
-           g[ _E_n+_E_g+2*_E_n ], gP[ _E_n+_E_g+2*_E_n ],
-           p[ _E_n+_E_g+2*_E_n ], pP[ _E_n+_E_g+2*_E_n ],
-           last_slack_feasible_p[ _E_n+_E_g+2*_E_n ];
+    double w_til[_E_n + _E_g + 2 * _E_n], wP_til[_E_n + _E_g + 2 * _E_n],
+        last_slack_feasible_w_til[_E_n + _E_g + 2 * _E_n],
+        r[_E_n + _E_g + 2 * _E_n], rP[_E_n + _E_g + 2 * _E_n], Gp[_E_n + _E_g + 2 * _E_n],
+        g[_E_n + _E_g + 2 * _E_n], gP[_E_n + _E_g + 2 * _E_n],
+        p[_E_n + _E_g + 2 * _E_n], pP[_E_n + _E_g + 2 * _E_n],
+        last_slack_feasible_p[_E_n + _E_g + 2 * _E_n];
 
     truss_exit = false;
     n_CGiter = 0;
 
     for ( int i = 0; i < nw; i++ )
     {
-        Gp[ i ] = 0;
+        Gp[i] = 0;
 
         for ( int j = 0; j < nw; j++ )
-            Gp[ i ] += G[ i ][ j ] * _v_til[ j ];
+            Gp[i] += G[i][j] * _v_til[j];
     }
 
     for ( int i = 0; i < n; i++ )
-        r[ i ] = gradf[ i ] + Gp[ i ];
+        r[i] = gradf[i] + Gp[i];
 
     for ( int i = n; i < nw; i++ )
-        r[ i ] = -MU + Gp[ i ];
+        r[i] = -MU + Gp[i];
 
     get_Pr( r, g );
 
@@ -1301,12 +1273,12 @@ double SolverConstrained<Data,Problem>::get_tangen_steps( double *_s, double _De
 
     for ( int i = 0; i < nw; i++ )
     {
-        w_til[ i ] = 0;
-        wP_til[ i ] = 0;
-        last_slack_feasible_w_til[ i ] = 0;
-        p[ i ] = -g[ i ];
-        pP[ i ] = -g[ i ];
-        last_slack_feasible_p[ i ] = -g[ i ];
+        w_til[i] = 0;
+        wP_til[i] = 0;
+        last_slack_feasible_w_til[i] = 0;
+        p[i] = -g[i];
+        pP[i] = -g[i];
+        last_slack_feasible_p[i] = -g[i];
     }
 
     last_slack_feasible_rg = __Dot( nw, g, r );
@@ -1316,7 +1288,7 @@ double SolverConstrained<Data,Problem>::get_tangen_steps( double *_s, double _De
     bool done = false;
     double gamma, alpha, beta;
 
-    while ( iter < 2*( n-_E_h ) && !done )
+    while ( iter < 2 * ( n - _E_h ) && !done )
     {
 #ifdef DEBUG_OUT_CG
         std::cerr << "\nCGiter = " << iter << ",\t  r'g = " << __Dot( nw, g, r );
@@ -1324,10 +1296,10 @@ double SolverConstrained<Data,Problem>::get_tangen_steps( double *_s, double _De
 
         for ( int i = 0; i < nw; i++ )
         {
-            Gp[ i ] = 0;
+            Gp[i] = 0;
 
             for ( int j = 0; j < nw; j++ )
-                Gp[ i ] += G[ i ][ j ] * p[ j ];
+                Gp[i] += G[i][j] * p[j];
         }
 
         gamma = __Dot( nw, p, Gp );
@@ -1336,12 +1308,12 @@ double SolverConstrained<Data,Problem>::get_tangen_steps( double *_s, double _De
         {
             double a = __Dot( nw, p, p );
             double b = 2. * __Dot( nw, w_til, p );
-            double c = __Dot( nw, w_til, w_til ) + __Dot( nw, _v_til, _v_til ) - _Delta*_Delta;
-            double thetaa = ( -b + std::sqrt( b*b - 4.*a*c ) ) / ( 2.*a );
+            double c = __Dot( nw, w_til, w_til ) + __Dot( nw, _v_til, _v_til ) - _Delta * _Delta;
+            double thetaa = ( -b + std::sqrt( b * b - 4. * a * c ) ) / ( 2. * a );
             assert( thetaa > 0 );
 
             for ( int i = 0; i < nw; i++ )
-                wP_til[ i ] = w_til[ i ] + thetaa * p[ i ];
+                wP_til[i] = w_til[i] + thetaa * p[i];
 
             done = true;
             truss_exit = true;
@@ -1349,7 +1321,7 @@ double SolverConstrained<Data,Problem>::get_tangen_steps( double *_s, double _De
             std::cerr << "\nCG indefinitness EXIT:  ||wP_til||^2 + ||v_til||^2 = "
                       << __Dot( nw, wP_til, wP_til ) + __Dot( nw, _v_til, _v_til )
                       << " ,\t Delta^2 = "
-                      << _Delta*_Delta << "\n";
+                      << _Delta * _Delta << "\n";
 #endif
         }
 
@@ -1358,18 +1330,18 @@ double SolverConstrained<Data,Problem>::get_tangen_steps( double *_s, double _De
             alpha = __Dot( nw, r, g ) / gamma;
 
             for ( int i = 0; i < nw; i++ )
-                wP_til[ i ] = w_til[ i ] + alpha * p[ i ];
+                wP_til[i] = w_til[i] + alpha * p[i];
 
-            if ( __Dot( nw, wP_til, wP_til ) + __Dot( nw, _v_til, _v_til ) > _Delta*_Delta )
+            if ( __Dot( nw, wP_til, wP_til ) + __Dot( nw, _v_til, _v_til ) > _Delta * _Delta )
             {
                 double a = __Dot( nw, p, p );
                 double b = 2. * __Dot( nw, w_til, p );
-                double c = __Dot( nw, w_til, w_til ) + __Dot( nw, _v_til, _v_til ) - _Delta*_Delta;
-                double thetab = ( -b + std::sqrt( b*b - 4.*a*c ) ) / ( 2.*a );
+                double c = __Dot( nw, w_til, w_til ) + __Dot( nw, _v_til, _v_til ) - _Delta * _Delta;
+                double thetab = ( -b + std::sqrt( b * b - 4. * a * c ) ) / ( 2. * a );
                 assert( thetab > 0 );
 
                 for ( int i = 0; i < nw; i++ )
-                    wP_til[ i ] = w_til[ i ] + thetab * p[ i ];
+                    wP_til[i] = w_til[i] + thetab * p[i];
 
                 done = true;
                 truss_exit = true;
@@ -1377,7 +1349,7 @@ double SolverConstrained<Data,Problem>::get_tangen_steps( double *_s, double _De
                 std::cerr << "\nCG truss EXIT:  ||wP_til||^2 + ||v_til||^2 = "
                           << __Dot( nw, wP_til, wP_til ) + __Dot( nw, _v_til, _v_til )
                           << " ,\t Delta^2 = "
-                          << _Delta*_Delta << "\n";
+                          << _Delta * _Delta << "\n";
 #endif
             }
         }
@@ -1385,7 +1357,7 @@ double SolverConstrained<Data,Problem>::get_tangen_steps( double *_s, double _De
         if ( !done )
         {
             for ( int i = 0; i < nw; i++ )
-                rP[ i ] = r[ i ] + alpha * Gp[ i ];
+                rP[i] = r[i] + alpha * Gp[i];
 
             get_Pr( rP, gP );
 
@@ -1412,19 +1384,19 @@ double SolverConstrained<Data,Problem>::get_tangen_steps( double *_s, double _De
 
             for ( int i = 0; i < nw; i++ )
             {
-                pP[ i ] = -gP[ i ] + beta * p[ i ];
-                w_til[ i ] = wP_til[ i ];
-                r[ i ] = rP[ i ];
-                g[ i ] = gP[ i ];
-                p[ i ] = pP[ i ];
+                pP[i] = -gP[i] + beta * p[i];
+                w_til[i] = wP_til[i];
+                r[i] = rP[i];
+                g[i] = gP[i];
+                p[i] = pP[i];
             }
 
             if ( this->slack_feasible( wP_til, _v_til ) )
             {
                 for ( int i = 0; i < nw; i++ )
                 {
-                    last_slack_feasible_w_til[ i ] = wP_til[ i ];
-                    last_slack_feasible_p[ i ] = p[ i ];
+                    last_slack_feasible_w_til[i] = wP_til[i];
+                    last_slack_feasible_p[i] = p[i];
                 }
 
                 last_slack_feasible_rg = __Dot( nw, g, r );
@@ -1438,43 +1410,41 @@ double SolverConstrained<Data,Problem>::get_tangen_steps( double *_s, double _De
     {
         double a = __Dot( nw, last_slack_feasible_p, last_slack_feasible_p );
         double b = 2. * __Dot( nw, last_slack_feasible_w_til, last_slack_feasible_p );
-        double c = __Dot( nw, last_slack_feasible_w_til, last_slack_feasible_w_til )
-                   + __Dot( nw, _v_til, _v_til ) - _Delta*_Delta;
-        double thetac = ( -b + std::sqrt( b*b - 4.*a*c ) ) / ( 2.*a );
+        double c = __Dot( nw, last_slack_feasible_w_til, last_slack_feasible_w_til ) + __Dot( nw, _v_til, _v_til ) - _Delta * _Delta;
+        double thetac = ( -b + std::sqrt( b * b - 4. * a * c ) ) / ( 2. * a );
         assert( thetac > 0 );
         double tau = options.tau;
         truss_exit = true;
 
         for ( int i = n; i < nw; i++ )
-            if ( last_slack_feasible_p[ i ] < 0 )
+            if ( last_slack_feasible_p[i] < 0 )
             {
                 thetac = std::min( thetac,
-                                   ( -tau - _v_til[ i ] - last_slack_feasible_w_til[ i ] )
-                                   / last_slack_feasible_p[ i ] );
+                                   ( -tau - _v_til[i] - last_slack_feasible_w_til[i] ) / last_slack_feasible_p[i] );
             }
 
         assert( thetac > 0 );
 
         for ( int i = 0; i < nw; i++ )
-            wP_til[ i ] = last_slack_feasible_w_til[ i ] + thetac * last_slack_feasible_p[ i ];
+            wP_til[i] = last_slack_feasible_w_til[i] + thetac * last_slack_feasible_p[i];
 
 #ifdef DEBUG_OUT_CG
-        std::cerr << "\nCorrected slack feasibility violation of wP_til: tau = " << tau << ", wP_til_s + v_til_s = " ;
+        std::cerr << "\nCorrected slack feasibility violation of wP_til: tau = " << tau << ", wP_til_s + v_til_s = ";
 
         for ( int i = n; i < nw; i++ )
-            std::cerr << "\n " << wP_til[ i ] + _v_til[ i ];
+            std::cerr << "\n " << wP_til[i] + _v_til[i];
 
-        std::cerr<< "\nr'g = " << last_slack_feasible_rg << "\n";
+        std::cerr << "\nr'g = " << last_slack_feasible_rg << "\n";
 #endif
     }
 
     n_CGiter = iter;
 
     for ( int i = 0; i < n; i++ )
-        _dx_tangen[ i ] = wP_til[ i ];
+        _dx_tangen[i] = wP_til[i];
 
-    for ( int i = 0; i < _E_g+2*n; i++ )
-        _ds_tangen[ i ] = _s[ i ] * wP_til[ n+i ];
+    for ( int i = 0; i < _E_g + 2 * n; i++ )
+        _ds_tangen[i] = _s[i] * wP_til[n + i];
 
     /*
       __print_vec( nw, _v_til );
@@ -1503,25 +1473,23 @@ double SolverConstrained<Data,Problem>::get_tangen_steps( double *_s, double _De
       //exit(0);
       */
 
-
     return this->get_q( _v_til, wP_til, MU );
-
 }
 
-template<typename Data,template<class> class Problem>
-double SolverConstrained<Data,Problem>::get_steps( double *_s, double _Delta, double MU,
-        double *_dx, double *_ds, double &_vpred, double &_q,
-        bool &truss_exit, int &n_CGiter )
+template <typename Data, template <class> class Problem>
+double SolverConstrained<Data, Problem>::get_steps( double* _s, double _Delta, double MU,
+                                                    double* _dx, double* _ds, double& _vpred, double& _q,
+                                                    bool& truss_exit, int& n_CGiter )
 {
     int n = M_prob.n();
-    double dx_normal[ _E_n ], ds_normal[ _E_g+2*_E_n ], v_til[ _E_n+_E_g+2*_E_n ];
-    double dx_tangen[ _E_n ], ds_tangen[ _E_g+2*_E_n ], d[ _E_n+_E_g+2*_E_n ];
+    double dx_normal[_E_n], ds_normal[_E_g + 2 * _E_n], v_til[_E_n + _E_g + 2 * _E_n];
+    double dx_tangen[_E_n], ds_tangen[_E_g + 2 * _E_n], d[_E_n + _E_g + 2 * _E_n];
 
     _vpred = this->get_normal_steps( _s, _Delta, dx_normal, ds_normal, v_til );
     _q = this->get_tangen_steps( _s, _Delta, v_til, MU, dx_tangen, ds_tangen, truss_exit, n_CGiter );
 
     __SumVecs( n, dx_normal, dx_tangen, _dx );
-    __SumVecs( _E_g+2*n, ds_normal, ds_tangen, _ds );
+    __SumVecs( _E_g + 2 * n, ds_normal, ds_tangen, _ds );
 
     /*
       std::cerr << "\n dx_normal = ";
@@ -1536,17 +1504,17 @@ double SolverConstrained<Data,Problem>::get_steps( double *_s, double _Delta, do
     */
 
     for ( int i = 0; i < n; i++ )
-        d[ i ] = _dx[ i ];
+        d[i] = _dx[i];
 
-    for ( int i = 0; i < _E_g+2*n; i++ )
-        d[ n+i ] = _ds[ i ];
+    for ( int i = 0; i < _E_g + 2 * n; i++ )
+        d[n + i] = _ds[i];
 
-    return __Norm_2( n+_E_g+2*n, d );
+    return __Norm_2( n + _E_g + 2 * n, d );
 }
 
-template<typename Data,template<class> class Problem>
-double SolverConstrained<Data,Problem>::get_phi( double *_x, double *_s, double MU,
-        double nu, double *rhs )
+template <typename Data, template <class> class Problem>
+double SolverConstrained<Data, Problem>::get_phi( double* _x, double* _s, double MU,
+                                                  double nu, double* rhs )
 {
     double phi_val;
 
@@ -1585,97 +1553,97 @@ double SolverConstrained<Data,Problem>::get_phi( double *_x, double *_s, double 
     h_type __hx;
 
     // get the order 0 information only
-    M_prob.evaluate ( _x, __fx, diff_order<0>() );
-    M_prob.evaluate ( _x, __gx, diff_order<0>() );
-    M_prob.evaluate ( _x, __hx, diff_order<0>() );
+    M_prob.evaluate( _x, __fx, diff_order<0>() );
+    M_prob.evaluate( _x, __gx, diff_order<0>() );
+    M_prob.evaluate( _x, __hx, diff_order<0>() );
 
     double __f_at_x = __fx.value( 0 );
-    double __g_at_x[ _E_g+2*_E_n ];
+    double __g_at_x[_E_g + 2 * _E_n];
 
     for ( uint __i = 0; __i < __gx.value().size(); ++__i )
         __g_at_x[__i] = __gx.value( __i );
 
-    double __h_at_x[ _E_h ];
+    double __h_at_x[_E_h];
 
     for ( uint __i = 0; __i < _E_h; ++__i )
         __h_at_x[__i] = __hx.value( __i );
 
     for ( int m = 0; m < _E_h; m++ )
-        rhs[ m ] = __h_at_x[ m ];
+        rhs[m] = __h_at_x[m];
 
-    for ( int m = 0; m < _E_g+2*_E_n; m++ )
-        rhs[ _E_h + m ] = __g_at_x[ m ] + _s[ m ];
+    for ( int m = 0; m < _E_g + 2 * _E_n; m++ )
+        rhs[_E_h + m] = __g_at_x[m] + _s[m];
 
     phi_val = __f_at_x;
 
-    for ( int i = 0; i < _E_g+2*_E_n; i++ )
-        phi_val += -MU * std::log( _s[ i ] );
+    for ( int i = 0; i < _E_g + 2 * _E_n; i++ )
+        phi_val += -MU * std::log( _s[i] );
 
-    phi_val += nu * __Norm_2( _E_g+2*_E_n, rhs );
+    phi_val += nu * __Norm_2( _E_g + 2 * _E_n, rhs );
 #endif
     return phi_val;
 }
 
-template<typename Data,template<class> class Problem>
-double SolverConstrained<Data,Problem>::get_phi( double *_x, double *_s, double MU, double nu )
+template <typename Data, template <class> class Problem>
+double SolverConstrained<Data, Problem>::get_phi( double* _x, double* _s, double MU, double nu )
 {
-    double rhs[ _E_h + _E_g+2*_E_n ];
+    double rhs[_E_h + _E_g + 2 * _E_n];
     double phi_val = this->get_phi( _x, _s, MU, nu, rhs );
 
     return phi_val;
 }
 
-template<typename Data,template<class> class Problem>
-double SolverConstrained<Data,Problem>::get_SOC( double *_s, double *_rhs_xs_pd,
-        double *_xy, double *_sy )
+template <typename Data, template <class> class Problem>
+double SolverConstrained<Data, Problem>::get_SOC( double* _s, double* _rhs_xs_pd,
+                                                  double* _xy, double* _sy )
 {
     int n = M_prob.n();
 
     // Second order corrections y:
-    double zeros[ _E_n + _E_g+2*_E_n ], dummy[ _E_n + _E_g+2*_E_n ],
-           x_til[ _E_h + _E_g+2*_E_n ], y[ _E_n + _E_g+2*_E_n ];
+    double zeros[_E_n + _E_g + 2 * _E_n], dummy[_E_n + _E_g + 2 * _E_n],
+        x_til[_E_h + _E_g + 2 * _E_n], y[_E_n + _E_g + 2 * _E_n];
 
-    for ( int i = 0; i < n+_E_g+2*_E_n; i++ )
-        zeros[ i ] = 0;
+    for ( int i = 0; i < n + _E_g + 2 * _E_n; i++ )
+        zeros[i] = 0;
 
     this->solve_AtA_system( zeros, _rhs_xs_pd, dummy, x_til );
 
-    for ( int i = 0; i < n+_E_g+2*n; i++ )
+    for ( int i = 0; i < n + _E_g + 2 * n; i++ )
     {
-        y[ i ] = 0;
+        y[i] = 0;
 
-        for ( int m = 0; m < _E_h+_E_g+2*n; m++ )
-            y[ i ] += A_hat[ i ][ m ] * x_til[ m ];
+        for ( int m = 0; m < _E_h + _E_g + 2 * n; m++ )
+            y[i] += A_hat[i][m] * x_til[m];
     }
 
     for ( int i = 0; i < n; i++ )
-        _xy[ i ] = y[ i ];
+        _xy[i] = y[i];
 
-    for ( int i = 0; i < _E_g+2*n; i++ )
-        _sy[ i ] = y[ n+i ];
+    for ( int i = 0; i < _E_g + 2 * n; i++ )
+        _sy[i] = y[n + i];
 
-    return __Norm_2( n+_E_g+2*n, y );
+    return __Norm_2( n + _E_g + 2 * n, y );
 }
 
-template<typename Data,template<class> class Problem>
-double SolverConstrained<Data,Problem>::get_phi( double *_s, double MU, double nu )
+template <typename Data, template <class> class Problem>
+double SolverConstrained<Data, Problem>::get_phi( double* _s, double MU, double nu )
 {
     int n = M_prob.n();
-    double rhs[ _E_h + _E_g+2*_E_n ];
+    double rhs[_E_h + _E_g + 2 * _E_n];
     double phi_val;
 
     for ( int m = 0; m < _E_h; m++ )
-        rhs[ m ] = hx[ m ];
+        rhs[m] = hx[m];
 
-    for ( int m = 0; m < _E_g+2*n; m++ )
-        rhs[ _E_h + m ] = gx[ m ] + _s[ m ];
+    for ( int m = 0; m < _E_g + 2 * n; m++ )
+        rhs[_E_h + m] = gx[m] + _s[m];
 
     phi_val = fx;
 
-    for ( int i = 0; i < _E_g+2*n; i++ )
-        phi_val += -MU * std::log( _s[ i ] );
+    for ( int i = 0; i < _E_g + 2 * n; i++ )
+        phi_val += -MU * std::log( _s[i] );
 
-    phi_val += nu * __Norm_2( _E_g+2*n, rhs );
+    phi_val += nu * __Norm_2( _E_g + 2 * n, rhs );
 
     /*
       std::cerr << "\nfx = " << fx << "\n";
@@ -1692,34 +1660,31 @@ double SolverConstrained<Data,Problem>::get_phi( double *_s, double MU, double n
     return phi_val;
 }
 
-
-template<typename Data,template<class> class Problem>
-bool
-SolverConstrained<Data,Problem>::optimize( double __x[_E_n] )
+template <typename Data, template <class> class Problem>
+bool SolverConstrained<Data, Problem>::optimize( double __x[_E_n] )
 {
     int n = M_prob.n();
 
     M_solver_stats.clear();
 
-
     std::cout << "\n[SolverConstrained<Data,Problem>::optimize()]: Optimizing...\n";
 
     // Controlling parameters
-    double Delta = std::min( options.Delta_init, ( double )Max_Allowed_Delta );
+    double Delta = std::min( options.Delta_init, (double)Max_Allowed_Delta );
     double eMU = options.eMU_init;
     double MU = options.MU_init;
     double MU_last = MU;
     double nu = options.nu0_init;
     double rho_N = options.rho_N;
 
-    double rhs_xs_p_d[ _E_h + _E_g+2*_E_n ];
+    double rhs_xs_p_d[_E_h + _E_g + 2 * _E_n];
 
-    double dx[ _E_n ];
-    double x_p_dx[ _E_n ];
-    double s[ _E_g+2*_E_n ];
-    double ds[ _E_g+2*_E_n ];
-    double s_p_ds[ _E_g+2*_E_n ];
-    double lambda_h[ _E_h ], lambda_g[ _E_g+2*_E_n ];
+    double dx[_E_n];
+    double x_p_dx[_E_n];
+    double s[_E_g + 2 * _E_n];
+    double ds[_E_g + 2 * _E_n];
+    double s_p_ds[_E_g + 2 * _E_n];
+    double lambda_h[_E_h], lambda_g[_E_g + 2 * _E_n];
     double vpred, q, pred, ared, gamma, norm_d;
 
     M_prob.copy_x0_to_x( __x );
@@ -1734,7 +1699,7 @@ SolverConstrained<Data,Problem>::optimize( double __x[_E_n] )
 
         double max_TR_iter = options.max_TR_iter;
 
-        if ( hom_iter+1 >= options.max_hom_iter )
+        if ( hom_iter + 1 >= options.max_hom_iter )
             max_TR_iter = 2 * max_TR_iter;
 
         err_iter++;
@@ -1760,17 +1725,17 @@ SolverConstrained<Data,Problem>::optimize( double __x[_E_n] )
 
             bool evaluate_Hess = false;
 
-            if ( iter%2 == 0 )
+            if ( iter % 2 == 0 )
                 evaluate_Hess = true;
 
             norm_d = this->get_steps( s, Delta, MU, dx, ds, vpred, q, truss_exit, n_CGiter );
 
             if ( q > 0 )
-                nu = std::max( 1.5*nu, q / ( ( 1 - rho_N ) * vpred ) );
+                nu = std::max( 1.5 * nu, q / ( ( 1 - rho_N ) * vpred ) );
 
             pred = -q + nu * vpred;
             __SumVecs( n, __x, dx, x_p_dx );
-            __SumVecs( _E_g+2*n, s, ds, s_p_ds );
+            __SumVecs( _E_g + 2 * n, s, ds, s_p_ds );
             ared = get_phi( s, MU, nu ) - get_phi( x_p_dx, s_p_ds, MU, nu, rhs_xs_p_d );
             gamma = ared / pred;
 
@@ -1787,29 +1752,29 @@ SolverConstrained<Data,Problem>::optimize( double __x[_E_n] )
                       << "\n  norm_d    = " << norm_d
                       << "\n  Delta     = " << Delta
 
-                      ;
+                ;
             __print_vec( n, dx );
-            __print_vec( _E_g+2*n, ds );
+            __print_vec( _E_g + 2 * n, ds );
 #endif
 
             if ( gamma >= options.eta )
             {
                 __CopyVecs( n, x_p_dx, __x );
-                __CopyVecs( _E_g+2*n, s_p_ds, s );
+                __CopyVecs( _E_g + 2 * n, s_p_ds, s );
 
                 if ( gamma >= options.rho_big )
-                    Delta = std::max( options.rho_increase_big * norm_d , Delta );
+                    Delta = std::max( options.rho_increase_big * norm_d, Delta );
 
                 else if ( gamma >= options.rho_small )
-                    Delta = std::max( options.rho_increase_small * norm_d , Delta );
+                    Delta = std::max( options.rho_increase_small * norm_d, Delta );
 
-                Delta = std::min( Delta, ( double )Max_Allowed_Delta );
+                Delta = std::min( Delta, (double)Max_Allowed_Delta );
             }
 
             else
             {
                 SOC = false;
-                double xy[ _E_n ], sy[ _E_g+2*_E_n ];
+                double xy[_E_n], sy[_E_g + 2 * _E_n];
                 double norm_xypsy = this->get_SOC( s_p_ds, rhs_xs_p_d, xy, sy );
 #ifdef DEBUG_OUT_TR
                 std::cerr << "\n  SECOND ORDER CORRECTION:"
@@ -1821,17 +1786,17 @@ SolverConstrained<Data,Problem>::optimize( double __x[_E_n] )
                     bool sy_feasible = true;
                     double tau = options.tau;
 
-                    for ( int i = 0; i < _E_g+2*n; i++ )
-                        if ( ds[ i ] + sy[ i ] + tau*s[ i ] < 0 )
+                    for ( int i = 0; i < _E_g + 2 * n; i++ )
+                        if ( ds[i] + sy[i] + tau * s[i] < 0 )
                             sy_feasible = false;
 
                     if ( sy_feasible )
                     {
                         __SumVecs( n, __x, dx, x_p_dx );
-                        __SumVecs( _E_g+2*n, s, ds, s_p_ds );
+                        __SumVecs( _E_g + 2 * n, s, ds, s_p_ds );
 
                         __SumVecs( n, x_p_dx, xy, x_p_dx );
-                        __SumVecs( _E_g+2*n, s_p_ds, sy, s_p_ds );
+                        __SumVecs( _E_g + 2 * n, s_p_ds, sy, s_p_ds );
 
                         ared = get_phi( s, MU, nu ) - get_phi( x_p_dx, s_p_ds, MU, nu );
                         gamma = ared / pred;
@@ -1843,7 +1808,7 @@ SolverConstrained<Data,Problem>::optimize( double __x[_E_n] )
                         {
                             SOC = true;
                             __CopyVecs( n, x_p_dx, __x );
-                            __CopyVecs( _E_g+2*n, s_p_ds, s );
+                            __CopyVecs( _E_g + 2 * n, s_p_ds, s );
                             // (Delta = Delta)
                         }
                     }
@@ -1861,8 +1826,8 @@ SolverConstrained<Data,Problem>::optimize( double __x[_E_n] )
                 this->update_opt_objs( __x, s, lambda_h, lambda_g, MU_last, evaluate_Hess );
 
                 M_solver_stats.push_all( MU, E, this->evaluate_E_current( s, lambda_h, lambda_g, 0 ),
-                                          n_CGiter, truss_exit, SOC,
-                                          Delta_used, ared, pred, gamma );
+                                         n_CGiter, truss_exit, SOC,
+                                         Delta_used, ared, pred, gamma );
                 iter++;
                 MU_last = MU;
             }
@@ -1919,9 +1884,8 @@ SolverConstrained<Data,Problem>::optimize( double __x[_E_n] )
 //
 // Stats
 //
-template<typename Data, template<class> class Problem>
-void
-SolverConstrained<Data,Problem>::Stats::clear()
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::Stats::clear()
 {
     x_hstr.clear();
     mu_hstr.clear();
@@ -1938,20 +1902,18 @@ SolverConstrained<Data,Problem>::Stats::clear()
     gamma_hstr.clear();
 }
 
-template<typename Data, template<class> class Problem>
-void
-SolverConstrained<Data,Problem>::Stats::push_x( const double *__x )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::Stats::push_x( const double* __x )
 {
     for ( int i = 0; i < solver_type::_E_n; i++ )
         x_hstr.push_back( __x[i] );
 }
 
-template<typename Data, template<class> class Problem>
-void
-SolverConstrained<Data,Problem>::Stats::push_all( double mu, double E, double E0,
-        int n_CGiter,
-        bool truss_exit, bool SOC,
-        double Delta, double ared, double pred, double gamma )
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::Stats::push_all( double mu, double E, double E0,
+                                                        int n_CGiter,
+                                                        bool truss_exit, bool SOC,
+                                                        double Delta, double ared, double pred, double gamma )
 {
     //push_x_in_hstr( _x );
     mu_hstr.push_back( mu );
@@ -1966,10 +1928,8 @@ SolverConstrained<Data,Problem>::Stats::push_all( double mu, double E, double E0
     gamma_hstr.push_back( gamma );
 }
 
-
-template<typename Data, template<class> class Problem>
-void
-SolverConstrained<Data,Problem>::Stats::show( bool verbose ) const
+template <typename Data, template <class> class Problem>
+void SolverConstrained<Data, Problem>::Stats::show( bool verbose ) const
 {
     iter = mu_hstr.size();
     std::cerr << "\nScaled Trust-Region Method Statistics:\n\n";
@@ -1981,58 +1941,58 @@ SolverConstrained<Data,Problem>::Stats::show( bool verbose ) const
 
     for ( int k = 0; k < iter; k++ )
     {
-        if ( mu_hstr[ k ] != mu_last )
+        if ( mu_hstr[k] != mu_last )
         {
-            fprintf( stderr, "%3d ", k+1 );
-            fprintf ( stderr, " %3.1e", mu_hstr[ k ] );
-            fprintf ( stderr, " %10.3e", E0_hstr[ k ] );
-            fprintf ( stderr, " %10.3e", E_hstr[ k ] );
-            fprintf ( stderr, " %5d", n_CGiter_hstr[ k ] );
+            fprintf( stderr, "%3d ", k + 1 );
+            fprintf( stderr, " %3.1e", mu_hstr[k] );
+            fprintf( stderr, " %10.3e", E0_hstr[k] );
+            fprintf( stderr, " %10.3e", E_hstr[k] );
+            fprintf( stderr, " %5d", n_CGiter_hstr[k] );
 
-            if ( truss_exit_hstr[ k ] == true )
-                fprintf ( stderr, "      -Y-   " );
-
-            else
-                fprintf ( stderr, "       N    " );
-
-            if ( SOC_hstr[ k ] == true )
-                fprintf ( stderr, "-Y- " );
+            if ( truss_exit_hstr[k] == true )
+                fprintf( stderr, "      -Y-   " );
 
             else
-                fprintf ( stderr, " N  " );
+                fprintf( stderr, "       N    " );
 
-            fprintf ( stderr, " %3.1e", Delta_hstr[ k ] );
-            fprintf ( stderr, " %9.2e", ared_hstr[ k ] );
-            fprintf ( stderr, " %9.2e", pred_hstr[ k ] );
-            fprintf ( stderr, " %7.1f", gamma_hstr[ k ] );
+            if ( SOC_hstr[k] == true )
+                fprintf( stderr, "-Y- " );
+
+            else
+                fprintf( stderr, " N  " );
+
+            fprintf( stderr, " %3.1e", Delta_hstr[k] );
+            fprintf( stderr, " %9.2e", ared_hstr[k] );
+            fprintf( stderr, " %9.2e", pred_hstr[k] );
+            fprintf( stderr, " %7.1f", gamma_hstr[k] );
             std::cerr << std::endl;
-            mu_last = mu_hstr[ k ];
+            mu_last = mu_hstr[k];
         }
 
         else if ( !verbose )
         {
-            fprintf( stderr, "%3d ", k+1 );
-            fprintf ( stderr, "        " );
-            fprintf ( stderr, " %10.3e", E0_hstr[ k ] );
-            fprintf ( stderr, " %10.3e", E_hstr[ k ] );
-            fprintf ( stderr, " %5d", n_CGiter_hstr[ k ] );
+            fprintf( stderr, "%3d ", k + 1 );
+            fprintf( stderr, "        " );
+            fprintf( stderr, " %10.3e", E0_hstr[k] );
+            fprintf( stderr, " %10.3e", E_hstr[k] );
+            fprintf( stderr, " %5d", n_CGiter_hstr[k] );
 
-            if ( truss_exit_hstr[ k ] == true )
-                fprintf ( stderr, "      -Y-   " );
-
-            else
-                fprintf ( stderr, "       N    " );
-
-            if ( SOC_hstr[ k ] == true )
-                fprintf ( stderr, "-Y- " );
+            if ( truss_exit_hstr[k] == true )
+                fprintf( stderr, "      -Y-   " );
 
             else
-                fprintf ( stderr, " N  " );
+                fprintf( stderr, "       N    " );
 
-            fprintf ( stderr, " %3.1e", Delta_hstr[ k ] );
-            fprintf ( stderr, " %9.2e", ared_hstr[ k ] );
-            fprintf ( stderr, " %9.2e", pred_hstr[ k ] );
-            fprintf ( stderr, " %7.1f", gamma_hstr[ k ] );
+            if ( SOC_hstr[k] == true )
+                fprintf( stderr, "-Y- " );
+
+            else
+                fprintf( stderr, " N  " );
+
+            fprintf( stderr, " %3.1e", Delta_hstr[k] );
+            fprintf( stderr, " %9.2e", ared_hstr[k] );
+            fprintf( stderr, " %9.2e", pred_hstr[k] );
+            fprintf( stderr, " %7.1f", gamma_hstr[k] );
             std::cerr << std::endl;
         }
     }

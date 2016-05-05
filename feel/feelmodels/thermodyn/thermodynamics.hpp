@@ -37,15 +37,15 @@ namespace Feel
 namespace FeelModels
 {
 
-template< typename ConvexType, typename BasisTemperatureType>
-class ThermoDynamics : public ThermoDynamicsBase<ConvexType,BasisTemperatureType>,
-                       public boost::enable_shared_from_this< ThermoDynamics<ConvexType,BasisTemperatureType> >
+template <typename ConvexType, typename BasisTemperatureType>
+class ThermoDynamics : public ThermoDynamicsBase<ConvexType, BasisTemperatureType>,
+                       public boost::enable_shared_from_this<ThermoDynamics<ConvexType, BasisTemperatureType>>
 {
 
-public:
-    typedef ThermoDynamicsBase<ConvexType,BasisTemperatureType> super_type;
+  public:
+    typedef ThermoDynamicsBase<ConvexType, BasisTemperatureType> super_type;
 
-    typedef ThermoDynamics<ConvexType,BasisTemperatureType> self_type;
+    typedef ThermoDynamics<ConvexType, BasisTemperatureType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     // mesh
@@ -69,10 +69,9 @@ public:
 
     //___________________________________________________________________________________//
     // assembly using bc
-    void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
-    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
-    void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const;
-
+    void updateWeakBCLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart ) const;
+    void updateBCStrongDirichletLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+    void updateSourceTermLinearPDE( vector_ptrtype& F, bool buildCstPart ) const;
 };
 
 } // namespace FeelModels

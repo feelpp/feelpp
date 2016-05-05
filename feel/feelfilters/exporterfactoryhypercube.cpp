@@ -27,21 +27,21 @@
    \date 2010-04-16
 */
 
-#include <feel/feelfilters/exporterimpl.hpp>
 #include <feel/feelfilters/exporterensight.hpp>
 #include <feel/feelfilters/exportergmsh.hpp>
+#include <feel/feelfilters/exporterimpl.hpp>
 
 namespace Feel
 {
 /// \cond detail
 namespace detail
 {
-template<typename MT>
+template <typename MT>
 Exporter<MT>* createEnsight()
 {
     return new ExporterEnsight<MT>;
 }
-template<typename MT>
+template <typename MT>
 Exporter<MT>* createGmsh()
 {
     return new ExporterGmsh<MT>;
@@ -93,13 +93,13 @@ const bool meshsp32g = Exporter<meshsp32_t>::Factory::type::instance().registerP
 //
 // explicit instances
 //
-template class Exporter<Mesh<Hypercube<1,1,1> > >;
-template class Exporter<Mesh<Hypercube<2,1,2> > >;
-template class Exporter<Mesh<Hypercube<3,1,3> > >;
-template class Exporter<Mesh<Hypercube<3,2,3> > >;
+template class Exporter<Mesh<Hypercube<1, 1, 1>>>;
+template class Exporter<Mesh<Hypercube<2, 1, 2>>>;
+template class Exporter<Mesh<Hypercube<3, 1, 3>>>;
+template class Exporter<Mesh<Hypercube<3, 2, 3>>>;
 
-template class Exporter<Mesh<Hypercube<2,2,2> > >;
-template class Exporter<Mesh<Hypercube<2,3,2> > >;
+template class Exporter<Mesh<Hypercube<2, 2, 2>>>;
+template class Exporter<Mesh<Hypercube<2, 3, 2>>>;
 
 /// \endcond detail
 }

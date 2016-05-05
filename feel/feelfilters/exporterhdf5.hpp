@@ -32,26 +32,25 @@
 #ifndef __Exporterhdf5_H
 #define __Exporterhdf5_H 1
 
-#if defined(FEELPP_HAS_HDF5)
+#if defined( FEELPP_HAS_HDF5 )
 
-#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelcore/hdf5.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
-
-namespace Feel 
+namespace Feel
 {
 namespace fs = boost::filesystem;
 
 template <typename MeshType, int N>
 class Exporterhdf5
-    : 
-        public Exporter <MeshType, N>
+    : public Exporter<MeshType, N>
 {
     typedef Exporter<MeshType, N> super;
-public: 
+
+  public:
     typedef MeshType mesh_type;
     typedef typename mesh_type::value_type value_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;    
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename super::timeset_type timeset_type;
     typedef typename super::timeset_ptrtype timeset_ptrtype;
     typedef typename super::timeset_iterator timeset_iterator;
@@ -59,95 +58,94 @@ public:
 
     Exporterhdf5( WorldComm const& worldComm = Environment::worldComm() );
     Exporterhdf5( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    Exporterhdf5( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    Exporterhdf5( po::variables_map const& vm = Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
     Exporterhdf5( std::string const& exp_prefix, WorldComm const& worldComm = Environment::worldComm() );
 
-    Exporterhdf5( Exporterhdf5 const & __ex );
+    Exporterhdf5( Exporterhdf5 const& __ex );
 
-    ~Exporterhdf5(); 
+    ~Exporterhdf5();
 
     /** @name  Mutators
      */
     //@{
 
-    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
-        {
-            super::setOptions( exp_prefix );
+    Exporter<MeshType, N>* setOptions( std::string const& exp_prefix = "" )
+    {
+        super::setOptions( exp_prefix );
 
-            return this;
-        }
-    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
-        {
-            super::setOptions( exp_prefix );
+        return this;
+    }
+    Exporter<MeshType, N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
+    {
+        super::setOptions( exp_prefix );
 
-            return this;
-        }
+        return this;
+    }
 
-        //@}
+    //@}
 
+    void save() const;
+    void visit( mesh_type* mesh );
 
-        void save() const;
-        void visit( mesh_type* mesh);
-
-    private :
-        /*!
+  private:
+    /*!
          * \brief Fonction used in almost all constructor to initialize the element's type
          */
-        void init();
+    void init();
 
-        /*!
+    /*!
          * \brief write .xmf and .h5 files for each process
          */
-        void write() const;
+    void write() const;
 
-        /*!
+    /*!
          * \brief write .h5 files for each process
          */
-        void writeHDF5() const;
+    void writeHDF5() const;
 
-        /*!
+    /*!
          * \brief write .xmf file
          */
-        void writeXDMF() const;
+    void writeXDMF() const;
 
-        /*!
+    /*!
          * \brief write mesh data
          */
-        void saveMesh(mesh_ptrtype mesh, int stepIndex) const;
+    void saveMesh( mesh_ptrtype mesh, int stepIndex ) const;
 
-        /*!
+    /*!
          * \brief write informations of the mesh in .h5 file (unused for now)
          */
-        void writeStats() const;
+    void writeStats() const;
 
-        /*!
+    /*!
          * \brief save solutions on nodes 
          * \param __step a time step
          * \param __var  iterator on solutions (begin)
          * \param en     iterator on solutions (end)
          */
-        template<typename Iterator>
-            void saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
+    template <typename Iterator>
+    void saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
 
-        /*!
+    /*!
          * \brief save solutions on elements 
          * \param __step   a time step
          * \param __evar   iterator on solutions (begin)
          * \param __evaren iterator on solutions (end)
          */
-        template<typename Iterator>
-            void saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const;
+    template <typename Iterator>
+    void saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const;
 
-    private :
-        mutable int tabCount;                   /*!< Number of tabs to print for Xdmf */
-        mutable std::ostringstream M_fileName;        /*!< file name */
-        mutable HDF5 M_HDF5;                   /*!< HDF5 IO */
+  private:
+    mutable int tabCount;                  /*!< Number of tabs to print for Xdmf */
+    mutable std::ostringstream M_fileName; /*!< file name */
+    mutable HDF5 M_HDF5;                   /*!< HDF5 IO */
 
-        // Mesh geometry
-        mutable std::string M_element_type;    /*!< element's type */
+    // Mesh geometry
+    mutable std::string M_element_type; /*!< element's type */
 
-        mutable std::ofstream M_xmf;          /*!< Out stream to write the .xmf file */
-        mutable std::ostringstream M_XDMFContent;               /*!< Content of Xdmf file */
+    mutable std::ofstream M_xmf;              /*!< Out stream to write the .xmf file */
+    mutable std::ostringstream M_XDMFContent; /*!< Content of Xdmf file */
 };
 } // Feel
 
@@ -155,4 +153,3 @@ public:
 
 #endif /* FEELL_HAS_HDF5 */
 #endif /* __Exporterhdf5_H */
-

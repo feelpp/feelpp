@@ -34,51 +34,50 @@ namespace Feel
 namespace meta
 {
 
-template<typename MeshType,
-         int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
-         int Tag = 0>
+template <typename MeshType,
+          int Order,
+          template <class, uint16_type, class> class Pts = PointSetEquiSpaced,
+          int Tag = 0>
 struct NChv
 {
     typedef FunctionSpace<MeshType,
-                          bases<CrouzeixRaviart<Order,Vectorial,Pts,Tag>>,
+                          bases<CrouzeixRaviart<Order, Vectorial, Pts, Tag>>,
                           double,
-                          Periodicity <NoPeriodicity>,
-                          mortars<NoMortar>> type;
+                          Periodicity<NoPeriodicity>,
+                          mortars<NoMortar>>
+        type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 
 } // meta
 
-template<typename MeshType,
-         int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
-         int Tag = 0>
-using NChv_type = typename meta::NChv<MeshType,Order,Pts,Tag>::type;
-template<typename MeshType,
-         int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
-         int Tag = 0>
-using NChv_ptrtype = typename meta::NChv<MeshType,Order,Pts,Tag>::ptrtype;
+template <typename MeshType,
+          int Order,
+          template <class, uint16_type, class> class Pts = PointSetEquiSpaced,
+          int Tag = 0>
+using NChv_type = typename meta::NChv<MeshType, Order, Pts, Tag>::type;
+template <typename MeshType,
+          int Order,
+          template <class, uint16_type, class> class Pts = PointSetEquiSpaced,
+          int Tag = 0>
+using NChv_ptrtype = typename meta::NChv<MeshType, Order, Pts, Tag>::ptrtype;
 
 /**
    Given a \p mesh, build a function space of vectorial continuous function
    which are piecewise polynomial of degree (total or in each variable) less
    than k using Lagrange basis functions
  */
-template<int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
-         typename MeshType,
-         int Tag = 0>
-inline
-NChv_ptrtype<MeshType,Order,Pts,Tag>
-NChv( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
+template <int Order,
+          template <class, uint16_type, class> class Pts = PointSetEquiSpaced,
+          typename MeshType,
+          int Tag = 0>
+inline NChv_ptrtype<MeshType, Order, Pts, Tag>
+NChv( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable = false )
 {
-    return NChv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
-                                                   _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                                   _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+    return NChv_type<MeshType, Order, Pts, Tag>::New( _mesh = mesh,
+                                                      _worldscomm = std::vector<WorldComm>( 1, mesh->worldComm() ),
+                                                      _extended_doftable = std::vector<bool>( 1, buildExtendedDofTable ) );
 }
-
 }
 
 #endif

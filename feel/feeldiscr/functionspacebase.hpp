@@ -41,20 +41,16 @@ namespace Feel
  */
 class FunctionSpaceBase
 {
-public:
-
-
+  public:
     /** @name Constants
      */
     //@{
-
 
     //@}
 
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -72,7 +68,7 @@ public:
     //@{
 
     //! copy operator
-    FunctionSpaceBase& operator=( FunctionSpaceBase const & o )
+    FunctionSpaceBase& operator=( FunctionSpaceBase const& o )
     {
         if ( this != &o )
         {
@@ -86,13 +82,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -100,18 +94,14 @@ public:
      */
     //@{
 
-
     //@}
 
-    class ElementBase {};
+    class ElementBase
+    {
+    };
 
-protected:
-
-private:
- 
+  protected:
+  private:
 };
-
-
-
 }
 #endif /* __FunctionSpaceBase_H */

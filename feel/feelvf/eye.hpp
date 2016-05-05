@@ -31,7 +31,6 @@
 
 #include <blitz/array.h>
 
-
 namespace Feel
 {
 namespace vf
@@ -45,33 +44,31 @@ namespace detail
  *
  * @author Christophe Prud'homme
  */
-template<int M, int N = M>
+template <int M, int N = M>
 class Eye
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
     static const size_type context = 0;
 
-    static const uint16_type imorder =  0;
+    static const uint16_type imorder = 0;
     static const bool imIsPoly = true;
 
-    template<typename Func>
+    template <typename Func>
     struct HasTestFunction
     {
         static const bool result = false;
     };
 
-    template<typename Func>
+    template <typename Func>
     struct HasTrialFunction
     {
         static const bool result = false;
     };
 
-    typedef Eye<M,N> this_type;
+    typedef Eye<M, N> this_type;
     typedef double value_type;
     //@}
 
@@ -80,21 +77,20 @@ public:
     //@{
 
     Eye()
-        :
-        M_eye( M, N )
+        : M_eye( M, N )
     {
         blitz::firstIndex i;
         blitz::secondIndex j;
-        M_eye = !( i-j );
+        M_eye = !( i - j );
     }
 
-    Eye( Eye const & eig )
-        :
-        M_eye( eig.M_eye )
+    Eye( Eye const& eig )
+        : M_eye( eig.M_eye )
     {
     }
     ~Eye()
-    {}
+    {
+    }
 
     //@}
 
@@ -102,13 +98,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
-
 
     //@}
 
@@ -116,65 +110,63 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-    blitz::Array<value_type,2> eye() const
+    blitz::Array<value_type, 2> eye() const
     {
         return M_eye;
     }
 
     //@}
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
+    template <typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {
         typedef this_type expression_type;
         typedef typename expression_type::value_type value_type;
         typedef value_type return_value_type;
         using key_type = key_t<Geo_t>;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+        typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type* gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type gmc_type;
 
-        struct INVALID_SHAPE {};
-        static const bool eq11 = M==1&&N==1;
-        static const bool eqD1 = M==gmc_type::nDim&&N==1;
-        static const bool eq1D = M==1&&N==gmc_type::nDim;
-        static const bool eqDD = M==gmc_type::nDim&&N==gmc_type::nDim;
-        typedef typename mpl::if_< mpl::bool_<eq11>,
-                mpl::identity<Shape<gmc_type::nDim, Scalar, false, false> >,
-                typename mpl::if_< mpl::bool_<eqD1>,
-                mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false> >,
-                typename mpl::if_< mpl::bool_<eq1D>,
-                mpl::identity<Shape<gmc_type::nDim, Vectorial, true, false> >,
-                typename mpl::if_< mpl::bool_<eqDD>,
-                mpl::identity<Shape<gmc_type::nDim, Tensor2, false, false> >,
-                mpl::identity<INVALID_SHAPE> >::type>::type>::type>::type::type shape;
+        struct INVALID_SHAPE
+        {
+        };
+        static const bool eq11 = M == 1 && N == 1;
+        static const bool eqD1 = M == gmc_type::nDim && N == 1;
+        static const bool eq1D = M == 1 && N == gmc_type::nDim;
+        static const bool eqDD = M == gmc_type::nDim && N == gmc_type::nDim;
+        typedef typename mpl::if_<mpl::bool_<eq11>,
+                                  mpl::identity<Shape<gmc_type::nDim, Scalar, false, false>>,
+                                  typename mpl::if_<mpl::bool_<eqD1>,
+                                                    mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false>>,
+                                                    typename mpl::if_<mpl::bool_<eq1D>,
+                                                                      mpl::identity<Shape<gmc_type::nDim, Vectorial, true, false>>,
+                                                                      typename mpl::if_<mpl::bool_<eqDD>,
+                                                                                        mpl::identity<Shape<gmc_type::nDim, Tensor2, false, false>>,
+                                                                                        mpl::identity<INVALID_SHAPE>>::type>::type>::type>::type::type shape;
 
-
-        template <class Args> struct sig
+        template <class Args>
+        struct sig
         {
             typedef value_type type;
         };
 
-        tensor( this_type const& expr,Geo_t const&, Basis_i_t const&, Basis_j_t const& )
-            :
-            M_expr( expr )
+        tensor( this_type const& expr, Geo_t const&, Basis_i_t const&, Basis_j_t const& )
+            : M_expr( expr )
         {
         }
 
-        tensor( this_type const& expr,Geo_t const&, Basis_i_t const& )
-            :
-            M_expr( expr )
+        tensor( this_type const& expr, Geo_t const&, Basis_i_t const& )
+            : M_expr( expr )
         {
         }
 
-        tensor( this_type const& expr, Geo_t const&  )
-            :
-            M_expr( expr )
+        tensor( this_type const& expr, Geo_t const& )
+            : M_expr( expr )
         {
         }
 
@@ -188,7 +180,6 @@ public:
         {
         }
 
-
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
@@ -198,7 +189,7 @@ public:
             return eval( c1, c2, mpl::bool_<shape::is_scalar>() );
         }
 
-        template<int PatternContext>
+        template <int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
@@ -222,7 +213,8 @@ public:
             Feel::detail::ignore_unused_variable_warning( q );
             return eval( c1, c2, mpl::bool_<shape::is_scalar>() );
         }
-    private:
+
+      private:
         value_type
         eval( int c1, int c2, mpl::bool_<true> ) const
         {
@@ -237,9 +229,9 @@ public:
         }
         this_type M_expr;
     };
-private:
-    blitz::Array<value_type,2> M_eye;
 
+  private:
+    blitz::Array<value_type, 2> M_eye;
 };
 } // detail
 /// \endcond
@@ -250,12 +242,11 @@ private:
  *
  * @author Christophe
  */
-template<int M, int N>
-inline
-Expr<vf::detail::Eye<M,N> >
+template <int M, int N>
+inline Expr<vf::detail::Eye<M, N>>
 eye()
 {
-    return Expr< vf::detail::Eye<M,N> >(  vf::detail::Eye<M, N>() );
+    return Expr<vf::detail::Eye<M, N>>( vf::detail::Eye<M, N>() );
 }
 } // vf
 } // Feel

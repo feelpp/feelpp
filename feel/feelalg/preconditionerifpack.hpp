@@ -38,29 +38,26 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #undef PACKAGE_STRING
 #undef PACKAGE_TARNAME
 #undef PACKAGE_VERSION
-#include <Teuchos_ParameterList.hpp>
-#include <Ifpack_config.h>
 #include <Ifpack.h>
-#include <Ifpack_Preconditioner.h>
 #include <Ifpack_AdditiveSchwarz.h>
 #include <Ifpack_Amesos.h>
 #include <Ifpack_ILU.h>
+#include <Ifpack_Preconditioner.h>
+#include <Ifpack_config.h>
+#include <Teuchos_ParameterList.hpp>
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
 #undef PACKAGE_STRING
 #undef PACKAGE_TARNAME
 #undef PACKAGE_VERSION
 
-
 namespace Feel
 {
 class PreconditionerIfpack
 {
-public:
-
+  public:
     typedef Ifpack_Preconditioner prec_type;
     typedef boost::shared_ptr<prec_type> prec_ptrtype;
-
 
     typedef MatrixSparse<double> sparse_matrix_type;
     typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
@@ -76,7 +73,7 @@ public:
 
     PreconditionerIfpack( PreconditionerIfpack const& tc );
 
-    void setAmesosSolver( std::string str="Amesos_Klu" );
+    void setAmesosSolver( std::string str = "Amesos_Klu" );
 
     void setOptions( list_type options );
 
@@ -88,8 +85,7 @@ public:
 
     prec_ptrtype getPrec();
 
-private:
-
+  private:
     prec_ptrtype M_Prec;
 
     Teuchos::ParameterList M_List;

@@ -24,10 +24,9 @@
 #ifndef FEELPP_UNITS_HPP
 #define FEELPP_UNITS_HPP 1
 
+#include <boost/units/pow.hpp>
 #include <boost/units/systems/si.hpp>
 #include <boost/units/systems/si/io.hpp>
-#include <boost/units/pow.hpp>
-
 
 namespace Feel
 {

@@ -31,7 +31,6 @@
 
 #include <feel/feelalg/datamap.hpp>
 
-
 namespace Feel
 {
 /**
@@ -44,13 +43,11 @@ namespace Feel
 class DofComposite : public DataMap
 {
     typedef DataMap super;
-public:
 
-
+  public:
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -58,10 +55,14 @@ public:
      */
     //@{
 
-    DofComposite( WorldComm const& _worldComm = Environment::worldComm() ): super( _worldComm ) {}
-    DofComposite( size_type n, size_type n_local, WorldComm const& _worldComm = Environment::worldComm() ) : super( n, n_local, _worldComm ) {}
-    DofComposite( std::vector< datamap_ptrtype > const& subdm, WorldComm const& _worldComm ) : super( subdm, _worldComm ) {}
-    DofComposite( DofComposite const & dc ) : super( dc ) {}
+    DofComposite( WorldComm const& _worldComm = Environment::worldComm() )
+        : super( _worldComm ) {}
+    DofComposite( size_type n, size_type n_local, WorldComm const& _worldComm = Environment::worldComm() )
+        : super( n, n_local, _worldComm ) {}
+    DofComposite( std::vector<datamap_ptrtype> const& subdm, WorldComm const& _worldComm )
+        : super( subdm, _worldComm ) {}
+    DofComposite( DofComposite const& dc )
+        : super( dc ) {}
     ~DofComposite() {}
 
     //@}
@@ -70,13 +71,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
-
 
     //@}
 
@@ -84,27 +83,22 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
-    
-    std::pair<std::map<size_type,size_type>,std::map<size_type,size_type> >
-    pointIdToDofRelation(std::string fname="") const
+
+    std::pair<std::map<size_type, size_type>, std::map<size_type, size_type>>
+    pointIdToDofRelation( std::string fname = "" ) const
     {
-        return std::pair<std::map<size_type,size_type>,std::map<size_type,size_type> >();
+        return std::pair<std::map<size_type, size_type>, std::map<size_type, size_type>>();
     }
 
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
 };
 } // Feel
 #endif /* __DofComposite_H */

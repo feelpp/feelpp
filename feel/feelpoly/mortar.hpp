@@ -33,10 +33,10 @@ namespace Feel
 {
 namespace detail
 {
-template<typename P>
+template <typename P>
 class Mortar
 {
-public:
+  public:
 };
 } // detail
 /**
@@ -48,19 +48,18 @@ public:
  */
 class Mortar
 {
-public:
-
-    template<typename P>
+  public:
+    template <typename P>
     class apply
     {
         typedef typename detail::Mortar<P> type;
     };
-
 };
 
-template<typename P>
-struct is_mortar : public boost::is_base_of<Mortar,P>
-{};
+template <typename P>
+struct is_mortar : public boost::is_base_of<Mortar, P>
+{
+};
 
 } // Feel
 #endif /* __Mortar_H */

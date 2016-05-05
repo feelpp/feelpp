@@ -24,9 +24,9 @@
 #ifndef FEELPP_PTR_HPP
 #define FEELPP_PTR_HPP 1
 
-#include <memory>
-#include <boost/shared_ptr.hpp>
 #include <boost/detail/is_xxx.hpp>
+#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace Feel
 {
@@ -43,13 +43,12 @@ namespace std
 /**
  * provide the c++14 implementation of std::make_unique
  */
-template<typename T, typename... Ts>
+template <typename T, typename... Ts>
 std::unique_ptr<T>
-make_unique(Ts&&... params)
+make_unique( Ts&&... params )
 {
-    return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
+    return std::unique_ptr<T>( new T( std::forward<Ts>( params )... ) );
 }
 #endif
-
 }
 #endif

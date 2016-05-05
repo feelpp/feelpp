@@ -26,13 +26,12 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-10-18
  */
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
+#include <feel/feelcore/feel.hpp>
 
-#if defined(FEELPP_HAS_TAU)
+#if defined( FEELPP_HAS_TAU )
 #include <Profile/Profiler.h>
 #endif /* FEELPP_HAS_TAU */
-
 
 namespace Feel
 {
@@ -47,37 +46,32 @@ serialOptions()
 Application::Application( int argc,
                           char** argv,
                           AboutData const& ad )
-    :
-    super( argc, argv, ad, serialOptions(), true )
+    : super( argc, argv, ad, serialOptions(), true )
 {
 
-#if defined(FEELPP_HAS_TAU)
+#if defined( FEELPP_HAS_TAU )
     TAU_PROFILE_SET_NODE( _S_process_id );
 #endif /* FEELPP_HAS_TAU */
 }
-
 
 Application::Application( int argc,
                           char** argv,
                           AboutData const& ad,
                           po::options_description const& od )
-    :
-    super( argc, argv, ad, serialOptions().add( od ), true )
+    : super( argc, argv, ad, serialOptions().add( od ), true )
 
 {
-#if defined(FEELPP_HAS_TAU)
+#if defined( FEELPP_HAS_TAU )
     TAU_PROFILE_SET_NODE( _S_process_id );
 #endif /* FEELPP_HAS_TAU */
 }
 
 Application::Application( Application const& a )
-    :
-    super( a )
+    : super( a )
 {
 }
 
 Application::~Application()
 {
 }
-
 }

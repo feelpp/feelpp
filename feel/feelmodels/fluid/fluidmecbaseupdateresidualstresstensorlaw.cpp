@@ -6,19 +6,16 @@
 
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 
-
 namespace Feel
 {
 namespace FeelModels
 {
 
-
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_external_storage_type/*element_fluid_type*/ const& U,
-                                                             vector_ptrtype& R,
-                                                             bool BuildCstPart,
-                                                             bool UseJacobianLinearTerms ) const
+void FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_external_storage_type /*element_fluid_type*/ const& U,
+                                                                  vector_ptrtype& R,
+                                                                  bool BuildCstPart,
+                                                                  bool UseJacobianLinearTerms ) const
 {
     using namespace Feel::vf;
 
@@ -26,9 +23,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_exter
 
     //!this->velocityDivIsEqualToZero() && BuildCstPart
 
-    this->log("FluidMechanics","updateResidualModel", "start for " + this->densityViscosityModel()->dynamicViscosityLaw() );
+    this->log( "FluidMechanics", "updateResidualModel", "start for " + this->densityViscosityModel()->dynamicViscosityLaw() );
 
-    boost::mpi::timer thetimer,thetimer2;
+    boost::mpi::timer thetimer, thetimer2;
     //--------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();
@@ -38,91 +35,91 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_exter
     auto p = U.template element<1>();
     auto q = U.template element<1>();
 
-    auto linearForm_PatternCoupled = form1( _test=Xh, _vector=R,
-                                            _pattern=size_type(Pattern::COUPLED),
-                                            _rowstart=this->rowStartInVector() );
+    auto linearForm_PatternCoupled = form1( _test = Xh, _vector = R,
+                                            _pattern = size_type( Pattern::COUPLED ),
+                                            _rowstart = this->rowStartInVector() );
 
     //--------------------------------------------------------------------------------------------------//
     double timeElapsedBis = thetimer2.elapsed();
-    this->log("FluidMechanics","updateResidualModel",
-              "finish init in "+(boost::format("%1% s") % timeElapsedBis).str() );
+    this->log( "FluidMechanics", "updateResidualModel",
+               "finish init in " + ( boost::format( "%1% s" ) % timeElapsedBis ).str() );
 
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
 
-    if ( this->densityViscosityModel()->dynamicViscosityLaw() == "newtonian")
+    if ( this->densityViscosityModel()->dynamicViscosityLaw() == "newtonian" )
     {
         //--------------------------------------------------------------------------------------------------//
         // identity matrix
-        auto const Id = eye<nDim,nDim>();
+        auto const Id = eye<nDim, nDim>();
         //--------------------------------------------------------------------------------------------------//
         // strain tensor
         //bool useSymTensor = option(_name="strain_tensor.use-sym-tensor",_prefix=this->prefix()).as<bool>();
         //auto const defv = Feel::vf::FSI::fluidStrainTensor(gradv(u),useSymTensor); // D(u) = 0.5*(a+at) or D(u)=a
-        auto const defv = sym(gradv(u));
+        auto const defv = sym( gradv( u ) );
         //--------------------------------------------------------------------------------------------------//
         // newtonian law
         auto const& mu = this->densityViscosityModel()->fieldMu();
-        auto const mu_newtonian = idv(mu);
-        auto const Sigmav_newtonian = -idv(p)*Id + 2*mu_newtonian*defv;
+        auto const mu_newtonian = idv( mu );
+        auto const Sigmav_newtonian = -idv( p ) * Id + 2 * mu_newtonian * defv;
         //--------------------------------------------------------------------------------------------------//
         // sigma : grad(v) on Omega
-        if (!BuildCstPart && !UseJacobianLinearTerms )
+        if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
-            this->log("FluidMechanics","updateResidualModel","assembly with newtonian viscosity" );
+            this->log( "FluidMechanics", "updateResidualModel", "assembly with newtonian viscosity" );
 #if 1
             linearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range = elements( mesh ),
                            //_expr= inner( StressTensorExpr,grad(v) ),
-                           _expr= inner( val(Sigmav_newtonian),grad(v) ),
-                           _geomap=this->geomap() );
+                           _expr = inner( val( Sigmav_newtonian ), grad( v ) ),
+                           _geomap = this->geomap() );
 #else
             form1( Xh, R ) +=
-                integrate( _range=elements(mesh),
-                           _expr= 2*idv(*M_P0Mu)*trace(trans(defv)*grad(v)),
-                           _geomap=this->geomap() );
+                integrate( _range = elements( mesh ),
+                           _expr = 2 * idv( *M_P0Mu ) * trace( trans( defv ) * grad( v ) ),
+                           _geomap = this->geomap() );
             form1( Xh, R ) +=
-                integrate( _range=elements(mesh),
-                           _expr= -idv(p)*div(v),
-                           _geomap=this->geomap() );
+                integrate( _range = elements( mesh ),
+                           _expr = -idv( p ) * div( v ),
+                           _geomap = this->geomap() );
 #endif
 
             if ( !this->markerPressureBC().empty() )
             {
                 linearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(mesh,this->markerPressureBC()),
+                    integrate( _range = markedfaces( mesh, this->markerPressureBC() ),
                                //_expr= -inner( ViscousStressTensorExpr*N(),id(v) ),
-                               _expr= -inner( 2*mu_newtonian*defv*N(),id(v) ),
-                               _geomap=this->geomap() );
+                               _expr = -inner( 2 * mu_newtonian * defv * N(), id( v ) ),
+                               _geomap = this->geomap() );
             }
         }
     }
     else
     {
-        if (!BuildCstPart && !UseJacobianLinearTerms )
+        if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
             linearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
-                           _expr= -idv(p)*div(v),
-                           _geomap=this->geomap() );
+                integrate( _range = elements( mesh ),
+                           _expr = -idv( p ) * div( v ),
+                           _geomap = this->geomap() );
         }
 
-        if (!BuildCstPart)
+        if ( !BuildCstPart )
         {
-            auto const StressTensorExpr = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),false/*true*/);
+            auto const StressTensorExpr = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2 * nOrderVelocity>( u, p, *this->densityViscosityModel(), false /*true*/ );
             // sigma : grad(v) on Omega
             linearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
-                           _expr= inner( StressTensorExpr,grad(v) ),
-                           _geomap=this->geomap() );
+                integrate( _range = elements( mesh ),
+                           _expr = inner( StressTensorExpr, grad( v ) ),
+                           _geomap = this->geomap() );
             //pressure condition
             if ( !this->markerPressureBC().empty() )
             {
                 linearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(mesh,this->markerPressureBC()),
-                               _expr= -inner( StressTensorExpr*N(),id(v) ),
-                               _geomap=this->geomap() );
+                    integrate( _range = markedfaces( mesh, this->markerPressureBC() ),
+                               _expr = -inner( StressTensorExpr * N(), id( v ) ),
+                               _geomap = this->geomap() );
             }
         }
     } // non newtonian
@@ -131,25 +128,24 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_exter
     //--------------------------------------------------------------------------------------------------//
 
     // take into account that div u != 0
-    if (!this->velocityDivIsEqualToZero() && BuildCstPart)
+    if ( !this->velocityDivIsEqualToZero() && BuildCstPart )
     {
         linearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
-                       _expr= idv(this->velocityDiv())*id(q),
-                       _geomap=this->geomap() );
+            integrate( _range = elements( mesh ),
+                       _expr = idv( this->velocityDiv() ) * id( q ),
+                       _geomap = this->geomap() );
 
-        auto coeffDiv = (2./3.)*idv(this->densityViscosityModel()->fieldMu()); //(eps-2mu/3)
+        auto coeffDiv = ( 2. / 3. ) * idv( this->densityViscosityModel()->fieldMu() ); //(eps-2mu/3)
         linearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
-                       _expr= val(-coeffDiv*gradv(this->velocityDiv()))*id(v),
-                       _geomap=this->geomap() );
+            integrate( _range = elements( mesh ),
+                       _expr = val( -coeffDiv * gradv( this->velocityDiv() ) ) * id( v ),
+                       _geomap = this->geomap() );
     }
 
     //--------------------------------------------------------------------------------------------------//
 
     double timeElapsed = thetimer.elapsed();
-    this->log("FluidMechanics","updateResidualModel","finish in "+(boost::format("%1% s") % timeElapsed).str() );
-
+    this->log( "FluidMechanics", "updateResidualModel", "finish in " + ( boost::format( "%1% s" ) % timeElapsed ).str() );
 
 } // updateResidual
 

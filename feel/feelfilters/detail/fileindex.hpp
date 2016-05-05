@@ -26,9 +26,11 @@
 
 #include <feel/feelcore/environment.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
-namespace detail {
+namespace detail
+{
 /**
  * \class FileIndex
  *
@@ -37,11 +39,16 @@ namespace detail {
  */
 class FileIndex
 {
-public:
-    FileIndex() : n_steps( 0 ), fileblock_n_steps( -1 ) {}
+  public:
+    FileIndex()
+        : n_steps( 0 ), fileblock_n_steps( -1 ) {}
     void read( MPI_File fh );
     void write( MPI_File fh );
-    void add( int64_type tellp ) { ++n_steps ; fileblocks.push_back( tellp ); }
+    void add( int64_type tellp )
+    {
+        ++n_steps;
+        fileblocks.push_back( tellp );
+    }
     bool defined() const { return n_steps != 0; }
     int64_type n_steps;
     std::vector<int64_type> fileblocks;

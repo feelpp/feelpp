@@ -36,63 +36,59 @@ namespace Feel
 namespace FeelModels
 {
 
-template< class Convex, int Order = 1 >
+template <class Convex, int Order = 1>
 class ALE : public ModelBase
 {
-public :
+  public:
     typedef ModelBase super_type;
 
-    typedef ALE< Convex,Order> self_type;
+    typedef ALE<Convex, Order> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     typedef Convex convex_type;
     static const uint16_type Dim = convex_type::nDim;
     static const uint16_type Order_low = convex_type::nOrder;
-    typedef Mesh< convex_type > mesh_type;
+    typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef std::map< std::string, std::vector<flag_type> > flagSet_type;
+    typedef std::map<std::string, std::vector<flag_type>> flagSet_type;
 
-protected :
-
-    template< int i >
+  protected:
+    template <int i>
     struct MyReferenceFunctionSpace
     {
-        typedef bases<Lagrange<i, Vectorial> > basis_type;
-        typedef FunctionSpace< mesh_type, basis_type > type;
+        typedef bases<Lagrange<i, Vectorial>> basis_type;
+        typedef FunctionSpace<mesh_type, basis_type> type;
         typedef boost::shared_ptr<type> ptrtype;
         typedef typename type::element_type elt_type;
         typedef boost::shared_ptr<elt_type> elt_ptrtype;
-
     };
 
-    static const int orderUse = mpl::if_< mpl::greater<mpl::int_<Order>,mpl::int_<Order_low> >,
-                                          mpl::int_<Order>,
-                                          mpl::int_<Order_low> >::type::value ;
+    static const int orderUse = mpl::if_<mpl::greater<mpl::int_<Order>, mpl::int_<Order_low>>,
+                                         mpl::int_<Order>,
+                                         mpl::int_<Order_low>>::type::value;
 
-public:
-
+  public:
     typedef typename MyReferenceFunctionSpace<orderUse>::basis_type ale_map_basis_type;
     typedef typename MyReferenceFunctionSpace<orderUse>::type ale_map_functionspace_type;
     typedef typename MyReferenceFunctionSpace<orderUse>::ptrtype ale_map_functionspace_ptrtype;
     typedef typename MyReferenceFunctionSpace<orderUse>::elt_type ale_map_element_type;
 
-
     /**
      * constructor,copy,desctructor
      */
-    ALE( mesh_ptrtype mesh, std::string prefix="",
+    ALE( mesh_ptrtype mesh, std::string prefix = "",
          WorldComm const& worldcomm = WorldComm(),
-         bool moveGhostEltFromExtendedStencil=false );
+         bool moveGhostEltFromExtendedStencil = false );
     ALE( ALE const& tc );
     //~ALE();
 
     /**
      * static builder
      */
-    static self_ptrtype build(mesh_ptrtype mesh, std::string prefix="",
-                              WorldComm const& worldcomm = WorldComm(),
-                              bool moveGhostEltFromExtendedStencil=false );
+    static self_ptrtype build( mesh_ptrtype mesh, std::string prefix = "",
+                               WorldComm const& worldcomm = WorldComm(),
+                               bool moveGhostEltFromExtendedStencil = false );
 
     /**
      * Add the set of flags that mark the boundary
@@ -100,23 +96,20 @@ public:
     void addBoundaryFlags( flagSet_type flags );
     void addBoundaryFlags( std::string str, flag_type flag );
     void clearFlagSet();
-    void setFlagSet( flagSet_type const & fl );
+    void setFlagSet( flagSet_type const& fl );
     flagSet_type const& flagSet() const;
-    std::vector<flag_type> const& flagSet(std::string key) const;
-    flag_type flagSet(std::string key, int k) const;
-
+    std::vector<flag_type> const& flagSet( std::string key ) const;
+    flag_type flagSet( std::string key, int k ) const;
 
     virtual ale_map_functionspace_ptrtype const& functionSpace() const = 0;
     virtual ale_map_element_type const& displacement() const = 0;
     virtual ale_map_element_type const& map() const = 0;
 
-    virtual void generateMap( ale_map_element_type const & dispOnBoundary,
-                              ale_map_element_type const & oldDisp ) = 0;
+    virtual void generateMap( ale_map_element_type const& dispOnBoundary,
+                              ale_map_element_type const& oldDisp ) = 0;
 
-private :
+  private:
     flagSet_type M_flagSet;
-
-
 };
 } // namespace FeelModels
 } // namespace Feel

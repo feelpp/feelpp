@@ -26,33 +26,31 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_UNITHYPERCUBE_HPP)
+#if !defined( FEELPP_UNITHYPERCUBE_HPP )
 #define FEELPP_UNITHYPERCUBE_HPP 1
-
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
    Generate the mesh of an hypercube
  */
-template<int Dim, typename Convex=Simplex<Dim>>
-inline
-boost::shared_ptr<Mesh<Convex> >
-unitHypercube( double h = doption(_name="gmsh.hsize") )
+template <int Dim, typename Convex = Simplex<Dim>>
+inline boost::shared_ptr<Mesh<Convex>>
+unitHypercube( double h = doption( _name = "gmsh.hsize" ) )
 {
-    return createGMSHMesh(_mesh=new Mesh<Convex>,
-                          _desc=domain( _name="hypercube",
-                                        _shape="hypercube",
-                                        _convex=Convex::type(),
-                                        _dim=Dim,
-                                        _h=h ) );
+    return createGMSHMesh( _mesh = new Mesh<Convex>,
+                           _desc = domain( _name = "hypercube",
+                                           _shape = "hypercube",
+                                           _convex = Convex::type(),
+                                           _dim = Dim,
+                                           _h = h ) );
 }
-
 }
 
 #endif /* FEELPP_UNITHYPERCUBE_HPP */

@@ -26,15 +26,17 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-27
 */
-#if !defined(FEELPP_PERIODICENTITIES_HPP)
+#if !defined( FEELPP_PERIODICENTITIES_HPP )
 #define FEELPP_PERIODICENTITIES_HPP 1
 
 #include <map>
 
-namespace Feel {
+namespace Feel
+{
 
-class PeriodicEntities: public std::map<int,std::pair<int,int> > {};
-
+class PeriodicEntities : public std::map<int, std::pair<int, int>>
+{
+};
 }
 
 #endif /* FEELPP_PERIODICENTITIES_HPP */

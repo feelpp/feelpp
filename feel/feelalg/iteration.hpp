@@ -53,12 +53,10 @@ namespace Feel
   @see
   @version $Id: Iteration.hpp,v 1.6 2002/08/22 13:09:56 prudhomm Exp $
 */
-template<typename Real>
+template <typename Real>
 class Iteration
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -67,7 +65,7 @@ public:
        \brief Numerical Type
     */
     typedef Real NumericalType;
-    typedef  typename ublas::type_traits<Real>::value_type value_type;
+    typedef typename ublas::type_traits<Real>::value_type value_type;
     typedef typename ublas::type_traits<Real>::real_type real_type;
     //@}
 
@@ -84,16 +82,14 @@ public:
     }
 
     Iteration( Iteration const& iter )
-        :
-        __iterations( iter.__iterations ),
-        __max_iter( iter.__max_iter ),
-        __residual( iter.__residual ),
-        __precision( iter.__precision ),
-        __norm_init( iter.__norm_init )
+        : __iterations( iter.__iterations ),
+          __max_iter( iter.__max_iter ),
+          __residual( iter.__residual ),
+          __precision( iter.__precision ),
+          __norm_init( iter.__norm_init )
     {
         // do nothing here
     }
-
 
     //! destructor
     virtual ~Iteration()
@@ -162,7 +158,7 @@ public:
         return __norm_init;
     }
 
-    real_type relaxation () const
+    real_type relaxation() const
     {
         return M_relaxation;
     }
@@ -202,7 +198,7 @@ public:
         __norm_init = ninit;
     }
 
-    void setRelaxation ( real_type __w )
+    void setRelaxation( real_type __w )
     {
         M_relaxation = __w;
     }
@@ -255,8 +251,7 @@ public:
         return ret;
     }
 
-
-    template<typename VectorX>
+    template <typename VectorX>
     bool isFinished( const VectorX& r, bool verbose = false ) //throw(SExceptionSolverHasNotConverged)
     {
         bool ret = false;
@@ -294,7 +289,8 @@ public:
         return ( __residual <= __precision );
     }
 
-    template<typename VectorX> bool isConverged( VectorX const& x ) throw()
+    template <typename VectorX>
+    bool isConverged( VectorX const& x ) throw()
     {
         __residual = ublas::norm_2( x ) / __norm_init;
         return ( __residual <= __precision );
@@ -312,20 +308,18 @@ public:
 
     //@}
 
-protected:
-
+  protected:
     /**
        Default constructor.
 
     */
     Iteration()
-        :
-        __iterations( 0 ),
-        __max_iter( 0 ),
-        __residual( 0 ),
-        __precision( 0 ),
-        __norm_init( 1.0 ),
-        M_relaxation( 1.0 )
+        : __iterations( 0 ),
+          __max_iter( 0 ),
+          __residual( 0 ),
+          __precision( 0 ),
+          __norm_init( 1.0 ),
+          M_relaxation( 1.0 )
     {
         // do nothing here
     }
@@ -357,8 +351,8 @@ protected:
             //SSubject::notifyObservers( &aEvent );
         }
     }
-private:
 
+  private:
     int __iterations;
     int __max_iter;
 
@@ -372,6 +366,5 @@ private:
 typedef Iteration<double> iteration_type;
 typedef boost::shared_ptr<iteration_type> iteration_ptrtype;
 }
-
 
 #endif /* __Iteration_H */

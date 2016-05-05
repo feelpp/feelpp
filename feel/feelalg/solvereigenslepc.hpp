@@ -29,34 +29,32 @@
 #ifndef __SolverEigenSlepc_H
 #define __SolverEigenSlepc_H 1
 
+#include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
-#include <feel/feelalg/matrixpetsc.hpp>
 
 /**
  * SLEPc include files. SLEPs can only be used
  * together with PETSc.
  */
-#if defined(FEELPP_HAS_SLEPC) && defined(FEELPP_HAS_PETSC)
+#if defined( FEELPP_HAS_SLEPC ) && defined( FEELPP_HAS_PETSC )
 #ifndef USE_COMPLEX_NUMBERS
-extern "C"
-{
-# include <slepceps.h>
-#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 5)
-# include <slepcbv.h>
+extern "C" {
+#include <slepceps.h>
+#if ( SLEPC_VERSION_MAJOR == 3 ) && ( SLEPC_VERSION_MINOR >= 5 )
+#include <slepcbv.h>
 #else
-# include <slepcip.h>
+#include <slepcip.h>
 #endif
 }
 #else
-# include <slepceps.h>
-#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 5)
-# include <slepcbv.h>
+#include <slepceps.h>
+#if ( SLEPC_VERSION_MAJOR == 3 ) && ( SLEPC_VERSION_MINOR >= 5 )
+#include <slepcbv.h>
 #else
-# include <slepcip.h>
+#include <slepcip.h>
 #endif
 #endif
-
 
 namespace Feel
 {
@@ -70,13 +68,12 @@ namespace Feel
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename T>
+template <typename T>
 class SolverEigenSlepc : public SolverEigen<T>
 {
     typedef SolverEigen<T> super;
-public:
 
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -109,23 +106,19 @@ public:
     }
 
     SolverEigenSlepc( po::variables_map const& vm, std::string const& prefix = "" )
-        :
-        super( vm, prefix )
+        : super( vm, prefix )
     {
     }
 
-    SolverEigenSlepc( SolverEigenSlepc const & );
+    SolverEigenSlepc( SolverEigenSlepc const& );
 
     /**
      * Destructor.
      */
     ~SolverEigenSlepc()
     {
-        this->clear ();
+        this->clear();
     }
-
-
-
 
     /**
      * Initialize data structures if not done so already.
@@ -138,13 +131,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
-
 
     /**
      * This function returns the real and imaginary part of the ith
@@ -152,25 +143,24 @@ public:
      * vector. Note that also in case of purely real matrix entries the
      * eigenpair may be complex values.
      */
-    eigenpair_type eigenPair ( unsigned int i );
+    eigenpair_type eigenPair( unsigned int i );
 
     /**
      * Returns the eigen modes in a map
      */
-    virtual eigenmodes_type eigenModes () ;
+    virtual eigenmodes_type eigenModes();
 
     /**
      * @computes and returns the relative error
      * ||A*x-lambda*x||/|lambda*x| of the ith eigenpair.
      */
-    real_type relativeError ( unsigned int i );
+    real_type relativeError( unsigned int i );
 
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -183,7 +173,6 @@ public:
      */
     void clear();
 
-
     /**
      * This function calls the SLEPc solver to compute the eigenpairs
      * of matrix matrix_A. \p nev is the number of eigenpairs to be
@@ -192,11 +181,11 @@ public:
      * converged eigen values and the number of the iterations carried
      * out by the eigen solver.
      */
-    solve_return_type  solve ( MatrixSparse<T> &matrix_A,
-                               int nev,
-                               int ncv,
-                               const double tol,
-                               const unsigned int m_its );
+    solve_return_type solve( MatrixSparse<T>& matrix_A,
+                             int nev,
+                             int ncv,
+                             const double tol,
+                             const unsigned int m_its );
 
     /**
      * This function calls the SLEPc solver to compute the eigenpairs
@@ -207,32 +196,27 @@ public:
      * values and the number of the iterations carried out by the
      * eigen solver.
      */
-    solve_return_type  solve ( MatrixSparse<T> &matrix_A,
-                               MatrixSparse<T> &matrix_B,
-                               int nev,
-                               int ncv,
-                               const double tol,
-                               const unsigned int m_its );
-
-
+    solve_return_type solve( MatrixSparse<T>& matrix_A,
+                             MatrixSparse<T>& matrix_B,
+                             int nev,
+                             int ncv,
+                             const double tol,
+                             const unsigned int m_its );
 
     //@}
 
-
-
-private:
-
+  private:
     /**
      * Tells Slepc to use the user-specified solver stored in
      * \p _eigen_solver_type
      */
-    void setSlepcSolverType ();
+    void setSlepcSolverType();
 
     /**
      * Tells Slepc to deal with the type of problem stored in
      * \p _eigen_problem_type
      */
-    void setSlepcProblemType ();
+    void setSlepcProblemType();
 
     /**
      * Tells Slepc to compute the spectrum at the position
@@ -255,10 +239,10 @@ private:
      */
     EPS M_eps;
 
-    /**
+/**
      * Eigenproblem inner products
      */
-#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 5)
+#if ( SLEPC_VERSION_MAJOR == 3 ) && ( SLEPC_VERSION_MINOR >= 5 )
     BV M_ip;
 #else
     IP M_ip;

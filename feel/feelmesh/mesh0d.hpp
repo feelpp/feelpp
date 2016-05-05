@@ -29,24 +29,21 @@
 #ifndef __Mesh0d_H
 #define __Mesh0d_H 1
 
-
-#include <iomanip>
-#include <fstream>
 #include <cstdlib>
+#include <fstream>
+#include <iomanip>
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
-#include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
 #include <boost/multi_array.hpp>
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
 #include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index_container.hpp>
 #include <boost/numeric/ublas/io.hpp>
-
-
+#include <boost/shared_ptr.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/visitor.hpp>
@@ -72,20 +69,17 @@ namespace Feel
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename Shape>
+template <typename Shape>
 class Mesh0D
-    :
-public VisitableBase<>,
-public MeshBase,
-public Elements<Shape>,
-public Points<Shape::nRealDim>
+    : public VisitableBase<>,
+      public MeshBase,
+      public Elements<Shape>,
+      public Points<Shape::nRealDim>
 {
     // check at compilation time that the shape has indeed dimension 1
     BOOST_STATIC_ASSERT( Shape::nDim == 0 && Shape::nRealDim >= 1 );
 
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -131,30 +125,30 @@ public:
      * default constructor
      */
     Mesh0D( WorldComm const& worldComm = Environment::worldComm() )
-        :
-        super_visitable(),
-        super( worldComm ),
-        super_elements( worldComm ),
-        super_points( worldComm )
-    {}
-
+        : super_visitable(),
+          super( worldComm ),
+          super_elements( worldComm ),
+          super_points( worldComm )
+    {
+    }
 
     /**
      * copy constructor
      */
-    Mesh0D( Mesh0D const & m )
-        :
-        super_visitable(),
-        super( m ),
-        super_elements( m ),
-        super_points( m )
-    {}
+    Mesh0D( Mesh0D const& m )
+        : super_visitable(),
+          super( m ),
+          super_elements( m ),
+          super_points( m )
+    {
+    }
 
     /**
      * destructor
      */
     ~Mesh0D()
-    {}
+    {
+    }
 
     //@}
 
@@ -174,7 +168,6 @@ public:
         return *this;
     }
 
-
     //@}
 
     /** @name Accessors
@@ -189,7 +182,6 @@ public:
         return ( super_elements::isEmpty() &&
                  super_points::isEmpty() );
     }
-
 
     /**
      * \return the number of elements
@@ -223,7 +215,6 @@ public:
         return 0;
     }
 
-
     /**
      * \return the number of points
      */
@@ -239,17 +230,16 @@ public:
     //@{
 
     void setWorldComm( WorldComm const& _worldComm )
-        {
-            this->setWorldCommMeshBase( _worldComm );
-            this->setWorldCommPoints( _worldComm );
-        }
+    {
+        this->setWorldCommMeshBase( _worldComm );
+        this->setWorldCommPoints( _worldComm );
+    }
 
     //@}
 
     /** @name  Methods
      */
     //@{
-
 
     /**
      * clear out all data from the mesh, \p isEmpty() should return
@@ -259,27 +249,23 @@ public:
     {
         this->elements().clear();
         this->points().clear();
-        FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
+        FEELPP_ASSERT( isEmpty() )
+            .error( "all mesh containers should be empty after a clear." );
     }
-
-
 
     FEELPP_DEFINE_VISITABLE();
     //@}
 
-
-
-protected:
-
+  protected:
     /**
      * dummy  implementation
      * \see Mesh
      */
     void renumber()
     {
-        FEELPP_ASSERT( 0 ).error( "invalid call" );
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call" );
     }
-
 
     /**
      * update permutation of entities of co-dimension 1
@@ -296,22 +282,16 @@ protected:
     {
         // no-op
     }
-private:
 
+  private:
     friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-        {
-            ar & boost::serialization::base_object<super_elements>( *this );
-            ar & boost::serialization::base_object<super_points>( *this );
-        }
-
-
-
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version )
+    {
+        ar& boost::serialization::base_object<super_elements>( *this );
+        ar& boost::serialization::base_object<super_points>( *this );
+    }
 };
-
-
-
 
 } // Feel
 

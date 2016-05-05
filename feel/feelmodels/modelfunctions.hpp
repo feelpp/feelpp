@@ -30,22 +30,23 @@
 
 #include <feel/feelvf/ginac.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
-namespace pt =  boost::property_tree;
+namespace pt = boost::property_tree;
 
 struct ModelFunction
 {
     static const uint16_type expr_order = 2;
     typedef scalar_field_expression<expr_order> expr_scalar_type;
-    typedef vector_field_expression<2,1,expr_order> expr_vectorial2_type;
-    typedef vector_field_expression<3,1,expr_order> expr_vectorial3_type;
+    typedef vector_field_expression<2, 1, expr_order> expr_vectorial2_type;
+    typedef vector_field_expression<3, 1, expr_order> expr_vectorial3_type;
 
     ModelFunction() = default;
     ModelFunction( ModelFunction const& ) = default;
     ModelFunction( ModelFunction&& ) = default;
     ModelFunction& operator=( ModelFunction const& ) = default;
-    ModelFunction& operator=( ModelFunction && ) = default;
+    ModelFunction& operator=( ModelFunction&& ) = default;
     ModelFunction( std::string const& name, std::string const& expression,
                    std::string const& dirLibExpr = "", WorldComm const& world = Environment::worldComm() );
 
@@ -57,38 +58,48 @@ struct ModelFunction
     bool isVectorial3() const { return M_exprVectorial3.get_ptr() != 0; }
     bool hasSymbol( std::string const& symb ) const;
 
-    void setParameterValues( std::map<std::string,double> const& mp );
+    void setParameterValues( std::map<std::string, double> const& mp );
 
-    expr_scalar_type const& expressionScalar() const { CHECK( this->isScalar() ) << "no scalar expression"; return *M_exprScalar; }
-    expr_vectorial2_type const& expressionVectorial2() const { CHECK( this->isVectorial2() ) << "no vectorial2 expression"; return *M_exprVectorial2; }
-    expr_vectorial3_type const& expressionVectorial3() const { CHECK( this->isVectorial3() ) << "no vectorial3 expression"; return *M_exprVectorial3; }
+    expr_scalar_type const& expressionScalar() const
+    {
+        CHECK( this->isScalar() ) << "no scalar expression";
+        return *M_exprScalar;
+    }
+    expr_vectorial2_type const& expressionVectorial2() const
+    {
+        CHECK( this->isVectorial2() ) << "no vectorial2 expression";
+        return *M_exprVectorial2;
+    }
+    expr_vectorial3_type const& expressionVectorial3() const
+    {
+        CHECK( this->isVectorial3() ) << "no vectorial3 expression";
+        return *M_exprVectorial3;
+    }
 
-private:
+  private:
     std::string M_name;
     boost::optional<expr_scalar_type> M_exprScalar;
     boost::optional<expr_vectorial2_type> M_exprVectorial2;
     boost::optional<expr_vectorial3_type> M_exprVectorial3;
-
 };
-class ModelFunctions: public std::map<std::string,ModelFunction>
+class ModelFunctions : public std::map<std::string, ModelFunction>
 {
-public:
+  public:
     ModelFunctions( WorldComm const& world = Environment::worldComm() );
     ModelFunctions( ModelFunctions const& ) = default;
     virtual ~ModelFunctions();
     void setPTree( pt::ptree const& _p );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
 
-    void setParameterValues( std::map<std::string,double> const& mp );
+    void setParameterValues( std::map<std::string, double> const& mp );
 
-private:
+  private:
     void setup();
-private:
+
+  private:
     WorldComm const& M_worldComm;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
 };
-
-
 }
 #endif

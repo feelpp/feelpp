@@ -41,7 +41,11 @@ namespace ublas = boost::numeric::ublas;
  *
  * Ripped from getfem++ by Y. Renard
  */
-enum BFGSType { BFGS = 0,  DFP };
+enum BFGSType
+{
+    BFGS = 0,
+    DFP
+};
 
 /**
    delta[k] = x[k+1] - x[k]<br>
@@ -66,32 +70,31 @@ struct BFGSInvHessian
     //typedef typename number_traits<T>::magnitude_type R;
     typedef value_type magnitude_type;
 
-
     BFGSInvHessian( BFGSType v = BFGS )
     {
         version = v;
     }
 
-    template<typename VEC1, typename VEC2>
-    void hmult( const VEC1 &X, VEC2 &Y )
+    template <typename VEC1, typename VEC2>
+    void hmult( const VEC1& X, VEC2& Y )
     {
-        Y.assign(  X );
+        Y.assign( X );
 
-        for ( size_type k = 0 ; k < delta.size(); ++k )
+        for ( size_type k = 0; k < delta.size(); ++k )
         {
             T xdelta = ublas::inner_prod( X, delta[k] );
             T xzeta = ublas::inner_prod( X, zeta[k] );
 
             switch ( version )
             {
-            case BFGS :
-                Y.plus_assign( rho[k]*xdelta*zeta[k] );
-                Y.plus_assign( rho[k]*( xzeta-rho[k]*tau[k]*xdelta )*delta[k] );
+            case BFGS:
+                Y.plus_assign( rho[k] * xdelta * zeta[k] );
+                Y.plus_assign( rho[k] * ( xzeta - rho[k] * tau[k] * xdelta ) * delta[k] );
                 break;
 
-            case DFP :
-                Y.plus_assign( rho[k]*xdelta*delta[k] );
-                Y.minus_assign( xzeta/tau[k]*zeta[k] );
+            case DFP:
+                Y.plus_assign( rho[k] * xdelta * delta[k] );
+                Y.minus_assign( xzeta / tau[k] * zeta[k] );
                 break;
             }
         }
@@ -106,8 +109,8 @@ struct BFGSInvHessian
         rho.clear();
     }
 
-    template<typename VECT1, typename VECT2>
-    void update( const VECT1 &deltak, const VECT2 &gammak )
+    template <typename VECT1, typename VECT2>
+    void update( const VECT1& deltak, const VECT2& gammak )
     {
         size_type N = deltak.size();
         size_type k = delta.size();
@@ -116,11 +119,11 @@ struct BFGSInvHessian
 
         hmult( gammak, Y );
 
-        delta.resize( k+1 );
-        gamma.resize( k+1 );
-        zeta.resize( k+1 );
-        tau.resize( k+1 );
-        rho.resize( k+1 );
+        delta.resize( k + 1 );
+        gamma.resize( k + 1 );
+        zeta.resize( k + 1 );
+        tau.resize( k + 1 );
+        rho.resize( k + 1 );
 
         delta[k].resize( N );
         gamma[k].resize( N );
@@ -137,7 +140,7 @@ struct BFGSInvHessian
         else
             zeta[k].assign( Y );
 
-        tau[k] = ublas::inner_prod( gammak,  zeta[k] );
+        tau[k] = ublas::inner_prod( gammak, zeta[k] );
     }
 
     //
@@ -148,11 +151,10 @@ struct BFGSInvHessian
     int version;
 };
 
-
-template <typename FUNCTION, typename DERIVATIVE, typename VECTOR,  typename IterationBFGS>
+template <typename FUNCTION, typename DERIVATIVE, typename VECTOR, typename IterationBFGS>
 void bfgs( FUNCTION f,
            DERIVATIVE grad,
-           VECTOR &x,
+           VECTOR& x,
            int restart,
            IterationBFGS& iter,
            BFGSType version = BFGS,
@@ -169,7 +171,6 @@ void bfgs( FUNCTION f,
     typedef typename type_traits<T>::real_type real_type;
     typedef value_type magnitude_type;
 
-
     BFGSInvHessian<vector_type> invhessian( version );
 
     VECTOR r( x.size() ), d( x.size() ), y( x.size() ), r2( x.size() );
@@ -178,7 +179,7 @@ void bfgs( FUNCTION f,
     int nb_restart( 0 );
 
     //if (iter.get_noisy() >= 1) cout << "value " << valx / print_norm << " ";
-    while ( ! iter.isFinished( r ) )
+    while ( !iter.isFinished( r ) )
     {
         invhessian.hmult( r, d );
         d *= -1;
@@ -195,7 +196,7 @@ void bfgs( FUNCTION f,
         {
 
             //add(x, scaled(d, lambda), y);
-            y = lambda*d+x;
+            y = lambda * d + x;
             valy = f( y );
 
 #if 0
@@ -215,7 +216,7 @@ void bfgs( FUNCTION f,
 
                 T derivative2 = ublas::inner_prod( r2, d );
 
-                if ( derivative2 >= m2*derivative )
+                if ( derivative2 >= m2 * derivative )
                     break;
 
                 lambda_min = lambda;
@@ -233,9 +234,9 @@ void bfgs( FUNCTION f,
             else
                 lambda = ( lambda_max + lambda_min ) / real_type( 2 );
 
-            if ( valy <= real_type( 2 )*valx &&
-                    ( lambda < real_type( lambda_init*1E-8 ) ||
-                      ( !unbounded && lambda_max-lambda_min < real_type( lambda_init*1E-8 ) ) ) )
+            if ( valy <= real_type( 2 ) * valx &&
+                 ( lambda < real_type( lambda_init * 1E-8 ) ||
+                   ( !unbounded && lambda_max - lambda_min < real_type( lambda_init * 1E-8 ) ) ) )
             {
                 blocked = true;
                 lambda = lambda_init;
@@ -267,7 +268,7 @@ void bfgs( FUNCTION f,
         else
         {
             //invhessian.update(gmm::scaled(d,lambda), gmm::scaled(r,-1));
-            invhessian.update( lambda*d, -r );
+            invhessian.update( lambda * d, -r );
             nb_restart = 0;
         }
 
@@ -276,22 +277,18 @@ void bfgs( FUNCTION f,
         valx = valy;
         //if (iter.get_noisy() >= 1) cout << "BFGS value " << valx/print_norm << "\t";
     }
-
 }
 
-
-template <typename FUNCTION, typename DERIVATIVE, typename VECTOR,  typename IterationBFGS>
+template <typename FUNCTION, typename DERIVATIVE, typename VECTOR, typename IterationBFGS>
 inline void
 dfp( FUNCTION f,
      DERIVATIVE grad,
-     VECTOR &x,
+     VECTOR& x,
      int restart,
      IterationBFGS& iter,
      BFGSType version = DFP )
 {
     bfgs( f, grad, x, restart, iter, version );
 }
-
-
 }
 #endif

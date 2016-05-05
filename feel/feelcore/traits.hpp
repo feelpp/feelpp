@@ -34,10 +34,10 @@
 
 #include <boost/rational.hpp>
 
-#include <boost/mpl/vector.hpp>
 #include <boost/mpl/max_element.hpp>
-#include <boost/mpl/transform_view.hpp>
 #include <boost/mpl/sizeof.hpp>
+#include <boost/mpl/transform_view.hpp>
+#include <boost/mpl/vector.hpp>
 
 #include <feel/feelcore/feel.hpp>
 
@@ -50,38 +50,37 @@ template <typename T1, typename T2, typename T3 = mpl::void_, typename T4 = mpl:
 struct strongest_numeric_type
 {
     typedef mpl::vector<T1, T2, T3, T4, T5> types;
-    typedef typename mpl::max_element<mpl::transform_view< types,mpl::sizeof_<mpl::_1> > >::type iter;
+    typedef typename mpl::max_element<mpl::transform_view<types, mpl::sizeof_<mpl::_1>>>::type iter;
     typedef typename mpl::deref<typename iter::base>::type type;
 };
 
 template <typename T1, typename T2>
-struct strongest_numeric_type<T1,std::complex<T2> >
+struct strongest_numeric_type<T1, std::complex<T2>>
 {
     typedef typename type_traits<T1>::real_type R1;
-    typedef std::complex<typename strongest_numeric_type<R1,T2>::type > type;
+    typedef std::complex<typename strongest_numeric_type<R1, T2>::type> type;
 };
 template <typename T1, typename T2>
-struct strongest_numeric_type<std::complex<T1>,T2 >
+struct strongest_numeric_type<std::complex<T1>, T2>
 {
     typedef typename type_traits<T2>::real_type R2;
-    typedef std::complex<typename strongest_numeric_type<T1,R2>::type > type;
+    typedef std::complex<typename strongest_numeric_type<T1, R2>::type> type;
 };
 template <typename T1, typename T2>
-struct strongest_numeric_type<std::complex<T1>,std::complex<T2> >
+struct strongest_numeric_type<std::complex<T1>, std::complex<T2>>
 {
-    typedef std::complex<typename strongest_numeric_type<T1,T2>::type > type;
+    typedef std::complex<typename strongest_numeric_type<T1, T2>::type> type;
 };
-
 
 template <class T>
 struct is_shared_ptr
-        : mpl::false_
+    : mpl::false_
 {
 };
 
 template <class T>
-struct is_shared_ptr<boost::shared_ptr<T> >
-        : mpl::true_
+struct is_shared_ptr<boost::shared_ptr<T>>
+    : mpl::true_
 {
 };
 
@@ -92,22 +91,21 @@ struct remove_shared_ptr
 };
 
 template <class T>
-struct remove_shared_ptr<boost::shared_ptr<T> >
+struct remove_shared_ptr<boost::shared_ptr<T>>
 {
     typedef T type;
 };
 
+template <typename T>
+struct is_ptr_or_shared_ptr : mpl::or_<is_shared_ptr<T>, boost::is_pointer<T>>::type
+{
+};
 
-template<typename T>
-struct is_ptr_or_shared_ptr : mpl::or_<is_shared_ptr<T>, boost::is_pointer<T> >::type {};
-
-template<typename T>
+template <typename T>
 using remove_shared_ptr_type = typename mpl::if_<is_shared_ptr<T>, mpl::identity<typename T::element_type>, mpl::identity<T>>::type::type;
 
-template<typename T>
+template <typename T>
 using decay_type = typename std::decay<remove_shared_ptr_type<typename std::decay<T>::type>>::type;
 
 } // namespace Feel
 #endif
-
-

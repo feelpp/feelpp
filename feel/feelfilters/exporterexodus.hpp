@@ -29,13 +29,12 @@
 #ifndef __ExporterExodus_H
 #define __ExporterExodus_H 1
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
-
-#include <boost/lambda/lambda.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/lambda/lambda.hpp>
 
 #include <feel/feelmesh/filters.hpp>
 
@@ -50,15 +49,13 @@ namespace fs = boost::filesystem;
  * \ingroup Exporter
  * @author Christophe Prud'homme
  */
-template<typename MeshType, int N>
+template <typename MeshType, int N>
 class ExporterExodus
-    :
-public Exporter<MeshType, N>
+    : public Exporter<MeshType, N>
 {
     typedef Exporter<MeshType, N> super;
-public:
 
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -120,19 +117,17 @@ public:
     */
     ExporterExodus( WorldComm const& worldComm = Environment::worldComm() );
     ExporterExodus( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterExodus( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    ExporterExodus( po::variables_map const& vm = Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
 
-    ExporterExodus( ExporterExodus const & __ex );
+    ExporterExodus( ExporterExodus const& __ex );
 
     ~ExporterExodus();
-
 
     //@}
 
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -148,27 +143,25 @@ public:
         return M_element_type;
     }
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
 
-    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
+    Exporter<MeshType, N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
     {
         super::setOptions( exp_prefix );
 
         return this;
     }
 
-    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
+    Exporter<MeshType, N>* setOptions( std::string const& exp_prefix = "" )
     {
         super::setOptions( exp_prefix );
 
         return this;
     }
-
 
     //@}
 
@@ -185,103 +178,88 @@ public:
 
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
     /**
      * init the ensight exporter
      */
     void init();
 
-
-private:
-
+  private:
     mutable std::string M_filename;
     std::string M_element_type;
 };
 
-template<typename MeshType, int N>
-ExporterExodus<MeshType,N>::ExporterExodus( WorldComm const& worldComm )
-:
-super( worldComm ),
-M_element_type()
+template <typename MeshType, int N>
+ExporterExodus<MeshType, N>::ExporterExodus( WorldComm const& worldComm )
+    : super( worldComm ),
+      M_element_type()
 
 {
     init();
 }
-template<typename MeshType, int N>
-ExporterExodus<MeshType,N>::ExporterExodus( std::string const& __p, int freq, WorldComm const& worldComm )
-    :
-    super( "exodus", __p, freq, worldComm ),
-    M_element_type()
+template <typename MeshType, int N>
+ExporterExodus<MeshType, N>::ExporterExodus( std::string const& __p, int freq, WorldComm const& worldComm )
+    : super( "exodus", __p, freq, worldComm ),
+      M_element_type()
 {
     init();
 }
-template<typename MeshType, int N>
-ExporterExodus<MeshType,N>::ExporterExodus( po::variables_map const& vm, std::string const& exp_prefix, WorldComm const& worldComm )
-    :
-    super( vm, exp_prefix, worldComm )
+template <typename MeshType, int N>
+ExporterExodus<MeshType, N>::ExporterExodus( po::variables_map const& vm, std::string const& exp_prefix, WorldComm const& worldComm )
+    : super( vm, exp_prefix, worldComm )
 {
     init();
 }
 
-template<typename MeshType, int N>
-ExporterExodus<MeshType,N>::ExporterExodus( ExporterExodus const & __ex )
-    :
-    super( __ex ),
-    M_element_type( __ex.M_element_type )
+template <typename MeshType, int N>
+ExporterExodus<MeshType, N>::ExporterExodus( ExporterExodus const& __ex )
+    : super( __ex ),
+      M_element_type( __ex.M_element_type )
 {
 }
 
-template<typename MeshType, int N>
-ExporterExodus<MeshType,N>::~ExporterExodus()
-{}
+template <typename MeshType, int N>
+ExporterExodus<MeshType, N>::~ExporterExodus()
+{
+}
 
-template<typename MeshType, int N>
-void
-ExporterExodus<MeshType,N>::init()
+template <typename MeshType, int N>
+void ExporterExodus<MeshType, N>::init()
 {
     if ( mesh_type::nDim == 1 )
         if ( mesh_type::Shape == SHAPE_LINE )
-            M_element_type = ( mesh_type::nOrder == 1 )?"bar2":"bar3";
+            M_element_type = ( mesh_type::nOrder == 1 ) ? "bar2" : "bar3";
 
     if ( mesh_type::nDim == 2 )
     {
         if ( mesh_type::Shape == SHAPE_TRIANGLE )
-            M_element_type = ( mesh_type::nOrder == 1 )?"tria3":"tria6";
+            M_element_type = ( mesh_type::nOrder == 1 ) ? "tria3" : "tria6";
 
         else if ( mesh_type::Shape == SHAPE_QUAD )
-            M_element_type = ( mesh_type::nOrder == 1 )?"quad4":"quad8";
+            M_element_type = ( mesh_type::nOrder == 1 ) ? "quad4" : "quad8";
     }
 
     if ( mesh_type::nDim == 3 )
     {
         if ( mesh_type::Shape == SHAPE_TETRA )
-            M_element_type = ( mesh_type::nOrder == 1 )?"tetra4":"tetra10";
+            M_element_type = ( mesh_type::nOrder == 1 ) ? "tetra4" : "tetra10";
 
         else if ( mesh_type::Shape == SHAPE_HEXA )
-            M_element_type = ( mesh_type::nOrder == 1 )?"hexa8":"hexa20";
+            M_element_type = ( mesh_type::nOrder == 1 ) ? "hexa8" : "hexa20";
     }
 }
-template<typename MeshType, int N>
-void
-ExporterExodus<MeshType,N>::save() const
+template <typename MeshType, int N>
+void ExporterExodus<MeshType, N>::save() const
 {
     if ( !this->worldComm().isActive() ) return;
-
 }
 
-
-template<typename MeshType, int N>
-void
-ExporterExodus<MeshType,N>::visit( mesh_type* __mesh )
+template <typename MeshType, int N>
+void ExporterExodus<MeshType, N>::visit( mesh_type* __mesh )
 {
 }
 
 } // Feel
-
 
 #endif /* __ExporterExodus_H */

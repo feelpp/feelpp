@@ -26,12 +26,13 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_ELEMENT_PRODUCT_HPP)
+#if !defined( FEELPP_ELEMENT_PRODUCT_HPP )
 #define FEELPP_ELEMENT_PRODUCT_HPP 1
 
 #include <feel/feeldiscr/functionspace.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
    Computes the element wise product of two vectors and eventually in parallel
@@ -42,9 +43,10 @@ namespace Feel {
 */
 template <typename ElementType>
 ElementType
-prod( ElementType const& v1, ElementType const& v2,  typename boost::enable_if<boost::is_base_of<FunctionSpaceBase::ElementBase,ElementType> >::type* dummy = 0  )
+prod( ElementType const& v1, ElementType const& v2, typename boost::enable_if<boost::is_base_of<FunctionSpaceBase::ElementBase, ElementType>>::type* dummy = 0 )
 {
-    FEELPP_ASSERT( v1.functionSpace() == v2.functionSpace() ).error( "incompatible function spaces" );
+    FEELPP_ASSERT( v1.functionSpace() == v2.functionSpace() )
+        .error( "incompatible function spaces" );
 
     typedef typename type_traits<typename ElementType::value_type>::real_type real_type;
 
@@ -53,11 +55,10 @@ prod( ElementType const& v1, ElementType const& v2,  typename boost::enable_if<b
     size_type start = v1.firstLocalIndex();
 
     for ( size_type i = 0; i < s; ++i )
-        _t.operator()( start+i ) = v1.operator()( start + i )* v2.operator()( start + i );
+        _t.operator()( start + i ) = v1.operator()( start + i ) * v2.operator()( start + i );
 
     return _t;
 }
-
 }
 
 #endif /* FEELPP_ELEMENT_PRODUCT_HPP */

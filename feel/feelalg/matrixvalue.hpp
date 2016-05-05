@@ -33,7 +33,6 @@
 
 #include <boost/numeric/ublas/vector.hpp>
 
-
 namespace Feel
 {
 /*!
@@ -47,12 +46,10 @@ namespace Feel
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename T>
+template <typename T>
 class MatrixValue
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -60,10 +57,9 @@ public:
     typedef T value_type;
 
     typedef value_type matrix_type;
-    typedef std::vector<std::set<size_type> > pattern_type;
+    typedef std::vector<std::set<size_type>> pattern_type;
 
     static const bool is_row_major = true;
-
 
     //@}
 
@@ -72,13 +68,13 @@ public:
     //@{
 
     MatrixValue( value_type acc = value_type( 0 ) )
-        :
-        M_mat( acc )
-    {}
-    MatrixValue( MatrixValue const & m )
-        :
-        M_mat( m.M_mat )
-    {}
+        : M_mat( acc )
+    {
+    }
+    MatrixValue( MatrixValue const& m )
+        : M_mat( m.M_mat )
+    {
+    }
 
     ~MatrixValue()
     {
@@ -100,7 +96,7 @@ public:
      * @returns \p m, the row-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    unsigned int size1 () const
+    unsigned int size1() const
     {
         return 1;
     }
@@ -109,7 +105,7 @@ public:
      * @returns \p n, the column-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    unsigned int size2 () const
+    unsigned int size2() const
     {
         return 1;
     }
@@ -126,7 +122,7 @@ public:
      * return row_start, the index of the first
      * matrix row stored on this processor
      */
-    unsigned int rowStart () const
+    unsigned int rowStart() const
     {
         return 0;
     }
@@ -135,7 +131,7 @@ public:
      * return row_stop, the index of the last
      * matrix row (+1) stored on this processor
      */
-    unsigned int rowStop () const
+    unsigned int rowStop() const
     {
         return 0;
     }
@@ -152,8 +148,7 @@ public:
      * \c close the gmm matrix, that will copy the content of write
      * optimized matrix into a read optimized matrix
      */
-    void close () const;
-
+    void close() const;
 
     /**
      * see if Gmm matrix has been closed
@@ -164,11 +159,10 @@ public:
         return true;
     }
 
-
     /**
      * Returns the read optimized gmm matrix.
      */
-    matrix_type const& mat () const
+    matrix_type const& mat() const
     {
         return M_mat;
     }
@@ -176,7 +170,7 @@ public:
     /**
      * Returns the read optimized gmm matrix.
      */
-    matrix_type & mat ()
+    matrix_type& mat()
     {
         return M_mat;
     }
@@ -184,7 +178,7 @@ public:
     /**
      * Returns the write optimized gmm matrix.
      */
-    matrix_type const& wmat () const
+    matrix_type const& wmat() const
     {
         return M_mat;
     }
@@ -192,19 +186,16 @@ public:
     /**
      * Returns the write optimized gmm matrix.
      */
-    matrix_type & wmat ()
+    matrix_type& wmat()
     {
         return M_mat;
     }
-
-
 
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -220,12 +211,12 @@ public:
      * \p noz is the number of on-processor
      * nonzeros per row (defaults to 30).
      */
-    void init ( const unsigned int /*m*/,
-                const unsigned int /*n*/,
-                const unsigned int /*m_l*/,
-                const unsigned int /*n_l*/,
-                const unsigned int /*nnz*/=30,
-                const unsigned int /*noz*/=10 )
+    void init( const unsigned int /*m*/,
+               const unsigned int /*n*/,
+               const unsigned int /*m_l*/,
+               const unsigned int /*n_l*/,
+               const unsigned int /*nnz*/ = 30,
+               const unsigned int /*noz*/ = 10 )
     {
         this->zero();
     }
@@ -236,7 +227,7 @@ public:
      * having called the default
      * constructor.
      */
-    void clear ()
+    void clear()
     {
         M_mat = 0;
     }
@@ -245,12 +236,12 @@ public:
      * Set all entries to 0. This method retains
      * sparsity structure.
      */
-    void zero ()
+    void zero()
     {
         M_mat = 0;
     }
 
-    void zero ( size_type /*start1*/, size_type /*stop1*/, size_type /*start2*/, size_type /*stop2*/ )
+    void zero( size_type /*start1*/, size_type /*stop1*/, size_type /*start2*/, size_type /*stop2*/ )
     {
         M_mat = 0;
     }
@@ -258,9 +249,9 @@ public:
     /**
      * Add \p value to the value already accumulated
      */
-    void add ( const unsigned int /*i*/,
-               const unsigned int /*j*/,
-               const value_type value )
+    void add( const unsigned int /*i*/,
+              const unsigned int /*j*/,
+              const value_type value )
     {
         M_mat += value;
     }
@@ -268,14 +259,12 @@ public:
     /**
      * set to \p value
      */
-    void set ( const unsigned int /*i*/,
-               const unsigned int /*j*/,
-               const value_type value )
+    void set( const unsigned int /*i*/,
+              const unsigned int /*j*/,
+              const value_type value )
     {
         M_mat = value;
     }
-
-
 
     /**
      * Print the contents of the matrix in Matlab's
@@ -283,8 +272,7 @@ public:
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL" ) const;
-
+    void printMatlab( const std::string name = "NULL" ) const;
 
     /**
      * fill sparse matrix with non zero entries
@@ -293,7 +281,6 @@ public:
 
     void resize( size_type /* nr*/, size_type /*nc*/, bool /*preserve*/ = false )
     {
-
     }
 
     /**
@@ -312,40 +299,32 @@ public:
     void diagonalize( size_type );
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
     /**
      * the gmm sparse matrix data structure
      */
     mutable matrix_type M_mat;
-
 };
 
-template<typename T>
-void
-MatrixValue<T>::diagonalize( size_type __dof_index )
+template <typename T>
+void MatrixValue<T>::diagonalize( size_type __dof_index )
 {
-    FEELPP_ASSERT( 0 ).error( "diagonalize is undefined for this matrix type" );
+    FEELPP_ASSERT( 0 )
+        .error( "diagonalize is undefined for this matrix type" );
 }
-template<typename T>
-void
-MatrixValue<T>::fill( pattern_type const& /*__pattern*/ )
-{
-}
-
-template<typename T>
-void
-MatrixValue<T>::close() const
+template <typename T>
+void MatrixValue<T>::fill( pattern_type const& /*__pattern*/ )
 {
 }
 
-template<typename T>
-void
-MatrixValue<T>::printMatlab( const std::string /*filename*/ ) const
+template <typename T>
+void MatrixValue<T>::close() const
+{
+}
+
+template <typename T>
+void MatrixValue<T>::printMatlab( const std::string /*filename*/ ) const
 {
 }
 

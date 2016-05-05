@@ -29,27 +29,27 @@
 #ifndef FEELPP_TSBASE_HPP
 #define FEELPP_TSBASE_HPP 1
 
-#include <string>
+#include <algorithm>
 #include <iostream>
 #include <sstream>
-#include <algorithm>
+#include <string>
 
-#include <boost/timer.hpp>
-#include <boost/shared_array.hpp>
-#include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/shared_array.hpp>
+#include <boost/timer.hpp>
 #include <boost/utility.hpp>
 
-#include <boost/foreach.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
-#include <boost/serialization/vector.hpp>
+#include <boost/foreach.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
 
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
@@ -60,19 +60,28 @@
 #include <feel/feelcore/typetraits.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 
-
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
 namespace fs = boost::filesystem;
 
-enum TSState { TS_UNITIALIZED = 0, TS_RUNNING, TS_STOPPED };
-enum TSStragegy { TS_STRATEGY_DT_CONSTANT,TS_STRATEGY_DT_ADAPTATIVE};
+enum TSState
+{
+    TS_UNITIALIZED = 0,
+    TS_RUNNING,
+    TS_STOPPED
+};
+enum TSStragegy
+{
+    TS_STRATEGY_DT_CONSTANT,
+    TS_STRATEGY_DT_ADAPTATIVE
+};
 
 class TSBase
 {
     friend class boost::serialization::access;
-public:
+
+  public:
     typedef std::vector<double>::iterator time_iterator;
     typedef std::vector<double>::const_iterator time_const_iterator;
     typedef std::vector<double> time_values_map_type;
@@ -87,10 +96,10 @@ public:
     TSBase& operator=( TSBase const& b );
 
     //! save/load Bdf metadata
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version )
     {
-        DVLOG(2) << "[BDF::serialize] serialize BDFBase\n";
+        DVLOG( 2 ) << "[BDF::serialize] serialize BDFBase\n";
 #if 0
         ar & M_order;
         ar & M_name;
@@ -101,25 +110,24 @@ public:
         ar & M_Tf;
 #endif
         //ar & M_time_orders;
-        ar & boost::serialization::make_nvp( "time_values", M_time_values_map );
+        ar& boost::serialization::make_nvp( "time_values", M_time_values_map );
 
         //DVLOG(2) << "[BDF::serialize] time orders size: " << M_time_orders.size() << "\n";
-        DVLOG(2) << "[BDF::serialize] time values size: " << M_time_values_map.size() << "\n";
+        DVLOG( 2 ) << "[BDF::serialize] time values size: " << M_time_values_map.size() << "\n";
 
-        for ( auto it = M_time_values_map.begin(), en = M_time_values_map.end(); it!=en; ++it )
+        for ( auto it = M_time_values_map.begin(), en = M_time_values_map.end(); it != en; ++it )
         {
             //LOG(INFO) << "[Bdf] order " << i << "=" << M_time_orders[i] << "\n";
-            DVLOG(2) << "[Bdf::serialize] value " << *it << "\n";
-
+            DVLOG( 2 ) << "[Bdf::serialize] value " << *it << "\n";
         }
 
-        DVLOG(2) << "[BDF::serialize] serialize BDFBase done\n";
+        DVLOG( 2 ) << "[BDF::serialize] serialize BDFBase done\n";
     }
 
     //! reload metadata to get all time step already done
     void reloadMetaData()
     {
-        CHECK(  M_restart ) <<" bdf is not in restart mode ";
+        CHECK( M_restart ) << " bdf is not in restart mode ";
         this->init();
     }
 
@@ -197,8 +205,8 @@ public:
         M_state = TS_RUNNING;
         M_timer.restart();
         // if initiliaze has been called M_iteration start to 1 else 0
-        M_iteration = M_time_values_map.size();//1;
-        M_time = M_Ti+this->timeStep();
+        M_iteration = M_time_values_map.size(); //1;
+        M_time = M_Ti + this->timeStep();
         return M_Ti;
     }
 
@@ -207,23 +215,22 @@ public:
     {
         M_state = TS_RUNNING;
         M_timer.restart();
-        M_time = M_Ti+this->timeStep();
+        M_time = M_Ti + this->timeStep();
         ++M_iteration;
         return M_Ti;
     }
 
-
     //! return true if Bdf is finished, false otherwise
     bool isFinished() const
     {
-        bool finished=false;
+        bool finished = false;
 
-        if ( M_Tf>M_Ti )
+        if ( M_Tf > M_Ti )
         {
             if ( M_time > M_Tf )
             {
                 M_state = TS_STOPPED;
-                finished=true;
+                finished = true;
             }
         }
 
@@ -232,7 +239,7 @@ public:
             if ( M_time < M_Tf )
             {
                 M_state = TS_STOPPED;
-                finished=true;
+                finished = true;
             }
         }
 
@@ -250,7 +257,7 @@ public:
         CHECK( state() == TS_RUNNING ) << "invalid Time Stepping state, it should be " << TS_RUNNING << " (TS_RUNNING) and it is " << state();
         M_real_time_per_iteration = M_timer.elapsed();
         M_timer.restart();
-        if ( boption(prefixvm(M_prefix,"ts.display-stats")) )
+        if ( boption( prefixvm( M_prefix, "ts.display-stats" ) ) )
             Environment::saveTimers( true );
         M_time += M_dt;
         ++M_iteration;
@@ -265,12 +272,11 @@ public:
     virtual void update()
     {
         double tn = M_time_values_map[M_iteration];
-        double tn1 = M_time_values_map[M_iteration-1];
-        double tn2= 0;
+        double tn1 = M_time_values_map[M_iteration - 1];
+        double tn2 = 0;
 
         if ( M_iteration >= 2 )
-            tn2 = M_time_values_map[M_iteration-2];
-
+            tn2 = M_time_values_map[M_iteration - 2];
     }
     //! return the state of the BDF
     TSState state() const
@@ -300,12 +306,11 @@ public:
 
     bool rankProcInNameOfFiles() const
     {
-        return  M_rankProcInNameOfFiles ;
+        return M_rankProcInNameOfFiles;
     }
 
     //! return file format saved and loaded : binary or hdf5
     std::string fileFormat() const { return M_fileFormat; }
-
 
     WorldComm const& worldComm() const
     {
@@ -345,29 +350,29 @@ public:
         M_steady = steady;
         if ( steady )
         {
-            M_dt=1e30;
-            M_Tf=1e30;
+            M_dt = 1e30;
+            M_Tf = 1e30;
         }
     }
     void setRestart( bool doRestart )
     {
-        M_restart=doRestart;
+        M_restart = doRestart;
     }
     void setRestartPath( std::string const& s )
     {
-        M_restartPath=s;
+        M_restartPath = s;
     }
     void setRestartAtLastSave( bool b )
     {
-        M_restartAtLastSave=b;
+        M_restartAtLastSave = b;
     }
     void setSaveInFile( bool b )
     {
         M_saveInFile = b;
     }
-    void setSaveFreq(int v)
+    void setSaveFreq( int v )
     {
-        M_saveFreq=v;
+        M_saveFreq = v;
     }
     void setRankProcInNameOfFiles( bool b )
     {
@@ -380,14 +385,14 @@ public:
 
     virtual void print() const
     {
-        LOG(INFO) << "============================================================\n";
-        LOG(INFO) << "TS Information\n";
-        LOG(INFO) << "   time step : " << this->timeStep() << "\n";
-        LOG(INFO) << "time initial : " << this->timeInitial() << "\n";
-        LOG(INFO) << "  time final : " << this->timeFinal() << "\n";
+        LOG( INFO ) << "============================================================\n";
+        LOG( INFO ) << "TS Information\n";
+        LOG( INFO ) << "   time step : " << this->timeStep() << "\n";
+        LOG( INFO ) << "time initial : " << this->timeInitial() << "\n";
+        LOG( INFO ) << "  time final : " << this->timeFinal() << "\n";
     }
-protected:
 
+  protected:
     //! name of the file holding the bdf data
     std::string M_name;
 
@@ -399,7 +404,7 @@ protected:
 
     //! is steady
     bool M_steady;
-    
+
     //! initial time to start
     double M_Ti;
 
@@ -459,15 +464,14 @@ protected:
 
     std::string M_prefix;
 
-protected:
+  protected:
     void init();
 };
 class TSBaseMetadata
 {
-public:
+  public:
     TSBaseMetadata( TSBase& bdf )
-        :
-        M_ts( bdf )
+        : M_ts( bdf )
     {
     }
 
@@ -475,7 +479,7 @@ public:
 
     void save();
 
-private:
+  private:
     TSBase& M_ts;
 };
 

@@ -27,7 +27,6 @@
    \date 2011-12-30
  */
 
-
 #ifndef FEELMODELS_LOG_HPP
 #define FEELMODELS_LOG_HPP 1
 
@@ -36,16 +35,16 @@
 
 #include <feel/feelcore/worldcomm.hpp>
 
-namespace Feel {
-namespace FeelModels {
+namespace Feel
+{
+namespace FeelModels
+{
 
-    void Log(std::string _className,std::string _functionName,std::string _msg);
-    void Log(std::string _className,std::string _functionName,std::string _msg, WorldComm const& worldComm, bool allproc=false);
-    void Log(std::string _msgbefore,std::string _className,std::string _functionName,std::string _msg, WorldComm const& worldComm, bool allproc=false);
-
+void Log( std::string _className, std::string _functionName, std::string _msg );
+void Log( std::string _className, std::string _functionName, std::string _msg, WorldComm const& worldComm, bool allproc = false );
+void Log( std::string _msgbefore, std::string _className, std::string _functionName, std::string _msg, WorldComm const& worldComm, bool allproc = false );
 
 } // namespace FeelModels
 } // namespace Feel
-
 
 #endif // FEELMODELS_LOG_HPP

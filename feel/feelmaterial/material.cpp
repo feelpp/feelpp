@@ -31,21 +31,16 @@
 namespace Feel
 {
 Material::Material( std::string const& name )
-    :
-    M_name( name )
+    : M_name( name )
 {
-
 }
 
 Material::Material( Material const& m )
-    :
-    M_name( m.M_name )
+    : M_name( m.M_name )
 {
-
 }
 
 Material::~Material()
 {
-
 }
 }

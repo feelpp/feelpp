@@ -24,8 +24,7 @@
 #ifndef FEELPP_CORE_HPP
 #define FEELPP_CORE_HPP 1
 
-#include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/application.hpp>
-
+#include <feel/feelcore/environment.hpp>
 
 #endif

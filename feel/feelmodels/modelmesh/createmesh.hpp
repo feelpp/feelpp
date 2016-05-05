@@ -36,13 +36,12 @@ namespace Feel
 {
 namespace FeelModels
 {
-    template <typename MeshType>
-    boost::shared_ptr<MeshType>
-    reloadMesh(std::string const& nameFile, WorldComm const& worldComm, int straighten=1 );
+template <typename MeshType>
+boost::shared_ptr<MeshType>
+reloadMesh( std::string const& nameFile, WorldComm const& worldComm, int straighten = 1 );
 
-    template <typename MeshType>
-    void
-    createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std::string const& modelMeshRestartFile );
+template <typename MeshType>
+void createMeshModel( ModelNumerical& model, boost::shared_ptr<MeshType>& mesh, std::string const& modelMeshRestartFile );
 
 } // namespace FeelModels
 } // namespace Feel

@@ -34,20 +34,19 @@
 
 namespace Feel
 {
-template< class Convex,
+template <class Convex,
           uint16_type Order,
-          typename T = double >
-class PointSetElectrostatic : public  PointSetInterpolation<Convex::nDim, Order, T, Simplex>
+          typename T = double>
+class PointSetElectrostatic : public PointSetInterpolation<Convex::nDim, Order, T, Simplex>
 {
 
-public :
-
+  public:
     typedef PointSetWarpBlend<Convex, Order, T> super;
 
     typedef T value_type;
 
     static const uint32_type Dim = Convex::nDim;
-    static const uint16_type nPoints1D = Order+1;
+    static const uint16_type nPoints1D = Order + 1;
 
     typedef typename super::return_type return_type;
 
@@ -82,16 +81,16 @@ public :
 
             defineOrbits();
 
-            points_type Gt( Dim+1, nbPtsPerFace );
+            points_type Gt( Dim + 1, nbPtsPerFace );
 
-            uint16_type p=0;
+            uint16_type p = 0;
 
             for ( uint16_type i = 0; i < getPrimalNumber(); i++ )
             {
                 points_type orbit = generateOrbit( getOrbitId( i ),
-                                                   ublas::subrange( getPrimalPts(), 0, 3, i, i+1 ) );
+                                                   ublas::subrange( getPrimalPts(), 0, 3, i, i + 1 ) );
 
-                ublas::subrange( Gt, 0, 3, p, p+orbit.size2() ) = orbit;
+                ublas::subrange( Gt, 0, 3, p, p + orbit.size2() ) = orbit;
 
                 p += orbit.size2();
             }
@@ -104,8 +103,7 @@ public :
                 final_pts = pts;
 
             else
-                final_pts = putInPointset ( final_pts, pts, G.interiorRangeById( 2, 0 ) );
-
+                final_pts = putInPointset( final_pts, pts, G.interiorRangeById( 2, 0 ) );
         }
 
         this->setPoints( final_pts );
@@ -115,15 +113,14 @@ public :
 
     ~PointSetElectrostatic() {}
 
-private :
-
+  private:
     std::pair<points_type, points_type> entities;
 
     orbits_type orbits;
 
     void addOrbit( uint16_type orbit_id, uint16_type num )
     {
-        for ( uint16_type i=0; i<num; i++ )
+        for ( uint16_type i = 0; i < num; i++ )
             orbits.push_back( orbit_id );
     }
 
@@ -199,70 +196,69 @@ private :
     // returns the number of points defined in the triangle with which we calculate the orbits
     uint16_type getPrimalNumber()
     {
-        uint16_type __num[ 16 ] = { 1,
-                                    1,
-                                    1,
-                                    1,
-                                    2,
-                                    3,
-                                    4,
-                                    5
-                                  };
+        uint16_type __num[16] = {1,
+                                 1,
+                                 1,
+                                 1,
+                                 2,
+                                 3,
+                                 4,
+                                 5};
 
-        return __num[Order-1];
+        return __num[Order - 1];
     }
 
     // defines the points with which we calculate the orbits
     points_type getPrimalPts()
     {
-        points_type bar_coord( Dim+1, getPrimalNumber() );
+        points_type bar_coord( Dim + 1, getPrimalNumber() );
 
         if ( Order == 3 )
         {
-            bar_coord( 0,0 ) = value_type( 1.0/3.0 );
-            bar_coord( 1,0 ) = value_type( 1.0/3.0 );
+            bar_coord( 0, 0 ) = value_type( 1.0 / 3.0 );
+            bar_coord( 1, 0 ) = value_type( 1.0 / 3.0 );
         }
 
         else if ( Order == 4 )
         {
-            bar_coord( 0,0 ) = value_type( 0.2371200168 );
-            bar_coord( 1,0 ) = value_type( 0.2371200168 );
+            bar_coord( 0, 0 ) = value_type( 0.2371200168 );
+            bar_coord( 1, 0 ) = value_type( 0.2371200168 );
         }
 
         else if ( Order == 5 )
         {
-            bar_coord( 0,0 ) = value_type( 0.410515151 );
-            bar_coord( 1,0 ) = value_type( 0.410515151 );
+            bar_coord( 0, 0 ) = value_type( 0.410515151 );
+            bar_coord( 1, 0 ) = value_type( 0.410515151 );
 
-            bar_coord( 0,1 ) = value_type( 0.1575181512 );
-            bar_coord( 1,1 ) = value_type( 0.1575181512 );
+            bar_coord( 0, 1 ) = value_type( 0.1575181512 );
+            bar_coord( 1, 1 ) = value_type( 0.1575181512 );
         }
 
         else if ( Order == 6 )
         {
-            bar_coord( 0,0 ) = value_type( 1.0/3 );
-            bar_coord( 1,0 ) = value_type( 1.0/3 );
+            bar_coord( 0, 0 ) = value_type( 1.0 / 3 );
+            bar_coord( 1, 0 ) = value_type( 1.0 / 3 );
 
-            bar_coord( 0,1 ) = value_type( 0.1061169285 );
-            bar_coord( 1,1 ) = value_type( 0.1061169285 );
+            bar_coord( 0, 1 ) = value_type( 0.1061169285 );
+            bar_coord( 1, 1 ) = value_type( 0.1061169285 );
 
-            bar_coord( 0,2 ) = value_type( 0.3097982151 );
-            bar_coord( 1,2 ) = value_type( 0.5569099204 );
+            bar_coord( 0, 2 ) = value_type( 0.3097982151 );
+            bar_coord( 1, 2 ) = value_type( 0.5569099204 );
         }
 
         else if ( Order == 7 )
         {
-            bar_coord( 0,0 ) = value_type( 0.4477725053 );
-            bar_coord( 1,0 ) = value_type( 0.4477725053 );
+            bar_coord( 0, 0 ) = value_type( 0.4477725053 );
+            bar_coord( 1, 0 ) = value_type( 0.4477725053 );
 
-            bar_coord( 0,1 ) = value_type( 0.2604038024 );
-            bar_coord( 1,1 ) = value_type( 0.2604038024 );
+            bar_coord( 0, 1 ) = value_type( 0.2604038024 );
+            bar_coord( 1, 1 ) = value_type( 0.2604038024 );
 
-            bar_coord( 0,2 ) = value_type( 0.0660520784 );
-            bar_coord( 1,2 ) = value_type( 0.0660520784 );
+            bar_coord( 0, 2 ) = value_type( 0.0660520784 );
+            bar_coord( 1, 2 ) = value_type( 0.0660520784 );
 
-            bar_coord( 0,3 ) = value_type( 0.2325524777 );
-            bar_coord( 1,3 ) = value_type( 0.6759625951 );
+            bar_coord( 0, 3 ) = value_type( 0.2325524777 );
+            bar_coord( 1, 3 ) = value_type( 0.6759625951 );
         }
 
 #if 0
@@ -411,8 +407,8 @@ private :
 
 #endif
 
-        for ( uint16_type i=0; i < getPrimalNumber(); i++ )
-            bar_coord( 2,i ) = 1 - bar_coord( 0,i ) - bar_coord( 1,i );
+        for ( uint16_type i = 0; i < getPrimalNumber(); i++ )
+            bar_coord( 2, i ) = 1 - bar_coord( 0, i ) - bar_coord( 1, i );
 
         return bar_coord;
     }
@@ -421,24 +417,23 @@ private :
     {
         if ( permOrder > 0 )
         {
-            for ( uint16_type i=0; i<pts.size2(); i++ )
+            for ( uint16_type i = 0; i < pts.size2(); i++ )
             {
-                value_type a = pts( 0,i );
-                value_type b = pts( 1,i );
-                value_type c = pts( 2,i );
+                value_type a = pts( 0, i );
+                value_type b = pts( 1, i );
+                value_type c = pts( 2, i );
 
-                pts( 0,i ) = c;
-                pts( 1,i ) = a;
-                pts( 2,i ) = b;
+                pts( 0, i ) = c;
+                pts( 1, i ) = a;
+                pts( 2, i ) = b;
             }
         }
 
         if ( permOrder > 1 )
-            pts = cyclic( pts, permOrder-1 );
+            pts = cyclic( pts, permOrder - 1 );
 
         return pts;
     }
-
 
     points_type symmetries( points_type pts, uint16_type permOrder )
     {
@@ -447,59 +442,57 @@ private :
 
         else
         {
-            for ( uint16_type i=0; i<pts.size2(); i++ )
+            for ( uint16_type i = 0; i < pts.size2(); i++ )
             {
-                value_type a = pts( 0,i );
-                value_type b = pts( 1,i );
-                value_type c = pts( 2,i );
+                value_type a = pts( 0, i );
+                value_type b = pts( 1, i );
+                value_type c = pts( 2, i );
 
-                pts( 0,i ) = a;
-                pts( 1,i ) = c;
-                pts( 2,i ) = b;
+                pts( 0, i ) = a;
+                pts( 1, i ) = c;
+                pts( 2, i ) = b;
 
-                pts = cyclic( pts, permOrder-3 );
+                pts = cyclic( pts, permOrder - 3 );
             }
         }
 
         return pts;
     }
 
-
     points_type generateOrbit( uint16_type numOrbit, points_type orbitPoint )
     {
-        points_type orbit( Dim+1, numOrbit );
+        points_type orbit( Dim + 1, numOrbit );
 
         if ( numOrbit == 1 )
             orbit = orbitPoint;
 
         else
         {
-            for ( uint16_type i=0; i<numOrbit; i++ )
-                ublas::subrange( orbit, 0, 3, i, i+1 ) = symmetries( orbitPoint, i );
+            for ( uint16_type i = 0; i < numOrbit; i++ )
+                ublas::subrange( orbit, 0, 3, i, i + 1 ) = symmetries( orbitPoint, i );
         }
 
         return orbit;
     }
 
-
-    points_type equiVertices ()
+    points_type equiVertices()
     {
-        points_type V ( ublas::scalar_matrix<value_type>( Dim, Dim+1, value_type( 0 ) ) );
+        points_type V( ublas::scalar_matrix<value_type>( Dim, Dim + 1, value_type( 0 ) ) );
 
-        for ( uint16_type i=0; i < 3; i++ )
+        for ( uint16_type i = 0; i < 3; i++ )
         {
-            value_type angle = M_PI*( value_type( 7 ) + value_type( 4 )*value_type( i ) )/value_type( 6 );
+            value_type angle = M_PI * ( value_type( 7 ) + value_type( 4 ) * value_type( i ) ) / value_type( 6 );
 
-            V( 0,i ) = math::cos( angle );
-            V( 1,i ) = math::sin( angle );
+            V( 0, i ) = math::cos( angle );
+            V( 1, i ) = math::sin( angle );
         }
 
-        V *= value_type( 2 )/math::sqrt( value_type( 3 ) );
+        V *= value_type( 2 ) / math::sqrt( value_type( 3 ) );
 
         return V;
     }
 
-    vector_type getVertex ( uint16_type element, uint16_type i )
+    vector_type getVertex( uint16_type element, uint16_type i )
     {
         vector_type p;
 
@@ -512,61 +505,61 @@ private :
         return p;
     }
 
-    points_type toCartesian ( points_type pts )
+    points_type toCartesian( points_type pts )
     {
         points_type C( Dim, Dim );
 
         for ( uint16_type i = 0; i < Dim; i++ )
-            ublas::column( C, i ) = getVertex( 1, ( Dim - Dim%2 + i )%Dim ) - getVertex( 1,Dim );
+            ublas::column( C, i ) = getVertex( 1, ( Dim - Dim % 2 + i ) % Dim ) - getVertex( 1, Dim );
 
-        points_type bar_coord = ublas::subrange( pts, 1, Dim+1, 0, pts.size2() );
+        points_type bar_coord = ublas::subrange( pts, 1, Dim + 1, 0, pts.size2() );
 
         points_type Gt = ublas::prod( C, bar_coord );
 
-        for ( uint16_type i=0; i < pts.size2(); i++ )
-            ublas::column( Gt, i ) += getVertex( 1,Dim );
+        for ( uint16_type i = 0; i < pts.size2(); i++ )
+            ublas::column( Gt, i ) += getVertex( 1, Dim );
 
         return Gt;
     }
 
-    points_type toEquilateral ( points_type pts )
+    points_type toEquilateral( points_type pts )
     {
-        points_type coord_ref_elem ( Dim, Dim );
-        points_type coord_equi_elem ( Dim, Dim );
+        points_type coord_ref_elem( Dim, Dim );
+        points_type coord_equi_elem( Dim, Dim );
 
         for ( uint16_type i = 0; i < Dim; i++ )
         {
-            ublas::column( coord_ref_elem, i ) = getVertex( 0,Dim ) - getVertex( 0,i );
-            ublas::column( coord_equi_elem, i ) = getVertex( 1,Dim ) - getVertex( 1,i );
+            ublas::column( coord_ref_elem, i ) = getVertex( 0, Dim ) - getVertex( 0, i );
+            ublas::column( coord_equi_elem, i ) = getVertex( 1, Dim ) - getVertex( 1, i );
         }
 
-        points_type A ( Dim, Dim );
-        points_type b ( Dim, 1 );
+        points_type A( Dim, Dim );
+        points_type b( Dim, 1 );
 
-        LU< points_type > lu( coord_ref_elem );
+        LU<points_type> lu( coord_ref_elem );
         lu.inverse( A );
 
-        A = ublas::prod( coord_equi_elem , A );
+        A = ublas::prod( coord_equi_elem, A );
 
-        ublas::column( b,0 ) = getVertex( 1,0 ) - ublas::prod( A, getVertex( 0,0 ) );
+        ublas::column( b, 0 ) = getVertex( 1, 0 ) - ublas::prod( A, getVertex( 0, 0 ) );
 
-        for ( uint16_type i=0; i < pts.size2(); i++ )
-            ublas::column( pts, i ) -= ublas::column( b,0 );
+        for ( uint16_type i = 0; i < pts.size2(); i++ )
+            ublas::column( pts, i ) -= ublas::column( b, 0 );
 
-        LU< points_type > lu2( A );
-        pts = lu2.solve( pts ) ;
+        LU<points_type> lu2( A );
+        pts = lu2.solve( pts );
 
         return pts;
     }
 
-    points_type putInPointset ( points_type final_pts, points_type pts, std::pair<uint16_type, uint16_type> position )
+    points_type putInPointset( points_type final_pts, points_type pts, std::pair<uint16_type, uint16_type> position )
     {
         ublas::subrange( final_pts, 0, 2, position.first, position.second ) = pts;
 
         return final_pts;
     }
 
-    template<int n>
+    template <int n>
     static bool order( vector_type a, vector_type b )
     {
         return a( n ) < b( n );
@@ -576,18 +569,18 @@ private :
     {
         std::vector<vector_type> aux( pts.size2() );
 
-        for ( uint16_type i=0; i<pts.size2(); i++ )
+        for ( uint16_type i = 0; i < pts.size2(); i++ )
             aux[i] = ublas::column( pts, i );
 
         std::sort( aux.begin(), aux.end(), &order<1> );
 
-        for ( uint16_type p=0, i=Order-3; i>0; i-- )
+        for ( uint16_type p = 0, i = Order - 3; i > 0; i-- )
         {
-            std::sort( aux.begin()+p, aux.begin()+p+i+1, &order<0> );
-            p += i+1;
+            std::sort( aux.begin() + p, aux.begin() + p + i + 1, &order<0> );
+            p += i + 1;
         }
 
-        for ( uint16_type i=0; i<pts.size2(); i++ )
+        for ( uint16_type i = 0; i < pts.size2(); i++ )
             ublas::column( pts, i ) = aux[i];
 
         return pts;

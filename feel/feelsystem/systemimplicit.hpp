@@ -41,17 +41,15 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-template<typename SpaceType>
+template <typename SpaceType>
 class SystemImplicit : SystemExplicit<SpaceType>
 {
     typedef SystemExplicit<SpaceType> super;
-public:
 
-
+  public:
     /** @name Constants
      */
     //@{
-
 
     //@}
 
@@ -76,7 +74,6 @@ public:
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
-
     //@}
 
     /** @name Constructors, destructor
@@ -86,7 +83,7 @@ public:
     SystemImplicit( functionspace_ptrtype const& Xh, po::variables_map const& vm );
 
     //! copy constructor
-    SystemImplicit( SystemImplicit const & si );
+    SystemImplicit( SystemImplicit const& si );
 
     //! destructor
     ~SystemImplicit() {}
@@ -98,7 +95,7 @@ public:
     //@{
 
     //! copy operator
-    SystemImplicit& operator=( SystemImplicit const & o )
+    SystemImplicit& operator=( SystemImplicit const& o )
     {
         if ( this != &o )
         {
@@ -144,33 +141,26 @@ public:
      */
     //@{
 
-
     //@}
 
-
-
-protected:
-
+  protected:
     backend_ptrtype M_backend;
 
-
-private:
-
+  private:
 };
-template<typename SpaceType>
+template <typename SpaceType>
 SystemImplicit<SpaceType>::SystemImplicit( functionspace_ptrtype const& Xh,
-        po::variables_map const& vm )
-    :
-    super( Xh, vm ),
-    M_backend( backend_type::build( vm ) )
-{}
-template<typename SpaceType>
+                                           po::variables_map const& vm )
+    : super( Xh, vm ),
+      M_backend( backend_type::build( vm ) )
+{
+}
+template <typename SpaceType>
 SystemImplicit<SpaceType>::SystemImplicit( SystemImplicit const& sil )
-    :
-    super( sil ),
-    M_backend( sil.M_backend )
-{}
-
+    : super( sil ),
+      M_backend( sil.M_backend )
+{
+}
 
 } // Feel
 #endif /* __SystemImplicit_H */

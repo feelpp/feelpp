@@ -32,29 +32,28 @@
 
 #include <string>
 
-#include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/convenience.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem/operations.hpp>
 
-#include <boost/serialization/vector.hpp>
 #include <boost/serialization/list.hpp>
-#include <boost/serialization/string.hpp>
-#include <boost/serialization/version.hpp>
 #include <boost/serialization/split_member.hpp>
+#include <boost/serialization/string.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/version.hpp>
 
 #include <feel/feelcore/feel.hpp>
 
 namespace Feel
 {
 
-template<typename ModelType>
+template <typename ModelType>
 class CRBElementsDB : public CRBDB
 {
 
-    typedef  CRBDB super;
+    typedef CRBDB super;
 
-public :
-
+  public:
     typedef ModelType model_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
 
@@ -74,31 +73,28 @@ public :
 
     //! constructors
     CRBElementsDB()
-    :
-        super()
+        : super()
     {
     }
 
     CRBElementsDB( std::string prefixdir,
-                std::string name,
-                std::string dbprefix,
-                po::variables_map const& vm,
-                model_ptrtype const & model )
-    :
-        super( prefixdir,
-               name,
-               dbprefix,
-               vm ),
-        M_N( 0 )
+                   std::string name,
+                   std::string dbprefix,
+                   po::variables_map const& vm,
+                   model_ptrtype const& model )
+        : super( prefixdir,
+                 name,
+                 dbprefix,
+                 vm ),
+          M_N( 0 )
     {
         M_model = model;
     }
 
-
     //! destructor
     ~CRBElementsDB()
-    {}
-
+    {
+    }
 
     /**
      * save the database
@@ -110,10 +106,9 @@ public :
      */
     bool loadDB();
 
-
     boost::tuple<wn_type, wn_type> wn()
     {
-        return boost::make_tuple( M_WN , M_WNdu );
+        return boost::make_tuple( M_WN, M_WNdu );
     }
 
     void setMN( size_type MN )
@@ -121,7 +116,7 @@ public :
         M_N = MN;
     }
 
-    void setWn( boost::tuple< wn_type, wn_type > WN )
+    void setWn( boost::tuple<wn_type, wn_type> WN )
     {
         auto primal = WN.template get<0>();
         auto dual = WN.template get<1>();
@@ -129,17 +124,16 @@ public :
         M_WNdu = dual;
     }
 
-private :
-
+  private:
     friend class boost::serialization::access;
     // When the class Archive corresponds to an output archive, the
     // & operator is defined similar to <<.  Likewise, when the class Archive
     // is a type of input archive the & operator is defined similar to >>.
-    template<class Archive>
-    void save( Archive & ar, const unsigned int version ) const;
+    template <class Archive>
+    void save( Archive& ar, const unsigned int version ) const;
 
-    template<class Archive>
-    void load( Archive & ar, const unsigned int version ) ;
+    template <class Archive>
+    void load( Archive& ar, const unsigned int version );
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
@@ -150,12 +144,10 @@ private :
 
     model_ptrtype M_model;
 
+}; //class CRBElementsDB
 
-};//class CRBElementsDB
-
-template<typename ModelType>
-void
-CRBElementsDB<ModelType>::saveDB()
+template <typename ModelType>
+void CRBElementsDB<ModelType>::saveDB()
 {
 
     fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
@@ -169,17 +161,16 @@ CRBElementsDB<ModelType>::saveDB()
     }
 }
 
-template<typename ModelType>
-bool
-CRBElementsDB<ModelType>::loadDB()
+template <typename ModelType>
+bool CRBElementsDB<ModelType>::loadDB()
 {
 
-    bool rebuild_db = boption(_name="crb.rebuild-database");
-    int Nrestart = ioption(_name="crb.restart-from-N");
+    bool rebuild_db = boption( _name = "crb.rebuild-database" );
+    int Nrestart = ioption( _name = "crb.restart-from-N" );
     if ( rebuild_db && Nrestart < 1 )
         return false;
 
-    if( this->isDBLoaded() )
+    if ( this->isDBLoaded() )
         return true;
 
     fs::path db = this->lookForDB();
@@ -207,11 +198,9 @@ CRBElementsDB<ModelType>::loadDB()
     return false;
 }
 
-
-template<typename ModelType>
-template<class Archive>
-void
-CRBElementsDB<ModelType>::save( Archive & ar, const unsigned int version ) const
+template <typename ModelType>
+template <class Archive>
+void CRBElementsDB<ModelType>::save( Archive& ar, const unsigned int version ) const
 {
 #if 0
     auto mesh = mesh_type::New();
@@ -228,17 +217,16 @@ CRBElementsDB<ModelType>::save( Archive & ar, const unsigned int version ) const
     int size = M_WN.size();
 
     LOG( INFO ) << "saving Elements DB";
-    for(int i=0; i<size; i++)
-        ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
-    for(int i=0; i<size; i++)
-        ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
+    for ( int i = 0; i < size; i++ )
+        ar& BOOST_SERIALIZATION_NVP( M_WN[i] );
+    for ( int i = 0; i < size; i++ )
+        ar& BOOST_SERIALIZATION_NVP( M_WNdu[i] );
     LOG( INFO ) << "Elements DB saved";
 }
 
-template<typename ModelType>
-template<class Archive>
-void
-CRBElementsDB<ModelType>::load( Archive & ar, const unsigned int version )
+template <typename ModelType>
+template <class Archive>
+void CRBElementsDB<ModelType>::load( Archive& ar, const unsigned int version )
 {
     LOG( INFO ) << " loading Elements DB ... ";
 
@@ -250,51 +238,46 @@ CRBElementsDB<ModelType>::load( Archive & ar, const unsigned int version )
 
     if ( !M_model )
     {
-        LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
+        LOG( INFO ) << "[load] model not initialized, loading fdb files...\n";
         mesh = mesh_type::New();
-        bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
+        bool is_mesh_loaded = mesh->load( _name = "mymesh", _path = this->dbLocalPath(), _type = "binary" );
         Xh = space_type::New( mesh );
-        LOG(INFO) << "[load] loading fdb files done.\n";
+        LOG( INFO ) << "[load] loading fdb files done.\n";
     }
     else
     {
-        LOG(INFO) << "[load] get mesh/Xh from model...\n";
+        LOG( INFO ) << "[load] get mesh/Xh from model...\n";
         mesh = M_model->functionSpace()->mesh();
         Xh = M_model->functionSpace();
-        LOG(INFO) << "[load] get mesh/Xh from model done.\n";
+        LOG( INFO ) << "[load] get mesh/Xh from model done.\n";
     }
 
     element_type temp = Xh->element();
 
-    for( int i = 0 ; i < M_N ; i++ )
+    for ( int i = 0; i < M_N; i++ )
     {
-        temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
-        ar & BOOST_SERIALIZATION_NVP( temp );
+        temp.setName( ( boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+        ar& BOOST_SERIALIZATION_NVP( temp );
         M_WN[i] = temp;
     }
 
-    for( int i = 0 ; i < M_N ; i++ )
+    for ( int i = 0; i < M_N; i++ )
     {
-        temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
-        ar & BOOST_SERIALIZATION_NVP( temp );
+        temp.setName( ( boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+        ar& BOOST_SERIALIZATION_NVP( temp );
         M_WNdu[i] = temp;
     }
     LOG( INFO ) << " Elements DB loaded";
 }
 
-
-
-
-}//Feel
-
-
+} //Feel
 
 namespace boost
 {
 namespace serialization
 {
-template< typename T>
-struct version< Feel::CRBElementsDB<T> >
+template <typename T>
+struct version<Feel::CRBElementsDB<T>>
 {
     // at the moment the version of the CRB DB is 0. if any changes is done
     // to the format it is mandatory to increase the version number below
@@ -303,7 +286,8 @@ struct version< Feel::CRBElementsDB<T> >
     typedef mpl::integral_c_tag tag;
     static const unsigned int value = version::type::value;
 };
-template<typename T> const unsigned int version<Feel::CRBElementsDB<T> >::value;
+template <typename T>
+const unsigned int version<Feel::CRBElementsDB<T>>::value;
 }
 }
 

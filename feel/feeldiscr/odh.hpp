@@ -26,53 +26,54 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_ODH_HPP)
+#if !defined( FEELPP_ODH_HPP )
 #define FEELPP_ODH_HPP 1
 
-#include <feel/feelpoly/orthonormalpolynomialset.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/orthonormalpolynomialset.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
-namespace meta {
-template<typename MeshType,
-         int Order,
-         int Tag = 0>
+namespace meta
+{
+template <typename MeshType,
+          int Order,
+          int Tag = 0>
 struct Odh
 {
     typedef FunctionSpace<MeshType,
-                          bases<OrthonormalPolynomialSet<Order,Scalar>>,
+                          bases<OrthonormalPolynomialSet<Order, Scalar>>,
                           double,
-                          Periodicity <NoPeriodicity>,
-                          mortars<NoMortar>> type;
+                          Periodicity<NoPeriodicity>,
+                          mortars<NoMortar>>
+        type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 
 } // meta
 
-template<typename MeshType,
-         int Order,
-         int Tag = 0>
-using Odh_type = typename meta::Odh<MeshType,Order,Tag>::type;
-template<typename MeshType,
-         int Order,
-         int Tag = 0>
-using Odh_ptrtype = typename meta::Odh<MeshType,Order,Tag>::ptrtype;
+template <typename MeshType,
+          int Order,
+          int Tag = 0>
+using Odh_type = typename meta::Odh<MeshType, Order, Tag>::type;
+template <typename MeshType,
+          int Order,
+          int Tag = 0>
+using Odh_ptrtype = typename meta::Odh<MeshType, Order, Tag>::ptrtype;
 
 /**
    Given a \p mesh, build a function space of discontinuous function which are
   piecewise polynomial of degree and \f$L_2\f$ Orthonormal
  */
-template<int Order,typename MeshType, int Tag = 0>
-inline
-Odh_ptrtype<MeshType,Order,Tag>
-Odh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+template <int Order, typename MeshType, int Tag = 0>
+inline Odh_ptrtype<MeshType, Order, Tag>
+Odh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable = false )
 {
-    
-    return Odh_type<MeshType,Order,Tag>::New( _mesh=mesh,
-                                              _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                              _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
-}
 
+    return Odh_type<MeshType, Order, Tag>::New( _mesh = mesh,
+                                                _worldscomm = std::vector<WorldComm>( 1, mesh->worldComm() ),
+                                                _extended_doftable = std::vector<bool>( 1, buildExtendedDofTable ) );
+}
 }
 #endif /* FEELPP_ODH_HPP */

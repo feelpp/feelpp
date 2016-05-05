@@ -32,18 +32,15 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 
-
 namespace Feel
 {
 namespace FeelModels
 {
 
-
-template< class ConvexType >
+template <class ConvexType>
 class FSIMesh
 {
-public :
-
+  public:
     typedef Mesh<ConvexType> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type mesh_fluid_type;
@@ -71,22 +68,20 @@ public :
     void setSolidMshPathPartN( fs::path const& path ) { M_mshfilepathSolidPartN = path; }
 
     double meshSize() const { return M_meshSize; }
-    void setMeshSize(double d) { M_meshSize=d; }
-
+    void setMeshSize( double d ) { M_meshSize = d; }
 
     bool forceRebuild() const { return M_forceRebuild; }
-    void setForceRebuild(bool b) {M_forceRebuild=b; }
+    void setForceRebuild( bool b ) { M_forceRebuild = b; }
 
     int nPartitions() const { return M_nPartitions; }
     int partitioner() const { return M_partitioner; }
-    void setNumberOfPartitions(int p) { M_nPartitions=p; }
-    void setPartitioner(int p) { M_partitioner=p; }
+    void setNumberOfPartitions( int p ) { M_nPartitions = p; }
+    void setPartitioner( int p ) { M_partitioner = p; }
 
     std::set<std::string> const& markersNameFluidVolume() const { return M_markersNameFluidVolume; }
     std::set<std::string> const& markersNameSolidVolume() const { return M_markersNameSolidVolume; }
-    void setMarkersNameFluidVolume( std::set<std::string> const& s ) { M_markersNameFluidVolume=s; }
-    void setMarkersNameSolidVolume( std::set<std::string> const& s ) { M_markersNameSolidVolume=s; }
-
+    void setMarkersNameFluidVolume( std::set<std::string> const& s ) { M_markersNameFluidVolume = s; }
+    void setMarkersNameSolidVolume( std::set<std::string> const& s ) { M_markersNameSolidVolume = s; }
 
     //-------------------------------------------------------------------------------------------------//
     //-------------------------------------------------------------------------------------------------//
@@ -97,13 +92,12 @@ public :
     void buildSubMesh( mesh_ptrtype const& fsimesh );
     void buildMeshesPartitioning();
 
-private :
-
+  private:
     std::string M_prefix;
     WorldComm M_worldComm;
-    fs::path M_geoPathFSI,M_mshPathFSI;
-    fs::path M_mshfilepathFluidPartN,M_mshfilepathFluidPart1;
-    fs::path M_mshfilepathSolidPartN,M_mshfilepathSolidPart1;
+    fs::path M_geoPathFSI, M_mshPathFSI;
+    fs::path M_mshfilepathFluidPartN, M_mshfilepathFluidPart1;
+    fs::path M_mshfilepathSolidPartN, M_mshfilepathSolidPart1;
     std::set<std::string> M_markersNameFluidVolume, M_markersNameSolidVolume;
 
     double M_meshSize;
@@ -114,11 +108,9 @@ private :
     //mesh_ptrtype M_meshSolid;
 
     bool M_forceRebuild;
-
 };
 
 } // namespace FeelModels
 } // namespace Feel
-
 
 #endif // FEELPP_MODELS_FSIMESH_H

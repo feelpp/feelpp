@@ -43,9 +43,8 @@ namespace detail
  * - Genereate library (compilation+link) if necessary
  * - Store in Singleton GiNaC::FUNCP_CUBA
  */
-void
-ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::string const& exprDesc, std::string const& filename,WorldComm const& world,
-                   boost::shared_ptr<GiNaC::FUNCP_CUBA> & cfun );
+void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::string const& exprDesc, std::string const& filename, WorldComm const& world,
+                        boost::shared_ptr<GiNaC::FUNCP_CUBA>& cfun );
 
 /**
  * @brief get a filename for ginac lib define by use a singleton counter
@@ -53,18 +52,16 @@ ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::string 
 std::string
 ginacGetDefaultFileName( std::string const& exprDesc, std::string const& dirLibExpr = "" );
 
-
 } // namespace detail
 } // namespace vf
 
-class GinacExprManagerImpl :
-        public std::map<std::string, boost::shared_ptr<GiNaC::FUNCP_CUBA> > ,
-        public boost::noncopyable
+class GinacExprManagerImpl : public std::map<std::string, boost::shared_ptr<GiNaC::FUNCP_CUBA>>,
+                             public boost::noncopyable
 {
-public:
+  public:
     typedef boost::shared_ptr<GiNaC::FUNCP_CUBA> value_type;
     typedef std::string key_type;
-    typedef std::map<key_type,value_type> ginac_expr_manager_type;
+    typedef std::map<key_type, value_type> ginac_expr_manager_type;
 };
 
 typedef Feel::Singleton<GinacExprManagerImpl> GinacExprManager;
@@ -72,23 +69,21 @@ typedef Feel::Singleton<GinacExprManagerImpl> GinacExprManager;
 struct GinacExprManagerDeleterImpl
 {
     void operator()() const
-        {
-            VLOG(2) << "[GinacManagerDeleter] clear GinacExprManager Singleton: " << GinacExprManager::instance().size() << "\n";
-            GinacExprManager::instance().clear();
-            VLOG(2) << "[GinacManagerDeleter] clear GinacExprManager done\n";
-        }
+    {
+        VLOG( 2 ) << "[GinacManagerDeleter] clear GinacExprManager Singleton: " << GinacExprManager::instance().size() << "\n";
+        GinacExprManager::instance().clear();
+        VLOG( 2 ) << "[GinacManagerDeleter] clear GinacExprManager done\n";
+    }
 };
 typedef Feel::Singleton<GinacExprManagerDeleterImpl> GinacExprManagerDeleter;
 
-
-class GinacExprManagerDefaultFileNameImpl :
-        public std::map<std::string, std::string >,
-        public boost::noncopyable
+class GinacExprManagerDefaultFileNameImpl : public std::map<std::string, std::string>,
+                                            public boost::noncopyable
 {
-public:
+  public:
     typedef std::string value_type;
     typedef std::string key_type;
-    typedef std::map<key_type,value_type> ginac_expr_manager_default_filename_type;
+    typedef std::map<key_type, value_type> ginac_expr_manager_default_filename_type;
 };
 
 typedef Feel::Singleton<GinacExprManagerDefaultFileNameImpl> GinacExprManagerDefaultFileName;
@@ -96,11 +91,11 @@ typedef Feel::Singleton<GinacExprManagerDefaultFileNameImpl> GinacExprManagerDef
 struct GinacExprManagerDefaultFileNameDeleterImpl
 {
     void operator()() const
-        {
-            VLOG(2) << "[GinacManagerDeleter] clear GinacExprManager Singleton: " << GinacExprManager::instance().size() << "\n";
-            GinacExprManagerDefaultFileName::instance().clear();
-            VLOG(2) << "[GinacManagerDeleter] clear GinacExprManager done\n";
-        }
+    {
+        VLOG( 2 ) << "[GinacManagerDeleter] clear GinacExprManager Singleton: " << GinacExprManager::instance().size() << "\n";
+        GinacExprManagerDefaultFileName::instance().clear();
+        VLOG( 2 ) << "[GinacManagerDeleter] clear GinacExprManager done\n";
+    }
 };
 typedef Feel::Singleton<GinacExprManagerDefaultFileNameDeleterImpl> GinacExprManagerDefaultFileNameDeleter;
 

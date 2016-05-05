@@ -43,9 +43,8 @@ namespace Feel
 class GmshHypercubeDomain : public Gmsh
 {
     typedef Gmsh super;
-public:
 
-
+  public:
     /** @name Constants and Typedefs
      */
     //@{
@@ -57,7 +56,7 @@ public:
 
     GmshHypercubeDomain( int dim, int order );
     GmshHypercubeDomain( int dim, int order, int rdim, bool use_hypercube );
-    GmshHypercubeDomain( GmshHypercubeDomain const & td );
+    GmshHypercubeDomain( GmshHypercubeDomain const& td );
     ~GmshHypercubeDomain();
 
     //@}
@@ -66,20 +65,17 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -89,9 +85,7 @@ public:
 
     //@}
 
-
-
-private:
+  private:
     int M_rdim;
     bool M_use_hypercube;
     //
@@ -103,9 +97,7 @@ private:
     // 3D
     std::string getDescription3D() const;
 
-private:
-
-
+  private:
 };
 
 } // Feel

@@ -29,17 +29,17 @@
 #ifndef SOLVERUNCONSTRAINED_H
 #define SOLVERUNCONSTRAINED_H
 
-#include <boost/numeric/ublas/banded.hpp>
-#include <boost/numeric/ublas/symmetric.hpp>
-#include <boost/numeric/ublas/io.hpp>
-#include <boost/lambda/lambda.hpp>
 #include <boost/lambda/if.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/numeric/ublas/banded.hpp>
+#include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/symmetric.hpp>
 
 #include <clapack.h>
 
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelopt/problem.hpp>
 #include <feel/feelopt/dirscalingmatrix.hpp>
+#include <feel/feelopt/problem.hpp>
 
 namespace Feel
 {
@@ -48,29 +48,25 @@ namespace Feel
  *
  *  \author Ivan Oliveira and Christophe Prud'homme
  */
-template<
-typename Data,
-         template<class> class Problem = problem
-         >
+template <
+    typename Data,
+    template <class> class Problem = problem>
 class SolverUnconstrained
 {
-public:
-
+  public:
     //! this solver type
-    typedef SolverUnconstrained<Data,Problem> solver_type;
+    typedef SolverUnconstrained<Data, Problem> solver_type;
 
     //! problem data type
     typedef Problem<Data> problem_type;
 
-
-
     enum
     {
-        _E_n   = problem_type::_E_n,  //!< number of control variables
-        _E_g   = 0,                   //!< number of inequality constraints
-        _E_h   = 0,                   //!< number of equality constraints
-        _E_nA  = problem_type::_E_nA,  //!< size of the matrix
-        _E_nL  = problem_type::_E_nL, //!< number of multipliers
+        _E_n = problem_type::_E_n,    //!< number of control variables
+        _E_g = 0,                     //!< number of inequality constraints
+        _E_h = 0,                     //!< number of equality constraints
+        _E_nA = problem_type::_E_nA,  //!< size of the matrix
+        _E_nL = problem_type::_E_nL,  //!< number of multipliers
         _E_nAL = problem_type::_E_nAL //!< size of the multipliers matrix
     };
 
@@ -108,19 +104,18 @@ public:
     struct COptions
     {
         COptions()
-            :
-            Delta_init( 1.0 ),
-            zeta_min( 0.9 ),
-            CGtol( 1e-12 ),
-            deps( 1e-9 ),
-            max_TR_iter( 100 ),
-            TR_tol( 1e-7 ),
-            allow_Trust_radius_calculations( true ),
-            rho_decrease( 0.3 ),
-            rho_big( 0.9 ),
-            rho_increase_big( 1.5 ),
-            rho_small( 0.3 ),
-            rho_increase_small( 1.1 )
+            : Delta_init( 1.0 ),
+              zeta_min( 0.9 ),
+              CGtol( 1e-12 ),
+              deps( 1e-9 ),
+              max_TR_iter( 100 ),
+              TR_tol( 1e-7 ),
+              allow_Trust_radius_calculations( true ),
+              rho_decrease( 0.3 ),
+              rho_big( 0.9 ),
+              rho_increase_big( 1.5 ),
+              rho_small( 0.3 ),
+              rho_increase_small( 1.1 )
         {
             // do nothing here
         }
@@ -148,19 +143,17 @@ public:
     */
     class Stats
     {
-    public:
-
+      public:
         /**
          * \brief default constructor
          * \param \c __c true if collect statistics, false otherwise
          */
         Stats( solver_type* __s, bool __c = false )
-            :
-            M_s( __s ),
-            M_collect( __c ),
-            M_x ( _E_n ),
-            M_l ( _E_n ),
-            M_u ( _E_n )
+            : M_s( __s ),
+              M_collect( __c ),
+              M_x( _E_n ),
+              M_l( _E_n ),
+              M_u( _E_n )
         {
             // nothing to do here
         }
@@ -174,7 +167,7 @@ public:
         //! reset all statistics
         void clear();
 
-        void push( const vector_type & __x, vector_type const&, vector_type const& );
+        void push( const vector_type& __x, vector_type const&, vector_type const& );
 
         void push( value_type norm_Tgrad_fx,
                    int n_CGiter, int n_restarts, int n_indef,
@@ -183,9 +176,8 @@ public:
                    value_type Delta, value_type ared_til, value_type phi_til, value_type rho );
         void show() const;
 
-    private:
-
-        solver_type *M_s;
+      private:
+        solver_type* M_s;
         bool M_collect;
         mutable int iter;
 
@@ -198,9 +190,6 @@ public:
             n_crosses_def_hstr, n_crosses_indef_hstr,
             n_truss_exit_def_hstr, n_truss_exit_indef_hstr;
         std::vector<value_type> Delta_hstr, ared_til_hstr, phi_til_hstr, rho_hstr;
-
-
-
     };
 
     //! statistics data type
@@ -234,41 +223,38 @@ public:
         return M_prob;
     }
 
-private:
-
+  private:
     // make it private to avoid having it called
     SolverUnconstrained();
-
 
     //! read the options from a file
     void read_options();
 
     //!
-    void makeCauchyStep( vector_type & _x, value_type _Delta,
+    void makeCauchyStep( vector_type& _x, value_type _Delta,
                          f_type&,
-                         vector_type & _Tgrad_fx,
-                         banded_matrix_type & _Hg,
-                         symmetric_matrix_type & _Thess_fxT, symmetric_matrix_type & _Htil,
-                         vector_type & _neg_grad_fx );
+                         vector_type& _Tgrad_fx,
+                         banded_matrix_type& _Hg,
+                         symmetric_matrix_type& _Thess_fxT, symmetric_matrix_type& _Htil,
+                         vector_type& _neg_grad_fx );
 
     //!
-    void makeStep( vector_type & _x, vector_type & _s, value_type _Delta,
+    void makeStep( vector_type& _x, vector_type& _s, value_type _Delta,
                    f_type&,
-                   vector_type & _Tgrad_fx,
-                   banded_matrix_type & _Hg,
-                   symmetric_matrix_type & _Thess_fxT, symmetric_matrix_type & _Htil );
+                   vector_type& _Tgrad_fx,
+                   banded_matrix_type& _Hg,
+                   symmetric_matrix_type& _Thess_fxT, symmetric_matrix_type& _Htil );
 
     //!
-    value_type norm_Theta_x_grad_fx( vector_type & _x, value_type _Delta );
-
+    value_type norm_Theta_x_grad_fx( vector_type& _x, value_type _Delta );
 
     //!
-    void CGstep( vector_type & _x, value_type _Delta, vector_type & _sCG, value_type &norm_s_til,
-                 int &_CGiter,
-                 int &_n_restarts, int &_n_indef,
-                 int &_n_crosses_def, int &_n_crosses_indef,
-                 int &_n_truss_exit_def, int &_n_truss_exit_indef,
-                 value_type &_s_til_x_G_til_x_s_til, value_type &phi_til );
+    void CGstep( vector_type& _x, value_type _Delta, vector_type& _sCG, value_type& norm_s_til,
+                 int& _CGiter,
+                 int& _n_restarts, int& _n_indef,
+                 int& _n_crosses_def, int& _n_crosses_indef,
+                 int& _n_truss_exit_def, int& _n_truss_exit_indef,
+                 value_type& _s_til_x_G_til_x_s_til, value_type& phi_til );
 
     /*!
       Find \f$\tau \geq 0\f$ such that:
@@ -292,12 +278,10 @@ private:
     */
     value_type xi( vector_type const& __s, vector_type const& __d, value_type const& __xi1 );
 
-
     //!
-    void lambda_LS( vector_type & _x, vector_type & _lambda_l, vector_type & _lambda_u );
+    void lambda_LS( vector_type& _x, vector_type& _lambda_l, vector_type& _lambda_u );
 
-private:
-
+  private:
     // problem specification and data
     problem_type M_prob;
 
@@ -306,7 +290,6 @@ private:
     statistics_type M_solver_stats;
 
     dsm_type M_theta;
-
 };
 
 // SolverUnconstrained
@@ -314,33 +297,30 @@ private:
 //#define DEBUG_OUT_CG
 //#define DEBUG_OUT_TR
 
-template<typename Data,template<class> class Problem>
-SolverUnconstrained<Data,Problem>::SolverUnconstrained( value_type x_definitions[_E_n][3] )
-    :
-    M_prob( x_definitions ),
-    M_solver_stats ( this, true ),
-    M_theta( _E_n )
+template <typename Data, template <class> class Problem>
+SolverUnconstrained<Data, Problem>::SolverUnconstrained( value_type x_definitions[_E_n][3] )
+    : M_prob( x_definitions ),
+      M_solver_stats( this, true ),
+      M_theta( _E_n )
 {
     read_options();
 }
-template<typename Data,template<class> class Problem>
-SolverUnconstrained<Data,Problem>::SolverUnconstrained( Data const& __data )
-    :
-    M_prob( __data ),
-    M_solver_stats ( this, true ),
-    M_theta( M_prob.lowerBounds(), M_prob.upperBounds() )
+template <typename Data, template <class> class Problem>
+SolverUnconstrained<Data, Problem>::SolverUnconstrained( Data const& __data )
+    : M_prob( __data ),
+      M_solver_stats( this, true ),
+      M_theta( M_prob.lowerBounds(), M_prob.upperBounds() )
 {
     read_options();
 }
 
-template<typename Data,template<class> class Problem>
-SolverUnconstrained<Data,Problem>::~SolverUnconstrained()
+template <typename Data, template <class> class Problem>
+SolverUnconstrained<Data, Problem>::~SolverUnconstrained()
 {
 }
 
-template<typename Data,template<class> class Problem>
-bool
-SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
+template <typename Data, template <class> class Problem>
+bool SolverUnconstrained<Data, Problem>::optimize( vector_type& x )
 {
     M_solver_stats.clear();
 
@@ -348,20 +328,18 @@ SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
     // trust region radius
     value_type Delta = M_options.Delta_init;
 
-    vector_type x_new ( x.size() );
-    vector_type stot ( x.size() );
+    vector_type x_new( x.size() );
+    vector_type stot( x.size() );
     value_type norm_Tgrad_fx = this->norm_Theta_x_grad_fx( x, Delta );
     value_type norm_s_til = 0;
 
     M_prob.copy_x0_to_x( x );
-
 
     // FIXME: if ( M_options.verbose() )
     //M_prob.print_complete( x );
 
     if ( M_solver_stats.collectStats() )
         M_solver_stats.push( norm_Tgrad_fx, 0, 0, 0, 0, 0, 0, 0, Delta, 0, 0, 0 );
-
 
     try
     {
@@ -378,11 +356,9 @@ SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
                 n_crosses_def, n_crosses_indef, n_truss_exit_def, n_truss_exit_indef;
             value_type _s_til_x_G_til_x_s_til, phi_til, rho, Delta_used = Delta;
 
-            DVLOG(2) << "\n===================== iter = " << iter << " ===========================";
+            DVLOG( 2 ) << "\n===================== iter = " << iter << " ===========================";
             //DVLOG(2) << "\nx = " << x << "\n";
-            DVLOG(2) << "\n -> norm_Tgrad_fx = " << norm_Tgrad_fx;
-
-
+            DVLOG( 2 ) << "\n -> norm_Tgrad_fx = " << norm_Tgrad_fx;
 
             /** find an approximate stot for the step to make
              * solve :
@@ -419,11 +395,11 @@ SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
                 {
                     x = x + stot;
 
-                    if     ( rho > M_options.rho_big )
-                        Delta = std::max( M_options.rho_increase_big*norm_s_til, Delta );
+                    if ( rho > M_options.rho_big )
+                        Delta = std::max( M_options.rho_increase_big * norm_s_til, Delta );
 
                     else if ( rho > M_options.rho_small )
-                        Delta = std::max( M_options.rho_increase_small*norm_s_til, Delta );
+                        Delta = std::max( M_options.rho_increase_small * norm_s_til, Delta );
                 }
 
                 norm_Tgrad_fx = this->norm_Theta_x_grad_fx( x, Delta );
@@ -440,23 +416,23 @@ SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
             if ( M_solver_stats.collectStats() )
             {
                 M_solver_stats.push( norm_Tgrad_fx,
-                                      n_CGiter, n_restarts, n_indef,
-                                      n_crosses_def, n_crosses_indef,
-                                      n_truss_exit_def, n_truss_exit_indef,
-                                      Delta_used, ared_til, phi_til, rho );
+                                     n_CGiter, n_restarts, n_indef,
+                                     n_crosses_def, n_crosses_indef,
+                                     n_truss_exit_def, n_truss_exit_indef,
+                                     Delta_used, ared_til, phi_til, rho );
             }
 
-            if (  norm_Tgrad_fx > 1e-5 )
+            if ( norm_Tgrad_fx > 1e-5 )
                 M_prob.setAccuracy( std::min( 1e-1, norm_Tgrad_fx ) );
 
-            DVLOG(2) << "norm_Tgrad_fx = " << norm_Tgrad_fx  << "\n";
+            DVLOG( 2 ) << "norm_Tgrad_fx = " << norm_Tgrad_fx << "\n";
         }
     }
 
     catch ( std::exception const& __ex )
     {
         f_type __fx_new;
-        M_prob.evaluate ( x, __fx_new, diff_order<2>() );
+        M_prob.evaluate( x, __fx_new, diff_order<2>() );
 
         if ( norm_inf( __fx_new.gradient( 0 ) ) > 1e-10 )
             throw __ex;
@@ -481,9 +457,8 @@ SolverUnconstrained<Data,Problem>::history()
     M_prob.print_stationary_x( x, lambda_l, lambda_u );
 }
 #endif
-template<typename Data,template<class> class Problem>
-void
-SolverUnconstrained<Data,Problem>::read_options()
+template <typename Data, template <class> class Problem>
+void SolverUnconstrained<Data, Problem>::read_options()
 {
     value_type num;
     char str[20];
@@ -499,71 +474,66 @@ SolverUnconstrained<Data,Problem>::read_options()
     {
         fin >> str >> num;
 
-        if ( !strcmp( str, "Delta_init" ) )                      M_options.Delta_init = num;
+        if ( !strcmp( str, "Delta_init" ) ) M_options.Delta_init = num;
 
-        if ( !strcmp( str, "zeta_min" ) )                        M_options.zeta_min = num;
+        if ( !strcmp( str, "zeta_min" ) ) M_options.zeta_min = num;
 
-        if ( !strcmp( str, "CGtol" ) )                           M_options.CGtol = num;
+        if ( !strcmp( str, "CGtol" ) ) M_options.CGtol = num;
 
-        if ( !strcmp( str, "deps" ) )                            M_options.deps = num;
+        if ( !strcmp( str, "deps" ) ) M_options.deps = num;
 
-        if ( !strcmp( str, "max_TR_iter" ) )                     M_options.max_TR_iter = num;
+        if ( !strcmp( str, "max_TR_iter" ) ) M_options.max_TR_iter = num;
 
-        if ( !strcmp( str, "TR_tol" ) )                          M_options.TR_tol = num;
+        if ( !strcmp( str, "TR_tol" ) ) M_options.TR_tol = num;
 
         if ( !strcmp( str, "allow_Trust_radius_calculations" ) ) M_options.allow_Trust_radius_calculations = num;
 
-        if ( !strcmp( str, "rho_decrease" ) )                    M_options.rho_decrease = num;
+        if ( !strcmp( str, "rho_decrease" ) ) M_options.rho_decrease = num;
 
-        if ( !strcmp( str, "rho_big" ) )                         M_options.rho_big = num;
+        if ( !strcmp( str, "rho_big" ) ) M_options.rho_big = num;
 
-        if ( !strcmp( str, "rho_increase_big" ) )                M_options.rho_increase_big = num;
+        if ( !strcmp( str, "rho_increase_big" ) ) M_options.rho_increase_big = num;
 
-        if ( !strcmp( str, "rho_small" ) )                       M_options.rho_small = num;
+        if ( !strcmp( str, "rho_small" ) ) M_options.rho_small = num;
 
-        if ( !strcmp( str, "rho_increase_small" ) )              M_options.rho_increase_small = num;
+        if ( !strcmp( str, "rho_increase_small" ) ) M_options.rho_increase_small = num;
     }
 
     fin.close();
-
 }
 
-
-template<typename Data,template<class> class Problem>
-void
-SolverUnconstrained<Data,Problem>::makeCauchyStep( vector_type & _x, value_type _Delta,
-        f_type& __fx,
-        vector_type & _Tgrad_fx,
-        banded_matrix_type & _Hg,
-        symmetric_matrix_type & _Thess_fxT, symmetric_matrix_type & _Htil,
-        vector_type & _neg_grad_fx )
+template <typename Data, template <class> class Problem>
+void SolverUnconstrained<Data, Problem>::makeCauchyStep( vector_type& _x, value_type _Delta,
+                                                         f_type& __fx,
+                                                         vector_type& _Tgrad_fx,
+                                                         banded_matrix_type& _Hg,
+                                                         symmetric_matrix_type& _Thess_fxT, symmetric_matrix_type& _Htil,
+                                                         vector_type& _neg_grad_fx )
 {
-    M_prob.evaluate ( _x, __fx, diff_order<2>() );
+    M_prob.evaluate( _x, __fx, diff_order<2>() );
 
-
-    _neg_grad_fx = -  __fx.gradient( 0 );
+    _neg_grad_fx = -__fx.gradient( 0 );
 
     makeStep( _x, _neg_grad_fx, _Delta, __fx, _Tgrad_fx,
               _Hg, _Thess_fxT, _Htil );
 }
 
-template<typename Data,template<class> class Problem>
-void
-SolverUnconstrained<Data,Problem>::makeStep( vector_type & _x, vector_type & _s, value_type _Delta,
-        f_type& __fx,
-        vector_type & _Tgrad_fx,
-        banded_matrix_type & _Hg,
-        symmetric_matrix_type & _Thess_fxT, symmetric_matrix_type & _Htil )
+template <typename Data, template <class> class Problem>
+void SolverUnconstrained<Data, Problem>::makeStep( vector_type& _x, vector_type& _s, value_type _Delta,
+                                                   f_type& __fx,
+                                                   vector_type& _Tgrad_fx,
+                                                   banded_matrix_type& _Hg,
+                                                   symmetric_matrix_type& _Thess_fxT, symmetric_matrix_type& _Htil )
 {
     M_theta.update( _Delta, _x, _s );
 
-    _Tgrad_fx = prod( M_theta(),  __fx.gradient( 0 ) );
+    _Tgrad_fx = prod( M_theta(), __fx.gradient( 0 ) );
 
     banded_matrix_type __diag_grad_fx( _E_n, _E_n, 0, 0 );
 
     matrix<value_type> __m( outer_prod( _Tgrad_fx,
                                         scalar_vector<value_type>( _Tgrad_fx.size(), 1 ) ) );
-    __diag_grad_fx = banded_adaptor<matrix<value_type> >( __m, 0, 0 );
+    __diag_grad_fx = banded_adaptor<matrix<value_type>>( __m, 0, 0 );
 
     _Hg = prod( M_theta.jacobian(), __diag_grad_fx );
 
@@ -571,66 +541,66 @@ SolverUnconstrained<Data,Problem>::makeStep( vector_type & _x, vector_type & _s,
     _Htil = _Thess_fxT + _Hg;
 }
 
-template<typename Data,template<class> class Problem>
-typename SolverUnconstrained<Data,Problem>::value_type
-SolverUnconstrained<Data,Problem>::norm_Theta_x_grad_fx( vector_type & _x, value_type _Delta )
+template <typename Data, template <class> class Problem>
+typename SolverUnconstrained<Data, Problem>::value_type
+SolverUnconstrained<Data, Problem>::norm_Theta_x_grad_fx( vector_type& _x, value_type _Delta )
 {
     f_type __fx;
-    M_prob.evaluate ( _x, __fx, diff_order<1>() );
+    M_prob.evaluate( _x, __fx, diff_order<1>() );
 
     vector_type __Tgrad_fx( _E_n );
     vector_type __neg_grad_fx( _E_n );
-    __neg_grad_fx = - __fx.gradient( 0 );
+    __neg_grad_fx = -__fx.gradient( 0 );
 
     M_theta.update( _Delta, _x, __neg_grad_fx, dsm_type::NO_JACOBIAN );
 
-    __Tgrad_fx = prod ( M_theta(), __fx.gradient( 0 ) );
+    __Tgrad_fx = prod( M_theta(), __fx.gradient( 0 ) );
 
     return norm_2( __Tgrad_fx );
 }
 
-template<typename Data,template<class> class Problem>
-typename SolverUnconstrained<Data,Problem>::value_type
-SolverUnconstrained<Data,Problem>::tau( vector_type const& _s,
-                                        vector_type const& _d,
-                                        value_type const& _Delta )
+template <typename Data, template <class> class Problem>
+typename SolverUnconstrained<Data, Problem>::value_type
+SolverUnconstrained<Data, Problem>::tau( vector_type const& _s,
+                                         vector_type const& _d,
+                                         value_type const& _Delta )
 {
-    value_type a =  inner_prod( _d, _d );
-    GST_SMART_ASSERT( a != 0 ).error( "a is 0 and should not be. It will cause a divide by zero." );
+    value_type a = inner_prod( _d, _d );
+    GST_SMART_ASSERT( a != 0 )
+        .error( "a is 0 and should not be. It will cause a divide by zero." );
     value_type b = 2.0 * inner_prod( _s, _d );
-    value_type c = inner_prod( _s, _s )  -  _Delta*_Delta;
-    return ( -b + sqrt( b*b - 4.0*a*c ) ) / ( 2.0*a );
+    value_type c = inner_prod( _s, _s ) - _Delta * _Delta;
+    return ( -b + sqrt( b * b - 4.0 * a * c ) ) / ( 2.0 * a );
 }
 
-template<typename Data,template<class> class Problem>
-typename SolverUnconstrained<Data,Problem>::value_type
-SolverUnconstrained<Data,Problem>::xi( vector_type const& __s,
-                                       vector_type const& __d,
-                                       value_type const& _xi1 )
+template <typename Data, template <class> class Problem>
+typename SolverUnconstrained<Data, Problem>::value_type
+SolverUnconstrained<Data, Problem>::xi( vector_type const& __s,
+                                        vector_type const& __d,
+                                        value_type const& _xi1 )
 {
 
-    vector_type __frac = - element_div ( __s, __d );
+    vector_type __frac = -element_div( __s, __d );
 
     namespace lambda = boost::lambda;
 
-    value_type __xi =  _xi1;
+    value_type __xi = _xi1;
     std::for_each( __frac.begin(), __frac.end(),
                    lambda::if_then( lambda::_1 > 0 && lambda::_1 < lambda::var( __xi ),
                                     lambda::var( __xi ) = lambda::_1 ) );
     return __xi;
 }
 
-template<typename Data,template<class> class Problem>
-void
-SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, vector_type & _sCG,
-        value_type &norm_s_til,
-        int &_CGiter,
-        int &_n_restarts, int &_n_indef,
-        int &_n_crosses_def, int &_n_crosses_indef,
-        int &_n_truss_exit_def,
-        int &_n_truss_exit_indef,
-        value_type &_s_til_x_G_til_x_s_til,
-        value_type &phi_til )
+template <typename Data, template <class> class Problem>
+void SolverUnconstrained<Data, Problem>::CGstep( vector_type& _x, value_type _Delta, vector_type& _sCG,
+                                                 value_type& norm_s_til,
+                                                 int& _CGiter,
+                                                 int& _n_restarts, int& _n_indef,
+                                                 int& _n_crosses_def, int& _n_crosses_indef,
+                                                 int& _n_truss_exit_def,
+                                                 int& _n_truss_exit_indef,
+                                                 value_type& _s_til_x_G_til_x_s_til,
+                                                 value_type& phi_til )
 {
     bool _restart = false;
     bool _done = false;
@@ -644,17 +614,17 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
 
     f_type __fx;
 
-    vector_type _neg_grad_fx ( _x.size() );
-    vector_type _Tgrad_fx ( _x.size() );
-    vector_type _Htil_d ( _x.size() ); // Htil * dCG
-    vector_type _Htil_s_til ( _x.size() ); // Htil * s_til
+    vector_type _neg_grad_fx( _x.size() );
+    vector_type _Tgrad_fx( _x.size() );
+    vector_type _Htil_d( _x.size() );     // Htil * dCG
+    vector_type _Htil_s_til( _x.size() ); // Htil * s_til
 
-    vector_type _s_til ( _x.size() );
-    vector_type _s_til_old ( _x.size() );
-    vector_type _s_til_eps ( _x.size() );
-    vector_type _rCG ( _x.size() );
-    vector_type _rCG_old ( _x.size() );
-    vector_type _dCG ( _x.size() );
+    vector_type _s_til( _x.size() );
+    vector_type _s_til_old( _x.size() );
+    vector_type _s_til_eps( _x.size() );
+    vector_type _rCG( _x.size() );
+    vector_type _rCG_old( _x.size() );
+    vector_type _dCG( _x.size() );
 
     value_type _alpha = 0;
     value_type _gamma; // d' Htil d
@@ -663,17 +633,17 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
     value_type _tau;
 
     // diagonal matrices
-    banded_matrix_type _Hg ( _x.size(), _x.size(), 0, 0 ); // Gtil
+    banded_matrix_type _Hg( _x.size(), _x.size(), 0, 0 ); // Gtil
 
-    symmetric_matrix_type _Thess_fxT ( _E_nA, _E_nA ); // Btil
-    symmetric_matrix_type _Htil ( _E_nA, _E_nA );  // Htil
+    symmetric_matrix_type _Thess_fxT( _E_nA, _E_nA ); // Btil
+    symmetric_matrix_type _Htil( _E_nA, _E_nA );      // Htil
 
-    DVLOG(2) << "\n\n[value_type SolverUnconstrained<Data,Problem>::CGstep]...\n";
+    DVLOG( 2 ) << "\n\n[value_type SolverUnconstrained<Data,Problem>::CGstep]...\n";
 
     // INITIALIZE:
     this->makeCauchyStep( _x, _Delta, __fx, _Tgrad_fx, _Hg, _Thess_fxT, _Htil, _neg_grad_fx );
 
-    DVLOG(2) << "Trust region active (C) : " << M_theta.isTrustRegionActive() << "\n";
+    DVLOG( 2 ) << "Trust region active (C) : " << M_theta.isTrustRegionActive() << "\n";
 
     value_type _norm_gtil = norm_2( _Tgrad_fx );
     _s_til = zero_vector<value_type>( _s_til.size() );
@@ -707,7 +677,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
 
             _s_til_old = _s_til;
             _rCG = -_Tgrad_fx - _Htil_s_til;
-            _rCG_old  = _rCG ;
+            _rCG_old = _rCG;
             _dCG = _rCG;
 
             _restart = false;
@@ -716,7 +686,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
         //
         // STEP 1:
         //
-        _gamma = inner_prod( _dCG, prod( _Htil,_dCG ) );
+        _gamma = inner_prod( _dCG, prod( _Htil, _dCG ) );
 
         if ( _gamma <= 0 )
         {
@@ -794,7 +764,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
             if ( _xi >= _alpha )
             {
                 _rCG_old = _rCG;
-                _rCG -= _alpha * prod( _Htil,  _dCG );
+                _rCG -= _alpha * prod( _Htil, _dCG );
             }
 
             else if ( M_theta.isTrustRegionActive() )
@@ -808,7 +778,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
         {
             _sCG = _s_til;
 
-            DVLOG(2) << "\n\nNormal CG exit 1: ||rCG||/||g_til|| = " << norm_2( _rCG ) / _norm_gtil << "\n";
+            DVLOG( 2 ) << "\n\nNormal CG exit 1: ||rCG||/||g_til|| = " << norm_2( _rCG ) / _norm_gtil << "\n";
 
             _done = true;
         }
@@ -817,7 +787,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
         {
             _sCG = _s_til;
 
-            DVLOG(2) << "\n\nNormal CG exit 2: _CGiter = " << _CGiter << "\n";
+            DVLOG( 2 ) << "\n\nNormal CG exit 2: _CGiter = " << _CGiter << "\n";
 
             _done = true;
         }
@@ -829,7 +799,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
         {
             _beta = inner_prod( _rCG, _rCG ) / inner_prod( _rCG_old, _rCG_old );
 
-            DVLOG(2) << "\nbeta = " << _beta << "\n";
+            DVLOG( 2 ) << "\nbeta = " << _beta << "\n";
 
             _dCG = _rCG + _beta * _dCG;
 
@@ -840,7 +810,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
 
     _s_til_x_G_til_x_s_til = inner_prod( _sCG, prod( _Hg, _sCG ) );
 
-    phi_til = inner_prod( _Tgrad_fx, _sCG ) + 0.5 * inner_prod( _sCG, prod( _Htil,_sCG ) );
+    phi_til = inner_prod( _Tgrad_fx, _sCG ) + 0.5 * inner_prod( _sCG, prod( _Htil, _sCG ) );
 
     norm_s_til = norm_2( _sCG );
 
@@ -848,26 +818,24 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
     _sCG = prod( M_theta(), _sCG );
 }
 
-
-template<typename Data, template<class> class Problem>
-void
-SolverUnconstrained<Data,Problem>::lambda_LS( vector_type & _x, vector_type & _lambda_l, vector_type & _lambda_u )
+template <typename Data, template <class> class Problem>
+void SolverUnconstrained<Data, Problem>::lambda_LS( vector_type& _x, vector_type& _lambda_l, vector_type& _lambda_u )
 {
     //symmetric_matrix_type __A ( _E_nL, _E_nL );
-    matrix_type __A ( _E_nL, _E_nL );
-    vector_type __b ( _E_nL );
+    matrix_type __A( _E_nL, _E_nL );
+    vector_type __b( _E_nL );
 
     // At = [ -I  (l-x)  0;  I  0  (x-u) ]  -->  AtA = [ I+(l-x)^2  -I;  -I  I+(x-u)^2 ]
     __A = zero_matrix<double>( _E_nL, _E_nL );
 
     for ( int __i = 0; __i < _E_n; ++__i )
     {
-        __A( __i, __i ) = 1.0 + ( M_prob.x_l( __i )-_x ( __i ) )*( M_prob.x_l( __i )-_x ( __i ) );
+        __A( __i, __i ) = 1.0 + ( M_prob.x_l( __i ) - _x( __i ) ) * ( M_prob.x_l( __i ) - _x( __i ) );
 
-        __A( __i, _E_n+__i ) = -1.0;
-        __A( _E_n+__i,__i ) = -1.0;
+        __A( __i, _E_n + __i ) = -1.0;
+        __A( _E_n + __i, __i ) = -1.0;
 
-        __A( ( _E_n+__i ),  _E_n+__i ) =  1.0+( _x ( __i )-M_prob.x_u( __i ) )*( _x ( __i )-M_prob.x_u( __i ) );
+        __A( ( _E_n + __i ), _E_n + __i ) = 1.0 + ( _x( __i ) - M_prob.x_u( __i ) ) * ( _x( __i ) - M_prob.x_u( __i ) );
     }
 
     // b = [ \nabla f;  0;  0 ]  -->  Atb = [ -\nabla f; \nabla f ]
@@ -877,8 +845,8 @@ SolverUnconstrained<Data,Problem>::lambda_LS( vector_type & _x, vector_type & _l
     for ( int i = 0; i < _E_n; i++ )
     {
         value_type val = __f_x.gradient( 0, i );
-        __b ( i ) =  val;
-        __b ( _E_n+i ) = -val;
+        __b( i ) = val;
+        __b( _E_n + i ) = -val;
     }
 
     // after solve __b = [ _lambda_l;  _lambda_] = A\b
@@ -891,9 +859,9 @@ SolverUnconstrained<Data,Problem>::lambda_LS( vector_type & _x, vector_type & _l
 
     ublas::vector<int> __itype( __N );
     //dspsv_( &__uplo, &__N, &__nrhs,  __A.data().begin(), __itype.data().begin(), __b.data().begin(), &__N, &__info );
-    dgesv_( &__N,&__nrhs,__A.data().begin(),&__N,__itype.data().begin(),__b.data().begin(),&__N,&__info );
+    dgesv_( &__N, &__nrhs, __A.data().begin(), &__N, __itype.data().begin(), __b.data().begin(), &__N, &__info );
 
-    if ( __info!= 0 )
+    if ( __info != 0 )
     {
         std::ostringstream __err;
 
@@ -906,19 +874,17 @@ SolverUnconstrained<Data,Problem>::lambda_LS( vector_type & _x, vector_type & _l
 
     for ( int i = 0; i < _E_n; i++ )
     {
-        _lambda_l ( i ) = __b ( i );
-        _lambda_u ( i ) = __b ( _E_n+i );
+        _lambda_l( i ) = __b( i );
+        _lambda_u( i ) = __b( _E_n + i );
     }
 }
-
 
 //
 // Statistics class implementation
 //
 
-template<typename Data, template<class> class Problem>
-void
-SolverUnconstrained<Data,Problem>::Stats::clear()
+template <typename Data, template <class> class Problem>
+void SolverUnconstrained<Data, Problem>::Stats::clear()
 {
     norm_Tgrad_fx_hstr.clear();
     norm_err.clear();
@@ -934,25 +900,23 @@ SolverUnconstrained<Data,Problem>::Stats::clear()
     phi_til_hstr.clear();
     rho_hstr.clear();
 }
-template<typename Data, template<class> class Problem>
-void
-SolverUnconstrained<Data,Problem>::Stats::push( const vector_type & __x, vector_type const& __l, vector_type const& __u )
+template <typename Data, template <class> class Problem>
+void SolverUnconstrained<Data, Problem>::Stats::push( const vector_type& __x, vector_type const& __l, vector_type const& __u )
 {
     M_x = __x;
     M_l = __l;
     M_u = __u;
 }
 
-template<typename Data, template<class> class Problem>
-void
-SolverUnconstrained<Data,Problem>::Stats::push( value_type norm_Tgrad_fx,
-        int n_CGiter, int n_restarts, int n_indef,
-        int n_crosses_def, int n_crosses_indef,
-        int n_truss_exit_def, int n_truss_exit_indef,
-        value_type Delta,
-        value_type ared_til,
-        value_type phi_til,
-        value_type rho )
+template <typename Data, template <class> class Problem>
+void SolverUnconstrained<Data, Problem>::Stats::push( value_type norm_Tgrad_fx,
+                                                      int n_CGiter, int n_restarts, int n_indef,
+                                                      int n_crosses_def, int n_crosses_indef,
+                                                      int n_truss_exit_def, int n_truss_exit_indef,
+                                                      value_type Delta,
+                                                      value_type ared_til,
+                                                      value_type phi_til,
+                                                      value_type rho )
 {
     //push_x_in_hstr( _x );
     norm_Tgrad_fx_hstr.push_back( norm_Tgrad_fx );
@@ -969,15 +933,14 @@ SolverUnconstrained<Data,Problem>::Stats::push( value_type norm_Tgrad_fx,
     rho_hstr.push_back( rho );
 }
 
-template<typename Data, template<class> class Problem>
-void
-SolverUnconstrained<Data,Problem>::Stats::show() const
+template <typename Data, template <class> class Problem>
+void SolverUnconstrained<Data, Problem>::Stats::show() const
 {
-    M_s->problem().print_stationary_x ( M_x, M_l, M_u );
+    M_s->problem().print_stationary_x( M_x, M_l, M_u );
 
     iter = norm_Tgrad_fx_hstr.size();
     std::cerr << "\n\nScaled Trust-Region Method Statistics:\n";
-    std::cerr << "\nNumber of outter iterations: " << iter-1 << "\n";
+    std::cerr << "\nNumber of outter iterations: " << iter - 1 << "\n";
 
     std::cerr << "\n";
     std::cerr << "  k  CGiters restarts indefs crosses trustEx   ||g_til||   Delta^k   ared_til^k  phi_til^k     rho^k \n";
@@ -993,22 +956,22 @@ SolverUnconstrained<Data,Problem>::Stats::show() const
         else
         {
             std::cerr << "    " << n_CGiter_hstr[k]
-                      << "       "  << n_restarts_hstr[k]
-                      << "       "  << n_indef_hstr[k]
-                      << "       "  << n_crosses_def_hstr[k] + n_crosses_indef_hstr[k]
+                      << "       " << n_restarts_hstr[k]
+                      << "       " << n_indef_hstr[k]
+                      << "       " << n_crosses_def_hstr[k] + n_crosses_indef_hstr[k]
                       << "       " << n_truss_exit_def_hstr[k] + n_truss_exit_indef_hstr[k] << " ";
         }
 
-        fprintf ( stderr, " %13.3e %9f", norm_Tgrad_fx_hstr[ k ], Delta_hstr[k] );
+        fprintf( stderr, " %13.3e %9f", norm_Tgrad_fx_hstr[k], Delta_hstr[k] );
 
         if ( k == 0 )
             std::cerr << "      N/A         N/A          N/A";
 
         else
         {
-            fprintf ( stderr, " %11.3e", ared_til_hstr[ k ] );
-            fprintf ( stderr, " %11.3e", phi_til_hstr[ k ] );
-            fprintf ( stderr, " %11f", rho_hstr[ k ] );
+            fprintf( stderr, " %11.3e", ared_til_hstr[k] );
+            fprintf( stderr, " %11.3e", phi_til_hstr[k] );
+            fprintf( stderr, " %11f", rho_hstr[k] );
         }
 
         std::cerr << std::endl;

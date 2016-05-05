@@ -34,19 +34,19 @@ namespace Feel
 namespace details
 {
 
-template<typename T>
+template <typename T>
 class FmsHeap
 {
 
-public:
-
+  public:
     typedef T value_type;
 
     //         pair < phi_value,  index >
     typedef std::pair<value_type, size_type> heap_entry_type;
 
     /* constructor */
-    FmsHeap() : maxValue( std::numeric_limits<value_type>::max() ) {}
+    FmsHeap()
+        : maxValue( std::numeric_limits<value_type>::max() ) {}
 
     void push( heap_entry_type in )
     {
@@ -56,22 +56,22 @@ public:
 
     void change( heap_entry_type in )
     {
-        for ( auto it=M_heap.begin(); it != M_heap.end(); ++it )
+        for ( auto it = M_heap.begin(); it != M_heap.end(); ++it )
+        {
+            // if the entry at index exists,
+            // this phi_entry take the min value between |phi_entry| and |phi_min|
+            if ( it->second == in.second )
             {
-                // if the entry at index exists,
-                // this phi_entry take the min value between |phi_entry| and |phi_min|
-                if (it->second == in.second)
-                    {
-                        if ( farther( *it, in ) )
-                            {
-                                *it = in;
-                                make_heap( M_heap.begin(),
-                                           M_heap.end(),
-                                           farther );
-                            }
-                        return;
-                    }
+                if ( farther( *it, in ) )
+                {
+                    *it = in;
+                    make_heap( M_heap.begin(),
+                               M_heap.end(),
+                               farther );
+                }
+                return;
             }
+        }
         // if not found, push
         push( in );
     }
@@ -79,76 +79,74 @@ public:
     heap_entry_type pop()
     {
         // assert M_heap.size() > 0
-        heap_entry_type out = *(M_heap.begin());
+        heap_entry_type out = *( M_heap.begin() );
         pop_heap( M_heap.begin(), M_heap.end(), farther );
         M_heap.pop_back();
         return out;
     }
-
 
     /* returns the front element, which is the one having the smallest phi
        if the heap is empty, return an element having a huge value of phi, so that, compared to other heap entries it will never be accepted */
     heap_entry_type front()
     {
         if ( M_heap.empty() )
-            return std::make_pair(maxValue, 0 );
+            return std::make_pair( maxValue, 0 );
         return M_heap.front();
     }
 
-    bool checkExistingEntry(size_type index)
+    bool checkExistingEntry( size_type index )
     {
-        for (auto it = M_heap.begin(); it != M_heap.end(); ++it )
-                if (it->second == index)
-                    return true;
+        for ( auto it = M_heap.begin(); it != M_heap.end(); ++it )
+            if ( it->second == index )
+                return true;
         return false;
     }
 
     /* remove from the heap the entry having the specific value index*/
-    bool removeFromHeap(size_type index)
+    bool removeFromHeap( size_type index )
     {
         bool removed = false;
-        for (auto it = M_heap.begin(); it != M_heap.end(); ++it )
-            if (it->second == index)
-                {
-                    M_heap.erase(it);
-                    removed = true;
-                    break;
-                }
+        for ( auto it = M_heap.begin(); it != M_heap.end(); ++it )
+            if ( it->second == index )
+            {
+                M_heap.erase( it );
+                removed = true;
+                break;
+            }
         return removed;
     }
 
-
-    static heap_entry_type min(heap_entry_type a, heap_entry_type b)
+    static heap_entry_type min( heap_entry_type a, heap_entry_type b )
     {
-        return std::abs(a.first < b.first) ? a : b;
+        return std::abs( a.first < b.first ) ? a : b;
     }
-
 
     size_type size() const
     {
         return M_heap.size();
     }
 
-
     value_type valueAtIndex( size_type index )
     {
-        for (auto const& heapEntry : M_heap)
-            if (heapEntry.second == index )
+        for ( auto const& heapEntry : M_heap )
+            if ( heapEntry.second == index )
                 return heapEntry.first;
 
-        CHECK( false ) << "index: "<<index<<" does not exists in the heap\n";
+        CHECK( false ) << "index: " << index << " does not exists in the heap\n";
         return 0;
     }
 
-
     typename std::vector<heap_entry_type>::iterator begin()
-    { return M_heap.begin(); }
+    {
+        return M_heap.begin();
+    }
 
     typename std::vector<heap_entry_type>::iterator end()
-    { return M_heap.end(); }
+    {
+        return M_heap.end();
+    }
 
-private:
-
+  private:
     typedef std::vector<heap_entry_type> heapvect_type;
     const value_type maxValue;
 

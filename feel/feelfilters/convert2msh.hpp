@@ -26,12 +26,13 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_CONVERT2MSH_HPP)
+#if !defined( FEELPP_CONVERT2MSH_HPP )
 #define FEELPP_CONVERT2MSH_HPP 1
 
 #include <feel/feelfilters/gmsh.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
  * \brief convert to gmsh format
@@ -42,14 +43,9 @@ namespace Feel {
  */
 BOOST_PARAMETER_FUNCTION(
     ( gmsh_ptrtype ), // return type
-    convert2msh,    // 2. function name
-    tag,           // 3. namespace of tag types
-    ( required
-      ( filename,       *( boost::is_convertible<mpl::_,std::string> ) ) )
-    ( optional
-      ( dim,              *( boost::is_integral<mpl::_> ), 3 )
-      ( order,              *( boost::is_integral<mpl::_> ), 1 ) )
-    )
+    convert2msh,      // 2. function name
+    tag,              // 3. namespace of tag types
+    ( required( filename, *(boost::is_convertible<mpl::_, std::string>)) )( optional( dim, *(boost::is_integral<mpl::_>), 3 )( order, *(boost::is_integral<mpl::_>), 1 ) ) )
 {
     gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1 ) );
 #if BOOST_FILESYSTEM_VERSION == 3
@@ -65,7 +61,7 @@ BOOST_PARAMETER_FUNCTION(
     else if ( fs::exists( fs::path( Environment::localGeoRepository() ) / filename ) )
         gmsh_ptr->setDescription( ( boost::format( "Merge \"%1%\";\n" ) % ( fs::path( Environment::localGeoRepository() ) / filename ).string() ).str() );
 
-    else if ( Environment::systemGeoRepository().template get<1>()  &&
+    else if ( Environment::systemGeoRepository().template get<1>() &&
               fs::exists( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) )
         gmsh_ptr->setDescription( ( boost::format( "Merge \"%1%\";\n" ) % ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ).string() ).str() );
 
@@ -78,7 +74,6 @@ BOOST_PARAMETER_FUNCTION(
 
     return gmsh_ptr;
 }
-
 }
 
 #endif /* FEELPP_CONVERT2MSH_HPP */

@@ -112,11 +112,11 @@ detailed documentation.
   of global tables or Fields.
 
 */
-#include<utility>
-#include<vector>
-#include<map>
-#include<algorithm>
-#include<iostream>
+#include <algorithm>
+#include <iostream>
+#include <map>
+#include <utility>
+#include <vector>
 
 #include <feel/feelcore/feel.hpp>
 
@@ -131,16 +131,19 @@ namespace Feel
 struct BarePoint
 {
     /** Standard Constructor*/
-    BarePoint() : first( 0 )
-    {}
+    BarePoint()
+        : first( 0 )
+    {
+    }
 
     /** constructor taking the size_type's */
-    BarePoint( size_type i ) : first( i )
-    {}
+    BarePoint( size_type i )
+        : first( i )
+    {
+    }
 
     /** First size_type which defines the Edge */
     size_type first;
-
 };
 
 /**
@@ -154,12 +157,16 @@ struct BarePoint
 struct BareEdge
 {
     /** Standard Constructor*/
-    BareEdge() : first( 0 ), second( 0 )
-    {}
+    BareEdge()
+        : first( 0 ), second( 0 )
+    {
+    }
 
     /** constructor taking the size_type's */
-    BareEdge( size_type i, size_type j ) : first( i ), second( j )
-    {}
+    BareEdge( size_type i, size_type j )
+        : first( i ), second( j )
+    {
+    }
 
     /** First size_type which defines the Edge */
     size_type first;
@@ -181,20 +188,26 @@ struct BareEdge
 struct BareFace
 {
     /** Default constructor */
-    BareFace() : first( 0 ), second( 0 ), third( 0 )
-    {}
+    BareFace()
+        : first( 0 ), second( 0 ), third( 0 )
+    {
+    }
 
     /** Constructor that takes the size_type's as parameter */
-    BareFace( size_type i, size_type j, size_type k ) : first( i ), second( j ), third( k )
-    {}
+    BareFace( size_type i, size_type j, size_type k )
+        : first( i ), second( j ), third( k )
+    {
+    }
 
     /**
      * Constructor that takes a BareEdge Object and an size_type. The
      * face is then identified by the size_type of the Points on the
      * BareEdge + <tt>i</tt>
      */
-    BareFace( size_type i, const BareEdge & e ) : first( i ), second( e.first ), third( e.second )
-    {}
+    BareFace( size_type i, const BareEdge& e )
+        : first( i ), second( e.first ), third( e.second )
+    {
+    }
 
     /** First size_type which defines the BareFace */
     size_type first;
@@ -204,11 +217,9 @@ struct BareFace
     size_type third;
 };
 
-
-    /** \defgroup BareItemsBuilder Global functions to build Bare Items.
+/** \defgroup BareItemsBuilder Global functions to build Bare Items.
         \ingroup Obsolet_Groups */
-inline
-std::pair<BarePoint, bool>
+inline std::pair<BarePoint, bool>
 makeBarePoint( size_type const i )
 {
     return std::make_pair( BarePoint( i ), true );
@@ -229,8 +240,7 @@ makeBarePoint( size_type const i )
  *
  * \pre i and j >0, i!=j
  */
-inline
-std::pair<BareEdge, bool>
+inline std::pair<BareEdge, bool>
 makeBareEdge( size_type const i, size_type const j )
 {
     if ( i < j )
@@ -244,8 +254,7 @@ makeBareEdge( size_type const i, size_type const j )
         ;
     }
 }
-inline
-std::pair<BareEdge, bool>
+inline std::pair<BareEdge, bool>
 makeBareItem( size_type i, size_type j )
 {
     return makeBareEdge( i, j );
@@ -263,8 +272,7 @@ makeBareItem( size_type i, size_type j )
  * if orientation flag is not needed;
  * \pre i and j >0, i!=j
  */
-inline
-BareEdge
+inline BareEdge
 setBareEdge( size_type const i, size_type const j )
 {
     BareEdge be;
@@ -289,13 +297,11 @@ setBareEdge( size_type const i, size_type const j )
  * invariant of the class (first < second). It must be used only if
  * the BareEdge class is NOT used to uniquely identify edges.
  */
-inline
-BareEdge
+inline BareEdge
 setBareEdgeNo( size_type const i, size_type const j )
 {
     return BareEdge( i, j );
 }
-
 
 /*! \ingroup BareItemsBuilder
  \brief It creates Bare Face objects from three Point size_type's
@@ -309,8 +315,7 @@ setBareEdgeNo( size_type const i, size_type const j )
 
 */
 std::pair<BareFace, bool> makeBareFace( size_type i, size_type j, size_type k );
-inline
-std::pair<BareFace, bool>
+inline std::pair<BareFace, bool>
 makeBareItem( size_type i, size_type j, size_type k )
 {
     return makeBareFace( i, j, k );
@@ -330,8 +335,7 @@ makeBareItem( size_type i, size_type j, size_type k )
 */
 std::pair<BareFace, bool> makeBareFace( size_type i, size_type j, size_type k, size_type l );
 
-inline
-std::pair<BareFace, bool>
+inline std::pair<BareFace, bool>
 makeBareItem( size_type i, size_type j, size_type k, size_type l )
 {
     return makeBareFace( i, j, k, l );
@@ -345,9 +349,8 @@ makeBareItem( size_type i, size_type j, size_type k, size_type l )
 /*! \ingroup comparison
     inequality
 */
-inline
-bool
-operator!=( const BareEdge & p1 , const BareEdge & p2 )
+inline bool
+operator!=( const BareEdge& p1, const BareEdge& p2 )
 {
     return p1.first != p2.first || p1.second != p2.second;
 }
@@ -355,9 +358,8 @@ operator!=( const BareEdge & p1 , const BareEdge & p2 )
 /*! \ingroup comparison
      equality
 */
-inline
-bool
-operator==( const BareEdge & p1 , const BareEdge & p2 )
+inline bool
+operator==( const BareEdge& p1, const BareEdge& p2 )
 {
     return p1.first == p2.first && p1.second == p2.second;
 }
@@ -365,9 +367,8 @@ operator==( const BareEdge & p1 , const BareEdge & p2 )
 /*! \ingroup comparison
     greater than
 */
-inline
-bool
-operator>( const BareEdge & e1 , const BareEdge & e2 )
+inline bool
+operator>( const BareEdge& e1, const BareEdge& e2 )
 {
     return e2.first > e1.first || ( e2.first == e1.first && e2.second > e1.second );
 }
@@ -375,9 +376,8 @@ operator>( const BareEdge & e1 , const BareEdge & e2 )
 /*! \ingroup comparison
      greater-equal than
 */
-inline
-bool
-operator>=( const BareEdge & e1 , const BareEdge & e2 )
+inline bool
+operator>=( const BareEdge& e1, const BareEdge& e2 )
 {
     return e1 == e2 || e1 > e2;
 }
@@ -385,9 +385,8 @@ operator>=( const BareEdge & e1 , const BareEdge & e2 )
 /*! \ingroup comparison
     less than
 */
-inline
-bool
-operator<( const BareEdge & e1 , const BareEdge & e2 )
+inline bool
+operator<( const BareEdge& e1, const BareEdge& e2 )
 {
     return e2.first < e1.first || ( e2.first == e1.first && e2.second < e1.second );
 }
@@ -395,27 +394,23 @@ operator<( const BareEdge & e1 , const BareEdge & e2 )
 /*! \ingroup comparison
      less-equal than
 */
-inline
-bool
-operator<=( const BareEdge & e1 , const BareEdge & e2 )
+inline bool
+operator<=( const BareEdge& e1, const BareEdge& e2 )
 {
     return e1 == e2 || e1 < e2;
     ;
 }
 
 /*! \ingroup comparison*/
-inline
-bool
-operator!=( const BareFace & p1 , const BareFace & p2 )
+inline bool
+operator!=( const BareFace& p1, const BareFace& p2 )
 {
     return p1.first != p2.first || p1.second != p2.second || p1.third != p2.third;
 }
 
-
 /*! \ingroup comparison*/
-inline
-bool
-operator==( const BareFace & p1 , const BareFace & p2 )
+inline bool
+operator==( const BareFace& p1, const BareFace& p2 )
 {
     return p1.first == p2.first && p1.second == p2.second && p1.third == p2.third;
 }
@@ -433,7 +428,7 @@ struct cmpBareItem;
 template <>
 struct cmpBareItem<BarePoint> //!< The actual comparison operator
 {
-    bool operator() ( const BarePoint & e1, const BarePoint & e2 ) const
+    bool operator()( const BarePoint& e1, const BarePoint& e2 ) const
     {
         return e2.first > e1.first;
     }
@@ -443,7 +438,7 @@ struct cmpBareItem<BarePoint> //!< The actual comparison operator
 template <>
 struct cmpBareItem<BareEdge> //!< The actual comparison operator
 {
-    bool operator() ( const BareEdge & e1, const BareEdge & e2 ) const
+    bool operator()( const BareEdge& e1, const BareEdge& e2 ) const
     {
         return e2.first > e1.first || ( e2.first == e1.first && e2.second > e1.second );
     }
@@ -455,7 +450,7 @@ struct cmpBareItem<BareEdge> //!< The actual comparison operator
 template <>
 struct cmpBareItem<BareFace>
 {
-    bool operator() ( const BareFace & e1, const BareFace & e2 ) const
+    bool operator()( const BareFace& e1, const BareFace& e2 ) const
     {
         if ( e2.first > e1.first )
             return true;
@@ -484,10 +479,10 @@ struct cmpBareItem<BareFace>
  * the method addIfNotThere
 */
 template <typename BareItem>
-class BareItemsHandler: public std::map<BareItem, Feel::size_type, cmpBareItem<BareItem> >
+class BareItemsHandler : public std::map<BareItem, Feel::size_type, cmpBareItem<BareItem>>
 {
-public:
-    typedef std::map<BareItem, Feel::size_type, cmpBareItem<BareItem> > container;
+  public:
+    typedef std::map<BareItem, Feel::size_type, cmpBareItem<BareItem>> container;
     typedef typename container::size_type size_type;
     typedef typename container::iterator iterator;
     typedef typename container::const_iterator const_iterator;
@@ -496,22 +491,22 @@ public:
     BareItemsHandler();
 
     //!< is the item there? I just ask
-    bool isThere( BareItem const & ) const;
+    bool isThere( BareItem const& ) const;
 
     //!< Returns size_type of a BareItem. 0 if not there
-    size_type id( BareItem const & ) const;
+    size_type id( BareItem const& ) const;
 
     //!< To modify size_type of bareitem item in the list
-    bool setId( BareItem const & item, size_type const i );
+    bool setId( BareItem const& item, size_type const i );
 
     //!< if not there adds it, the item size_type is autogenerated
-    std::pair<size_type, bool> addIfNotThere( BareItem const & );
+    std::pair<size_type, bool> addIfNotThere( BareItem const& );
 
     //!<if not there adds it, and sets size_type id
-    std::pair<size_type, bool> addIfNotThere( BareItem const &, const size_type id );
+    std::pair<size_type, bool> addIfNotThere( BareItem const&, const size_type id );
 
     //!< if it is there take it out (Id is lost)
-    bool isThereDel( BareItem const & );
+    bool isThereDel( BareItem const& );
 
     //!< The # of entities ones actually stored.
     size_type howMany() const
@@ -528,8 +523,8 @@ public:
     //!< Writes info in output
     void showMe() const;
 
-private:
-    size_type  M_id_count;
+  private:
+    size_type M_id_count;
 };
 
 /*********************************************************************************
@@ -541,41 +536,35 @@ private:
 
 //!\ingroup Helper
 template <typename BareItem>
-inline
-size_type getId( std::pair<BareItem, size_type> const & i )
+inline size_type getId( std::pair<BareItem, size_type> const& i )
 {
     return i.second;
 }
 
 //!\ingroup Helper
 template <typename BareItem>
-inline
-BareItem getItem( std::pair<BareItem, size_type> const & i )
+inline BareItem getItem( std::pair<BareItem, size_type> const& i )
 {
     return i.first;
 }
 
-
 //                   BareItemsHandler
 template <class BareItem>
 BareItemsHandler<BareItem>::BareItemsHandler()
-    :
-    M_id_count( 0 )
-{ }
-
+    : M_id_count( 0 )
+{
+}
 
 template <class BareItem>
-inline
-bool
-BareItemsHandler<BareItem>::isThere( const BareItem & s ) const
+inline bool
+BareItemsHandler<BareItem>::isThere( const BareItem& s ) const
 {
     return find( s ) != container::end();
 }
 
 template <class BareItem>
-inline
-bool
-BareItemsHandler<BareItem>::setId( const BareItem & s, size_type const id )
+inline bool
+BareItemsHandler<BareItem>::setId( const BareItem& s, size_type const id )
 {
     const_iterator i = find( s );
 
@@ -589,13 +578,12 @@ BareItemsHandler<BareItem>::setId( const BareItem & s, size_type const id )
     {
         return false;
     }
-
 }
 
 template <class BareItem>
 inline
-typename BareItemsHandler<BareItem>::size_type
-BareItemsHandler<BareItem>::id( const BareItem & s ) const
+    typename BareItemsHandler<BareItem>::size_type
+    BareItemsHandler<BareItem>::id( const BareItem& s ) const
 {
     const_iterator i = find( s );
 
@@ -607,26 +595,24 @@ BareItemsHandler<BareItem>::id( const BareItem & s ) const
 }
 
 template <class BareItem>
-inline
-std::pair<typename BareItemsHandler<BareItem>::size_type, bool>
-BareItemsHandler<BareItem>::addIfNotThere( const BareItem & s )
+inline std::pair<typename BareItemsHandler<BareItem>::size_type, bool>
+BareItemsHandler<BareItem>::addIfNotThere( const BareItem& s )
 {
     std::pair<typename BareItemsHandler<BareItem>::iterator, bool> i( insert( std::make_pair( s, M_id_count ) ) );
 
     if ( i.second )
         ++M_id_count;
 
-    return std::make_pair( ( i.first ) ->second, i.second );
+    return std::make_pair( ( i.first )->second, i.second );
 }
 
 template <class BareItem>
-inline
-std::pair<typename BareItemsHandler<BareItem>::size_type, bool>
-BareItemsHandler<BareItem>::addIfNotThere( const BareItem & s, const size_type id )
+inline std::pair<typename BareItemsHandler<BareItem>::size_type, bool>
+BareItemsHandler<BareItem>::addIfNotThere( const BareItem& s, const size_type id )
 {
     std::pair<typename BareItemsHandler<BareItem>::iterator, bool> i( insert( std::make_pair( s, id ) ) );
     // Set new id in any case.
-    ( i.first ) ->second = id;
+    ( i.first )->second = id;
 
     // id count should grow +1
     //FEELPP_ASSERT( M_id_count == id )( M_id_count )( id ).error ( "invalid item id" );
@@ -641,15 +627,13 @@ BareItemsHandler<BareItem>::addIfNotThere( const BareItem & s, const size_type i
 }
 
 template <class BareItem>
-bool
-BareItemsHandler<BareItem>::isThereDel( BareItem const & s )
+bool BareItemsHandler<BareItem>::isThereDel( BareItem const& s )
 {
     return erase( s ) != 0;
 }
 
 template <typename BareItem>
-inline
-void BareItemsHandler<BareItem>::showMe() const
+inline void BareItemsHandler<BareItem>::showMe() const
 {
     std::cout << "BareItemsHandler: " << std::endl;
     std::cout << "Number of Items stored: " << this->size() << std::endl;

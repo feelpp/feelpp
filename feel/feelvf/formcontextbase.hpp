@@ -43,31 +43,29 @@ namespace detail
  * \class FormContextBase
  * \brief base class for bi/linear form contexts
  */
-template<typename GeomapContext, typename IM, typename GeomapExprContext>
+template <typename GeomapContext, typename IM, typename GeomapExprContext>
 class FormContextBase
 {
-public:
-
+  public:
     /** @name Typedefs
      */
     //@{
     typedef GeomapContext map_geometric_mapping_context_type;
-    typedef typename fusion::result_of::value_at_key<GeomapContext,gmc<0> >::type geometric_mapping_context_ptrtype;
+    typedef typename fusion::result_of::value_at_key<GeomapContext, gmc<0>>::type geometric_mapping_context_ptrtype;
     typedef typename geometric_mapping_context_ptrtype::element_type geometric_mapping_context_type;
     typedef typename geometric_mapping_context_type::gm_type geometric_mapping_type;
 
     typedef mpl::int_<fusion::result_of::template size<GeomapContext>::type::value> map_size;
 
-    typedef typename mpl::if_<mpl::equal_to<map_size,mpl::int_<2> >, gmc<1>, gmc<0> >::type gmc1;
+    typedef typename mpl::if_<mpl::equal_to<map_size, mpl::int_<2>>, gmc<1>, gmc<0>>::type gmc1;
 
-    typedef typename fusion::result_of::value_at_key<GeomapContext,gmc<0> >::type left_gmc_ptrtype;
-    typedef typename fusion::result_of::value_at_key<GeomapContext,gmc<0> >::type::element_type left_gmc_type;
-    typedef typename fusion::result_of::value_at_key<GeomapContext,gmc1 >::type right_gmc_ptrtype;
-    typedef typename fusion::result_of::value_at_key<GeomapContext,gmc1 >::type::element_type right_gmc_type;
+    typedef typename fusion::result_of::value_at_key<GeomapContext, gmc<0>>::type left_gmc_ptrtype;
+    typedef typename fusion::result_of::value_at_key<GeomapContext, gmc<0>>::type::element_type left_gmc_type;
+    typedef typename fusion::result_of::value_at_key<GeomapContext, gmc1>::type right_gmc_ptrtype;
+    typedef typename fusion::result_of::value_at_key<GeomapContext, gmc1>::type::element_type right_gmc_type;
 
-    typedef fusion::map<fusion::pair<gmc<0>, left_gmc_ptrtype> > map_left_gmc_type;
-    typedef fusion::map<fusion::pair<gmc<0>, right_gmc_ptrtype> > map_right_gmc_type;
-
+    typedef fusion::map<fusion::pair<gmc<0>, left_gmc_ptrtype>> map_left_gmc_type;
+    typedef fusion::map<fusion::pair<gmc<0>, right_gmc_ptrtype>> map_right_gmc_type;
 
     typedef GeomapExprContext map_geometric_mapping_expr_context_type;
 
@@ -82,7 +80,6 @@ public:
                          map_geometric_mapping_expr_context_type const& _gmcExpr,
                          mpl::int_<2> ) = 0;
 
-
     virtual void update( map_geometric_mapping_context_type const& _gmc,
                          map_geometric_mapping_expr_context_type const& _gmcExpr,
                          IM const& im ) = 0;
@@ -90,7 +87,6 @@ public:
     virtual void update( map_geometric_mapping_context_type const& _gmc,
                          map_geometric_mapping_expr_context_type const& _gmcExpr,
                          IM const& im, mpl::int_<2> ) = 0;
-
 
     virtual void integrate() = 0;
 

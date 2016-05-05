@@ -33,30 +33,28 @@
 
 #include <feel/feelcore/visitor.hpp>
 
-#include <stdexcept>
-#include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
-
+#include <stdexcept>
 
 #include <feel/feelcore/traits.hpp>
 
-#include <feel/feelpoly/jacobi.hpp>
-#include <feel/feelpoly/quadpoint.hpp>
-#include <feel/feelpoly/pointsetinterpolation.hpp>
-#include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelalg/glas.hpp>
-
-
+#include <feel/feelmesh/hypercube.hpp>
+#include <feel/feelpoly/jacobi.hpp>
+#include <feel/feelpoly/pointsetinterpolation.hpp>
+#include <feel/feelpoly/quadpoint.hpp>
 
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
 
-
-template<class Convex, uint16_type Integration_Degree, typename T> class PointSetQuadrature;
-template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
+template <class Convex, uint16_type Integration_Degree, typename T>
+class PointSetQuadrature;
+template <int Dim, int Order, int RealDim, template <uint16_type, uint16_type, uint16_type> class Entity, typename T>
+struct GT_Lagrange;
 
 /*!
  * \class GaussLobatto
@@ -72,32 +70,33 @@ template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint1
  * @author Gilles Steiner
  * @author Christophe Prud'homme
  */
-template<class Convex, uint16_type Integration_Degree, typename T>
-class GaussLobatto : public PointSetQuadrature<Convex, Integration_Degree, T>  {};
+template <class Convex, uint16_type Integration_Degree, typename T>
+class GaussLobatto : public PointSetQuadrature<Convex, Integration_Degree, T>
+{
+};
 
 /// \cond detail
-template< uint16_type Integration_Degree, typename T>
-class GaussLobatto<Simplex<1,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<1,1> , Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class GaussLobatto<Simplex<1, 1>, Integration_Degree, T> : public PointSetQuadrature<Simplex<1, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<1,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<1, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    static const uint16_type Degree = ( Integration_Degree+3 )/2+1;
+    static const uint16_type Degree = ( Integration_Degree + 3 ) / 2 + 1;
     static const uint32_type Npoints = Degree;
 
     GaussLobatto()
-        :
-        super( Npoints )
+        : super( Npoints )
     {
         ublas::vector<T> px( Npoints );
 
-        details::gausslobattojacobi<Npoints, T, ublas::vector<T>, ublas::vector<T> >( this->M_w, px );
+        details::gausslobattojacobi<Npoints, T, ublas::vector<T>, ublas::vector<T>>( this->M_w, px );
         ublas::row( this->M_points, 0 ) = px;
     }
 
@@ -106,46 +105,43 @@ public :
     FEELPP_DEFINE_VISITABLE();
 };
 
-
 /** Gauss-Lobatto x Left-Radau Quadrature on a triangle **/
 
-template< uint16_type Integration_Degree, typename T>
-class GaussLobatto<Simplex<2,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<2,1> , Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class GaussLobatto<Simplex<2, 1>, Integration_Degree, T> : public PointSetQuadrature<Simplex<2, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<2,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<2, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    typedef GaussLobatto<Simplex<1,1>,Integration_Degree, T> face_quad_type;
+    typedef GaussLobatto<Simplex<1, 1>, Integration_Degree, T> face_quad_type;
 
-
-    static const uint16_type DegreeX = ( Integration_Degree+3 )/2+1;
-    static const uint16_type DegreeY = ( Integration_Degree+2 )/2+1;
-    static const uint32_type Npoints = DegreeX*DegreeY;
+    static const uint16_type DegreeX = ( Integration_Degree + 3 ) / 2 + 1;
+    static const uint16_type DegreeY = ( Integration_Degree + 2 ) / 2 + 1;
+    static const uint32_type Npoints = DegreeX * DegreeY;
 
     GaussLobatto()
-        :
-        super( Npoints )
+        : super( Npoints )
     {
         // build rules in x and y direction
         weights_type wx( DegreeX );
         weights_type px( DegreeX );
-        details::gausslobattojacobi<DegreeX,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        details::gausslobattojacobi<DegreeX, T, ublas::vector<T>, ublas::vector<T>>( wx, px, 0.0, 0.0 );
 
         weights_type wy( DegreeY );
         weights_type py( DegreeY );
-        details::left_gaussradaujacobi<DegreeY,T, ublas::vector<T>, ublas::vector<T> >( wy, py, 1.0, 0.0 );
+        details::left_gaussradaujacobi<DegreeY, T, ublas::vector<T>, ublas::vector<T>>( wy, py, 1.0, 0.0 );
 
         // coordinate in cartesian space
         node_type eta( 2 );
         details::xi<TRIANGLE, value_type> to_xi;
 
-        for ( int i = 0,  k = 0; i < DegreeX; ++i )
+        for ( int i = 0, k = 0; i < DegreeX; ++i )
         {
             for ( int j = 0; j < DegreeY; ++j, ++k )
             {
@@ -159,11 +155,10 @@ public :
             }
         }
 
-        boost::shared_ptr<GT_Lagrange<2,1, 2 ,Simplex, T> > gm( new GT_Lagrange<2, 1, 2, Simplex,T> );
+        boost::shared_ptr<GT_Lagrange<2, 1, 2, Simplex, T>> gm( new GT_Lagrange<2, 1, 2, Simplex, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
-        this->constructQROnFace( Reference<Simplex<2, 1, 2>,2,1>(), gm, face_qr );
-
+        this->constructQROnFace( Reference<Simplex<2, 1, 2>, 2, 1>(), gm, face_qr );
     }
 
     ~GaussLobatto() {}
@@ -173,48 +168,46 @@ public :
 
 /** Gauss-Lobatto x Left-Radau x Left-Radau Quadrature on a tetrahedra **/
 
-template< uint16_type Integration_Degree, typename T>
-class GaussLobatto<Simplex<3,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<3,1> , Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class GaussLobatto<Simplex<3, 1>, Integration_Degree, T> : public PointSetQuadrature<Simplex<3, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<3,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<3, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    typedef GaussLobatto<Simplex<2,1>,Integration_Degree, T> face_quad_type;
+    typedef GaussLobatto<Simplex<2, 1>, Integration_Degree, T> face_quad_type;
 
-
-    static const uint16_type DegreeX = ( Integration_Degree+3 )/2+1;
-    static const uint16_type DegreeY = ( Integration_Degree+2 )/2+1;
-    static const uint16_type DegreeZ = ( Integration_Degree+2 )/2+1;
-    static const uint32_type Npoints = DegreeX*DegreeY*DegreeZ;
+    static const uint16_type DegreeX = ( Integration_Degree + 3 ) / 2 + 1;
+    static const uint16_type DegreeY = ( Integration_Degree + 2 ) / 2 + 1;
+    static const uint16_type DegreeZ = ( Integration_Degree + 2 ) / 2 + 1;
+    static const uint32_type Npoints = DegreeX * DegreeY * DegreeZ;
 
     GaussLobatto()
-        :
-        super( Npoints )
+        : super( Npoints )
     {
         // build rules in x and y direction
         weights_type wx( DegreeX );
         weights_type px( DegreeX );
-        details::gausslobattojacobi<DegreeX,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        details::gausslobattojacobi<DegreeX, T, ublas::vector<T>, ublas::vector<T>>( wx, px, 0.0, 0.0 );
 
         weights_type wy( DegreeY );
         weights_type py( DegreeY );
-        details::left_gaussradaujacobi<DegreeY,T, ublas::vector<T>, ublas::vector<T> >( wy, py, 1.0, 0.0 );
+        details::left_gaussradaujacobi<DegreeY, T, ublas::vector<T>, ublas::vector<T>>( wy, py, 1.0, 0.0 );
 
         weights_type wz( DegreeZ );
         weights_type pz( DegreeZ );
-        details::left_gaussradaujacobi<DegreeZ,T, ublas::vector<T>, ublas::vector<T> >( wz, pz, 2.0, 0.0 );
+        details::left_gaussradaujacobi<DegreeZ, T, ublas::vector<T>, ublas::vector<T>>( wz, pz, 2.0, 0.0 );
 
         // coordinate in cartesian space
         node_type eta( 3 );
         details::xi<TETRAHEDRON, value_type> to_xi;
 
-        for ( int i = 0,  k = 0; i < DegreeX; ++i )
+        for ( int i = 0, k = 0; i < DegreeX; ++i )
         {
             for ( int j = 0; j < DegreeY; ++j )
             {
@@ -232,10 +225,10 @@ public :
             }
         }
 
-        boost::shared_ptr<GT_Lagrange<3, 1, 3, Simplex, T> > gm( new GT_Lagrange<3, 1, 3, Simplex, T> );
+        boost::shared_ptr<GT_Lagrange<3, 1, 3, Simplex, T>> gm( new GT_Lagrange<3, 1, 3, Simplex, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
-        this->constructQROnFace( Reference<Simplex<3, 1, 3>,3,1>(), gm, face_qr );
+        this->constructQROnFace( Reference<Simplex<3, 1, 3>, 3, 1>(), gm, face_qr );
     }
 
     ~GaussLobatto() {}
@@ -243,40 +236,35 @@ public :
     FEELPP_DEFINE_VISITABLE();
 };
 
-
-
-
 /** GaussLobatto Quadrature on Simplex Product **/
 
 /** GaussLobatto Quadrature on the quadrangle [-1,1]x[-1,1] **/
 
-template< uint16_type Integration_Degree, typename T>
-class GaussLobatto<Hypercube<2,1>, Integration_Degree ,T >
-    :
-public PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class GaussLobatto<Hypercube<2, 1>, Integration_Degree, T>
+    : public PointSetQuadrature<Hypercube<2, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<2, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
-    typedef GaussLobatto<Hypercube<1,1>,Integration_Degree, T> face_quad_type;
-    static const uint16_type Degree = ( Integration_Degree+3 )/2+1;
-    static const uint32_type Npoints = Degree*Degree;
+    typedef GaussLobatto<Hypercube<1, 1>, Integration_Degree, T> face_quad_type;
+    static const uint16_type Degree = ( Integration_Degree + 3 ) / 2 + 1;
+    static const uint32_type Npoints = Degree * Degree;
 
     GaussLobatto()
-        :
-        super( Npoints )
+        : super( Npoints )
     {
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gausslobattojacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        details::gausslobattojacobi<Degree, T, ublas::vector<T>, ublas::vector<T>>( wx, px, 0.0, 0.0 );
 
-        for ( int i = 0,  k = 0; i < Degree; ++i )
+        for ( int i = 0, k = 0; i < Degree; ++i )
         {
             for ( int j = 0; j < Degree; ++j, ++k )
             {
@@ -287,10 +275,10 @@ public :
             }
         }
 
-        boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
+        boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T>> gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
-        this->constructQROnFace( Reference<Hypercube<2, 1, 2>,2,1>(), gm, face_qr );
+        this->constructQROnFace( Reference<Hypercube<2, 1, 2>, 2, 1>(), gm, face_qr );
     }
 
     ~GaussLobatto() {}
@@ -300,37 +288,35 @@ public :
 
 /** GaussLobatto Quadrature on the hexahedra [-1,1]x[-1,1]x[-1,1] **/
 
-template< uint16_type Integration_Degree, typename T>
-class GaussLobatto<Hypercube<3,1>, Integration_Degree ,T >
-    :
-public PointSetQuadrature<Hypercube<3,1>, Integration_Degree, T>
+template <uint16_type Integration_Degree, typename T>
+class GaussLobatto<Hypercube<3, 1>, Integration_Degree, T>
+    : public PointSetQuadrature<Hypercube<3, 1>, Integration_Degree, T>
 {
-public :
+  public:
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<3,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<3, 1>, Integration_Degree, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
-    typedef GaussLobatto<Hypercube<2,1>,Integration_Degree, T> face_quad_type;
-    static const uint16_type Degree = ( Integration_Degree+3 )/2+1;
-    static const uint32_type Npoints = Degree*Degree*Degree;
+    typedef GaussLobatto<Hypercube<2, 1>, Integration_Degree, T> face_quad_type;
+    static const uint16_type Degree = ( Integration_Degree + 3 ) / 2 + 1;
+    static const uint32_type Npoints = Degree * Degree * Degree;
 
     GaussLobatto()
-        :
-        super( Npoints )
+        : super( Npoints )
     {
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gausslobattojacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        details::gausslobattojacobi<Degree, T, ublas::vector<T>, ublas::vector<T>>( wx, px, 0.0, 0.0 );
 
-        for ( int i = 0,  k = 0; i < Degree; ++i )
+        for ( int i = 0, k = 0; i < Degree; ++i )
         {
             for ( int j = 0; j < Degree; ++j )
             {
-                for ( int l = 0; l < Degree ; ++l, ++k )
+                for ( int l = 0; l < Degree; ++l, ++k )
                 {
                     // computes the weight of the k-th node
                     this->M_w( k ) = wx( i ) * wx( j ) * wx( l );
@@ -341,17 +327,16 @@ public :
             }
         }
 
-        boost::shared_ptr<GT_Lagrange<3, 1, 3, Hypercube, T> > gm( new GT_Lagrange<3, 1, 3, Hypercube, T> );
+        boost::shared_ptr<GT_Lagrange<3, 1, 3, Hypercube, T>> gm( new GT_Lagrange<3, 1, 3, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
-        this->constructQROnFace( Reference<Hypercube<3, 1, 3>,3,1>(), gm, face_qr );
+        this->constructQROnFace( Reference<Hypercube<3, 1, 3>, 3, 1>(), gm, face_qr );
     }
 
     ~GaussLobatto() {}
     FEELPP_DEFINE_VISITABLE();
 };
 /// \endcond
-
 
 /**
  * \class GaussLobatto
@@ -361,21 +346,20 @@ public :
  * @author Goncalo Pena
  * @see
  */
-template< class Convex,
+template <class Convex,
           uint16_type Order,
-          typename T = double >
+          typename T = double>
 class PointSetGaussLobatto : public PointSetInterpolation<Convex::nDim, Order, T, Hypercube>
 {
-public:
-
-    typedef PointSetInterpolation< Convex::nDim, Order, T, Hypercube> super;
+  public:
+    typedef PointSetInterpolation<Convex::nDim, Order, T, Hypercube> super;
 
     typedef typename super::return_type return_type;
 
     typedef T value_type;
 
     static const uint32_type Dim = Convex::nDim;
-    static const uint32_type nPoints = Order+1;
+    static const uint32_type nPoints = Order + 1;
     static const uint32_type topological_dimension = Convex::topological_dimension;
     static const uint32_type nRealDim = Convex::nRealDim;
 
@@ -384,7 +368,7 @@ public:
     static const bool is_simplex = Convex::is_simplex;
     static const bool is_hypercube = Convex::is_hypercube;
 
-    typedef Reference<Convex, Dim, Convex::nOrder, Convex::nDim/*Convex::nRealDim*/, value_type> reference_convex_type;
+    typedef Reference<Convex, Dim, Convex::nOrder, Convex::nDim /*Convex::nRealDim*/, value_type> reference_convex_type;
 
     typedef ublas::vector<value_type> vector_type;
 
@@ -407,33 +391,34 @@ public:
 
     PointSetGaussLobatto( int interior = 0 )
     {
-        FEELPP_ASSERT( is_hypercube || ( Dim == 1 )  ).error( "gauss lobatto points are just defined in simplex products" );
+        FEELPP_ASSERT( is_hypercube || ( Dim == 1 ) )
+            .error( "gauss lobatto points are just defined in simplex products" );
 
         nodes_type pts( Dim, numPoints );
 
-        calculate_gl_points( mpl::bool_< ( Order > 1 )>() );
+        calculate_gl_points( mpl::bool_<( Order > 1 )>() );
 
         if ( interior == 0 && Order > 0 )
         {
-            for ( uint16_type d = 0, p = 0; d < topological_dimension+1; ++d )
+            for ( uint16_type d = 0, p = 0; d < topological_dimension + 1; ++d )
             {
                 for ( int e = RefConv.entityRange( d ).begin();
-                        e < RefConv.entityRange( d ).end();
-                        ++e )
+                      e < RefConv.entityRange( d ).end();
+                      ++e )
                 {
-                    nodes_type Gt ( makePoints( d, e ) );
+                    nodes_type Gt( makePoints( d, e ) );
 
                     if ( Gt.size2() )
                     {
-                        ublas::subrange( pts, 0, Dim, p, p+Gt.size2() ) = Gt;
+                        ublas::subrange( pts, 0, Dim, p, p + Gt.size2() ) = Gt;
 
                         for ( size_type j = 0; j < Gt.size2(); ++j )
                         {
-                            this->addToEid( d, p+j );
-                            this->addToPtE( p+j, std::make_pair( d, e ) );
+                            this->addToEid( d, p + j );
+                            this->addToPtE( p + j, std::make_pair( d, e ) );
                         }
 
-                        p+=Gt.size2();
+                        p += Gt.size2();
                     }
                 }
             }
@@ -454,24 +439,24 @@ public:
 
     ~PointSetGaussLobatto() {}
 
-private:
-
+  private:
     vector_type gl_pts;
 
-    void calculate_gl_points ( mpl::bool_<true> )
+    void calculate_gl_points( mpl::bool_<true> )
     {
-        vector_type wx( Order+1 );
-        vector_type px( Order+1 );
+        vector_type wx( Order + 1 );
+        vector_type px( Order + 1 );
 
-        details::gausslobattojacobi<Order+1, T, vector_type, vector_type >( wx, px );
+        details::gausslobattojacobi<Order + 1, T, vector_type, vector_type>( wx, px );
 
-        ublas::vector_range<vector_type> inner_pts ( px, ublas::range( 1, px.size()-1 ) );
+        ublas::vector_range<vector_type> inner_pts( px, ublas::range( 1, px.size() - 1 ) );
 
         gl_pts = inner_pts;
     }
 
-    void calculate_gl_points ( mpl::bool_<false> )
-    {}
+    void calculate_gl_points( mpl::bool_<false> )
+    {
+    }
 
     points_type makePoints( uint16_type topo_dim, uint16_type __id )
     {
@@ -528,7 +513,7 @@ private:
         return points_type();
     }
 
-    template<size_type shape>
+    template <size_type shape>
     points_type makeLattice()
     {
         points_type G;
@@ -558,28 +543,27 @@ private:
 
     int n_quad_points() const
     {
-        return std::max( 0, ( int( Order ) - 1 )*( int( Order ) - 1 ) );
-
+        return std::max( 0, ( int( Order ) - 1 ) * ( int( Order ) - 1 ) );
     }
 
     int n_hexa_points() const
     {
-        return std::max( 0, ( int( Order )-1 )*( int( Order )-1 )*( int( Order )-1 ) );
+        return std::max( 0, ( int( Order ) - 1 ) * ( int( Order ) - 1 ) * ( int( Order ) - 1 ) );
     }
 
     points_type
     make_line_points()
     {
-        points_type G ( Dim, n_line_points() );
+        points_type G( Dim, n_line_points() );
 
         if ( Order > 1 )
         {
-            vector_type ones ( ublas::scalar_vector<value_type>( G.size2(), value_type( 1 ) ) );
+            vector_type ones( ublas::scalar_vector<value_type>( G.size2(), value_type( 1 ) ) );
 
             ublas::row( G, 0 ) = gl_pts;
 
-            for ( uint16_type i=1; i<Dim; i++ )
-                ublas::row( G, i ) = - ones;
+            for ( uint16_type i = 1; i < Dim; i++ )
+                ublas::row( G, i ) = -ones;
         }
 
         return G;
@@ -594,7 +578,7 @@ private:
         {
             uint16_type numInterior = Order - 1;
 
-            for ( uint16_type i = 0,  k = 0; i < numInterior; ++i )
+            for ( uint16_type i = 0, k = 0; i < numInterior; ++i )
             {
                 for ( uint16_type j = 0; j < numInterior; ++j, ++k )
                 {
@@ -603,10 +587,10 @@ private:
                 }
             }
 
-            vector_type ones ( ublas::scalar_vector<value_type>( G.size2(), value_type( 1 ) ) );
+            vector_type ones( ublas::scalar_vector<value_type>( G.size2(), value_type( 1 ) ) );
 
             if ( Dim == 3 )
-                ublas::row( G, 2 ) = - ones;
+                ublas::row( G, 2 ) = -ones;
         }
 
         return G;
@@ -621,7 +605,7 @@ private:
         {
             uint16_type numInterior = Order - 1;
 
-            for ( uint16_type i = 0,  k = 0; i < numInterior; ++i )
+            for ( uint16_type i = 0, k = 0; i < numInterior; ++i )
             {
                 for ( uint16_type j = 0; j < numInterior; ++j )
                 {
@@ -638,57 +622,54 @@ private:
         return G;
     }
 
-    template<size_type shape>
+    template <size_type shape>
     struct pt_to_edge
     {
         pt_to_edge( std::vector<uint16_type> vert_ids )
-            :
-            h( 1.0 ),
-            a( Entity<SHAPE_LINE, value_type>().vertex( 0 ) ),
-            b( Entity<SHAPE_LINE, value_type>().vertex( 1 ) ),
-            u( Entity<shape, value_type>().vertex( vert_ids[ 0 ] ) ),
-            v( Entity<shape, value_type>().vertex( vert_ids[ 1 ] ) ),
-            diff( v-u )
+            : h( 1.0 ),
+              a( Entity<SHAPE_LINE, value_type>().vertex( 0 ) ),
+              b( Entity<SHAPE_LINE, value_type>().vertex( 1 ) ),
+              u( Entity<shape, value_type>().vertex( vert_ids[0] ) ),
+              v( Entity<shape, value_type>().vertex( vert_ids[1] ) ),
+              diff( v - u )
         {
-            h = 1.0/( b[0]-a[0] );
+            h = 1.0 / ( b[0] - a[0] );
         }
         node_type
         operator()( node_type const& x ) const
         {
-            return u + h * ( x[ 0 ] - a[ 0 ] ) * diff;
+            return u + h * ( x[0] - a[0] ) * diff;
         }
         value_type h;
         node_type a, b;
         node_type u, v, diff;
     };
 
-
     //
     // pt_to_face hexa
     //
-    template<size_type shape>
+    template <size_type shape>
     struct pt_to_face_hexahedron
     {
         pt_to_face_hexahedron( std::vector<uint16_type> vert_ids )
-            :
-            u( Entity<shape, value_type>().vertex( vert_ids[ 0 ] ) ),
-            v( Entity<shape, value_type>().vertex( vert_ids[ 1 ] ) ),
-            w( Entity<shape, value_type>().vertex( vert_ids[ 3 ] ) ),
-            diff( 2 )
+            : u( Entity<shape, value_type>().vertex( vert_ids[0] ) ),
+              v( Entity<shape, value_type>().vertex( vert_ids[1] ) ),
+              w( Entity<shape, value_type>().vertex( vert_ids[3] ) ),
+              diff( 2 )
         {
-            diff[0] = v-u;
-            diff[1] = w-u;
+            diff[0] = v - u;
+            diff[1] = w - u;
         }
         node_type
         operator()( node_type const& x ) const
         {
-            return u + 0.5*( x[ 0 ]+1.0 ) * diff[ 0 ] + 0.5*( x[ 1 ]+1.0 ) * diff[ 1 ];
+            return u + 0.5 * ( x[0] + 1.0 ) * diff[0] + 0.5 * ( x[1] + 1.0 ) * diff[1];
         }
         node_type u, v, w;
         ublas::vector<node_type> diff;
     };
 
-    template<size_type shape>
+    template <size_type shape>
     struct pt_to_element
     {
         pt_to_element() {}
@@ -699,23 +680,22 @@ private:
         }
     };
 
-    template<size_type shape,uint16_type topo_dim>
+    template <size_type shape, uint16_type topo_dim>
     struct pt_to_entity_hexahedron
     {
-        typedef typename mpl::if_<mpl::equal_to<mpl::size_t<shape>, mpl::size_t<SHAPE_LINE> >,
-                mpl::identity<mpl::vector<boost::none_t,pt_to_edge<shape>,pt_to_edge<shape> > >,
-                typename mpl::if_<mpl::equal_to<mpl::size_t<shape>, mpl::size_t<SHAPE_QUAD> >,
-                mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_element<shape> > >,
-                mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_face_hexahedron<shape>, pt_to_element<shape> > >
-                >::type // 2
-                >::type::type _type;
-        typedef typename mpl::at<_type, mpl::int_<topo_dim> >::type mapping_type;
+        typedef typename mpl::if_<mpl::equal_to<mpl::size_t<shape>, mpl::size_t<SHAPE_LINE>>,
+                                  mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_edge<shape>>>,
+                                  typename mpl::if_<mpl::equal_to<mpl::size_t<shape>, mpl::size_t<SHAPE_QUAD>>,
+                                                    mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_element<shape>>>,
+                                                    mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_face_hexahedron<shape>, pt_to_element<shape>>>>::type // 2
+                                  >::type::type _type;
+        typedef typename mpl::at<_type, mpl::int_<topo_dim>>::type mapping_type;
         typedef mpl::vector<boost::none_t, edge_to_point_t, face_to_point_t> list_v;
 
         pt_to_entity_hexahedron( uint16_type entity_id )
-            :
-            mapping( typename mpl::at<list_v, mpl::int_<topo_dim> >::type().entity( topo_dim, entity_id ) )
-        {}
+            : mapping( typename mpl::at<list_v, mpl::int_<topo_dim>>::type().entity( topo_dim, entity_id ) )
+        {
+        }
 
         node_type operator()( node_type const& x ) const
         {
@@ -723,7 +703,6 @@ private:
         }
         mapping_type mapping;
     };
-
 };
 } // Feel
 #endif /* __GaussLobatto_H */

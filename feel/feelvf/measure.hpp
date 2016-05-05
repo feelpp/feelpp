@@ -27,39 +27,27 @@
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/integrate.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 BOOST_PARAMETER_FUNCTION(
-    ( double ), // return type
-    measure,    // 2. function name
+    (double), // return type
+    measure,  // 2. function name
 
-    tag,           // 3. namespace of tag types
+    tag, // 3. namespace of tag types
 
-    ( required
-      ( range, *  )
-    ) // 4. one required parameter, and
+    ( required( range, * ) ) // 4. one required parameter, and
 
-    ( optional
-      ( expr,   *, cst(1.0))
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-    )
-)
+    ( optional( expr, *, cst( 1.0 ) )( quad, *, typename vf::detail::integrate_type<Args>::_quad_type() )( geomap, *, GeomapStrategyType::GEOMAP_OPT )( quad1, *, typename vf::detail::integrate_type<Args>::_quad1_type() )( use_tbb, (bool), false )( use_harts, (bool), false )( grainsize, (int), 100 )( partitioner, *, "auto" )( verbose, (bool), false ) ) )
 {
-    double meas = integrate( _range=range, _expr=expr, _quad=quad, _quad1=quad1, _geomap=geomap,
-                             _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                             _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
-    DLOG(INFO) << "[mean] measure = " << meas << "\n";
-    CHECK( math::abs(meas) > 1e-13 ) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
+    double meas = integrate( _range = range, _expr = expr, _quad = quad, _quad1 = quad1, _geomap = geomap,
+                             _use_tbb = use_tbb, _use_harts = use_harts, _grainsize = grainsize,
+                             _partitioner = partitioner, _verbose = verbose )
+                      .evaluate()( 0, 0 );
+    DLOG( INFO ) << "[mean] measure = " << meas << "\n";
+    CHECK( math::abs( meas ) > 1e-13 ) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
     return meas;
 }
-
 }
 
 #endif /* FEELPP_MEASURE_HPP */

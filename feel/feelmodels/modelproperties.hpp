@@ -24,24 +24,24 @@
 #ifndef FEELPP_MODELPROPERTIES_HPP
 #define FEELPP_MODELPROPERTIES_HPP 1
 
-#include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 
-#include <feel/feelmodels/modelparameters.hpp>
-#include <feel/feelmodels/modelmaterials.hpp>
-#include <feel/feelmodels/modelpostprocess.hpp>
 #include <feel/feelmodels/modelfunctions.hpp>
+#include <feel/feelmodels/modelmaterials.hpp>
+#include <feel/feelmodels/modelparameters.hpp>
+#include <feel/feelmodels/modelpostprocess.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
 
+namespace Feel
+{
 
-namespace Feel {
-
-namespace pt =  boost::property_tree;
+namespace pt = boost::property_tree;
 
 class ModelProperties
 {
-public:
-    ModelProperties( std::string const& filename = Environment::expand(soption("mod-file")),
+  public:
+    ModelProperties( std::string const& filename = Environment::expand( soption( "mod-file" ) ),
                      std::string const& directoryLibExpr = "",
                      WorldComm const& world = Environment::worldComm() );
     virtual ~ModelProperties();
@@ -49,51 +49,51 @@ public:
     WorldComm const& worldComm() const { return M_worldComm; }
 
     pt::ptree const& pTree() const { return M_p; }
-    pt::ptree & pTree() { return M_p; }
+    pt::ptree& pTree() { return M_p; }
 
-    std::string const& name() const {  return M_name; }
-    void setName( std::string const& t) { M_name = t; }
-    std::string shortName() const {  return M_shortname; }
-    void setShortName( std::string const& t) { M_shortname = t; }
+    std::string const& name() const { return M_name; }
+    void setName( std::string const& t ) { M_name = t; }
+    std::string shortName() const { return M_shortname; }
+    void setShortName( std::string const& t ) { M_shortname = t; }
 
-    std::string const& description() const {  return M_description; }
-    void setDescription( std::string const& t) { M_description = t; }
+    std::string const& description() const { return M_description; }
+    void setDescription( std::string const& t ) { M_description = t; }
 
-    std::string const& model() const {  return M_model; }
-    void setModel( std::string const& t) { M_model = t; }
+    std::string const& model() const { return M_model; }
+    void setModel( std::string const& t ) { M_model = t; }
 
-    ModelParameters const& parameters() const {  return M_params; }
-    ModelMaterials const& materials() const {  return M_mat; }
+    ModelParameters const& parameters() const { return M_params; }
+    ModelMaterials const& materials() const { return M_mat; }
     BoundaryConditions const& boundaryConditions() const { return M_bc; }
 
-    ModelParameters & parameters()  {  return M_params; }
-    ModelMaterials & materials() {  return M_mat; }
-    BoundaryConditions & boundaryConditions()  { return M_bc; }
+    ModelParameters& parameters() { return M_params; }
+    ModelMaterials& materials() { return M_mat; }
+    BoundaryConditions& boundaryConditions() { return M_bc; }
 
     ModelPostprocess& postProcess() { return M_postproc; }
     ModelPostprocess const& postProcess() const { return M_postproc; }
 
-    ModelFunctions & functions() { return M_functions; }
+    ModelFunctions& functions() { return M_functions; }
     ModelFunctions const& functions() const { return M_functions; }
 
-    std::string getEntry(std::string &s);
+    std::string getEntry( std::string& s );
 
-    void saveMD(std::ostream &os);
+    void saveMD( std::ostream& os );
 
     /**
      * Add an entry to the tree
      * @param[in] key Where is stored the value in the tree
      * @param[in] entry The value of the key
      **/
-    void put( std::string const &key, std::string const &entry);
+    void put( std::string const& key, std::string const& entry );
 
     /**
      * Save the stree
      * @param[in] filename The file to save the current tree
      **/
-    void write(std::string const &filename);
+    void write( std::string const& filename );
 
-private:
+  private:
     WorldComm const& M_worldComm;
     pt::ptree M_p;
     std::string M_name, M_shortname, M_description, M_model;
@@ -103,7 +103,5 @@ private:
     ModelPostprocess M_postproc;
     ModelFunctions M_functions;
 };
-
-
 }
 #endif

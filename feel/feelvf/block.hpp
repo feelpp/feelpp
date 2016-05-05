@@ -30,15 +30,15 @@
 #ifndef __Block_H
 #define __Block_H 1
 
-#include <sstream>
 #include <list>
+#include <sstream>
 
 #include <feel/feelcore/feel.hpp>
 
 namespace Feel
 {
 
-    //template<typename T> class MatrixSparse;
+//template<typename T> class MatrixSparse;
 
 namespace vf
 {
@@ -52,13 +52,10 @@ namespace vf
 */
 class Block
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -67,21 +64,22 @@ public:
     //@{
 
     Block( uint16_type __ic = 0, uint16_type __jc = 0, size_type __gic = 0, size_type __gjc = 0 )
-        :
-        M_lr( __ic ),
-        M_lc( __jc ),
-        M_gr( __gic ),
-        M_gc( __gjc )
-    {}
-    Block( Block const & __b )
-        :
-        M_lr( __b.M_lr ),
-        M_lc( __b.M_lc ),
-        M_gr( __b.M_gr ),
-        M_gc( __b.M_gc )
-    {}
+        : M_lr( __ic ),
+          M_lc( __jc ),
+          M_gr( __gic ),
+          M_gc( __gjc )
+    {
+    }
+    Block( Block const& __b )
+        : M_lr( __b.M_lr ),
+          M_lc( __b.M_lc ),
+          M_gr( __b.M_gr ),
+          M_gc( __b.M_gc )
+    {
+    }
     ~Block()
-    {}
+    {
+    }
 
     //@}
 
@@ -101,7 +99,6 @@ public:
 
         return *this;
     }
-
 
     //@}
 
@@ -157,13 +154,10 @@ public:
      */
     //@{
 
-
     //@}
 
-protected:
-
-private:
-
+  protected:
+  private:
     uint16_type M_lr;
     uint16_type M_lc;
     size_type M_gr;
@@ -171,8 +165,7 @@ private:
 };
 typedef std::list<Block> list_block_type;
 
-inline
-std::ostream&
+inline std::ostream&
 operator<<( std::ostream& __os, Block const& __b )
 {
     __os << "Block [ "
@@ -185,49 +178,48 @@ operator<<( std::ostream& __os, Block const& __b )
 }
 /// \endcond
 
-
 template <typename T>
 struct BlocksBase
 {
     typedef T block_type;
     typedef uint16_type index_type;
     BlocksBase()
-        :
-        M_nRow( 0 ),
-        M_nCol( 0 ),
-        M_vec( 1 ),
-        M_cptToBuild( 0 )
-    {}
+        : M_nRow( 0 ),
+          M_nCol( 0 ),
+          M_vec( 1 ),
+          M_cptToBuild( 0 )
+    {
+    }
 
-    BlocksBase( index_type nr,index_type nc )
-        :
-        M_nRow( nr ),
-        M_nCol( nc ),
-        M_vec( nr*nc ),
-        M_cptToBuild( 0 )
-    {}
+    BlocksBase( index_type nr, index_type nc )
+        : M_nRow( nr ),
+          M_nCol( nc ),
+          M_vec( nr * nc ),
+          M_cptToBuild( 0 )
+    {
+    }
 
-    BlocksBase( index_type nr,index_type nc,block_type const& a )
-        :
-        M_nRow( nr ),
-        M_nCol( nc ),
-        M_vec( nr*nc, a ),
-        M_cptToBuild( 0 )
-    {}
+    BlocksBase( index_type nr, index_type nc, block_type const& a )
+        : M_nRow( nr ),
+          M_nCol( nc ),
+          M_vec( nr * nc, a ),
+          M_cptToBuild( 0 )
+    {
+    }
 
     BlocksBase( BlocksBase<T> const& b )
-        :
-        M_nRow( b.M_nRow ),
-        M_nCol( b.M_nCol ),
-        M_vec( b.M_vec ),
-        M_cptToBuild( b.M_cptToBuild )
-    {}
+        : M_nRow( b.M_nRow ),
+          M_nCol( b.M_nCol ),
+          M_vec( b.M_vec ),
+          M_cptToBuild( b.M_cptToBuild )
+    {
+    }
 
     BlocksBase<T>
-    operator<<( block_type const& m )  const
+    operator<<( block_type const& m ) const
     {
         BlocksBase<T> newBlock( *this );
-        newBlock.M_vec[M_cptToBuild]=m;
+        newBlock.M_vec[M_cptToBuild] = m;
         ++( newBlock.M_cptToBuild );
         return newBlock;
     }
@@ -235,7 +227,7 @@ struct BlocksBase
     void
     push_back( block_type const& m )
     {
-        M_vec[M_cptToBuild]=m;
+        M_vec[M_cptToBuild] = m;
         ++M_cptToBuild;
     }
 #if 0
@@ -248,16 +240,16 @@ struct BlocksBase
     }
 #endif
 
-    block_type &
-    operator()( index_type c1,index_type c2=0 )
+    block_type&
+    operator()( index_type c1, index_type c2 = 0 )
     {
-        return M_vec[c1*M_nCol+c2];
+        return M_vec[c1 * M_nCol + c2];
     }
 
     block_type
-    operator()( index_type c1,index_type c2=0 ) const
+    operator()( index_type c1, index_type c2 = 0 ) const
     {
-        return M_vec[c1*M_nCol+c2];
+        return M_vec[c1 * M_nCol + c2];
     }
 
     std::vector<block_type> const&
@@ -277,53 +269,51 @@ struct BlocksBase
 
     void reset()
     {
-        M_cptToBuild=0;
+        M_cptToBuild = 0;
         M_vec.clear();
-        M_vec.resize( this->nRow()*this->nCol() );
+        M_vec.resize( this->nRow() * this->nCol() );
     }
 
-    void resize( index_type nr,index_type nc=1)
+    void resize( index_type nr, index_type nc = 1 )
     {
-        M_nRow=nr;
-        M_nCol=nc;
-        M_vec.resize( nr*nc );
+        M_nRow = nr;
+        M_nCol = nc;
+        M_vec.resize( nr * nc );
     }
 
-    void merge( index_type c1,index_type c2,BlocksBase<T> const& b )
+    void merge( index_type c1, index_type c2, BlocksBase<T> const& b )
     {
         const index_type nRb = b.nRow(), nCb = b.nCol();
-        for ( index_type i=0; i<nRb; ++i )
-            for ( index_type j=0; j<nCb; ++j )
-                this->operator()( c1+i,c2+j ) = b( i,j );
+        for ( index_type i = 0; i < nRb; ++i )
+            for ( index_type j = 0; j < nCb; ++j )
+                this->operator()( c1 + i, c2 + j ) = b( i, j );
     }
 
-    BlocksBase<T> subBlock(index_type x1r,index_type x1c,index_type x2r,index_type x2c) const
+    BlocksBase<T> subBlock( index_type x1r, index_type x1c, index_type x2r, index_type x2c ) const
     {
-        const index_type nrow = x2r-x1r+1;
-        const index_type ncol = x2c-x1c+1;
-        BlocksBase<T> res(nrow,ncol);
-        for (index_type kr=0;kr<nrow;++kr)
-            for (index_type kc=0;kc<ncol;++kc)
-                res(kr,kc)=this->operator()(x1r+kr,x1c+kc);
+        const index_type nrow = x2r - x1r + 1;
+        const index_type ncol = x2c - x1c + 1;
+        BlocksBase<T> res( nrow, ncol );
+        for ( index_type kr = 0; kr < nrow; ++kr )
+            for ( index_type kc = 0; kc < ncol; ++kc )
+                res( kr, kc ) = this->operator()( x1r + kr, x1c + kc );
         return res;
     }
 
     BlocksBase<T> transpose() const
     {
-        BlocksBase<T> res(this->nCol(),this->nRow());
-        for (index_type i=0;i<res.nRow();++i)
-            for (index_type j=0;j<res.nCol();++j)
-                res(i,j) = this->operator()(j,i);
+        BlocksBase<T> res( this->nCol(), this->nRow() );
+        for ( index_type i = 0; i < res.nRow(); ++i )
+            for ( index_type j = 0; j < res.nCol(); ++j )
+                res( i, j ) = this->operator()( j, i );
         return res;
     }
 
-private :
-    index_type M_nRow,M_nCol;
+  private:
+    index_type M_nRow, M_nCol;
     std::vector<block_type> M_vec;
     index_type M_cptToBuild;
 };
-
-
 
 template <int NR, int NC, typename T>
 struct Blocks : public BlocksBase<T>
@@ -336,24 +326,24 @@ struct Blocks : public BlocksBase<T>
     typedef T block_type;
 
     Blocks()
-        :
-        super_type( NR,NC )
-    {}
+        : super_type( NR, NC )
+    {
+    }
 
     Blocks( block_type const& a )
-        :
-        super_type( NR,NC, a )
-    {}
+        : super_type( NR, NC, a )
+    {
+    }
 
     Blocks( super_type const& a )
-        :
-        super_type( a )
-    {}
+        : super_type( a )
+    {
+    }
 
-    Blocks<NR,NC,T>
+    Blocks<NR, NC, T>
     operator<<( block_type const& m ) const
     {
-        Blocks<NR,NC,T> newBlock = super_type::operator<<( m ) ;
+        Blocks<NR, NC, T> newBlock = super_type::operator<<( m );
         return newBlock;
     }
 
@@ -370,7 +360,6 @@ struct Blocks : public BlocksBase<T>
         super_type::operator<<( m );
     }
 #endif
-
 };
 
 } // vf
@@ -380,31 +369,29 @@ class BlocksStencilPattern : public vf::BlocksBase<size_type>
     typedef vf::BlocksBase<size_type> super_type;
     typedef super_type::index_type index_type;
     typedef BlocksStencilPattern self_type;
-public :
 
-    BlocksStencilPattern(index_type nr,index_type nc)
-        :
-        super_type(nr,nc)
-    {}
+  public:
+    BlocksStencilPattern( index_type nr, index_type nc )
+        : super_type( nr, nc )
+    {
+    }
 
-    BlocksStencilPattern(index_type nr,index_type nc, size_type pat)
-        :
-        super_type(nr,nc,pat)
-    {}
+    BlocksStencilPattern( index_type nr, index_type nc, size_type pat )
+        : super_type( nr, nc, pat )
+    {
+    }
 
-    BlocksStencilPattern(super_type const & b)
-        :
-        super_type(b)
-    {}
+    BlocksStencilPattern( super_type const& b )
+        : super_type( b )
+    {
+    }
 
     self_type
     operator<<( size_type const& m ) const
     {
         return super_type::operator<<( m );
     }
-
 };
-
 
 } // feel
 #endif /* __Block_H */

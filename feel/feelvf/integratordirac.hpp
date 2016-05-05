@@ -29,8 +29,8 @@
 #ifndef __INTEGRATORDIRAC_HPP
 #define __INTEGRATORDIRAC_HPP 1
 
-#include <boost/timer.hpp>
 #include <boost/foreach.hpp>
+#include <boost/timer.hpp>
 
 #include <feel/feelalg/enums.hpp>
 
@@ -47,12 +47,10 @@ namespace vf
  *
  * @author Christophe Prud'homme
  */
-template<typename ElementRange, typename Pts, typename DiracExpr >
+template <typename ElementRange, typename Pts, typename DiracExpr>
 class IntegratorDirac
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -61,13 +59,13 @@ public:
     static const uint16_type imorder = DiracExpr::imorder;
     static const bool imIsPoly = DiracExpr::imIsPoly;
 
-    template<typename Func>
+    template <typename Func>
     struct HasTestFunction
     {
         static const bool result = DiracExpr::template HasTestFunction<Func>::result;
     };
 
-    template<typename Func>
+    template <typename Func>
     struct HasTrialFunction
     {
         static const bool result = DiracExpr::template HasTrialFunction<Func>::result;
@@ -105,7 +103,7 @@ public:
         // Precompute some data in the reference element for
         // geometric mapping and reference finite element
         //
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>> map_gmc_type;
         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
         typedef typename eval_expr_type::shape shape;
         //typedef typename shape_type::storage<value_type> storage_type;
@@ -126,19 +124,17 @@ public:
     IntegratorDirac( ElementRange const& __elts,
                      Pts const& pts,
                      expression_type const& __expr )
-        :
-        M_eltbegin( __elts.template get<1>() ),
-        M_eltend( __elts.template get<2>() ),
-        M_pts( pts ),
-        M_expr( __expr )
+        : M_eltbegin( __elts.template get<1>() ),
+          M_eltend( __elts.template get<2>() ),
+          M_pts( pts ),
+          M_expr( __expr )
     {
     }
     IntegratorDirac( IntegratorDirac const& ioe )
-        :
-        M_eltbegin( ioe.M_eltbegin ),
-        M_eltend( ioe.M_eltend ),
-        M_pts( ioe.M_pts ),
-        M_expr( ioe.M_expr )
+        : M_eltbegin( ioe.M_eltbegin ),
+          M_eltend( ioe.M_eltend ),
+          M_pts( ioe.M_pts ),
+          M_expr( ioe.M_expr )
     {
     }
 
@@ -149,7 +145,6 @@ public:
     /** @name Accessors
     */
     //@{
-
 
     /**
      * iterator that points at the beginning of the container that
@@ -169,7 +164,6 @@ public:
         return M_eltend;
     }
 
-
     //@}
     /** @name  Methods
      */
@@ -179,15 +173,15 @@ public:
      * assembly routine for Dirichlet condition
      *
      */
-    template<typename Elem1, typename Elem2, typename FormType>
+    template <typename Elem1, typename Elem2, typename FormType>
     void assemble( boost::shared_ptr<Elem1> const& __u,
                    boost::shared_ptr<Elem2> const& __v,
                    FormType& __f ) const
     {
         typedef typename Elem1::functionspace_type functionspace_type;
-        DVLOG(2) << "[IntegratorDirac::assemble()] is_same: "
-                      << mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>::value << "\n";
-        assemble( __u, __v, __f, mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>() );
+        DVLOG( 2 ) << "[IntegratorDirac::assemble()] is_same: "
+                   << mpl::bool_<boost::is_same<functionspace_type, Elem1>::value>::value << "\n";
+        assemble( __u, __v, __f, mpl::bool_<boost::is_same<functionspace_type, Elem1>::value>() );
     }
 
     //typename expression_type::template tensor<Geo_t>::value_type
@@ -198,14 +192,13 @@ public:
     }
 
     //@}
-private:
-
-    template<typename Elem1, typename Elem2, typename FormType>
+  private:
+    template <typename Elem1, typename Elem2, typename FormType>
     void assemble( boost::shared_ptr<Elem1> const& /*__u*/,
                    boost::shared_ptr<Elem2> const& /*__v*/,
                    FormType& /*__f*/, mpl::bool_<false> ) const {}
 
-    template<typename Elem1, typename Elem2, typename FormType>
+    template <typename Elem1, typename Elem2, typename FormType>
     void assemble( boost::shared_ptr<Elem1> const& __u,
                    boost::shared_ptr<Elem2> const& __v,
                    FormType& __f, mpl::bool_<true> ) const;
@@ -213,8 +206,7 @@ private:
     ret_type evaluate( mpl::int_<MESH_ELEMENTS> ) const;
     ret_type evaluate( mpl::int_<MESH_FACES> ) const;
 
-private:
-
+  private:
     element_iterator M_eltbegin;
     element_iterator M_eltend;
 
@@ -222,13 +214,12 @@ private:
     expression_type M_expr;
 };
 
-template<typename ElementRange, typename Pts, typename DiracExpr>
-template<typename Elem1, typename Elem2, typename FormType>
-void
-IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
-        boost::shared_ptr<Elem2> const& /*__v*/,
-        FormType& __form,
-        mpl::bool_<true> ) const
+template <typename ElementRange, typename Pts, typename DiracExpr>
+template <typename Elem1, typename Elem2, typename FormType>
+void IntegratorDirac<ElementRange, Pts, DiracExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
+                                                              boost::shared_ptr<Elem2> const& /*__v*/,
+                                                              FormType& __form,
+                                                              mpl::bool_<true> ) const
 {
 #if 0
     std::map<std::string,std::pair<boost::timer,value_type> > timer;
@@ -346,9 +337,9 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem
     LOG(INFO) << "[timer] intvrho(): " << timer["intvrho"].second << "\n";
 #endif
 }
-template<typename Elements, typename Pts, typename DiracExpr>
+template <typename Elements, typename Pts, typename DiracExpr>
 typename IntegratorDirac<Elements, Pts, DiracExpr>::ret_type
-IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
+    IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 {
     mesh_type::Inverse meshinv( M_mesh );
 
@@ -389,11 +380,12 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
     // make sure that we have elements to iterate over (return 0
     // otherwise)
     if ( it == en )
-        return typename eval::ret_type( eval::shape::M, eval::shape::N );;
+        return typename eval::ret_type( eval::shape::M, eval::shape::N );
+    ;
 
     gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
-    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>> map_gmc_type;
+    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( __c ) );
 
     typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
     eval_expr_type expr( expression(), mapgmc );
@@ -403,7 +395,7 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
     res.clear();
 
     // size_type first_dof = M_Space->dof()->firstDof();
-    for ( ; it != en; ++ it )
+    for ( ; it != en; ++it )
     {
         __c->update( *it, __geopc );
         meshinv.pointsInConvex( it->id(), itab );
@@ -418,7 +410,7 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
 
             if ( !dof_done[dof] )
             {
-                dof_done[dof]=true;
+                dof_done[dof] = true;
                 ublas::column( pts, 0 ) = meshinv.referenceCoords()[dof];
                 element_type::pc_type pc( v.functionSpace()->fe(), pts );
                 __geopc->update( pts );
@@ -431,14 +423,12 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
                         //res( c1, c2 ) += ;
                     }
                 }
-
             }
         }
     } // element
 
     return res;
 }
-
 
 /// \endcond
 
@@ -450,13 +440,12 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
  * \param expr expression to integrate
  *
  */
-template<typename ElementRange, typename PointRange, typename DiracExpr>
-Expr<IntegratorDirac<ElementRange, PointRange, DiracExpr> >
+template <typename ElementRange, typename PointRange, typename DiracExpr>
+Expr<IntegratorDirac<ElementRange, PointRange, DiracExpr>>
 dirac( ElementRange const& elem_range, PointRange const& pt_range, DiracExpr const& expr )
 {
     typedef IntegratorDirac<ElementRange, PointRange, DiracExpr> expr_t;
     return Expr<expr_t>( expr_t( elem_range, pt_range, expr ) );
-
 }
 
 } // vf

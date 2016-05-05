@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-08-10
  */
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/applicationxml.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/options.hpp>
 
 //#include <opusdata.hpp>
@@ -35,10 +35,10 @@
 #include <crbmodel.hpp>
 #include <heat1d.hpp>
 
-
 namespace Feel
 {
-template<int OrderU, int OrderP, int OrderT> class OpusModelRB;
+template <int OrderU, int OrderP, int OrderT>
+class OpusModelRB;
 
 /**
  * \fn makeAbout()
@@ -48,8 +48,8 @@ template<int OrderU, int OrderP, int OrderT> class OpusModelRB;
 AboutData
 makeAbout()
 {
-    Feel::AboutData about( "opuseigs" ,
-                           "opuseigs" ,
+    Feel::AboutData about( "opuseigs",
+                           "opuseigs",
                            "0.1",
                            "2D OPUS/EADS Benchmark (eigenvalue problems)",
                            Feel::AboutData::License_GPL,
@@ -57,7 +57,6 @@ makeAbout()
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
-
 }
 
 /**
@@ -69,18 +68,17 @@ makeAbout()
  *
  * @author Christophe Prud'homme
  */
-class OpusAppEigs   : public ApplicationXML
+class OpusAppEigs : public ApplicationXML
 {
     typedef ApplicationXML super;
-public:
 
+  public:
     //typedef CRBModel<OpusModelRB<2,1,2> > opusmodel_type;
     typedef CRBModel<Heat1D> opusmodel_type;
     typedef boost::shared_ptr<opusmodel_type> opusmodel_ptrtype;
 
     OpusAppEigs( int argc, char** argv, AboutData const& ad, po::options_description const& od )
-        :
-        super( argc, argv, ad, od )
+        : super( argc, argv, ad, od )
     {
         if ( this->vm().count( "help" ) )
         {
@@ -112,19 +110,16 @@ public:
 
 #endif
         M_opusmodel = opusmodel_ptrtype( new opusmodel_type( this->vm() ) );
-        Parameter h( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="2e-4:10:1e-3" );
-        this->
-        addParameter( Parameter( _name="order",_type=DISC_ATTR,_latex="N_T",_values=boost::lexical_cast<std::string>( 2 ).c_str() ) )
-        .addParameter( Parameter( _name="kic",_type=CONT_ATTR,_latex="k_{\\mathrm{IC}}",_values="0.2:10:150" ) )
-        .addParameter( Parameter( _name="D",_type=CONT_ATTR,_latex="D",_values="1e-4:10:1e-3" ) )
-        .addParameter( h );
+        Parameter h( _name = "h", _type = CONT_ATTR, _cmdName = "hsize", _values = "2e-4:10:1e-3" );
+        this->addParameter( Parameter( _name = "order", _type = DISC_ATTR, _latex = "N_T", _values = boost::lexical_cast<std::string>( 2 ).c_str() ) )
+            .addParameter( Parameter( _name = "kic", _type = CONT_ATTR, _latex = "k_{\\mathrm{IC}}", _values = "0.2:10:150" ) )
+            .addParameter( Parameter( _name = "D", _type = CONT_ATTR, _latex = "D", _values = "1e-4:10:1e-3" ) )
+            .addParameter( h );
 
-        LOG(INFO) << "parameter added\n";
-        this->
-        addOutput( Output( _name="eigmin",_latex="\\alpha^{\\mathcal{N}}(\\mu)" ) )
-        .addOutput( Output( _name="eigmax",_latex="\\gamma^{\\mathcal{N}}(\\mu)" ) );
-        LOG(INFO) << "output added\n";
-
+        LOG( INFO ) << "parameter added\n";
+        this->addOutput( Output( _name = "eigmin", _latex = "\\alpha^{\\mathcal{N}}(\\mu)" ) )
+            .addOutput( Output( _name = "eigmax", _latex = "\\gamma^{\\mathcal{N}}(\\mu)" ) );
+        LOG( INFO ) << "output added\n";
     }
 
     void run()
@@ -146,7 +141,7 @@ public:
 
 #endif
         double eigmin, eigmax;
-        std::map<double, boost::tuple<double,double,double,int,double,double> > res = M_opusmodel->run();
+        std::map<double, boost::tuple<double, double, double, int, double, double>> res = M_opusmodel->run();
 
         boost::tie( boost::tuples::ignore, eigmin, eigmax, boost::tuples::ignore, boost::tuples::ignore, boost::tuples::ignore ) = res.begin()->second;
 
@@ -155,14 +150,14 @@ public:
         this->postProcessing();
 #endif
 
-        std::map<double, boost::tuple<double,double,double,int,double,double> > res2 = M_opusmodel->runq();
+        std::map<double, boost::tuple<double, double, double, int, double, double>> res2 = M_opusmodel->runq();
 
-        std::map<double, boost::tuple<double,double,double,int,double,double> >::iterator it = res.begin();
-        std::map<double, boost::tuple<double,double,double,int,double,double> >::iterator end = res.end();
+        std::map<double, boost::tuple<double, double, double, int, double, double>>::iterator it = res.begin();
+        std::map<double, boost::tuple<double, double, double, int, double, double>>::iterator end = res.end();
 
         for ( ; it != end; ++it )
         {
-            std::cout <<"| " << std::setprecision( 4 ) << it->second.get<0>()
+            std::cout << "| " << std::setprecision( 4 ) << it->second.get<0>()
                       << " | " << std::setprecision( 16 ) << it->second.get<01>()
                       << " | " << it->second.get<4>()
                       << " | " << it->second.get<2>()
@@ -171,12 +166,12 @@ public:
                       << " |\n";
         }
 
-        std::map<double, boost::tuple<double,double,double,int,double,double> >::iterator it2 = res2.begin();
-        std::map<double, boost::tuple<double,double,double,int,double,double> >::iterator end2 = res2.end();
+        std::map<double, boost::tuple<double, double, double, int, double, double>>::iterator it2 = res2.begin();
+        std::map<double, boost::tuple<double, double, double, int, double, double>>::iterator end2 = res2.end();
 
         for ( ; it2 != end2; ++it2 )
         {
-            std::cout <<"| " << std::setprecision( 4 ) << it2->second.get<0>()
+            std::cout << "| " << std::setprecision( 4 ) << it2->second.get<0>()
                       << " | " << std::setprecision( 16 ) << it2->second.get<01>()
                       << " | " << it2->second.get<4>()
                       << " | " << it2->second.get<2>()
@@ -186,17 +181,14 @@ public:
         }
     }
 
-private:
-
+  private:
     opusmodel_ptrtype M_opusmodel;
 
 }; // Opus
 
 } // Feel
 
-
-int
-main( int argc, char** argv )
+int main( int argc, char** argv )
 {
     Feel::OpusAppEigs app( argc, argv,
                            Feel::makeAboutHeat1D(),
@@ -207,12 +199,3 @@ main( int argc, char** argv )
 
     app.run();
 }
-
-
-
-
-
-
-
-
-

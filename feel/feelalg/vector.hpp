@@ -20,10 +20,10 @@
 #ifndef __numeric_vector_h__
 #define __numeric_vector_h__
 
-#include <vector>
-#include <memory>
-#include <boost/shared_ptr.hpp>
 #include <boost/numeric/ublas/vector.hpp>
+#include <boost/shared_ptr.hpp>
+#include <memory>
+#include <vector>
 
 #include <feel/feelcore/traits.hpp>
 
@@ -34,9 +34,12 @@ namespace Feel
 namespace ublas = boost::numeric::ublas;
 
 // forward declarations
-template <typename T> class Vector;
-template <typename T> class MatrixSparse;
-template <typename T> class MatrixShell;
+template <typename T>
+class Vector;
+template <typename T>
+class MatrixSparse;
+template <typename T>
+class MatrixShell;
 
 /**
  * Numeric vector. Provides a uniform interface
@@ -49,44 +52,43 @@ template <typename T> class MatrixShell;
 template <typename T>
 class Vector
 {
-public:
-
+  public:
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
 
     typedef Vector<T> self_type;
-    typedef boost::shared_ptr<Vector<T> > self_ptrtype;
-    typedef boost::shared_ptr<Vector<T> > clone_ptrtype;
+    typedef boost::shared_ptr<Vector<T>> self_ptrtype;
+    typedef boost::shared_ptr<Vector<T>> clone_ptrtype;
 
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
     /**
      *  Dummy-Constructor. Dimension=0
      */
-    Vector ( WorldComm const& _worldComm = Environment::worldComm() );
+    Vector( WorldComm const& _worldComm = Environment::worldComm() );
 
-    Vector ( datamap_ptrtype const& n );
+    Vector( datamap_ptrtype const& n );
 
     /**
      * Constructor. Set dimension to \p n and initialize all elements with zero.
      */
-    Vector ( const size_type n, WorldComm const& _worldComm = Environment::worldComm() );
+    Vector( const size_type n, WorldComm const& _worldComm = Environment::worldComm() );
 
     /**
      * Constructor. Set local dimension to \p n_local, the global dimension
      * to \p n, and initialize all elements with zero.
      */
-    Vector ( const size_type n,
-             const size_type n_local,
-             WorldComm const& _worldComm = Environment::worldComm() );
+    Vector( const size_type n,
+            const size_type n_local,
+            WorldComm const& _worldComm = Environment::worldComm() );
 
-    Vector ( Vector const& v );
+    Vector( Vector const& v );
 
     /**
      * Destructor, deallocates memory. Made virtual to allow
      * for derived classes to behave properly.
      */
-    virtual ~Vector ();
+    virtual ~Vector();
 
     datamap_type const& map() const
     {
@@ -100,7 +102,7 @@ public:
 
     void setMap( datamap_ptrtype const& d )
     {
-        M_map=d;
+        M_map = d;
     }
 
     /**
@@ -124,17 +126,17 @@ public:
     /**
      * Call the assemble functions
      */
-    virtual void close () = 0;
+    virtual void close() = 0;
 
     /**
      * @returns the \p Vector<T> to a pristine state.
      */
-    virtual void clear ();
+    virtual void clear();
 
     /**
      *
      */
-    void localize(const Vector<T>& V);
+    void localize( const Vector<T>& V );
 
     /**
      * set initialized only for subclasses
@@ -157,12 +159,12 @@ public:
      * Set all entries to zero. Equivalent to \p v = 0, but more obvious and
      * faster.
      */
-    virtual void zero () = 0;
+    virtual void zero() = 0;
 
     /**
      * Set entries to zero between \p start and \p stop
      */
-    virtual void zero ( size_type /*start*/,  size_type /*stop*/ ) = 0;
+    virtual void zero( size_type /*start*/, size_type /*stop*/ ) = 0;
 
     /**
      * set the entries to the constant \p v
@@ -194,7 +196,7 @@ public:
      * Creates a copy of this vector and returns it in an \p shared_ptr<>.
      * This must be overloaded in the derived classes.
      */
-    virtual clone_ptrtype clone () const = 0;
+    virtual clone_ptrtype clone() const = 0;
 
     /**
      * Change the dimension of the vector to \p N. The reserved memory for
@@ -209,28 +211,25 @@ public:
      * zeros.
      */
 
-    virtual void init ( const size_type,
-                        const size_type,
-                        const bool = false );
+    virtual void init( const size_type,
+                       const size_type,
+                       const bool = false );
 
     /**
      * call init with n_local = N,
      */
-    virtual void init ( const size_type,
-                        const bool = false );
-
+    virtual void init( const size_type,
+                       const bool = false );
 
     /**
      * call init with datamap,
      */
-    virtual void init ( datamap_ptrtype const& dm )
+    virtual void init( datamap_ptrtype const& dm )
     {
         M_is_closed = false;
         M_is_initialized = false;
         M_map = dm;
     }
-
-
 
     //   /**
     //    * Change the dimension to that of the
@@ -247,27 +246,27 @@ public:
     /**
      * \f$U(0-N) = s\f$: fill all components.
      */
-    Vector<T> & operator= ( const T s );
+    Vector<T>& operator=( const T s );
 
     /**
      *  \f$U = V\f$: copy all components.
      */
-    virtual Vector<T> & operator= ( const Vector<T> &V );
+    virtual Vector<T>& operator=( const Vector<T>& V );
 
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<T> & operator= ( const std::vector<T> &v );
+    Vector<T>& operator=( const std::vector<T>& v );
 
     /**
      *  \f$v = x*y\f$: coefficient-wise multiplication
      */
-    virtual void pointwiseMult ( Vector<T> const& x, Vector<T> const& y ) {}
+    virtual void pointwiseMult( Vector<T> const& x, Vector<T> const& y ) {}
 
     /**
      *  \f$v = x/y\f$: coefficient-wise divide
      */
-    virtual void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y ) {}
+    virtual void pointwiseDivide( Vector<T> const& x, Vector<T> const& y ) {}
 
     /**
      * \return the sum of the components of the vector
@@ -279,7 +278,7 @@ public:
      * In case of complex numbers, this returns the minimum
      * Real part.
      */
-    virtual real_type min () const = 0;
+    virtual real_type min() const = 0;
 
     /**
      * retrieve the min component as well as the index of the min component
@@ -291,7 +290,7 @@ public:
      * In case of complex numbers, this returns the maximum
      * Real part.
      */
-    virtual real_type max () const = 0;
+    virtual real_type max() const = 0;
 
     /**
      * retrieve the max component as well as the index of the max component
@@ -302,21 +301,21 @@ public:
      * @returns the \f$l_1\f$-norm of the vector, i.e.
      * the sum of the absolute values.
      */
-    virtual real_type l1Norm () const = 0;
+    virtual real_type l1Norm() const = 0;
 
     /**
      * @returns the \f$l_2\f$-norm of the vector, i.e.
      * the square root of the sum of the
      * squares of the elements.
      */
-    virtual real_type l2Norm () const = 0;
+    virtual real_type l2Norm() const = 0;
 
     /**
      * @returns the maximum absolute value of the
      * elements of this vector, which is the
      * \f$l_\infty\f$-norm of a vector.
      */
-    virtual real_type linftyNorm () const = 0;
+    virtual real_type linftyNorm() const = 0;
 
     /**
      * @returns dimension of the vector. This
@@ -325,7 +324,7 @@ public:
      * closer to the C++ standard library's
      * \p std::vector container.
      */
-    virtual size_type size () const
+    virtual size_type size() const
     {
         return M_map->nDof();
     }
@@ -356,12 +355,12 @@ public:
      */
     virtual size_type lastLocalIndex() const
     {
-        return M_map->maxMyGID()+1;
+        return M_map->maxMyGID() + 1;
     }
 
-    virtual bool localIndexIsGhost(size_type localDof) const
+    virtual bool localIndexIsGhost( size_type localDof ) const
     {
-        return M_map->dofGlobalProcessIsGhost(localDof);
+        return M_map->dofGlobalProcessIsGhost( localDof );
     }
 
     /**
@@ -375,69 +374,69 @@ public:
     /**
      * Access components, returns \p U(i).
      */
-    virtual T operator() ( const size_type i ) const = 0;
+    virtual T operator()( const size_type i ) const = 0;
 
-    virtual T& operator() ( const size_type i ) = 0;
+    virtual T& operator()( const size_type i ) = 0;
 
     /**
      * Addition operator.
      * Fast equivalent to \p U.add(1, V).
      */
-    virtual Vector<T> & operator += ( const Vector<value_type> &V ) = 0;
+    virtual Vector<T>& operator+=( const Vector<value_type>& V ) = 0;
 
     /**
      * Subtraction operator.
      * Fast equivalent to \p U.add(-1, V).
      */
-    virtual Vector<T> & operator -= ( const Vector<value_type> &V ) = 0;
+    virtual Vector<T>& operator-=( const Vector<value_type>& V ) = 0;
 
     /**
      * v(i) = value
      */
-    virtual void set ( const size_type i, const value_type& value ) = 0;
+    virtual void set( const size_type i, const value_type& value ) = 0;
 
     /**
      * v([i1,i2,...,in]) = [value1,...,valuen]
      */
-    virtual void setVector ( int* i, int n, value_type* v ) = 0;
+    virtual void setVector( int* i, int n, value_type* v ) = 0;
 
     /**
      * v(i) += value
      */
-    virtual void add ( const size_type i, const value_type& value ) = 0;
+    virtual void add( const size_type i, const value_type& value ) = 0;
 
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
      */
-    virtual void addVector ( int* i, int n, value_type* v ) = 0;
+    virtual void addVector( int* i, int n, value_type* v ) = 0;
 
     /**
      * \f$U(0-DIM)+=s\f$.
      * Addition of \p s to all components. Note
      * that \p s is a scalar and not a vector.
      */
-    virtual void add ( const value_type& s ) = 0;
+    virtual void add( const value_type& s ) = 0;
 
     /**
      * \f$U+=V\f$:
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    virtual void add ( const Vector<value_type>& V ) = 0;
+    virtual void add( const Vector<value_type>& V ) = 0;
 
     /**
      * \f$U+=a*V\f$.
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    virtual void add ( const value_type& a, const Vector<value_type>& v ) = 0;
+    virtual void add( const value_type& a, const Vector<value_type>& v ) = 0;
 
     /**
      * \f$U+=a*V\f$.
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add ( const value_type& a, const boost::shared_ptr<Vector<value_type> >& v )
+    void add( const value_type& a, const boost::shared_ptr<Vector<value_type>>& v )
     {
         add( a, *v );
     }
@@ -446,8 +445,8 @@ public:
      * and you
      * want to specify WHERE to add it
      */
-    virtual void addVector ( const std::vector<T>& v,
-                             const std::vector<size_type>& dof_indices ) = 0;
+    virtual void addVector( const std::vector<T>& v,
+                            const std::vector<size_type>& dof_indices ) = 0;
 
     /**
      * \f$U+=V\f$, where U and V are type
@@ -455,22 +454,22 @@ public:
      * want to specify WHERE to add
      * the Vector<T> V
      */
-    virtual void addVector ( const Vector<T>& V,
-                             const std::vector<size_type>& dof_indices ) = 0;
+    virtual void addVector( const Vector<T>& V,
+                            const std::vector<size_type>& dof_indices ) = 0;
 
     /**
      * \f$U+=A*V\f$, add the product of a \p SparseMatrix \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    virtual void addVector ( const Vector<T>& V_in,
-                             const MatrixSparse<T>& A_in ) = 0;
+    virtual void addVector( const Vector<T>& V_in,
+                            const MatrixSparse<T>& A_in ) = 0;
 
     /**
      * \f$U+=A*V\f$, add the product of a \p SparseMatrix \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    void addVector ( const boost::shared_ptr<Vector<T> >& V_in,
-                     const boost::shared_ptr<MatrixSparse<T> >& A_in )
+    void addVector( const boost::shared_ptr<Vector<T>>& V_in,
+                    const boost::shared_ptr<MatrixSparse<T>>& A_in )
     {
         addVector( *V_in, *A_in );
     }
@@ -479,15 +478,15 @@ public:
      * \f$U+=A*V\f$, add the product of a \p MatrixShell \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    void addVector ( const Vector<T>& V_in,
-                     const MatrixShell<T>& A_in );
+    void addVector( const Vector<T>& V_in,
+                    const MatrixShell<T>& A_in );
 
     /**
      * \f$U+=A*V\f$, add the product of a \p MatrixShell \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    void addVector ( const boost::shared_ptr<Vector<T> >& V_in,
-                     const boost::shared_ptr<MatrixShell<T> >& A_in );
+    void addVector( const boost::shared_ptr<Vector<T>>& V_in,
+                    const boost::shared_ptr<MatrixShell<T>>& A_in );
 
 #if 0
     /**
@@ -501,14 +500,14 @@ public:
 #endif
 
     virtual value_type dot( Vector<T> const& v ) const = 0;
-    virtual value_type dot( boost::shared_ptr<Vector<T> > const& v ) const { return dot( *v ); }
+    virtual value_type dot( boost::shared_ptr<Vector<T>> const& v ) const { return dot( *v ); }
 
     /**
      * \f$ U=v \f$ where v is a DenseVector<T>
      * and you want to specify WHERE to insert it
      */
-    virtual void insert ( const std::vector<T>& v,
-                          const std::vector<size_type>& dof_indices ) = 0;
+    virtual void insert( const std::vector<T>& v,
+                         const std::vector<size_type>& dof_indices ) = 0;
 
     /**
      * \f$U=V\f$, where U and V are type
@@ -516,8 +515,8 @@ public:
      * want to specify WHERE to insert
      * the Vector<T> V
      */
-    virtual void insert ( const Vector<T>& V,
-                          const std::vector<size_type>& dof_indices ) = 0;
+    virtual void insert( const Vector<T>& V,
+                         const std::vector<size_type>& dof_indices ) = 0;
 
     /**
      * \f$ U+=V \f$ where U and V are type
@@ -525,14 +524,14 @@ public:
      * want to specify WHERE to insert
      * the DenseVector<T> V
      */
-    virtual void insert ( const ublas::vector<T>& V,
-                          const std::vector<size_type>& dof_indices ) = 0;
+    virtual void insert( const ublas::vector<T>& V,
+                         const std::vector<size_type>& dof_indices ) = 0;
 
     /**
      * Scale each element of the
      * vector by the given factor.
      */
-    virtual void scale ( const T factor ) = 0;
+    virtual void scale( const T factor ) = 0;
 
     /**
      * @returns \p -1 when \p this is equivalent to \p other_vector,
@@ -542,20 +541,18 @@ public:
      * no threshold is given, the \p Application \p TOLERANCE
      * is used.
      */
-    virtual int compare ( const Vector<T> &other_vector,
-                          const real_type threshold = 1e-10 ) const;
-
-
+    virtual int compare( const Vector<T>& other_vector,
+                         const real_type threshold = 1e-10 ) const;
 
     /**
      * Prints the contents of the vector to the screen.
      */
-    virtual void print( std::ostream& os=std::cout ) const;
+    virtual void print( std::ostream& os = std::cout ) const;
 
     /**
      * Same as above but allows you to use stream syntax.
      */
-    friend std::ostream& operator << ( std::ostream& os, const Vector<T>& v )
+    friend std::ostream& operator<<( std::ostream& os, const Vector<T>& v )
     {
         v.print( os );
         return os;
@@ -567,11 +564,12 @@ public:
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    virtual void printMatlab( const std::string name="NULL", bool renumber = false ) const
+    virtual void printMatlab( const std::string name = "NULL", bool renumber = false ) const
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         std::cerr << "ERROR writing MATLAB file " << name << std::endl;
-        FEELPP_ASSERT( 0 ).error( "invalid call" );
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call" );
     }
 
     /**
@@ -580,25 +578,25 @@ public:
      * the SparseMatrix class, it is currently only implemented for
      * PetscVectors.
      */
-    virtual void createSubvector( Vector<T>& ,
+    virtual void createSubvector( Vector<T>&,
                                   const std::vector<size_type>& ) const
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
-        FEELPP_ASSERT( 0 ).error( "invalid call" );
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call" );
     }
 
     /**
      * copy vector entries in subvector ( subvector is already built from a createSubVector)
      * row indices given in the "rows" entries.
      */
-    virtual
-    void
-    updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
+    virtual void
+    updateSubVector( boost::shared_ptr<Vector<T>>& subvector,
                      std::vector<size_type> const& rows,
-                     bool init=true )
-        {
-            CHECK( false ) << "invalid call : Not Implemented in base class";
-        }
+                     bool init = true )
+    {
+        CHECK( false ) << "invalid call : Not Implemented in base class";
+    }
 
     /**
      * Creates the subvector "subvector" from the indices in the
@@ -606,18 +604,16 @@ public:
      * the SparseMatrix class, it is currently only implemented for
      * PetscVectors.
      */
-    virtual
-    boost::shared_ptr<Vector<T> >
+    virtual boost::shared_ptr<Vector<T>>
     createSubVector( std::vector<size_type> const& rows,
-                     bool checkAndFixRange=true ) const
-        {
-            CHECK( false ) << "invalid call : Not Implemented in base class";
-            boost::shared_ptr<Vector<T> > res;
-            return res;
-        }
+                     bool checkAndFixRange = true ) const
+    {
+        CHECK( false ) << "invalid call : Not Implemented in base class";
+        boost::shared_ptr<Vector<T>> res;
+        return res;
+    }
 
-protected:
-
+  protected:
     /**
      * Flag to see if the Numeric
      * assemble routines have been called yet
@@ -655,8 +651,7 @@ inner_product( Vector<T> const& v1, Vector<T> const& v2 )
 {
     FEELPP_ASSERT( v1.localSize() == v2.localSize() &&
                    v1.size() == v2.size() )
-    ( v1.localSize() )( v2.localSize() )
-    ( v1.size() )( v2.size() ).error( "incompatible vector sizes" );
+    ( v1.localSize() )( v2.localSize() )( v1.size() )( v2.size() ).error( "incompatible vector sizes" );
 
     return v1.dot( v2 );
 }
@@ -669,16 +664,16 @@ inner_product( Vector<T> const& v1, Vector<T> const& v2 )
  */
 template <typename T>
 typename type_traits<T>::real_type
-inner_product( boost::shared_ptr<Vector<T> > const& v1,
-               boost::shared_ptr<Vector<T> > const& v2 )
+inner_product( boost::shared_ptr<Vector<T>> const& v1,
+               boost::shared_ptr<Vector<T>> const& v2 )
 {
     return inner_product( *v1, *v2 );
 }
 
 template <typename T>
 typename type_traits<T>::real_type
-dot( boost::shared_ptr<Vector<T> > const& v1,
-     boost::shared_ptr<Vector<T> > const& v2 )
+dot( boost::shared_ptr<Vector<T>> const& v1,
+     boost::shared_ptr<Vector<T>> const& v2 )
 {
     return inner_product( *v1, *v2 );
 }
@@ -690,55 +685,50 @@ dot( Vector<T> const& v1,
     return inner_product( v1, v2 );
 }
 
-
 namespace detail
 {
 template <class VectorType>
-struct is_vector_ptr : mpl::false_ {};
+struct is_vector_ptr : mpl::false_
+{
+};
 
 template <class VectorType>
-struct is_vector_ptr<boost::shared_ptr<VectorType> >
-        :
-        boost::is_base_of<Vector<typename VectorType::value_type>,
-        VectorType>
-{};
+struct is_vector_ptr<boost::shared_ptr<VectorType>>
+    : boost::is_base_of<Vector<typename VectorType::value_type>,
+                        VectorType>
+{
+};
 
 template <typename T>
 struct syncOperator
 {
-    typedef std::set<std::pair< rank_type, T > > storage_ghostdof_type;
+    typedef std::set<std::pair<rank_type, T>> storage_ghostdof_type;
     syncOperator() {}
-    syncOperator( std::map<size_type, std::set<rank_type> > const& m )
-        :
-        M_activeDofClusterUsedByProc( m )
-        {}
+    syncOperator( std::map<size_type, std::set<rank_type>> const& m )
+        : M_activeDofClusterUsedByProc( m )
+    {
+    }
     syncOperator( syncOperator const& obj ) = default;
 
     virtual T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const = 0;
     virtual bool hasOperator() const = 0;
-    std::map<size_type, std::set<rank_type> > const& activeDofClusterUsedByProc() const { return M_activeDofClusterUsedByProc; }
-    void setActiveDofClusterUsedByProc( std::map<size_type, std::set<rank_type> > const& m ) { M_activeDofClusterUsedByProc = m; }
-private :
-    std::map<size_type, std::set<rank_type> > M_activeDofClusterUsedByProc;
-
+    std::map<size_type, std::set<rank_type>> const& activeDofClusterUsedByProc() const { return M_activeDofClusterUsedByProc; }
+    void setActiveDofClusterUsedByProc( std::map<size_type, std::set<rank_type>> const& m ) { M_activeDofClusterUsedByProc = m; }
+  private:
+    std::map<size_type, std::set<rank_type>> M_activeDofClusterUsedByProc;
 };
 
 } // namespace detail
 
 template <typename T>
-void
-sync( Vector<T> & v, std::string const& opSyncStr = "=" );
+void sync( Vector<T>& v, std::string const& opSyncStr = "=" );
 
 template <typename T>
-void
-sync( Vector<T> & v, std::string const& opSyncStr, std::set<size_type> const& dofGlobalProcessPresent );
+void sync( Vector<T>& v, std::string const& opSyncStr, std::set<size_type> const& dofGlobalProcessPresent );
 
 template <typename T>
-void
-sync( Vector<T> & v, Feel::detail::syncOperator<T> const& opSync );
-
-
+void sync( Vector<T>& v, Feel::detail::syncOperator<T> const& opSync );
 
 } // Feel
 
-#endif  // #ifdef __numeric_vector_h__
+#endif // #ifdef __numeric_vector_h__

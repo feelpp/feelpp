@@ -26,84 +26,80 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-04-07
  */
-#include <sstream>
 #include <feel/feeldiscr/stencil.hpp>
+#include <sstream>
 
 namespace Feel
 {
 
-BlocksStencilPattern default_block_pattern( 1,1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) );
+BlocksStencilPattern default_block_pattern( 1, 1, size_type( Pattern::HAS_NO_BLOCK_PATTERN ) );
 
-void
-stencilManagerGarbageCollect()
+void stencilManagerGarbageCollect()
 {
 
     std::list<StencilManagerImpl::key_type> eltToDelete;
 
-    BOOST_FOREACH( StencilManagerImpl::value_type & entry, StencilManager::instance() )
+    BOOST_FOREACH ( StencilManagerImpl::value_type& entry, StencilManager::instance() )
     {
         auto fspace1 = entry.first.get<0>().lock();
         auto fspace2 = entry.first.get<1>().lock();
         // each entry is a pair of tuple and graph
         if ( entry.second.unique() || entry.first.get<0>().expired() || entry.first.get<1>().expired() )
         {
-#if !defined ( NDEBUG )
+#if !defined( NDEBUG )
             std::ostringstream ostr;
             std::for_each( entry.first.get<3>().begin(),
                            entry.first.get<3>().end(),
                            [&ostr]( size_type i ) { ostr << i << ","; } );
-            LOG(INFO) << "[stencilManagerGarbageCollect] deleting entry space: ( "
-                      << fspace1
-                      << "," << fspace2
-                      << "," << int(entry.first.get<2>())
-                      << ",( " << ostr.str()
-                      << "),"
-                      << "," << int(entry.first.get<4>())
-                      << " ): "
-                      << entry.second << "\n";
+            LOG( INFO ) << "[stencilManagerGarbageCollect] deleting entry space: ( "
+                        << fspace1
+                        << "," << fspace2
+                        << "," << int( entry.first.get<2>() )
+                        << ",( " << ostr.str()
+                        << "),"
+                        << "," << int( entry.first.get<4>() )
+                        << " ): "
+                        << entry.second << "\n";
 #endif
-            eltToDelete.push_back(entry.first);
+            eltToDelete.push_back( entry.first );
         }
     }
-    VLOG(1) << "Deleting " << eltToDelete.size() << " stencils...";
-    for ( auto it=eltToDelete.begin(),en=eltToDelete.end();it!=en;++it)
+    VLOG( 1 ) << "Deleting " << eltToDelete.size() << " stencils...";
+    for ( auto it = eltToDelete.begin(), en = eltToDelete.end(); it != en; ++it )
     {
-        auto ki=StencilManager::instance().erase( *it );
+        auto ki = StencilManager::instance().erase( *it );
     }
 }
 
-void
-stencilManagerGarbage(StencilManagerImpl::key_type const& key)
+void stencilManagerGarbage( StencilManagerImpl::key_type const& key )
 {
     auto git = StencilManager::instance().find( key );
-    if (  git != StencilManager::instance().end() )
+    if ( git != StencilManager::instance().end() )
     {
         if ( git->second.unique() )
-            {
-                StencilManager::instance().erase( git->first );
-            }
+        {
+            StencilManager::instance().erase( git->first );
+        }
     }
 }
 
-void
-stencilManagerAdd(StencilManagerImpl::key_type const& key,StencilManagerImpl::graph_ptrtype graph)
+void stencilManagerAdd( StencilManagerImpl::key_type const& key, StencilManagerImpl::graph_ptrtype graph )
 {
     auto git = StencilManager::instance().find( key );
-    if (  git == StencilManager::instance().end() )
-        {
-            StencilManager::instance().operator[]( key ) = graph;
-        }
+    if ( git == StencilManager::instance().end() )
+    {
+        StencilManager::instance().operator[]( key ) = graph;
+    }
 }
 
-void
-stencilManagerPrint()
+void stencilManagerPrint()
 {
     std::cout << "********************************************************************************\n";
     if ( StencilManager::instance().empty() )
     {
         std::cout << "[stencilManagerPrint] no entries in StencilManager\n";
     }
-    BOOST_FOREACH( StencilManagerImpl::value_type& entry, StencilManager::instance() )
+    BOOST_FOREACH ( StencilManagerImpl::value_type& entry, StencilManager::instance() )
     {
         auto fspace1 = entry.first.get<0>().lock();
         auto fspace2 = entry.first.get<1>().lock();
@@ -111,23 +107,23 @@ stencilManagerPrint()
         std::for_each( entry.first.get<3>().begin(),
                        entry.first.get<3>().end(),
                        [&ostr]( size_type i ) { ostr << i << ","; } );
-        LOG(INFO) << "[stencilManagerPrint] ("
-                  << fspace1 << "[" << fspace2.use_count() << "]"
-                  << "," << fspace2 << "[" << fspace2.use_count() << "]"
-                  << "," << int(entry.first.get<2>())
-                  << ", (" << ostr.str()
-                  << "),"
-                  << "," << int(entry.first.get<4>())
-                  << "): "
-                  << " " << entry.second << "[" << entry.second.use_count() << "]"<< "\n";
+        LOG( INFO ) << "[stencilManagerPrint] ("
+                    << fspace1 << "[" << fspace2.use_count() << "]"
+                    << "," << fspace2 << "[" << fspace2.use_count() << "]"
+                    << "," << int( entry.first.get<2>() )
+                    << ", (" << ostr.str()
+                    << "),"
+                    << "," << int( entry.first.get<4>() )
+                    << "): "
+                    << " " << entry.second << "[" << entry.second.use_count() << "]"
+                    << "\n";
     }
     std::cout << "********************************************************************************\n";
 }
 
 stencilRangeMap0Type
-stencilRangeMap( )
+stencilRangeMap()
 {
     return stencilRangeMap0Type();
 }
-
 }

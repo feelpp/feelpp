@@ -48,11 +48,9 @@ namespace fusion = boost::fusion;
 class Discontinuous
     :
     // necessary for boost.parameters
-public Feel::detail::continuity_base
+    public Feel::detail::continuity_base
 {
-public:
-
-
+  public:
     /** @name Constants
      */
     //@{
@@ -60,7 +58,6 @@ public:
     static const bool is_continuous = false;
     static const bool is_discontinuous_locally = false;
     static const bool is_discontinuous_totally = true;
-
 
     //@}
 
@@ -78,7 +75,7 @@ public:
     //! default constructor
     Discontinuous();
     //! copy constructor
-    Discontinuous( Continuous const & );
+    Discontinuous( Continuous const& );
     //! destructor
     ~Discontinuous();
 
@@ -89,7 +86,7 @@ public:
     //@{
 
     //! copy operator
-    Discontinuous& operator=( Discontinuous const & o )
+    Discontinuous& operator=( Discontinuous const& o )
     {
         if ( this != &o )
         {
@@ -103,13 +100,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -117,39 +112,37 @@ public:
      */
     //@{
 
-
     //@}
 
-    template<typename MeshType, typename DofType>
+    template <typename MeshType, typename DofType>
     class apply
     {
-    public:
+      public:
         typedef size_type result_type;
         typedef MeshType mesh_type;
         typedef DofType dof_type;
         typedef typename dof_type::fe_type fe_type;
 
         apply( MeshType& M, DofType& D )
-            :
-            M_mesh( M ),
-            M_dof( D )
-        {}
-        template<typename T>
+            : M_mesh( M ),
+              M_dof( D )
+        {
+        }
+        template <typename T>
         result_type operator()( const T& t, const size_type& start ) const
         {
             //return build( T::value, start );
             return start;
         }
-    private:
-    private:
+
+      private:
+      private:
         MeshType& M_mesh;
         DofType M_dof;
     };
 
-protected:
-
-private:
-
+  protected:
+  private:
 };
 
 } // Feel

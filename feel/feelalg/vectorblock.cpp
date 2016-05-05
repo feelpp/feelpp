@@ -29,42 +29,37 @@
 
 #include <feel/feelalg/vectorblock.hpp>
 
-
-
 namespace Feel
 {
 
-
 template <typename T>
-void
-BlocksBaseVector<T>::localize( vector_ptrtype const& vb, size_type _start_i )
+void BlocksBaseVector<T>::localize( vector_ptrtype const& vb, size_type _start_i )
 {
     if ( !vb->closed() )
         vb->close();
 
     auto const& dm = vb->map();
     int currentDataBaseId = _start_i;
-    for ( uint16_type i=0; i<this->nRow(); ++i )
+    for ( uint16_type i = 0; i < this->nRow(); ++i )
     {
         //size_type nBlockRow = this->operator()( i,0 )->localSize();
-        auto const& dmb = this->operator()( i,0 )->map();
+        auto const& dmb = this->operator()( i, 0 )->map();
         int nDataBase = dmb.numberOfDofIdToContainerId();
-        for ( int tag=0;tag<nDataBase;++tag,++currentDataBaseId )
+        for ( int tag = 0; tag < nDataBase; ++tag, ++currentDataBaseId )
         {
-            auto const& dofIdToContainerIdBlock = dmb.dofIdToContainerId(tag);
-            auto const& dofIdToContainerIdVec = dm.dofIdToContainerId(currentDataBaseId);
-            for (int k=0;k<dofIdToContainerIdBlock.size();++k)
+            auto const& dofIdToContainerIdBlock = dmb.dofIdToContainerId( tag );
+            auto const& dofIdToContainerIdVec = dm.dofIdToContainerId( currentDataBaseId );
+            for ( int k = 0; k < dofIdToContainerIdBlock.size(); ++k )
             {
-                this->operator()( i,0 )->set( dofIdToContainerIdBlock[k], vb->operator()( dofIdToContainerIdVec[k] ) );
+                this->operator()( i, 0 )->set( dofIdToContainerIdBlock[k], vb->operator()( dofIdToContainerIdVec[k] ) );
             }
         }
-        this->operator()( i,0 )->close();
+        this->operator()( i, 0 )->close();
     }
 }
 
 template <typename T>
-void
-BlocksBaseVector<T>::localize()
+void BlocksBaseVector<T>::localize()
 {
     if ( !this->vector() ) return;
 
@@ -72,72 +67,65 @@ BlocksBaseVector<T>::localize()
 }
 
 template <typename T>
-void
-BlocksBaseVector<T>::buildVector( backend_ptrtype backend )
+void BlocksBaseVector<T>::buildVector( backend_ptrtype backend )
 {
-    M_vector = backend->newBlockVector( _block=*this );
+    M_vector = backend->newBlockVector( _block = *this );
 }
 
-
 template <typename T>
-void
-BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec , int blockId ) const
+void BlocksBaseVector<T>::setVector( vector_type& vec, vector_type const& subvec, int blockId ) const
 {
     auto const& dmVec = vec.map();
     auto const& dmSubVec = subvec.map();
-    for ( int tag=0 ; tag<dmSubVec.numberOfDofIdToContainerId() ; ++tag )
+    for ( int tag = 0; tag < dmSubVec.numberOfDofIdToContainerId(); ++tag )
     {
         auto const& basisGpToContainerGpSubVec = dmSubVec.dofIdToContainerId( tag );
-        CHECK( blockId+tag < dmVec.numberOfDofIdToContainerId() ) << "error "<<blockId+tag << " vs " << dmVec.numberOfDofIdToContainerId();
-        auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( blockId+tag );
+        CHECK( blockId + tag < dmVec.numberOfDofIdToContainerId() ) << "error " << blockId + tag << " vs " << dmVec.numberOfDofIdToContainerId();
+        auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( blockId + tag );
         CHECK( basisGpToContainerGpSubVec.size() == basisGpToContainerGpVec.size() ) << " aii " << basisGpToContainerGpSubVec.size() << " vs " << basisGpToContainerGpVec.size();
-        for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
+        for ( int k = 0; k < basisGpToContainerGpSubVec.size(); ++k )
             vec( basisGpToContainerGpVec[k] ) = subvec( basisGpToContainerGpSubVec[k] );
     }
 }
 
 template <typename T>
-void
-BlocksBaseVector<T>::setSubVector( vector_type & subvec, vector_type const& vec , int idStart ) const
+void BlocksBaseVector<T>::setSubVector( vector_type& subvec, vector_type const& vec, int idStart ) const
 {
     auto const& dmVec = vec.map();
     auto const& dmSubVec = subvec.map();
     int basisIndexSubVec = idStart;
-    for ( int tag=0 ; tag<dmSubVec.numberOfDofIdToContainerId() ; ++tag )
+    for ( int tag = 0; tag < dmSubVec.numberOfDofIdToContainerId(); ++tag )
     {
         auto const& basisGpToContainerGpSubVec = dmSubVec.dofIdToContainerId( tag );
-        CHECK( basisIndexSubVec+tag < dmVec.numberOfDofIdToContainerId() ) << "error "<<basisIndexSubVec+tag<< " vs " << dmVec.numberOfDofIdToContainerId();
-        auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( basisIndexSubVec+tag );
+        CHECK( basisIndexSubVec + tag < dmVec.numberOfDofIdToContainerId() ) << "error " << basisIndexSubVec + tag << " vs " << dmVec.numberOfDofIdToContainerId();
+        auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( basisIndexSubVec + tag );
         CHECK( basisGpToContainerGpSubVec.size() == basisGpToContainerGpVec.size() ) << " error " << basisGpToContainerGpSubVec.size() << " vs " << basisGpToContainerGpVec.size();
-        for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
+        for ( int k = 0; k < basisGpToContainerGpSubVec.size(); ++k )
             subvec( basisGpToContainerGpSubVec[k] ) = vec( basisGpToContainerGpVec[k] );
     }
 }
 
-
 template class BlocksBaseVector<double>;
 
-
 template <typename T>
-VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & blockVec,
-                                     backend_type &backend,
+VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const& blockVec,
+                                     backend_type& backend,
                                      bool copy_values )
-    :
-    M_vec()
+    : M_vec()
 {
     auto nRow = blockVec.nRow();
 
     boost::shared_ptr<DataMap> dm;
     if ( nRow == 1 )
     {
-        dm = blockVec(0,0)->mapPtr();
+        dm = blockVec( 0, 0 )->mapPtr();
     }
     else
     {
-        std::vector<boost::shared_ptr<DataMap> > listofdm;
-        for ( uint16_type i=0 ; i<nRow; ++i )
-            listofdm.push_back( blockVec(i,0)->mapPtr() );
-        dm.reset( new DataMap( listofdm, blockVec(0,0)->map().worldComm() ) );
+        std::vector<boost::shared_ptr<DataMap>> listofdm;
+        for ( uint16_type i = 0; i < nRow; ++i )
+            listofdm.push_back( blockVec( i, 0 )->mapPtr() );
+        dm.reset( new DataMap( listofdm, blockVec( 0, 0 )->map().worldComm() ) );
     }
     M_vec = backend.newVector( dm );
 
@@ -145,20 +133,19 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
 
     if ( copy_values )
     {
-        size_type start_i = 0;//M_vec->map().firstDof();
-        for ( int i=0; i<nRow; ++i )
+        size_type start_i = 0; //M_vec->map().firstDof();
+        for ( int i = 0; i < nRow; ++i )
         {
-            blockVec( i,0 )->close(); // not good but necessary here (TODO)
-            this->updateBlockVec( blockVec( i,0 ), start_i );
-            start_i += blockVec( i,0 )->map().numberOfDofIdToContainerId();
+            blockVec( i, 0 )->close(); // not good but necessary here (TODO)
+            this->updateBlockVec( blockVec( i, 0 ), start_i );
+            start_i += blockVec( i, 0 )->map().numberOfDofIdToContainerId();
             //start_i += blockVec( i,0 )->map().nLocalDofWithGhost();
         }
     }
 }
 
 template <typename T>
-void
-VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
+void VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
 {
     auto const& dmb = m->map();
     auto const& dm = M_vec->map();
@@ -168,18 +155,16 @@ VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
     //     startTagIdInVec += this->operator[]( i,0 )->map().indexSplit()->size();
 
     int nTag = dmb.numberOfDofIdToContainerId();
-    for ( int tag=0;tag<nTag;++tag )
+    for ( int tag = 0; tag < nTag; ++tag )
     {
-        auto const& dofIdToContainerIdBlock = dmb.dofIdToContainerId(tag);
-        auto const& dofIdToContainerIdVec = dm.dofIdToContainerId(start_i+tag);
+        auto const& dofIdToContainerIdBlock = dmb.dofIdToContainerId( tag );
+        auto const& dofIdToContainerIdVec = dm.dofIdToContainerId( start_i + tag );
         CHECK( dofIdToContainerIdBlock.size() == dofIdToContainerIdVec.size() ) << "incompatibility with size";
-        for (int k=0;k<dofIdToContainerIdBlock.size();++k)
-            M_vec->set( dofIdToContainerIdVec[k],m->operator()( dofIdToContainerIdBlock[k] ) );
+        for ( int k = 0; k < dofIdToContainerIdBlock.size(); ++k )
+            M_vec->set( dofIdToContainerIdVec[k], m->operator()( dofIdToContainerIdBlock[k] ) );
     }
 }
 
 template class VectorBlockBase<double>;
 
 } // Feel
-
-

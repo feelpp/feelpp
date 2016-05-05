@@ -29,9 +29,9 @@
 #ifndef FEELPP_EXPRBASE_HPP
 #define FEELPP_EXPRBASE_HPP 1
 
-#include <string>
-#include <sstream>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 namespace Feel
 {
@@ -43,20 +43,16 @@ namespace Feel
  */
 class ExprBase
 {
-public:
-
-
+  public:
     /** @name Constants
      */
     //@{
-
 
     //@}
 
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -82,14 +78,13 @@ public:
     //@{
 
     /** Return a descriptive name for the expression subtype */
-    virtual std::string typeName() const ;
+    virtual std::string typeName() const;
 
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -111,17 +106,12 @@ public:
     /**
      * write the expression into a std::string
      */
-    std::string toString() const ;
-
+    std::string toString() const;
 
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
 };
 }
 #endif /* FEELPP_EXPRBASE_HPP */

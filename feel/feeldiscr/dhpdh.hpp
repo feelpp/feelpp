@@ -21,13 +21,14 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#if !defined(FEELPP_DHPDH_HPP)
+#if !defined( FEELPP_DHPDH_HPP )
 #define FEELPP_DHPDH_HPP 1
 
-#include <feel/feelpoly/raviartthomas.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/raviartthomas.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
 
@@ -36,18 +37,15 @@ namespace Feel {
    auto Xh = DhPdh<2>( mesh );
    \endcode
  */
-template<int Order,typename MeshType>
-inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<RaviartThomas<Order>,Lagrange<Order,Scalar,Discontinuous> > > >
+template <int Order, typename MeshType>
+inline boost::shared_ptr<FunctionSpace<MeshType, bases<RaviartThomas<Order>, Lagrange<Order, Scalar, Discontinuous>>>>
 DhPdh( boost::shared_ptr<MeshType> mesh,
-       std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2,false ) )
+       std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2, false ) )
 {
     CHECK( buildExtendedDofTable.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << buildExtendedDofTable.size() << "\n";
-    return FunctionSpace<MeshType,bases<RaviartThomas<Order>,Lagrange<Order,Scalar,Discontinuous>>>::New( _mesh=mesh,
-                                                                                                          _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ),
-                                                                                                          _extended_doftable=buildExtendedDofTable );
+    return FunctionSpace<MeshType, bases<RaviartThomas<Order>, Lagrange<Order, Scalar, Discontinuous>>>::New( _mesh = mesh,
+                                                                                                              _worldscomm = std::vector<WorldComm>( 2, mesh->worldComm() ),
+                                                                                                              _extended_doftable = buildExtendedDofTable );
 }
-
-
 }
 #endif /* FEELPP_DHPDH_HPP */

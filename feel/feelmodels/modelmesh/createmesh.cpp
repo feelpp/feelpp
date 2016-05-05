@@ -41,7 +41,7 @@ namespace FeelModels
 
 template <typename MeshType>
 boost::shared_ptr<MeshType>
-reloadMesh(std::string const& nameFile, WorldComm const& worldComm, int straighten )
+reloadMesh( std::string const& nameFile, WorldComm const& worldComm, int straighten )
 {
     typedef MeshType mesh_type;
 
@@ -52,7 +52,7 @@ reloadMesh(std::string const& nameFile, WorldComm const& worldComm, int straight
         CHECK( false ) << "Fail to open the txt file containing path of msh file : " << nameFile << "\n";
     }
     std::string mshfile;
-    if ( ! ( file >> mshfile ) )
+    if ( !( file >> mshfile ) )
     {
         CHECK( false ) << "Fail to read the msh path in file : " << nameFile << "\n";
     }
@@ -65,45 +65,43 @@ reloadMesh(std::string const& nameFile, WorldComm const& worldComm, int straight
                         _straighten=straighten,
                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
 #else
-    return loadMesh(_mesh=new mesh_type( worldComm ),
-                    _filename=mshfile,
-                    _worldcomm=worldComm,
-                    //_prefix=model.prefix(),
-                    _rebuild_partitions=false,
-                    _savehdf5=0,
-                    _straighten=straighten,
-                    _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
+    return loadMesh( _mesh = new mesh_type( worldComm ),
+                     _filename = mshfile,
+                     _worldcomm = worldComm,
+                     //_prefix=model.prefix(),
+                     _rebuild_partitions = false,
+                     _savehdf5 = 0,
+                     _straighten = straighten,
+                     _update = MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
 #endif
 
 } // reloadFluidMesh()
 
-
 template <typename MeshType>
-void
-createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std::string const& modelMeshRestartFile )
+void createMeshModel( ModelNumerical& model, boost::shared_ptr<MeshType>& mesh, std::string const& modelMeshRestartFile )
 {
     typedef MeshType mesh_type;
-    std::string fmpath = (fs::path( model.rootRepository() ) / fs::path( modelMeshRestartFile/*model.fileNameMeshPath()*/)).string();
-    if (model.doRestart())
+    std::string fmpath = ( fs::path( model.rootRepository() ) / fs::path( modelMeshRestartFile /*model.fileNameMeshPath()*/ ) ).string();
+    if ( model.doRestart() )
     {
-        model.log("createMeshModel","", "restart with : "+fmpath);
+        model.log( "createMeshModel", "", "restart with : " + fmpath );
 
         if ( !model.restartPath().empty() )
         {
-            fmpath = (fs::path( model.restartPath() ) / fs::path( modelMeshRestartFile/*model.fileNameMeshPath()*/)).string();
+            fmpath = ( fs::path( model.restartPath() ) / fs::path( modelMeshRestartFile /*model.fileNameMeshPath()*/ ) ).string();
         }
-        mesh = reloadMesh<mesh_type>(fmpath,model.worldComm());
+        mesh = reloadMesh<mesh_type>( fmpath, model.worldComm() );
     }
     else
     {
-        if (model.hasMshfileStr())
+        if ( model.hasMshfileStr() )
         {
             std::string rootpath = model.rootRepository();
             std::string mshfileRebuildPartitions = rootpath + "/" + model.prefix() + ".msh";
 
-            model.log("createMeshModel","", "load mesh file : " + model.mshfileStr());
+            model.log( "createMeshModel", "", "load mesh file : " + model.mshfileStr() );
             std::string meshFileExt = fs::path( model.mshfileStr() ).extension().string();
-            bool rebuildPartition = boption(_prefix=model.prefix(),_name="gmsh.partition");
+            bool rebuildPartition = boption( _prefix = model.prefix(), _name = "gmsh.partition" );
             if ( rebuildPartition && meshFileExt != ".msh" )
                 CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
 #if 0
@@ -116,46 +114,46 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
                                 _partitions=model.worldComm().localSize(),
                                 _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK);
 #else
-            mesh = loadMesh(_mesh=new mesh_type( model.worldComm() ),
-                            _filename=model.mshfileStr(),
-                            _worldcomm=model.worldComm(),
-                            _prefix=model.prefix(),
-                            _rebuild_partitions=rebuildPartition,
-                            _rebuild_partitions_filename=mshfileRebuildPartitions,
-                            _partitions=model.worldComm().localSize(),
-                            _savehdf5=0,
-                            _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
+            mesh = loadMesh( _mesh = new mesh_type( model.worldComm() ),
+                             _filename = model.mshfileStr(),
+                             _worldcomm = model.worldComm(),
+                             _prefix = model.prefix(),
+                             _rebuild_partitions = rebuildPartition,
+                             _rebuild_partitions_filename = mshfileRebuildPartitions,
+                             _partitions = model.worldComm().localSize(),
+                             _savehdf5 = 0,
+                             _update = MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
 #endif
 
-            if (rebuildPartition/*model.rebuildMeshPartitions()*/) model.setMshfileStr(mshfileRebuildPartitions);
+            if ( rebuildPartition /*model.rebuildMeshPartitions()*/ ) model.setMshfileStr( mshfileRebuildPartitions );
         }
-        else if (model.hasGeofileStr())
+        else if ( model.hasGeofileStr() )
         {
             std::string path = model.rootRepository();
             std::string mshfile = path + "/" + model.prefix() + ".msh";
-            model.setMshfileStr(mshfile);
+            model.setMshfileStr( mshfile );
 
-            fs::path curPath=fs::current_path();
-            bool hasChangedRep=false;
-            if ( curPath != fs::path(model.rootRepository()) )
+            fs::path curPath = fs::current_path();
+            bool hasChangedRep = false;
+            if ( curPath != fs::path( model.rootRepository() ) )
             {
-                model.log("createMeshModel","", "change repository (temporary) for build mesh from geo : "+ model.rootRepository() );
-                bool hasChangedRep=true;
-                Environment::changeRepository( _directory=boost::format(model.rootRepository()), _subdir=false );
+                model.log( "createMeshModel", "", "change repository (temporary) for build mesh from geo : " + model.rootRepository() );
+                bool hasChangedRep = true;
+                Environment::changeRepository( _directory = boost::format( model.rootRepository() ), _subdir = false );
             }
 
-            gmsh_ptrtype geodesc = geo( _filename=model.geofileStr(),
-                                        _prefix=model.prefix(),
-                                        _worldcomm=model.worldComm() );
+            gmsh_ptrtype geodesc = geo( _filename = model.geofileStr(),
+                                        _prefix = model.prefix(),
+                                        _worldcomm = model.worldComm() );
             // allow to have a geo and msh file with a filename equal to prefix
-            geodesc->setPrefix(model.prefix());
-            mesh = createGMSHMesh(_mesh=new mesh_type,_desc=geodesc,
-                                  _prefix=model.prefix(),_worldcomm=model.worldComm(),
-                                  _partitions=model.worldComm().localSize() );
+            geodesc->setPrefix( model.prefix() );
+            mesh = createGMSHMesh( _mesh = new mesh_type, _desc = geodesc,
+                                   _prefix = model.prefix(), _worldcomm = model.worldComm(),
+                                   _partitions = model.worldComm().localSize() );
 
             // go back to previous repository
             if ( hasChangedRep )
-                Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
+                Environment::changeRepository( _directory = boost::format( curPath.string() ), _subdir = false );
         }
 #if 0
         else
@@ -186,38 +184,34 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
             }
         }
 #endif
-        model.saveMSHfilePath(fmpath);
+        model.saveMSHfilePath( fmpath );
     } //not restart
-
 }
 
-template boost::shared_ptr<Mesh<Simplex<2,1>>> reloadMesh<Mesh<Simplex<2,1>>>( std::string const&, WorldComm const&, int );
-template boost::shared_ptr<Mesh<Simplex<3,1>>> reloadMesh<Mesh<Simplex<3,1>>>( std::string const&, WorldComm const&, int );
-template boost::shared_ptr<Mesh<Simplex<1,1,2>>> reloadMesh<Mesh<Simplex<1,1,2>>>( std::string const&, WorldComm const&, int );
-template boost::shared_ptr<Mesh<Simplex<1,1,3>>> reloadMesh<Mesh<Simplex<1,1,3>>>( std::string const&, WorldComm const&, int );
-template void createMeshModel<Mesh<Simplex<2,1>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<2,1>>> &, std::string const& );
-template void createMeshModel<Mesh<Simplex<3,1>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<3,1>>> &, std::string const& );
+template boost::shared_ptr<Mesh<Simplex<2, 1>>> reloadMesh<Mesh<Simplex<2, 1>>>( std::string const&, WorldComm const&, int );
+template boost::shared_ptr<Mesh<Simplex<3, 1>>> reloadMesh<Mesh<Simplex<3, 1>>>( std::string const&, WorldComm const&, int );
+template boost::shared_ptr<Mesh<Simplex<1, 1, 2>>> reloadMesh<Mesh<Simplex<1, 1, 2>>>( std::string const&, WorldComm const&, int );
+template boost::shared_ptr<Mesh<Simplex<1, 1, 3>>> reloadMesh<Mesh<Simplex<1, 1, 3>>>( std::string const&, WorldComm const&, int );
+template void createMeshModel<Mesh<Simplex<2, 1>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<2, 1>>>&, std::string const& );
+template void createMeshModel<Mesh<Simplex<3, 1>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<3, 1>>>&, std::string const& );
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
-template boost::shared_ptr<Mesh<Simplex<2,2>>> reloadMesh<Mesh<Simplex<2,2>>>( std::string const&, WorldComm const&, int );
-template boost::shared_ptr<Mesh<Simplex<3,2>>> reloadMesh<Mesh<Simplex<3,2>>>( std::string const&, WorldComm const&, int );
-template void createMeshModel<Mesh<Simplex<2,2>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<2,2>>> &, std::string const& );
-template void createMeshModel<Mesh<Simplex<3,2>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<3,2>>> &, std::string const& );
+template boost::shared_ptr<Mesh<Simplex<2, 2>>> reloadMesh<Mesh<Simplex<2, 2>>>( std::string const&, WorldComm const&, int );
+template boost::shared_ptr<Mesh<Simplex<3, 2>>> reloadMesh<Mesh<Simplex<3, 2>>>( std::string const&, WorldComm const&, int );
+template void createMeshModel<Mesh<Simplex<2, 2>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<2, 2>>>&, std::string const& );
+template void createMeshModel<Mesh<Simplex<3, 2>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<3, 2>>>&, std::string const& );
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
-template boost::shared_ptr<Mesh<Simplex<2,3>>> reloadMesh<Mesh<Simplex<2,3>>>( std::string const&, WorldComm const&, int );
-template boost::shared_ptr<Mesh<Simplex<3,3>>> reloadMesh<Mesh<Simplex<3,3>>>( std::string const&, WorldComm const&, int );
-template void createMeshModel<Mesh<Simplex<2,3>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<2,3>>> &, std::string const& );
-template void createMeshModel<Mesh<Simplex<3,3>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<3,3>>> &, std::string const& );
+template boost::shared_ptr<Mesh<Simplex<2, 3>>> reloadMesh<Mesh<Simplex<2, 3>>>( std::string const&, WorldComm const&, int );
+template boost::shared_ptr<Mesh<Simplex<3, 3>>> reloadMesh<Mesh<Simplex<3, 3>>>( std::string const&, WorldComm const&, int );
+template void createMeshModel<Mesh<Simplex<2, 3>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<2, 3>>>&, std::string const& );
+template void createMeshModel<Mesh<Simplex<3, 3>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<3, 3>>>&, std::string const& );
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 4 )
-template boost::shared_ptr<Mesh<Simplex<2,4>>> reloadMesh<Mesh<Simplex<2,4>>>( std::string const&, WorldComm const&, int );
-template boost::shared_ptr<Mesh<Simplex<3,4>>> reloadMesh<Mesh<Simplex<3,4>>>( std::string const&, WorldComm const&, int );
-template void createMeshModel<Mesh<Simplex<2,4>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<2,4>>> &, std::string const& );
-template void createMeshModel<Mesh<Simplex<3,4>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<3,4>>> &, std::string const& );
+template boost::shared_ptr<Mesh<Simplex<2, 4>>> reloadMesh<Mesh<Simplex<2, 4>>>( std::string const&, WorldComm const&, int );
+template boost::shared_ptr<Mesh<Simplex<3, 4>>> reloadMesh<Mesh<Simplex<3, 4>>>( std::string const&, WorldComm const&, int );
+template void createMeshModel<Mesh<Simplex<2, 4>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<2, 4>>>&, std::string const& );
+template void createMeshModel<Mesh<Simplex<3, 4>>>( ModelNumerical&, boost::shared_ptr<Mesh<Simplex<3, 4>>>&, std::string const& );
 #endif
-
-
 
 } // namespace FeelModels
 } // namespace Feel
-

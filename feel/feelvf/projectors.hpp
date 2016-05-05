@@ -50,17 +50,15 @@ namespace details
  * @author Christophe Prud'homme
  * @see Projector3D, Projector2D, ProjectorOn
  */
-template<ProjectorType iDim, typename FunctionSpaceType, typename IteratorRange, typename ExprT>
+template <ProjectorType iDim, typename FunctionSpaceType, typename IteratorRange, typename ExprT>
 class Projector
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
 
-    static const size_type context = ExprT::context|vm::POINT;
+    static const size_type context = ExprT::context | vm::POINT;
 
     typedef FunctionSpaceType functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
@@ -69,17 +67,15 @@ public:
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
 
-
     static const uint16_type imorder = functionspace_type::basis_type::nOrder;
     static const bool imIsPoly = true;
 
     typedef IteratorRange range_iterator;
-    typedef typename mpl::if_< boost::is_std_list<range_iterator>,
-                               mpl::identity<range_iterator>,
-                               mpl::identity<std::list<range_iterator> > >::type::type::value_type range_iterator_type;
+    typedef typename mpl::if_<boost::is_std_list<range_iterator>,
+                              mpl::identity<range_iterator>,
+                              mpl::identity<std::list<range_iterator>>>::type::type::value_type range_iterator_type;
     typedef typename boost::tuples::template element<0, range_iterator_type>::type idim_type;
     typedef typename boost::tuples::template element<1, range_iterator_type>::type iterator_type;
-
 
     //@}
 
@@ -91,24 +87,21 @@ public:
                IteratorRange const& r,
                expression_type const& __expr,
                GeomapStrategyType geomap_strategy )
-        :
-        M_functionspace( __functionspace ),
-        M_range( r ),
-        M_expr( __expr ),
-        M_geomap_strategy( geomap_strategy )
+        : M_functionspace( __functionspace ),
+          M_range( r ),
+          M_expr( __expr ),
+          M_geomap_strategy( geomap_strategy )
     {
-        DVLOG(2) << "Projector constructor from expression\n";
+        DVLOG( 2 ) << "Projector constructor from expression\n";
     }
 
-
     Projector( Projector const& __vfi )
-        :
-        M_functionspace( __vfi.M_functionspace ),
-        M_range( __vfi.M_range ),
-        M_expr( __vfi.M_expr ),
-        M_geomap_strategy( __vfi.M_geomap_strategy )
+        : M_functionspace( __vfi.M_functionspace ),
+          M_range( __vfi.M_range ),
+          M_expr( __vfi.M_expr ),
+          M_geomap_strategy( __vfi.M_geomap_strategy )
     {
-        DVLOG(2) << "Projector copy constructor\n";
+        DVLOG( 2 ) << "Projector copy constructor\n";
     }
 
     virtual ~Projector() {}
@@ -155,35 +148,34 @@ public:
 
     //@}
 
-private:
-
+  private:
     element_type operator()( const bool sum, mpl::size_t<MESH_ELEMENTS> ) const;
     element_type operator()( const bool sum, mpl::size_t<MESH_FACES> ) const;
     element_type operator()( const bool sum, mpl::size_t<MESH_EDGES> ) const;
     element_type operator()( const bool sum, mpl::size_t<MESH_POINTS> ) const;
 
-private:
-
+  private:
     functionspace_ptrtype const& M_functionspace;
     range_iterator M_range;
-    expression_type const&  M_expr;
+    expression_type const& M_expr;
     GeomapStrategyType M_geomap_strategy;
 };
 
-template<ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
+template <ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
 typename Projector<iDim, FunctionSpaceType, Iterator, ExprT>::element_type
 Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum, mpl::size_t<MESH_ELEMENTS> ) const
 {
     boost::timer __timer;
 
     element_type __v( M_functionspace );
-    FEELPP_ASSERT( __v.size() == M_functionspace->dof()->nDof() )( __v.size() )( M_functionspace->dof()->nDof() ).warn( "invalid size" );
+    FEELPP_ASSERT( __v.size() == M_functionspace->dof()->nDof() )
+    ( __v.size() )( M_functionspace->dof()->nDof() ).warn( "invalid size" );
     __v.setZero();
-    __v.on( _range=M_range, _expr=M_expr, _geomap=M_geomap_strategy, _accumulate=sum );
+    __v.on( _range = M_range, _expr = M_expr, _geomap = M_geomap_strategy, _accumulate = sum );
     return __v;
 }
 
-template<ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
+template <ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
 typename Projector<iDim, FunctionSpaceType, Iterator, ExprT>::element_type
 Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum, mpl::size_t<MESH_EDGES> ) const
 {
@@ -191,11 +183,11 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     element_type __v( M_functionspace );
     __v.setZero();
-    __v.on( _range=M_range, _expr=M_expr, _geomap=M_geomap_strategy, _accumulate=sum );
+    __v.on( _range = M_range, _expr = M_expr, _geomap = M_geomap_strategy, _accumulate = sum );
     return __v;
 }
 
-template<ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
+template <ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
 typename Projector<iDim, FunctionSpaceType, Iterator, ExprT>::element_type
 Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum, mpl::size_t<MESH_FACES> ) const
 {
@@ -203,11 +195,11 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     element_type __v( M_functionspace );
     __v.setZero();
-    __v.on( _range=M_range, _expr=M_expr, _geomap=M_geomap_strategy, _accumulate=sum );
+    __v.on( _range = M_range, _expr = M_expr, _geomap = M_geomap_strategy, _accumulate = sum );
     return __v;
 }
 
-template<ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
+template <ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
 typename Projector<iDim, FunctionSpaceType, Iterator, ExprT>::element_type
 Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum, mpl::size_t<MESH_POINTS> ) const
 {
@@ -241,32 +233,31 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 } // detail
 /// \endcond
 
-
 /**
  * \brief nodal projection of \p __expr onto the the subspace of \p __functionspace described by the range \p range_it
  *
  * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr over the range \p __range_it
  */
-template<typename FunctionSpaceType, typename IteratorRange, typename ExprT>
+template <typename FunctionSpaceType, typename IteratorRange, typename ExprT>
 typename FunctionSpaceType::element_type
 project( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
          IteratorRange const& range_it,
          Expr<ExprT> const& __expr,
          GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
-    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
+    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT>> proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
     return p();
 }
 
-template<typename FunctionSpaceType, typename IteratorRange, typename ExprT>
+template <typename FunctionSpaceType, typename IteratorRange, typename ExprT>
 typename FunctionSpaceType::element_type
 project_impl( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
               IteratorRange const& range_it,
               Expr<ExprT> const& __expr,
               GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
-    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
+    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT>> proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
     return p();
 }
@@ -275,7 +266,7 @@ project_impl( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
  * \brief nodal projection of \p __expr onto the space \p __functionspace
  * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr
  */
-template<typename FunctionSpaceType, typename ExprT>
+template <typename FunctionSpaceType, typename ExprT>
 typename FunctionSpaceType::element_type
 project( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr,
          GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
@@ -288,7 +279,7 @@ project( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT
  *
  * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr over the range \p __range_it
  */
-template<typename FunctionSpaceType, typename IteratorRange, typename ExprT>
+template <typename FunctionSpaceType, typename IteratorRange, typename ExprT>
 typename FunctionSpaceType::element_type
 sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
      IteratorRange const& range_it,
@@ -296,11 +287,11 @@ sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
      GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_OPT,
      bool parallelSync = true )
 {
-    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
+    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT>> proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
     auto res = p( true );
     if ( parallelSync )
-        sync(res,"+");
+        sync( res, "+" );
     return res;
 }
 
@@ -308,7 +299,7 @@ sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
  * \brief nodal projection of \p __expr onto the space \p __functionspace
  * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr
  */
-template<typename FunctionSpaceType, typename ExprT>
+template <typename FunctionSpaceType, typename ExprT>
 typename FunctionSpaceType::element_type
 sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr,
      GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_OPT,
@@ -322,13 +313,13 @@ sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> co
  *
  * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr
  */
-template<typename FunctionSpaceType, typename ExprT>
+template <typename FunctionSpaceType, typename ExprT>
 typename FunctionSpaceType::element_type
 project( FunctionSpaceType const& __functionspace, Expr<ExprT> const& __expr,
          GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
     typedef __typeof__( __functionspace->mesh()->elementsRange() ) IteratorRange;
-    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
+    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT>> proj_t;
     proj_t p( __functionspace, __functionspace->mesh()->elementsRange(), __expr, geomap );
     return p();
 }
@@ -338,14 +329,14 @@ project( FunctionSpaceType const& __functionspace, Expr<ExprT> const& __expr,
  *
  * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr over the range \p __range_it
  */
-template<typename FunctionSpaceType, typename IteratorRange, typename ExprT>
+template <typename FunctionSpaceType, typename IteratorRange, typename ExprT>
 typename FunctionSpaceType::element_type
 project( FunctionSpaceType const& __functionspace,
          IteratorRange const& range_it,
          Expr<ExprT> const& __expr,
          GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
-    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
+    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT>> proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
     return p();
 }
@@ -353,25 +344,25 @@ project( FunctionSpaceType const& __functionspace,
 /// \cond DETAIL
 namespace detail
 {
-template<typename S>
+template <typename S>
 struct space_ptr
 {
     typedef typename S::element_type type;
 };
 
-template<typename S>
+template <typename S>
 struct space_value
 {
     typedef S type;
 };
 
-template<typename Args>
+template <typename Args>
 struct project
 {
-    typedef typename clean_type<Args,tag::space>::type the_space_type;
+    typedef typename clean_type<Args, tag::space>::type the_space_type;
     typedef typename mpl::if_<is_shared_ptr<the_space_type>,
-                              mpl::identity<space_ptr<the_space_type> >,
-                              mpl::identity<space_value<the_space_type> > >::type::type space_type;
+                              mpl::identity<space_ptr<the_space_type>>,
+                              mpl::identity<space_value<the_space_type>>>::type::type space_type;
     typedef typename space_type::type _space_type;
     typedef boost::shared_ptr<_space_type> _space_ptrtype;
     typedef typename _space_type::element_type element_type;
@@ -393,21 +384,13 @@ struct project
  */
 BOOST_PARAMETER_FUNCTION(
     ( typename vf::detail::project<Args>::element_type ), // return type
-    project,    // 2. function name
+    project,                                              // 2. function name
 
-    tag,           // 3. namespace of tag types
+    tag, // 3. namespace of tag types
 
-    ( required
-      ( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<Feel::FunctionSpaceBase> > ) )
-      ( expr, * )
-    ) // 4. one required parameter, and
+    ( required( space, *(boost::is_convertible<mpl::_, boost::shared_ptr<Feel::FunctionSpaceBase>>))( expr, * ) ) // 4. one required parameter, and
 
-    ( optional
-      ( range,          *, elements( space->mesh() )  )
-      ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
-      ( accumulate,     *( boost::is_integral<mpl::_> ), false )
-    )
-)
+    ( optional( range, *, elements( space->mesh() ) )( geomap, *, GeomapStrategyType::GEOMAP_OPT )( accumulate, *(boost::is_integral<mpl::_>), false ) ) )
 {
 #if 0
     typedef typename vf::detail::project<Args>::_space_type _space_type;
@@ -426,6 +409,5 @@ BOOST_PARAMETER_FUNCTION(
 
 } // vf
 } // feel
-
 
 #endif /* __Projectors_H */

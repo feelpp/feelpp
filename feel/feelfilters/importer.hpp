@@ -55,14 +55,12 @@ enum MeshFormat
  * \ingroup Importer
  * \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
-template<typename MeshType>
+template <typename MeshType>
 class Importer
-    :
-public VisitorBase,
-public Visitor<MeshType>
+    : public VisitorBase,
+      public Visitor<MeshType>
 {
-public:
-
+  public:
     typedef MeshType mesh_type;
     typedef typename mesh_type::point_type point_type;
     typedef typename point_type::node_type node_type;
@@ -74,26 +72,27 @@ public:
      * default constructor. use GMSH as default mesh format
      */
     Importer( MeshFormat const& _format = GMSH, WorldComm const& _worldcomm = Environment::worldComm() )
-        :
-        M_worldComm( _worldcomm ),
-        M_filename(),
-        M_format( _format )
-    {}
+        : M_worldComm( _worldcomm ),
+          M_filename(),
+          M_format( _format )
+    {
+    }
 
     /**
      * constructor
      * @param filename mesh filename to import
      * @param format format of the file
      */
-    Importer( std::string const& _filename,  MeshFormat const& _format = GMSH, WorldComm const& _worldcomm = Environment::worldComm() )
-        :
-        M_worldComm( _worldcomm ),
-        M_filename( _filename ),
-        M_format( _format )
-    {}
+    Importer( std::string const& _filename, MeshFormat const& _format = GMSH, WorldComm const& _worldcomm = Environment::worldComm() )
+        : M_worldComm( _worldcomm ),
+          M_filename( _filename ),
+          M_format( _format )
+    {
+    }
 
     virtual ~Importer()
-    {}
+    {
+    }
 
     /**
      * set the file name
@@ -121,7 +120,6 @@ public:
         return M_filename;
     }
 
-
     /**
      * \return the mesh format
      */
@@ -138,8 +136,7 @@ public:
         return M_worldComm;
     }
 
-private:
-
+  private:
     //! communicator
     WorldComm M_worldComm;
 

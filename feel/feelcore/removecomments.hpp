@@ -26,12 +26,12 @@
 
 #include <string>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
  * remove c and c++ comments from string \p str_with_comments if any
  */
 std::string removeComments( std::string str_with_comments );
-
 }
 #endif

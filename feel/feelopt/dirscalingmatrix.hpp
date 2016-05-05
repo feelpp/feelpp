@@ -31,10 +31,9 @@
 
 #include <algorithm>
 
-
-#include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/banded.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/vector.hpp>
 
 namespace Feel
 {
@@ -47,17 +46,16 @@ using namespace boost::numeric::ublas;
   @author Christophe Prud'homme
   @see
 */
-template<typename NumType>
+template <typename NumType>
 class DirScalingMatrix
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
 
-    typedef enum mode_type { NO_JACOBIAN, WITH_JACOBIAN };
+    typedef enum mode_type { NO_JACOBIAN,
+                             WITH_JACOBIAN };
 
     typedef NumType value_type;
 
@@ -71,39 +69,40 @@ public:
     //@{
 
     DirScalingMatrix()
-        :
-        M_lb(),
-        M_ub(),
-        M_lb_ub(),
-        M_value(),
-        M_jacobian(),
-        M_trust_region_active( false )
-    {}
+        : M_lb(),
+          M_ub(),
+          M_lb_ub(),
+          M_value(),
+          M_jacobian(),
+          M_trust_region_active( false )
+    {
+    }
 
     DirScalingMatrix( vector_type const& __lb, vector_type const& __ub )
-        :
-        M_lb( __lb ),
-        M_ub( __ub ),
-        M_lb_ub( M_ub - M_lb ),
-        M_value( __lb.size(), __lb.size(), 0, 0 ),
-        M_jacobian( __lb.size(), __lb.size(), 0, 0 ),
-        M_trust_region_active( false )
+        : M_lb( __lb ),
+          M_ub( __ub ),
+          M_lb_ub( M_ub - M_lb ),
+          M_value( __lb.size(), __lb.size(), 0, 0 ),
+          M_jacobian( __lb.size(), __lb.size(), 0, 0 ),
+          M_trust_region_active( false )
     {
-        GST_SMART_ASSERT( __lb.size() == __ub.size() )( __lb )( __ub )( "inconsistent bounds definition" );
+        GST_SMART_ASSERT( __lb.size() == __ub.size() )
+        ( __lb )( __ub )( "inconsistent bounds definition" );
         GST_SMART_ASSERT( *std::min_element( M_lb_ub.begin(), M_lb_ub.end() ) >= 0 )
         ( M_lb )( M_ub )( "lower and upper bounds are not properly defined" );
     }
-    DirScalingMatrix( DirScalingMatrix const & )
-    {}
+    DirScalingMatrix( DirScalingMatrix const& )
+    {
+    }
     ~DirScalingMatrix()
-    {}
+    {
+    }
 
     //@}
 
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -137,11 +136,12 @@ public:
      */
     //@{
 
-    void update( value_type const&,  vector_type const&, vector_type const&, mode_type = WITH_JACOBIAN );
+    void update( value_type const&, vector_type const&, vector_type const&, mode_type = WITH_JACOBIAN );
 
     void setBounds( vector_type const& __lb, vector_type const& __up )
     {
-        GST_SMART_ASSERT( __lb.size() == __up.size() )( __lb )( __up )( "inconsistent bounds definition" );
+        GST_SMART_ASSERT( __lb.size() == __up.size() )
+        ( __lb )( __up )( "inconsistent bounds definition" );
         M_lb = __lb;
         M_ub = __up;
         M_lb_ub = __up - __lb;
@@ -157,24 +157,22 @@ public:
 
     //@}
 
-
-
-protected:
-
+  protected:
     vector_type distanceToLB( vector_type const& __x ) const
     {
-        GST_SMART_ASSERT( __x.size() == M_lb.size() )( __x )( M_lb )( "inconsistent bounds definition" );
+        GST_SMART_ASSERT( __x.size() == M_lb.size() )
+        ( __x )( M_lb )( "inconsistent bounds definition" );
         return element_div( __x - M_lb, M_lb_ub );
     }
 
     vector_type distanceToUB( vector_type const& __x ) const
     {
-        GST_SMART_ASSERT( __x.size() == M_ub.size() )( __x )( M_ub )( "inconsistent bounds definition" );
+        GST_SMART_ASSERT( __x.size() == M_ub.size() )
+        ( __x )( M_ub )( "inconsistent bounds definition" );
         return element_div( __x - M_ub, M_lb_ub );
     }
 
-private:
-
+  private:
     vector_type M_lb;
     vector_type M_ub;
     vector_type M_lb_ub;
@@ -187,29 +185,29 @@ private:
     bool M_trust_region_active;
 };
 
-template<typename NumType>
+template <typename NumType>
 typename DirScalingMatrix<NumType>::value_type
 DirScalingMatrix<NumType>::zeta( vector_type const& __x ) const
 {
-    M_zeta = 0.9;//M_options.zeta_min;
+    M_zeta = 0.9; //M_options.zeta_min;
 
     M_zeta = std::max( M_zeta, std::max( ublas::norm_inf( distanceToLB( __x ) ),
                                          ublas::norm_inf( distanceToUB( __x ) ) ) );
     return M_zeta;
 }
-template<typename NumType>
-void
-DirScalingMatrix<NumType>::update( value_type const& __Delta,
-                                   vector_type const& __x,
-                                   vector_type const& __s,
-                                   mode_type __mode )
+template <typename NumType>
+void DirScalingMatrix<NumType>::update( value_type const& __Delta,
+                                        vector_type const& __x,
+                                        vector_type const& __s,
+                                        mode_type __mode )
 {
-    GST_SMART_ASSERT( __x.size() == M_lb.size() )( __x )( M_lb )( "inconsistent bounds definition" );
-    GST_SMART_ASSERT( __x.size() == M_ub.size() )( __x )( M_ub )( "inconsistent bounds definition" );
+    GST_SMART_ASSERT( __x.size() == M_lb.size() )
+    ( __x )( M_lb )( "inconsistent bounds definition" );
+    GST_SMART_ASSERT( __x.size() == M_ub.size() )
+    ( __x )( M_ub )( "inconsistent bounds definition" );
 
     M_value.resize( __x.size(), __x.size(), 0, 0 );
     M_jacobian.resize( __x.size(), __x.size(), 0, 0 );
-
 
     M_zeta = zeta( __x );
 
@@ -228,11 +226,11 @@ DirScalingMatrix<NumType>::update( value_type const& __Delta,
 
         for ( size_t __i = 0; __i < __x.size(); ++__i )
         {
-            if ( __s ( __i ) < 0 )
-                M_value ( __i, __i ) = M_zeta * std::min( 1. , __dl( __i ) ) / __Delta;
+            if ( __s( __i ) < 0 )
+                M_value( __i, __i ) = M_zeta * std::min( 1., __dl( __i ) ) / __Delta;
 
             else
-                M_value ( __i, __i ) = M_zeta * std::min( 1. , __du( __i ) ) / __Delta;
+                M_value( __i, __i ) = M_zeta * std::min( 1., __du( __i ) ) / __Delta;
         }
     }
 
@@ -242,22 +240,20 @@ DirScalingMatrix<NumType>::update( value_type const& __Delta,
         {
             if ( ( __s( i ) < 0 ) && ( __x( i ) < M_lb( i ) + __Delta ) )
             {
-                M_jacobian ( i, i ) = M_zeta / __Delta;
+                M_jacobian( i, i ) = M_zeta / __Delta;
             }
 
-            else if	( ( __s ( i ) > 0 ) && ( __x ( i ) > M_ub( i ) - __Delta ) )
+            else if ( ( __s( i ) > 0 ) && ( __x( i ) > M_ub( i ) - __Delta ) )
             {
-                M_jacobian ( i, i ) = -M_zeta / __Delta;
+                M_jacobian( i, i ) = -M_zeta / __Delta;
             }
 
             else
             {
-                M_jacobian ( i, i ) = 0;
+                M_jacobian( i, i ) = 0;
             }
         }
     }
 }
-
 }
 #endif /* __DirScalingMatrix_H */
-

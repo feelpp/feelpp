@@ -31,27 +31,27 @@
 #ifndef __PolynomialSet_H
 #define __PolynomialSet_H 1
 
-#include <vector>
+#include <Eigen/Core>
+#include <boost/foreach.hpp>
+#include <boost/mpl/min_max.hpp>
 #include <boost/multi_array.hpp>
 #include <boost/multi_array/extent_gen.hpp>
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
-#include <boost/mpl/min_max.hpp>
-#include <Eigen/Core>
+#include <vector>
 
 #include <feel/feelpoly/context.hpp>
 
 #include <feel/feelalg/svd.hpp>
 
-#include <feel/feelpoly/dubiner.hpp>
-#include <feel/feelpoly/legendre.hpp>
 #include <feel/feelpoly/boundadapted.hpp>
-#include <feel/feelpoly/tensorisedboundadapted.hpp>
-#include <feel/feelpoly/polynomial.hpp>
+#include <feel/feelpoly/dubiner.hpp>
 #include <feel/feelpoly/expansiontypes.hpp>
-#include <feel/feelpoly/quadmapped.hpp>
-#include <feel/feelpoly/hdivpolynomialset.hpp>
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
+#include <feel/feelpoly/hdivpolynomialset.hpp>
+#include <feel/feelpoly/legendre.hpp>
+#include <feel/feelpoly/polynomial.hpp>
+#include <feel/feelpoly/quadmapped.hpp>
+#include <feel/feelpoly/tensorisedboundadapted.hpp>
 #include <feel/feelpoly/traits.hpp>
 
 namespace Feel
@@ -76,14 +76,13 @@ using default_t = mpl::bool_<false>;
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename Poly, template<uint16_type> class PolySetType = Scalar >
+template <typename Poly, template <uint16_type> class PolySetType = Scalar>
 class PolynomialSet
-    :
-        public boost::enable_shared_from_this<PolynomialSet<Poly, PolySetType > >
+    : public boost::enable_shared_from_this<PolynomialSet<Poly, PolySetType>>
 {
-    typedef boost::enable_shared_from_this<PolynomialSet<Poly, PolySetType > > super_enable_shared_from_this;
-public:
+    typedef boost::enable_shared_from_this<PolynomialSet<Poly, PolySetType>> super_enable_shared_from_this;
 
+  public:
     /** @name Constants
      */
     //@{
@@ -102,7 +101,6 @@ public:
     typedef typename Poly::value_type value_type;
     typedef typename Poly::basis_type basis_type;
     static const bool is_product = Poly::is_product;
-
 
     typedef PolySetType<nRealDim> polyset_type;
     static const bool is_tensor2 = polyset_type::is_tensor2;
@@ -123,10 +121,10 @@ public:
     typedef typename basis_type::points_type points_type;
 
     using gradient_polynomialset_type = typename mpl::if_<is_scalar_polynomial<polyset_type>,
-                                                          mpl::identity<PolynomialSet<Poly, Vectorial> >,
+                                                          mpl::identity<PolynomialSet<Poly, Vectorial>>,
                                                           typename mpl::if_<is_vector_polynomial<polyset_type>,
-                                                                            mpl::identity<PolynomialSet<Poly, Tensor2> >,
-                                                                            mpl::identity<PolynomialSet<Poly, Tensor3> > >::type>::type::type;
+                                                                            mpl::identity<PolynomialSet<Poly, Tensor2>>,
+                                                                            mpl::identity<PolynomialSet<Poly, Tensor3>>>::type>::type::type;
 
     BOOST_STATIC_ASSERT( ( boost::is_same<typename matrix_type::value_type, value_type>::value ) );
     BOOST_STATIC_ASSERT( ( boost::is_same<typename matrix_type::value_type, typename points_type::value_type>::value ) );
@@ -138,28 +136,26 @@ public:
     //@{
 
     PolynomialSet()
-        :
-        M_basis(),
-        M_coeff(),
-        M_fname( "pset" )
+        : M_basis(),
+          M_coeff(),
+          M_fname( "pset" )
     {
         //std::cout << "[PolynomialSet::default] dim = " << nDim << " order = " << nOrder << "\n";
     }
     PolynomialSet( Poly const& p )
-        :
-        M_basis( p.basis() ),
-        M_coeff( p.coeff() ),
-        M_fname( p.familyName() )
-    {}
+        : M_basis( p.basis() ),
+          M_coeff( p.coeff() ),
+          M_fname( p.familyName() )
+    {
+    }
     /**
      */
     //template<typename AE>
     //PolynomialSet( Poly const& p, ublas::matrix_expression<AE> const& c )
     PolynomialSet( Poly const& p, matrix_type const& c, bool __as_is = false )
-        :
-        M_basis( p.basis() ),
-        M_coeff( p.coeff() ),
-        M_fname( p.familyName() )
+        : M_basis( p.basis() ),
+          M_coeff( p.coeff() ),
+          M_fname( p.familyName() )
     {
         setCoefficient( c, __as_is );
         //FEELPP_ASSERT( c.size2() == p.coeff().size1() )( c.size2() )( p.coeff().size1() ).error( "invalid dimension\n" );
@@ -174,10 +170,9 @@ public:
     //template<typename AE>
     //PolynomialSet( Poly const& p, ublas::matrix_expression<AE> const& c )
     PolynomialSet( matrix_type const& c, bool __as_is = false )
-        :
-        M_basis(),
-        M_coeff( c ),
-        M_fname( "pset" )
+        : M_basis(),
+          M_coeff( c ),
+          M_fname( "pset" )
     {
         setCoefficient( c, __as_is );
         //FEELPP_ASSERT( c.size2() == p.coeff().size1() )( c.size2() )( p.coeff().size1() ).error( "invalid dimension\n" );
@@ -187,12 +182,10 @@ public:
         //std::cout << "[PolynomialSet] coeff = " << M_coeff << "\n";
     }
 
-
-    PolynomialSet( PolynomialSet const & p )
-        :
-        M_basis( p.M_basis ),
-        M_coeff( p.M_coeff ),
-        M_fname( p.M_fname )
+    PolynomialSet( PolynomialSet const& p )
+        : M_basis( p.M_basis ),
+          M_coeff( p.M_coeff ),
+          M_fname( p.M_fname )
     {
         //std::cout << "[PolynomialSet::copy] dim = " << nDim << " order = " << nOrder << "\n";
         //std::cout << "[PolynomialSet::copy] p.coeff = " << p.coeff() << "\n";
@@ -200,7 +193,8 @@ public:
     }
 
     virtual ~PolynomialSet()
-    {}
+    {
+    }
 
     //@}
 
@@ -227,23 +221,26 @@ public:
     component_type operator[]( uint16_type i ) const
     {
         BOOST_STATIC_ASSERT( is_vectorial );
-        FEELPP_ASSERT( i < nComponents )( i )( nComponents ).error ( "invalid component index" );
-        const int nrows = M_coeff.size1()/nComponents;
+        FEELPP_ASSERT( i < nComponents )
+        ( i )( nComponents ).error( "invalid component index" );
+        const int nrows = M_coeff.size1() / nComponents;
         const int ncols = M_coeff.size2();
         return component_type( Poly(), ublas::project( M_coeff,
-                               ublas::slice( nrows*i+i, nComponents, nrows/nComponents ),
-                               ublas::slice( 0, 1, ncols ) ), true );
+                                                       ublas::slice( nrows * i + i, nComponents, nrows / nComponents ),
+                                                       ublas::slice( 0, 1, ncols ) ),
+                               true );
     }
 
     component_type operator()( uint16_type i, uint16_type j ) const
-        {
-            BOOST_STATIC_ASSERT( is_tensor2 );
-            const int nrows = M_coeff.size1()/nComponents;
-            const int ncols = M_coeff.size2();
-            return component_type( Poly(), ublas::project( M_coeff,
-                                                           ublas::slice( nrows*i+j, nComponents, nrows/nComponents ),
-                                                           ublas::slice( 0, 1, ncols ) ), true );
-        }
+    {
+        BOOST_STATIC_ASSERT( is_tensor2 );
+        const int nrows = M_coeff.size1() / nComponents;
+        const int ncols = M_coeff.size2();
+        return component_type( Poly(), ublas::project( M_coeff,
+                                                       ublas::slice( nrows * i + j, nComponents, nrows / nComponents ),
+                                                       ublas::slice( 0, 1, ncols ) ),
+                               true );
+    }
 
     //@}
 
@@ -263,9 +260,9 @@ public:
      * \return coefficient of the polynomials of the polynomial set in
      * the basis associated with Poly
      */
-    matrix_type const&  coeff() const
+    matrix_type const& coeff() const
     {
-        return  M_coeff;
+        return M_coeff;
     }
 
     /**
@@ -305,7 +302,7 @@ public:
      */
     size_type polynomialDimension() const
     {
-        return M_coeff.size1()/nComponents;
+        return M_coeff.size1() / nComponents;
     }
 
     /**
@@ -397,22 +394,22 @@ public:
      * \param list_p list of indices of polynomials to extract
      * \return the polynomial set extracted
      */
-    PolynomialSet<Poly, PolySetType> polynomials( std::vector<uint16_type> const& list_p  ) const
+    PolynomialSet<Poly, PolySetType> polynomials( std::vector<uint16_type> const& list_p ) const
     {
         size_type dim_p = this->polynomialDimension();
-        size_type new_dim_p = nComponents*list_p.size();
-        matrix_type coeff( nComponents*nComponents*list_p.size(), M_coeff.size2() );
+        size_type new_dim_p = nComponents * list_p.size();
+        matrix_type coeff( nComponents * nComponents * list_p.size(), M_coeff.size2() );
         int j = 0;
-        BOOST_FOREACH( uint16_type i, list_p )
+        BOOST_FOREACH ( uint16_type i, list_p )
         {
             for ( int c = 0; c < nComponents; ++c )
             {
                 ublas::project( coeff,
-                                ublas::range( c*new_dim_p+nComponents*j, c*dim_p+nComponents*j+nComponents ),
+                                ublas::range( c * new_dim_p + nComponents * j, c * dim_p + nComponents * j + nComponents ),
                                 ublas::range( 0, M_coeff.size2() ) ) =
-                                    ublas::project( M_coeff,
-                                                    ublas::range( c*dim_p+nComponents*i, c*dim_p+nComponents*i+nComponents ),
-                                                    ublas::range( 0, M_coeff.size2() ) );
+                    ublas::project( M_coeff,
+                                    ublas::range( c * dim_p + nComponents * i, c * dim_p + nComponents * i + nComponents ),
+                                    ublas::range( 0, M_coeff.size2() ) );
             }
 
             ++j;
@@ -426,19 +423,19 @@ public:
      * \param dim_p polynomial dimension
      * \return the polynomial set extracted
      */
-    PolynomialSet<Poly, PolySetType> polynomialsUpToDimension( int dim_p  ) const
+    PolynomialSet<Poly, PolySetType> polynomialsUpToDimension( int dim_p ) const
     {
-        matrix_type coeff( nComponents*nComponents*dim_p, M_coeff.size2() );
+        matrix_type coeff( nComponents * nComponents * dim_p, M_coeff.size2() );
 
         for ( int c = 0; c < nComponents; ++c )
         {
-            size_type nc = c*this->polynomialDimension();
+            size_type nc = c * this->polynomialDimension();
             ublas::project( coeff,
-                            ublas::range( c*nComponents*dim_p, ( c+1 )*nComponents*dim_p ),
+                            ublas::range( c * nComponents * dim_p, ( c + 1 ) * nComponents * dim_p ),
                             ublas::range( 0, M_coeff.size2() ) ) =
-                                ublas::project( M_coeff,
-                                                ublas::range( nc, nc+nComponents*dim_p ),
-                                                ublas::range( 0, M_coeff.size2() ) );
+                ublas::project( M_coeff,
+                                ublas::range( nc, nc + nComponents * dim_p ),
+                                ublas::range( 0, M_coeff.size2() ) );
         }
 
         return PolynomialSet<Poly, PolySetType>( Poly(), coeff, true );
@@ -452,21 +449,21 @@ public:
      * \return the polynomial set extracted
      */
     PolynomialSet<Poly, PolySetType>
-    polynomialsRange( uint16_type dim_bot, uint16_type dim_top  ) const
+    polynomialsRange( uint16_type dim_bot, uint16_type dim_top ) const
     {
-        uint16_type dim_p = dim_top-dim_bot;
-        matrix_type coeff( nComponents*nComponents*dim_p,
+        uint16_type dim_p = dim_top - dim_bot;
+        matrix_type coeff( nComponents * nComponents * dim_p,
                            M_coeff.size2() );
 
         for ( int c = 0; c < nComponents; ++c )
         {
-            size_type nc = c*this->polynomialDimension();
+            size_type nc = c * this->polynomialDimension();
             ublas::project( coeff,
-                            ublas::range( c*nComponents*dim_bot, ( c+1 )*nComponents*dim_top ),
+                            ublas::range( c * nComponents * dim_bot, ( c + 1 ) * nComponents * dim_top ),
                             ublas::range( 0, M_coeff.size2() ) ) =
-                                ublas::project( M_coeff,
-                                                ublas::range( nc+dim_bot, nc+nComponents*dim_top ),
-                                                ublas::range( 0, M_coeff.size2() ) );
+                ublas::project( M_coeff,
+                                ublas::range( nc + dim_bot, nc + nComponents * dim_top ),
+                                ublas::range( 0, M_coeff.size2() ) );
         }
 
         return PolynomialSet<Poly, PolySetType>( Poly(), coeff, true );
@@ -478,7 +475,7 @@ public:
      * \param i index of the polynomial to extract
      * \return the polynomial extracted
      */
-    Polynomial<Poly, PolySetType> polynomial( uint16_type i  ) const
+    Polynomial<Poly, PolySetType> polynomial( uint16_type i ) const
     {
         size_type dim_p = this->polynomialDimension();
         matrix_type coeff( nComponents, M_coeff.size2() );
@@ -487,14 +484,13 @@ public:
             ublas::project( coeff,
                             ublas::range( 0, nComponents ),
                             ublas::range( 0, M_coeff.size2() ) ) =
-                                ublas::project( M_coeff,
-                                                //ublas::range( c*dim_p+nComponents*i, c*dim_p+nComponents*i+nComponents ),
-                                                ublas::range( nComponents*i, nComponents*( i+1 ) ),
-                                                ublas::range( 0, M_coeff.size2() ) );
+                ublas::project( M_coeff,
+                                //ublas::range( c*dim_p+nComponents*i, c*dim_p+nComponents*i+nComponents ),
+                                ublas::range( nComponents * i, nComponents * ( i + 1 ) ),
+                                ublas::range( 0, M_coeff.size2() ) );
         }
-        return Polynomial<Poly, PolySetType> ( Poly(), coeff, true );
+        return Polynomial<Poly, PolySetType>( Poly(), coeff, true );
     }
-
 
     /**
      * evaluate the i-th polynomial at node __pt
@@ -502,22 +498,21 @@ public:
      * \warning this function is not efficient at all, the preferred
      * method is to evaluate at a set of points
      */
-    template<typename AE>
+    template <typename AE>
     ublas::vector<value_type> evaluate( uint16_type i, ublas::vector_expression<AE> const& __pt ) const
     {
-        return ublas::row( ublas::prod( M_coeff, M_basis( __pt ) ),  i );
+        return ublas::row( ublas::prod( M_coeff, M_basis( __pt ) ), i );
     }
 
     /**
      * evaluate all polynomials at node __pt
      * \return a column matrix
      */
-    template<typename AE>
+    template <typename AE>
     ublas::matrix<value_type> evaluate( ublas::vector_expression<AE> const& __pt ) const
     {
         return ublas::prod( M_coeff, M_basis( __pt ) );
     }
-
 
     /**
      * evaluate all polynomials of the set at a set of nodes
@@ -529,11 +524,12 @@ public:
      *
      * \return the matrix \f$A\f$
      */
-    template<typename AE>
+    template <typename AE>
     matrix_type evaluate( ublas::matrix_expression<AE> const& __pts ) const
     {
-        matrix_type m ( M_basis.evaluate( __pts ) );
-        FEELPP_ASSERT( M_coeff.size2() == m.size1() )( M_coeff.size2() )( m.size1() ).error( "invalid size" );
+        matrix_type m( M_basis.evaluate( __pts ) );
+        FEELPP_ASSERT( M_coeff.size2() == m.size1() )
+        ( M_coeff.size2() )( m.size1() ).error( "invalid size" );
         return ublas::prod( M_coeff, m );
     }
 
@@ -575,10 +571,10 @@ public:
      */
     self_type derivate( uint16_type l ) const
     {
-        return self_type( Poly(), ublas::prod(  M_coeff, M_basis.d( l ) ), true );
+        return self_type( Poly(), ublas::prod( M_coeff, M_basis.d( l ) ), true );
     }
 
-    template<typename AE>
+    template <typename AE>
     ublas::vector<matrix_type> derivate( ublas::matrix_expression<AE> const& pts ) const
     {
         ublas::vector<matrix_type> der( M_basis.derivate( pts ) );
@@ -593,7 +589,7 @@ public:
         return res;
     }
 
-    template<typename AE>
+    template <typename AE>
     matrix_type derivate( uint16_type i, ublas::matrix_expression<AE> const& pts ) const
     {
         ublas::vector<matrix_type> der( M_basis.derivate( pts ) );
@@ -602,25 +598,25 @@ public:
         return res;
     }
 
-    template<typename AE>
+    template <typename AE>
     ublas::matrix<matrix_type> derivate2( ublas::matrix_expression<AE> const& pts ) const
-        {
-            //std::cout << "[derivate2] M_coeff = " << M_coeff << "\n";
-            matrix_type eval( M_basis.evaluate( pts ) );
-            ublas::matrix<matrix_type> res( nDim, nDim );
+    {
+        //std::cout << "[derivate2] M_coeff = " << M_coeff << "\n";
+        matrix_type eval( M_basis.evaluate( pts ) );
+        ublas::matrix<matrix_type> res( nDim, nDim );
 
-            for ( uint16_type i = 0; i < nDim; ++i )
+        for ( uint16_type i = 0; i < nDim; ++i )
+        {
+            for ( uint16_type j = 0; j < nDim; ++j )
             {
-                for ( uint16_type j = 0; j < nDim; ++j )
-                {
-                    matrix_type p1 = ublas::prod( M_coeff, M_basis.d( i ) );
-                    matrix_type p2 = ublas::prod( p1, M_basis.d( j ) );
-                    res( i, j ) = ublas::prod( p2, eval );
-                }
+                matrix_type p1 = ublas::prod( M_coeff, M_basis.d( i ) );
+                matrix_type p2 = ublas::prod( p1, M_basis.d( j ) );
+                res( i, j ) = ublas::prod( p2, eval );
             }
-            return res;
         }
-    template<typename AE>
+        return res;
+    }
+    template <typename AE>
     matrix_type derivate( uint16_type i, uint16_type j, ublas::matrix_expression<AE> const& pts ) const
     {
         //std::cout << "[derivate2] M_coeff = " << M_coeff << "\n";
@@ -643,38 +639,38 @@ public:
     }
 
     gradient_polynomialset_type
-    gradient( mpl::int_<0> ) const
+        gradient( mpl::int_<0> ) const
     {
         const int n1 = M_coeff.size1();
         const int n2 = M_coeff.size2();
-        ublas::matrix<value_type> c ( nDim*nDim*n1, n2 );
+        ublas::matrix<value_type> c( nDim * nDim * n1, n2 );
         c.clear();
 
-        for ( int i = 0; i <nDim; ++i )
+        for ( int i = 0; i < nDim; ++i )
         {
             ublas::project( c,
-                            ublas::slice( nDim*n1*i+i, nDim, n1 ),
-                            ublas::slice( 0, 1, n2 ) )  = ublas::prod( M_coeff, M_basis.d( i ) );
+                            ublas::slice( nDim * n1 * i + i, nDim, n1 ),
+                            ublas::slice( 0, 1, n2 ) ) = ublas::prod( M_coeff, M_basis.d( i ) );
         }
 
         return gradient_polynomialset_type( c, true );
     }
 
     gradient_polynomialset_type
-    gradient( mpl::int_<1> ) const
+        gradient( mpl::int_<1> ) const
     {
         // we deal with a VECTORIAL polynomial set: nComponents = nDim*nDim
         // number of basis functions times the numb er of components(was vertorial function)
         const int n1 = M_coeff.size1();
         const int n2 = M_coeff.size2();
-        ublas::matrix<value_type> c ( nComponents*nComponents*n1, n2 );
+        ublas::matrix<value_type> c( nComponents * nComponents * n1, n2 );
         c.clear();
 #if 0
         std::cout << "M_coeff = " << M_coeff << "\n"
                   << "c = " << c << "\n";
 #endif
 
-        for ( int i = 0; i <nDim; ++i )
+        for ( int i = 0; i < nDim; ++i )
         {
 #if 0
             std::cout << "i=" << i << "\n"
@@ -687,16 +683,13 @@ public:
             // c[i][c1][c2][q]
 #endif
             ublas::project( c,
-                            ublas::slice( nDim*n1*i+i, nDim, n1 ),
-                            ublas::slice( 0, 1, n2 ) )  = ublas::prod( M_coeff, M_basis.d( i ) );
+                            ublas::slice( nDim * n1 * i + i, nDim, n1 ),
+                            ublas::slice( 0, 1, n2 ) ) = ublas::prod( M_coeff, M_basis.d( i ) );
         }
 
         //std::cout << "coeff = " << c << "\n";
         return gradient_polynomialset_type( c, true );
     }
-
-
-
 
     /**
      * \return the number of degrees of freedom
@@ -706,13 +699,13 @@ public:
         return M_coeff.size1();
     }
 
-
     /**
      * insert the polynomial set \p p at the end of the set
      */
-    void insert( PolynomialSet<Poly,PolySetType> const& p, bool erase = false )
+    void insert( PolynomialSet<Poly, PolySetType> const& p, bool erase = false )
     {
-        FEELPP_ASSERT( p.coeff().size2() == coeff().size2() )( p.coeff().size2() )( coeff().size2() ).warn( "invalid polynomial set" );
+        FEELPP_ASSERT( p.coeff().size2() == coeff().size2() )
+        ( p.coeff().size2() )( coeff().size2() ).warn( "invalid polynomial set" );
 
 #if 0
         std::cout << "coeff = " << M_coeff << "\n"
@@ -729,7 +722,6 @@ public:
         matrix_type oldcoeff = M_coeff;
         M_coeff.resize( M_coeff.size1() + p.coeff().size1(), p.coeff().size2(), false );
 
-
         if ( oldcoeff.size1() > 0 )
         {
             ublas::project( M_coeff,
@@ -738,15 +730,12 @@ public:
         }
 
         ublas::project( M_coeff,
-                        ublas::range( oldcoeff.size1(), oldcoeff.size1()+p.coeff().size1() ),
+                        ublas::range( oldcoeff.size1(), oldcoeff.size1() + p.coeff().size1() ),
                         ublas::range( 0, oldcoeff.size2() ) ) = p.coeff();
         //std::cout << "insert ="  << M_coeff << "\n";
-
     }
 
-
     //@}
-
 
     /******************************************************/
     /**
@@ -754,9 +743,9 @@ public:
      */
     class PreCompute
     {
-    public:
+      public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        typedef PolynomialSet<Poly, PolySetType > reference_element_type;
+        typedef PolynomialSet<Poly, PolySetType> reference_element_type;
         typedef boost::shared_ptr<reference_element_type> reference_element_ptrtype;
 
         typedef typename reference_element_type::value_type value_type;
@@ -769,15 +758,15 @@ public:
 
         typedef typename reference_element_type::points_type matrix_node_t_type;
         typedef ublas::matrix<value_type> matrix_type;
-        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> id_type;
-        typedef Eigen::Matrix<value_type,nComponents1,nDim> g_type;
-        typedef Eigen::Matrix<value_type,nDim,nDim> h_type;
-        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> l_type;
-        typedef boost::multi_array<id_type,2> functionvalue_type;
-        typedef boost::multi_array<g_type,2> grad_type;
-        typedef boost::multi_array<h_type,3> hessian_type;
+        typedef Eigen::Matrix<value_type, nComponents1, nComponents2> id_type;
+        typedef Eigen::Matrix<value_type, nComponents1, nDim> g_type;
+        typedef Eigen::Matrix<value_type, nDim, nDim> h_type;
+        typedef Eigen::Matrix<value_type, nComponents1, nComponents2> l_type;
+        typedef boost::multi_array<id_type, 2> functionvalue_type;
+        typedef boost::multi_array<g_type, 2> grad_type;
+        typedef boost::multi_array<h_type, 3> hessian_type;
 
-        PreCompute()  = default;
+        PreCompute() = default;
 
 #if 0
         /**
@@ -803,12 +792,11 @@ public:
          */
         PreCompute( reference_element_ptrtype const& __ref_ele,
                     matrix_node_t_type const& __pts )
-            :
-            M_ref_ele( __ref_ele ),
-            M_nodes( __pts ),
-            M_phi(),
-            M_grad(),
-            M_hessian()
+            : M_ref_ele( __ref_ele ),
+              M_nodes( __pts ),
+              M_phi(),
+              M_grad(),
+              M_hessian()
         {
             init( M_ref_ele, __pts, mpl::int_<rank>() );
         }
@@ -890,31 +878,31 @@ public:
             return M_phi;
         }
 
-        functionvalue_type const*  phiPtr() const
-            {
-                return &M_phi;
-            }
+        functionvalue_type const* phiPtr() const
+        {
+            return &M_phi;
+        }
         /**
          * Returns the value of the q-th node of the i-th basis
          * functions.
          */
         value_type phi( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            CHECK( q < nComputedNodes() ) << "invalid node index q=" << q << " nComputedNodes="<< nComputedNodes();
+            CHECK( q < nComputedNodes() ) << "invalid node index q=" << q << " nComputedNodes=" << nComputedNodes();
             CHECK( i < M_ref_ele->nbDof() ) << "invalid dof index i=" << i << " ndof =" << M_ref_ele->nbDof();
 
-            return M_phi[i][q]( c1,c2 );
+            return M_phi[i][q]( c1, c2 );
         }
         id_type const& phi( uint16_type i, uint16_type q ) const
         {
-            CHECK( q < nComputedNodes() ) << "invalid node index q=" << q << " nComputedNodes="<< nComputedNodes();
+            CHECK( q < nComputedNodes() ) << "invalid node index q=" << q << " nComputedNodes=" << nComputedNodes();
             CHECK( i < M_ref_ele->nbDof() ) << "invalid dof index i=" << i << " ndof =" << M_ref_ele->nbDof();
 
             return M_phi[i][q];
         }
         id_type& phi( uint16_type i, uint16_type q )
         {
-            CHECK( q < nComputedNodes() ) << "invalid node index q=" << q << " nComputedNodes="<< nComputedNodes();
+            CHECK( q < nComputedNodes() ) << "invalid node index q=" << q << " nComputedNodes=" << nComputedNodes();
             CHECK( i < M_ref_ele->nbDof() ) << "invalid dof index i=" << i << " ndof =" << M_ref_ele->nbDof();
 
             return M_phi[i][q];
@@ -925,13 +913,13 @@ public:
             return M_grad;
         }
         grad_type const* gradPtr() const
-            {
-                return &M_grad;
-            }
+        {
+            return &M_grad;
+        }
 
         value_type grad( size_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_grad[i][q]( c1,c2 );
+            return M_grad[i][q]( c1, c2 );
         }
 
         hessian_type const& hessian() const
@@ -942,39 +930,39 @@ public:
         // hessian of scalar basis function
         value_type hessian( size_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_hessian[i][0][q]( c1,c2 );
+            return M_hessian[i][0][q]( c1, c2 );
         }
         // hessian of scalar basis function
         h_type const& hessian( size_type i, uint16_type q ) const
-            {
-                return M_hessian[i][0][q];
-            }
+        {
+            return M_hessian[i][0][q];
+        }
         // hessian of vectorial basis function
         value_type hessian( size_type i, uint16_type c1, uint16_type c2, uint16_type c3, uint16_type q ) const
-            {
-                return M_hessian[i][c1][q]( c2,c3 );
-            }
+        {
+            return M_hessian[i][c1][q]( c2, c3 );
+        }
         // hessian of vectorial basis function
         h_type const& hessian( size_type i, uint16_type c1, uint16_type q ) const
-            {
-                return M_hessian[i][c1][q];
-            }
+        {
+            return M_hessian[i][c1][q];
+        }
 
         void print()
+        {
+            typedef typename grad_type::index index;
+            const index I = M_ref_ele->nbDof();
+            const index Q = M_nodes.size2();
+
+            LOG( INFO ) << "Precompute nodes : " << M_nodes;
+            for ( index i = 0; i < I; ++i )
             {
-                typedef typename grad_type::index index;
-                const index I = M_ref_ele->nbDof();
-                const index Q = M_nodes.size2();
-
-                LOG(INFO) << "Precompute nodes : " << M_nodes;
-                for ( index i = 0; i < I; ++i )
-                {
-                    for ( index q = 0; q < Q; ++q )
-                        LOG(INFO) << "Precompute phi[" << i << ", " << q << "]= " << M_phi[i][q](0,0);
-                }
+                for ( index q = 0; q < Q; ++q )
+                    LOG( INFO ) << "Precompute phi[" << i << ", " << q << "]= " << M_phi[i][q]( 0, 0 );
             }
-    private:
+        }
 
+      private:
         void
         init( reference_element_ptrtype const& M_ref_ele,
               matrix_node_t_type const& __pts,
@@ -995,23 +983,22 @@ public:
             for ( index i = 0; i < I; ++i )
             {
                 for ( index q = 0; q < Q; ++q )
-                    M_phi[i][q]( 0,0 ) = phiv( i, q );
+                    M_phi[i][q]( 0, 0 ) = phiv( i, q );
 
                 for ( index q = 0; q < Q; ++q )
                     for ( index j = 0; j < nDim; ++j )
-                        M_grad[i][q]( 0,j ) = __grad[j]( i, q );
+                        M_grad[i][q]( 0, j ) = __grad[j]( i, q );
 
                 for ( index q = 0; q < Q; ++q )
                     for ( index j = 0; j < nDim; ++j )
                         for ( index k = j; k < nDim; ++k )
                         {
                             //value_type t = __hessian( nDim*nDim*I*( nDim*k+j )+nDim*nDim*i+nDim*j+k, q );
-                            value_type t = __hess(j,k)( i, q );
-                            M_hessian[i][0][q]( j,k ) = t;
-                            M_hessian[i][0][q]( k,j ) = t;
+                            value_type t = __hess( j, k )( i, q );
+                            M_hessian[i][0][q]( j, k ) = t;
+                            M_hessian[i][0][q]( k, j ) = t;
                         }
             }
-
         }
         void
         init( reference_element_ptrtype const& M_ref_ele,
@@ -1024,15 +1011,15 @@ public:
             std::cout << "is_product = " << reference_element_type::is_product << std::endl;
             std::cout << "nbDof = " << M_ref_ele->nbDof() << std::endl;
 #endif
-            const index I = ( reference_element_type::is_product?M_ref_ele->nbDof()/nRealDim/nRealDim:M_ref_ele->nbDof()/nRealDim );
+            const index I = ( reference_element_type::is_product ? M_ref_ele->nbDof() / nRealDim / nRealDim : M_ref_ele->nbDof() / nRealDim );
             //std::cout << "I = " << I << std::endl;
             //std::cout << "nbDof = " << M_ref_ele->nbDof() << std::endl;
 
             const index Q = __pts.size2();
             //std::cout << "Q = " << I << std::endl;
 
-            const int ncdof= ( reference_element_type::is_product?nRealDim:1 );
-            int nldof= ( reference_element_type::is_product?I*nRealDim:I );
+            const int ncdof = ( reference_element_type::is_product ? nRealDim : 1 );
+            int nldof = ( reference_element_type::is_product ? I * nRealDim : I );
             //std::cout << "ncdof = " << ncdof << ", nldof = " << nldof << "\n";
             M_phi.resize( boost::extents[nldof][__pts.size2()] );
             M_grad.resize( boost::extents[nldof][__pts.size2()] );
@@ -1049,7 +1036,7 @@ public:
                 {
                     for ( index q = 0; q < Q; ++q )
                         for ( index j = 0; j < nRealDim; ++j )
-                            M_phi[I*c1+i][q]( j,0 ) = phiv( nldof*c1+nRealDim*i+j, q );
+                            M_phi[I * c1 + i][q]( j, 0 ) = phiv( nldof * c1 + nRealDim * i + j, q );
 
                     //M_phi[I*c1+i][q](j,0) = phiv( nDim*I*c1+nDim*i+j, q );
 
@@ -1058,7 +1045,7 @@ public:
                             for ( index l = 0; l < nDim; ++l )
                             {
                                 //M_grad[I*c1+i][j](l,q) = __grad[l]( nDim*I*c1+nDim*i+j, q );
-                                M_grad[I*c1+i][q]( j,l ) = __grad[l]( nldof*c1+nRealDim*i+j, q );
+                                M_grad[I * c1 + i][q]( j, l ) = __grad[l]( nldof * c1 + nRealDim * i + j, q );
                                 //M_grad[I*c1+i][j][nRealDim-1][q] = __grad[l]( nldof*c1+nRealDim*i+j, q );
                                 //std::cout << "grad(" << i << "," << c1 << "," << j << "," << l << "," << q << ")=" <<  M_grad[I*c1+i][j](l,q) << "\n";
                             }
@@ -1068,12 +1055,10 @@ public:
                             for ( index j = 0; j < nDim; ++j )
                                 for ( index k = j; k < nDim; ++k )
                                 {
-                                    value_type t = __hess(j,k)( nldof*c1+nRealDim*i+l,q);
-                                    M_hessian[I*c1+i][l][q]( j,k ) = t;
-                                    M_hessian[I*c1+i][l][q]( k,j ) = t;
+                                    value_type t = __hess( j, k )( nldof * c1 + nRealDim * i + l, q );
+                                    M_hessian[I * c1 + i][l][q]( j, k ) = t;
+                                    M_hessian[I * c1 + i][l][q]( k, j ) = t;
                                 }
-
-
                 }
             }
         }
@@ -1089,16 +1074,16 @@ public:
             std::cout << "is_product = " << reference_element_type::is_product << std::endl;
             std::cout << "nbDof = " << M_ref_ele->nbDof() << std::endl;
 #endif
-            const index I = ( reference_element_type::is_product?M_ref_ele->nbDof()/nComponents/nComponents:M_ref_ele->nbDof() );
+            const index I = ( reference_element_type::is_product ? M_ref_ele->nbDof() / nComponents / nComponents : M_ref_ele->nbDof() );
             //std::cout << "I = " << I << std::endl;
             //std::cout << "nbDof = " << M_ref_ele->nbDof() << std::endl;
 
             const index Q = __pts.size2();
             //std::cout << "Q = " << I << std::endl;
 
-            const int nc1dof= ( reference_element_type::is_product?nComponents1:1 );
-            const int nc2dof= ( reference_element_type::is_product?nComponents2:1 );
-            int nldof= ( reference_element_type::is_product?I*nComponents:I );
+            const int nc1dof = ( reference_element_type::is_product ? nComponents1 : 1 );
+            const int nc2dof = ( reference_element_type::is_product ? nComponents2 : 1 );
+            int nldof = ( reference_element_type::is_product ? I * nComponents : I );
             //std::cout << " nldof = " << nldof << " I=" << I << " nc1dof=" << nc1dof << " nc2dof=" << nc2dof << std::endl;
             M_phi.resize( boost::extents[nldof][__pts.size2()] );
             M_grad.resize( boost::extents[nldof][__pts.size2()] );
@@ -1111,20 +1096,20 @@ public:
                 {
                     for ( index c2 = 0; c2 < nc2dof; ++c2 )
                     {
-                        int II = i + c2*I+nc2dof*c1*I;
+                        int II = i + c2 * I + nc2dof * c1 * I;
                         for ( index q = 0; q < Q; ++q )
                         {
                             for ( index j = 0; j < nRealDim; ++j )
                                 for ( index k = 0; k < nRealDim; ++k )
-                                    M_phi[II][q]( j,k ) = phiv( I*nComponents*(nComponents2*c1+c2)+nComponents*i+nRealDim*j+k, q );
+                                    M_phi[II][q]( j, k ) = phiv( I * nComponents * ( nComponents2 * c1 + c2 ) + nComponents * i + nRealDim * j + k, q );
                             //std::cout << "phi[" << II << "(" << i << ",c2=" << c2 << ", " << I << "," << nc2dof << ",c1=" << c1 << ")[" << q << "]=" << M_phi[II][q] << std::endl;
                         }
                     }
                 }
             }
         }
-    private:
 
+      private:
         reference_element_ptrtype M_ref_ele;
         matrix_node_t_type M_nodes;
         functionvalue_type M_phi;
@@ -1147,9 +1132,9 @@ public:
         return boost::make_shared<PreCompute>( super_enable_shared_from_this::shared_from_this(), P );
     }
 
-    typedef std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> > faces_precompute_type;
+    typedef std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype>> faces_precompute_type;
 
-    std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> >
+    std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype>>
     preComputeOnFaces( self_ptrtype p, points_type const& P )
     {
 #if 0
@@ -1158,60 +1143,60 @@ public:
         typename QuadMapped<pointset_type>::permutation_points_type ppts( qm( P ) );
 #endif
         typedef typename convex_type::permutation_type permutation_type;
-        std::vector<std::map<permutation_type, precompute_ptrtype> > geopc( convex_type::numTopologicalFaces );
+        std::vector<std::map<permutation_type, precompute_ptrtype>> geopc( convex_type::numTopologicalFaces );
 
         for ( uint16_type __f = 0; __f < convex_type::numTopologicalFaces; ++__f )
         {
             for ( permutation_type __p( permutation_type::IDENTITY );
-                    __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                  __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
                 //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-                geopc[__f][__p] = precompute_ptrtype(  new precompute_type( p, P ) );
+                geopc[__f][__p] = precompute_ptrtype( new precompute_type( p, P ) );
             }
         }
 
         return geopc;
     }
 
-    std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> >
-    preComputeOnFaces( self_ptrtype p, std::vector<std::map<uint16_type,points_type > > const& P )
+    std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype>>
+    preComputeOnFaces( self_ptrtype p, std::vector<std::map<uint16_type, points_type>> const& P )
     {
         typedef typename convex_type::permutation_type permutation_type;
-        std::vector<std::map<permutation_type, precompute_ptrtype> > geopc( convex_type::numTopologicalFaces );
+        std::vector<std::map<permutation_type, precompute_ptrtype>> geopc( convex_type::numTopologicalFaces );
         CHECK( P.size() == convex_type::numTopologicalFaces ) << "invalid number of face : " << P.size() << " vs " << convex_type::numTopologicalFaces;
         for ( uint16_type __f = 0; __f < convex_type::numTopologicalFaces; ++__f )
         {
             auto const& ptsOnFace = P[__f];
             for ( permutation_type __p( permutation_type::IDENTITY );
-                    __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                  __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
                 auto itFindPerm = ptsOnFace.find( __p.value() );
                 CHECK( itFindPerm != ptsOnFace.end() ) << "permutation not find";
-                geopc[__f][__p] = precompute_ptrtype(  new precompute_type( p, itFindPerm->second ) );
+                geopc[__f][__p] = precompute_ptrtype( new precompute_type( p, itFindPerm->second ) );
             }
         }
 
         return geopc;
     }
 
-    template<typename PAtEdges>
+    template <typename PAtEdges>
     std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype>>
     preComputeOnEdges( self_ptrtype gm, PAtEdges const& p )
     {
         typedef typename convex_type::permutation_type permutation_type;
-        std::vector<std::map<permutation_type, precompute_ptrtype> > __geopc( convex_type::numEdges );
+        std::vector<std::map<permutation_type, precompute_ptrtype>> __geopc( convex_type::numEdges );
         for ( uint16_type __f = 0; __f < convex_type::numEdges; ++__f )
         {
-            __geopc[__f][permutation_type::NO_PERMUTATION] = boost::make_shared<precompute_type>(  gm, p(__f) );
-            __geopc[__f][permutation_type::REVERSE_PERMUTATION] = boost::make_shared<precompute_type>(  gm, p( __f ) );
+            __geopc[__f][permutation_type::NO_PERMUTATION] = boost::make_shared<precompute_type>( gm, p( __f ) );
+            __geopc[__f][permutation_type::REVERSE_PERMUTATION] = boost::make_shared<precompute_type>( gm, p( __f ) );
         }
         return __geopc;
     }
 
-    template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g = context_v>
+    template <size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g = context_v>
     class Context
     {
-    public:
+      public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         static const int context = context_v;
         // reference space dimension
@@ -1230,18 +1215,17 @@ public:
         static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<Basis_t>::value;
         static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<Basis_t>::value;
 
-        static const bool do_optimization_p1= ( nOrder<=1 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_simplex );
+        static const bool do_optimization_p1 = ( nOrder <= 1 ) && ( Geo_t::nOrder == 1 ) && ( convex_type::is_simplex );
         using do_optimization_p1_t = mpl::bool_<do_optimization_p1>;
         using optimization_p1_t = mpl::bool_<true>;
         using no_optimization_p1_t = mpl::bool_<false>;
 
-
-        static const bool do_optimization_p2= ( nOrder==2 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_simplex );
+        static const bool do_optimization_p2 = ( nOrder == 2 ) && ( Geo_t::nOrder == 1 ) && ( convex_type::is_simplex );
         using do_optimization_p2_t = mpl::bool_<do_optimization_p2>;
         using optimization_p2_t = mpl::bool_<true>;
         using no_optimization_p2_t = mpl::bool_<false>;
 
-        static const bool do_opt_q1= ( nOrder<=2 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_hypercube );
+        static const bool do_opt_q1 = ( nOrder <= 2 ) && ( Geo_t::nOrder == 1 ) && ( convex_type::is_hypercube );
 
         typedef typename Basis_t::polyset_type polyset_type;
         static const uint16_type rank = polyset_type::rank;
@@ -1269,17 +1253,17 @@ public:
         typedef typename matrix_type::value_type dphi_type;
         typedef typename matrix_type::value_type id_type;
 #else
-        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> id_type;
-        typedef Eigen::Matrix<value_type,nComponents1,nDim> ref_grad_type;
-        typedef Eigen::Matrix<value_type,nComponents1,NDim> grad_type;
-        typedef Eigen::Matrix<value_type,NDim,NDim> hess_type;
-        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> laplacian_type;
-        typedef Eigen::Matrix<value_type,1,1> div_type;
-        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> dn_type;
-        typedef Eigen::Matrix<value_type,3,1> curl_type;
-        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> dx_type;
-        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> dy_type;
-        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> dz_type;
+        typedef Eigen::Matrix<value_type, nComponents1, nComponents2> id_type;
+        typedef Eigen::Matrix<value_type, nComponents1, nDim> ref_grad_type;
+        typedef Eigen::Matrix<value_type, nComponents1, NDim> grad_type;
+        typedef Eigen::Matrix<value_type, NDim, NDim> hess_type;
+        typedef Eigen::Matrix<value_type, nComponents1, nComponents2> laplacian_type;
+        typedef Eigen::Matrix<value_type, 1, 1> div_type;
+        typedef Eigen::Matrix<value_type, nComponents1, nComponents2> dn_type;
+        typedef Eigen::Matrix<value_type, 3, 1> curl_type;
+        typedef Eigen::Matrix<value_type, nComponents1, nComponents2> dx_type;
+        typedef Eigen::Matrix<value_type, nComponents1, nComponents2> dy_type;
+        typedef Eigen::Matrix<value_type, nComponents1, nComponents2> dz_type;
 
 #if 0
         typedef boost::multi_array<id_type,2> functionvalue_type;
@@ -1291,15 +1275,15 @@ public:
 #endif
 
         typedef geometric_mapping_context_type gmc_type;
-        typedef Eigen::Matrix<value_type,Eigen::Dynamic, Eigen::Dynamic> matrix_eigen_type;
-        typedef Eigen::Matrix<value_type,gmc_type::NDim,gmc_type::PDim> matrix_eigen_NP_type;
-        typedef Eigen::Matrix<value_type,gmc_type::PDim,gmc_type::NDim> matrix_eigen_PN_type;
-        typedef Eigen::Matrix<value_type,gmc_type::NDim,gmc_type::NDim> matrix_eigen_NN_type;
-        typedef Eigen::Matrix<value_type,nComponents1,NDim> matrix_eigen_grad_type;
-        typedef typename Eigen::Map<const Eigen::Matrix<value_type,gmc_type::NDim,gmc_type::PDim,Eigen::RowMajor> > matrix_eigen_ublas_NP_type;
-        typedef typename Eigen::Map<const Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > matrix_eigen_ublas_type;
+        typedef Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> matrix_eigen_type;
+        typedef Eigen::Matrix<value_type, gmc_type::NDim, gmc_type::PDim> matrix_eigen_NP_type;
+        typedef Eigen::Matrix<value_type, gmc_type::PDim, gmc_type::NDim> matrix_eigen_PN_type;
+        typedef Eigen::Matrix<value_type, gmc_type::NDim, gmc_type::NDim> matrix_eigen_NN_type;
+        typedef Eigen::Matrix<value_type, nComponents1, NDim> matrix_eigen_grad_type;
+        typedef typename Eigen::Map<const Eigen::Matrix<value_type, gmc_type::NDim, gmc_type::PDim, Eigen::RowMajor>> matrix_eigen_ublas_NP_type;
+        typedef typename Eigen::Map<const Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> matrix_eigen_ublas_type;
 
-        // deprecate
+// deprecate
 #if 0
         template<uint16_type TheRank = polyset_type::rank+2>
         struct Index
@@ -1498,27 +1482,26 @@ public:
         Context( reference_element_ptrtype const& __RefEle,
                  geometric_mapping_context_ptrtype const& __gmc,
                  precompute_ptrtype const& __pc )
-            :
-            M_pc( __pc ),
-            M_npoints( __pc->nPoints() ),
+            : M_pc( __pc ),
+              M_npoints( __pc->nPoints() ),
 
-            M_ipt( 0 ),
-            M_ref_ele( __RefEle ),
+              M_ipt( 0 ),
+              M_ref_ele( __RefEle ),
 
-            M_gmc( __gmc ),
-            M_dofs( nDofs() ),
-            M_phi( __pc->phi() ),
-            M_gradphi( __pc->gradPtr() ),
-            M_dn(),
-            M_grad(),
-            M_dx(),
-            M_dy(),
-            M_dz()
+              M_gmc( __gmc ),
+              M_dofs( nDofs() ),
+              M_phi( __pc->phi() ),
+              M_gradphi( __pc->gradPtr() ),
+              M_dn(),
+              M_grad(),
+              M_dx(),
+              M_dy(),
+              M_dz()
         {
             std::iota( M_dofs.begin(), M_dofs.end(), 0 );
-            
+
             //LOG(INFO) << " Polynomial derivatives optimized for P1: " << do_optimization_p1;
-            if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
+            if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value )
             {
                 //const int ntdof = nDof*nComponents1;
                 const int ntdof = this->nDofs();
@@ -1548,7 +1531,7 @@ public:
                         M_curl.resize( boost::extents[ntdof][M_npoints] );
                 }
 
-                if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
+                if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value )
                 {
                     M_hessian.resize( boost::extents[ntdof][M_npoints] );
                 }
@@ -1562,26 +1545,24 @@ public:
             update( __gmc );
         }
         Context( Context const& c )
-            :
-            M_pc( c.M_pc ),
-            M_npoints( c.M_npoints ),
+            : M_pc( c.M_pc ),
+              M_npoints( c.M_npoints ),
 
-            M_ipt( c.M_ipt ),
-            M_ref_ele( c.M_ref_ele ),
+              M_ipt( c.M_ipt ),
+              M_ref_ele( c.M_ref_ele ),
 
-            M_gmc( c.M_gmc ),
-            
-            M_dofs( c.M_dofs ),
-            M_phi( c.M_phi ),
-            M_gradphi( c.M_gradphi ),
-            M_dn( c.M_dn ),
-            M_grad( c.M_grad ),
-            M_dx( c.M_dx ),
-            M_dy( c.M_dy ),
-            M_dz( c.M_dz )
-            {
+              M_gmc( c.M_gmc ),
 
-            }
+              M_dofs( c.M_dofs ),
+              M_phi( c.M_phi ),
+              M_gradphi( c.M_gradphi ),
+              M_dn( c.M_dn ),
+              M_grad( c.M_grad ),
+              M_dx( c.M_dx ),
+              M_dy( c.M_dy ),
+              M_dz( c.M_dz )
+        {
+        }
         virtual ~Context() {}
         /**
          * if isTransformationEquivalent is set to true in basis then no
@@ -1684,8 +1665,8 @@ public:
         /**
          * @return the number of basis functions
          */
-        constexpr uint16_type nDofs() const { return nDof*( reference_element_type::is_product?nComponents1*nComponents2:1 ); }
-        
+        constexpr uint16_type nDofs() const { return nDof * ( reference_element_type::is_product ? nComponents1 * nComponents2 : 1 ); }
+
         /**
          * @return the degrees of freedom
          */
@@ -1703,7 +1684,7 @@ public:
             return M_pc.get();
         }
 
-        boost::multi_array<value_type,4> const& id() const
+        boost::multi_array<value_type, 4> const& id() const
         {
             return M_phi;
         }
@@ -1711,7 +1692,7 @@ public:
         value_type const& id( uint32_type i,
                               uint16_type c1,
                               uint16_type c2,
-                              uint32_type q  ) const
+                              uint32_type q ) const
         {
             return id( i, c1, c2, q, mpl::int_<rank>() );
         }
@@ -1722,7 +1703,7 @@ public:
                               uint32_type q,
                               mpl::int_<0> ) const
         {
-            return M_phi[i][q]( 0,0 );
+            return M_phi[i][q]( 0, 0 );
         }
 
         value_type const& id( uint32_type i,
@@ -1732,7 +1713,7 @@ public:
                               mpl::int_<1> ) const
         {
             Feel::detail::ignore_unused_variable_warning( c2 );
-            return M_phi[i][q]( c1,0 );
+            return M_phi[i][q]( c1, 0 );
         }
 
         id_type const& id( uint32_type i, uint32_type q ) const
@@ -1746,64 +1727,64 @@ public:
                               uint32_type q,
                               mpl::int_<2> ) const
         {
-            return M_phi[i][q]( c1,c2 );
+            return M_phi[i][q]( c1, c2 );
         }
 
         value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
-            {
-                return d( i, c1, c2, q, do_optimization_p1_t() );
-            }
+        {
+            return d( i, c1, c2, q, do_optimization_p1_t() );
+        }
         value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
-            {
-                return M_grad[i][0]( c1,c2 );
-            }
-        value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false>  ) const
-            {
-                return M_grad[i][q]( c1,c2 );
-            }
+        {
+            return M_grad[i][0]( c1, c2 );
+        }
+        value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+        {
+            return M_grad[i][q]( c1, c2 );
+        }
 
         value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
-            {
-                return dx( i, c1, c2, q, do_optimization_p1_t() );
-            }
+        {
+            return dx( i, c1, c2, q, do_optimization_p1_t() );
+        }
         value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
-            {
-                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<1> ) );
-                return M_grad[i][0]( c1,0 );
-            }
+        {
+            BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, (mpl::int_<nDim>, mpl::int_<1>));
+            return M_grad[i][0]( c1, 0 );
+        }
         value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
-            {
-                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<1> ) );
-                return M_grad[i][q]( c1,0 );
-            }
+        {
+            BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, (mpl::int_<nDim>, mpl::int_<1>));
+            return M_grad[i][q]( c1, 0 );
+        }
         value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
-            {
-                return dy( i, c1, c2, q, do_optimization_p1_t() );
-            }
+        {
+            return dy( i, c1, c2, q, do_optimization_p1_t() );
+        }
         value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
-            {
-                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<1> ) );
-                return M_grad[i][0]( c1,1 );
-            }
+        {
+            BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, (mpl::int_<nDim>, mpl::int_<1>));
+            return M_grad[i][0]( c1, 1 );
+        }
         value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
-            {
-                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<1> ) );
-                return M_grad[i][q]( c1,1 );
-            }
+        {
+            BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, (mpl::int_<nDim>, mpl::int_<1>));
+            return M_grad[i][q]( c1, 1 );
+        }
         value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
-            {
-                return dz( i, c1, c2, q, do_optimization_p1_t() );
-            }
+        {
+            return dz( i, c1, c2, q, do_optimization_p1_t() );
+        }
         value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
-            {
-                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<1> ) );
-                return M_grad[i][0]( c1,2 );
-            }
+        {
+            BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, (mpl::int_<nDim>, mpl::int_<1>));
+            return M_grad[i][0]( c1, 2 );
+        }
         value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
-            {
-                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<1> ) );
-                return M_grad[i][q]( c1,2 );
-            }
+        {
+            BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, (mpl::int_<nDim>, mpl::int_<1>));
+            return M_grad[i][q]( c1, 2 );
+        }
 
         /**
          * \return the matrix containing the value of the normal
@@ -1812,9 +1793,9 @@ public:
         value_type const& dn( uint32_type i,
                               uint16_type c1,
                               uint16_type c2,
-                              uint32_type q  ) const
+                              uint32_type q ) const
         {
-            return M_dn[i][q]( c1,c2 );
+            return M_dn[i][q]( c1, c2 );
         }
 
         dn_type const& dn( uint16_type i, uint32_type q ) const
@@ -1822,66 +1803,66 @@ public:
             return M_dn[i][q];
         }
         grad_type const& grad( uint16_type i, uint32_type q ) const
-            {
-                return grad( i, q, do_optimization_p1_t() );
-            }
+        {
+            return grad( i, q, do_optimization_p1_t() );
+        }
         grad_type const& grad( uint16_type i, uint32_type q, mpl::bool_<true> ) const
-            {
-                return M_grad[i][0];
-            }
+        {
+            return M_grad[i][0];
+        }
         grad_type const& grad( uint16_type i, uint32_type q, mpl::bool_<false> ) const
-            {
-                return M_grad[i][q];
-            }
+        {
+            return M_grad[i][q];
+        }
 
         value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
-            {
-                return grad(i, c1, c2, q, do_optimization_p1_t() );
-            }
+        {
+            return grad( i, c1, c2, q, do_optimization_p1_t() );
+        }
         value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
-            {
-                return M_grad[i][0]( c1,c2 );
-            }
+        {
+            return M_grad[i][0]( c1, c2 );
+        }
         value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
-            {
-                return M_grad[i][q]( c1,c2 );
-            }
-        dx_type  dx( uint16_type i, uint32_type q ) const
-            {
-                return dx( i, q, do_optimization_p1_t() );
-            }
-        dx_type  dx( uint16_type i, uint32_type q, mpl::bool_<true> ) const
-            {
-                return M_grad[i][0].col(0);
-            }
-        dx_type  dx( uint16_type i, uint32_type q, mpl::bool_<false> ) const
-            {
-                return M_grad[i][q].col(0);
-            }
-        dy_type  dy( uint16_type i, uint32_type q ) const
-            {
-                return dy( i, q, do_optimization_p1_t() );
-            }
-        dy_type  dy( uint16_type i, uint32_type q, mpl::bool_<true> ) const
-            {
-                return M_grad[i][0].col(1);
-            }
-        dy_type  dy( uint16_type i, uint32_type q, mpl::bool_<false> ) const
-            {
-                return M_grad[i][q].col(1);
-            }
-        dz_type  dz( uint16_type i, uint32_type q ) const
-            {
-                return dz( i, q, do_optimization_p1_t() );
-            }
-        dz_type  dz( uint16_type i, uint32_type q, mpl::bool_<true> ) const
-            {
-                return M_grad[i][0].col(1);
-            }
-        dz_type  dz( uint16_type i, uint32_type q, mpl::bool_<false> ) const
-            {
-                return M_grad[i][q].col(1);
-            }
+        {
+            return M_grad[i][q]( c1, c2 );
+        }
+        dx_type dx( uint16_type i, uint32_type q ) const
+        {
+            return dx( i, q, do_optimization_p1_t() );
+        }
+        dx_type dx( uint16_type i, uint32_type q, mpl::bool_<true> ) const
+        {
+            return M_grad[i][0].col( 0 );
+        }
+        dx_type dx( uint16_type i, uint32_type q, mpl::bool_<false> ) const
+        {
+            return M_grad[i][q].col( 0 );
+        }
+        dy_type dy( uint16_type i, uint32_type q ) const
+        {
+            return dy( i, q, do_optimization_p1_t() );
+        }
+        dy_type dy( uint16_type i, uint32_type q, mpl::bool_<true> ) const
+        {
+            return M_grad[i][0].col( 1 );
+        }
+        dy_type dy( uint16_type i, uint32_type q, mpl::bool_<false> ) const
+        {
+            return M_grad[i][q].col( 1 );
+        }
+        dz_type dz( uint16_type i, uint32_type q ) const
+        {
+            return dz( i, q, do_optimization_p1_t() );
+        }
+        dz_type dz( uint16_type i, uint32_type q, mpl::bool_<true> ) const
+        {
+            return M_grad[i][0].col( 1 );
+        }
+        dz_type dz( uint16_type i, uint32_type q, mpl::bool_<false> ) const
+        {
+            return M_grad[i][q].col( 1 );
+        }
 
         /**
          * divergence of the basis function at the q-th point.
@@ -1898,7 +1879,7 @@ public:
             return div( i, c1, c2, q, mpl::int_<rank>() );
         }
 
-        value_type div( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
+        value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
             Feel::detail::ignore_unused_variable_warning( i );
             Feel::detail::ignore_unused_variable_warning( q );
@@ -1912,21 +1893,21 @@ public:
         }
 
         value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
-            {
-                return div( i, c1, c2, q, do_optimization_p1_t() );
-            }
+        {
+            return div( i, c1, c2, q, do_optimization_p1_t() );
+        }
         value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
-            {
-                Feel::detail::ignore_unused_variable_warning( c1 );
-                Feel::detail::ignore_unused_variable_warning( c2 );
-                return M_div[i][0]( 0,0 );
-            }
+        {
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            return M_div[i][0]( 0, 0 );
+        }
         value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
-            {
-                Feel::detail::ignore_unused_variable_warning( c1 );
-                Feel::detail::ignore_unused_variable_warning( c2 );
-                return M_div[i][q]( 0,0 );
-            }
+        {
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            return M_div[i][q]( 0, 0 );
+        }
 
         /**
          * curl of the basis function at the q-th point.
@@ -1936,9 +1917,9 @@ public:
          * \return curl of the basis function at the q-th point
          */
         curl_type const& curl( uint16_type i, uint32_type q ) const
-            {
-                return M_curl[i][q];
-            }
+        {
+            return M_curl[i][q];
+        }
         value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
             Feel::detail::ignore_unused_variable_warning( c1 );
@@ -1946,7 +1927,7 @@ public:
             return curl( i, c1, c2, q, mpl::int_<rank>() );
         }
 
-        value_type curl( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
+        value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
             Feel::detail::ignore_unused_variable_warning( i );
             Feel::detail::ignore_unused_variable_warning( q );
@@ -1957,20 +1938,19 @@ public:
         }
 
         value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
-            {
-                return curl( i, c1, c2, q, do_optimization_p1_t() );
-            }
+        {
+            return curl( i, c1, c2, q, do_optimization_p1_t() );
+        }
         value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
-            {
-                Feel::detail::ignore_unused_variable_warning( c2 );
-                return M_curl[i][0]( c1 );
-            }
+        {
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            return M_curl[i][0]( c1 );
+        }
         value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
-            {
-                Feel::detail::ignore_unused_variable_warning( c2 );
-                return M_curl[i][q]( c1 );
-            }
-
+        {
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            return M_curl[i][q]( c1 );
+        }
 
         value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
@@ -1979,7 +1959,7 @@ public:
             return curlx( i, c1, c2, q, mpl::int_<rank>() );
         }
 
-        value_type curlx( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
+        value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
             Feel::detail::ignore_unused_variable_warning( i );
             Feel::detail::ignore_unused_variable_warning( q );
@@ -1990,19 +1970,19 @@ public:
         }
 
         value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
-            {
-                return curlx( i, c1, c2, q, do_optimization_p1_t() );
-            }
+        {
+            return curlx( i, c1, c2, q, do_optimization_p1_t() );
+        }
         value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
-            {
-                Feel::detail::ignore_unused_variable_warning( c2 );
-                return M_curl[i][0]( 0 );
-            }
+        {
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            return M_curl[i][0]( 0 );
+        }
         value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
-            {
-                Feel::detail::ignore_unused_variable_warning( c2 );
-                return M_curl[i][q]( 0 );
-            }
+        {
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            return M_curl[i][q]( 0 );
+        }
 
         value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
@@ -2011,7 +1991,7 @@ public:
             return curly( i, c1, c2, q, mpl::int_<rank>() );
         }
 
-        value_type curly( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
+        value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
             Feel::detail::ignore_unused_variable_warning( i );
             Feel::detail::ignore_unused_variable_warning( q );
@@ -2022,19 +2002,19 @@ public:
         }
 
         value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
-            {
-                return curly( i, c1, c2, q, do_optimization_p1_t() );
-            }
+        {
+            return curly( i, c1, c2, q, do_optimization_p1_t() );
+        }
         value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
-            {
-                Feel::detail::ignore_unused_variable_warning( c2 );
-                return M_curl[i][0]( 1 );
-            }
+        {
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            return M_curl[i][0]( 1 );
+        }
         value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
-            {
-                Feel::detail::ignore_unused_variable_warning( c2 );
-                return M_curl[i][q]( 1 );
-            }
+        {
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            return M_curl[i][q]( 1 );
+        }
 
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
@@ -2043,69 +2023,68 @@ public:
             return curlz( i, c1, c2, q, mpl::int_<rank>() );
         }
 
-        value_type curlz( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
-            {
-                Feel::detail::ignore_unused_variable_warning( i );
-                Feel::detail::ignore_unused_variable_warning( q );
-                Feel::detail::ignore_unused_variable_warning( c1 );
-                Feel::detail::ignore_unused_variable_warning( c2 );
-                throw std::logic_error( "invalid use of curlz operator, field must be vectorial" );
-                return 0;
-            }
+        value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
+        {
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( q );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            throw std::logic_error( "invalid use of curlz operator, field must be vectorial" );
+            return 0;
+        }
 
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
-            {
-                return curlz( i, c1, c2, q, do_optimization_p1_t() );
-            }
+        {
+            return curlz( i, c1, c2, q, do_optimization_p1_t() );
+        }
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
-            {
-                Feel::detail::ignore_unused_variable_warning( c2 );
-                return M_curl[i][0]( 2 );
-            }
+        {
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            return M_curl[i][0]( 2 );
+        }
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
-            {
-                Feel::detail::ignore_unused_variable_warning( c2 );
-                return M_curl[i][q]( 2 );
-            }
+        {
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            return M_curl[i][q]( 2 );
+        }
 
         hess_type const& hess( uint16_type i, uint32_type q ) const
-            {
-                return M_hessian[i][q];
-            }
+        {
+            return M_hessian[i][q];
+        }
         value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
-            {
-                return hess( i, c1, c2, q, mpl::int_<rank>() );
-            }
+        {
+            return hess( i, c1, c2, q, mpl::int_<rank>() );
+        }
         value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
-            {
-                return M_hessian[i][q]( c1,c2 );
-            }
+        {
+            return M_hessian[i][q]( c1, c2 );
+        }
         laplacian_type const& laplacian( uint16_type i, uint32_type q ) const
-            {
-                return M_laplacian[i][q];
-            }
+        {
+            return M_laplacian[i][q];
+        }
         value_type laplacian( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
-            {
-                return M_laplacian[i][q](c1,c2);
-            }
+        {
+            return M_laplacian[i][q]( c1, c2 );
+        }
         //    private:
         Context() {}
 
         void print()
+        {
+            const uint16_type Q = M_npoints;
+            const uint16_type I = nDof;
+            for ( uint16_type i = 0; i < I; ++i )
             {
-                const uint16_type Q = M_npoints;
-                const uint16_type I = nDof;
-                for ( uint16_type i = 0; i < I; ++i )
+                for ( uint16_type q = 0; q < Q; ++q )
                 {
-                    for ( uint16_type q = 0; q < Q; ++q )
-                    {
-                        LOG(INFO) << "M_phi[" << i << "," << q << "]=" << M_phi[i][q];
-                    }
+                    LOG( INFO ) << "M_phi[" << i << "," << q << "]=" << M_phi[i][q];
                 }
-
             }
-    private:
+        }
 
+      private:
         boost::optional<precompute_ptrtype> M_pc;
         uint16_type M_npoints;
 
@@ -2115,73 +2094,74 @@ public:
 
         geometric_mapping_context_ptrtype M_gmc;
         std::vector<uint16_type> M_dofs;
-        boost::multi_array<id_type,2> M_phi;
-        boost::multi_array<ref_grad_type,2> const* M_gradphi;
-        boost::multi_array<hess_type,2> M_hessphi;
-        boost::multi_array<dn_type,2> M_dn;
-        boost::multi_array<grad_type,2> M_grad;
-        boost::multi_array<dx_type,2> M_dx;
-        boost::multi_array<dy_type,2> M_dy;
-        boost::multi_array<dz_type,2> M_dz;
-        boost::multi_array<div_type,2> M_div;
-        boost::multi_array<curl_type,2> M_curl;
-        boost::multi_array<hess_type,2> M_hessian;
-        boost::multi_array<id_type,2> M_laplacian;
+        boost::multi_array<id_type, 2> M_phi;
+        boost::multi_array<ref_grad_type, 2> const* M_gradphi;
+        boost::multi_array<hess_type, 2> M_hessphi;
+        boost::multi_array<dn_type, 2> M_dn;
+        boost::multi_array<grad_type, 2> M_grad;
+        boost::multi_array<dx_type, 2> M_dx;
+        boost::multi_array<dy_type, 2> M_dy;
+        boost::multi_array<dz_type, 2> M_dz;
+        boost::multi_array<div_type, 2> M_div;
+        boost::multi_array<curl_type, 2> M_curl;
+        boost::multi_array<hess_type, 2> M_hessian;
+        boost::multi_array<id_type, 2> M_laplacian;
     };
 
-    template<size_type context_v, typename BasisType, typename GeoType, typename ElementType>
-    boost::shared_ptr<Context<context_v,BasisType, GeoType, ElementType> >
+    template <size_type context_v, typename BasisType, typename GeoType, typename ElementType>
+    boost::shared_ptr<Context<context_v, BasisType, GeoType, ElementType>>
     context( boost::shared_ptr<BasisType> b, boost::shared_ptr<GeoType> gm, precompute_ptrtype& pc )
     {
-        return boost::shared_ptr<Context<context_v,BasisType, GeoType, ElementType> >(
-                   new Context<context_v, BasisType, GeoType, ElementType>( context_v,
-                           b,
-                           gm,
-                           pc ) );
+        return boost::shared_ptr<Context<context_v, BasisType, GeoType, ElementType>>(
+            new Context<context_v, BasisType, GeoType, ElementType>( context_v,
+                                                                     b,
+                                                                     gm,
+                                                                     pc ) );
     }
 
-    template<int contextv, int contextg, typename BasisType, typename GeoType,typename ElementType>
-    boost::shared_ptr<Context<contextv,BasisType, GeoType, ElementType> >
+    template <int contextv, int contextg, typename BasisType, typename GeoType, typename ElementType>
+    boost::shared_ptr<Context<contextv, BasisType, GeoType, ElementType>>
     ctx( boost::shared_ptr<BasisType> const& b,
-         boost::shared_ptr<typename GeoType::template Context<contextg, ElementType> > const& gm,
+         boost::shared_ptr<typename GeoType::template Context<contextg, ElementType>> const& gm,
          precompute_ptrtype pc, ElementType& e )
     {
-        typedef Context<contextv,BasisType, GeoType, ElementType> ctx_type;
+        typedef Context<contextv, BasisType, GeoType, ElementType> ctx_type;
         return boost::shared_ptr<ctx_type>( new ctx_type( b, gm, pc ) );
-
     }
-    template<int contextv, typename BasisType, typename GeoType,typename ElementType>
-    boost::shared_ptr<Context<contextv,BasisType, GeoType, ElementType> >
+    template <int contextv, typename BasisType, typename GeoType, typename ElementType>
+    boost::shared_ptr<Context<contextv, BasisType, GeoType, ElementType>>
     ctx( boost::shared_ptr<BasisType> const& b,
-         boost::shared_ptr<typename GeoType::template Context<contextv, ElementType> > const& gm,
+         boost::shared_ptr<typename GeoType::template Context<contextv, ElementType>> const& gm,
          precompute_ptrtype pc, ElementType& e )
     {
-        typedef Context<contextv,BasisType, GeoType, ElementType> ctx_type;
+        typedef Context<contextv, BasisType, GeoType, ElementType> ctx_type;
         return boost::shared_ptr<ctx_type>( new ctx_type( b, gm, pc ) );
-
     }
 
-protected:
-
-private:
-
-private:
-
+  protected:
+  private:
+  private:
     basis_type M_basis;
     matrix_type M_coeff;
     std::string M_fname;
 };
 
-template<typename Poly,template<uint16_type> class PolySetType> const bool PolynomialSet<Poly,PolySetType>::is_scalar;
-template<typename Poly,template<uint16_type> class PolySetType> const bool PolynomialSet<Poly,PolySetType>::is_vectorial;
-template<typename Poly,template<uint16_type> class PolySetType> const bool PolynomialSet<Poly,PolySetType>::is_tensor2;
-template<typename Poly,template<uint16_type> class PolySetType> const uint16_type PolynomialSet<Poly,PolySetType>::nComponents;
-template<typename Poly,template<uint16_type> class PolySetType> const uint16_type PolynomialSet<Poly,PolySetType>::nComponents1;
-template<typename Poly,template<uint16_type> class PolySetType> const uint16_type PolynomialSet<Poly,PolySetType>::nComponents2;
+template <typename Poly, template <uint16_type> class PolySetType>
+const bool PolynomialSet<Poly, PolySetType>::is_scalar;
+template <typename Poly, template <uint16_type> class PolySetType>
+const bool PolynomialSet<Poly, PolySetType>::is_vectorial;
+template <typename Poly, template <uint16_type> class PolySetType>
+const bool PolynomialSet<Poly, PolySetType>::is_tensor2;
+template <typename Poly, template <uint16_type> class PolySetType>
+const uint16_type PolynomialSet<Poly, PolySetType>::nComponents;
+template <typename Poly, template <uint16_type> class PolySetType>
+const uint16_type PolynomialSet<Poly, PolySetType>::nComponents1;
+template <typename Poly, template <uint16_type> class PolySetType>
+const uint16_type PolynomialSet<Poly, PolySetType>::nComponents2;
 
 } // Feel
 
-#include <feel/feelpoly/polynomialset_impl.hpp>
 #include <feel/feelpoly/orthonormalpolynomialset.hpp>
+#include <feel/feelpoly/polynomialset_impl.hpp>
 
 #endif /* __PolynomialSet_H */

@@ -30,12 +30,12 @@
 #ifndef __Singleton_H
 #define __Singleton_H 1
 
-#include <cstdlib>
-#include <cassert>
-#include <exception>
-#include <stdexcept>
 #include <algorithm>
+#include <cassert>
+#include <cstdlib>
+#include <exception>
 #include <new>
+#include <stdexcept>
 
 #include <feel/feelcore/policy.hpp>
 
@@ -56,20 +56,18 @@ namespace Feel
 template <typename T>
 class Singleton
 {
-public:
-
+  public:
     typedef T singleton_type;
 
     typedef PolicyFeelTimeDefault<singleton_type> feeltime_policy;
     typedef PolicyCreationUsingNew<singleton_type> creation_policy;
-
 
     /**
      * return the instance of the singleton
      */
     static singleton_type& instance();
 
-private:
+  private:
     // Helpers
     static void makeInstance();
 
@@ -96,10 +94,8 @@ typename Singleton<T>::instance_type Singleton<T>::_S_instance;
 template <class T>
 bool Singleton<T>::_S_destroyed;
 
-
 template <class T>
-inline
-T&
+inline T&
 Singleton<T>::instance()
 {
     if ( !_S_instance )
@@ -110,10 +106,8 @@ Singleton<T>::instance()
     return *_S_instance;
 }
 
-
 template <class T>
-void
-Singleton<T>::makeInstance()
+void Singleton<T>::makeInstance()
 {
     if ( !_S_instance )
     {
@@ -129,8 +123,7 @@ Singleton<T>::makeInstance()
 }
 
 template <class T>
-void
-Singleton<T>::destroySingleton()
+void Singleton<T>::destroySingleton()
 {
     assert( !_S_destroyed );
     creation_policy::destroy( _S_instance );

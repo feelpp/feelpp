@@ -33,14 +33,13 @@
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/vector.hpp>
+#include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/vector.hpp>
-#include <boost/numeric/ublas/io.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelpoly/gauss.hpp>
-
 
 namespace Feel
 {
@@ -59,7 +58,7 @@ using namespace boost::assign;
  * \internal
  * \class IMTetrahedra
  */
-template<int Order, typename T>
+template <int Order, typename T>
 struct IMTriangle
 {
 };
@@ -67,8 +66,8 @@ struct IMTriangle
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=1
 */
 
-template<typename T>
-struct IMTriangle<1,T>
+template <typename T>
+struct IMTriangle<1, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -80,13 +79,16 @@ struct IMTriangle<1,T>
     std::vector<value_type> q;
 };
 
-template<typename T> struct IMTriangle<0,T>: public IMTriangle<1,T> {};
+template <typename T>
+struct IMTriangle<0, T> : public IMTriangle<1, T>
+{
+};
 
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=2
 */
-template<typename T>
-struct IMTriangle<2,T>
+template <typename T>
+struct IMTriangle<2, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -102,8 +104,8 @@ struct IMTriangle<2,T>
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=3
 */
 
-template<typename T>
-struct IMTriangle<3,T>
+template <typename T>
+struct IMTriangle<3, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -118,8 +120,8 @@ struct IMTriangle<3,T>
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=4
 */
 
-template<typename T>
-struct IMTriangle<4,T>
+template <typename T>
+struct IMTriangle<4, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -133,8 +135,8 @@ struct IMTriangle<4,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=5
 */
-template<typename T>
-struct IMTriangle<5,T>
+template <typename T>
+struct IMTriangle<5, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -148,8 +150,8 @@ struct IMTriangle<5,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=6
 */
-template<typename T>
-struct IMTriangle<6,T>
+template <typename T>
+struct IMTriangle<6, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -163,8 +165,8 @@ struct IMTriangle<6,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=7
 */
-template<typename T>
-struct IMTriangle<7,T>
+template <typename T>
+struct IMTriangle<7, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -178,8 +180,8 @@ struct IMTriangle<7,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=8
 */
-template<typename T>
-struct IMTriangle<8,T>
+template <typename T>
+struct IMTriangle<8, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -193,8 +195,8 @@ struct IMTriangle<8,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=9
 */
-template<typename T>
-struct IMTriangle<9,T>
+template <typename T>
+struct IMTriangle<9, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -207,8 +209,8 @@ struct IMTriangle<9,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=10
 */
-template<typename T>
-struct IMTriangle<10,T>
+template <typename T>
+struct IMTriangle<10, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -222,8 +224,8 @@ struct IMTriangle<10,T>
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=11
 */
 
-template<typename T>
-struct IMTriangle<11,T>
+template <typename T>
+struct IMTriangle<11, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -236,8 +238,8 @@ struct IMTriangle<11,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=12
 */
-template<typename T>
-struct IMTriangle<12,T>
+template <typename T>
+struct IMTriangle<12, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -251,8 +253,8 @@ struct IMTriangle<12,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=13
 */
-template<typename T>
-struct IMTriangle<13,T>
+template <typename T>
+struct IMTriangle<13, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -266,8 +268,8 @@ struct IMTriangle<13,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=14
 */
-template<typename T>
-struct IMTriangle<14,T>
+template <typename T>
+struct IMTriangle<14, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -280,8 +282,8 @@ struct IMTriangle<14,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=15
 */
-template<typename T>
-struct IMTriangle<15,T>
+template <typename T>
+struct IMTriangle<15, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -294,8 +296,8 @@ struct IMTriangle<15,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=16
 */
-template<typename T>
-struct IMTriangle<16,T>
+template <typename T>
+struct IMTriangle<16, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -309,8 +311,8 @@ struct IMTriangle<16,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=17
 */
-template<typename T>
-struct IMTriangle<17,T>
+template <typename T>
+struct IMTriangle<17, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -324,8 +326,8 @@ struct IMTriangle<17,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=18
 */
-template<typename T>
-struct IMTriangle<18,T>
+template <typename T>
+struct IMTriangle<18, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -338,8 +340,8 @@ struct IMTriangle<18,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=19
 */
-template<typename T>
-struct IMTriangle<19,T>
+template <typename T>
+struct IMTriangle<19, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -352,8 +354,8 @@ struct IMTriangle<19,T>
 /*
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=20
  */
-template<typename T>
-struct IMTriangle<20,T>
+template <typename T>
+struct IMTriangle<20, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 2;
@@ -364,14 +366,13 @@ struct IMTriangle<20,T>
     std::vector<value_type> q;
 };
 
-
 /// \endcond
 
 /**
  * \internal
  * \class IMTetrahedra
  */
-template<int Order, typename T>
+template <int Order, typename T>
 struct IMTetrahedra
 {
 };
@@ -379,8 +380,8 @@ struct IMTetrahedra
 /**
  Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=1
 */
-template<typename T>
-struct IMTetrahedra<1,T>
+template <typename T>
+struct IMTetrahedra<1, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -391,12 +392,15 @@ struct IMTetrahedra<1,T>
 
     std::vector<value_type> q;
 };
-template<typename T> struct IMTetrahedra<0,T> : public IMTetrahedra<1,T> {};
+template <typename T>
+struct IMTetrahedra<0, T> : public IMTetrahedra<1, T>
+{
+};
 /*
   Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=2
  */
-template<typename T>
-struct IMTetrahedra<2,T>
+template <typename T>
+struct IMTetrahedra<2, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -410,8 +414,8 @@ struct IMTetrahedra<2,T>
 /*
   Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=3
  */
-template<typename T>
-struct IMTetrahedra<3,T>
+template <typename T>
+struct IMTetrahedra<3, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -424,7 +428,8 @@ struct IMTetrahedra<3,T>
 /*
   Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=4
 */
-template<typename T> struct IMTetrahedra<4,T>
+template <typename T>
+struct IMTetrahedra<4, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -437,7 +442,8 @@ template<typename T> struct IMTetrahedra<4,T>
 /*
   Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=5
 */
-template<typename T> struct IMTetrahedra<5,T>
+template <typename T>
+struct IMTetrahedra<5, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -450,8 +456,8 @@ template<typename T> struct IMTetrahedra<5,T>
 /*
   Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=6
  */
-template<typename T>
-struct IMTetrahedra<6,T>
+template <typename T>
+struct IMTetrahedra<6, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -465,8 +471,8 @@ struct IMTetrahedra<6,T>
 /*
   Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=7
 */
-template<typename T>
-struct IMTetrahedra<7,T>
+template <typename T>
+struct IMTetrahedra<7, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -480,8 +486,8 @@ struct IMTetrahedra<7,T>
 /*
   Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=8
 */
-template<typename T>
-struct IMTetrahedra<8,T>
+template <typename T>
+struct IMTetrahedra<8, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -495,8 +501,8 @@ struct IMTetrahedra<8,T>
 /*
   Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=9
 */
-template<typename T>
-struct IMTetrahedra<9,T>
+template <typename T>
+struct IMTetrahedra<9, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -510,8 +516,8 @@ struct IMTetrahedra<9,T>
 /*
   Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=11
 */
-template<typename T>
-struct IMTetrahedra<11,T>
+template <typename T>
+struct IMTetrahedra<11, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -521,12 +527,15 @@ struct IMTetrahedra<11,T>
 
     std::vector<value_type> q;
 };
-template<typename T> struct IMTetrahedra<10,T>: public IMTetrahedra<11,T> {};
+template <typename T>
+struct IMTetrahedra<10, T> : public IMTetrahedra<11, T>
+{
+};
 /*
   Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=13
 */
-template<typename T>
-struct IMTetrahedra<13,T>
+template <typename T>
+struct IMTetrahedra<13, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -536,12 +545,15 @@ struct IMTetrahedra<13,T>
 
     std::vector<value_type> q;
 };
-template<typename T> struct IMTetrahedra<12,T>: public IMTetrahedra<13,T> {};
+template <typename T>
+struct IMTetrahedra<12, T> : public IMTetrahedra<13, T>
+{
+};
 /*
   Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=15
 */
-template<typename T>
-struct IMTetrahedra<15,T>
+template <typename T>
+struct IMTetrahedra<15, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -551,12 +563,15 @@ struct IMTetrahedra<15,T>
 
     std::vector<value_type> q;
 };
-template<typename T> struct IMTetrahedra<14,T>: public IMTetrahedra<15,T> {};
+template <typename T>
+struct IMTetrahedra<14, T> : public IMTetrahedra<15, T>
+{
+};
 /*
   Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=17
 */
-template<typename T>
-struct IMTetrahedra<17,T>
+template <typename T>
+struct IMTetrahedra<17, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -566,12 +581,15 @@ struct IMTetrahedra<17,T>
 
     std::vector<value_type> q;
 };
-template<typename T> struct IMTetrahedra<16,T>: public IMTetrahedra<17,T> {};
+template <typename T>
+struct IMTetrahedra<16, T> : public IMTetrahedra<17, T>
+{
+};
 /*
   Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=19
 */
-template<typename T>
-struct IMTetrahedra<19,T>
+template <typename T>
+struct IMTetrahedra<19, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -581,12 +599,15 @@ struct IMTetrahedra<19,T>
 
     std::vector<value_type> q;
 };
-template<typename T> struct IMTetrahedra<18,T>: public IMTetrahedra<19,T> {};
+template <typename T>
+struct IMTetrahedra<18, T> : public IMTetrahedra<19, T>
+{
+};
 /*
   Gauss  quadrature  constants  for  the  reference  tetrahedron  order  p=21
 */
-template<typename T>
-struct IMTetrahedra<21,T>
+template <typename T>
+struct IMTetrahedra<21, T>
 {
     typedef T value_type;
     static const uint16_type nDim = 3;
@@ -596,9 +617,11 @@ struct IMTetrahedra<21,T>
 
     std::vector<value_type> q;
 };
-template<typename T> struct IMTetrahedra<20,T>: public IMTetrahedra<21,T> {};
+template <typename T>
+struct IMTetrahedra<20, T> : public IMTetrahedra<21, T>
+{
+};
 } // detail
-
 
 /**
  * \class IMSimplex
@@ -608,24 +631,23 @@ template<typename T> struct IMTetrahedra<20,T>: public IMTetrahedra<21,T> {};
  * @author Christophe Prud'homme
  * @see
  */
-template<int Dim,int Order, typename T>
+template <int Dim, int Order, typename T>
 class IMSimplex
-    :
-public PointSetQuadrature<Simplex<Dim,1> , Order, T>
+    : public PointSetQuadrature<Simplex<Dim, 1>, Order, T>
 {
-    typedef PointSetQuadrature<Simplex<Dim,1> , Order, T> super;
-public:
+    typedef PointSetQuadrature<Simplex<Dim, 1>, Order, T> super;
 
+  public:
     /** @name Typedefs
      */
     //@{
-    typedef Simplex<Dim,1> convex_type;
+    typedef Simplex<Dim, 1> convex_type;
     typedef T value_type;
-    typedef ublas::matrix<value_type,ublas::column_major> matrix_type;
+    typedef ublas::matrix<value_type, ublas::column_major> matrix_type;
     typedef ublas::vector<value_type> vector_type;
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<Dim>,mpl::int_<2> >,
-            mpl::identity<Feel::detail::IMTriangle<Order,T> >,
-            mpl::identity<Feel::detail::IMTetrahedra<Order,T> > >::type::type quad_type;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<Dim>, mpl::int_<2>>,
+                              mpl::identity<Feel::detail::IMTriangle<Order, T>>,
+                              mpl::identity<Feel::detail::IMTetrahedra<Order, T>>>::type::type quad_type;
 
 #if 1
 #if 0
@@ -634,12 +656,12 @@ public:
             mpl::identity<Gauss<Simplex<Dim-1,1>,Order,T> > >::type::type face_quad_type;
     //mpl::identity<IMSimplex<Dim-1,Order,T> > >::type::type face_quad_type;
 #else
-    typedef Gauss<Simplex<Dim-1,1>,Order,T> face_quad_type;
+    typedef Gauss<Simplex<Dim - 1, 1>, Order, T> face_quad_type;
 #endif
 #else
-    typedef IMSimplex<Dim-1,Order,T> face_quad_type;
+    typedef IMSimplex<Dim - 1, Order, T> face_quad_type;
 #endif
-    typedef IMSimplex<Dim,Order,T> parent_quadrature_type;
+    typedef IMSimplex<Dim, Order, T> parent_quadrature_type;
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
     static const uint16_type nQuadPoints = quad_type::nPoints;
@@ -649,30 +671,30 @@ public:
     /** @name Constructors, destructor
      */
     //@{
-    IMSimplex(  )
-        :
-        super( quad_type::nPoints ),
-        M_quad()
+    IMSimplex()
+        : super( quad_type::nPoints ),
+          M_quad()
     {
-        for ( size_type i=0; i< quad_type::nPoints; i++ )
+        for ( size_type i = 0; i < quad_type::nPoints; i++ )
         {
 
             for ( int j = 0; j < Dim; ++j )
             {
-                this->M_points( j, i ) = M_quad.q[( Dim+1 )*i+j];
+                this->M_points( j, i ) = M_quad.q[( Dim + 1 ) * i + j];
             }
 
-            this->M_w( i ) = M_quad.q[( Dim+1 )*i+Dim];
+            this->M_w( i ) = M_quad.q[( Dim + 1 ) * i + Dim];
         }
 
-        boost::shared_ptr<GT_Lagrange<Dim,1,Dim,Simplex,T> > gm( new GT_Lagrange<Dim, 1, Dim, Simplex, T> );
+        boost::shared_ptr<GT_Lagrange<Dim, 1, Dim, Simplex, T>> gm( new GT_Lagrange<Dim, 1, Dim, Simplex, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
         // construct face quadratures
         this->constructQROnFace( Reference<Simplex<Dim, 1>, Dim, 1>(), gm, face_qr );
     }
 
     ~IMSimplex()
-    {}
+    {
+    }
 
     //@}
 
@@ -681,14 +703,13 @@ public:
      */
     T factor() const
     {
-        return ( Dim==2 )?T( 1 )/T( 2 ):T( 1 )/T( 6 );
+        return ( Dim == 2 ) ? T( 1 ) / T( 2 ) : T( 1 ) / T( 6 );
     }
-
 
     /** @name  Methods
      */
     //@{
-    IMSimplex& operator=( IMSimplex const & i )
+    IMSimplex& operator=( IMSimplex const& i )
     {
         if ( this != &i )
         {
@@ -699,11 +720,9 @@ public:
     }
     //@}
 
-
-private:
+  private:
     quad_type M_quad;
 };
-
 }
 
 #endif /* __IMSimplex_H */

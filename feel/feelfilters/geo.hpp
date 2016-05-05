@@ -26,12 +26,13 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_GEO_HPP)
+#if !defined( FEELPP_GEO_HPP )
 #define FEELPP_GEO_HPP 1
 
 #include <feel/feelfilters/gmsh.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
  * \brief geo return a gmsh_ptrtype of a .geo mesh
@@ -43,21 +44,9 @@ namespace Feel {
  */
 BOOST_PARAMETER_FUNCTION(
     ( gmsh_ptrtype ), // return type
-    geo,    // 2. function name
-    tag,           // 3. namespace of tag types
-    ( required
-      ( filename,       *( boost::is_convertible<mpl::_,std::string> ) ) )
-    ( optional
-      ( prefix,(std::string), "" )
-      ( desc, *( boost::is_convertible<mpl::_,std::string> ), std::string() )
-      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
-      ( geo_parameters,    *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map( soption(_prefix=prefix,_name="gmsh.geo-variables-list") ) )
-      ( dim,              *( boost::is_integral<mpl::_> ), 3 )
-      ( order,              *( boost::is_integral<mpl::_> ), 1 )
-      ( files_path, *( boost::is_convertible<mpl::_,std::string> ), Environment::localGeoRepository() )
-      ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends") )
-      ( worldcomm,       (WorldComm), Environment::worldComm() ) )
-    )
+    geo,              // 2. function name
+    tag,              // 3. namespace of tag types
+    ( required( filename, *(boost::is_convertible<mpl::_, std::string>)) )( optional( prefix, ( std::string ), "" )( desc, *(boost::is_convertible<mpl::_, std::string>), std::string() )( h, *(boost::is_arithmetic<mpl::_>), doption( _prefix = prefix, _name = "gmsh.hsize" ) )( geo_parameters, *(boost::icl::is_map<mpl::_>), Gmsh::gpstr2map( soption( _prefix = prefix, _name = "gmsh.geo-variables-list" ) ) )( dim, *(boost::is_integral<mpl::_>), 3 )( order, *(boost::is_integral<mpl::_>), 1 )( files_path, *(boost::is_convertible<mpl::_, std::string>), Environment::localGeoRepository() )( depends, *(boost::is_convertible<mpl::_, std::string>), soption( _prefix = prefix, _name = "gmsh.depends" ) )( worldcomm, ( WorldComm ), Environment::worldComm() ) ) )
 
 {
     gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1, worldcomm ) );
@@ -65,9 +54,9 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->setCharacteristicLength( h );
 
 #if BOOST_FILESYSTEM_VERSION == 3
-        gmsh_ptr->setPrefix( fs::path( filename ).stem().string() );
+    gmsh_ptr->setPrefix( fs::path( filename ).stem().string() );
 #elif BOOST_FILESYSTEM_VERSION == 2
-        gmsh_ptr->setPrefix( fs::path( filename ).stem() );
+    gmsh_ptr->setPrefix( fs::path( filename ).stem() );
 #endif
 
     if ( !desc.empty() )
@@ -87,7 +76,7 @@ BOOST_PARAMETER_FUNCTION(
 
         gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile( filename_with_path ) );
 
-        if( worldcomm.globalRank() == worldcomm.masterRank() )
+        if ( worldcomm.globalRank() == worldcomm.masterRank() )
         {
             fs::path cp = fs::current_path();
             std::vector<std::string> depends_on_files;
@@ -95,8 +84,7 @@ BOOST_PARAMETER_FUNCTION(
                 algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
             // copy include/merged files needed by geometry file
             boost::for_each( depends_on_files,
-                             [&cp, &files_path]( std::string const& _filename )
-                             {
+                             [&cp, &files_path]( std::string const& _filename ) {
                                  fs::path file_path( files_path );
                                  file_path /= _filename;
 
@@ -107,9 +95,8 @@ BOOST_PARAMETER_FUNCTION(
                                      if ( !( fs::exists( file_path ) && fs::is_regular_file( file_path ) ) )
                                          std::cout << "File : " << file_path << " doesn't exist or is not a regular file" << std::endl;
 
-                                     else if ( !fs::exists( cp / _filename )  )
+                                     else if ( !fs::exists( cp / _filename ) )
                                          fs::copy_file( file_path, fs::path( _filename ), fs::copy_option::none );
-
                                  }
 
                                  catch ( const fs::filesystem_error& e )
@@ -123,10 +110,7 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->setGeoParameters( geo_parameters );
 
     return gmsh_ptr;
-
 }
-
-
 }
 
 #endif /* FEELPP_GEO_HPP */

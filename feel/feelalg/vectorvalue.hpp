@@ -33,7 +33,6 @@
 
 #include <boost/numeric/ublas/vector.hpp>
 
-
 namespace Feel
 {
 /*!
@@ -47,12 +46,10 @@ namespace Feel
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename T>
+template <typename T>
 class VectorValue
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -68,13 +65,13 @@ public:
     //@{
 
     VectorValue( value_type acc = value_type( 0 ) )
-        :
-        M_vec( acc )
-    {}
-    VectorValue( VectorValue const & m )
-        :
-        M_vec( m.M_vec )
-    {}
+        : M_vec( acc )
+    {
+    }
+    VectorValue( VectorValue const& m )
+        : M_vec( m.M_vec )
+    {
+    }
 
     ~VectorValue()
     {
@@ -104,7 +101,7 @@ public:
      * @returns \p m, the row-dimension of
      * the vector where the marix is \f$ M \times N \f$.
      */
-    unsigned int size () const
+    unsigned int size() const
     {
         return 1;
     }
@@ -113,7 +110,7 @@ public:
      * return row_start, the index of the first
      * vector row stored on this processor
      */
-    unsigned int rowStart () const
+    unsigned int rowStart() const
     {
         return 0;
     }
@@ -122,7 +119,7 @@ public:
      * return row_stop, the index of the last
      * vector row (+1) stored on this processor
      */
-    unsigned int rowStop () const
+    unsigned int rowStop() const
     {
         return 0;
     }
@@ -139,8 +136,7 @@ public:
      * \c close the gmm vector, that will copy the content of write
      * optimized vector into a read optimized vector
      */
-    void close () const;
-
+    void close() const;
 
     /**
      * see if vector has been closed
@@ -151,11 +147,10 @@ public:
         return true;
     }
 
-
     /**
      * Returns the read optimized gmm vector.
      */
-    vector_type const& vec () const
+    vector_type const& vec() const
     {
         return M_vec;
     }
@@ -163,7 +158,7 @@ public:
     /**
      * Returns the read optimized gmm vector.
      */
-    vector_type & vec ()
+    vector_type& vec()
     {
         return M_vec;
     }
@@ -173,7 +168,6 @@ public:
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -187,7 +181,7 @@ public:
      * having called the default
      * constructor.
      */
-    void clear ()
+    void clear()
     {
         M_vec = 0;
     }
@@ -196,12 +190,12 @@ public:
      * Set all entries to 0. This method retains
      * sparsity structure.
      */
-    void zero ()
+    void zero()
     {
         M_vec = 0;
     }
 
-    void zero ( size_type /*start1*/, size_type /*stop1*/ )
+    void zero( size_type /*start1*/, size_type /*stop1*/ )
     {
         M_vec = 0;
     }
@@ -209,8 +203,8 @@ public:
     /**
      * Add \p value to the value already accumulated
      */
-    void add ( const unsigned int /*i*/,
-               const value_type value )
+    void add( const unsigned int /*i*/,
+              const value_type value )
     {
         M_vec += value;
     }
@@ -218,13 +212,11 @@ public:
     /**
      * set to \p value
      */
-    void set ( const unsigned int /*i*/,
-               const value_type value )
+    void set( const unsigned int /*i*/,
+              const value_type value )
     {
         M_vec = value;
     }
-
-
 
     /**
      * Print the contents of the vector in Matlab's
@@ -232,33 +224,25 @@ public:
      * vector to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL", bool renumber = false ) const;
-
+    void printMatlab( const std::string name = "NULL", bool renumber = false ) const;
 
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
     /**
      * the gmm sparse vector data structure
      */
     mutable vector_type M_vec;
-
 };
 
-template<typename T>
-void
-VectorValue<T>::close() const
+template <typename T>
+void VectorValue<T>::close() const
 {
 }
 
-template<typename T>
-void
-VectorValue<T>::printMatlab( const std::string /*filename*/, bool renumber ) const
+template <typename T>
+void VectorValue<T>::printMatlab( const std::string /*filename*/, bool renumber ) const
 {
 }
 

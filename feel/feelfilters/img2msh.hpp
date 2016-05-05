@@ -26,12 +26,13 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_IMG2MSH_HPP)
+#if !defined( FEELPP_IMG2MSH_HPP )
 #define FEELPP_IMG2MSH_HPP 1
 
 #include <feel/feelfilters/gmsh.hpp>
 
-namespace Feel {
+namespace Feel
+{
 /**
  * \brief convert to msh format
  *
@@ -39,13 +40,9 @@ namespace Feel {
  */
 BOOST_PARAMETER_FUNCTION(
     ( std::string ), // return type
-    img2msh,    // 2. function name
-    tag,           // 3. namespace of tag types
-    ( required
-      ( filename,       *( boost::is_convertible<mpl::_,std::string> ) ) )
-    ( optional
-      ( prefix,       *( boost::is_convertible<mpl::_,std::string> ), fs::path( filename ).stem() ) )
-    )
+    img2msh,         // 2. function name
+    tag,             // 3. namespace of tag types
+    ( required( filename, *(boost::is_convertible<mpl::_, std::string>)) )( optional( prefix, *(boost::is_convertible<mpl::_, std::string>), fs::path( filename ).stem() ) ) )
 {
     gmsh_ptrtype gmsh_ptr( new Gmsh( 2, 1 ) );
     gmsh_ptr->setPrefix( prefix );
@@ -58,7 +55,7 @@ BOOST_PARAMETER_FUNCTION(
     else if ( fs::exists( fs::path( Environment::localGeoRepository() ) / filename ) )
         gmsh_ptr->setDescription( ( boost::format( "Merge \"%1%\";\nSave View [0] \"%2%\";\n" ) % ( fs::path( Environment::localGeoRepository() ) / filename ).string() % meshname ).str() );
 
-    else if ( Environment::systemGeoRepository().template get<1>()  &&
+    else if ( Environment::systemGeoRepository().template get<1>() &&
               fs::exists( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) )
         gmsh_ptr->setDescription( ( boost::format( "Merge \"%1%\";\nSave View [0] \"%2%\";\n" ) % ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ).string() % meshname ).str() );
 
@@ -72,8 +69,6 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->generate( gmsh_ptr->prefix(), gmsh_ptr->description() );
     return meshname;
 }
-
-
 }
 
 #endif /* FEELPP_IMG2MSH_HPP */

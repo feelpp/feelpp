@@ -29,9 +29,8 @@
 #ifndef __ExporterGnuplot_H
 #define __ExporterGnuplot_H 1
 
-#include <iostream>
 #include <fstream>
-
+#include <iostream>
 
 #include <boost/lambda/lambda.hpp>
 
@@ -51,19 +50,17 @@ namespace Feel
  * \ingroup Exporter
  * @author Christophe Prud'homme
  */
-template<typename MeshType>
+template <typename MeshType>
 class ExporterGnuplot
-    :
-public Exporter<MeshType>
+    : public Exporter<MeshType>
 {
-public:
-
+  public:
     /**
      * Define enumerations to set plotting properties on construction
      */
     enum PlottingProperties
     {
-        GRID_ON    = 1,
+        GRID_ON = 1,
         PNG_OUTPUT = 2
     };
 
@@ -97,7 +94,7 @@ public:
 
     ExporterGnuplot( po::variables_map const& vm, std::string const& exp_prefix = "", int properties = 0 );
 
-    ExporterGnuplot( ExporterGnuplot const & __ex );
+    ExporterGnuplot( ExporterGnuplot const& __ex );
 
     ~ExporterGnuplot();
 
@@ -107,13 +104,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
-
 
     //@}
 
@@ -136,7 +131,6 @@ public:
     {
         M_grid = grid;
     }
-
 
     /**
      * Write output to a .png file useing gnuplot
@@ -171,13 +165,8 @@ public:
 
     //@}
 
-
-
-protected:
-
-
-private:
-
+  protected:
+  private:
     std::string M_title;
     bool M_grid;
     bool M_png_output;
@@ -186,9 +175,7 @@ private:
 } // Feel
 
 #if !defined( FEELPP_INSTANTIATION_MODE )
-# include <feel/feelfilters/exportergnuplot.cpp>
+#include <feel/feelfilters/exportergnuplot.cpp>
 #endif // FEELPP_INSTANTIATION_MODE
 
 #endif /* __ExporterGnuplot_H */
-
-

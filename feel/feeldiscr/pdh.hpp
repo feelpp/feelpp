@@ -26,33 +26,31 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_PDH_HPP)
+#if !defined( FEELPP_PDH_HPP )
 #define FEELPP_PDH_HPP
 
 #include <feel/feeldiscr/functionspace.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
-using Pdh_type=FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>;
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
-using Pdh_ptrtype=boost::shared_ptr<Pdh_type<MeshType,Order,Pts>>;
-    
+template <typename MeshType, int Order, template <class, uint16_type, class> class Pts = PointSetEquiSpaced>
+using Pdh_type = FunctionSpace<MeshType, bases<Lagrange<Order, Scalar, Discontinuous, Pts>>>;
+template <typename MeshType, int Order, template <class, uint16_type, class> class Pts = PointSetEquiSpaced>
+using Pdh_ptrtype = boost::shared_ptr<Pdh_type<MeshType, Order, Pts>>;
 
 /**
    Given a \p mesh, build a function space of discontinuous function which are
    piecewise polynomial of degree (total or in each variable) less than k.
 */
-template<int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
-inline
-Pdh_ptrtype<MeshType,Order,Pts>
-Pdh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+template <int Order, template <class, uint16_type, class> class Pts = PointSetEquiSpaced, typename MeshType>
+inline Pdh_ptrtype<MeshType, Order, Pts>
+Pdh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable = false )
 {
-    return Pdh_type<MeshType,Order,Pts>::New( _mesh=mesh,
-                                              _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                              _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+    return Pdh_type<MeshType, Order, Pts>::New( _mesh = mesh,
+                                                _worldscomm = std::vector<WorldComm>( 1, mesh->worldComm() ),
+                                                _extended_doftable = std::vector<bool>( 1, buildExtendedDofTable ) );
 }
-
 }
 
 #endif /* FEELPP_PDH_HPP */

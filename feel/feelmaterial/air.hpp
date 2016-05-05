@@ -46,13 +46,10 @@ namespace Feel
  */
 class Air : public Material
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -60,8 +57,10 @@ public:
      */
     //@{
 
-    Air() : Material( "Air" ) {}
-    Air( Air const & m ): Material( m ) {}
+    Air()
+        : Material( "Air" ) {}
+    Air( Air const& m )
+        : Material( m ) {}
     ~Air() {}
 
     //@}
@@ -70,19 +69,17 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
 
-
     //! thermal conductivity in \f$ W/(m*K) \f$
     virtual double k() const
     {
         double T = 273; // K (default)
-        return pow( 10,( 0.8616*log10( std::abs( T ) )-3.7142 ) );
+        return pow( 10, ( 0.8616 * log10( std::abs( T ) ) - 3.7142 ) );
     }
 
     //! density in \f$ kg/m^3 \f$
@@ -95,14 +92,14 @@ public:
     //! thermal capacity in \f$ J/(kg*K) \f$
     virtual double C() const
     {
-        double T=273;
-        return 0.0769*T+1076.9;
+        double T = 273;
+        return 0.0769 * T + 1076.9;
     }
 
     //! Poisson coefficient
     virtual double nu() const
     {
-        return 1.7*1e-5;
+        return 1.7 * 1e-5;
     }
 
     //! Young modulus in \f$ Pa \f$
@@ -111,13 +108,11 @@ public:
         return -1;
     }
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -125,16 +120,10 @@ public:
      */
     //@{
 
-
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
 };
 
 } // Feel
-

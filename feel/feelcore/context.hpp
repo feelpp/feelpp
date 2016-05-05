@@ -35,14 +35,14 @@
 namespace Feel
 {
 
-template<size_type Contextv, size_type Value>
+template <size_type Contextv, size_type Value>
 using has_value = mpl::bool_<( Contextv & Value ) != 0>;
 
-template<size_type Contextv, size_type Value>
+template <size_type Contextv, size_type Value>
 using set_value = mpl::bool_<( Contextv | Value )>;
 
-template<size_type Contextv, size_type Value>
-using clear_value = mpl::bool_<Contextv & ( ~Value )>;
+template <size_type Contextv, size_type Value>
+using clear_value = mpl::bool_<Contextv&( ~Value )>;
 
 /*!
   \class Context
@@ -53,8 +53,7 @@ using clear_value = mpl::bool_<Contextv & ( ~Value )>;
 */
 class Context
 {
-public:
-
+  public:
     /** @name Constructors, destructor
      */
     //@{
@@ -65,25 +64,26 @@ public:
      * @param c context
      */
     explicit Context( size_type c )
-        :
-        M_context( c )
-    {}
+        : M_context( c )
+    {
+    }
 
     /**
      * copy constructor
      *
      */
-    Context( Context const & c )
-        :
-        M_context( c.M_context )
-    {}
+    Context( Context const& c )
+        : M_context( c.M_context )
+    {
+    }
 
     /**
      * destructor
      *
      */
     ~Context()
-    {}
+    {
+    }
 
     //@}
 
@@ -98,7 +98,7 @@ public:
      */
     Context& operator=( Context const& __c )
     {
-        if (  this != &__c )
+        if ( this != &__c )
         {
             M_context = __c.M_context;
         }
@@ -143,7 +143,6 @@ public:
         return M_context;
     }
 
-
     //@}
 
     /** @name  Mutators
@@ -157,9 +156,8 @@ public:
      */
     void setContext( size_type __v )
     {
-        M_context = __v ;
+        M_context = __v;
     }
-
 
     //@}
 
@@ -167,14 +165,14 @@ public:
      */
     //@{
 
-
     bool test( size_type b ) const
     {
-        return ( M_context&b )!=0;
+        return ( M_context & b ) != 0;
     }
-    template<typename T> bool test( T b ) const
+    template <typename T>
+    bool test( T b ) const
     {
-        return ( M_context&size_type( b ) )!=0;
+        return ( M_context & size_type( b ) ) != 0;
     }
     void set( size_type b )
     {
@@ -192,19 +190,16 @@ public:
 
     //@}
 
-private:
-
+  private:
     friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-        {
-            ar & M_context;
-        }
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version )
+    {
+        ar& M_context;
+    }
 
-private:
-
+  private:
     size_type M_context;
-
 };
 }
 #endif /* __Context_H */

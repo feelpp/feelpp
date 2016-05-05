@@ -47,23 +47,22 @@ namespace functional
  *
  * \author Christophe Prud'homme
  */
-template<typename Space>
+template <typename Space>
 class PointEvaluation
-    :
-public Functional<Space>
+    : public Functional<Space>
 {
     typedef Functional<Space> super;
-public:
 
+  public:
     typedef PointEvaluation<Space> self_type;
     typedef typename super::space_type space_type;
     typedef typename space_type::value_type value_type;
     typedef typename node<value_type>::type node_type;
 
     PointEvaluation()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
     PointEvaluation( space_type const& b, node_type const& __pt )
         : super( b, ublas::trans( b.basis()( __pt ) ) )
     {
@@ -82,26 +81,24 @@ public:
  *
  * \author Christophe Prud'homme
  */
-template<typename Space>
+template <typename Space>
 class ComponentPointEvaluation
-    :
-public Functional<Space>
+    : public Functional<Space>
 {
     typedef Functional<Space> super;
-public:
 
+  public:
     typedef ComponentPointEvaluation<Space> self_type;
     typedef typename super::space_type space_type;
     typedef typename space_type::value_type value_type;
     typedef typename node<value_type>::type node_type;
 
     ComponentPointEvaluation()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
     ComponentPointEvaluation( space_type const& b, uint16_type __c, node_type const& __pt )
-        :
-        super( b )
+        : super( b )
     {
         ublas::matrix<value_type> m( ublas::zero_matrix<value_type>( space_type::nComponents, b.polynomialDimensionPerComponent() ) );
 
@@ -122,7 +119,6 @@ public:
 
         this->setCoefficient( m );
         //std::cout << "[ComponentPointEvaluation] m = " << m << "\n";
-
     }
 };
 
@@ -137,27 +133,25 @@ public:
  *
  * \author Christophe Prud'homme
  */
-template<typename Space>
+template <typename Space>
 class PointDerivative
-    :
-public Functional<Space>
+    : public Functional<Space>
 {
     typedef Functional<Space> super;
-public:
 
+  public:
     typedef PointDerivative<Space> self_type;
     typedef typename super::space_type space_type;
     typedef typename space_type::value_type value_type;
     typedef typename node<value_type>::type node_type;
 
     PointDerivative()
-        :
-        super()
-    {}
-    PointDerivative( space_type const& b, int i, node_type const& __pt )
-        : super( b, ublas::trans( b.derivate( i ).evaluate(  __pt ) ) )
+        : super()
     {
-
+    }
+    PointDerivative( space_type const& b, int i, node_type const& __pt )
+        : super( b, ublas::trans( b.derivate( i ).evaluate( __pt ) ) )
+    {
     }
 };
 
@@ -177,23 +171,21 @@ public:
  *
  * \author Christophe Prud'homme
  */
-template<typename Space>
+template <typename Space>
 struct PointsEvaluation
-        :
-    public std::vector<Functional<Space> >
+    : public std::vector<Functional<Space>>
 {
-    typedef std::vector<Functional<Space> > super;
-public:
+    typedef std::vector<Functional<Space>> super;
 
+  public:
     typedef PointsEvaluation<Space> self_type;
     typedef Space space_type;
     typedef typename space_type::points_type points_type;
 
-
     PointsEvaluation()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
     PointsEvaluation( space_type const& b, points_type const& __pts )
         : super()
     {
@@ -202,10 +194,8 @@ public:
             //std::cout << "[PointsEvaluation] eval at point " << ublas::column( __pts, c)  << "\n";
             this->push_back( PointEvaluation<Space>( b, ublas::column( __pts, c ) ) );
         }
-
     }
 }; // PointsEvaluation
-
 
 /**
  * \class PointsDerivative
@@ -223,23 +213,21 @@ public:
  *
  * \author Christophe Prud'homme
  */
-template<typename Space>
+template <typename Space>
 struct PointsDerivative
-        :
-    public std::vector<Functional<Space> >
+    : public std::vector<Functional<Space>>
 {
-    typedef std::vector<Functional<Space> > super;
-public:
+    typedef std::vector<Functional<Space>> super;
 
+  public:
     typedef PointsDerivative<Space> self_type;
     typedef Space space_type;
     typedef typename space_type::points_type points_type;
 
-
     PointsDerivative()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
     PointsDerivative( space_type const& b, int i, points_type const& __pts )
         : super()
     {
@@ -248,7 +236,6 @@ public:
             //std::cout << "[PointsDerivative] eval at point " << ublas::column( __pts, c)  << "\n";
             this->push_back( PointDerivative<Space>( b, i, ublas::column( __pts, c ) ) );
         }
-
     }
 }; // PointsDerivative
 
@@ -268,23 +255,21 @@ public:
  *
  * \author Christophe Prud'homme
  */
-template<typename Space>
+template <typename Space>
 struct PointsGradient
-        :
-    public std::vector<Functional<Space> >
+    : public std::vector<Functional<Space>>
 {
-    typedef std::vector<Functional<Space> > super;
-public:
+    typedef std::vector<Functional<Space>> super;
 
+  public:
     typedef PointsGradient<Space> self_type;
     typedef Space space_type;
     typedef typename space_type::points_type points_type;
 
-
     PointsGradient()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
     PointsGradient( space_type const& b, points_type const& __pts )
         : super()
     {
@@ -293,7 +278,6 @@ public:
             for ( int j = 0; j < __pts.size1(); ++j )
                 this->push_back( PointDerivative<Space>( b, j, ublas::column( __pts, c ) ) );
         }
-
     }
 }; // PointsGradient
 
@@ -313,26 +297,24 @@ public:
  *
  * \author Christophe Prud'homme
  */
-template<typename Space>
+template <typename Space>
 struct ComponentsPointsEvaluation
-        :
-    public std::vector<Functional<Space> >
+    : public std::vector<Functional<Space>>
 {
-    typedef std::vector<Functional<Space> > super;
-public:
+    typedef std::vector<Functional<Space>> super;
 
+  public:
     typedef ComponentsPointsEvaluation<Space> self_type;
     typedef Space space_type;
     typedef typename space_type::points_type points_type;
-
 
     BOOST_STATIC_ASSERT( space_type::is_vectorial ||
                          space_type::is_tensor2 );
 
     ComponentsPointsEvaluation()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
     ComponentsPointsEvaluation( space_type const& b, points_type const& __pts )
         : super()
     {
@@ -345,10 +327,8 @@ public:
                 this->push_back( ComponentPointEvaluation<Space>( b, c, ublas::column( __pts, pt ) ) );
             }
         }
-
     }
 }; // ComponentsPointsEvaluation
-
 
 /**
  * \class DirectionalComponentPointEvaluation
@@ -357,21 +337,19 @@ public:
  *
  * \author Christophe Prud'homme
  */
-template<typename Space>
+template <typename Space>
 struct DirectionalComponentPointEvaluation
-        :
-    public Functional<Space>
+    : public Functional<Space>
 {
     typedef Functional<Space> super;
-public:
 
+  public:
     typedef DirectionalComponentPointEvaluation<Space> self_type;
     typedef Space space_type;
     typedef typename space_type::points_type points_type;
 
     typedef typename super::value_type value_type;
     typedef typename node<value_type>::type node_type;
-
 
     BOOST_STATIC_ASSERT( space_type::is_vectorial ||
                          space_type::is_tensor2 );
@@ -399,14 +377,13 @@ public:
  *
  * \author Christophe Prud'homme
  */
-template<typename Space>
+template <typename Space>
 struct DirectionalComponentPointsEvaluation
-        :
-    public std::vector<Functional<Space> >
+    : public std::vector<Functional<Space>>
 {
-    typedef std::vector<Functional<Space> > super;
-public:
+    typedef std::vector<Functional<Space>> super;
 
+  public:
     typedef DirectionalComponentPointsEvaluation<Space> self_type;
     typedef Functional<Space> functional_type;
     typedef Space space_type;
@@ -415,14 +392,13 @@ public:
     typedef typename space_type::value_type value_type;
     typedef typename node<value_type>::type node_type;
 
-
     BOOST_STATIC_ASSERT( space_type::is_vectorial ||
                          space_type::is_tensor2 );
 
     DirectionalComponentPointsEvaluation()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
     DirectionalComponentPointsEvaluation( space_type const& b,
                                           node_type const& d,
                                           points_type const& __pts )
@@ -449,14 +425,13 @@ public:
  *
  * \author Christophe Prud'homme
  */
-    template<typename Space>
+template <typename Space>
 struct SecondDirectionalComponentPointEvaluation
-        :
-    public std::vector<Functional<Space> >
+    : public std::vector<Functional<Space>>
 {
-    typedef std::vector<Functional<Space> > super;
-public:
+    typedef std::vector<Functional<Space>> super;
 
+  public:
     typedef SecondDirectionalComponentPointEvaluation<Space> self_type;
     typedef Functional<Space> functional_type;
     typedef Space space_type;
@@ -465,18 +440,17 @@ public:
     typedef typename space_type::value_type value_type;
     typedef typename node<value_type>::type node_type;
 
-
     BOOST_STATIC_ASSERT( space_type::is_vectorial ||
                          space_type::is_tensor2 );
 
     SecondDirectionalComponentPointEvaluation()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
     SecondDirectionalComponentPointEvaluation( space_type const& b,
                                                node_type const& d,
                                                points_type const& __pts,
-                                               ublas::vector<value_type> poly)
+                                               ublas::vector<value_type> poly )
         : super()
     {
         ublas::matrix<value_type> m( ublas::zero_matrix<value_type>( d.size(), b.basis().size() ) );
@@ -484,20 +458,19 @@ public:
         // Evaluate poly on points of __pts (2 points)
         double q1_1 = 0;
         double q1_2 = 0;
-        for(int k=0; k<__pts.size1(); ++k)
-            {
-                q1_1 += poly(k)*__pts(k,0);
-                q1_2 += poly(k)*__pts(k,1);
-            }
-        q1_1 += poly(poly.size() - 1);
-        q1_2 += poly(poly.size() - 1);
+        for ( int k = 0; k < __pts.size1(); ++k )
+        {
+            q1_1 += poly( k ) * __pts( k, 0 );
+            q1_2 += poly( k ) * __pts( k, 1 );
+        }
+        q1_1 += poly( poly.size() - 1 );
+        q1_2 += poly( poly.size() - 1 );
 
         // approximate integral
         for ( int i = 0; i < d.size(); ++i )
-            {
-                ublas::row( m, i ) = 0.5*d( i )* q1_1 *ublas::column( b.basis()( ublas::column( __pts, 0 ) ), 0 )
-                    - 0.5*d( i )* q1_2 *ublas::column( b.basis()( ublas::column( __pts, 1 ) ), 0 );
-            }
+        {
+            ublas::row( m, i ) = 0.5 * d( i ) * q1_1 * ublas::column( b.basis()( ublas::column( __pts, 0 ) ), 0 ) - 0.5 * d( i ) * q1_2 * ublas::column( b.basis()( ublas::column( __pts, 1 ) ), 0 );
+        }
 
         std::cout << "[SecondDirectionalComponentPointEvaluation] m  = " << m << "\n";
         //this->push_back( functional_type( b, m ) );

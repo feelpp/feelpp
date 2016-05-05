@@ -41,21 +41,19 @@ namespace Feel
  *
  *  @author Christophe Prud'homme
  */
-template<int Dim,
-         int Order = 1,
-         int RealDim = Dim,
-         typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Entity = Simplex>
+template <int Dim,
+          int Order = 1,
+          int RealDim = Dim,
+          typename T = double,
+          template <uint16_type, uint16_type, uint16_type> class Entity = Simplex>
 class GeoMapInverse
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
 
-    typedef GeoMap<Dim,Order,RealDim,T,Entity> gm_type;
+    typedef GeoMap<Dim, Order, RealDim, T, Entity> gm_type;
     typedef typename gm_type::Inverse gic_type;
     typedef T value_type;
     //@}
@@ -65,17 +63,18 @@ public:
     //@{
 
     GeoMapInverse( value_type eps = 1e-12 )
-        :
-        M_eps( eps ),
-        M_tree()
-    {}
-    GeoMapInverse( GeoMapInverse const & gmi )
-        :
-        M_eps( gmi.M_eps ),
-        M_tree( gmi.M_tree )
-    {}
+        : M_eps( eps ),
+          M_tree()
+    {
+    }
+    GeoMapInverse( GeoMapInverse const& gmi )
+        : M_eps( gmi.M_eps ),
+          M_tree( gmi.M_tree )
+    {
+    }
     virtual ~GeoMapInverse()
-    {}
+    {
+    }
 
     //@}
 
@@ -83,20 +82,17 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -115,11 +111,11 @@ public:
     /**
      *  Add the points contained in c to the list of points.
      */
-    template<class CONT>
+    template <class CONT>
     void
-    addPoints( const CONT &c )
+    addPoints( const CONT& c )
     {
-        M_tree.reserve( std::distance( c.begin(),c.end() ) );
+        M_tree.reserve( std::distance( c.begin(), c.end() ) );
         typename CONT::const_iterator it = c.begin(), ite = c.end();
 
         for ( ; it != ite; ++it )
@@ -155,7 +151,7 @@ public:
     /**
      * add new points in the kd-tree
      */
-    void addPointWithId( boost::tuple<typename node<value_type>::type, size_type, uint16_type > const& p )
+    void addPointWithId( boost::tuple<typename node<value_type>::type, size_type, uint16_type> const& p )
     {
         M_tree.addPointWithId( boost::get<0>( p ), boost::get<1>( p ), boost::get<2>( p ) );
     }
@@ -164,7 +160,7 @@ public:
      * Find all the points present in the box between min and max.
      */
     size_type
-    pointsInBox( KDTree::points_type &ipts,
+    pointsInBox( KDTree::points_type& ipts,
                  typename node<value_type>::type const& min,
                  typename node<value_type>::type const& max ) const
     {
@@ -172,15 +168,12 @@ public:
         return ipts.size();
     }
 
-
     //@}
 
-protected:
-
+  protected:
     value_type M_eps;
     mutable KDTree M_tree;
     //gic_type M_gic;
-
 };
 } // Feel
 #endif /* __GeoMapInverse_H */

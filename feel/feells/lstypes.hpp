@@ -27,33 +27,29 @@
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 
-
-
-namespace Feel {
-
+namespace Feel
+{
 
 // Instantiate 2d and 3d only when compiling reinit_fms.cpp (where FEELPP_INSTANTIATE_FMS is defined), else "extern" avoid useless instantiation
 
-template<int Dim, int GeoOrder=1,template <uint16_type,uint16_type,uint16_type> class Convex=Simplex>
-using ls_mesh_type = Feel::Mesh< Convex<Dim,GeoOrder,Dim> >;
-template<int Dim, int GeoOrder=1,template <uint16_type,uint16_type,uint16_type> class Convex=Simplex>
-using ls_mesh_ptrtype = boost::shared_ptr<Feel::Mesh< Convex<Dim,GeoOrder,Dim> >>;
+template <int Dim, int GeoOrder = 1, template <uint16_type, uint16_type, uint16_type> class Convex = Simplex>
+using ls_mesh_type = Feel::Mesh<Convex<Dim, GeoOrder, Dim>>;
+template <int Dim, int GeoOrder = 1, template <uint16_type, uint16_type, uint16_type> class Convex = Simplex>
+using ls_mesh_ptrtype = boost::shared_ptr<Feel::Mesh<Convex<Dim, GeoOrder, Dim>>>;
 
-template<int Dim,int GeoOrder=1,template <uint16_type,uint16_type,uint16_type> class Convex=Simplex>
-using ls_space_type = Pch_type<ls_mesh_type<Dim,GeoOrder,Convex>,1>;
-template<int Dim,int GeoOrder=1,template <uint16_type,uint16_type,uint16_type> class Convex=Simplex>
-using ls_space_ptrtype = Pch_ptrtype<ls_mesh_type<Dim,GeoOrder,Convex>,1>;
+template <int Dim, int GeoOrder = 1, template <uint16_type, uint16_type, uint16_type> class Convex = Simplex>
+using ls_space_type = Pch_type<ls_mesh_type<Dim, GeoOrder, Convex>, 1>;
+template <int Dim, int GeoOrder = 1, template <uint16_type, uint16_type, uint16_type> class Convex = Simplex>
+using ls_space_ptrtype = Pch_ptrtype<ls_mesh_type<Dim, GeoOrder, Convex>, 1>;
 
-template<int Dim,int GeoOrder=1,template <uint16_type,uint16_type,uint16_type> class Convex=Simplex>
-using ls_element_type = typename ls_space_type<Dim,GeoOrder,Convex>::element_type;
+template <int Dim, int GeoOrder = 1, template <uint16_type, uint16_type, uint16_type> class Convex = Simplex>
+using ls_element_type = typename ls_space_type<Dim, GeoOrder, Convex>::element_type;
 
-template<int Dim, int GeoOrder=1>
-using lsh_mesh_type = ls_mesh_type<Dim,GeoOrder,Hypercube>;
-template<int Dim,int GeoOrder=1>
-using lsh_space_type = ls_space_type<Dim,GeoOrder,Hypercube>;
-template<int Dim,int GeoOrder=1>
-using lsh_element_type = ls_element_type<Dim,GeoOrder,Hypercube>;
-
-
+template <int Dim, int GeoOrder = 1>
+using lsh_mesh_type = ls_mesh_type<Dim, GeoOrder, Hypercube>;
+template <int Dim, int GeoOrder = 1>
+using lsh_space_type = ls_space_type<Dim, GeoOrder, Hypercube>;
+template <int Dim, int GeoOrder = 1>
+using lsh_element_type = ls_element_type<Dim, GeoOrder, Hypercube>;
 }
 #endif

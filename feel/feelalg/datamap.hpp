@@ -29,62 +29,59 @@
 #ifndef __DataMap_H
 #define __DataMap_H 1
 
-#include <vector>
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/worldcomm.hpp>
+#include <vector>
 
 namespace Feel
 {
 
 class DataMap;
 
-
-
 /**
  *
  */
-class IndexSplit : public std::vector<std::vector<size_type> >
+class IndexSplit : public std::vector<std::vector<size_type>>
 {
     typedef IndexSplit self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
-    typedef std::vector<std::vector<size_type> > super_type;
+    typedef std::vector<std::vector<size_type>> super_type;
     typedef super_type container_type;
     typedef std::vector<size_type> subcontainer_type;
 
-    public:
-
+  public:
     IndexSplit()
-        :
-        super_type(),
-        M_firstIndex(0),
-        M_lastIndex(0),
-        M_nIndex(0),
-        M_nIndexForSmallerRankId(0),
-        M_tag(0)
-    {}
+        : super_type(),
+          M_firstIndex( 0 ),
+          M_lastIndex( 0 ),
+          M_nIndex( 0 ),
+          M_nIndexForSmallerRankId( 0 ),
+          M_tag( 0 )
+    {
+    }
 
     IndexSplit( int s )
-        :
-        super_type( s ),
-        M_firstIndex( s, invalid_size_type_value ),
-        M_lastIndex( s, invalid_size_type_value ),
-        M_nIndex( s, invalid_size_type_value ),
-        M_nIndexForSmallerRankId( s, invalid_size_type_value ),
-        M_tag(s,0)
-    {}
+        : super_type( s ),
+          M_firstIndex( s, invalid_size_type_value ),
+          M_lastIndex( s, invalid_size_type_value ),
+          M_nIndex( s, invalid_size_type_value ),
+          M_nIndexForSmallerRankId( s, invalid_size_type_value ),
+          M_tag( s, 0 )
+    {
+    }
 
     IndexSplit( IndexSplit const& is )
-        :
-        super_type( is ),
-        M_firstIndex( is.M_firstIndex ),
-        M_lastIndex( is.M_lastIndex ),
-        M_nIndex( is.M_nIndex ),
-        M_nIndexForSmallerRankId( is.M_nIndexForSmallerRankId ),
-        M_tag( is.M_tag )
-    {}
+        : super_type( is ),
+          M_firstIndex( is.M_firstIndex ),
+          M_lastIndex( is.M_lastIndex ),
+          M_nIndex( is.M_nIndex ),
+          M_nIndexForSmallerRankId( is.M_nIndexForSmallerRankId ),
+          M_tag( is.M_tag )
+    {
+    }
 
-    subcontainer_type const& split( int k ) const { return this->operator[](k); }
+    subcontainer_type const& split( int k ) const { return this->operator[]( k ); }
 
     void resize( int s );
     void addSplit( size_type startSplit, self_ptrtype const& addedIndexSplit /*DataMap const& dm*/ );
@@ -92,21 +89,23 @@ class IndexSplit : public std::vector<std::vector<size_type> >
     void showMe() const;
 
     size_type firstIndex( int i ) const { return M_firstIndex[i]; }
-    void setFirstIndex( int i,size_type s ) { M_firstIndex[i] = s; }
+    void setFirstIndex( int i, size_type s ) { M_firstIndex[i] = s; }
     size_type lastIndex( int i ) const { return M_lastIndex[i]; }
-    void setLastIndex( int i,size_type s ) { M_lastIndex[i] = s; }
+    void setLastIndex( int i, size_type s ) { M_lastIndex[i] = s; }
     size_type nIndex( int i ) const { return M_nIndex[i]; }
-    void setNIndex( int i,size_type s ) { M_nIndex[i] = s; }
+    void setNIndex( int i, size_type s ) { M_nIndex[i] = s; }
     size_type nIndexForSmallerRankId( int i ) const { return M_nIndexForSmallerRankId[i]; }
-    void setNIndexForSmallerRankId( int i,size_type s ) { M_nIndexForSmallerRankId[i] = s; }
+    void setNIndexForSmallerRankId( int i, size_type s ) { M_nIndexForSmallerRankId[i] = s; }
     int tag( int i ) const { return M_tag[i]; }
-    void setTag( int i,int tag ) { M_tag[i]=tag; }
+    void setTag( int i, int tag ) { M_tag[i] = tag; }
 
-    struct FieldsDef : public std::map<int,std::set<int> >
+    struct FieldsDef : public std::map<int, std::set<int>>
     {
-        typedef std::map<int,std::set<int> > super_type;
-        FieldsDef() : super_type() {}
-        FieldsDef( super_type const& s ) : super_type( s ) {}
+        typedef std::map<int, std::set<int>> super_type;
+        FieldsDef()
+            : super_type() {}
+        FieldsDef( super_type const& s )
+            : super_type( s ) {}
         void showMe() const;
     };
 
@@ -114,13 +113,10 @@ class IndexSplit : public std::vector<std::vector<size_type> >
 
     self_ptrtype applyFieldsDef( FieldsDef const& fieldsDef ) const;
 
-
-private :
-
+  private:
     std::vector<size_type> M_firstIndex, M_lastIndex, M_nIndex;
     std::vector<size_type> M_nIndexForSmallerRankId;
     std::vector<int> M_tag;
-
 };
 
 /**
@@ -133,17 +129,16 @@ private :
 class DataMap
 {
 
-public:
+  public:
     typedef IndexSplit indexsplit_type;
     typedef boost::shared_ptr<indexsplit_type> indexsplit_ptrtype;
 
-    typedef Eigen::Matrix<int, Eigen::Dynamic, 1>  localglobal_indices_type;
-    typedef std::vector<localglobal_indices_type,Eigen::aligned_allocator<localglobal_indices_type> > vector_indices_type;
+    typedef Eigen::Matrix<int, Eigen::Dynamic, 1> localglobal_indices_type;
+    typedef std::vector<localglobal_indices_type, Eigen::aligned_allocator<localglobal_indices_type>> vector_indices_type;
 
     /** @name Typedefs
      */
     //@{
-
 
     //@}
 
@@ -169,9 +164,9 @@ public:
     /**
      *
      */
-    DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, WorldComm const& _worldComm );
+    DataMap( std::vector<boost::shared_ptr<DataMap>> const& listofdm, WorldComm const& _worldComm );
 
-    DataMap( DataMap const & dm ) = default;
+    DataMap( DataMap const& dm ) = default;
     DataMap( DataMap&& dm ) = default;
     virtual ~DataMap();
 
@@ -182,7 +177,7 @@ public:
     //@{
 
     DataMap& operator=( DataMap const& dm ) = default;
-    DataMap& operator=( DataMap && dm ) = default;
+    DataMap& operator=( DataMap&& dm ) = default;
 
     //@}
 
@@ -201,9 +196,9 @@ public:
     /**
      * @return the number of degrees of freedom on this processor(with ghosts).
      */
-    size_type nLocalDof () const
+    size_type nLocalDof() const
     {
-        return this->nLocalDofWithGhost()/*nDofOnProcessor (M_comm.rank())*/;
+        return this->nLocalDofWithGhost() /*nDofOnProcessor (M_comm.rank())*/;
     }
 
     /**
@@ -211,7 +206,7 @@ public:
      */
     size_type nLocalDofWithoutGhost() const
     {
-        return nLocalDofWithoutGhost(this->worldComm().rank());
+        return nLocalDofWithoutGhost( this->worldComm().rank() );
     }
 
     /**
@@ -219,7 +214,7 @@ public:
      */
     size_type nLocalGhosts() const
     {
-        return nLocalDofWithGhost()-nLocalDofWithoutGhost();
+        return nLocalDofWithGhost() - nLocalDofWithoutGhost();
     }
 
     /**
@@ -235,7 +230,7 @@ public:
      */
     size_type nLocalDofWithGhost() const
     {
-        return this->nLocalDofWithGhost(this->worldComm().rank());
+        return this->nLocalDofWithGhost( this->worldComm().rank() );
     }
 
     /**
@@ -249,9 +244,9 @@ public:
     /**
      * @return the number of degrees of freedom on this processor.
      */
-    size_type nMyDof () const
+    size_type nMyDof() const
     {
-        return this->nDofOnProcessor ( M_worldComm.rank() );
+        return this->nDofOnProcessor( M_worldComm.rank() );
     }
 
     /**
@@ -260,7 +255,7 @@ public:
     size_type nDofOnProcessor( const rank_type proc ) const
     {
         DCHECK( proc < M_first_df.size() ) << "invalid proc id or dof table , proc: "
-                                           <<  proc << ", first dof : " <<  M_first_df.size();
+                                           << proc << ", first dof : " << M_first_df.size();
         return M_n_localWithoutGhost_df[proc];
         //return ( M_last_df[proc] - M_first_df[proc]+1);
     }
@@ -283,7 +278,7 @@ public:
     size_type firstDof( const rank_type proc ) const
     {
         DCHECK( proc < M_first_df.size() ) << "invalid proc id or dof table , proc: "
-                                           <<  proc << ", first dof : " <<  M_first_df.size();
+                                           << proc << ", first dof : " << M_first_df.size();
         return M_first_df[proc];
     }
 
@@ -295,7 +290,7 @@ public:
     size_type firstDofGlobalCluster( rank_type proc ) const
     {
         DCHECK( proc < M_first_df_globalcluster.size() ) << "invalid proc id or dof table , proc: "
-                                                         <<  proc << ", first dof global cluster : " <<  M_first_df_globalcluster.size();
+                                                         << proc << ", first dof global cluster : " << M_first_df_globalcluster.size();
         return M_first_df_globalcluster[proc];
     }
 
@@ -317,7 +312,7 @@ public:
     size_type lastDof( const rank_type proc ) const
     {
         DCHECK( proc < M_last_df.size() ) << "invalid proc id or dof table , proc: "
-                                          <<  proc << ", last dof : " <<  M_last_df.size();
+                                          << proc << ", last dof : " << M_last_df.size();
         return M_last_df[proc];
     }
 
@@ -332,7 +327,7 @@ public:
     size_type lastDofGlobalCluster( rank_type proc ) const
     {
         DCHECK( proc < M_last_df_globalcluster.size() ) << "invalid proc id or dof table , proc: "
-                                                         <<  proc << ", last dof global cluster : " <<  M_last_df_globalcluster.size();
+                                                        << proc << ", last dof global cluster : " << M_last_df_globalcluster.size();
         return M_last_df_globalcluster[proc];
     }
 
@@ -350,24 +345,24 @@ public:
 
     bool dofGlobalClusterIsOnProc( size_type globDof, rank_type proc ) const
     {
-        return ( ( this->nLocalDofWithoutGhost(proc) > 0 ) && ( globDof <= M_last_df_globalcluster[proc] ) && ( globDof >= M_first_df_globalcluster[proc] ) );
+        return ( ( this->nLocalDofWithoutGhost( proc ) > 0 ) && ( globDof <= M_last_df_globalcluster[proc] ) && ( globDof >= M_first_df_globalcluster[proc] ) );
     }
 
-    bool dofGlobalProcessIsGhost( size_type dof) const
+    bool dofGlobalProcessIsGhost( size_type dof ) const
     {
-        return !this->dofGlobalClusterIsOnProc(this->mapGlobalProcessToGlobalCluster( dof ));
+        return !this->dofGlobalClusterIsOnProc( this->mapGlobalProcessToGlobalCluster( dof ) );
     }
 
     //! return global process id from global cluster id if available
-    boost::tuple<bool,size_type> searchGlobalProcessDof( size_type gpdof ) const;
+    boost::tuple<bool, size_type> searchGlobalProcessDof( size_type gpdof ) const;
 
     //! Returns local ID of global ID, return invalid_size_type_value if not found on this processor.
-    size_type  lid( size_type GID ) const
+    size_type lid( size_type GID ) const
     {
         uint16_type pid = M_worldComm.rank();
 
         if ( GID >= firstDof( pid ) &&
-                GID <= lastDof( pid ) )
+             GID <= lastDof( pid ) )
             return GID - firstDof( pid );
 
         return invalid_size_type_value;
@@ -378,58 +373,58 @@ public:
     {
         uint16_type pid = M_worldComm.rank();
 
-        if ( LID < ( lastDof( pid )-firstDof( pid ) + 1 ) )
+        if ( LID < ( lastDof( pid ) - firstDof( pid ) + 1 ) )
             return firstDof( pid ) + LID;
 
         return invalid_size_type_value;
     }
 
     //! Returns true if the GID passed in belongs to the calling processor in this map, otherwise returns false.
-    bool  myGID( size_type GID ) const
+    bool myGID( size_type GID ) const
     {
-        return( lid( GID )!=invalid_size_type_value );
+        return ( lid( GID ) != invalid_size_type_value );
     }
 
     //! Returns true if the LID passed in belongs to the calling processor in this map, otherwise returns false.
-    bool  myLID( size_type LID ) const
+    bool myLID( size_type LID ) const
     {
-        return( gid( LID )!=invalid_size_type_value );
+        return ( gid( LID ) != invalid_size_type_value );
     }
 
     //!Returns the minimum global ID across the entire map.
-    size_type  minAllGID() const
+    size_type minAllGID() const
     {
-        return( firstDof( 0 ) );
+        return ( firstDof( 0 ) );
     }
 
     //! Returns the maximum global ID across the entire map.
-    size_type  maxAllGID() const
+    size_type maxAllGID() const
     {
-        return( lastDof( M_worldComm.size()-1 ) );
+        return ( lastDof( M_worldComm.size() - 1 ) );
     }
 
     //! Returns the maximum global ID owned by this processor.
-    size_type  minMyGID() const
+    size_type minMyGID() const
     {
         return firstDof( M_worldComm.rank() );
     }
 
     //! Returns the maximum global ID owned by this processor.
-    size_type  maxMyGID() const
+    size_type maxMyGID() const
     {
         return lastDof( M_worldComm.rank() );
     };
 
     //!  The minimum local index value on the calling processor.
-    size_type  minLID() const
+    size_type minLID() const
     {
         return 0;
     };
 
     //! The maximum local index value on the calling processor.
-    size_type  maxLID() const
+    size_type maxLID() const
     {
-        return lastDof( M_worldComm.rank() )-firstDof( M_worldComm.rank() );
+        return lastDof( M_worldComm.rank() ) - firstDof( M_worldComm.rank() );
     };
 
     //! number of elements across all processors.
@@ -468,12 +463,12 @@ public:
 
     void setNDof( size_type ndof );
 
-    void setNLocalDofWithoutGhost( const rank_type proc, const size_type n, bool inWorld=true );
-    void setNLocalDofWithGhost( const rank_type proc, const size_type n, bool inWorld=true );
-    void setFirstDof( const rank_type proc, const size_type df, bool inWorld=true );
-    void setLastDof( const rank_type proc, const size_type df, bool inWorld=true );
-    void setFirstDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld=true );
-    void setLastDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld=true );
+    void setNLocalDofWithoutGhost( const rank_type proc, const size_type n, bool inWorld = true );
+    void setNLocalDofWithGhost( const rank_type proc, const size_type n, bool inWorld = true );
+    void setFirstDof( const rank_type proc, const size_type df, bool inWorld = true );
+    void setLastDof( const rank_type proc, const size_type df, bool inWorld = true );
+    void setFirstDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld = true );
+    void setLastDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld = true );
 
     void setMapGlobalProcessToGlobalCluster( std::vector<size_type> const& map );
     void setMapGlobalProcessToGlobalCluster( size_type i, size_type j );
@@ -481,11 +476,10 @@ public:
 
     void updateDataInWorld();
 
-
     typename std::set<rank_type>::const_iterator beginNeighborSubdomains() const { return M_neighbor_processors.begin(); }
     typename std::set<rank_type>::const_iterator endNeighborSubdomains() const { return M_neighbor_processors.end(); }
     std::set<rank_type> const& neighborSubdomains() const { return M_neighbor_processors; }
-    void setNeighborSubdomains( std::set<rank_type> const& neigh) { M_neighbor_processors=neigh; }
+    void setNeighborSubdomains( std::set<rank_type> const& neigh ) { M_neighbor_processors = neigh; }
     void addNeighborSubdomain( rank_type p ) { M_neighbor_processors.insert( p ); }
     void addNeighborSubdomains( std::set<rank_type> const& neigh )
     {
@@ -493,9 +487,8 @@ public:
             M_neighbor_processors.insert( procIdNeigh );
     }
 
-    std::map<size_type, std::set<rank_type> > const& activeDofSharedOnCluster() const { return M_activeDofSharedOnCluster; }
-    void setActiveDofSharedOnCluster(size_type j, std::set<rank_type> const& sharedRank ) { M_activeDofSharedOnCluster[j]=sharedRank; }
-
+    std::map<size_type, std::set<rank_type>> const& activeDofSharedOnCluster() const { return M_activeDofSharedOnCluster; }
+    void setActiveDofSharedOnCluster( size_type j, std::set<rank_type> const& sharedRank ) { M_activeDofSharedOnCluster[j] = sharedRank; }
 
     //! \return true if DataMap is close, false otherwise
     bool closed() const
@@ -507,7 +500,7 @@ public:
      * print some information
      * showAll : print more (can be large)
      */
-    void showMe( bool showAll=false, std::ostream& __out = std::cout ) const;
+    void showMe( bool showAll = false, std::ostream& __out = std::cout ) const;
 
     /**
      * \return the mpi communicator
@@ -532,33 +525,33 @@ public:
      * \return the mapping index which contains this global process id in container view
      */
     int databaseIndexFromContainerId( size_type gpdof ) const
+    {
+        size_type currentStartId = 0;
+        for ( int tag = 0; tag < this->numberOfDofIdToContainerId(); ++tag )
         {
-            size_type currentStartId = 0;
-            for ( int tag=0;tag<this->numberOfDofIdToContainerId();++tag )
-            {
-                size_type nGpDof = this->dofIdToContainerId( tag ).size();
-                if ( gpdof >= currentStartId && gpdof < ( currentStartId + nGpDof ) )
-                    return tag;
-                currentStartId+=nGpDof;
-            }
-            return 0;
+            size_type nGpDof = this->dofIdToContainerId( tag ).size();
+            if ( gpdof >= currentStartId && gpdof < ( currentStartId + nGpDof ) )
+                return tag;
+            currentStartId += nGpDof;
         }
+        return 0;
+    }
     /**
      * initialize the number of dofIdToContainerId mapping
      */
-    void initNumberOfDofIdToContainerId( int nTag ) { M_dofIdToContainerId.resize(nTag); }
+    void initNumberOfDofIdToContainerId( int nTag ) { M_dofIdToContainerId.resize( nTag ); }
     /**
      * initialize the number of dof id in the mapping
      */
-    void initDofIdToContainerId( int tag, int nDof ) { M_dofIdToContainerId[tag].resize(nDof,invalid_size_type_value); }
+    void initDofIdToContainerId( int tag, int nDof ) { M_dofIdToContainerId[tag].resize( nDof, invalid_size_type_value ); }
     /**
      * initialize a mapping as identity
      */
     void initDofIdToContainerIdIdentity( int tag, int nDof )
-        {
-            M_dofIdToContainerId[tag].resize(nDof);
-            std::iota( M_dofIdToContainerId[tag].begin(),M_dofIdToContainerId[tag].end(),0 );
-        }
+    {
+        M_dofIdToContainerId[tag].resize( nDof );
+        std::iota( M_dofIdToContainerId[tag].begin(), M_dofIdToContainerId[tag].end(), 0 );
+    }
     /**
      * \return a reference of dofIdToContainerId mapping (from functionspace id to container id with global process numbering)
      */
@@ -571,7 +564,7 @@ public:
     /**
      * \return global process index in container from dof id
      */
-    size_type dofIdToContainerId( int tag,size_type gpdof ) const { return M_dofIdToContainerId[tag][gpdof]; }
+    size_type dofIdToContainerId( int tag, size_type gpdof ) const { return M_dofIdToContainerId[tag][gpdof]; }
 
     /**
      * \return the indexsplit description
@@ -580,19 +573,15 @@ public:
     void setIndexSplit( indexsplit_ptrtype const& is ) { M_indexSplit = is; }
     void buildIndexSplit();
 
-    bool hasIndexSplitWithComponents() const { return (M_indexSplitWithComponents.get() != 0); }
-    indexsplit_ptrtype const& indexSplitWithComponents() const { return (M_indexSplitWithComponents)? M_indexSplitWithComponents : this->indexSplit(); }
+    bool hasIndexSplitWithComponents() const { return ( M_indexSplitWithComponents.get() != 0 ); }
+    indexsplit_ptrtype const& indexSplitWithComponents() const { return ( M_indexSplitWithComponents ) ? M_indexSplitWithComponents : this->indexSplit(); }
     void setIndexSplitWithComponents( indexsplit_ptrtype const& is ) { M_indexSplitWithComponents = is; }
     void buildIndexSplitWithComponents( uint16_type nComp );
     //@}
 
-
-
     /** @name  Mutators
      */
     //@{
-
-
 
     //@}
 
@@ -608,23 +597,19 @@ public:
     void close() const;
 
     // add missing dof entries in // ( typically a ghost dof present in index set but not active dof associated )
-    void updateIndexSetWithParallelMissingDof( std::vector<size_type> & _indexSet ) const;
+    void updateIndexSetWithParallelMissingDof( std::vector<size_type>& _indexSet ) const;
     std::vector<size_type> buildIndexSetWithParallelMissingDof( std::vector<size_type> const& _indexSet ) const;
     // get process ids of active dof index (in cluster view) used in the input index set
-    std::map<size_type, std::set<rank_type> >
+    std::map<size_type, std::set<rank_type>>
     activeDofClusterUsedByProc( std::set<size_type> const& dofGlobalProcessPresent ) const;
-
 
     // build sub data map from an index set
     boost::shared_ptr<DataMap> createSubDataMap( std::vector<size_type> const& idExtract,
-                                                 bool _checkAndFixInputRange=true ) const;
+                                                 bool _checkAndFixInputRange = true ) const;
 
     //@}
 
-
-
-protected:
-
+  protected:
     mutable bool M_closed;
 
     /**
@@ -678,7 +663,7 @@ protected:
     /**
      * get set of rank which use an active dof (dofid on process, not cluster)
      */
-    std::map<size_type, std::set<rank_type> > M_activeDofSharedOnCluster;
+    std::map<size_type, std::set<rank_type>> M_activeDofSharedOnCluster;
 
     /**
      * Communicator
@@ -691,9 +676,9 @@ protected:
     indexsplit_ptrtype M_indexSplit, M_indexSplitWithComponents;
 
     //! dof global process id (space def) to container global process id (identity with non composite space)
-    std::vector<std::vector<size_type> > M_dofIdToContainerId;
-private:
+    std::vector<std::vector<size_type>> M_dofIdToContainerId;
 
+  private:
 };
 
 using datamap_t = DataMap;

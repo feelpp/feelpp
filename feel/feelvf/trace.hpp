@@ -42,32 +42,31 @@ namespace vf
  * @author Christophe Prud'homme
  * @see
  */
-template<typename ExprT>
+template <typename ExprT>
 class Trace
 {
-public:
-
+  public:
     static const size_type context = ExprT::context;
     static const bool is_terminal = false;
 
     static const uint16_type imorder = ExprT::imorder;
     static const bool imIsPoly = ExprT::imIsPoly;
 
-    template<typename Func>
+    template <typename Func>
     struct HasTestFunction
     {
         static const bool result = ExprT::template HasTestFunction<Func>::result;
     };
 
-    template<typename Func>
+    template <typename Func>
     struct HasTrialFunction
     {
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
 
-    template<typename Func>
+    template <typename Func>
     static const bool has_test_basis = ExprT::template has_test_basis<Func>;
-    template<typename Func>
+    template <typename Func>
     static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
     using test_basis = typename ExprT::test_basis;
     using trial_basis = typename ExprT::trial_basis;
@@ -81,23 +80,23 @@ public:
     typedef value_type evaluate_type;
     typedef Trace<ExprT> this_type;
 
-
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
 
-    explicit Trace( expression_type const & __expr )
-        :
-        M_expr( __expr )
-    {}
-    Trace( Trace const & te )
-        :
-        M_expr( te.M_expr )
-    {}
+    explicit Trace( expression_type const& __expr )
+        : M_expr( __expr )
+    {
+    }
+    Trace( Trace const& te )
+        : M_expr( te.M_expr )
+    {
+    }
     ~Trace()
-    {}
+    {
+    }
 
     //@}
 
@@ -105,20 +104,17 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -134,18 +130,18 @@ public:
     //@}
 
     //template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptrvf::detail::gmc<0> > > >, typename Basis_j_t = Basis_i_t>
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
+    template <typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
 
         typedef typename tensor_expr_type::shape expr_shape;
-        BOOST_MPL_ASSERT_MSG( ( boost::is_same<mpl::int_<expr_shape::M>,mpl::int_<expr_shape::N> >::value ), INVALID_TENSOR_SHOULD_BE_RANK_2_OR_0, ( mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N> ) );
-        typedef Shape<expr_shape::nDim,Scalar,false,false> shape;
+        BOOST_MPL_ASSERT_MSG( ( boost::is_same<mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N>>::value ), INVALID_TENSOR_SHOULD_BE_RANK_2_OR_0, (mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N>));
+        typedef Shape<expr_shape::nDim, Scalar, false, false> shape;
 
-
-        template <class Args> struct sig
+        template <class Args>
+        struct sig
         {
             typedef value_type type;
         };
@@ -157,24 +153,21 @@ public:
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            :
-            M_tensor_expr( expr.expression(), geom, fev, feu )
+            : M_tensor_expr( expr.expression(), geom, fev, feu )
         {
         }
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
-            :
-            M_tensor_expr( expr.expression(), geom, fev )
+            : M_tensor_expr( expr.expression(), geom, fev )
         {
         }
 
         tensor( this_type const& expr, Geo_t const& geom )
-            :
-            M_tensor_expr( expr.expression(), geom )
+            : M_tensor_expr( expr.expression(), geom )
         {
         }
-        template<typename IM>
+        template <typename IM>
         void init( IM const& im )
         {
             M_tensor_expr.init( im );
@@ -196,13 +189,11 @@ public:
             M_tensor_expr.update( geom, face );
         }
 
-
         value_type
         evalij( uint16_type i, uint16_type j ) const
         {
             return M_tensor_expr.evalij( i, j );
         }
-
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
@@ -214,7 +205,7 @@ public:
 
             return res;
         }
-        template<int PatternContext>
+        template <int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q,
                  mpl::int_<PatternContext> ) const
@@ -252,23 +243,21 @@ public:
         tensor_expr_type M_tensor_expr;
     };
 
-private:
-    mutable expression_type  M_expr;
+  private:
+    mutable expression_type M_expr;
 };
 /// \endcond
 
 /**
  * \brief trace of the expression tensor
  */
-template<typename ExprT>
-inline
-Expr< Trace<ExprT> >
+template <typename ExprT>
+inline Expr<Trace<ExprT>>
 trace( ExprT v )
 {
     typedef Trace<ExprT> trace_t;
-    return Expr< trace_t >(  trace_t( v ) );
+    return Expr<trace_t>( trace_t( v ) );
 }
-
 }
 }
 #endif /* __Trace_H */

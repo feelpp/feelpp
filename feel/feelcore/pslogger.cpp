@@ -1,7 +1,7 @@
 #include <cstdlib>
 
-#include <unistd.h>
 #include <sstream>
+#include <unistd.h>
 
 #include <petscsys.h>
 
@@ -11,16 +11,15 @@
 namespace Feel
 {
 
-PsLogger::PsLogger( std::string fileName, WorldComm const& worldComm, std::string format,  bool all_procs)
-    :
-    M_worldComm( worldComm ),
-    M_fileName( fileName + (boost::format("-%1%_%2%") %this->worldComm().globalSize() %this->worldComm().globalRank()).str() )
+PsLogger::PsLogger( std::string fileName, WorldComm const& worldComm, std::string format, bool all_procs )
+    : M_worldComm( worldComm ),
+      M_fileName( fileName + ( boost::format( "-%1%_%2%" ) % this->worldComm().globalSize() % this->worldComm().globalRank() ).str() )
 {
     std::stringstream command;
 
-    bool only_one_proc=(! all_procs) && ( Environment::worldComm().globalRank()==Environment::worldComm().masterRank() );
-    bool write_a_file = all_procs || only_one_proc ;
-    if( write_a_file )
+    bool only_one_proc = ( !all_procs ) && ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() );
+    bool write_a_file = all_procs || only_one_proc;
+    if ( write_a_file )
     {
         command << "echo logging output of ps, format: > " << this->fileName() << std::ends;
         system( command.str().c_str() );
@@ -36,13 +35,13 @@ PsLogger::PsLogger( std::string fileName, WorldComm const& worldComm, std::strin
                 << " -o \"" << format << "\" >> " << this->fileName() << std::ends;
 #endif
         M_command = command.str();
-    }//write a file
+    } //write a file
 }
 
-void PsLogger::log( std::string logMessage , bool all_procs )
+void PsLogger::log( std::string logMessage, bool all_procs )
 {
-    bool only_one_proc=(! all_procs) && ( Environment::worldComm().globalRank()==Environment::worldComm().masterRank() );
-    bool write_a_file = all_procs || only_one_proc ;
+    bool only_one_proc = ( !all_procs ) && ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() );
+    bool write_a_file = all_procs || only_one_proc;
 
     if ( logMessage.length() > 0 && write_a_file )
     {
@@ -53,7 +52,5 @@ void PsLogger::log( std::string logMessage , bool all_procs )
 
     Environment::logMemoryUsage( logMessage );
     system( M_command.c_str() );
-
 }
-
 }

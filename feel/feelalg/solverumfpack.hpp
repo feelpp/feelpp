@@ -30,31 +30,29 @@
 #ifndef __SolverUMFPACK_H
 #define __SolverUMFPACK_H 1
 
+#include <boost/numeric/ublas/vector.hpp>
 #include <boost/shared_array.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/utility.hpp>
-#include <boost/numeric/ublas/vector.hpp>
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/matrixtriplet.hpp>
+#include <feel/feelcore/feel.hpp>
 
-#if defined(FEELPP_HAS_UMFPACK)
+#if defined( FEELPP_HAS_UMFPACK )
 
-extern "C"
-{
-#if defined (FEELPP_HAS_SUITESPARSE_UMFPACK_H)
+extern "C" {
+#if defined( FEELPP_HAS_SUITESPARSE_UMFPACK_H )
 #include <suitesparse/umfpack.h>
-#elif defined (FEELPP_HAS_UFSPARSE_UMFPACK_H)
+#elif defined( FEELPP_HAS_UFSPARSE_UMFPACK_H )
 #include <ufsparse/umfpack.h>
-#elif defined (FEELPP_HAS_UMFPACK_UMFPACK_H)
+#elif defined( FEELPP_HAS_UMFPACK_UMFPACK_H )
 #include <umfpack/umfpack.h>
 #else
 #include <umfpack.h>
 #endif
 };
 #endif
-
 
 namespace Feel
 {
@@ -68,9 +66,7 @@ namespace Feel
 */
 class SolverUMFPACK
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -81,8 +77,6 @@ public:
     typedef MatrixTriplet<double> matrix_type;
 
     typedef ublas::vector<value_type> array_type;
-
-
 
     //@}
 
@@ -97,7 +91,7 @@ public:
      */
     SolverUMFPACK();
 
-    SolverUMFPACK( SolverUMFPACK const & umfpackSolver );
+    SolverUMFPACK( SolverUMFPACK const& umfpackSolver );
 
     ~SolverUMFPACK();
 
@@ -107,13 +101,11 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
-
 
     //@}
 
@@ -141,7 +133,6 @@ public:
      */
     //@{
 
-
     //! solve A X = B
     /*!
 
@@ -154,7 +145,6 @@ public:
     //! report some info about umfpack
     void reportInfo();
 
-
     /**
      *  report status of umfpack
      *
@@ -164,26 +154,21 @@ public:
 
     //@}
 
-private:
-
+  private:
     void prepareSolve();
 
-
-private:
-
+  private:
     class Pimpl;
     boost::shared_ptr<Pimpl> M_p;
 
     bool M_matrix_reset;
     bool M_matrix_values_reset;
 
-    void *M_symbolic;
-    void *M_numeric;
+    void* M_symbolic;
+    void* M_numeric;
 
     double* M_Control;
     double* M_Info;
-
 };
 }
 #endif /* __SolverUMFPACK_H */
-

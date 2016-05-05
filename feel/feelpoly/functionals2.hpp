@@ -32,8 +32,8 @@
 
 #include <feel/feelpoly/functional.hpp>
 
-#include <feel/feelpoly/quadpoint.hpp>
 #include <feel/feelpoly/im.hpp>
+#include <feel/feelpoly/quadpoint.hpp>
 
 namespace Feel
 {
@@ -50,15 +50,14 @@ namespace functional
  *
  * \author Christophe Prud'homme
  */
-template<typename Space, typename Poly = Space>
+template <typename Space, typename Poly = Space>
 class IntegralMoment
-    :
-public Functional<Space>
+    : public Functional<Space>
 {
     typedef Functional<Space> super;
-public:
 
-    typedef IntegralMoment<Space,Poly> self_type;
+  public:
+    typedef IntegralMoment<Space, Poly> self_type;
     typedef typename super::space_type space_type;
     typedef typename Poly::polynomial_type polynomial_type;
     typedef typename space_type::value_type value_type;
@@ -67,13 +66,12 @@ public:
     //BOOST_STATIC_ASSERT( ( boost::is_same<typename space_type::basis_type, typename Poly::basis_type>::value ) );
 
     IntegralMoment()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
 
     IntegralMoment( space_type const& p, polynomial_type const& q )
-        :
-        super( p )
+        : super( p )
     {
 #if 0
         std::cout << "p.coeff = " << p.coeff() << "\n";
@@ -82,7 +80,7 @@ public:
 #endif
         //ublas::matrix<value_type> m ( ublas::prod( q.coeff(), ublas::trans( p.basis().coeff() ) ) );
         typename space_type::Pkp1_v_type l;
-        ublas::matrix<value_type> m ( ublas::prod( q.coeff(), ublas::trans( l.coeff() ) ) );
+        ublas::matrix<value_type> m( ublas::prod( q.coeff(), ublas::trans( l.coeff() ) ) );
 
         //ublas::matrix<value_type> m ( ublas::prod( q.coeff(), p.coeff() ) );
         //std::cout << "[IntegralMoment] m = " << m << "\n";
@@ -90,9 +88,9 @@ public:
     }
 
     IntegralMoment( IntegralMoment const& im )
-        :
-        super( im )
-    {}
+        : super( im )
+    {
+    }
 
     IntegralMoment& operator=( IntegralMoment const& im )
     {
@@ -103,27 +101,26 @@ public:
 
         return *this;
     }
-
 };
 
 namespace detail
 {
-template<typename P1, typename P2>
+template <typename P1, typename P2>
 struct prod
 {
     typedef typename P1::value_type value_type;
-    prod ( P1 const& p1, P2 const& p2 )
-        :
-        M_p1 ( p1 ),
-        M_p2 ( p2 )
-    {}
+    prod( P1 const& p1, P2 const& p2 )
+        : M_p1( p1 ),
+          M_p2( p2 )
+    {
+    }
 #if 0
     value_type operator() ( typename node<value_type>::type const& n )
     {
         return M_p1.evaluate( n )( 0,0 ) * M_p2.evaluate( n )( 0,0 );
     }
 #endif
-    typename node<value_type>::type operator() ( typename node<value_type>::type const& n )
+    typename node<value_type>::type operator()( typename node<value_type>::type const& n )
     {
         return ublas::column( ublas::element_prod( M_p1.evaluate( n ), M_p2.evaluate( n ) ), 0 );
     }
@@ -138,14 +135,13 @@ struct prod
  *
  * \author Christophe Prud'homme
  */
-template<typename Space>
+template <typename Space>
 class IntegralMomentOnFace
-    :
-public Functional<Space>
+    : public Functional<Space>
 {
     typedef Functional<Space> super;
-public:
 
+  public:
     typedef IntegralMomentOnFace<Space> self_type;
     typedef typename super::space_type space_type;
     typedef typename super::polynomial_type polynomial_type;
@@ -162,10 +158,9 @@ public:
      * \param face face of the convex over which to integrate
      */
     IntegralMomentOnFace( space_type const& p, uint16_type k, IntegrationFaceEnum face = ALL_FACES )
-        :
-        super( p ),
-        M_k ( k ),
-        M_q()
+        : super( p ),
+          M_k( k ),
+          M_q()
     {
         ublas::matrix<value_type> __rep( nComponents, p.polynomialDimensionPerComponent() );
         typedef detail::prod<typename space_type::polynomial_type, polynomial_type> prod_fun;
@@ -191,16 +186,16 @@ public:
      * \param face face of the convex over which to integrate
      */
     IntegralMomentOnFace( space_type const& p, uint16_type k, uint16_type c, IntegrationFaceEnum face = ALL_FACES )
-        :
-        super( p ),
-        M_k ( k ),
-        M_q()
+        : super( p ),
+          M_k( k ),
+          M_q()
     {
         ublas::matrix<value_type> __rep( ublas::zero_matrix<value_type>( nComponents, p.polynomialDimensionPerComponent() ) );
         typedef detail::prod<typename space_type::polynomial_type::component_type,
-                typename polynomial_type::component_type> prod_fun;
+                             typename polynomial_type::component_type>
+            prod_fun;
 
-        int nc = p.polynomialDimensionPerComponent()*c;
+        int nc = p.polynomialDimensionPerComponent() * c;
         int ind_p2 = nc + k;
 
         for ( uint16_type i = 0; i < p.polynomialDimensionPerComponent(); ++i )
@@ -208,26 +203,23 @@ public:
             int ind_p1 = nc + i;
             typedef typename node<value_type>::type node_type;
             __rep( c, i ) = M_q.integrate( face, prod_fun( p.polynomial( ind_p1 )[c],
-                                            p.polynomial( ind_p2 )[c] ) )( 0 );
+                                                           p.polynomial( ind_p2 )[c] ) )( 0 );
         }
 
         this->setCoefficient( __rep );
     }
 
-private:
-
+  private:
     // disabled
     IntegralMomentOnFace();
 
-private:
-
+  private:
     // polynomial degree integrate against
     uint16_type M_k;
 
     // quadrature rule on the element and faces of the element
-    IM<Space::nDim,2*Space::nOrder+1, value_type> M_q;
+    IM<Space::nDim, 2 * Space::nOrder + 1, value_type> M_q;
 };
-
 
 /**
  * \class IntegralMomentsOnFace
@@ -236,16 +228,15 @@ private:
  *
  * \author Christophe Prud'homme
  */
-template<typename Space,typename BasisType>
+template <typename Space, typename BasisType>
 class IntegralMomentsOnFace
-    :
-public std::vector<Functional<Space> >
+    : public std::vector<Functional<Space>>
 {
-    typedef std::vector<Functional<Space> > super;
-public:
+    typedef std::vector<Functional<Space>> super;
 
+  public:
     typedef Functional<Space> functional_type;
-    typedef IntegralMomentsOnFace<Space,BasisType> self_type;
+    typedef IntegralMomentsOnFace<Space, BasisType> self_type;
     typedef BasisType basis_type;
     typedef Space space_type;
     typedef typename space_type::reference_convex_type reference_convex_type;
@@ -265,30 +256,28 @@ public:
     IntegralMomentsOnFace( space_type const& p,
                            basis_type const& l,
                            IntegrationFaceEnum face = ALL_FACES )
-        :
-        super()
+        : super()
     {
         reference_convex_type ref_convex;
-        typedef typename reference_convex_type::topological_face_type  element_type;
+        typedef typename reference_convex_type::topological_face_type element_type;
         element_type ref_convex_face = ref_convex.topologicalFace( face );
 
-        typedef GeoMap<reference_convex_type::nDim,1,reference_convex_type::nDim> gm_type;
+        typedef GeoMap<reference_convex_type::nDim, 1, reference_convex_type::nDim> gm_type;
         typedef typename gm_type::face_gm_type::precompute_type face_pc_type;
         typedef typename gm_type::face_gm_type::precompute_ptrtype face_pc_ptrtype;
         gm_type __gm;
-        IM<reference_convex_type::nDim-1,2*space_type::nOrder-1> __qr_face;
-        face_pc_ptrtype __geopc( new face_pc_type( __gm->boundaryMap(),__qr_face.points() ) );
+        IM<reference_convex_type::nDim - 1, 2 * space_type::nOrder - 1> __qr_face;
+        face_pc_ptrtype __geopc( new face_pc_type( __gm->boundaryMap(), __qr_face.points() ) );
 
-        DVLOG(2) << "[nc] ref_convex_face "  << face << "=" << ref_convex_face.points() << "\n";
+        DVLOG( 2 ) << "[nc] ref_convex_face " << face << "=" << ref_convex_face.points() << "\n";
 
-
-        typename gm_type::template Context<vm::POINT,element_type> __c( __gm->boundaryMap(),
-                ref_convex_face,
-                __geopc );
+        typename gm_type::template Context<vm::POINT, element_type> __c( __gm->boundaryMap(),
+                                                                         ref_convex_face,
+                                                                         __geopc );
 
         __c.update( ref_convex_face, __geopc );
-        DVLOG(2) << "[nc] ref_convex_face "  << face << " xref" << __c.xRefs() << "\n";
-        DVLOG(2) << "[nc] ref_convex_face "  << face << " xreal" << __c.xReal() << "\n";
+        DVLOG( 2 ) << "[nc] ref_convex_face " << face << " xref" << __c.xRefs() << "\n";
+        DVLOG( 2 ) << "[nc] ref_convex_face " << face << " xreal" << __c.xReal() << "\n";
 
         for ( uint16_type k = 0; k < l.polynomialDimensionPerComponent(); ++k )
         {
@@ -315,18 +304,14 @@ public:
                 this->push_back( functional_type( p,  __rep ) );
                 */
             }
-
         }
     }
 
-private:
-
+  private:
     // disabled
     IntegralMomentsOnFace();
 
-private:
-
-
+  private:
 };
 
 /**
@@ -335,28 +320,27 @@ private:
  *
  * \author Christophe Prud'homme
  */
-template<typename Space>
+template <typename Space>
 class IntegralMomentOfDerivative
-    :
-public Functional<Space>
+    : public Functional<Space>
 {
     typedef Functional<Space> super;
-public:
 
+  public:
     typedef IntegralMoment<Space> self_type;
     typedef typename super::space_type space_type;
     typedef typename space_type::value_type value_type;
     typedef typename node<value_type>::type node_type;
 
     IntegralMomentOfDerivative()
-        :
-        super()
-    {}
-    template<typename P>
+        : super()
+    {
+    }
+    template <typename P>
     IntegralMomentOfDerivative( space_type const& b, uint16_type i )
-        :
-        super( b, b.d( i ) )
-    {}
+        : super( b, b.d( i ) )
+    {
+    }
 };
 
 /**
@@ -365,14 +349,13 @@ public:
  *
  * \author Christophe Prud'homme
  */
-template<typename Space, typename Poly = Space>
+template <typename Space, typename Poly = Space>
 class IntegralMomentOfDivergence
-    :
-public Functional<Space>
+    : public Functional<Space>
 {
     typedef Functional<Space> super;
-public:
 
+  public:
     BOOST_STATIC_ASSERT( Space::is_vectorial );
 
     typedef IntegralMoment<Space> self_type;
@@ -382,13 +365,12 @@ public:
     typedef typename node<value_type>::type node_type;
 
     IntegralMomentOfDivergence()
-        :
-        super()
-    {}
+        : super()
+    {
+    }
 
     IntegralMomentOfDivergence( space_type const& p, polynomial_type const& q )
-        :
-        super( p )
+        : super( p )
     {
         ublas::matrix<value_type> __rep( space_type::nComponents, p.polynomialDimensionPerComponent() );
 
@@ -396,10 +378,10 @@ public:
         for ( int i = 0; i < space_type::nComponents; ++i )
         {
 
-            std::cout << "p.d("<< i << ")  = " << p.basis().d( i ) << "\n"
+            std::cout << "p.d(" << i << ")  = " << p.basis().d( i ) << "\n"
                       << "prod = " << ublas::prod( q.coeff(), p.basis().d( i ) ) << "\n";
 
-            ublas::row( __rep,i ) = ublas::row( ublas::prod( q.coeff(), p.basis().d( i ) ), 0 ) ;
+            ublas::row( __rep, i ) = ublas::row( ublas::prod( q.coeff(), p.basis().d( i ) ), 0 );
         }
 
         //std::cout << "[IntegralMomentOfDivergence] rep = " << __rep << "\n";

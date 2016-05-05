@@ -24,18 +24,14 @@
 #define FEELPP_FUNCTIONSPACE_NOEXTERN 1
 #include <feel/feeldiscr/functionspace_inst.hpp>
 
-namespace Feel {
+namespace Feel
+{
 //
 // Explicit instatiations
 //
 #if defined( FEELPP_INSTANTIATION_MODE )
 
-
 BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_QCH_OP, 4, ( FEDIMS3, FEORDERS, FETENSOR, FECONTINUOUS ) )
 
-
-
-
 #endif // FEELPP_INSTANTIATION_MODE
-
 }

@@ -30,16 +30,15 @@
 #ifndef __application_H
 #define __application_H 1
 
-#include <boost/optional.hpp>
 #include <boost/format.hpp>
+#include <boost/optional.hpp>
 #include <boost/ptr_container/ptr_list.hpp>
 
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/about.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/simget.hpp>
 
-#include <iostream>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -47,16 +46,16 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/string.hpp> // Needed to send/receive strings!
+#include <iostream>
 
 #include <boost/mpi.hpp>
-#if defined(FEELPP_HAS_MPI_H)
+#if defined( FEELPP_HAS_MPI_H )
 #include <mpi.h>
 #endif /* FEELPP_HAS_MPI_H */
 
-#if defined(FEELPP_HAS_TAU)
+#if defined( FEELPP_HAS_TAU )
 #include <Profile/Profiler.h>
 #endif /* FEELPP_HAS_TAU */
-
 
 namespace Feel
 {
@@ -70,9 +69,7 @@ namespace mpi = boost::mpi;
  */
 class Application
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -81,7 +78,7 @@ public:
     typedef boost::ptr_list<Simget> simgets_type;
 
     //! Simget iterator over the collection
-    typedef simgets_type::iterator  simget_iterator;
+    typedef simgets_type::iterator simget_iterator;
 
     //@}
 
@@ -91,7 +88,7 @@ public:
 
     Application();
 
-    /**
+/**
      * Construct an MPI Application
      *
      * @param ad \p AboutData structure for this \p Application
@@ -103,7 +100,7 @@ public:
     Application( AboutData const& ad );
 #endif
 
-    /**
+/**
      * Construct an MPI Application
      *
      * @param ad \p AboutData structure for this \p Application
@@ -116,7 +113,7 @@ public:
     Application( AboutData const& ad, po::options_description const& od );
 #endif
 
-    /**
+/**
      * Construct an MPI Application
      *
      * @param argc number of arguments on the command line
@@ -133,7 +130,7 @@ public:
     Application( int argc, char** argv, AboutData const& ad ) FEELPP_DEPRECATED;
 #endif
 
-    /**
+/**
      * Construct an MPI Application
      *
      * @param argc number of arguments on the command line
@@ -155,7 +152,7 @@ public:
      * copy constructor
      * @param app \p Application to be copy constructed
      */
-    Application( Application const & app );
+    Application( Application const& app );
 
     virtual ~Application();
 
@@ -164,7 +161,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -211,7 +207,7 @@ public:
      */
     int unknownArgc() const
     {
-        return M_to_pass_further.size()+1;
+        return M_to_pass_further.size() + 1;
     }
 
     /**
@@ -340,7 +336,6 @@ public:
      */
     void setDimension( int dim );
 
-
     //@}
 
     /** @name  Methods
@@ -401,13 +396,13 @@ public:
 
     enum Stats
     {
-        FLAT    = 1<<1,
-        HEADER  = 1<<2,
-        ERRORS  = 1<<3,
-        TIME    = 1<<4,
-        DATA    = 1<<5,
-        NUMBERS = 1<<6,
-        ALL     = ERRORS | TIME | DATA | NUMBERS
+        FLAT = 1 << 1,
+        HEADER = 1 << 2,
+        ERRORS = 1 << 3,
+        TIME = 1 << 4,
+        DATA = 1 << 5,
+        NUMBERS = 1 << 6,
+        ALL = ERRORS | TIME | DATA | NUMBERS
     };
 
     /**
@@ -418,13 +413,12 @@ public:
     /**
      * store statistics \p s in statistics map entry with key \p n
      */
-    void storeStats( std::string const&  n, ptree::ptree const& s );
+    void storeStats( std::string const& n, ptree::ptree const& s );
 
     /**
      * print statistics from applications
      */
     void printStats( std::ostream& out, size_type stats = ALL ) const;
-
 
     /**
      * print statistics from applications
@@ -438,10 +432,7 @@ public:
 
     //@}
 
-
-
-protected:
-
+  protected:
     /**
      * parse and store application options from cmdline
      * @param argc number of arguments
@@ -455,7 +446,6 @@ protected:
      *
      */
     void processGenericOptions();
-
 
     /**
      * \internal
@@ -471,14 +461,12 @@ protected:
      */
     void setLogs();
 
-private:
-
+  private:
     void initMPI( int, char**, MPI_Comm );
     void initPETSc();
     void initTrilinos();
 
-private:
-
+  private:
     AboutData M_about;
 
     po::options_description M_desc;
@@ -486,19 +474,17 @@ private:
 
     boost::optional<std::string> M_name1;
     boost::optional<std::string> M_name2;
-    boost::optional<std::pair<double, int> > M_h;
+    boost::optional<std::pair<double, int>> M_h;
     boost::optional<int> M_dim;
 
     std::vector<std::string> M_to_pass_further;
-
 
     boost::shared_ptr<mpi::environment> M_env;
     WorldComm M_comm;
 
     simgets_type M_simgets;
-    std::map<std::string,std::vector<ptree::ptree> > M_stats;
+    std::map<std::string, std::vector<ptree::ptree>> M_stats;
     std::vector<std::string> M_keys;
-
 };
 }
 #endif /* __Application_H */

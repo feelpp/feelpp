@@ -35,7 +35,6 @@ namespace Feel
 {
 namespace po = boost::program_options;
 
-
 po::options_description
 file_options( std::string const& prefix );
 
@@ -46,7 +45,10 @@ po::options_description
 feel_options( std::string const& prefix = "" );
 
 inline po::options_description
-feel_nooptions() { return po::options_description(); }
+feel_nooptions()
+{
+    return po::options_description();
+}
 
 //! add benchmark options to feel++ applications
 po::options_description benchmark_options( std::string const& prefix = "" );
@@ -129,8 +131,6 @@ po::options_description blockns_options( std::string const& prefix = "" );
 po::options_description blockms_options( std::string const& prefix = "" );
 po::options_description ams_options( std::string const& prefix = "" );
 
-
-po::options_description stabilization_options( std::string const& prefix="" );
-
+po::options_description stabilization_options( std::string const& prefix = "" );
 }
 #endif // FEELPP_OPTIONS_HPP

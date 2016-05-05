@@ -61,7 +61,7 @@ struct vertex
 /**
  * \class line
  */
-template<uint16_type Order>
+template <uint16_type Order>
 struct line
 {
     //static uint16_type f2p( uint16_type /*f*/, uint16_type /*p*/ ) { throw std::logic_error( "invalid call to line::f2p" ); return uint16_type(-1); }
@@ -90,7 +90,8 @@ struct line
         return __entity;
     }
 };
-template<uint16_type Order> const uint16_type  line<Order>::__e2p[11] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+template <uint16_type Order>
+const uint16_type line<Order>::__e2p[11] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 }
 /// \endcond
 }

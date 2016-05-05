@@ -41,13 +41,12 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-template<typename SpaceType>
+template <typename SpaceType>
 class SystemImplicitLinear : public SystemImplicit<SpaceType>
 {
     typedef SystemImplicit<SpaceType> super;
-public:
 
-
+  public:
     /** @name Constants
      */
     //@{
@@ -79,7 +78,7 @@ public:
     //@{
 
     SystemImplicitLinear( functionspace_ptrtype const& Xh, po::variables_map const& vm );
-    SystemImplicitLinear( SystemImplicitLinear const & sil );
+    SystemImplicitLinear( SystemImplicitLinear const& sil );
     ~SystemImplicitLinear() {}
 
     //@}
@@ -88,12 +87,11 @@ public:
      */
     //@{
 
-    SystemImplicitLinear& operator=( SystemImplicitLinear const & o )
+    SystemImplicitLinear& operator=( SystemImplicitLinear const& o )
     {
         if ( this != &o )
         {
             super::operator=( o );
-
 
             M_lhs = o.M_lhs;
             M_rhs = o.M_rhs;
@@ -131,13 +129,11 @@ public:
         return M_rhs;
     }
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -150,41 +146,33 @@ public:
      */
     void solve( element_type& u )
     {
-        vector_ptrtype U( this->backend->newVector( _test=this->functionSpace() ) );
+        vector_ptrtype U( this->backend->newVector( _test = this->functionSpace() ) );
         this->backend->solve( M_lhs, M_lhs, U, M_rhs );
         u = *U;
     }
 
     //@}
 
-
-
-protected:
-
+  protected:
     sparse_matrix_ptrtype M_lhs;
     vector_ptrtype M_rhs;
 
-private:
-
-
-
+  private:
 };
-template<typename SpaceType>
+template <typename SpaceType>
 SystemImplicitLinear<SpaceType>::SystemImplicitLinear( functionspace_ptrtype const& Xh,
-        po::variables_map const& vm )
-    :
-    super( Xh, vm ),
-    M_lhs( this->backend()->newMatrix( Xh, Xh ) ),
-    M_rhs( this->backend()->newVector( Xh ) )
-{}
-template<typename SpaceType>
+                                                       po::variables_map const& vm )
+    : super( Xh, vm ),
+      M_lhs( this->backend()->newMatrix( Xh, Xh ) ),
+      M_rhs( this->backend()->newVector( Xh ) )
+{
+}
+template <typename SpaceType>
 SystemImplicitLinear<SpaceType>::SystemImplicitLinear( SystemImplicitLinear const& sil )
-    :
-    super( sil ),
-    M_lhs( sil.M_lhs ),
-    M_rhs( sil.M_rhs )
-{}
-
-
+    : super( sil ),
+      M_lhs( sil.M_lhs ),
+      M_rhs( sil.M_rhs )
+{
+}
 }
 #endif /* __SystemImplicitLinear_H */

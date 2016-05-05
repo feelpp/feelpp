@@ -40,9 +40,8 @@ namespace vf
  *
  * \return the inner product \f$(l * r^T)\f$
  */
-template<typename ExprL, typename ExprR>
-inline
-auto
+template <typename ExprL, typename ExprR>
+inline auto
 outer_prod( ExprL l, ExprR r ) -> decltype( l * trans( r ) )
 {
     return l * trans( r );
@@ -55,17 +54,14 @@ outer_prod( ExprL l, ExprR r ) -> decltype( l * trans( r ) )
  *
  * \return the double dot product \f$(l : r)\f$
  */
-template<typename ExprL, typename ExprR>
-inline
-auto
+template <typename ExprL, typename ExprR>
+inline auto
 ddot( ExprL l, ExprR r ) -> decltype( trace( trans( l ) * r ) )
 {
     return trace( trans( l ) * r );
 }
 
-
 } // vf
-
 
 } // feel
 #endif /* __norm_H */

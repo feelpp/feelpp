@@ -31,7 +31,6 @@
 #include <feel/feelmaterial/air.hpp>
 #include <feel/feelmaterial/castiron.hpp>
 
-
 namespace Feel
 {
 /**
@@ -46,20 +45,22 @@ po::options_description material_options( std::string const& prefix )
 
     po::options_description _options( "Material " + prefix + "  options" );
     _options.add_options()
-    // material library options
-    //((_prefix+"material-lib").c_str(), Feel::po::value<std::string>()->default_value( "stdmaterial.so" ), "Standard material library")
-    ( ( _prefix+"material" ).c_str(), Feel::po::value<std::string>()->default_value( "Air" ), "material" )
-    ;
+        // material library options
+        //((_prefix+"material-lib").c_str(), Feel::po::value<std::string>()->default_value( "stdmaterial.so" ), "Standard material library")
+        ( ( _prefix + "material" ).c_str(), Feel::po::value<std::string>()->default_value( "Air" ), "material" );
     return _options;
 }
 
 MaterialLib::MaterialLib()
-{}
+{
+}
 
 MaterialLib::MaterialLib( po::variables_map const& vm )
-{}
+{
+}
 MaterialLib::~MaterialLib()
-{}
+{
+}
 
 material_ptrtype
 MaterialLib::material( std::string const& name )
@@ -67,9 +68,6 @@ MaterialLib::material( std::string const& name )
     return material_ptrtype( factory_type::instance().createObject( name ) );
 }
 
-
 const bool material_air = MaterialLib::factory_type::instance().registerProduct( "Air", &detail::createMaterial<Air> );
 const bool material_castiron = MaterialLib::factory_type::instance().registerProduct( "CastIron", &detail::createMaterial<CastIron> );
-
-
 }

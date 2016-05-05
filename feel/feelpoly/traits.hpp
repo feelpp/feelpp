@@ -28,30 +28,41 @@
 
 namespace Feel
 {
-class ScalarBase {};
-class VectorialBase {};
-class Tensor2Base {};
-
+class ScalarBase
+{
+};
+class VectorialBase
+{
+};
+class Tensor2Base
+{
+};
 
 //template<template<uint16_type> class PolySetType>
 //struct is_scalar_field : std::is_base_of<ScalarBase,PolySetType<1> >::type {};
 
 //template<template<uint16_type> class PolySetType>
 //struct is_vector_field : std::is_base_of<ScalarBase,PolySetType<1> >::type {};
-        
-template<typename T>
-struct is_scalar_polynomial : std::is_base_of<ScalarBase, T>::type {};
 
-template<typename T>
-struct is_vector_polynomial : std::is_base_of<VectorialBase, T>::type {};
+template <typename T>
+struct is_scalar_polynomial : std::is_base_of<ScalarBase, T>::type
+{
+};
 
-template<typename T>
+template <typename T>
+struct is_vector_polynomial : std::is_base_of<VectorialBase, T>::type
+{
+};
+
+template <typename T>
 using is_vectorial_polynomial = is_vector_polynomial<T>;
 
-template<typename T>
-struct is_tensor2_polynomial : std::is_base_of<Tensor2Base, T>::type {};
+template <typename T>
+struct is_tensor2_polynomial : std::is_base_of<Tensor2Base, T>::type
+{
+};
 
-template<typename T>
+template <typename T>
 using is_matrix_polynomial = is_tensor2_polynomial<T>;
 
 } // Feel

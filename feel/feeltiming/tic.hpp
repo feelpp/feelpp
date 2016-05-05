@@ -26,12 +26,12 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-03-20
  */
-#if !defined(FEELPP_TIMING_TIC_HPP)
+#if !defined( FEELPP_TIMING_TIC_HPP )
 #define FEELPP_TIMING_TIC_HPP 1
 
 #include <feel/feelcore/environment.hpp>
-#include <feel/feeltiming/timer.hpp>
 #include <feel/feeltiming/now.hpp>
+#include <feel/feeltiming/timer.hpp>
 
 namespace Feel
 {
@@ -39,24 +39,24 @@ namespace details
 {
 struct SecondBasedTimer
 {
-    static void print( std::string const& msg, const std::pair<double,int>& val )
+    static void print( std::string const& msg, const std::pair<double, int>& val )
     {
         if ( Environment::isMasterRank() )
         {
             if ( !msg.empty() )
-                std::cout << std::setw(1+val.second) << "[" << msg << "] Time : " << val.first << "s\n";
+                std::cout << std::setw( 1 + val.second ) << "[" << msg << "] Time : " << val.first << "s\n";
             else
-                std::cout << std::setw(7+val.second) << "Time : " << val << "s\n";
+                std::cout << std::setw( 7 + val.second ) << "Time : " << val << "s\n";
         }
     }
-    static inline time_point  time()
+    static inline time_point time()
     {
         return Feel::details::now();
     }
 };
 
-counter<time_point,SecondBasedTimer> const sec_timer = {};
-}  // details
+counter<time_point, SecondBasedTimer> const sec_timer = {};
+} // details
 } // Feel
 
 namespace Feel
@@ -68,7 +68,7 @@ inline void tic()
     Feel::details::sec_timer.tic();
 }
 
-inline double  toc( std::string const& msg = "", bool display = true )
+inline double toc( std::string const& msg = "", bool display = true )
 {
     auto t = Feel::details::sec_timer.toc( msg, display );
     Environment::addTimer( msg, t );

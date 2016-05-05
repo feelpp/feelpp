@@ -29,13 +29,12 @@
 #ifndef __FunctionalSet_H
 #define __FunctionalSet_H 1
 
-#include <boost/numeric/ublas/vector.hpp>
-#include <boost/numeric/ublas/vector_proxy.hpp>
+#include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/lu.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <boost/numeric/ublas/lu.hpp>
-#include <boost/numeric/ublas/io.hpp>
-
+#include <boost/numeric/ublas/vector.hpp>
+#include <boost/numeric/ublas/vector_proxy.hpp>
 
 #include <feel/feelpoly/functional.hpp>
 
@@ -49,12 +48,10 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-template<typename Space>
+template <typename Space>
 class FunctionalSet
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -62,11 +59,9 @@ public:
     typedef Space space_type;
     typedef typename space_type::value_type value_type;
 
-
     typedef FunctionalSet<Space> functionalset_type;
     typedef functionalset_type self_type;
     typedef Functional<Space> functional_type;
-
 
     typedef typename space_type::matrix_type matrix_type;
 
@@ -79,37 +74,36 @@ public:
     //@{
 
     FunctionalSet()
-        :
-        M_space(),
-        M_fset(),
-        M_mat()
-    {}
+        : M_space(),
+          M_fset(),
+          M_mat()
+    {
+    }
 
     FunctionalSet( space_type const& s )
-        :
-        M_space( s ),
-        M_fset(),
-        M_mat()
+        : M_space( s ),
+          M_fset(),
+          M_mat()
     {
     }
     FunctionalSet( space_type const& s, std::vector<functional_type> const& fset )
-        :
-        M_space( s ),
-        M_fset( fset ),
-        M_mat( space_type::nComponents*fset.size(), fset[0].coeff().size2() )
+        : M_space( s ),
+          M_fset( fset ),
+          M_mat( space_type::nComponents * fset.size(), fset[0].coeff().size2() )
     {
         //std::cout << "FunctionalSet: " << fset[0].coeff() <<  "\n";
         this->setFunctionalSet( fset );
     }
-    FunctionalSet( FunctionalSet const & fset )
-        :
-        M_space( fset.M_space ),
-        M_fset( fset.M_fset ),
-        M_mat( fset.M_mat )
-    {}
+    FunctionalSet( FunctionalSet const& fset )
+        : M_space( fset.M_space ),
+          M_fset( fset.M_fset ),
+          M_mat( fset.M_mat )
+    {
+    }
 
     ~FunctionalSet()
-    {}
+    {
+    }
 
     //@}
 
@@ -173,7 +167,6 @@ public:
         return M_mat;
     }
 
-
     //@}
 
     /** @name  Mutators
@@ -195,7 +188,6 @@ public:
     {
         M_fset = fset;
 
-
         if ( space_type::is_scalar )
         {
             // update matrix associated with functionals applied to the
@@ -210,22 +202,21 @@ public:
             }
 
             //std::cout << "mat size" << M_mat << "\n";
-
         }
 
         else
         {
             // update matrix associated with functionals applied to the
             // basis of the function space
-            M_mat = ublas::zero_matrix<value_type>( space_type::nComponents*fset.size(), fset[0].coeff().size2() );
+            M_mat = ublas::zero_matrix<value_type>( space_type::nComponents * fset.size(), fset[0].coeff().size2() );
 
             for ( uint16_type i = 0; i < fset.size(); ++i )
             {
                 ublas::project( M_mat,
-                                ublas::range( i*space_type::nComponents, ( i+1 )*space_type::nComponents ),
+                                ublas::range( i * space_type::nComponents, ( i + 1 ) * space_type::nComponents ),
                                 ublas::range( 0, M_mat.size2() ) ) = ublas::scalar_matrix<value_type>( space_type::nComponents, M_mat.size2(), -1 );
                 ublas::project( M_mat,
-                                ublas::range( i*space_type::nComponents, ( i+1 )*space_type::nComponents ),
+                                ublas::range( i * space_type::nComponents, ( i + 1 ) * space_type::nComponents ),
                                 ublas::range( 0, M_mat.size2() ) ) = fset[i].coeff();
             }
         }
@@ -237,14 +228,10 @@ public:
      */
     //@{
 
-
     //@}
 
-
-
-protected:
-
-private:
+  protected:
+  private:
     space_type M_space;
     fset_type M_fset;
     matrix_type M_mat;

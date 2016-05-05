@@ -30,18 +30,16 @@
 #ifndef FEELPP_FEELPOLY_POLICY_HPP
 #define FEELPP_FEELPOLY_POLICY_HPP 1
 
-
-
 #include <boost/mpl/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 
-#include <boost/mpl/if.hpp>
 #include <boost/mpl/find.hpp>
+#include <boost/mpl/if.hpp>
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelpoly/traits.hpp>
 namespace Feel
 {
@@ -49,16 +47,20 @@ namespace ublas = boost::numeric::ublas;
 
 namespace fem
 {
-enum transformation_type { LINEAR, BILINEAR,  NONLINEAR };
+enum transformation_type
+{
+    LINEAR,
+    BILINEAR,
+    NONLINEAR
+};
 }
-
 
 /**
  * Policy for \c Scalar polynomials or polynomial set of dimension
  * \p Dim
  * \note \c Scalar can be seen as rank 0 tensor polynomials
  */
-template<uint16_type Dim>
+template <uint16_type Dim>
 struct Scalar : public ScalarBase
 {
     static const uint16_type rank = 0;
@@ -75,29 +77,26 @@ struct Scalar : public ScalarBase
     static const uint16_type nComponents3 = 1;
     static const uint16_type nComponentsLast = 1;
 
-    template<typename T>
-    static
-    inline ublas::matrix<T> const&
-    toMatrix( ublas::matrix<T> const&  __c )
+    template <typename T>
+    static inline ublas::matrix<T> const&
+    toMatrix( ublas::matrix<T> const& __c )
     {
         return __c;
     }
-    template<typename T>
-    static
-    inline ublas::matrix<T> const&
-    toType( ublas::matrix<T> const&  __c )
+    template <typename T>
+    static inline ublas::matrix<T> const&
+    toType( ublas::matrix<T> const& __c )
     {
         return __c;
     }
 };
-
 
 /**
  * Policy for \c Vectorial polynomials or polynomial sets of dimension
  * \p Dim
  * \note \c Vectorial can be seen as rank 1 Tensor polynomials
  */
-template<uint16_type Dim>
+template <uint16_type Dim>
 struct Vectorial : public VectorialBase
 {
     static const uint16_type rank = 1;
@@ -113,72 +112,69 @@ struct Vectorial : public VectorialBase
     static const uint16_type nComponents2 = 1;
     static const uint16_type nComponents3 = 1;
     static const uint16_type nComponentsLast = nComponents1;
-    template<typename T>
-    static
-    ublas::matrix<T>
-    toMatrix( ublas::matrix<T> const&  __c )
+    template <typename T>
+    static ublas::matrix<T>
+    toMatrix( ublas::matrix<T> const& __c )
     {
         typedef T value_type;
         // reshape the coefficients in the vectorial case
-        const size_type nRows = __c.size1()/nComponents;
+        const size_type nRows = __c.size1() / nComponents;
         const size_type nCols = __c.size2();
-        ublas::matrix<T> __c_reshaped( ublas::zero_matrix<value_type>( nRows, nComponents*nCols ) );
+        ublas::matrix<T> __c_reshaped( ublas::zero_matrix<value_type>( nRows, nComponents * nCols ) );
 
         for ( int c = 0; c < nComponents; ++c )
         {
             ublas::project( __c_reshaped,
                             ublas::range( 0, nRows ),
-                            ublas::range( c*nCols, ( c+1 )*nCols ) ) = ublas::project( __c,
-                                    ublas::slice( c, nComponents, nRows ),
-                                    ublas::slice( 0, 1, nCols ) );
+                            ublas::range( c * nCols, ( c + 1 ) * nCols ) ) = ublas::project( __c,
+                                                                                             ublas::slice( c, nComponents, nRows ),
+                                                                                             ublas::slice( 0, 1, nCols ) );
         }
 
         return __c_reshaped;
     }
 
-    template<typename AE>
-    static
-    ublas::matrix<typename ublas::matrix_expression<AE>::value_type>
-    toType( ublas::matrix_expression<AE> const&  __c )
+    template <typename AE>
+    static ublas::matrix<typename ublas::matrix_expression<AE>::value_type>
+    toType( ublas::matrix_expression<AE> const& __c )
     {
         typedef typename ublas::matrix_expression<AE>::value_type value_type;
 
         // reshape the coefficients in the vectorial case
-        const size_type nRows = __c().size1()*nComponents;
-        const size_type nCols = __c().size2()/nComponents;
+        const size_type nRows = __c().size1() * nComponents;
+        const size_type nCols = __c().size2() / nComponents;
         ublas::matrix<value_type> __c_reshaped( ublas::zero_matrix<value_type>( nRows, nCols ) );
 
         for ( int c = 0; c < nComponents; ++c )
         {
             ublas::project( __c_reshaped,
-                            ublas::slice( c, nComponents, nRows/nComponents ),
+                            ublas::slice( c, nComponents, nRows / nComponents ),
                             ublas::slice( 0, 1, nCols ) ) = ublas::project( __c(),
-                                    ublas::range( 0, nRows/nComponents ),
-                                    ublas::range( c*nCols, ( c+1 )*nCols ) );
+                                                                            ublas::range( 0, nRows / nComponents ),
+                                                                            ublas::range( c * nCols, ( c + 1 ) * nCols ) );
         }
 
         return __c_reshaped;
     }
 
-    template<typename T>
-    static
-    ublas::matrix<T>
-    toType( ublas::matrix<T> const&  __c )
+    template <typename T>
+    static ublas::matrix<T>
+    toType( ublas::matrix<T> const& __c )
     {
         typedef T value_type;
 
         // reshape the coefficients in the vectorial case
-        const size_type nRows = __c.size1()*nComponents;
-        const size_type nCols = __c.size2()/nComponents;
+        const size_type nRows = __c.size1() * nComponents;
+        const size_type nCols = __c.size2() / nComponents;
         ublas::matrix<value_type> __c_reshaped( ublas::zero_matrix<value_type>( nRows, nCols ) );
 
         for ( int c = 0; c < nComponents; ++c )
         {
             ublas::project( __c_reshaped,
-                            ublas::slice( c, nComponents, nRows/nComponents ),
+                            ublas::slice( c, nComponents, nRows / nComponents ),
                             ublas::slice( 0, 1, nCols ) ) = ublas::project( __c,
-                                    ublas::range( 0, nRows/nComponents ),
-                                    ublas::range( c*nCols, ( c+1 )*nCols ) );
+                                                                            ublas::range( 0, nRows / nComponents ),
+                                                                            ublas::range( c * nCols, ( c + 1 ) * nCols ) );
         }
 
         return __c_reshaped;
@@ -191,15 +187,15 @@ struct Vectorial : public VectorialBase
  */
 namespace detail
 {
-template<uint16_type N, uint16_type M>
+template <uint16_type N, uint16_type M>
 struct Field
 {
     static const uint16_type rank = ( M > 1 );
     static const uint16_type nDim = N;
     static const uint16_type nVariables = N;
 
-    static const bool is_scalar = ( M==1 );
-    static const bool is_vectorial = ( N==M );
+    static const bool is_scalar = ( M == 1 );
+    static const bool is_vectorial = ( N == M );
     static const bool is_tensor2 = false;
     static const bool is_tensor3 = false;
 
@@ -209,30 +205,28 @@ struct Field
     static const uint16_type nComponents3 = 1;
     static const uint16_type nComponentsLast = 1;
 
-    template<typename T>
-    static
-    inline ublas::matrix<T> const&
-    toMatrix( ublas::matrix<T> const&  __c )
+    template <typename T>
+    static inline ublas::matrix<T> const&
+    toMatrix( ublas::matrix<T> const& __c )
     {
         return __c;
     }
-    template<typename T>
-    static
-    inline ublas::matrix<T> const&
-    toType( ublas::matrix<T> const&  __c )
+    template <typename T>
+    static inline ublas::matrix<T> const&
+    toType( ublas::matrix<T> const& __c )
     {
         return __c;
     }
 };
 }
 
-template<uint16_type M>
+template <uint16_type M>
 struct Field
 {
     template <uint16_type Nvar>
     struct apply
     {
-        typedef detail::Field<Nvar,M> type;
+        typedef detail::Field<Nvar, M> type;
     };
 };
 
@@ -241,7 +235,7 @@ struct Field
  * dimension \p Dim
  *
  */
-template<uint16_type Dim>
+template <uint16_type Dim>
 struct Tensor2 : public Tensor2Base
 {
     static const uint16_type rank = 2;
@@ -252,36 +246,35 @@ struct Tensor2 : public Tensor2Base
     static const bool is_tensor2 = true;
     static const bool is_tensor3 = false;
 
-    static const uint16_type nComponents = nDim*nDim;
+    static const uint16_type nComponents = nDim * nDim;
     static const uint16_type nComponents1 = nDim;
     static const uint16_type nComponents2 = nDim;
     static const uint16_type nComponents3 = 1;
     static const uint16_type nComponentsLast = nComponents2;
 
-    template<typename T>
-    static
-    ublas::matrix<T>
-    toMatrix( ublas::matrix<T> const&  __c )
+    template <typename T>
+    static ublas::matrix<T>
+    toMatrix( ublas::matrix<T> const& __c )
     {
         typedef T value_type;
         // reshape the coefficients in the vectorial case
         const size_type nRows = __c.size1();
-        const size_type nRows1= __c.size2()*nComponents;
+        const size_type nRows1 = __c.size2() * nComponents;
         const size_type nCols = __c.size2();
-        ublas::matrix<T> __c_reshaped( nRows/nComponents, nCols*nComponents );
+        ublas::matrix<T> __c_reshaped( nRows / nComponents, nCols * nComponents );
 
         //__c_reshaped = ublas::scalar_matrix<value_type>( nRows/nComponents, nCols*nComponents, -1 );
         for ( int c1 = 0; c1 < nComponents; ++c1 )
         {
-            uint16_type i1 = nRows1*c1;
+            uint16_type i1 = nRows1 * c1;
 
             for ( int c2 = 0; c2 < nComponents; ++c2 )
             {
                 ublas::project( __c_reshaped,
-                                ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
-                                ublas::range( c2*nCols, ( c2+1 )*nCols ) ) =
+                                ublas::range( i1 / nComponents, ( i1 + nRows1 ) / nComponents ),
+                                ublas::range( c2 * nCols, ( c2 + 1 ) * nCols ) ) =
                     ublas::project( __c,
-                                    ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
+                                    ublas::slice( i1 + c2, nComponents, nRows1 / nComponents ),
                                     ublas::slice( 0, 1, nCols ) );
             }
         }
@@ -289,38 +282,35 @@ struct Tensor2 : public Tensor2Base
         return __c_reshaped;
     }
 
-    template<typename AE>
-    static
-    ublas::matrix<typename ublas::matrix_expression<AE>::value_type>
-    toType( ublas::matrix_expression<AE> const&  __c )
+    template <typename AE>
+    static ublas::matrix<typename ublas::matrix_expression<AE>::value_type>
+    toType( ublas::matrix_expression<AE> const& __c )
     {
-
     }
 
-    template<typename T>
-    static
-    ublas::matrix<T>
-    toType( ublas::matrix<T> const&  __c )
+    template <typename T>
+    static ublas::matrix<T>
+    toType( ublas::matrix<T> const& __c )
     {
         typedef T value_type;
         // reshape the coefficients in the vectorial case
-        const size_type nRows = __c.size1()*nComponents;
-        const size_type nRows1= __c.size2();
-        const size_type nCols = __c.size2()/nComponents;
+        const size_type nRows = __c.size1() * nComponents;
+        const size_type nRows1 = __c.size2();
+        const size_type nCols = __c.size2() / nComponents;
         ublas::matrix<T> __c_reshaped( nRows, nCols );
 
         //__c_reshaped = ublas::scalar_matrix<value_type>( nRows, nCols, -1 );
         for ( int c1 = 0; c1 < nComponents; ++c1 )
         {
-            uint16_type i1 = nRows1*c1;
+            uint16_type i1 = nRows1 * c1;
 
             for ( int c2 = 0; c2 < nComponents; ++c2 )
             {
                 ublas::project( __c_reshaped,
-                                ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
+                                ublas::slice( i1 + c2, nComponents, nRows1 / nComponents ),
                                 ublas::slice( 0, 1, nCols ) ) = ublas::project( __c,
-                                        ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
-                                        ublas::range( c2*nCols, ( c2+1 )*nCols ) );
+                                                                                ublas::range( i1 / nComponents, ( i1 + nRows1 ) / nComponents ),
+                                                                                ublas::range( c2 * nCols, ( c2 + 1 ) * nCols ) );
             }
         }
 
@@ -333,7 +323,7 @@ struct Tensor2 : public Tensor2Base
  * dimension \p Dim
  *
  */
-template<uint16_type Dim>
+template <uint16_type Dim>
 struct Tensor3
 {
     static const uint16_type rank = 3;
@@ -344,26 +334,26 @@ struct Tensor3
     static const bool is_tensor2 = false;
     static const bool is_tensor3 = true;
 
-    static const uint16_type nComponents = nDim*nDim*nDim;
+    static const uint16_type nComponents = nDim * nDim * nDim;
     static const uint16_type nComponents1 = nDim;
     static const uint16_type nComponents2 = nDim;
     static const uint16_type nComponents3 = nDim;
     static const uint16_type nComponentsLast = nComponents3;
 };
 
-template<int Dim>
+template <int Dim>
 struct ListReturnTypes
 {
-    typedef mpl::vector<Scalar<Dim>, Vectorial<Dim>, Tensor2<Dim>, Tensor3<Dim> > return_types;
+    typedef mpl::vector<Scalar<Dim>, Vectorial<Dim>, Tensor2<Dim>, Tensor3<Dim>> return_types;
 };
-template<typename T1, typename T2>
+template <typename T1, typename T2>
 struct ReturnSelect
 {
     typedef typename mpl::if_<boost::is_same<T1, T2>,
-            mpl::identity<T1>,
-            typename mpl::if_<mpl::greater<mpl::int_<T1::rank>, mpl::int_<T2::rank> >,
-            mpl::identity<T1>,
-            mpl::identity<T2> >::type>::type::type type;
+                              mpl::identity<T1>,
+                              typename mpl::if_<mpl::greater<mpl::int_<T1::rank>, mpl::int_<T2::rank>>,
+                                                mpl::identity<T1>,
+                                                mpl::identity<T2>>::type>::type::type type;
 };
 
 enum EnumIndex
@@ -377,12 +367,11 @@ enum EnumIndex
 };
 
 const mpl::int_<GLOBAL_COMPONENT> INDEX_GLOBAL_COMPONENT = mpl::int_<GLOBAL_COMPONENT>();
-const mpl::int_<COMPONENT_IN_COMPONENT> INDEX_COMPONENT_IN_COMPONENT = mpl::int_<COMPONENT_IN_COMPONENT>() ;
+const mpl::int_<COMPONENT_IN_COMPONENT> INDEX_COMPONENT_IN_COMPONENT = mpl::int_<COMPONENT_IN_COMPONENT>();
 const mpl::int_<GLOBAL_FUNCTION_INDEX> INDEX_GLOBAL_FUNCTION_INDEX = mpl::int_<GLOBAL_FUNCTION_INDEX>();
 const mpl::int_<PER_COMPONENT_FUNCTION_INDEX> INDEX_PER_COMPONENT_FUNCTION_INDEX = mpl::int_<PER_COMPONENT_FUNCTION_INDEX>();
 const mpl::int_<COMPONENT_IN_COMPONENT_FUNCTION_INDEX> INDEX_COMPONENT_IN_COMPONENT_FUNCTION_INDEX = mpl::int_<COMPONENT_IN_COMPONENT_FUNCTION_INDEX>();
 const mpl::int_<FUNCTION_INDEX> INDEX_FUNCTION_INDEX = mpl::int_<FUNCTION_INDEX>();
-
 
 /**
  * Get the component type out the available types
@@ -391,23 +380,23 @@ const mpl::int_<FUNCTION_INDEX> INDEX_FUNCTION_INDEX = mpl::int_<FUNCTION_INDEX>
  * // component_type should be of type \c Scalar<3>
  * \endcode
  */
-template<typename T>
+template <typename T>
 struct GetComponent
 {
     static const uint16_type nDim = T::nDim;
-    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim> > types;
+    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>> types;
 #if 0
     typedef typename mpl::find<types, T>::type iter;
     typedef typename mpl::if_<boost::is_same<T, Scalar<nDim> >,
             mpl::identity<Scalar<nDim> >,
             mpl::identity<typename mpl::deref<typename mpl::prior<iter>::type>::type> >::type::type type;
 #else
-    typedef typename mpl::if_<boost::is_same<T, Scalar<nDim> >,
-            mpl::identity<Scalar<nDim> >,
-            typename mpl::if_<boost::is_same<T, Vectorial<nDim> >,
-            mpl::identity<Vectorial<nDim> >,
-            typename mpl::if_<boost::is_same<T, Tensor2<nDim> >,
-            mpl::identity<Tensor2<nDim> > >::type>::type>::type::type type;
+    typedef typename mpl::if_<boost::is_same<T, Scalar<nDim>>,
+                              mpl::identity<Scalar<nDim>>,
+                              typename mpl::if_<boost::is_same<T, Vectorial<nDim>>,
+                                                mpl::identity<Vectorial<nDim>>,
+                                                typename mpl::if_<boost::is_same<T, Tensor2<nDim>>,
+                                                                  mpl::identity<Tensor2<nDim>>>::type>::type>::type::type type;
 #endif
 };
 
@@ -418,48 +407,48 @@ struct GetComponent
  * // rank_type should be of type \c Vectorial<3>
  * \endcode
  */
-template<typename T>
+template <typename T>
 struct RankUp
 {
     static const uint16_type nDim = T::nDim;
-    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> > types;
+    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim>> types;
     typedef typename mpl::find<types, T>::type iter;
     typedef typename mpl::deref<typename mpl::next<iter>::type>::type type;
 };
 
-template<typename T>
+template <typename T>
 struct RankUp2
 {
     static const uint16_type nDim = T::nDim;
-    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> > types;
+    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim>> types;
     typedef typename mpl::find<types, T>::type iter;
     typedef typename mpl::deref<typename mpl::next<typename mpl::next<iter>::type>::type>::type type;
 };
 
-template<typename T>
+template <typename T>
 struct RankSame
 {
     static const uint16_type nDim = T::nDim;
     typedef T type;
 };
 
-template<typename T>
+template <typename T>
 struct RankDown
 {
     static const uint16_type nDim = T::nDim;
-    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> > types;
+    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim>> types;
     typedef typename mpl::find<types, T>::type iter;
     typedef typename mpl::deref<typename mpl::prior<iter>::type>::type _type;
-    typedef typename mpl::if_<boost::is_same<_type,mpl::void_>,
-            mpl::identity<Scalar<nDim> >,
-            mpl::identity<_type> >::type::type type;
+    typedef typename mpl::if_<boost::is_same<_type, mpl::void_>,
+                              mpl::identity<Scalar<nDim>>,
+                              mpl::identity<_type>>::type::type type;
 };
 /**
  * Policy for orthogonal polynomial set which can be \p normalized or
  * not.  This can be used as a policy for orthogonal polynomial sets
  * in order to select either the normalized or un-normalized version
  */
-template<bool normalized>
+template <bool normalized>
 struct Normalized
 {
     static const bool is_normalized = normalized;
@@ -470,7 +459,7 @@ struct Normalized
  *
  *
  */
-template<typename T>
+template <typename T>
 struct StorageUBlas
 {
     typedef T value_type;
@@ -481,7 +470,6 @@ struct StorageUBlas
     typedef typename matrix_node<value_type>::type matrix_node_type;
     typedef typename matrix_node<value_type>::type points_type;
     typedef typename node<value_type>::type node_type;
-
 };
 
 } // Feel

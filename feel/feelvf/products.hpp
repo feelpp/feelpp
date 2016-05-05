@@ -27,7 +27,7 @@
 #warning This file includes at least one deprecated or antiquated header \
     Please include <feel/feelvf/inner.hpp> and/or <feel/feelvf/cross.hpp> instead.
 
-#include <feel/feelvf/inner.hpp>
 #include <feel/feelvf/cross.hpp>
+#include <feel/feelvf/inner.hpp>
 
 #endif /* FEELPP_FEELVF_PRODUCTS_HPP */

@@ -36,31 +36,31 @@
 
 #ifndef USE_COMPLEX_NUMBERS
 extern "C" {
-# include <petscversion.h>
-# include <petsc.h>
-# include <petscsnes.h>
+#include <petsc.h>
+#include <petscsnes.h>
+#include <petscversion.h>
 }
 #else
-# include <petscversion.h>
-# include <petsc.h>
-# include <petscsnes.h>
+#include <petsc.h>
+#include <petscsnes.h>
+#include <petscversion.h>
 #endif
 
-#include <feel/feelalg/enums.hpp>
 #include <feel/feelalg/datamap.hpp>
+#include <feel/feelalg/enums.hpp>
 
 namespace Feel
 {
 
-    //MatSolverPackageType matSolverPackageEnumType(std::string const& type );
-void PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt );
+//MatSolverPackageType matSolverPackageEnumType(std::string const& type );
+void PetscPCFactorSetMatSolverPackage( PC& pc, MatSolverPackageType mspackt );
 
 std::string PetscConvertKSPReasonToString( KSPConvergedReason reason );
 std::string PetscConvertSNESReasonToString( SNESConvergedReason reason );
 
 MatStructure PetscGetMatStructureEnum( Feel::MatrixStructure matStruc );
 
-void PetscConvertIndexSplit( std::vector<IS> & isPetsc ,IndexSplit const& is,WorldComm const& worldcomm );
+void PetscConvertIndexSplit( std::vector<IS>& isPetsc, IndexSplit const& is, WorldComm const& worldcomm );
 } // namespace Feel
 
 #endif

@@ -26,7 +26,6 @@
 
 #include <feel/feelconfig.h>
 
-
 #if defined( FEELPP_HAS_FFTW )
 #include <boost/multi_array.hpp>
 #include <feel/feeldiscr/multiscaleimage.hpp>
@@ -34,8 +33,9 @@
 #include <feel/feelvf/shape.hpp>
 #include <unsupported/Eigen/Splines>
 
-namespace Eigen {
-  
+namespace Eigen
+{
+
 // lets do some explicit instantiations and thus
 // force the compilation of all spline functions...
 template class Spline<double, 2, Dynamic>;
@@ -50,8 +50,7 @@ namespace Feel
 namespace vf
 {
 
-
-    /// \cond DETAIL
+/// \cond DETAIL
 namespace detail
 {
 /**
@@ -64,12 +63,10 @@ namespace detail
  * \endcode
  * @author Christophe Prud'homme
  */
-template<typename T, int _Options = 0>
+template <typename T, int _Options = 0>
 class MSI
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -81,36 +78,35 @@ public:
     static const bool imIsPoly = true;
     static const bool is_terminal = true;
 
-    typedef Feel::MultiScaleImage<T,Options> msi_type;
+    typedef Feel::MultiScaleImage<T, Options> msi_type;
     using needs_gradient_t = typename msi_type::needs_gradient_t;
     using do_compute_gradient_t = typename msi_type::do_compute_gradient_t;
     using no_compute_gradient_t = typename msi_type::no_compute_gradient_t;
 
-    template<typename Func>
+    template <typename Func>
     struct HasTestFunction
     {
         static const bool result = false;
     };
 
-    template<typename Func>
+    template <typename Func>
     struct HasTrialFunction
     {
         static const bool result = false;
     };
 
-    template<typename Func>
+    template <typename Func>
     static const bool has_test_basis = false;
-    template<typename Func>
+    template <typename Func>
     static const bool has_trial_basis = false;
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
-
-    typedef MSI<T,Options> this_type;
+    typedef MSI<T, Options> this_type;
     typedef T value_type;
     typedef value_type evaluate_type;
 
-    using image_type = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
+    using image_type = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
     //@}
 
     /** @name Constructors, destructor
@@ -118,13 +114,11 @@ public:
     //@{
 
     MSI( image_type const& m, int L )
-        :
-        M_coarse2fine( m, L )
+        : M_coarse2fine( m, L )
     {
-
     }
 
-    MSI( MSI const &  ) = default;
+    MSI( MSI const& ) = default;
 
     ~MSI() = default;
 
@@ -134,20 +128,17 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -157,36 +148,35 @@ public:
 
     //blitz::Array<value_type,2> ones() const { return M_values; }
 
-    value_type coarse2fine( ublas::vector<T> const& real, ublas::vector<T> const& ref   ) const
+    value_type coarse2fine( ublas::vector<T> const& real, ublas::vector<T> const& ref ) const
     {
         return M_coarse2fine( real, ref );
     }
-    value_type coarse2fine( int c, ublas::vector<T> const& real, ublas::vector<T> const& ref   ) const
-        {
-            return M_coarse2fine( c, real, ref );
-        }
+    value_type coarse2fine( int c, ublas::vector<T> const& real, ublas::vector<T> const& ref ) const
+    {
+        return M_coarse2fine( c, real, ref );
+    }
 
-
-private:
-    
+  private:
     msi_type M_coarse2fine;
-    
-public:
+
+  public:
     //@}
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
+    template <typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {
         typedef this_type expression_type;
         typedef typename expression_type::value_type value_type;
         typedef value_type return_value_type;
         using key_type = key_t<Geo_t>;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+        typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type* gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type gmc_type;
         typedef typename mpl::if_<needs_gradient_t,
                                   mpl::identity<Shape<gmc_type::nDim, Vectorial, true, false>>,
-                                  mpl::identity<Shape<gmc_type::nDim, Scalar, false, false>> >::type::type shape;
+                                  mpl::identity<Shape<gmc_type::nDim, Scalar, false, false>>>::type::type shape;
 
-        template <class Args> struct sig
+        template <class Args>
+        struct sig
         {
             typedef value_type type;
         };
@@ -196,28 +186,25 @@ public:
             static const bool value = false;
         };
 
-        tensor( this_type const& expr,Geo_t const& geom, Basis_i_t const&, Basis_j_t const& )
-            :
-            M_expr( expr ),
-            M_gmc( fusion::at_key<key_type>( geom ).get() )
+        tensor( this_type const& expr, Geo_t const& geom, Basis_i_t const&, Basis_j_t const& )
+            : M_expr( expr ),
+              M_gmc( fusion::at_key<key_type>( geom ).get() )
         {
             //std::cout << "tensor::ones = " << M_expr.ones() << "\n";
         }
 
-        tensor( this_type const& expr,Geo_t const& geom, Basis_i_t const& )
-            :
-            M_expr( expr ),
-            M_gmc( fusion::at_key<key_type>( geom ).get() )
+        tensor( this_type const& expr, Geo_t const& geom, Basis_i_t const& )
+            : M_expr( expr ),
+              M_gmc( fusion::at_key<key_type>( geom ).get() )
         {
         }
 
-        tensor( this_type const& expr, Geo_t const&  geom )
-            :
-            M_expr( expr ),
-            M_gmc( fusion::at_key<key_type>( geom ).get() )
+        tensor( this_type const& expr, Geo_t const& geom )
+            : M_expr( expr ),
+              M_gmc( fusion::at_key<key_type>( geom ).get() )
         {
         }
-        template<typename IM>
+        template <typename IM>
         void init( IM const& /*im*/ )
         {
         }
@@ -229,16 +216,14 @@ public:
         void update( Geo_t const& geom, Basis_i_t const& )
         {
             update( geom );
-            
         }
-        void update( Geo_t const& geom)
+        void update( Geo_t const& geom )
         {
             M_gmc = fusion::at_key<key_type>( geom ).get();
         }
         void update( Geo_t const& /*geom*/, uint16_type /*face*/ )
         {
         }
-
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -249,7 +234,7 @@ public:
             return eval( c1, c2, q );
         }
 
-        template<int PatternContext>
+        template <int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
@@ -273,8 +258,8 @@ public:
             Feel::detail::ignore_unused_variable_warning( q );
             return eval( c1, c2, q );
         }
-    private:
-        
+
+      private:
         value_type
         eval( int c1, int c2, uint16_type q ) const
         {
@@ -285,28 +270,26 @@ public:
          */
         value_type
         eval( int c1, int c2, uint16_type q, do_compute_gradient_t ) const
-            {
+        {
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            
-            return M_expr.coarse2fine( c2, M_gmc->xReal(q), M_gmc->xRef(q) );
-            }
+
+            return M_expr.coarse2fine( c2, M_gmc->xReal( q ), M_gmc->xRef( q ) );
+        }
         /**
          * compute the value of the image of point \c q
          */
         value_type
         eval( int c1, int c2, uint16_type q, no_compute_gradient_t ) const
-            {
-                Feel::detail::ignore_unused_variable_warning( c1 );
-                Feel::detail::ignore_unused_variable_warning( c2 );
-            
-                return M_expr.coarse2fine( M_gmc->xReal(q), M_gmc->xRef(q) );
-            }
+        {
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
+
+            return M_expr.coarse2fine( M_gmc->xReal( q ), M_gmc->xRef( q ) );
+        }
         this_type M_expr;
         gmc_ptrtype M_gmc;
-        
     };
-
 };
 } // detail
 /// \endcond
@@ -314,15 +297,12 @@ public:
 /**
  *
  */
-template<typename T, int Options = 0>
-inline
-Expr<vf::detail::MSI<T, Options> >
-msi( Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> const& f, int level )
+template <typename T, int Options = 0>
+inline Expr<vf::detail::MSI<T, Options>>
+msi( Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> const& f, int level )
 {
-    return Expr<vf::detail::MSI<T,Options> >( vf::detail::MSI<T,Options>(f,level ));
+    return Expr<vf::detail::MSI<T, Options>>( vf::detail::MSI<T, Options>( f, level ) );
 }
-
-
 
 } // vf
 } // Feel

@@ -24,16 +24,17 @@
 #ifndef FEELPP_PARTITIONERLINEAR_HPP
 #define FEELPP_PARTITIONERLINEAR_HPP 1
 
-namespace Feel {
+namespace Feel
+{
 
 /**
  * @brief split mesh into equal size parts associated to each processor
  * @note use with care
  */
-template<typename MeshType>
+template <typename MeshType>
 class PartitionerLinear : public Partitioner<MeshType>
 {
-public:
+  public:
     using super = Partitioner<MeshType>;
     using clone_ptrtype = typename super::clone_ptrtype;
     using mesh_ptrtype = typename super::mesh_ptrtype;
@@ -41,31 +42,27 @@ public:
     /**
      * Constructor.
      */
-    PartitionerLinear () {}
+    PartitionerLinear() {}
 
     /**
      * Creates a new partitioner of this type 
      */
-    virtual clone_ptrtype clone () const override
-        {
-            return std::make_unique<PartitionerLinear>();
-        }
+    virtual clone_ptrtype clone() const override
+    {
+        return std::make_unique<PartitionerLinear>();
+    }
 
-protected:
+  protected:
     /**
      * Partition the \p MeshBase into \p n subdomains.
      */
-    virtual void partitionImpl ( mesh_ptrtype& mesh, rank_type n );
+    virtual void partitionImpl( mesh_ptrtype& mesh, rank_type n );
 
-private:
-
+  private:
 };
-
-
 
 } // Feel
 
 #include <feel/feelpartition/partitionerlinear_impl.hpp>
-
 
 #endif

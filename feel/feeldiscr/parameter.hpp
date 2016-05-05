@@ -30,8 +30,8 @@
 #define FEELPP_feeldiscr_parameter_H 1
 
 #include <boost/parameter.hpp>
-#include <boost/parameter/keyword.hpp>
 #include <boost/parameter/aux_/maybe.hpp>
+#include <boost/parameter/keyword.hpp>
 
 #include <feel/feelpoly/parameter.hpp>
 
@@ -49,6 +49,5 @@ BOOST_PARAMETER_TEMPLATE_KEYWORD( domain_value_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( periodicity_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( continuity_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( mortar_type )
-
 }
 #endif /* __parameter_H */

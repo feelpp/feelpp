@@ -30,7 +30,6 @@
 
 #include <feel/feelvf/unaryfunctor.hpp>
 
-
 namespace Feel
 {
 namespace vf
@@ -38,10 +37,10 @@ namespace vf
 /// \cond detail
 UnaryFunctor::UnaryFunctor( std::string const& name,
                             boost::shared_ptr<FunctorDomain> const& domain )
-    :
-    M_name( name ),
-    M_domain( domain )
-{}
+    : M_name( name ),
+      M_domain( domain )
+{
+}
 
 /// \endcond
 }

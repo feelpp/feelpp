@@ -23,72 +23,65 @@
 
 namespace Feel
 {
-template < class Convex >
+template <class Convex>
 MeshHighOrder<Convex>::MeshHighOrder( mesh_ptrtype& mesh,
                                       std::string projectionStrategy )
-    :
-    old_mesh( mesh ),
-    new_mesh( new new_mesh_type ),
-    strategy ( projectionStrategy )
+    : old_mesh( mesh ),
+      new_mesh( new new_mesh_type ),
+      strategy( projectionStrategy )
 {
-    this->createSwapEdgesMap( mpl::bool_< is_simplex >() );
+    this->createSwapEdgesMap( mpl::bool_<is_simplex>() );
 }
 
-template < class Convex >
+template <class Convex>
 MeshHighOrder<Convex>::MeshHighOrder( MeshHighOrder const& tc )
-    :
-    old_mesh( tc.old_mesh ),
-    new_mesh( tc.new_mesh ),
-    strategy( tc.strategy ),
-    M_swap_edges( tc.M_swap_edges )
+    : old_mesh( tc.old_mesh ),
+      new_mesh( tc.new_mesh ),
+      strategy( tc.strategy ),
+      M_swap_edges( tc.M_swap_edges )
 {
 }
 
-template < class Convex >
+template <class Convex>
 MeshHighOrder<Convex>::~MeshHighOrder()
 {
 }
 
-
-template < class Convex >
-void
-MeshHighOrder<Convex>::clearMesh()
+template <class Convex>
+void MeshHighOrder<Convex>::clearMesh()
 {
     new_mesh->clear();
 }
 
-template < class Convex >
-void
-MeshHighOrder<Convex>::updateP1Mesh ( mesh_ptrtype const& mesh )
+template <class Convex>
+void MeshHighOrder<Convex>::updateP1Mesh( mesh_ptrtype const& mesh )
 {
     old_mesh = mesh;
 }
 
-template < class Convex >
+template <class Convex>
 typename MeshHighOrder<Convex>::new_mesh_ptrtype
 MeshHighOrder<Convex>::getMesh() const
 {
     return new_mesh;
 }
 
-
 // affine transformation from [-1,1] to the edge defined by node1 and node2
-template < class Convex >
+template <class Convex>
 typename MeshHighOrder<Convex>::node_type
 MeshHighOrder<Convex>::affineEdge( node_type const& node1, node_type const& node2, double const& x ) const
 {
-    return ( 0.5*( ( 1-x )*node1 + ( x+1 )*node2 ) );
+    return ( 0.5 * ( ( 1 - x ) * node1 + ( x + 1 ) * node2 ) );
 }
 
-
-template < class Convex >
+template <class Convex>
 void
-MeshHighOrder<Convex>::createSwapEdgesMap ( mpl::bool_<true>  )
+    MeshHighOrder<Convex>::createSwapEdgesMap( mpl::bool_<true> )
 {
     // Construct a map that returns if for a given element and an edge,
     // the edge points should be inverted (for triangles only)
     for ( element_const_iterator elt = old_mesh->beginElement();
-            elt != old_mesh->endElement(); ++elt )
+          elt != old_mesh->endElement(); ++elt )
     {
         //check if point(0) is elt->point(1)
         // if they are not the same, points need to be swapped
@@ -107,14 +100,14 @@ MeshHighOrder<Convex>::createSwapEdgesMap ( mpl::bool_<true>  )
     }
 }
 
-template < class Convex >
+template <class Convex>
 void
-MeshHighOrder<Convex>::createSwapEdgesMap ( mpl::bool_<false>  )
+    MeshHighOrder<Convex>::createSwapEdgesMap( mpl::bool_<false> )
 {
     // Construct a map that returns if for a given element and an edge,
     // the edge points should be inverted (for triangles only)
     for ( element_const_iterator elt = old_mesh->beginElement();
-            elt != old_mesh->endElement(); ++elt )
+          elt != old_mesh->endElement(); ++elt )
     {
 #if 0
 
@@ -137,31 +130,25 @@ MeshHighOrder<Convex>::createSwapEdgesMap ( mpl::bool_<false>  )
     }
 }
 
-
-
-template < class Convex >
-bool
-MeshHighOrder<Convex>::swapEdge ( size_type eltId, size_type edgeId )
+template <class Convex>
+bool MeshHighOrder<Convex>::swapEdge( size_type eltId, size_type edgeId )
 {
     return M_swap_edges[eltId][edgeId];
 }
 
-template < class Convex >
-void
-MeshHighOrder<Convex>::updatePts( ublas::vector<double> const& x, points_type const& pts,
-                                  points_type& final_pts ) const
+template <class Convex>
+void MeshHighOrder<Convex>::updatePts( ublas::vector<double> const& x, points_type const& pts,
+                                       points_type& final_pts ) const
 {
     ublas::row( final_pts, 0 ) += element_prod( ublas::row( pts, 0 ), x );
     ublas::row( final_pts, 1 ) += element_prod( ublas::row( pts, 1 ), x );
 }
 
-
-template < class Convex >
-void
-MeshHighOrder<Convex>::addVertices( element_type const& elt, new_element_type& new_element,
-                                    new_mesh_ptrtype& new_mesh, std::vector<bool>& vertexAdd ) const
+template <class Convex>
+void MeshHighOrder<Convex>::addVertices( element_type const& elt, new_element_type& new_element,
+                                         new_mesh_ptrtype& new_mesh, std::vector<bool>& vertexAdd ) const
 {
-    for ( uint16_type i = 0; i< element_type::numVertices; ++i )
+    for ( uint16_type i = 0; i < element_type::numVertices; ++i )
     {
         point_type old_point = elt.point( i );
 
@@ -169,31 +156,26 @@ MeshHighOrder<Convex>::addVertices( element_type const& elt, new_element_type& n
         new_point.marker().assign( old_point.marker().value() );
 
         // if the created point has not been added to the mesh then add it
-        if ( vertexAdd[ old_point.id() ] == 0 )
+        if ( vertexAdd[old_point.id()] == 0 )
         {
             new_mesh->addPoint( new_point );
 
-#if !defined ( NDEBUG )
-            DVLOG(2) << "[AddPointToMesh] Vertex of id: " << new_point.id() << " has coordinates "
-                          << new_point.node();
+#if !defined( NDEBUG )
+            DVLOG( 2 ) << "[AddPointToMesh] Vertex of id: " << new_point.id() << " has coordinates "
+                       << new_point.node();
 #endif
 
-            vertexAdd[ new_point.id() ] = 1;
+            vertexAdd[new_point.id()] = 1;
         }
 
         // add point to the element it belongs
         new_element.setPoint( i, new_mesh->point( new_point.id() ) );
 
-#if !defined ( NDEBUG )
-        DVLOG(2) << "[AddVertexElement] Add point: localId=" << i
-                      << " globalToMeshId=" << new_mesh->point( new_point.id() ).id()
-                      << " to element " << new_element.id() << "\n";
+#if !defined( NDEBUG )
+        DVLOG( 2 ) << "[AddVertexElement] Add point: localId=" << i
+                   << " globalToMeshId=" << new_mesh->point( new_point.id() ).id()
+                   << " to element " << new_element.id() << "\n";
 #endif
-
     }
 }
-
 }
-
-
-

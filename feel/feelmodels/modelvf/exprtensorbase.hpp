@@ -35,95 +35,96 @@ namespace vf
 {
 namespace FeelModels
 {
-    enum ExprApplyType { EVAL=0,JACOBIAN=1 };
+enum ExprApplyType
+{
+    EVAL = 0,
+    JACOBIAN = 1
+};
 
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ShapeType, typename ValueType>
-    struct tensorBase
+template <typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ShapeType, typename ValueType>
+struct tensorBase
+{
+  public:
+    typedef ValueType value_type;
+    typedef ShapeType shape_type;
+    typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0>>,
+                              mpl::identity<vf::detail::gmc<0>>,
+                              mpl::identity<vf::detail::gmc<1>>>::type::type key_type;
+    typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type gmc_type;
+    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef typename gmc_type::gm_type gm_type;
+
+    typedef Basis_i_t map_basis_fec_test_type;
+    typedef Basis_j_t map_basis_fec_trial_type;
+    //typedef typename mpl::if_<fusion::result_of::has_key<map_basis_fec_test_type,vf::detail::gmc<0> >,
+    //                        mpl::identity<vf::detail::gmc<0> >,
+    //                         mpl::identity<vf::detail::gmc<1> > >::type::type key_fec_test_type;
+    typedef typename mpl::if_<fusion::result_of::has_key<map_basis_fec_test_type, vf::detail::gmc<0>>,
+                              mpl::identity<vf::detail::gmc<0>>,
+                              mpl::identity<vf::detail::gmc<1>>>::type::type basis_fec_test_key_type;
+
+    typedef typename mpl::if_<fusion::result_of::has_key<map_basis_fec_trial_type, vf::detail::gmc<0>>,
+                              mpl::identity<vf::detail::gmc<0>>,
+                              mpl::identity<vf::detail::gmc<1>>>::type::type basis_fec_trial_key_type;
+
+    typedef typename fusion::result_of::value_at_key<map_basis_fec_test_type, basis_fec_test_key_type>::type::element_type basis_fec_test_type;
+    typedef typename fusion::result_of::value_at_key<map_basis_fec_test_type, basis_fec_test_key_type>::type::element_type* basis_fec_test_ptrtype;
+    typedef typename fusion::result_of::value_at_key<map_basis_fec_trial_type, basis_fec_trial_key_type>::type::element_type basis_fec_trial_type;
+    typedef typename fusion::result_of::value_at_key<map_basis_fec_trial_type, basis_fec_trial_key_type>::type::element_type* basis_fec_trial_ptrtype;
+
+    typedef Eigen::Matrix<value_type, shape_type::M, shape_type::N> matrix_shape_type;
+    typedef boost::multi_array<matrix_shape_type, 1> array_shape_type;
+
+    // shapes used
+    typedef Shape<shape_type::nDim, Scalar, false, false> shape_scalar;
+    typedef Eigen::Matrix<value_type, shape_scalar::M, shape_scalar::N> loc_scalar_type;
+    typedef boost::multi_array<loc_scalar_type, 1> array_scalar_type;
+
+    typedef Shape<shape_type::nDim, Vectorial, false, false> shape_vectorial;
+    typedef Eigen::Matrix<value_type, shape_vectorial::M, shape_vectorial::N> loc_vectorial_type;
+    typedef boost::multi_array<loc_vectorial_type, 1> array_vectorial_type;
+
+    typedef Shape<shape_type::nDim, Vectorial, true, false> shape_vectorial_transpose;
+    typedef Eigen::Matrix<value_type, shape_vectorial_transpose::M, shape_vectorial_transpose::N> loc_vectorial_transpose_type;
+    typedef boost::multi_array<loc_vectorial_transpose_type, 1> array_vectorial_transpose_type;
+
+    typedef Shape<shape_type::nDim, Tensor2, false, false> shape_tensor2;
+    typedef Eigen::Matrix<value_type, shape_tensor2::M, shape_tensor2::N> loc_tensor2_type;
+    typedef boost::multi_array<loc_tensor2_type, 1> array_tensor2_type;
+
+    tensorBase( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+        : M_geot( fusion::at_key<key_type>( geom ) ),
+          M_fecTest( fusion::at_key<basis_fec_test_key_type>( fev ).get() ),
+          M_fecTrial( fusion::at_key<basis_fec_trial_key_type>( feu ).get() ),
+          M_locMatrixShape( matrix_shape_type::Zero() )
     {
-    public :
-        typedef ValueType value_type;
-        typedef ShapeType shape_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-        typedef typename gmc_type::gm_type gm_type;
+    }
+    tensorBase( Geo_t const& geom, Basis_i_t const& fev )
+        : M_geot( fusion::at_key<key_type>( geom ) ),
+          M_fecTest( fusion::at_key<basis_fec_test_key_type>( fev ).get() ),
+          M_locMatrixShape( matrix_shape_type::Zero() )
+    {
+    }
+    tensorBase( Geo_t const& geom )
+        : M_geot( fusion::at_key<key_type>( geom ) ),
+          M_locMatrixShape( matrix_shape_type::Zero() )
+    {
+    }
+    tensorBase( tensorBase const& t )
+        : M_geot( t.M_geot ),
+          M_fecTest( t.M_fecTest ),
+          M_fecTrial( t.M_fecTrial )
+    {
+    }
+    virtual ~tensorBase() {}
 
-        typedef Basis_i_t map_basis_fec_test_type;
-        typedef Basis_j_t map_basis_fec_trial_type;
-        //typedef typename mpl::if_<fusion::result_of::has_key<map_basis_fec_test_type,vf::detail::gmc<0> >,
-        //                        mpl::identity<vf::detail::gmc<0> >,
-        //                         mpl::identity<vf::detail::gmc<1> > >::type::type key_fec_test_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<map_basis_fec_test_type,vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type basis_fec_test_key_type;
+    gmc_ptrtype const& gmc() const { return M_geot; }
+    basis_fec_test_ptrtype const& fecTest() const { return M_fecTest; }
+    basis_fec_trial_ptrtype const& fecTrial() const { return M_fecTrial; }
+    matrix_shape_type /*const*/& locMatrixShape() const { return M_locMatrixShape; }
 
-        typedef typename mpl::if_<fusion::result_of::has_key<map_basis_fec_trial_type,vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type basis_fec_trial_key_type;
-
-        typedef typename fusion::result_of::value_at_key<map_basis_fec_test_type, basis_fec_test_key_type>::type::element_type  basis_fec_test_type;
-        typedef typename fusion::result_of::value_at_key<map_basis_fec_test_type, basis_fec_test_key_type>::type::element_type* basis_fec_test_ptrtype;
-        typedef typename fusion::result_of::value_at_key<map_basis_fec_trial_type,basis_fec_trial_key_type>::type::element_type  basis_fec_trial_type;
-        typedef typename fusion::result_of::value_at_key<map_basis_fec_trial_type,basis_fec_trial_key_type>::type::element_type* basis_fec_trial_ptrtype;
-
-        typedef Eigen::Matrix<value_type,shape_type::M,shape_type::N> matrix_shape_type;
-        typedef boost::multi_array<matrix_shape_type,1> array_shape_type;
-
-        // shapes used
-        typedef Shape<shape_type::nDim, Scalar, false, false> shape_scalar;
-        typedef Eigen::Matrix<value_type,shape_scalar::M,shape_scalar::N> loc_scalar_type;
-        typedef boost::multi_array<loc_scalar_type,1> array_scalar_type;
-
-        typedef Shape<shape_type::nDim, Vectorial, false, false> shape_vectorial;
-        typedef Eigen::Matrix<value_type,shape_vectorial::M,shape_vectorial::N> loc_vectorial_type;
-        typedef boost::multi_array<loc_vectorial_type,1> array_vectorial_type;
-
-        typedef Shape<shape_type::nDim, Vectorial, true, false> shape_vectorial_transpose;
-        typedef Eigen::Matrix<value_type,shape_vectorial_transpose::M,shape_vectorial_transpose::N> loc_vectorial_transpose_type;
-        typedef boost::multi_array<loc_vectorial_transpose_type,1> array_vectorial_transpose_type;
-
-        typedef Shape<shape_type::nDim, Tensor2, false, false> shape_tensor2;
-        typedef Eigen::Matrix<value_type,shape_tensor2::M,shape_tensor2::N> loc_tensor2_type;
-        typedef boost::multi_array<loc_tensor2_type,1> array_tensor2_type;
-
-
-
-        tensorBase( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            :
-            M_geot( fusion::at_key<key_type>( geom ) ),
-            M_fecTest( fusion::at_key<basis_fec_test_key_type>( fev ).get() ),
-            M_fecTrial( fusion::at_key<basis_fec_trial_key_type>( feu ).get() ),
-            M_locMatrixShape( matrix_shape_type::Zero() )
-        {}
-        tensorBase( Geo_t const& geom, Basis_i_t const& fev )
-            :
-            M_geot( fusion::at_key<key_type>( geom ) ),
-            M_fecTest( fusion::at_key<basis_fec_test_key_type>( fev ).get() ),
-            M_locMatrixShape( matrix_shape_type::Zero() )
-        {}
-        tensorBase( Geo_t const& geom )
-            :
-            M_geot( fusion::at_key<key_type>( geom ) ),
-            M_locMatrixShape( matrix_shape_type::Zero() )
-        {}
-        tensorBase( tensorBase const& t )
-            :
-            M_geot( t.M_geot ),
-            M_fecTest( t.M_fecTest ),
-            M_fecTrial( t.M_fecTrial )
-        {}
-        virtual ~tensorBase() {}
-
-        gmc_ptrtype const& gmc() const { return M_geot; }
-        basis_fec_test_ptrtype const& fecTest() const { return M_fecTest; }
-        basis_fec_trial_ptrtype const& fecTrial() const { return M_fecTrial; }
-        matrix_shape_type /*const*/& locMatrixShape() const { return M_locMatrixShape; }
-
-        virtual void update( Geo_t const& geom ) = 0;
-        virtual void update( Geo_t const& geom, uint16_type face ) = 0;
-
+    virtual void update( Geo_t const& geom ) = 0;
+    virtual void update( Geo_t const& geom, uint16_type face ) = 0;
 
 #if 0
         virtual
@@ -142,47 +143,43 @@ namespace FeelModels
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
 #else
-        virtual
-        Eigen::Matrix<value_type, shape_type::M, shape_type::N> const&
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
-        {
-            CHECK( false ) << "not allow\n";
-            return M_locMatrixShape;
-        }
+    virtual Eigen::Matrix<value_type, shape_type::M, shape_type::N> const&
+    evalijq( uint16_type i, uint16_type j, uint16_type q ) const
+    {
+        CHECK( false ) << "not allow\n";
+        return M_locMatrixShape;
+    }
 
-        virtual
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
-        {
-            CHECK( false ) << "not allow\n";
-            return value_type(0);
-        }
+    virtual value_type
+    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
+    {
+        CHECK( false ) << "not allow\n";
+        return value_type( 0 );
+    }
 
-        virtual
-        value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
-        {
-            CHECK( false ) << "not allow\n";
-            return value_type(0);
-        }
+    virtual value_type
+    evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
+    {
+        CHECK( false ) << "not allow\n";
+        return value_type( 0 );
+    }
 
-        virtual
-        value_type
-        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
-        {
-            CHECK( false ) << "not allow\n";
-            return value_type(0);
-        }
+    virtual value_type
+    evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
+    {
+        CHECK( false ) << "not allow\n";
+        return value_type( 0 );
+    }
 
 #endif
-    private:
-        gmc_ptrtype M_geot;
-        basis_fec_test_ptrtype M_fecTest;
-        basis_fec_trial_ptrtype M_fecTrial;
-    protected :
-        mutable matrix_shape_type M_locMatrixShape;
+  private:
+    gmc_ptrtype M_geot;
+    basis_fec_test_ptrtype M_fecTest;
+    basis_fec_trial_ptrtype M_fecTrial;
 
-    };
+  protected:
+    mutable matrix_shape_type M_locMatrixShape;
+};
 
 } // namespace FeelModels
 } // namespace vf

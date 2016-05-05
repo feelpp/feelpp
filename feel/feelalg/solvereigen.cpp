@@ -36,65 +36,62 @@ namespace Feel
 {
 template <typename T>
 SolverEigen<T>::SolverEigen()
-    :
-    M_eigen_solver_type    ( ARNOLDI ),
-    M_eigen_problem_type   ( NHEP ),
-    M_position_of_spectrum ( LARGEST_MAGNITUDE ),
-    M_spectral_transform   ( SHIFT ),
-    M_is_initialized       ( false ),
-    M_nev( 1 ),
-    M_ncv( 3 ),
-    M_mpd( invalid_size_type_value ),
-    M_interval_a( 0. ), M_interval_b( 0. )
+    : M_eigen_solver_type( ARNOLDI ),
+      M_eigen_problem_type( NHEP ),
+      M_position_of_spectrum( LARGEST_MAGNITUDE ),
+      M_spectral_transform( SHIFT ),
+      M_is_initialized( false ),
+      M_nev( 1 ),
+      M_ncv( 3 ),
+      M_mpd( invalid_size_type_value ),
+      M_interval_a( 0. ), M_interval_b( 0. )
 {
 }
 
 template <typename T>
 SolverEigen<T>::SolverEigen( po::variables_map const& vm, std::string const& prefix )
-    :
-    M_prefix( ( !prefix.empty() && !boost::algorithm::ends_with( prefix, "-" ) )? ( prefix+"-" ):prefix ),
-    M_eigen_solver_type    ( ( EigenSolverType )vm[M_prefix+"solvereigen.solver-type"].template as<int>() ),
-    M_eigen_problem_type   ( ( EigenProblemType )vm[M_prefix+"solvereigen.problem-type"].template as<int>() ),
-    M_position_of_spectrum ( ( PositionOfSpectrum )vm[M_prefix+"solvereigen.position"].template as<int>() ),
-    M_spectral_transform   ( SHIFT ),
-    M_is_initialized       ( false ),
-    M_nev( ioption(_prefix=M_prefix,_name="solvereigen.nev") ),
-    M_ncv( ioption(_prefix=M_prefix,_name="solvereigen.ncv") ),
-    M_mpd( invalid_size_type_value ),
-    M_interval_a( 0. ), M_interval_b( 0. )
+    : M_prefix( ( !prefix.empty() && !boost::algorithm::ends_with( prefix, "-" ) ) ? ( prefix + "-" ) : prefix ),
+      M_eigen_solver_type( (EigenSolverType)vm[M_prefix + "solvereigen.solver-type"].template as<int>() ),
+      M_eigen_problem_type( (EigenProblemType)vm[M_prefix + "solvereigen.problem-type"].template as<int>() ),
+      M_position_of_spectrum( (PositionOfSpectrum)vm[M_prefix + "solvereigen.position"].template as<int>() ),
+      M_spectral_transform( SHIFT ),
+      M_is_initialized( false ),
+      M_nev( ioption( _prefix = M_prefix, _name = "solvereigen.nev" ) ),
+      M_ncv( ioption( _prefix = M_prefix, _name = "solvereigen.ncv" ) ),
+      M_mpd( invalid_size_type_value ),
+      M_interval_a( 0. ), M_interval_b( 0. )
 {
-    int mpdOption = ioption(_prefix=M_prefix,_name="solvereigen.mpd");
+    int mpdOption = ioption( _prefix = M_prefix, _name = "solvereigen.mpd" );
     if ( mpdOption > 0 )
         M_mpd = mpdOption;
 }
 
 template <typename T>
 SolverEigen<T>::SolverEigen( SolverEigen const& eis )
-    :
-    M_prefix( eis.M_prefix ),
-    M_eigen_solver_type    ( eis.M_eigen_solver_type ),
-    M_eigen_problem_type   ( eis.M_eigen_problem_type ),
-    M_position_of_spectrum ( eis.M_position_of_spectrum ),
-    M_spectral_transform   ( eis.M_spectral_transform ),
-    M_is_initialized       ( eis.M_is_initialized ),
-    M_nev( eis.M_nev ),
-    M_ncv( eis.M_ncv ),
-    M_mpd ( eis.M_mpd ),
-    M_interval_a( eis.M_interval_a ), M_interval_b( eis.M_interval_b ),
-    M_maxit( eis.M_maxit ),
-    M_tolerance( eis.M_tolerance ),
-    M_mapRow( eis.M_mapRow ),
-    M_mapCol( eis.M_mapCol )
+    : M_prefix( eis.M_prefix ),
+      M_eigen_solver_type( eis.M_eigen_solver_type ),
+      M_eigen_problem_type( eis.M_eigen_problem_type ),
+      M_position_of_spectrum( eis.M_position_of_spectrum ),
+      M_spectral_transform( eis.M_spectral_transform ),
+      M_is_initialized( eis.M_is_initialized ),
+      M_nev( eis.M_nev ),
+      M_ncv( eis.M_ncv ),
+      M_mpd( eis.M_mpd ),
+      M_interval_a( eis.M_interval_a ), M_interval_b( eis.M_interval_b ),
+      M_maxit( eis.M_maxit ),
+      M_tolerance( eis.M_tolerance ),
+      M_mapRow( eis.M_mapRow ),
+      M_mapCol( eis.M_mapCol )
 {
 }
 
 template <typename T>
 SolverEigen<T>::~SolverEigen()
 {
-    this->clear ();
+    this->clear();
 }
 template <typename T>
-boost::shared_ptr<SolverEigen<T> >
+boost::shared_ptr<SolverEigen<T>>
 SolverEigen<T>::build( const SolverPackage solver_package )
 {
     // Build the appropriate solver
@@ -125,7 +122,7 @@ SolverEigen<T>::build( const SolverPackage solver_package )
 }
 
 template <typename T>
-boost::shared_ptr<SolverEigen<T> >
+boost::shared_ptr<SolverEigen<T>>
 SolverEigen<T>::build( po::variables_map const& vm, std::string const& prefix )
 {
     SolverPackage solver_package = SOLVERS_SLEPC;
@@ -146,8 +143,8 @@ SolverEigen<T>::build( po::variables_map const& vm, std::string const& prefix )
 
     else
     {
-        LOG(INFO) << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
-        LOG(INFO) << "[Backend] use fallback  gmm\n";
+        LOG( INFO ) << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
+        LOG( INFO ) << "[Backend] use fallback  gmm\n";
 #if defined( FEELPP_HAS_PETSC )
         solver_package = SOLVERS_PETSC;
 #endif
@@ -179,7 +176,6 @@ SolverEigen<T>::build( po::variables_map const& vm, std::string const& prefix )
 
     return solvereigen_ptrtype();
 }
-
 
 /*
  * Explicit instantiations

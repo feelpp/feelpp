@@ -163,61 +163,60 @@ namespace Feel
 {
 namespace glas
 {
-namespace ublas= boost::numeric::ublas;
+namespace ublas = boost::numeric::ublas;
 
-template<typename T = double>
+template <typename T = double>
 class ldl
 {
-public:
+  public:
     typedef T value_type;
     typedef ublas::compressed_matrix<value_type, ublas::column_major> matrix_type;
 
     ldl( matrix_type& A )
-        :
-        n( A.size1() ),
-        Ap( A.index1_data().begin() ),
-        Ai( A.index2_data().begin() ),
-        Ax( A.value_data().begin() ),
-        Lp( n+1 ),
-        Parent( n ),
-        Lnz( n ),
-        Li(),
-        Lx(),
-        D( n ),
-        Y( n ),
-        Flag( n ),
-        Pattern( n ),
-        P( 0 ),
-        Pinv( 0 )
-    {}
-    void symbolic () ;
+        : n( A.size1() ),
+          Ap( A.index1_data().begin() ),
+          Ai( A.index2_data().begin() ),
+          Ax( A.value_data().begin() ),
+          Lp( n + 1 ),
+          Parent( n ),
+          Lnz( n ),
+          Li(),
+          Lx(),
+          D( n ),
+          Y( n ),
+          Flag( n ),
+          Pattern( n ),
+          P( 0 ),
+          Pinv( 0 )
+    {
+    }
+    void symbolic();
 
     size_type numeric();
 
-    void lsolve ( ublas::vector<value_type>& X );
+    void lsolve( ublas::vector<value_type>& X );
 
-    void dsolve ( ublas::vector<value_type>& X );
+    void dsolve( ublas::vector<value_type>& X );
 
-    void ltsolve ( ublas::vector<value_type>& X );
+    void ltsolve( ublas::vector<value_type>& X );
 
     /**
      * shortcut for solving LDL^T X = B
      */
-    void solve ( ublas::vector<value_type>& X )
+    void solve( ublas::vector<value_type>& X )
     {
         lsolve( X );
         dsolve( X );
         ltsolve( X );
     }
 
-    void perm  ( ublas::vector<value_type>& X, ublas::vector<value_type> const& B );
-    void permt  ( ublas::vector<value_type>& X, ublas::vector<value_type> const& B );
+    void perm( ublas::vector<value_type>& X, ublas::vector<value_type> const& B );
+    void permt( ublas::vector<value_type>& X, ublas::vector<value_type> const& B );
 
-    bool valid_perm ();
-    bool valid_matrix ();
+    bool valid_perm();
+    bool valid_matrix();
 
-private:
-
+  private:
     size_type n;
 
     size_type* Ap;
@@ -230,10 +229,10 @@ private:
 
     /* output of size n, not defined on input */
     ublas::vector<size_type> Lnz;
-    ublas::vector<size_type> Li;	/* output of size lnz=Lp[n], not defined on input */
-    ublas::vector<value_type> Lx;	/* output of size lnz=Lp[n], not defined on input */
-    ublas::vector<value_type> D;	/* output of size n, not defined on input */
-    ublas::vector<value_type> Y;	/* workspace of size n, not defn. on input or output */
+    ublas::vector<size_type> Li;  /* output of size lnz=Lp[n], not defined on input */
+    ublas::vector<value_type> Lx; /* output of size lnz=Lp[n], not defined on input */
+    ublas::vector<value_type> D;  /* output of size n, not defined on input */
+    ublas::vector<value_type> Y;  /* workspace of size n, not defn. on input or output */
 
     /* workspace of size n, not defn. on input or output */
     ublas::vector<size_type> Flag;
@@ -244,7 +243,6 @@ private:
     /* optional output of size n (used if P is not NULL) */
     size_type* Pinv;
 };
-
 
 /* ========================================================================== */
 /* === ldl::symbolic ========================================================= */
@@ -273,61 +271,60 @@ private:
  * is not returned, but could be computed after ldl::symbolic is done.  It is
  * the sum of (Lnz [k]) * (Lnz [k] + 2) for k = 0 to n-1.
  */
-template<typename T>
+template <typename T>
 void ldl<T>::symbolic()
 {
-    size_type i, k, p, kk, p2 ;
+    size_type i, k, p, kk, p2;
 
     if ( P )
     {
         /* If P is present then compute Pinv, the inverse of P */
-        for ( k = 0 ; k < n ; k++ )
+        for ( k = 0; k < n; k++ )
         {
-            Pinv [P [k]] = k ;
+            Pinv[P[k]] = k;
         }
     }
 
-    for ( k = 0 ; k < n ; k++ )
+    for ( k = 0; k < n; k++ )
     {
         /* L(k,:) pattern: all nodes reachable in etree from nz in A(0:k-1,k) */
-        Parent [k] = -1 ;	    /* parent of k is not yet known */
-        Flag [k] = k ;		    /* mark node k as visited */
-        Lnz [k] = 0 ;		    /* count of nonzeros in column k of L */
-        kk = ( P ) ? ( P [k] ) : ( k ) ; /* kth original, or permuted, column */
-        p2 = Ap [kk+1] ;
+        Parent[k] = -1;                /* parent of k is not yet known */
+        Flag[k] = k;                   /* mark node k as visited */
+        Lnz[k] = 0;                    /* count of nonzeros in column k of L */
+        kk = ( P ) ? ( P[k] ) : ( k ); /* kth original, or permuted, column */
+        p2 = Ap[kk + 1];
 
-        for ( p = Ap [kk] ; p < p2 ; p++ )
+        for ( p = Ap[kk]; p < p2; p++ )
         {
             /* A (i,k) is nonzero (original or permuted A) */
-            i = ( Pinv ) ? ( Pinv [Ai [p]] ) : ( Ai [p] ) ;
+            i = ( Pinv ) ? ( Pinv[Ai[p]] ) : ( Ai[p] );
 
             if ( i < k )
             {
                 /* follow path from i to root of etree, stop at flagged node */
-                for ( ; Flag [i] != k ; i = Parent [i] )
+                for ( ; Flag[i] != k; i = Parent[i] )
                 {
                     /* find parent of i if not yet determined */
-                    if ( Parent [i] == -1 ) Parent [i] = k ;
+                    if ( Parent[i] == -1 ) Parent[i] = k;
 
-                    Lnz [i]++ ;				/* L (k,i) is nonzero */
-                    Flag [i] = k ;			/* mark i as visited */
+                    Lnz[i]++;    /* L (k,i) is nonzero */
+                    Flag[i] = k; /* mark i as visited */
                 }
             }
         }
     }
 
     /* construct Lp index array from Lnz column counts */
-    Lp [0] = 0 ;
+    Lp[0] = 0;
 
-    for ( k = 0 ; k < n ; k++ )
+    for ( k = 0; k < n; k++ )
     {
-        Lp [k+1] = Lp [k] + Lnz [k] ;
+        Lp[k + 1] = Lp[k] + Lnz[k];
     }
 
     Li.resize( Lp[n] );
     Lx.resize( Lp[n] );
 }
-
 
 /* ========================================================================== */
 /* === ldl::numeric ========================================================== */
@@ -340,198 +337,192 @@ void ldl<T>::symbolic()
  */
 
 /* returns n if successful, k if D (k,k) is zero */
-template<typename T>
+template <typename T>
 size_type ldl<T>::numeric()
 {
-    value_type yi, l_ki ;
+    value_type yi, l_ki;
     size_type i, k, p, kk, p2;
-    size_type len, top ;
+    size_type len, top;
 
-    for ( k = 0 ; k < n ; k++ )
+    for ( k = 0; k < n; k++ )
     {
         /* compute nonzero Pattern of kth row of L, in topological order */
-        Y [k] = 0.0 ;		    /* Y(0:k) is now all zero */
-        top = n ;		    /* stack for pattern is empty */
-        Flag [k] = k ;		    /* mark node k as visited */
-        Lnz [k] = 0 ;		    /* count of nonzeros in column k of L */
-        kk = ( P ) ? ( P [k] ) : ( k ) ; /* kth original, or permuted, column */
-        p2 = Ap [kk+1] ;
+        Y[k] = 0.0;                    /* Y(0:k) is now all zero */
+        top = n;                       /* stack for pattern is empty */
+        Flag[k] = k;                   /* mark node k as visited */
+        Lnz[k] = 0;                    /* count of nonzeros in column k of L */
+        kk = ( P ) ? ( P[k] ) : ( k ); /* kth original, or permuted, column */
+        p2 = Ap[kk + 1];
 
-        for ( p = Ap [kk] ; p < p2 ; p++ )
+        for ( p = Ap[kk]; p < p2; p++ )
         {
-            i = ( Pinv ) ? ( Pinv [Ai [p]] ) : ( Ai [p] ) ;	/* get A(i,k) */
+            i = ( Pinv ) ? ( Pinv[Ai[p]] ) : ( Ai[p] ); /* get A(i,k) */
 
             if ( i <= k )
             {
-                Y [i] += Ax [p] ;  /* scatter A(i,k) into Y (sum duplicates) */
+                Y[i] += Ax[p]; /* scatter A(i,k) into Y (sum duplicates) */
 
-                for ( len = 0 ; Flag [i] != k ; i = Parent [i] )
+                for ( len = 0; Flag[i] != k; i = Parent[i] )
                 {
-                    Pattern [len++] = i ;   /* L(k,i) is nonzero */
-                    Flag [i] = k ;	    /* mark i as visited */
+                    Pattern[len++] = i; /* L(k,i) is nonzero */
+                    Flag[i] = k;        /* mark i as visited */
                 }
 
-                while ( len > 0 ) Pattern [--top] = Pattern [--len] ;
+                while ( len > 0 )
+                    Pattern[--top] = Pattern[--len];
             }
         }
 
         /* compute numerical values kth row of L (a sparse triangular solve) */
-        D [k] = Y [k] ;		    /* get D(k,k) and clear Y(k) */
-        Y [k] = 0.0 ;
+        D[k] = Y[k]; /* get D(k,k) and clear Y(k) */
+        Y[k] = 0.0;
 
-        for ( ; top < n ; top++ )
+        for ( ; top < n; top++ )
         {
-            i = Pattern [top] ;	    /* Pattern [top:n-1] is pattern of L(:,k) */
-            yi = Y [i] ;	    /* get and clear Y(i) */
-            Y [i] = 0.0 ;
-            p2 = Lp [i] + Lnz [i] ;
+            i = Pattern[top]; /* Pattern [top:n-1] is pattern of L(:,k) */
+            yi = Y[i];        /* get and clear Y(i) */
+            Y[i] = 0.0;
+            p2 = Lp[i] + Lnz[i];
 
-            for ( p = Lp [i] ; p < p2 ; p++ )
+            for ( p = Lp[i]; p < p2; p++ )
             {
-                Y [Li [p]] -= Lx [p] * yi ;
+                Y[Li[p]] -= Lx[p] * yi;
             }
 
-            l_ki = yi / D [i] ;	    /* the nonzero entry L(k,i) */
-            D [k] -= l_ki * yi ;
-            Li [p] = k ;	    /* store L(k,i) in column form of L */
-            Lx [p] = l_ki ;
-            Lnz [i]++ ;		    /* increment count of nonzeros in col i */
+            l_ki = yi / D[i]; /* the nonzero entry L(k,i) */
+            D[k] -= l_ki * yi;
+            Li[p] = k; /* store L(k,i) in column form of L */
+            Lx[p] = l_ki;
+            Lnz[i]++; /* increment count of nonzeros in col i */
         }
 
-        if ( D [k] == 0.0 ) return ( k ) ;	 /* failure, D(k,k) is zero */
+        if ( D[k] == 0.0 ) return ( k ); /* failure, D(k,k) is zero */
     }
 
-    return ( n ) ;	/* success, diagonal of D is all nonzero */
+    return ( n ); /* success, diagonal of D is all nonzero */
 }
-
 
 /* ========================================================================== */
 /* === ldl::lsolve:  solve Lx=b ============================================== */
 /* ========================================================================== */
-template<typename T>
+template <typename T>
 void ldl<T>::lsolve( ublas::vector<value_type>& X )
 {
-    size_type j, p, p2 ;
+    size_type j, p, p2;
 
-    for ( j = 0 ; j < n ; j++ )
+    for ( j = 0; j < n; j++ )
     {
-        p2 = Lp [j+1] ;
+        p2 = Lp[j + 1];
 
-        for ( p = Lp [j] ; p < p2 ; p++ )
+        for ( p = Lp[j]; p < p2; p++ )
         {
-            X [Li [p]] -= Lx [p] * X [j] ;
+            X[Li[p]] -= Lx[p] * X[j];
         }
     }
 }
-
 
 /* ========================================================================== */
 /* === ldl::dsolve:  solve Dx=b ============================================== */
 /* ========================================================================== */
-template<typename T>
+template <typename T>
 void ldl<T>::dsolve( ublas::vector<value_type>& X )
 {
-    size_type j ;
+    size_type j;
 
-    for ( j = 0 ; j < n ; j++ )
+    for ( j = 0; j < n; j++ )
     {
-        X [j] /= D [j] ;
+        X[j] /= D[j];
     }
 }
-
 
 /* ========================================================================== */
 /* === ldl::ltsolve: solve L'x=b  ============================================ */
 /* ========================================================================== */
-template<typename T>
+template <typename T>
 void ldl<T>::ltsolve( ublas::vector<value_type>& X )
 {
-    size_type  p, p2 ;
+    size_type p, p2;
 
-    for ( int j = n-1 ; j >= 0 ; j-- )
+    for ( int j = n - 1; j >= 0; j-- )
     {
-        p2 = Lp [j+1] ;
+        p2 = Lp[j + 1];
 
-        for ( p = Lp [j] ; p < p2 ; p++ )
+        for ( p = Lp[j]; p < p2; p++ )
         {
-            X [j] -= Lx [p] * X [Li [p]] ;
+            X[j] -= Lx[p] * X[Li[p]];
         }
     }
 }
 
-
 /* ========================================================================== */
 /* === ldl::perm: permute a vector, x=Pb ===================================== */
 /* ========================================================================== */
-template<typename T>
-void ldl<T>::perm( ublas::vector<value_type> & X,
+template <typename T>
+void ldl<T>::perm( ublas::vector<value_type>& X,
                    ublas::vector<value_type> const& B )
 {
-    size_type j ;
+    size_type j;
 
-    for ( j = 0 ; j < n ; j++ )
+    for ( j = 0; j < n; j++ )
     {
-        X [j] = B [P [j]] ;
+        X[j] = B[P[j]];
     }
 }
-
 
 /* ========================================================================== */
 /* === ldl::permt: permute a vector, x=P'b =================================== */
 /* ========================================================================== */
-template<typename T>
-void ldl<T>::permt( ublas::vector<value_type> & X,
+template <typename T>
+void ldl<T>::permt( ublas::vector<value_type>& X,
                     ublas::vector<value_type> const& B )
 {
-    size_type j ;
+    size_type j;
 
-    for ( j = 0 ; j < n ; j++ )
+    for ( j = 0; j < n; j++ )
     {
-        X [P [j]] = B [j] ;
+        X[P[j]] = B[j];
     }
 }
-
 
 /* ========================================================================== */
 /* === ldl::valid_perm: check if a permutation vector is valid =============== */
 /* ========================================================================== */
 
 /* returns 1 if valid, 0 otherwise */
-template<typename T>
+template <typename T>
 bool ldl<T>::valid_perm()
 {
-    size_type j, k ;
+    size_type j, k;
 
     if ( Flag.size() == 0 )
     {
-        return false;	    /* n must be >= 0, and Flag must be present */
+        return false; /* n must be >= 0, and Flag must be present */
     }
 
     if ( !P )
     {
-        return true;	    /* If NULL, P is assumed to be the identity perm. */
+        return true; /* If NULL, P is assumed to be the identity perm. */
     }
 
-    for ( j = 0 ; j < n ; j++ )
+    for ( j = 0; j < n; j++ )
     {
-        Flag [j] = 0 ;	    /* clear the Flag array */
+        Flag[j] = 0; /* clear the Flag array */
     }
 
-    for ( k = 0 ; k < n ; k++ )
+    for ( k = 0; k < n; k++ )
     {
-        j = P [k] ;
+        j = P[k];
 
-        if ( j >= n || Flag [j] != 0 )
+        if ( j >= n || Flag[j] != 0 )
         {
-            return false;    /* P is not valid */
+            return false; /* P is not valid */
         }
 
-        Flag [j] = 1 ;
+        Flag[j] = 1;
     }
 
-    return true;	    /* P is valid */
+    return true; /* P is valid */
 }
-
 
 /* ========================================================================== */
 /* === ldl::valid_matrix: check if a sparse matrix is valid ================== */
@@ -543,33 +534,33 @@ bool ldl<T>::valid_perm()
  * are stored in Ax [Ap [j] ... Ap [j+1]-1], with row indices in
  * Ai [Ap [j] ... Ap [j+1]-1].  The Ax array is not checked.
  */
-template<typename T>
+template <typename T>
 bool ldl<T>::valid_matrix()
 {
-    size_type j, p ;
+    size_type j, p;
 
     /*
     if (n < 0 || !Ap || !Ai || Ap [0] != 0)
     {
     return false ;	    // n must be >= 0, and Ap and Ai must be present
     }*/
-    for ( j = 0 ; j < n ; j++ )
+    for ( j = 0; j < n; j++ )
     {
-        if ( Ap [j] > Ap [j+1] )
+        if ( Ap[j] > Ap[j + 1] )
         {
-            return false;    /* Ap must be monotonically nondecreasing */
+            return false; /* Ap must be monotonically nondecreasing */
         }
     }
 
-    for ( p = 0 ; p < Ap [n] ; p++ )
+    for ( p = 0; p < Ap[n]; p++ )
     {
-        if ( Ai [p] >= n )
+        if ( Ai[p] >= n )
         {
-            return false;    /* row indices must be in the range 0 to n-1 */
+            return false; /* row indices must be in the range 0 to n-1 */
         }
     }
 
-    return true;	    /* matrix is valid */
+    return true; /* matrix is valid */
 }
 
 } // namespace glas

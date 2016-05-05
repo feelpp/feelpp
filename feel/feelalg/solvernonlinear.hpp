@@ -35,22 +35,22 @@
 //#include <boost/bind.hpp>
 
 #include <Eigen/Core>
-#include <Eigen/LU>
 #include <Eigen/Dense>
+#include <Eigen/LU>
 
 #include <feel/feelalg/enums.hpp>
 #include <feel/feelalg/glas.hpp>
-#include <feel/feelcore/traits.hpp>
-#include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelalg/nullspace.hpp>
-
+#include <feel/feelalg/preconditioner.hpp>
+#include <feel/feelcore/traits.hpp>
 
 namespace Feel
 {
 
-template<typename T> class Vector;
-template<typename T> class MatrixSparse;
-
+template <typename T>
+class Vector;
+template <typename T>
+class MatrixSparse;
 
 /**
  * \class SolverNonLinear
@@ -65,75 +65,83 @@ template<typename T> class MatrixSparse;
 template <typename T>
 class SolverNonLinear
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
 
     typedef SolverNonLinear<T> self_type;
-    typedef boost::shared_ptr<SolverNonLinear<T> > self_ptrtype;
+    typedef boost::shared_ptr<SolverNonLinear<T>> self_ptrtype;
     typedef self_type solvernonlinear_type;
     typedef boost::shared_ptr<self_type> solvernonlinear_ptrtype;
 
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
 
-    typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
+    typedef boost::shared_ptr<Preconditioner<T>> preconditioner_ptrtype;
 
-    typedef boost::shared_ptr<Vector<value_type> > vector_ptrtype;
-    typedef boost::shared_ptr<MatrixSparse<value_type> > sparse_matrix_ptrtype;
+    typedef boost::shared_ptr<Vector<value_type>> vector_ptrtype;
+    typedef boost::shared_ptr<MatrixSparse<value_type>> sparse_matrix_ptrtype;
 
     typedef ublas::matrix<value_type> dense_matrix_type;
     typedef ublas::vector<value_type> dense_vector_type;
 
-    typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
-    typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
+    typedef Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> map_dense_matrix_type;
+    typedef Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>> map_dense_vector_type;
 
-    typedef std::function<void ( const vector_ptrtype& X,
-                                   vector_ptrtype& R )> residual_function_type;
-    typedef std::function<void ( const vector_ptrtype& X,
-                                   sparse_matrix_ptrtype& J )> jacobian_function_type;
-    typedef std::function<void ( const vector_ptrtype& X,
-                                   vector_ptrtype& R,
-                                   sparse_matrix_ptrtype& J )> matvec_function_type;
+    typedef std::function<void( const vector_ptrtype& X,
+                                vector_ptrtype& R )>
+        residual_function_type;
+    typedef std::function<void( const vector_ptrtype& X,
+                                sparse_matrix_ptrtype& J )>
+        jacobian_function_type;
+    typedef std::function<void( const vector_ptrtype& X,
+                                vector_ptrtype& R,
+                                sparse_matrix_ptrtype& J )>
+        matvec_function_type;
 
-    typedef std::function<void ( dense_vector_type const& X,
-                                   dense_vector_type & R )> dense_residual_function_type;
-    typedef std::function<void ( dense_vector_type const& X,
-                                   dense_matrix_type& J )> dense_jacobian_function_type;
-    typedef std::function<void ( dense_vector_type const& X,
-                                   dense_vector_type& R,
-                                   dense_matrix_type& J )> dense_matvec_function_type;
+    typedef std::function<void( dense_vector_type const& X,
+                                dense_vector_type& R )>
+        dense_residual_function_type;
+    typedef std::function<void( dense_vector_type const& X,
+                                dense_matrix_type& J )>
+        dense_jacobian_function_type;
+    typedef std::function<void( dense_vector_type const& X,
+                                dense_vector_type& R,
+                                dense_matrix_type& J )>
+        dense_matvec_function_type;
 
     //eigen
-    typedef std::function<void ( map_dense_vector_type const& X,
-                                   map_dense_vector_type & R )> map_dense_residual_function_type;
-    typedef std::function<void ( map_dense_vector_type const& X,
-                                   map_dense_matrix_type& J )> map_dense_jacobian_function_type;
-    typedef std::function<void ( map_dense_vector_type const& X,
-                                   map_dense_vector_type& R,
-                                   map_dense_matrix_type& J )> map_dense_matvec_function_type;
+    typedef std::function<void( map_dense_vector_type const& X,
+                                map_dense_vector_type& R )>
+        map_dense_residual_function_type;
+    typedef std::function<void( map_dense_vector_type const& X,
+                                map_dense_matrix_type& J )>
+        map_dense_jacobian_function_type;
+    typedef std::function<void( map_dense_vector_type const& X,
+                                map_dense_vector_type& R,
+                                map_dense_matrix_type& J )>
+        map_dense_matvec_function_type;
 
-    using pre_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
-    using post_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
+    using pre_solve_type = std::function<void( vector_ptrtype, vector_ptrtype )>;
+    using post_solve_type = std::function<void( vector_ptrtype, vector_ptrtype )>;
 
-    class NLSolveData : public boost::tuple<bool,size_type,value_type>
+    class NLSolveData : public boost::tuple<bool, size_type, value_type>
     {
-        typedef boost::tuple<bool,size_type,value_type> super_type;
-    public:
+        typedef boost::tuple<bool, size_type, value_type> super_type;
+
+      public:
         NLSolveData() {}
         // rvalue: move constructor (fast)
-        NLSolveData( super_type && i )
-            :
-            super_type( i )
-        {}
+        NLSolveData( super_type&& i )
+            : super_type( i )
+        {
+        }
         // copie
         NLSolveData( super_type const& i )
-            :
-            super_type( i )
-        {}
+            : super_type( i )
+        {
+        }
         bool isConverged() const { return this->template get<0>(); }
         size_type nIterations() const { return this->template get<1>(); }
         value_type residual() const { return this->template get<2>(); }
@@ -142,7 +150,7 @@ public:
     // return type of solve()
     typedef NLSolveData solve_return_type;
     using SolveData = NLSolveData;
-    
+
     //@}
 
     /** @name Constructors, destructor
@@ -157,13 +165,12 @@ public:
     /**
      * copy constructor
      */
-    SolverNonLinear( SolverNonLinear const & );
+    SolverNonLinear( SolverNonLinear const& );
 
     /**
      * Destructor.
      */
     virtual ~SolverNonLinear();
-
 
     /**
      * Builds a \p NonlinearSolver using the nonlinear solver package specified by
@@ -185,15 +192,13 @@ public:
     /**
      * Initialize data structures if not done so already.
      */
-    virtual void init () = 0;
-
+    virtual void init() = 0;
 
     //@}
 
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -211,7 +216,7 @@ public:
      * @returns true if the data structures are
      * initialized, false otherwise.
      */
-    bool initialized () const
+    bool initialized() const
     {
         return M_is_initialized;
     }
@@ -219,7 +224,7 @@ public:
     /**
      * Release all memory and clear data structures.
      */
-    virtual void clear () {}
+    virtual void clear() {}
 
     /**
      * \return the preconditioner matrix structure
@@ -265,8 +270,7 @@ public:
     /**
      * \return the prefix
      */
-    std::string const& prefix() const{ return M_prefix; }
-
+    std::string const& prefix() const { return M_prefix; }
 
     //@}
 
@@ -283,31 +287,30 @@ public:
      * \return the preconditioner matrix structure
      * it may not be relevant to all non linear solvers
      */
-    virtual void setPrecMatrixStructure( MatrixStructure mstruct  )
+    virtual void setPrecMatrixStructure( MatrixStructure mstruct )
     {
         // warning : in boths cases!
         if ( M_preconditioner )
-            M_preconditioner->setPrecMatrixStructure(mstruct);
+            M_preconditioner->setPrecMatrixStructure( mstruct );
 
         M_prec_matrix_structure = mstruct;
     }
-
 
     /**
      * Select type of non linear solver : LINEAR_SEARCH, TRUST_REGION, ...
      */
     void setType( SolverNonLinearType snl_type )
     {
-        M_snl_type=snl_type;
+        M_snl_type = snl_type;
     }
     void setType( std::string const& snl_type )
     {
-        M_snl_type=snesTypeConvertStrToEnum(snl_type);
+        M_snl_type = snesTypeConvertStrToEnum( snl_type );
     }
     /**
      * Returns the type of solver to use.
      */
-    SolverNonLinearType nlSolverType () const
+    SolverNonLinearType nlSolverType() const
     {
         return M_snl_type;
     }
@@ -315,7 +318,7 @@ public:
     /**
      * Sets the type of solver to use.
      */
-    void setKspSolverType ( const SolverType st )
+    void setKspSolverType( const SolverType st )
     {
         M_kspSolver_type = st;
     }
@@ -323,7 +326,7 @@ public:
     /**
      * Returns the type of solver to use.
      */
-    SolverType kspSolverType () const
+    SolverType kspSolverType() const
     {
         return M_kspSolver_type;
     }
@@ -331,7 +334,7 @@ public:
     /**
      * Returns the type of preconditioner to use.
      */
-    PreconditionerType preconditionerType () const
+    PreconditionerType preconditionerType() const
     {
         if ( M_preconditioner )
             return M_preconditioner->type();
@@ -342,7 +345,7 @@ public:
     /**
      * Sets the type of preconditioner to use.
      */
-    void setPreconditionerType ( const PreconditionerType pct )
+    void setPreconditionerType( const PreconditionerType pct )
     {
         if ( M_preconditioner )
             M_preconditioner->setType( pct );
@@ -358,18 +361,18 @@ public:
     {
         if ( this->M_is_initialized )
         {
-            std::cerr<<"Preconditioner must be attached before the solver is initialized!"<<std::endl;
+            std::cerr << "Preconditioner must be attached before the solver is initialized!" << std::endl;
         }
 
         M_preconditioner_type = SHELL_PRECOND;
         M_preconditioner = preconditioner;
     }
 
-    void attachNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    void attachNullSpace( boost::shared_ptr<NullSpace<value_type>> const& ns )
     {
         M_nullSpace = ns;
     }
-    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type>> const& ns )
     {
         M_nearNullSpace = ns;
     }
@@ -377,19 +380,17 @@ public:
     /**
      * Sets the type of preconditioner to use.
      */
-    void setMatSolverPackageType ( const MatSolverPackageType mspackt )
+    void setMatSolverPackageType( const MatSolverPackageType mspackt )
     {
         M_matSolverPackage_type = mspackt;
     }
     /**
      * Returns the type of preconditioner to use.
      */
-    MatSolverPackageType matSolverPackageType () const
+    MatSolverPackageType matSolverPackageType() const
     {
         return M_matSolverPackage_type;
     }
-
-
 
     /**
      * set reuse jacobian and/or preconditioner
@@ -400,10 +401,10 @@ public:
      * when jac >= n, prec=-1 (rebuilt once at each new nonlinear iteration)
      * when jac >= n, prec=-1 (rebuilt once at each new nonlinear iteration)
      */
-    virtual void setReuse( int jac=1, int prec=1 )
+    virtual void setReuse( int jac = 1, int prec = 1 )
     {
-        M_reuse_jac=jac;
-        M_reuse_prec=prec;
+        M_reuse_jac = jac;
+        M_reuse_prec = prec;
     }
 
     /**
@@ -427,7 +428,7 @@ public:
      */
     void setNbItMax( uint n )
     {
-        M_nbItMax=n;
+        M_nbItMax = n;
     }
 
     /**
@@ -443,7 +444,7 @@ public:
     /**
      * call the pre solve function with \p x as the rhs and \p y as the solution
      */
-    void preSolve(vector_ptrtype x, vector_ptrtype y) { return M_pre_solve(x,y); }
+    void preSolve( vector_ptrtype x, vector_ptrtype y ) { return M_pre_solve( x, y ); }
 
     /**
      * \return the post solve function
@@ -454,62 +455,60 @@ public:
      * set the post solve function
      */
     void setPostSolve( post_solve_type post ) { M_post_solve = post; }
-    
+
     /**
      * call the post solve function with \p x as the rhs and \p y as the solution
      */
-    void postSolve(vector_ptrtype x, vector_ptrtype y) { return M_post_solve(x,y); }
-    
-    //@}
+    void postSolve( vector_ptrtype x, vector_ptrtype y ) { return M_post_solve( x, y ); }
 
+    //@}
 
     /**
      * show SNES monitor
      */
     bool showSNESMonitor() const { return M_showSNESMonitor; }
-    void setShowSNESMonitor(bool b) { M_showSNESMonitor=b; }
+    void setShowSNESMonitor( bool b ) { M_showSNESMonitor = b; }
 
     /**
      * show KSP monitor
      */
     bool showKSPMonitor() const { return M_showKSPMonitor; }
-    void setShowKSPMonitor(bool b) { M_showKSPMonitor=b; }
+    void setShowKSPMonitor( bool b ) { M_showKSPMonitor = b; }
 
     /**
      * show SNES converged reason
      */
     bool showSNESConvergedReason() const { return M_showSNESConvergedReason; }
-    void setShowSNESConvergedReason( bool b ) { M_showSNESConvergedReason=b; }
+    void setShowSNESConvergedReason( bool b ) { M_showSNESConvergedReason = b; }
 
     /**
      * show KSP converged reason
      */
     bool showKSPConvergedReason() const { return M_showKSPConvergedReason; }
-    void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
+    void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason = b; }
 
     bool viewSNESInfo() const { return M_viewSNESInfo; }
-    void setViewSNESInfo( bool b ) { M_viewSNESInfo=b; }
+    void setViewSNESInfo( bool b ) { M_viewSNESInfo = b; }
     /**
      * KSP relative tolerance
      */
     double rtoleranceKSP() const { return M_rtoleranceKSP; }
-    void setRtoleranceKSP( double tol ) { M_rtoleranceKSP=tol; }
+    void setRtoleranceKSP( double tol ) { M_rtoleranceKSP = tol; }
     /**
      * KSP divergence tolerance
      */
     double dtoleranceKSP() const { return M_dtoleranceKSP; }
-    void setDtoleranceKSP( double tol ) { M_dtoleranceKSP=tol; }
+    void setDtoleranceKSP( double tol ) { M_dtoleranceKSP = tol; }
     /**
      * KSP absolute tolerance
      */
     double atoleranceKSP() const { return M_atoleranceKSP; }
-    void setAtoleranceKSP( double tol ) { M_atoleranceKSP=tol; }
+    void setAtoleranceKSP( double tol ) { M_atoleranceKSP = tol; }
     /**
      * KSP maximum number of iterations
      */
     size_type maxitKSP() const { return M_maxitKSP; }
-    void setMaxitKSP( size_type n) { M_maxitKSP=n; }
-
+    void setMaxitKSP( size_type n ) { M_maxitKSP = n; }
 
     /** @name  Methods
      */
@@ -518,29 +517,29 @@ public:
     /**
      * Solves a sparse nonlinear system.
      */
-    virtual solve_return_type solve ( sparse_matrix_ptrtype&,  // System Jacobian Matrix
-            vector_ptrtype&, // Solution vector
-            vector_ptrtype&, // Residual vector
-            const double,      // Stopping tolerance
-            const unsigned int ) = 0; // N. Iterations
+    virtual solve_return_type solve( sparse_matrix_ptrtype&,   // System Jacobian Matrix
+                                     vector_ptrtype&,          // Solution vector
+                                     vector_ptrtype&,          // Residual vector
+                                     const double,             // Stopping tolerance
+                                     const unsigned int ) = 0; // N. Iterations
 
     /**
      * Solves a dense nonlinear system.
      */
-    virtual std::pair<unsigned int, real_type> solve ( dense_matrix_type&,  // System Jacobian Matrix
-            dense_vector_type&, // Solution vector
-            dense_vector_type&, // Residual vector
-            const double,      // Stopping tolerance
-            const unsigned int ) = 0; // N. Iterations
+    virtual std::pair<unsigned int, real_type> solve( dense_matrix_type&,       // System Jacobian Matrix
+                                                      dense_vector_type&,       // Solution vector
+                                                      dense_vector_type&,       // Residual vector
+                                                      const double,             // Stopping tolerance
+                                                      const unsigned int ) = 0; // N. Iterations
 
     /**
      * Solves a dense nonlinear system ( using eigen).
      */
-    virtual std::pair<unsigned int, real_type> solve ( map_dense_matrix_type&,  // System Jacobian Matrix
-            map_dense_vector_type&, // Solution vector
-            map_dense_vector_type&, // Residual vector
-            const double,      // Stopping tolerance
-            const unsigned int ) = 0; // N. Iterations
+    virtual std::pair<unsigned int, real_type> solve( map_dense_matrix_type&,   // System Jacobian Matrix
+                                                      map_dense_vector_type&,   // Solution vector
+                                                      map_dense_vector_type&,   // Residual vector
+                                                      const double,             // Stopping tolerance
+                                                      const unsigned int ) = 0; // N. Iterations
 
     /**
      * Function that computes the residual \p R(X) of the nonlinear system
@@ -604,10 +603,7 @@ public:
 
     //@}
 
-
-
-protected:
-
+  protected:
     std::string M_prefix;
 
     WorldComm M_worldComm;
@@ -618,7 +614,6 @@ protected:
     bool M_is_initialized;
 
     MatrixStructure M_prec_matrix_structure;
-
 
     /**
      * Define the type of non linear solver
@@ -643,7 +638,7 @@ protected:
     /**
      * Null Space and Near Null Space
      */
-    boost::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
+    boost::shared_ptr<NullSpace<value_type>> M_nullSpace, M_nearNullSpace;
 
     /**
      * Enum the software that is used to perform the factorization
@@ -706,7 +701,6 @@ protected:
      * post solve function
      */
     post_solve_type M_post_solve;
-
 };
 
 #if !defined( FEELPP_INSTANTIATE_SOLVERNONLINEAR )

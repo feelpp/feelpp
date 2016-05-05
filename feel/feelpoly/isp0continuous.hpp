@@ -26,16 +26,16 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-04
 */
-#if !defined(FEELPP_IS_P0_CONTINUOUS_HPP)
+#if !defined( FEELPP_IS_P0_CONTINUOUS_HPP )
 #define FEELPP_IS_P0_CONTINUOUS_HPP 1
 
 namespace Feel
 {
-template<typename PSet>
+template <typename PSet>
 struct isP0Continuous
 {
-    static constexpr bool result = mpl::and_< boost::is_same<mpl::int_<PSet::nOrder>,mpl::int_<0> >,
-                                              boost::is_same<typename PSet::continuity_type, Continuous > >::type::value;
+    static constexpr bool result = mpl::and_<boost::is_same<mpl::int_<PSet::nOrder>, mpl::int_<0>>,
+                                             boost::is_same<typename PSet::continuity_type, Continuous>>::type::value;
 };
 }
 

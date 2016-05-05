@@ -31,24 +31,24 @@
 #include <sstream>
 
 #include <feel/feelconfig.h>
-#include <feel/feelinfo.h>
 #include <feel/feelcore/info.hpp>
+#include <feel/feelinfo.h>
 
-#define stringize2(x) #x
-#define stringize(x) stringize2(x)
+#define stringize2( x ) #x
+#define stringize( x ) stringize2( x )
 
 namespace Feel
 {
 char const*
 Info::buildId()
 {
-    return stringize(FEELPP_BUILDID);
+    return stringize( FEELPP_BUILDID );
 }
 
 char const*
 Info::revision()
 {
-    return stringize(FEELPP_REVISION);
+    return stringize( FEELPP_REVISION );
 }
 
 unsigned long long
@@ -78,7 +78,7 @@ Info::versionMicro()
 char const*
 Info::versionString()
 {
-    return stringize( FEELPP_VERSION_MAJOR ) "." stringize( FEELPP_VERSION_MINOR ) "." stringize( FEELPP_VERSION_MICRO )  stringize(FEELPP_VERSION_PRERELEASE) stringize(FEELPP_VERSION_METADATA) stringize(FEELPP_BUILDID);
+    return stringize( FEELPP_VERSION_MAJOR ) "." stringize( FEELPP_VERSION_MINOR ) "." stringize( FEELPP_VERSION_MICRO ) stringize( FEELPP_VERSION_PRERELEASE ) stringize( FEELPP_VERSION_METADATA ) stringize( FEELPP_BUILDID );
 }
 
 char const*
@@ -92,5 +92,4 @@ Info::datadir()
 {
     return stringize( FEELPP_DATADIR );
 }
-
 }

@@ -37,11 +37,12 @@ namespace Feel
 namespace FeelModels
 {
 
-template<class SpaceType>
+template <class SpaceType>
 class DensityViscosityModel : public DynamicViscosityModel<SpaceType>
 {
     typedef DensityViscosityModel<SpaceType> self_type;
-public :
+
+  public:
     typedef SpaceType space_type;
     typedef boost::shared_ptr<SpaceType> space_ptrtype;
     typedef typename SpaceType::element_type element_type;
@@ -51,110 +52,107 @@ public :
     typedef DynamicViscosityModel<space_type> super_type;
 
     DensityViscosityModel( std::string prefix )
-        :
-        super_type( prefix )
-        {
-            M_cstDensity[self_type::defaultMaterialName()] = doption(_name="rho",_prefix=prefix);
-            M_cstCinematicViscosity[self_type::defaultMaterialName()] = this->cstMu()/this->cstDensity();
-        }
-    DensityViscosityModel( DensityViscosityModel const& app  ) = default;
+        : super_type( prefix )
+    {
+        M_cstDensity[self_type::defaultMaterialName()] = doption( _name = "rho", _prefix = prefix );
+        M_cstCinematicViscosity[self_type::defaultMaterialName()] = this->cstMu() / this->cstDensity();
+    }
+    DensityViscosityModel( DensityViscosityModel const& app ) = default;
 
     void initFromMesh( mesh_ptrtype const& mesh, bool useExtendedDofTable )
     {
-        super_type::initFromMesh(mesh,useExtendedDofTable);
+        super_type::initFromMesh( mesh, useExtendedDofTable );
         M_fieldDensity = this->dynamicViscositySpace()->elementPtr( cst( this->cstDensity() ) );
         M_fieldCinematicViscosity = this->dynamicViscositySpace()->elementPtr( cst( this->cstCinematicViscosity() ) );
     }
 
     void initFromSpace( space_ptrtype const& space )
     {
-        super_type::initFromSpace(space);
+        super_type::initFromSpace( space );
         M_fieldDensity = this->dynamicViscositySpace()->elementPtr( cst( this->cstDensity() ) );
         M_fieldCinematicViscosity = this->dynamicViscositySpace()->elementPtr( cst( this->cstCinematicViscosity() ) );
     }
 
-
-    double cstRho( std::string const& marker = "" ) const { return this->cstDensity(marker); }
+    double cstRho( std::string const& marker = "" ) const { return this->cstDensity( marker ); }
     double cstDensity( std::string const& marker = "" ) const
     {
-        std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
+        std::string markerUsed = ( marker.empty() ) ? self_type::defaultMaterialName() : marker;
         auto itFindMarker = M_cstDensity.find( markerUsed );
         CHECK( itFindMarker != M_cstDensity.end() ) << "invalid marker not registered " << markerUsed;
         return itFindMarker->second;
     }
-    void setCstDensity(double d, std::string const& marker = "" )
+    void setCstDensity( double d, std::string const& marker = "" )
     {
-        std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
-        M_cstDensity[markerUsed]=d;
-        this->updateDensity( cst(d),marker);
+        std::string markerUsed = ( marker.empty() ) ? self_type::defaultMaterialName() : marker;
+        M_cstDensity[markerUsed] = d;
+        this->updateDensity( cst( d ), marker );
         this->updateCinematicViscosity( marker );
     }
     element_type const& fieldRho() const { return this->fieldDensity(); }
     element_type const& fieldDensity() const { return *M_fieldDensity; }
     element_ptrtype const& fieldDensityPtr() const { return M_fieldDensity; }
 
-    double cstNu( std::string const& marker = "" ) const { return this->cstCinematicViscosity(marker); }
+    double cstNu( std::string const& marker = "" ) const { return this->cstCinematicViscosity( marker ); }
     double cstCinematicViscosity( std::string const& marker = "" ) const
     {
-        std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
+        std::string markerUsed = ( marker.empty() ) ? self_type::defaultMaterialName() : marker;
         auto itFindMarker = M_cstCinematicViscosity.find( markerUsed );
         CHECK( itFindMarker != M_cstCinematicViscosity.end() ) << "invalid marker not registered " << markerUsed;
         return itFindMarker->second;
     }
     void setCstCinematicViscosity( double d, std::string const& marker = "" )
     {
-        std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
-        M_cstCinematicViscosity[markerUsed]=d;
-        this->updateCinematicViscosity(cst(d),marker);
+        std::string markerUsed = ( marker.empty() ) ? self_type::defaultMaterialName() : marker;
+        M_cstCinematicViscosity[markerUsed] = d;
+        this->updateCinematicViscosity( cst( d ), marker );
     }
     element_type const& fieldNu() const { return this->fieldCinematicViscosity(); }
     element_type const& fieldCinematicViscosity() const { return *M_fieldCinematicViscosity; }
     element_ptrtype const& fieldCinematicViscosityPtr() const { return M_fieldCinematicViscosity; }
 
-
     void setCstDynamicViscosity( double d, std::string const& marker = "" )
     {
-        super_type::setCstDynamicViscosity(d,marker);
-        this->updateCinematicViscosity(marker);
+        super_type::setCstDynamicViscosity( d, marker );
+        this->updateCinematicViscosity( marker );
     }
 
-    template < typename ExprT >
+    template <typename ExprT>
     void updateDensity( vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
     {
         if ( !M_fieldDensity ) return;
         if ( marker.empty() )
-            M_fieldDensity->on(_range=elements(M_fieldDensity->mesh()),_expr=__expr );
+            M_fieldDensity->on( _range = elements( M_fieldDensity->mesh() ), _expr = __expr );
         else
-            M_fieldDensity->on(_range=markedelements(M_fieldDensity->mesh(),marker),_expr=__expr );
+            M_fieldDensity->on( _range = markedelements( M_fieldDensity->mesh(), marker ), _expr = __expr );
     }
-    template < typename ExprT >
+    template <typename ExprT>
     void updateCinematicViscosity( vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
     {
         if ( !M_fieldCinematicViscosity ) return;
         if ( marker.empty() )
-            M_fieldCinematicViscosity->on(_range=elements(M_fieldCinematicViscosity->mesh()),_expr=__expr );
+            M_fieldCinematicViscosity->on( _range = elements( M_fieldCinematicViscosity->mesh() ), _expr = __expr );
         else
-            M_fieldCinematicViscosity->on(_range=markedelements(M_fieldCinematicViscosity->mesh(),marker),_expr=__expr );
+            M_fieldCinematicViscosity->on( _range = markedelements( M_fieldCinematicViscosity->mesh(), marker ), _expr = __expr );
     }
-    template < typename ExprT >
+    template <typename ExprT>
     void updateDynamicViscosity( vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
     {
-        super_type::updateDynamicViscosity(__expr,marker);
-        this->updateCinematicViscosity(marker);
+        super_type::updateDynamicViscosity( __expr, marker );
+        this->updateCinematicViscosity( marker );
     }
 
     void updateCinematicViscosity( std::string const& marker = "" )
     {
-        std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
-        M_cstCinematicViscosity[markerUsed] = this->cstMu(markerUsed)/this->cstRho(markerUsed);
+        std::string markerUsed = ( marker.empty() ) ? self_type::defaultMaterialName() : marker;
+        M_cstCinematicViscosity[markerUsed] = this->cstMu( markerUsed ) / this->cstRho( markerUsed );
         if ( M_fieldCinematicViscosity )
         {
             if ( marker.empty() )
-                M_fieldCinematicViscosity->on(_range=elements(M_fieldCinematicViscosity->mesh()),
-                                              _expr=idv(this->fieldMu())/idv(this->fieldRho()) );
+                M_fieldCinematicViscosity->on( _range = elements( M_fieldCinematicViscosity->mesh() ),
+                                               _expr = idv( this->fieldMu() ) / idv( this->fieldRho() ) );
             else
-                M_fieldCinematicViscosity->on(_range=markedelements(M_fieldCinematicViscosity->mesh(),marker),
-                                              _expr=idv(this->fieldMu())/idv(this->fieldRho()) );
+                M_fieldCinematicViscosity->on( _range = markedelements( M_fieldCinematicViscosity->mesh(), marker ),
+                                               _expr = idv( this->fieldMu() ) / idv( this->fieldRho() ) );
         }
     }
 
@@ -162,22 +160,19 @@ public :
     {
         if ( mat.empty() ) return;
         super_type::updateFromModelMaterials( mat );
-        for( auto const& m : mat )
+        for ( auto const& m : mat )
         {
             auto const& mat = m.second;
             auto const& matmarker = m.first;
-            this->setCstDensity( mat.rho(),matmarker );
+            this->setCstDensity( mat.rho(), matmarker );
         }
     }
 
-
-private :
-
-    std::map<std::string,double> M_cstDensity;// rho
-    element_ptrtype M_fieldDensity;// rho
-    std::map<std::string,double> M_cstCinematicViscosity;// nu
-    element_ptrtype M_fieldCinematicViscosity;// nu
-
+  private:
+    std::map<std::string, double> M_cstDensity;            // rho
+    element_ptrtype M_fieldDensity;                        // rho
+    std::map<std::string, double> M_cstCinematicViscosity; // nu
+    element_ptrtype M_fieldCinematicViscosity;             // nu
 };
 
 } // namespace FeelModels

@@ -24,11 +24,11 @@
 #ifndef FEELPP_FEELIO_HPP
 #define FEELPP_FEELIO_HPP 1
 
-#include <iostream>
 #include <feel/feelcore/environment.hpp>
+#include <iostream>
 
-
-namespace Feel {
+namespace Feel
+{
 
 /**
  * Output Stream that outputs only on master rank of a worldcomm
@@ -43,42 +43,42 @@ namespace Feel {
  */
 class MasterStream
 {
-public:
+  public:
     /**
      * Construct a MasterStream from a std::ostream and a WorldComm. The
      * WorldComm master rank process is in charge of outputting the data from
      * the MasterStream
      */
-    MasterStream(std::ostream& _out, boost::shared_ptr<WorldComm> _wc = Environment::worldCommPtr() )
-        :
-        out(_out),
-        wc(_wc)
-        {}
+    MasterStream( std::ostream& _out, boost::shared_ptr<WorldComm> _wc = Environment::worldCommPtr() )
+        : out( _out ),
+          wc( _wc )
+    {
+    }
 
     void attachWorldComm( boost::shared_ptr<WorldComm>& _wc )
-        {
-            wc = _wc;
-        }
+    {
+        wc = _wc;
+    }
 
     /**
      * this overload allows to output stream to the master rank process
      */
-    template<typename T>
-    const MasterStream& operator<<(const T& v) const
-        {
-            if ( wc->isMasterRank() )
-                out << v;
-            return *this;
-        }
+    template <typename T>
+    const MasterStream& operator<<( const T& v ) const
+    {
+        if ( wc->isMasterRank() )
+            out << v;
+        return *this;
+    }
     /**
      * this overload handles std::endl and std::flush and allows to honor them
      */
-    MasterStream const& operator<<(std::ostream& (*F)(std::ostream&)) const
-        {
-            if ( wc->isMasterRank() )
-                F(out);
-            return *this;
-        }
+    MasterStream const& operator<<( std::ostream& ( *F )(std::ostream&)) const
+    {
+        if ( wc->isMasterRank() )
+            F( out );
+        return *this;
+    }
 
     /**
      * provide an interface to \c str() for ostringstream
@@ -87,27 +87,25 @@ public:
      * empty string otherwise
      */
     std::string str()
-        {
-            auto* o = dynamic_cast<std::ostringstream*>( &out );
-            if ( o )
-                return o->str();
-            return std::string();
-        }
+    {
+        auto* o = dynamic_cast<std::ostringstream*>( &out );
+        if ( o )
+            return o->str();
+        return std::string();
+    }
 
     /**
      * @return the shared_ptr WorldComm
      */
     boost::shared_ptr<WorldComm> worldCommPtr() const { return wc; }
 
-protected:
+  protected:
     std::ostream& out;
     boost::shared_ptr<WorldComm> wc;
 };
 
-
 extern MasterStream cout;
 extern MasterStream cerr;
 extern MasterStream clog;
-
 }
 #endif

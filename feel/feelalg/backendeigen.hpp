@@ -35,13 +35,11 @@
 #include <boost/program_options/variables_map.hpp>
 #include <feel/feelcore/feelpetsc.hpp>
 #undef MatType
-#include <feel/feelcore/application.hpp>
-#include <feel/feelalg/vectorublas.hpp>
 #include <feel/feelalg/matrixeigendense.hpp>
 #include <feel/feelalg/matrixeigensparse.hpp>
 #include <feel/feelalg/vectoreigen.hpp>
-
-
+#include <feel/feelalg/vectorublas.hpp>
+#include <feel/feelcore/application.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
@@ -51,31 +49,30 @@ namespace Feel
 {
 namespace po = boost::program_options;
 
-
 /**
  * \class BackendEigen
  *
  * this class provides an interface to the EIGEN linear algebra library
  */
-template<typename T, int _Options = 0>
+template <typename T, int _Options = 0>
 class BackendEigen : public Backend<T>
 {
     typedef Backend<T> super;
-public:
 
+  public:
     // -- TYPEDEFS --
     typedef typename super::value_type value_type;
     typedef typename super::real_type real_type;
 
-    static const bool IsDense = (_Options == 1);
-    static const bool IsSparse = (_Options == 0);
+    static const bool IsDense = ( _Options == 1 );
+    static const bool IsSparse = ( _Options == 0 );
 
     /* matrix */
     typedef typename super::sparse_matrix_type sparse_matrix_type;
     typedef typename super::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename mpl::if_<mpl::bool_<IsDense>,
-                              mpl::identity<MatrixEigenDense<value_type> >,
-                              mpl::identity<MatrixEigenSparse<value_type> > >::type::type eigen_sparse_matrix_type;
+                              mpl::identity<MatrixEigenDense<value_type>>,
+                              mpl::identity<MatrixEigenSparse<value_type>>>::type::type eigen_sparse_matrix_type;
     typedef boost::shared_ptr<eigen_sparse_matrix_type> eigen_sparse_matrix_ptrtype;
 
     typedef typename sparse_matrix_type::graph_type graph_type;
@@ -95,18 +92,18 @@ public:
 
     // -- CONSTRUCTOR --
     BackendEigen();
-    BackendEigen( WorldComm const& worldComm=Environment::worldComm() );
+    BackendEigen( WorldComm const& worldComm = Environment::worldComm() );
     BackendEigen( po::variables_map const& vm, std::string const& prefix = "",
-                  WorldComm const& worldComm=Environment::worldComm() );
+                  WorldComm const& worldComm = Environment::worldComm() );
 
     // -- FACTORY METHODS --
     sparse_matrix_ptrtype
     newMatrix()
     {
-        auto A= boost::make_shared<eigen_sparse_matrix_type>(0,0,this->comm());
+        auto A = boost::make_shared<eigen_sparse_matrix_type>( 0, 0, this->comm() );
         return A;
     }
-    template<typename DomainSpace, typename DualImageSpace>
+    template <typename DomainSpace, typename DualImageSpace>
     static sparse_matrix_ptrtype newMatrix( boost::shared_ptr<DomainSpace> const& space1,
                                             boost::shared_ptr<DualImageSpace> const& space2,
                                             size_type matrix_properties = NON_HERMITIAN )
@@ -116,7 +113,7 @@ public:
         {
             //auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof() ) );
             //auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof(), this->comm() ) );
-            auto A= boost::make_shared<eigen_sparse_matrix_type>( space1->nDof(), space2->nDof(), space1->map()->worldComm() );
+            auto A = boost::make_shared<eigen_sparse_matrix_type>( space1->nDof(), space2->nDof(), space1->map()->worldComm() );
             A->setMatrixProperties( matrix_properties );
             return A;
         }
@@ -127,12 +124,12 @@ public:
                const size_type n,
                const size_type m_l,
                const size_type n_l,
-               const size_type nnz=30,
-               const size_type noz=10,
+               const size_type nnz = 30,
+               const size_type noz = 10,
                size_type matrix_properties = NON_HERMITIAN )
     {
         //sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n ) );
-        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n,this->comm() ) );
+        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m, n, this->comm() ) );
         mat->setMatrixProperties( matrix_properties );
         return mat;
     }
@@ -142,11 +139,11 @@ public:
                const size_type n,
                const size_type m_l,
                const size_type n_l,
-               graph_ptrtype const & graph,
+               graph_ptrtype const& graph,
                size_type matrix_properties = NON_HERMITIAN )
     {
         //sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n ) );
-        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n,this->comm() ) );
+        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m, n, this->comm() ) );
         mat->setMatrixProperties( matrix_properties );
         return mat;
     }
@@ -172,7 +169,6 @@ public:
         return A;
     }
 
-
     sparse_matrix_ptrtype
     newZeroMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2 )
     {
@@ -181,14 +177,14 @@ public:
         return A;
     }
 
-    template<typename SpaceT>
+    template <typename SpaceT>
     static vector_ptrtype newVector( boost::shared_ptr<SpaceT> const& space )
     {
         //return vector_ptrtype( new eigen_vector_type( space->nDof() ) );
         return vector_ptrtype( new eigen_vector_type( space->nDof(), space->map()->comm() ) );
     }
 
-    template<typename SpaceT>
+    template <typename SpaceT>
     static vector_ptrtype newVector( SpaceT const& space )
     {
         //return vector_ptrtype( new eigen_vector_type( space.nDof() ) );
@@ -206,7 +202,6 @@ public:
         return vector_ptrtype( new eigen_vector_type( n, this->comm() ) );
     }
 
-
     // -- LINEAR ALGEBRA INTERFACE --
     void prod( sparse_matrix_type const& A,
                vector_type const& x,
@@ -215,18 +210,18 @@ public:
         eigen_sparse_matrix_type const& _A = dynamic_cast<eigen_sparse_matrix_type const&>( A );
         eigen_vector_type const& _x = dynamic_cast<eigen_vector_type const&>( x );
         eigen_vector_type& _b = dynamic_cast<eigen_vector_type&>( b );
-        if(!transpose)
-            _b.vec() = _A.mat()*_x.vec();
+        if ( !transpose )
+            _b.vec() = _A.mat() * _x.vec();
         else
-            _b.vec() = _A.mat().adjoint()*_x.vec();
+            _b.vec() = _A.mat().adjoint() * _x.vec();
     }
 
     solve_return_type solve( sparse_matrix_type const& A,
                              vector_type& x,
                              const vector_type& b )
-        {
-            return this->solve( A, x, b, mpl::bool_<IsDense>() );
-        }
+    {
+        return this->solve( A, x, b, mpl::bool_<IsDense>() );
+    }
 
     solve_return_type solve( sparse_matrix_ptrtype const& A,
                              vector_ptrtype& x,
@@ -243,16 +238,15 @@ public:
         return this->solve( *A, *x, *b );
     }
 
-
     value_type dot( const vector_type& f,
-                   const vector_type& x ) const
+                    const vector_type& x ) const
     {
         eigen_vector_type const& _f = dynamic_cast<eigen_vector_type const&>( f );
         eigen_vector_type const& _x = dynamic_cast<eigen_vector_type const&>( x );
         return _f.vec().dot( _x.vec() );
     }
 
-private:
+  private:
     solve_return_type solve( sparse_matrix_type const& A,
                              vector_type& x,
                              const vector_type& b,
@@ -265,10 +259,9 @@ private:
 }; // class BackendEigen
 
 // -- CONSTRUCTOR --
-template<typename T, int _Options>
-BackendEigen<T,_Options>::BackendEigen( WorldComm const& _worldComm )
-    :
-    super(_worldComm)
+template <typename T, int _Options>
+BackendEigen<T, _Options>::BackendEigen( WorldComm const& _worldComm )
+    : super( _worldComm )
 {
     if ( IsSparse )
         this->M_backend = BackendType::BACKEND_EIGEN;
@@ -276,10 +269,9 @@ BackendEigen<T,_Options>::BackendEigen( WorldComm const& _worldComm )
         this->M_backend = BackendType::BACKEND_EIGEN_DENSE;
 }
 
-template<typename T, int _Options>
-BackendEigen<T,_Options>::BackendEigen( po::variables_map const& vm, std::string const& prefix, WorldComm const& _worldComm  )
-    :
-    super( vm, prefix, _worldComm )
+template <typename T, int _Options>
+BackendEigen<T, _Options>::BackendEigen( po::variables_map const& vm, std::string const& prefix, WorldComm const& _worldComm )
+    : super( vm, prefix, _worldComm )
 {
     if ( IsSparse )
         this->M_backend = BackendType::BACKEND_EIGEN;
@@ -292,36 +284,34 @@ BackendEigen<T,_Options>::BackendEigen( po::variables_map const& vm, std::string
         _prefix += "-";
 }
 
-
-
-template<typename T, int _Options>
-typename BackendEigen<T,_Options>::solve_return_type
-BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
-                                 vector_type& _x,
-                                 const vector_type& _b,
-                                 mpl::bool_<true>)
+template <typename T, int _Options>
+typename BackendEigen<T, _Options>::solve_return_type
+BackendEigen<T, _Options>::solve( sparse_matrix_type const& _A,
+                                  vector_type& _x,
+                                  const vector_type& _b,
+                                  mpl::bool_<true> )
 {
     bool reusePC = ( this->precMatrixStructure() == SAME_PRECONDITIONER );
 
     eigen_sparse_matrix_type const& A( dynamic_cast<eigen_sparse_matrix_type const&>( _A ) );
-    eigen_vector_type      & x( dynamic_cast<eigen_vector_type      &>( _x ) );
+    eigen_vector_type& x( dynamic_cast<eigen_vector_type&>( _x ) );
     eigen_vector_type const& b( dynamic_cast<eigen_vector_type const&>( _b ) );
-    x.vec() = A.mat().lu().solve(b.vec());
+    x.vec() = A.mat().lu().solve( b.vec() );
 
-    return solve_return_type( boost::make_tuple(true,1,1e-10) );
+    return solve_return_type( boost::make_tuple( true, 1, 1e-10 ) );
 } // BackendEigen::solve
 
-template<typename T, int _Options>
-typename BackendEigen<T,_Options>::solve_return_type
-BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
-                                 vector_type& _x,
-                                 const vector_type& _b,
-                                 mpl::bool_<false>)
+template <typename T, int _Options>
+typename BackendEigen<T, _Options>::solve_return_type
+BackendEigen<T, _Options>::solve( sparse_matrix_type const& _A,
+                                  vector_type& _x,
+                                  const vector_type& _b,
+                                  mpl::bool_<false> )
 {
     bool reusePC = ( this->precMatrixStructure() == SAME_PRECONDITIONER );
 
     eigen_sparse_matrix_type const& A( dynamic_cast<eigen_sparse_matrix_type const&>( _A ) );
-    eigen_vector_type      & x( dynamic_cast<eigen_vector_type      &>( _x ) );
+    eigen_vector_type& x( dynamic_cast<eigen_vector_type&>( _x ) );
     eigen_vector_type const& b( dynamic_cast<eigen_vector_type const&>( _b ) );
 
     //x.vec()=A.mat().template fullPivLu().solve(b.vec());
@@ -337,19 +327,16 @@ BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
     else
     {
         Eigen::SparseLU<typename eigen_sparse_matrix_type::matrix_type> solver;
-        solver.compute(A.mat());
-        x.vec() = solver.solve(b.vec());
+        solver.compute( A.mat() );
+        x.vec() = solver.solve( b.vec() );
     }
 
     // if(solver.info()!=Eigen::Succeeded) {
     //     // solving failed
     //     return boost::make_tuple(false,1,1e-10);;
     // }
-    return solve_return_type( boost::make_tuple(true,1,1e-10) );
+    return solve_return_type( boost::make_tuple( true, 1, 1e-10 ) );
 } // BackendEigen::solve
-
-
-
 
 po::options_description backendeigen_options( std::string const& prefix = "" );
 

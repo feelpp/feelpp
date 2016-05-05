@@ -26,30 +26,28 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_DETAIL_MESH_HPP)
+#if !defined( FEELPP_DETAIL_MESH_HPP )
 #define FEELPP_DETAIL_MESH_HPP 1
 
-namespace Feel {
+namespace Feel
+{
 
 /// \cond DETAIL
 namespace detail
 {
-template<typename Args, typename Tag=tag::mesh>
+template <typename Args, typename Tag = tag::mesh>
 struct mesh
 {
     typedef typename boost::remove_pointer<
         typename boost::remove_const<
             typename boost::remove_reference<
-                typename parameter::binding<Args, Tag>::type
-                >::type
-            >::type
-    >::type _type;
-typedef typename mpl::if_<is_shared_ptr<_type>,
-                          mpl::identity<typename _type::element_type>,
-                          mpl::identity<_type> >::type::type type;
-typedef boost::shared_ptr<type> ptrtype;
+                typename parameter::binding<Args, Tag>::type>::type>::type>::type _type;
+    typedef typename mpl::if_<is_shared_ptr<_type>,
+                              mpl::identity<typename _type::element_type>,
+                              mpl::identity<_type>>::type::type type;
+    typedef boost::shared_ptr<type> ptrtype;
 };
-
-} }
+}
+}
 
 #endif /* FEELPP_DETAIL_MESH_HPP */

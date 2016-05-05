@@ -21,11 +21,9 @@
 #ifndef __MeshHighOrder
 #define __MeshHighOrder 1
 
-
-#include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/interpolate.hpp>
+#include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelvf/vf.hpp>
-
 
 namespace Feel
 {
@@ -33,21 +31,19 @@ namespace Feel
  * \class MeshHighOrder
  * Class to handle high order meshes (only works for 2D meshes)
  */
-template< class Convex >
+template <class Convex>
 class MeshHighOrder
 {
     static const bool is_simplex = Convex::is_simplex;
     static const uint16_type Dim = Convex::nDim;
     static const uint16_type Order = Convex::nOrder;
 
-
-    typedef typename mpl::if_< mpl::bool_< is_simplex >, Simplex<Dim, 1>, Hypercube<Dim, 1> >::type convex_type;
-    typedef Mesh< convex_type > mesh_type;
+    typedef typename mpl::if_<mpl::bool_<is_simplex>, Simplex<Dim, 1>, Hypercube<Dim, 1>>::type convex_type;
+    typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-
-    typedef typename mpl::if_< mpl::bool_< is_simplex >, Simplex<2, Order>, Hypercube<2, Order> >::type new_convex_type;
-    typedef Mesh< new_convex_type > new_mesh_type;
+    typedef typename mpl::if_<mpl::bool_<is_simplex>, Simplex<2, Order>, Hypercube<2, Order>>::type new_convex_type;
+    typedef Mesh<new_convex_type> new_mesh_type;
 
     typedef boost::shared_ptr<new_mesh_type> new_mesh_ptrtype;
 
@@ -63,14 +59,13 @@ class MeshHighOrder
     typedef typename new_mesh_type::element_type new_element_type;
     typedef typename new_mesh_type::element_const_iterator new_element_const_iterator;
 
-    typedef PointSetEquiSpaced<Hypercube<1,1>, Order, double> oned_pointset_type;
+    typedef PointSetEquiSpaced<Hypercube<1, 1>, Order, double> oned_pointset_type;
     typedef PointSetEquiSpaced<convex_type, Order, double> interior_pointset_type;
 
     typedef typename oned_pointset_type::points_type node_points_type;
     typedef typename interior_pointset_type::points_type points_type;
 
-public:
-
+  public:
     typedef new_mesh_type ho_mesh_type;
 
     MeshHighOrder( mesh_ptrtype& mesh,
@@ -82,18 +77,18 @@ public:
 
     void clearMesh();
 
-    void updateP1Mesh ( mesh_ptrtype const& mesh );
+    void updateP1Mesh( mesh_ptrtype const& mesh );
 
     new_mesh_ptrtype getMesh() const;
 
-    template< typename elem_type >
+    template <typename elem_type>
     void generateMesh( std::vector<flag_type> const& flags, std::vector<elem_type> const& polyBoundary )
     {
         new_mesh->clear();
 
         //Create pointset
         oned_pointset_type pts_space;
-        node_points_type span = pts_space.pointsBySubEntity( 1,0 );
+        node_points_type span = pts_space.pointsBySubEntity( 1, 0 );
 
         // stores a boolean indicating if the vertex is in the new mesh
         std::vector<bool> vertexAdd( old_mesh->numVertices() );
@@ -102,7 +97,7 @@ public:
         std::vector<bool> edgeAdd( old_mesh->numEdges() );
 
         // connectivity map for edges
-        std::vector<uint16_type> edgesMap ( old_mesh->numEdges() );
+        std::vector<uint16_type> edgesMap( old_mesh->numEdges() );
 
         std::fill( vertexAdd.begin(), vertexAdd.end(), 0 );
         std::fill( edgeAdd.begin(), edgeAdd.end(), 0 );
@@ -112,29 +107,28 @@ public:
 
         // for in the elements
         for ( element_const_iterator elt = old_mesh->beginElement();
-                elt != old_mesh->endElement(); ++elt )
+              elt != old_mesh->endElement(); ++elt )
         {
             new_element_type new_element;
             new_element.setId( elt->id() );
             new_element.setOnBoundary( elt->isOnBoundary() );
 
-            // add vertices to mesh
-#if !defined ( NDEBUG )
-            DVLOG(2) << "Add vertices...\n";
+// add vertices to mesh
+#if !defined( NDEBUG )
+            DVLOG( 2 ) << "Add vertices...\n";
 #endif
             this->addVertices( *elt, new_element, new_mesh, vertexAdd );
 
-
-            // add edges and nodes in edges to mesh
-#if !defined ( NDEBUG )
-            DVLOG(2) << "Add edges...\n";
+// add edges and nodes in edges to mesh
+#if !defined( NDEBUG )
+            DVLOG( 2 ) << "Add edges...\n";
 #endif
 
-            for ( uint16_type i = 0; i< element_type::numEdges; ++i )
+            for ( uint16_type i = 0; i < element_type::numEdges; ++i )
             {
                 edge_type old_edge = elt->edge( i );
 
-                bool hasEdge = edgeAdd[ old_edge.id() ];
+                bool hasEdge = edgeAdd[old_edge.id()];
 
                 new_edge_type new_edge;
                 new_edge.setId( old_edge.id() );
@@ -145,7 +139,7 @@ public:
                 if ( hasEdge == 0 )
                 {
                     // add points to edge:
-                    for ( uint16_type j = 0; j<2; ++j )
+                    for ( uint16_type j = 0; j < 2; ++j )
                     {
                         uint16_type localId = j;
 
@@ -154,26 +148,25 @@ public:
 
                         else
                         {
-                            localId = 1-j;
+                            localId = 1 - j;
                             new_edge.setPoint( j, new_mesh->point( old_edge.point( localId ).id() ) );
                         }
 
-#if !defined ( NDEBUG )
-                        DVLOG(2) << "[AddPointToEdge] Point localId=" << j
-                                      << ": globalToMeshId=" << new_mesh->point( old_edge.point( localId ).id() ).id()
-                                      << "; " << new_mesh->point( old_edge.point( localId ).id() ).node();
+#if !defined( NDEBUG )
+                        DVLOG( 2 ) << "[AddPointToEdge] Point localId=" << j
+                                   << ": globalToMeshId=" << new_mesh->point( old_edge.point( localId ).id() ).id()
+                                   << "; " << new_mesh->point( old_edge.point( localId ).id() ).node();
 #endif
                     }
 
-                    edgesMap[ new_edge.id() ] = nodesCount;
+                    edgesMap[new_edge.id()] = nodesCount;
                 }
-
 
                 node_type node( Dim );
 
-                for ( uint16_type j=2; j<=Order; ++j )
+                for ( uint16_type j = 2; j <= Order; ++j )
                 {
-                    double t = span( 0,j-2 );
+                    double t = span( 0, j - 2 );
 
                     if ( swapEdge( elt->id(), i ) )
                         node = this->affineEdge( old_edge.point( 1 ).node(), old_edge.point( 0 ).node(), t );
@@ -198,10 +191,10 @@ public:
 
                         new_edge.setPoint( j, new_mesh->point( nodesCount ) );
 
-#if !defined ( NDEBUG )
-                        DVLOG(2) << "[AddPointToMesh] Point " << j
-                                      << ": id=" << new_mesh->point( nodesCount ).id()
-                                      << "; " << new_mesh->point( nodesCount ).node();
+#if !defined( NDEBUG )
+                        DVLOG( 2 ) << "[AddPointToMesh] Point " << j
+                                   << ": id=" << new_mesh->point( nodesCount ).id()
+                                   << "; " << new_mesh->point( nodesCount ).node();
 #endif
                         nodesCount++;
                     }
@@ -209,19 +202,19 @@ public:
                     else
                     {
                         if ( !swapEdge( elt->id(), i ) )
-                            new_point.setId( edgesMap[ new_edge.id() ] + j - 2 );
+                            new_point.setId( edgesMap[new_edge.id()] + j - 2 );
 
                         else
-                            new_point.setId( edgesMap[ new_edge.id() ] + Order - j );
+                            new_point.setId( edgesMap[new_edge.id()] + Order - j );
                     }
 
-                    new_element.setPoint( element_type::numVertices +  ( Order-1 )*i +j-2, new_mesh->point( new_point.id() ) );
+                    new_element.setPoint( element_type::numVertices + ( Order - 1 ) * i + j - 2, new_mesh->point( new_point.id() ) );
 
-#if !defined ( NDEBUG )
-                    DVLOG(2) << "[AddPointToElement] Add point with local id "
-                                  << element_type::numVertices + ( Order-1 )*i +j-2
-                                  << " with global id " << new_mesh->point( new_point.id() ).id()
-                                  << " to element " << new_element.id() << "\n";
+#if !defined( NDEBUG )
+                    DVLOG( 2 ) << "[AddPointToElement] Add point with local id "
+                               << element_type::numVertices + ( Order - 1 ) * i + j - 2
+                               << " with global id " << new_mesh->point( new_point.id() ).id()
+                               << " to element " << new_element.id() << "\n";
 #endif
                 }
 
@@ -229,12 +222,12 @@ public:
                 {
                     new_mesh->addFace( new_edge );
 
-                    edgeAdd[ new_edge.id() ] = 1;
+                    edgeAdd[new_edge.id()] = 1;
                 }
 
-#if !defined ( NDEBUG )
-                DVLOG(2) << "[AddToMesh] Edge of id " << new_edge.id() << " has been added\n";
-                DVLOG(2) << "\n";
+#if !defined( NDEBUG )
+                DVLOG( 2 ) << "[AddToMesh] Edge of id " << new_edge.id() << " has been added\n";
+                DVLOG( 2 ) << "\n";
 #endif
             } // end for in edges
 
@@ -248,61 +241,59 @@ public:
                 this->GordonHall( *elt, pts, flags, polyBoundary );
 
                 // add interior points given by the GordonHall transformation to element and mesh
-                for ( uint16_type i=0; i < pts.size2(); ++i )
+                for ( uint16_type i = 0; i < pts.size2(); ++i )
                 {
                     // add point to mesh
-                    node_type node ( Dim );
-                    node[0] = pts( 0,i );
-                    node[1] = pts( 1,i );
+                    node_type node( Dim );
+                    node[0] = pts( 0, i );
+                    node[1] = pts( 1, i );
 
                     point_type new_point( nodesCount, node, false );
                     new_point.marker().assign( 0 );
 
                     new_mesh->addPoint( new_point );
 
-                    new_element.setPoint( element_type::numVertices + ( Order-1 )*element_type::numEdges +i,
+                    new_element.setPoint( element_type::numVertices + ( Order - 1 ) * element_type::numEdges + i,
                                           new_mesh->point( new_point.id() ) );
 
-#if !defined ( NDEBUG )
-                    DVLOG(2) << "Added Point "
-                                  << element_type::numVertices + ( Order-1 )*element_type::numEdges +i
-                                  << ": id=" << new_mesh->point( new_point.id() ).id() << "; "
-                                  << new_mesh->point( new_point.id() ).node() << "\n";
+#if !defined( NDEBUG )
+                    DVLOG( 2 ) << "Added Point "
+                               << element_type::numVertices + ( Order - 1 ) * element_type::numEdges + i
+                               << ": id=" << new_mesh->point( new_point.id() ).id() << "; "
+                               << new_mesh->point( new_point.id() ).node() << "\n";
 #endif
 
                     nodesCount++;
                 }
-
             }
 
             new_mesh->addElement( new_element );
 
-#if !defined ( NDEBUG )
-            DVLOG(2) << "[AddToMesh] Element of id " << new_element.id() << " has been added\n";
-            DVLOG(2) << "-------------------------------------------------------\n\n";
+#if !defined( NDEBUG )
+            DVLOG( 2 ) << "[AddToMesh] Element of id " << new_element.id() << " has been added\n";
+            DVLOG( 2 ) << "-------------------------------------------------------\n\n";
 #endif
 
         } // end for in elements
 
         new_mesh->setNumVertices( old_mesh->numVertices() );
 
-#if !defined ( NDEBUG )
-        DVLOG(2) << "Number of elements in the new mesh: " << new_mesh->numElements() << "\n";
+#if !defined( NDEBUG )
+        DVLOG( 2 ) << "Number of elements in the new mesh: " << new_mesh->numElements() << "\n";
 #endif
 
         new_mesh->components().set( MESH_CHECK | MESH_RENUMBER | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
         new_mesh->updateForUse();
     }
 
-
-    template< typename elem_type >
+    template <typename elem_type>
     void GordonHall( element_type const& elt, points_type& pts,
                      std::vector<flag_type> const& flags, std::vector<elem_type> const& polyBoundary )
     {
-        points_type final_pts = 0*pts;
+        points_type final_pts = 0 * pts;
 
-        node_type node1 ( Dim );
-        node_type node2 ( Dim );
+        node_type node1( Dim );
+        node_type node2( Dim );
         ublas::vector<double> ones( ublas::scalar_vector<double>( pts.size2(), 1.0 ) );
 
         ublas::vector<double> xi( pts.size2(), 0.0 );
@@ -310,7 +301,7 @@ public:
         xi = ublas::row( pts, 0 );
         eta = ublas::row( pts, 1 );
 
-        for ( uint16_type i = 0; i< element_type::numEdges; ++i )
+        for ( uint16_type i = 0; i < element_type::numEdges; ++i )
         {
             std::vector<flag_type>::const_iterator result;
             result = find( flags.begin(), flags.end(), elt.edge( i ).marker().value() );
@@ -321,7 +312,7 @@ public:
             node2 = elt.edge( i ).point( 1 ).node();
 
             if ( this->swapEdge( elt.id(), i ) )
-                std::swap( node1,node2 );
+                std::swap( node1, node2 );
 
             bool isAffine = ( result == flags.end() );
 
@@ -333,30 +324,28 @@ public:
         pts = final_pts;
     }
 
-
-private:
-
+  private:
     mesh_ptrtype old_mesh;
 
     new_mesh_ptrtype new_mesh;
 
     std::string strategy;
 
-    std::map< size_type, std::map< size_type, bool > > M_swap_edges;
+    std::map<size_type, std::map<size_type, bool>> M_swap_edges;
 
     // affine transformation from [-1,1] to the edge defined by node1 and node2
     node_type affineEdge( node_type const& node1, node_type const& node2, double const& x ) const;
 
-    void createSwapEdgesMap ( mpl::bool_<true>  );
+    void createSwapEdgesMap( mpl::bool_<true> );
 
-    void createSwapEdgesMap ( mpl::bool_<false>  );
+    void createSwapEdgesMap( mpl::bool_<false> );
 
     void updatePts( ublas::vector<double> const& x, points_type const& pts, points_type& final_pts ) const;
 
     void addVertices( element_type const& elt, new_element_type& new_element,
                       new_mesh_ptrtype& new_mesh, std::vector<bool>& vertexAdd ) const;
 
-    bool swapEdge ( size_type eltId, size_type edgeId );
+    bool swapEdge( size_type eltId, size_type edgeId );
 
 #if 0
     template< typename elem_type >
@@ -414,13 +403,7 @@ private:
 
 #endif
 
-
-
-
-
-
-
-    template< typename elem_type >
+    template <typename elem_type>
     void shiftCoordinates( node_type& node,
                            node_type const& node0,
                            node_type const& node1,
@@ -447,13 +430,14 @@ private:
             if ( strategy == "axis" )
             {
 
-#if !defined ( NDEBUG )
-                DVLOG(2) << "Point (" << node[0] << "," << node[1]
-                              << ") moves to (" << node[0] << "," << p( pt )( 0,0,0 )
-                              << ")" << "\n";
+#if !defined( NDEBUG )
+                DVLOG( 2 ) << "Point (" << node[0] << "," << node[1]
+                           << ") moves to (" << node[0] << "," << p( pt )( 0, 0, 0 )
+                           << ")"
+                           << "\n";
 #endif
 
-                node[1] = p( pt )( 0,0,0 );
+                node[1] = p( pt )( 0, 0, 0 );
             }
 
             else
@@ -476,28 +460,28 @@ private:
                     double n1 = node1[0];
 
                     if ( n0 > n1 )
-                        std::swap( n0,n1 );
+                        std::swap( n0, n1 );
 
-                    DVLOG(2) << "Initial interval: [" << n0 << "," << n1 << "]\n";
-                    std::pair<double, double> interval = std::make_pair( n0,n1 );
+                    DVLOG( 2 ) << "Initial interval: [" << n0 << "," << n1 << "]\n";
+                    std::pair<double, double> interval = std::make_pair( n0, n1 );
 
-                    double m = ( node1[1] - node0[1] )/( node1[0] - node0[0] );
-                    DVLOG(2) << "Slope: " << m << "\n";
+                    double m = ( node1[1] - node0[1] ) / ( node1[0] - node0[0] );
+                    DVLOG( 2 ) << "Slope: " << m << "\n";
 
                     double error = 1;
                     uint16_type iter = 0;
 
-                    while ( error > 1e-14 && iter<100  )
+                    while ( error > 1e-14 && iter < 100 )
                     {
-                        double midpoint = ( interval.first+interval.second )/2;
+                        double midpoint = ( interval.first + interval.second ) / 2;
 
                         pt[0] = midpoint;
-                        double feval = p( pt )( 0,0,0 ) - node[1] + ( 1/m )*( pt[0] - node[0] );
+                        double feval = p( pt )( 0, 0, 0 ) - node[1] + ( 1 / m ) * ( pt[0] - node[0] );
 
                         pt[0] = interval.first;
-                        double feval0 = p( pt )( 0,0,0 ) - node[1] + ( 1/m )*( pt[0] - node[0] );
+                        double feval0 = p( pt )( 0, 0, 0 ) - node[1] + ( 1 / m ) * ( pt[0] - node[0] );
 
-                        if ( feval*feval0 > 0 )
+                        if ( feval * feval0 > 0 )
                             interval.first = midpoint;
 
                         else
@@ -505,27 +489,26 @@ private:
 
                         error = math::abs( feval );
 
-                        DVLOG(2) << "Abs(residual) = " << error << "\n";
+                        DVLOG( 2 ) << "Abs(residual) = " << error << "\n";
 
                         ++iter;
                     }
 
-                    DVLOG(2) << "Finished in " << iter << " iterations...\n";
+                    DVLOG( 2 ) << "Finished in " << iter << " iterations...\n";
 
-                    DVLOG(2) << "Point (" << node[0] << "," << node[1]
-                                  << ") moves to (" << pt[0] << "," << p( pt )( 0,0,0 )
-                                  << ")" << "\n";
+                    DVLOG( 2 ) << "Point (" << node[0] << "," << node[1]
+                               << ") moves to (" << pt[0] << "," << p( pt )( 0, 0, 0 )
+                               << ")"
+                               << "\n";
 
-                    node[1] = p( pt )( 0,0,0 );
+                    node[1] = p( pt )( 0, 0, 0 );
                     node[0] = pt[0];
-
                 }
             }
         }
     }
 
-
-    template< typename elem_type >
+    template <typename elem_type>
     void deformEdge( node_type const& node1, node_type const& node2,
                      elem_type const& p, ublas::vector<double> const& x,
                      points_type& pts, bool const& isAffine = 1 ) const
@@ -534,8 +517,8 @@ private:
         {
             ublas::vector<double> one( ublas::scalar_vector<double>( x.size(), 1.0 ) );
 
-            ublas::row( pts, 0 ) = 0.5*( node1[0]*( one - x ) + node2[0]*( one+x ) );
-            ublas::row( pts, 1 ) = 0.5*( node1[1]*( one - x ) + node2[1]*( one+x ) );
+            ublas::row( pts, 0 ) = 0.5 * ( node1[0] * ( one - x ) + node2[0] * ( one + x ) );
+            ublas::row( pts, 1 ) = 0.5 * ( node1[1] * ( one - x ) + node2[1] * ( one + x ) );
         }
 
         else
@@ -548,14 +531,14 @@ private:
 
             for ( uint16_type i = 0; i < x.size(); i++ )
             {
-                pt[0] = 0.5*( ( b-a )*x( i ) + b+a );
-                pts( 0,i ) = pt[0];
-                pts( 1,i ) = p( pt )( 0,0,0 );
+                pt[0] = 0.5 * ( ( b - a ) * x( i ) + b + a );
+                pts( 0, i ) = pt[0];
+                pts( 1, i ) = p( pt )( 0, 0, 0 );
             }
         }
     }
 
-    template< typename elem_type >
+    template <typename elem_type>
     void applyDeformation( uint16_type i, node_type const& node1, node_type const& node2,
                            ublas::vector<double> const& xi, ublas::vector<double> const& eta,
                            ublas::vector<double> const& ones,
@@ -572,43 +555,41 @@ private:
             deformEdge( node1, node2, p, -xi, nodes3, isAffine );
 
             // calculates ( 1 + 0.5*(\xi+\eta) )*nodes3
-            updatePts( ones + 0.5*( xi+eta ), nodes3, final_pts );
+            updatePts( ones + 0.5 * ( xi + eta ), nodes3, final_pts );
 
-            deformEdge( node1, node2, p, -( ones+xi+eta ), nodes3, isAffine );
-            updatePts( - 0.5*( ones + xi ), nodes3, final_pts );
+            deformEdge( node1, node2, p, -( ones + xi + eta ), nodes3, isAffine );
+            updatePts( -0.5 * ( ones + xi ), nodes3, final_pts );
             break;
         }
 
         case 1:
         {
             deformEdge( node1, node2, p, -eta, nodes3, isAffine );
-            updatePts( 0.5*( ones-xi ), nodes3, final_pts );
+            updatePts( 0.5 * ( ones - xi ), nodes3, final_pts );
 
             deformEdge( node1, node2, p, xi, nodes3, isAffine );
-            updatePts( - 0.5*( ones + eta ), nodes3, final_pts );
+            updatePts( -0.5 * ( ones + eta ), nodes3, final_pts );
 
             deformEdge( node1, node2, p, ones, nodes3, isAffine );
-            updatePts( 0.5*( eta+xi ), nodes3, final_pts );
+            updatePts( 0.5 * ( eta + xi ), nodes3, final_pts );
             break;
         }
 
         default:
         {
             deformEdge( node1, node2, p, xi, nodes3, isAffine );
-            updatePts( 0.5*( ones-eta ), nodes3, final_pts );
+            updatePts( 0.5 * ( ones - eta ), nodes3, final_pts );
 
             deformEdge( node1, node2, p, -eta, nodes3, isAffine );
-            updatePts( - 0.5*( ones + xi ), nodes3, final_pts );
+            updatePts( -0.5 * ( ones + xi ), nodes3, final_pts );
 
             deformEdge( node1, node2, p, ones, nodes3, isAffine );
-            updatePts( 0.5*( ones+xi ), nodes3, final_pts );
+            updatePts( 0.5 * ( ones + xi ), nodes3, final_pts );
         }
         }
     }
 
-
-
-    template< typename elem_type >
+    template <typename elem_type>
     void applyDeformation( uint16_type i, node_type const& node1, node_type const& node2,
                            ublas::vector<double> const& xi, ublas::vector<double> const& eta,
                            ublas::vector<double> const& ones,
@@ -625,13 +606,13 @@ private:
             deformEdge( node1, node2, p, xi, nodes3, isAffine );
 
             // calculates ( 0.5*(1-eta) )*nodes3
-            updatePts( 0.5*( ones-eta ), nodes3, final_pts );
+            updatePts( 0.5 * ( ones - eta ), nodes3, final_pts );
 
             // calculates nodes3 = \pi_0 ( 1 )
             deformEdge( node1, node2, p, ones, nodes3, isAffine );
 
             // calculates ( -0.25*( (1+xi)*(1-eta)) )*nodes3
-            updatePts( -0.25*ublas::element_prod( ones+xi, ones - eta ), nodes3, final_pts );
+            updatePts( -0.25 * ublas::element_prod( ones + xi, ones - eta ), nodes3, final_pts );
         }
 
         case 1:
@@ -640,13 +621,13 @@ private:
             deformEdge( node1, node2, p, eta, nodes3, isAffine );
 
             // calculates ( 0.5*(1+xi) )*nodes3
-            updatePts( 0.5*( ones+xi ), nodes3, final_pts );
+            updatePts( 0.5 * ( ones + xi ), nodes3, final_pts );
 
             // calculates nodes3 = \pi_1 ( 1 )
             deformEdge( node1, node2, p, ones, nodes3, isAffine );
 
             // calculates ( -0.25*( (1+xi)*(1+eta)) )*nodes3
-            updatePts( -0.25*ublas::element_prod( ones+xi, ones + eta ), nodes3, final_pts );
+            updatePts( -0.25 * ublas::element_prod( ones + xi, ones + eta ), nodes3, final_pts );
         }
 
         case 2:
@@ -655,13 +636,13 @@ private:
             deformEdge( node1, node2, p, -xi, nodes3, isAffine );
 
             // calculates ( 0.5*(1+eta) )*nodes3
-            updatePts( 0.5*( ones+eta ), nodes3, final_pts );
+            updatePts( 0.5 * ( ones + eta ), nodes3, final_pts );
 
             // calculates nodes3 = \pi_2 ( 1 )
             deformEdge( node1, node2, p, ones, nodes3, isAffine );
 
             // calculates ( -0.25*( (1-xi)*(1+eta)) )*nodes3
-            updatePts( -0.25*ublas::element_prod( ones-xi, ones + eta ), nodes3, final_pts );
+            updatePts( -0.25 * ublas::element_prod( ones - xi, ones + eta ), nodes3, final_pts );
         }
 
         default:
@@ -670,22 +651,21 @@ private:
             deformEdge( node1, node2, p, -eta, nodes3, isAffine );
 
             // calculates ( 0.5*(1-xi) )*nodes3
-            updatePts( 0.5*( ones-xi ), nodes3, final_pts );
+            updatePts( 0.5 * ( ones - xi ), nodes3, final_pts );
 
             // calculates nodes3 = \pi_3 ( 1 )
             deformEdge( node1, node2, p, ones, nodes3, isAffine );
 
             // calculates ( -0.25*( (1-xi)*(1-eta)) )*nodes3
-            updatePts( -0.25*ublas::element_prod( ones-xi, ones - eta ), nodes3, final_pts );
+            updatePts( -0.25 * ublas::element_prod( ones - xi, ones - eta ), nodes3, final_pts );
         }
         }
     }
-
 };
 }
 
-#if !defined(FEELPP_INSTANTIATION_MODE)
-# include <feel/feeldiscr/meshhighorderimpl.hpp>
+#if !defined( FEELPP_INSTANTIATION_MODE )
+#include <feel/feeldiscr/meshhighorderimpl.hpp>
 #endif //
 
 #endif // __MeshHighOrder

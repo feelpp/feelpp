@@ -26,9 +26,8 @@
 
 #include <feel/feelcore/feel.hpp>
 
-
-namespace Feel {
-
+namespace Feel
+{
 
 /**
  * This utility class provides a convenient implementation for
@@ -38,57 +37,47 @@ namespace Feel {
 template <class IndexType>
 class CSRGraphMetis
 {
-public:
+  public:
     std::vector<IndexType> offsets, vals;
 
-    void prepareNumberNonZeros(const dof_id_type row,
-                               const dof_id_type n_nonzeros_in)
-        {
-            CHECK( row+1 < offsets.size() ) << "Invalid row id " << row+1 << " greater than offset size " << offsets.size();
-            offsets[row+1] = n_nonzeros_in;
-        }
-
-
+    void prepareNumberNonZeros( const dof_id_type row,
+                                const dof_id_type n_nonzeros_in )
+    {
+        CHECK( row + 1 < offsets.size() ) << "Invalid row id " << row + 1 << " greater than offset size " << offsets.size();
+        offsets[row + 1] = n_nonzeros_in;
+    }
 
     dof_id_type
-    numberNonZero (const dof_id_type row) const
-        {
-            CHECK( row+1 < offsets.size() ) << "Invalid row id " << row+1 << " greater than offset size " << offsets.size();
-            return (offsets[row+1] - offsets[row]);
-        }
-
+    numberNonZero( const dof_id_type row ) const
+    {
+        CHECK( row + 1 < offsets.size() ) << "Invalid row id " << row + 1 << " greater than offset size " << offsets.size();
+        return ( offsets[row + 1] - offsets[row] );
+    }
 
     void prepareForUse()
-        {
-            std::partial_sum (offsets.begin(), offsets.end(), offsets.begin());
+    {
+        std::partial_sum( offsets.begin(), offsets.end(), offsets.begin() );
 
-            CHECK( !offsets.empty() ) << "Invalid offsets in CSR Graph for Metis";
+        CHECK( !offsets.empty() ) << "Invalid offsets in CSR Graph for Metis";
 
-            vals.resize(offsets.back());
+        vals.resize( offsets.back() );
 
-            if (vals.empty())
-                vals.push_back(0);
-        }
-
-
+        if ( vals.empty() )
+            vals.push_back( 0 );
+    }
 
     IndexType& operator()( const dof_id_type row, const dof_id_type nonzero )
-        {
-            CHECK( vals.size() > offsets[row]+nonzero ) << "Invalid row and associated offset " << row << " (offset:" << offsets[row] << ")";
+    {
+        CHECK( vals.size() > offsets[row] + nonzero ) << "Invalid row and associated offset " << row << " (offset:" << offsets[row] << ")";
 
-            return vals[offsets[row]+nonzero];
-        }
+        return vals[offsets[row] + nonzero];
+    }
 
-
-
-    const IndexType& operator()(const dof_id_type row, const dof_id_type nonzero) const
-        {
-            CHECK( vals.size() > offsets[row]+nonzero ) << "Invalid row and associated offset " << row << " (offset:" << offsets[row] << ")";
-            return vals[offsets[row]+nonzero];
-        }
-
+    const IndexType& operator()( const dof_id_type row, const dof_id_type nonzero ) const
+    {
+        CHECK( vals.size() > offsets[row] + nonzero ) << "Invalid row and associated offset " << row << " (offset:" << offsets[row] << ")";
+        return vals[offsets[row] + nonzero];
+    }
 };
-
-
 }
 #endif

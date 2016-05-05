@@ -33,16 +33,16 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 
-
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelpoly/policy.hpp>
 
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
 
-template<typename, template<uint16_type> class PolySetType > class PolynomialSet;
+template <typename, template <uint16_type> class PolySetType>
+class PolynomialSet;
 
 /**
  * \class Polynomial
@@ -61,13 +61,12 @@ template<typename, template<uint16_type> class PolySetType > class PolynomialSet
  * @author Christophe Prud'homme
  * @see
  */
-template<typename Poly,
-         template<uint16_type> class PolySetType = Scalar,
-         typename Container =  typename Poly::basis_type::matrix_type>
+template <typename Poly,
+          template <uint16_type> class PolySetType = Scalar,
+          typename Container = typename Poly::basis_type::matrix_type>
 class Polynomial
 {
-public:
-
+  public:
     /** @name Constants
      */
     //@{
@@ -77,7 +76,6 @@ public:
 
     //@}
 
-
     /** @name Typedefs
      */
     //@{
@@ -85,8 +83,6 @@ public:
     typedef Polynomial<Poly, PolySetType> self_type;
     typedef typename Poly::value_type value_type;
     typedef typename Poly::basis_type basis_type;
-
-
 
     typedef PolySetType<nDim> polyset_type;
     static const bool is_tensor2 = polyset_type::is_tensor2;
@@ -97,7 +93,7 @@ public:
     static const uint16_type nComponents2 = polyset_type::nComponents2;
 
     typedef typename GetComponent<polyset_type>::type component_type;
-    typedef Polynomial<Poly,Scalar> scalar_component_type;
+    typedef Polynomial<Poly, Scalar> scalar_component_type;
 
     typedef typename basis_type::points_type points_type;
     typedef typename basis_type::matrix_type matrix_type;
@@ -118,21 +114,18 @@ public:
      * default constructor
      */
     Polynomial()
-        :
-        M_basis(),
-        M_coeff( M_basis.coeff() )
+        : M_basis(),
+          M_coeff( M_basis.coeff() )
     {
     }
-
 
     /**
      * constructor giving only the underlying basis
      * \param __poly polynomial whose we take the basis
      */
     Polynomial( Poly const& __poly )
-        :
-        M_basis( __poly.basis() ),
-        M_coeff( M_basis.coeff() )
+        : M_basis( __poly.basis() ),
+          M_coeff( M_basis.coeff() )
     {
     }
 
@@ -144,9 +137,8 @@ public:
      * \param __coeff coefficients of the polynomial in the basis
      */
     Polynomial( Poly const& __poly, container_type const& __coeff, bool __as_is = false )
-        :
-        M_basis( __poly.basis() ),
-        M_coeff( M_basis.coeff() )
+        : M_basis( __poly.basis() ),
+          M_coeff( M_basis.coeff() )
     {
         setCoefficient( __coeff, __as_is );
     }
@@ -158,9 +150,8 @@ public:
      * \param __coeff coefficients of the polynomial in the basis
      */
     Polynomial( container_type const& __coeff, bool __as_is = false )
-        :
-        M_basis(),
-        M_coeff( M_basis.coeff() )
+        : M_basis(),
+          M_coeff( M_basis.coeff() )
     {
         setCoefficient( __coeff, __as_is );
     }
@@ -172,23 +163,23 @@ public:
      * \param __poly polynomial whose we take the basis
      * \param __coeff coefficients of the polynomial in the basis
      */
-    template<class AE>
+    template <class AE>
     Polynomial( Poly const& __poly, ublas::matrix_expression<AE> const& __coeff, bool __as_is = false )
-        :
-        M_basis( __poly.basis() ),
-        M_coeff( M_basis.coeff() )
+        : M_basis( __poly.basis() ),
+          M_coeff( M_basis.coeff() )
     {
         setCoefficient( __coeff, __as_is );
     }
 
-    Polynomial( Polynomial const & p )
-        :
-        M_basis( p.M_basis ),
-        M_coeff( p.M_coeff )
-    {}
+    Polynomial( Polynomial const& p )
+        : M_basis( p.M_basis ),
+          M_coeff( p.M_coeff )
+    {
+    }
 
     ~Polynomial()
-    {}
+    {
+    }
 
     //@}
 
@@ -224,7 +215,6 @@ public:
         return *this;
     }
 
-
     /**
      * \brief extract the i-th component of a vectorial polynomial
      *
@@ -234,8 +224,8 @@ public:
     {
         const int ncols = M_coeff.size2();
         return component_type( Poly(), ublas::project( M_coeff,
-                               ublas::slice( nComponents*i+i, 1, 1  ),
-                               ublas::slice( 0, 1, ncols ) ) );
+                                                       ublas::slice( nComponents * i + i, 1, 1 ),
+                                                       ublas::slice( 0, 1, ncols ) ) );
     }
 
     /**
@@ -267,14 +257,12 @@ public:
      */
     //@{
 
-
     /**
      * \return \c true if the polynomial set is zero, \c false otherwise
      */
     bool isZero() const
     {
         return ublas::norm_2( M_coeff ) < Feel::type_traits<value_type>::epsilon();
-
     }
     /**
      * \return the dof
@@ -323,7 +311,6 @@ public:
             M_coeff = __c;
     }
 
-
     //@}
 
     /** @name  Methods
@@ -353,7 +340,7 @@ public:
         return ublas::prod( M_coeff, M_basis( __pts ) );
     }
 
-    template<typename AE>
+    template <typename AE>
     matrix_type derivate( uint16_type i, ublas::matrix_expression<AE> const& pts ) const
     {
         ublas::vector<matrix_type> der( M_basis.derivate( pts ) );
@@ -362,7 +349,7 @@ public:
         return res;
     }
 
-    template<typename AE>
+    template <typename AE>
     matrix_type derivate( uint16_type i, uint16_type j, ublas::matrix_expression<AE> const& pts ) const
     {
         //std::cout << "[derivate2] M_coeff = " << M_coeff << "\n";
@@ -373,7 +360,6 @@ public:
         matrix_type p2 = ublas::prod( p1, M_basis.d( j ) );
         return ublas::prod( p2, eval );
     }
-
 
     /**
      * \brief differentiation matrix of Dubiner polynomials
@@ -402,9 +388,9 @@ public:
      *
      * \return a \p PolynomialSet
      */
-    PolynomialSet<Poly,PolySetType> toSet( bool asis = false ) const
+    PolynomialSet<Poly, PolySetType> toSet( bool asis = false ) const
     {
-        return PolynomialSet<Poly,PolySetType>( Poly(), M_coeff, asis );
+        return PolynomialSet<Poly, PolySetType>( Poly(), M_coeff, asis );
     }
 #if 0
     Polynomial<Poly, PolySetType> operator-( Polynomial<Poly, PolySetType> const& p ) const
@@ -416,25 +402,24 @@ public:
 #endif
     //@}
 
-
-protected:
-
-private:
-
+  protected:
+  private:
     basis_type M_basis;
     container_type M_coeff;
 };
-template<typename Poly, template<uint16_type> class PolySetType>
-Polynomial<Poly, PolySetType> operator-( Polynomial<Poly, PolySetType> const& p1,Polynomial<Poly, PolySetType> const& p2 )
+template <typename Poly, template <uint16_type> class PolySetType>
+Polynomial<Poly, PolySetType> operator-( Polynomial<Poly, PolySetType> const& p1, Polynomial<Poly, PolySetType> const& p2 )
 {
-    auto c = p1.coeff()-p2.coeff();
+    auto c = p1.coeff() - p2.coeff();
     //std::cout << "operator- c=" << c << "\n";
     return Polynomial<Poly, PolySetType>( Poly(), c );
 }
 
-template<typename Poly,template<uint16_type> class PolySetType, typename Container> const bool Polynomial<Poly,PolySetType,Container>::is_scalar;
-template<typename Poly,template<uint16_type> class PolySetType, typename Container> const bool Polynomial<Poly,PolySetType, Container>::is_vectorial;
-template<typename Poly,template<uint16_type> class PolySetType, typename Container> const bool Polynomial<Poly,PolySetType, Container>::is_tensor2;
-
+template <typename Poly, template <uint16_type> class PolySetType, typename Container>
+const bool Polynomial<Poly, PolySetType, Container>::is_scalar;
+template <typename Poly, template <uint16_type> class PolySetType, typename Container>
+const bool Polynomial<Poly, PolySetType, Container>::is_vectorial;
+template <typename Poly, template <uint16_type> class PolySetType, typename Container>
+const bool Polynomial<Poly, PolySetType, Container>::is_tensor2;
 }
 #endif /* __Polynomial_H */

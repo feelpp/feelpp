@@ -26,16 +26,16 @@
 
 #include <feel/feelpartition/partitioner.hpp>
 
-
-namespace Feel {
+namespace Feel
+{
 
 /**
  * @brief Metis partitioner
  */
-template<typename MeshType>
+template <typename MeshType>
 class PartitionerMetis : public Partitioner<MeshType>
 {
-public:
+  public:
     using super = Partitioner<MeshType>;
     using mesh_type = typename super::mesh_type;
     using mesh_ptrtype = typename super::mesh_ptrtype;
@@ -44,30 +44,30 @@ public:
     /**
      * Constructor.
      */
-    PartitionerMetis () {}
+    PartitionerMetis() {}
 
     /**
      * Creates a new partitioner of this type 
      */
-    virtual clone_ptrtype clone () const override
-        {
-            return std::make_unique<PartitionerMetis<mesh_type>>();
-        }
+    virtual clone_ptrtype clone() const override
+    {
+        return std::make_unique<PartitionerMetis<mesh_type>>();
+    }
 
-    void attachWeights( std::vector<double> const& weights) override
-        { this->M_weights = weights; }
+    void attachWeights( std::vector<double> const& weights ) override
+    {
+        this->M_weights = weights;
+    }
 
-protected:
+  protected:
     /**
      * Partition the \p MeshBase into \p n subdomains.
      */
-    void partitionImpl ( mesh_ptrtype mesh, rank_type n ) override;
+    void partitionImpl( mesh_ptrtype mesh, rank_type n ) override;
 };
-
 
 } // Feel
 
 #include <feel/feelpartition/partitionermetis_impl.hpp>
-
 
 #endif

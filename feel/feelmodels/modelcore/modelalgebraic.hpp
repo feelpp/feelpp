@@ -35,7 +35,6 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 
-
 namespace Feel
 {
 namespace FeelModels
@@ -43,7 +42,7 @@ namespace FeelModels
 
 class ModelAlgebraic : public ModelBase
 {
-public :
+  public:
     typedef ModelBase super_type;
 
     typedef double value_type;
@@ -61,22 +60,22 @@ public :
 
     class DataUpdateLinear
     {
-    public:
+      public:
         DataUpdateLinear( const vector_ptrtype& currentSolution,
                           sparse_matrix_ptrtype matrix, vector_ptrtype rhs,
                           bool buildCstPart,
                           sparse_matrix_ptrtype matrixExtended, bool buildExtendedPart )
-            :
-            M_matrix( matrix ),
-            M_rhs( rhs ),
-            M_currentSolution( currentSolution ),
-            M_buildCstPart( buildCstPart ),
-            M_matrixExtended( matrixExtended ),
-            M_buildExtendedPart( buildExtendedPart ),
-            M_doBCStrongDirichlet( true )
-            {}
-        DataUpdateLinear(DataUpdateLinear const& d) = default;
-        DataUpdateLinear(DataUpdateLinear && d) = default;
+            : M_matrix( matrix ),
+              M_rhs( rhs ),
+              M_currentSolution( currentSolution ),
+              M_buildCstPart( buildCstPart ),
+              M_matrixExtended( matrixExtended ),
+              M_buildExtendedPart( buildExtendedPart ),
+              M_doBCStrongDirichlet( true )
+        {
+        }
+        DataUpdateLinear( DataUpdateLinear const& d ) = default;
+        DataUpdateLinear( DataUpdateLinear&& d ) = default;
 
         sparse_matrix_ptrtype& matrix() { return M_matrix; }
         vector_ptrtype& rhs() { return M_rhs; }
@@ -87,9 +86,9 @@ public :
         bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
 
         void setBuildCstPart( bool b ) { M_buildCstPart = b; }
-        void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
+        void setDoBCStrongDirichlet( bool b ) { M_doBCStrongDirichlet = b; }
 
-    private :
+      private:
         sparse_matrix_ptrtype M_matrix;
         vector_ptrtype M_rhs;
         const vector_ptrtype& M_currentSolution;
@@ -102,18 +101,18 @@ public :
 
     class DataUpdateResidual
     {
-    public:
+      public:
         DataUpdateResidual( const vector_ptrtype& currentSolution, vector_ptrtype residual,
                             bool buildCstPart, bool useJacobianLinearTerms )
-            :
-            M_residual( residual ),
-            M_currentSolution( currentSolution ),
-            M_buildCstPart( buildCstPart ),
-            M_useJacobianLinearTerms( useJacobianLinearTerms ),
-            M_doBCStrongDirichlet( true )
-            {}
+            : M_residual( residual ),
+              M_currentSolution( currentSolution ),
+              M_buildCstPart( buildCstPart ),
+              M_useJacobianLinearTerms( useJacobianLinearTerms ),
+              M_doBCStrongDirichlet( true )
+        {
+        }
         DataUpdateResidual( DataUpdateResidual const& d ) = default;
-        DataUpdateResidual( DataUpdateResidual && d ) = default;
+        DataUpdateResidual( DataUpdateResidual&& d ) = default;
 
         vector_ptrtype& residual() { return M_residual; }
         vector_ptrtype const& currentSolution() { return M_currentSolution; }
@@ -122,9 +121,9 @@ public :
         bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
 
         void setBuildCstPart( bool b ) { M_buildCstPart = b; }
-        void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
+        void setDoBCStrongDirichlet( bool b ) { M_doBCStrongDirichlet = b; }
 
-    private :
+      private:
         vector_ptrtype M_residual;
         const vector_ptrtype& M_currentSolution;
         bool M_buildCstPart;
@@ -134,22 +133,22 @@ public :
 
     class DataUpdateJacobian
     {
-    public:
+      public:
         DataUpdateJacobian( const vector_ptrtype& currentSolution, sparse_matrix_ptrtype jacobian,
                             vector_ptrtype vectorUsedInStrongDirichlet, bool buildCstPart,
                             sparse_matrix_ptrtype matrixExtended, bool buildExtendedPart )
-            :
-            M_jacobian( jacobian ),
-            M_vectorUsedInStrongDirichlet( vectorUsedInStrongDirichlet ),
-            M_currentSolution( currentSolution ),
-            M_buildCstPart( buildCstPart ),
-            M_matrixExtended( matrixExtended ),
-            M_buildExtendedPart( buildExtendedPart ),
-            M_doBCStrongDirichlet( true )
-            {}
+            : M_jacobian( jacobian ),
+              M_vectorUsedInStrongDirichlet( vectorUsedInStrongDirichlet ),
+              M_currentSolution( currentSolution ),
+              M_buildCstPart( buildCstPart ),
+              M_matrixExtended( matrixExtended ),
+              M_buildExtendedPart( buildExtendedPart ),
+              M_doBCStrongDirichlet( true )
+        {
+        }
 
-        DataUpdateJacobian( DataUpdateJacobian const& d) = default;
-        DataUpdateJacobian( DataUpdateJacobian && d) = default;
+        DataUpdateJacobian( DataUpdateJacobian const& d ) = default;
+        DataUpdateJacobian( DataUpdateJacobian&& d ) = default;
 
         sparse_matrix_ptrtype& jacobian() { return M_jacobian; }
         vector_ptrtype& vectorUsedInStrongDirichlet() { return M_vectorUsedInStrongDirichlet; }
@@ -161,9 +160,9 @@ public :
         bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
 
         void setBuildCstPart( bool b ) { M_buildCstPart = b; }
-        void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
+        void setDoBCStrongDirichlet( bool b ) { M_doBCStrongDirichlet = b; }
 
-    private :
+      private:
         sparse_matrix_ptrtype M_jacobian;
         vector_ptrtype M_vectorUsedInStrongDirichlet;
         const vector_ptrtype& M_currentSolution;
@@ -173,46 +172,44 @@ public :
         bool M_doBCStrongDirichlet;
     };
 
-
     ModelAlgebraic( std::string _theprefix,
-                    WorldComm const& _worldComm=Environment::worldComm(),
-                    std::string const& subPrefix="",
+                    WorldComm const& _worldComm = Environment::worldComm(),
+                    std::string const& subPrefix = "",
                     std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
     ModelAlgebraic( ModelAlgebraic const& app ) = default;
 
     virtual ~ModelAlgebraic();
 
-
     // verbose
     bool verboseSolverTimer() const;
     bool verboseSolverTimerAllProc() const;
     // do rebuild cst part in linear/jacobian or use jac for residual
     bool rebuildCstPartInLinearSystem() const;
-    void setRebuildCstPartInLinearSystem(bool b);
+    void setRebuildCstPartInLinearSystem( bool b );
     bool useLinearJacobianInResidual() const;
-    void setUseLinearJacobianInResidual(bool b);
+    void setUseLinearJacobianInResidual( bool b );
     bool rebuildLinearPartInJacobian() const;
-    void setRebuildLinearPartInJacobian(bool b);
+    void setRebuildLinearPartInJacobian( bool b );
     // a utiliser avec precaution!!!
     bool rebuildCstPartInResidual() const;
-    void setRebuildCstPartInResidual(bool b);
+    void setRebuildCstPartInResidual( bool b );
     // define an other matrix/vector to store the cst part
     bool useCstMatrix() const;
-    void setUseCstMatrix(bool b);
+    void setUseCstMatrix( bool b );
     bool useCstVector() const;
-    void setUseCstVector(bool b);
+    void setUseCstVector( bool b );
     // allow to rebuild cst part (once at next solve) if some parameters (model,time mode,..) change
     bool needToRebuildCstPart() const;
-    void setNeedToRebuildCstPart(bool b);
+    void setNeedToRebuildCstPart( bool b );
     // an option
     bool errorIfSolverNotConverged() const;
     void setErrorIfSolverNotConverged( bool b );
     // save a python script to view graph
     bool printGraph() const;
-    void setPrintGraph(bool b);
+    void setPrintGraph( bool b );
     std::string printGraphFileName() const;
-    void setPrintGraphFileName(std::string s);
+    void setPrintGraphFileName( std::string s );
 
     //----------------------------------------------------------------------------------//
     /**
@@ -227,12 +224,11 @@ public :
 
     bool buildMatrixPrecond() const;
 
-    virtual
-    void
-    updatePreconditioner(const vector_ptrtype& X,
-                         sparse_matrix_ptrtype& A,
-                         sparse_matrix_ptrtype& A_extended,
-                         sparse_matrix_ptrtype& Prec) const;
+    virtual void
+    updatePreconditioner( const vector_ptrtype& X,
+                          sparse_matrix_ptrtype& A,
+                          sparse_matrix_ptrtype& A_extended,
+                          sparse_matrix_ptrtype& Prec ) const;
 
     virtual void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
 
@@ -241,23 +237,23 @@ public :
     //----------------------------------------------------------------------------------//
 
     virtual void updateNewtonInitialGuess( vector_ptrtype& U ) const;
-    virtual void updateJacobian( DataUpdateJacobian & data ) const;
-    virtual void updateResidual( DataUpdateResidual & data ) const;
-    virtual void updateLinearPDE( DataUpdateLinear & data ) const;
-    virtual void updatePicard( DataUpdateLinear & data ) const;
+    virtual void updateJacobian( DataUpdateJacobian& data ) const;
+    virtual void updateResidual( DataUpdateResidual& data ) const;
+    virtual void updateLinearPDE( DataUpdateLinear& data ) const;
+    virtual void updatePicard( DataUpdateLinear& data ) const;
     virtual double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
 
     //----------------------------------------------------------------------------------//
 
-private :
+  private:
     // verbose
-    bool M_verboseSolverTimer,M_verboseSolverTimerAllProc;
+    bool M_verboseSolverTimer, M_verboseSolverTimerAllProc;
 
     bool M_rebuildCstPartInLinearSystem;
     bool M_useLinearJacobianInResidual;
     bool M_rebuildLinearPartInJacobian;
     bool M_rebuildCstPartInResidual;
-    bool M_useCstMatrix,M_useCstVector;
+    bool M_useCstMatrix, M_useCstVector;
     bool M_needToRebuildCstPart;
 
     bool M_errorIfSolverNotConverged;
@@ -266,9 +262,7 @@ private :
     std::string M_printGraphFileName;
 };
 
-
 } // namespace FeelModels
 } // namespace feel
-
 
 #endif // FEELPP_MODELALGEBRAIC_HPP

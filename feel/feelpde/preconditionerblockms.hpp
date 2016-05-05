@@ -37,20 +37,21 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 
 #include <feel/feelalg/backend.hpp>
+#include <feel/feelalg/backendpetsc.hpp>
 #include <feel/feelalg/operator.hpp>
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
-#include <feel/feelalg/backendpetsc.hpp>
 
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 
 namespace Feel
 {
-template< typename space_type >
-    class PreconditionerBlockMS : public Preconditioner<typename space_type::value_type>
+template <typename space_type>
+class PreconditionerBlockMS : public Preconditioner<typename space_type::value_type>
 {
     typedef Preconditioner<typename space_type::value_type> super;
-public:
+
+  public:
     static const uint16_type Dim = space_type::nDim;
     typedef typename space_type::value_type value_type;
 
@@ -62,7 +63,7 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef typename space_type::indexsplit_ptrtype  indexsplit_ptrtype;
+    typedef typename space_type::indexsplit_ptrtype indexsplit_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
     typedef typename space_type::element_type element_type;
@@ -72,8 +73,8 @@ public:
     typedef typename boost::shared_ptr<lagrange_space_type> lagrange_space_ptrtype;
 
     // Qh3
-    typedef Lagrange<1,Vectorial> lag_v_type;
-    typedef FunctionSpace<mesh_type, bases< lag_v_type >> lag_v_space_type;
+    typedef Lagrange<1, Vectorial> lag_v_type;
+    typedef FunctionSpace<mesh_type, bases<lag_v_type>> lag_v_space_type;
     typedef boost::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
 
     // Potential
@@ -105,20 +106,20 @@ public:
                            ModelProperties model,
                            std::string const& s,
                            sparse_matrix_ptrtype A,
-                           value_type relax=1);
+                           value_type relax = 1 );
 
     void init( void );
     void initAMS( void );
 
-    void apply( const vector_type & X, vector_type & Y ) const
+    void apply( const vector_type& X, vector_type& Y ) const
     {
-        this->applyInverse(X,Y);
+        this->applyInverse( X, Y );
     }
 
-    int applyInverse ( const vector_type& X, vector_type& Y ) const;
+    int applyInverse( const vector_type& X, vector_type& Y ) const;
 
-    void attacheAAlpha(sparse_matrix_ptrtype _a) {M_a_alpha = _a;}
-    void attacheABeta (sparse_matrix_ptrtype _b) {M_a_beta  = _b;}
+    void attacheAAlpha( sparse_matrix_ptrtype _a ) { M_a_alpha = _a; }
+    void attacheABeta( sparse_matrix_ptrtype _b ) { M_a_beta = _b; }
     virtual ~PreconditionerBlockMS(){};
 #if 0
     void printMatSize(int i, std::ostream &os)
@@ -165,7 +166,7 @@ public:
         return M_minMaxMean.at(i).at(j);
     }
 #endif
-private:
+  private:
     backend_ptrtype M_backend;
 
 #if 0
@@ -226,70 +227,69 @@ private:
     value_type M_relax;
 };
 
-    template < typename space_type >
-PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,             // (u)x(p)
-                                                         ModelProperties model,        // model
-                                                         std::string const& p,         // prefix
-                                                         sparse_matrix_ptrtype AA, value_type relax )    // The matrix
-    :
-        M_backend(backend()),           // the backend associated to the PC
-        M_Xh( Xh ),
-        M_Vh( Xh->template functionSpace<0>() ), // Potential
-        M_Qh( Xh->template functionSpace<1>() ), // Lagrange
-        M_Vh_indices( AA->mapRow().dofIdToContainerId( 0 ) ),
-        M_Qh_indices( AA->mapRow().dofIdToContainerId( 1 ) ),
-        M_uin( M_backend->newVector( M_Vh )  ),
-        M_uout( M_backend->newVector( M_Vh )  ),
-        M_pin( M_backend->newVector( M_Qh )  ),
-        M_pout( M_backend->newVector( M_Qh )  ),
-        U( M_Xh, "U" ),
-        M_mass(M_backend->newMatrix(M_Vh,M_Vh)),
-        M_L(M_backend->newMatrix(M_Qh,M_Qh)),
-        M_er( 1. ),
-        M_model( model ),
-        M_prefix( p ),
-        M_prefix_11( p+".11" ),
-        M_prefix_22( p+".22" ),
-        u(M_Vh, "u"),
-        ozz(M_Vh, "ozz"),
-        zoz(M_Vh, "zoz"),
-        zzo(M_Vh, "zzo"),
-        M_ozz(M_backend->newVector( M_Vh )),
-        M_zoz(M_backend->newVector( M_Vh )),
-        M_zzo(M_backend->newVector( M_Vh )),
-        X(M_Qh, "X"),
-        Y(M_Qh, "Y"),
-        Z(M_Qh, "Z"),
-        M_X(M_backend->newVector( M_Qh )),
-        M_Y(M_backend->newVector( M_Qh )),
-        M_Z(M_backend->newVector( M_Qh )),
-        phi(M_Qh, "phi"),
-        M_relax(relax)
+template <typename space_type>
+PreconditionerBlockMS<space_type>::PreconditionerBlockMS( space_ptrtype Xh,                            // (u)x(p)
+                                                          ModelProperties model,                       // model
+                                                          std::string const& p,                        // prefix
+                                                          sparse_matrix_ptrtype AA, value_type relax ) // The matrix
+    : M_backend( backend() ),                                                                          // the backend associated to the PC
+      M_Xh( Xh ),
+      M_Vh( Xh->template functionSpace<0>() ), // Potential
+      M_Qh( Xh->template functionSpace<1>() ), // Lagrange
+      M_Vh_indices( AA->mapRow().dofIdToContainerId( 0 ) ),
+      M_Qh_indices( AA->mapRow().dofIdToContainerId( 1 ) ),
+      M_uin( M_backend->newVector( M_Vh ) ),
+      M_uout( M_backend->newVector( M_Vh ) ),
+      M_pin( M_backend->newVector( M_Qh ) ),
+      M_pout( M_backend->newVector( M_Qh ) ),
+      U( M_Xh, "U" ),
+      M_mass( M_backend->newMatrix( M_Vh, M_Vh ) ),
+      M_L( M_backend->newMatrix( M_Qh, M_Qh ) ),
+      M_er( 1. ),
+      M_model( model ),
+      M_prefix( p ),
+      M_prefix_11( p + ".11" ),
+      M_prefix_22( p + ".22" ),
+      u( M_Vh, "u" ),
+      ozz( M_Vh, "ozz" ),
+      zoz( M_Vh, "zoz" ),
+      zzo( M_Vh, "zzo" ),
+      M_ozz( M_backend->newVector( M_Vh ) ),
+      M_zoz( M_backend->newVector( M_Vh ) ),
+      M_zzo( M_backend->newVector( M_Vh ) ),
+      X( M_Qh, "X" ),
+      Y( M_Qh, "Y" ),
+      Z( M_Qh, "Z" ),
+      M_X( M_backend->newVector( M_Qh ) ),
+      M_Y( M_backend->newVector( M_Qh ) ),
+      M_Z( M_backend->newVector( M_Qh ) ),
+      phi( M_Qh, "phi" ),
+      M_relax( relax )
 {
     tic();
-    LOG(INFO) << "[PreconditionerBlockMS] setup starts";
+    LOG( INFO ) << "[PreconditionerBlockMS] setup starts";
     this->setMatrix( AA );
-    this->setName(M_prefix);
+    this->setName( M_prefix );
 
-    M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true, true);
+    M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true, true );
 
     /* Boundary conditions */
     BoundaryConditions M_bc = M_model.boundaryConditions();
-    map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
-    map_scalar_field<2> m_dirichlet_p { M_bc.getScalarFields<2> ( "phi", "Dirichlet" ) };
+    map_vector_field<FEELPP_DIM, 1, 2> m_dirichlet_u{M_bc.getVectorFields<FEELPP_DIM>( "u", "Dirichlet" )};
+    map_scalar_field<2> m_dirichlet_p{M_bc.getScalarFields<2>( "phi", "Dirichlet" )};
 
     /* Compute the mass matrix (needed in first block, constant) */
-    auto f2A = form2(_test=M_Vh, _trial=M_Vh, _matrix=M_mass);
-    auto f1A = form1(_test=M_Vh);
-    f2A = integrate(_range=elements(M_Vh->mesh()), _expr=inner(idt(u),id(u))); // M
-    for(auto const & it : m_dirichlet_u )
+    auto f2A = form2( _test = M_Vh, _trial = M_Vh, _matrix = M_mass );
+    auto f1A = form1( _test = M_Vh );
+    f2A = integrate( _range = elements( M_Vh->mesh() ), _expr = inner( idt( u ), id( u ) ) ); // M
+    for ( auto const& it : m_dirichlet_u )
     {
-        LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_11<<"\n";
-        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type="elimination_symmetric");
+        LOG( INFO ) << "Applying " << it.second << " on " << it.first << " for " << M_prefix_11 << "\n";
+        f2A += on( _range = markedfaces( M_Vh->mesh(), it.first ), _expr = it.second, _rhs = f1A, _element = u, _type = "elimination_symmetric" );
     }
-    
+
     /* Compute the L (= er * grad grad) matrix (the second block) */
-    auto f2L = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_L);
+    auto f2L = form2( _test = M_Qh, _trial = M_Qh, _matrix = M_L );
 #if 0
     //If you want to manage the relative permittivity materials per material,
     //here is the entry to deal with.
@@ -298,32 +298,31 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
         f2L += integrate(_range=markedelements(M_Qh->mesh(),marker(it)), _expr=M_er*inner(gradt(phi), grad(phi)));
     }
 #else
-    f2L += integrate(_range=elements(M_Qh->mesh()), _expr=M_er*inner(gradt(phi), grad(phi)));
+    f2L += integrate( _range = elements( M_Qh->mesh() ), _expr = M_er * inner( gradt( phi ), grad( phi ) ) );
 #endif
-    auto f1LQ = form1(_test=M_Qh);
+    auto f1LQ = form1( _test = M_Qh );
 
-    for(auto const & it : m_dirichlet_p)
+    for ( auto const& it : m_dirichlet_p )
     {
-        LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_22<<"\n";
-        f2L += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type="elimination_symmetric");
+        LOG( INFO ) << "Applying " << it.second << " on " << it.first << " for " << M_prefix_22 << "\n";
+        f2L += on( _range = markedfaces( M_Qh->mesh(), it.first ), _element = phi, _expr = it.second, _rhs = f1LQ, _type = "elimination_symmetric" );
     }
 
     toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
 }
 
-template < typename space_type >
-void
-PreconditionerBlockMS<space_type>::init( void )
+template <typename space_type>
+void PreconditionerBlockMS<space_type>::init( void )
 {
-    if( Environment::worldComm().isMasterRank() )
+    if ( Environment::worldComm().isMasterRank() )
         std::cout << "Init preconditioner blockms\n";
-    LOG(INFO) << "Init ...\n";
+    LOG( INFO ) << "Init ...\n";
     tic();
     BoundaryConditions M_bc = M_model.boundaryConditions();
 
-    LOG(INFO) << "Create sub Matrix\n";
-    map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
-    map_scalar_field<2> m_dirichlet_p { M_bc.getScalarFields<2> ( "phi", "Dirichlet" ) };
+    LOG( INFO ) << "Create sub Matrix\n";
+    map_vector_field<FEELPP_DIM, 1, 2> m_dirichlet_u{M_bc.getVectorFields<FEELPP_DIM>( "u", "Dirichlet" )};
+    map_scalar_field<2> m_dirichlet_p{M_bc.getScalarFields<2>( "phi", "Dirichlet" )};
 
     /*
      * AA = [[ A - k^2 M, B^t],
@@ -332,93 +331,94 @@ PreconditionerBlockMS<space_type>::init( void )
      */
     // Is the zero() necessary ?
     M_11->zero();
-    this->matrix()->updateSubMatrix(M_11, M_Vh_indices, M_Vh_indices, false); // M_11 = A-k^2 M
-    LOG(INFO) << "Use relax = " << M_relax << std::endl;
-    M_11->addMatrix(M_relax,M_mass);                            // A-k^2 M + M_relax*M = A+(M_relax-k^2) M
-    auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
-    auto f1A = form1(_test=M_Vh);
-    for(auto const & it : m_dirichlet_u )
-        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type="elimination_symmetric");
+    this->matrix()->updateSubMatrix( M_11, M_Vh_indices, M_Vh_indices, false ); // M_11 = A-k^2 M
+    LOG( INFO ) << "Use relax = " << M_relax << std::endl;
+    M_11->addMatrix( M_relax, M_mass ); // A-k^2 M + M_relax*M = A+(M_relax-k^2) M
+    auto f2A = form2( _test = M_Vh, _trial = M_Vh, _matrix = M_11 );
+    auto f1A = form1( _test = M_Vh );
+    for ( auto const& it : m_dirichlet_u )
+        f2A += on( _range = markedfaces( M_Vh->mesh(), it.first ), _expr = it.second, _rhs = f1A, _element = u, _type = "elimination_symmetric" );
 
     /* 
      * Rebuilding sub-backend
      */
-    backend(_name=M_prefix_11, _rebuild=true);
-    backend(_name=M_prefix_22, _rebuild=true);
+    backend( _name = M_prefix_11, _rebuild = true );
+    backend( _name = M_prefix_22, _rebuild = true );
     // We have to set the G, Px,Py,Pz or X,Y,Z matrices to AMS
-    if(soption(_name="pc-type", _prefix=M_prefix_11) == "ams")
+    if ( soption( _name = "pc-type", _prefix = M_prefix_11 ) == "ams" )
     {
 #if FEELPP_DIM == 3
-    initAMS();
-    {
-        if(boption(_name="setAlphaBeta",_prefix=M_prefix_11))
+        initAMS();
         {
-            auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption(M_prefix_11+".pc-type")),
-                                       _backend=backend(_name=M_prefix_11),
-                                       _prefix=M_prefix_11,
-                                       _matrix=M_11
-                                      );
-            prec->setMatrix(M_11);
-            prec->attachAuxiliarySparseMatrix("a_alpha",M_a_alpha);
-            prec->attachAuxiliarySparseMatrix("a_beta",M_a_beta);
+            if ( boption( _name = "setAlphaBeta", _prefix = M_prefix_11 ) )
+            {
+                auto prec = preconditioner( _pc = pcTypeConvertStrToEnum( soption( M_prefix_11 + ".pc-type" ) ),
+                                            _backend = backend( _name = M_prefix_11 ),
+                                            _prefix = M_prefix_11,
+                                            _matrix = M_11 );
+                prec->setMatrix( M_11 );
+                prec->attachAuxiliarySparseMatrix( "a_alpha", M_a_alpha );
+                prec->attachAuxiliarySparseMatrix( "a_beta", M_a_beta );
+            }
         }
-    }
 #else
-    std::cerr << "ams preconditioner is not interfaced in two dimensions\n";
+        std::cerr << "ams preconditioner is not interfaced in two dimensions\n";
 #endif
     }
-    toc("[PreconditionerBlockMS] Init",FLAGS_v>0);
-    LOG(INFO) << "Init done\n";
+    toc( "[PreconditionerBlockMS] Init", FLAGS_v > 0 );
+    LOG( INFO ) << "Init done\n";
 }
 
-template < typename space_type >
-void
-PreconditionerBlockMS<space_type>::initAMS( void )
+template <typename space_type>
+void PreconditionerBlockMS<space_type>::initAMS( void )
+{
+    M_grad = Grad( _domainSpace = M_Qh, _imageSpace = M_Vh );
+
+    // This preconditioner is linked to that backend : the backend will
+    // automatically use the preconditioner.
+    auto prec = preconditioner( _pc = pcTypeConvertStrToEnum( soption( M_prefix_11 + ".pc-type" ) ),
+                                _backend = backend( _name = M_prefix_11 ),
+                                _prefix = M_prefix_11,
+                                _matrix = M_11 );
+    prec->setMatrix( M_11 );
+    prec->attachAuxiliarySparseMatrix( "G", M_grad.matPtr() );
+    if ( boption( M_prefix_11 + ".useEdge" ) )
     {
-        M_grad  = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
+        LOG( INFO ) << "[ AMS ] : using SetConstantEdgeVector \n";
+        ozz.on( _range = elements( M_Vh->mesh() ), _expr = vec( cst( 1 ), cst( 0 ), cst( 0 ) ) );
+        zoz.on( _range = elements( M_Vh->mesh() ), _expr = vec( cst( 0 ), cst( 1 ), cst( 0 ) ) );
+        zzo.on( _range = elements( M_Vh->mesh() ), _expr = vec( cst( 0 ), cst( 0 ), cst( 1 ) ) );
+        *M_ozz = ozz;
+        M_ozz->close();
+        *M_zoz = zoz;
+        M_zoz->close();
+        *M_zzo = zzo;
+        M_zzo->close();
 
-        // This preconditioner is linked to that backend : the backend will
-        // automatically use the preconditioner.
-        auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption(M_prefix_11+".pc-type")),
-                                   _backend=backend(_name=M_prefix_11),
-                                   _prefix=M_prefix_11,
-                                   _matrix=M_11
-                                  );
-        prec->setMatrix(M_11);
-        prec->attachAuxiliarySparseMatrix("G",M_grad.matPtr());
-        if(boption(M_prefix_11+".useEdge"))
-        {
-            LOG(INFO) << "[ AMS ] : using SetConstantEdgeVector \n";
-            ozz.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(1),cst(0),cst(0)));
-            zoz.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(0),cst(1),cst(0)));
-            zzo.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(0),cst(0),cst(1)));
-            *M_ozz = ozz; M_ozz->close();
-            *M_zoz = zoz; M_zoz->close();
-            *M_zzo = zzo; M_zzo->close();
-
-            prec->attachAuxiliaryVector("Px",M_ozz);
-            prec->attachAuxiliaryVector("Py",M_zoz);
-            prec->attachAuxiliaryVector("Pz",M_zzo);
-        }
-        else
-        {
-            LOG(INFO) << "[ AMS ] : using SetCoordinates \n";
-            X.on(_range=elements(M_Vh->mesh()),_expr=Px());
-            Y.on(_range=elements(M_Vh->mesh()),_expr=Py());
-            Z.on(_range=elements(M_Vh->mesh()),_expr=Pz());
-            *M_X = X; M_X->close();
-            *M_Y = Y; M_Y->close();
-            *M_Z = Z; M_Z->close();
-            prec->attachAuxiliaryVector("X",M_X);
-            prec->attachAuxiliaryVector("Y",M_Y);
-            prec->attachAuxiliaryVector("Z",M_Z);
-        }
+        prec->attachAuxiliaryVector( "Px", M_ozz );
+        prec->attachAuxiliaryVector( "Py", M_zoz );
+        prec->attachAuxiliaryVector( "Pz", M_zzo );
     }
+    else
+    {
+        LOG( INFO ) << "[ AMS ] : using SetCoordinates \n";
+        X.on( _range = elements( M_Vh->mesh() ), _expr = Px() );
+        Y.on( _range = elements( M_Vh->mesh() ), _expr = Py() );
+        Z.on( _range = elements( M_Vh->mesh() ), _expr = Pz() );
+        *M_X = X;
+        M_X->close();
+        *M_Y = Y;
+        M_Y->close();
+        *M_Z = Z;
+        M_Z->close();
+        prec->attachAuxiliaryVector( "X", M_X );
+        prec->attachAuxiliaryVector( "Y", M_Y );
+        prec->attachAuxiliaryVector( "Z", M_Z );
+    }
+}
 
-
-template < typename space_type >
-int
-PreconditionerBlockMS<space_type>::applyInverse ( const vector_type& X, vector_type& Y ) const
+template <typename space_type>
+int PreconditionerBlockMS<space_type>::applyInverse( const vector_type& X, vector_type& Y ) const
 {
     tic();
     U = X;
@@ -430,51 +430,36 @@ PreconditionerBlockMS<space_type>::applyInverse ( const vector_type& X, vector_t
 
     // Solve eq (12)
     // solve here eq 15 : Pm v = c
-    backend(_name=M_prefix_11)->solve(_matrix=M_11,
-                                      _rhs=M_uin,
-                                      _solution=M_uout
-                                     ) ;
+    backend( _name = M_prefix_11 )->solve( _matrix = M_11, _rhs = M_uin, _solution = M_uout );
     M_uout->close();
 
     // solve here eq 16
-    backend(_name=M_prefix_22)->solve(_matrix=M_L,
-                                      _rhs=M_pin,
-                                      _solution=M_pout
-                                     );
+    backend( _name = M_prefix_22 )->solve( _matrix = M_L, _rhs = M_pin, _solution = M_pout );
     M_pout->close();
 
     U.template element<0>() = *M_uout;
     U.template element<1>() = *M_pout;
     U.close();
-    Y=U;
+    Y = U;
     Y.close();
-    toc("[PreconditionerBlockMS] applyInverse update solution",FLAGS_v>0);
+    toc( "[PreconditionerBlockMS] applyInverse update solution", FLAGS_v > 0 );
     return 0;
 }
 
 namespace meta
 {
-template< typename space_type >
-    struct blockms
+template <typename space_type>
+struct blockms
 {
     typedef PreconditionerBlockMS<space_type> type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 }
 BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockms<
-                                   typename parameter::value_type<Args, tag::space >::type::element_type
-                                   >::ptrtype ),
+                                     typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype ),
                                  blockms,
                                  tag,
-                                 ( required
-                                   ( space, *)
-                                   ( matrix, *)
-                                   ( model, *)
-                                 )
-                                 ( optional
-                                   ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "blockms" )
-                                 )
-                               )
+                                 ( required( space, * )( matrix, * )(model, *))( optional( prefix, *(boost::is_convertible<mpl::_, std::string>), "blockms" ) ) )
 {
     typedef typename meta::blockms<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype pblockms_t;
     typedef typename meta::blockms<typename parameter::value_type<Args, tag::space>::type::element_type>::type blockms_t;

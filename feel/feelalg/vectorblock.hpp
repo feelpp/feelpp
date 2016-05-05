@@ -30,43 +30,41 @@
 #ifndef __VectorBlock_H
 #define __VectorBlock_H 1
 
-#include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/backend.hpp>
+#include <feel/feelalg/vector.hpp>
 #include <feel/feelvf/block.hpp>
-
 
 namespace Feel
 {
 
+template <typename T>
+class Backend;
 
-template<typename T> class Backend;
-
-
-template <typename T=double>
-class BlocksBaseVector : public vf::BlocksBase<boost::shared_ptr<Vector<T> > >
+template <typename T = double>
+class BlocksBaseVector : public vf::BlocksBase<boost::shared_ptr<Vector<T>>>
 {
-public :
-    typedef vf::BlocksBase<boost::shared_ptr<Vector<T> > > super_type;
+  public:
+    typedef vf::BlocksBase<boost::shared_ptr<Vector<T>>> super_type;
     typedef BlocksBaseVector<T> self_type;
     typedef Vector<T> vector_type;
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
-    typedef boost::shared_ptr<Backend<T> > backend_ptrtype;
+    typedef boost::shared_ptr<Backend<T>> backend_ptrtype;
 
-    BlocksBaseVector(uint16_type nr = 0)
-        :
-        super_type(nr,1)
-    {}
+    BlocksBaseVector( uint16_type nr = 0 )
+        : super_type( nr, 1 )
+    {
+    }
 
-    BlocksBaseVector(self_type const & b)
-        :
-        super_type(b),
-        M_vector( b.M_vector )
-    {}
+    BlocksBaseVector( self_type const& b )
+        : super_type( b ),
+          M_vector( b.M_vector )
+    {
+    }
 
-    BlocksBaseVector(super_type const & b)
-        :
-        super_type(b)
-    {}
+    BlocksBaseVector( super_type const& b )
+        : super_type( b )
+    {
+    }
 
     /**
      * push_back methode
@@ -80,7 +78,7 @@ public :
     /**
      * copy subblock and M_vector if init from global vector
      */
-    void localize( vector_ptrtype const& vb, size_type _start_i=0 );
+    void localize( vector_ptrtype const& vb, size_type _start_i = 0 );
 
     /**
      * copy subblock from M_vector ( contained in this object )
@@ -90,39 +88,38 @@ public :
     /**
      * build vector representating all blocks
      */
-    void buildVector( backend_ptrtype _backend = Feel::backend(_rebuild=false));
+    void buildVector( backend_ptrtype _backend = Feel::backend( _rebuild = false ) );
 
     /**
      * set values of VectorBlock from subvector
      */
-    void setVector( vector_type & vec, vector_type const& subvec , int blockId ) const;
+    void setVector( vector_type& vec, vector_type const& subvec, int blockId ) const;
     /**
      * set values of subvector from global vector build with VectorBlock
      */
-    void setSubVector( vector_type & subvec, vector_type const& vec , int blockId ) const;
+    void setSubVector( vector_type& subvec, vector_type const& vec, int blockId ) const;
 
     vector_ptrtype& vector() { return M_vector; }
     vector_ptrtype const& vector() const { return M_vector; }
 
-private :
+  private:
     vector_ptrtype M_vector;
 };
 
-template <int NR, typename T=double>
+template <int NR, typename T = double>
 class BlocksVector : public BlocksBaseVector<T>
 {
-public :
+  public:
     static const uint16_type NBLOCKROWS = NR;
     static const uint16_type NBLOCKCOLS = 1;
 
     typedef BlocksBaseVector<T> super_type;
 
     BlocksVector()
-        :
-        super_type(NBLOCKROWS)
-    {}
+        : super_type( NBLOCKROWS )
+    {
+    }
 };
-
 
 /**
  * \class VectorBlock
@@ -137,12 +134,11 @@ public :
  * @author Vincent Chabannes
  */
 
-template< typename T>
+template <typename T>
 class VectorBlockBase
 {
     //typedef Vector<T> super;
-public:
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -162,18 +158,18 @@ public:
      */
     //@{
 
-    VectorBlockBase( vf::BlocksBase<vector_ptrtype > const & blockVec,
-                     backend_type &backend,
-                     bool copy_values=true );
+    VectorBlockBase( vf::BlocksBase<vector_ptrtype> const& blockVec,
+                     backend_type& backend,
+                     bool copy_values = true );
 
-
-    VectorBlockBase( VectorBlockBase const & vb )
-        :
-        M_vec( vb.M_vec )
-    {}
+    VectorBlockBase( VectorBlockBase const& vb )
+        : M_vec( vb.M_vec )
+    {
+    }
 
     ~VectorBlockBase()
-    {}
+    {
+    }
 
     //@}
 
@@ -206,53 +202,46 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-    void updateBlockVec( vector_ptrtype const & m, size_type start_i );
+    void updateBlockVec( vector_ptrtype const& m, size_type start_i );
 
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
     vector_ptrtype M_vec;
 };
 
-
-template<int NR, typename T>
+template <int NR, typename T>
 class VectorBlock : public VectorBlockBase<T>
 {
     typedef VectorBlockBase<T> super_type;
 
-public:
-
+  public:
     static const uint16_type NBLOCKROWS = NR;
 
     typedef typename super_type::value_type value_type;
     typedef typename super_type::vector_ptrtype vector_ptrtype;
     typedef typename super_type::backend_type backend_type;
-    typedef vf::Blocks<NBLOCKROWS,1,vector_ptrtype > blocks_type;
+    typedef vf::Blocks<NBLOCKROWS, 1, vector_ptrtype> blocks_type;
     typedef vf::BlocksBase<vector_ptrtype> blocksbase_type;
 
-    VectorBlock(  blocksbase_type const & blockVec,
-                  backend_type &backend,
-                  bool copy_values=true )
-        :
-        super_type( blockVec,backend,copy_values )
-    {}
+    VectorBlock( blocksbase_type const& blockVec,
+                 backend_type& backend,
+                 bool copy_values = true )
+        : super_type( blockVec, backend, copy_values )
+    {
+    }
 
-    VectorBlock( VectorBlock const & vb )
-        :
-        super_type( vb )
-    {}
+    VectorBlock( VectorBlock const& vb )
+        : super_type( vb )
+    {
+    }
 
     VectorBlock operator=( VectorBlock const& vb )
     {
@@ -260,14 +249,13 @@ public:
         return *this;
     }
 
-    VectorBlock & operator = ( vector_ptrtype const& F )
+    VectorBlock& operator=( vector_ptrtype const& F )
     {
         super_type::operator=( F );
         return *this;
     }
 
 }; // VectorBlock
-
 
 } // Feel
 

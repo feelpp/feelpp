@@ -27,34 +27,26 @@
 #include <functional>
 
 #include <feel/feelpartition/partitioner.hpp>
-#include <feel/feelpartition/partitionermetis.hpp>
 #include <feel/feelpartition/partitionerlinear.hpp>
+#include <feel/feelpartition/partitionermetis.hpp>
 
+namespace Feel
+{
 
-
-namespace Feel {
-
-
-
-template<typename MeshType>
-std::map<std::string, std::unique_ptr<Partitioner<MeshType> > > 
+template <typename MeshType>
+std::map<std::string, std::unique_ptr<Partitioner<MeshType>>>
 registerPartitioner()
 {
-    typedef std::function< Partitioner<MeshType>*() > factory_partitioner;
-    typedef boost::function< std::unique_ptr<Partitioner<MeshType>>() > a_factory;
+    typedef std::function<Partitioner<MeshType>*()> factory_partitioner;
+    typedef boost::function<std::unique_ptr<Partitioner<MeshType>>()> a_factory;
 
-    std::map<std::string, std::unique_ptr<Partitioner<MeshType> > > m;
-    
+    std::map<std::string, std::unique_ptr<Partitioner<MeshType>>> m;
+
     return m;
-    
 }
-template<typename MeshType>
+template <typename MeshType>
 void partition( std::string partitioner, boost::shared_ptr<MeshType> mesh, int n_parts )
 {
-    
-
 }
-
-
 }
 #endif

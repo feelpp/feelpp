@@ -30,19 +30,19 @@
 #ifndef __SolverNonLinearTrilinos_H
 #define __SolverNonLinearTrilinos_H 1
 
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelalg/solvernonlinear.hpp>
 #include <feel/feelalg/matrixepetra.hpp>
 #include <feel/feelalg/operatortrilinos.hpp>
+#include <feel/feelalg/solvernonlinear.hpp>
 #include <feel/feelalg/vectorepetra.hpp>
+#include <feel/feelcore/feel.hpp>
 // #include <feel/feelalg/operatortrilinos.hpp>
 
 #if defined( FEELPP_HAS_TRILINOS )
 #include "NOX.H"
-#include "NOX_Epetra_Interface_Required.H"
-#include "NOX_Epetra_Interface_Jacobian.H"
-#include "NOX_Epetra_LinearSystem_AztecOO.H"
 #include "NOX_Epetra_Group.H"
+#include "NOX_Epetra_Interface_Jacobian.H"
+#include "NOX_Epetra_Interface_Required.H"
+#include "NOX_Epetra_LinearSystem_AztecOO.H"
 
 namespace Feel
 {
@@ -55,15 +55,13 @@ namespace Feel
  *
  * @author Florent Vielfaure
  */
-template<typename T>
+template <typename T>
 class SolverNonLinearTrilinos
-    :
-public SolverNonLinear<T>
+    : public SolverNonLinear<T>
 {
     typedef SolverNonLinear<T> super;
-public:
 
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -87,8 +85,8 @@ public:
     /**
      *  Constructor. Initializes Trilinos data structures
      */
-    SolverNonLinearTrilinos( std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
-    SolverNonLinearTrilinos( SolverNonLinearTrilinos const & );
+    SolverNonLinearTrilinos( std::string const& prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    SolverNonLinearTrilinos( SolverNonLinearTrilinos const& );
 
     /**
      * Destructor.
@@ -98,14 +96,13 @@ public:
     /**
      * Initialize data structures if not done so already.
      */
-    virtual void init ();
+    virtual void init();
 
     //@}
 
     /** @name Operator overloads
      */
     //@{
-
 
     //@}
 
@@ -128,25 +125,23 @@ public:
     /**
      * Release all memory and clear data structures.
      */
-    virtual void clear ();
+    virtual void clear();
 
     /**
      * Call the Trilinos solver.  It calls the method below, using the
      * same matrix for the system and preconditioner matrices.
      */
-    virtual std::pair<int, real_type> solve ( sparse_matrix_ptrtype&,    // System Jacobian Matrix
-            vector_ptrtype&,          // Solution vector
-            vector_ptrtype&,          // Residual vector
-            const double,        // Stopping tolerance
-            const unsigned int ); // N. Iterations
+    virtual std::pair<int, real_type> solve( sparse_matrix_ptrtype&, // System Jacobian Matrix
+                                             vector_ptrtype&,        // Solution vector
+                                             vector_ptrtype&,        // Residual vector
+                                             const double,           // Stopping tolerance
+                                             const unsigned int );   // N. Iterations
 
-    virtual std::pair<unsigned int, real_type> solve ( dense_matrix_type&,    // System Jacobian Matrix
-            dense_vector_type&,          // Solution vector
-            dense_vector_type&,          // Residual vector
-            const double,        // Stopping tolerance
-            const unsigned int ); // N. Iterations
-
-
+    virtual std::pair<unsigned int, real_type> solve( dense_matrix_type&,   // System Jacobian Matrix
+                                                      dense_vector_type&,   // Solution vector
+                                                      dense_vector_type&,   // Residual vector
+                                                      const double,         // Stopping tolerance
+                                                      const unsigned int ); // N. Iterations
 
     //@}
 
@@ -158,24 +153,20 @@ public:
     //bool computePrecMatrix( const Epetra_Vector & x, Epetra_RowMatrix & M );
     //bool computePreconditioner( const Epetra_Vector & x, Epetra_Operator & O );
 
-private:
-
+  private:
 };
 
 template <typename T>
-inline
-SolverNonLinearTrilinos<T>::SolverNonLinearTrilinos ( std::string const& prefix, WorldComm const& worldComm )
-{}
-
-
+inline SolverNonLinearTrilinos<T>::SolverNonLinearTrilinos( std::string const& prefix, WorldComm const& worldComm )
+{
+}
 
 template <typename T>
-inline
-SolverNonLinearTrilinos<T>::~SolverNonLinearTrilinos ()
+inline SolverNonLinearTrilinos<T>::~SolverNonLinearTrilinos()
 {
-    this->clear ();
+    this->clear();
 }
 
 } // Feel
-#endif// FEELPP_HAS_TRILINOS_NOX
+#endif // FEELPP_HAS_TRILINOS_NOX
 #endif /* __SolverNonLinearTrilinos_H */

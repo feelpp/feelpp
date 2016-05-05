@@ -30,8 +30,8 @@
 #ifndef __DiscontinuousInterfaces_H
 #define __DiscontinuousInterfaces_H 1
 
-#include <feel/feelpoly/continuity.hpp>
 #include <feel/feeldiscr/doffromelement.hpp>
+#include <feel/feelpoly/continuity.hpp>
 
 namespace Feel
 {
@@ -42,12 +42,10 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-template<typename A0>
+template <typename A0>
 class DiscontinuousInterfaces : public Feel::detail::continuity_base
 {
-public:
-
-
+  public:
     /** @name Constants
      */
     //@{
@@ -57,9 +55,6 @@ public:
     static const bool is_discontinuous_totally = false;
 
     static const uint16_type n_discontinuities = fusion::result_of::size<A0>::type::value;
-
-
-
 
     //@}
 
@@ -76,19 +71,20 @@ public:
 
     //! default constructor
     DiscontinuousInterfaces()
-        :
-        M_d_faces()
-    {}
+        : M_d_faces()
+    {
+    }
 
     //! copy constructor
-    DiscontinuousInterfaces( DiscontinuousInterfaces const & d )
-        :
-        M_d_faces( d.M_d_faces )
-    {}
+    DiscontinuousInterfaces( DiscontinuousInterfaces const& d )
+        : M_d_faces( d.M_d_faces )
+    {
+    }
 
     //! destructor
     ~DiscontinuousInterfaces()
-    {}
+    {
+    }
 
     //@}
 
@@ -97,7 +93,7 @@ public:
     //@{
 
     //! copy operator
-    DiscontinuousInterfaces & operator=( DiscontinuousInterfaces const &  d )
+    DiscontinuousInterfaces& operator=( DiscontinuousInterfaces const& d )
     {
         if ( this != &d )
         {
@@ -118,13 +114,11 @@ public:
         return M_d_faces;
     }
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -132,41 +126,38 @@ public:
      */
     //@{
 
-
     //@}
 
-
-
-    template<typename MeshType, typename DofType>
+    template <typename MeshType, typename DofType>
     class apply
     {
-    public:
+      public:
         typedef size_type result_type;
         typedef MeshType mesh_type;
         typedef DofType dof_type;
         typedef typename dof_type::fe_type fe_type;
 
         apply( MeshType& M, DofType& D )
-            :
-            M_mesh( M ),
-            M_dof( D ),
-            M_fe( D.fe() )
-        {}
-        template<typename T>
+            : M_mesh( M ),
+              M_dof( D ),
+              M_fe( D.fe() )
+        {
+        }
+        template <typename T>
 #if BOOST_VERSION < 104200
         result_type operator()( const T& t, const size_type& start )
 #else
         result_type operator()( const size_type& start, const T& t )
 #endif
         {
-            boost::tuple<size_type,size_type,size_type> disc = boost::make_tuple( mpl::at<T,mpl::int_<0> >::type::value,
-                    mpl::at<T,mpl::int_<1> >::type::value,
-                    mpl::at<T,mpl::int_<2> >::type::value );
+            boost::tuple<size_type, size_type, size_type> disc = boost::make_tuple( mpl::at<T, mpl::int_<0>>::type::value,
+                                                                                    mpl::at<T, mpl::int_<1>>::type::value,
+                                                                                    mpl::at<T, mpl::int_<2>>::type::value );
 
             return build( disc, start );
         }
-    private:
 
+      private:
         // -loop on faces marked as discontinuous
         //    - verify that the face is connected to two elements
         //    - for each element associated to the face
@@ -176,7 +167,7 @@ public:
         //          map_gdof must be updated to ensure that these will _never_ be revisited (don't use insertDof)
         //    - return the next_free_dof
         size_type
-        build( boost::tuple<size_type,size_type,size_type> const& marker, size_type start )
+        build( boost::tuple<size_type, size_type, size_type> const& marker, size_type start )
         {
             size_type next_free_dof = start;
             size_type n_dof = 0;
@@ -188,8 +179,8 @@ public:
             element_const_iterator fit, fen;
             //boost::tie( fit, fen ) = M_mesh.elementsWithMarker( boost::get<1>( marker ), M_mesh.rank() );
             boost::tie( fit, fen ) = M_mesh.elementsRange();
-            DVLOG(2) << "[DiscontinuousInterfaces::build] n_elements = " << std::distance( fit, fen )
-                          << " with marker " << boost::get<1>( marker ) << "\n";
+            DVLOG( 2 ) << "[DiscontinuousInterfaces::build] n_elements = " << std::distance( fit, fen )
+                       << " with marker " << boost::get<1>( marker ) << "\n";
 #if 0
 
             while ( fit != fen )
@@ -230,14 +221,14 @@ public:
 #else
             boost::tie( fit, fen ) = M_mesh.elementsRange();
 
-            DofFromElement<dof_type,fe_type> dfe( &M_dof, M_fe );
+            DofFromElement<dof_type, fe_type> dfe( &M_dof, M_fe );
             while ( fit != fen )
             {
-                if ( fit->marker().value() == ( int )boost::get<1>( marker ) )
+                if ( fit->marker().value() == (int)boost::get<1>( marker ) )
                 {
 
                     //M_dof.addDofFromElement( *fit, next_free_dof, 0 );
-                    dfe.add( *fit, next_free_dof, M_dof.worldComm().localRank()  );
+                    dfe.add( *fit, next_free_dof, M_dof.worldComm().localRank() );
                 }
 
                 ++fit;
@@ -247,12 +238,12 @@ public:
             //n_dof = next_free_dof-start;
             n_dof = next_free_dof;
 
-            DVLOG(2) << "[DiscontinuousInterfaces::build] n_dof = " << n_dof << "\n";
+            DVLOG( 2 ) << "[DiscontinuousInterfaces::build] n_dof = " << n_dof << "\n";
 
             //boost::tie( fit, fen ) = M_mesh.elementsWithMarker( boost::get<2>( marker ), M_mesh.rank() );
             boost::tie( fit, fen ) = M_mesh.elementsRange();
-            DVLOG(2) << "[DiscontinuousInterfaces::build] n_elements = " << std::distance( fit, fen )
-                          << " with marker " << boost::get<2>( marker ) << "\n";
+            DVLOG( 2 ) << "[DiscontinuousInterfaces::build] n_elements = " << std::distance( fit, fen )
+                       << " with marker " << boost::get<2>( marker ) << "\n";
 #if 0
 
             while ( fit != fen )
@@ -303,7 +294,7 @@ public:
                 if ( fit->marker().value() == boost::get<2>( marker ) )
                 {
                     //M_dof.addDofFromElement( *fit, next_free_dof );
-                    dfe.add( *fit, next_free_dof, M_dof.worldComm().localRank()  );
+                    dfe.add( *fit, next_free_dof, M_dof.worldComm().localRank() );
                 }
 
                 ++fit;
@@ -332,19 +323,18 @@ public:
                 M_dof.mapGDof().insert( *it );
             }
 
-            DVLOG(2) << "size dictionnary = " << M_dof.mapGDof().size() << " next_free_dof = " << next_free_dof+n_dof << "\n";
+            DVLOG( 2 ) << "size dictionnary = " << M_dof.mapGDof().size() << " next_free_dof = " << next_free_dof + n_dof << "\n";
 #endif
 #endif
 
             return next_free_dof;
         }
-        template<typename element_type, typename face_type>
+        template <typename element_type, typename face_type>
         void
         addVertexDof( element_type const& elt, face_type const& face, size_type& next_free_dof, size_type shift, mpl::bool_<false> )
         {
-
         }
-        template<typename element_type, typename face_type>
+        template <typename element_type, typename face_type>
         void
         addVertexDof( element_type const& elt, face_type const& face, size_type& next_free_dof, size_type shift, mpl::bool_<true> )
         {
@@ -362,7 +352,8 @@ public:
                 uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
                 Feel::detail::ignore_unused_variable_warning( iVeEl );
 
-                FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
+                FEELPP_ASSERT( iVeEl != invalid_uint16_type_value )
+                    .error( "invalid local dof" );
 
                 // Loop number of Dof per vertex
                 for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
@@ -370,40 +361,40 @@ public:
                     uint16_type lid = iVeEl * fe_type::nDofPerVertex + l;
                     const size_type gDof = ( elt.point( iVeEl ).id() ) * fe_type::nDofPerVertex + l;
 
-                    DVLOG(2) << "add vertex discontinuous dof " << next_free_dof << " in element " << elt.id() << " lid = " << lid << "\n";
+                    DVLOG( 2 ) << "add vertex discontinuous dof " << next_free_dof << " in element " << elt.id() << " lid = " << lid << "\n";
                     bool inserted = M_dof.insertDof( elt.id(), lid, iVeEl, boost::make_tuple( 0, 0, gDof ), 0, next_free_dof, 1, false, shift );
 
                     if ( shift )
                     {
-                        FEELPP_ASSERT( inserted == false )( elt.id() )
-                        ( lid )( gDof )( next_free_dof ).error( "should have inserted unique dof" );
+                        FEELPP_ASSERT( inserted == false )
+                        ( elt.id() )( lid )( gDof )( next_free_dof ).error( "should have inserted unique dof" );
                     }
 
-                    DVLOG(2) << "vertex discontinuous dof inserted : " << inserted << "\n";
+                    DVLOG( 2 ) << "vertex discontinuous dof inserted : " << inserted << "\n";
 
-                    DVLOG(2) << "added vertex discontinuous dof " <<  elt.id() << ", "
-                                  <<  lid << ", "
-                                  << boost::get<0>( M_dof.localToGlobal( elt.id(), lid, 0 ) ) << "\n";
+                    DVLOG( 2 ) << "added vertex discontinuous dof " << elt.id() << ", "
+                               << lid << ", "
+                               << boost::get<0>( M_dof.localToGlobal( elt.id(), lid, 0 ) ) << "\n";
                 }
-
             }
-
-
         }
-        template<typename element_type, typename face_type>
+        template <typename element_type, typename face_type>
         void
         addEdgeDof( element_type const& elt, face_type const& face, size_type& next_free_dof, size_type shift, mpl::bool_<false>, mpl::int_<1> )
-        {}
-        template<typename element_type, typename face_type>
+        {
+        }
+        template <typename element_type, typename face_type>
         void
         addEdgeDof( element_type const& elt, face_type const& face, size_type& next_free_dof, size_type shift, mpl::bool_<true>, mpl::int_<1> )
-        {}
+        {
+        }
 
-        template<typename element_type, typename face_type>
+        template <typename element_type, typename face_type>
         void
         addEdgeDof( element_type const& elt, face_type const& face, size_type& next_free_dof, size_type shift, mpl::bool_<false>, mpl::int_<2> )
-        {}
-        template<typename element_type, typename face_type>
+        {
+        }
+        template <typename element_type, typename face_type>
         void
         addEdgeDof( element_type const& elt, face_type const& face, size_type& next_free_dof, size_type shift, mpl::bool_<true>, mpl::int_<2> )
         {
@@ -418,28 +409,27 @@ public:
             // Loop number of Dof per edge
             for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
             {
-                uint16_type lid = element_type::numVertices*fe_type::nDofPerVertex + iFaEl * fe_type::nDofPerEdge + l;
+                uint16_type lid = element_type::numVertices * fe_type::nDofPerVertex + iFaEl * fe_type::nDofPerEdge + l;
                 const size_type gDof = ( elt.edge( iFaEl ).id() ) * fe_type::nDofPerEdge + l;
 
-                DVLOG(2) << "add edge discontinuous dof " << next_free_dof << " in element " << elt.id() << " lid = " << lid << "\n";
+                DVLOG( 2 ) << "add edge discontinuous dof " << next_free_dof << " in element " << elt.id() << " lid = " << lid << "\n";
                 bool inserted = M_dof.insertDof( elt.id(), lid, iFaEl, boost::make_tuple( 1, 0, gDof ), 0, next_free_dof, 1, false, shift );
-                DVLOG(2) << "edge discontinuous dof inserted (1 or 0) : " << inserted << "\n";
+                DVLOG( 2 ) << "edge discontinuous dof inserted (1 or 0) : " << inserted << "\n";
 
-                DVLOG(2) << "added edge discontinuous dof "
-                              <<  elt.id() << ", "
-                              <<  lid << ", "
-                              << boost::get<0>( M_dof.localToGlobal( elt.id(), lid, 0 ) ) << "\n";
-
+                DVLOG( 2 ) << "added edge discontinuous dof "
+                           << elt.id() << ", "
+                           << lid << ", "
+                           << boost::get<0>( M_dof.localToGlobal( elt.id(), lid, 0 ) ) << "\n";
             }
-
         }
-    private:
+
+      private:
         MeshType& M_mesh;
         DofType& M_dof;
         fe_type const& M_fe;
     };
 
-private:
+  private:
     discontinuity_markers_type M_d_faces;
 };
 } // Feel

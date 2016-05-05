@@ -57,12 +57,13 @@ namespace math
 template <typename Tag, typename Rep = double>
 struct Constant
 {
-    Constant() {} // Returns the value of the constant.
+    Constant() {}         // Returns the value of the constant.
     operator Rep() const; // Fully specialized for each Rep/Tag pair.
 };
 
-
-struct pi_tag {};
+struct pi_tag
+{
+};
 namespace float_constants
 {
 Constant<pi_tag, float> const pi;
@@ -75,7 +76,7 @@ namespace long_double_constants
 {
 Constant<pi_tag, long double> const pi;
 }
-#if defined(FEELPP_HAS_QD_REAL)
+#if defined( FEELPP_HAS_QD_REAL )
 namespace dd_real_constants
 {
 Constant<pi_tag, dd_real> const pi;
@@ -85,24 +86,29 @@ namespace qd_real_constants
 Constant<pi_tag, qd_real> const pi;
 }
 #endif /*FEELPP_HAS_QD_REAL*/
-template<> inline Constant<pi_tag, long double>::operator long double() const
+template <>
+inline Constant<pi_tag, long double>::operator long double() const
 {
     return 3.141592653589793238462643383279502884197L;
 }
-template<> inline Constant<pi_tag, double>::operator double() const
+template <>
+inline Constant<pi_tag, double>::operator double() const
 {
     return 3.141592653589793238462643383279502884197;
 }
-template<> inline Constant<pi_tag, float>::operator float() const
+template <>
+inline Constant<pi_tag, float>::operator float() const
 {
     return 3.141592653589793238462643383279502884197F;
 }
-#if defined(FEELPP_HAS_QD_REAL)
-template<> inline Constant<pi_tag, dd_real>::operator dd_real() const
+#if defined( FEELPP_HAS_QD_REAL )
+template <>
+inline Constant<pi_tag, dd_real>::operator dd_real() const
 {
     return dd_real::_pi;
 }
-template<> inline Constant<pi_tag, qd_real>::operator qd_real() const
+template <>
+inline Constant<pi_tag, qd_real>::operator qd_real() const
 {
     return qd_real::_pi;
 }

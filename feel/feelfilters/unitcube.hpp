@@ -26,20 +26,20 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_UNITCUBE_HPP)
+#if !defined( FEELPP_UNITCUBE_HPP )
 #define FEELPP_UNITCUBE_HPP 1
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 
-namespace Feel {
+namespace Feel
+{
 
 /**
  * build a mesh of the unit square [0,1]^3 using tetrahedrons
  */
 boost::shared_ptr<Mesh<Simplex<3>>>
-unitCube( double h = option(_name="gmsh.hsize").as<double>() );
-
+unitCube( double h = option( _name = "gmsh.hsize" ).as<double>() );
 }
 
 #endif /* FEELPP_UNITCUBE_HPP */

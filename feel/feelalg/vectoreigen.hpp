@@ -29,32 +29,32 @@
 #ifndef __VectorEigen_H
 #define __VectorEigen_H 1
 
-#include <boost/serialization/complex.hpp>
-#include <set>
-#include <boost/operators.hpp>
 #include <Eigen/Core>
-#include <feel/feelcore/application.hpp>
-#include <feel/feelalg/vector.hpp>
-#include <feel/feelalg/matrixsparse.hpp>
+#include <boost/operators.hpp>
+#include <boost/serialization/complex.hpp>
 #include <feel/feelalg/matrixeigendense.hpp>
-
+#include <feel/feelalg/matrixsparse.hpp>
+#include <feel/feelalg/vector.hpp>
+#include <feel/feelcore/application.hpp>
+#include <set>
 
 namespace Feel
 {
 //template<typename T> class MatrixEigenDense;
 
-template<typename T>
+template <typename T>
 struct get_real_type
-{};
+{
+};
 
-template<>
+template <>
 struct get_real_type<double>
 {
     typedef double value_type;
 };
 
-template<>
-struct get_real_type<std::complex<double> >
+template <>
+struct get_real_type<std::complex<double>>
 {
     typedef double value_type;
 };
@@ -70,17 +70,16 @@ struct get_real_type<std::complex<double> >
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename T >
+template <typename T>
 class VectorEigen
-    : public Vector<T>
-    , boost::addable<VectorEigen<T> >
-    , boost::subtractable<VectorEigen<T> >
+    : public Vector<T>,
+      boost::addable<VectorEigen<T>>,
+      boost::subtractable<VectorEigen<T>>
 
 {
     typedef Vector<T> super1;
-public:
 
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -88,7 +87,7 @@ public:
     typedef T value_type;
     typedef typename get_real_type<T>::value_type real_type;
 
-    typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vector_type;
+    typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> vector_type;
     typedef VectorEigen<value_type> this_type;
     typedef typename super1::clone_ptrtype clone_ptrtype;
 
@@ -109,7 +108,7 @@ public:
 
     VectorEigen( size_type __s, size_type __n_local, WorldComm const& _worldComm = Environment::worldComm() );
 
-    VectorEigen( VectorEigen const & m );
+    VectorEigen( VectorEigen const& m );
 
     ~VectorEigen();
 
@@ -117,7 +116,7 @@ public:
      * Creates a copy of this vector and returns it in an \p shared_ptr<>.
      * This must be overloaded in the derived classes.
      */
-    clone_ptrtype clone () const ;
+    clone_ptrtype clone() const;
 
     /**
      * Change the dimension of the vector to \p N. The reserved memory
@@ -131,21 +130,20 @@ public:
      *
      * On \p fast==false, the vector is filled by zeros.
      */
-    void init ( const size_type N,
-                const size_type n_local,
-                const bool      fast=false );
+    void init( const size_type N,
+               const size_type n_local,
+               const bool fast = false );
 
     /**
      * call init with n_local = N,
      */
-    void init ( const size_type n,
-                const bool      fast=false );
+    void init( const size_type n,
+               const bool fast = false );
 
     /**
      * init from a \p DataMap
      */
     void init( datamap_ptrtype const& dm );
-
 
     //@}
     /** @name Operator overloads
@@ -155,21 +153,20 @@ public:
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<value_type>& operator= ( const Vector<value_type> &V );
+    Vector<value_type>& operator=( const Vector<value_type>& V );
 
     /**
      * Access components, returns \p u(i).
      */
     T operator()( size_type i ) const
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
-                        ( i < this->lastLocalIndex() ) )
-        ( i )
-        ( this->firstLocalIndex() )
-        ( this->lastLocalIndex() ).error( "vector invalid index" );
+        FEELPP_ASSERT( this->isInitialized() )
+            .error( "vector not initialized" );
+        FEELPP_ASSERT( ( i >= this->firstLocalIndex() ) &&
+                       ( i < this->lastLocalIndex() ) )
+        ( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).error( "vector invalid index" );
 
-        return M_vec.operator()( i-this->firstLocalIndex() );
+        return M_vec.operator()( i - this->firstLocalIndex() );
     }
 
     /**
@@ -177,13 +174,12 @@ public:
      */
     T& operator()( size_type i )
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
-                        ( i <  this->lastLocalIndex() ) )
-        ( i )
-        ( this->firstLocalIndex() )
-        ( this->lastLocalIndex() ).error( "vector invalid index" );
-        return M_vec.operator()( i-this->firstLocalIndex() );
+        FEELPP_ASSERT( this->isInitialized() )
+            .error( "vector not initialized" );
+        FEELPP_ASSERT( ( i >= this->firstLocalIndex() ) &&
+                       ( i < this->lastLocalIndex() ) )
+        ( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).error( "vector invalid index" );
+        return M_vec.operator()( i - this->firstLocalIndex() );
     }
 
     /**
@@ -191,14 +187,13 @@ public:
      */
     T operator[]( size_type i ) const
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
-                        ( i < this->lastLocalIndex() ) )
-        ( i )
-        ( this->firstLocalIndex() )
-        ( this->lastLocalIndex() ).error( "vector invalid index" );
+        FEELPP_ASSERT( this->isInitialized() )
+            .error( "vector not initialized" );
+        FEELPP_ASSERT( ( i >= this->firstLocalIndex() ) &&
+                       ( i < this->lastLocalIndex() ) )
+        ( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).error( "vector invalid index" );
 
-        return M_vec.operator()( i-this->firstLocalIndex() );
+        return M_vec.operator()( i - this->firstLocalIndex() );
     }
 
     /**
@@ -206,13 +201,12 @@ public:
      */
     T& operator[]( size_type i )
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
-                        ( i <=  this->lastLocalIndex() ) )
-        ( i )
-        ( this->firstLocalIndex() )
-        ( this->lastLocalIndex() ).error( "vector invalid index" );
-        return M_vec.operator()( i-this->firstLocalIndex() );
+        FEELPP_ASSERT( this->isInitialized() )
+            .error( "vector not initialized" );
+        FEELPP_ASSERT( ( i >= this->firstLocalIndex() ) &&
+                       ( i <= this->lastLocalIndex() ) )
+        ( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).error( "vector invalid index" );
+        return M_vec.operator()( i - this->firstLocalIndex() );
     }
 
     /**
@@ -244,7 +238,6 @@ public:
      */
     //@{
 
-
     /**
      * if the vector is a range, return the first index of the range,
      * otherwise returns 0
@@ -255,7 +248,7 @@ public:
      * return row_start, the index of the first
      * vector row stored on this processor
      */
-    unsigned int rowStart () const
+    unsigned int rowStart() const
     {
         checkInvariant();
         return 0;
@@ -265,7 +258,7 @@ public:
      * return row_stop, the index of the last
      * vector row (+1) stored on this processor
      */
-    size_type rowStop () const
+    size_type rowStop() const
     {
         checkInvariant();
         return 0;
@@ -283,8 +276,7 @@ public:
      * \c close the eigen vector, that will copy the content of write
      * optimized vector into a read optimized vector
      */
-    void close () const;
-
+    void close() const;
 
     /**
      * see if vector has been closed
@@ -295,11 +287,10 @@ public:
         return true;
     }
 
-
     /**
      * Returns the read optimized eigen vector.
      */
-    vector_type const& vec () const
+    vector_type const& vec() const
     {
         return M_vec;
     }
@@ -307,27 +298,24 @@ public:
     /**
      * Returns the read optimized eigen vector.
      */
-    vector_type & vec ()
+    vector_type& vec()
     {
         return M_vec;
     }
-
 
     //@
-
 
     /** @name  Mutators
      */
     //@{
 
-
     /**
      * set the entries to the constant \p v
      */
     void setConstant( value_type v )
-        {
-            M_vec.setConstant( v );
-        }
+    {
+        M_vec.setConstant( v );
+    }
 
     //@}
 
@@ -346,18 +334,18 @@ public:
      * having called the default
      * constructor.
      */
-    void clear ();
+    void clear();
 
     /**
      * Set all entries to 0. This method retains
      * sparsity structure.
      */
-    void zero ()
+    void zero()
     {
         M_vec.setZero( M_vec.size() );
     }
 
-    void zero ( size_type /*start1*/, size_type /*stop1*/ )
+    void zero( size_type /*start1*/, size_type /*stop1*/ )
     {
         //eigen::project( (*this), eigen::range( start1, stop1 ) ) = eigen::zero_vector<value_type>( stop1 );
         this->zero();
@@ -366,7 +354,7 @@ public:
     /**
      * Add \p value to the value already accumulated
      */
-    void add ( const size_type i, const value_type& value )
+    void add( const size_type i, const value_type& value )
     {
         checkInvariant();
         M_vec( i ) += value;
@@ -375,7 +363,7 @@ public:
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
      */
-    void addVector ( int* i, int n, value_type* v )
+    void addVector( int* i, int n, value_type* v )
     {
         for ( int j = 0; j < n; ++j )
             M_vec( i[j] ) += v[j];
@@ -384,7 +372,7 @@ public:
     /**
      * set to \p value
      */
-    void set ( size_type i, const value_type& value )
+    void set( size_type i, const value_type& value )
     {
         checkInvariant();
         M_vec( i ) = value;
@@ -393,7 +381,7 @@ public:
     /**
      * v([i1,i2,...,in]) = [value1,...,valuen]
      */
-    void setVector ( int* i, int n, value_type* v )
+    void setVector( int* i, int n, value_type* v )
     {
         for ( int j = 0; j < n; ++j )
             M_vec( i[j] ) = v[j];
@@ -404,13 +392,14 @@ public:
      * and you
      * want to specify WHERE to add it
      */
-    void addVector ( const std::vector<value_type>& v,
-                     const std::vector<size_type>& dof_indices )
+    void addVector( const std::vector<value_type>& v,
+                    const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT ( v.size() == dof_indices.size() ).error( "invalid dof indices" );
+        FEELPP_ASSERT( v.size() == dof_indices.size() )
+            .error( "invalid dof indices" );
 
-        for ( size_type i=0; i<v.size(); i++ )
-            this->add ( dof_indices[i], v[i] );
+        for ( size_type i = 0; i < v.size(); i++ )
+            this->add( dof_indices[i], v[i] );
     }
 
     /**
@@ -419,22 +408,22 @@ public:
      * want to specify WHERE to add
      * the \p NumericVector<T> V
      */
-    void addVector ( const Vector<value_type>& V,
-                     const std::vector<size_type>& dof_indices )
+    void addVector( const Vector<value_type>& V,
+                    const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
+        FEELPP_ASSERT( V.size() == dof_indices.size() )
+            .error( "invalid dof indices" );
 
-        for ( size_type i=0; i<V.size(); i++ )
-            this->add ( dof_indices[i], V( i ) );
+        for ( size_type i = 0; i < V.size(); i++ )
+            this->add( dof_indices[i], V( i ) );
     }
-
 
     /**
      * \f$ U+=A*V\f$, add the product of a \p MatrixSparse \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    void addVector ( const Vector<value_type>& /*V_in*/,
-                     const MatrixSparse<value_type>& /*A_in*/ );
+    void addVector( const Vector<value_type>& /*V_in*/,
+                    const MatrixSparse<value_type>& /*A_in*/ );
     // {
     //     FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     // }
@@ -445,23 +434,25 @@ public:
      * want to specify WHERE to add
      * the DenseVector<T> V
      */
-    void addVector ( const vector_type& V,
-                     const std::vector<size_type>& dof_indices )
+    void addVector( const vector_type& V,
+                    const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
+        FEELPP_ASSERT( V.size() == dof_indices.size() )
+            .error( "invalid dof indices" );
 
-        for ( size_type i=0; i<V.size(); i++ )
-            this->add ( dof_indices[i], V( i ) );
+        for ( size_type i = 0; i < V.size(); i++ )
+            this->add( dof_indices[i], V( i ) );
     }
 
     /**
      * \f$ U=v \f$ where v is a DenseVector<T>
      * and you want to specify WHERE to insert it
      */
-    void insert ( const std::vector<T>& /*v*/,
-                  const std::vector<size_type>& /*dof_indices*/ )
+    void insert( const std::vector<T>& /*v*/,
+                 const std::vector<size_type>& /*dof_indices*/ )
     {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call, not implemented yet" );
     }
 
     /**
@@ -470,23 +461,11 @@ public:
      * want to specify WHERE to insert
      * the Vector<T> V
      */
-    void insert ( const Vector<T>& /*V*/,
-                  const std::vector<size_type>& /*dof_indices*/ )
+    void insert( const Vector<T>& /*V*/,
+                 const std::vector<size_type>& /*dof_indices*/ )
     {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
-    }
-
-
-    /**
-     * \f$ U+=V \f$ where U and V are type
-     * DenseVector<T> and you
-     * want to specify WHERE to insert
-     * the DenseVector<T> V
-     */
-    void insert ( const vector_type& /*V*/,
-                  const std::vector<size_type>& /*dof_indices*/ )
-    {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call, not implemented yet" );
     }
 
     /**
@@ -495,15 +474,27 @@ public:
      * want to specify WHERE to insert
      * the DenseVector<T> V
      */
-    void insert ( const ublas::vector<T>& V,
-                  const std::vector<size_type>& dof_indices );
+    void insert( const vector_type& /*V*/,
+                 const std::vector<size_type>& /*dof_indices*/ )
+    {
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call, not implemented yet" );
+    }
 
+    /**
+     * \f$ U+=V \f$ where U and V are type
+     * DenseVector<T> and you
+     * want to specify WHERE to insert
+     * the DenseVector<T> V
+     */
+    void insert( const ublas::vector<T>& V,
+                 const std::vector<size_type>& dof_indices );
 
     /**
      * Scale each element of the
      * vector by the given factor.
      */
-    void scale ( const T factor )
+    void scale( const T factor )
     {
         M_vec *= factor;
     }
@@ -514,7 +505,7 @@ public:
      * vector to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL", bool renumber = false ) const;
+    void printMatlab( const std::string name = "NULL", bool renumber = false ) const;
 
     void close() {}
 
@@ -526,18 +517,16 @@ public:
     {
         checkInvariant();
 
-        real_type local_min = 0;//M_vec.minCoeff();
+        real_type local_min = 0; //M_vec.minCoeff();
 
         real_type global_min = local_min;
-
-
 
 #ifdef FEELPP_HAS_MPI
 
         if ( this->comm().size() > 1 )
         {
-            MPI_Allreduce ( &local_min, &global_min, 1,
-                            MPI_DOUBLE, MPI_MIN, this->comm() );
+            MPI_Allreduce( &local_min, &global_min, 1,
+                           MPI_DOUBLE, MPI_MIN, this->comm() );
         }
 
 #endif
@@ -552,17 +541,16 @@ public:
     {
         checkInvariant();
 
-        real_type local_max = 0;//M_vec.maxCoeff();
+        real_type local_max = 0; //M_vec.maxCoeff();
 
         real_type global_max = local_max;
-
 
 #ifdef FEELPP_HAS_MPI
 
         if ( this->comm().size() > 1 )
         {
-            MPI_Allreduce ( &local_max, &global_max, 1,
-                            MPI_DOUBLE, MPI_MAX, this->comm() );
+            MPI_Allreduce( &local_max, &global_max, 1,
+                           MPI_DOUBLE, MPI_MAX, this->comm() );
         }
 
 #endif
@@ -581,7 +569,6 @@ public:
 
         double global_l1 = local_l1;
 
-
 #ifdef FEELPP_HAS_MPI
 
         if ( this->comm().size() > 1 )
@@ -592,7 +579,6 @@ public:
 #endif
 
         return global_l1;
-
     }
 
     /**
@@ -604,7 +590,6 @@ public:
         checkInvariant();
         real_type local_norm2 = M_vec.squaredNorm();
         real_type global_norm2 = local_norm2;
-
 
 #ifdef FEELPP_HAS_MPI
 
@@ -627,7 +612,6 @@ public:
         real_type local_norminf = M_vec.array().abs().maxCoeff();
         real_type global_norminf = local_norminf;
 
-
 #ifdef FEELPP_HAS_MPI
 
         if ( this->comm().size() > 1 )
@@ -639,7 +623,6 @@ public:
         return global_norminf;
     }
 
-
     /**
      * @return the sum of the vector.
      */
@@ -649,7 +632,6 @@ public:
         value_type local_sum = M_vec.array().sum();
 
         value_type global_sum = local_sum;
-
 
 #ifdef FEELPP_HAS_MPI
 
@@ -661,7 +643,6 @@ public:
 #endif
 
         return global_sum;
-
     }
 
     /**
@@ -669,12 +650,10 @@ public:
      */
     FEELPP_DONT_INLINE this_type sqrt() const;
 
-
     /**
      *@compute pow on each element of the vector.
      */
     this_type pow( int n ) const;
-
 
     /**
      * \f$U(0-DIM)+=s\f$.
@@ -712,7 +691,7 @@ public:
         checkInvariant();
 
         for ( size_type i = 0; i < this->localSize(); ++i )
-            M_vec.operator()( i ) += a*v( v.firstLocalIndex() + i );
+            M_vec.operator()( i ) += a * v( v.firstLocalIndex() + i );
 
         return;
     }
@@ -721,34 +700,33 @@ public:
      * Creates a copy of the global vector in the
      * local vector \p v_local.
      */
-    void localize ( std::vector<value_type>& /*v_local*/ ) const
+    void localize( std::vector<value_type>& /*v_local*/ ) const
     {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call, not implemented yet" );
     }
 
     /**
      * Updates a local vector with selected values from neighboring
      * processors, as defined by \p send_list.
      */
-    void localize ( const size_type first_local_idx,
-                    const size_type last_local_idx,
-                    const std::vector<size_type>& send_list );
+    void localize( const size_type first_local_idx,
+                   const size_type last_local_idx,
+                   const std::vector<size_type>& send_list );
     /**
      * Same, but fills a \p Vector<T> instead of
      * a \p std::vector.
      */
-    void localize ( Vector<T>& v_local ) const;
-    void localize ( vector_type& v_local ) const;
+    void localize( Vector<T>& v_local ) const;
+    void localize( vector_type& v_local ) const;
 
     /**
      * Creates a local vector \p v_local containing
      * only information relevant to this processor, as
      * defined by the \p send_list.
      */
-    void localize ( Vector<T>& v_local,
-                    const std::vector<size_type>& send_list ) const;
-
-
+    void localize( Vector<T>& v_local,
+                   const std::vector<size_type>& send_list ) const;
 
     /**
      * Creates a local copy of the global vector in
@@ -756,11 +734,10 @@ public:
      * default the data is sent to processor 0.  This method
      * is useful for outputting data from one processor.
      */
-    void localizeToOneProcessor ( std::vector<T>& v_local,
-                                  const size_type proc_id = 0 ) const;
-    void localizeToOneProcessor ( vector_type& v_local,
-                                  const size_type proc_id = 0 ) const;
-
+    void localizeToOneProcessor( std::vector<T>& v_local,
+                                 const size_type proc_id = 0 ) const;
+    void localizeToOneProcessor( vector_type& v_local,
+                                 const size_type proc_id = 0 ) const;
 
     value_type dot( Vector<T> const& __v ) const
     {
@@ -769,18 +746,14 @@ public:
     }
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
     /**
      * check vector consistency
      */
     void checkInvariant() const;
 
-private:
+  private:
     vector_type M_vec;
 };
 
@@ -795,7 +768,7 @@ template <typename T>
 VectorEigen<T>
 element_product( VectorEigen<T> const& v1, VectorEigen<T> const& v2 )
 {
-    return v1.vec().array()*v2.vec().array();
+    return v1.vec().array() * v2.vec().array();
 }
 
 /**
@@ -807,10 +780,10 @@ element_product( VectorEigen<T> const& v1, VectorEigen<T> const& v2 )
  */
 template <typename T>
 VectorEigen<T>
-element_product( boost::shared_ptr<VectorEigen<T> > const& v1,
-                 boost::shared_ptr<VectorEigen<T> > const& v2 )
+element_product( boost::shared_ptr<VectorEigen<T>> const& v1,
+                 boost::shared_ptr<VectorEigen<T>> const& v2 )
 {
-    return v1->vec().array()*v2->vec().array();
+    return v1->vec().array() * v2->vec().array();
 }
 
 /**
@@ -824,6 +797,5 @@ extern template class VectorEigen<std::complex<double>>;
 #endif
 
 } // Feel
-
 
 #endif /* __VectorEigen_H */
