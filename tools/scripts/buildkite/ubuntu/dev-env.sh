@@ -3,6 +3,9 @@
 set -e
 
 NPROCS=10
+echo '--- apt-get update'
+apt-get -qq update
+
 echo '--- install apt-add-repository'
 apt-get -y --force-yes install software-properties-common python-software-properties
 
@@ -12,9 +15,6 @@ apt-add-repository 'deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.7 ma
 
 echo '--- added openturns repo'
 curl http://ubuntu.openturns.org/openturns.org-repo.key | apt-key add -
-
-echo '--- apt-get update'
-apt-get -qq update
 
 echo '--- apt-get install'
 apt-get -y --force-yes install \
