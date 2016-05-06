@@ -2,6 +2,9 @@
 
 set -e
 
+if [ -f /usr/share/modules/init/sh ]; then
+    . /usr/share/modules/init/sh
+fi
 if [ -f  /opt/config/etc/feelpprc.sh  ]; then
     . /opt/config/etc/feelpprc.sh
 fi
