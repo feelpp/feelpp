@@ -2421,7 +2421,13 @@ public:
         return 0;
     }
 
-
+    preconditioner_ptrtype preconditionerPrimal() const { return M_preconditioner_primal; }
+    preconditioner_ptrtype preconditionerDual() const { return M_preconditioner_dual; }
+    preconditioner_ptrtype preconditionerL2() const { return M_preconditioner_l2; }
+    preconditioner_ptrtype preconditionerPrimal()  { return M_preconditioner_primal; }
+    preconditioner_ptrtype preconditionerDual()  { return M_preconditioner_dual; }
+    preconditioner_ptrtype preconditionerL2()  { return M_preconditioner_l2; }
+    
     /**
      * solve the model for a given parameter \p mu
      */
