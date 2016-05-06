@@ -3,7 +3,7 @@ Credits
 
 ==  Copyright  
 
-  * Feel\++ is Copyright (C) 2010-2015 by- Feel++ Consortium
+  * Feel++ is Copyright (C) 2010-2015 by Feel++ Consortium
 
   * Feel++ is Copyright (C) 2005-2015 by
    
