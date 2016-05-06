@@ -10,13 +10,15 @@ If the problem is non linear, the materials also need to have the non linear con
 The boundary conditions are on the fields `potential` or `flux`. +
 On the potential, you can have:
 
-- Dirichlet
-- Neumann
-- Robin
+- `SourceTerm`
+- `Dirichlet`
+- `Neumann`
+- `Robin`
 
 On the flux:
 
-- Integral
+- `SourceTerm`
+- `Integral`
 
 == Advance usage
 
