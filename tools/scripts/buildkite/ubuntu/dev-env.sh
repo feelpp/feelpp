@@ -47,7 +47,7 @@ export FEELPP_DEP_INSTALL_PREFIX=/usr/local
 # Boost
 export BOOST_VERSION=1.59.0
 export BOOST_DIR=boost_1_59_0
-echo '--- compiling/installing boost ${BOOST_VERSION}'
+echo '--- compiling/installing boost $BOOST_VERSION'
 
 if ! [ -f ${FEELPP_DEP_INSTALL_PREFIX}/boost-${BOOST_VERSION} ]; then
 wget http://sourceforge.net/projects/boost/files/boost/${BOOST_VERSION}/${BOOST_DIR}.tar.bz2/download -O ${BOOST_DIR}.tar.bz2 \
@@ -68,7 +68,7 @@ fi
 
 # Install PETSc from source
 export PETSC_VERSION=3.6.3
-echo '--- compiling/installing PETSc ${PETSC_VERSION}'
+echo '--- compiling/installing PETSc $PETSC_VERSION'
 if ! [ -f ${FEELPP_DEP_INSTALL_PREFIX}/petsc-${PETSC_VERSION} ]; then
    cd /tmp && \
     wget -nc http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-${PETSC_VERSION}.tar.gz && \
@@ -100,7 +100,7 @@ fi
 
 # Install SLEPc from source
 export SLEPC_VERSION=3.6.3
-echo '--- compiling/installing SLEPc ${SLEPC_VERSION}'
+echo '--- compiling/installing SLEPc $SLEPC_VERSION'
 if ! [ -f ${FEELPP_DEP_INSTALL_PREFIX}/slepc-${SLEPC_VERSION} ]; then
 cd /tmp && \
     export PETSC_DIR=${FEELPP_DEP_INSTALL_PREFIX} && \
@@ -147,7 +147,7 @@ fi
 
 # ParaView
 export PARAVIEW_VERSION=4.4.0
-echo '--- compiling/installing PARAVIEW ${PARAVIEW_VERSION}'
+echo '--- compiling/installing PARAVIEW $PARAVIEW_VERSION'
 if ! [ -f ${FEELPP_DEP_INSTALL_PREFIX}/paraview-${PARAVIEW_VERSION} ]; then
 cd /tmp \
     && wget "http://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v4.4&type=source&os=all&downloadFile=ParaView-v${PARAVIEW_VERSION}-source.tar.gz" -O ParaView-v${PARAVIEW_VERSION}-source.tar.gz \
