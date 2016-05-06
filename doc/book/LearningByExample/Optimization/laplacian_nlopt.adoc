@@ -1,0 +1,224 @@
+Laplacian nlopt
+===============
+
+Here we propose to solve the following problem, finding the parameters $$b,c,d$$
+solution of the following homogeneous heat equation
+
+$$
+\begin{cases}
+\begin{aligned}
+\displaystyle
+-\nabla\cdot(\kappa\nabla u) &= 0 \quad \text{on}\;\Omega \\
+  u &= g \quad \text{on}\;\partial\Omega
+\end{aligned}
+\end{cases}
+\label{eq:heatnlopt}
+$$
+
+with $$ \kappa\rightarrow\kappa(\kappa_0,\kappa_1,\kappa_2)$$ and
+where $$ \Omega $$ denotes the whole domain, $$ \partial\Omega $$ denotes
+the boundary of the domain such that these parameters verify the observation
+$$ u_\text{obs} $$.
+
+In other words, the goal is to minimize an objective function $$ J(\kappa_0,\kappa_1,\kappa_2) $$
+
+$$
+  \min_{\kappa_0,\kappa_1,\kappa_2\in\mathbb{R}} J = \frac{1}{2}\int_{U} (u-u_\text{obs})^2
+$$
+
+with $$ U\in\Omega $$ an open subset of all observable measures.
+
+TIP: In practice, observations are often boundary measurement taken on a subset of the
+domain boundary $$ U\subseteq\partial\Omega $$. Thus arise concerns about existence
+and uniqueness of solution for the inverse problem, especially if observations
+does not cover the whole boundary.
+
+For the following example, we take $$ U=\Omega $$ and we define
+
+$$
+\kappa=1+{\kappa_0}_{\vert_{I_0}} + {\kappa_1}_{\vert_{I_1}} + {\kappa_2}_{\vert_{I_2}}
+$$
+
+where $$ I_0, I_1, I_2 $$ are different subset (inclusions) of $$ \Omega $$.
+
+Adjoint method
+~~~~~~~~~~~~~~
+
+We add a small perturbation to the given parameter $$ b, c, d $$ denoted
+
+$$
+\kappa_0^\delta = \kappa_0 + \alpha\delta \kappa_0 \\
+\kappa_1^\delta = \kappa_1 + \alpha\delta \kappa_1 \\
+\kappa_2^\delta = \kappa_2 + \alpha\delta \kappa_2 \\
+$$
+
+for $$ \alpha\in\mathbb{R} $$.
+Then $$ u^\delta=u+\alpha\delta u $$ is the perturbed solution of the equation
+
+$$
+\begin{cases}
+\begin{aligned}
+\displaystyle
+-\nabla\cdot(\kappa^\delta \nabla u^\delta) &= 0 \quad \text{on}\;\Omega \\
+  u^\delta &= 0 \quad \text{on}\;\partial\Omega
+\end{aligned}
+\end{cases}
+\label{eq:heat2nlopt}
+$$
+
+where the diffusion coefficient for the perturbation
+$$ \kappa^\delta \rightarrow \kappa( \kappa_0^\delta, \kappa_1^\delta, \kappa_2^\delta ) $$
+
+Lets note $$ \delta J $$ the shift for the cost function $$ J $$ such that
+
+$$
+\begin{aligned}
+    \delta J
+    &=J(\kappa_0^\delta, \kappa_1^\delta, \kappa_2^\delta) - J(\kappa_0,\kappa_1,\kappa_2) \\
+    &=\frac{1}{2}\int_U (u^\delta - u_\text{obs})^2 - (u-u_\text{obs})^2 \\
+    &=\frac{1}{2}\int_U (u^\delta - u)(u^\delta+u-2 u_\text{obs}) \\
+    &=\frac{1}{2}\int_U (u^\delta - u)( (u^\delta-u_\text{objs}) + (u -
+    u_\text{obs}) ) \\
+\end{aligned}
+$$
+If we divide by $$ \alpha $$ and look when $$ \alpha\rightarrow 0 $$, then we have
+
+$$
+\delta J \approx \int_U \delta u(u - u_\text{obs})
+$$
+
+Now we desire a method to compute the gradient. We consider the following linear
+tangent model deduced from two previous system of equations. We have
+
+$$
+-\nabla\cdot(\kappa^\delta \nabla u^\delta)
+= -\nabla\cdot(\kappa \nabla u)
+$$
+
+We introduce a state variable $$ p $$ (the adjoint) chosen appropriately as we
+will see further. We multiply the previous model by this variable and integrate
+on the domain.
+
+$$
+-\int_\Omega \nabla\cdot(\kappa^\delta \nabla u^\delta) p
+=
+-\int_\Omega \nabla\cdot(\kappa \nabla u) p
+$$
+
+Then writing the weak form we have 
+
+$$
+\int_\Omega \kappa^\delta \nabla u^\delta \nabla p
+-\int_\Omega\kappa^\delta \frac{\partial u^\delta}{\partial\mathbf n}p
+=
+\int_\Omega \kappa\nabla u\nabla p
+-\int_\Omega\kappa\frac{\partial u}{\partial\mathbf n}p
+$$
+
+we expand the perturbed diffusion coefficient as $$ \kappa^\delta=\kappa +\alpha\delta\kappa $$ 
+and rearrange terms by $$u^\delta -u $$ ($$ =\alpha\delta u $$).
+We divide by $$ \alpha $$ as previously and makes $$ \alpha\rightarrow 0 $$, we
+have
+
+$$
+\int_\Omega \kappa \nabla \delta u \nabla p
+-\int_{\partial\Omega} \kappa \frac{\partial \delta u }{\partial\mathbf n}p
+\approx
+-\int_\Omega \delta\kappa\nabla u \nabla p
++\int_{\partial\Omega} \delta\kappa \frac{\partial u}{\partial\mathbf n}p
+$$
+
+We integrate by part a second time
+
+$$
+-\int_\Omega \delta u \nabla\cdot(\kappa \nabla p)
++\int_{\partial\Omega}
+\left(
+\kappa \frac{\partial p }{\partial\mathbf n}\delta u
+- \kappa \frac{\partial \delta u }{\partial\mathbf n}p
+\right)
+\approx
+\int_\Omega u \nabla\cdot(\delta\kappa \nabla p)
+-\int_{\partial\Omega}
+\left(
+\delta\kappa \frac{\partial p}{\partial\mathbf n}u
++\delta\kappa \frac{\partial u}{\partial\mathbf n}p
+\right)
+$$
+
+we obtain finally for $$ p=0 $$ on the boundary
+
+$$
+-\int_\Omega \delta u \nabla\cdot(\kappa \nabla p)
+\approx
+\int_\Omega u\nabla\cdot(\delta\kappa \nabla p)
+$$
+
+Now to compute the gradient, we recall the previous equation for
+$$ J $$ and we deduce from build from the previous equation the following
+model (adjoint equation) for the state variable $$ p $$
+
+$$
+\begin{cases}
+\begin{aligned}
+\displaystyle
+-\nabla\cdot(\kappa\nabla p) &= (u - u_\text{objs}) \\
+  u &= 0 \quad \text{on}\;\partial\Omega
+\end{aligned}
+\end{cases}
+\label{eq:heatadjnlopt}
+$$
+
+If we multiply this equation by $$ u^\delta-u $$ and integrate 
+over the domain, we obtain
+
+$$
+\begin{aligned}
+-\int_\Omega \nabla\cdot(\kappa\nabla p)(u^\delta-u)
+&= \int_\Omega (u - u_\text{objs})(u^\delta - u) \\
+&\approx \int_\Omega (u - u_\text{objs})\delta u \\
+&\approx \delta J
+\end{aligned}
+$$
+
+Now if we write the weak form of this equation, we have
+
+$$
+\delta J
+\approx\int_\Omega \kappa\nabla p\nabla \delta u
+-\int_{\partial\Omega} \kappa\frac{\partial p}{\partial\mathbf
+n} \delta u
+$$
+
+We apply the boundary condition
+
+$$
+\begin{aligned}
+\delta J
+&=\int_\Omega \kappa\nabla p\nabla\delta u \\
+&=-\int_\Omega \delta\kappa\nabla p\nabla u
+\end{aligned}
+$$
+
+We recall $$ \kappa $$ chosen as
+
+$$
+\kappa=1+{k_0}_{\vert_{I_0}} + {k_1}_{\vert_{I_1}} + {k_2}_{\vert_{I_2}}
+$$
+
+Then the we deduce the gradient from the derivatives
+
+$$
+\nabla J(\kappa_0,\kappa_1,\kappa_2) =
+\left(
+-\int_{I_0} \nabla p\nabla u,
+-\int_{I_1} \nabla p\nabla u,
+-\int_{I_2} \nabla p\nabla u
+\right)
+$$
+
+So now we have a method to compute the gradient.
+
+
+
+// vim:set sw=2 tw=80 et:

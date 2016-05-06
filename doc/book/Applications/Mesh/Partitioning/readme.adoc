@@ -1,0 +1,25 @@
+# Partitioning
+
+In `feelpp/applications/mesh`, an application, named https://github.com/feelpp/feelpp/blob/develop/applications/mesh/mesh_partitioner.cpp[`feelpp_mesh_partitioner`], can generate a partitioned mesh and save it in a hdf5 file that can be loaded efficiently in parallel.
+
+## Options
+
+The partitioner executable need some options in order to supply our result files.
+
+|===
+| Name | Description | Default value
+| `dim` | dimension of the mesh | 3
+| `shape`| shape of the mesh elements | Simplex
+| `part` | number of desired partitions | 
+| `ifile` | name or path to the mesh | 
+| `ofile` | output filename |
+| `odir` | output directory | 
+|===
+
+## Code 
+
+The code will partition a mesh, given by `ifile` option, into a number of partition equals to `part`. The result of this operation will then be exported in the Feel++  parallel format `json+hdf5`.
+
+## Examples
+
+> TODO
