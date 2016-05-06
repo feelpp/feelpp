@@ -2,6 +2,7 @@
 
 set -e
 
+NPROCS=10
 echo '--- install apt-add-repository'
 apt-get -y --force-yes install software-properties-common python-software-properties
 
@@ -53,7 +54,7 @@ wget http://sourceforge.net/projects/boost/files/boost/${BOOST_VERSION}/${BOOST_
     && echo "using mpi ;" >> user-config.jam \
     && echo "" >> user-config.jam \
     && ./bootstrap.sh \
-    && ./bjam -j4 install \
+    && ./bjam -j$NPROCS install \
       --layout=tagged \
       --prefix=${FEELPP_DEP_INSTALL_PREFIX} \
       --user-config=user-config.jam \
@@ -136,7 +137,7 @@ cd /tmp \
         -DENABLE_MUMPS=OFF \
         -DENABLE_OPENMP=ON  \
         .. \
-    && make -j4 \
+    && make -j$NPROCS \
     && make install \
     && rm -rf /tmp/*
 touch ${FEELPP_DEP_INSTALL_PREFIX}/gmsh-${GMSH_VERSION}
@@ -163,7 +164,7 @@ cd /tmp \
         -DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON \
         -DPARAVIEW_USE_MPI=ON \
         .. \
-    && make -j8 \
+    && make -j$NPROCS \
     && make install \
     && rm -rf /tmp/*
 touch ${FEELPP_DEP_INSTALL_PREFIX}/paraview-${PARAVIEW_VERSION}
