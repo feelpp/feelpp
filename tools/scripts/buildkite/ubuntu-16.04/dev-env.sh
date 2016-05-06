@@ -10,6 +10,7 @@ fi
 export FEELPP_HPCNAME=sd-87660
 export FEELPP_CONFIG_PATH=/opt/config
 export FEELPP_SHARE_PATH=/opt/software/install
+export FEELPP_MODULE_PATH=/opt/config/modules
 
 echo '--- setup feelpp module'
 if [ -f  /opt/config/etc/feelpprc.sh  ]; then
