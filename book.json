@@ -1,5 +1,4 @@
-{
-    "root": "./doc/book/", 
+{ 
     "gitbook": ">=3.0.0-pre.0",
     "plugins": ["anchors","include-codeblock","include-highlight","katex","ga","richquotes","toc","expandable-chapters","unicodecss"],
     "pluginsConfig": {
@@ -19,5 +18,6 @@
     }, 
     "variables": {
         "feelpp": "Feel++"
-    }
+    },
+    "root": "./doc/book/" 
 }
