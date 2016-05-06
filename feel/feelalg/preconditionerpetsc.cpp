@@ -1645,7 +1645,7 @@ updateOptionsDescPrecBase( po::options_description & _options, std::string const
 #endif
         ( prefixvm( prefix,pcctx+"pc-use-config-default-petsc" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
-          "configure pc with defult petsc options" )
+          "configure pc with default petsc options" )
         ( prefixvm( prefix,pcctx+"pc-factor-shift-type" ).c_str(),
           (useDefaultValue)?Feel::po::value<std::string>()->default_value( "none" ):Feel::po::value<std::string>(),
           "adds a particular type of quantity to the diagonal of the matrix during numerical factorization, thus the matrix has nonzero pivots : none, nonzero, positive_definite, inblocks" )
