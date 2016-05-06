@@ -31,6 +31,8 @@
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 
+#include <feel/feelalg/solverlinearpetsc.hpp>
+
 
 extern "C" {
 
@@ -2216,7 +2218,11 @@ ConfigureKSP::run( KSP& ksp ) const
     this->check( KSPSetTolerances( ksp,M_rtol,PETSC_DEFAULT,PETSC_DEFAULT,M_maxit ) );
     // monitor
     if ( M_showMonitor )
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+        this->check( KSPMonitorSet( ksp,__feel_petsc_monitor,PETSC_NULL,PETSC_NULL ) );
+#else
         this->check( KSPMonitorSet( ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL ) );
+#endif
     // constant null space
     if ( M_constantNullSpace )
     {
@@ -2856,18 +2862,33 @@ ConfigurePCGAMG::run( PC& pc )
         this->check( PCGetOptionsPrefix(pc,&petscPrefix ) );
         if ( petscPrefix != NULL )
         {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
+            this->check( PetscOptionsSetValue( NULL, (boost::format("-%1%pc_gamg_sym_graph")%std::string(petscPrefix)).str().c_str(),
+                                               boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
+            this->check( PetscOptionsSetValue( NULL, (boost::format("-%1%pc_gamg_verbose")%std::string(petscPrefix)).str().c_str(),
+                                               boost::lexical_cast<std::string>(M_gamgVerbose).c_str()) );
+            this->check( PetscOptionsSetValue( NULL, (boost::format("-%1%pc_gamg_agg_nsmooths")%std::string(petscPrefix)).str().c_str(),
+                                               boost::lexical_cast<std::string>(M_nSmooths).c_str()) );
+#else
             this->check( PetscOptionsSetValue( (boost::format("-%1%pc_gamg_sym_graph")%std::string(petscPrefix)).str().c_str(),
                                                boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
             this->check( PetscOptionsSetValue( (boost::format("-%1%pc_gamg_verbose")%std::string(petscPrefix)).str().c_str(),
                                                boost::lexical_cast<std::string>(M_gamgVerbose).c_str()) );
             this->check( PetscOptionsSetValue( (boost::format("-%1%pc_gamg_agg_nsmooths")%std::string(petscPrefix)).str().c_str(),
                                                boost::lexical_cast<std::string>(M_nSmooths).c_str()) );
+#endif
         }
         else
         {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
+            this->check( PetscOptionsSetValue(NULL, "-pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
+            this->check( PetscOptionsSetValue(NULL, "-pc_gamg_verbose", boost::lexical_cast<std::string>(M_gamgVerbose).c_str()) );
+            this->check( PetscOptionsSetValue(NULL, "-pc_gamg_agg_nsmooths", boost::lexical_cast<std::string>(M_nSmooths).c_str()) );
+#else
             this->check( PetscOptionsSetValue("-pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
             this->check( PetscOptionsSetValue("-pc_gamg_verbose", boost::lexical_cast<std::string>(M_gamgVerbose).c_str()) );
             this->check( PetscOptionsSetValue("-pc_gamg_agg_nsmooths", boost::lexical_cast<std::string>(M_nSmooths).c_str()) );
+#endif
         }
 
         // PCSetFromOptions is called here because PCGAMGSetType destroy all unless the type_name
