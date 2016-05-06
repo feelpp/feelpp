@@ -70,8 +70,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_elements, T, dim_t )
     if ( T::value == 3 ) 
         flag=15;
     auto submesh = createSubmesh( mesh, elementsWithMarkedFaces(mesh,flag_type(flag)), EXTRACTION_KEEP_MESH_RELATION );
-    auto len1=measure(_range=markedfaces(mesh,flag_type(1)));
-    auto len2=measure(_range=markedfaces(submesh,flag_type(1)));
+    auto len1=measure(_range=markedfaces(mesh,flag_type(flag)));
+    auto len2=measure(_range=markedfaces(submesh,flag_type(flag)));
     BOOST_CHECK( len1 > 0 );
     BOOST_CHECK_CLOSE( len1, len2, 1e-12 );
     BOOST_MESSAGE( "test_elements ends for dim=" << T::value);
