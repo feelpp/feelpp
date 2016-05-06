@@ -12,6 +12,8 @@ apt-get -y --force-yes install software-properties-common python-software-proper
 echo '--- added gcc toolchain and clang repo'
 apt-add-repository 'deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu trusty main'
 apt-add-repository 'deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.7 main'
+apt-cache search g++-4.9
+apt-cache search clang-3.7
 
 echo '--- added openturns repo'
 curl http://ubuntu.openturns.org/openturns.org-repo.key | apt-key add -
