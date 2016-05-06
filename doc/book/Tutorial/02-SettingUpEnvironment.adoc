@@ -22,7 +22,7 @@ We initialize the environment variables through the Feel++ `Environment` class, 
 {% include "/doc/book/Tutorial/code/02-environment.cpp" %}
 ----
 
-[include:-6,numbered](code/02-environment.cpp)
+
 
 === Config file
 
@@ -31,7 +31,6 @@ We initialize the environment variables through the Feel++ `Environment` class, 
 {% include "/doc/book/Tutorial/code/02-environment.cfg" %}
 ----
 
-[include:2-3](/doc/book/Tutorial/code/02-environment.cfg)
 
 == Adding options
 
