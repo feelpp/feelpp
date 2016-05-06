@@ -922,6 +922,9 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
     {
         this->M_vec = v;
         this->M_is_initialized = true;
+
+        // make sure that ghosts are updated
+        this->localize();
     }
 
     this->setIsClosed( true );

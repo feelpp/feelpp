@@ -100,6 +100,7 @@ public Edges<typename Shape::template shape<1>::type,
 
 
     static const uint16_type nDim = 3;
+    static const uint16_type nRealDim = 3;
 
     /** @name Typedefs
      */
@@ -172,10 +173,8 @@ public Edges<typename Shape::template shape<1>::type,
      */
     Mesh3D( WorldComm const& worldComm = Environment::worldComm() );
 
-    /**
-     * copy constructor
-     */
-    Mesh3D( Mesh3D const & m );
+    Mesh3D( Mesh3D const & m ) = default;
+    Mesh3D( Mesh3D && m ) = default;
 
     /**
      * destructor
@@ -188,7 +187,8 @@ public Edges<typename Shape::template shape<1>::type,
      */
     //@{
 
-    Mesh3D& operator=( Mesh3D const& m );
+    Mesh3D& operator=( Mesh3D const& m ) = default;
+    Mesh3D& operator=( Mesh3D && m ) = default;
 
     //@}
 
@@ -404,48 +404,16 @@ template <typename GEOSHAPE>
 Mesh3D<GEOSHAPE>::Mesh3D( WorldComm const& worldComm )
     :
     super_visitable(),
-    super( worldComm ),
+    super( 3, nRealDim, worldComm ),
     super_elements( worldComm ),
     super_points( worldComm ),
     super_faces( worldComm ),
     super_edges( worldComm ),
     M_e2e()
 {}
-
-template <typename GEOSHAPE>
-Mesh3D<GEOSHAPE>::Mesh3D( Mesh3D const & m )
-    :
-    super_visitable(),
-    super( m ),
-    super_elements( m ),
-    super_points( m ),
-    super_faces( m ),
-    super_edges( m ),
-    M_e2e( m.M_e2e )
-{}
-
 template <typename GEOSHAPE>
 Mesh3D<GEOSHAPE>::~Mesh3D()
 {}
-
-template <typename GEOSHAPE>
-Mesh3D<GEOSHAPE>&
-Mesh3D<GEOSHAPE>::operator=( Mesh3D const& m )
-{
-    if ( this != &m )
-    {
-        super::operator=( m );
-        super_elements::operator=( m );
-        super_points::operator=( m );
-        super_faces::operator=( m );
-        super_edges::operator=( m );
-
-        M_e2e = m.M_e2e;
-    }
-
-    return *this;
-}
-
 template <typename GEOSHAPE>
 void
 Mesh3D<GEOSHAPE>::clear()
