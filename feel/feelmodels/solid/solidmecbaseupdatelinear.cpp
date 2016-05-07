@@ -132,22 +132,22 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( 
                            _geomap=this->geomap() );
 
             auto p = M_XhPressure->element();//*M_fieldPressure;
-            size_type startDofIndexPressure = this->startDofIndexFieldsInMatrix().find("pressure")->second;
+            size_type startBlockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
             form2( _test=Xh, _trial=M_XhPressure, _matrix=A,
                    _rowstart=rowStartInMatrix,
-                   _colstart=colStartInMatrix+startDofIndexPressure ) +=
+                   _colstart=colStartInMatrix+startBlockIndexPressure ) +=
                 integrate (_range=elements(mesh),
                            _expr= idt(p)*div(v),
                            _geomap=this->geomap() );
             form2( _test=M_XhPressure, _trial=Xh, _matrix=A,
-                   _rowstart=rowStartInMatrix+startDofIndexPressure,
+                   _rowstart=rowStartInMatrix+startBlockIndexPressure,
                    _colstart=colStartInMatrix ) +=
                 integrate(_range=elements(mesh),
                           _expr= id(p)*divt(u),
                           _geomap=this->geomap() );
             form2( _test=M_XhPressure, _trial=M_XhPressure, _matrix=A,
-                   _rowstart=rowStartInMatrix+startDofIndexPressure,
-                   _colstart=colStartInMatrix+startDofIndexPressure ) +=
+                   _rowstart=rowStartInMatrix+startBlockIndexPressure,
+                   _colstart=colStartInMatrix+startBlockIndexPressure ) +=
                 integrate(_range=elements(mesh),
                           _expr= -(cst(1.)/idv(coeffLame1))*idt(p)*id(p),
                           _geomap=this->geomap() );

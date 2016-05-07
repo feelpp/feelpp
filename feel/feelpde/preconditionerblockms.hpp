@@ -236,8 +236,8 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
         M_Xh( Xh ),
         M_Vh( Xh->template functionSpace<0>() ), // Potential
         M_Qh( Xh->template functionSpace<1>() ), // Lagrange
-        M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
-        M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
+        M_Vh_indices( AA->mapRow().dofIdToContainerId( 0 ) ),
+        M_Qh_indices( AA->mapRow().dofIdToContainerId( 1 ) ),
         M_uin( M_backend->newVector( M_Vh )  ),
         M_uout( M_backend->newVector( M_Vh )  ),
         M_pin( M_backend->newVector( M_Qh )  ),
@@ -268,12 +268,11 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockMS] setup starts";
+    if( Environment::worldComm().isMasterRank() )
+    std::cout << "the relax parameter is now provided thanks to the options" << std::endl;
+    M_relax = doption(_prefix=M_prefix_11, _name="relax");
     this->setMatrix( AA );
     this->setName(M_prefix);
-
-    /* Indices are need to extract sub matrix */
-    std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
-    std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
 
     M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true, true);
 
@@ -312,6 +311,7 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
         f2L += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type="elimination_symmetric");
     }
 
+    init();
     toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
 }
 

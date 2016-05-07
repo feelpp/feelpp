@@ -9,7 +9,13 @@
 if (NOT DEFINED FEELPP_STD_CPP ) 
   set(FEELPP_STD_CPP "14") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 1z")
 endif()
+if (NOT DEFINED FEELPP_STDLIB_CPP AND NOT APPLE) 
+  set(FEELPP_STDLIB_CPP "stdc++") # DOC STRING "define feel++ standard c++ library (default libstdc++), values can be : libc++ libstdc++")
+elseif( NOT DEFINED FEELPP_STDLIB_CPP )
+  set(FEELPP_STDLIB_CPP "c++") # DOC STRING "define feel++ standard c++ library (default libstdc++), values can be : libc++ libstdc++")
+endif()
 message(STATUS "[feelpp] using c++${FEELPP_STD_CPP} standard." )
+message(STATUS "[feelpp] using lib${FEELPP_STDLIB_CPP} standard c++ library." )
 # Check compiler
 message(STATUS "[feelpp] Compiler version : ${CMAKE_CXX_COMPILER_ID}  ${CMAKE_CXX_COMPILER_VERSION}")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -55,18 +61,36 @@ IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -wd3373" )
   endif()
   IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
-    IF(APPLE OR FEELPP_USE_CLANG_LIBCXX)
-      message(STATUS "[feelpp] Use clang libc++")
-      set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++" )
-    ELSE()
-      set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++" )
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=lib${FEELPP_STDLIB_CPP}" )
+    if ( "${FEELPP_STDLIB_CPP}" STREQUAL "c++" )
+      find_path(CXXABI_H cxxabi.h PATH_SUFFIXES libcxxabi)
+      message(STATUS "[feelpp] use ${CXXABI_H}")
+      if ( CXXABI_H )
+        include_directories(${CXXABI_H})
+      else()
+        message(ERROR "[feelpp] ${CXXABI_H}")
+      endif()
+      
     ENDIF()
-  ENDIF()
+  endif()
 ENDIF()
 
 # IBM XL compiler
 IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "XL") )
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qlanglvl=extc1x" )
+endif()
+
+# Sometimes relinking libraries in contrib does not work becaus of bad paths
+# A discussion has been opened on the bugtracker of CMake: https://cmake.org/Bug/print_bug_page.php?bug_id=13934
+# To fix this: if the executable format has not been specified, which seems to happen with Clang, we force it to ELF for Linux
+# Potentially also a bug to fix on OS X if it happens (The format is MACHO on OS X)
+if(NOT CMAKE_EXECUTABLE_FORMAT)
+    if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+        message(STATUS "CMAKE_EXECUTABLE_FORMAT is not set. Setting to ELF on current system (Linux).")
+        set(CMAKE_EXECUTABLE_FORMAT "ELF")
+    else()
+        message(WARNING "CMAKE_EXECUTABLE_FORMAT is not set, you might end up with relinking errors with contrib libraries.")
+    endif()
 endif()
 
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS)
@@ -131,11 +155,16 @@ SET(FEELPP_MESH_MAX_ORDER "2" CACHE STRING "maximum geometrical order in templat
 # enable host specific
 include(feelpp.host)
 
+find_package(Threads REQUIRED)
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
+SET(FEELPP_LIBRARIES ${FEELPP_LIBRARIES} pthread)
+
+
 if ( FEELPP_ENABLE_TBB )
   FIND_PACKAGE(TBB)
   IF ( TBB_FOUND )
     INCLUDE_DIRECTORIES( ${TBB_INCLUDE_DIR} )
-    SET(FEELPP_LIBRARIES ${TBB_LIBRARIES})
+    SET(FEELPP_LIBRARIES ${TBB_LIBRARIES} ${FEELPP_LIBRARIES})
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Tbb" )
   ENDIF (TBB_FOUND )
 endif()
@@ -155,6 +184,8 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         endif()
     endif()
 endif()
+
+
 
 # on APPLE enfore the use of macports openmpi version
 if ( APPLE )
@@ -270,7 +301,7 @@ IF ( MPI_FOUND )
           # Automatically add oarsh to the options when using OpenMPI
           # See: https://oar.readthedocs.org/en/2.5/user/usecases.html#using-mpi-with-oarsh
           if(FEELPP_ENABLE_SCHED_OAR)
-              set(MPIEXEC_PREFLAGS "${MPIEXEC_PREFLAGS} -mca plm_rsh_agent \"oarsh\"")
+              set(MPIEXEC_PREFLAGS ${MPIEXEC_PREFLAGS} -mca plm_rsh_agent \"oarsh\")
               message(STATUS "[feelpp] OAR detected - Automatically adding transport option to MPIEXEC_PREFLAGS (-mca plm_rsh_agent \"oarsh\")")
           endif()
       endif()
@@ -458,6 +489,7 @@ endif (BOOST_ENABLE_TEST_DYN_LINK)
 
 # undefined BOOST_UBLAS_TYPE_CHECK
 add_definitions(-UBOOST_UBLAS_TYPE_CHECK )
+add_definitions(-DBOOST_UBLAS_SHALLOW_ARRAY_ADAPTOR)
 
 # this fix an issue with boost filesystem: boost is usually no compiled with
 # std=c++0x and we compile with it, this causes problems with the macro
