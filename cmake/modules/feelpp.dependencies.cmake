@@ -9,7 +9,13 @@
 if (NOT DEFINED FEELPP_STD_CPP ) 
   set(FEELPP_STD_CPP "14") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 1z")
 endif()
+if (NOT DEFINED FEELPP_STDLIB_CPP AND NOT APPLE) 
+  set(FEELPP_STDLIB_CPP "stdc++") # DOC STRING "define feel++ standard c++ library (default libstdc++), values can be : libc++ libstdc++")
+elseif( NOT DEFINED FEELPP_STDLIB_CPP )
+  set(FEELPP_STDLIB_CPP "c++") # DOC STRING "define feel++ standard c++ library (default libstdc++), values can be : libc++ libstdc++")
+endif()
 message(STATUS "[feelpp] using c++${FEELPP_STD_CPP} standard." )
+message(STATUS "[feelpp] using lib${FEELPP_STDLIB_CPP} standard c++ library." )
 # Check compiler
 message(STATUS "[feelpp] Compiler version : ${CMAKE_CXX_COMPILER_ID}  ${CMAKE_CXX_COMPILER_VERSION}")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -55,13 +61,18 @@ IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -wd3373" )
   endif()
   IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
-    IF(APPLE OR FEELPP_USE_CLANG_LIBCXX)
-      message(STATUS "[feelpp] Use clang libc++")
-      set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++" )
-    ELSE()
-      set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++" )
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=lib${FEELPP_STDLIB_CPP}" )
+    if ( "${FEELPP_STDLIB_CPP}" STREQUAL "c++" )
+      find_path(CXXABI_H cxxabi.h PATH_SUFFIXES libcxxabi)
+      message(STATUS "[feelpp] use ${CXXABI_H}")
+      if ( CXXABI_H )
+        include_directories(${CXXABI_H})
+      else()
+        message(ERROR "[feelpp] ${CXXABI_H}")
+      endif()
+      
     ENDIF()
-  ENDIF()
+  endif()
 ENDIF()
 
 # IBM XL compiler
@@ -146,11 +157,16 @@ SET(FEELPP_MESH_MAX_ORDER "2" CACHE STRING "maximum geometrical order in templat
 # enable host specific
 include(feelpp.host)
 
+find_package(Threads REQUIRED)
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
+SET(FEELPP_LIBRARIES ${FEELPP_LIBRARIES} pthread)
+
+
 if ( FEELPP_ENABLE_TBB )
   FIND_PACKAGE(TBB)
   IF ( TBB_FOUND )
     INCLUDE_DIRECTORIES( ${TBB_INCLUDE_DIR} )
-    SET(FEELPP_LIBRARIES ${TBB_LIBRARIES})
+    SET(FEELPP_LIBRARIES ${TBB_LIBRARIES} ${FEELPP_LIBRARIES})
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Tbb" )
   ENDIF (TBB_FOUND )
 endif()
@@ -170,6 +186,8 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         endif()
     endif()
 endif()
+
+
 
 # on APPLE enfore the use of macports openmpi version
 if ( APPLE )
