@@ -131,7 +131,27 @@ public:
      */
     virtual void clear ();
 
+    /**
+     *
+     */
     void localize(const Vector<T>& V);
+
+    /**
+     * set initialized only for subclasses
+     */
+    void setInitialized( bool b )
+    {
+        M_is_initialized = b;
+    }
+
+    /**
+     * @ set false if the vector is in assembly state and need to be closed
+     * for some next used (global operation) , false otherwise.
+     */
+    void setIsClosed( bool b )
+    {
+        M_is_closed = b;
+    }
 
     /**
      * Set all entries to zero. Equivalent to \p v = 0, but more obvious and
@@ -200,8 +220,10 @@ public:
                         const bool = false );
 
 
-    // surement a virtualiser!!!
-    void init ( datamap_ptrtype const& dm )
+    /**
+     * call init with datamap,
+     */
+    virtual void init ( datamap_ptrtype const& dm )
     {
         M_is_closed = false;
         M_is_initialized = false;
@@ -478,8 +500,8 @@ public:
                              const std::vector<size_type>& dof_indices ) = 0;
 #endif
 
-    virtual value_type dot( Vector<T> const& v ) = 0;
-    virtual value_type dot( boost::shared_ptr<Vector<T> > const& v ) { return dot( *v ); }
+    virtual value_type dot( Vector<T> const& v ) const = 0;
+    virtual value_type dot( boost::shared_ptr<Vector<T> > const& v ) const { return dot( *v ); }
 
     /**
      * \f$ U=v \f$ where v is a DenseVector<T>
@@ -636,34 +658,7 @@ inner_product( Vector<T> const& v1, Vector<T> const& v2 )
     ( v1.localSize() )( v2.localSize() )
     ( v1.size() )( v2.size() ).error( "incompatible vector sizes" );
 
-    typedef typename type_traits<T>::real_type real_type;
-
-    size_type s = v1.localSize();
-    //size_type s = v1.map().nLocalDofWithoutGhost();
-    real_type res = 0;
-    size_type start = v1.firstLocalIndex();
-    real_type global_res = 0;
-
-    if ( v1.comm().size() == 1 )
-        {
-            for ( size_type i = 0; i < s; ++i )
-                res += v1( start + i )* v2( start + i );
-
-            global_res = res;
-        }
-    else
-        {
-            for ( size_type i = 0; i < s; ++i )
-                {
-                    if ( !v1.localIndexIsGhost( start + i ) )
-                        res += v1( start + i )* v2( start + i );
-                }
-#if defined( FEELPP_HAS_MPI )
-            mpi::all_reduce( v1.comm(), res, global_res, std::plus<real_type>() );
-#endif
-        }
-
-    return global_res;
+    return v1.dot( v2 );
 }
 /**
  * Computes the inner product of two vectors and eventually in parallel

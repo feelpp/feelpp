@@ -67,39 +67,6 @@ Mesh<Shape, T, Tag>::partition ( const uint16_type n_parts )
     //M_part->partition( *this, n_parts );
 }
 
-template<typename Shape, typename T, int Tag>
-flag_type
-Mesh<Shape, T, Tag>::markerId ( boost::any const& __marker )
-{
-    flag_type theflag = -1;
-    if ( boost::any_cast<flag_type>( &__marker ) )
-    {
-        theflag = boost::any_cast<flag_type>( __marker);
-    }
-    else if ( boost::any_cast<int>( &__marker ) )
-    {
-        theflag = boost::any_cast<int>( __marker);
-    }
-    else if ( boost::any_cast<size_type>( &__marker ) )
-    {
-        theflag = boost::any_cast<size_type>( __marker);
-    }
-    else if ( boost::any_cast<uint16_type>( &__marker ) )
-    {
-        theflag = boost::any_cast<uint16_type>( __marker);
-    }
-    else if ( boost::any_cast<std::string>( &__marker ) )
-    {
-        theflag = this->markerName( boost::any_cast<std::string>( __marker) );
-    }
-    else if ( boost::any_cast<const char*>( &__marker ) )
-    {
-        theflag = this->markerName( std::string(boost::any_cast<const char*>( __marker) ) );
-    }
-    else
-        CHECK( theflag != -1 ) << "invalid flag type\n";
-    return theflag;
-}
 
 template<typename Shape, typename T, int Tag>
 void
@@ -3072,8 +3039,8 @@ Mesh<Shape, T, Tag>::send(int p, int tag)
     encode();
     VLOG(1) << "sending markername\n";
     //this->comm().send( p, tag, M_markername.size() );
-    VLOG(1) << "sending markername size: "<< M_markername.size() << "\n";
-    BOOST_FOREACH(auto m, M_markername )
+    VLOG(1) << "sending markername size: "<< this->M_markername.size() << "\n";
+    BOOST_FOREACH(auto m, this->M_markername )
     {
         VLOG(1) << "sending key: "<< m.first << "\n";
         //this->comm().send( p, tag, m.first );
@@ -3087,7 +3054,7 @@ void
 Mesh<Shape, T, Tag>::recv(int p, int tag)
 {
     VLOG(1) << "receiving markername\n";
-    //this->comm().recv( p, tag, M_markername );
+    //this->comm().recv( p, tag, this->M_markername );
     int s = 0;
     //this->comm().recv( p, tag, s );
     VLOG(1) << "receiving markername size: "<< s << "\n";
@@ -3101,7 +3068,7 @@ Mesh<Shape, T, Tag>::recv(int p, int tag)
         VLOG(1) << "receiving value\n";
         //this->comm().recv( p, tag, v );
         VLOG(1) << "receiving value: "<< v[0] << ","<< v[1] <<"\n";
-        //M_markername[k]=v;
+        // this->M_markername[k]=v;
     }
 
 

@@ -177,11 +177,10 @@ public:
         {
             M_matrix->close();
         }
-
         vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        *_v2 = ie;
+        *_v2 = ie;_v2->close();
         vector_ptrtype _v3( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( M_matrix, _v1, _v3 );
         return inner_product( _v2, _v3 );

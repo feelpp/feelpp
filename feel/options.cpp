@@ -600,6 +600,7 @@ crbOptions( std::string const& prefix )
 
     ( "crb.use-accurate-apee",Feel::po::value<bool>()->default_value( false ), "use a posteriori error estimators from F.Casenave's paper if true, classic one else")
     ( "crb.optimize-offline-residual",Feel::po::value<bool>()->default_value( false ), "use optimize way for offline residual computation if true (temporary option)")
+    ( "crb.offline-residual-version",Feel::po::value<int>()->default_value( 0 ), "offline residual version 0 : old no storage, 1 : new faster with storage")
 
     ( "crb.user-parameters",Feel::po::value<std::string>()->default_value( "" ), "values of parameters (used for one feel)")
     ( "crb.vary-only-parameter-components",Feel::po::value<std::string>()->default_value( "" ), "specify which parameter component vary (max : 2 components + time 't') and how many values we take in each direction. For example 0 10 1 20 means that component 0 will take 10 values and component 1 will take 20 values. We can write also t 1 10 and in this case the time will vary and also component 1")
@@ -607,6 +608,9 @@ crbOptions( std::string const& prefix )
 
     ( "crb.solve-fem-monolithic",Feel::po::value<bool>()->default_value( false ), "solve FEM problem without using EIM and without affine decomposition ")
     ( "crb.export-name-max-size",Feel::po::value<int>()->default_value( 30 ), "maximum size for variable names in export (truncature)")
+
+    ("crb.minimization-func", Feel::po::value<std::string>(), "giving a functional f(output) - give the output which minimizes f(output)" )
+    ("crb.minimization-param-name", Feel::po::value<std::string>()->default_value( "output" ), "name of the parameter to be replaced by the output in expression given by crb.minimization-func")
     ;
 
     crboptions

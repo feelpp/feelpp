@@ -29,7 +29,7 @@
 #ifndef ModelCrbBase_H
 #define ModelCrbBase_H 1
 
-#include <feel/feel.hpp>
+//#include <feel/feel.hpp>
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
@@ -278,6 +278,15 @@ public :
 
     virtual std::string modelName() { return "generic-model-name"; }
 
+    /**
+     * return directory path where symbolic expression (ginac) are built
+     * empty means current path
+     */
+    std::string const& symbolicExpressionBuildDir() const { return M_symbolicExpressionBuildDir; }
+    /**
+     * set directory path where symbolic expression (ginac) are built
+     */
+    void setSymbolicExpressionBuildDir( std::string const& dir ) { M_symbolicExpressionBuildDir=dir; }
 
 
     void addLhs( boost::tuple< form2_type, std::string > const & tuple )
@@ -798,12 +807,15 @@ public :
             std::string symbol = ( boost::format("mu%1%") %i ).str();
             M_symbols_vec.push_back( symbol );
         }
+        fs::path dir( Environment::expand( M_symbolicExpressionBuildDir ) );
         if( M_betaAqString.size() > 0 )
         {
             int size = M_betaAqString.size();
             for(int q=0; q<size; q++)
             {
                 std::string filename = ( boost::format("GinacA%1%") %q ).str();
+                if ( !M_symbolicExpressionBuildDir.empty() )
+                    filename = ( dir / fs::path( filename ) ).string();
                 M_ginacAq.push_back( expr( M_betaAqString[q], Symbols( M_symbols_vec ) , filename ) );
             }
         }
@@ -813,6 +825,8 @@ public :
             for(int q=0; q<size; q++)
             {
                 std::string filename = ( boost::format("GinacM%1%") %q ).str();
+                if ( !M_symbolicExpressionBuildDir.empty() )
+                    filename = ( dir / fs::path( filename ) ).string();
                 M_ginacMq.push_back( expr( M_betaMqString[q], Symbols( M_symbols_vec ) , filename ) );
             }
         }
@@ -826,6 +840,8 @@ public :
                 for(int q=0; q<size; q++)
                 {
                     std::string filename = ( boost::format("GinacF%1%.%2%") %output %q ).str();
+                    if ( !M_symbolicExpressionBuildDir.empty() )
+                        filename = ( dir / fs::path( filename ) ).string();
                     M_ginacFq[output].push_back( expr( M_betaFqString[output][q], Symbols( M_symbols_vec ) , filename ) );
                 }
             }
@@ -1529,6 +1545,7 @@ protected :
     std::vector< Expr<GinacEx<2> > > M_ginacMq;
     std::vector< std::vector< Expr<GinacEx<2> > > > M_ginacFq;
     std::vector< std::string > M_symbols_vec;
+    std::string M_symbolicExpressionBuildDir;
 
     beta_vector_type M_betaAqm;
     beta_vector_type M_betaMqm;
