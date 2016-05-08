@@ -690,9 +690,10 @@ ams_options( std::string const& prefix )
     po::options_description _options( "AMS options (" + prefix + ")" );
     _options.add_options()
         ( prefixvm( prefix, "useEdge" ).c_str(), Feel::po::value<bool>()->default_value(true), "true: SetConstantEdgeVector, false: SetCoordinates" )
-        ( prefixvm( prefix, "threshold" ).c_str(), Feel::po::value<bool>()->default_value(false), "remove near null values in Grad" )
+        //( prefixvm( prefix, "threshold" ).c_str(), Feel::po::value<bool>()->default_value(false), "remove near null values in Grad" )
         ( prefixvm( prefix, "setAlphaBeta" ).c_str(), Feel::po::value<bool>()->default_value(false), "Use locally constructed A_alpha and A_beta" )
-        ( prefixvm( prefix, "singular" ).c_str(), Feel::po::value<bool>()->default_value(false), "Force the relaxation parameter to be zero" )
+        //( prefixvm( prefix, "singular" ).c_str(), Feel::po::value<bool>()->default_value(false), "Force the relaxation parameter to be zero" )
+        ( prefixvm( prefix, "relax" ).c_str(), Feel::po::value<double>()->default_value(1.), "Relaxation parameter" )
         ;
     return _options
         .add( backend_options( prefix.c_str() ))  // for AMS
