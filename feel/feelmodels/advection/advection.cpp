@@ -6,13 +6,23 @@ namespace FeelModels {
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 ADVECTION_CLASS_TEMPLATE_TYPE::Advection( 
-        space_advection_ptrtype const& space,
         std::string const& prefix,
         WorldComm const& worldComm,
         std::string const& subPrefix,
         std::string const& rootRepository )
-: super_type(space, prefix, worldComm, subPrefix, rootRepository)
+: super_type( prefix, worldComm, subPrefix, rootRepository)
 {
+}
+
+ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+typename ADVECTION_CLASS_TEMPLATE_TYPE::self_ptrtype 
+ADVECTION_CLASS_TEMPLATE_TYPE::New( 
+        std::string const& prefix,
+        WorldComm const& worldComm,
+        std::string const& subPrefix,
+        std::string const& rootRepository )
+{
+    return boost::make_shared<self_type>( prefix, worldComm, subPrefix, rootRepository );
 }
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
