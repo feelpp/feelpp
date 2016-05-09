@@ -21,7 +21,6 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionStabMethodIdMap = {
 // Construction
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionBase( 
-        space_advection_ptrtype const& space,
         std::string const& prefix,
         WorldComm const& worldComm,
         std::string const& subPrefix,
@@ -29,8 +28,6 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionBase(
 :
     super_type( prefix, worldComm, subPrefix, rootRepository ),
     M_isUpdatedForUse(false),
-    M_mesh(space->mesh()),
-    M_space(space),
     M_gamma1(std::pow(nOrder, -3.5))
 {
     this->loadParametersFromOptionsVm();
@@ -41,19 +38,6 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionBase(
     this->addTimerTool("Solve",nameFileSolve);
 }
     
-ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
-typename ADVECTIONBASE_CLASS_TEMPLATE_TYPE::self_ptrtype 
-ADVECTIONBASE_CLASS_TEMPLATE_TYPE::New( 
-        space_advection_ptrtype const& space,
-        std::string const& prefix,
-        WorldComm const& _worldComm,
-        std::string const& subPrefix,
-        std::string const& rootRepository )
-{
-    self_ptrtype adv ( new self_type( space, prefix, _worldComm, subPrefix, rootRepository ) );
-    return adv;
-}
-
 //----------------------------------------------------------------------------//
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -61,6 +45,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build()
 {
     this->log("Advection","build", "start");
     
+    // Function spaces
+    this->createFunctionSpaces();
     // Algebraic data
     this->createAlgebraicData();
     // Bdf time scheme
@@ -113,6 +99,20 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_stabMethod = AdvectionStabMethodIdMap.at(stabmeth);
     
     this->log("Advection","loadParametersFromOptionsVm", "finish");
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
+{
+    this->log("Advection","createFunctionSpaces","start");
+    this->timerTool("Constructor").start();
+    
+    // Advection space
+    M_space = space_advection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+
+    double tElapsed = this->timerTool("Constructor").stop("create");
+    this->log("Advection","createFUnctionSpaces", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -231,7 +231,6 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
             M_algebraicFactory->rebuildCstLinearPDE(M_solution);
         }
     }
-
 
     this->timerTool("TimeStepping").stop("updateBdf");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();

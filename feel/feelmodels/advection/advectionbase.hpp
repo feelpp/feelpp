@@ -96,7 +96,6 @@ public :
     //--------------------------------------------------------------------//
     // Constructor
     AdvectionBase( 
-            space_advection_ptrtype const& space,
             std::string const& prefix,
             WorldComm const& _worldComm = Environment::worldComm(),
             std::string const& subPrefix = "",
@@ -104,18 +103,13 @@ public :
 
     AdvectionBase( self_type const& A ) = default;
 
-    static self_ptrtype New( space_advection_ptrtype const& space,
-                             std::string const& prefix,
-                             WorldComm const& _worldComm = Environment::worldComm(),
-                             std::string const& subPrefix = "",
-                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
-
     //--------------------------------------------------------------------//
     // Initialization
     void build();
     void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app );
 
     void loadParametersFromOptionsVm();
+    void createFunctionSpaces();
     void createAlgebraicData();
     void createTimeDiscretization();
     
