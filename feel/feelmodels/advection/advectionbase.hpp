@@ -109,22 +109,24 @@ public :
     void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app );
 
     void loadParametersFromOptionsVm();
+    void createMesh();
     void createFunctionSpaces();
     void createAlgebraicData();
     void createTimeDiscretization();
     
     //--------------------------------------------------------------------//
+    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"AdvectionMesh.path"); }
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
 
-    space_advection_ptrtype const& functionSpace() const { return M_space; }
+    space_advection_ptrtype const& functionSpace() const { return M_Xh; }
 
-    element_advection_ptrtype & fieldSolutionPtr() { return M_solution; }
-    element_advection_ptrtype const& fieldSolutionPtr() const { return M_solution; }
-    element_advection_type & fieldSolution() { return *M_solution; }
-    element_advection_type const& fieldSolution() const { return *M_solution; }
+    element_advection_ptrtype & fieldSolutionPtr() { return M_fieldSolution; }
+    element_advection_ptrtype const& fieldSolutionPtr() const { return M_fieldSolution; }
+    element_advection_type & fieldSolution() { return *M_fieldSolution; }
+    element_advection_type const& fieldSolution() const { return *M_fieldSolution; }
 
-    element_advection_velocity_type const& fieldAdvectionVelocity() const { return *M_advectionVelocity; }
+    element_advection_velocity_type const& fieldAdvectionVelocity() const { return *M_fieldAdvectionVelocity; }
 
     //--------------------------------------------------------------------//
     // Algebraic data
@@ -176,8 +178,8 @@ protected:
     //--------------------------------------------------------------------//
     // Mesh
     mesh_ptrtype M_mesh;
-    // Space
-    space_advection_ptrtype M_space;
+    // Advection space
+    space_advection_ptrtype M_Xh;
     // Time discretization
     bdf_ptrtype M_bdf;
     //--------------------------------------------------------------------//
@@ -187,10 +189,11 @@ protected:
     BlocksBaseVector<double> M_blockVectorSolution;
     //--------------------------------------------------------------------//
     // Solution
-    element_advection_ptrtype M_solution;
+    element_advection_ptrtype M_fieldSolution;
     //--------------------------------------------------------------------//
     // Advection velocity
-    element_advection_velocity_ptrtype M_advectionVelocity;
+    space_advection_velocity_ptrtype M_XhAdvectionVelocity;
+    element_advection_velocity_ptrtype M_fieldAdvectionVelocity;
     //--------------------------------------------------------------------//
     // Stabilization
     static const std::map<std::string, AdvectionStabMethod> AdvectionStabMethodIdMap;

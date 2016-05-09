@@ -1,5 +1,7 @@
 #include <feel/feelmodels/advection/advectionbase.hpp>
 
+#include <feel/feelmodels/modelmesh/createmesh.hpp>
+
 namespace Feel {
 namespace FeelModels {
 
@@ -45,6 +47,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build()
 {
     this->log("Advection","build", "start");
     
+    // Mesh
+    this->createMesh();
     // Function spaces
     this->createFunctionSpaces();
     // Algebraic data
@@ -103,16 +107,35 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createMesh()
+{
+    this->log("Advection","createMesh","start");
+    this->timerTool("Constructor").start();
+    
+    createMeshModel<mesh_type>(*this, M_mesh, this->fileNameMeshPath() );
+    CHECK( M_mesh ) << "mesh generation failed";
+
+    double tElapsed = this->timerTool("Constructor").stop("create");
+    this->log("Advection","createMesh", (boost::format("finish in %1% s") %tElapsed).str() );
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
     this->log("Advection","createFunctionSpaces","start");
     this->timerTool("Constructor").start();
     
-    // Advection space
-    M_space = space_advection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+    // Advection 
+    M_Xh = space_advection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+    M_fieldSolution.reset( new element_advection_type(M_Xh, "phi") );
+
+    // Advection velocity 
+    M_XhAdvectionVelocity = space_advection_velocity_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+    M_fieldAdvectionVelocity.reset( new element_advection_velocity_type(M_XhAdvectionVelocity, "AdvectionVelocity") );
 
     double tElapsed = this->timerTool("Constructor").stop("create");
-    this->log("Advection","createFUnctionSpaces", (boost::format("finish in %1% s") %tElapsed).str() );
+    this->log("Advection","createFunctionSpaces", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -122,10 +145,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createAlgebraicData()
     this->log("Advection","createAlgebraicData","start");
     this->timerTool("Constructor").start();
     
-    // Solution
-    M_solution.reset( new element_advection_type(M_space, "phi") );
     // Backend
-    M_backend = backend_type::build( soption(_name="backend"), this->prefix(), M_space->worldComm() );
+    M_backend = backend_type::build( soption(_name="backend"), this->prefix(), M_Xh->worldComm() );
 
     double tElapsed = this->timerTool("Constructor").stop("create");
     this->log("Advection","createAlgebraicData", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -142,7 +163,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretization()
     std::string suffixName = "";
     if ( myFileFormat == "binary" )
          suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
-    M_bdf = bdf( _vm=Environment::vm(), _space=M_space,
+    M_bdf = bdf( _vm=Environment::vm(), _space=M_Xh,
                        _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"phi"+suffixName)),
                        _prefix=this->prefix(),
                        // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
@@ -214,7 +235,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
 
     int previousTimeOrder = this->timeStepBDF()->timeOrder();
 
-    M_bdf->next( *M_solution );
+    M_bdf->next( *M_fieldSolution );
 
     int currentTimeOrder = this->timeStepBDF()->timeOrder();
 
@@ -228,7 +249,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
         if (!this->rebuildCstPartInLinearSystem())
         {
             this->log("Advection","updateTimeStepBDF", "do rebuildCstLinearPDE" );
-            M_algebraicFactory->rebuildCstLinearPDE(M_solution);
+            M_algebraicFactory->rebuildCstLinearPDE(M_fieldSolution);
         }
     }
 
@@ -466,7 +487,7 @@ template<typename ExprT>
 void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr)
 {
-    M_advectionVelocity->on(_range=elements(this->mesh()), _expr=v_expr );
+    M_fieldAdvectionVelocity->on(_range=elements(this->mesh()), _expr=v_expr );
 }
 
 //----------------------------------------------------------------------------//
