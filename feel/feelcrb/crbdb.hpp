@@ -121,13 +121,13 @@ public:
     }
 
     //! \return the db local path
-    fs::path dbLocalPath() const;
+    virtual fs::path dbLocalPath() const;
 
     //! \return the db system path
     fs::path dbSystemPath() const;
 
     //! \return path to database, empty path if not found
-    fs::path lookForDB() const;
+    virtual fs::path lookForDB() const;
 
     //! \return \c variables_map
     po::variables_map vm()
@@ -196,9 +196,11 @@ protected:
     {}
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
+
+protected:
+    std::string M_prefixdir;
 private:
 
-    std::string M_prefixdir;
     std::string M_name;
     std::string M_dbfilename;
     po::variables_map M_vm;
