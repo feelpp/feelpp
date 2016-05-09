@@ -22,7 +22,12 @@ public:
     //--------------------------------------------------------------------//
     // Constructor
     Advection( 
-            space_advection_ptrtype const& space,
+            std::string const& prefix,
+            WorldComm const& _worldComm = Environment::worldComm(),
+            std::string const& subPrefix = "",
+            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+
+    static self_ptrtype New( 
             std::string const& prefix,
             WorldComm const& _worldComm = Environment::worldComm(),
             std::string const& subPrefix = "",
