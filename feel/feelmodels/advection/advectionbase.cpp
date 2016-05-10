@@ -74,6 +74,9 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
     M_blockVectorSolution.resize(1);
     M_blockVectorSolution(0) = this->fieldSolutionPtr();
     M_blockVectorSolution.buildVector( this->backend() );
+
+    // Time step
+    this->initTimeStep();
     
     // Algebraic factory
     if( buildModelAlgebraicFactory )
@@ -133,6 +136,16 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     // Advection velocity 
     M_XhAdvectionVelocity = space_advection_velocity_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
     M_fieldAdvectionVelocity.reset( new element_advection_velocity_type(M_XhAdvectionVelocity, "AdvectionVelocity") );
+    
+    // Load the field velocity convection from a math expr
+    if ( Environment::vm().count(prefixvm(this->prefix(),"advection-velocity").c_str()) )
+    {
+        std::string pathGinacExpr = this->directoryLibSymbExpr() + "/advection-velocity";
+        M_exprAdvectionVelocity = expr<nDim,1>( soption(_prefix=this->prefix(),_name="advection-velocity"),
+                                                                 this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
+        //this->updateFieldVelocityConvection();
+        M_fieldAdvectionVelocity->on( _range=elements(this->mesh()), _expr=*M_exprAdvectionVelocity );
+    }
 
     double tElapsed = this->timerTool("Constructor").stop("create");
     this->log("Advection","createFunctionSpaces", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -256,6 +269,35 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
     this->timerTool("TimeStepping").stop("updateBdf");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
     this->log("Advection","updateTimeStepBDF", "finish" );
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::initTimeStep()
+{
+    // start or restart time step scheme
+    if (!this->doRestart())
+    {
+        // start time step
+        M_bdf->start(*M_fieldSolution);
+        // up current time
+        this->updateTime( M_bdf->time() );
+    }
+    else
+    {
+        // start time step
+        M_bdf->restart();
+        // load a previous solution as current solution
+        *M_fieldSolution = M_bdf->unknown(0);
+        // up initial time
+        this->setTimeInitial( M_bdf->timeInitial() );
+        // restart exporter
+        //this->restartPostProcess();
+        // up current time
+        this->updateTime( M_bdf->time() );
+
+        this->log("Advection","initTimeStep", "restart bdf/exporter done" );
+    }
 }
 
 //----------------------------------------------------------------------------//
@@ -487,6 +529,7 @@ template<typename ExprT>
 void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr)
 {
+    M_exprAdvectionVelocity.reset(); // remove symbolic expr
     M_fieldAdvectionVelocity->on(_range=elements(this->mesh()), _expr=v_expr );
 }
 
