@@ -2,6 +2,7 @@
 #define _ADVECTIONBASE_HPP 1
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelts/bdf.hpp>
@@ -20,8 +21,11 @@ namespace FeelModels {
 enum class AdvectionStabMethod { NONE=0, GALS, CIP, SUPG, SGS };
 
 template< typename ConvexType, typename BasisAdvectionType >
-class AdvectionBase
-    : public ModelNumerical
+class AdvectionBase : 
+    public ModelNumerical,
+    public MarkerManagementDirichletBC,
+    public MarkerManagementNeumannBC
+
 {
 public :
     typedef ModelNumerical super_type;
@@ -160,6 +164,9 @@ public :
     // Linear PDE
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilization( DataUpdateLinear & data ) const;
+    virtual void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const =0;
+    virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const = 0;
+    virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const=0;
     
     void updateBCNeumannLinearPDE( vector_ptrtype& F ) const;
     

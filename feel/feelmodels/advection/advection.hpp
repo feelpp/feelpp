@@ -35,6 +35,19 @@ public:
     //--------------------------------------------------------------------//
     // Initialization
     void init( bool buildModelAlgebraicFactory = true );
+    void loadConfigBCFile();
+    //--------------------------------------------------------------------//
+    // BC and source term assembly
+    void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
+    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
+    void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const;
+
+protected:
+    // Boundary conditions
+    map_scalar_field<2> M_bcDirichlet;
+    map_scalar_field<2> M_bcNeumann;
+    map_scalar_fields<2> M_bcRobin;
+
 };
     
 
