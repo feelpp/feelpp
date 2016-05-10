@@ -216,6 +216,7 @@ fit( ExprT v,
         std::string dataFile = soption("fit.datafile"), 
         int intType = ioption("fit.kind") )
 {
+    LOG(INFO) << "Fit "<< dataFile << " with " << intType << std::endl;
     typedef Fit<ExprT> fit_t;
     return Expr< fit_t >(  fit_t( v, dataFile, intType ) );
 }

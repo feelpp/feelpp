@@ -284,7 +284,7 @@ class InterpolatorSpline : public Interpolator
     {
         SpMat A((this->M_data.size()-1)*4,(this->M_data.size()-1)*4);
         std::vector<T> coef;
-        Eigen::VectorXd b((this->M_data.size()-1)*4);
+        Eigen::VectorXd b = Eigen::VectorXd::Zero((this->M_data.size()-1)*4);
         for(int i = 0; i<this->M_data.size()-1; i++)
         {
             double x  = this->M_data.at(i).first;
@@ -360,8 +360,13 @@ class InterpolatorSpline : public Interpolator
                 }
         }
         A.setFromTriplets(coef.begin(), coef.end());
+Eigen::SparseLU<SpMat> lu(A);
+        LOG(INFO) << "Here the |det| \t" << lu.absDeterminant() << std::endl;
+        LOG(INFO) << "Here the matrix \n" << A << std::endl;
         Eigen::SparseQR<SpMat,Eigen::COLAMDOrdering<int>> solver(A);
         sol = solver.solve(b);
+        LOG(INFO) << "Here the solution \n" << sol << std::endl;
+        LOG(INFO) << "Here the rhs \n" << b << std::endl;
     }
         InterpolatorSpline(const InterpolatorSpline &) = default;
         value_type operator()(double _x)
@@ -380,6 +385,7 @@ class InterpolatorSpline : public Interpolator
             double c = 0.;
             double d = 0.;
             getCoef(_x, a, b, c, d);
+            LOG(INFO) << "_x = " << _x << "\tVal = " << a << " - " << b << " - " << c << " - " << d << "\t" << 3.*a*_x*_x+2.*b*_x+c << "\n";
             return 3.*a*_x*_x+2.*b*_x+c;
         }
 
@@ -399,6 +405,7 @@ class InterpolatorSpline : public Interpolator
             auto it = std::lower_bound(M_data.begin(), M_data.end(), lower, [] (pair_type a, pair_type b){ return a.first < b.first ; } );
             if(it == M_data.end()) // _x > M_data.end()->first 
             {
+                LOG(INFO) << "A\n";
                 a = sol((M_data.size()-2)*4+0);
                 b = sol((M_data.size()-2)*4+1);
                 c = sol((M_data.size()-2)*4+2);
@@ -406,6 +413,7 @@ class InterpolatorSpline : public Interpolator
             }
             else if(it == M_data.begin()) // _x < M_data.begin()->first 
             {
+                LOG(INFO) << "B\n";
                 a = sol(0);
                 b = sol(1);
                 c = sol(2);
@@ -413,12 +421,16 @@ class InterpolatorSpline : public Interpolator
             }
             else
             {
+                LOG(INFO) << "C\n";
                 size_t index = std::distance(M_data.begin(), it)-1;
+                LOG(INFO) << "index = " << index << "\t";
+                LOG(INFO) << "size = " << sol.size() << "\n";
                 a = sol(index*4+0);
                 b = sol(index*4+1);
                 c = sol(index*4+2);
                 d = sol(index*4+3);
             }
+        LOG(INFO) << "Here the solution \n" << sol << std::endl;
         }
 
 }; // InterpolatorSpline
@@ -438,10 +450,9 @@ class InterpolatorAkima : public Interpolator
         using T = Eigen::Triplet<value_type>;
         InterpolatorAkima( std::vector<pair_type> data) : super(data)
     {
-        // two entries : one spline
         SpMat A((this->M_data.size()-1)*4,(this->M_data.size()-1)*4);
         std::vector<T> coef;
-        Eigen::VectorXd b((this->M_data.size()-1)*4);
+        Eigen::VectorXd b = Eigen::VectorXd::Zero((this->M_data.size()-1)*4);
         double x, xp;
         for(int i = 0; i<this->M_data.size()-1; i++)
         {
