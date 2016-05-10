@@ -194,6 +194,7 @@ protected:
     // Advection velocity
     space_advection_velocity_ptrtype M_XhAdvectionVelocity;
     element_advection_velocity_ptrtype M_fieldAdvectionVelocity;
+    boost::optional<vector_field_expression<nDim,1,2> > M_exprAdvectionVelocity;
     //--------------------------------------------------------------------//
     // Stabilization
     static const std::map<std::string, AdvectionStabMethod> AdvectionStabMethodIdMap;
