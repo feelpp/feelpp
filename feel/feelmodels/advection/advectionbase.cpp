@@ -55,6 +55,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build()
     this->createAlgebraicData();
     // Bdf time scheme
     this->createTimeDiscretization();
+    // Exporters
+    this->createExporters();
 
     this->log("Advection","build", "finish");
 }
@@ -104,6 +106,9 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     const std::string stabmeth = soption( _name="advec-stab-method", _prefix=this->prefix() );
     CHECK(AdvectionStabMethodIdMap.count(stabmeth)) << stabmeth <<" is not in the list of possible stabilization methods\n";
     M_stabMethod = AdvectionStabMethodIdMap.at(stabmeth);
+
+    M_doExportAll = boption(_name="export-all",_prefix=this->prefix());
+    M_doExportAdvectionVelocity = boption(_name="export-advection-velocity",_prefix=this->prefix());
     
     this->log("Advection","loadParametersFromOptionsVm", "finish");
 }
@@ -195,6 +200,22 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretization()
     this->log("Advection","createTimeDiscretization", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createExporters()
+{
+    this->log("Advection","createExporters", "start");
+    this->timerTool("Constructor").start();
+
+    std::string geoExportType="static";//change_coords_only, change, static
+    M_exporter = exporter( _mesh=this->mesh(),
+                           _name="Export",
+                           _geo=geoExportType,
+                           _path=this->exporterPath() );
+
+    double tElpased = this->timerTool("Constructor").stop("createExporters");
+    this->log("Advection","createExporters",(boost::format("finish in %1% s")%tElpased).str() );
+}
 
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
@@ -558,6 +579,48 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::solve()
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     this->log("Advection","solve", (boost::format("finish in %1% s")%tElapsed).str() );
+}
+
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+// Export results
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
+{
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
+{
+    if ( !M_exporter->doExport() ) return;
+
+    this->log("Advection","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    M_exporter->step( time )->add( prefixvm(this->prefix(),"phi"),
+                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"phi")),
+                                   this->fieldSolution() );
+    if ( ( M_doExportAdvectionVelocity || M_doExportAll ) )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"advection-velocity"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"advection_velocity")),
+                                       this->fieldAdvectionVelocity() );
+    }
+    M_exporter->save();
+
+    this->exportMeasures( time );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("Advection","exportResults", "finish");
 }
 
 } // namespace FeelModels

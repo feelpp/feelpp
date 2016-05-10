@@ -6,6 +6,7 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelts/bdf.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 
 /*
@@ -94,6 +95,11 @@ public :
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
     //--------------------------------------------------------------------//
+    // Exporter
+    typedef Exporter<mesh_type, nOrderGeo> exporter_type;
+    typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
+
+    //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
 
@@ -117,6 +123,7 @@ public :
     void createFunctionSpaces();
     void createAlgebraicData();
     void createTimeDiscretization();
+    void createExporters();
     
     //--------------------------------------------------------------------//
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"AdvectionMesh.path"); }
@@ -179,6 +186,11 @@ public :
     // Solve
     virtual void solve();
 
+    // Export results
+    void exportMeasures( double time );
+    void exportResults() { this->exportResults( this->currentTime() ); }
+    void exportResults( double time );
+
 protected:
 
     bool M_isUpdatedForUse;
@@ -195,13 +207,17 @@ protected:
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
     //--------------------------------------------------------------------//
-    // Solution
-    element_advection_ptrtype M_fieldSolution;
-    //--------------------------------------------------------------------//
     // Advection velocity
     space_advection_velocity_ptrtype M_XhAdvectionVelocity;
     element_advection_velocity_ptrtype M_fieldAdvectionVelocity;
     boost::optional<vector_field_expression<nDim,1,2> > M_exprAdvectionVelocity;
+    //--------------------------------------------------------------------//
+    // Solution
+    element_advection_ptrtype M_fieldSolution;
+    //--------------------------------------------------------------------//
+    // Export
+    exporter_ptrtype M_exporter;
+    bool M_doExportAll, M_doExportAdvectionVelocity;
     //--------------------------------------------------------------------//
     // Stabilization
     static const std::map<std::string, AdvectionStabMethod> AdvectionStabMethodIdMap;

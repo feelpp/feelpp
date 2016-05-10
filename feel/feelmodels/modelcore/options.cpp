@@ -335,8 +335,8 @@ advection_options(std::string const& prefix)
         (prefixvm(prefix,"advection-velocity").c_str(), Feel::po::value<std::string>(), "math expression")
         (prefixvm(prefix,"advec-stab-method").c_str(), Feel::po::value<std::string>()->default_value( "GALS" ), "stab method")
         //(prefixvm(prefix,"initial-solution.temperature").c_str(), Feel::po::value<std::string>(), "math expression")
-        //(prefixvm(prefix,"do_export_all").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_all")
-        //(prefixvm(prefix,"do_export_velocity-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_velocity-convection")
+        (prefixvm(prefix,"export-all").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_all")
+        (prefixvm(prefix,"export-advection-velocity").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_advection_velocity")
         ;
     return advectionOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
