@@ -15,7 +15,7 @@ feelpp_add_application( application_advection_2d SRCS main_adv.cpp
   #DEFS FEELPP_DIM=3
 #)
 
-#feelpp_add_testcase(cavity)
+feelpp_add_testcase(ring PREFIX feelpp_advection)
 #feelpp_add_testcase(TurekHron)
 #feelpp_add_testcase(TurekHronExt3d)
 
