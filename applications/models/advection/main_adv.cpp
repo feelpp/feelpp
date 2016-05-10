@@ -22,7 +22,7 @@ runAdvectionApplication()
     if ( Adv->isStationary() )
     {
         Adv->solve();
-        //Adv->exportResults();
+        Adv->exportResults();
     }
     else
     {
@@ -36,7 +36,7 @@ runAdvectionApplication()
             }
 
             Adv->solve();
-            //Adv->exportResults();
+            Adv->exportResults();
         }
     }
 
@@ -56,7 +56,7 @@ main( int argc, char** argv )
 
 	Environment env( _argc=argc, _argv=argv,
                      _desc=advectionoptions,
-                   _about=about(_name="application_fluid",
+                   _about=about(_name="application_advection",
                                 _author="Feel++ Consortium",
                                 _email="feelpp-devel@feelpp.org"));
 
