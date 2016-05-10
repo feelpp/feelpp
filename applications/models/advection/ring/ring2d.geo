@@ -10,8 +10,9 @@ Line(3) = {3,4};
 Circle(4) = {4,5,1};
 Line Loop(5) = {1,2,3,4};
 Plane Surface(6) = {5};
-Physical Line(10) = {1};
-Physical Line(20) = {2};
-Physical Line(30) = {3};
-Physical Line(40) = {4};
-Physical Surface(7) = {6};
+
+Physical Line("Bottom") = {1};
+Physical Line("OuterCircle") = {2};
+Physical Line("Left") = {3};
+Physical Line("InnerCircle") = {4};
+Physical Surface("Omega") = {6};
