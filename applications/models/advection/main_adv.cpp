@@ -51,7 +51,7 @@ main( int argc, char** argv )
 	po::options_description advectionoptions( "application advection options" );
     advectionoptions.add( feelmodels_options("advection") );
     advectionoptions.add_options()
-        ("fe-approximation", Feel::po::value<std::string>()->default_value( "P2P1" ), "fe-approximation : P2P1,P1P1 ")
+        ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P2,P1 ")
         ;
 
 	Environment env( _argc=argc, _argv=argv,
@@ -63,10 +63,9 @@ main( int argc, char** argv )
     std::string feapprox = soption(_name="fe-approximation");
     if ( feapprox == "P2" )
         runAdvectionApplication<2>();
-#if 0//FEELPP_DIM == 2
     else if ( feapprox == "P1" )
         runAdvectionApplication<1>();
-#endif
+    
     else CHECK( false ) << "invalid feapprox " << feapprox;
 
     return 0;
