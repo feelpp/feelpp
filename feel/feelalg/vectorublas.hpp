@@ -998,9 +998,9 @@ public:
     //@}
 
 #ifdef FEELPP_HAS_HDF5
-    void saveHDF5( std::string const& filename );
-    void loadHDF5( std::string const& filename );
-    void ioHDF5( bool isLoad, std::string const& filename );
+    void saveHDF5( std::string const& filename, std::string tableName = "element", bool appendMode = false );
+    void loadHDF5( std::string const& filename, std::string tableName = "element" );
+    void ioHDF5( bool isLoad, std::string const& filename, std::string tableName = "element", bool appendMode = false );
 #endif
 
 
