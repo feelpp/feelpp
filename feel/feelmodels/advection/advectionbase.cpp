@@ -374,7 +374,6 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
                     _expr=M_bdf->polyDerivCoefficient(0)*idt(phi)*id(psi),
                     _geomap=this->geomap() 
                     );
-
         }
         if (build_Form1TransientTerm)
         {
@@ -391,6 +390,14 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
 
     // Stabilization
     this->updateLinearPDEStabilization( data );
+    
+    // Source term
+    this->updateSourceTermLinearPDE(F, BuildCstPart);
+
+    // Boundary conditions
+    this->updateWeakBCLinearPDE(A, F, BuildCstPart);
+    if ( !BuildCstPart && _doBCStrongDirichlet)
+        this->updateBCStrongDirichletLinearPDE(A,F);
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("Advection","updateLinearPDE","finish in "+(boost::format("%1% s") %timeElapsed).str() );
