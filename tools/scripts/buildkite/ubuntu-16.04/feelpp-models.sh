@@ -10,14 +10,7 @@ export PKG_CONFIG_PATH=${FEELPP_DEP_INSTALL_PREFIX}/lib/pkgconfig:$PKG_CONFIG_PA
 export PYTHONPATH=${FEELPP_DEP_INSTALL_PREFIX}/lib/python2.7/site-packages:/usr/lib/paraview/site-packages:$PYTHONPATH
 export MANPATH=${FEELPP_DEP_INSTALL_PREFIX}/share/man:$MANPATH
 
-echo '--- build directory'
-if [ -d build ]; then rm -rf build; fi
-mkdir -p build
 cd build
 
-echo '--- configure -r'
-#../configure -r  --cmakeflags="-DFEELPP_ENABLE_VTK_INSITU=ON -DCMAKE_INSTALL_PREFIX=${FEELPP_HOME}"
-../configure -r  --cmakeflags="-DCMAKE_INSTALL_PREFIX=${FEELPP_HOME}"
-
-echo '--- make feelpp library'
-make -j10 feelpp
+echo '--- make feelpp model library'
+make -j10 feelpp-models

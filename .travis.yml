@@ -113,7 +113,8 @@ before_install:
   $BOOSTROOT
 - bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh; echo
   $GMSH_DIR
-- bash ports/travis/petsc.sh; export PETSC_DIR=$HOME/software/install/petsc;
+- export M_PETSC_VERSION=3.7.0
+- bash ports/travis/petsc.sh ${M_PETSC_VERSION}; export PETSC_DIR=$HOME/software/install/petsc-${M_PETSC_VERSION};
   echo $PETSC_DIR
 - bash ports/travis/cln.sh; export CLN_DIR=$HOME/software/install/cln; echo $CLN_DIR
 install:
