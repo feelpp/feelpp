@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE( test_main_fit )
         case 0: //P0 interpolation
             {
                 BOOST_CHECK_SMALL(max_K, 0.95);
-                BOOST_CHECK_SMALL(max_Kd, 6.); // the derivative is null
+                BOOST_CHECK_SMALL(max_Kd, 6.0001); // the derivative is null
                 break;
             }
         case 1: // P1 interpolation
