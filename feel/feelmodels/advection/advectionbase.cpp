@@ -475,7 +475,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 linearForm += integrate(
                         _range=elements(mesh),
-                        _expr=/*coeff**/L_op*f,
+                        _expr=coeff*L_op*f,
                         _geomap=this->geomap() );
 
                 break ;
