@@ -2,18 +2,21 @@
 
 set -e
 
+NPROCS=10
+echo '--- apt-get update'
+apt-get -qq update
+
 echo '--- install apt-add-repository'
 apt-get -y --force-yes install software-properties-common python-software-properties
 
 echo '--- added gcc toolchain and clang repo'
 apt-add-repository 'deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu trusty main'
 apt-add-repository 'deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.7 main'
+apt-cache search g++-4.9
+apt-cache search clang-3.7
 
 echo '--- added openturns repo'
 curl http://ubuntu.openturns.org/openturns.org-repo.key | apt-key add -
-
-echo '--- apt-get update'
-apt-get -qq update
 
 echo '--- apt-get install'
 apt-get -y --force-yes install \
@@ -44,7 +47,7 @@ export FEELPP_DEP_INSTALL_PREFIX=/usr/local
 # Boost
 export BOOST_VERSION=1.59.0
 export BOOST_DIR=boost_1_59_0
-echo '--- compiling/installing boost ${BOOST_VERSION}'
+echo '--- compiling/installing boost $BOOST_VERSION'
 
 if ! [ -f ${FEELPP_DEP_INSTALL_PREFIX}/boost-${BOOST_VERSION} ]; then
 wget http://sourceforge.net/projects/boost/files/boost/${BOOST_VERSION}/${BOOST_DIR}.tar.bz2/download -O ${BOOST_DIR}.tar.bz2 \
@@ -53,7 +56,7 @@ wget http://sourceforge.net/projects/boost/files/boost/${BOOST_VERSION}/${BOOST_
     && echo "using mpi ;" >> user-config.jam \
     && echo "" >> user-config.jam \
     && ./bootstrap.sh \
-    && ./bjam -j4 install \
+    && ./bjam -j$NPROCS install \
       --layout=tagged \
       --prefix=${FEELPP_DEP_INSTALL_PREFIX} \
       --user-config=user-config.jam \
@@ -65,7 +68,7 @@ fi
 
 # Install PETSc from source
 export PETSC_VERSION=3.6.3
-echo '--- compiling/installing PETSc ${PETSC_VERSION}'
+echo '--- compiling/installing PETSc $PETSC_VERSION'
 if ! [ -f ${FEELPP_DEP_INSTALL_PREFIX}/petsc-${PETSC_VERSION} ]; then
    cd /tmp && \
     wget -nc http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-${PETSC_VERSION}.tar.gz && \
@@ -97,7 +100,7 @@ fi
 
 # Install SLEPc from source
 export SLEPC_VERSION=3.6.3
-echo '--- compiling/installing SLEPc ${SLEPC_VERSION}'
+echo '--- compiling/installing SLEPc $SLEPC_VERSION'
 if ! [ -f ${FEELPP_DEP_INSTALL_PREFIX}/slepc-${SLEPC_VERSION} ]; then
 cd /tmp && \
     export PETSC_DIR=${FEELPP_DEP_INSTALL_PREFIX} && \
@@ -136,7 +139,7 @@ cd /tmp \
         -DENABLE_MUMPS=OFF \
         -DENABLE_OPENMP=ON  \
         .. \
-    && make -j4 \
+    && make -j$NPROCS \
     && make install \
     && rm -rf /tmp/*
 touch ${FEELPP_DEP_INSTALL_PREFIX}/gmsh-${GMSH_VERSION}
@@ -144,7 +147,7 @@ fi
 
 # ParaView
 export PARAVIEW_VERSION=4.4.0
-echo '--- compiling/installing PARAVIEW ${PARAVIEW_VERSION}'
+echo '--- compiling/installing PARAVIEW $PARAVIEW_VERSION'
 if ! [ -f ${FEELPP_DEP_INSTALL_PREFIX}/paraview-${PARAVIEW_VERSION} ]; then
 cd /tmp \
     && wget "http://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v4.4&type=source&os=all&downloadFile=ParaView-v${PARAVIEW_VERSION}-source.tar.gz" -O ParaView-v${PARAVIEW_VERSION}-source.tar.gz \
@@ -163,7 +166,7 @@ cd /tmp \
         -DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON \
         -DPARAVIEW_USE_MPI=ON \
         .. \
-    && make -j8 \
+    && make -j$NPROCS \
     && make install \
     && rm -rf /tmp/*
 touch ${FEELPP_DEP_INSTALL_PREFIX}/paraview-${PARAVIEW_VERSION}

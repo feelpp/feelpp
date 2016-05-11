@@ -152,7 +152,7 @@ public:
     Mesh1D( WorldComm const& worldComm = Environment::worldComm() )
         :
         super_visitable(),
-        super( worldComm ),
+        super( 1, nRealDim, worldComm ),
         super_elements( worldComm ),
         super_points( worldComm ),
         super_faces( worldComm )

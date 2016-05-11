@@ -764,13 +764,21 @@ void SolverNonLinearPetsc<T>::init ()
 
         if ( this->showSNESMonitor() )
         {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+            ierr = SNESMonitorSet( M_snes,__feel_petsc_snes_monitor,PETSC_NULL,PETSC_NULL );
+#else
             ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_NULL,PETSC_NULL );
+#endif
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
         if ( this->showKSPMonitor() )
         {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+            ierr = KSPMonitorSet( M_ksp,__feel_petsc_monitor,PETSC_NULL,PETSC_NULL );
+#else
             ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+#endif
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
