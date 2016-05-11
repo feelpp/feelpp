@@ -49,8 +49,8 @@ For k In {1:nbCut}
     vol[] += {out1[1],out2[1],out3[1],out4[1]};
 EndFor
 
-Physical Surface("inflow") = inflow[];
-Physical Surface("outflow") = outflow[];
+Physical Surface("inlet") = inflow[];
+Physical Surface("outlet") = outflow[];
 Physical Surface("wall") = wall[];
 // each surface between the parts
 For k In {0:nbCut-2}
@@ -60,4 +60,4 @@ EndFor
 Physical Surface(Sprintf("cut%g", nbCut)) = cutH1[];
 Physical Surface(Sprintf("cut%g", nbCut+1)) = cutH2[];
 
-Physical Volume("fluid") = vol[];
+Physical Volume("omega") = vol[];
