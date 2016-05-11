@@ -100,9 +100,12 @@ public:
         super( syms ),
         M_fun( fun ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
-        M_filename( Environment::expand( (filename.empty() || fs::path(filename).is_absolute())? filename : (fs::current_path()/filename).string() ) ),
+        M_filename(),
         M_exprDesc( exprDesc )
         {
+            std::string filenameExpanded = Environment::expand( filename );
+            M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::current_path()/filenameExpanded).string();
+
             DVLOG(2) << "Ginac constructor with expression_type \n";
             GiNaC::lst exprs(fun);
             GiNaC::lst syml;
