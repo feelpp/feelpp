@@ -62,7 +62,7 @@ bool Feel::HDF5::groupExist( const std::string& groupName )
 
 void Feel::HDF5::openFile( const std::string& fileName,
                            const comm_type& comm,
-                           const bool& existing )
+                           const bool& existing, const bool& rdwr )
 {
     hid_t plistId;
     MPI_Comm mpiComm = comm.comm();
@@ -75,7 +75,20 @@ void Feel::HDF5::openFile( const std::string& fileName,
     // Create/open a file collectively and release property list identifier.
     if (existing)
     {
-        M_fileId = H5Fopen (fileName.c_str(), H5F_ACC_RDONLY, plistId);
+        /* if the file does not already exists
+         * this is an error case: The user marked the file as existing
+         * and it does not exists. Create the file so we don't get this error
+         */
+        if( !boost::filesystem::exists( fileName ) )
+        { M_fileId = H5Fcreate (fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, plistId); }
+        /* Case where the file exists */
+        else
+        {
+            if(rdwr)
+            { M_fileId = H5Fopen (fileName.c_str(), H5F_ACC_RDWR, plistId); }
+            else
+            { M_fileId = H5Fopen (fileName.c_str(), H5F_ACC_RDONLY, plistId); }
+        }
     }
     else
     {
@@ -133,7 +146,8 @@ void Feel::HDF5::createTable ( const std::string& groupName,
                                const std::string& tableName,
                                hid_t& fileDataType,
                                hsize_t tableDimensions[],
-                               const bool& existing )
+                               const bool& existing,
+                               unsigned int nbDims )
 {
     if (!existing)
     {
@@ -143,7 +157,7 @@ void Feel::HDF5::createTable ( const std::string& groupName,
     tableHandle& currentTable = M_tableList[groupName+tableName] ;
     hid_t group_id = M_groupList[groupName] ;
 
-    currentTable.filespace = H5Screate_simple (2, tableDimensions,
+    currentTable.filespace = H5Screate_simple (nbDims, tableDimensions,
                                                tableDimensions);
 #ifdef H5_USE_16_API
     currentTable.dataset = H5Dcreate (group_id, tableName.c_str(), fileDataType,
@@ -159,11 +173,12 @@ void Feel::HDF5::createTable ( const std::string& groupName,
 
 void Feel::HDF5::createTable( const std::string& tableName,
                               hid_t& fileDataType,
-                              hsize_t tableDimensions[] )
+                              hsize_t tableDimensions[],
+                              unsigned int nbDims )
 {
     tableHandle& currentTable = M_tableList[tableName];
 
-    currentTable.filespace = H5Screate_simple (2, tableDimensions,
+    currentTable.filespace = H5Screate_simple (nbDims, tableDimensions,
                                                tableDimensions);
 #ifdef H5_USE_16_API
     currentTable.dataset = H5Dcreate (M_fileId, tableName.c_str(), fileDataType,
@@ -195,11 +210,11 @@ void Feel::HDF5::openTable( const std::string& tableName,
 
 void Feel::HDF5::write( const std::string& tableName,
                         hid_t& memDataType, hsize_t currentCount[],
-                        hsize_t currentOffset[], void* buffer )
+                        hsize_t currentOffset[], void* buffer, unsigned int nbDims )
 {
     tableHandle& currentTable = M_tableList[tableName];
 
-    hid_t memspace = H5Screate_simple (2, currentCount, currentCount);
+    hid_t memspace = H5Screate_simple (nbDims, currentCount, currentCount);
 
     H5Sselect_hyperslab (currentTable.filespace, H5S_SELECT_SET, currentOffset,
                          NULL, currentCount, NULL);
@@ -211,11 +226,11 @@ void Feel::HDF5::write( const std::string& tableName,
 
 void Feel::HDF5::read( const std::string& tableName,
                        hid_t& memDataType, hsize_t currentCount[],
-                       hsize_t currentOffset[], void* buffer )
+                       hsize_t currentOffset[], void* buffer, int nbDims )
 {
     tableHandle& currentTable = M_tableList[tableName];
 
-    hid_t memspace = H5Screate_simple (2, currentCount, currentCount);
+    hid_t memspace = H5Screate_simple (nbDims, currentCount, currentCount);
 
     H5Sselect_hyperslab (currentTable.filespace, H5S_SELECT_SET, currentOffset,
                          NULL, currentCount, NULL);
