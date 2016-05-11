@@ -133,26 +133,14 @@ public:
     Mesh0D( WorldComm const& worldComm = Environment::worldComm() )
         :
         super_visitable(),
-        super( worldComm ),
+        super( 0, nRealDim, worldComm ),
         super_elements( worldComm ),
         super_points( worldComm )
     {}
 
+    Mesh0D( Mesh0D const& m ) = default;
+    Mesh0D( Mesh0D && m ) = default;
 
-    /**
-     * copy constructor
-     */
-    Mesh0D( Mesh0D const & m )
-        :
-        super_visitable(),
-        super( m ),
-        super_elements( m ),
-        super_points( m )
-    {}
-
-    /**
-     * destructor
-     */
     ~Mesh0D()
     {}
 
@@ -162,18 +150,8 @@ public:
      */
     //@{
 
-    Mesh0D& operator=( Mesh0D const& m )
-    {
-        if ( this != &m )
-        {
-            super::operator=( m );
-            super_elements::operator=( m );
-            super_points::operator=( m );
-        }
-
-        return *this;
-    }
-
+    Mesh0D& operator=( Mesh0D const& m ) = default;
+    Mesh0D& operator=( Mesh0D && m ) = default;
 
     //@}
 

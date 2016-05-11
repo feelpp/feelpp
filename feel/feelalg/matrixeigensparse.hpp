@@ -95,6 +95,8 @@ public:
 
     MatrixEigenSparse( size_type r, size_type c, WorldComm const& worldComm=Environment::worldComm() );
 
+    MatrixEigenSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
+
     MatrixEigenSparse( MatrixEigenSparse const & m );
 
     ~MatrixEigenSparse();
