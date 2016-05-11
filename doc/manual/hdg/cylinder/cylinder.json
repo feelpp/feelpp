@@ -7,7 +7,7 @@
         "omega":
         {
             "name":"copper",
-            "cond":"-1"
+            "cond":"1"
             // "alpha":"3.35e-3",
             // "T0":"293",
             // "sigma0":"58e+3",
@@ -35,6 +35,17 @@
                     "expr":"0"
                 }
             }
+        }
+    },
+    "Functions":
+    {
+        "u":
+        {
+            "expr":"{0,0,0}:x:y:z"
+        },
+        "p":
+        {
+            "expr":"0:x:y:z"
         }
     },
     "PostProcess":
