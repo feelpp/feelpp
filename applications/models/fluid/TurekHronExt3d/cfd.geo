@@ -26,19 +26,19 @@ Circle(6) = {8, 5, 6};
 Point(9) = {0.6,0.19,0.,myhprecis};
 Point(10) = {0.6,0.19+hstruct,0.,myhprecis};
 
-Point(11) = {0.6,0.19+hstruct/2.,0,myhprecis};
-Point(12) = {1.5,0.19+hstruct/2.,0,myhprecis*3.};
+//Point(11) = {0.6,0.19+hstruct/2.,0,myhprecis};
+//Point(12) = {1.5,0.19+hstruct/2.,0,myhprecis*3.};
 
 Line(7) = {6, 9};
 Line(8) = {9, 11};
 Line(9) = {11, 10};
 Line(10) = {10, 7};
-Line(11) = {11, 12};
+//Line(11) = {11, 12};
 
 
 // surface fluid
 Line Loop(11) = {3, 4, 1, 2};
-Line Loop(12) = {5, 6, 7, 8, 9, 10,11,-11};
+Line Loop(12) = {5, 6, 7, 8, 9, 10};
 Plane Surface(1) = {11, 12};
 
 Extrude {0, 0, Haut} {
