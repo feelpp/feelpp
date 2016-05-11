@@ -1241,7 +1241,7 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename )
 #else
 template<typename T, typename Storage>
 void
-VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename )
+VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename, std::string tableName, bool appendMode )
 {
     bool useTransposedStorage = true;
     const int dimsComp0 = (useTransposedStorage)? 1 : 0;
@@ -1274,10 +1274,11 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename )
     std::vector<double> dataStorage( dm.nLocalDofWithoutGhost() );
 
     HDF5 hdf5;
-    hdf5.openFile( filename, this->comm().localComm(), isLoad );
 
     if ( isLoad )
     {
+        hdf5.openFile( filename, this->comm().localComm(), isLoad );
+
         if ( false )
         {
             std::vector<uint> sizeValuesReload( 1 );
@@ -1287,15 +1288,15 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename )
             CHECK( sizeValuesReload[0] == dm.nLocalDofWithoutGhost() ) << "error : must be equal "  << sizeValuesReload[0] << " " << dm.nLocalDofWithoutGhost();
         }
 
-        hdf5.openTable( "element",dimsElt );
+        hdf5.openTable( tableName, dimsElt );
         if ( dm.nLocalDofWithoutGhost() > 0 )
-            hdf5.read( "element", H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, dataStorage.data()/*&(M_vec[0])*/ );
+            hdf5.read( tableName, H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, dataStorage.data()/*&(M_vec[0])*/ );
         else
         {
             double uselessValue=0;
-            hdf5.read( "element", H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, &uselessValue );
+            hdf5.read( tableName, H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, &uselessValue );
         }
-        hdf5.closeTable( "element" );
+        hdf5.closeTable( tableName );
 
         for ( size_type k=0;k<dataStorage.size();++k )
             this->set( k, dataStorage[k] );
@@ -1303,6 +1304,16 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename )
     }
     else // save
     {
+        /* If appendMode is true, then we want to append the table to the hdf5 file */
+        /* To do so we open the hdf5 as existing and allow read/write in it */
+        if(appendMode)
+        {
+            hdf5.openFile( filename, this->comm().localComm(), true, true );
+        }
+        else
+        {
+            hdf5.openFile( filename, this->comm().localComm(), false );
+        }
         if ( false )
         {
             // create size tab
@@ -1315,10 +1326,10 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename )
             dataStorage[k] = this->operator()( k );
 
         // create double tab
-        hdf5.createTable( "element", H5T_NATIVE_DOUBLE, dimsElt );
+        hdf5.createTable( tableName, H5T_NATIVE_DOUBLE, dimsElt );
         if ( dm.nLocalDofWithoutGhost() > 0 )
-            hdf5.write( "element", H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, dataStorage.data()/*&(M_vec[0])*/ );
-        hdf5.closeTable( "element" );
+            hdf5.write( tableName, H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, dataStorage.data()/*&(M_vec[0])*/ );
+        hdf5.closeTable( tableName );
     }
     hdf5.closeFile();
 
@@ -1327,15 +1338,15 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename )
 #endif
 template<typename T, typename Storage>
 void
-VectorUblas<T,Storage>::saveHDF5( std::string const& filename )
+VectorUblas<T,Storage>::saveHDF5( std::string const& filename, std::string tableName, bool appendMode )
 {
-    this->ioHDF5( false, filename );
+    this->ioHDF5( false, filename, tableName, appendMode);
 }
 template<typename T, typename Storage>
 void
-VectorUblas<T,Storage>::loadHDF5( std::string const& filename )
+VectorUblas<T,Storage>::loadHDF5( std::string const& filename, std::string tableName )
 {
-    this->ioHDF5( true, filename );
+    this->ioHDF5( true, filename, tableName );
 }
 #endif
 

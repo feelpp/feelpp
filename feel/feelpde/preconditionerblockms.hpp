@@ -268,6 +268,9 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockMS] setup starts";
+    if( Environment::worldComm().isMasterRank() )
+    std::cout << "the relax parameter is now provided thanks to the options" << std::endl;
+    M_relax = doption(_prefix=M_prefix_11, _name="relax");
     this->setMatrix( AA );
     this->setName(M_prefix);
 
@@ -308,6 +311,7 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
         f2L += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type="elimination_symmetric");
     }
 
+    init();
     toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
 }
 
