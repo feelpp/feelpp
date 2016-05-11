@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/bash
 
 #set -x
 
@@ -58,7 +58,7 @@ COMMON="ctest -VV -S $1/cmake/dashboard/testsuite.cmake,FEELPP_CTEST_CONFIG=$1/c
 ## Where are installed the custom libraries ?
 lib_dir=${4:-"/data/software/install"}
 ## List of compiler (installed in the PATH) to test
-compiler=("gcc-5.0 gcc-4.7 gcc-4.8 gcc-4.9 clang-3.3 clang-3.4 clang-3.5");
+compiler=("gcc-5.0 clang-3.6 clang-3.7 clang-3.8");
 ## List of petsc installation to test (default = system one)
 petsc_dir=("$lib_dir/petsc-3.6.3 $lib_dir/petsc-3.6.1 $lib_dir/petsc-3.7.0 default")
 ## List of boost installation to test (default = system one)
@@ -66,5 +66,8 @@ boost_dir=("$lib_dir/boost-1.58 $lib_dir/boost-1.59.0 default")
 
 for ccomp in ${compiler[@]}; do
   echo "**"
-  boost
+  which $ccomp
+  if [[ $? == 0 ]]; then
+    boost
+  fi
 done #Compiler
