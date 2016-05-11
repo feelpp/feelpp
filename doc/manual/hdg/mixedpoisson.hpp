@@ -10,6 +10,7 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelmesh/complement.hpp>
+#include <feel/feelalg/topetsc.hpp>
 
 #include <boost/algorithm/string.hpp>
 
@@ -129,9 +130,6 @@ private:
     bool M_integralCondition;
     bool M_isPicard;
 
-    std::list<std::string> M_dirichletMarkersList;
-    std::list<std::string> M_neumannMarkersList;
-    std::list<std::string> M_robinMarkersList;
     std::list<std::string> M_integralMarkersList;
 
     void initGraphs();
@@ -191,9 +189,6 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
         M_mesh = mesh;
 
     // initialize marker lists for each boundary condition type
-    M_dirichletMarkersList.clear();
-    M_neumannMarkersList.clear();
-    M_robinMarkersList.clear();
     M_integralMarkersList.clear();
     auto itField = M_modelProperties->boundaryConditions().find( "potential");
     if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -202,29 +197,44 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
         auto itType = mapField.find( "Dirichlet" );
         if ( itType != mapField.end() )
         {
+            cout << "Dirichlet: ";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                M_dirichletMarkersList.push_back(marker);
+                if ( M_mesh->hasFaceMarker(marker) )
+                    cout << " " << marker;
+                else
+                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
+            cout << std::endl;
         }
         itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
         {
+            cout << "Neumann:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                M_neumannMarkersList.push_back(marker);
+                if ( M_mesh->hasFaceMarker(marker) )
+                    cout << " " << marker;
+                else
+                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
+            cout << std::endl;
         }
         itType = mapField.find( "Robin" );
         if ( itType != mapField.end() )
         {
+            cout << "Robin:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                M_robinMarkersList.push_back(marker);
+                if ( M_mesh->hasFaceMarker(marker) )
+                    cout << " " << marker;
+                else
+                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
+            cout << std::endl;
         }
     }
     itField = M_modelProperties->boundaryConditions().find( "flux");
@@ -234,16 +244,19 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
         auto itType = mapField.find( "Integral" );
         if ( itType != mapField.end() )
         {
+            cout << "Integral:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
+                if ( M_mesh->hasFaceMarker(marker) )
+                    cout << " " << marker;
+                else
+                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
                 M_integralMarkersList.push_back(marker);
             }
+            cout << std::endl;
         }
     }
-    cout << "Dirichlet : " << M_dirichletMarkersList << std::endl
-         << "Neumann : " << M_neumannMarkersList << std::endl
-         << "Robin : " << M_robinMarkersList << std::endl;
 
     // Mh only on the faces whitout integral condition
     auto complement_integral_bdy = complement(faces(M_mesh),[this]( auto const& e ) {
@@ -607,11 +620,11 @@ MixedPoisson<Dim, Order>::assembleA()
                          _rowstart=3,
                          _colstart=3);
 
-        auto itField = M_modelProperties->boundaryConditions().find( "potential");
+        auto itField = M_modelProperties->boundaryConditions().find( "flux");
         if ( itField != M_modelProperties->boundaryConditions().end() )
         {
             auto mapField = (*itField).second;
-            auto itType = mapField.find( "Dirichlet" );
+            auto itType = mapField.find( "Integral" );
             if ( itType != mapField.end() )
             {
                 for ( auto const& exAtMarker : (*itType).second )
@@ -638,6 +651,8 @@ MixedPoisson<Dim, Order>::assembleA()
             }
         }
     }
+
+    M_A_cst->close();
 }
 
 template<int Dim, int Order>
@@ -762,8 +777,7 @@ MixedPoisson<Dim, Order>::updateConductivityTerm( Expr<ExprT> expr, std::string 
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
 
-    M_A->zero();
-    M_A->addMatrix(1.,M_A_cst);
+    MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
 
     auto a11 = form2( _trial=M_Vh, _test=M_Vh,_matrix=M_A );
     if ( marker.empty() )
@@ -779,8 +793,7 @@ MixedPoisson<Dim, Order>::updateConductivityTerm( bool isNL)
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
 
-    M_A->zero();
-    M_A->addMatrix(1.,M_A_cst);
+    MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
 
     auto a11 = form2( _trial=M_Vh, _test=M_Vh, _matrix=M_A );
     for( auto const& pairMat : M_modelProperties->materials() )
