@@ -242,7 +242,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
     return stencil( 
             _test=this->functionSpace(), _trial=this->functionSpace(),
             _pattern=this->matrixPattern(),
-            _diag_is_nonzero=true,
+            //_diag_is_nonzero=true,
             _close=true
             )->graph();
 }
@@ -410,7 +410,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
     }
 
     // Stabilization
-    this->updateLinearPDEStabilization( data );
+    this->updateLinearPDEStabilization(A, F, BuildCstPart);
     
     // Source term
     this->updateSourceTermLinearPDE(F, BuildCstPart);
@@ -426,37 +426,28 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization( DataUpdateLinear & data ) const
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_ptrtype& A, vector_ptrtype& F, bool BuildCstPart) const
 {
     using namespace Feel::vf;
 
-    sparse_matrix_ptrtype& A = data.matrix();
-    vector_ptrtype& F = data.rhs();
-    bool _BuildCstPart = data.buildCstPart();
-    sparse_matrix_ptrtype& A_extended = data.matrixExtended();
-    bool _BuildExtendedPart = data.buildExtendedPart();
-    
-    bool BuildNonCstPart = !_BuildCstPart;
-    bool BuildCstPart = _BuildCstPart;
+    bool Build_StabTerm = !BuildCstPart;
 
-    bool Build_StabTerm = BuildNonCstPart;
-
-    std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
+    std::string sc=(BuildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("Advection","updateLinearPDEStabilization", "start"+sc );
     this->timerTool("Solve").start();
     
     auto mesh = this->mesh();
     auto space = this->functionSpace();
 
-    auto phi = space->elementPtr();
-    auto psi = space->elementPtr();
+    auto const& phi = this->fieldSolution();
+    auto const& psi = this->fieldSolution();
 
     double stabCoeff = this->stabilizationCoefficient();
 
     // Forms
     auto bilinearForm = form2( _test=space, _trial=space, _matrix=A );
     auto bilinearForm_PatternExtended = form2( _test=space, _trial=space, _matrix=A, _pattern=size_type(Pattern::EXTENDED) );
-    auto linearForm = form1( _test=space, _vector=F );
+    auto linearForm = form1( _test=space, _vector=F, _rowstart=this->rowStartInVector() );
 
     if(Build_StabTerm)
     {
@@ -474,16 +465,18 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization( DataUpdateLinea
                 auto coeff  = val( stabCoeff /
                         ( 2*beta_norm*nOrder/h() + std::abs(sigma) ));
 
-                auto L_op = grad(psi)*val(beta) + val(sigma)*id(psi);
-                auto L_opt = gradt(phi)*val(beta) + val(sigma)*idt(phi);
+                auto L_op = grad(psi)*beta + sigma*id(psi);
+                auto L_opt = gradt(phi)*beta + sigma*idt(phi);
 
                 bilinearForm += integrate(
-                        _range=elements(M_mesh),
-                        _expr=coeff * L_op * L_opt );
+                        _range=elements(mesh),
+                        _expr=coeff * L_op * L_opt,
+                        _geomap=this->geomap() );
 
                 linearForm += integrate(
-                        _range=elements(M_mesh),
-                        _expr=coeff*L_op*f );
+                        _range=elements(mesh),
+                        _expr=/*coeff**/L_op*f,
+                        _geomap=this->geomap() );
 
                 break ;
             } //GALS
