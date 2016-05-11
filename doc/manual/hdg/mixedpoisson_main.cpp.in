@@ -6,8 +6,8 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "mixed-poisson-model" ,
-                     "mixed-poisson-model" ,
+    AboutData about( "mixed-poisson-model_@D@D_P@P@" ,
+                     "mixed-poisson-model_@D@D_P@P@" ,
                      "0.1",
                      "Mixed-Poisson-Model",
                      AboutData::License_GPL,
