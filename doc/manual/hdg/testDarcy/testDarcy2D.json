@@ -7,7 +7,7 @@
         "omega":
         {
             "name":"copper",
-            "cond":"1"
+            "cond":"-1"
         }
     },
     "BoundaryConditions":
@@ -18,28 +18,9 @@
             {
                 "omega":
                 {
-                    "expr":"sin(Pi*x)*sin(Pi*y):x:y"
+                    "expr":"-sin(Pi*x)*sin(Pi*y):x:y"
                 }
             },
-            // "Dirichlet":
-            // {
-            //     "top":
-            //     {
-            //         "expr":"1/(2*Pi*Pi)*sin(Pi*x)*sin(Pi*y):x:y"
-            //     },
-            //     "bottom":
-            //     {
-            //         "expr":"1/(2*Pi*Pi)*sin(Pi*x)*sin(Pi*y):x:y"
-            //     },
-            //     "left":
-            //     {
-            //         "expr":"1/(2*Pi*Pi)*sin(Pi*x)*sin(Pi*y):x:y"
-            //     },
-            //     "right":
-            //     {
-            //         "expr":"1/(2*Pi*Pi)*sin(Pi*x)*sin(Pi*y):x:y"
-            //     }
-            // }
             "Neumann":
             {
                 "top":
@@ -61,7 +42,7 @@
             }
         }
     },
-    "Functions": // Model.fieldUserScalar/Vectorial("u")
+    "Functions":
     {
         "u":
         {
