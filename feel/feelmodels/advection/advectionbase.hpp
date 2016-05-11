@@ -141,12 +141,11 @@ public :
 
     //--------------------------------------------------------------------//
     // Algebraic data
-    backend_ptrtype backend() { return M_backend; }
-    backend_ptrtype const& backend() const { return  M_backend; }
+    backend_ptrtype const& backend() const { return M_backend; }
     size_type matrixPattern() const;
     graph_ptrtype buildMatrixGraph() const;
     //indexsplit_ptrtype buildIndexSplit() const;
-    model_algebraic_factory_ptrtype algebraicFactory() { return M_algebraicFactory; }
+    model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
     size_type nLocalDof() const;
 
@@ -170,7 +169,7 @@ public :
     // Algebraic model updates
     // Linear PDE
     void updateLinearPDE( DataUpdateLinear & data ) const;
-    void updateLinearPDEStabilization( DataUpdateLinear & data ) const;
+    void updateLinearPDEStabilization(sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart) const;
     virtual void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const =0;
     virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const = 0;
     virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const=0;
