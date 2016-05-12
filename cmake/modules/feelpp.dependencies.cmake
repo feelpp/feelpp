@@ -986,8 +986,9 @@ if ( FEELPP_ENABLE_VTK )
         # Enable VTK exporter and insitu in config
         set(FEELPP_VTK_INSITU_ENABLED 1)
 
-        # Mark VTK as available
+        # Mark VTK and ParaView as available
         set(FEELPP_HAS_VTK 1)
+        set(FEELPP_HAS_PARAVIEW 1)
         # Check for version to ensure that we are able to
         # use an external communicator
         set(VTK_HAS_PARALLEL 0)
