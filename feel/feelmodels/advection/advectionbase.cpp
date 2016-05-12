@@ -137,6 +137,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     // Advection 
     M_Xh = space_advection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
     M_fieldSolution.reset( new element_advection_type(M_Xh, "phi") );
+    //M_fieldSolution->on(_range=elements(M_mesh), _expr=Px());
 
     // Advection velocity 
     M_XhAdvectionVelocity = space_advection_velocity_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
@@ -454,7 +455,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
         auto sigma = M_bdf->polyDerivCoefficient(0);
         auto beta = idv(this->fieldAdvectionVelocity());
         auto beta_norm = vf::sqrt(trans(beta)*beta);
-        auto f = idv(M_bdf->polyDeriv());
+        auto f = M_bdf->polyDeriv();
         
         switch ( this->stabilizationMethod() )
         {
@@ -475,7 +476,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 linearForm += integrate(
                         _range=elements(mesh),
-                        _expr=coeff*L_op*f,
+                        _expr=coeff*L_op*idv(f),
                         _geomap=this->geomap() );
 
                 break ;
@@ -494,7 +495,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 linearForm += integrate(
                         _range=elements(M_mesh),
-                        _expr=coeff*L_op*f );
+                        _expr=coeff*L_op*idv(f) );
 
                 break;
             } //SUPG
@@ -512,7 +513,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 linearForm += integrate(
                         _range=elements(M_mesh),
-                        _expr=coeff*L_op*f );
+                        _expr=coeff*L_op*idv(f) );
 
                 break;
             } //SGS
