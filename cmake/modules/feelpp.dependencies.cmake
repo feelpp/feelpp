@@ -1152,6 +1152,12 @@ if ( GMSH_FOUND )
 endif()
 include(feelpp.module.gmsh)
 
+
+#
+# Acusim
+# 
+include(feelpp.module.altair)
+
 #
 # if Feel++ has been installed on the system
 #
