@@ -709,6 +709,8 @@ po::options_description
 blockms_options( std::string const& prefix )
 {
     po::options_description _options( "BLOCKMS options (" + prefix + ")" );
+    _options.add_options()
+        ( prefixvm( prefix, "penaldir" ).c_str(), Feel::po::value<double>()->default_value(10.), "Penalisation parameter for weak bc" );
     return _options
         .add(     ams_options( prefixvm(prefix, "11").c_str() ))  // the (1,1) block
         .add( backend_options( prefixvm(prefix, "22").c_str() )); // the (2,2) block

@@ -268,8 +268,7 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockMS] setup starts";
-    if( Environment::worldComm().isMasterRank() )
-    std::cout << "the relax parameter is now provided thanks to the options" << std::endl;
+    cout << "the relax (="<<doption(_prefix=M_prefix_11, _name="relax")<<") parameter is now provided thanks to the options" << std::endl;
     M_relax = doption(_prefix=M_prefix_11, _name="relax");
     this->setMatrix( AA );
     this->setName(M_prefix);
@@ -278,18 +277,22 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
 
     /* Boundary conditions */
     BoundaryConditions M_bc = M_model.boundaryConditions();
-    map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
+    //map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
     map_scalar_field<2> m_dirichlet_p { M_bc.getScalarFields<2> ( "phi", "Dirichlet" ) };
+
+    //map_vector_field<FEELPP_DIM,1,2> m_weak_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Weakdir" ) };
+    map_scalar_field<2> m_weak_p { M_bc.getScalarFields<2> ( "phi", "Weakdir" ) };
 
     /* Compute the mass matrix (needed in first block, constant) */
     auto f2A = form2(_test=M_Vh, _trial=M_Vh, _matrix=M_mass);
     auto f1A = form1(_test=M_Vh);
     f2A = integrate(_range=elements(M_Vh->mesh()), _expr=inner(idt(u),id(u))); // M
-    for(auto const & it : m_dirichlet_u )
-    {
-        LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_11<<"\n";
-        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type="elimination_symmetric");
-    }
+    // the BC are applied during the init() function
+    //for(auto const & it : m_dirichlet_u )
+    //{
+    //    LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_11<<"\n";
+    //    f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type="elimination_symmetric");
+    //}
     
     /* Compute the L (= er * grad grad) matrix (the second block) */
     auto f2L = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_L);
@@ -304,10 +307,19 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
     f2L += integrate(_range=elements(M_Qh->mesh()), _expr=M_er*inner(gradt(phi), grad(phi)));
 #endif
     auto f1LQ = form1(_test=M_Qh);
+    
+    for(auto const & it : m_weak_p)
+    {
+        LOG(INFO) << "Applying (weak) " << it.second << " on " << it.first << " for "<<M_prefix_22<<"\n";
+        f2L += integrate(_range=markedfaces(M_Qh->mesh(),it.first),
+                         _expr=M_er*inner(trans(gradt(phi)),N())*id(phi)
+                         + (doption(_prefix=M_prefix,_name="penaldir")/hFace())*idt(phi)*id(phi)
+                         ); 
+    }
 
     for(auto const & it : m_dirichlet_p)
     {
-        LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_22<<"\n";
+        LOG(INFO) << "Applying (on)" << it.second << " on " << it.first << " for "<<M_prefix_22<<"\n";
         f2L += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type="elimination_symmetric");
     }
 
@@ -326,8 +338,10 @@ PreconditionerBlockMS<space_type>::init( void )
     BoundaryConditions M_bc = M_model.boundaryConditions();
 
     LOG(INFO) << "Create sub Matrix\n";
-    map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
-    map_scalar_field<2> m_dirichlet_p { M_bc.getScalarFields<2> ( "phi", "Dirichlet" ) };
+    map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" )};
+    //map_scalar_field<2> m_dirichlet_p { M_bc.getScalarFields<2> ( "phi", "Dirichlet" ) };
+    map_vector_field<FEELPP_DIM,1,2> m_weak_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Weakdir" ) };
+    //map_scalar_field<2> m_weak_p { M_bc.getScalarFields<2> ( "phi", "Weakdir" ) };
 
     /*
      * AA = [[ A - k^2 M, B^t],
@@ -341,8 +355,19 @@ PreconditionerBlockMS<space_type>::init( void )
     M_11->addMatrix(M_relax,M_mass);                            // A-k^2 M + M_relax*M = A+(M_relax-k^2) M
     auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
     auto f1A = form1(_test=M_Vh);
+    for(auto const & it : m_weak_u )
+    {
+        LOG(INFO) << "Applying (weak) " << it.second << " on " << it.first << " for "<<M_prefix_11<<"\n";
+        f2A += integrate(_range=markedfaces(M_Vh->mesh(),it.first),
+            _expr=-(1./M_relax)*trans(curlt_op(u))*(cross(N(),id(u)) )
+            - (1./M_relax)*trans(curl_op(u))*(cross(N(),idt(u)) )
+            + doption(_prefix=M_prefix,_name="penaldir")/(hFace()*M_relax)*inner(cross(idt(u),N()),cross(id(u),N())) );
+    }
     for(auto const & it : m_dirichlet_u )
+    {
+        LOG(INFO) << "Applying (on) " << it.second << " on " << it.first << " for "<<M_prefix_11<<"\n";
         f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type="elimination_symmetric");
+    }
 
     /* 
      * Rebuilding sub-backend
