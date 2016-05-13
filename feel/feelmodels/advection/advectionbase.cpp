@@ -30,6 +30,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionBase(
 :
     super_type( prefix, worldComm, subPrefix, rootRepository ),
     M_isUpdatedForUse(false),
+    M_diffusionReactionModel( new diffusionreaction_model_type( prefix ) ),
     M_gamma1(std::pow(nOrder, -3.5))
 {
     this->loadParametersFromOptionsVm();
@@ -55,6 +56,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build()
     this->createAlgebraicData();
     // Bdf time scheme
     this->createTimeDiscretization();
+    // Physical parameters
+    this->createOthers();
     // Exporters
     this->createExporters();
 
@@ -102,6 +105,15 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
     this->log("Advection","loadParametersFromOptionsVm", "start");
     
+    // Model and solver 
+    std::string advection_model = this->modelProperties().model();
+    if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
+        advection_model = soption(_name="model",_prefix=this->prefix());
+    this->setModelName( advection_model );
+
+    if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
+        this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
+
     // Stabilization method
     const std::string stabmeth = soption( _name="advec-stab-method", _prefix=this->prefix() );
     CHECK(AdvectionStabMethodIdMap.count(stabmeth)) << stabmeth <<" is not in the list of possible stabilization methods\n";
@@ -135,7 +147,13 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     this->timerTool("Constructor").start();
     
     // Advection 
-    M_Xh = space_advection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+    std::vector<bool> extendedDT( space_advection_type::nSpaces, false );
+    if( this->stabilizationMethod() == AdvectionStabMethod::CIP )
+    {
+        this->log("Advection","createFunctionSpaces", "use buildDofTableMPIExtended on advection" );
+        extendedDT[0] = true;
+    }
+    M_Xh = space_advection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(), _extended_doftable=extendedDT );
     M_fieldSolution.reset( new element_advection_type(M_Xh, "phi") );
     //M_fieldSolution->on(_range=elements(M_mesh), _expr=Px());
 
@@ -203,6 +221,13 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretization()
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createOthers()
+{
+    M_diffusionReactionModel->initFromMesh( this->mesh(), this->useExtendedDofTable() );
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createExporters()
 {
     this->log("Advection","createExporters", "start");
@@ -216,6 +241,73 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createExporters()
 
     double tElpased = this->timerTool("Constructor").stop("createExporters");
     this->log("Advection","createExporters",(boost::format("finish in %1% s")%tElpased).str() );
+}
+
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+// Model and solver
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
+{
+    if( type != M_modelName )
+        this->setNeedToRebuildCstPart(true);
+
+    if ( type == "Advection" )
+    {
+        M_modelName = "Advection";
+        M_solverName = "LinearSystem";
+    }
+    else if ( type == "Advection-Diffusion" )
+    {
+        M_modelName = "Advection-Diffusion";
+        M_solverName = "LinearSystem";
+    }
+    else if ( type == "Advection-Diffusion-Reaction" )
+    {
+        M_modelName = "Advection-Diffusion-Reaction";
+        M_solverName = "LinearSystem";
+    }
+    else
+        CHECK( false ) << "invalid modelName " << type << "\n";
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::setSolverName( std::string const& type )
+{
+    if( type != M_solverName )
+        this->setNeedToRebuildCstPart(true);
+
+    if ( type == "LinearSystem" )
+    {
+        M_solverName = "LinearSystem";
+    }
+    //else if ( type == "Advection-Diffusion" )
+    //{
+        //M_solverName = "Advection-Diffusion";
+    //}
+    //else if ( type == "Advection-Diffusion-Reaction" )
+    //{
+        //M_solverName = "Advection-Diffusion-Reaction";
+    //}
+    else
+        CHECK( false ) << "invalid solverName " << type << "\n";
+}
+
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+bool
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
+{
+    if ( this->worldComm().localSize() == 1 ) return false;
+    bool useExtendedDofTable=false;
+    for ( bool hasExt : M_Xh->extendedDofTableComposite() )
+        useExtendedDofTable = useExtendedDofTable || hasExt;
+    return useExtendedDofTable;
 }
 
 //----------------------------------------------------------------------------//
@@ -344,6 +436,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
     bool BuildCstPart = _BuildCstPart;
 
     bool build_AdvectiveTerm = BuildNonCstPart;
+    bool build_DiffusionTerm = BuildNonCstPart;
+    bool build_ReactionTerm = BuildNonCstPart;
     bool build_Form2TransientTerm = BuildNonCstPart;
     bool build_Form1TransientTerm = BuildNonCstPart;
     //bool build_SourceTerm = BuildNonCstPart;
@@ -382,6 +476,40 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
 
         double timeElapsedAdvection = this->timerTool("Solve").stop();
         this->log("Advection","updateLinearPDE","assembly advection terms in "+(boost::format("%1% s") %timeElapsedAdvection).str() );
+    }
+
+    // Diffusion
+    if( (this->modelName() == "Advection-Diffusion" || this->modelName() == "Advection-Diffusion-Reaction") && build_DiffusionTerm )
+    {
+        this->timerTool("Solve").start();
+
+        auto const& D = this->diffusionReactionModel()->fieldDiffusionCoeff();
+
+        bilinearForm += integrate(
+                _range=elements(mesh),
+                _expr=idv(D)*inner(gradt(phi),grad(psi)),
+                _geomap=this->geomap()
+                );
+
+        double timeElapsedDiffusion = this->timerTool("Solve").stop();
+        this->log("Advection","updateLinearPDE","assembly diffusion terms in "+(boost::format("%1% s") %timeElapsedDiffusion).str() );
+    }
+
+    // Reaction
+    if( this->modelName() == "Advection-Diffusion-Reaction" && build_ReactionTerm )
+    {
+        this->timerTool("Solve").start();
+
+        auto const& R = this->diffusionReactionModel()->fieldReactionCoeff();
+        
+        linearForm += integrate(
+                _range=elements(mesh),
+                _expr=idv(R)*id(psi),
+                _geomap=this->geomap()
+                );
+
+        double timeElapsedReaction = this->timerTool("Solve").stop();
+        this->log("Advection","updateLinearPDE","assembly reaction terms in "+(boost::format("%1% s") %timeElapsedReaction).str() );
     }
 
     // Transient terms

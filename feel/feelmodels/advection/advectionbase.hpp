@@ -1,14 +1,16 @@
 #ifndef _ADVECTIONBASE_HPP
 #define _ADVECTIONBASE_HPP 1
 
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelts/bdf.hpp>
+#include <feel/feelvf/vf.hpp>
+
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
-#include <feel/feelts/bdf.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelvf/vf.hpp>
-
+#include <feel/feelmodels/advection/diffusionreactionmodel.hpp>
 /*
 VD, TODO :
 the stabilization method and the stabilization coefficient might be external options. 
@@ -21,7 +23,7 @@ namespace FeelModels {
 
 enum class AdvectionStabMethod { NONE=0, GALS, CIP, SUPG, SGS };
 
-template< typename ConvexType, typename BasisAdvectionType >
+template< typename ConvexType, typename BasisAdvectionType, typename BasisDiffusionReactionType >
 class AdvectionBase : 
     public ModelNumerical,
     public MarkerManagementDirichletBC,
@@ -31,7 +33,7 @@ class AdvectionBase :
 public :
     typedef ModelNumerical super_type;
 
-    typedef AdvectionBase< ConvexType, BasisAdvectionType > self_type;
+    typedef AdvectionBase< ConvexType, BasisAdvectionType, BasisDiffusionReactionType > self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     //--------------------------------------------------------------------//
@@ -72,6 +74,15 @@ public :
     typedef boost::shared_ptr<space_advection_velocity_type> space_advection_velocity_ptrtype;
     typedef typename space_advection_velocity_type::element_type element_advection_velocity_type;
     typedef boost::shared_ptr<element_advection_velocity_type> element_advection_velocity_ptrtype;
+
+    //--------------------------------------------------------------------//
+    // Diffusion-reaction model
+    typedef BasisDiffusionReactionType basis_diffusionreaction_type;
+    static const uint16_type nOrderDiffusionReaction = BasisDiffusionReactionType::nOrder;
+    typedef FunctionSpace< mesh_type, bases<basis_diffusionreaction_type> > space_diffusionreaction_type;
+
+    typedef DiffusionReactionModel<space_diffusionreaction_type> diffusionreaction_model_type;
+    typedef boost::shared_ptr<diffusionreaction_model_type> diffusionreaction_model_ptrtype;
 
     //--------------------------------------------------------------------//
     // Backend
@@ -124,13 +135,23 @@ public :
     void createAlgebraicData();
     void createTimeDiscretization();
     void createExporters();
+    void createOthers();
     
+    //--------------------------------------------------------------------//
+    // Model and solver
+    std::string const& modelName() const { return M_modelName; }
+    void setModelName( std::string const& type );
+    std::string const& solverName() const { return M_solverName; }
+    void setSolverName( std::string const& type );
+
     //--------------------------------------------------------------------//
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"AdvectionMesh.path"); }
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
 
     space_advection_ptrtype const& functionSpace() const { return M_Xh; }
+    
+    bool useExtendedDofTable() const;
 
     element_advection_ptrtype & fieldSolutionPtr() { return M_fieldSolution; }
     element_advection_ptrtype const& fieldSolutionPtr() const { return M_fieldSolution; }
@@ -180,6 +201,30 @@ public :
     // Advection velocity update
     template<typename ExprT>
     void updateAdvectionVelocity(vf::Expr<ExprT> const& expr);
+    //--------------------------------------------------------------------//
+    // Diffusion-reaction parameters update
+    diffusionreaction_model_ptrtype & diffusionReactionModel() { return M_diffusionReactionModel; }
+    diffusionreaction_model_ptrtype const& diffusionReactionModel() const { return M_diffusionReactionModel; }
+
+    void updateDiffusionCoeff(double D)
+    {
+        this->diffusionReactionModel()->setCstDiffusionCoeff(D);
+    }
+    void updateReactionCoeff(double R)
+    {
+        this->diffusionReactionModel()->setCstReactionCoeff(R);
+    }
+
+    template<typename ExprT>
+    void updateDiffusionCoeff(vf::Expr<ExprT> const& expr)
+    {
+        this->diffusionReactionModel()->updateDiffusionCoeff(expr);
+    }
+    template<typename ExprT>
+    void updateReactionCoeff(vf::Expr<ExprT> const& expr)
+    {
+        this->diffusionReactionCoeff()->updateReactionCoeff(expr);
+    }
 
     //--------------------------------------------------------------------//
     // Solve
@@ -193,6 +238,10 @@ public :
 protected:
 
     bool M_isUpdatedForUse;
+    //--------------------------------------------------------------------//
+    // Model and solver
+    std::string M_modelName;
+    std::string M_solverName;
     //--------------------------------------------------------------------//
     // Mesh
     mesh_ptrtype M_mesh;
@@ -210,6 +259,9 @@ protected:
     space_advection_velocity_ptrtype M_XhAdvectionVelocity;
     element_advection_velocity_ptrtype M_fieldAdvectionVelocity;
     boost::optional<vector_field_expression<nDim,1,2> > M_exprAdvectionVelocity;
+    //--------------------------------------------------------------------//
+    // Physical parameters (diffusivity and reaction coefficient)
+    diffusionreaction_model_ptrtype M_diffusionReactionModel;
     //--------------------------------------------------------------------//
     // Solution
     element_advection_ptrtype M_fieldSolution;

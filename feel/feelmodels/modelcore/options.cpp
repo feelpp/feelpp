@@ -326,8 +326,11 @@ advection_options(std::string const& prefix)
 {
     Feel::po::options_description advectionOptions("Advection options");
     advectionOptions.add_options()
+        (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >(), "advection model : Advection, Advection-Diffusion, Advection-Diffusion-Reaction")
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "advection solver")
         //(prefixvm(prefix,"thermal-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "thermal-conductivity [ W/(m*K) ]")
-        //(prefixvm(prefix,"rho").c_str(), Feel::po::value<double>()->default_value( 1 ), "density [ kg/(m^3) ]")
+        (prefixvm(prefix,"D").c_str(), Feel::po::value<double>()->default_value( 1 ), "diffusion coefficient [ m^2/s ]")
+        (prefixvm(prefix,"R").c_str(), Feel::po::value<double>()->default_value( 0 ), "reaction coefficient [ ]")
         //(prefixvm(prefix,"heat-capacity").c_str(), Feel::po::value<double>()->default_value( 1 ), "heat-capacity [ J/(kg*K) ]")
         //(prefixvm(prefix,"thermal-expansion").c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "thermal-conductivity [ 1/K) ]")
         //(prefixvm(prefix,"use_velocity-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use-velocity-convection")

@@ -5,19 +5,27 @@
 #define ADVECTION_DIM @ADVECTION_DIM@
 #define ADVECTION_ORDERGEO @ADVECTION_ORDERGEO@
 #define ADVECTION_ORDERPOLY @ADVECTION_ORDERPOLY@
+#define ADVECTION_ORDER_DIFFUSION_REACTION @ADVECTION_ORDER_DIFFUSION_REACTION@
+#define ADVECTION_USE_CONTINUOUS_DIFFUSION_REACTION @ADVECTION_USE_CONTINUOUS_DIFFUSION_REACTION@
 
+#if ADVECTION_USE_CONTINUOUS_DIFFUSION_REACTION
+#define ADVECTION_DIFFUSION_REACTION_CONTINUITY_TAG Continuous
+#else
+#define ADVECTION_DIFFUSION_REACTION_CONTINUITY_TAG Discontinuous
+#endif
 
 #define ADVECTION_INTERPOLATIONPOINTS PointSetFekete
 
 #define ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename ConvexType, typename BasisAdvectionType> \
+    template< typename ConvexType, typename BasisAdvectionType, typename BasisDiffusionReactionType> \
         /**/
 #define ADVECTIONBASE_CLASS_TEMPLATE_TYPE \
-    AdvectionBase<ConvexType,BasisAdvectionType> \
+    AdvectionBase<ConvexType,BasisAdvectionType, BasisDiffusionReactionType> \
         /**/
 #define ADVECTIONBASE_CLASS_TYPE \
     AdvectionBase< Simplex<ADVECTION_DIM,ADVECTION_ORDERGEO,ADVECTION_DIM>, \
-        Lagrange<ADVECTION_ORDERPOLY, Scalar,Continuous,ADVECTION_INTERPOLATIONPOINTS > \
+        Lagrange<ADVECTION_ORDERPOLY, Scalar,Continuous,ADVECTION_INTERPOLATIONPOINTS >, \
+        Lagrange<ADVECTION_ORDER_DIFFUSION_REACTION, Scalar,ADVECTION_DIFFUSION_REACTION_CONTINUITY_TAG > \
         >                                                              \
     /**/
 #define ADVECTIONBASE_CLASS_INSTANTIATION \
@@ -25,14 +33,15 @@
     /**/
 
 #define ADVECTION_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename ConvexType, typename BasisAdvectionType> \
+    template< typename ConvexType, typename BasisAdvectionType, typename BasisDiffusionReactionType> \
         /**/
 #define ADVECTION_CLASS_TEMPLATE_TYPE \
-    Advection<ConvexType,BasisAdvectionType> \
+    Advection<ConvexType,BasisAdvectionType,BasisDiffusionReactionType> \
         /**/
 #define ADVECTION_CLASS_TYPE \
     Advection< Simplex<ADVECTION_DIM,ADVECTION_ORDERGEO,ADVECTION_DIM>, \
-        Lagrange<ADVECTION_ORDERPOLY, Scalar,Continuous,ADVECTION_INTERPOLATIONPOINTS > \
+        Lagrange<ADVECTION_ORDERPOLY, Scalar,Continuous,ADVECTION_INTERPOLATIONPOINTS >, \
+        Lagrange<ADVECTION_ORDER_DIFFUSION_REACTION, Scalar,ADVECTION_DIFFUSION_REACTION_CONTINUITY_TAG > \
         >                                                              \
     /**/
 #define ADVECTION_CLASS_INSTANTIATION \
