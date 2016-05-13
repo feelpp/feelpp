@@ -540,6 +540,34 @@ macro( genLibAdvection )
   set(ADVECTION_DIM ${FEELMODELS_APP_DIM})
   set(ADVECTION_ORDERPOLY ${FEELMODELS_APP_T_ORDER})
   set(ADVECTION_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+  #######################################################
+  if (FEELMODELS_APP_DIFFUSION_REACTION_ORDER)
+      set(ADVECTION_ORDER_DIFFUSION_REACTION ${FEELMODELS_APP_DIFFUSION_REACTION_ORDER} )
+  else()
+    # default value
+    set(ADVECTION_ORDER_DIFFUSION_REACTION 0)
+  endif()
+  #######################################################
+  if (FEELMODELS_APP_DIFFUSION_REACTION_CONTINUITY)
+      if ("${FEELMODELS_APP_DIFFUSION_REACTION_CONTINUITY}" STREQUAL "Continuous" )
+          set(ADVECTION_USE_CONTINUOUS_DIFFUSION_REACTION 1)
+          set(ADVECTION_DIFFUSION_REACTION_TAG DRP${ADVECTION_ORDER_DIFFUSION_REACTION}c)
+      elseif ("${FEELMODELS_APP_DIFFUSION_REACTION_CONTINUITY}" STREQUAL "Discontinuous" )
+          set(ADVECTION_USE_CONTINUOUS_DIFFUSION_REACTION 0)
+          if ( "${ADVECTION_ORDER_DIFFUSION_REACTION}" STREQUAL "0" )
+              unset(ADVECTION_DIFFUSION_REACTION_TAG) # default value P0d
+      else()
+          set(ADVECTION_DIFFUSION_REACTION_TAG DRP${ADVECTION_ORDER_DIFFUSION_REACTION}d)
+      endif()
+    else()
+        message(FATAL_ERROR "DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_DIFFUSION_REACTION}_CONTINUITY : is not valid! It must be Continuous or Discontinuous")
+    endif()
+  else()
+    # default value
+    set(ADVECTION_USE_CONTINUOUS_DIFFUSION_REACTION 0)
+    unset(ADVECTION_DIFFUSION_REACTION_TAG) # default value P0d
+  endif()
+  #######################################################
 
   if (0)
     MESSAGE("*** Arguments for advection application ${LIB_NAME}")
