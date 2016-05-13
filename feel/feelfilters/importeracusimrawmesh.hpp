@@ -233,7 +233,7 @@ ImporterAcusimRawMesh<MeshType>::readNodes( mesh_type* mesh ) const
     }
     else
     {
-#if defined(HYPERMESH_ACUSOLVE_LIBRARY)
+#if defined(FEELPP_HAS_ACUSIM)
         // Binaire + hypermesh altair interface
         ///H3Read...
 #endif
