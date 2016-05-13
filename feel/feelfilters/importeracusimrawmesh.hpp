@@ -200,6 +200,8 @@ template<typename MeshType>
 void
 ImporterAcusimRawMesh<MeshType>::readNodes( mesh_type* mesh ) const
 {
+    if ( M_file_type == ASCII )
+    {
     std::ifstream __is( this->filenameNodes().c_str() );
 
     if ( !__is.is_open() )
@@ -228,6 +230,14 @@ ImporterAcusimRawMesh<MeshType>::readNodes( mesh_type* mesh ) const
     }
 
     __is.close();
+    }
+    else
+    {
+#if defined(HYPERMESH_ACUSOLVE_LIBRARY)
+        // Binaire + hypermesh altair interface
+        ///H3Read...
+#endif
+    }
 }
 template<typename MeshType>
 void
