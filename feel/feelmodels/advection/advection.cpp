@@ -12,6 +12,17 @@ ADVECTION_CLASS_TEMPLATE_TYPE::Advection(
         std::string const& rootRepository )
 : super_type( prefix, worldComm, subPrefix, rootRepository)
 {
+    this->log("Advection","constructor", "start" );
+
+    this->setFilenameSaveInfo( prefixvm(this->prefix(),"Advection.info") );
+    //-----------------------------------------------------------------------------//
+    // load info from .bc file
+    this->loadConfigBCFile();
+    //-----------------------------------------------------------------------------//
+    // build mesh, space, exporter,...
+    //if ( buildMesh ) this->build();
+    //-----------------------------------------------------------------------------//
+    this->log("Advection","constructor", "finish");
 }
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
@@ -81,7 +92,7 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_pt
                 _element=u,_rhs=F,_expr=expression(d) );
     }
 
-    this->log("ThermoDynamics","updateBCStrongDirichletLinearPDE","finish" );
+    this->log("Advection","updateBCStrongDirichletLinearPDE","finish" );
 }
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS

@@ -129,7 +129,9 @@ public :
     void build();
     void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app );
 
-    void loadParametersFromOptionsVm();
+    virtual void loadParametersFromOptionsVm();
+    virtual void loadConfigBCFile() =0;
+
     void createMesh();
     void createFunctionSpaces();
     void createAlgebraicData();
