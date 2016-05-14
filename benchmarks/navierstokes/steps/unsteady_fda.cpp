@@ -67,7 +67,8 @@ int main(int argc, char**argv )
         std::cout << "                h avg : " << mesh->hAverage() << std::endl;
         std::cout << "              measure : " << mesh->measure() << std::endl;
     }
-
+    Environment::saveTimers(true);
+    
     //CHECK( mesh->hasMarkers( {"wall","inlet"} ) ) << "Mesh markers wall or inlet are not set properly in "  << soption("gmsh.filename");
     toc("mesh");tic();
     // Taylor Hood P_N+1 velocity P_N  pressure space (N==p_order)
@@ -179,12 +180,19 @@ int main(int argc, char**argv )
                               _type=soption("ns.preconditioner"),
                               _bc=BoundaryConditionFactory::instance(),
                               _matrix= a.matrixPtr(),
-                              _alpha=rho*mybdf->polyDerivCoefficient(0),
-                              _mu=mu,
-                              _rho=rho,
+                              _properties_space = Pdh<0>( mesh ),
+                              _alpha=cst(rho*mybdf->polyDerivCoefficient(0)),
+                              _mu=cst(mu),
+                              _rho=cst(rho),
                               _prefix="velocity" );
     
     toc("bdf, forms,...");
+    auto b = backend(_prefix="ns",_name="ns");
+    
+    auto precPetsc = preconditioner( _prefix="ns",_matrix=a.matrixPtr(),_pc=b->pcEnumType(),
+                                    _pcfactormatsolverpackage=b->matSolverPackageEnumType(), _backend=b->shared_from_this(),
+                                    _worldcomm=b->comm() );
+
 
     for ( mybdf->restart();  mybdf->isFinished() == false; mybdf->next(U) )
     {
@@ -235,7 +243,8 @@ int main(int argc, char**argv )
         else
         {
             // use petsc preconditioner
-            at.solveb(_rhs=ft,_solution=U,_backend=backend(_name="ns"));
+            //at.solveb(_rhs=ft,_solution=U,_backend=backend(_name="ns"));
+            backend(_name="ns")->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=ft.vectorPtr(),_prec=precPetsc );
         }
         toc("Solve");
 

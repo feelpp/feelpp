@@ -176,14 +176,14 @@ extern "C"
 
         if ( solver->comm().size()>1 )
         {
-            R.reset( new Feel::VectorPetscMPI<double>( r, solver->mapRowPtr() ) );
-            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRowPtr() ) );
+            R.reset( new Feel::VectorPetscMPI<double>( r, solver->mapColPtr() ) );
+            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapColPtr() ) );
         }
 
         else // MPI
         {
-            R.reset( new Feel::VectorPetsc<double>( r ) );
-            X_global.reset( new Feel::VectorPetsc<double>( x ) );
+            R.reset( new Feel::VectorPetsc<double>( r, solver->mapColPtr() ) );
+            X_global.reset( new Feel::VectorPetsc<double>( x, solver->mapColPtr() ) );
         }
 
         //if (solver->residual != NULL) solver->residual (X_local, R);
@@ -223,7 +223,7 @@ extern "C"
 #else
             Jac.reset( new Feel::MatrixPetscMPI<double>( jac,solver->mapRowPtr(),solver->mapColPtr() ) );
 #endif
-            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRowPtr() ) );
+            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapColPtr() ) );
         }
 
         else
@@ -764,13 +764,21 @@ void SolverNonLinearPetsc<T>::init ()
 
         if ( this->showSNESMonitor() )
         {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+            ierr = SNESMonitorSet( M_snes,__feel_petsc_snes_monitor,PETSC_NULL,PETSC_NULL );
+#else
             ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_NULL,PETSC_NULL );
+#endif
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
         if ( this->showKSPMonitor() )
         {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+            ierr = KSPMonitorSet( M_ksp,__feel_petsc_monitor,PETSC_NULL,PETSC_NULL );
+#else
             ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+#endif
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -281,12 +281,35 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
 
     // TODO: possible memory leak here
     //VecDestroy( M_mode );
+    auto const& dmCol = matrix_A->mapCol();
+    if ( dmCol.nProcessors() == 1 )
+    {
 #if PETSC_VERSION_LESS_THAN(3,6,0)
-    ierr = MatGetVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+        ierr = MatGetVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
 #else
-    ierr = MatCreateVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+        ierr = MatCreateVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
 #endif
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    }
+    else
+    {
+        // define a mpi vector with ghost
+        PetscInt *ghostId = NULL;
+        int petsc_n=static_cast<PetscInt>( dmCol.nDof() );
+        int petsc_n_localWithoutGhost=static_cast<PetscInt>( dmCol.nLocalDofWithoutGhost() );
+        int petsc_n_localWithGhost=static_cast<PetscInt>( dmCol.nLocalDofWithGhost() );
+        int petsc_n_localGhost=static_cast<PetscInt>( dmCol.nLocalGhosts() );
+        if ( petsc_n_localGhost > 0 )
+        {
+            ghostId = new PetscInt[petsc_n_localGhost];
+            std::copy( dmCol.mapGlobalProcessToGlobalCluster().begin()+petsc_n_localWithoutGhost,
+                       dmCol.mapGlobalProcessToGlobalCluster().end(),
+                       ghostId );
+        }
+        ierr = VecCreateGhost( dmCol.worldComm(), petsc_n_localWithoutGhost, petsc_n,
+                               petsc_n_localGhost, ghostId, &M_mode );
+        CHKERRABORT( dmCol.worldComm(),ierr );
+    }
 
     std::vector<double> ret_error( nconv );
 
@@ -472,12 +495,35 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
 
     // TODO: possible memory leak here
     //VecDestroy( M_mode );
+    auto const& dmCol = matrix_A->mapCol();
+    if ( dmCol.nProcessors() == 1 )
+    {
 #if PETSC_VERSION_LESS_THAN(3,6,0)
-    ierr = MatGetVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+        ierr = MatGetVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
 #else
-    ierr = MatCreateVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+        ierr = MatCreateVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
 #endif
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    }
+    else
+    {
+        // define a mpi vector with ghost
+        PetscInt *ghostId = NULL;
+        int petsc_n=static_cast<PetscInt>( dmCol.nDof() );
+        int petsc_n_localWithoutGhost=static_cast<PetscInt>( dmCol.nLocalDofWithoutGhost() );
+        int petsc_n_localWithGhost=static_cast<PetscInt>( dmCol.nLocalDofWithGhost() );
+        int petsc_n_localGhost=static_cast<PetscInt>( dmCol.nLocalGhosts() );
+        if ( petsc_n_localGhost > 0 )
+        {
+            ghostId = new PetscInt[petsc_n_localGhost];
+            std::copy( dmCol.mapGlobalProcessToGlobalCluster().begin()+petsc_n_localWithoutGhost,
+                       dmCol.mapGlobalProcessToGlobalCluster().end(),
+                       ghostId );
+        }
+        ierr = VecCreateGhost( dmCol.worldComm(), petsc_n_localWithoutGhost, petsc_n,
+                               petsc_n_localGhost, ghostId, &M_mode );
+        CHKERRABORT( dmCol.worldComm(),ierr );
+    }
 
 
     std::vector<double> ret_error( nconv );
@@ -597,7 +643,7 @@ SolverEigenSlepc<T>::setSlepcProblemType()
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         break;
 
-        // Generalized Non-Hermitian with positive (semi-)deﬁnite B
+        // Generalized Non-Hermitian with positive (semi-)definite B
     case PGNHEP:
         ierr = EPSSetProblemType ( M_eps, EPS_PGNHEP );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
@@ -772,7 +818,11 @@ SolverEigenSlepc<T>:: setSlepcDimensions()
              Note: depending on the interval, it may be necessary also to increase the workspace:
              '-mat_mumps_icntl_14 <percentage>': increase workspace with a percentage (50, 100 or more)
              */
+#if PETSC_VERSION_LESS_THAN(3,7,0)
             PetscOptionsInsertString("-mat_mumps_icntl_13 1");
+#else
+            PetscOptionsInsertString(NULL,"-mat_mumps_icntl_13 1");
+#endif
         }
     }
 }

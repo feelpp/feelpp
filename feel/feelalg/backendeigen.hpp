@@ -116,7 +116,7 @@ public:
         {
             //auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof() ) );
             //auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof(), this->comm() ) );
-            auto A= boost::make_shared<eigen_sparse_matrix_type>( space1->nDof(), space2->nDof(), space1->map()->worldComm() );
+            auto A= boost::make_shared<eigen_sparse_matrix_type>( space2->dof(), space1->dof() );
             A->setMatrixProperties( matrix_properties );
             return A;
         }
@@ -154,9 +154,7 @@ public:
     sparse_matrix_ptrtype
     newMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2, size_type matrix_properties = NON_HERMITIAN, bool init = true )
     {
-        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1->nGlobalElements(),
-                                                                      d2->nGlobalElements(),
-                                                                      this->comm() ) );
+        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d2, d1 ) );
         A->setMatrixProperties( matrix_properties );
         return A;
     }
@@ -176,7 +174,7 @@ public:
     sparse_matrix_ptrtype
     newZeroMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2 )
     {
-        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1->nGlobalElements(), d2->nGlobalElements() ) );
+        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d2, d1 ) );
         //A->setMatrixProperties( matrix_properties );
         return A;
     }

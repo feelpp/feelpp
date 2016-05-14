@@ -102,16 +102,14 @@ BOOST_AUTO_TEST_CASE( test_prepostsolve )
     auto l = form1( _test=Xh );
     l= integrate(_range=elements(mesh), _expr=-lapf*id(v));
     l+=integrate(_range=boundaryfaces(mesh), _expr=gradf*N()*id(v));
-    auto zeromean =  [&Xh,&v]( vector_ptrtype rhs, vector_ptrtype sol )
+    auto zeromean =  [&Xh,&u]( vector_ptrtype rhs, vector_ptrtype sol )
         {
-            if ( Environment::isMasterRank() )
-                std::cout << " . Call postsolve: remove mean value to input vector\n";
-            v = *sol;
-            v.close();
-            double m = mean( _range=elements(Xh->mesh()), _expr=idv(v))(0,0);
-            v.add( -m );
-            *sol = v;
-            sol->close();
+            cout << " . Call postsolve: remove mean value to input vector\n";
+            double m = mean( _range=elements(Xh->mesh()), _expr=idv(u))(0,0);
+            cout << "[zeromean] MEAN1:" << m << std::endl;
+            u.add( -m );
+            m = mean( _range=elements(Xh->mesh()), _expr=idv(u))(0,0);
+            cout << "[zeromean] MEAN2:" << m << std::endl;
         };
     a.solve( _solution=u, _rhs=l, _pre=zeromean, _post=zeromean);
     double m = mean( _range=elements(Xh->mesh()), _expr=idv(u))(0,0);
@@ -120,10 +118,9 @@ BOOST_AUTO_TEST_CASE( test_prepostsolve )
     double mex = mean( _range=elements(Xh->mesh()), _expr=f) (0,0);
     BOOST_MESSAGE( "MEAN exact:" << mex );
     double l2error = normL2( _range=elements(mesh), _expr=(idv(u)-m)-(f-mex) );
-    if ( Environment::isMasterRank() )
-    {
-        std::cout << "||u-(f-mex)||=" << l2error << std::endl;
-    }
+
+    cout << "||u-(f-mex)||=" << l2error << std::endl;
+
     v.on(_range=elements(mesh), _expr=f-mex);
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
@@ -154,8 +151,8 @@ BOOST_AUTO_TEST_CASE( test_prepost_nlsolve )
             v.close();
             double m = mean( _range=elements(Xh->mesh()), _expr=idv(v))(0,0);
             v.add( -m );
+            v.close();
             *sol = v;
-            sol->close();
         };
 
     auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
@@ -183,10 +180,9 @@ BOOST_AUTO_TEST_CASE( test_prepost_nlsolve )
     double mex = mean( _range=elements(Xh->mesh()), _expr=f) (0,0);
     BOOST_MESSAGE( "MEAN exact:" << mex );
     double l2error = normL2( _range=elements(mesh), _expr=(idv(u)-m)-(f-mex) );
-    if ( Environment::isMasterRank() )
-    {
-        std::cout << "||u-(f-mex)||=" << l2error << std::endl;
-    }
+
+    cout << "||u-(f-mex)||=" << l2error << std::endl;
+
     v.on(_range=elements(mesh), _expr=f-mex);
     auto e = exporter( _mesh=mesh, _prefix="nlsolve" );
     e->add( "u", u );

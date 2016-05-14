@@ -720,47 +720,6 @@ public:
         return M_e2f[std::make_pair(e,n)];
     }
 
-    /**
-     * @return the id associated to the \p marker
-     */
-    size_type markerName( std::string const& marker ) const
-    {
-        auto mit = M_markername.find( marker );
-        if (  mit != M_markername.end() )
-            return mit->second[0];
-        return invalid_size_type_value;
-    }
-    /**
-     * @return the marker name associated to the \p marker id
-     */
-    std::string markerName( size_type marker ) const
-        {
-            for( auto const& n : M_markername )
-            {
-                if (n.second[0] == marker )
-                    return n.first;
-            }
-            return std::string();
-        }
-
-    /**
-     * @return the topological dimension associated to the \p marker
-     */
-    size_type markerDim( std::string const& marker ) const
-    {
-        auto mit = M_markername.find( marker );
-        if (  mit != M_markername.end() )
-            return mit->second[1];
-        return invalid_size_type_value;
-    }
-
-    /**
-     * @return the marker names
-     */
-    std::map<std::string, std::vector<size_type> > markerNames() const
-    {
-        return M_markername;
-    }
 
     /**
      * @return a localization tool
@@ -823,75 +782,7 @@ public:
      */
     //@{
 
-    /**
-     * @return true if \p marker exists, false otherwise
-     */
-    bool
-    hasMarker( std::string const& marker ) const
-        {
-            return markerName( marker ) != invalid_size_type_value;
-        }
 
-    /**
-     * @return true if \p marker exists and topological dimension of the entity
-     * associated is Dim-1, false otherwise
-     */
-    bool
-    hasFaceMarker( std::string const& marker ) const
-        {
-            return hasMarker( marker ) && ( markerDim( marker ) == nDim-1 );
-        }
-
-    /**
-     * @return true if \p marker exists and topological dimension of the entity
-     * associated is Dim-2, false otherwise
-     */
-    bool
-    hasEdgeMarker( std::string const& marker ) const
-        {
-            return (nDim == 3) && hasMarker( marker ) &&  ( markerDim( marker ) == nDim-2 );
-        }
-
-    /**
-     * @return true if \p marker exists and topological dimension of the entity
-     * associated is 0, false otherwise
-     */
-    bool
-    hasPointMarker( std::string const& marker ) const
-        {
-            return hasMarker( marker ) &&  ( markerDim( marker ) == 0 );
-        }
-
-    /**
-     * add a new marker name
-     */
-    void addMarkerName( std::pair<std::string, std::vector<size_type> > const& marker )
-    {
-        M_markername.insert( marker );
-    }
-
-    /**
-     * add a new marker name
-     */
-    void addMarkerName( std::string __name, int __id ,int __topoDim )
-    {
-        M_markername[__name] = { static_cast<size_type>(__id), static_cast<size_type>(__topoDim) };
-    }
-    /**
-      * @return true if all markers are defined in the mesh, false otherwise
-      */
-    bool hasMarkers( std::initializer_list<std::string> l ) const
-    {
-      for( auto m : l )
-      {
-        if ( !hasMarker( m ) ) return false;
-      }
-      return true;
-
-    }
-
-    /// @return the marker id given the marker name \p marker
-    flag_type markerId( boost::any const& marker );
 
     /**
      * erase element at position \p position
@@ -1337,7 +1228,7 @@ private:
                 DVLOG(2) << "encoding...\n";
                 encode();
                 DVLOG(2) << "loading markers...\n";
-                ar & M_markername;
+                ar & this->M_markername;
                 DVLOG(2) << "loading pts...\n";
                 ar & M_enc_pts;
                 DVLOG(2) << "loading faces...\n";
@@ -1349,7 +1240,7 @@ private:
             {
                 DVLOG(2) << "Serializing mesh(loading) ...\n";
                 DVLOG(2) << "loading markers...\n";
-                ar & M_markername;
+                ar & this->M_markername;
                 DVLOG(2) << "loading pts...\n";
                 ar & M_enc_pts;
                 DVLOG(2) << "loading faces...\n";
@@ -1914,13 +1805,6 @@ private:
      * Arrays containing the global ids of edges of each element
      */
     boost::multi_array<element_edge_type,2> M_e2e;
-
-    /**
-     * marker name dictionnary ( std::string -> <int,int> )
-     * get<0>() provides the id
-     * get<1>() provides the topological dimension
-     */
-    std::map<std::string, std::vector<size_type> > M_markername;
 
     /**
      * periodic entities

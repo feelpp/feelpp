@@ -96,9 +96,12 @@ public:
         super( syms ),
         M_fun( fun.evalm() ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
-        M_filename( Environment::expand( (filename.empty() || fs::path(filename).is_absolute())? filename : (fs::current_path()/filename).string() ) ),
+        M_filename(),
         M_exprDesc( exprDesc )
         {
+            std::string filenameExpanded = Environment::expand( filename );
+            M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::current_path()/filenameExpanded).string();
+
             DVLOG(2) << "Ginac matrix matrix constructor with expression_type \n";
             GiNaC::lst exprs;
             for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
@@ -121,9 +124,12 @@ public:
         super(syms),
         M_fun(fun.evalm()),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
-        M_filename( Environment::expand( (filename.empty() || fs::path(filename).is_absolute())? filename : (fs::current_path()/filename).string() ) ),
+        M_filename(),
         M_exprDesc( exprDesc )
         {
+            std::string filenameExpanded = Environment::expand( filename );
+            M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::current_path()/filenameExpanded).string();
+
             DVLOG(2) << "Ginac matrix ex constructor with expression_type \n";
             GiNaC::lst exprs;
             for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
