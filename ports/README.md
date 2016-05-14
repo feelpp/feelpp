@@ -59,13 +59,30 @@ export GMSH_DIR=/data/software/install/gmsh-2.10.1
 CC=`which mpicc` CXX=`which mpic++` ./configure --enable-parallel --prefix=/data/software/install/hdf5/1.8.15-patch1/gcc-4.9.0/openmpi-1.10 --enable-build-all --enable-production
 make install
 ```
+
+## ParaView 
+* Build for using DISPLAY export over SSH (see https://github.com/feelpp/feelpp/blob/develop/ports/linux/ParaView.sh for more information)
+```
+cmake /data/software/src/ParaView/ParaView-v5.0.1-source -DBUILD_TESTING=OFF -DVTK_RENDERING_BACKEND=OpenGL -DPARAVIEW_ENABLE_CATALYST=ON -DPARAVIEW_ENABLE_PYTHON=ON -DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DPARAVIEW_USE_MPI=ON -DCMAKE_INSTALL_PREFIX=/data/software/install/ParaView/5.0.1/gcc-4.9.0/openmpi-1.10
+make -j $3
+ ```
  
-## VTK
+ * To use offscreen rendering (only available for NVIDIA with recent drivers > 355), please refer to this [wiki page](https://github.com/aancel/admin/wiki/Compile-ParaView-with-EGL-support-on-Ubuntu-14.04)
+ 
+## VTK (not needed if ParaView is installed)
 ```
 cmake /data/software/src/VTK/VTK5.10.1 -DCMAKE_INSTALL_PREFIX=/data/software/install/VTK/5.10.1/gcc-4.9.0/openmpi-1.10 -DCMAKE_BUILT_TYPE=Release -DVTK_USE_PARALLEL=ON -DBUILD_SHARED_LIBS=ON -DVTK_WRAP_PYTHON=ON -DVTK_USE_MPI=ON
 make install
 ```
 
+## FFTW
+```
+wget http://fftw.org/fftw-3.3.4.tar.gz && tar zxvf fftw-3.3.4.tar.gz && cd fftw-3.3.4
+./configure --enable-mpi --enable-threads --enable-openmp --enable-shared --prefix=/data/software/install/fftw/3.3.4/gcc-4.9.0/openmpi-1.10
+make install
+```
+
+<!--
 ## To Export
 Be carreful, there is a conflict :
 ```
@@ -83,3 +100,4 @@ export GMSH_DIR=/data/software/install/gmsh-2.10.1
 export PETSC_DIR=/data/software/install/petsc-3.6.1/openmpi-1.10.0/
 export SLEPC_DIR=/data/software/install/slepc-3.6.1/openmpi-1.10.0
 ```
+-->

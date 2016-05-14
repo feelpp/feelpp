@@ -31,7 +31,7 @@ int main(int argc, char**argv )
     ( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
     ( "attach-mass-matrix", po::value<bool>()->default_value( false ), "attach mass matrix at petsc preconditioner" )
     ( "penaldir", po::value<double>()->default_value( 100 ), "coeff" )
-    ( "sym", po::value<bool>()->default_value( 0 ), "use symmetric deformation tensor" )
+    ( "symm", po::value<bool>()->default_value( false ), "use symmetric deformation tensor when true" )
     ( "stokes.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
     ( "picard", po::value<bool>()->default_value( 1 ), "picard" )
     ( "picard.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
@@ -63,6 +63,8 @@ int main(int argc, char**argv )
     auto q = V.element<1>();
     double mu = doption(_name="mu");
     double rho = doption(_name="rho");
+    bool symm = boption(_name="symm");
+    
 
     size_type nbdyfaces = nelements(boundaryfaces(mesh));
     if ( Environment::isMasterRank() )
@@ -121,8 +123,8 @@ int main(int argc, char**argv )
             std::cout << " - Fu reuse-prec: " << boption( "Fu.reuse-prec" ) << "\n\n";
         }
     }
-    auto deft = gradt( u );
-    auto def = grad( v );
+
+
     double fixPtTol = doption(_name="picard.tol");
     int fixPtMaxIt = doption(_name="picard.maxit");
     double newtonTol = doption(_name="newton.tol");
@@ -138,7 +140,17 @@ int main(int argc, char**argv )
 
     auto a = form2( _trial=Vh, _test=Vh);
     auto at = form2( _trial=Vh, _test=Vh);
-    a += integrate( _range=elements( mesh ), _expr=mu*inner( deft,def ) );
+    
+    //a += integrate( _range=elements( mesh ), _expr=mu*inner( deft,def ) );
+    if (symm)
+    {
+        a += integrate( _range=elements( mesh ), _expr=2*mu*inner( sym(gradt( u )),sym(grad( v )) ) );
+    }
+    else
+    {
+      a += integrate( _range=elements( mesh ), _expr=mu*inner( gradt( u ),grad( v ) ) );
+    }
+        
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
     if ( boption("blockns.weakdir") )
     {
@@ -177,15 +189,24 @@ int main(int argc, char**argv )
     }
 
     tic();
-    auto a_blockns = blockns( _space=Vh, _properties_space=Pdh<0>(Vh->mesh()), _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="velocity" );
+    auto a_blockns = blockns( _space=Vh,
+                             _properties_space=Pdh<0>(Vh->mesh()),
+                             _type=soption("stokes.preconditioner"),
+                             _bc=bcs, _matrix= at.matrixPtr(),
+                             _prefix="velocity" );
+    
     toc(" - Setting up Precondition Blockns...");
 
     a_blockns->setMatrix( at.matrixPtr() );
-    auto b = backend(_prefix="picard",_name="picard");
-
-    auto precPetsc = preconditioner( _prefix="picard",_matrix=at.matrixPtr(),_pc=b->pcEnumType(),
-                                    _pcfactormatsolverpackage=b->matSolverPackageEnumType(), _backend=b->shared_from_this(),
-                                    _worldcomm=b->comm() );
+    auto bb = backend(_prefix="stokes",_name="stokes");
+    //auto bb = backend(_prefix="picard",_name="picard");
+    
+    auto precPetscStokes = preconditioner( _prefix="stokes",
+                                    _matrix=at.matrixPtr(),_pc=bb->pcEnumType(),
+                                    _pcfactormatsolverpackage=bb->matSolverPackageEnumType(),
+                                    _backend=bb->shared_from_this(),
+                                    _worldcomm=bb->comm() );
+    
 
     bool attachMassMatrix = boption(_name="attach-mass-matrix");
     if ( attachMassMatrix )
@@ -193,19 +214,18 @@ int main(int argc, char**argv )
         auto massbf = form2( _trial=Vh->functionSpace<0>(), _test=Vh->functionSpace<0>());
         massbf += integrate( _range=elements( mesh ), _expr=inner( idt(u),id(u) ) );
         massbf.matrixPtr()->close();
-        precPetsc->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
+        precPetscStokes->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
     }
 
     tic();
     if ( soption("stokes.preconditioner") != "petsc" )
     {
         a_blockns->update( at.matrixPtr(), zero<dim,1>(), m_dirichlet );
-
         at.solveb(_rhs=l,_solution=U,_backend=backend(_name="stokes"),_prec=a_blockns);
     }
     else
     {
-        b->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=l.vectorPtr(),_prec=precPetsc );
+        b->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=l.vectorPtr(),_prec=precPetscStokes );
     }
     toc(" - Solving Stokes...");
 
@@ -220,7 +240,7 @@ int main(int argc, char**argv )
     if ( boption("picard") )
     {
         int fixedpt_iter = 0;
-
+        
         double res = 0;
         auto deltaU = Vh->element();
         do
@@ -239,10 +259,20 @@ int main(int argc, char**argv )
                 LOG(INFO) << "Applying Dirichlet condition " << c.second << " on " << c.first;
                 if ( boption( "blockns.weakdir" ) )
                 {
+                    if(symm==0)
+                    {
                     at += integrate( _range=markedfaces( mesh, c.first ),
                                     _expr=(trans(-mu*gradt(u)*N()+idt(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idt(v)+doption("penaldir")*trans(idt(u))*id(v)/hFace() );
                     r += integrate( _range=markedfaces( mesh, c.first ),
                                    _expr=trans(-mu*grad(u)*N()+id(p)*N()+doption("penaldir")*id(v)/hFace())*c.second );
+                    }
+                    else
+                    {
+                    at += integrate( _range=markedfaces( mesh, c.first ),
+                                    _expr=(trans(-mu*sym(gradt(u))*N()+idt(p)*N()))*id(v)+(trans(-mu*sym(grad(v))*N()+id(p)*N()))*idt(v)+doption("penaldir")*trans(idt(u))*id(v)/hFace() );
+                    r += integrate( _range=markedfaces( mesh, c.first ),
+                                   _expr=trans(-mu*sym(grad(u))*N()+id(p)*N()+doption("penaldir")*id(v)/hFace())*c.second );
+                    }
                 }
                 else
                 {
@@ -263,6 +293,7 @@ int main(int argc, char**argv )
                 toc("Picard::update blockns");
                 tic();
                 auto b = backend(_name="picard",_rebuild=true);
+                
                 toc("Picard::update backend");
                 tic();
                 at.solveb(_rhs=r,_solution=U,_backend=b,_prec=a_blockns );
@@ -270,6 +301,12 @@ int main(int argc, char**argv )
             }
             else
             {
+                auto precPetsc = preconditioner( _prefix="picard",
+                                                _matrix=at.matrixPtr(),_pc=b->pcEnumType(),
+                                                _pcfactormatsolverpackage=b->matSolverPackageEnumType(),
+                                                _backend=b->shared_from_this(),
+                                                _worldcomm=b->comm() );
+                
                 //at.solveb(_rhs=r,_solution=U,_backend=backend(_rebuild=true) );
                 backend(_name="picard")->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=r.vectorPtr(),_prec=precPetsc );
             }
@@ -330,7 +367,7 @@ int main(int argc, char**argv )
 
             if ( Environment::isMasterRank() )
                 std::cout << " - Assemble residual  ...\n";
-            r = integrate( _range=elements( mesh ), _expr=mu*inner( gradv(u),def ) );
+            r = integrate( _range=elements( mesh ), _expr=mu*inner( gradv(u),grad( v ) ) );
             r +=integrate( _range=elements( mesh ), _expr=-div( v )*idv( p ) - divv( u )*id( q ) );
             r += integrate( _range=elements(mesh),_expr=rho*trans(id(v))*(gradv(u)*idv(u)) );
             if ( Environment::isMasterRank() )

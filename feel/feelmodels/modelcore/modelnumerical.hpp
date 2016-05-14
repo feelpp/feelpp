@@ -47,7 +47,9 @@ namespace Feel
 {
 namespace FeelModels
 {
-
+/**
+ * Handles some numerical model aspects: timestepping, mesh and properties
+ */
 class ModelNumerical : public ModelAlgebraic
     {
     public:
