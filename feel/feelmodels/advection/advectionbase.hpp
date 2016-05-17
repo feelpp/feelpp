@@ -208,6 +208,11 @@ public :
     template<typename ExprT>
     void updateAdvectionVelocity(vf::Expr<ExprT> const& expr);
     //--------------------------------------------------------------------//
+    // Source update
+    template<typename ExprT>
+    void updateSourceAdded(vf::Expr<ExprT> const& expr);
+    bool hasSourceAdded() const { return M_hasSourceAdded; }
+    //--------------------------------------------------------------------//
     // Diffusion-reaction parameters update
     diffusionreaction_model_ptrtype & diffusionReactionModel() { return M_diffusionReactionModel; }
     diffusionreaction_model_ptrtype const& diffusionReactionModel() const { return M_diffusionReactionModel; }
@@ -268,6 +273,10 @@ protected:
     //--------------------------------------------------------------------//
     // Physical parameters (diffusivity and reaction coefficient)
     diffusionreaction_model_ptrtype M_diffusionReactionModel;
+    //--------------------------------------------------------------------//
+    // Source added
+    element_advection_ptrtype M_fieldSourceAdded;
+    bool M_hasSourceAdded;
     //--------------------------------------------------------------------//
     // Solution
     element_advection_ptrtype M_fieldSolution;

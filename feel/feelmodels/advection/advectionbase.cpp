@@ -105,6 +105,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
     this->log("Advection","loadParametersFromOptionsVm", "start");
     
+    M_hasSourceAdded = false;
+
     // Model and solver 
     std::string advection_model = this->modelProperties().model();
     if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
@@ -155,7 +157,6 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     }
     M_Xh = space_advection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(), _extended_doftable=extendedDT );
     M_fieldSolution.reset( new element_advection_type(M_Xh, "phi") );
-    //M_fieldSolution->on(_range=elements(M_mesh), _expr=Px());
 
     // Advection velocity 
     M_XhAdvectionVelocity = space_advection_velocity_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
@@ -557,6 +558,15 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
     
     // Source term
     this->updateSourceTermLinearPDE(F, BuildCstPart);
+    // User provided source term
+    if( this->hasSourceAdded() && BuildNonCstPart )
+    {
+        linearForm += integrate( 
+                _range=elements(mesh),
+                _expr= idv(*M_fieldSourceAdded)*id(psi),
+                _geomap=this->geomap() 
+                );
+    }
 
     // Boundary conditions
     this->updateWeakBCLinearPDE(A, F, BuildCstPart);
@@ -725,6 +735,22 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity(vf::Expr<ExprT> const
 {
     M_exprAdvectionVelocity.reset(); // remove symbolic expr
     M_fieldAdvectionVelocity->on(_range=elements(this->mesh()), _expr=v_expr );
+}
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+// Source update
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+template<typename ExprT>
+void 
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateSourceAdded(vf::Expr<ExprT> const& f_expr)
+{
+    if (!M_fieldSourceAdded)
+    {
+        M_fieldSourceAdded.reset( new element_advection_type(M_Xh, "SourceAdded") );
+    }
+    M_fieldSourceAdded->on(_range=elements( this->mesh() ), _expr=f_expr );
+    M_hasSourceAdded=true;
 }
 
 //----------------------------------------------------------------------------//
