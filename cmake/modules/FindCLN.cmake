@@ -57,14 +57,14 @@ IF ( NOT CLN_INCLUDE_DIR OR NOT CLN_LIBRARY )
         if (FEELPP_USE_STATIC_LINKAGE )
             message(STATUS "CLN: use static linkage")
             execute_process(
-                COMMAND ${FEELPP_HOME_DIR}/contrib/cln/configure --prefix=${CMAKE_BINARY_DIR}/contrib/cln --enable-static --disable-shared 
+                COMMAND ${FEELPP_HOME_DIR}/contrib/cln/configure --prefix=${CMAKE_BINARY_DIR}/contrib/cln --enable-static --disable-shared CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile
                 # OUTPUT_QUIET
                 OUTPUT_FILE "cln-configure"
                 )
         else()
             execute_process(
-                COMMAND ${FEELPP_HOME_DIR}/contrib/cln/configure --prefix=${CMAKE_BINARY_DIR}/contrib/cln LDFLAGS=-dynamic
+                COMMAND ${FEELPP_HOME_DIR}/contrib/cln/configure --prefix=${CMAKE_BINARY_DIR}/contrib/cln LDFLAGS=-dynamic CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile
                 #      OUTPUT_QUIET
                 OUTPUT_FILE "cln-configure"

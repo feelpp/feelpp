@@ -51,6 +51,14 @@ MatrixEigenDense<T>::MatrixEigenDense( size_type r, size_type c, WorldComm const
 {}
 
 template <typename T>
+MatrixEigenDense<T>::MatrixEigenDense( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
+    :
+    super( dmRow,dmCol ),
+    M_is_initialized( false ),
+    M_mat( dmRow->nDof(), dmCol->nDof() )
+{}
+
+template <typename T>
 MatrixEigenDense<T>::MatrixEigenDense( MatrixEigenDense const & m )
     :
     super( m ),

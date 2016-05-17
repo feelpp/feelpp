@@ -1262,14 +1262,22 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
         //                             name.c_str(),
         //                             &petsc_viewer );
         CHKERRABORT( this->comm(),ierr );
-
+#if PETSC_VERSION_LESS_THAN(3,7,0)
         ierr = PetscViewerSetFormat ( petsc_viewer,
                                       PETSC_VIEWER_BINARY_MATLAB );
+#else
+        ierr = PetscViewerPushFormat ( petsc_viewer,
+                                      PETSC_VIEWER_BINARY_MATLAB );
+#endif
         //PETSC_VIEWER_ASCII_PYTHON );
         CHKERRABORT( this->comm(),ierr );
 
         ierr = MatView ( M_mat, petsc_viewer );
         CHKERRABORT( this->comm(),ierr );
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+        ierr = PetscViewerPopFormat ( petsc_viewer );
+        CHKERRABORT( this->comm(),ierr );
+#endif
     }
 
     /**
