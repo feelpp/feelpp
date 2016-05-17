@@ -32,27 +32,29 @@ if ( FEELPP_ENABLE_ACUSIM )
       include
       NO_DEFAULT_PATH)
 
-    set(ACUSIM_INCLUDE_DIR "${ACUSIM_DIR}/include")
-    include_directories(${ACUSIM_INCLUDE_DIR})
-
-    set(ACUSIM_LIBRARY_DIR "${ACUSIM_DIR}/lib")
-    set(ACUSIM_LIBRARIES acusolve acusim)
-
-    SET(FEELPP_LIBRARIES ${ACUSIM_LIBRARIES} ${FEELPP_LIBRARIES} )
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ACUSIM" )
-    SET(FEELPP_HAS_ACUSIM 1)
-
-    message(STATUS "[feelpp] Altair: ${ACUSIM_INCLUDE_DIR}")
-    include_directories(${ACUSIM_INCLUDE_DIR})
-
-    if( NOT ACUSIM_INCLUDE_DIR OR NOT ACUSIM_LIBRARIES )
+    if ( ACUSIM_DIR )
+      
+      set(ACUSIM_INCLUDE_DIR "${ACUSIM_DIR}/include")
+      include_directories(${ACUSIM_INCLUDE_DIR})
+      
+      set(ACUSIM_LIBRARY_DIR "${ACUSIM_DIR}/lib")
+      set(ACUSIM_LIBRARIES acusolve acusim)
+      
+      SET(FEELPP_LIBRARIES ${ACUSIM_LIBRARIES} ${FEELPP_LIBRARIES} )
+      SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ACUSIM" )
+      SET(FEELPP_HAS_ACUSIM 1)
+      
+      message(STATUS "[feelpp] Altair: ${ACUSIM_INCLUDE_DIR}")
+      include_directories(${ACUSIM_INCLUDE_DIR})
+      
+      if( NOT ACUSIM_INCLUDE_DIR OR NOT ACUSIM_LIBRARIES )
         message(WARNING "[feelpp] Acusim libraries and headers were not found on your system. Either install it or set FEELPP_ENABLE_ACUSIM to OFF.")
+      endif()
     endif()
-
     # handle the QUIETLY and REQUIRED arguments and set ACUSIM_FOUND to TRUE if
     # all listed variables are TRUE
     include (FindPackageHandleStandardArgs)
-    find_package_handle_standard_args (ACUSIM DEFAULT_MSG ACUSIM_INCLUDE_DIR ACUSIM_LIBRARIES )
+    find_package_handle_standard_args (ACUSIM DEFAULT_MSG ACUSIM_DIR ACUSIM_INCLUDE_DIR ACUSIM_LIBRARIES )
 
     mark_as_advanced (ACUSIM_INCLUDE_DIR ACUSIM_LIBRARIES )
 
