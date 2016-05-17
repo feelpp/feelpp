@@ -26,6 +26,11 @@
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/product.hpp>
 
+constexpr int dim = FEELPP_DIM;
+constexpr int order_p= FEELPP_ORDER_P;
+
+using namespace Feel;
+
 template<typename ElementType>
 struct f_evaluate
 {
@@ -36,9 +41,9 @@ struct f_evaluate
     static const uint16_type rank = 0;
     static const uint16_type imorder = 1;
     static const bool imIsPoly = true;
-    f_evaluate( ElementType& u1, ElementType& u2, double R ) : M_u1(u1) M_u2(u2); M_R(R)
+    f_evaluate( ElementType& u1, ElementType& u2, double R ) : M_u1(u1), M_u2(u2), M_R(R)
     {}
-    double operator()( uint16_type c1, uint16_type c2, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
+    double operator()( uint16_type c1, uint16_type c2, boost::numeric::ublas::vector<double> const& x, boost::numeric::ublas::vector<double> const& ) const
     {
         return M_u1(x)[0][0][0]*((c1==0)*x[0]/M_R+(c1==1)*x[1]/M_R)+M_u2(x)[0][0][0]*((c1==2)*(1-(x[0]*x[0]+x[1]*x[1])/(M_R*M_R)));
     }
@@ -50,10 +55,6 @@ struct f_evaluate
 
 int main(int argc, char**argv )
 {
-    constexpr int dim = FEELPP_DIM;
-    constexpr int order_p= FEELPP_ORDER_P;
-    
-    using namespace Feel;
     po::options_description stokes1Doptions( "Steady NS options" );
     stokes1Doptions.add_options()
     ( "rho", po::value<double>()->default_value( 1.0 ), "coeff" )
@@ -62,6 +63,7 @@ int main(int argc, char**argv )
     ( "sym", po::value<bool>()->default_value( 0 ), "symmetric formulation of the stress tensor" )
     ( "penaldir", po::value<double>()->default_value( 100 ), "coeff" )
     ( "stokes.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
+    ( "markername", po::value<std::string>()->default_value( "centerline" ), "marker name" )
     ;
     stokes1Doptions.add( backend_options( "stokes" ) );
     
@@ -71,7 +73,7 @@ int main(int argc, char**argv )
                                  _author="Feel++ Consortium",
                                  _email="feelpp-devel@feelpp.org"));
     
-    auto mesh3d = loadMesh(_mesh=new Mesh<Simplex<3>>);
+    auto mesh3d = loadMesh(_mesh=new Mesh<Simplex<3,1,3>>);
     std::cout<<"loading mesh 3D: DONE \n";
     auto Xh3 = THch<order_p>( mesh3d );
     std::cout<<"creating Xh3: DONE \n";
@@ -79,8 +81,9 @@ int main(int argc, char**argv )
     auto u3 = U3.element<0>();
     auto p3 = U3.element<1>();
     std::cout<<"Creating U 3D: DONE \n";
+    std::string markername = soption(_name="markername");
     
-    auto mesh1d = createSubmesh(mesh3d, markededges(mesh3d,"centerline"));
+    auto mesh1d = createSubmesh(mesh3d, markededges(mesh3d,"markername"));
     //auto mesh1d = loadMesh(_mesh=new Mesh<Simplex<1,1,3>>);
     std::cout<<"subtrating  mesh 1D: DONE \n";
     
@@ -120,7 +123,7 @@ int main(int argc, char**argv )
     auto e3 = exporter( _mesh=mesh3d );
     //e3->save();
     
-    std::cout<<"Measure of Xh1 = "<<nelements(_range=elements( mesh1d ))<<"\n";
+    std::cout<<"Measure of Xh1 = "<< nelements(elements( mesh1d ))<<"\n";
     
     auto l = form1( _test=Xh1 );
     std::cout<<"creating the linear form l: DONE \n";
