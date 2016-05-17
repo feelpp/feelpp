@@ -39,7 +39,8 @@ enum ExporterGeometry
 enum FileType
 {
     ASCII  = 0,
-    BINARY = 1
+    BINARY = 1,
+    UNDEFINED
 };
 
 /**

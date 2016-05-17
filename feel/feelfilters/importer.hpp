@@ -71,7 +71,7 @@ public:
         M_worldComm( _worldcomm ),
         M_filename(),
         M_format( _format ),
-        M_file_type( _file_type )
+        M_file_type( t )
     {}
 
     /**
