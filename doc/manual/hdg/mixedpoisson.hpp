@@ -822,7 +822,7 @@ template<typename ExprT>
 void
 MixedPoisson<Dim, Order>::updatePotentialRHS( Expr<ExprT> expr, std::string marker)
 {
-    auto rhs = form1( _test=M_Wh, _vector=M_F, _colstart=1);
+    auto rhs = form1( _test=M_Wh, _vector=M_F, _rowstart=1);
     auto w = M_Wh->element();
     if ( marker.empty() )
         rhs += integrate(_range=elements(M_mesh), _expr=expr*id(w) );
@@ -836,7 +836,7 @@ template<typename ExprT>
 void
 MixedPoisson<Dim, Order>::updateFluxRHS( Expr<ExprT> expr, std::string marker)
 {
-    auto rhs = form1( _test=M_Vh, _vector=M_F, _colstart=0);
+    auto rhs = form1( _test=M_Vh, _vector=M_F, _rowstart=0);
     auto v = M_Vh->element();
     if ( marker.empty() )
         rhs += integrate(_range=elements(M_mesh), _expr=expr*id(v) );

@@ -127,7 +127,7 @@ ElectroThermal<Dim, Order>::updateThermalAssembly( sparse_matrix_ptrtype& A, vec
     auto w = Wh->element();
 
     auto a11 = form2( _trial=Vh, _test=Vh,_matrix=A );
-    auto rhs = form1( _test=Wh, _vector=F, _colstart=1);
+    auto rhs = form1( _test=Wh, _vector=F, _rowstart=1);
 
     auto thermalModelProp = M_ThermalModel.modelProperties();
     auto electroModelProp = M_ElectroModel.modelProperties();
@@ -179,6 +179,7 @@ ElectroThermal<Dim, Order>::run()
     M_V = M_ElectroModel.potentialField();
 
     M_ThermalModel.assembleF();
+    M_ThermalModel.updateConductivityTerm();
     for( auto const& pairMat : electroModelProp.materials() )
     {
         auto marker = pairMat.first;
@@ -186,14 +187,6 @@ ElectroThermal<Dim, Order>::run()
 
         auto expr = inner(idv(*M_j))/material.getScalar("sigma0");
         M_ThermalModel.updatePotentialRHS(expr, marker);
-    }
-    for( auto const& pairMat : thermalModelProp.materials() )
-    {
-        auto marker = pairMat.first;
-        auto material = pairMat.second;
-
-        auto expr = material.getScalar("k0");
-        M_ThermalModel.updateConductivityTerm(expr, marker);
     }
 
     M_ThermalModel.solveNL();
