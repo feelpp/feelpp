@@ -120,6 +120,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     const std::string stabmeth = soption( _name="advec-stab-method", _prefix=this->prefix() );
     CHECK(AdvectionStabMethodIdMap.count(stabmeth)) << stabmeth <<" is not in the list of possible stabilization methods\n";
     M_stabMethod = AdvectionStabMethodIdMap.at(stabmeth);
+    M_stabCoeff = doption( _name="advec-stab-coeff", _prefix=this->prefix() );
 
     M_doExportAll = boption(_name="export-all",_prefix=this->prefix());
     M_doExportAdvectionVelocity = boption(_name="export-advection-velocity",_prefix=this->prefix());
