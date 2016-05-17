@@ -32,6 +32,8 @@ if ( FEELPP_ENABLE_ACUSIM )
       include
       NO_DEFAULT_PATH)
 
+    message(STATUS "[feelpp] acusim dir : ${ACUSIM_DIR}")
+
     if ( ACUSIM_DIR )
       
       set(ACUSIM_INCLUDE_DIR "${ACUSIM_DIR}/include")
