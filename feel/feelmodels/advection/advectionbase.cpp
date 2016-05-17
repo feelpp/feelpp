@@ -274,6 +274,20 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+bool
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::hasDiffusion() const
+{
+    return (this->modelName() == "Advection-Diffusion" || this->modelName() == "Advection-Diffusion-Reaction");
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+bool
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::hasReaction() const
+{
+    return (this->modelName() == "Advection-Diffusion-Reaction");
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::setSolverName( std::string const& type )
 {
@@ -479,7 +493,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
     }
 
     // Diffusion
-    if( (this->modelName() == "Advection-Diffusion" || this->modelName() == "Advection-Diffusion-Reaction") && build_DiffusionTerm )
+    if( this->hasDiffusion() && build_DiffusionTerm )
     {
         this->timerTool("Solve").start();
 
@@ -496,15 +510,15 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
     }
 
     // Reaction
-    if( this->modelName() == "Advection-Diffusion-Reaction" && build_ReactionTerm )
+    if( this->hasReaction() && build_ReactionTerm )
     {
         this->timerTool("Solve").start();
 
         auto const& R = this->diffusionReactionModel()->fieldReactionCoeff();
         
-        linearForm += integrate(
+        bilinearForm += integrate(
                 _range=elements(mesh),
-                _expr=idv(R)*id(psi),
+                _expr=-idv(R)*idt(phi)*id(psi),
                 _geomap=this->geomap()
                 );
 
@@ -582,6 +596,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
     {
         double sigma = this->isStationary() ? 0: M_bdf->polyDerivCoefficient(0);
         auto beta = idv(this->fieldAdvectionVelocity());
+        auto const& D = this->diffusionReactionModel()->fieldDiffusionCoeff();
+        auto const& R = this->diffusionReactionModel()->fieldReactionCoeff();
         auto beta_norm = vf::sqrt(trans(beta)*beta);
         auto f = M_bdf->polyDeriv();
         
@@ -594,8 +610,19 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
                 auto coeff  = val( stabCoeff /
                         ( 2*beta_norm*nOrder/h() + std::abs(sigma) ));
 
-                auto L_op = grad(psi)*beta + sigma*id(psi);
-                auto L_opt = gradt(phi)*beta + sigma*idt(phi);
+                //auto L_op = grad(psi)*beta + sigma*id(psi);
+                //auto L_opt = gradt(phi)*beta + sigma*idt(phi);
+
+                auto L_op = grad(psi) * beta // advection term
+                    + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*id(psi) // transient term
+                    + (this->hasReaction()) * (-idv(R))*id(psi) // reaction term
+                    + (this->hasDiffusion() && nOrder >= 2) * (-idv(D))*laplacian(psi) // diffusion term
+                    ;
+                auto L_opt = gradt(phi) * beta // advection term
+                    + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*idt(phi) // transient term
+                    + (this->hasReaction()) * (-idv(R))*idt(phi) // reaction term
+                    + (this->hasDiffusion() && nOrder >= 2 ) * (-idv(D))*laplaciant(phi) // diffusion term
+                    ;
 
                 bilinearForm += integrate(
                         _range=elements(mesh),
@@ -615,7 +642,13 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
                 auto coeff = val(vf::h() / (2 * beta_norm + 0.001));
 
                 auto L_op = grad(psi) * val(beta);
-                auto L_opt = gradt(phi) * val(beta) + val(sigma) * idt(phi);
+                //auto L_opt = gradt(phi) * val(beta) + val(sigma) * idt(phi);
+
+                auto L_opt = gradt(phi) * beta // advection term
+                    + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*idt(phi) // transient term
+                    + (this->hasReaction()) * (-idv(R))*idt(phi) // reaction term
+                    + (this->hasDiffusion() && nOrder >= 2 ) * (-idv(D))*laplaciant(phi) // diffusion term
+                    ;
 
                 bilinearForm += integrate(
                         _range=elements(M_mesh),
@@ -632,9 +665,20 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
             {
                 auto coeff = val(1. / ( (2 * beta_norm) / vf::h()  + vf::abs(sigma) ) );
 
-                auto L_op = grad(psi) * val(beta) - val(sigma) * id(psi);
-                auto L_opt = gradt(phi) * val(beta) + val(sigma) * idt(phi);
+                //auto L_op = grad(psi) * val(beta) - val(sigma) * id(psi);
+                //auto L_opt = gradt(phi) * val(beta) + val(sigma) * idt(phi);
                 
+                auto L_op = grad(psi) * beta // advection term
+                    - (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*id(psi) // transient term
+                    - (this->hasReaction()) * (-idv(R))*id(psi) // reaction term
+                    - (this->hasDiffusion() && nOrder >= 2) * (-idv(D))*laplacian(psi) // diffusion term
+                    ;
+                auto L_opt = gradt(phi) * beta // advection term
+                    + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*idt(phi) // transient term
+                    + (this->hasReaction()) * (-idv(R))*idt(phi) // reaction term
+                    + (this->hasDiffusion() && nOrder >= 2 ) * (-idv(D))*laplaciant(phi) // diffusion term
+                    ;
+
                 bilinearForm += integrate(
                         _range=elements(M_mesh),
                         _expr=coeff * L_op * L_opt );

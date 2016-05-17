@@ -143,6 +143,10 @@ public :
     // Model and solver
     std::string const& modelName() const { return M_modelName; }
     void setModelName( std::string const& type );
+
+    bool hasDiffusion() const;
+    bool hasReaction() const;
+
     std::string const& solverName() const { return M_solverName; }
     void setSolverName( std::string const& type );
 
