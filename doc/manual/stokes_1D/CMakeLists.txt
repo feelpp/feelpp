@@ -1,10 +1,9 @@
-# -*- mode: cmake; coding: utf-8 -*-
-#
+###  TEMPLATE.txt.tpl; coding: utf-8 ---
+
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2009-11-29
+#       Date: 2012-02-03
 #
-#  Copyright (C) 2009-2012 UniversitÃ© Joseph Fourier (Grenoble I)
-#  Copyright (C) 2011-2016 Feel++ Consortium
+#  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,31 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
-
-add_subdirectory(python)
-
-if (NOT FEELPP_MINIMAL_CONFIGURATION)
-  foreach(DIR laplacian
-      stokes
-      stokes_1D
-      advection
-      accoustic
-      dd
-      heat
-      solid
-      ns
-      heatns
-      nonlinear
-      adapt
-      nirb
-      fd
-      maxwell
-      opt
-      eikonal
-      eigen
-      magnetostatic )
-    add_subdirectory(${DIR})
-  endforeach()
-endif()
+feelpp_add_application(doc_stokes1D_P2P1 SRCS stokes1D.cpp LABELS doc GEO tige1D.geo cylinder3D.geo cylinder2D.geo INCLUDE_IN_ALL CFG stokes1D.cfg DEFS FEELPP_DIM=3 FEELPP_ORDER_P=1)
