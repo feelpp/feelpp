@@ -1,0 +1,3 @@
+steps:
+ - name: ':feelpp: hello'
+   command: echo "Hello!"

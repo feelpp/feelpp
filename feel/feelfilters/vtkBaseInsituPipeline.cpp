@@ -1,5 +1,5 @@
 
-#include <feel/feelfilters/vtkBaseInsituPipeline.h>
+#include <feel/feelfilters/vtkBaseInsituPipeline.hpp>
 
 namespace Feel
 {

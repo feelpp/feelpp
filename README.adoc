@@ -16,9 +16,9 @@ image:https://badges.gitter.im/Join%20Chat.svg["Join the chat at", https://gitte
 | Platform & Compiler | `master` | `develop` 
 | Travis/Ubuntu & Clang >= 3.5 |  image:https://travis-ci.org/feelpp/feelpp.svg?branch=master["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
 | image:https://travis-ci.org/feelpp/feelpp.svg?branch=develop["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
-| Buildkite Ubuntu 14.04 
-| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feel-plus-plus-consortium/feelpp"] 
-| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feel-plus-plus-consortium/feelpp"] 
+| Buildkite Docker/Ubuntu 14.04 
+| image:https://badge.buildkite.com/d7458430a2dad5ee7747a259681a82bc4ad7c6eabfa1632232.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp-docker-ubuntu"] 
+| image:https://badge.buildkite.com/d7458430a2dad5ee7747a259681a82bc4ad7c6eabfa1632232.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp-docker-ubuntu"] 
 |===
 
 == Introduction

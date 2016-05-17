@@ -2289,6 +2289,12 @@ public:
             fs::current_path( M_current_path );
         }
 
+        /* Returns CRB objects */
+        crb_ptrtype getCRB()
+        {
+            return this->crb;
+        }
+
 private:
     int printParameterHdr( std::ostream& os, int N, std::vector<std::string> outputhdrs )
         {
