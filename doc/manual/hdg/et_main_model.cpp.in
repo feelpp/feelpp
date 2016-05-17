@@ -29,8 +29,8 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "electro-thermal-model" ,
-                     "electro-thermal-model" ,
+    AboutData about( "electrothermal_@D@D_P@P@" ,
+                     "electrothermal_@D@D_P@P@" ,
                      "0.1",
                      "Electro-Thermal Model",
                      AboutData::License_GPL,
