@@ -1,5 +1,5 @@
 set_directory_properties(PROPERTIES LABEL testfilters )
-foreach(TEST importergmsh geotool geotool2 exporter_sanitize)
+foreach(TEST importergmsh importerarm geotool geotool2 exporter_sanitize)
 
   feelpp_add_test( ${TEST} )
 
