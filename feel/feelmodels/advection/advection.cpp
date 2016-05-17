@@ -60,6 +60,8 @@ ADVECTION_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     //this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "advection", "Robin" );
     //for( auto const& d : this->M_bcRobin )
         //this->addMarkerRobinBC( marker(d) );
+
+    M_sources = this->modelProperties().boundaryConditions().template getScalarFields( "advection", "Sources" );
 }
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
@@ -97,8 +99,35 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_pt
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const
+ADVECTION_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE(vector_ptrtype& F, bool BuildCstPart) const
 {
+    if( this->M_sources.empty() ) return;
+
+    bool BuildSourceTerm = !BuildCstPart;
+
+    if ( BuildSourceTerm )
+    {
+        auto linearForm = form1( 
+                _test=this->functionSpace(), 
+                _vector=F,
+                _rowstart=this->rowStartInVector() 
+                );
+        auto const& v = this->fieldSolution();
+        for( auto const& d : M_sources )
+        {
+            if ( marker(d).empty() )
+                linearForm +=
+                    integrate( _range=elements(this->mesh()),
+                               _expr= inner( expression(d),id(v) ),
+                               _geomap=this->geomap() );
+            else
+                linearForm +=
+                    integrate( _range=markedelements(this->mesh(),marker(d)),
+                               _expr= inner( expression(d),id(v) ),
+                               _geomap=this->geomap() );
+        }
+
+    }
 }
 
 
