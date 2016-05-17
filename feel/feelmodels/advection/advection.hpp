@@ -51,6 +51,8 @@ protected:
     map_scalar_field<2> M_bcNeumann;
     map_scalar_fields<2> M_bcRobin;
 
+    map_scalar_field<2> M_sources;
+
 };
     
 
