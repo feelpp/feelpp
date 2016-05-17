@@ -580,7 +580,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
     if(Build_StabTerm)
     {
-        auto sigma = M_bdf->polyDerivCoefficient(0);
+        double sigma = this->isStationary() ? 0: M_bdf->polyDerivCoefficient(0);
         auto beta = idv(this->fieldAdvectionVelocity());
         auto beta_norm = vf::sqrt(trans(beta)*beta);
         auto f = M_bdf->polyDeriv();
