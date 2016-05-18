@@ -2,10 +2,6 @@
     "Name": "HDG-Electro-Thermo ",
     "ShortName":"ET",
     "Model":"hdg",
-    "Parameters":
-    {
-        "Tw":"293"
-    },
     "Materials":
     {
         "omega":
@@ -13,8 +9,8 @@
             "name":"copper",
             "alpha":"3.35e-3",
             "T0":"293",
-            "sigma0":"50",
-            "k0":"300",
+            "sigma0":"58e+3",
+            "k0":"0.38",
             "sigma":"sigma0/(1+alpha*(T-T0)):sigma0:alpha:T:T0",
             "k":"k0*T/((1+alpha*(T-T0))*T0):k0:T:alpha:T0"
         }
@@ -25,14 +21,34 @@
         {
             "Dirichlet":
             {
-                "top":
+                "V0":
                 {
-                    "expr":"1"
+                    "expr":"0.25"
                 }
             },
             "Neumann":
             {
-                "R":
+                "Channel0":
+                {
+                    "expr":"0"
+                },
+                "Channel1":
+                {
+                    "expr":"0"
+                },
+                "CoolingHoles":
+                {
+                    "expr":"0"
+                },
+                "TieRods":
+                {
+                    "expr":"0"
+                },
+                "top":
+                {
+                    "expr":"0"
+                },
+                "bottom":
                 {
                     "expr":"0"
                 }
@@ -42,26 +58,11 @@
         {
             "Integral":
             {
-                "bottom":
+                "V1":
                 {
-                    "expr":"40"
-                }
-            }
-        },
-        "temperature":
-        {
-            "Robin":
-            {
-                "R":
-                {
-                    "expr1":"1",
-                    "expr2":"Tw:Tw"
+                    "expr":"3333"
                 }
             }
         }
-    },
-    "PostProcess":
-    {
-        "Fields":["potential","current","temperature"]
-    }    
+    }
 }
