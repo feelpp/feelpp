@@ -119,7 +119,7 @@ class TestPrecAFP : public Application
     typedef typename lag_space_type::element_type lag_element_type;
 
     //! Pch 0 space
-    typedef Lagrange<0, Scalar, Discontinuous> lag_0_basis_type; 
+    typedef Lagrange<0, Scalar, Discontinuous> lag_0_basis_type;
     typedef FunctionSpace<mesh_type, bases<lag_0_basis_type>> lag_0_space_type;
     typedef boost::shared_ptr<lag_0_space_type> lag_0_space_ptrtype;
     typedef typename lag_0_space_type::element_type lag_0_element_type;
@@ -135,9 +135,9 @@ class TestPrecAFP : public Application
     typedef typename comp_space_type::element_type comp_element_type;
 
     //! Preconditioners
-    typedef PreconditionerBlockMS<comp_space_type,lag_0_space_type> preconditioner_type;
+    typedef PreconditionerBlockMS<comp_space_type> preconditioner_type;
     typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
-    
+
     //! The exporter factory
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
@@ -191,22 +191,22 @@ class TestPrecAFP : public Application
         auto v = V.template element<0>();
         auto phi = U.template element<1>();
         auto psi = V.template element<1>();
-        
+
         auto f2 = form2(_test=Xh,_trial=Xh);
         auto f1 = form1(_test=Xh);
 
         preconditioner_ptrtype M_prec;
-       
+
         map_vector_field<DIM,1,2> m_dirichlet {model.boundaryConditions().getVectorFields<DIM>("u","Dirichlet")};
         map_scalar_field<2> m_dirichlet_phi {model.boundaryConditions().getScalarFields<2>("phi","Dirichlet")};
-        
+
         f1 = integrate(_range=elements(M_mesh),
                        _expr = inner(idv(M_rhs),id(v)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
-                       _expr = 
+                       _expr =
                          inner(trans(id(v)),gradt(phi)) // grad(phi)
                        + inner(trans(idt(u)),grad(psi)) // div(u) = 0
-                       + (1./idv(M_mu_r))*(trans(curlt_op(u))*curl_op(v)) // curl curl 
+                       + (1./idv(M_mu_r))*(trans(curlt_op(u))*curl_op(v)) // curl curl
                        );
         for(auto const & it : m_dirichlet)
         {
@@ -229,17 +229,16 @@ class TestPrecAFP : public Application
         if(soption("ms.pc-type") == "blockms" ){
             // auto M_prec = blockms(
             //    _space = Xh,
-            //    _space2 = Mh, 
+            //    _space2 = Mh,
             //    _matrix = f2.matrixPtr(),
             //    _bc = model.boundaryConditions());
 
-            M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type,lag_0_space_type>>(Xh, 
-                                                                                                 Mh,
-                                                                                                 model,
-                                                                                                 "blockms",
-                                                                                                 f2.matrixPtr());
+            M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type>>(Xh,
+                                                                                model,
+                                                                                "blockms",
+                                                                                f2.matrixPtr());
 
-            M_prec->update(f2.matrixPtr(),M_mu_r);
+            //??: M_prec->update(f2.matrixPtr(),M_mu_r);
             tic();
             ret = f2.solveb(_rhs=f1,
                       _solution=U,
