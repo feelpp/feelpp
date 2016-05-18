@@ -139,8 +139,7 @@ ElectroThermal<Dim, Order>::updateThermalAssembly( sparse_matrix_ptrtype& A, vec
         auto alpha = material.getDouble("alpha");
         auto T0 = material.getDouble("T0");
         auto sigma0 = material.getDouble("sigma0");
-        auto sigma = material.getScalar("sigma", "T", idv(*M_T));
-        sigma.setParameterValues({{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
+        auto sigma = material.getScalar("sigma", {"T"}, {idv(*M_T)}, {{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
         auto expr = inner(idv(*M_j))/sigma;
         rhs += integrate( _range=markedelements(M_mesh, marker),
                           _expr=inner(expr,id(w)) );
@@ -152,8 +151,7 @@ ElectroThermal<Dim, Order>::updateThermalAssembly( sparse_matrix_ptrtype& A, vec
         auto alpha = material.getDouble("alpha");
         auto T0 = material.getDouble("T0");
         auto k0 = material.getDouble("k0");
-        auto k = material.getScalar("k", "T", idv(*M_T));
-        k.setParameterValues({{"k0",k0},{"T0",T0},{"alpha",alpha}});
+        auto k = material.getScalar("k", {"T"}, {idv(*M_T)}, {{"k0",k0},{"T0",T0},{"alpha",alpha}});
         a11 += integrate( _range=markedelements(M_mesh, marker), _expr=inner(idt(u),id(v))/k);
     }
 }
