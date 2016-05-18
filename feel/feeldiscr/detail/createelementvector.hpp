@@ -27,7 +27,7 @@
 namespace Feel { namespace detail {
 
 template<typename ElementType>
-struct CreateElementVector
+struct FEELPP_NO_EXPORT CreateElementVector
 {
 public:
     template<typename Sig>
@@ -84,4 +84,6 @@ public:
 
 
 } } // Feel / detail
+
+
 #endif // FEELPP_CREATE_ELEMENT_VECTOR_HPP

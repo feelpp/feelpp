@@ -2497,14 +2497,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     for ( ; __face_it != __face_en; ++__face_it )
     {
         face_type const& curFace = boost::unwrap_ref(*__face_it);
-        FEELPP_ASSERT( curFace.isOnBoundary() && !curFace.isConnectedTo1() )
-        ( curFace.marker() )
-        ( curFace.isOnBoundary() )
-        ( curFace.ad_first() )
-        ( curFace.pos_first() )
-        ( curFace.ad_second() )
-        ( curFace.pos_second() )
-        ( curFace.id() ).warn( "inconsistent data face" );
+        DLOG_IF( WARNING, curFace.isOnBoundary() && !curFace.isConnectedTo1() )
+            << "Inconsistent data face : " 
+            << " marker : " <<  curFace.marker()
+            << " isOnBoundary : " << curFace.isOnBoundary()
+            << " ad_first : " << curFace.ad_first()
+            << " pos_first : " <<  curFace.pos_first()
+            << " ad_second : " << curFace.ad_second()
+            << " pos_second : " <<  curFace.pos_second()
+            << " id : " << curFace.id();
         DVLOG(2) << "[projector] FACE_ID = " << curFace.id()
                       << " element id= " << curFace.ad_first()
                       << " pos in elt= " << curFace.pos_first()
@@ -2682,5 +2683,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
 
 }
+
 
 #endif

@@ -655,16 +655,16 @@ private:
     static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np, WorldComm const& worldcomm );
 
 #if defined ( FEELPP_HAS_PETSC_H )
-    void initPetsc( int * argc = 0, char *** argv = NULL );
+    FEELPP_NO_EXPORT void initPetsc( int * argc = 0, char *** argv = NULL );
 #endif
 
 
 
     //! process command-line/config-file options
-    static void doOptions( int argc, char** argv,
-                           po::options_description const& desc,
-                           po::options_description const& desc_lib,
-                           std::string const& appName );
+    static FEELPP_NO_EXPORT void doOptions( int argc, char** argv,
+                                            po::options_description const& desc,
+                                            po::options_description const& desc_lib,
+                                            std::string const& appName );
 
     /**
      * \fn void generateOLFiles( int argc, char ** argv, std::string const& appName )
@@ -675,9 +675,9 @@ private:
      * @param argv Application arguments.
      * @param appName Name of the application.
      */
-    static void generateOLFiles( int argc, char ** argv, std::string const& appName );
-    static void processGenericOptions();
-    static void parseAndStoreOptions( po::command_line_parser parser, bool extra_parser = false );
+    static FEELPP_NO_EXPORT void generateOLFiles( int argc, char ** argv, std::string const& appName );
+    static FEELPP_NO_EXPORT void processGenericOptions();
+    static FEELPP_NO_EXPORT void parseAndStoreOptions( po::command_line_parser parser, bool extra_parser = false );
 
 private:
     /// Whether this environment object called MPI_Init
