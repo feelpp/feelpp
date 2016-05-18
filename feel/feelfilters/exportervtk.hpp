@@ -94,7 +94,7 @@
 #include <vtkCPDataDescription.h>
 #include <vtkCPInputDataDescription.h>
 
-#include <feel/feelfilters/vtkBaseInsituPipeline.h>
+#include <feel/feelfilters/vtkBaseInsituPipeline.hpp>
 #endif // FEELPP_VTK_INSITU_ENABLED
 
 #endif // VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
