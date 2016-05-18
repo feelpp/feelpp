@@ -1619,6 +1619,7 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 {
+    tic();
     M_mesh = boost::addressof( M );
 
     VLOG(2) << "[Dof::build] initDofMap\n";
@@ -1832,6 +1833,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 
     this->initDofIdToContainerIdIdentity( 0,this->nLocalDofWithGhost() );
 
+    tic();
     EntityProcessType entityProcess = (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
     for ( auto const& eltRange : elements( M,entityProcess) )
     {
@@ -1866,7 +1868,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                 }
             }
     }
-
+    toc("DofTable::build - locglob indices", FLAGS_v>0);
 
     this->buildIndexSplit();
 
@@ -1874,7 +1876,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     if ( is_product && nComponents > 1 )
         this->buildIndexSplitWithComponents( nComponents );
 
-    VLOG(2) << "[Dof::build] done building the map\n";
+    toc("DofTable::build", FLAGS_v > 0);
 }
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
@@ -2381,7 +2383,7 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( mesh_type& M )
 {
-    boost::timer tim;
+    tic();
     size_type nDofF = nLocalDofOnFace(true);
     M_n_dof_per_face_on_bdy = nDofF;
     DVLOG(2) << "vertex dof : " <<  face_type::numVertices * fe_type::nDofPerVertex << "\n";
@@ -2436,20 +2438,18 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
             FEELPP_ASSERT( boost::get<0>( M_face_l2g[__face_it->id()][face_dof_id] ) != invalid_size_type_value )( __face_it->id() )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
 
 #endif
-    if (Environment::isMasterRank() && FLAGS_v > 0)
-        std::cout << " . DofTable::buildBoundaryDofMap done in " << tim.elapsed() << "s\n";
+    
+    toc( "DofTable::buildBoundaryDofMap", FLAGS_v > 0 );
 }    // updateBoundaryDof
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel ) const
 {
-    boost::timer tim;
-
+    tic();
     generateDofPoints( M, buildMinimalParallel, mpl::bool_<is_mortar>() );
 
-    if ( Environment::isMasterRank() && FLAGS_v > 0)
-        std::cout << " - DofTable::generateDofPoints done in " << tim.elapsed() << "\n";
+    toc("DofTable::generateDofPoints", FLAGS_v > 0 );
 
 }
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
