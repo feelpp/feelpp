@@ -135,7 +135,7 @@ class TestPrecAFP : public Application
     typedef typename comp_space_type::element_type comp_element_type;
 
     //! Preconditioners
-    typedef PreconditionerBlockMS<comp_space_type,lag_0_space_type> preconditioner_type;
+    typedef PreconditionerBlockMS<comp_space_type> preconditioner_type;
     typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
     
     //! The exporter factory
@@ -233,13 +233,12 @@ class TestPrecAFP : public Application
             //    _matrix = f2.matrixPtr(),
             //    _bc = model.boundaryConditions());
 
-            M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type,lag_0_space_type>>(Xh, 
-                                                                                                 Mh,
-                                                                                                 model,
-                                                                                                 "blockms",
-                                                                                                 f2.matrixPtr());
+            M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type>>(Xh, 
+                                                                                model,
+                                                                                "blockms",
+                                                                                f2.matrixPtr(), 0.1);
 
-            M_prec->update(f2.matrixPtr(),M_mu_r);
+            //M_prec->update(f2.matrixPtr(),M_mu_r);
             tic();
             ret = f2.solveb(_rhs=f1,
                       _solution=U,
