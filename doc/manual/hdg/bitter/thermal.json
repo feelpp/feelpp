@@ -2,10 +2,6 @@
     "Name": "HDG-Electro-Thermo ",
     "ShortName":"ET",
     "Model":"hdg",
-    "Parameters":
-    {
-        "Tw":"293"
-    },
     "Materials":
     {
         "omega":
@@ -23,16 +19,36 @@
     {
         "potential":
         {
-            "Dirichlet":
+            "Robin":
             {
-                "in":
+                "Channel0":
                 {
-                    "expr":"0"
+                    "expr1":"0.01",
+                    "expr2":"0.01*Tw:Tw"
+                },
+                "Channel1":
+                {
+                    "expr1":"0.01",
+                    "expr2":"0.01*Tw:Tw"
+                },
+                "TieRods":
+                {
+                    "expr1":"0.055",
+                    "expr2":"0.055*Tw::Tw"
+                },
+                "CoolingHoles":
+                {
+                    "expr1":"0.055",
+                    "expr2":"0.055*Tw:Tw"
                 }
             },
             "Neumann":
             {
-                "R":
+                "V0":
+                {
+                    "expr":"0"
+                },
+                "V1":
                 {
                     "expr":"0"
                 },
@@ -45,31 +61,6 @@
                     "expr":"0"
                 }
             }
-        },
-        "flux":
-        {
-            "Integral":
-            {
-                "out":
-                {
-                    "expr":"3333"
-                }
-            }
-        },
-        "temperature":
-        {
-            "Robin":
-            {
-                "R":
-                {
-                    "expr1":"0.01",
-                    "expr2":"0.01*Tw:Tw"
-                }
-            }
         }
-    },
-    "PostProcess":
-    {
-        "Fields":["potential","current","temperature"]
-    }    
+    }
 }
