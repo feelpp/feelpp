@@ -21,3 +21,5 @@ feelpp_add_test( projtangent )
 feelpp_add_test( idf_functor )
 feelpp_add_test( idf2_functor )
 
+feelpp_add_test( divergence )
+
