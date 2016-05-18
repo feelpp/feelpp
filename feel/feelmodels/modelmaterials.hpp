@@ -204,7 +204,7 @@ struct ModelMaterial
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e, std::map<std::string, double> params )
         {
             auto ex = expr( M_p.get( key, "0" ), sym, e );
-            ex->setParameterValues( params );
+            ex.setParameterValues( params );
             return ex;
         }
     template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key )
