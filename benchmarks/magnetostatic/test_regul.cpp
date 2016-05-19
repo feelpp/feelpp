@@ -122,9 +122,9 @@ public:
         // mesh size
         auto xxx = l2_h->element();
         xxx.on(_range=elements(M_mesh), _expr=vf::h());
-        std::cout << "h()\t" << xxx.min() << " : " << xxx.max() << std::endl;
+        cout << "h()\t" << xxx.min() << " : " << xxx.max() << std::endl;
         xxx.on(_range=elements(M_mesh), _expr=vf::meas());
-        std::cout << "meas()\t" << xxx.min() << " : " << xxx.max() << std::endl;
+        cout << "meas()\t" << xxx.min() << " : " << xxx.max() << std::endl;
         // Interpolation operators
         auto Idiv  = Div( _domainSpace=div_h, _imageSpace=l2_h);
         auto Icurl = Curl( _domainSpace=curl_h, _imageSpace=div_h);
@@ -138,25 +138,25 @@ public:
         auto curl_cst_exp = curl_h->element();
         curl_cst_exp.on(_range=elements(M_mesh), _expr=expr<DIM,1>(soption("vec_curl")));
         auto curl_cst = Icurl(curl_cst_exp);
-        std::cout << "Curl ( " << soption("vec_curl") << " ) :  [" << curl_cst.min() << " ; " << curl_cst.max() << " ]" << std::endl;
+        cout << "Curl ( " << soption("vec_curl") << " ) :  [" << curl_cst.min() << " ; " << curl_cst.max() << " ]" << std::endl;
 
         auto grad_cst_exp = h1_h->element();
         grad_cst_exp.on(_range=elements(M_mesh), _expr=expr(soption("scal_grad")));
         auto grad_cst = Igrad(grad_cst_exp);
-        std::cout << "Grad ( " << soption("scal_grad") << " ) : [" << grad_cst.min() << " ; " << grad_cst.max() << " ]" << std::endl;
+        cout << "Grad ( " << soption("scal_grad") << " ) : [" << grad_cst.min() << " ; " << grad_cst.max() << " ]" << std::endl;
 
         auto div_cst_exp = div_h->element();
         div_cst_exp.on(_range=elements(M_mesh), _expr=expr<DIM,1>(soption("vec_div")));
         auto div_cst = Idiv(div_cst_exp); 
-        std::cout << "Div ( " << soption("vec_div") << " ) : [" << div_cst.min() << " ; " << div_cst.max() << " ]" << std::endl;
+        cout << "Div ( " << soption("vec_div") << " ) : [" << div_cst.min() << " ; " << div_cst.max() << " ]" << std::endl;
 
-        std::cout << " ** Matrix Sizes ** " << std::endl;
+        cout << " ** Matrix Sizes ** " << std::endl;
         
-        std::cout << "Idiv : " << Idiv.matPtr()->size1() << " : " << Idiv.matPtr()->size2() << std::endl;
-        std::cout << "Icurl : " << Icurl.matPtr()->size1() << " : " << Icurl.matPtr()->size2() << std::endl;
-        std::cout << "Igrad : " << Igrad.matPtr()->size1() << " : " << Igrad.matPtr()->size2() << std::endl;
-        std::cout << "curl_grad : " << curl_grad->size1() << " : " << curl_grad->size2() << std::endl;
-        std::cout << "div_curl : " << div_curl->size1() << " : " << div_curl->size2() << std::endl;
+        cout << "Idiv : " << Idiv.matPtr()->size1() << " : " << Idiv.matPtr()->size2() << std::endl;
+        cout << "Icurl : " << Icurl.matPtr()->size1() << " : " << Icurl.matPtr()->size2() << std::endl;
+        cout << "Igrad : " << Igrad.matPtr()->size1() << " : " << Igrad.matPtr()->size2() << std::endl;
+        cout << "curl_grad : " << curl_grad->size1() << " : " << curl_grad->size2() << std::endl;
+        cout << "div_curl : " << div_curl->size1() << " : " << div_curl->size2() << std::endl;
 
         Icurl.matPtr()->matMatMult(Igrad.mat(),(*curl_grad));
         Idiv.matPtr()->matMatMult(Icurl.mat(),(*div_curl));
@@ -176,7 +176,7 @@ public:
         // Save curl_grad && div curl to see min/max values
         div_curl->printMatlab("div_curl.m");
         curl_grad->printMatlab("curl_grad.m");
-
+#if 0
         // Now, we solve the pb
         auto u = curl_h->element(); // Potenial - unknown
         auto e = curl_h->element(); // exact
@@ -295,6 +295,7 @@ public:
                 ex->save();
             }
         }
+#endif
     }
 };
 
