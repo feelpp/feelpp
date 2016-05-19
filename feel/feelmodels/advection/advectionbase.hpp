@@ -197,9 +197,9 @@ public :
     // Linear PDE
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilization(sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart) const;
-    virtual void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const =0;
-    virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const = 0;
-    virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const=0;
+    virtual void updateSourceTermLinearPDE(element_advection_ptrtype& fieldSource, bool buildCstPart) const =0;
+    virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const =0;
+    virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const =0;
     
     void updateBCNeumannLinearPDE( vector_ptrtype& F ) const;
     
@@ -212,6 +212,7 @@ public :
     template<typename ExprT>
     void updateSourceAdded(vf::Expr<ExprT> const& expr);
     bool hasSourceAdded() const { return M_hasSourceAdded; }
+    virtual bool hasSourceTerm() const =0;
     //--------------------------------------------------------------------//
     // Diffusion-reaction parameters update
     diffusionreaction_model_ptrtype & diffusionReactionModel() { return M_diffusionReactionModel; }
@@ -275,7 +276,7 @@ protected:
     diffusionreaction_model_ptrtype M_diffusionReactionModel;
     //--------------------------------------------------------------------//
     // Source added
-    element_advection_ptrtype M_fieldSourceAdded;
+    element_advection_ptrtype M_fieldSource;
     bool M_hasSourceAdded;
     //--------------------------------------------------------------------//
     // Solution
@@ -283,7 +284,9 @@ protected:
     //--------------------------------------------------------------------//
     // Export
     exporter_ptrtype M_exporter;
-    bool M_doExportAll, M_doExportAdvectionVelocity;
+    bool M_doExportAll;
+    bool M_doExportAdvectionVelocity;
+    bool M_doExportSourceField;
     //--------------------------------------------------------------------//
     // Stabilization
     static const std::map<std::string, AdvectionStabMethod> AdvectionStabMethodIdMap;
