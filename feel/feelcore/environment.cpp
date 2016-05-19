@@ -389,6 +389,10 @@ Environment::Environment( int argc, char** argv,
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
 
+    cout.attachWorldComm( S_worldcomm );
+    cerr.attachWorldComm( S_worldcomm );
+    clog.attachWorldComm( S_worldcomm );
+
     S_desc_app = boost::make_shared<po::options_description>( desc );
     S_desc_lib = boost::make_shared<po::options_description>( desc_lib );
     S_desc = boost::make_shared<po::options_description>();
@@ -414,10 +418,24 @@ Environment::Environment( int argc, char** argv,
     // rearrange them and it screws badly the flags for PETSc/SLEPc
     char** envargv = dupargv( argv );
 
+#if defined ( FEELPP_HAS_PETSC_H )
+    initPetsc( &argc, &envargv );
+#endif
+    // parse options
+    doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
 
-
-
-    S_scratchdir = scratchdir();
+    
+    if ( S_vm.count( "nochdir" ) == 0 )
+    {
+        if ( S_vm.count( "directory" ) )
+            directory = S_vm["directory"].as<std::string>();
+        
+        boost::format f( directory );
+        bool createSubdir = add_subdir_np && S_vm["npdir"].as<bool>();
+        changeRepository( _directory=f,_subdir=createSubdir );
+    }
+    S_scratchdir = fs::current_path() / "logs"; //scratchdir();
+    
     fs::path a0 = std::string( argv[0] );
     const int Nproc = 200;
 
@@ -480,11 +498,6 @@ Environment::Environment( int argc, char** argv,
     //tbb::task_scheduler_init init(2);
 #endif
 
-#if defined ( FEELPP_HAS_PETSC_H )
-    initPetsc( &argc, &envargv );
-#endif
-    // parse options
-    doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
 
 
     // make sure that we pass the proper verbosity level to glog
@@ -496,6 +509,7 @@ Environment::Environment( int argc, char** argv,
         //google::SetVLOGLevel( "*btpcd", 2 );
     }
 
+#if 0
     if ( S_vm.count( "nochdir" ) == 0 )
     {
         if ( S_vm.count( "directory" ) )
@@ -506,6 +520,7 @@ Environment::Environment( int argc, char** argv,
         bool createSubdir = add_subdir_np && S_vm["npdir"].as<bool>();
         changeRepository( _directory=f,_subdir=createSubdir );
     }
+#endif //0
 
     freeargv( envargv );
 
@@ -515,9 +530,6 @@ Environment::Environment( int argc, char** argv,
     Environment::initHwlocTopology();
 #endif
 
-    cout.attachWorldComm( S_worldcomm );
-    cerr.attachWorldComm( S_worldcomm );
-    clog.attachWorldComm( S_worldcomm );
 }
 void
 Environment::clearSomeMemory()
@@ -1588,7 +1600,7 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
 
         if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
         {
-            LOG( INFO ) << "Creating directory " << rep_path << "...";
+            //LOG( INFO ) << "Creating directory " << rep_path << "...";
             fs::create_directory( rep_path );
         }
     }
@@ -1612,7 +1624,7 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
             fs::create_directory( rep_path );
 
-        LOG( INFO ) << "changing directory to " << rep_path << "\n";
+        //LOG( INFO ) << "changing directory to " << rep_path << "\n";
     }
 
     // wait all process in order to be sure that the dir has been created by master process
@@ -1621,6 +1633,8 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
     ::chdir( rep_path.string().c_str() );
 
     setLogs( logfilename );
+
+    cout << tc::red << "Results are stored in " << fs::current_path().string() << tc::reset << std::endl;
 }
 
 #if 0
