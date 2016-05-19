@@ -534,7 +534,10 @@ Environment::Environment( int argc, char** argv,
 
     boost::gregorian::date today = boost::gregorian::day_clock::local_day();
     tic();
-    cout << "Feel++ application " << about.appName() <<  " version " << about.version() << " date " << today << std::endl;
+    cout << "[ Starting Feel++ ] " << tc::green << "application "  << about.appName() 
+         <<  " version " << about.version() << " date " << today << tc::reset << std::endl;
+    cout << " . Results are stored in "
+         << tc::red << fs::current_path().string() << tc::reset << std::endl;
 }
 void
 Environment::clearSomeMemory()
@@ -556,7 +559,8 @@ Environment::~Environment()
         Environment::saveTimers( true );
 
     double t = toc("env");
-    cout << "Feel++ application " << S_about.appName() << " execution time " << t << "s" << std::endl;
+    cout << "[ Stopping Feel++ ] " << tc::green << "application " << S_about.appName()
+         << " execution time " << t << "s" << tc::reset << std::endl;
 
 #if defined(FEELPP_HAS_HARTS)
     /* if we used hwloc, we free tolology data */
@@ -1641,7 +1645,6 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
 
     setLogs( logfilename );
 
-    cout << tc::red << "Results are stored in " << fs::current_path().string() << tc::reset << std::endl;
 }
 
 #if 0
