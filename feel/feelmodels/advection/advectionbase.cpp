@@ -124,6 +124,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     M_doExportAll = boption(_name="export-all",_prefix=this->prefix());
     M_doExportAdvectionVelocity = boption(_name="export-advection-velocity",_prefix=this->prefix());
+    M_doExportSourceField = boption(_name="export-source", _prefix=this->prefix());
     
     this->log("Advection","loadParametersFromOptionsVm", "finish");
 }
@@ -172,6 +173,9 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
         //this->updateFieldVelocityConvection();
         M_fieldAdvectionVelocity->on( _range=elements(this->mesh()), _expr=*M_exprAdvectionVelocity );
     }
+
+    // Source term
+    M_fieldSource.reset( new element_advection_type(M_Xh, "SourceAdded") );
 
     double tElapsed = this->timerTool("Constructor").stop("create");
     this->log("Advection","createFunctionSpaces", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -554,24 +558,34 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         this->log("Advection","updateLinearPDE","assembly transient terms in "+(boost::format("%1% s") %timeElapsedTransient).str() );
     }
 
-    // Stabilization
-    this->updateLinearPDEStabilization(A, F, BuildCstPart);
-    
     // Source term
-    this->updateSourceTermLinearPDE(F, BuildCstPart);
-    // User provided source term
-    if( this->hasSourceAdded() && BuildNonCstPart )
+    if( this->hasSourceTerm() )
     {
+        if( !this->hasSourceAdded() )
+            M_fieldSource->zero();
+        this->updateSourceTermLinearPDE(const_cast<element_advection_ptrtype&>(M_fieldSource), BuildCstPart);
+    }
+
+    if( BuildNonCstPart && (this->hasSourceAdded() || this->hasSourceTerm()) )
+    {
+        this->timerTool("Solve").start();
+
         linearForm += integrate( 
                 _range=elements(mesh),
-                _expr= idv(*M_fieldSourceAdded)*id(psi),
+                _expr= idv(*M_fieldSource)*id(psi),
                 _geomap=this->geomap() 
                 );
+
+        double timeElapsedSource = this->timerTool("Solve").stop();
+        this->log("Advection","updateLinearPDE","assembly source terms in "+(boost::format("%1% s") %timeElapsedSource).str() );
     }
+
+    // Stabilization
+    this->updateLinearPDEStabilization(A, F, BuildCstPart);
 
     // Boundary conditions
     this->updateWeakBCLinearPDE(A, F, BuildCstPart);
-    if ( !BuildCstPart && _doBCStrongDirichlet)
+    if ( BuildNonCstPart && _doBCStrongDirichlet)
         this->updateBCStrongDirichletLinearPDE(A,F);
 
     double timeElapsed = this->timerTool("Solve").stop();
@@ -610,7 +624,11 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
         auto const& D = this->diffusionReactionModel()->fieldDiffusionCoeff();
         auto const& R = this->diffusionReactionModel()->fieldReactionCoeff();
         auto beta_norm = vf::sqrt(trans(beta)*beta);
-        auto f = M_bdf->polyDeriv();
+        auto polyDeriv = M_bdf->polyDeriv();
+
+        auto f = (!this->isStationary()) * idv(polyDeriv) // transient rhs
+            + (this->hasSourceAdded() || this->hasSourceTerm()) * idv(*M_fieldSource) // source
+            ;
         
         switch ( this->stabilizationMethod() )
         {
@@ -642,7 +660,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 linearForm += integrate(
                         _range=elements(mesh),
-                        _expr=coeff*L_op*idv(f),
+                        _expr=coeff*L_op*f,
                         _geomap=this->geomap() );
 
                 break ;
@@ -667,7 +685,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 linearForm += integrate(
                         _range=elements(M_mesh),
-                        _expr=coeff*L_op*idv(f) );
+                        _expr=coeff*L_op*f );
 
                 break;
             } //SUPG
@@ -696,7 +714,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 linearForm += integrate(
                         _range=elements(M_mesh),
-                        _expr=coeff*L_op*idv(f) );
+                        _expr=coeff*L_op*f );
 
                 break;
             } //SGS
@@ -746,11 +764,11 @@ template<typename ExprT>
 void 
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateSourceAdded(vf::Expr<ExprT> const& f_expr)
 {
-    if (!M_fieldSourceAdded)
+    if (!M_fieldSource)
     {
-        M_fieldSourceAdded.reset( new element_advection_type(M_Xh, "SourceAdded") );
+        M_fieldSource.reset( new element_advection_type(M_Xh, "SourceAdded") );
     }
-    M_fieldSourceAdded->on(_range=elements( this->mesh() ), _expr=f_expr );
+    M_fieldSource->on(_range=elements( this->mesh() ), _expr=f_expr );
     M_hasSourceAdded=true;
 }
 
@@ -802,6 +820,12 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"advection_velocity")),
                                        this->fieldAdvectionVelocity() );
     }
+    if ( ( M_doExportSourceField || M_doExportAll ) )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"source"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"source")),
+                                       *M_fieldSource );
+    }
     M_exporter->save();
 
     this->exportMeasures( time );
@@ -818,20 +842,3 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
 } // namespace FeelModels
 } // namespace Feel
-
-/*
-//instantiation
-
-// if one application uses an advec() method which as not been instantiated
-// before, it has to include <levelsetcore/advect.hpp> which includes this file
-// if compiler makes this file when comming from advect.hpp, do not re-instantiate levelset class, thus skip this part
-#if !defined( FEELPP_CALLED_FROM_ADVECT_HPP )
-
-#define FEELPP_INSTANTIATE_LEVELSET 1
-#define FEELPP_INSTANTIATE_LEVELSET_TEMPLATE_FUNCTION 1
-#include "levelset_instance.hpp"
-#undef FEELPP_INSTANTIATE_LEVELSET_TEMPLATE_FUNCTION
-
-#endif // FEELPP_CALLED_FROM_ADVECT_HPP
-
-#endif // LEVELSET_ADVECTION_CPP*/

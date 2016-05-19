@@ -21,6 +21,7 @@ public:
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     typedef typename super_type::space_advection_ptrtype space_advection_ptrtype;
+    typedef typename super_type::element_advection_ptrtype element_advection_ptrtype;
 
     //--------------------------------------------------------------------//
     // Constructor
@@ -43,7 +44,9 @@ public:
     // BC and source term assembly
     void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
     void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
-    void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const;
+    void updateSourceTermLinearPDE(element_advection_ptrtype& fieldSource, bool buildCstPart) const;
+
+    bool hasSourceTerm() const;
 
 protected:
     // Boundary conditions

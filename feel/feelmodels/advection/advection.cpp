@@ -99,7 +99,7 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_pt
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE(vector_ptrtype& F, bool BuildCstPart) const
+ADVECTION_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE(element_advection_ptrtype& fieldSource, bool BuildCstPart) const
 {
     if( this->M_sources.empty() ) return;
 
@@ -107,29 +107,54 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE(vector_ptrtype& F, bool
 
     if ( BuildSourceTerm )
     {
-        auto linearForm = form1( 
-                _test=this->functionSpace(), 
-                _vector=F,
-                _rowstart=this->rowStartInVector() 
-                );
-        auto const& v = this->fieldSolution();
+        //auto linearForm = form1( 
+                //_test=this->functionSpace(), 
+                //_vector=F,
+                //_rowstart=this->rowStartInVector() 
+                //);
+        //auto const& v = this->fieldSolution();
+        
+        auto fieldSourceAux = this->functionSpace()->element();
+
         for( auto const& d : M_sources )
         {
             if ( marker(d).empty() )
-                linearForm +=
-                    integrate( _range=elements(this->mesh()),
-                               _expr= inner( expression(d),id(v) ),
-                               _geomap=this->geomap() );
+            {
+                //linearForm +=
+                    //integrate( _range=elements(this->mesh()),
+                               //_expr= inner( expression(d),id(v) ),
+                               //_geomap=this->geomap() );
+                fieldSourceAux.on( 
+                        _range=elements(this->mesh()), 
+                        _expr=expression(d), 
+                        _geomap=this->geomap()
+                        );
+            }
             else
-                linearForm +=
-                    integrate( _range=markedelements(this->mesh(),marker(d)),
-                               _expr= inner( expression(d),id(v) ),
-                               _geomap=this->geomap() );
+            {
+                //linearForm +=
+                    //integrate( _range=markedelements(this->mesh(),marker(d)),
+                               //_expr= inner( expression(d),id(v) ),
+                               //_geomap=this->geomap() );
+                fieldSourceAux.on( 
+                        _range=markedelements(this->mesh(),marker(d)), 
+                        _expr=expression(d), 
+                        _geomap=this->geomap()
+                        );
+            }
+            
+            *fieldSource += fieldSourceAux;
         }
 
     }
 }
 
+ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+bool
+ADVECTION_CLASS_TEMPLATE_TYPE::hasSourceTerm() const
+{
+    return !this->M_sources.empty(); 
+}
 
 } // namespace FeelModels
 } // namespace Feel
