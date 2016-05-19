@@ -96,7 +96,7 @@ namespace Feel
  \f}
 
  \section IMP Implementation
- We have to define a model, that is a C++ class that provide two functions:
+ We have to define a model, that is a C++ class that provides two functions:
  - initmodel()
  - output()
  \subsection TM The Model

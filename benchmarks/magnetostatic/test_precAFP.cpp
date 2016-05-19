@@ -64,7 +64,8 @@ makeOptions()
     ( "myModel", po::value<std::string>()->default_value( "model.mod" ), "name of the model" )
     ;
     return opts.add( Feel::feel_options() )
-        .add(Feel::backend_options("ms"));
+        .add(Feel::backend_options("ms"))
+        .add(Feel::blockms_options("ms"));
 }
 
 inline
@@ -135,7 +136,7 @@ class TestPrecAFP : public Application
     typedef typename comp_space_type::element_type comp_element_type;
 
     //! Preconditioners
-    typedef PreconditionerBlockMS<comp_space_type,lag_0_space_type> preconditioner_type;
+    typedef PreconditionerBlockMS<comp_space_type> preconditioner_type;
     typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
     
     //! The exporter factory
@@ -200,9 +201,9 @@ class TestPrecAFP : public Application
         map_vector_field<DIM,1,2> m_dirichlet {model.boundaryConditions().getVectorFields<DIM>("u","Dirichlet")};
         map_scalar_field<2> m_dirichlet_phi {model.boundaryConditions().getScalarFields<2>("phi","Dirichlet")};
         
-        f1 = integrate(_range=elements(M_mesh),
+        f1 = integrate(_range= elements(M_mesh),
                        _expr = inner(idv(M_rhs),id(v)));    // rhs
-        f2 = integrate(_range=elements(M_mesh),
+        f2 = integrate(_range= elements(M_mesh),
                        _expr = 
                          inner(trans(id(v)),gradt(phi)) // grad(phi)
                        + inner(trans(idt(u)),grad(psi)) // div(u) = 0
@@ -226,20 +227,19 @@ class TestPrecAFP : public Application
         }
 
         solve_ret_type ret;
-        if(soption("ms.pc-type") == "blockms" ){
+        if(soption("ms.pc-type") == "ms" ){
             // auto M_prec = blockms(
             //    _space = Xh,
             //    _space2 = Mh, 
             //    _matrix = f2.matrixPtr(),
             //    _bc = model.boundaryConditions());
 
-            M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type,lag_0_space_type>>(Xh, 
-                                                                                                 Mh,
-                                                                                                 model,
-                                                                                                 "blockms",
-                                                                                                 f2.matrixPtr());
+            M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type>>(Xh, 
+                                                                                model,
+                                                                                "ms",
+                                                                                f2.matrixPtr(), 0.1);
 
-            M_prec->update(f2.matrixPtr(),M_mu_r);
+            //M_prec->update(f2.matrixPtr(),M_mu_r);
             tic();
             ret = f2.solveb(_rhs=f1,
                       _solution=U,
