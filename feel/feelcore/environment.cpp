@@ -1999,6 +1999,19 @@ Environment::expand( std::string const& expr )
               << "\n";
 
     std::string res=expr;
+    
+    boost::replace_all( res, "${feelpp_srcdir}", topSrcDir );
+    boost::replace_all( res, "${feelpp_builddir}", topBuildDir );
+    boost::replace_all( res, "${feelpp_databasesdir}", topSrcDir + "/databases/" );
+    boost::replace_all( res, "${top_srcdir}", topSrcDir );
+    boost::replace_all( res, "${top_builddir}", topBuildDir );
+    boost::replace_all( res, "${cfgdir}", cfgDir );
+    boost::replace_all( res, "${home}", homeDir );
+    boost::replace_all( res, "${repository}", Environment::rootRepository() );
+    boost::replace_all( res, "${datadir}", dataDir );
+    boost::replace_all( res, "${exprdbdir}", exprdbDir );
+    boost::replace_all( res, "${h}", std::to_string(doption("gmsh.hsize") ) );
+    
     boost::replace_all( res, "$feelpp_srcdir", topSrcDir );
     boost::replace_all( res, "$feelpp_builddir", topBuildDir );
     boost::replace_all( res, "$feelpp_databasesdir", topSrcDir + "/databases/" );
@@ -2019,6 +2032,18 @@ Environment::expand( std::string const& expr )
     boost::split( SplitVec, FEELPP_ENABLED_PROJECTS, boost::is_any_of(" "), boost::token_compress_on );
     for( auto const& s : SplitVec )
     {
+        std::ostringstream oo1,oo2,oo3;
+        oo1 << "${" << s << "_srcdir}";
+        oo2 << "${" << s << "_builddir}";
+        oo3 << "${" << s << "_databasesdir}";
+
+        boost::replace_all( res, oo1.str(), topSrcDir + "/research/" + s );
+        VLOG(2) << oo1.str() << " : " << topSrcDir + "/research/" + s;
+        boost::replace_all( res, oo2.str(),  topBuildDir + "/research/" + s );
+        VLOG(2) << oo2.str() << " : " << topBuildDir + "/research/" + s;
+        boost::replace_all( res, oo3.str(),  topSrcDir + "/research/" + s + "/databases/" );
+        VLOG(2) << oo3.str() << " : " << topSrcDir + "/research/" + s + "/databases/";;
+        
         std::ostringstream o1,o2,o3;
         o1 << "$" << s << "_srcdir";
         o2 << "$" << s << "_builddir";
