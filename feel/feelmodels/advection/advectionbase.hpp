@@ -40,12 +40,6 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelmodels/advection/diffusionreactionmodel.hpp>
-/*
-VD, TODO :
-the stabilization method and the stabilization coefficient might be external options. 
-This brings the need of specific options for the advection class. 
-In the level set framework for exemple, it is used twice : for the level set and the hamilton jacobi reinit. 
-Thus, being able to tune externally the stab method or the stab coeff could be great */
 
 namespace Feel {
 namespace FeelModels {
