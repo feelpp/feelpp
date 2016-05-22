@@ -33,6 +33,8 @@
 #include <algorithm>
 #include <boost/lambda/lambda.hpp>
 #include <boost/foreach.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 #include <Eigen/Core>
 
@@ -55,7 +57,7 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-template<int P>
+template<uint16_type P = invalid_uint16_type_value >
 class ParameterSpace: public boost::enable_shared_from_this<ParameterSpace<P> >
 {
 public:
@@ -64,7 +66,7 @@ public:
     /** @name Constants
      */
     //@{
-
+    static const int nDimEigenContainer = ( P == invalid_uint16_type_value )? Eigen::Dynamic : P;
     //! dimension of the parameter space
     static const uint16_type Dimension = P;
     static const uint16_type ParameterSpaceDimension = P;
@@ -82,9 +84,9 @@ public:
     /**
      * \brief element of a parameter space
      */
-    class Element : public Eigen::Matrix<double,Dimension,1>
+    class Element : public Eigen::Matrix<double,nDimEigenContainer,1>
     {
-        typedef Eigen::Matrix<double,Dimension,1> super;
+        typedef Eigen::Matrix<double,nDimEigenContainer,1> super;
     public:
         typedef ParameterSpace<Dimension> parameterspace_type;
         typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
@@ -101,18 +103,15 @@ public:
         /**
          * default constructor
          */
-        Element( Element const& e )
-        :
-        super( e ),
-        M_space( e.M_space )
-            {}
+        Element( Element const& e ) = default;
+
         /**
          * construct element from \p space
          */
-        Element( parameterspace_ptrtype space )
-        :
-        super(),
-        M_space( space )
+        Element( parameterspace_ptrtype const& space )
+            :
+            super( space->dimension() ),
+            M_space( space )
             {}
         /**
          * destructor
@@ -123,16 +122,7 @@ public:
         /**
          * copy constructor
          */
-        Element& operator=( Element const& e )
-            {
-                if ( this != &e )
-                {
-                    super::operator=( e );
-                    M_space = e.M_space;
-                }
-
-                return *this;
-            }
+        Element& operator=( Element const& e ) = default;
 
         template<typename OtherDerived>
         super& operator=( const Eigen::MatrixBase<OtherDerived>& other )
@@ -149,7 +139,7 @@ public:
         /**
          * \brief Retuns the parameter space
          */
-        parameterspace_ptrtype parameterSpace() const
+        parameterspace_ptrtype const& parameterSpace() const
             {
                 return M_space;
             }
@@ -161,24 +151,25 @@ public:
                     LOG(INFO) << "No need to check element since parameter space is no valid (yet)\n";
                     return;
                 }
-                Element sum;
+                Element sum( M_space );
                 sum.setZero();
                 // verify that the element is the same on all processors
-                mpi::all_reduce( Environment::worldComm().localComm(), *this, sum,
+                mpi::all_reduce( M_space->worldComm().localComm(), *this, sum,
                                  []( Element const& m1, Element const& m2 ) { return m1+m2; } );
-                int proc_number = Environment::worldComm().globalRank();
-                if( (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() > 1e-7 )
+                rank_type proc_number = M_space->worldComm().localRank();
+                rank_type nProc = M_space->worldComm().localSize();
+                if( (this->array()-sum.array()/nProc).abs().maxCoeff() > 1e-7 )
                 {
                     std::cout << "Parameter not identical on all processors: "<< "current parameter on proc "<<proc_number<<" : [";
                     for(int i=0; i<this->size()-1; i++) std::cout <<std::setprecision(15)<< this->operator()(i) <<", ";
                     std::cout<<std::setprecision(15)<<this->operator()(this->size()-1)<<" ]";
-                    std::cout <<std::setprecision(15)<< " and test" << (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() << "\n";
+                    std::cout <<std::setprecision(15)<< " and test" << (this->array()-sum.array()/nProc).abs().maxCoeff() << "\n";
                 }
-                Environment::worldComm().barrier();
-                CHECK( (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() < 1e-7 )
-                    << "Parameter not identical on all processors(" << Environment::worldComm().masterRank() << "/" << Environment::numberOfProcessors() << ")\n"
-                    << "max error: " << (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() << "\n"
-                    << "error: " << std::setprecision(15) << (this->array()-sum.array()/Environment::numberOfProcessors()).abs() << "\n"
+                M_space->worldComm().barrier();
+                CHECK( (this->array()-sum.array()/nProc).abs().maxCoeff() < 1e-7 )
+                    << "Parameter not identical on all processors(" << M_space->worldComm().masterRank() << "/" << nProc << ")\n"
+                    << "max error: " << (this->array()-sum.array()/nProc).abs().maxCoeff() << "\n"
+                    << "error: " << std::setprecision(15) << (this->array()-sum.array()/nProc).abs() << "\n"
                     << "current parameter " << std::setprecision(15) << *this << "\n"
                     << "sum parameter " << std::setprecision(15) << sum << "\n"
                     << "space min : " << M_space->min() << "\n"
@@ -259,7 +250,7 @@ public:
 #endif /* FEELPP_HAS_ANN_H */
 
 
-        Sampling( parameterspace_ptrtype space, int N = 1, sampling_ptrtype supersampling = sampling_ptrtype() )
+        Sampling( parameterspace_ptrtype const& space, int N = 1, sampling_ptrtype supersampling = sampling_ptrtype() )
             :
             super( N ),
             M_space( space ),
@@ -272,7 +263,7 @@ public:
         /**
          * \brief return number of elements in the sampling
          */
-        int nbElements()
+        int nbElements() const
         {
             return super::size();
         }
@@ -289,20 +280,20 @@ public:
          * \brief create a sampling with elements given by the user
          * \param V : vector of element_type
          */
-        void setElements( std::vector< element_type > V )
+        void setElements( std::vector< element_type > const& V )
         {
             CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
 
             // first empty the set
             this->clear();
 
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            if( M_space->worldComm().isMasterRank() )
             {
-                for( auto mu : V )
+                for( auto const& mu : V )
                     super::push_back( mu );
             }
 
-            boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+            boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
 
         }
 
@@ -313,20 +304,20 @@ public:
         void addElement( element_type const mu )
         {
             CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            if( M_space->worldComm().isMasterRank() )
             {
                 super::push_back( mu );
             }
 
-            boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+            boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
         }
 
-        void distributeOnAllProcessors( int N , std::string file_name )
+        void distributeOnAllProcessors( int N , std::string const& file_name )
         {
-
-            int total_proc = Environment::worldComm().globalSize();
-            int proc = Environment::worldComm().globalRank();
-            int master_proc = Environment::worldComm().masterRank();
+            auto const& theworldcomm = (M_space)? M_space->worldComm() : Environment::worldComm();
+            rank_type total_proc = theworldcomm.globalSize();
+            rank_type proc = theworldcomm.globalRank();
+            rank_type master_proc = theworldcomm.masterRank();
             int number_of_elements_per_proc =N/total_proc;
             int extra_elements = N%total_proc;
 
@@ -347,7 +338,7 @@ public:
             int shift=0;
 
 
-            if( Environment::worldComm().isMasterRank() )
+            if( theworldcomm.isMasterRank() )
             {
                 std::ifstream file ( file_name );
                 CHECK( file ) << "The file "<<file_name<<" was not found so we can't distribute the sampling on all processors\n";
@@ -388,7 +379,7 @@ public:
                     {
                         if( proc_recv_sampling != master_proc )
                         {
-                            reqs[count_reqs]=Environment::worldComm().isend( proc_recv_sampling , tag, *this);
+                            reqs[count_reqs]=theworldcomm.isend( proc_recv_sampling , tag, *this);
                             count_reqs++;
                             super::clear();
                         }
@@ -419,7 +410,7 @@ public:
 
             if( proc != master_proc )
             {
-                reqs[count_reqs]=Environment::worldComm().irecv( master_proc, tag, *this);
+                reqs[count_reqs]=theworldcomm.irecv( master_proc, tag, *this);
                 count_reqs++;
             }//not master proc
 
@@ -433,7 +424,7 @@ public:
          * \param all_procs_have_same_sampling (boolean)
          * \param file_name : file name where the sampling is written
          */
-        void randomize( int N , bool all_procs_have_same_sampling=true, std::string file_name="" )
+        void randomize( int N , bool all_procs_have_same_sampling=true, std::string const& file_name="" )
             {
                 CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
 
@@ -460,7 +451,7 @@ public:
 
                 // fill with log Random elements from the parameter space
                 //only with one proc and then send a part of the sampling to each other proc
-                if( Environment::worldComm().isMasterRank() && generate_the_file )
+                if( M_space->worldComm().isMasterRank() && generate_the_file )
                 {
 
                     bool already_exist;
@@ -505,7 +496,7 @@ public:
 
                 if( all_procs_have_same_sampling )
                 {
-                    boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+                    boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
                 }
                 else
                 {
@@ -519,7 +510,7 @@ public:
          * \param all_procs_have_same_sampling (boolean)
          * \param file_name : file name where the sampling is written
          */
-        void logEquidistribute( int N , bool all_procs_have_same_sampling=true,  std::string file_name="" )
+        void logEquidistribute( int N , bool all_procs_have_same_sampling=true,  std::string const& file_name="" )
             {
                 this->clear();
 
@@ -530,7 +521,7 @@ public:
                     generate_the_file=true;
                 }
 
-                if( Environment::worldComm().isMasterRank() && generate_the_file )
+                if( M_space->worldComm().isMasterRank() && generate_the_file )
                 {
                     std::vector<Element> temporary_sampling;
 
@@ -546,7 +537,7 @@ public:
                 }
                 if( all_procs_have_same_sampling )
                 {
-                    boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+                    boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
                 }
                 else
                 {
@@ -560,12 +551,12 @@ public:
          * \param N : vector containing the number of samples on each direction
          * if N[direction] < 1 then we take minimum value for this direction
          */
-        void logEquidistributeProduct( std::vector<int> N , element_type const &mu)
+        void logEquidistributeProduct( std::vector<int> const& N , element_type const &mu)
         {
             // first empty the set
             this->clear();
 
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            if( M_space->worldComm().isMasterRank() )
             {
                 int number_of_directions = N.size();
 
@@ -593,7 +584,7 @@ public:
                 generateElementsProduct( components );
 
             }//end of master proc
-            boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+            boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
         }
 
 
@@ -602,12 +593,12 @@ public:
          * \param Nlogequi : vector containing the number of log-equidistributed samples on each direction
          * \param Nequi : vector containing the number of equidistributed samples on each direction
          */
-        void mixEquiLogEquidistributeProduct( std::vector<int> Nlogequi , std::vector<int> Nequi )
+        void mixEquiLogEquidistributeProduct( std::vector<int> const& Nlogequi , std::vector<int> const& Nequi )
         {
             // first empty the set
             this->clear();
 
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            if( M_space->worldComm().isMasterRank() )
             {
 
                 int number_of_directions_equi = Nequi.size();
@@ -634,7 +625,7 @@ public:
                 generateElementsProduct( vector_components );
 
             }//end of master proc
-            boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+            boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
         }
 
 
@@ -643,14 +634,14 @@ public:
          * example if components has 2 vectors : [1,2,3] and [100,200] then it creates the samping :
          * (1,100) - (2,100) - (3,100) - (1,200) - (2,200) - (3,200)
          */
-        void generateElementsProduct( std::vector< std::vector< double > > components )
+        void generateElementsProduct( std::vector< std::vector< double > > const& components )
         {
             std::vector< std::vector< std::vector< double > > > vector_components(1);
             vector_components[0]=components;
             generateElementsProduct( vector_components );
         }
 
-        void generateElementsProduct( std::vector< std::vector< std::vector< double > > > vector_components )
+        void generateElementsProduct( std::vector< std::vector< std::vector< double > > > const& vector_components )
         {
             int number_of_comp = vector_components.size();
             for(int comp=0; comp<number_of_comp; comp++)
@@ -723,10 +714,11 @@ public:
          * mu_0= [ value0 , value1 , ... ]
          * mu_1= [ value0 , value1 , ... ]
          */
-        void writeOnFile( std::string file_name = "list_of_parameters_taken" )
+        void writeOnFile( std::string const& file_name = "list_of_parameters_taken" )
             {
-                int proc = Environment::worldComm().globalRank();
-                int total_proc = Environment::worldComm().globalSize();
+                auto const& theworldcomm = (M_space)? M_space->worldComm() : Environment::worldComm();
+                rank_type proc = theworldcomm.globalRank();
+                rank_type total_proc = theworldcomm.globalSize();
                 //std::string real_file_name = (boost::format(file_name+"-proc%1%on%2%") %proc %total_proc ).str();
                 std::ofstream file;
                 file.open( file_name,std::ios::out );
@@ -752,7 +744,7 @@ public:
          * mu_1= [ value0 , value1 , ... ]
          * return the size of the sampling
          */
-        double readFromFile( std::string file_name= "list_of_parameters_taken" )
+        double readFromFile( std::string const& file_name= "list_of_parameters_taken" )
             {
                 std::ifstream file ( file_name );
                 double mui;
@@ -786,7 +778,7 @@ public:
          * \param file_name : give the real parameters we want
          * return the index vector of parameters in the supersampling
          */
-        std::vector<int> closestSamplingFromFile( std::string file_name="list_of_parameters_taken")
+        std::vector<int> closestSamplingFromFile( std::string const& file_name="list_of_parameters_taken")
         {
             std::vector<int> index_vector;
             std::ifstream file( file_name );
@@ -826,7 +818,7 @@ public:
          * \param all_procs_have_same_sampling (boolean)
          * \param file_name : file name where the sampling is written
          */
-        void equidistribute( int N , bool all_procs_have_same_sampling=true, std::string file_name="" )
+        void equidistribute( int N , bool all_procs_have_same_sampling=true, std::string const& file_name="" )
             {
                 this->clear();
 
@@ -837,7 +829,7 @@ public:
                     generate_the_file=true;
                 }
 
-                if( Environment::worldComm().isMasterRank() && generate_the_file )
+                if( M_space->worldComm().isMasterRank() && generate_the_file )
                 {
                     // fill with log Random elements from the parameter space
                     std::vector< Element > temporary_sampling;
@@ -856,7 +848,7 @@ public:
                 }//master proc
                 if( all_procs_have_same_sampling )
                 {
-                    boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+                    boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
                 }
                 else
                 {
@@ -868,7 +860,7 @@ public:
          * \brief create a sampling with equidistributed elements
          * \param N : vector containing the number of samples on each direction
          */
-        void equidistributeProduct( std::vector<int> N, bool all_procs_have_same_sampling=true, std::string file_name="" )
+        void equidistributeProduct( std::vector<int> const&  N, bool all_procs_have_same_sampling=true, std::string const& file_name="" )
         {
             // first empty the set
             this->clear();
@@ -887,7 +879,7 @@ public:
                 total_number*=N[d];
             }
 
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            if( M_space->worldComm().isMasterRank() )
             {
 
                 //contains values of parameters on each direction
@@ -908,7 +900,7 @@ public:
 
             if( all_procs_have_same_sampling )
             {
-                boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+                boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
             }
             else
             {
@@ -943,15 +935,15 @@ public:
                 }
 
                 //do communications to have global min
-                int world_size = Environment::worldComm().globalSize();
+                rank_type world_size = M_space->worldComm().globalSize();
                 std::vector<double> max_world( world_size );
-                mpi::all_gather( Environment::worldComm().globalComm(),
+                mpi::all_gather( M_space->worldComm().globalComm(),
                                  mumin_norm,
                                  max_world );
                 auto it_min = std::min_element( max_world.begin() , max_world.end() );
                 int proc_having_good_mu = it_min - max_world.begin();
                 auto tuple = boost::make_tuple( mumin , index );
-                boost::mpi::broadcast( Environment::worldComm() , tuple , proc_having_good_mu );
+                boost::mpi::broadcast( M_space->worldComm() , tuple , proc_having_good_mu );
 
                 mumin = tuple.template get<0>();
                 index = tuple.template get<1>();
@@ -988,15 +980,15 @@ public:
                 }
 
                 //do communications to have global min
-                int world_size = Environment::worldComm().globalSize();
+                rank_type world_size = M_space->worldComm().globalSize();
                 std::vector<double> max_world( world_size );
-                mpi::all_gather( Environment::worldComm().globalComm(),
+                mpi::all_gather( M_space->worldComm().globalComm(),
                                  mumax_norm,
                                  max_world );
                 auto it_max = std::max_element( max_world.begin() , max_world.end() );
                 int proc_having_good_mu = it_max - max_world.begin();
                 auto tuple = boost::make_tuple( mumax , index );
-                boost::mpi::broadcast( Environment::worldComm() , tuple , proc_having_good_mu );
+                boost::mpi::broadcast( M_space->worldComm() , tuple , proc_having_good_mu );
 
                 mumax = tuple.template get<0>();
                 index = tuple.template get<1>();
@@ -1009,7 +1001,7 @@ public:
         /**
          * \brief Retuns the parameter space
          */
-        parameterspace_ptrtype parameterSpace() const
+        parameterspace_ptrtype const& parameterSpace() const
             {
                 return M_space;
             }
@@ -1063,6 +1055,42 @@ public:
                 return M_superindices[ index ];
             }
 
+        /**
+         * \brief save sampling data in json
+         * \param output filename
+         */
+        void saveJson( std::string const& filename )
+            {
+                if ( M_space->worldComm().isMasterRank() )
+                {
+                    boost::property_tree::ptree ptree;
+                    this->updatePropertyTree( ptree );
+                    write_json( filename, ptree/*, std::locale(), false*/ );
+                }
+                M_space->worldComm().barrier();
+            }
+        /**
+         * \brief update sampling description in property_tree data structure
+         * \param ptree to update
+         */
+        void updatePropertyTree( boost::property_tree::ptree & ptree )
+            {
+                int nDim = /*parameterspace_type::Dimension*/ M_space->dimension();
+                std::vector<boost::property_tree::ptree> ptreeMu( nDim );
+                for ( auto const& mu : *this )
+                {
+                    for ( int d=0;d<nDim;++d )
+                    {
+                        ptreeMu[d].add("", mu(d) );
+                    }
+                }
+                for ( int d=0;d<nDim;++d )
+                {
+                    std::string nameMu = (boost::format("mu%1%")%d).str();
+                    ptree.add_child( nameMu, ptreeMu[d] );
+                }
+            }
+
     private:
         Sampling() {}
     private:
@@ -1105,8 +1133,10 @@ public:
     //@{
 
     //! default constructor
-    ParameterSpace()
+    ParameterSpace( uint16_type dim = 0, WorldComm const& worldComm = Environment::worldComm() )
         :
+        M_worldComm( worldComm ),
+        M_nDim( (Dimension == invalid_uint16_type_value)? dim : Dimension ),
         M_min(),
         M_max()
         {
@@ -1114,20 +1144,17 @@ public:
             M_max.setZero();
         }
     //! copy constructor
-    ParameterSpace( ParameterSpace const & o )
-    :
-    M_min( o.M_min ),
-    M_max( o.M_max )
-        {}
-
+    ParameterSpace( ParameterSpace const & o ) = default;
+#if 0
     ParameterSpace( element_type const& emin, element_type const& emax )
         :
         M_min( emin ),
         M_max( emax )
         {
-            M_min.setParameterSpace( this->shared_from_this() );
-            M_max.setParameterSpace( this->shared_from_this() );
+            //M_min.setParameterSpace( this->shared_from_this() );
+            //M_max.setParameterSpace( this->shared_from_this() );
         }
+#endif
     //! destructor
     ~ParameterSpace()
         {}
@@ -1135,9 +1162,9 @@ public:
     /**
      * generate a shared_ptr out of a parameter space
      */
-    static parameterspace_ptrtype New()
+    static parameterspace_ptrtype New( uint16_type dim = 0, WorldComm const& worldComm = Environment::worldComm() )
         {
-            return parameterspace_ptrtype(new parameterspace_type);
+            return parameterspace_ptrtype( new parameterspace_type( dim,worldComm ) );
         }
     //@}
 
@@ -1146,26 +1173,20 @@ public:
     //@{
 
     //! copy operator
-    ParameterSpace& operator=( ParameterSpace const & o )
-        {
-            if ( this != &o )
-            {
-                M_min = o.M_min;
-                M_max = o.M_max;
-            }
-
-            return *this;
-        }
+    ParameterSpace& operator=( ParameterSpace const & o ) = default;
     //@}
 
     /** @name Accessors
      */
     //@{
 
+    //! \return the mpi communicators
+    WorldComm const& worldComm() const { return M_worldComm; }
+
     //! \return the parameter space dimension
-    int dimension() const
+    uint16_type dimension() const
         {
-            return Dimension;
+            return M_nDim;//Dimension;
         }
 
     /**
@@ -1212,6 +1233,8 @@ public:
     void setMin( element_type const& min )
         {
             M_min = min;
+            M_min.setParameterSpace( this->shared_from_this() );
+
         }
 
     /**
@@ -1220,6 +1243,7 @@ public:
     void setMax( element_type const& max )
         {
             M_max = max;
+            M_max.setParameterSpace( this->shared_from_this() );
         }
 
     //@}
@@ -1231,7 +1255,7 @@ public:
     /**
      * \brief Returns a log random element of the parameter space
      */
-    static element_type logRandom( parameterspace_ptrtype space, bool broadcast )
+    static element_type logRandom( parameterspace_ptrtype const& space, bool broadcast )
         {
             //LOG(INFO) << "call logRandom...\n";
             //LOG(INFO) << "call logRandom broadcast: " << broadcast << "...\n";
@@ -1240,7 +1264,7 @@ public:
             {
                 element_type mu( space );
                 if ( !space->check() ) return mu;
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                if( space->worldComm().isMasterRank() )
                 {
                     //LOG(INFO) << "generate random mu...\n";
                     //google::FlushLogFiles(google::GLOG_INFO);
@@ -1248,8 +1272,8 @@ public:
                 }
                 //LOG(INFO) << "broadcast...\n";
                 //google::FlushLogFiles(google::GLOG_INFO);
-                boost::mpi::broadcast( Environment::worldComm() , mu , Environment::worldComm().masterRank() );
-                Environment::worldComm().barrier();
+                boost::mpi::broadcast( space->worldComm() , mu , space->worldComm().masterRank() );
+                //Environment::worldComm().barrier();
                 //LOG(INFO) << "check...\n";
                 mu.check();
                 return mu;
@@ -1259,7 +1283,7 @@ public:
                 return logRandom1( space );
             }
         }
-    static element_type logRandom1( parameterspace_ptrtype space )
+    static element_type logRandom1( parameterspace_ptrtype const& space )
         {
             element_type mur( space );
             mur.array() = element_type::Random().array().abs();
@@ -1274,17 +1298,17 @@ public:
     /**
      * \brief Returns a log random element of the parameter space
      */
-    static element_type random( parameterspace_ptrtype space, bool broadcast = true )
+    static element_type random( parameterspace_ptrtype const& space, bool broadcast = true )
         {
             //std::srand( static_cast<unsigned>( std::time( 0 ) ) );
             element_type mur( space );
             if ( broadcast )
             {
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                if( space->worldComm().isMasterRank() )
                 {
                     mur.array() = element_type::Random().array().abs();
                 }
-                boost::mpi::broadcast( Environment::worldComm() , mur , Environment::worldComm().masterRank() );
+                boost::mpi::broadcast( space->worldComm() , mur , space->worldComm().masterRank() );
 
             }
             else
@@ -1305,7 +1329,7 @@ public:
      * \param direction
      * \param N : number of samples in the direction
      */
-    static std::vector<double> logEquidistributeInDirection( parameterspace_ptrtype space, int direction , int N)
+    static std::vector<double> logEquidistributeInDirection( parameterspace_ptrtype const& space, int direction , int N)
     {
         std::vector<double> result(N);
 
@@ -1332,7 +1356,7 @@ public:
      * \brief Returns a log equidistributed element of the parameter space
      * \param factor is a factor in [0,1]
      */
-    static element_type logEquidistributed( double factor, parameterspace_ptrtype space )
+    static element_type logEquidistributed( double factor, parameterspace_ptrtype const& space )
         {
             element_type mu( space );
             mu.array() = ( space->min().array().log()+factor*( space->max().array().log()-space->min().array().log() ) ).exp();
@@ -1346,7 +1370,7 @@ public:
      * \param direction
      * \param N : number of samples in the direction
      */
-    static std::vector<double> equidistributeInDirection( parameterspace_ptrtype space, int direction , int N)
+    static std::vector<double> equidistributeInDirection( parameterspace_ptrtype const& space, int direction , int N)
     {
         std::vector<double> result(N);
 
@@ -1374,7 +1398,7 @@ public:
      * \brief Returns a equidistributed element of the parameter space
      * \param factor is a factor in [0,1]
      */
-    static element_type equidistributed( double factor, parameterspace_ptrtype space )
+    static element_type equidistributed( double factor, parameterspace_ptrtype const& space )
         {
             element_type mu( space );
             mu = space->min()+factor*( space->max()-space->min() );
@@ -1407,6 +1431,12 @@ private:
 
     private:
 
+    //! mpi communicators
+    WorldComm const& M_worldComm;
+
+    //! parameter space dimension
+    uint16_type M_nDim;
+
     //! min element
     element_type M_min;
 
@@ -1414,9 +1444,9 @@ private:
     element_type M_max;
 };
 
-template<int P> const uint16_type ParameterSpace<P>::Dimension;
+template<uint16_type P> const uint16_type ParameterSpace<P>::Dimension;
 
-template<int P>
+template<uint16_type P>
 //typename ParameterSpace<P>::sampling_ptrtype
 boost::shared_ptr<typename ParameterSpace<P>::Sampling>
 ParameterSpace<P>::Sampling::complement() const
@@ -1430,10 +1460,10 @@ ParameterSpace<P>::Sampling::complement() const
     {
         complement = sampling_ptrtype( new sampling_type( M_space, 1, M_supersampling ) );
         complement->clear();
-        for( auto mu_supersampling : *M_supersampling )
+        for( auto const& mu_supersampling : *M_supersampling )
         {
             is_in_sampling=false;
-            for( auto mu_sampling : *this )
+            for( auto const& mu_sampling : *this )
             {
                 if( mu_supersampling == mu_sampling )
                 {
@@ -1481,7 +1511,7 @@ ParameterSpace<P>::Sampling::complement() const
 #endif
 
 }
-template<int P>
+template<uint16_type P>
 boost::shared_ptr<typename ParameterSpace<P>::Sampling>
 ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
                                                      size_type _M ,
@@ -1491,7 +1521,7 @@ ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
     sampling_ptrtype neighbors( new sampling_type( M_space, M ) );
 #if defined(FEELPP_HAS_ANN_H)
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( M_space->worldComm().isMasterRank() )
     {
         //std::cout << "[ParameterSpace::Sampling::searchNearestNeighbors] start\n";
         //if ( !M_kdtree )
@@ -1550,8 +1580,8 @@ ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
         annDeallocPts( data_pts );
     }//end of procMaster
 
-    boost::mpi::broadcast( Environment::worldComm() , neighbors , Environment::worldComm().masterRank() );
-    boost::mpi::broadcast( Environment::worldComm() , index_vector , Environment::worldComm().masterRank() );
+    boost::mpi::broadcast( M_space->worldComm() , neighbors , M_space->worldComm().masterRank() );
+    boost::mpi::broadcast( M_space->worldComm() , index_vector , M_space->worldComm().masterRank() );
 
 
 #endif /* FEELPP_HAS_ANN_H */
