@@ -900,7 +900,7 @@ if ( PETSC_FOUND )
   INCLUDE_DIRECTORIES(${PETSC_INCLUDE_DIR} ${PETSC_INCLUDE_CONF})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PETSc" )
 
-endif( PETSC_FOUND )
+endif( PETSC_FOUND ) 
 
 # ML was already searched for, if it was not found then try again to look for it
 # in PETSC_DIR
