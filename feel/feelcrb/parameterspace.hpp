@@ -198,8 +198,9 @@ public:
 
     typedef Element element_type;
     typedef boost::shared_ptr<Element> element_ptrtype;
-    element_type element( bool broadcast = true )
+    element_type element( bool broadcast = true, bool apply_log = false )
     {
+#if 0
         //first, pick a random element, then
         //look if there is negative elements and if not
         //pick a log-random element
@@ -218,7 +219,12 @@ public:
         {
             element = parameterspace_type::logRandom( this->shared_from_this(), broadcast );
         }
+#else
+        auto element = ( !apply_log )?
+            parameterspace_type::random( this->shared_from_this(), broadcast ) :
+            parameterspace_type::logRandom( this->shared_from_this(), broadcast );
 
+#endif
         return element;
     }
     element_ptrtype elementPtr()  { element_ptrtype e( new element_type( this->shared_from_this() ) ); *e=element(); return e; }
@@ -424,7 +430,7 @@ public:
          * \param all_procs_have_same_sampling (boolean)
          * \param file_name : file name where the sampling is written
          */
-        void randomize( int N , bool all_procs_have_same_sampling=true, std::string const& file_name="" )
+        void randomize( int N , bool all_procs_have_same_sampling=true, std::string const& file_name="", bool apply_log=false )
             {
                 CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
 
@@ -438,7 +444,7 @@ public:
                 {
                     generate_the_file=true;
                 }
-
+#if 0
                 auto min = this->min();
                 auto mu_min = min.template get<0>();
                 int size = mu_min.size();
@@ -448,7 +454,7 @@ public:
                     if( mu_min(i) < 0 )
                         apply_log=false;
                 }
-
+#endif
                 // fill with log Random elements from the parameter space
                 //only with one proc and then send a part of the sampling to each other proc
                 if( M_space->worldComm().isMasterRank() && generate_the_file )
@@ -456,11 +462,7 @@ public:
 
                     bool already_exist;
                     // first element
-                    auto mu = parameterspace_type::random( M_space, false );
-                    if( apply_log )
-                    {
-                        mu = parameterspace_type::logRandom( M_space , false );
-                    }
+                    auto mu = ( apply_log )?parameterspace_type::logRandom( M_space , false ) : parameterspace_type::random( M_space, false );
                     super::push_back( mu );
 
                     for(int i=1; i<N; i++)
@@ -479,11 +481,12 @@ public:
                                 mu = parameterspace_type::random( M_space, false );
                             }
 
-                            for( auto _mu : *this )
+                            for( auto const& _mu : *this )
                             {
                                 if( mu == _mu )
                                     already_exist=true;
                             }
+
                         }
                         while( already_exist );
 
@@ -922,7 +925,7 @@ public:
                 int index = 0;
                 int i = 0;
                 double mumin_norm = mumin.norm();
-                for( auto mu : *this )
+                for( auto const& mu : *this )
                 {
                     if ( mu.norm() < mumin_norm  )
                     {
@@ -967,7 +970,7 @@ public:
                 int index = 0;
                 int i = 0;
                 double mumax_norm = mumax.norm();
-                for( auto mu : *this )
+                for( auto const& mu : *this )
                 {
                     if ( mu.norm() > mumax_norm  )
                     {
@@ -1059,12 +1062,12 @@ public:
          * \brief save sampling data in json
          * \param output filename
          */
-        void saveJson( std::string const& filename )
+        void saveJson( std::string const& filename, bool addParameterSpaceInfo = true )
             {
                 if ( M_space->worldComm().isMasterRank() )
                 {
                     boost::property_tree::ptree ptree;
-                    this->updatePropertyTree( ptree );
+                    this->updatePropertyTree( ptree, addParameterSpaceInfo );
                     write_json( filename, ptree/*, std::locale(), false*/ );
                 }
                 M_space->worldComm().barrier();
@@ -1073,22 +1076,29 @@ public:
          * \brief update sampling description in property_tree data structure
          * \param ptree to update
          */
-        void updatePropertyTree( boost::property_tree::ptree & ptree )
+        void updatePropertyTree( boost::property_tree::ptree & ptree, bool addParameterSpaceInfo = true )
             {
-                int nDim = /*parameterspace_type::Dimension*/ M_space->dimension();
+                // update parameter space ptree
+                if ( addParameterSpaceInfo )
+                    M_space->updatePropertyTree( ptree );
+
+                // update sampling ptree
+                int nDim = M_space->dimension();
                 std::vector<boost::property_tree::ptree> ptreeMu( nDim );
                 for ( auto const& mu : *this )
                 {
                     for ( int d=0;d<nDim;++d )
                     {
-                        ptreeMu[d].add("", mu(d) );
+                        ptreeMu[d].add( "", mu(d) );
                     }
                 }
-                for ( int d=0;d<nDim;++d )
+                boost::property_tree::ptree ptreeSampling;
+                for ( uint16_type d=0;d<nDim;++d )
                 {
-                    std::string nameMu = (boost::format("mu%1%")%d).str();
-                    ptree.add_child( nameMu, ptreeMu[d] );
+                    std::string const& nameMu = M_space->parameterName( d );
+                    ptreeSampling.add_child( nameMu, ptreeMu[d] );
                 }
+                ptree.add_child( "sampling", ptreeSampling );
             }
 
     private:
@@ -1142,6 +1152,7 @@ public:
         {
             M_min.setZero();
             M_max.setZero();
+            this->updateDefaultParameterNames();
         }
     //! copy constructor
     ParameterSpace( ParameterSpace const & o ) = default;
@@ -1221,11 +1232,34 @@ public:
             return ( ( M_min + M_max )/2. );
         }
 
+    /**
+     * \brief name of a parameter
+     * \param d parameter index
+     */
+    std::string const& parameterName( uint16_type d ) const
+        {
+            return M_parameterNames[d];
+        }
+
     //@}
 
     /** @name  Mutators
      */
     //@{
+
+    /**
+     * set the parameter space dimension
+     */
+    void setDimension( uint16_type d )
+        {
+            if ( M_nDim == d )
+                return;
+            if ( Dimension == invalid_uint16_type_value )
+            {
+                M_nDim = d;
+                this->updateDefaultParameterNames();
+            }
+        }
 
     /**
      * set the minimum element
@@ -1246,11 +1280,60 @@ public:
             M_max.setParameterSpace( this->shared_from_this() );
         }
 
+    /**
+     * \brief name of a parameter
+     * \param d parameter index
+     */
+    void setParameterName( uint16_type d, std::string const& name )
+        {
+            M_parameterNames[d] = name;
+        }
+
     //@}
 
     /** @name  Methods
      */
     //@{
+        /**
+         * \brief save ParameterSpace description in json
+         * \param output filename
+         */
+    void saveJson( std::string const& filename )
+        {
+            if ( this->worldComm().isMasterRank() )
+            {
+                boost::property_tree::ptree ptree;
+                this->updatePropertyTree( ptree );
+                write_json( filename, ptree/*, std::locale(), false*/ );
+            }
+            this->worldComm().barrier();
+        }
+    /**
+     * \brief update ParameterSpace description in property_tree data structure
+     * \param ptree to update
+     */
+    void updatePropertyTree( boost::property_tree::ptree & ptree )
+        {
+            int nDim = this->dimension();
+            boost::property_tree::ptree ptreeParameterSpace;
+            ptreeParameterSpace.add( "dimension",nDim);
+
+            boost::property_tree::ptree ptreeParameterName;
+            for ( int d=0;d<nDim;++d )
+                ptreeParameterName.add( "",this->parameterName(d) );
+            ptreeParameterSpace.add_child( "names", ptreeParameterName );
+
+            boost::property_tree::ptree ptreeParametersDesc;
+            for ( int d=0;d<nDim;++d )
+            {
+                boost::property_tree::ptree ptreeParameterDesc;
+                ptreeParameterDesc.add( "min", this->min()(d) );
+                ptreeParameterDesc.add( "max", this->max()(d) );
+                ptreeParametersDesc.add_child( this->parameterName(d), ptreeParameterDesc );
+            }
+            ptreeParameterSpace.add_child( "parameters", ptreeParametersDesc );
+            ptree.add_child( "parameter_space", ptreeParameterSpace );
+        }
 
     /**
      * \brief Returns a log random element of the parameter space
@@ -1286,12 +1369,28 @@ public:
     static element_type logRandom1( parameterspace_ptrtype const& space )
         {
             element_type mur( space );
-            mur.array() = element_type::Random().array().abs();
+            mur.array() = element_type::Random(space->dimension(),1).array().abs();
             //LOG(INFO) << "random1 generate random mur= " << mur << " \n";
+#if 0
             google::FlushLogFiles(google::GLOG_INFO);
             element_type mu( space );
             mu.array() = ( space->min().array().log()+mur.array()*( space->max().array().log()-space->min().array().log() ) ).array().exp();
             //LOG(INFO) << "random1 generate random mu= " << mu << " \n";
+#else
+            element_type mu( space );
+            element_type muShift( space );
+            element_type muMin( space );
+            element_type muMax( space );
+            for (int d=0;d<space->dimension();++d)
+            {
+                muShift(d) = -space->min()(d) + 1.;
+                muMin(d) = space->min()(d) + muShift(d);
+                muMax(d) = space->max()(d) + muShift(d);
+            }
+            mu.array() = ( muMin.array().log()+mur.array()*( muMax.array().log()-muMin.array().log() ) ).exp();
+            mu.array() -= muShift.array();
+
+#endif
             return mu;
         }
 
@@ -1306,13 +1405,13 @@ public:
             {
                 if( space->worldComm().isMasterRank() )
                 {
-                    mur.array() = element_type::Random().array().abs();
+                    mur.array() = element_type::Random(space->dimension(),1).array().abs();
                 }
                 boost::mpi::broadcast( space->worldComm() , mur , space->worldComm().masterRank() );
 
             }
             else
-                mur.array() = element_type::Random().array().abs();
+                mur.array() = element_type::Random(space->dimension(),1).array().abs();
             //std::cout << "mur= " << mur << "\n";
             //mur.setRandom()/RAND_MAX;
             //std::cout << "mur= " << mur << "\n";
@@ -1358,9 +1457,25 @@ public:
      */
     static element_type logEquidistributed( double factor, parameterspace_ptrtype const& space )
         {
+#if 0
             element_type mu( space );
             mu.array() = ( space->min().array().log()+factor*( space->max().array().log()-space->min().array().log() ) ).exp();
             return mu;
+#else
+            element_type mu( space );
+            element_type muShift( space );
+            element_type muMin( space );
+            element_type muMax( space );
+            for (int d=0;d<space->dimension();++d)
+            {
+                muShift(d) = -space->min()(d) + 1.;
+                muMin(d) = space->min()(d) + muShift(d);
+                muMax(d) = space->max()(d) + muShift(d);
+            }
+            mu.array() = ( muMin.array().log()+factor*( muMax.array().log()-muMin.array().log() ) ).exp();
+            mu.array() -= muShift.array();
+            return mu;
+#endif
         }
 
 
@@ -1413,6 +1528,14 @@ public:
 protected:
 
 private:
+
+    void updateDefaultParameterNames()
+        {
+            M_parameterNames.resize( this->dimension() );
+            for ( uint16_type d=0;d<this->dimension();++d )
+                M_parameterNames[d] = (boost::format("mu%1%")%d).str();
+        }
+
     friend class boost::serialization::access;
     template<class Archive>
     void save( Archive & ar, const unsigned int version ) const
@@ -1442,6 +1565,9 @@ private:
 
     //! max element
     element_type M_max;
+
+    //! parameter names
+    std::vector<std::string> M_parameterNames;
 };
 
 template<uint16_type P> const uint16_type ParameterSpace<P>::Dimension;
@@ -1528,16 +1654,16 @@ ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
         //{
         //std::cout << "[ParameterSpace::Sampling::searchNearestNeighbors] building data points\n";
         ANNpointArray data_pts;
-        data_pts = annAllocPts( this->size(), M_space->Dimension );
+        data_pts = annAllocPts( this->size(), M_space->dimension() );
 
         for ( size_type i = 0; i < this->size(); ++i )
         {
-            std::copy( this->at( i ).data(), this->at( i ).data()+M_space->Dimension, data_pts[i] );
+            std::copy( this->at( i ).data(), this->at( i ).data()+M_space->dimension(), data_pts[i] );
             FEELPP_ASSERT( data_pts[i] != 0 )( i ) .error( "invalid pointer" );
         }
 
         //std::cout << "[ParameterSpace::Sampling::searchNearestNeighbors] building tree in R^" <<  M_space->Dimension << "\n";
-        M_kdtree = kdtree_ptrtype( new kdtree_type( data_pts, this->size(), M_space->Dimension ) );
+        M_kdtree = kdtree_ptrtype( new kdtree_type( data_pts, this->size(), M_space->dimension() ) );
         //}
 
 
