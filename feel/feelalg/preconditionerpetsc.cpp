@@ -1064,6 +1064,11 @@ void PreconditionerPetsc<T>::init ()
             check( PCSetType( M_pc,( char* ) PCFIELDSPLIT ) );
             pmatrix->updatePCFieldSplit( M_pc );
         }
+        else if (this->M_preconditioner_type==FEELPP_BLOCKMS_PRECOND)
+        {
+            check( PCSetType( M_pc, "blockms" ) );
+            this->init();
+        }
         M_indexSplitHasChanged = true;
 
         this->M_mat_has_changed = false;
