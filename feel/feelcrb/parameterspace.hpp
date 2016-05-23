@@ -256,7 +256,7 @@ public:
 #endif /* FEELPP_HAS_ANN_H */
 
 
-        Sampling( parameterspace_ptrtype const& space, int N = 1, sampling_ptrtype supersampling = sampling_ptrtype() )
+        Sampling( parameterspace_ptrtype const& space, int N = 0, sampling_ptrtype const& supersampling = sampling_ptrtype() )
             :
             super( N ),
             M_space( space ),
@@ -1041,9 +1041,10 @@ public:
         /**
          * \brief add new parameter \p mu in sampling and store \p index in super sampling
          */
-        void push_back( element_type const& mu, size_type index )
+        void push_back( element_type const& mu, size_type index = invalid_size_type_value )
             {
-                if ( M_supersampling ) M_superindices.push_back( index );
+                if ( M_supersampling && index != invalid_size_type_value )
+                    M_superindices.push_back( index );
 
                 super::push_back( mu );
             }
@@ -1643,7 +1644,8 @@ ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
                                                      size_type _M ,
                                                      std::vector<int>& index_vector)
 {
-    size_type M=_M;
+    // make sure that the sampling set is big enough
+    size_type M = std::min( _M, size_type(this->size()) );
     sampling_ptrtype neighbors( new sampling_type( M_space, M ) );
 #if defined(FEELPP_HAS_ANN_H)
 
@@ -1666,10 +1668,6 @@ ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
         M_kdtree = kdtree_ptrtype( new kdtree_type( data_pts, this->size(), M_space->dimension() ) );
         //}
 
-
-        // make sure that the sampling set is big enough
-        if ( this->size() < M )
-            M=this->size();
 
         std::vector<int> nnIdx( M );
         std::vector<double> dists( M );
