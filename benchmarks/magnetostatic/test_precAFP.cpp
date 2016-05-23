@@ -288,7 +288,11 @@ class TestPrecAFP : public Application
                                   _expr = inner(idv(u),idv(u))
                                   + inner(curlv(u),curlv(u))
                                  ).evaluate()(0,0);
-        Feel::cout << e21 << "\t" << e21/e22 << "\t" << e21_curl << "\t" << e21_curl/e22_curl << std::endl;
+        
+        auto ecurl1 = normL2(_range=elements(M_mesh), _expr=(c_M_a-curlv(u)));
+        auto ecurl2 = normL2(_range=elements(M_mesh), _expr=c_M_a);
+        
+        Feel::cout << "Error\t" << e21 << "\t" << e21/e22 << "\t" << e21_curl << "\t" << e21_curl/e22_curl << "\t" << ecurl1 << "\t" << ecurl1/ecurl2 << std::endl;
 #else
         auto nnzVec = f2.matrixPtr()->graph()->nNz();
         int nnz = std::accumulate(nnzVec.begin(),nnzVec.end(),0);
