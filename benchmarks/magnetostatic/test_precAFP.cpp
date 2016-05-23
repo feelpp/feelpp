@@ -288,7 +288,7 @@ class TestPrecAFP : public Application
                                   _expr = inner(idv(u),idv(u))
                                   + inner(curlv(u),curlv(u))
                                  ).evaluate()(0,0);
-        cout << e21 << "\t" << e21/e22 << "\t" << e21_curl << "\t" << e21_curl/e22_curl << std::endl;
+        Feel::cout << e21 << "\t" << e21/e22 << "\t" << e21_curl << "\t" << e21_curl/e22_curl << std::endl;
 #else
         auto nnzVec = f2.matrixPtr()->graph()->nNz();
         int nnz = std::accumulate(nnzVec.begin(),nnzVec.end(),0);
@@ -312,7 +312,7 @@ class TestPrecAFP : public Application
              * timer iter block22 : min max mean
              * mu : min max mean
              */
-        std::cout 
+        std::Feel::cout 
             << ioption("test-case") << "\t"
             << soption("ms.ksp-type") << "-" << soption("ms.pc-type") << "_"
             << soption("blockms.11.ksp-type") << "-" << soption("blockms.11.pc-type") << "_"
@@ -333,7 +333,7 @@ class TestPrecAFP : public Application
             << M_prec->printMinMaxMean(1,2) << "\t"
             << e21 << "\t"
             << e21/e22 << "\n"; 
-            //std::cout << "RES\t"
+            //std::Feel::cout << "RES\t"
             //    << Xh->nDof() << "\t"
             //    << nnz << "\t"
             //    << soption("functions.m") << "\t"
