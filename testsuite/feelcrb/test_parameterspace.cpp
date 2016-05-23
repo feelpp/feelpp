@@ -39,8 +39,9 @@ BOOST_AUTO_TEST_CASE( test1 )
 
     auto muspace = parameterspace_type::New(8);
     muspace->setDimension(4);
-    parameter_type muMin(muspace);
-    muMin(0)=2;muMin(1)=3;muMin(2)=-4;muMin(3)=5;
+
+    auto muMin = muspace->element();
+    muMin << 2,3,-4,5;
     parameter_type muMax(muspace);
     muMax(0)=6;muMax(1)=7;muMax(2)=8;muMax(3)=9;
     muspace->setMin( muMin );
