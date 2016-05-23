@@ -360,7 +360,7 @@ public:
         M_iter_max( ioption(_name="crb.dimension-max") ),
         M_factor( ioption(_name="crb.factor") ),
         M_error_type( CRBErrorType( ioption(_name="crb.error-type" ) ) ),
-        M_Dmu( new parameterspace_type ),
+        M_Dmu( model->parameterSpace() ),
         M_Xi( new sampling_type( M_Dmu ) ),
         //M_N( 0 ),
         M_WNmu( new sampling_type( M_Dmu, 1, M_Xi ) ),
