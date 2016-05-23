@@ -151,6 +151,8 @@ public:
                     LOG(INFO) << "No need to check element since parameter space is no valid (yet)\n";
                     return;
                 }
+                if ( M_space->dimension() == 0 )
+                    return;
                 Element sum( M_space );
                 sum.setZero();
                 // verify that the element is the same on all processors
@@ -230,6 +232,8 @@ public:
     element_ptrtype elementPtr()  { element_ptrtype e( new element_type( this->shared_from_this() ) ); *e=element(); return e; }
     bool check() const
         {
+            if ( this->dimension() == 0 )
+                return true;
             return (min()-max()).array().abs().maxCoeff() > 1e-10;
         }
     /**
@@ -719,6 +723,8 @@ public:
          */
         void writeOnFile( std::string const& file_name = "list_of_parameters_taken" )
             {
+                if ( file_name.empty() )
+                    return;
                 auto const& theworldcomm = (M_space)? M_space->worldComm() : Environment::worldComm();
                 rank_type proc = theworldcomm.globalRank();
                 rank_type total_proc = theworldcomm.globalSize();
@@ -1151,8 +1157,12 @@ public:
         M_min(),
         M_max()
         {
+            //M_min.setZero();
+            //M_max.setZero();
+            M_min.resize( M_nDim,1 );
             M_min.setZero();
-            M_max.setZero();
+            M_max.resize( M_nDim,1 );
+            M_max.setOnes();
             this->updateDefaultParameterNames();
         }
     //! copy constructor
@@ -1258,6 +1268,10 @@ public:
             if ( Dimension == invalid_uint16_type_value )
             {
                 M_nDim = d;
+                M_min.resize( M_nDim,1 );
+                M_min.setZero();
+                M_max.resize( M_nDim,1 );
+                M_max.setOnes();
                 this->updateDefaultParameterNames();
             }
         }
@@ -1343,10 +1357,13 @@ public:
         {
             //LOG(INFO) << "call logRandom...\n";
             //LOG(INFO) << "call logRandom broadcast: " << broadcast << "...\n";
-            google::FlushLogFiles(google::GLOG_INFO);
+            //google::FlushLogFiles(google::GLOG_INFO);
             if ( broadcast )
             {
                 element_type mu( space );
+                if ( space->dimension() == 0 )
+                    return mu;
+
                 if ( !space->check() ) return mu;
                 if( space->worldComm().isMasterRank() )
                 {
@@ -1370,6 +1387,8 @@ public:
     static element_type logRandom1( parameterspace_ptrtype const& space )
         {
             element_type mur( space );
+            if ( space->dimension() == 0 )
+                return mur;
             mur.array() = element_type::Random(space->dimension(),1).array().abs();
             //LOG(INFO) << "random1 generate random mur= " << mur << " \n";
 #if 0
@@ -1402,6 +1421,9 @@ public:
         {
             //std::srand( static_cast<unsigned>( std::time( 0 ) ) );
             element_type mur( space );
+            if ( space->dimension() == 0 )
+                return mur;
+
             if ( broadcast )
             {
                 if( space->worldComm().isMasterRank() )
