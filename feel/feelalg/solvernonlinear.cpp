@@ -51,7 +51,11 @@ SolverNonLinear<T>::SolverNonLinear ( std::string const& prefix, WorldComm const
     M_preconditioner_type( LU_PRECOND ),
     M_preconditioner(),
     M_nullSpace(), M_nearNullSpace(),
+#if FEELPP_HAS_PETSC
     M_matSolverPackage_type( MATSOLVER_PETSC ),
+#else
+    M_matSolverPackage_type( MATSOLVER_NONE ),
+#endif
     M_relativeResidualTol( 0 ),
     M_absoluteResidualTol( 0 ),
     M_absoluteSolutionTol( 0 ),
