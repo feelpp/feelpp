@@ -173,7 +173,8 @@ public:
         Idiv.matPtr()->matMatMult(Icurl.mat(),(*div_curl));
 
 
-
+        if(Environment::worldComm().globalSize()==1)
+        {
         // Save operators 
         Idiv.matPtr()->printMatlab("idiv.m");
         Icurl.matPtr()->printMatlab("icurl.m");
@@ -189,6 +190,7 @@ public:
         // Save curl_grad && div curl to see min/max values
         div_curl->printMatlab("div_curl.m");
         curl_grad->printMatlab("curl_grad.m");
+        }
 #if 0
         // Now, we solve the pb
         auto u = curl_h->element(); // Potenial - unknown
