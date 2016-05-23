@@ -126,8 +126,11 @@ public:
         xxx.on(_range=elements(M_mesh), _expr=vf::meas());
         Feel::cout << "meas()\t" << xxx.min() << " : " << xxx.max() << std::endl;
         // Interpolation operators
+        // (Nb faces) x (nb elements)
         auto Idiv  = Div( _domainSpace=div_h, _imageSpace=l2_h);
+        // (nb aretes) x (nb faces)
         auto Icurl = Curl( _domainSpace=curl_h, _imageSpace=div_h);
+        // (nb elements) x (nb aretes)
         auto Igrad = Grad( _domainSpace=h1_h, _imageSpace=curl_h);
 
         auto curl_grad = backend()->newMatrix(_trial = div_h, _test = h1_h);
@@ -136,28 +139,34 @@ public:
         /* Curl op */
         auto vec_exp = curl_h->element();
         auto curl_ginac = div_h->element();
+        auto curl_err = div_h->element();
         vec_exp.on(_range=elements(M_mesh), _expr=expr<DIM,1>(soption("vec_curl")));
         curl_ginac.on(_range=elements(M_mesh), _expr=curl(expr<DIM,1>(soption("vec_curl"))));
         auto curl_proj = Icurl(vec_exp);
         Feel::cout << "Curl ( " << soption("vec_curl") << " ) :  [" << curl_proj.min() << " ; " << curl_proj.max() << " ]" << std::endl;
+        curl_err.on(_range=elements(M_mesh), _expr = idv(curl_proj) - idv(curl_ginac));
         auto diff_curl = integrate(_range=elements(M_mesh), _expr = norm2(idv(curl_proj) - idv(curl_ginac))).evaluate()(0,0);
         Feel::cout << "diff_curl = " << diff_curl << std::endl; 
 
         auto scal_exp = h1_h->element();
         auto grad_ginac = curl_h->element();
+        auto grad_err = curl_h->element();
         scal_exp.on(_range=elements(M_mesh), _expr=expr(soption("scal_grad")));
         grad_ginac.on(_range=elements(M_mesh), _expr=trans(grad<DIM,2>(expr(soption("scal_grad"))))); 
         auto grad_proj = Igrad(scal_exp);
         Feel::cout << "Grad ( " << soption("scal_grad") << " ) : [" << grad_proj.min() << " ; " << grad_proj.max() << " ]" << std::endl;
+        grad_err.on(_range=elements(M_mesh), _expr = idv(grad_proj) - idv(grad_ginac));
         auto diff_grad = integrate(_range=elements(M_mesh), _expr = norm2(idv(grad_proj) - idv(grad_ginac))).evaluate()(0,0);
         Feel::cout << "diff_grad = " << diff_grad << std::endl; 
 
         auto vec_exp_h1 = div_h->element();
         auto div_ginac = l2_h->element();
+        auto div_err = l2_h->element();
         vec_exp_h1.on(_range=elements(M_mesh), _expr=expr<DIM,1>(soption("vec_div")));
         div_ginac.on(_range=elements(M_mesh), _expr=div(expr<DIM,1>(soption("vec_div"))));
         auto div_proj = Idiv(vec_exp_h1);
         Feel::cout << "Div ( " << soption("vec_div") << " ) : [" << div_proj.min() << " ; " << div_proj.max() << " ]" << std::endl;
+        div_err.on(_range=elements(M_mesh), _expr = idv(div_proj) - idv(div_ginac));
         auto diff_div = integrate(_range=elements(M_mesh), _expr = norm2(idv(div_proj) - idv(div_ginac))).evaluate()(0,0);
         Feel::cout << "diff_div = " << diff_div << std::endl; 
 
@@ -302,6 +311,9 @@ public:
                 ex->step(i)->add("curl_proj",curl_proj);
                 ex->step(i)->add("grad_proj",grad_proj);
                 ex->step(i)->add("div_proj",div_proj);
+                ex->step(i)->add("curl_err",curl_err);
+                ex->step(i)->add("grad_err",grad_err);
+                ex->step(i)->add( "div_err", div_err);
                 ex->step(i)->add("h",xxx);
                 //if(boption("solveIt"))
                 //{
