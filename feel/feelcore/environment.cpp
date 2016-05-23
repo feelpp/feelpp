@@ -57,7 +57,9 @@ extern "C"
 
 #include <feel/feelcore/environment.hpp>
 
+#if FEELPP_HAS_PETSC
 #include <feel/feelcore/feelpetsc.hpp>
+#endif
 #include <feel/feelcore/timertable.hpp>
 #include <feel/options.hpp>
 

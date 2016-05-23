@@ -636,6 +636,7 @@ VectorUblas<T,Storage>::operator= ( const Vector<value_type> &v )
         this->assignWithUblasImpl( *vecUblasExtArraySlice );
         return *this;
     }
+#if FEELPP_HAS_PETSC
     const VectorPetsc<T> * vecPetsc = dynamic_cast<VectorPetsc<T> const*>( &v );
     if ( vecPetsc && !is_slice_vector )
     {
@@ -643,6 +644,7 @@ VectorUblas<T,Storage>::operator= ( const Vector<value_type> &v )
         toPETScPtr( *this )->operator=( *vecPetsc );
         return *this;
     }
+#endif
 
     // default operator=
     for ( size_type i = 0; i < this->localSize(); ++i )
@@ -778,6 +780,8 @@ VectorUblas<T,Storage>::add( const T& a, const Vector<T>& v )
         this->addWithUblasImpl( a,*vecUblasExtArraySlice );
         return;
     }
+    
+#if FEELPP_HAS_PETSC
     const VectorPetsc<T> * vecPetsc = dynamic_cast<VectorPetsc<T> const*>( &v );
     if ( vecPetsc && !is_slice_vector )
     {
@@ -785,6 +789,7 @@ VectorUblas<T,Storage>::add( const T& a, const Vector<T>& v )
         toPETScPtr( *this )->add( a,*vecPetsc );
         return;
     }
+#endif
 
     // default add operator
     for ( size_type i = 0; i < this->localSize(); ++i )
@@ -1136,11 +1141,14 @@ VectorUblas<T,Storage>::dot( Vector<T> const& v ) const
     {
         return this->dotWithUblasImpl( *vecUblasExtArraySlice );
     }
+
+#if FEELPP_HAS_PETSC
     const VectorPetsc<T> * vecPetsc = dynamic_cast<VectorPetsc<T> const*>( &v );
     if ( vecPetsc && !is_slice_vector )
     {
         return toPETScPtr( *this )->dot( *vecPetsc );
     }
+#endif
 
     // default dot operator
     value_type localResult = 0;
