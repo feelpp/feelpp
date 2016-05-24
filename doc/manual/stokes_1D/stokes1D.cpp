@@ -208,8 +208,9 @@ int main(int argc, char**argv )
     auto a = form2( _trial=Xh1, _test=Xh1);
     std::cout<<"creating the bilinear form a: DONE \n";
 
-    a += integrate( _range=elements( mesh1d ), _expr=4*Pi*mu*inner(idt(u1),id(v1))  + Pi*mu*inner(idt(u2)*id(v2)) );
-        
+    a += integrate( _range=elements( mesh1d ), _expr=4*Pi*mu*inner(idt(u1),id(v1))  + 2*Pi*mu*R*R*inner(idt(u2)*id(v2)) );
+    a += integrate( _range=elements( mesh1d ), _expr=-Pi*R*mu*inner(idt(u2),dz(v1)) -Pi*R*mu*inner(id(v2),dzt(u1)) );
+    a += integrate( _range=elements( mesh1d ), _expr=0.5*Pi*mu*R*R*inner(dzt(u1),dz(v1)) + (2/3)*Pi*mu*R*R*inner(dzt(u2),dz(v2)));
     a +=integrate( _range=elements( mesh1d ), _expr=-2*Pi*R*idt(p)*id(v1) - (Pi*R*R/2)*idt(p)*dz(v2) );
     a +=integrate( _range=elements( mesh1d ), _expr=-2*Pi*R*id(q)*idt(u1) - (Pi*R*R/2)*id(q)*dzt(u2) );
     std::cout<<"Assembling the bilinear terms: DONE \n";
@@ -240,7 +241,7 @@ int main(int argc, char**argv )
     u1.printMatlab("u1.m");
     u2.printMatlab("u2.m");
     
-#if 1
+#if 0
     u3.on(_range=elements(mesh3d), _expr=idf(f_evaluate<decltype(u1),decltype(u2)>( u1, u2,R)));
     e3->step(0)->add( "u3", u3 );
     u1.on(_range=elements(mesh1d), _expr=cst(0.));
