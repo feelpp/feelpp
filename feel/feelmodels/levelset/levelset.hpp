@@ -60,7 +60,7 @@ enum class LevelsetReinitMethod {FM, HJ};
 // NONE = don't do anything, before the fast marching
 enum strategyBeforeFm_type {NONE=0, ILP=1, HJ_EQ=2, IL_HJ_EQ=3};
 
-template<typename ConvexType, int Order=1, typename PeriodicityType = NoPeriodicity>
+template<typename ConvexType, typename AdvectionType, int Order=1, typename PeriodicityType = NoPeriodicity>
 class LevelSetBase
 {
 public :
@@ -106,25 +106,27 @@ public :
 #elif (LEVELSET_CONSERVATIVE_ADVECTION == 2)
     // correction in the same space than phi
     typedef space_levelset_type spaceLSCorr_type;
-    typedef spaceLS_ptrtype spaceLSCorr_ptrtype;
+    typedef space_levelset_ptrtype spaceLSCorr_ptrtype;
     typedef elementLS_type elementLSCorr_type;
-    typedef elementLS_ptrtype elementLSCorr_ptrtype;
+    typedef element_levelset_ptrtype elementLSCorr_ptrtype;
 #endif
 
-    // ---------------- P1 reinit space -----------------
-    // used for reinitialization, always P1 non periodic !
-    typedef bases<Lagrange<1, Scalar> > basisP1_type;
-    typedef FunctionSpace<mesh_type, basisP1_type, double, Periodicity<NoPeriodicity>, mortars<NoMortar> > spaceP1_type;
-    typedef boost::shared_ptr<spaceP1_type> spaceP1_ptrtype;
-    typedef typename spaceP1_type::element_type elementP1_type;
-    typedef boost::shared_ptr< elementP1_type > elementP1_ptrtype;
+    //--------------------------------------------------------------------//
+    // Space levelset reinitP1
+    // used for FM reinitialization, always P1 non-periodic !
+    typedef Lagrange<1, Scalar> basis_levelset_reinitP1_type;
+    typedef FunctionSpace<mesh_type, bases<basis_levelset_reinitP1_type>, value_type, Periodicity<NoPeriodicity>, mortars<NoMortar> > space_levelset_reinitP1_type;
+    typedef boost::shared_ptr<space_levelset_reinitP1_type> space_levelset_reinitP1_ptrtype;
+    typedef typename space_levelset_reinitP1_type::element_type element_levelset_reinitP1_type;
+    typedef boost::shared_ptr< element_levelset_reinitP1_type > element_levelset_reinitP1_ptrtype;
 
-    // ---------------- P0 space -----------------
-    typedef bases<Lagrange<0, Scalar, Discontinuous> > basisP0_type;
-    typedef FunctionSpace<mesh_type, basisP0_type, value_type, Periodicity<NoPeriodicity> > spaceP0_type;
-    typedef boost::shared_ptr<spaceP0_type> spaceP0_ptrtype;
-    typedef typename spaceP0_type::element_type elementP0_type;
-    typedef boost::shared_ptr< elementP0_type > elementP0_ptrtype;
+    //--------------------------------------------------------------------//
+    // Space markers P0
+    typedef Lagrange<0, Scalar, Discontinuous> basis_markers_type;
+    typedef FunctionSpace<mesh_type, bases<basis_markers_type>, value_type, Periodicity<NoPeriodicity> > space_markers_type;
+    typedef boost::shared_ptr<space_markers_type> space_markers_ptrtype;
+    typedef typename space_markers_type::element_type element_markers_type;
+    typedef boost::shared_ptr< element_markers_type > element_markers_ptrtype;
 
 #if defined (MESH_ADAPTATION_LS)
     typedef MeshAdaptation<Dim, Order, 1, PeriodicityType > mesh_adaptation_type;
@@ -132,128 +134,146 @@ public :
 #endif
 
 
-    // ----------------------- operator interpolation -------------
-    typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
-                         typename MeshTraits<mesh_type>::element_const_iterator,
-                         typename MeshTraits<mesh_type>::element_const_iterator> range_visu_ho_type;
+    //--------------------------------------------------------------------//
+    // Interpolation operators
+    typedef boost::tuple<
+        boost::mpl::size_t<MESH_ELEMENTS>,
+        typename MeshTraits<mesh_type>::element_const_iterator,
+        typename MeshTraits<mesh_type>::element_const_iterator> range_visu_ho_type;
 
-    typedef OperatorInterpolation<space_levelset_type, //espace depart
-                                  spaceP1_type, //espace arrivee
-                                      range_visu_ho_type> op_inte_LS_to_P1_type;
+    typedef OperatorInterpolation<
+        space_levelset_type, // from space
+        space_levelset_reinitP1_type, // to space
+        range_visu_ho_type> op_inte_LS_to_P1_type;
 
-    typedef OperatorInterpolation<spaceP1_type, //espace depart
-                                  space_levelset_type, //espace arrivee
-                                      range_visu_ho_type> op_inte_P1_to_LS_type;
+    typedef OperatorInterpolation<
+        space_levelset_reinitP1_type, // from space
+        space_levelset_type, // to space
+        range_visu_ho_type> op_inte_P1_to_LS_type;
 
     typedef boost::shared_ptr<op_inte_LS_to_P1_type> op_inte_LS_to_P1_ptrtype;
     typedef boost::shared_ptr<op_inte_P1_to_LS_type> op_inte_P1_to_LS_ptrtype;
 
     // ---------------- reinitializer ----------------
-    typedef ReinitializerFMS<spaceP1_type, PeriodicityType> reinitilizer_type;
+    typedef ReinitializerFMS<space_levelset_reinitP1_type, PeriodicityType> reinitilizer_type;
 
-    // ---------------------- backend type ----------------
-    typedef Backend<double> backend_type;
+    //--------------------------------------------------------------------//
+    // Backend
+    typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
-    //----------------------- matrix and vector type ---------
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     // ------------------ Advection ------------
-    typedef Advection<space_levelset_type> advection_type;
+    typedef AdvectionType advection_type;
 
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
 
-    /*  ++++++++++++++++++++  public functions  ++++++++++++++++ */
+    //--------------------------------------------------------------------//
+    // Constructor
+    //LevelSetBase(
+            //mesh_ptrtype mesh, 
+            //std::string const& prefix, 
+            //double TimeStep=0.1, 
+            //PeriodicityType periodocity = NoPeriodicity() );
+    LevelSetBase(
+            std::string const& prefix,
+            WorldComm const& _worldComm = Environment::worldComm(),
+            std::string const& subPrefix = "",
+            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
-    // ---------- constructor -------------
-    LevelSet(mesh_ptrtype mesh, std::string const& prefix, double TimeStep=0.1, PeriodicityType periodocity = NoPeriodicity());
+    LevelSetBase( self_type const& L ) = default;
 
-    static self_ptrtype New( mesh_ptrtype mesh, std::string const& prefix, double TimeStep=0.1, PeriodicityType periodocity = NoPeriodicity() );
+    //static self_ptrtype New( mesh_ptrtype mesh, std::string const& prefix, double TimeStep=0.1, PeriodicityType periodocity = NoPeriodicity() );
 
-    //~LevelSet(){};
+    //--------------------------------------------------------------------//
+    // Initialization
+    void build();
+    void init();
+    void initFromMesh();
+    //--------------------------------------------------------------------//
+    space_levelset_ptrtype const& functionSpace() const { return M_spaceLevelSet; }
+    space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceLevelSet; }
+    space_levelset_vectorial_ptrtype const& functionsSpaceVectorial() const { return M_spaceMarkers; }
+    space_levelset_reinitP1_ptrtype const& functionSpaceReinitP1() const { return M_spaceReinitP1; }
 
+    space_levelset_ptrtype const& functionSubspace() const { return M_subspaceLevelSet; }
+    space_levelset_vectorial_ptrtype const& functionSubspaceVectorial() const { return M_subspaceLevelSetVec; }
+
+    mesh_ptrtype const& mesh() const { return M_mesh; }
+    mesh_ptrtype const& submesh() const { return M_submesh; }
+
+    //--------------------------------------------------------------------//
+    // Mesh adaptation
 #if defined (MESH_ADAPTATION_LS)
-    mesh_ptrtype adaptMesh(double time, elementLS_ptrtype elt);
+    mesh_ptrtype adaptMesh(double time, element_levelset_ptrtype elt);
     mesh_adaptation_ptrtype mesh_adapt;
-    template< typename ExprT >  mesh_ptrtype adaptedMeshFromExp(ExprT expr);
+    template<typename ExprT> mesh_ptrtype adaptedMeshFromExp(ExprT expr);
 #endif
 
+    //--------------------------------------------------------------------//
+    // Advection
     /* advect phi by Velocity
        this->M_phi takes the new value
        also the following variable are updated : M_phio, M_delta, M_H, M_mass */
-    template < typename TVeloc >
+    template <typename TVeloc>
     bool advect(TVeloc const& Velocity, bool ForceReinit = false, bool updateBilinearForm = true, bool updateTime = true);
 
     /* returns phi after advection by Velocity
       do not change the value of this->M_phi or any other variable (delta heavyside ...) */
     template < typename TVeloc >
-    elementLS_ptrtype phiAdvected(TVeloc const& Velocity, bool stabilization = true)
+    element_levelset_ptrtype phiAdvected(TVeloc const& Velocity, bool stabilization = true)
     { return this->advReactUpdate(Velocity, stabilization); }
 
     // template < typename TVeloc >
     // void updateE(TVeloc& Velocity);
 
-    void initialize(elementLS_ptrtype, bool doFirstReinit = false, ReinitMethod method=FM, int max_iter=-1, double dtau=0.01, double tol=0.1);
-    elementLS_ptrtype circleShape(double r0, double x0, double y0, double z0=0);
-    elementLS_ptrtype ellipseShape(double a_ell, double b_ell, double x0, double y0, double z0=0);
-    void imposePhi( elementLS_ptrtype );
+    void initialize(element_levelset_ptrtype, bool doFirstReinit = false, ReinitMethod method=FM, int max_iter=-1, double dtau=0.01, double tol=0.1);
+    element_levelset_ptrtype circleShape(double r0, double x0, double y0, double z0=0);
+    element_levelset_ptrtype ellipseShape(double a_ell, double b_ell, double x0, double y0, double z0=0);
+    void imposePhi( element_levelset_ptrtype );
 
-    elementLS_ptrtype makeDistFieldFromParametrizedCurve(std::function<double(double)> xexpr, std::function<double(double)> yexpr,
+    element_levelset_ptrtype makeDistFieldFromParametrizedCurve(std::function<double(double)> xexpr, std::function<double(double)> yexpr,
                                                          double tStart, double tEnd, double dt,
                                                          bool useRandomPt=true, double randomness=doption("gmsh.hsize") / 5.,
                                                          bool export_points=false, std::string export_name="");
 
 
-    elementLS_ptrtype makeDistFieldFromParametrizedCurve(std::tuple< std::function<double(double)>, std::function<double(double)>, double, double >  paramCurve,
+    element_levelset_ptrtype makeDistFieldFromParametrizedCurve(std::tuple< std::function<double(double)>, std::function<double(double)>, double, double >  paramCurve,
                                                          double dt, bool useRandomPt=true, double randomness=doption("gmsh.hsize") / 5.,
                                                          bool export_points=false, std::string export_name="");
 
     template< typename Elt1, typename Elt2 >
     std::vector<double> getStatReinit(Elt1 __phio, Elt2 __phi);
 
-
     /* update the submesh and subspaces*/
-    void updateSubMeshSubSpace(elementP0_ptrtype marker);
+    void updateSubMeshSubSpace(element_markers_ptrtype marker);
     void updateSubMeshSubSpace();
 
-
-
     /* usefull markers (see comments in functions bodies) */
-    elementP0_type markerInterface();
-    elementP0_ptrtype markerDelta();
-    elementP0_type markerH(bool invert = false, bool cut_at_half = false);
-    elementP0_type crossedelements();
+    element_markers_type markerInterface();
+    element_markers_ptrtype markerDelta();
+    element_markers_type markerH(bool invert = false, bool cut_at_half = false);
+    element_markers_type crossedelements();
 
     std::string levelsetInfos( bool show = false );
 
     // ------------- accessors ---------------
-    const elementLS_ptrtype phi();
+    const element_levelset_ptrtype phi();
 
-    const elementLS_ptrtype phinl();
+    const element_levelset_ptrtype phinl();
 
-    const elementLS_ptrtype H();
+    const element_levelset_ptrtype H();
 
-    const elementLS_ptrtype D();
+    const element_levelset_ptrtype D();
 
     double mass();
 
     int iterSinceReinit();
 
-    spaceLS_ptrtype space();
-
-    spaceP0_ptrtype spaceP0();
-
-    space_levelset_vectorial_ptrtype spaceVec();
-
-    spaceP1_ptrtype spaceP1();
-
-    spaceLS_ptrtype subspace();
-
-    space_levelset_vectorial_ptrtype subspaceVec();
-
-    mesh_ptrtype mesh();
-
-    mesh_ptrtype submesh();
 
     /*delta and heavyside thickness*/
     double thicknessInterface();
@@ -280,15 +300,47 @@ public :
     boost::shared_ptr< Projector<space_levelset_type, space_levelset_type> >  M_l2p;
     boost::shared_ptr< Projector<space_levelset_vectorial_type, space_levelset_vectorial_type> >  M_l2pVec;
 
+protected:
+    void updateHeavyside();
+    void updateDirac();
+    void updateMass();
 
-protected :
-    // ----------- Elements type ------------
-    elementLS_ptrtype M_phi;
-    elementLS_ptrtype M_phio;
-    elementLS_ptrtype M_phinl;
+private:
+    void initWithMesh(mesh_ptrtype mesh);
+    void initFastMarching(mesh_ptrtype const& mesh);
 
-    elementLS_ptrtype M_H;
-    elementLS_ptrtype M_delta;
+    template < typename TVeloc >
+    element_levelset_ptrtype advReactUpdate(TVeloc& Velocity, bool updateStabilization=true, bool updateBilinearForm=true);
+
+#if defined(LEVELSET_CONSERVATIVE_ADVECTION)
+    template < typename TVeloc >
+    void conservativeH(TVeloc& Velocity, element_levelset_ptrtype Hc);
+
+    void updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J);
+    void updateResidual(const vector_ptrtype& X, vector_ptrtype& R, element_levelset_ptrtype Hc);
+    void computeCorrection(element_levelset_ptrtype Hc);
+#endif
+
+    void reinitialize(int max_iter, double dtau, double tol, bool useMethodInOption = true, ReinitMethod givenMethod = FM );
+    element_levelset_ptrtype explicitHJ(int, double, double);
+    element_levelset_ptrtype explicitILHJ(int, double, double);
+    double distToDist();
+    //        element_levelset_reinitP1_ptrtype makeShape(std::function<double(double)> xexpr, std::function<double(double)> yexpr, double tStart, double tEnd, double dt, space_markers_ptrtype mspaceP0, mesh_ptrtype msmesh, bool useRandomPt=false);
+
+
+
+protected:
+
+    const std::string M_prefix;
+
+    //--------------------------------------------------------------------//
+    // Levelset elements 
+    element_levelset_ptrtype M_phi;
+    element_levelset_ptrtype M_phio;
+    element_levelset_ptrtype M_phinl;
+
+    element_levelset_ptrtype M_heaviside;
+    element_levelset_ptrtype M_delta;
     boost::shared_ptr<double> M_mass;
     boost::shared_ptr<int> itersincereinit;
 
@@ -296,46 +348,44 @@ protected :
     elementLSCorr_ptrtype phic;
 #endif
 
-    const std::string M_prefix;
 
-    void updateHeavyside();
-    void updateDirac();
-    void updateMass();
-
-private :
-
-    // ---------- mesh ---------------
+private:
+    //--------------------------------------------------------------------//
+    // Mesh 
     mesh_ptrtype M_mesh;
     mesh_ptrtype M_submesh;
 
-    // ----------- periodicity --------
+    //--------------------------------------------------------------------//
     PeriodicityType M_periodicity;
 
-    // ---------- spaces ---------------
-    spaceLS_ptrtype M_spaceLS;
-    space_levelset_vectorial_ptrtype M_spaceLSVec;
-    spaceP0_ptrtype M_spaceP0;
+    //--------------------------------------------------------------------//
+    // Spaces
+    space_levelset_ptrtype M_spaceLevelSet;
+    space_levelset_vectorial_ptrtype M_spaceLevelSetVec;
+    space_markers_ptrtype M_spaceMarkers;
 
-    space_levelset_vectorial_ptrtype M_subspaceLSVec;
-    spaceLS_ptrtype M_subspaceLS;
+    space_levelset_ptrtype M_subspaceLevelSet;
+    space_levelset_vectorial_ptrtype M_subspaceLevelSetVec;
 
-    // ----------- Fast Marching objects ------------
-    spaceP1_ptrtype M_spaceP1;
+    space_levelset_reinitP1_ptrtype M_spaceReinitP1;
+    //--------------------------------------------------------------------//
+    // Fast-marching
     op_inte_LS_to_P1_ptrtype op_inte_LS_to_P1;
     op_inte_P1_to_LS_ptrtype op_inte_P1_to_LS;
     boost::shared_ptr <OperatorLagrangeP1<space_levelset_type> > opLagP1;
 
-    //  ----------- fast marching -------------
     boost::shared_ptr<reinitilizer_type> M_reinitializerFMS;
     boost::shared_ptr< Projector<space_levelset_type, space_levelset_type> >  M_smooth;
 
     bool reinitializerUpdated;
 
-    // ----------------- backends -----------------
+    //--------------------------------------------------------------------//
+    // Backends
     backend_ptrtype M_backend_advrea;
     backend_ptrtype M_backend_smooth;
 
-    // --------------- advection -------------
+    //--------------------------------------------------------------------//
+    // Advection
     boost::shared_ptr<advection_type> M_advection;
     boost::shared_ptr<advection_type> M_advection_hj;
     boost::shared_ptr<advection_type> M_advection_ilhj;
@@ -353,54 +403,33 @@ private :
     vector_ptrtype F_h;
 #endif
 
-    // ----------------  parameters ------------
-    const double pi;
-    double Dt;
-    int reinitevery;
+    //--------------------------------------------------------------------//
+    // Parameters
+    double M_thicknessInterface;
+
     int stabStrategy;
-    bool enable_reinit;
-    strategyBeforeFm_type strategyBeforeFm;
-    bool M_useMarker2AsMarkerDoneFmm;
     int impose_inflow;
     bool useRegularPhi;
     bool hdNodalProj;
     double k_correction;
-    int hj_max_iter;
-    double hj_dtau;
-    double hj_tol;
-    AdvectionStabMethod M_advecstabmethod;
-    ReinitMethod M_reinitmethod;
+    //--------------------------------------------------------------------//
+    // Reinitialization
+    bool M_enableReinit;
+    ReinitMethod M_reinitMethod;
+    int M_reinitEvery;
+    strategyBeforeFm_type strategyBeforeFm;
+    bool M_useMarker2AsMarkerDoneFmm;
+    int M_hjMaxIter;
+    double M_hjDtau;
+    double M_hjTol;
+
     LevelSetTimeDiscretization M_discrMethod;
 
 
     // -------------- variables -----------
-    double M_epsilon;
     boost::timer ch;
     std::ofstream statReinitFile;
     int __iter;
-
-    //  ------------- private functions ----------------
-    void initWithMesh(mesh_ptrtype mesh);
-    void initFastMarching(mesh_ptrtype const& mesh);
-
-    template < typename TVeloc >
-    elementLS_ptrtype advReactUpdate(TVeloc& Velocity, bool updateStabilization=true, bool updateBilinearForm=true);
-
-#if defined(LEVELSET_CONSERVATIVE_ADVECTION)
-    template < typename TVeloc >
-    void conservativeH(TVeloc& Velocity, elementLS_ptrtype Hc);
-
-    void updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J);
-    void updateResidual(const vector_ptrtype& X, vector_ptrtype& R, elementLS_ptrtype Hc);
-    void computeCorrection(elementLS_ptrtype Hc);
-#endif
-
-    void reinitialize(int max_iter, double dtau, double tol, bool useMethodInOption = true, ReinitMethod givenMethod = FM );
-    elementLS_ptrtype explicitHJ(int, double, double);
-    elementLS_ptrtype explicitILHJ(int, double, double);
-    double distToDist();
-    //        elementP1_ptrtype makeShape(std::function<double(double)> xexpr, std::function<double(double)> yexpr, double tStart, double tEnd, double dt, spaceP0_ptrtype mspaceP0, mesh_ptrtype msmesh, bool useRandomPt=false);
-
 
 }; //class LevelSet
 
