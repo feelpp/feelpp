@@ -282,63 +282,6 @@ Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::iterSinceReinit()
     return *itersincereinit;
 }
 
-template<int Order, int Dim, typename PeriodicityType>
-inline typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::spaceLS_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::space()
-{
-    return M_spaceLS;
-}
-
-template<int Order, int Dim, typename PeriodicityType>
-inline typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::spaceP0_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::spaceP0()
-{
-    return  M_spaceP0;
-}
-
-template<int Order, int Dim, typename PeriodicityType>
-inline typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::spaceP1_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::spaceP1()
-{
-   return M_spaceP1;
-}
-
-
-template<int Order, int Dim, typename PeriodicityType>
-inline typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::spaceLSVec_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::spaceVec()
-{
-    return M_spaceLSVec;
-}
-
-template<int Order, int Dim, typename PeriodicityType>
-inline typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::spaceLS_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::subspace()
-{
-    return M_subspaceLS;
-}
-
-template<int Order, int Dim, typename PeriodicityType>
-inline typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::spaceLSVec_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::subspaceVec()
-{
-    return M_subspaceLSVec;
-}
-
-template<int Order, int Dim, typename PeriodicityType>
-inline typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::mesh_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::mesh()
-{
-    return M_mesh;
-}
-
-template<int Order, int Dim, typename PeriodicityType>
-inline typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::mesh_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::submesh()
-{
-    return M_submesh;
-}
-
 /*delta and heavyside thickness*/
 template<int Order, int Dim, typename PeriodicityType>
 inline double
