@@ -445,24 +445,6 @@ public:
 
                 this->clear();
 
-#if 0
-                bool generate_the_file=false;
-                std::ifstream file ( file_name );
-                if( !file || all_procs_have_same_sampling )
-                {
-                    generate_the_file=true;
-                }
-
-                auto min = this->min();
-                auto mu_min = min.template get<0>();
-                int size = mu_min.size();
-                bool apply_log=true;
-                for(int i=0; i<size; i++)
-                {
-                    if( mu_min(i) < 0 )
-                        apply_log=false;
-                }
-#endif
                 // fill with log Random elements from the parameter space
                 //only with one proc and then send a part of the sampling to each other proc
                 if( M_space->worldComm().isMasterRank() /*&& generate_the_file*/ )
@@ -507,7 +489,7 @@ public:
 
                 if( all_procs_have_same_sampling )
                 {
-                    boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
+                    boost::mpi::broadcast( M_space->worldComm() , /**this*/boost::serialization::base_object<super>( *this ) , M_space->worldComm().masterRank() );
                 }
                 else
                 {
@@ -525,34 +507,36 @@ public:
             {
                 this->clear();
 
-#if 0
-                bool generate_the_file=false;
-                std::ifstream file ( file_name );
-                if( ! file )
-                {
-                    generate_the_file=true;
-                }
-#endif
+                uint16_type nDim = M_space->dimension();
 
-                if( M_space->worldComm().isMasterRank() /*&& generate_the_file*/ )
+                // define sampling size in each direction (search to be a global sampling size close to N)
+                int samplingSizeDirectionEquidistribute = math::floor( math::pow( double(N) , 1./nDim ) );
+                std::vector<size_type> samplingSizeDirection( nDim, samplingSizeDirectionEquidistribute );
+                for ( uint16_type d = 0; d < nDim;++d )
                 {
-                    // fill with log Random elements from the parameter space
-                    // first we fill temporary_sampling and then we distribute a part of it to each proc
-                    for ( int i = 0; i < N; ++i )
+                    ++samplingSizeDirection[d];
+                    size_type newSamplingSize = std::accumulate(samplingSizeDirection.begin(), samplingSizeDirection.end(), 1, std::multiplies<size_type>());
+                    if ( newSamplingSize > N )
                     {
-                        double factor = double( i )/( N-1 );
-                        auto mu = parameterspace_type::logEquidistributed( factor,M_space ) ;
-                        super::push_back( mu );
+                        --samplingSizeDirection[d];
+                        break;
                     }
+                }
+                size_type samplingSize = std::accumulate(samplingSizeDirection.begin(), samplingSizeDirection.end(), 1, std::multiplies<size_type>());
+
+                if( M_space->worldComm().isMasterRank() )
+                {
+                    this->genericEquidistributeImpl( samplingSizeDirection, 1 );
+
                     this->writeOnFile( file_name );
                 }
                 if( all_procs_have_same_sampling )
                 {
-                    boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
+                    boost::mpi::broadcast( M_space->worldComm() , /**this*/boost::serialization::base_object<super>( *this ) , M_space->worldComm().masterRank() );
                 }
                 else
                 {
-                    this->distributeOnAllProcessors( N , file_name );
+                    this->distributeOnAllProcessors( samplingSize , file_name );
                 }//if all procs don't have  same sampling
 
             }
@@ -562,40 +546,29 @@ public:
          * \param N : vector containing the number of samples on each direction
          * if N[direction] < 1 then we take minimum value for this direction
          */
-        void logEquidistributeProduct( std::vector<int> const& N , element_type const &mu)
+        void logEquidistributeProduct( std::vector<size_type> const&  N, bool all_procs_have_same_sampling=true, std::string const& file_name="" )
         {
-            // first empty the set
+            // clear previous sampling
             this->clear();
+
+            size_type samplingSize = std::accumulate(N.begin(), N.end(), 1, std::multiplies<size_type>());
 
             if( M_space->worldComm().isMasterRank() )
             {
-                int number_of_directions = N.size();
+                this->genericEquidistributeImpl( N, 1 );
 
-                //contains values of parameters on each direction
-                std::vector< std::vector< double > > components;
-                components.resize( number_of_directions );
-
-                //auto min=M_space->min();
-
-                for(int direction=0; direction<number_of_directions; direction++)
-                {
-                    if( N[direction] > 0 )
-                    {
-                        std::vector<double> coeff_vector = parameterspace_type::logEquidistributeInDirection( M_space , direction , N[direction] );
-                        components[direction]= coeff_vector ;
-                    }
-                    else
-                    {
-                        std::vector<double> coeff_vector( 1 );
-                        coeff_vector[0]=mu(direction);
-                        components[direction] = coeff_vector ;
-                    }
-                }
-
-                generateElementsProduct( components );
+                this->writeOnFile( file_name );
 
             }//end of master proc
-            boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
+
+            if( all_procs_have_same_sampling )
+            {
+                boost::mpi::broadcast( M_space->worldComm() , /**this*/boost::serialization::base_object<super>( *this ) , M_space->worldComm().masterRank() );
+            }
+            else
+            {
+                this->distributeOnAllProcessors( samplingSize , file_name );
+            }
         }
 
 
@@ -857,7 +830,7 @@ public:
 
                 if( M_space->worldComm().isMasterRank() )
                 {
-                    this->equidistributeImpl( samplingSizeDirection );
+                    this->genericEquidistributeImpl( samplingSizeDirection, 0 );
 
                     this->writeOnFile( file_name );
                 }//master proc
@@ -885,7 +858,7 @@ public:
 
             if( M_space->worldComm().isMasterRank() )
             {
-                this->equidistributeImpl( N );
+                this->genericEquidistributeImpl( N, 0 );
 
                 this->writeOnFile( file_name );
 
@@ -1100,7 +1073,7 @@ public:
     private:
         Sampling() {}
     private:
-        void equidistributeImpl( std::vector<size_type> const& samplingSizeDirection )
+        void genericEquidistributeImpl( std::vector<size_type> const& samplingSizeDirection, int type )
             {
                 this->clear();
 
@@ -1115,7 +1088,10 @@ public:
                 std::vector<std::vector<double> > distribution( nDim );
                 for ( uint16_type d = 0; d < nDim;++d )
                 {
-                    distribution[d] = parameterspace_type::equidistributeInDirection( M_space,d,samplingSizeDirection[d] );
+                    if ( type == 0 )
+                        distribution[d] = parameterspace_type::equidistributeInDirection( M_space,d,samplingSizeDirection[d] );
+                    else if ( type == 1 )
+                        distribution[d] = parameterspace_type::logEquidistributeInDirection( M_space,d,samplingSizeDirection[d] );
                     mymu(d) = distribution[d][0];
                 }
 
@@ -1153,6 +1129,7 @@ public:
                 }
 
             }
+
 
         friend class boost::serialization::access;
         template<class Archive>
@@ -1506,19 +1483,21 @@ public:
     {
         std::vector<double> result(N);
 
-        auto min_element = space->min();
-        auto max_element = space->max();
-        int space_dimension=space->dimension();
-        FEELPP_ASSERT( space_dimension > direction )( space_dimension )( direction ).error( "bad dimension of vector containing number of samples on each direction" );
-        FEELPP_ASSERT( direction >= 0 )( direction ).error( "the direction must be positive number" );
-
-        double min = min_element(direction);
-        double max = max_element(direction);
-
-        for(int i=0; i<N; i++)
+        CHECK( direction >=0 && direction < space->dimension() ) << "direction invalid " << direction;
+        double shift = -space->min()(direction) + 1.;
+        double min = space->min()(direction) + shift;
+        double max = space->max()(direction) + shift;
+        if ( N > 1 )
         {
-            double factor = (double)(i)/(N-1);
-            result[i] = math::exp(math::log(min)+factor*( math::log(max)-math::log(min) ) );
+            for(int i=0; i<N; i++)
+            {
+                double factor = (double)(i)/(N-1);
+                result[i] = math::exp(math::log(min)+factor*( math::log(max)-math::log(min) ) ) - shift;
+            }
+        }
+        else if ( N == 1 )
+        {
+            result[0] = (min+max)/2. - shift;
         }
 
         return result;
