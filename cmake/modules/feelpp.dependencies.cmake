@@ -104,6 +104,7 @@ INCLUDE(CheckFunctionExists)
 INCLUDE(CheckSymbolExists)
 INCLUDE(CheckCXXSourceCompiles)
 INCLUDE(CheckLibraryExists)
+INCLUDE(CMakeDependentOption)
 
 OPTION(FEELPP_ENABLE_SYSTEM_EIGEN3 "enable system eigen3 support" OFF)
 
@@ -116,7 +117,6 @@ OPTION(FEELPP_ENABLE_SCHED_SLURM "Enable Feel++ slurm submission scripts generat
 OPTION(FEELPP_ENABLE_SCHED_CCC "Enable Feel++ tgcc/ccc submission scripts generation" OFF)
 OPTION(FEELPP_ENABLE_SCHED_LOADLEVELER "Enable Feel++ ibm(supermuc) submission scripts generation" OFF)
 OPTION(FEELPP_ENABLE_TBB "enable feel++ TBB support" OFF)
-OPTION(FEELPP_ENABLE_SLEPC "enable feel++ SLEPc support" ON)
 OPTION(FEELPP_ENABLE_TRILINOS "enable feel++ Trilinos support" OFF)
 OPTION(FEELPP_ENABLE_EXODUS "enable feel++ Exodus support" OFF)
 if ( APPLE )
@@ -892,7 +892,10 @@ endif()
 #
 # Petsc
 #
-if(NOT FEELPP_MINIMAL_BUILD)
+
+cmake_dependent_option(FEELPP_ENABLE_PETSC "Enable PETSc Support" OFF "FEELPP_MINIMAL_CONFIGURATION" ON)
+
+if(FEELPP_ENABLE_PETSC)
   FIND_PACKAGE( PETSc REQUIRED)
   if ( PETSC_FOUND )
     add_definitions( -DFEELPP_HAS_PETSC -DFEELPP_HAS_PETSC_H )
@@ -905,7 +908,7 @@ if(NOT FEELPP_MINIMAL_BUILD)
     INCLUDE_DIRECTORIES(${PETSC_INCLUDE_DIR} ${PETSC_INCLUDE_CONF})
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PETSc" )
   endif( PETSC_FOUND )
-endif( NOT FEELPP_MINIMAL_BUILD )
+endif()
 
 # ML was already searched for, if it was not found then try again to look for it
 # in PETSC_DIR
@@ -932,6 +935,9 @@ MARK_AS_ADVANCED( PARPACK_LIBRARY )
 #
 # SLEPc
 #
+
+cmake_dependent_option(FEELPP_ENABLE_SLEPC "Enable SLEPc Support" OFF "FEELPP_MINIMAL_CONFIGURATION" ON)
+
 if (FEELPP_ENABLE_SLEPC)
   FIND_PACKAGE( SLEPc )
   if ( SLEPC_FOUND )
@@ -1123,39 +1129,45 @@ endif( FEELPP_ENABLE_OCTAVE)
 #
 # Gmsh
 #
-if(FEELPP_USE_GMSH_PACKAGE)
+
+cmake_dependent_option(FEELPP_ENABLE_GMSH "Enable Gmsh Support" OFF "FEELPP_MINIMAL_CONFIGURATION" ON)
+
+if( FEELPP_ENABLE_GMSH )
+  if(FEELPP_USE_GMSH_PACKAGE)
 	FIND_PACKAGE(Gmsh)
-else()
+  else()
 	set(GMSH_FOUND false)
-endif()
-if(NOT GMSH_FOUND)#Download and Instal it
-  message(STATUS "[feelpp] GMSH NOT FOUND - Downloading and Installing it" )
-  execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gmsh-compile)
-  message(STATUS "[feelpp] Building gmsh in ${CMAKE_BINARY_DIR}/contrib/gmsh-compile...")
-  execute_process(
-    COMMAND ${FEELPP_HOME_DIR}/contrib/gmsh/gmsh.sh ${CMAKE_BINARY_DIR}/contrib/gmsh/ ${FEELPP_HOME_DIR}/contrib/gmsh/patches ${NProcs2} ${CMAKE_CXX_COMPILER}
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gmsh-compile
-    #      OUTPUT_QUIET
-    OUTPUT_FILE "gmsh-configure"
+  endif()
+  if(NOT GMSH_FOUND)#Download and Instal it
+    message(STATUS "[feelpp] GMSH NOT FOUND - Downloading and Installing it" )
+    execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gmsh-compile)
+    message(STATUS "[feelpp] Building gmsh in ${CMAKE_BINARY_DIR}/contrib/gmsh-compile...")
+    execute_process(
+      COMMAND ${FEELPP_HOME_DIR}/contrib/gmsh/gmsh.sh ${CMAKE_BINARY_DIR}/contrib/gmsh/ ${FEELPP_HOME_DIR}/contrib/gmsh/patches ${NProcs2} ${CMAKE_CXX_COMPILER}
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gmsh-compile
+      #      OUTPUT_QUIET
+      OUTPUT_FILE "gmsh-configure"
     )
 
-  FIND_PACKAGE(Gmsh REQUIRED)
-endif()
-if ( GMSH_FOUND )
-  ADD_DEFINITIONS( -DFEELPP_HAS_GMSH=1 -D_FEELPP_HAS_GMSH_ -DGMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
-  if ( GL2PS_LIBRARY )
-    if ( GL_LIBRARY AND FEELPP_ENABLE_OPENGL )
-      SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${GL2PS_LIBRARY} ${GL_LIBRARY} ${FEELPP_LIBRARIES})
-    else()
-      SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${GL2PS_LIBRARY} ${FEELPP_LIBRARIES})
-    endif()
-  else()
-    SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${FEELPP_LIBRARIES})
+    FIND_PACKAGE(Gmsh REQUIRED)
   endif()
-  INCLUDE_DIRECTORIES(${GMSH_INCLUDE_DIR})
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
+  if ( GMSH_FOUND )
+    ADD_DEFINITIONS( -DFEELPP_HAS_GMSH=1 -D_FEELPP_HAS_GMSH_ -DGMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
+    if ( GL2PS_LIBRARY )
+      if ( GL_LIBRARY AND FEELPP_ENABLE_OPENGL )
+        SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${GL2PS_LIBRARY} ${GL_LIBRARY} ${FEELPP_LIBRARIES})
+      else()
+        SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${GL2PS_LIBRARY} ${FEELPP_LIBRARIES})
+      endif()
+    else()
+      SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${FEELPP_LIBRARIES})
+    endif()
+    INCLUDE_DIRECTORIES(${GMSH_INCLUDE_DIR})
+    SET(FEELPP_HAS_GMSH 1)
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
+  endif()
+  include(feelpp.module.gmsh)
 endif()
-include(feelpp.module.gmsh)
 
 #
 # if Feel++ has been installed on the system
