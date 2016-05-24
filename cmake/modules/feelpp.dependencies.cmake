@@ -893,7 +893,7 @@ endif()
 # Petsc
 #
 
-cmake_dependent_option(FEELPP_ENABLE_PETSC "Enable PETSc Support" OFF "FEELPP_MINIMAL_CONFIGURATION" ON)
+cmake_dependent_option(FEELPP_ENABLE_PETSC "Enable PETSc Support" OFF "FEELPP_MINIMAL_BUILD" ON)
 
 if(FEELPP_ENABLE_PETSC)
   FIND_PACKAGE( PETSc REQUIRED)
@@ -936,7 +936,7 @@ MARK_AS_ADVANCED( PARPACK_LIBRARY )
 # SLEPc
 #
 
-cmake_dependent_option(FEELPP_ENABLE_SLEPC "Enable SLEPc Support" OFF "FEELPP_MINIMAL_CONFIGURATION" ON)
+cmake_dependent_option(FEELPP_ENABLE_SLEPC "Enable SLEPc Support" OFF "FEELPP_MINIMAL_BUILD" ON)
 
 if (FEELPP_ENABLE_SLEPC)
   FIND_PACKAGE( SLEPc )
@@ -1130,7 +1130,7 @@ endif( FEELPP_ENABLE_OCTAVE)
 # Gmsh
 #
 
-cmake_dependent_option(FEELPP_ENABLE_GMSH "Enable Gmsh Support" OFF "FEELPP_MINIMAL_CONFIGURATION" ON)
+cmake_dependent_option(FEELPP_ENABLE_GMSH "Enable Gmsh Support" OFF "FEELPP_MINIMAL_BUILD" ON)
 
 if( FEELPP_ENABLE_GMSH )
   if(FEELPP_USE_GMSH_PACKAGE)
