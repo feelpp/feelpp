@@ -1230,7 +1230,7 @@ public:
     /**
      * print informations on online Picard iterations
      */
-    void printOnlineRbPicardIterations(parameter_type mu) const;
+    void printOnlineRbPicardIterations(parameter_type const& mu) const;
 
     /**
      * print max errors (total error and also primal and dual contributions)
@@ -2184,23 +2184,35 @@ CRB<TruthModelType>::offline()
         std::string sampling_mode = soption("crb.sampling-mode");
         bool all_proc_same_sampling=boption("crb.all-procs-have-same-sampling");
         int sampling_size = ioption("crb.sampling-size");
+#if 0
         std::string file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%") % sampling_size %proc_number %total_proc ).str();
         if( all_proc_same_sampling )
             file_name+="-all-proc-have-same-sampling";
+#endif
+        std::string file_name;
+        if( all_proc_same_sampling )
+            file_name = ( boost::format("M_Xi_%1%_"+sampling_mode )% sampling_size ).str();
+        else
+            file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%") % sampling_size %proc_number %total_proc ).str();
+
         std::ifstream file ( file_name );
         if( ! file )
         {
             // random sampling
-            std::string supersamplingname =(boost::format("Dmu-%1%-generated-by-master-proc") %sampling_size ).str();
+            //std::string supersamplingname =(boost::format("Dmu-%1%-generated-by-master-proc") %sampling_size ).str();
             if( sampling_mode == "log-random" )
-                M_Xi->randomize( sampling_size , all_proc_same_sampling , supersamplingname );
+                M_Xi->randomize( sampling_size , all_proc_same_sampling /*, supersamplingname*/ );
             else if( sampling_mode == "log-equidistribute" )
-                M_Xi->logEquidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
+                M_Xi->logEquidistribute( sampling_size , all_proc_same_sampling /*, supersamplingname*/ );
             else if( sampling_mode == "equidistribute" )
-                M_Xi->equidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
+                M_Xi->equidistribute( sampling_size , all_proc_same_sampling /*, supersamplingname*/ );
             else
                 throw std::logic_error( "[CRB::offline] ERROR invalid option crb.sampling-mode, please select between log-random, log-equidistribute or equidistribute" );
-            M_Xi->writeOnFile(file_name);
+
+            if ( all_proc_same_sampling )
+                this->worldComm().barrier();
+            if ( !all_proc_same_sampling || this->worldComm().isMasterRank() )
+                M_Xi->writeOnFile(file_name);
         }
         else
         {
@@ -9256,7 +9268,7 @@ CRB<TruthModelType>::printRbPicardIterations()
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::printOnlineRbPicardIterations(parameter_type mu) const
+CRB<TruthModelType>::printOnlineRbPicardIterations(parameter_type const& mu) const
 {
     if ( Environment::worldComm().isMasterRank() )
     {
