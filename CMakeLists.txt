@@ -113,6 +113,7 @@ OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
 SET(FEELPP_DEFAULT_TEST_TIMEOUT "300")
 OPTION(FEELPP_ENABLE_DOXYGEN "enable Feel++ doxygen documentation generation" OFF)
 OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
+OPTION(FEELPP_MINIMAL_BUILD "Enable Feel++ minimal build" OFF)
 
 OPTION(FEELPP_USE_GMSH_PACKAGE "Use system installed package" ON)
 
