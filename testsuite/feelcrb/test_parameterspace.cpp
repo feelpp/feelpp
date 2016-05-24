@@ -85,21 +85,53 @@ BOOST_AUTO_TEST_CASE( test1 )
     mpi::all_reduce( Environment::worldComm(), int(mysampling->size()), nSamples2, std::plus<int>() );
     BOOST_CHECK( nSamples == nSamples2 );
 
-    // logEquidistribute sampling
-    int nSampling = 230;
-    mysampling->logEquidistribute( nSampling );
-    BOOST_CHECK( mysampling->size() == nSampling );
-    for ( int k=0;k<nSampling;++k )
+    // logEquidistribute sampling (identical for all process)
+    mysampling->logEquidistribute( 230 );
+    nSamples = mysampling->size();
+    BOOST_CHECK( nSamples <= 230 );
+    for ( int k=0;k<nSamples;++k )
         for ( uint16_type d=0;d<muspace->dimension();++d)
             BOOST_CHECK( (*mysampling)[k](d) >= muMin(d) && (*mysampling)[k](d) <= muMax(d) );
+    // logEquidistribute sampling (distributed on world)
+    mysampling->equidistribute( 230, false );
+    BOOST_CHECK( mysampling->size() <= nSamples );
+    for ( int k=0;k<mysampling->size();++k )
+        for ( uint16_type d=0;d<muspace->dimension();++d)
+            BOOST_CHECK( (*mysampling)[k](d) >= muMin(d) && (*mysampling)[k](d) <= muMax(d) );
+    mpi::all_reduce( Environment::worldComm(), int(mysampling->size()), nSamples2, std::plus<int>() );
+    BOOST_CHECK( nSamples == nSamples2 );
 
-    // randomize sampling
-    nSampling = 168;
-    mysampling->randomize( nSampling );
-    BOOST_CHECK( mysampling->size() == nSampling );
-    for ( int k=0;k<nSampling;++k )
+    // logEquidistributeProduct sampling (identical for all process)
+    mysampling->logEquidistributeProduct( nSampleDir, true );
+    nSamples = mysampling->size();
+    BOOST_CHECK( nSamples == 12*5*8*3 );
+    for ( int k=0;k<nSamples;++k )
         for ( uint16_type d=0;d<muspace->dimension();++d)
             BOOST_CHECK( (*mysampling)[k](d) >= muMin(d) && (*mysampling)[k](d) <= muMax(d) );
+    // equidistributeProduct sampling (distributed on world)
+    mysampling->logEquidistributeProduct( nSampleDir, false );
+    BOOST_CHECK( mysampling->size() <= nSamples );
+    for ( int k=0;k<mysampling->size();++k )
+        for ( uint16_type d=0;d<muspace->dimension();++d)
+            BOOST_CHECK( (*mysampling)[k](d) >= muMin(d) && (*mysampling)[k](d) <= muMax(d) );
+    mpi::all_reduce( Environment::worldComm(), int(mysampling->size()), nSamples2, std::plus<int>() );
+    BOOST_CHECK( nSamples == nSamples2 );
+
+    // randomize sampling (identical for all process)
+    mysampling->randomize( 168, true, "", false );
+    nSamples = mysampling->size();
+    BOOST_CHECK( nSamples == 168 );
+    for ( int k=0;k<nSamples;++k )
+        for ( uint16_type d=0;d<muspace->dimension();++d)
+            BOOST_CHECK( (*mysampling)[k](d) >= muMin(d) && (*mysampling)[k](d) <= muMax(d) );
+    // log-randomize sampling (distributed on world)
+    mysampling->randomize( 168, false, "", true );
+    BOOST_CHECK( mysampling->size() <= nSamples );
+    for ( int k=0;k<mysampling->size();++k )
+        for ( uint16_type d=0;d<muspace->dimension();++d)
+            BOOST_CHECK( (*mysampling)[k](d) >= muMin(d) && (*mysampling)[k](d) <= muMax(d) );
+    mpi::all_reduce( Environment::worldComm(), int(mysampling->size()), nSamples2, std::plus<int>() );
+    BOOST_CHECK( nSamples == nSamples2 );
 
     // write sampling in json file
     mysampling->saveJson("mysampling.json");
@@ -148,5 +180,6 @@ BOOST_AUTO_TEST_CASE( test1 )
     auto const& muMaxRes2 = boost::get<0>( maxRes2 );
     BOOST_CHECK( muMinRes2(0) == 2 && muMinRes2(1) == 3 && muMinRes2(2) == 0 && muMinRes2(3) == 5 );
     BOOST_CHECK( muMaxRes2(0) == 6 && muMaxRes2(1) == 7 && muMaxRes2(2) == 8 && muMaxRes2(3) == 9 );
+
 }
 BOOST_AUTO_TEST_SUITE_END()
