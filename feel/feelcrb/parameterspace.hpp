@@ -350,9 +350,12 @@ public:
 
             if( theworldcomm.isMasterRank() )
             {
-                std::ifstream file ( file_name );
-                CHECK( file ) << "The file "<<file_name<<" was not found so we can't distribute the sampling on all processors\n";
-                this->readFromFile( file_name );
+                if ( !file_name.empty() )
+                {
+                    std::ifstream file ( file_name );
+                    CHECK( file ) << "The file "<<file_name<<" was not found so we can't distribute the sampling on all processors\n";
+                    this->readFromFile( file_name );
+                }
 
                 std::vector<Element> temporary_sampling;
                 for(int i=0; i<N; i++)
@@ -389,7 +392,7 @@ public:
                     {
                         if( proc_recv_sampling != master_proc )
                         {
-                            reqs[count_reqs]=theworldcomm.isend( proc_recv_sampling , tag, *this);
+                            reqs[count_reqs]=theworldcomm.isend( proc_recv_sampling , tag, /**this*/boost::serialization::base_object<super>( *this ) );
                             count_reqs++;
                             super::clear();
                         }
@@ -420,7 +423,7 @@ public:
 
             if( proc != master_proc )
             {
-                reqs[count_reqs]=theworldcomm.irecv( master_proc, tag, *this);
+                reqs[count_reqs]=theworldcomm.irecv( master_proc, tag, /**this*/boost::serialization::base_object<super>( *this ));
                 count_reqs++;
             }//not master proc
 
@@ -442,13 +445,14 @@ public:
 
                 this->clear();
 
+#if 0
                 bool generate_the_file=false;
                 std::ifstream file ( file_name );
                 if( !file || all_procs_have_same_sampling )
                 {
                     generate_the_file=true;
                 }
-#if 0
+
                 auto min = this->min();
                 auto mu_min = min.template get<0>();
                 int size = mu_min.size();
@@ -461,7 +465,7 @@ public:
 #endif
                 // fill with log Random elements from the parameter space
                 //only with one proc and then send a part of the sampling to each other proc
-                if( M_space->worldComm().isMasterRank() && generate_the_file )
+                if( M_space->worldComm().isMasterRank() /*&& generate_the_file*/ )
                 {
 
                     bool already_exist;
@@ -521,17 +525,17 @@ public:
             {
                 this->clear();
 
+#if 0
                 bool generate_the_file=false;
                 std::ifstream file ( file_name );
                 if( ! file )
                 {
                     generate_the_file=true;
                 }
+#endif
 
-                if( M_space->worldComm().isMasterRank() && generate_the_file )
+                if( M_space->worldComm().isMasterRank() /*&& generate_the_file*/ )
                 {
-                    std::vector<Element> temporary_sampling;
-
                     // fill with log Random elements from the parameter space
                     // first we fill temporary_sampling and then we distribute a part of it to each proc
                     for ( int i = 0; i < N; ++i )
@@ -725,21 +729,24 @@ public:
             {
                 if ( file_name.empty() )
                     return;
-                auto const& theworldcomm = (M_space)? M_space->worldComm() : Environment::worldComm();
-                rank_type proc = theworldcomm.globalRank();
-                rank_type total_proc = theworldcomm.globalSize();
+                //auto const& theworldcomm = (M_space)? M_space->worldComm() : Environment::worldComm();
+                //rank_type proc = theworldcomm.globalRank();
+                //rank_type total_proc = theworldcomm.globalSize();
                 //std::string real_file_name = (boost::format(file_name+"-proc%1%on%2%") %proc %total_proc ).str();
                 std::ofstream file;
                 file.open( file_name,std::ios::out );
-                element_type mu( M_space );
-                int size = mu.size();
+                //element_type mu( M_space );
+                //int size = mu.size();
+                int size = M_space->dimension();
                 int number = 0;
-                for( auto mu : *this )
+                for( auto const& mu : *this )
                 {
-                    file<<std::setprecision(15)<<" mu_"<<number<<"= [ ";
-                    for(int i=0; i<size-1; i++)
+                    file << std::setprecision(15) << " mu_"<<number<<"= [ ";
+                    for( int i=0; i<size-1; i++ )
                         file << mu[i]<<" , ";
-                    file<< mu[size-1] << " ] \n" ;
+                    if ( size > 0 )
+                        file << mu[size-1];
+                    file << " ] \n" ;
                     number++;
                 }
                 file.close();
@@ -831,37 +838,37 @@ public:
             {
                 this->clear();
 
-                bool generate_the_file=false;
-                std::ifstream file ( file_name );
-                if( ! file )
-                {
-                    generate_the_file=true;
-                }
+                uint16_type nDim = M_space->dimension();
 
-                if( M_space->worldComm().isMasterRank() && generate_the_file )
+                // define sampling size in each direction (search to be a global sampling size close to N)
+                int samplingSizeDirectionEquidistribute = math::floor( math::pow( double(N) , 1./nDim ) );
+                std::vector<size_type> samplingSizeDirection( nDim, samplingSizeDirectionEquidistribute );
+                for ( uint16_type d = 0; d < nDim;++d )
                 {
-                    // fill with log Random elements from the parameter space
-                    std::vector< Element > temporary_sampling;
-                    for ( int i = 0; i < N; ++i )
+                    ++samplingSizeDirection[d];
+                    size_type newSamplingSize = std::accumulate(samplingSizeDirection.begin(), samplingSizeDirection.end(), 1, std::multiplies<size_type>());
+                    if ( newSamplingSize > N )
                     {
-                        double factor = double( i )/( N-1 );
-                        auto mu = parameterspace_type::equidistributed( factor, M_space );
-                        if( all_procs_have_same_sampling )
-                            super::push_back( mu );
-                        else
-                            temporary_sampling.push_back( mu );
+                        --samplingSizeDirection[d];
+                        break;
                     }
+                }
+                size_type samplingSize = std::accumulate(samplingSizeDirection.begin(), samplingSizeDirection.end(), 1, std::multiplies<size_type>());
+
+                if( M_space->worldComm().isMasterRank() )
+                {
+                    this->equidistributeImpl( samplingSizeDirection );
 
                     this->writeOnFile( file_name );
-
                 }//master proc
+
                 if( all_procs_have_same_sampling )
                 {
-                    boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
+                    boost::mpi::broadcast( M_space->worldComm() , /**this*/boost::serialization::base_object<super>( *this ) , M_space->worldComm().masterRank() );
                 }
                 else
                 {
-                    this->distributeOnAllProcessors( N , file_name );
+                    this->distributeOnAllProcessors( samplingSize , file_name );
                 }//if all procs don't have  same sampling
             }
 
@@ -869,39 +876,16 @@ public:
          * \brief create a sampling with equidistributed elements
          * \param N : vector containing the number of samples on each direction
          */
-        void equidistributeProduct( std::vector<int> const&  N, bool all_procs_have_same_sampling=true, std::string const& file_name="" )
+        void equidistributeProduct( std::vector<size_type> const&  N, bool all_procs_have_same_sampling=true, std::string const& file_name="" )
         {
-            // first empty the set
+            // clear previous sampling
             this->clear();
 
-            bool generate_the_file=false;
-            std::ifstream file ( file_name );
-            if( !file || all_procs_have_same_sampling )
-            {
-                generate_the_file=true;
-            }
-
-            int number_of_directions = N.size();
-            int total_number=1;
-            for(int d=0; d<number_of_directions; d++)
-            {
-                total_number*=N[d];
-            }
+            size_type samplingSize = std::accumulate(N.begin(), N.end(), 1, std::multiplies<size_type>());
 
             if( M_space->worldComm().isMasterRank() )
             {
-
-                //contains values of parameters on each direction
-                std::vector< std::vector< double > > components;
-                components.resize( number_of_directions );
-
-                for(int direction=0; direction<number_of_directions; direction++)
-                {
-                    std::vector<double> coeff_vector = parameterspace_type::equidistributeInDirection( M_space , direction , N[direction] );
-                    components[direction] = coeff_vector ;
-                }
-
-                generateElementsProduct( components );
+                this->equidistributeImpl( N );
 
                 this->writeOnFile( file_name );
 
@@ -909,11 +893,11 @@ public:
 
             if( all_procs_have_same_sampling )
             {
-                boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
+                boost::mpi::broadcast( M_space->worldComm() , /**this*/boost::serialization::base_object<super>( *this ) , M_space->worldComm().masterRank() );
             }
             else
             {
-                this->distributeOnAllProcessors( total_number , file_name );
+                this->distributeOnAllProcessors( samplingSize , file_name );
             }
         }
 
@@ -925,19 +909,21 @@ public:
         min( bool check=true ) const
             {
                 element_type mumin( M_space );
-                mumin = M_space->max();
+                //mumin = M_space->max();
 
-                element_type mu( M_space );
+                //element_type mu( M_space );
                 int index = 0;
                 int i = 0;
-                double mumin_norm = mumin.norm();
+                double mumin_norm = 1e30;//mumin.norm();
+
                 for( auto const& mu : *this )
                 {
-                    if ( mu.norm() < mumin_norm  )
+                    double curNorm = mu.norm();
+                    if ( curNorm < mumin_norm  )
                     {
                         mumin = mu;
                         index = i;
-                        mumin_norm = mumin.norm();
+                        mumin_norm = curNorm;
                     }
 
                     ++i;
@@ -951,11 +937,13 @@ public:
                                  max_world );
                 auto it_min = std::min_element( max_world.begin() , max_world.end() );
                 int proc_having_good_mu = it_min - max_world.begin();
+
                 auto tuple = boost::make_tuple( mumin , index );
                 boost::mpi::broadcast( M_space->worldComm() , tuple , proc_having_good_mu );
 
                 mumin = tuple.template get<0>();
                 index = tuple.template get<1>();
+                mumin.setParameterSpace( M_space );
 
                 if( check )
                     mumin.check();
@@ -970,12 +958,12 @@ public:
         max( bool check=true ) const
             {
                 element_type mumax( M_space );
-                mumax = M_space->min();
+                //mumax = M_space->min();
 
-                element_type mu( M_space );
+                //element_type mu( M_space );
                 int index = 0;
                 int i = 0;
-                double mumax_norm = mumax.norm();
+                double mumax_norm = -1e30;//mumax.norm();
                 for( auto const& mu : *this )
                 {
                     if ( mu.norm() > mumax_norm  )
@@ -1001,6 +989,7 @@ public:
 
                 mumax = tuple.template get<0>();
                 index = tuple.template get<1>();
+                mumax.setParameterSpace( M_space );
 
                 if( check )
                     mumax.check();
@@ -1071,7 +1060,7 @@ public:
          */
         void saveJson( std::string const& filename, bool addParameterSpaceInfo = true )
             {
-                if ( M_space->worldComm().isMasterRank() )
+                //if ( M_space->worldComm().isMasterRank() )
                 {
                     boost::property_tree::ptree ptree;
                     this->updatePropertyTree( ptree, addParameterSpaceInfo );
@@ -1111,6 +1100,60 @@ public:
     private:
         Sampling() {}
     private:
+        void equidistributeImpl( std::vector<size_type> const& samplingSizeDirection )
+            {
+                this->clear();
+
+                uint16_type nDim = M_space->dimension();
+                CHECK( samplingSizeDirection.size() == nDim ) << "invalid size, must be equal " << samplingSizeDirection.size() << " vs " << nDim;
+                size_type samplingSize = std::accumulate(samplingSizeDirection.begin(), samplingSizeDirection.end(), 1, std::multiplies<size_type>());
+                //std::cout << "samplingSize  : " << samplingSize << "\n";
+
+                // compute sampling in each direction
+                typename parameterspace_type::element_type mymu( M_space );
+
+                std::vector<std::vector<double> > distribution( nDim );
+                for ( uint16_type d = 0; d < nDim;++d )
+                {
+                    distribution[d] = parameterspace_type::equidistributeInDirection( M_space,d,samplingSizeDirection[d] );
+                    mymu(d) = distribution[d][0];
+                }
+
+                // store information for next process
+                std::vector<size_type> reuseParam( nDim );
+                reuseParam[nDim-1] = 1;
+                for ( int d = nDim-2; d >= 0;--d )
+                {
+                    reuseParam[d] = samplingSizeDirection[d+1]*reuseParam[d+1];
+                }
+
+                size_type samplingSize2 = samplingSizeDirection[0]*reuseParam[0];
+                CHECK( samplingSize == samplingSize2 ) << "invalid data, must be equal : " << samplingSize << " vs " << samplingSize2;
+
+                // update sampling
+                std::vector<size_type> currentParam( nDim,0 );
+                std::vector<size_type> countReuseParam( nDim,0 );
+                super::resize( samplingSize, mymu );
+                for ( size_type k=0;k<samplingSize;++k )
+                {
+                    super::operator[](k) = mymu;
+
+                    for ( uint16_type d = 0; d < (nDim);++d )
+                    {
+                        ++countReuseParam[d];
+                        if ( countReuseParam[d] == reuseParam[d] )
+                        {
+                            countReuseParam[d] = 0;
+                            ++currentParam[d];
+                            if ( currentParam[d] >= samplingSizeDirection[d] )
+                                currentParam[d] = 0;
+                            mymu(d) = distribution[d][currentParam[d]];
+                        }
+                    }
+                }
+
+            }
+
         friend class boost::serialization::access;
         template<class Archive>
         void save( Archive & ar, const unsigned int version ) const
@@ -1257,6 +1300,14 @@ public:
     /** @name  Mutators
      */
     //@{
+
+    /**
+     * set worldcomm
+     */
+    void setWorldComm( WorldComm const& worldComm )
+        {
+            M_worldComm = worldComm;
+        }
 
     /**
      * set the parameter space dimension
@@ -1521,11 +1572,17 @@ public:
 
         double min = min_element(direction);
         double max = max_element(direction);
-
-        for(int i=0; i<N; i++)
+        if ( N > 1 )
         {
-            double factor = (double)(i)/(N-1);
-            result[i] = min+factor*( max-min );
+            for(int i=0; i<N; i++)
+            {
+                double factor = (double)(i)/(N-1);
+                result[i] = min+factor*( max-min );
+            }
+        }
+        else if ( N == 1 )
+        {
+            result[0] = (min+max)/2.;
         }
 
         return result;
@@ -1563,15 +1620,19 @@ private:
     template<class Archive>
     void save( Archive & ar, const unsigned int version ) const
         {
+            ar & M_nDim;
             ar & M_min;
             ar & M_max;
+            ar & M_parameterNames;
         }
 
     template<class Archive>
     void load( Archive & ar, const unsigned int version )
         {
+            ar & M_nDim;
             ar & M_min;
             ar & M_max;
+            ar & M_parameterNames;
         }
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
