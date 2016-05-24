@@ -33,7 +33,6 @@ BOOST_AUTO_TEST_SUITE( parameterspace )
 BOOST_AUTO_TEST_CASE( test1 )
 {
     using namespace Feel;
-
     typedef ParameterSpace</*4*/> parameterspace_type;
     typedef typename parameterspace_type::element_type parameter_type;
 
@@ -52,16 +51,42 @@ BOOST_AUTO_TEST_CASE( test1 )
     muspace->setParameterName( 3, "myparamD" );
 
     auto mysampling = muspace->sampling();
-    // equidistribute sampling
-    int nSampling = 120;
-    mysampling->equidistribute( nSampling );
-    BOOST_CHECK( mysampling->size() == nSampling );
-    for ( int k=0;k<nSampling;++k )
+    // equidistribute sampling (identical for all process)
+    mysampling->equidistribute( 120, true );
+    int nSamples = mysampling->size();
+    BOOST_CHECK( nSamples <= 120 );
+    for ( int k=0;k<nSamples;++k )
         for ( uint16_type d=0;d<muspace->dimension();++d)
             BOOST_CHECK( (*mysampling)[k](d) >= muMin(d) && (*mysampling)[k](d) <= muMax(d) );
+    // equidistribute sampling (distributed on world)
+    mysampling->equidistribute( 120, false );
+    BOOST_CHECK( mysampling->size() <= nSamples );
+    for ( int k=0;k<mysampling->size();++k )
+        for ( uint16_type d=0;d<muspace->dimension();++d)
+            BOOST_CHECK( (*mysampling)[k](d) >= muMin(d) && (*mysampling)[k](d) <= muMax(d) );
+    int nSamples2 = 0;
+    mpi::all_reduce( Environment::worldComm(), int(mysampling->size()), nSamples2, std::plus<int>() );
+    BOOST_CHECK( nSamples == nSamples2 );
+
+    // equidistributeProduct sampling (identical for all process)
+    std::vector<size_type> nSampleDir = { 12,5,8,3 };
+    mysampling->equidistributeProduct( nSampleDir, true );
+    nSamples = mysampling->size();
+    BOOST_CHECK( nSamples == 12*5*8*3 );
+    for ( int k=0;k<nSamples;++k )
+        for ( uint16_type d=0;d<muspace->dimension();++d)
+            BOOST_CHECK( (*mysampling)[k](d) >= muMin(d) && (*mysampling)[k](d) <= muMax(d) );
+    // equidistributeProduct sampling (distributed on world)
+    mysampling->equidistributeProduct( nSampleDir, false );
+    BOOST_CHECK( mysampling->size() <= nSamples );
+    for ( int k=0;k<mysampling->size();++k )
+        for ( uint16_type d=0;d<muspace->dimension();++d)
+            BOOST_CHECK( (*mysampling)[k](d) >= muMin(d) && (*mysampling)[k](d) <= muMax(d) );
+    mpi::all_reduce( Environment::worldComm(), int(mysampling->size()), nSamples2, std::plus<int>() );
+    BOOST_CHECK( nSamples == nSamples2 );
 
     // logEquidistribute sampling
-    nSampling = 230;
+    int nSampling = 230;
     mysampling->logEquidistribute( nSampling );
     BOOST_CHECK( mysampling->size() == nSampling );
     for ( int k=0;k<nSampling;++k )
@@ -80,11 +105,10 @@ BOOST_AUTO_TEST_CASE( test1 )
     mysampling->saveJson("mysampling.json");
 
     // create another sampling
-    nSampling = 1249;
-    mysampling->equidistribute( nSampling );
+    mysampling->equidistribute( 1249 );
     auto mysampling2 = muspace->sampling();
     mysampling2->setSuperSampling( mysampling );
-    for ( int k=0;k<nSampling;++k )
+    for ( int k=0;k<mysampling->size();++k )
     {
         if ( k%3 != 0 ) continue;
         mysampling2->push_back( (*mysampling)[k] );
@@ -92,7 +116,7 @@ BOOST_AUTO_TEST_CASE( test1 )
 
     // test complement
     auto mysamplingComplement = mysampling2->complement();
-    BOOST_CHECK( nSampling == ( mysampling2->size() + mysamplingComplement->size() ) );
+    BOOST_CHECK( mysampling->size() == ( mysampling2->size() + mysamplingComplement->size() ) );
 
     // test searchNearestNeighbors
     auto muSearch = muspace->element();
@@ -103,5 +127,26 @@ BOOST_AUTO_TEST_CASE( test1 )
     BOOST_CHECK( mysamplingNeighbors->size() == 5 );
     mysamplingNeighbors->saveJson("mysamplingNeighbors.json");
 
+    // min/max (identical for all process)
+    std::vector<size_type> nSampleDir2 = { 5, 5, 13, 5 };
+    mysampling->equidistributeProduct( nSampleDir2, true );
+    auto minRes = mysampling->min( true );
+    auto maxRes = mysampling->max( true );
+    auto const& muMinRes = boost::get<0>( minRes );
+    auto const& muMaxRes = boost::get<0>( maxRes );
+    int indexMinRes = boost::get<1>( minRes );
+    int indexMaxRes = boost::get<1>( maxRes );
+    BOOST_CHECK( muMinRes(0) == 2 && muMinRes(1) == 3 && muMinRes(2) == 0 && muMinRes(3) == 5 );
+    BOOST_CHECK( muMaxRes(0) == 6 && muMaxRes(1) == 7 && muMaxRes(2) == 8 && muMaxRes(3) == 9 );
+    BOOST_CHECK( muMinRes == mysampling->at( indexMinRes ) );
+    BOOST_CHECK( muMaxRes == mysampling->at( indexMaxRes ) );
+    // min/max (distributed on world)
+    mysampling->equidistributeProduct( nSampleDir2, false );
+    auto minRes2 = mysampling->min( true );
+    auto maxRes2 = mysampling->max( true );
+    auto const& muMinRes2 = boost::get<0>( minRes2 );
+    auto const& muMaxRes2 = boost::get<0>( maxRes2 );
+    BOOST_CHECK( muMinRes2(0) == 2 && muMinRes2(1) == 3 && muMinRes2(2) == 0 && muMinRes2(3) == 5 );
+    BOOST_CHECK( muMaxRes2(0) == 6 && muMaxRes2(1) == 7 && muMaxRes2(2) == 8 && muMaxRes2(3) == 9 );
 }
 BOOST_AUTO_TEST_SUITE_END()
