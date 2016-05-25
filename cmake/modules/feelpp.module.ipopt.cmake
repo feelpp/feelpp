@@ -112,4 +112,18 @@ if ( FEELPP_ENABLE_IPOPT )
   #SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
   #SET(FEELPP_HAS_IPOPT 1)
 
+  #
+  # Metis
+  #
+  #INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/contrib/ipopt/Ipopt/src)
+
+  message(status "[feelpp] use contrib/ipopt : ${CMAKE_SOURCE_DIR}/contrib/ipopt/")
+  SET(FEELPP_HAS_IPOPT 1)
+  ADD_DEFINITIONS( -DFEELPP_HAS_IPOPT )
+  #ADD_DEFINITIONS( -fPIC )
+  
+  SET(FEELPP_LIBRARIES feelpp_ipopt ${FEELPP_LIBRARIES})
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Ipopt/Contrib" )
+  add_subdirectory(contrib/ipopt)
+
 endif()

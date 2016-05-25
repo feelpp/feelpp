@@ -418,7 +418,8 @@ protected:
     mutable bool M_correct_RB_SER;
     bool M_restart;
     double M_greedy_maxerr;
-
+    double M_greedy_rbmaxerr; // stores maximum value of rb approximation error indicator (only for SER with error estimation)
+    bool M_criterion;
 protected:
 
 private:
@@ -532,6 +533,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     vector_type maxerr( trainset->size() );
     maxerr.setZero();
     int index = 0;
+    int index_criterion = 0;
     DVLOG(2) << "Compute best fit M=" << __M << "\n";
     vector_type rhs( __M );
 
@@ -549,17 +551,35 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     else
         subtrainset = trainset;
 
+    std::vector<bool> error_criterion(subtrainset->size(), true);
+    M_criterion=true;
+    double max_rb_error = 0.0;
+    bool ser = (ioption(_name="ser.eim-frequency") != 0);
+    double rtol = doption(_name="ser.eim-greedy-rtol");
+    std::vector<vectorN_type> uN; //eventually contains reduced basis approx.
     for( auto mu : *subtrainset )
     {
         DVLOG(2) << "compute best fit check mu...\n";
         mu.check();
         //LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
-
         timer.restart();
-        if( ioption(_name="ser.eim-frequency") != 0 ) //Use SER
+
+        if( ser && ser_error_estimation && doption(_name="ser.eim-greedy-rtol")!=0 )
         {
-            if( boption(_name="ser.use-rb-in-eim-mu-selection") )
-                solution = M_model->computeRbExpansion( mu ); //RB
+            // Compute the error indicator with mu
+            auto riesz = M_model->RieszResidualNorm( mu );
+            double error_indicator = riesz.template get<0>();
+            uN = riesz.template get<1>();
+            if( error_indicator > max_rb_error ) // Update the max error indicator to be used at the next step
+                max_rb_error = error_indicator;
+            if( M_greedy_rbmaxerr != 0 ) // Takes whole sampling with the roughest RB approx (greedy_maxerr uninitialized)
+                error_criterion[index] = error_indicator/M_greedy_rbmaxerr < rtol;
+        }
+
+        if( ser ) //Use SER
+        {
+            if( boption(_name="ser.use-rb-in-eim-mu-selection") && error_criterion[index] )
+                solution = M_model->computeRbExpansion( mu, uN ); //RB
             else
                 solution = M_model->computePfem( mu ); //PFEM
         }
@@ -576,19 +596,37 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
 
         LOG_ASSERT( index < subtrainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << subtrainset->size() << "\n";
         maxerr( index ) = resmax.template get<0>();
+        if( error_criterion[index] )
+            index_criterion++;
         index++;
     }
+
+    if( doption(_name="ser.eim-greedy-rtol")!=0 )
+    {
+        M_greedy_rbmaxerr = max_rb_error; // Update the maximum error indicator value for the next basis
+        Feel::cout << "[computeBestFit] updated M_greedy_rbmaxerr = " << M_greedy_rbmaxerr << std::endl;
+    }
+
     if( Environment::worldComm().isMasterRank() )
     {
         std::cout << "-- Mean time to solve(mu) : " << time_solve/trainset->size() << std::endl;
         std::cout << "-- Mean time to compute resmax : " << time_exp/trainset->size() << std::endl;
+        if( doption(_name="ser.eim-greedy-rtol")!=0 )
+        {
+            std::cout << "-- Number of parameters selected to compute resmax : " << index << "/" << subtrainset->size() << "\n";
+            std::cout << "-- Number of parameters which satistify the criterion : " << index_criterion << "/" << subtrainset->size() << "\n";
+        }
     }
 
-    LOG_ASSERT( index == subtrainset->size() ) << "Invalid index " << index << " should be equal to trainset size = " << subtrainset->size() << "\n";
+    //LOG_ASSERT( index == subtrainset->size() ) << "Invalid index " << index << " should be equal to trainset size = " << subtrainset->size() << "\n";
+    LOG_ASSERT( index <= subtrainset->size() ) << "Invalid index " << index << " should be inferior to trainset size = " << subtrainset->size() << "\n";
     auto err = maxerr.array().abs().maxCoeff( &index );
 
     if( Environment::worldComm().isMasterRank() )
         std::cout << "err=" << err << " reached at index " << index << " and mu=" << subtrainset->at(index) << "\n";
+    if( ! error_criterion[index] )
+        M_criterion = false;
+
     return boost::make_tuple( err, subtrainset->at(index) );
 }
 
@@ -645,6 +683,7 @@ EIM<ModelType>::offline()
 
         // min element in Dmu to start with (in // each proc have the same element)
         mu = M_model->parameterSpace()->max();
+        mu.check();
 
         DVLOG( 2 ) << "mu ( of size "<<mu.size()<<"): \n"<<mu;
 
@@ -726,6 +765,8 @@ EIM<ModelType>::offline()
             std::cout<<" -- interpolation matrix filled in "<<time<<"s"<<std::endl;
             std::cout<<" -- time for this basis : "<<time_<<"s"<<std::endl;
         }
+
+        M_greedy_rbmaxerr = 0;
     }//if M_restart
     else
     {
@@ -838,7 +879,7 @@ EIM<ModelType>::offline()
         if( ioption(_name="ser.eim-frequency") != 0  ) // SER
         {
             // SER : choose between RB and PFEM approx
-            if( boption(_name="ser.use-rb-in-eim-basis-build") )
+            if( boption(_name="ser.use-rb-in-eim-basis-build") && M_criterion )
                 solution = M_model->computeRbExpansion( mu ); // Use current RB approx
             else
                 solution = M_model->computePfem( mu ); // Use parametric FE with current affine decomposition
@@ -1350,8 +1391,9 @@ public:
     virtual vector_type evaluateExpressionAtInterpolationPoints(model_solution_type const &solution, parameter_type const& mu, int M)=0;
     virtual vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M)=0;
     virtual model_solution_type computeRbExpansion( parameter_type const& mu)=0;
+    virtual model_solution_type computeRbExpansion( parameter_type const& mu, std::vector<vectorN_type> uN)=0;
     virtual model_solution_type computePfem( parameter_type const& mu )=0;
-    virtual double RieszResidualNorm( parameter_type const& mu )=0;
+    virtual boost::tuple<double,std::vector<vectorN_type> > RieszResidualNorm( parameter_type const& mu )=0;
     virtual sampling_ptrtype createSubTrainset( sampling_ptrtype const& trainset, int method )=0;
 
     po::variables_map M_vm;
@@ -2064,44 +2106,34 @@ public:
         //Compute RB approx (online)
         std::vector<vectorN_type> uN, uNdu, uNold, uNduold;
         auto o = M_crb->lb( M_crb->dimension(), mu, uN, uNdu , uNold, uNduold );
+        return computeRbExpansion( mu, uN );
+    }
+
+    model_solution_type computeRbExpansion( parameter_type const& mu, std::vector<vectorN_type> uN)
+    {
+        if( this->RBbuilt() )
+            return computeRbExpansion( mu, uN, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
+        else
+            return M_model->solve( mu );
+    }
+    model_solution_type computeRbExpansion( parameter_type const& mu, std::vector<vectorN_type> uN, boost::mpl::bool_<false>)
+    {
+        return M_model->functionSpace()->element();
+    }
+    model_solution_type computeRbExpansion( parameter_type const& mu, std::vector<vectorN_type> uN, boost::mpl::bool_<true>)
+    {
         int size = uN.size();
-
-        // Compute RB expansion from uN
-        model_solution_type sol = Feel::expansion( M_crbmodel->rBFunctionSpace()->primalRB(), uN[size-1] , M_crb->dimension());
-
-#if 0 // RB correction is not yet available
-        // Correct RB from Riesz representation of RB residual is asked
-        if( this->getRbCorrection() )
+        if( size!= 0 )
         {
-            if( !boption(_name="ser.use-greedy-in-rb") && Environment::worldComm().isMasterRank() )
-                std::cout << "Correction terms are not appliable on RB expansion."
-                          << "Please check that error estimation is used (option ser.corrected-rb) has to be set to true." << std::endl;
+            // Compute RB expansion from uN
+            model_solution_type sol = Feel::expansion( M_crbmodel->rBFunctionSpace()->primalRB(), uN[size-1] , M_crb->dimension());
 
-            // Compute correction terms
-            auto correction = M_crb->computeRieszResidual( mu, uN );
-            auto min_correction = correction->min();
-            auto max_correction = correction->max();
-            if( Environment::worldComm().isMasterRank() )
-                std::cout << "Correction min = " << min_correction
-                          << ", max = " << max_correction << std::endl;
-
-            // Add correction term to RB expansion
-            size_type s = sol.localSize();
-            size_type start = sol.firstLocalIndex();
-            for ( size_type i = 0; i < s; ++i )
-            {
-                if ( !sol.localIndexIsGhost( start + i ) )
-                {
-                    double correction_value = correction->operator()(start + i);
-                    sol.add( start + i, correction_value );
-                }
-            }
+            this->M_rb_online_iterations.push_back( M_crb->online_iterations().first );
+            this->M_rb_online_increments.push_back( M_crb->online_iterations().second );
+            return sol;
         }
-#endif
-
-        this->M_rb_online_iterations.push_back( M_crb->online_iterations().first );
-        this->M_rb_online_increments.push_back( M_crb->online_iterations().second );
-        return sol;
+        else
+            return computeRbExpansion( mu );
     }
 
     /* computePfem returns PFEM solution (FE with affine decomposition) */
@@ -2124,20 +2156,24 @@ public:
             return M_crbmodel->solveFemUsingAffineDecompositionFixedPoint( mu );
     }
 
-    double RieszResidualNorm( parameter_type const& mu )
+    boost::tuple<double,std::vector<vectorN_type> > RieszResidualNorm( parameter_type const& mu )
     {
         if( this->RBbuilt() )
             return RieszResidualNorm( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
-            return 0;
+            return boost::make_tuple(0,std::vector<vectorN_type>());
     }
-    double RieszResidualNorm( parameter_type const& mu, boost::mpl::bool_<false>)
+    boost::tuple<double,std::vector<vectorN_type> > RieszResidualNorm( parameter_type const& mu, boost::mpl::bool_<false>)
     {
-        return 0;
+        return boost::make_tuple(0,std::vector<vectorN_type>());
     }
-    double RieszResidualNorm( parameter_type const& mu, boost::mpl::bool_<true>)
+    boost::tuple<double,std::vector<vectorN_type> > RieszResidualNorm( parameter_type const& mu, boost::mpl::bool_<true>)
     {
-        return M_crb->computeRieszResidualNorm( mu );
+        //Compute RB approx (online)
+        std::vector<vectorN_type> uN, uNdu, uNold, uNduold;
+        auto o = M_crb->lb( M_crb->dimension(), mu, uN, uNdu , uNold, uNduold );
+        auto error = M_crb->computeRieszResidualNorm( mu, uN );
+        return boost::make_tuple( error, uN );
     }
 
     sampling_ptrtype createSubTrainset( sampling_ptrtype const& trainset, int method )
@@ -2150,7 +2186,7 @@ public:
         int i=0;
         for( auto mu : *trainset )
         {
-            norm[i] = RieszResidualNorm( mu );
+            norm[i] = RieszResidualNorm( mu ).template get<0>();
             i++;
         }
         auto min = min_element(norm.begin(), norm.end());
