@@ -2448,7 +2448,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
 {
     tic();
     generateDofPoints( M, buildMinimalParallel, mpl::bool_<is_mortar>() );
-
     toc("DofTable::generateDofPoints", FLAGS_v > 0 );
 
 }
