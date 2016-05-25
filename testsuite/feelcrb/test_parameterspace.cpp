@@ -182,4 +182,33 @@ BOOST_AUTO_TEST_CASE( test1 )
     BOOST_CHECK( muMaxRes2(0) == 6 && muMaxRes2(1) == 7 && muMaxRes2(2) == 8 && muMaxRes2(3) == 9 );
 
 }
+BOOST_AUTO_TEST_CASE( test2 )
+{
+    using namespace Feel;
+    typedef ParameterSpace</*4*/> parameterspace_type;
+    typedef typename parameterspace_type::element_type parameter_type;
+
+    auto muspace = parameterspace_type::New(4);
+    auto muMin = muspace->element();
+    muMin << 2,3,-4,5;
+    auto muMax = muspace->element();
+    muMax << 8,7,-2,3;
+    muspace->setMin( muMin );
+    muspace->setMax( muMax );
+    muspace->setParameterName( 0, "myparamA" );
+    muspace->setParameterName( 1, "myparamB" );
+    muspace->setParameterName( 2, "myparamC" );
+    muspace->setParameterName( 3, "myparamD" );
+    muspace->saveJson("test2_muspace.json");
+
+    auto muspaceReloaded = parameterspace_type::New("test2_muspace.json");
+    muspaceReloaded->saveJson("test2_muspaceReloaded.json");
+    BOOST_CHECK( muspace->dimension() == muspaceReloaded->dimension() );
+    for (int d=0;d<muspace->dimension();++d )
+    {
+        BOOST_CHECK_CLOSE( muspace->min()(d),muspaceReloaded->min()(d),1e-9 );
+        BOOST_CHECK( muspace->parameterName(d) == muspaceReloaded->parameterName(d) );
+    }
+
+}
 BOOST_AUTO_TEST_SUITE_END()
