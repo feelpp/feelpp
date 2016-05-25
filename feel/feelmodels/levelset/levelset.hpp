@@ -302,8 +302,8 @@ public :
 protected:
     //--------------------------------------------------------------------//
     // Levelset data update functions
-    void updateHeavyside();
     void updateDirac();
+    void updateHeavyside();
     void updateMass();
 
     void updateMarkerDirac();

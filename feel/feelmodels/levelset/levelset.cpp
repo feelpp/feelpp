@@ -73,11 +73,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSet(
 
     __iter=0;
 
-    M_phi = M_spaceLS->elementPtr();
-    M_phio = M_spaceLS->elementPtr();
-    M_phinl=M_spaceLS->elementPtr();
-    M_H = M_spaceLS->elementPtr();
-    M_dirac = M_spaceLS->elementPtr();
+    M_phi = M_spaceLevelSet->elementPtr();
+    M_phio = M_spaceLevelSet->elementPtr();
+    M_phinl=M_spaceLevelSet->elementPtr();
+    M_heaviside = M_spaceLevelSet->elementPtr();
+    M_dirac = M_spaceLevelSet->elementPtr();
 
 #if defined (LEVELSET_CONSERVATIVE_ADVECTION)
     if (M_discrMethod==CN_CONSERVATIVE)
@@ -103,9 +103,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
     M_spaceP0 = spaceP0_type::New(_mesh=M_mesh, _periodicity=periodicity(NoPeriodicity()) );
     M_spaceLSVec = spaceLSVec_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity) );
     if (M_advecstabmethod == CIP)
-        M_spaceLS = space_levelset_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity), _extended_doftable=std::vector<bool>(1,true) );
+        M_spaceLevelSet = space_levelset_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity), _extended_doftable=std::vector<bool>(1,true) );
     else
-        M_spaceLS = space_levelset_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity) );
+        M_spaceLevelSet = space_levelset_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity) );
 
     //  -------  backends ------
     M_backend_advrea = backend(_name="ls-advec");
@@ -113,14 +113,14 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 
     // ---------- advection -----------
     LOG(INFO)<<"start creating advection for level set"<<std::endl;
-    M_advection = advection_type::New( M_spaceLS, M_backend_advrea, M_advecstabmethod, option(prefixvm(M_prefix,"coeff-stab")).template as<double>() );
+    M_advection = advection_type::New( M_spaceLevelSet, M_backend_advrea, M_advecstabmethod, option(prefixvm(M_prefix,"coeff-stab")).template as<double>() );
     LOG(INFO)<<"end creating advection for level set"<<std::endl;
 
     if ( (M_reinitmethod == HJ) || (strategyBeforeFm==HJ_EQ) )
     {
         LOG(INFO)<<"start creating advection for hamilton jacobi"<<std::endl;
         auto backend_reinit_hj = backend(_name="ls-hj-reinit");
-        M_advection_hj = advection_type::New( M_spaceLS, backend_reinit_hj, SUPG, option( prefixvm(M_prefix,"hj-coeff-stab")).template as<double>() );
+        M_advection_hj = advection_type::New( M_spaceLevelSet, backend_reinit_hj, SUPG, option( prefixvm(M_prefix,"hj-coeff-stab")).template as<double>() );
         LOG(INFO)<<"end creating advection for hamilton jacobi"<<std::endl;
     }
 
@@ -134,7 +134,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 #if (LEVELSET_CONSERVATIVE_ADVECTION == 1)
             M_spaceLSCorr = spaceLSCorr_type::New(M_mesh);
 #else
-            M_spaceLSCorr = M_spaceLS;
+            M_spaceLSCorr = M_spaceLevelSet;
 #endif
 
             // to solve non linear problem for correction
@@ -148,11 +148,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 
             // to compute conservative heavyside function
             backend_h = backend(_name="ls-nl-advec-h");
-            D_h = backend_h->newMatrix(M_spaceLS, M_spaceLS );
-            form2( M_spaceLS, M_spaceLS, D_h);
+            D_h = backend_h->newMatrix(M_spaceLevelSet, M_spaceLevelSet );
+            form2( M_spaceLevelSet, M_spaceLevelSet, D_h);
 
-            F_h = backend_h->newVector(M_spaceLS);
-            form1(M_spaceLS, F_h);
+            F_h = backend_h->newVector(M_spaceLevelSet);
+            form1(M_spaceLevelSet, F_h);
 
             // might be an option (one more !)
             k_correction = (LEVELSET_CONSERVATIVE_ADVECTION==1) ? 0. : M_epsilon;
@@ -161,7 +161,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 
     // --------------- projectors ---------
     LOG(INFO)<<"start creating projectors for level set"<<std::endl;
-    M_l2p = projector(M_spaceLS, M_spaceLS, backend(_name="ls-l2p") );
+    M_l2p = projector(M_spaceLevelSet, M_spaceLevelSet, backend(_name="ls-l2p") );
     M_l2pVec = projector(M_spaceLSVec, M_spaceLSVec, backend(_name="ls-l2pVec") );
     LOG(INFO)<<"end creating projectors for level set"<<std::endl;
 
@@ -220,9 +220,9 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::circleShape(double r0, double x0, double y0, double z0)
 {
-    auto shape = M_spaceLS->elementPtr();
+    auto shape = M_spaceLevelSet->elementPtr();
 
-    *shape = vf::project(M_spaceLS, elements(M_mesh),
+    *shape = vf::project(M_spaceLevelSet, elements(M_mesh),
                          sqrt((Px()-x0)*(Px()-x0)
                               + (Py()-y0)*(Py()-y0)
                               + (Pz()-z0)*(Pz()-z0)) - r0 );
@@ -233,8 +233,8 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::ellipseShape(double a_ell, double b_ell, double x0, double y0, double z0)
 {
-    auto shape = M_spaceLS->elementPtr();
-    *shape = vf::project(M_spaceLS, elements(M_mesh),
+    auto shape = M_spaceLevelSet->elementPtr();
+    *shape = vf::project(M_spaceLevelSet, elements(M_mesh),
                          sqrt((Px()-x0)*(Px()-x0) / (a_ell * a_ell)
                               + (Py()-y0)*(Py()-y0) / (b_ell * b_ell)
                               + (Pz()-z0)*(Pz()-z0) / (b_ell * b_ell) ) - 1 );
@@ -262,7 +262,7 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 inline const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::H()
 {
-    return M_H;
+    return M_heaviside;
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -328,7 +328,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::getStrategyBeforeFm()
 }
 
 
-
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::setUseMarker2AsMarkerDoneFmm(bool value)
@@ -341,6 +340,93 @@ void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::setThicknessInterface( double value )
 {
     M_epsilon = value;
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDirac()
+{
+    // derivative of Heavyside function
+    auto eps = this->thicknessInterface();
+
+    if (M_useRegularPhi)
+    {
+        auto psi = idv(M_phi) / sqrt( gradv(M_phi) * trans(gradv(M_phi)) );
+        auto D_expr = vf::chi( psi<-eps )*vf::constant(0.0)
+            +
+            vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
+            1/(2*eps) *( 1 + cos(pi*psi/eps) )
+            +
+            vf::chi(psi>eps)*vf::constant(0.0);
+
+        if (boption(_name=prefixvm(M_prefix,"h-d-nodal-proj")))
+            *M_dirac = vf::project( M_spaceLevelSet, elements(M_mesh), D_expr );
+        else
+            *M_dirac = M_l2p->project(D_expr);
+    }
+    else
+    {
+        auto psi = idv(M_phi) ;
+        auto D_expr = vf::chi( psi<-eps )*vf::constant(0.0)
+            +
+            vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
+            1/(2*eps) *( 1 + cos(pi*psi/eps) )
+            +
+            vf::chi(psi>eps)*vf::constant(0.0);
+
+        if (boption(_name=prefixvm(M_prefix,"h-d-nodal-proj")))
+            *M_dirac = vf::project( M_spaceLevelSet, elements(M_mesh), D_expr );
+        else
+            *M_dirac = M_l2p->project(D_expr);
+    }
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateHeaviside()
+{ 
+    auto eps = this->thicknessInterface();
+
+    if (useRegularPhi)
+    {
+        auto psi = idv(M_phi) / vf::sqrt( gradv(M_phi) * trans(gradv(M_phi)) );
+        auto H_expr = vf::chi( psi<-eps )*vf::constant(0.0)
+            +
+            vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
+            1/2*(1 + psi/eps + 1/pi*vf::sin( pi*psi/eps ) )
+            +
+            vf::chi(psi>eps)*vf::constant(1.0);
+
+        if (boption(_name=prefixvm(M_prefix,"h-d-nodal-proj")))
+            *M_heaviside = vf::project(M_spaceLevelSet, elements(M_mesh), H_expr);
+        else
+            *M_heaviside = M_l2p->project(H_expr);
+    }
+    else
+    {
+        auto psi = idv(M_phi);
+        auto H_expr = vf::chi( psi<-eps )*vf::constant(0.0)
+            +
+            vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
+            1/2*(1 + psi/eps + 1/pi*vf::sin( pi*psi/eps ) )
+            +
+            vf::chi(psi>eps)*vf::constant(1.0);
+
+        if (boption(_name=prefixvm(M_prefix,"h-d-nodal-proj")))
+            *M_heaviside = vf::project(M_spaceLevelSet, elements(M_mesh), H_expr);
+        else
+            *M_heaviside = M_l2p->project(H_expr);
+    }
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMass()
+{
+    M_mass = integrate(
+            _range=elements(M_mesh),
+            _expr=(1-idv(this->heaviside())) ).evaluate()(0,0);
+            //_expr=vf::chi( idv(M_phi)<0.0) ).evaluate()(0,0); // gives very noisy results
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -399,7 +485,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerHeaviside(bool invert, bool cut_at
         bool mark_elt = false;
         for (int j=0; j<ndofv; j++)
         {
-            if ( std::abs( M_H->localToGlobal(it_elt->id(), j, 0) ) > cut )
+            if ( std::abs( M_heaviside->localToGlobal(it_elt->id(), j, 0) ) > cut )
             {
                 mark_elt = true;
                 break;
@@ -424,7 +510,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
     auto en_elt = M_mesh->endElementWithProcessId(M_mesh->worldComm().localRank());
     if (it_elt == en_elt) return;
 
-    auto prod = vf::project(M_spaceLS, elements(M_mesh),
+    auto prod = vf::project(M_spaceLevelSet, elements(M_mesh),
                             idv(M_phio) * idv(M_phi) );
 
 
