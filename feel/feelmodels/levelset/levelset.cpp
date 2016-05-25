@@ -343,6 +343,148 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::setThicknessInterface( double value )
     M_epsilon = value;
 }
 
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerDirac()
+{
+    const int ndofv = space_levelset_type::fe_type::nDof;
+
+    auto it_elt = M_mesh->beginElementWithProcessId(M_mesh->worldComm().localRank());
+    auto en_elt = M_mesh->endElementWithProcessId(M_mesh->worldComm().localRank());
+    if (it_elt == en_elt) return;
+
+    double dirac_cut = M_dirac->max() / 10.;
+
+    for (; it_elt!=en_elt; it_elt++)
+    {
+        bool mark_elt = false;
+        for (int j=0; j<ndofv; j++)
+        {
+            if ( std::abs( M_dirac->localToGlobal(it_elt->id(), j, 0) ) > dirac_cut )
+            {
+                mark_elt = true;
+                break; //don't need to do the others dof
+            }
+        }
+        if( mark_elt )
+            M_markerDirac->assign(it_elt->id(), 0, 0, 1);
+        else
+            M_markerDirac->assign(it_elt->id(), 0, 0, 0);
+    }
+}//markerDelta
+
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerHeaviside(bool invert, bool cut_at_half)
+{
+    /* returns P0 element having :
+    if invert == true : 1 on elements inside Heaviside function (where H is smaller than epsilon on at least 1 dof)
+    if invert == false : 1 on elements where Heaviside function greater than epsilon
+    if cut_in_out == true : marker = 1 where H>0.5 and 0 where H<0.5
+    */
+
+    const int ndofv = space_levelset_type::fe_type::nDof;
+
+    auto it_elt = M_mesh->beginElementWithProcessId(M_mesh->worldComm().localRank());
+    auto en_elt = M_mesh->endElementWithProcessId(M_mesh->worldComm().localRank());
+    if (it_elt == en_elt) return;
+
+    double cut;
+    if (cut_at_half) cut = 0.5;
+    else             cut = invert ? 1e-3 : 0.999;
+
+    for (; it_elt!=en_elt; it_elt++)
+    {
+        bool mark_elt = false;
+        for (int j=0; j<ndofv; j++)
+        {
+            if ( std::abs( M_H->localToGlobal(it_elt->id(), j, 0) ) > cut )
+            {
+                mark_elt = true;
+                break;
+            }
+        }
+        if( mark_elt )
+            M_markerHeaviside->assign(it_elt->id(), 0, 0, (invert)?0:1);
+        else
+            M_markerHeaviside->assign(it_elt->id(), 0, 0, (invert)?1:0);
+    }
+} 
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
+{
+    // return a "marker" on the elements traversed by the interface between phio and phi
+    // ie : mark as 1 is one of the dof of the element has  (phi * phio < 0)
+    const int ndofv = space_levelset_type::fe_type::nDof;
+
+    auto it_elt = M_mesh->beginElementWithProcessId(M_mesh->worldComm().localRank());
+    auto en_elt = M_mesh->endElementWithProcessId(M_mesh->worldComm().localRank());
+    if (it_elt == en_elt) return;
+
+    auto prod = vf::project(M_spaceLS, elements(M_mesh),
+                            idv(M_phio) * idv(M_phi) );
+
+
+    for (; it_elt!=en_elt; it_elt++)
+    {
+        bool mark_elt = false;
+        for (int j=0; j<ndofv ; j++)
+        {
+            if (prod.localToGlobal(it_elt->id(), j, 0) <= 0.)
+            {
+                mark_elt = true;
+                break;
+            }
+        }
+        if( mark_elt )
+            M_markerCrossedElements->assign(it_elt->id(), 0, 0, 1);
+        else
+            M_markerCrossedElements->assign(it_elt->id(), 0, 0, 0);
+    }
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerInterface()
+{
+    /* returns a marker (P0_type) on the elements crossed by the levelset
+       ie :
+       - if the element has not phi on all the dof of the same sign -> the element is mark as 1
+       - if phi on the dof of the element are of the same sign -> mark as 0
+      */
+
+    const int ndofv = space_levelset_type::fe_type::nDof;
+
+    auto it_elt = M_mesh->beginElementWithProcessId(M_mesh->worldComm().localRank());
+    auto en_elt = M_mesh->endElementWithProcessId(M_mesh->worldComm().localRank());
+    if (it_elt == en_elt) return;
+
+    for (; it_elt!=en_elt; it_elt++)
+    {
+        int nbplus = 0;
+        int nbminus = 0;
+
+        for (int j=0; j<ndofv ; j++)
+        {
+            if ((*M_phi).localToGlobal(it_elt->id(), j, 0) >= 0.)
+                nbplus++;
+            else
+                nbminus++;
+        }
+
+        //if elt crossed by interface
+        if ( (nbminus != ndofv) && (nbplus!=ndofv) )
+            M_markerInterface->assign(it_elt->id(), 0, 0, 1);
+        else
+            M_markerInterface->assign(it_elt->id(), 0, 0, 0);
+    }
+}
+
+} // FeelModels
+} // Feel
 
 //instantiation
 #define FEELPP_INSTANTIATE_LEVELSET 1
