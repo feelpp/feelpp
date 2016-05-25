@@ -287,7 +287,7 @@ public:
         M_WNmu_complement(),
         M_primal_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_dual_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_exporter( Exporter<mesh_type>::New( "ensight" ) ),
+        //M_exporter( Exporter<mesh_type>::New( "ensight" ) ),
         M_rebuild( this->rebuildDB() ),
         M_SER_adapt( false ),
         M_SER_maxerr( 0 )
@@ -349,7 +349,7 @@ public:
                             ( boost::format( "%1%-%2%-%3%-elements" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
                             model ),
         M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) ),
-        M_model(),
+        M_model( model ),
         M_backend( backend() ),
         M_backend_primal( backend(_name="backend-primal") ),
         M_backend_dual( backend(_name="backend-dual") ),
@@ -365,9 +365,9 @@ public:
         M_WNmu_complement(),
         M_primal_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_dual_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_scmA( new scm_type( name+"_a", vm , model , false /*not scm for mass mastrix*/ )  ),
-        M_scmM( new scm_type( name+"_m", vm , model , true /*scm for mass matrix*/ ) ),
-        M_exporter( Exporter<mesh_type>::New( "BasisFunction" ) ),
+        M_scmA( new scm_type( name+"_a", model , false /*not scm for mass mastrix*/ )  ),
+        M_scmM( new scm_type( name+"_m", model , true /*scm for mass matrix*/ ) ),
+        //M_exporter( Exporter<mesh_type>::New( "BasisFunction" ) ),
         M_orthonormalize_primal( boption(_name="crb.orthonormalize-primal") ),
         M_orthonormalize_dual( boption(_name="crb.orthonormalize-dual") ),
         M_solve_dual_problem( boption(_name="crb.solve-dual-problem") ),
@@ -378,17 +378,23 @@ public:
         M_rebuild( this->rebuildDB() ),
         M_SER_adapt( false ),
         M_SER_maxerr( 0 ),
+        M_SER_errorEstimation( boption(_name="ser.error-estimation") ),
+        M_SER_useGreedyInRb( boption(_name="ser.use-greedy-in-rb") ),
         M_model_executed_in_steady_mode( boption(_name="crb.is-model-executed-in-steady-mode") ),
         M_save_output_behavior( boption(_name="crb.save-output-behavior") ),
         M_fixedpointMaxIterations( ioption(_name="crb.max-fixedpoint-iterations") ),
         M_fixedpointIncrementTol( doption(_name="crb.increment-fixedpoint-tol") ),
         M_fixedpointVerbose( boption(_name="crb.fixedpoint-verbose") ),
         M_fixedpointCriticalValue( doption(_name="crb.fixedpoint-critical-value") ),
-        M_loadElementsDb( boption(_name="crb.load-elements-database") )
+        M_loadElementsDb( boption(_name="crb.load-elements-database") ),
+        M_useAccurateApee( boption(_name="crb.use-accurate-apee") ),
+        M_computeApeeForEachTimeStep( boption(_name="crb.compute-apee-for-each-time-step") ),
+        M_seekMuInComplement( boption(_name="crb.seek-mu-in-complement") ),
+        M_showResidual( boption(_name="crb.show-residual") )
     {
         if ( !M_solve_dual_problem )
             M_orthonormalize_dual = false;
-        this->setTruthModel( model );
+        //this->setTruthModel( model );
         if ( this->loadDB() )
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
         //this will be in the offline step (it's only when we enrich or create the database that we want to have access to elements of the RB)
@@ -1498,6 +1504,8 @@ protected:
     //int M_SER_groupsize;
     mutable bool M_SER_adapt;
     mutable double M_SER_maxerr;
+    bool M_SER_errorEstimation;
+    bool M_SER_useGreedyInRb;
 
     preconditioner_ptrtype M_preconditioner;
     preconditioner_ptrtype M_preconditioner_primal;
@@ -1517,6 +1525,11 @@ protected:
     double M_fixedpointCriticalValue;
 
     bool M_loadElementsDb;
+
+    bool M_useAccurateApee;
+    bool M_computeApeeForEachTimeStep;
+    bool M_seekMuInComplement;
+    bool M_showResidual;
 
     mutable std::pair<int,double> offline_iterations_summary;
     mutable std::pair<int,double> online_iterations_summary;
@@ -2109,7 +2122,7 @@ CRB<TruthModelType>::offline()
 
     M_Nm = ioption(_name="crb.Nm") ;
     number_of_added_elements = 1;
-    bool seek_mu_in_complement = boption(_name="crb.seek-mu-in-complement") ;
+    bool seek_mu_in_complement = M_seekMuInComplement;
 
     boost::timer ti;
     LOG(INFO)<< "Offline CRB starts, this may take a while until Database is computed...\n";
@@ -2811,7 +2824,7 @@ CRB<TruthModelType>::offline()
         if( ioption(_name="ser.rb-frequency") != 0 && !M_rebuild)
             number_of_elements_to_update = M_N;
         // In case of SER use + error estimation, we compute \hat{A}, \hat{F} (resp. \hat{R}) to compute norm of residual (Riesz)
-        int ser_error_estimation = boption(_name="ser.error-estimation");
+        int ser_error_estimation = M_SER_errorEstimation;
 
         if( ! M_use_newton )
         {
@@ -3161,7 +3174,7 @@ CRB<TruthModelType>::offline()
             std::cout<<" -- projection on reduced basis space : "<<time<<" s"<<std::endl;
         }
 
-        if( boption(_name="crb.use-accurate-apee") )
+        if( M_useAccurateApee )
         {
             if( M_solve_dual_problem )
             {
@@ -3198,7 +3211,7 @@ CRB<TruthModelType>::offline()
             timer2.restart();
         }
 
-        bool ser_greedy = boption(_name="ser.use-greedy-in-rb");
+        bool ser_greedy = M_SER_useGreedyInRb;
         if ( M_error_type == CRB_NO_RESIDUAL && ! use_predefined_WNmu && !ser_greedy )
         {
             //M_maxerror=M_iter_max-M_N;
@@ -5901,16 +5914,13 @@ CRB<TruthModelType>::delta( size_type N,
                             std::vector<vectorN_type> const& uNduold,
                             int k ) const
 {
-    bool ser_error_estimation = boption(_name="ser.error-estimation");
-    bool ser_greedy = boption(_name="ser.use-greedy-in-rb");
-
     std::vector< std::vector<double> > primal_residual_coeffs;
     std::vector< std::vector<double> > dual_residual_coeffs;
     std::vector<double> output_upper_bound;
     double delta_pr=0;
     double delta_du=0;
 
-    if( ser_error_estimation && ser_greedy ) // If SER is used : use Riesz residual norm as error indicator
+    if( M_SER_errorEstimation && M_SER_useGreedyInRb ) // If SER is used : use Riesz residual norm as error indicator
     {
         LOG(INFO) << "Use SER error estimation \n";
         output_upper_bound.resize(1);
@@ -5953,8 +5963,6 @@ CRB<TruthModelType>::delta( size_type N,
         double primal_sum_eim=0;
         double dual_sum_eim=0;
 
-        bool accurate_apee = boption(_name="crb.use-accurate-apee");
-
         //vectors to store residual coefficients
         int K = Tf/dt;
         primal_residual_coeffs.resize( K );
@@ -5965,18 +5973,16 @@ CRB<TruthModelType>::delta( size_type N,
         if ( M_error_type == CRB_RESIDUAL_SCM )
         {
             double alphaA_up, lbti;
-            M_scmA->setScmForMassMatrix( false );
             boost::tie( alphaA, lbti ) = M_scmA->lb( mu );
-            if( boption(_name="crb.scm.use-scm") )
+            if( M_scmA->useScm() )
                 boost::tie( alphaA_up, lbti ) = M_scmA->ub( mu );
             //LOG( INFO ) << "alphaA_lo = " << alphaA << " alphaA_hi = " << alphaA_up ;
 
             if ( ! M_model->isSteady() )
             {
-                M_scmM->setScmForMassMatrix( true );
                 double alphaM_up, lbti;
                 boost::tie( alphaM, lbti ) = M_scmM->lb( mu );
-                if( boption(_name="crb.scm.use-scm") )
+                if( M_scmM->useScm() )
                     boost::tie( alphaM_up, lbti ) = M_scmM->ub( mu );
                 //LOG( INFO ) << "alphaM_lo = " << alphaM << " alphaM_hi = " << alphaM_up ;
             }
@@ -5986,7 +5992,7 @@ CRB<TruthModelType>::delta( size_type N,
         int global_time_index=0;
         output_upper_bound.resize(K+1);
 
-        bool compute_error_for_each_time_step=boption(_name="crb.compute-apee-for-each-time-step");
+        bool compute_error_for_each_time_step = M_computeApeeForEachTimeStep;
 
         bool model_has_eim_error = M_model->hasEimError();
 
@@ -6000,7 +6006,7 @@ CRB<TruthModelType>::delta( size_type N,
         for(double output_time=start_time; math::abs(output_time-Tf-dt)>1e-9; output_time+=dt)
         {
             time_index=restart_time_index;
-            if( accurate_apee )
+            if( M_useAccurateApee )
             {
                 //in this case, we use a different way to compute primal_sum (i.e. square of dual norm of primal residual)
                 for( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
@@ -6039,14 +6045,14 @@ CRB<TruthModelType>::delta( size_type N,
                 if ( !M_model->isSteady() )
                     dual_residual = initialDualResidual( N,mu,uNduold[time_index],dt );
 
-                if( accurate_apee )
+                if( M_useAccurateApee )
                 {
                     //in this case, we use a different way to compute primal_sum (i.e. square of dual norm of primal residual)
                     for ( double time=output_time; math::abs(time - dt + dt) > 1e-9 ; time-=dt )
                     {
                         dual_sum += computeOnlineDualApee( N , mu , uNdu[time_index], uNduold[time_index], dt, time );
                     }
-                }//with accurate apee
+                }
                 else
                 {
                     for ( double time=output_time; math::abs(time - dt + dt) > 1e-9 ; time-=dt )
@@ -6119,15 +6125,13 @@ CRB<TruthModelType>::delta( size_type N,
             global_time_index++;
         }//end of loop over output time
 
-        bool show_residual = boption(_name="crb.show-residual") ;
-        if( ! M_offline_step && show_residual )
+        if( !M_offline_step && M_showResidual )
         {
             double sum=0;
             time_index=1;
             if( M_model->isSteady() )
                 time_index=0;
-            bool seek_mu_in_complement = boption(_name="crb.seek-mu-in-complement") ;
-            LOG( INFO ) <<" =========== Residual with "<<N<<" basis functions - seek mu in complement of WNmu : "<<seek_mu_in_complement<<"============ \n";
+            LOG( INFO ) <<" =========== Residual with "<<N<<" basis functions - seek mu in complement of WNmu : "<< M_seekMuInComplement<<"============ \n";
             for ( double time=dt; time<=Tf; time+=dt )
             {
                 int time_old_index = ( M_model->isSteady() )? 0 : time_index-1;
@@ -6166,10 +6170,6 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::max_error_type
 CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 {
-    bool seek_mu_in_complement = boption(_name="crb.seek-mu-in-complement") ;
-    bool ser_error_estimation = boption(_name="ser.error-estimation");
-    bool ser_greedy = boption(_name="ser.use-greedy-in-rb");
-
     int proc = this->worldComm().globalRank();
     int master_proc = this->worldComm().masterRank();
 
@@ -6221,7 +6221,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 
     else
     {
-        if ( seek_mu_in_complement )
+        if ( M_seekMuInComplement )
         {
             err.resize( M_WNmu_complement->size() );
             check_err.resize( M_WNmu_complement->size() );
@@ -6284,7 +6284,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 
     int _index=0;
 
-    if ( seek_mu_in_complement )
+    if ( M_seekMuInComplement )
     {
         LOG(INFO) << "[maxErrorBounds] WNmu_complement N=" << N << " max Error = " << maxerr << " at index = " << index << "\n";
         mu = M_WNmu_complement->at( index );
@@ -6318,7 +6318,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
     maxerr = *it_max;
 
     // SER : criterion for RB r-adaptation
-    if( ser_error_estimation )
+    if( M_SER_errorEstimation )
     {
         double increment = math::abs( maxerr - M_SER_maxerr );
         double inc_relative = increment/math::abs( M_SER_maxerr );
@@ -6453,7 +6453,8 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
 
     auto first_wn = vect_wn[0];
     auto first_element = first_wn[0];
-
+    if ( !M_exporter )
+        M_exporter = Exporter<mesh_type>::New( "BasisFunction" );
     M_exporter->step( 0 )->setMesh( first_element.functionSpace()->mesh() );
     M_exporter->addRegions();
     int basis_number=0;

@@ -135,26 +135,25 @@ public:
     }
 
     //! constructor from command line options
-    CRBSCM( std::string const& name,
-            po::variables_map const& vm )
+    CRBSCM( std::string const& name )
         :
         super( "scm",
                ( boost::format( "%1%" ) % name ).str(),
                ( boost::format( "%1%" ) % name ).str() ),
         M_is_initialized( false ),
         M_model(),
-        M_tolerance( vm["crb.scm.tol"].template as<double>() ),
-        M_iter_max( vm["crb.scm.iter-max"].template as<int>() ),
-        M_Mplus( vm["crb.scm.Mplus"].template as<int>() ),
-        M_Malpha( vm["crb.scm.Malpha"].template as<int>()  ),
+        M_tolerance( doption(_name="crb.scm.tol" ) ),
+        M_iter_max( ioption(_name="crb.scm.iter-max" ) ),
+        M_Mplus( ioption(_name="crb.scm.Mplus" ) ),
+        M_Malpha( ioption(_name="crb.scm.Malpha") ),
         M_Dmu( new parameterspace_type ),
         M_Xi( new sampling_type( M_Dmu ) ),
         M_C( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_vm( vm ),
+        M_vm( Environment::vm() ),
         M_scm_for_mass_matrix( false ),
         M_mu_ref( M_Dmu->element() ),
-        M_use_scm( vm["crb.scm.use-scm"].template as<bool>() )
+        M_use_scm( boption(_name="crb.scm.use-scm") )
     {
         if ( this->loadDB() )
             LOG( INFO ) << "Database " << this->lookForDB() << " available and loaded";
@@ -163,57 +162,28 @@ public:
 
     //! constructor from command line options
     CRBSCM( std::string const& name,
-            po::variables_map const& vm ,
-            truth_model_ptrtype const & model )
-        :
-        super( "scm",
-               ( boost::format( "%1%" ) % name ).str(),
-               ( boost::format( "%1%" ) % name ).str() ),
-        M_is_initialized( false ),
-        M_model(),
-        M_tolerance( vm["crb.scm.tol"].template as<double>() ),
-        M_iter_max( vm["crb.scm.iter-max"].template as<int>() ),
-        M_Mplus( vm["crb.scm.Mplus"].template as<int>() ),
-        M_Malpha( vm["crb.scm.Malpha"].template as<int>()  ),
-        M_Dmu( model->parameterSpace() ),
-        M_Xi( new sampling_type( M_Dmu ) ),
-        M_C( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_vm( vm ),
-        M_scm_for_mass_matrix( false ),
-        M_mu_ref( M_Dmu->element() ),
-        M_use_scm( vm["crb.scm.use-scm"].template as<bool>() )
-    {
-        this->setTruthModel( model );
-        if ( this->loadDB() )
-            LOG( INFO ) << "Database " << this->lookForDB() << " available and loaded";
-    }
-
-    //! constructor from command line options
-    CRBSCM( std::string const& name,
-            po::variables_map const& vm ,
             truth_model_ptrtype const & model ,
-            bool scm_for_mass_matrix )
+            bool scm_for_mass_matrix = false )
         :
         super( "scm",
                ( boost::format( "%1%" ) % name ).str(),
                ( boost::format( "%1%" ) % name ).str() ),
         M_is_initialized( false ),
-        M_model(),
-        M_tolerance( vm["crb.scm.tol"].template as<double>() ),
-        M_iter_max( vm["crb.scm.iter-max"].template as<int>() ),
-        M_Mplus( vm["crb.scm.Mplus"].template as<int>() ),
-        M_Malpha( vm["crb.scm.Malpha"].template as<int>()  ),
+        M_model( model ),
+        M_tolerance( doption(_name="crb.scm.tol" ) ),
+        M_iter_max( ioption(_name="crb.scm.iter-max" ) ),
+        M_Mplus( ioption(_name="crb.scm.Mplus" ) ),
+        M_Malpha( ioption(_name="crb.scm.Malpha") ),
         M_Dmu( model->parameterSpace() ),
         M_Xi( new sampling_type( M_Dmu ) ),
         M_C( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_vm( vm ),
+        M_vm( Environment::vm() ),
         M_scm_for_mass_matrix( scm_for_mass_matrix ),
         M_mu_ref( M_Dmu->element() ),
-        M_use_scm( vm["crb.scm.use-scm"].template as<bool>() )
+        M_use_scm( boption(_name="crb.scm.use-scm") )
     {
-        this->setTruthModel( model );
+        //this->setTruthModel( model );
         if ( this->loadDB() )
             LOG( INFO ) << "Database " << this->lookForDB() << " available and loaded";
     }
@@ -292,6 +262,9 @@ public:
     {
         return M_Malpha;
     }
+
+    //! use scm
+    bool useScm() const { return M_use_scm; }
 
     //@}
 
