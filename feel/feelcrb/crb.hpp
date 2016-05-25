@@ -396,7 +396,11 @@ public:
             M_orthonormalize_dual = false;
         //this->setTruthModel( model );
         if ( this->loadDB() )
+        {
+            if( Environment::worldComm().isMasterRank() )
+                std::cout << "Database " << this->lookForDB() << " available and loaded\n";
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
+        }
         //this will be in the offline step (it's only when we enrich or create the database that we want to have access to elements of the RB)
 
         M_elements_database.setMN( M_N );
