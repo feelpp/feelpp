@@ -37,6 +37,7 @@
 #include <boost/serialization/version.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/environment.hpp>
 
 namespace Feel
 {
@@ -74,10 +75,9 @@ public:
     CRBDB();
     CRBDB( std::string prefixdir,
            std::string name,
-           std::string dbprefix,
-           po::variables_map const& vm );
+           std::string dbprefix );
     //! copy constructor
-    CRBDB( CRBDB const & );
+    CRBDB( CRBDB const & ) = default;
     //! destructor
     virtual ~CRBDB();
 
@@ -88,14 +88,8 @@ public:
     //@{
 
     //! copy operator
-    CRBDB& operator=( CRBDB const & o )
-    {
-        if ( this != &o )
-        {
-        }
+    CRBDB& operator=( CRBDB const & o ) = default;
 
-        return *this;
-    }
     //@}
 
     /** @name Accessors
@@ -130,15 +124,9 @@ public:
     virtual fs::path lookForDB() const;
 
     //! \return \c variables_map
-    po::variables_map vm()
+    po::variables_map const& vm() const
     {
-        return M_vm;
-    }
-
-    //! \return \c variables_map
-    po::variables_map vm() const
-    {
-        return M_vm;
+        return Environment::vm();
     }
 
     //! \return true if the DB has been loaded, false otherwise
@@ -203,7 +191,6 @@ private:
 
     std::string M_name;
     std::string M_dbfilename;
-    po::variables_map M_vm;
     bool M_isloaded;
 
 

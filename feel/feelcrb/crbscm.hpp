@@ -140,8 +140,7 @@ public:
         :
         super( "scm",
                ( boost::format( "%1%" ) % name ).str(),
-               ( boost::format( "%1%" ) % name ).str(),
-               vm ),
+               ( boost::format( "%1%" ) % name ).str() ),
         M_is_initialized( false ),
         M_model(),
         M_tolerance( vm["crb.scm.tol"].template as<double>() ),
@@ -169,8 +168,7 @@ public:
         :
         super( "scm",
                ( boost::format( "%1%" ) % name ).str(),
-               ( boost::format( "%1%" ) % name ).str(),
-               vm ),
+               ( boost::format( "%1%" ) % name ).str() ),
         M_is_initialized( false ),
         M_model(),
         M_tolerance( vm["crb.scm.tol"].template as<double>() ),
@@ -199,8 +197,7 @@ public:
         :
         super( "scm",
                ( boost::format( "%1%" ) % name ).str(),
-               ( boost::format( "%1%" ) % name ).str(),
-               vm ),
+               ( boost::format( "%1%" ) % name ).str() ),
         M_is_initialized( false ),
         M_model(),
         M_tolerance( vm["crb.scm.tol"].template as<double>() ),

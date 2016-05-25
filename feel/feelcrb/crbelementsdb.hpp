@@ -82,13 +82,11 @@ public :
     CRBElementsDB( std::string prefixdir,
                 std::string name,
                 std::string dbprefix,
-                po::variables_map const& vm,
                 model_ptrtype const & model )
     :
         super( prefixdir,
                name,
-               dbprefix,
-               vm ),
+               dbprefix ),
         M_N( 0 )
     {
         M_model = model;
