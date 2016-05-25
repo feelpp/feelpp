@@ -577,7 +577,6 @@ endif()
 #
 include(feelpp.module.hpddm)
 include(feelpp.module.nlopt)
-include(feelpp.module.ipopt)
 include(feelpp.module.cereal)
 include(feelpp.module.paralution)
 include(feelpp.module.jsonlab)
@@ -900,7 +899,7 @@ if ( PETSC_FOUND )
   INCLUDE_DIRECTORIES(${PETSC_INCLUDE_DIR} ${PETSC_INCLUDE_CONF})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PETSc" )
 
-endif( PETSC_FOUND )
+endif( PETSC_FOUND ) 
 
 # ML was already searched for, if it was not found then try again to look for it
 # in PETSC_DIR
@@ -1151,6 +1150,11 @@ if ( GMSH_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
 endif()
 include(feelpp.module.gmsh)
+
+#
+# ipopt
+#
+include(feelpp.module.ipopt)
 
 #
 # if Feel++ has been installed on the system
