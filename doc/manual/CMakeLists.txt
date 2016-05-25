@@ -30,6 +30,7 @@ add_subdirectory(python)
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
   foreach(DIR laplacian
       stokes
+      stokes_1D
       advection
       accoustic
       dd
