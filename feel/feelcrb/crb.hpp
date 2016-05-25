@@ -342,13 +342,11 @@ public:
         :
         super( ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
                name,
-               ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
-               vm ),
+               ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str() ),
         M_elements_database(
                             ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
                             name,
                             ( boost::format( "%1%-%2%-%3%-elements" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
-                            vm ,
                             model ),
         M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) ),
         M_model(),
@@ -8460,7 +8458,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
     //
     LOG(INFO) << "[offlineResidual] Lambda_pr, Gamma_pr\n";
 
-    if ( Ncur == M_Nm )
+    if ( M_precomputeResidualPrF.empty()/*Ncur == M_Nm*/ )
     {
         // update M_precomputeResidualPrF
         M_precomputeResidualPrF.resize(__QRhs);
@@ -8496,6 +8494,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
     }
 
     // update M_precomputeResidualPrA
+    int nElementsToPrecompute = (M_precomputeResidualPrA.empty())? __N : number_of_added_elements;
     M_precomputeResidualPrA.resize(__QLhs);
     for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
     {
@@ -8505,7 +8504,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
             M_precomputeResidualPrA[__q1][__m1].resize(__N);
         }
     }
-    for ( int __j=__N-number_of_added_elements; __j<__N; __j++ )
+    for ( int __j=__N-nElementsToPrecompute/*__N-number_of_added_elements*/; __j<__N; __j++ )
     {
         *__X=M_model->rBFunctionSpace()->primalBasisElement(__j);
         for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
@@ -8588,7 +8587,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
             Atq1 = M_model->newMatrix();
 
         // compute this only once
-        if ( Ncur == M_Nm )
+        if ( M_precomputeResidualDuF.empty()/*Ncur == M_Nm*/ )
         {
             // update M_precomputeResidualDuF
             M_precomputeResidualDuF.resize(__QOutput);
@@ -8627,6 +8626,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
         }
 
         // update M_precomputeResidualDuA
+        int nElementsToPrecomputeDual = (M_precomputeResidualDuA.empty())? __N : number_of_added_elements;
         M_precomputeResidualDuA.resize(__QLhs);
         for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
         {
@@ -8636,7 +8636,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
                 M_precomputeResidualDuA[__q1][__m1].resize(__N);
             }
         }
-        for ( int __j=__N-number_of_added_elements; __j<__N; __j++ )
+        for ( int __j=__N-nElementsToPrecomputeDual/*__N-number_of_added_elements*/; __j<__N; __j++ )
         {
             *__X=M_model->rBFunctionSpace()->dualBasisElement(__j);
             for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
