@@ -215,10 +215,31 @@ public :
 #endif
 
     //--------------------------------------------------------------------//
+    // Levelset
+    element_levelset_ptrtype const& phi() const { return M_phi; }
+    element_levelset_ptrtype const& phinl() const { return M_phinl; }
+    element_levelset_ptrtype const& H() const { return M_heaviside; }
+    element_levelset_ptrtype const& D() const { return M_dirac; }
+
+    double mass() const { return *M_mass; }
+
+    double thicknessInterface() const { return M_thicknessInterface; }
+
+    int iterSinceReinit() const { return M_iterSinceReinit; }
+
+    //--------------------------------------------------------------------//
+    // Markers
+    element_markers_type markerInterface();
+    element_markers_ptrtype markerDelta();
+    element_markers_type markerH(bool invert = false, bool cut_at_half = false);
+    element_markers_type crossedElements();
+
+
+    //--------------------------------------------------------------------//
     // Advection
     /* advect phi by Velocity
        this->M_phi takes the new value
-       also the following variable are updated : M_phio, M_delta, M_H, M_mass */
+       also the following variable are updated : M_phio, M_dirac, M_H, M_mass */
     template <typename TVeloc>
     bool advect(TVeloc const& Velocity, bool ForceReinit = false, bool updateBilinearForm = true, bool updateTime = true);
 
@@ -253,30 +274,8 @@ public :
     void updateSubMeshSubSpace(element_markers_ptrtype marker);
     void updateSubMeshSubSpace();
 
-    /* usefull markers (see comments in functions bodies) */
-    element_markers_type markerInterface();
-    element_markers_ptrtype markerDelta();
-    element_markers_type markerH(bool invert = false, bool cut_at_half = false);
-    element_markers_type crossedelements();
-
     std::string levelsetInfos( bool show = false );
 
-    // ------------- accessors ---------------
-    const element_levelset_ptrtype phi();
-
-    const element_levelset_ptrtype phinl();
-
-    const element_levelset_ptrtype H();
-
-    const element_levelset_ptrtype D();
-
-    double mass();
-
-    int iterSinceReinit();
-
-
-    /*delta and heavyside thickness*/
-    double thicknessInterface();
 
     // ----------- serialization, save, restart
     template<class Archive>
@@ -301,9 +300,16 @@ public :
     boost::shared_ptr< Projector<space_levelset_vectorial_type, space_levelset_vectorial_type> >  M_l2pVec;
 
 protected:
+    //--------------------------------------------------------------------//
+    // Levelset data update functions
     void updateHeavyside();
     void updateDirac();
     void updateMass();
+
+    void updateMarkerDirac();
+    void updateMarkerHeaviside();
+    void updateMarkerCrossedElements();
+    void updateMarkerInterface();
 
 private:
     void initWithMesh(mesh_ptrtype mesh);
@@ -334,15 +340,19 @@ protected:
     const std::string M_prefix;
 
     //--------------------------------------------------------------------//
-    // Levelset elements 
+    // Levelset data
     element_levelset_ptrtype M_phi;
     element_levelset_ptrtype M_phio;
     element_levelset_ptrtype M_phinl;
 
     element_levelset_ptrtype M_heaviside;
-    element_levelset_ptrtype M_delta;
-    boost::shared_ptr<double> M_mass;
-    boost::shared_ptr<int> itersincereinit;
+    element_levelset_ptrtype M_dirac;
+    double M_mass;
+
+    element_markers_ptrtype M_markerDirac;
+    element_markers_ptrtype M_markerHeaviside;
+    element_markers_ptrtype M_markerCrossedElements;
+    element_markers_ptrtype M_markerInterface;
 
 #if defined(LEVELSET_CONSERVATIVE_ADVECTION)
     elementLSCorr_ptrtype phic;
@@ -378,6 +388,8 @@ private:
     boost::shared_ptr< Projector<space_levelset_type, space_levelset_type> >  M_smooth;
 
     bool reinitializerUpdated;
+
+    int M_iterSinceReinit;
 
     //--------------------------------------------------------------------//
     // Backends

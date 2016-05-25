@@ -1,12 +1,16 @@
 #include "levelset.hpp"
 
-template<int Order, int Dim, typename PeriodicityType>
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::LevelSet(mesh_ptrtype mesh, std::string const& prefix, double TimeStep, PeriodicityType periodicityLS)
+namespace Feel {
+namespace FeelModels {
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSet(
+        mesh_ptrtype mesh, 
+        std::string const& prefix, 
+        PeriodicityType periodicityLS )
    :
     M_prefix(prefix),
     M_periodicity(periodicityLS),
-    pi(M_PI),
-    Dt(TimeStep)
 {
     itersincereinit.reset( new int(0) );
     M_mass.reset( new double(0) );
@@ -73,7 +77,7 @@ Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::LevelSet(mesh_ptrtype mes
     M_phio = M_spaceLS->elementPtr();
     M_phinl=M_spaceLS->elementPtr();
     M_H = M_spaceLS->elementPtr();
-    M_delta = M_spaceLS->elementPtr();
+    M_dirac = M_spaceLS->elementPtr();
 
 #if defined (LEVELSET_CONSERVATIVE_ADVECTION)
     if (M_discrMethod==CN_CONSERVATIVE)
@@ -88,9 +92,9 @@ Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::LevelSet(mesh_ptrtype mes
 
 } //constructor
 
-template<int Order, int Dim, typename PeriodicityType>
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::initWithMesh(mesh_ptrtype mesh)
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 {
     // +++++++++ initialize every quantities which need the mesh +++++++++++
     M_mesh = mesh;
@@ -99,9 +103,9 @@ Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::initWithMesh(mesh_ptrtype
     M_spaceP0 = spaceP0_type::New(_mesh=M_mesh, _periodicity=periodicity(NoPeriodicity()) );
     M_spaceLSVec = spaceLSVec_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity) );
     if (M_advecstabmethod == CIP)
-        M_spaceLS = spaceLS_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity), _extended_doftable=std::vector<bool>(1,true) );
+        M_spaceLS = space_levelset_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity), _extended_doftable=std::vector<bool>(1,true) );
     else
-        M_spaceLS = spaceLS_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity) );
+        M_spaceLS = space_levelset_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity) );
 
     //  -------  backends ------
     M_backend_advrea = backend(_name="ls-advec");
@@ -164,8 +168,8 @@ Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::initWithMesh(mesh_ptrtype
 } // init
 
 
-template<int Order, int Dim, typename PeriodicityType>
-void Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::imposePhi( elementLS_ptrtype phi )
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void LEVELSETBASE_CLASS_TEMPLATE_TYPE::imposePhi( elementLS_ptrtype phi )
 {
     using namespace Feel::vf;
 
@@ -178,8 +182,8 @@ void Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::imposePhi( elementLS
 }//imposePhi
 
 
-template<int Order, int Dim, typename PeriodicityType>
-void Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::initialize(elementLS_ptrtype phi, bool doFirstReinit, ReinitMethod method, int max_iter, double dtau, double tol)
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void LEVELSETBASE_CLASS_TEMPLATE_TYPE::initialize(elementLS_ptrtype phi, bool doFirstReinit, ReinitMethod method, int max_iter, double dtau, double tol)
     {
         using namespace Feel;
         using namespace Feel::vf;
@@ -212,9 +216,9 @@ void Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::initialize(elementLS
     } //initialize
 
 
-template<int Order, int Dim, typename PeriodicityType>
-typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::elementLS_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::circleShape(double r0, double x0, double y0, double z0)
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::circleShape(double r0, double x0, double y0, double z0)
 {
     auto shape = M_spaceLS->elementPtr();
 
@@ -225,9 +229,9 @@ Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::circleShape(double r0, do
     return shape;
 } //circleShape
 
-template<int Order, int Dim, typename PeriodicityType>
-typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::elementLS_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::ellipseShape(double a_ell, double b_ell, double x0, double y0, double z0)
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::ellipseShape(double a_ell, double b_ell, double x0, double y0, double z0)
 {
     auto shape = M_spaceLS->elementPtr();
     *shape = vf::project(M_spaceLS, elements(M_mesh),
@@ -240,52 +244,52 @@ Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::ellipseShape(double a_ell
 
 /* accessors defined here. Mac doesn't like it to be in the .hpp */
 
-template<int Order, int Dim, typename PeriodicityType>
-inline const typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::elementLS_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::phi()
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+inline const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::phi()
 {
     return M_phi;
 }
 
-template<int Order, int Dim, typename PeriodicityType>
-inline const typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::elementLS_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::phinl()
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+inline const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::phinl()
 {
     return M_phinl;
 }
 
-template<int Order, int Dim, typename PeriodicityType>
-inline const typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::elementLS_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::H()
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+inline const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::H()
 {
     return M_H;
 }
 
-template<int Order, int Dim, typename PeriodicityType>
-inline const typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::elementLS_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::D()
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+inline const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::D()
 {
-    return M_delta;
+    return M_dirac;
 }
 
-template<int Order, int Dim, typename PeriodicityType>
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 inline double
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::mass()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::mass()
 {
     return *M_mass;
 }
 
-template<int Order, int Dim, typename PeriodicityType>
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 inline int
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::iterSinceReinit()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::iterSinceReinit()
 {
     return *itersincereinit;
 }
 
 /*delta and heavyside thickness*/
-template<int Order, int Dim, typename PeriodicityType>
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 inline double
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::thicknessInterface()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::thicknessInterface()
 {
     return M_epsilon;
 }
@@ -293,48 +297,48 @@ Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::thicknessInterface()
 
 
 
-template<int Order, int Dim, typename PeriodicityType>
-typename Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::self_ptrtype
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::New( mesh_ptrtype mesh, std::string const& prefix, double TimeStep, PeriodicityType periodocity )
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::self_ptrtype
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::New( mesh_ptrtype mesh, std::string const& prefix, double TimeStep, PeriodicityType periodocity )
 {
     self_ptrtype new_ls( new self_type( mesh, prefix, TimeStep, periodocity) );
     return new_ls;
 }
 
-template<int Order, int Dim, typename PeriodicityType>
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::setDt( double time )
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::setDt( double time )
 { Dt = time; }
 
 
-template<int Order, int Dim, typename PeriodicityType>
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::setStrategyBeforeFm( int strat )
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::setStrategyBeforeFm( int strat )
 {
     if (reinitializerUpdated)
         LOG(INFO)<<" !!!  WARNING !!! : setStrategyBeforeFm set after the fast marching has been actually initialized ! \n";
     strategyBeforeFm = (strategyBeforeFm_type) strat;
 }
 
-template<int Order, int Dim, typename PeriodicityType>
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 Feel::levelset::strategyBeforeFm_type
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::getStrategyBeforeFm()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::getStrategyBeforeFm()
 {
     return strategyBeforeFm;
 }
 
 
 
-template<int Order, int Dim, typename PeriodicityType>
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::setUseMarker2AsMarkerDoneFmm(bool value)
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::setUseMarker2AsMarkerDoneFmm(bool value)
 {
     M_useMarker2AsMarkerDoneFmm = value;
 }
 
-template<int Order, int Dim, typename PeriodicityType>
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::setThicknessInterface( double value )
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::setThicknessInterface( double value )
 {
     M_epsilon = value;
 }
