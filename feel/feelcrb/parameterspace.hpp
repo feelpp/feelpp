@@ -47,6 +47,8 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelmesh/kdtree.hpp>
+#include <feel/feelcore/removecomments.hpp>
+#include <feel/feelcore/utility.hpp>
 
 namespace Feel
 {
@@ -1033,7 +1035,7 @@ public:
          */
         void saveJson( std::string const& filename, bool addParameterSpaceInfo = true )
             {
-                //if ( M_space->worldComm().isMasterRank() )
+                if ( M_space->worldComm().isMasterRank() )
                 {
                     boost::property_tree::ptree ptree;
                     this->updatePropertyTree( ptree, addParameterSpaceInfo );
@@ -1049,23 +1051,22 @@ public:
             {
                 // update parameter space ptree
                 if ( addParameterSpaceInfo )
-                    M_space->updatePropertyTree( ptree );
-
+                {
+                    boost::property_tree::ptree ptreeParameterSpace;
+                    M_space->updatePropertyTree( ptreeParameterSpace );
+                    ptree.add_child( "parameter_space", ptreeParameterSpace );
+                }
                 // update sampling ptree
                 int nDim = M_space->dimension();
-                std::vector<boost::property_tree::ptree> ptreeMu( nDim );
+                boost::property_tree::ptree ptreeSampling;
                 for ( auto const& mu : *this )
                 {
+                    boost::property_tree::ptree ptreeMu;
                     for ( int d=0;d<nDim;++d )
                     {
-                        ptreeMu[d].add( "", mu(d) );
+                        ptreeMu.add( "", mu(d) );
                     }
-                }
-                boost::property_tree::ptree ptreeSampling;
-                for ( uint16_type d=0;d<nDim;++d )
-                {
-                    std::string const& nameMu = M_space->parameterName( d );
-                    ptreeSampling.add_child( nameMu, ptreeMu[d] );
+                    ptreeSampling.add_child("",ptreeMu);
                 }
                 ptree.add_child( "sampling", ptreeSampling );
             }
@@ -1208,6 +1209,13 @@ public:
         {
             return parameterspace_ptrtype( new parameterspace_type( dim,worldComm ) );
         }
+
+    static parameterspace_ptrtype New( std::string const& filename, WorldComm const& worldComm = Environment::worldComm() )
+        {
+            parameterspace_ptrtype ps( new parameterspace_type( 0,worldComm ) );
+            ps->loadJson( filename );
+            return ps;
+        }
     //@}
 
     /** @name Operator overloads
@@ -1337,11 +1345,77 @@ public:
     /** @name  Methods
      */
     //@{
+
+    /**
+     * \brief load ParameterSpace from json
+     * \param input json filename
+     */
+    void loadJson( std::string const& filename )
+        {
+            if ( !fs::exists( filename ) )
+            {
+                LOG(INFO) << "Could not find " << filename << std::endl;
+                return;
+            }
+
+            auto json_str_wo_comments = removeComments(readFromFile(filename));
+            //LOG(INFO) << "json file without comment:" << json_str_wo_comments;
+
+            boost::property_tree::ptree ptreeParameterSpace;
+            std::istringstream istr( json_str_wo_comments );
+            boost::property_tree::read_json( istr, ptreeParameterSpace );
+            this->setup( ptreeParameterSpace );
+        }
+
+    /**
+     * \brief setup ParameterSpace from property_tree::ptree
+     * \param input property_tree::ptree
+     */
+    void setup( boost::property_tree::ptree const& ptreeParameterSpace )
+        {
+            try {
+                int nDim  = ptreeParameterSpace.template get<int>( "dimension" );
+                if ( Dimension == invalid_uint16_type_value )
+                    M_nDim = nDim;
+                else
+                    CHECK( Dimension == nDim && M_nDim == nDim ) << "invalid dimension in json " << nDim << " must be " << Dimension;
+            }
+            catch ( boost::property_tree::ptree_bad_path& e )
+            {
+                if ( Dimension == invalid_uint16_type_value )
+                    CHECK( false ) << "invalid json : dimension is missing";
+            }
+
+            std::map<std::string,int> mapParameterNamesToId;
+            M_parameterNames.clear();
+            for (auto const& item : ptreeParameterSpace.get_child("names"))
+            {
+                std::string const& name = item.second.template get_value<std::string>();
+                mapParameterNamesToId[name] = M_parameterNames.size();
+                M_parameterNames.push_back( name );
+            }
+
+            element_type mumin( this->shared_from_this() );
+            element_type mumax( this->shared_from_this() );
+            for ( auto const& ptreeParametersPair : ptreeParameterSpace.get_child("parameters") )
+            {
+                std::string const& paramName = ptreeParametersPair.first;
+                auto itFindParameterNames = mapParameterNamesToId.find( paramName );
+                CHECK( itFindParameterNames != mapParameterNamesToId.end() ) << "parameter "<< paramName << " is not registered";
+                int paramId = itFindParameterNames->second;
+                auto const& ptreeParameters = ptreeParametersPair.second;
+                mumin( paramId ) = ptreeParameters.template get<double>("min");
+                mumax( paramId ) = ptreeParameters.template get<double>("max");
+            }
+            this->setMin( mumin );
+            this->setMax( mumax );
+        }
+
         /**
          * \brief save ParameterSpace description in json
          * \param output filename
          */
-    void saveJson( std::string const& filename )
+    void saveJson( std::string const& filename ) const
         {
             if ( this->worldComm().isMasterRank() )
             {
@@ -1355,10 +1429,9 @@ public:
      * \brief update ParameterSpace description in property_tree data structure
      * \param ptree to update
      */
-    void updatePropertyTree( boost::property_tree::ptree & ptree )
+    void updatePropertyTree( boost::property_tree::ptree & ptreeParameterSpace ) const
         {
             int nDim = this->dimension();
-            boost::property_tree::ptree ptreeParameterSpace;
             ptreeParameterSpace.add( "dimension",nDim);
 
             boost::property_tree::ptree ptreeParameterName;
@@ -1375,7 +1448,6 @@ public:
                 ptreeParametersDesc.add_child( this->parameterName(d), ptreeParameterDesc );
             }
             ptreeParameterSpace.add_child( "parameters", ptreeParametersDesc );
-            ptree.add_child( "parameter_space", ptreeParameterSpace );
         }
 
     /**
