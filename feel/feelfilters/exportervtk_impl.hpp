@@ -168,6 +168,7 @@ ExporterVTK<MeshType,N>::init()
     //std::cout << "Faces: " << M_face_type << "; Elements: " << M_element_type << std::endl;
 }
 
+#ifdef FEELPP_HAS_LIBXML2
 template<typename MeshType, int N>
 int ExporterVTK<MeshType,N>::writeTimePVD(std::string xmlFilename, double timestep, std::string dataFilename, int partNo) const
 {
@@ -266,6 +267,7 @@ int ExporterVTK<MeshType,N>::writeTimePVD(std::string xmlFilename, double timest
 
     return retcode;
 }
+#endif
 
 template<typename MeshType, int N>
 vtkSmartPointer<vtkMultiBlockDataSet>
@@ -520,6 +522,7 @@ ExporterVTK<MeshType,N>::save() const
                 {
                     fs::remove(pvdFilename.c_str()); 
                 }
+#ifdef FEELPP_HAS_LIBXML2
 #if VTK_MAJOR_VERSION < 6 || !defined(VTK_HAS_PARALLEL)
                 /* when we are not writing data with parallel filters */
                 /* we provide the info about the different parts from with */
@@ -536,6 +539,7 @@ ExporterVTK<MeshType,N>::save() const
 #else
                 /* When writing in parallel, we only write one entry in the pvd file */
                 this->writeTimePVD(pvdFilename, time, lfile.str());
+#endif
 #endif
             }
 #if defined(FEELPP_VTK_INSITU_ENABLED)
