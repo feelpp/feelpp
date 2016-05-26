@@ -104,12 +104,12 @@ BOOST_AUTO_TEST_CASE( test_prepostsolve )
     l+=integrate(_range=boundaryfaces(mesh), _expr=gradf*N()*id(v));
     auto zeromean =  [&Xh,&u]( vector_ptrtype rhs, vector_ptrtype sol )
         {
-            cout << " . Call postsolve: remove mean value to input vector\n";
+            std::cout << " . Call postsolve: remove mean value to input vector\n";
             double m = mean( _range=elements(Xh->mesh()), _expr=idv(u))(0,0);
-            cout << "[zeromean] MEAN1:" << m << std::endl;
+            std::cout << "[zeromean] MEAN1:" << m << std::endl;
             u.add( -m );
             m = mean( _range=elements(Xh->mesh()), _expr=idv(u))(0,0);
-            cout << "[zeromean] MEAN2:" << m << std::endl;
+            std::cout << "[zeromean] MEAN2:" << m << std::endl;
         };
     a.solve( _solution=u, _rhs=l, _pre=zeromean, _post=zeromean);
     double m = mean( _range=elements(Xh->mesh()), _expr=idv(u))(0,0);
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE( test_prepostsolve )
     BOOST_MESSAGE( "MEAN exact:" << mex );
     double l2error = normL2( _range=elements(mesh), _expr=(idv(u)-m)-(f-mex) );
 
-    cout << "||u-(f-mex)||=" << l2error << std::endl;
+    std::cout << "||u-(f-mex)||=" << l2error << std::endl;
 
     v.on(_range=elements(mesh), _expr=f-mex);
     auto e = exporter( _mesh=mesh );
@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_CASE( test_prepost_nlsolve )
     BOOST_MESSAGE( "MEAN exact:" << mex );
     double l2error = normL2( _range=elements(mesh), _expr=(idv(u)-m)-(f-mex) );
 
-    cout << "||u-(f-mex)||=" << l2error << std::endl;
+    std::cout << "||u-(f-mex)||=" << l2error << std::endl;
 
     v.on(_range=elements(mesh), _expr=f-mex);
     auto e = exporter( _mesh=mesh, _prefix="nlsolve" );
