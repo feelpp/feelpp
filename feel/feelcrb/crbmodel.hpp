@@ -229,7 +229,7 @@ public:
         this->init();
     }
 
-    CRBModel( po::variables_map const& vm, CRBModelMode mode = CRBModelMode::PFEM  )
+    CRBModel( po::variables_map const& vm, CRBModelMode mode = CRBModelMode::PFEM, int level=0 )
         :
         M_Aqm(),
         M_InitialGuessV(),
@@ -248,6 +248,9 @@ public:
         M_numberOfTimeStep( 1 ),
         M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
+
+        if ( level!=0 )
+            M_model->setModelName( M_model->modelName() + "-" + to_string(level) );
         this->init();
     }
 
@@ -2427,7 +2430,7 @@ public:
     preconditioner_ptrtype preconditionerPrimal()  { return M_preconditioner_primal; }
     preconditioner_ptrtype preconditionerDual()  { return M_preconditioner_dual; }
     preconditioner_ptrtype preconditionerL2()  { return M_preconditioner_l2; }
-    
+
     /**
      * solve the model for a given parameter \p mu
      */

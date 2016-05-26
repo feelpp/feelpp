@@ -208,9 +208,6 @@ public:
                 LOG(INFO) << "[OpusApp] set Logs" << "\n";
                 LOG(INFO) << "[OpusApp] mode:" << ( int )M_mode << "\n";
 
-                model = crbmodel_ptrtype( new crbmodel_type( this->vm(),M_mode ) );
-                LOG(INFO) << "[OpusApp] get model done" << "\n";
-
                 crbs.push_back( newCRB() );
                 crb = crbs.back();
 
@@ -234,6 +231,7 @@ public:
     crb_ptrtype newCRB()
         {
             models.push_back( boost::make_shared<model_type>( this->vm(), M_mode ) );
+            model = models.back();
             return boost::make_shared<crb_type>( this->about().appName(),
                                                  this->vm() ,
                                                  models.back() );
