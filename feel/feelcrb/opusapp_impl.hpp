@@ -41,9 +41,6 @@ OpusApp<ModelType,RM,Model>::SER()
         {
             crbs.push_back( newCRB() );
             crb = crbs.back();
-#if 0
-            model = models.back();
-#endif
         }
 
         // Identifiy is offline eim still needs to be done
