@@ -211,7 +211,7 @@ public:
                 model = crbmodel_ptrtype( new crbmodel_type( this->vm(),M_mode ) );
                 LOG(INFO) << "[OpusApp] get model done" << "\n";
 
-                crbs->push_back( newCRB() );
+                crbs.push_back( newCRB() );
                 crb = crbs.back();
 
                 LOG(INFO) << "[OpusApp] get crb done" << "\n";
@@ -231,9 +231,9 @@ public:
     /**
      * \return a new CRB shared pointer
      */
-    crb_type newCRB()
+    crb_ptrtype newCRB()
         {
-            return std::make_shared<crb_type>( this->about().appName(),
+            return boost::make_shared<crb_type>( this->about().appName(),
                                                this->vm() ,
                                                model );
         }
@@ -935,7 +935,7 @@ private:
     CRBModelMode M_mode;
     crbmodel_ptrtype model;
     crb_ptrtype crb;
-    std::vector<crb_ptrtype> crbs;;
+    std::vector<crb_ptrtype> crbs;
 
     // For SCM convergence study
     std::map<std::string, std::vector<vectorN_type> > M_mapConvSCM;
