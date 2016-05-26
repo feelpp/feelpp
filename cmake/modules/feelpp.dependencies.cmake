@@ -577,7 +577,6 @@ endif()
 #
 include(feelpp.module.hpddm)
 include(feelpp.module.nlopt)
-include(feelpp.module.ipopt)
 include(feelpp.module.cereal)
 include(feelpp.module.paralution)
 include(feelpp.module.jsonlab)
@@ -1151,6 +1150,11 @@ if ( GMSH_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
 endif()
 include(feelpp.module.gmsh)
+
+#
+# ipopt
+#
+include(feelpp.module.ipopt)
 
 #
 # if Feel++ has been installed on the system
