@@ -175,16 +175,14 @@ public:
 
     typedef BenchmarkGreplNonlinearElliptic<Order> self_type;
 
+    BenchmarkGreplNonlinearElliptic()
+        :
+        super_type( "BenchMarkGreplNonlinearElliptic-" + std::to_string(Order) )
+        {}
+
     //! initialization of the model
     void initModel();
     //@}
-
-    std::string modelName()
-    {
-        std::ostringstream ostr;
-        ostr << "BenchMarkGreplNonlinearElliptic" <<  Order;
-        return ostr.str();
-    }
 
     //\return the list of EIM objects
     virtual funs_type scalarContinuousEim() const

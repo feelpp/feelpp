@@ -271,12 +271,28 @@ public :
     ModelCrbBase()
         :
         Dmu( new parameterspace_type ),
+        M_name( "generic-model-name" ),
         M_is_initialized( false )
     {
     }
+    ModelCrbBase( std::string const& name )
+        :
+        Dmu( new parameterspace_type ),
+        M_name( name ),
+        M_is_initialized( false )
+        {
+        }
     virtual ~ModelCrbBase() {}
 
-    virtual std::string modelName() { return "generic-model-name"; }
+    /**
+     * \return the name of the model
+     */
+    virtual std::string modelName() { return M_name; }
+
+    /**
+     * set the model name
+     */
+    virtual void setModelName( std::string const& name ) { M_name = name; }
 
     /**
      * return directory path where symbolic expression (ginac) are built
@@ -795,7 +811,7 @@ public :
         }
         return computeBetaQm( mu, time , only_terms_time_dependent );
     }
-    
+
     void buildGinacBetaExpressions( parameter_type const& mu )
     {
         //not that the parameter mu is here to indicates
@@ -1506,6 +1522,7 @@ public:
 
 protected :
 
+    std::string M_name;
 
     funs_type M_funs;
     funsd_type M_funs_d;
