@@ -34,8 +34,9 @@
 
 namespace Feel
 {
-CRBDB::CRBDB()
+CRBDB::CRBDB( WorldComm const& worldComm )
     :
+    M_worldComm( worldComm ),
     M_name( "noname" ),
     M_isloaded( false )
 {}
@@ -43,9 +44,11 @@ CRBDB::CRBDB()
 //! constructor from command line options
 CRBDB::CRBDB( std::string const& prefixdir,
               std::string const& name,
-              std::string const& dbprefix )
+              std::string const& dbprefix,
+              WorldComm const& worldComm )
     :
     M_prefixdir( prefixdir ),
+    M_worldComm( worldComm ),
     M_name( name ),
     M_isloaded( false )
 {
@@ -54,7 +57,7 @@ CRBDB::CRBDB( std::string const& prefixdir,
     //this->setDBFilename( ( boost::format( "%1%.crbdb" ) % dbprefix ).str() );
     this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
                            %dbprefix
-                           %Environment::worldComm().globalRank()
+                           %this->worldComm().globalRank()
                            ).str() );
     LOG(INFO) << "database name " << dbFilename() << "\n";
 
@@ -62,7 +65,7 @@ CRBDB::CRBDB( std::string const& prefixdir,
     if( Environment::vm().count( "crb.results-repo-name" ) )
         database_subdir = ( boost::format("%1%/np_%2%")
                             %soption(_name="crb.results-repo-name")
-                            %Environment::worldComm().globalSize() ).str();
+                            %this->worldComm().globalSize() ).str();
     M_dbDirectory = ( boost::format( "%1%/db/crb/%2%" )
                               % Feel::Environment::rootRepository()
                               % database_subdir ).str();

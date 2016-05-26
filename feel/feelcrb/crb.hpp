@@ -274,7 +274,7 @@ public:
         :
         super(),
         M_elements_database(),
-        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
         M_model(),
         M_output_index( 0 ),
         M_tolerance( 1e-2 ),
@@ -306,7 +306,7 @@ public:
                              name,
                              ( boost::format( "%1%-%2%-%3%-elements" ) % name % ioption(_name="crb.output-index") % ioption(_name="crb.error-type") ).str(),
                              model ),
-        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
         M_model( model ),
         M_backend( backend() ),
         M_backend_primal( backend(_name="backend-primal") ),
@@ -355,7 +355,7 @@ public:
         //this->setTruthModel( model );
         if ( this->loadDB() )
         {
-            if( Environment::worldComm().isMasterRank() )
+            if( this->worldComm().isMasterRank() )
                 std::cout << "Database " << this->lookForDB() << " available and loaded\n";
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
         }
@@ -368,7 +368,7 @@ public:
         {
             if( M_elements_database.loadDB() )
             {
-                if( Environment::worldComm().isMasterRank() )
+                if( this->worldComm().isMasterRank() )
                     std::cout<<"database for basis functions " << M_elements_database.lookForDB() << " available and loaded"<<std::endl;
                 LOG(INFO) << "database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
                 auto basis_functions = M_elements_database.wn();
@@ -376,7 +376,7 @@ public:
             }
             else
             {
-               if( Environment::worldComm().isMasterRank() )
+               if( this->worldComm().isMasterRank() )
                    std::cout<<"Warning ! No database for basis functions loaded. Start from the begining"<<std::endl;
                 LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
                 M_N = 0; //Re-init M_N
@@ -1223,15 +1223,13 @@ public:
     void buildVarianceMatrixPhi(int const N , mpl::bool_<true> );
     void buildVarianceMatrixPhi(int const N , mpl::bool_<false> );
 
-    WorldComm const& worldComm() const { return Environment::worldComm() ; }
-
     void printRBMatrix(matrixN_type const& A, parameter_type const& mu) const
     {
         int rows=A.rows();
         int cols=A.cols();
         int N = rows;
         std::string file_name = ( boost::format("RBmatrix-N%1%-mu-%2%") %N  %mu[0] ).str();
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::ofstream file;
             file.open( file_name,std::ios::out );
@@ -2441,10 +2439,10 @@ CRB<TruthModelType>::offline()
                 //auto o = M_model->solve( mu );
                 u = offlineNewtonPrimal( mu );
                 // u = M_model->solve( mu );
-                // if( Environment::worldComm().isMasterRank() )
+                // if( this->worldComm().isMasterRank() )
                 //     std::cout<<"============================================= start"<<std::endl;
                 // auto    u_fem = M_model->solve( mu );
-                // if( Environment::worldComm().isMasterRank() )
+                // if( this->worldComm().isMasterRank() )
                 //     std::cout<<"============================================= finish"<<std::endl;
 
                 tpr=timer2.elapsed();
@@ -3800,7 +3798,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
 {
 
     LOG( INFO ) <<"\n compareResidualsForTransientProblems \n";
-    //backend_ptrtype backend = backend_type::build( BACKEND_PETSC, Environment::worldComm() ) ;
+    //backend_ptrtype backend = backend_type::build( BACKEND_PETSC, this->worldComm() ) ;
 
     if ( M_model->isSteady() )
     {
@@ -4479,7 +4477,7 @@ CRB<TruthModelType>::computeProjectionInitialGuess( const parameter_type & mu, i
     //auto min = FE_initial_guess_after.min();
     auto max = FE_initial_guess_after.max();
 
-    if( Environment::worldComm().globalRank() == 0 )
+    if( this->worldComm().globalRank() == 0 )
         std::cout << "FE initial guess maxT = " << max << std::endl;
 
     exporter->step( 0 )->setMesh( FE_initial_guess_after.functionSpace()->mesh() );
@@ -6297,7 +6295,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
         if( increment > 1e-10 && inc_relative > 0 && inc_relative < doption(_name="ser.radapt-rb-rtol") )
             this->setAdaptationSER( true );
 
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "[RB] SER adaptation : " << this->getAdaptationSER()  << std::endl;
         if( !getAdaptationSER() )
             M_SER_maxerr = maxerr;
@@ -6397,7 +6395,7 @@ CRB<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) const
 
     A -= I;
     DVLOG(2) << "orthonormalization: " << A.norm() << "\n";
-    if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if ( this->worldComm().isMasterRank() )
     {
         LOG( INFO ) << "    o check : " << A.norm() << " (should be 0)";
     }
@@ -7070,7 +7068,7 @@ CRB<TruthModelType>::transientDualResidual( int Ncur,parameter_type const& mu,  
         print=true;
     if( 0 )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"[transientDualResidual] time "<<time<<std::endl;
             std::cout<<"Undu = "<<UnduNorm<<std::endl;
@@ -7296,7 +7294,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
     int __Qm = M_model->Qm();
     int __N = Ncur;
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( this->worldComm().isMasterRank() )
         std::cout << "     o N=" << Ncur << " QLhs=" << __QLhs
                   << " QRhs=" << __QRhs << " Qoutput=" << __QOutput
                   << " Qm=" << __Qm << "\n";
@@ -7362,7 +7360,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
             }//m1
         }//q1
 
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "     o M_Cmf_pr updated in " << ti.elapsed() << "s\n";
         ti.restart();
 
@@ -7432,7 +7430,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
             }// q1
         } // __j
 
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "     o M_Cma_pr updated in " << ti.elapsed() << "s\n";
         ti.restart();
 
@@ -7562,7 +7560,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
             }// q1
         } // __j
 
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "     o M_Cmm_pr updated in " << ti.elapsed() << "s\n";
 
 
@@ -7617,7 +7615,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
         } // elem
 
 
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "     o M_Cmf_du updated in " << ti.elapsed() << "s\n";
 
         ti.restart();
@@ -7705,7 +7703,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
         } // __j
 
 
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "     o Cma_du updated in " << ti.elapsed() << "s\n";
 
         ti.restart();
@@ -7837,7 +7835,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
         } // __j
 
 
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "     o Cmm_du updated in " << ti.elapsed() << "s\n";
         ti.restart();
 
@@ -7875,7 +7873,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
     int __QOutput = M_model->Ql( M_output_index );
     int __N = Ncur;
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( this->worldComm().isMasterRank() )
         std::cout << "     o N=" << Ncur << " QLhs=" << __QLhs
                   << " QRhs=" << __QRhs << " Qoutput=" << __QOutput << "\n";
 
@@ -7894,7 +7892,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
     __X->zero();
     __X->add( 1.0 );
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( this->worldComm().isMasterRank() )
         std::cout << "     o initialize offlineResidual in " << ti.elapsed() << "s\n";
 
     //std::cout << "measure of domain= " << M_model->scalarProduct( __X, __X ) << "\n";
@@ -7941,7 +7939,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
             }//end of loop __m1
         }//end of loop __q1
 
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "     o M_C0_pr updated in " << ti.elapsed() << "s\n";
 
     }// Ncur==M_Nm
@@ -8020,7 +8018,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
         }//end of __q1
     }//elem
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( this->worldComm().isMasterRank() )
         std::cout << "     o Lambda_pr updated in " << ti.elapsed() << "s\n";
 
     ti.restart();
@@ -8143,7 +8141,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
         }// q1
     }// end of loop __j
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( this->worldComm().isMasterRank() )
         std::cout << "     o Gamma_pr updated in " << ti.elapsed() << "s\n";
     sparse_matrix_ptrtype Atq1 = M_model->newMatrix();
     sparse_matrix_ptrtype Atq2 = M_model->newMatrix();
@@ -8185,7 +8183,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                 }//end of loop __m1
             }//end of loop __q1
 
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            if( this->worldComm().isMasterRank() )
                 std::cout << "     o C0_du updated in " << ti.elapsed() << "s\n";
             ti.restart();
         }
@@ -8231,7 +8229,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
             } // q1
         }//elem
 
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "     o Lambda_du updated in " << ti.elapsed() << "s\n";
         ti.restart();
 
@@ -8386,7 +8384,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
             }// q1
         } // __j
 
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "     o Gamma_du updated in " << ti.elapsed() << "s\n";
         ti.restart();
         LOG(INFO) << "[offlineResidual] Done.\n";
@@ -8700,7 +8698,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
     int __QOutput = M_model->Ql( M_output_index );
     int __N = Ncur;
 
-    if( Environment::worldComm().isMasterRank() )
+    if( this->worldComm().isMasterRank() )
         std::cout << "     o offline residual eim "<<std::endl;
 
     vector_ptrtype __X( M_backend->newVector( M_model->functionSpace() ) );
@@ -8766,7 +8764,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             }
         }//end of loop __q1
 
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "     o M_C0_pr_eim updated in " << ti.elapsed() << "s\n";
 
     }// Ncur==M_Nm
@@ -8818,7 +8816,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
         }//end of __q1
     }//elem
 
-    if( Environment::worldComm().isMasterRank() )
+    if( this->worldComm().isMasterRank() )
         std::cout << "     o Lambda_pr_eim updated in " << ti.elapsed() << "s\n";
 
     ti.restart();
@@ -8922,7 +8920,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
         }// q1
     }// end of loop __j
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( this->worldComm().isMasterRank() )
         std::cout << "     o Gamma_pr_eim updated in " << ti.elapsed() << "s\n";
     sparse_matrix_ptrtype Atq1 = M_model->newMatrix();
     sparse_matrix_ptrtype Atq2 = M_model->newMatrix();
@@ -8978,7 +8976,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 }
             }//end of loop __q1
 
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            if( this->worldComm().isMasterRank() )
                 std::cout << "     o C0_du_eim updated in " << ti.elapsed() << "s\n";
             ti.restart();
         }
@@ -9032,7 +9030,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             } // q1
         }//elem
 
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "     o Lambda_du_eim updated in " << ti.elapsed() << "s\n";
         ti.restart();
 
@@ -9162,7 +9160,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             }// q1
         } // __j
 
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "     o Gamma_du_eim updated in " << ti.elapsed() << "s\n";
         ti.restart();
         LOG(INFO) << "[offlineResidual eim] Done.\n";
@@ -9179,7 +9177,7 @@ CRB<TruthModelType>::printErrorsDuringRbConstruction( void )
     std::string file_name = "crb-offline-error.dat";
     typedef convergence_type::left_map::const_iterator iterator;
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( this->worldComm().isMasterRank() )
     {
         conv.open(file_name, std::ios::app);
         conv << "NbBasis" << "\t" << "output" << "\t" << "primal" << "\t" << "dual\n";
@@ -9219,7 +9217,7 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::printRbPicardIterations()
 {
-    if ( Environment::worldComm().isMasterRank() )
+    if ( this->worldComm().isMasterRank() )
     {
         std::ofstream file;
         std::string filename = "RB-offline_picard_summary.dat";
@@ -9238,7 +9236,7 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::printOnlineRbPicardIterations(parameter_type const& mu) const
 {
-    if ( Environment::worldComm().isMasterRank() )
+    if ( this->worldComm().isMasterRank() )
     {
         std::ofstream file;
         std::string filename = "RB-online_picard_summary.dat";
@@ -10262,8 +10260,8 @@ CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
     if( cvg ) //if we want to compute time statistics for every crb basis then we start at 1
         N=1;
 
-    int proc_number =  Environment::worldComm().globalRank();
-    int master =  Environment::worldComm().masterRank();
+    int proc_number =  this->worldComm().globalRank();
+    int master =  this->worldComm().masterRank();
 
     //write on a file
     std::string file_name_prediction = "cvg-timing-crb-prediction.dat";
@@ -10531,13 +10529,13 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
         {
             if( M_use_newton )
             {
-                if( Environment::worldComm().isMasterRank() )
+                if( this->worldComm().isMasterRank() )
                     std::cout<<"[CRB::loadDB] WARNING in the database used the option use-newton=true and it's not the case in your options so make sure that crb.rebuild-database=true !" <<std::endl;
                 LOG( INFO )<<"[CRB::loadDB] WARNING in the database used the option use-newton=true and it's not the case in your options so make sure that crb.rebuild-database=true !" ;
             }
             else
             {
-                if( Environment::worldComm().isMasterRank() )
+                if( this->worldComm().isMasterRank() )
                     std::cout<< "[CRB::loadDB] WARNING in the database used the option use-newton=false and it's not the case in your options so make sure that crb.rebuild-database=true !"<<std::endl;
                 LOG( INFO )<< "[CRB::loadDB] WARNING in the database used the option use-newton=false and it's not the case in your options so make sure that crb.rebuild-database=true !";
             }
@@ -10554,7 +10552,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     bool current_option=boption(_name="crb.is-model-executed-in-steady-mode");
     if( M_model_executed_in_steady_mode != current_option )
     {
-        if( M_model_executed_in_steady_mode && Environment::worldComm().isMasterRank() )
+        if( M_model_executed_in_steady_mode && this->worldComm().isMasterRank() )
             std::cout<<"[CRB::loadDB] WARNING in the database used, the model was executed in steady mode but now you want to execute it in transient mode. make sure that --crb.rebuild-database=true"<<std::endl;
         LOG( INFO ) <<"[CRB::loadDB] WARNING in the database used, the model was executed in steady mode but now you want to execute it in transient mode. make sure that --crb.rebuild-database=true";
     }

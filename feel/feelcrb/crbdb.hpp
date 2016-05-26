@@ -72,10 +72,11 @@ public:
     //@{
 
     //! default constructor
-    CRBDB();
+    CRBDB( WorldComm const& worldComm = Environment::worldComm() );
     CRBDB( std::string const& prefixdir,
            std::string const& name,
-           std::string const& dbprefix );
+           std::string const& dbprefix,
+           WorldComm const& worldComm = Environment::worldComm() );
     //! copy constructor
     CRBDB( CRBDB const & ) = default;
     //! destructor
@@ -95,6 +96,9 @@ public:
     /** @name Accessors
      */
     //@{
+
+    //! \return the mpi communicators
+    WorldComm const& worldComm() const { return M_worldComm; }
 
     //! \return prefix directory
     std::string const& prefixDirectory() const
@@ -188,6 +192,8 @@ protected:
 protected:
     std::string M_prefixdir;
 private:
+    //! mpi communicators
+    WorldComm const& M_worldComm;
 
     std::string M_name;
     std::string M_dbfilename;
