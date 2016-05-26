@@ -104,7 +104,7 @@ public :
         else
             this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
                                    %dbprefix
-                                   %Environment::worldComm().globalRank()
+                                   %this->worldComm().globalRank()
                                    ).str() );
     }
 
@@ -308,7 +308,7 @@ CRBElementsDB<ModelType>::saveHDF5DB()
     offset[0] = 0;
 
     /* only do this on proc 0 */
-    if(Environment::worldComm().isMasterRank())
+    if(this->worldComm().isMasterRank())
     {
         /* If a previous db already exists, we remove it */
         if( boost::filesystem::exists( hdf5File.str() ) )
@@ -323,13 +323,13 @@ CRBElementsDB<ModelType>::saveHDF5DB()
         else
         { memDataType = H5T_NATIVE_LLONG; }
 
-        hdf5.openFile( hdf5File.str(), Environment::worldComm().subWorldCommSeq(), true, true );
+        hdf5.openFile( hdf5File.str(), this->worldComm().subWorldCommSeq(), true, true );
         hdf5.createTable( "dbSize", memDataType, dims, 1 );
         hdf5.write( "dbSize", memDataType, dims, offset, &size, 1 );
         hdf5.closeTable( "dbSize" );
         hdf5.closeFile();
     }
-    Environment::worldComm().barrier();
+    this->worldComm().barrier();
 
     LOG( INFO ) << "saving HDF5 Elements DB";
     for(int i=0; i < size; i++)
@@ -437,7 +437,7 @@ CRBElementsDB<ModelType>::loadHDF5DB()
     else
     { memDataType = H5T_NATIVE_LLONG; }
 
-    hdf5.openFile( hdf5File.str(), Environment::worldComm(), true, false );
+    hdf5.openFile( hdf5File.str(), this->worldComm(), true, false );
     hdf5.openTable( "dbSize", dims);
     hdf5.read( "dbSize", memDataType, dims, offset, &size, 1 );
     hdf5.closeTable( "dbSize");
