@@ -295,59 +295,17 @@ public:
     }
 
     //! constructor from command line options
-#if 0
-    CRB( std::string  name,
-         po::variables_map const& vm )
-        :
-        super( ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
-               name,
-               ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
-               vm ),
-        M_elements_database(
-                            ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
-                            name,
-                            ( boost::format( "%1%-%2%-%3%-elements" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
-                            vm ),
-        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) ),
-        M_model(),
-        M_backend( backend_type::build( vm ) ),
-        M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
-        M_backend_dual( backend_type::build( vm , "backend-dual") ),
-        M_output_index( vm["crb.output-index"].template as<int>() ),
-        M_tolerance( vm["crb.error-max"].template as<double>() ),
-        M_iter_max( vm["crb.dimension-max"].template as<int>() ),
-        M_factor( vm["crb.factor"].template as<int>() ),
-        M_error_type( CRBErrorType( vm["crb.error-type"].template as<int>() ) ),
-        M_Dmu( new parameterspace_type ),
-        M_Xi( new sampling_type( M_Dmu ) ),
-        M_WNmu( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_WNmu_complement(),
-        M_scmA( new scm_type( name+"_a", vm ) ),
-        M_scmM( new scm_type( name+"_m", vm ) ),
-        M_exporter( Exporter<mesh_type>::New( "BasisFunction" ) ),
-        M_database_contains_variance_info( vm["crb.save-information-for-variance"].template as<bool>()),
-        M_rebuild( this->rebuildDB() )
-    {
-        // this is too early to load the DB, we don't have the model yet and the
-        //associated function space for the reduced basis function if
-        // do the loadDB() in setTruthModel()
-        //this->loadDB() )
-
-    }
-#endif
-    //! constructor from command line options
     CRB( std::string  name,
          po::variables_map const& vm,
          truth_model_ptrtype const & model )
         :
-        super( ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
+        super( ( boost::format( "%1%" ) % ioption(_name="crb.error-type") ).str(),
                name,
-               ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str() ),
-        M_elements_database(
-                            ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
-                            name,
-                            ( boost::format( "%1%-%2%-%3%-elements" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
-                            model ),
+               ( boost::format( "%1%-%2%-%3%" ) % name % ioption(_name="crb.output-index") % ioption(_name="crb.error-type") ).str() ),
+        M_elements_database( ( boost::format( "%1%" ) % ioption(_name="crb.error-type") ).str(),
+                             name,
+                             ( boost::format( "%1%-%2%-%3%-elements" ) % name % ioption(_name="crb.output-index") % ioption(_name="crb.error-type") ).str(),
+                             model ),
         M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) ),
         M_model( model ),
         M_backend( backend() ),
@@ -401,6 +359,8 @@ public:
                 std::cout << "Database " << this->lookForDB() << " available and loaded\n";
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
         }
+        else
+            M_N = 0;
         //this will be in the offline step (it's only when we enrich or create the database that we want to have access to elements of the RB)
 
         M_elements_database.setMN( M_N );
@@ -2117,6 +2077,13 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::convergence_type
 CRB<TruthModelType>::offline()
 {
+
+    if ( this->worldComm().isMasterRank() )
+    {
+        if ( !fs::exists( this->dbLocalPath() ) )
+            fs::create_directories( this->dbLocalPath() );
+    }
+    this->worldComm().barrier();
 
     int proc_number = this->worldComm().globalRank();
     int master_proc = this->worldComm().masterRank();
@@ -10691,6 +10658,7 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::saveDB()
 {
+
     fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
 
     if ( ofs )
@@ -10701,6 +10669,22 @@ CRB<TruthModelType>::saveDB()
         oa << *this;
         // archive and stream closed when destructors are called
     }
+
+    if ( this->worldComm().isMasterRank() )
+    {
+        std::string filenameJson = (this->dbLocalPath()/fs::path("crb.json")).string();
+        boost::property_tree::ptree ptree;
+        M_model->updatePropertyTree( ptree );
+
+        boost::property_tree::ptree ptreeCrb;//Database;
+        ptreeCrb.add( "dimension", M_N );
+        ptreeCrb.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
+        ptreeCrb.add( "has-solve-dual-problem",M_solve_dual_problem );
+        ptree.add_child( "crb", ptreeCrb );
+
+        write_json( filenameJson, ptree );
+    }
+
 }
 
 template<typename TruthModelType>

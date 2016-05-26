@@ -425,6 +425,21 @@ public :
         return M_funs_d;
     }
 
+    /**
+     * \brief update model description in property_tree
+     * \param ptree to update
+     */
+    void updatePropertyTree( boost::property_tree::ptree & ptree ) const
+    {
+        boost::property_tree::ptree ptreeParameterSpace;
+        this->parameterSpace()->updatePropertyTree( ptreeParameterSpace );
+        ptree.add_child( "parameter_space", ptreeParameterSpace );
+
+        this->updateSpecificityModelPropertyTree( ptree );
+    }
+
+    virtual void updateSpecificityModelPropertyTree( boost::property_tree::ptree & ptree ) const {}
+
     virtual void initModel() = 0;
 
     virtual void assemble()
