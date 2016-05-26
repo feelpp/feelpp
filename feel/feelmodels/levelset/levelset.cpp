@@ -3,8 +3,8 @@
 namespace Feel {
 namespace FeelModels {
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSet(
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
         mesh_ptrtype mesh, 
         std::string const& prefix, 
         PeriodicityType periodicityLS )
@@ -93,9 +93,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSet(
 
 } //constructor
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
+LEVELSET_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 {
     // +++++++++ initialize every quantities which need the mesh +++++++++++
     M_mesh = mesh;
@@ -169,8 +169,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 } // init
 
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-void LEVELSETBASE_CLASS_TEMPLATE_TYPE::imposePhi( elementLS_ptrtype phi )
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void LEVELSET_CLASS_TEMPLATE_TYPE::imposePhi( elementLS_ptrtype phi )
 {
     using namespace Feel::vf;
 
@@ -183,8 +183,8 @@ void LEVELSETBASE_CLASS_TEMPLATE_TYPE::imposePhi( elementLS_ptrtype phi )
 }//imposePhi
 
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-void LEVELSETBASE_CLASS_TEMPLATE_TYPE::initialize(elementLS_ptrtype phi, bool doFirstReinit, ReinitMethod method, int max_iter, double dtau, double tol)
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void LEVELSET_CLASS_TEMPLATE_TYPE::initialize(elementLS_ptrtype phi, bool doFirstReinit, ReinitMethod method, int max_iter, double dtau, double tol)
     {
         using namespace Feel;
         using namespace Feel::vf;
@@ -217,9 +217,9 @@ void LEVELSETBASE_CLASS_TEMPLATE_TYPE::initialize(elementLS_ptrtype phi, bool do
     } //initialize
 
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::circleShape(double r0, double x0, double y0, double z0)
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
+LEVELSET_CLASS_TEMPLATE_TYPE::circleShape(double r0, double x0, double y0, double z0)
 {
     auto shape = M_spaceLevelSet->elementPtr();
 
@@ -230,9 +230,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::circleShape(double r0, double x0, double y0, d
     return shape;
 } //circleShape
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::ellipseShape(double a_ell, double b_ell, double x0, double y0, double z0)
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
+LEVELSET_CLASS_TEMPLATE_TYPE::ellipseShape(double a_ell, double b_ell, double x0, double y0, double z0)
 {
     auto shape = M_spaceLevelSet->elementPtr();
     *shape = vf::project(M_spaceLevelSet, elements(M_mesh),
@@ -242,41 +242,41 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::ellipseShape(double a_ell, double b_ell, doubl
     return shape;
 }//ellipseShape
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::self_ptrtype
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::New( mesh_ptrtype mesh, std::string const& prefix, double TimeStep, PeriodicityType periodocity )
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::self_ptrtype
+LEVELSET_CLASS_TEMPLATE_TYPE::New( mesh_ptrtype mesh, std::string const& prefix, double TimeStep, PeriodicityType periodocity )
 {
     self_ptrtype new_ls( new self_type( mesh, prefix, TimeStep, periodocity) );
     return new_ls;
 }
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::setStrategyBeforeFm( int strat )
+LEVELSET_CLASS_TEMPLATE_TYPE::setStrategyBeforeFm( int strat )
 {
     if (reinitializerUpdated)
         LOG(INFO)<<" !!!  WARNING !!! : setStrategyBeforeFm set after the fast marching has been actually initialized ! \n";
     strategyBeforeFm = (strategyBeforeFm_type) strat;
 }
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 Feel::levelset::strategyBeforeFm_type
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::getStrategyBeforeFm()
+LEVELSET_CLASS_TEMPLATE_TYPE::getStrategyBeforeFm()
 {
     return strategyBeforeFm;
 }
 
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::setUseMarker2AsMarkerDoneFmm(bool value)
+LEVELSET_CLASS_TEMPLATE_TYPE::setUseMarker2AsMarkerDoneFmm(bool value)
 {
     M_useMarker2AsMarkerDoneFmm = value;
 }
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::setThicknessInterface( double value )
+LEVELSET_CLASS_TEMPLATE_TYPE::setThicknessInterface( double value )
 {
     M_thicknessInterface = value;
 }
@@ -285,9 +285,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::setThicknessInterface( double value )
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Update levelset-dependent functions
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDirac()
+LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
 {
     // derivative of Heavyside function
     auto eps = this->thicknessInterface();
@@ -324,9 +324,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDirac()
     }
 }
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateHeaviside()
+LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
 { 
     auto eps = this->thicknessInterface();
 
@@ -362,9 +362,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateHeaviside()
     }
 }
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMass()
+LEVELSET_CLASS_TEMPLATE_TYPE::updateMass()
 {
     M_mass = integrate(
             _range=elements(M_mesh),
@@ -376,9 +376,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMass()
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Markers accessors
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::markerInterface()
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::markerInterface()
 {
     if( !M_markerInterface )
         M_markerInterface.reset( new element_markers_type(M_spaceMarkers, "MarkerInterface") );
@@ -389,9 +389,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::markerInterface()
     return M_markerInterface;
 }
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::markerDirac()
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::markerDirac()
 {
     if( !M_markerDirac )
         M_markerDirac.reset( new element_markers_type(M_spaceMarkers, "MarkerDirac") );
@@ -402,9 +402,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::markerDirac()
     return M_markerDirac;
 }
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::markerHeaviside()
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::markerHeaviside()
 {
     if( !M_markerHeaviside )
         M_markerHeaviside.reset( new element_markers_type(M_spaceMarkers, "MarkerHeaviside") );
@@ -415,9 +415,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::markerHeaviside()
     return M_markerHeaviside;
 }
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::markerCrossedElements()
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::markerCrossedElements()
 {
     if( !M_markerCrossedElements )
         M_markerCrossedElements.reset( new element_markers_type(M_spaceMarkers, "MarkerCrossedElements") );
@@ -432,10 +432,10 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::markerCrossedElements()
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Advection
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 template<typename ExprT>
 bool 
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
+LEVELSET_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
 {
     //output : true if reinitialized
     bool didReinit=false;
@@ -497,9 +497,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
 
 //----------------------------------------------------------------------------//
 // Reinitialization
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::reinitialize()
+LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 { 
     if( !M_reinitializerIsUpdatedForUse )
         this->createReinitializer();
@@ -616,9 +616,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::reinitialize()
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Update markers
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerInterface()
+LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerInterface()
 {
     /* returns a marker (P0_type) on the elements crossed by the levelset
        ie :
@@ -655,9 +655,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerInterface()
     }
 }
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerDirac()
+LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerDirac()
 {
     const int ndofv = space_levelset_type::fe_type::nDof;
 
@@ -686,9 +686,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerDirac()
 }//markerDelta
 
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerHeaviside(bool invert, bool cut_at_half)
+LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerHeaviside(bool invert, bool cut_at_half)
 {
     /* returns P0 element having :
     if invert == true : 1 on elements inside Heaviside function (where H is smaller than epsilon on at least 1 dof)
@@ -724,9 +724,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerHeaviside(bool invert, bool cut_at
     }
 } 
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
+LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
 {
     // return a "marker" on the elements traversed by the interface between phio and phi
     // ie : mark as 1 is one of the dof of the element has  (phi * phio < 0)

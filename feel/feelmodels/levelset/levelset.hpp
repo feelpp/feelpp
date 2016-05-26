@@ -61,7 +61,7 @@ enum class LevelSetReinitMethod {FM, HJ};
 enum strategyBeforeFm_type {NONE=0, ILP=1, HJ_EQ=2, IL_HJ_EQ=3};
 
 template<typename ConvexType, typename AdvectionType, int Order=1, typename PeriodicityType = NoPeriodicity>
-class LevelSetBase
+class LevelSet
 {
 public:
     typedef LevelSet<ConvexType, Order, PeriodicityType> self_type;
@@ -177,18 +177,18 @@ public:
 
     //--------------------------------------------------------------------//
     // Constructor
-    //LevelSetBase(
+    //LevelSet(
             //mesh_ptrtype mesh, 
             //std::string const& prefix, 
             //double TimeStep=0.1, 
             //PeriodicityType periodocity = NoPeriodicity() );
-    LevelSetBase(
+    LevelSet(
             std::string const& prefix,
             WorldComm const& _worldComm = Environment::worldComm(),
             std::string const& subPrefix = "",
             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
-    LevelSetBase( self_type const& L ) = default;
+    LevelSet( self_type const& L ) = default;
 
     //static self_ptrtype New( mesh_ptrtype mesh, std::string const& prefix, double TimeStep=0.1, PeriodicityType periodocity = NoPeriodicity() );
 
