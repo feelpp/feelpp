@@ -233,9 +233,10 @@ public:
      */
     crb_ptrtype newCRB()
         {
+            models.push_back( boost::make_shared<model_type>( this->vm(), M_mode ) );
             return boost::make_shared<crb_type>( this->about().appName(),
-                                               this->vm() ,
-                                               model );
+                                                 this->vm() ,
+                                                 models.back() );
         }
     crb_ptrtype & crbPtr() { return crb; }
     crb_ptrtype const& crbPtr() const { return crb; }
@@ -934,6 +935,7 @@ private:
 private:
     CRBModelMode M_mode;
     crbmodel_ptrtype model;
+    std::vector<crbmodel_ptrtype> models;
     crb_ptrtype crb;
     std::vector<crb_ptrtype> crbs;
 

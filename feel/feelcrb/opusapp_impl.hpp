@@ -34,13 +34,6 @@ void
 OpusApp<ModelType,RM,Model>::SER()
 {
     bool do_offline_eim = false;
-    // Identifiy is offline eim still needs to be done
-    auto eim_sc_vector = model->scalarContinuousEim();
-    auto eim_sd_vector = model->scalarDiscontinuousEim();
-    for( auto eim_sc : eim_sc_vector )
-        do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
-    for( auto eim_sd : eim_sd_vector )
-        do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
 
     for( int ser_level=0; ser_level < 2; ++ser_level )
     {
@@ -52,6 +45,14 @@ OpusApp<ModelType,RM,Model>::SER()
             model = models.back();
 #endif
         }
+
+        // Identifiy is offline eim still needs to be done
+        auto eim_sc_vector = model->scalarContinuousEim();
+        auto eim_sd_vector = model->scalarDiscontinuousEim();
+        for( auto eim_sc : eim_sc_vector )
+            do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
+        for( auto eim_sd : eim_sd_vector )
+            do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
 
         do
         {
