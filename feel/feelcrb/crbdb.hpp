@@ -73,9 +73,9 @@ public:
 
     //! default constructor
     CRBDB();
-    CRBDB( std::string prefixdir,
-           std::string name,
-           std::string dbprefix );
+    CRBDB( std::string const& prefixdir,
+           std::string const& name,
+           std::string const& dbprefix );
     //! copy constructor
     CRBDB( CRBDB const & ) = default;
     //! destructor
@@ -191,6 +191,7 @@ private:
 
     std::string M_name;
     std::string M_dbfilename;
+    std::string M_dbDirectory;
     bool M_isloaded;
 
 

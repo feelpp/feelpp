@@ -977,6 +977,15 @@ public:
 
 
     /**
+     * \brief update model description in property_tree
+     * \param ptree to update
+     */
+    void updatePropertyTree( boost::property_tree::ptree & ptree ) const
+    {
+        M_model->updatePropertyTree( ptree );
+    }
+
+    /**
      * initialize the model
      */
     void initModel()

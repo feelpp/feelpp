@@ -41,9 +41,9 @@ CRBDB::CRBDB()
 {}
 
 //! constructor from command line options
-CRBDB::CRBDB( std::string prefixdir,
-              std::string name,
-              std::string dbprefix )
+CRBDB::CRBDB( std::string const& prefixdir,
+              std::string const& name,
+              std::string const& dbprefix )
     :
     M_prefixdir( prefixdir ),
     M_name( name ),
@@ -51,10 +51,21 @@ CRBDB::CRBDB( std::string prefixdir,
 {
     LOG(INFO) << prefixdir << "," << name << "\n";
 
-    this->setDBFilename( ( boost::format( "%1%.crbdb" ) % dbprefix ).str() );
+    //this->setDBFilename( ( boost::format( "%1%.crbdb" ) % dbprefix ).str() );
+    this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
+                           %dbprefix
+                           %Environment::worldComm().globalRank()
+                           ).str() );
     LOG(INFO) << "database name " << dbFilename() << "\n";
 
-
+    std::string database_subdir = "default_repo";
+    if( Environment::vm().count( "crb.results-repo-name" ) )
+        database_subdir = ( boost::format("%1%/np_%2%")
+                            %soption(_name="crb.results-repo-name")
+                            %Environment::worldComm().globalSize() ).str();
+    M_dbDirectory = ( boost::format( "%1%/db/crb/%2%" )
+                              % Feel::Environment::rootRepository()
+                              % database_subdir ).str();
 }
 
 //! destructor
@@ -81,7 +92,7 @@ CRBDB::dbSystemPath() const
 fs::path
 CRBDB::dbLocalPath() const
 {
-
+#if 0
     int proc_number =  Environment::worldComm().globalRank();
     int nb_proc = Environment::worldComm().globalSize();
     std::string suf;
@@ -104,7 +115,8 @@ CRBDB::dbLocalPath() const
                               % suf ).str();
     fs::path rep_path = localpath;
     fs::create_directories( rep_path );
-
+#endif
+    fs::path rep_path = M_dbDirectory;
     return rep_path;
 }
 
