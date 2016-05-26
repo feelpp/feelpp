@@ -36,8 +36,10 @@
 #include <fstream>
 
 #include <cstring>
+#ifdef FEELPP_HAS_LIBXML2
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#endif
 
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -274,12 +276,14 @@ public:
     template<typename Iterator>
     void saveElementData( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
 
+#ifdef FEELPP_HAS_LIBXML2
     /**
      * As we process the timesteps one by one, we need a way to record each new timestep.
      * To do so, we use a pvd file (Paraview format) that allows use to specify new timesteps
      * using xml syntax.
      */
     int writeTimePVD(std::string xmlFilename, double timestep, std::string dataFilename, int partNo = 0) const;
+#endif
 
 
     /**
