@@ -79,17 +79,33 @@ public :
     {
     }
 
-    CRBElementsDB( std::string prefixdir,
-                std::string name,
-                std::string dbprefix,
-                model_ptrtype const & model )
+    CRBElementsDB( std::string const& prefixdir,
+                   std::string const& name,
+                   std::string const& dbprefix,
+                   model_ptrtype const & model )
     :
         super( prefixdir,
                name,
                dbprefix ),
-        M_N( 0 )
+        M_fileFormat( soption(_name="crb.db.format") ),
+        M_N( 0 ),
+        M_model( model )
     {
-        M_model = model;
+#ifndef FEELPP_HAS_HDF5
+        if ( M_fileFormat == "hdf5" )
+        {
+            LOG(INFO) << "CRB db format hdf5 unsupported. Switching to boost.";
+            M_fileFormat = "boost";
+        }
+#endif
+        if ( M_fileFormat == "hdf5" )
+            this->setDBFilename( ( boost::format( "%1%.h5" )
+                                   %dbprefix ).str() );
+        else
+            this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
+                                   %dbprefix
+                                   %Environment::worldComm().globalRank()
+                                   ).str() );
     }
 
 
@@ -119,10 +135,6 @@ public :
      */
     void loadHDF5DB();
 #endif
-
-    virtual fs::path lookForDB() const;
-
-    virtual fs::path dbLocalPath() const;
 
     boost::tuple<wn_type, wn_type> wn()
     {
@@ -156,6 +168,8 @@ private :
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
+    std::string M_fileFormat;
+
     size_type M_N;
 
     wn_type M_WN;
@@ -166,118 +180,23 @@ private :
 
 };//class CRBElementsDB
 
-template<typename ModelType>
-fs::path
-CRBElementsDB<ModelType>::dbLocalPath() const
-{
-    fs::path rep_path = "";
-    /* If we are using the boost implementation
-     * we use the original dbLocalPath from teh base class
-     */
-    if(soption(_name="crb.db.format").compare("boost") == 0)
-    {
-        rep_path = CRBDB::dbLocalPath();
-    }
-    /* otherwise we use a custom implementation
-     * to only output one hdf5 file in a common directory
-     */
-    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
-    {
-        std::string suf;
-        if( (this->vm()).count( "crb.results-repo-name" ) )
-        {
-            std::string database_name = (this->vm())["crb.results-repo-name"].template as<std::string>();
-            suf = database_name + "_common";
-        }
-        else
-        {
-            std::string database_name = "default_repo";
-            suf = database_name + "_common";
-        }
 
-        // generate the local repository db path
-        std::string localpath = ( boost::format( "%1%/db/crb/%2%/%3%" )
-                                  % Feel::Environment::rootRepository()
-                                  % M_prefixdir
-                                  % suf ).str();
-        rep_path = localpath;
-        fs::create_directories( rep_path );
-    }
-
-    return rep_path;
-}
-
-template<typename ModelType>
-fs::path
-CRBElementsDB<ModelType>::lookForDB() const
-{
-    if(soption(_name="crb.db.format").compare("boost") == 0)
-    {
-        //std::cout << "db fdilename=" << this->dbFilename() << "\n";
-        // look in local repository $HOME/feel/db/crb/...
-        if ( fs::exists( this->dbLocalPath() / this->dbFilename() ) )
-        {
-            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbLocalPath() << "\n";
-            return this->dbLocalPath() / this->dbFilename();
-        }
-
-        // then look into the system for install databases
-        if ( fs::exists( this->dbSystemPath() / this->dbFilename() ) )
-        {
-            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbSystemPath() << "\n";
-            return this->dbSystemPath() / this->dbFilename();
-        }
-    }
-    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
-    {
-        std::ostringstream oss;
-        /* build the filename of db 0 */
-        /* If this element exists, we load the database */
-        fs::path p = this->dbLocalPath() / fs::path(this->dbFilename());
-        p.replace_extension("");
-        oss << p.string() << ".h5";
-
-        //std::cout << "db fdilename=" << this->dbFilename() << "\n";
-        // look in local repository $HOME/feel/db/crb/...
-        if ( fs::exists( oss.str() ) )
-        {
-            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbLocalPath() << "\n";
-            return oss.str();
-        }
-
-        p = this->dbSystemPath() / fs::path(this->dbFilename());
-        p.replace_extension("");
-        oss << p.string() << ".h5";
-
-        // then look into the system for install databases
-        if ( fs::exists( oss.str() ) )
-        {
-            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbSystemPath() << "\n";
-            return oss.str();
-        }
-    }
-
-    return fs::path();
-}
 
 template<typename ModelType>
 void
 CRBElementsDB<ModelType>::saveDB()
 {
-#ifdef FEELPP_HAS_HDF5
-    if(soption(_name="crb.db.format").compare("hdf5") == 0)
+    if ( M_fileFormat == "hdf5" )
     {
+#ifdef FEELPP_HAS_HDF5
         this->saveHDF5DB();
+#else
+        CHECK(false) << "Feel++ not compiled with hdf5";
+#endif
     }
     else
-#endif
     /* save in boost format by default */
     {
-        if(soption(_name="crb.db.format").compare("boost") != 0)
-        {
-            LOG(INFO) << "CRB db format (" << soption(_name="crb.db.format") << " unsupported. Switching to boost.";
-        }
-
         fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
 
         if ( ofs )
@@ -310,22 +229,19 @@ CRBElementsDB<ModelType>::loadDB()
     if ( !fs::exists( db ) )
         return false;
 
-#ifdef FEELPP_HAS_HDF5
-    if(soption(_name="crb.db.format").compare("hdf5") == 0)
+    if ( M_fileFormat == "hdf5" )
     {
-        this->loadHDF5DB();    
+#ifdef FEELPP_HAS_HDF5
+        this->loadHDF5DB();
+#else
+        CHECK(false) << "Feel++ not compiled with hdf5";
+#endif
         std::cout << "Loading " << db << " done...\n";
         this->setIsLoaded( true );
         return true;
     }
     else
-#endif
     {
-        if(soption(_name="crb.db.format").compare("boost") != 0)
-        {
-            LOG(INFO) << "CRB db format (" << soption(_name="crb.db.format") << " unsupported. Switching to boost.";
-        }
-
         std::cout << "Loading " << db << "...\n";
         fs::ifstream ifs( db );
 
