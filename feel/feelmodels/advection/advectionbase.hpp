@@ -149,7 +149,6 @@ public :
 
     //--------------------------------------------------------------------//
     // Initialization
-    void build();
     void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app );
 
     virtual void loadParametersFromOptionsVm();
@@ -271,7 +270,13 @@ public :
     void exportResults( double time );
 
 protected:
+    //--------------------------------------------------------------------//
+    // Initialization
+    void build();
 
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
     bool M_isUpdatedForUse;
     //--------------------------------------------------------------------//
     // Model and solver
