@@ -230,11 +230,11 @@ public:
      */
     crb_ptrtype newCRB()
         {
-            models.push_back( boost::make_shared<model_type>( this->vm(), M_mode ) );
+            models.push_back( boost::make_shared<crbmodel_type>( this->vm(), M_mode ) );
             model = models.back();
             return boost::make_shared<crb_type>( this->about().appName(),
                                                  this->vm() ,
-                                                 models.back() );
+                                                 model );
         }
     crb_ptrtype & crbPtr() { return crb; }
     crb_ptrtype const& crbPtr() const { return crb; }
