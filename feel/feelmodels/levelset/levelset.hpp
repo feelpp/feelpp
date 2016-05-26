@@ -51,11 +51,11 @@ enum LevelSetTimeDiscretization {BDF2, /*CN,*/ EU, CN_CONSERVATIVE};
  * FM -> Fast-Marching
  * HJ -> Hamilton-Jacobi
  */
-enum class LevelsetReinitMethod {FM, HJ};
+enum class LevelSetReinitMethod {FM, HJ};
 
 // type of the possibles strategy to initialize the elements around the interface in the case of a reinitialization by fast marching
 // ILP = Interface Local projection i.e : project phi* = phi / |grad phi| (nodal projection of phi, smoothed projection of |grad phi|)
-// HJ_EQ = Do few steps of Hamilton Jacoby equation
+// HJ_EQ = Do few steps of Hamilton Jacobi equation
 // IL_HJ_EQ = "Interface Local HJ", solve Hamilton-Jacobi equation near the interface
 // NONE = don't do anything, before the fast marching
 enum strategyBeforeFm_type {NONE=0, ILP=1, HJ_EQ=2, IL_HJ_EQ=3};
@@ -63,7 +63,7 @@ enum strategyBeforeFm_type {NONE=0, ILP=1, HJ_EQ=2, IL_HJ_EQ=3};
 template<typename ConvexType, typename AdvectionType, int Order=1, typename PeriodicityType = NoPeriodicity>
 class LevelSetBase
 {
-public :
+public:
     typedef LevelSet<ConvexType, Order, PeriodicityType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
@@ -144,15 +144,18 @@ public :
     typedef OperatorInterpolation<
         space_levelset_type, // from space
         space_levelset_reinitP1_type, // to space
-        range_visu_ho_type> op_inte_LS_to_P1_type;
+        range_visu_ho_type> op_interpolation_LS_to_P1_type;
 
     typedef OperatorInterpolation<
         space_levelset_reinitP1_type, // from space
         space_levelset_type, // to space
-        range_visu_ho_type> op_inte_P1_to_LS_type;
+        range_visu_ho_type> op_interpolation_P1_to_LS_type;
 
-    typedef boost::shared_ptr<op_inte_LS_to_P1_type> op_inte_LS_to_P1_ptrtype;
-    typedef boost::shared_ptr<op_inte_P1_to_LS_type> op_inte_P1_to_LS_ptrtype;
+    typedef boost::shared_ptr<op_interpolation_LS_to_P1_type> op_interpolation_LS_to_P1_ptrtype;
+    typedef boost::shared_ptr<op_interpolation_P1_to_LS_type> op_interpolation_P1_to_LS_ptrtype;
+
+    typedef OperatorLagrangeP1<space_levelset_type> op_lagrangeP1_type;
+    typedef boost::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
 
     // ---------------- reinitializer ----------------
     typedef ReinitializerFMS<space_levelset_reinitP1_type, PeriodicityType> reinitilizer_type;
@@ -195,9 +198,9 @@ public :
     void init();
     void initFromMesh();
     //--------------------------------------------------------------------//
-    space_levelset_ptrtype const& functionSpace() const { return M_spaceLevelSet; }
-    space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceLevelSet; }
-    space_levelset_vectorial_ptrtype const& functionsSpaceVectorial() const { return M_spaceMarkers; }
+    space_levelset_ptrtype const& functionSpace() const { return M_advection->functionSpace(); }
+    space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
+    space_levelset_vectorial_ptrtype const& functionsSpaceVectorial() const { return M_spaceLevelSetVec; }
     space_levelset_reinitP1_ptrtype const& functionSpaceReinitP1() const { return M_spaceReinitP1; }
 
     space_levelset_ptrtype const& functionSubspace() const { return M_subspaceLevelSet; }
@@ -216,12 +219,12 @@ public :
 
     //--------------------------------------------------------------------//
     // Levelset
-    element_levelset_ptrtype const& phi() const { return M_phi; }
-    element_levelset_ptrtype const& phinl() const { return M_phinl; }
+    element_levelset_ptrtype const& phi() const { return M_advection->fieldSolutionPtr(); }
+    //element_levelset_ptrtype const& phinl() const { return M_phinl; }
     element_levelset_ptrtype const& H() const { return M_heaviside; }
     element_levelset_ptrtype const& D() const { return M_dirac; }
 
-    double mass() const { return *M_mass; }
+    double mass() const { return M_mass; }
 
     double thicknessInterface() const { return M_thicknessInterface; }
 
@@ -229,30 +232,30 @@ public :
 
     //--------------------------------------------------------------------//
     // Markers
-    element_markers_type markerInterface();
-    element_markers_ptrtype markerDelta();
-    element_markers_type markerH(bool invert = false, bool cut_at_half = false);
-    element_markers_type crossedElements();
-
+    element_markers_ptrtype const& markerInterface();
+    element_markers_ptrtype const& markerDirac();
+    element_markers_ptrtype const& markerHeaviside(bool invert = false, bool cut_at_half = false);
+    element_markers_ptrtype const& markerCrossedElements();
 
     //--------------------------------------------------------------------//
     // Advection
-    /* advect phi by Velocity
-       this->M_phi takes the new value
-       also the following variable are updated : M_phio, M_dirac, M_H, M_mass */
-    template <typename TVeloc>
-    bool advect(TVeloc const& Velocity, bool ForceReinit = false, bool updateBilinearForm = true, bool updateTime = true);
+    template<typename ExprT>
+    void advect(vf::Expr<ExprT> const& velocity);
 
     /* returns phi after advection by Velocity
       do not change the value of this->M_phi or any other variable (delta heavyside ...) */
     template < typename TVeloc >
     element_levelset_ptrtype phiAdvected(TVeloc const& Velocity, bool stabilization = true)
     { return this->advReactUpdate(Velocity, stabilization); }
+    
+    //--------------------------------------------------------------------//
+    // Reinitialization
+    void reinitialize();
 
     // template < typename TVeloc >
     // void updateE(TVeloc& Velocity);
 
-    void initialize(element_levelset_ptrtype, bool doFirstReinit = false, ReinitMethod method=FM, int max_iter=-1, double dtau=0.01, double tol=0.1);
+    void initialize(element_levelset_ptrtype, bool doFirstReinit = false, LevelSetReinitMethod method=FM, int max_iter=-1, double dtau=0.01, double tol=0.1);
     element_levelset_ptrtype circleShape(double r0, double x0, double y0, double z0=0);
     element_levelset_ptrtype ellipseShape(double a_ell, double b_ell, double x0, double y0, double z0=0);
     void imposePhi( element_levelset_ptrtype );
@@ -327,7 +330,7 @@ private:
     void computeCorrection(element_levelset_ptrtype Hc);
 #endif
 
-    void reinitialize(int max_iter, double dtau, double tol, bool useMethodInOption = true, ReinitMethod givenMethod = FM );
+    void reinitialize(int max_iter, double dtau, double tol, bool useMethodInOption = true, LevelSetReinitMethod givenMethod = FM );
     element_levelset_ptrtype explicitHJ(int, double, double);
     element_levelset_ptrtype explicitILHJ(int, double, double);
     double distToDist();
@@ -341,18 +344,13 @@ protected:
 
     //--------------------------------------------------------------------//
     // Levelset data
-    element_levelset_ptrtype M_phi;
-    element_levelset_ptrtype M_phio;
-    element_levelset_ptrtype M_phinl;
+    //element_levelset_ptrtype M_phi;
+    //element_levelset_ptrtype M_phio;
+    //element_levelset_ptrtype M_phinl;
 
     element_levelset_ptrtype M_heaviside;
     element_levelset_ptrtype M_dirac;
     double M_mass;
-
-    element_markers_ptrtype M_markerDirac;
-    element_markers_ptrtype M_markerHeaviside;
-    element_markers_ptrtype M_markerCrossedElements;
-    element_markers_ptrtype M_markerInterface;
 
 #if defined(LEVELSET_CONSERVATIVE_ADVECTION)
     elementLSCorr_ptrtype phic;
@@ -378,11 +376,20 @@ private:
     space_levelset_vectorial_ptrtype M_subspaceLevelSetVec;
 
     space_levelset_reinitP1_ptrtype M_spaceReinitP1;
+    
+    //--------------------------------------------------------------------//
+    // Markers
+    element_markers_ptrtype M_markerDirac;
+    element_markers_ptrtype M_markerHeaviside;
+    element_markers_ptrtype M_markerCrossedElements;
+    element_markers_ptrtype M_markerInterface;
+    bool M_doUpdateMarkers;
+
     //--------------------------------------------------------------------//
     // Fast-marching
-    op_inte_LS_to_P1_ptrtype op_inte_LS_to_P1;
-    op_inte_P1_to_LS_ptrtype op_inte_P1_to_LS;
-    boost::shared_ptr <OperatorLagrangeP1<space_levelset_type> > opLagP1;
+    op_interpolation_LS_to_P1_ptrtype M_opInterpolationLStoP1;
+    op_interpolation_P1_to_LS_ptrtype M_opInterpolationP1toLS;
+    op_lagrangeP1_ptrtype M_opLagrangeP1;
 
     boost::shared_ptr<reinitilizer_type> M_reinitializerFMS;
     boost::shared_ptr< Projector<space_levelset_type, space_levelset_type> >  M_smooth;
@@ -427,7 +434,7 @@ private:
     //--------------------------------------------------------------------//
     // Reinitialization
     bool M_enableReinit;
-    ReinitMethod M_reinitMethod;
+    LevelSetReinitMethod M_reinitMethod;
     int M_reinitEvery;
     strategyBeforeFm_type strategyBeforeFm;
     bool M_useMarker2AsMarkerDoneFmm;

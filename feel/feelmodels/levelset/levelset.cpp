@@ -11,9 +11,10 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSet(
    :
     M_prefix(prefix),
     M_periodicity(periodicityLS),
+    M_doUpdateMarkers(true)
 {
-    itersincereinit.reset( new int(0) );
-    M_mass.reset( new double(0) );
+    M_iterSinceReinit = 0;
+    M_mass = 0.;
 
     // +++++++++++++  informations from options +++++++++
     reinitevery = ioption(prefixvm(prefix,"reinitevery"));
@@ -26,7 +27,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSet(
     stabStrategy = ioption(prefixvm(prefix,"stabilization-strategy"));
     useRegularPhi = boption(_name=prefixvm(prefix,"use-regularized-phi"));
     hdNodalProj = boption(_name=prefixvm(prefix,"h-d-nodal-proj"));
-    M_epsilon=doption(prefixvm(prefix,"thickness-interface"));
+    M_thicknessInterface=doption(prefixvm(prefix,"thickness-interface"));
 
     // -------------- Advection -------------
     const std::string _stabmeth = soption(_name=prefixvm(prefix,"advec-stab-method"));
@@ -73,9 +74,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSet(
 
     __iter=0;
 
-    M_phi = M_spaceLevelSet->elementPtr();
-    M_phio = M_spaceLevelSet->elementPtr();
-    M_phinl=M_spaceLevelSet->elementPtr();
+    //M_phi = M_spaceLevelSet->elementPtr();
+    //M_phio = M_spaceLevelSet->elementPtr();
+    //M_phinl=M_spaceLevelSet->elementPtr();
     M_heaviside = M_spaceLevelSet->elementPtr();
     M_dirac = M_spaceLevelSet->elementPtr();
 
@@ -124,7 +125,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
         LOG(INFO)<<"end creating advection for hamilton jacobi"<<std::endl;
     }
 
-    if (M_epsilon > 1.)
+    if (M_thicknessInterface > 1.)
         std::cout<<"\n\n------------ WARNING : thickness_interface > 1 ----------\n\n";
 
     //------------- initialize matrices for conservative advection-------------
@@ -155,7 +156,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
             form1(M_spaceLevelSet, F_h);
 
             // might be an option (one more !)
-            k_correction = (LEVELSET_CONSERVATIVE_ADVECTION==1) ? 0. : M_epsilon;
+            k_correction = (LEVELSET_CONSERVATIVE_ADVECTION==1) ? 0. : M_thicknessInterface;
         }
 #endif
 
@@ -241,62 +242,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::ellipseShape(double a_ell, double b_ell, doubl
     return shape;
 }//ellipseShape
 
-
-/* accessors defined here. Mac doesn't like it to be in the .hpp */
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-inline const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::phi()
-{
-    return M_phi;
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-inline const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::phinl()
-{
-    return M_phinl;
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-inline const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::H()
-{
-    return M_heaviside;
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-inline const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::D()
-{
-    return M_dirac;
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-inline double
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::mass()
-{
-    return *M_mass;
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-inline int
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::iterSinceReinit()
-{
-    return *itersincereinit;
-}
-
-/*delta and heavyside thickness*/
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-inline double
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::thicknessInterface()
-{
-    return M_epsilon;
-}
-
-
-
-
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::self_ptrtype
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::New( mesh_ptrtype mesh, std::string const& prefix, double TimeStep, PeriodicityType periodocity )
@@ -304,12 +249,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::New( mesh_ptrtype mesh, std::string const& pre
     self_ptrtype new_ls( new self_type( mesh, prefix, TimeStep, periodocity) );
     return new_ls;
 }
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::setDt( double time )
-{ Dt = time; }
-
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -339,9 +278,13 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::setThicknessInterface( double value )
 {
-    M_epsilon = value;
+    M_thicknessInterface = value;
 }
 
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+// Update levelset-dependent functions
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDirac()
@@ -429,6 +372,289 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMass()
             //_expr=vf::chi( idv(M_phi)<0.0) ).evaluate()(0,0); // gives very noisy results
 }
 
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+// Markers accessors
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::markerInterface()
+{
+    if( !M_markerInterface )
+        M_markerInterface.reset( new element_markers_type(M_spaceMarkers, "MarkerInterface") );
+
+    if( M_doUpdateMarkers )
+       this->updateMarkerInterface(); 
+
+    return M_markerInterface;
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::markerDirac()
+{
+    if( !M_markerDirac )
+        M_markerDirac.reset( new element_markers_type(M_spaceMarkers, "MarkerDirac") );
+
+    if( M_doUpdateMarkers )
+       this->updateMarkerDirac(); 
+
+    return M_markerDirac;
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::markerHeaviside()
+{
+    if( !M_markerHeaviside )
+        M_markerHeaviside.reset( new element_markers_type(M_spaceMarkers, "MarkerHeaviside") );
+
+    if( M_doUpdateMarkers )
+       this->updateMarkerHeaviside(); 
+
+    return M_markerHeaviside;
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::markerCrossedElements()
+{
+    if( !M_markerCrossedElements )
+        M_markerCrossedElements.reset( new element_markers_type(M_spaceMarkers, "MarkerCrossedElements") );
+
+    if( M_doUpdateMarkers )
+       this->updateMarkerCrossedElements(); 
+
+    return M_markerCrossedElements;
+}
+
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+// Advection
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+template<typename ExprT>
+bool 
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
+{
+    //output : true if reinitialized
+    bool didReinit=false;
+
+    /*
+       update stabilization strategy
+       1 - update stab every iteration
+       2 - update stab when reinitialize
+       3 - update stab every n iterations (not implemented yet)
+       */
+
+    if( M_iterSinceReinit >= M_advection->timeSchemeOrder()-1 )
+    {
+        M_advection->updateAdvectionVelocity(velocity);
+        M_advection->solve();
+
+        M_iterSinceReinit++;
+    }
+    else
+    {
+        M_advection->setTimeOrder( M_iterSinceReinit + 1 );
+        M_advection->updateAdvectionVelocity(velocity);
+        M_advection->solve();
+
+        M_iterSinceReinit++;
+    }
+
+    /*//        if ( enable_reinit && (ForceReinit || doReinit() ))
+    if (M_discrMethod != CN_CONSERVATIVE)
+    {
+        bool timeToReinit;
+        if (reinitevery > 0)
+            timeToReinit = (M_iterSinceReinit == 0) ? false : (M_iterSinceReinit%reinitevery)==0 ;
+        else
+        {
+            double dtd = distToDist();
+            std::cout<<"dtd = "<<dtd<<std::endl;
+            double reinitif = option(prefixvm(M_prefix,"reinit-if-dist-smaller")).template as<double>();
+            timeToReinit = dtd > reinitif ;
+        }
+
+
+        if ( enable_reinit && (ForceReinit || timeToReinit ) && (updateTime) )
+        {
+
+            if (!updateTime)
+                M_phinl.swap(this->phi());
+            this->reinitialize(hj_max_iter, hj_dtau, hj_tol, true);
+            didReinit=true;
+            if (!updateTime)
+                M_phinl.swap(this->phi());
+        }
+    }*/
+    updateDirac();
+    updateHeavyside();
+    updateMass();
+    M_doUpdateMarkers = true;
+}
+
+//----------------------------------------------------------------------------//
+// Reinitialization
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::reinitialize()
+{ 
+    if( !M_reinitializerIsUpdatedForUse )
+        this->createReinitializer();
+
+    if ( M_reinitMethod == FM )
+    {
+        bool useMarker2AsMarkerDoneFmm = M_useMarker2AsMarkerDoneFmm;
+
+        elementP0_ptrtype markerdelta;
+        if ( useMarker2AsMarkerDoneFmm )
+        {
+            markerdelta = markerDelta();
+            M_mesh->updateMarker2( *markerdelta );
+        }
+
+        mesh_ptrtype mesh_reinit;
+        auto phi_reinit = M_spaceReinitP1->element();
+        auto phi = this->phi();
+
+        switch (strategyBeforeFm)
+        {
+            case ILP :
+            {
+                // save the smoothed gradient magnitude of phi
+                auto modgradphi = M_smooth->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
+
+                if (Order > 1)
+                {
+                    auto modgradphiP1 = M_spaceReinitP1->element();
+                    M_opInterpolationLStoP1->apply( *phi, phi_reinit );
+                    M_opInterpolationLStoP1->apply( modgradphi, modgradphiP1 );
+
+                    mesh_reinit = M_opLagrangeP1->mesh();
+
+                    phi_reinit = vf::project(M_spaceReinitP1, elements(mesh_reinit),
+                                               idv(phi_reinit) / idv(modgradphiP1) );
+
+                    if (useMarker2AsMarkerDoneFmm)
+                    {
+                        auto spaceP0OpLag = spaceP0_type::New( mesh_reinit );
+                        auto mark2opLag = vf::project(spaceP0OpLag, elements(mesh_reinit), idv( markerdelta ) > 1e-6 );
+                        mesh_reinit->updateMarker2( mark2opLag );
+                    }
+                }
+                else
+                {
+                    phi_reinit = vf::project(M_spaceReinitP1, elements(M_mesh), idv(phi) / idv(modgradphi) );
+                    mesh_reinit = M_mesh;
+                }
+            }
+            break;
+
+            case HJ_EQ :
+            case NONE :
+            {
+                if (strategyBeforeFm == HJ_EQ)
+                {
+                    CHECK(false) << "TODO\n";
+                    //*phi = *explicitHJ(max_iter, dtau, tol);
+                }
+
+                if (Order > 1)
+                {
+                    M_opInterpolationLStoP1->apply( *phi, phi_reinit );
+                    mesh_reinit = M_opLagrangeP1->mesh();
+
+                    if (useMarker2AsMarkerDoneFmm)
+                    {
+                        auto spaceP0OpLag = spaceP0_type::New( mesh_reinit );
+                        auto mark2opLag = vf::project(spaceP0OpLag, elements(mesh_reinit), idv( markerdelta ) > 1e-6 );
+                        mesh_reinit->updateMarker2( mark2opLag );
+                    }
+                }
+                // if P1 periodic, project on non periodic space for reinit
+                else if ( this->M_periodicity.isPeriodic() )
+                    phi_reinit = vf::project(M_spaceReinitP1, elements(M_mesh), idv(phi) );
+            }
+            break;
+
+            default:
+            {
+                CHECK(false)<<"no strategy chosen to initialize first elements before fast marching\n"
+                            <<"please, consider setting the option fm-init-first-elts-strategy to 0, 1 or 2\n";
+            }
+            break;
+        } // switch strategyBeforeFm
+
+
+        // Fast Marching Method
+        phi_reinit = M_reinitializerFMS->march(phi_reinit, useMarker2AsMarkerDoneFmm);
+
+        if (Order > 1)
+            M_opInterpolationP1toLS->apply( phi_reinit, *phi );
+        else
+            *phi = vf::project(this->functionSpace(), elements(M_mesh), idv(phi_reinit));
+
+        LOG(INFO)<< "reinit with FMM done"<<std::endl;
+
+    } // Fast Marching
+
+
+    else if ( M_reinitMethod == HJ )
+    {
+        CHECK(false) << "TODO\n";
+        //ch.restart();
+        //*phi = *explicitHJ(max_iter, dtau, tol);
+        //LOG(INFO)<<"reinit done in "<<ch.elapsed()<<" s\n";
+    } //HJ explicit
+
+    M_iterSinceReinit=0;
+}
+
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+// Update markers
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerInterface()
+{
+    /* returns a marker (P0_type) on the elements crossed by the levelset
+       ie :
+       - if the element has not phi on all the dof of the same sign -> the element is mark as 1
+       - if phi on the dof of the element are of the same sign -> mark as 0
+      */
+
+    const int ndofv = space_levelset_type::fe_type::nDof;
+
+    auto phi = this->phi();
+
+    auto it_elt = M_mesh->beginElementWithProcessId(M_mesh->worldComm().localRank());
+    auto en_elt = M_mesh->endElementWithProcessId(M_mesh->worldComm().localRank());
+    if (it_elt == en_elt) return;
+
+    for (; it_elt!=en_elt; it_elt++)
+    {
+        int nbplus = 0;
+        int nbminus = 0;
+
+        for (int j=0; j<ndofv ; j++)
+        {
+            if (phi->localToGlobal(it_elt->id(), j, 0) >= 0.)
+                nbplus++;
+            else
+                nbminus++;
+        }
+
+        //if elt crossed by interface
+        if ( (nbminus != ndofv) && (nbplus!=ndofv) )
+            M_markerInterface->assign(it_elt->id(), 0, 0, 1);
+        else
+            M_markerInterface->assign(it_elt->id(), 0, 0, 0);
+    }
+}
+
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerDirac()
@@ -510,8 +736,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
     auto en_elt = M_mesh->endElementWithProcessId(M_mesh->worldComm().localRank());
     if (it_elt == en_elt) return;
 
+    auto phi = this->phi();
+    auto phio = this->phio();
+
     auto prod = vf::project(M_spaceLevelSet, elements(M_mesh),
-                            idv(M_phio) * idv(M_phi) );
+                            idv(phio) * idv(phi) );
 
 
     for (; it_elt!=en_elt; it_elt++)
@@ -532,42 +761,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
     }
 }
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateMarkerInterface()
-{
-    /* returns a marker (P0_type) on the elements crossed by the levelset
-       ie :
-       - if the element has not phi on all the dof of the same sign -> the element is mark as 1
-       - if phi on the dof of the element are of the same sign -> mark as 0
-      */
-
-    const int ndofv = space_levelset_type::fe_type::nDof;
-
-    auto it_elt = M_mesh->beginElementWithProcessId(M_mesh->worldComm().localRank());
-    auto en_elt = M_mesh->endElementWithProcessId(M_mesh->worldComm().localRank());
-    if (it_elt == en_elt) return;
-
-    for (; it_elt!=en_elt; it_elt++)
-    {
-        int nbplus = 0;
-        int nbminus = 0;
-
-        for (int j=0; j<ndofv ; j++)
-        {
-            if ((*M_phi).localToGlobal(it_elt->id(), j, 0) >= 0.)
-                nbplus++;
-            else
-                nbminus++;
-        }
-
-        //if elt crossed by interface
-        if ( (nbminus != ndofv) && (nbplus!=ndofv) )
-            M_markerInterface->assign(it_elt->id(), 0, 0, 1);
-        else
-            M_markerInterface->assign(it_elt->id(), 0, 0, 0);
-    }
-}
 
 } // FeelModels
 } // Feel
