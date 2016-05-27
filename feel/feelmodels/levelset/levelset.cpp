@@ -4,68 +4,23 @@ namespace Feel {
 namespace FeelModels {
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
-        mesh_ptrtype mesh, 
-        std::string const& prefix, 
-        PeriodicityType periodicityLS )
-   :
+LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet( std::string const& prefix )
+:
     M_prefix(prefix),
-    M_periodicity(periodicityLS),
+    M_mass(0.),
+    //M_periodicity(periodicityLS),
+    M_reinitializerIsUpdatedForUse(false),
+    M_iterSinceReinit(0),
+    M_advection( prefixvm(prefix, "advection") ),
     M_doUpdateMarkers(true)
 {
-    M_iterSinceReinit = 0;
-    M_mass = 0.;
+    this->loadParametersFromOptionsVm();
 
-    // +++++++++++++  informations from options +++++++++
-    reinitevery = ioption(prefixvm(prefix,"reinitevery"));
-    enable_reinit = boption(prefixvm(prefix,"enable-reinit"));
-    M_useMarker2AsMarkerDoneFmm = boption(prefixvm(prefix,"fm-use-markerdelta"));
-    hj_max_iter = ioption(prefixvm(prefix,"hj-max-iter"));
-    hj_dtau = doption(prefixvm(prefix,"hj-dtau"));
-    hj_tol = doption(prefixvm(prefix,"hj-tol"));
-    impose_inflow = ioption(prefixvm(prefix,"impose-inflow"));
-    stabStrategy = ioption(prefixvm(prefix,"stabilization-strategy"));
-    useRegularPhi = boption(_name=prefixvm(prefix,"use-regularized-phi"));
-    hdNodalProj = boption(_name=prefixvm(prefix,"h-d-nodal-proj"));
-    M_thicknessInterface=doption(prefixvm(prefix,"thickness-interface"));
-
-    // -------------- Advection -------------
-    const std::string _stabmeth = soption(_name=prefixvm(prefix,"advec-stab-method"));
-    std::map<std::string, AdvectionStabMethod> m_stabmeth;
-    m_stabmeth["NO"]=NO;
-    m_stabmeth["CIP"]=CIP;
-    m_stabmeth["GALS"]=GALS;
-    m_stabmeth["SUPG"]=SUPG;
-    m_stabmeth["SGS"]=SGS;
-    CHECK(m_stabmeth.count(_stabmeth)) << _stabmeth <<" is not in the list of possible stabilization methods\n";
-    M_advecstabmethod = m_stabmeth.find( _stabmeth )->second;
-
-
-    // ----------- time discretization scheme ----------
-    const std::string _tds = soption(prefixvm(prefix,"time-discr-scheme"));
-    std::map<std::string, LevelSetTimeDiscretization> m_discr_method;
-    m_discr_method["BDF2"]=BDF2;
-#if defined(LEVELSET_CONSERVATIVE_ADVECTION)
-    m_discr_method["CN_CONSERVATIVE"]=CN_CONSERVATIVE;
-#endif
-    m_discr_method["EU"]=EU;
-    CHECK(m_discr_method.count(_tds)) << _tds << " is not in the list of possible time discretization\n";
-    M_discrMethod = m_discr_method.find( _tds )->second;
-
-    // --------------- mesh adaptation -----------------
+    /*// --------------- mesh adaptation -----------------
 #if defined (MESH_ADAPTATION)
     auto backend_mesh_adapt = backend_type::build(Environment::vm(), "mesh-adapt-backend");
     mesh_adapt.reset( new mesh_adaptation_type ( backend_mesh_adapt ));
-#endif
-
-
-    // ------------ reinitialization method -----------
-    const std::string _rm = soption(prefixvm(prefix,"reinit-method"));
-    CHECK( _rm == "hj" || _rm == "fm" ) << _rm << " is not a possible reinitialization method\n";
-    if (_rm == "hj" )
-        M_reinitmethod = HJ;
-    else
-        M_reinitmethod = FM;
+#endif*/
 
     // in the case of fast marching method, strategy to set the first elements
     strategyBeforeFm = (strategyBeforeFm_type) ioption(prefixvm(prefix,"fm-init-first-elts-strategy"));
@@ -80,18 +35,23 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_heaviside = M_spaceLevelSet->elementPtr();
     M_dirac = M_spaceLevelSet->elementPtr();
 
-#if defined (LEVELSET_CONSERVATIVE_ADVECTION)
+/*#if defined (LEVELSET_CONSERVATIVE_ADVECTION)
     if (M_discrMethod==CN_CONSERVATIVE)
-        {
-            phic = M_spaceLSCorr->elementPtr();
-        }
-#endif
-
-    reinitializerUpdated = false;
+    {
+        phic = M_spaceLSCorr->elementPtr();
+    }
+#endif*/
 
     this->levelsetInfos(true);
+}
 
-} //constructor
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::self_ptrtype
+LEVELSET_CLASS_TEMPLATE_TYPE::New( std::string const& prefix )
+{
+    self_ptrtype new_ls( new self_type(prefix) );
+    return new_ls;
+}
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -170,7 +130,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void LEVELSET_CLASS_TEMPLATE_TYPE::imposePhi( elementLS_ptrtype phi )
+void 
+LEVELSET_CLASS_TEMPLATE_TYPE::imposePhi( elementLS_ptrtype phi )
 {
     using namespace Feel::vf;
 
@@ -242,13 +203,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::ellipseShape(double a_ell, double b_ell, double x0
     return shape;
 }//ellipseShape
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::self_ptrtype
-LEVELSET_CLASS_TEMPLATE_TYPE::New( mesh_ptrtype mesh, std::string const& prefix, double TimeStep, PeriodicityType periodocity )
-{
-    self_ptrtype new_ls( new self_type( mesh, prefix, TimeStep, periodocity) );
-    return new_ls;
-}
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -257,6 +211,31 @@ LEVELSET_CLASS_TEMPLATE_TYPE::setStrategyBeforeFm( int strat )
     if (reinitializerUpdated)
         LOG(INFO)<<" !!!  WARNING !!! : setStrategyBeforeFm set after the fast marching has been actually initialized ! \n";
     strategyBeforeFm = (strategyBeforeFm_type) strat;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
+{
+    //M_enableReinit = boption(prefixvm(this->prefix(),"enable-reinit"));
+    //M_reinitEvery = ioption(prefixvm(this->prefix(),"reinit-every"));
+    M_useMarker2AsMarkerDoneFmm = boption(prefixvm(this->prefix(),"fm-use-markerdelta"));
+    //hj_max_iter = ioption(prefixvm(this->prefix(),"hj-max-iter"));
+    //hj_dtau = doption(prefixvm(this->prefix(),"hj-dtau"));
+    //hj_tol = doption(prefixvm(this->prefix(),"hj-tol"));
+    impose_inflow = ioption(prefixvm(this->prefix(),"impose-inflow"));
+    //stabStrategy = ioption(prefixvm(this->prefix(),"stabilization-strategy"));
+    M_useRegularPhi = boption(_name=prefixvm(this->prefix(),"use-regularized-phi"));
+    hdNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
+    M_thicknessInterface=doption(prefixvm(this->prefix(),"thickness-interface"));
+
+    std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );
+    if( reinitmethod == "fm" )
+        M_reinitmethod = LevelSetReinitMethod::FM;
+    else if( reinitmethod == "hj" )
+        M_reinitmethod = LevelSetReinitMethod::HJ;
+    else
+        CHECK( false ) << reinitmethod << " is not a valid reinitialization method\n";
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -330,7 +309,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
 { 
     auto eps = this->thicknessInterface();
 
-    if (useRegularPhi)
+    if (M_useRegularPhi)
     {
         auto psi = idv(M_phi) / vf::sqrt( gradv(M_phi) * trans(gradv(M_phi)) );
         auto H_expr = vf::chi( psi<-eps )*vf::constant(0.0)
