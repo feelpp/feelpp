@@ -250,7 +250,7 @@ public:
     {
 
         if ( level!=0 )
-            M_model->setModelName( M_model->modelName() + "-" + to_string(level) );
+            M_model->setModelName( M_model->modelName() + "-" + std::to_string(level) );
         this->init();
     }
 

@@ -177,7 +177,7 @@ public:
 
     BenchmarkGreplNonlinearElliptic()
         :
-        super_type( "BenchMarkGreplNonlinearElliptic-" + std::to_string(Order) )
+        super_type( "BenchMarkGreplNonlinearElliptic" + std::to_string(Order) )
         {}
 
     //! initialization of the model

@@ -35,11 +35,12 @@ OpusApp<ModelType,RM,Model>::SER()
 {
     bool do_offline_eim = false;
 
-    for( int ser_level=0; ser_level < 2; ++ser_level )
+    int nb_levels = ioption( _name="ser.nb-levels" );
+    for( int ser_level=0; ser_level < nb_levels; ++ser_level )
     {
         if ( ser_level > 0 )
         {
-            crbs.push_back( newCRB() );
+            crbs.push_back( newCRB( ser_level ) );
             crb = crbs.back();
         }
 
@@ -76,10 +77,16 @@ OpusApp<ModelType,RM,Model>::SER()
                     if( use_rb )
                     {
                         if ( crbs.size() > 1 )
+                        {
+                            CHECK( crbs.size() == models.size() );
                             eim_sc->setRB( crbs[ser_level-1] ); //update rb model member to be used in eim offline
+                            eim_sc->setModel( models[ser_level-1] );
+                        }
                         else
+                        {
                             eim_sc->setRB( crb ); // current crb (first level)
-                        eim_sc->setModel( model );
+                            eim_sc->setModel( model );
+                        }
                     }
                     do //r-adaptation for EIM
                     {
@@ -98,10 +105,16 @@ OpusApp<ModelType,RM,Model>::SER()
                     if( use_rb )
                     {
                         if ( crbs.size() > 1 )
+                        {
+                            CHECK( crbs.size() == models.size() );
                             eim_sd->setRB( crbs[ser_level-1] ); //update rb model member to be used in eim offline
+                            eim_sd->setModel( models[ser_level-1] );
+                        }
                         else
+                        {
                             eim_sd->setRB( crb ); //update rb model member to be used in eim offline
-                        eim_sd->setModel( model );
+                            eim_sd->setModel( model );
+                        }
                     }
                     do //r-adaptation for EIM
                     {
