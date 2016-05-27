@@ -4,14 +4,18 @@ namespace Feel {
 namespace FeelModels {
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet( std::string const& prefix )
+LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet( 
+        std::string const& prefix,
+        WorldComm const& worldComm,
+        std::string const& subPrefix,
+        std::string const& rootRepository ) 
 :
-    M_prefix(prefix),
+    super_type( prefix, worldComm, subPrefix, rootRepository ),
     M_mass(0.),
     //M_periodicity(periodicityLS),
     M_reinitializerIsUpdatedForUse(false),
     M_iterSinceReinit(0),
-    M_advection( prefixvm(prefix, "advection") ),
+    M_advection( prefixvm(prefix, "advection"), worldComm, subPrefix, rootRepository ),
     M_doUpdateMarkers(true)
 {
     this->loadParametersFromOptionsVm();
@@ -47,9 +51,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet( std::string const& prefix )
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::self_ptrtype
-LEVELSET_CLASS_TEMPLATE_TYPE::New( std::string const& prefix )
+LEVELSET_CLASS_TEMPLATE_TYPE::New(
+        std::string const& prefix,
+        WorldComm const& worldComm,
+        std::string const& subPrefix,
+        std::string const& rootRepository )
 {
-    self_ptrtype new_ls( new self_type(prefix) );
+    self_ptrtype new_ls( new self_type(prefix, worldComm, subPrefix, rootRepository) );
     return new_ls;
 }
 
