@@ -211,7 +211,7 @@ public:
      */
     //@{
 
-    CRBModel( CRBModelMode mode = CRBModelMode::PFEM  )
+    CRBModel( CRBModelMode mode = CRBModelMode::PFEM, bool doInit = true )
         :
         M_Aqm(),
         M_InitialGuessV(),
@@ -231,10 +231,11 @@ public:
         M_has_eim( false ),
         M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
-        this->init();
+        if ( doInit )
+            this->init();
     }
 
-    CRBModel( model_ptrtype & model , CRBModelMode mode = CRBModelMode::PFEM )
+    CRBModel( model_ptrtype & model , CRBModelMode mode = CRBModelMode::PFEM, bool doInit = true )
         :
         M_Aqm(),
         M_InitialGuessV(),
@@ -254,7 +255,8 @@ public:
         M_has_eim( false ),
         M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
-        this->init();
+        if ( doInit )
+            this->init();
     }
 
     /**
@@ -1026,6 +1028,7 @@ public:
             M_QLinearDecompositionA = M_mMaxLinearDecompositionA.size();
 
             M_alreadyCountAffineDecompositionTerms = true;
+            M_is_initialized=true;
         }
 
     /**
