@@ -176,16 +176,16 @@ public:
         M_Malpha( ioption(_name="crb.scm.Malpha") ),
         M_Dmu( model->parameterSpace() ),
         M_Xi( new sampling_type( M_Dmu ) ),
-        M_C( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
+        M_C( new sampling_type( M_Dmu, 0, M_Xi ) ),
+        M_C_complement( new sampling_type( M_Dmu, 0, M_Xi ) ),
         M_vm( Environment::vm() ),
         M_scm_for_mass_matrix( scm_for_mass_matrix ),
         M_mu_ref( M_Dmu->element() ),
         M_use_scm( boption(_name="crb.scm.use-scm") )
     {
         //this->setTruthModel( model );
-        if ( this->loadDB() )
-            LOG( INFO ) << "Database " << this->lookForDB() << " available and loaded";
+        // if ( this->loadDB() )
+        //     LOG( INFO ) << "Database " << this->lookForDB() << " available and loaded";
     }
 
     //! copy constructor
