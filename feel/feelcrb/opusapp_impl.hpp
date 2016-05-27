@@ -626,315 +626,127 @@ OpusApp<ModelType,RM,Model>::run()
 
     int sampling_size = Sampling->size();
 
-    for( auto mu : *Sampling )
+    //SER
+    int nb_levels = ioption( _name="ser.nb-levels" );
+    for( int ser_level=0; ser_level < nb_levels; ++ser_level )
     {
-        int size = mu.size();
+        crb = crbs[ser_level];
+        curpar=0;
 
-        element_type u_crb; // expansion of reduced solution
-        element_type u_crb_dual; // expansion of reduced solution ( dual )
+        for( auto mu : *Sampling )
+        {
+            int size = mu.size();
+
+            element_type u_crb; // expansion of reduced solution
+            element_type u_crb_dual; // expansion of reduced solution ( dual )
 #if !NDEBUG
-        if( proc_number == Environment::worldComm().masterRank() )
-        {
-            std::cout << "(" << curpar << "/" << Sampling->size() << ") mu = [ ";
-            for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
-            std::cout<< mu[size-1]<<" ]\n ";
-        }
-#endif
-        curpar++;
-
-        std::ostringstream mu_str;
-        //if too many parameters, it will crash
-        int sizemax=7;
-        if( size < sizemax )
-            sizemax=size;
-        for ( int i=0; i<sizemax-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
-        mu_str << std::scientific << std::setprecision( 5 ) << mu[size-1];
-
-#if !NDEBUG
-        LOG(INFO) << "mu=" << mu << "\n";
-        mu.check();
-#endif
-        if( boption(_name="crb.script-mode") )
-        {
-            unsigned long N = mu.size() + 5;
-            unsigned long P = 2;
-            std::vector<double> X( N );
-            std::vector<double> Y( P );
-            for(int i=0; i<mu.size(); i++)
-                X[i] = mu[i];
-
-            int N_dim = crb_dimension;
-            int N_dimMax = crb_dimension_max;
-            int Nwn;
-            if( N_dim > 0 )
-                Nwn = N_dim;
-            else
-                Nwn = N_dimMax;
-            X[N-5] = output_index;
-            X[N-4] = Nwn;
-            X[N-3] = crb_online_tolerance;
-            X[N-2] = crb_error_type;
-            //X[N-1] = ioption(_name="crb.compute-variance");
-            X[N-1] = 0;
-            bool compute_variance = crb_compute_variance;
-            if ( compute_variance )
-                X[N-1] = 1;
-
-            this->run( X.data(), X.size(), Y.data(), Y.size() );
-            //std::cout << "output = " << Y[0] << std::endl;
-
-            std::string resultFileName = soption(_name="result-file");
-            std::ofstream res(resultFileName);
-            res << "output="<< Y[0] << "\n";
-            res.close();
-        }
-        else
-        {
-            switch ( M_mode )
+            if( proc_number == Environment::worldComm().masterRank() )
             {
-            case  CRBModelMode::PFEM:
-            {
-                LOG(INFO) << "PFEM mode" << std::endl;
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-                    std::cout << "PFEM mode" << std::endl;
-                boost::mpi::timer ti;
-
-                model->computeAffineDecomposition();
-                bool use_newton = option(_name="crb.use-newton").template as<bool>();
-                element_type u_pfem;
-                if( use_newton )
-                    u_pfem =  model->solveFemUsingAffineDecompositionNewton( mu );
-                else
-                    u_pfem =  model->solveFemUsingAffineDecompositionFixedPoint( mu );
-                std::ostringstream u_pfem_str;
-                u_pfem_str << "u_pfem(" << mu_str.str() << ")";
-                u_pfem.setName( u_pfem_str.str()  );
-
-                LOG(INFO) << "compute output\n";
-                if( export_solution )
-                {
-                    std::string exportName = u_pfem.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
-                    e->add( exportName, u_pfem );
-                }
-                auto u_fem = model->solve( mu );
-                auto u_error = (( u_fem - u_pfem ).pow(2)).sqrt();
-                auto l2_error = l2Norm( u_error );
-                auto h1_error = h1Norm( u_error );
-                auto output_fem = model->output( output_index,mu , u_fem, true);
-                auto output_pfem = model->output( output_index,mu , u_pfem, true);
-                auto output_error = math::abs( output_fem - output_pfem );
-
-                std::vector<double> o{output_fem, output_pfem, ti.elapsed(), l2_error, h1_error, output_error};
-                if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
-                printEntry( ostr, mu, o );
-
-                l2_error_vector[curpar-1] = l2_error;
-                h1_error_vector[curpar-1] = h1_error;
-                relative_error_vector[curpar-1] = output_error;
-                time_fem_vector[curpar-1] = ti.elapsed();
-
-                std::ofstream res(soption(_name="result-file") );
-                res << "output="<< o[0] << "\n";
-
-                if( this->vm().count("crb.minimization-func") )
-                {
-                    auto min_func = expr( min_func_str, "min_func" );
-                    min_map[soption(_name="crb.minimization-param-name")] = output_fem;
-                    auto min = min_func.evaluate( min_map );
-                    if( min < min_value["fem"] || curpar == 1 )
-                    {
-                        min_value["fem"] = min;
-                        min_mu["fem"] = mu;
-                    }
-                }
-
+                std::cout << "(" << curpar << "/" << Sampling->size() << ") mu = [ ";
+                for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
+                std::cout<< mu[size-1]<<" ]\n ";
             }
-            break;
+#endif
+            curpar++;
 
-            case  CRBModelMode::CRB:
+            std::ostringstream mu_str;
+            //if too many parameters, it will crash
+            int sizemax=7;
+            if( size < sizemax )
+                sizemax=size;
+            for ( int i=0; i<sizemax-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
+            mu_str << std::scientific << std::setprecision( 5 ) << mu[size-1];
+
+#if !NDEBUG
+            LOG(INFO) << "mu=" << mu << "\n";
+            mu.check();
+#endif
+            if( boption(_name="crb.script-mode") )
             {
-                LOG(INFO) << "CRB mode\n";
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-                    std::cout << "CRB mode -- "<<curpar<<"/"<<sampling_size<<std::endl;
+                unsigned long N = mu.size() + 5;
+                unsigned long P = 2;
+                std::vector<double> X( N );
+                std::vector<double> Y( P );
+                for(int i=0; i<mu.size(); i++)
+                    X[i] = mu[i];
 
-                boost::mpi::timer ti;
+                int N_dim = crb_dimension;
+                int N_dimMax = crb_dimension_max;
+                int Nwn;
+                if( N_dim > 0 )
+                    Nwn = N_dim;
+                else
+                    Nwn = N_dimMax;
+                X[N-5] = output_index;
+                X[N-4] = Nwn;
+                X[N-3] = crb_online_tolerance;
+                X[N-2] = crb_error_type;
+                //X[N-1] = ioption(_name="crb.compute-variance");
+                X[N-1] = 0;
+                bool compute_variance = crb_compute_variance;
+                if ( compute_variance )
+                    X[N-1] = 1;
 
-                LOG(INFO) << "solve crb\n";
-                //google::FlushLogFiles(google::GLOG_INFO);
+                this->run( X.data(), X.size(), Y.data(), Y.size() );
+                //std::cout << "output = " << Y[0] << std::endl;
 
-                //dimension of the RB (not necessarily the max)
-
-                int N =  ioption(_name="crb.dimension");
-
-                bool print_rb_matrix = boption(_name="crb.print-rb-matrix");
-                double online_tol = doption(_name="crb.online-tolerance");
-                vectorN_type time_crb;
-                ti.restart();
-
-                auto o = crb->run( mu, time_crb, online_tol , N, print_rb_matrix);
-                double time_crb_prediction=time_crb(0);
-                double time_crb_error_estimation=time_crb(1);
-
-                auto WN = crb->wn();
-                auto WNdu = crb->wndu();
-                //auto u_crb = crb->expansion( mu , N );
-                auto solutions=o.template get<2>();
-                auto uN = solutions.template get<0>();
-                auto uNdu = solutions.template get<1>();
-
-                int size = uN.size();
-
-                // Re-use uN given by lb in crb->run
-
-                u_crb = crb->expansion( uN[size-1] , N , WN );
-                if( solve_dual_problem )
-                    u_crb_dual = crb->expansion( uNdu[0] , N , WNdu );
-
-                std::ostringstream u_crb_str;
-                u_crb_str << "u_crb(" << mu_str.str() << ")";
-                u_crb.setName( u_crb_str.str()  );
-                LOG(INFO) << "export u_crb \n";
-                if( export_solution )
+                std::string resultFileName = soption(_name="result-file");
+                std::ofstream res(resultFileName);
+                res << "output="<< Y[0] << "\n";
+                res.close();
+            }
+            else
+            {
+                switch ( M_mode )
                 {
-                    if( select_parameter_via_one_feel )
-                    {
-                        model->adaptMesh( mu );
-                    }
-                    std::string exportName = u_crb.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
-                    e->add( exportName, u_crb );
-                }
-
-                double relative_error = -1;
-                double relative_estimated_error = -1;
-                auto matrix_info = o.template get<3>();
-                double condition_number = matrix_info.template get<0>();
-                double l2_error = -1;
-                double h1_error = -1;
-                double l2_dual_error = -1;
-                double h1_dual_error = -1;
-                double time_fem = -1;
-
-                element_type u_fem ;
-                element_type u_dual_fem ;
-
-                auto all_upper_bounds = o.template get<6>();
-                auto vector_output_estimated_error = all_upper_bounds.template get<0>();
-                int last_time = vector_output_estimated_error.size()-1;
-                //output estimated error for last time
-                double output_estimated_error = vector_output_estimated_error[ last_time ];
-                double solution_estimated_error = all_upper_bounds.template get<1>();
-                double dual_solution_estimated_error = all_upper_bounds.template get<2>();
-
-                auto output_vector=o.template get<0>();
-                double output_vector_size=output_vector.size();
-                double ocrb = output_vector[output_vector_size-1];//output at last time
-                double time_fem_solve=-1;
-
-                if ( compute_fem )
+                case  CRBModelMode::PFEM:
                 {
-                    bool use_newton = boption(_name="crb.use-newton");
+                    LOG(INFO) << "PFEM mode" << std::endl;
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "PFEM mode" << std::endl;
+                    boost::mpi::timer ti;
 
-                    LOG(INFO) << "solve u_fem\n";
-                    ti.restart();
-
-                    //auto u_fem = model->solveRB( mu );
-                    //auto u_fem = model->solveFemUsingOfflineEim( mu );
-
-                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
-                    {
-                        if( boption(_name="crb.solve-fem-monolithic") )
-                        {
-                            //u_fem = model->solveFemMonolithicFormulation( mu );
-                            u_fem = model->solve( mu );
-                        }
-                        else
-                        {
-                            //use affine decomposition
-                            u_fem = model->solveFemUsingAffineDecompositionFixedPoint( mu );
-                        }
-                    }
+                    model->computeAffineDecomposition();
+                    bool use_newton = option(_name="crb.use-newton").template as<bool>();
+                    element_type u_pfem;
+                    if( use_newton )
+                        u_pfem =  model->solveFemUsingAffineDecompositionNewton( mu );
                     else
-                        u_fem = model->solve( mu );
+                        u_pfem =  model->solveFemUsingAffineDecompositionFixedPoint( mu );
+                    std::ostringstream u_pfem_str;
+                    u_pfem_str << "u_pfem(" << mu_str.str() << ")";
+                    u_pfem.setName( u_pfem_str.str()  );
 
-                    time_fem_solve=ti.elapsed();
-
-                    std::ostringstream u_fem_str;
-                    u_fem_str << "u_fem(" << mu_str.str() << ")";
-                    u_fem.setName( u_fem_str.str()  );
-
+                    LOG(INFO) << "compute output\n";
                     if( export_solution )
                     {
-                        LOG(INFO) << "export u_fem \n";
-                        std::string exportName = u_fem.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
-                        e->add( exportName, u_fem );
+                        std::string exportName = u_pfem.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                        e->add( exportName, u_pfem );
                     }
+                    auto u_fem = model->solve( mu );
+                    auto u_error = (( u_fem - u_pfem ).pow(2)).sqrt();
+                    auto l2_error = l2Norm( u_error );
+                    auto h1_error = h1Norm( u_error );
+                    auto output_fem = model->output( output_index,mu , u_fem, true);
+                    auto output_pfem = model->output( output_index,mu , u_pfem, true);
+                    auto output_error = math::abs( output_fem - output_pfem );
 
-                    ti.restart();
-                    std::vector<double> ofem{model->output( output_index, mu, u_fem, false ), ti.elapsed()};
+                    std::vector<double> o{output_fem, output_pfem, ti.elapsed(), l2_error, h1_error, output_error};
+                    if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
+                    printEntry( ostr, mu, o );
 
-                    if( boption(_name="crb.absolute-error") )
-                        relative_error = std::abs( ofem[0]- ocrb);
-                    else
-                        relative_error = std::abs( ofem[0]- ocrb) /ofem[0];
-                    relative_estimated_error = output_estimated_error / ofem[0];
+                    l2_error_vector[curpar-1] = l2_error;
+                    h1_error_vector[curpar-1] = h1_error;
+                    relative_error_vector[curpar-1] = output_error;
+                    time_fem_vector[curpar-1] = ti.elapsed();
 
-                    //compute || u_fem - u_crb||_L2
-                    LOG(INFO) << "compute error \n";
-                    auto u_error = model->functionSpace()->element();
-                    auto u_dual_error = model->functionSpace()->element();
-                    std::ostringstream u_error_str;
-                    u_error = (( u_fem - u_crb ).pow(2)).sqrt()  ;
-
-                    u_error_str << "u_error(" << mu_str.str() << ")";
-                    u_error.setName( u_error_str.str()  );
-                    if( export_solution )
-                    {
-                        std::string exportName = u_error.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
-                        e->add( exportName, u_error );
-                    }
-
-                    LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
-                    LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
-
-                    if( boption(_name="crb.absolute-error") )
-                    {
-                        l2_error = l2Norm( u_error );
-                        h1_error = h1Norm( u_error );
-                    }
-                    else
-                    {
-                        l2_error = l2Norm( u_error )/l2Norm( u_fem );
-                        h1_error = h1Norm( u_error )/h1Norm( u_fem );
-                    }
-
-                    output_fem = ofem[0];
-                    time_fem = ofem[1]+time_fem_solve;
-
-                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
-                    {
-                        if( solve_dual_problem )
-                        {
-                            if( boption(_name="crb.solve-fem-monolithic") )
-                            {
-                                u_dual_fem = model->solveFemDualMonolithicFormulation( mu );
-                            }
-                            else
-                            {
-                                //use affine decomposition
-                                u_dual_fem =  model->solveFemDualUsingAffineDecompositionFixedPoint( mu );
-                            }
-
-                            u_dual_error = model->functionSpace()->element();
-                            u_dual_error = (( u_dual_fem - u_crb_dual ).pow(2)).sqrt() ;
-                            l2_dual_error = l2Norm( u_dual_error )/l2Norm( u_dual_fem );
-                            h1_dual_error = h1Norm( u_dual_error )/h1Norm( u_dual_fem );
-                        }
-                    }
+                    std::ofstream res(soption(_name="result-file") );
+                    res << "output="<< o[0] << "\n";
 
                     if( this->vm().count("crb.minimization-func") )
                     {
                         auto min_func = expr( min_func_str, "min_func" );
-                        min_map[soption(_name="crb.minimization-param-name")] = ofem[0];
+                        min_map[soption(_name="crb.minimization-param-name")] = output_fem;
                         auto min = min_func.evaluate( min_map );
                         if( min < min_value["fem"] || curpar == 1 )
                         {
@@ -943,302 +755,468 @@ OpusApp<ModelType,RM,Model>::run()
                         }
                     }
 
-                }//compute-fem-during-online
-
-                if ( crb->errorType()==2 )
-                {
-                    auto output_vector=o.template get<0>();
-                    double output_vector_size=output_vector.size();
-                    double ocrb = output_vector[output_vector_size-1];//output at last time
-                    std::vector<double> v{output_fem, time_fem, ocrb, relative_estimated_error, time_crb_prediction, relative_error, condition_number, l2_error, h1_error};
-
-                    if( proc_number == Environment::worldComm().masterRank() )
-                    {
-                        std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions\n";
-                        printEntry( file_summary_of_simulations, mu, v );
-                        printEntry( ostr, mu, v );
-                        //file_summary_of_simulations.close();
-
-                        if ( boption(_name="crb.compute-stat") && compute_fem )
-                        {
-                            relative_error_vector[curpar-1] = relative_error;
-                            l2_error_vector[curpar-1] = l2_error;
-                            h1_error_vector[curpar-1] = h1_error;
-                            time_fem_vector[curpar-1] = time_fem;
-                            time_crb_vector_prediction[curpar-1] = time_crb_prediction;
-                            time_crb_vector_error_estimation[curpar-1] = time_crb_error_estimation;
-                        }
-                        std::ofstream res(soption(_name="result-file") );
-                        res << "output="<< ocrb << "\n";
-
-                        if( this->vm().count("crb.minimization-func") )
-                        {
-                            auto min_func = expr( min_func_str, "min_func" );
-                            min_map[soption(_name="crb.minimization-param-name")] = ocrb;
-                            auto min = min_func.evaluate( min_map );
-                            if( min < min_value["rb"] || curpar == 1 )
-                            {
-                                min_value["rb"] = min;
-                                min_mu["rb"] = mu;
-                            }
-                        }
-                    }
-
-                }//end of crb->errorType==2
-                else
-                {
-                    //if( ! boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
-                    //    throw std::logic_error( "ERROR TYPE must be 2 when using CRBTrilinear (no error estimation)" );
-
-                    auto output_vector=o.template get<0>();
-                    double output_vector_size=output_vector.size();
-                    double ocrb = output_vector[output_vector_size-1];//output at last time
-                    std::vector<double> v{output_fem, time_fem, ocrb, relative_estimated_error, time_crb_prediction, relative_error, condition_number, l2_error, h1_error};
-                    if( proc_number == Environment::worldComm().masterRank() )
-                    {
-                        std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions  (error estimation on this output : " << output_estimated_error<<") \n";
-                        //std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
-                        printEntry( file_summary_of_simulations, mu, v );
-                        printEntry( ostr, mu, v );
-                        //file_summary_of_simulations.close();
-
-                        if ( boption(_name="crb.compute-stat") && compute_fem )
-                        {
-                            relative_error_vector[curpar-1] = relative_error;
-                            l2_error_vector[curpar-1] = l2_error;
-                            h1_error_vector[curpar-1] = h1_error;
-                            time_fem_vector[curpar-1] = time_fem;
-                            time_crb_vector_prediction[curpar-1] = time_crb_prediction;
-                            time_crb_vector_error_estimation[curpar-1] = time_crb_error_estimation;
-                            relative_estimated_error_vector[curpar-1] = relative_estimated_error;
-                        }
-                        std::ofstream res(soption(_name="result-file") );
-                        res << "output="<< ocrb << "\n";
-
-                        if( this->vm().count("crb.minimization-func") )
-                        {
-                            auto min_func = expr( min_func_str, "min_func" );
-                            min_map[soption(_name="crb.minimization-param-name")] = ocrb;
-                            auto min = min_func.evaluate( min_map );
-                            if( min < min_value["rb"] || curpar == 1 )
-                            {
-                                min_value["rb"] = min;
-                                min_mu["rb"] = mu;
-                            }
-                        }
-
-                    }//end of proc==master
-                }//end of else (errorType==2)
-
-                if (boption(_name="eim.cvg-study") )
-                {
-                    bool check_name = false;
-                    std::string how_compute_unknown = soption(_name=_o( this->about().appName(),"how-compute-unkown-for-eim" ));
-                    if( how_compute_unknown == "CRB-with-ad")
-                    {
-                        LOG( INFO ) << "convergence eim with CRB-with-ad ";
-                        check_name = true;
-                        this->studyEimConvergence( mu , u_crb , curpar );
-                    }
-                    if( how_compute_unknown == "FEM-with-ad")
-                    {
-                        LOG( INFO ) << "convergence eim with FEM-with-ad ";
-                        check_name = true;
-                        //fem computed via solveFemUsingAffineDecomposition use the affine decomposition
-                        auto fem_with_ad = model->solveFemUsingAffineDecompositionFixedPoint( mu );
-                        this->studyEimConvergence( mu , fem_with_ad , curpar );
-                    }
-                    if( how_compute_unknown == "FEM-without-ad")
-                    {
-                        LOG( INFO ) << "convergence eim with FEM-without-ad ";
-                        check_name = true;
-                        auto fem_without_ad = model->solve( mu );
-                        this->studyEimConvergence( mu , fem_without_ad , curpar );
-                    }
-                    if( ! check_name )
-                        throw std::logic_error( "OpusApp error with option how-compute-unknown-for-eim, please use CRB-with-ad, FEM-with-ad or FEM-without-ad" );
                 }
+                break;
 
-                if (boption(_name="crb.cvg-study") && compute_fem )
+                case  CRBModelMode::CRB:
                 {
+                    LOG(INFO) << "CRB mode\n";
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "CRB mode -- "<<curpar<<"/"<<sampling_size<<std::endl;
 
-                    LOG(INFO) << "start convergence study...\n";
-                    std::map<int, boost::tuple<double,double,double,double,double,double,double> > conver;
+                    boost::mpi::timer ti;
 
-                    std::ofstream fileL2 ( "CrbConvergenceL2.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileH1 ( "CrbConvergenceH1.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileOutputError ( "CrbConvergenceOutputError.dat",std::ios::out | std::ios::app );
-                    std::ofstream fileOutputEstimatedError ( "CrbConvergenceOutputErrorEstimated.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileOutputErrorBoundEfficiency ( "CrbConvergenceOutputErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileAbsoluteOutputErrorBoundEfficiency ( "CrbConvergenceAbsoluteOutputErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileSolutionErrorBoundEfficiency ("CrbConvergencePrimalSolutionErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileAbsoluteSolutionErrorBoundEfficiency ("CrbConvergencePrimalAbsoluteSolutionErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileSolutionError ("CrbConvergencePrimalSolutionError.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileSolutionErrorEstimated ("CrbConvergencePrimalSolutionErrorEstimated.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileSolutionDualErrorBoundEfficiency ("CrbConvergenceDualSolutionErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileAbsoluteSolutionDualErrorBoundEfficiency ("CrbConvergenceDualAbsoluteSolutionErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileSolutionDualError ("CrbConvergenceDualSolutionError.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileSolutionDualErrorEstimated ("CrbConvergenceDualSolutionErrorEstimated.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream filePrimalResidualNorm ("CrbConvergencePrimalResidualNorm.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileDualResidualNorm ( "CrbConvergenceDualResidualNorm.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileCrbTimePrediction ( "CrbConvergenceCrbTimePrediction.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileCrbTimeErrorEstimation ( "CrbConvergenceCrbTimeErrorEstimation.dat" ,std::ios::out | std::ios::app );
-                    std::ofstream fileFemTime ( "CrbConvergenceFemTime.dat" ,std::ios::out | std::ios::app );
+                    LOG(INFO) << "solve crb\n";
+                    //google::FlushLogFiles(google::GLOG_INFO);
 
-                    int Nmax = ioption("crb.dimension-max");
-                    if( Environment::worldComm().isMasterRank() )
+                    //dimension of the RB (not necessarily the max)
+
+                    int N =  ioption(_name="crb.dimension");
+
+                    bool print_rb_matrix = boption(_name="crb.print-rb-matrix");
+                    double online_tol = doption(_name="crb.online-tolerance");
+                    vectorN_type time_crb;
+                    ti.restart();
+
+                    auto o = crb->run( mu, time_crb, online_tol , N, print_rb_matrix);
+                    double time_crb_prediction=time_crb(0);
+                    double time_crb_error_estimation=time_crb(1);
+
+                    auto WN = crb->wn();
+                    auto WNdu = crb->wndu();
+                    //auto u_crb = crb->expansion( mu , N );
+                    auto solutions=o.template get<2>();
+                    auto uN = solutions.template get<0>();
+                    auto uNdu = solutions.template get<1>();
+
+                    int size = uN.size();
+
+                    // Re-use uN given by lb in crb->run
+
+                    u_crb = crb->expansion( uN[size-1] , N , WN );
+                    if( solve_dual_problem )
+                        u_crb_dual = crb->expansion( uNdu[0] , N , WNdu );
+
+                    std::ostringstream u_crb_str;
+                    u_crb_str << "u_crb(" << mu_str.str() << ")";
+                    u_crb.setName( u_crb_str.str()  );
+                    LOG(INFO) << "export u_crb \n";
+                    if( export_solution )
                     {
-                        fileL2 << Nmax <<"\t";
-                        fileH1 << Nmax <<"\t";
-                        fileOutputError << Nmax <<"\t";
-                        fileOutputEstimatedError << Nmax << "\t";
-                        fileOutputErrorBoundEfficiency <<  Nmax << "\t";
-                        fileAbsoluteOutputErrorBoundEfficiency <<  Nmax << "\t";
-                        fileSolutionErrorBoundEfficiency << Nmax << "\t";
-                        fileAbsoluteSolutionErrorBoundEfficiency << Nmax << "\t";
-                        fileSolutionError << Nmax << "\t";
-                        fileSolutionErrorEstimated << Nmax << "\t";
-                        fileSolutionDualErrorBoundEfficiency << Nmax << "\t" ;
-                        fileAbsoluteSolutionDualErrorBoundEfficiency << Nmax << "\t" ;
-                        fileSolutionDualError << Nmax << "\t";
-                        fileSolutionDualErrorEstimated << Nmax << "\t";
-                        filePrimalResidualNorm << Nmax << "\t";
-                        fileDualResidualNorm << Nmax << "\t";
-                        fileCrbTimePrediction << Nmax << "\t";
-                        fileCrbTimeErrorEstimation << Nmax << "\t";
-                        fileFemTime << Nmax << "\t" ;
+                        if( select_parameter_via_one_feel )
+                        {
+                            model->adaptMesh( mu );
+                        }
+                        std::string exportName = u_crb.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                        e->add( exportName, u_crb );
                     }
-                    std::string str = "\t";
-                    vectorN_type crb_time;
-                    for( int N = 1; N <= Nmax ; N++ )
+
+                    double relative_error = -1;
+                    double relative_estimated_error = -1;
+                    auto matrix_info = o.template get<3>();
+                    double condition_number = matrix_info.template get<0>();
+                    double l2_error = -1;
+                    double h1_error = -1;
+                    double l2_dual_error = -1;
+                    double h1_dual_error = -1;
+                    double time_fem = -1;
+
+                    element_type u_fem ;
+                    element_type u_dual_fem ;
+
+                    auto all_upper_bounds = o.template get<6>();
+                    auto vector_output_estimated_error = all_upper_bounds.template get<0>();
+                    int last_time = vector_output_estimated_error.size()-1;
+                    //output estimated error for last time
+                    double output_estimated_error = vector_output_estimated_error[ last_time ];
+                    double solution_estimated_error = all_upper_bounds.template get<1>();
+                    double dual_solution_estimated_error = all_upper_bounds.template get<2>();
+
+                    auto output_vector=o.template get<0>();
+                    double output_vector_size=output_vector.size();
+                    double ocrb = output_vector[output_vector_size-1];//output at last time
+                    double time_fem_solve=-1;
+
+                    if ( compute_fem )
                     {
-                        auto o= crb->run( mu, crb_time, online_tol , N, print_rb_matrix);
+                        bool use_newton = boption(_name="crb.use-newton");
+
+                        LOG(INFO) << "solve u_fem\n";
+                        ti.restart();
+
+                        //auto u_fem = model->solveRB( mu );
+                        //auto u_fem = model->solveFemUsingOfflineEim( mu );
+
+                        if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
+                        {
+                            if( boption(_name="crb.solve-fem-monolithic") )
+                            {
+                                //u_fem = model->solveFemMonolithicFormulation( mu );
+                                u_fem = model->solve( mu );
+                            }
+                            else
+                            {
+                                //use affine decomposition
+                                u_fem = model->solveFemUsingAffineDecompositionFixedPoint( mu );
+                            }
+                        }
+                        else
+                            u_fem = model->solve( mu );
+
+                        time_fem_solve=ti.elapsed();
+
+                        std::ostringstream u_fem_str;
+                        u_fem_str << "u_fem(" << mu_str.str() << ")";
+                        u_fem.setName( u_fem_str.str()  );
+
+                        if( export_solution )
+                        {
+                            LOG(INFO) << "export u_fem \n";
+                            std::string exportName = u_fem.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                            e->add( exportName, u_fem );
+                        }
+
+                        ti.restart();
+                        std::vector<double> ofem{model->output( output_index, mu, u_fem, false ), ti.elapsed()};
+
+                        if( boption(_name="crb.absolute-error") )
+                            relative_error = std::abs( ofem[0]- ocrb);
+                        else
+                            relative_error = std::abs( ofem[0]- ocrb) /ofem[0];
+                        relative_estimated_error = output_estimated_error / ofem[0];
+
+                        //compute || u_fem - u_crb||_L2
+                        LOG(INFO) << "compute error \n";
+                        auto u_error = model->functionSpace()->element();
+                        auto u_dual_error = model->functionSpace()->element();
+                        std::ostringstream u_error_str;
+                        u_error = (( u_fem - u_crb ).pow(2)).sqrt()  ;
+
+                        u_error_str << "u_error(" << mu_str.str() << ")";
+                        u_error.setName( u_error_str.str()  );
+                        if( export_solution )
+                        {
+                            std::string exportName = u_error.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                            e->add( exportName, u_error );
+                        }
+
+                        LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
+                        LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
+
+                        if( boption(_name="crb.absolute-error") )
+                        {
+                            l2_error = l2Norm( u_error );
+                            h1_error = h1Norm( u_error );
+                        }
+                        else
+                        {
+                            l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                            h1_error = h1Norm( u_error )/h1Norm( u_fem );
+                        }
+
+                        output_fem = ofem[0];
+                        time_fem = ofem[1]+time_fem_solve;
+
+                        if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
+                        {
+                            if( solve_dual_problem )
+                            {
+                                if( boption(_name="crb.solve-fem-monolithic") )
+                                {
+                                    u_dual_fem = model->solveFemDualMonolithicFormulation( mu );
+                                }
+                                else
+                                {
+                                    //use affine decomposition
+                                    u_dual_fem =  model->solveFemDualUsingAffineDecompositionFixedPoint( mu );
+                                }
+
+                                u_dual_error = model->functionSpace()->element();
+                                u_dual_error = (( u_dual_fem - u_crb_dual ).pow(2)).sqrt() ;
+                                l2_dual_error = l2Norm( u_dual_error )/l2Norm( u_dual_fem );
+                                h1_dual_error = h1Norm( u_dual_error )/h1Norm( u_dual_fem );
+                            }
+                        }
+
+                        if( this->vm().count("crb.minimization-func") )
+                        {
+                            auto min_func = expr( min_func_str, "min_func" );
+                            min_map[soption(_name="crb.minimization-param-name")] = ofem[0];
+                            auto min = min_func.evaluate( min_map );
+                            if( min < min_value["fem"] || curpar == 1 )
+                            {
+                                min_value["fem"] = min;
+                                min_mu["fem"] = mu;
+                            }
+                        }
+
+                    }//compute-fem-during-online
+
+                    if ( crb->errorType()==2 )
+                    {
+                        auto output_vector=o.template get<0>();
+                        double output_vector_size=output_vector.size();
+                        double ocrb = output_vector[output_vector_size-1];//output at last time
+                        std::vector<double> v{output_fem, time_fem, ocrb, relative_estimated_error, time_crb_prediction, relative_error, condition_number, l2_error, h1_error};
+
+                        if( proc_number == Environment::worldComm().masterRank() )
+                        {
+                            std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions\n";
+                            printEntry( file_summary_of_simulations, mu, v );
+                            printEntry( ostr, mu, v );
+                            //file_summary_of_simulations.close();
+
+                            if ( boption(_name="crb.compute-stat") && compute_fem )
+                            {
+                                relative_error_vector[curpar-1] = relative_error;
+                                l2_error_vector[curpar-1] = l2_error;
+                                h1_error_vector[curpar-1] = h1_error;
+                                time_fem_vector[curpar-1] = time_fem;
+                                time_crb_vector_prediction[curpar-1] = time_crb_prediction;
+                                time_crb_vector_error_estimation[curpar-1] = time_crb_error_estimation;
+                            }
+                            std::ofstream res(soption(_name="result-file") );
+                            res << "output="<< ocrb << "\n";
+
+                            if( this->vm().count("crb.minimization-func") )
+                            {
+                                auto min_func = expr( min_func_str, "min_func" );
+                                min_map[soption(_name="crb.minimization-param-name")] = ocrb;
+                                auto min = min_func.evaluate( min_map );
+                                if( min < min_value["rb"] || curpar == 1 )
+                                {
+                                    min_value["rb"] = min;
+                                    min_mu["rb"] = mu;
+                                }
+                            }
+                        }
+
+                    }//end of crb->errorType==2
+                    else
+                    {
+                        //if( ! boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
+                        //    throw std::logic_error( "ERROR TYPE must be 2 when using CRBTrilinear (no error estimation)" );
 
                         auto output_vector=o.template get<0>();
                         double output_vector_size=output_vector.size();
                         double ocrb = output_vector[output_vector_size-1];//output at last time
-                        auto solutions=o.template get<2>();
-                        auto u_crb = solutions.template get<0>();
-                        auto u_crb_du = solutions.template get<1>();
-                        int size = u_crb.size();
-                        auto uN = crb->expansion( u_crb[size-1], N, WN );
-
-                        element_type uNdu;
-
-                        auto u_error = u_fem - uN;
-                        auto u_dual_error = model->functionSpace()->element();
-                        if( solve_dual_problem )
+                        std::vector<double> v{output_fem, time_fem, ocrb, relative_estimated_error, time_crb_prediction, relative_error, condition_number, l2_error, h1_error};
+                        if( proc_number == Environment::worldComm().masterRank() )
                         {
-                            uNdu = crb->expansion( u_crb_du[0], N, WNdu );
-                            u_dual_error = u_dual_fem - uNdu;
+                            std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions  (error estimation on this output : " << output_estimated_error<<") \n";
+                            //std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
+                            printEntry( file_summary_of_simulations, mu, v );
+                            printEntry( ostr, mu, v );
+                            //file_summary_of_simulations.close();
+
+                            if ( boption(_name="crb.compute-stat") && compute_fem )
+                            {
+                                relative_error_vector[curpar-1] = relative_error;
+                                l2_error_vector[curpar-1] = l2_error;
+                                h1_error_vector[curpar-1] = h1_error;
+                                time_fem_vector[curpar-1] = time_fem;
+                                time_crb_vector_prediction[curpar-1] = time_crb_prediction;
+                                time_crb_vector_error_estimation[curpar-1] = time_crb_error_estimation;
+                                relative_estimated_error_vector[curpar-1] = relative_estimated_error;
+                            }
+                            std::ofstream res(soption(_name="result-file") );
+                            res << "output="<< ocrb << "\n";
+
+                            if( this->vm().count("crb.minimization-func") )
+                            {
+                                auto min_func = expr( min_func_str, "min_func" );
+                                min_map[soption(_name="crb.minimization-param-name")] = ocrb;
+                                auto min = min_func.evaluate( min_map );
+                                if( min < min_value["rb"] || curpar == 1 )
+                                {
+                                    min_value["rb"] = min;
+                                    min_mu["rb"] = mu;
+                                }
+                            }
+
+                        }//end of proc==master
+                    }//end of else (errorType==2)
+
+                    if (boption(_name="eim.cvg-study") )
+                    {
+                        bool check_name = false;
+                        std::string how_compute_unknown = soption(_name=_o( this->about().appName(),"how-compute-unkown-for-eim" ));
+                        if( how_compute_unknown == "CRB-with-ad")
+                        {
+                            LOG( INFO ) << "convergence eim with CRB-with-ad ";
+                            check_name = true;
+                            this->studyEimConvergence( mu , u_crb , curpar );
                         }
-
-
-                        auto all_upper_bounds = o.template get<6>();
-                        auto vector_output_estimated_error = all_upper_bounds.template get<0>();
-                        int last_time = vector_output_estimated_error.size()-1;
-                        //output estimated error for last time
-                        output_estimated_error = vector_output_estimated_error[ last_time ];
-                        solution_estimated_error = all_upper_bounds.template get<1>();
-                        dual_solution_estimated_error = all_upper_bounds.template get<2>();
-
-                        //auto o = crb->run( mu,  doption(_name="crb.online-tolerance") , N);
-                        double rel_err = std::abs( output_fem-ocrb ) /output_fem;
-                        double err = std::abs( output_fem-ocrb );
-
-                        double output_relative_estimated_error = output_estimated_error / output_fem;
-
-                        double primal_residual_norm = o.template get<4>();
-                        double dual_residual_norm = o.template get<5>();
-
-                        double solution_error=0;
-                        double dual_solution_error=0;
-                        double square_solution_error=0;
-                        double square_dual_solution_error=0;
-                        double ref_primal=0;
-                        double ref_dual=0;
-                        int qlinear=model->QLinearDecompositionA();
-                        bool symmetric = boption(_name="crb.use-symmetric-matrix");
-                        if( model->hasEim() && (qlinear > 0) )
+                        if( how_compute_unknown == "FEM-with-ad")
                         {
+                            LOG( INFO ) << "convergence eim with FEM-with-ad ";
+                            check_name = true;
+                            //fem computed via solveFemUsingAffineDecomposition use the affine decomposition
+                            auto fem_with_ad = model->solveFemUsingAffineDecompositionFixedPoint( mu );
+                            this->studyEimConvergence( mu , fem_with_ad , curpar );
+                        }
+                        if( how_compute_unknown == "FEM-without-ad")
+                        {
+                            LOG( INFO ) << "convergence eim with FEM-without-ad ";
+                            check_name = true;
+                            auto fem_without_ad = model->solve( mu );
+                            this->studyEimConvergence( mu , fem_without_ad , curpar );
+                        }
+                        if( ! check_name )
+                            throw std::logic_error( "OpusApp error with option how-compute-unknown-for-eim, please use CRB-with-ad, FEM-with-ad or FEM-without-ad" );
+                    }
 
-                            if( model->isSteady() )
+                    if (boption(_name="crb.cvg-study") && compute_fem )
+                    {
+
+                        LOG(INFO) << "start convergence study...\n";
+                        std::map<int, boost::tuple<double,double,double,double,double,double,double> > conver;
+
+                        std::ofstream fileL2 ( "CrbConvergenceL2.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileH1 ( "CrbConvergenceH1.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileOutputError ( "CrbConvergenceOutputError.dat",std::ios::out | std::ios::app );
+                        std::ofstream fileOutputEstimatedError ( "CrbConvergenceOutputErrorEstimated.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileOutputErrorBoundEfficiency ( "CrbConvergenceOutputErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileAbsoluteOutputErrorBoundEfficiency ( "CrbConvergenceAbsoluteOutputErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileSolutionErrorBoundEfficiency ("CrbConvergencePrimalSolutionErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileAbsoluteSolutionErrorBoundEfficiency ("CrbConvergencePrimalAbsoluteSolutionErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileSolutionError ("CrbConvergencePrimalSolutionError.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileSolutionErrorEstimated ("CrbConvergencePrimalSolutionErrorEstimated.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileSolutionDualErrorBoundEfficiency ("CrbConvergenceDualSolutionErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileAbsoluteSolutionDualErrorBoundEfficiency ("CrbConvergenceDualAbsoluteSolutionErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileSolutionDualError ("CrbConvergenceDualSolutionError.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileSolutionDualErrorEstimated ("CrbConvergenceDualSolutionErrorEstimated.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream filePrimalResidualNorm ("CrbConvergencePrimalResidualNorm.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileDualResidualNorm ( "CrbConvergenceDualResidualNorm.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileCrbTimePrediction ( "CrbConvergenceCrbTimePrediction.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileCrbTimeErrorEstimation ( "CrbConvergenceCrbTimeErrorEstimation.dat" ,std::ios::out | std::ios::app );
+                        std::ofstream fileFemTime ( "CrbConvergenceFemTime.dat" ,std::ios::out | std::ios::app );
+
+                        int Nmax = ioption("crb.dimension-max");
+                        if( Environment::worldComm().isMasterRank() )
+                        {
+                            fileL2 << Nmax <<"\t";
+                            fileH1 << Nmax <<"\t";
+                            fileOutputError << Nmax <<"\t";
+                            fileOutputEstimatedError << Nmax << "\t";
+                            fileOutputErrorBoundEfficiency <<  Nmax << "\t";
+                            fileAbsoluteOutputErrorBoundEfficiency <<  Nmax << "\t";
+                            fileSolutionErrorBoundEfficiency << Nmax << "\t";
+                            fileAbsoluteSolutionErrorBoundEfficiency << Nmax << "\t";
+                            fileSolutionError << Nmax << "\t";
+                            fileSolutionErrorEstimated << Nmax << "\t";
+                            fileSolutionDualErrorBoundEfficiency << Nmax << "\t" ;
+                            fileAbsoluteSolutionDualErrorBoundEfficiency << Nmax << "\t" ;
+                            fileSolutionDualError << Nmax << "\t";
+                            fileSolutionDualErrorEstimated << Nmax << "\t";
+                            filePrimalResidualNorm << Nmax << "\t";
+                            fileDualResidualNorm << Nmax << "\t";
+                            fileCrbTimePrediction << Nmax << "\t";
+                            fileCrbTimeErrorEstimation << Nmax << "\t";
+                            fileFemTime << Nmax << "\t" ;
+                        }
+                        std::string str = "\t";
+                        vectorN_type crb_time;
+                        for( int N = 1; N <= Nmax ; N++ )
+                        {
+                            auto o= crb->run( mu, crb_time, online_tol , N, print_rb_matrix);
+
+                            auto output_vector=o.template get<0>();
+                            double output_vector_size=output_vector.size();
+                            double ocrb = output_vector[output_vector_size-1];//output at last time
+                            auto solutions=o.template get<2>();
+                            auto u_crb = solutions.template get<0>();
+                            auto u_crb_du = solutions.template get<1>();
+                            int size = u_crb.size();
+                            auto uN = crb->expansion( u_crb[size-1], N, WN );
+
+                            element_type uNdu;
+
+                            auto u_error = u_fem - uN;
+                            auto u_dual_error = model->functionSpace()->element();
+                            if( solve_dual_problem )
                             {
-                                //all loops are not really necessary in the elliptic case
-                                //we could also use directly sqrt( model->scalarProduct( u_error , u_error ) ) ;
-                                //but we need to be sure that the matrix associated to scalar product
-                                //was assembled using reference parameter (or at least, to known what parameter was used).
-                                //Moreover when we deal with transient problems we need to build a( u_error^k , u_error^k ; muref )
-                                //where u_error^k means u_error at time index k
-                                //so it is not possible to do that only using model->scalarProduct()
-                                for(int q=0; q<qlinear;q++)
+                                uNdu = crb->expansion( u_crb_du[0], N, WNdu );
+                                u_dual_error = u_dual_fem - uNdu;
+                            }
+
+
+                            auto all_upper_bounds = o.template get<6>();
+                            auto vector_output_estimated_error = all_upper_bounds.template get<0>();
+                            int last_time = vector_output_estimated_error.size()-1;
+                            //output estimated error for last time
+                            output_estimated_error = vector_output_estimated_error[ last_time ];
+                            solution_estimated_error = all_upper_bounds.template get<1>();
+                            dual_solution_estimated_error = all_upper_bounds.template get<2>();
+
+                            //auto o = crb->run( mu,  doption(_name="crb.online-tolerance") , N);
+                            double rel_err = std::abs( output_fem-ocrb ) /output_fem;
+                            double err = std::abs( output_fem-ocrb );
+
+                            double output_relative_estimated_error = output_estimated_error / output_fem;
+
+                            double primal_residual_norm = o.template get<4>();
+                            double dual_residual_norm = o.template get<5>();
+
+                            double solution_error=0;
+                            double dual_solution_error=0;
+                            double square_solution_error=0;
+                            double square_dual_solution_error=0;
+                            double ref_primal=0;
+                            double ref_dual=0;
+                            int qlinear=model->QLinearDecompositionA();
+                            bool symmetric = boption(_name="crb.use-symmetric-matrix");
+                            if( model->hasEim() && (qlinear > 0) )
+                            {
+
+                                if( model->isSteady() )
                                 {
-                                    for(int m=0; m<model->mMaxLinearDecompositionA(q); m++)
-                                    {
-                                        solution_error +=  ref_betaLinearDecompositionAqm[0][q][m]*model->linearDecompositionAqm(q,m,u_error,u_error) ;
-                                        ref_primal +=  ref_betaLinearDecompositionAqm[0][q][m]*model->linearDecompositionAqm(q,m,u_fem,u_fem);
-                                    }
-                                }
-                                if( solve_dual_problem )
-                                {
-                                    for(int q=0; q<model->QLinearDecompositionA();q++)
+                                    //all loops are not really necessary in the elliptic case
+                                    //we could also use directly sqrt( model->scalarProduct( u_error , u_error ) ) ;
+                                    //but we need to be sure that the matrix associated to scalar product
+                                    //was assembled using reference parameter (or at least, to known what parameter was used).
+                                    //Moreover when we deal with transient problems we need to build a( u_error^k , u_error^k ; muref )
+                                    //where u_error^k means u_error at time index k
+                                    //so it is not possible to do that only using model->scalarProduct()
+                                    for(int q=0; q<qlinear;q++)
                                     {
                                         for(int m=0; m<model->mMaxLinearDecompositionA(q); m++)
                                         {
-                                            dual_solution_error += ref_betaLinearDecompositionAqm[0][q][m]*model->linearDecompositionAqm(q,m,u_dual_error,u_dual_error);
-                                            ref_dual += ref_betaLinearDecompositionAqm[0][q][m]*model->linearDecompositionAqm(q,m,u_dual_fem,u_dual_fem);
+                                            solution_error +=  ref_betaLinearDecompositionAqm[0][q][m]*model->linearDecompositionAqm(q,m,u_error,u_error) ;
+                                            ref_primal +=  ref_betaLinearDecompositionAqm[0][q][m]*model->linearDecompositionAqm(q,m,u_fem,u_fem);
                                         }
                                     }
-                                    square_dual_solution_error = dual_solution_error;
-                                    dual_solution_error = math::sqrt( dual_solution_error );
-                                    ref_dual = math::sqrt( ref_dual );
-                                }
-                                square_solution_error = solution_error;
-                                solution_error = math::sqrt( solution_error );
-                                ref_primal = math::sqrt( ref_primal );
-                            }//steady
-                            else
-                            {
-                                double dt = model->timeStep();
-                                double ti = model->timeInitial();
-                                double tf = model->timeFinal();
-                                int K = ( tf - ti )/dt;
-
-                                for(int q=0; q<model->Qm();q++)
-                                {
-                                    for(int m=0; m<model->mMaxM(q); m++)
+                                    if( solve_dual_problem )
                                     {
-                                        solution_error +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_error,u_error);
-                                        ref_primal +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_fem,u_fem);
-                                    }
-                                }
-                                for(int time_index=0; time_index<K; time_index++)
-                                {
-                                    double t=time_index*dt;
-                                    for(int q=0; q<model->QLinearDecompositionA();q++)
-                                    {
-                                        for(int m=0; m<model->mMaxLinearDecompositionA(q); m++)
+                                        for(int q=0; q<model->QLinearDecompositionA();q++)
                                         {
-                                            solution_error +=  ref_betaLinearDecompositionAqm[time_index][q][m]*model->linearDecompositionAqm(q,m,u_error,u_error) * dt;
-                                            ref_primal +=  ref_betaLinearDecompositionAqm[time_index][q][m]*model->linearDecompositionAqm(q,m,u_fem,u_fem) * dt;
+                                            for(int m=0; m<model->mMaxLinearDecompositionA(q); m++)
+                                            {
+                                                dual_solution_error += ref_betaLinearDecompositionAqm[0][q][m]*model->linearDecompositionAqm(q,m,u_dual_error,u_dual_error);
+                                                ref_dual += ref_betaLinearDecompositionAqm[0][q][m]*model->linearDecompositionAqm(q,m,u_dual_fem,u_dual_fem);
+                                            }
                                         }
+                                        square_dual_solution_error = dual_solution_error;
+                                        dual_solution_error = math::sqrt( dual_solution_error );
+                                        ref_dual = math::sqrt( ref_dual );
                                     }
-                                }
-                                square_solution_error = solution_error;
-                                solution_error = math::sqrt( solution_error );
-                                ref_primal = math::sqrt( ref_primal );
-
-                                if( solve_dual_problem )
+                                    square_solution_error = solution_error;
+                                    solution_error = math::sqrt( solution_error );
+                                    ref_primal = math::sqrt( ref_primal );
+                                }//steady
+                                else
                                 {
-                                    ti = model->timeFinal()+dt;
-                                    tf = model->timeInitial()+dt;
-                                    dt -= dt;
+                                    double dt = model->timeStep();
+                                    double ti = model->timeInitial();
+                                    double tf = model->timeFinal();
+                                    int K = ( tf - ti )/dt;
+
                                     for(int q=0; q<model->Qm();q++)
                                     {
                                         for(int m=0; m<model->mMaxM(q); m++)
                                         {
-                                            dual_solution_error +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_dual_error,u_dual_error);
-                                            ref_dual +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_dual_fem,u_dual_fem);
+                                            solution_error +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_error,u_error);
+                                            ref_primal +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_fem,u_fem);
                                         }
                                     }
                                     for(int time_index=0; time_index<K; time_index++)
@@ -1248,95 +1226,95 @@ OpusApp<ModelType,RM,Model>::run()
                                         {
                                             for(int m=0; m<model->mMaxLinearDecompositionA(q); m++)
                                             {
-                                                dual_solution_error +=  ref_betaLinearDecompositionAqm[time_index][q][m]*model->linearDecompositionAqm(q,m,u_dual_error,u_dual_error) * dt;
-                                                ref_dual +=  ref_betaLinearDecompositionAqm[time_index][q][m]*model->linearDecompositionAqm(q,m,u_dual_fem,u_dual_fem) * dt;
+                                                solution_error +=  ref_betaLinearDecompositionAqm[time_index][q][m]*model->linearDecompositionAqm(q,m,u_error,u_error) * dt;
+                                                ref_primal +=  ref_betaLinearDecompositionAqm[time_index][q][m]*model->linearDecompositionAqm(q,m,u_fem,u_fem) * dt;
                                             }
                                         }
                                     }
-                                    square_dual_solution_error = dual_solution_error;
-                                    dual_solution_error = math::sqrt( dual_solution_error );
-                                    ref_dual = math::sqrt( ref_dual );
-                                }//if solve-dual
+                                    square_solution_error = solution_error;
+                                    solution_error = math::sqrt( solution_error );
+                                    ref_primal = math::sqrt( ref_primal );
 
-                            }//transient
-
-                        }//use EIM && qlinear > 0
-                        else
-                        {
-                            CHECK( symmetric ) << "Your model doesn' use a symmetric bilinear form a() so you have to implement computeLinearDecompositionA() function\n";
-                            if( model->isSteady() )
-                            {
-                                //let ufem-ucrb = e
-                                //||| e |||_mu = sqrt( a( e , e ; mu ) ) = solution_error
-                                for(int q=0; q<model->Qa();q++)
-                                {
-                                    for(int m=0; m<model->mMaxA(q); m++)
+                                    if( solve_dual_problem )
                                     {
-                                        solution_error +=  ref_betaAqm[0][q][m]*model->Aqm(q,m,u_error,u_error) ;
-                                        ref_primal +=  ref_betaAqm[0][q][m]*model->Aqm(q,m,u_fem,u_fem);
-                                    }
-                                }
-                                if( solve_dual_problem )
-                                {
-                                    for(int q=0; q<model->Qa();q++)
-                                    {
-                                        for(int m=0; m<model->mMaxA(q); m++)
+                                        ti = model->timeFinal()+dt;
+                                        tf = model->timeInitial()+dt;
+                                        dt -= dt;
+                                        for(int q=0; q<model->Qm();q++)
                                         {
-                                            dual_solution_error += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_error,u_dual_error);
-                                            ref_dual += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem);
+                                            for(int m=0; m<model->mMaxM(q); m++)
+                                            {
+                                                dual_solution_error +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_dual_error,u_dual_error);
+                                                ref_dual +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_dual_fem,u_dual_fem);
+                                            }
                                         }
-                                    }
-                                    square_dual_solution_error = dual_solution_error;
-                                    dual_solution_error = math::sqrt( dual_solution_error );
-                                    ref_dual = math::sqrt( ref_dual );
-                                }
-                                square_solution_error = solution_error;
-                                solution_error = math::sqrt( solution_error );
-                                ref_primal = math::sqrt( ref_primal );
-                                //dual_solution_error = math::sqrt( model->scalarProduct( u_dual_error, u_dual_error ) );
-                            }
+                                        for(int time_index=0; time_index<K; time_index++)
+                                        {
+                                            double t=time_index*dt;
+                                            for(int q=0; q<model->QLinearDecompositionA();q++)
+                                            {
+                                                for(int m=0; m<model->mMaxLinearDecompositionA(q); m++)
+                                                {
+                                                    dual_solution_error +=  ref_betaLinearDecompositionAqm[time_index][q][m]*model->linearDecompositionAqm(q,m,u_dual_error,u_dual_error) * dt;
+                                                    ref_dual +=  ref_betaLinearDecompositionAqm[time_index][q][m]*model->linearDecompositionAqm(q,m,u_dual_fem,u_dual_fem) * dt;
+                                                }
+                                            }
+                                        }
+                                        square_dual_solution_error = dual_solution_error;
+                                        dual_solution_error = math::sqrt( dual_solution_error );
+                                        ref_dual = math::sqrt( ref_dual );
+                                    }//if solve-dual
+
+                                }//transient
+
+                            }//use EIM && qlinear > 0
                             else
                             {
-                                double dt = model->timeStep();
-                                double ti = model->timeInitial();
-                                double tf = model->timeFinal();
-                                int K = ( tf - ti )/dt;
-
-                                for(int q=0; q<model->Qm();q++)
+                                CHECK( symmetric ) << "Your model doesn' use a symmetric bilinear form a() so you have to implement computeLinearDecompositionA() function\n";
+                                if( model->isSteady() )
                                 {
-                                    for(int m=0; m<model->mMaxM(q); m++)
-                                    {
-                                        solution_error +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_error,u_error);
-                                        ref_primal +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_fem,u_fem);
-                                    }
-                                }
-                                for(int time_index=0; time_index<K; time_index++)
-                                {
-                                    double t=time_index*dt;
+                                    //let ufem-ucrb = e
+                                    //||| e |||_mu = sqrt( a( e , e ; mu ) ) = solution_error
                                     for(int q=0; q<model->Qa();q++)
                                     {
                                         for(int m=0; m<model->mMaxA(q); m++)
                                         {
-                                            solution_error +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_error,u_error) * dt;
-                                            ref_primal +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_fem,u_fem) * dt;
+                                            solution_error +=  ref_betaAqm[0][q][m]*model->Aqm(q,m,u_error,u_error) ;
+                                            ref_primal +=  ref_betaAqm[0][q][m]*model->Aqm(q,m,u_fem,u_fem);
                                         }
                                     }
+                                    if( solve_dual_problem )
+                                    {
+                                        for(int q=0; q<model->Qa();q++)
+                                        {
+                                            for(int m=0; m<model->mMaxA(q); m++)
+                                            {
+                                                dual_solution_error += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_error,u_dual_error);
+                                                ref_dual += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem);
+                                            }
+                                        }
+                                        square_dual_solution_error = dual_solution_error;
+                                        dual_solution_error = math::sqrt( dual_solution_error );
+                                        ref_dual = math::sqrt( ref_dual );
+                                    }
+                                    square_solution_error = solution_error;
+                                    solution_error = math::sqrt( solution_error );
+                                    ref_primal = math::sqrt( ref_primal );
+                                    //dual_solution_error = math::sqrt( model->scalarProduct( u_dual_error, u_dual_error ) );
                                 }
-                                square_solution_error = solution_error;
-                                solution_error = math::sqrt( solution_error );
-                                ref_primal = math::sqrt( ref_primal );
-
-                                if( solve_dual_problem )
+                                else
                                 {
-                                    ti = model->timeFinal()+dt;
-                                    tf = model->timeInitial()+dt;
-                                    dt -= dt;
+                                    double dt = model->timeStep();
+                                    double ti = model->timeInitial();
+                                    double tf = model->timeFinal();
+                                    int K = ( tf - ti )/dt;
+
                                     for(int q=0; q<model->Qm();q++)
                                     {
                                         for(int m=0; m<model->mMaxM(q); m++)
                                         {
-                                            dual_solution_error +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_dual_error,u_dual_error);
-                                            ref_dual +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_dual_fem,u_dual_fem);
+                                            solution_error +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_error,u_error);
+                                            ref_primal +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_fem,u_fem);
                                         }
                                     }
                                     for(int time_index=0; time_index<K; time_index++)
@@ -1346,486 +1324,515 @@ OpusApp<ModelType,RM,Model>::run()
                                         {
                                             for(int m=0; m<model->mMaxA(q); m++)
                                             {
-                                                dual_solution_error +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_dual_error,u_dual_error) * dt;
-                                                ref_dual +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem) * dt;
+                                                solution_error +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_error,u_error) * dt;
+                                                ref_primal +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_fem,u_fem) * dt;
                                             }
                                         }
                                     }
-                                    square_dual_solution_error = dual_solution_error;
-                                    dual_solution_error = math::sqrt( dual_solution_error );
-                                    ref_dual = math::sqrt( ref_dual );
-                                }//if solve-dual
-                            }//transient case
-                        }//no use EIM
+                                    square_solution_error = solution_error;
+                                    solution_error = math::sqrt( solution_error );
+                                    ref_primal = math::sqrt( ref_primal );
 
-                        double l2_error = l2Norm( u_error )/l2Norm( u_fem );
-                        double h1_error = h1Norm( u_error )/h1Norm( u_fem );
-                        auto matrix_info = o.template get<3>();
-                        double condition_number = matrix_info.template get<0>();
-                        double output_error_bound_efficiency = 1;
-                        double absolute_output_error_bound_efficiency = 1;
+                                    if( solve_dual_problem )
+                                    {
+                                        ti = model->timeFinal()+dt;
+                                        tf = model->timeInitial()+dt;
+                                        dt -= dt;
+                                        for(int q=0; q<model->Qm();q++)
+                                        {
+                                            for(int m=0; m<model->mMaxM(q); m++)
+                                            {
+                                                dual_solution_error +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_dual_error,u_dual_error);
+                                                ref_dual +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_dual_fem,u_dual_fem);
+                                            }
+                                        }
+                                        for(int time_index=0; time_index<K; time_index++)
+                                        {
+                                            double t=time_index*dt;
+                                            for(int q=0; q<model->Qa();q++)
+                                            {
+                                                for(int m=0; m<model->mMaxA(q); m++)
+                                                {
+                                                    dual_solution_error +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_dual_error,u_dual_error) * dt;
+                                                    ref_dual +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem) * dt;
+                                                }
+                                            }
+                                        }
+                                        square_dual_solution_error = dual_solution_error;
+                                        dual_solution_error = math::sqrt( dual_solution_error );
+                                        ref_dual = math::sqrt( ref_dual );
+                                    }//if solve-dual
+                                }//transient case
+                            }//no use EIM
 
-                        if( err > 1e-12 )
-                        {
-                            output_error_bound_efficiency = output_relative_estimated_error / rel_err;
-                            absolute_output_error_bound_efficiency = output_estimated_error / err;
-                        }
-                        double relative_primal_solution_error = solution_error / ref_primal ;
-                        double relative_primal_solution_estimated_error = solution_estimated_error / ref_primal;
-                        double relative_primal_solution_error_bound_efficiency=1;
-                        double absolute_primal_solution_error_bound_efficiency=1;
-                        if( solution_error > 1e-12 )
-                        {
-                            //compute bounds efficiency only if error is big enough
-                            relative_primal_solution_error_bound_efficiency = relative_primal_solution_estimated_error / relative_primal_solution_error;
-                            absolute_primal_solution_error_bound_efficiency = solution_estimated_error / solution_error;
-                        }
+                            double l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                            double h1_error = h1Norm( u_error )/h1Norm( u_fem );
+                            auto matrix_info = o.template get<3>();
+                            double condition_number = matrix_info.template get<0>();
+                            double output_error_bound_efficiency = 1;
+                            double absolute_output_error_bound_efficiency = 1;
 
-                        // if( relative_primal_solution_error_bound_efficiency < 1 )
-                        // {
-                        //     vector_sampling_for_primal_efficiency_under_1[N-1]->push_back( mu , 1);
-                        // }
-
-                        double relative_dual_solution_error = 1;
-                        double relative_dual_solution_estimated_error = 1;
-                        double relative_dual_solution_error_bound_efficiency = 1;
-                        double absolute_dual_solution_error_bound_efficiency = 1;
-                        if( solve_dual_problem )
-                        {
-                            relative_dual_solution_error = dual_solution_error / ref_dual ;
-                            relative_dual_solution_estimated_error = dual_solution_estimated_error / ref_dual;
-                            if( dual_solution_error > 1e-12 )
+                            if( err > 1e-12 )
                             {
-                                relative_dual_solution_error_bound_efficiency = relative_dual_solution_estimated_error / relative_dual_solution_error;
-                                absolute_dual_solution_error_bound_efficiency = dual_solution_estimated_error / dual_solution_error;
+                                output_error_bound_efficiency = output_relative_estimated_error / rel_err;
+                                absolute_output_error_bound_efficiency = output_estimated_error / err;
                             }
+                            double relative_primal_solution_error = solution_error / ref_primal ;
+                            double relative_primal_solution_estimated_error = solution_estimated_error / ref_primal;
+                            double relative_primal_solution_error_bound_efficiency=1;
+                            double absolute_primal_solution_error_bound_efficiency=1;
+                            if( solution_error > 1e-12 )
+                            {
+                                //compute bounds efficiency only if error is big enough
+                                relative_primal_solution_error_bound_efficiency = relative_primal_solution_estimated_error / relative_primal_solution_error;
+                                absolute_primal_solution_error_bound_efficiency = solution_estimated_error / solution_error;
+                            }
+
+                            // if( relative_primal_solution_error_bound_efficiency < 1 )
+                            // {
+                            //     vector_sampling_for_primal_efficiency_under_1[N-1]->push_back( mu , 1);
+                            // }
+
+                            double relative_dual_solution_error = 1;
+                            double relative_dual_solution_estimated_error = 1;
+                            double relative_dual_solution_error_bound_efficiency = 1;
+                            double absolute_dual_solution_error_bound_efficiency = 1;
+                            if( solve_dual_problem )
+                            {
+                                relative_dual_solution_error = dual_solution_error / ref_dual ;
+                                relative_dual_solution_estimated_error = dual_solution_estimated_error / ref_dual;
+                                if( dual_solution_error > 1e-12 )
+                                {
+                                    relative_dual_solution_error_bound_efficiency = relative_dual_solution_estimated_error / relative_dual_solution_error;
+                                    absolute_dual_solution_error_bound_efficiency = dual_solution_estimated_error / dual_solution_error;
+                                }
+                                // if( relative_dual_solution_error_bound_efficiency < 1 )
+                                // {
+                                //     vector_sampling_for_dual_efficiency_under_1[N-1]->push_back( mu , 0);
+                                // }
+                            }
+                            conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , relative_estimated_error, condition_number , output_error_bound_efficiency , relative_primal_solution_error_bound_efficiency );
+
+                            //LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
+                            if ( proc_number == Environment::worldComm().masterRank() )
+                            {
+                                std::cout << "N=" << N << " Output =  "<< output_fem <<" OutputError = "<<rel_err <<" OutputErrorEstimated = "<<relative_estimated_error
+                                          <<"  L2Error = "<< l2_error << "  H1Error = " << h1_error <<std::endl;
+
+                                if( N == Nmax )
+                                    str="\n";
+                                fileL2 << l2_error <<str;
+                                fileH1 << h1_error <<str;
+                                fileOutputError << rel_err <<str;
+                                fileOutputEstimatedError << output_relative_estimated_error << str;
+                                fileOutputErrorBoundEfficiency <<  output_error_bound_efficiency << str;
+                                fileAbsoluteOutputErrorBoundEfficiency <<  absolute_output_error_bound_efficiency << str;
+                                fileSolutionErrorBoundEfficiency << relative_primal_solution_error_bound_efficiency << str;
+                                fileAbsoluteSolutionErrorBoundEfficiency << absolute_primal_solution_error_bound_efficiency << str;
+                                fileSolutionError << relative_primal_solution_error << str;
+                                fileSolutionErrorEstimated << relative_primal_solution_estimated_error << str;
+                                fileSolutionDualErrorBoundEfficiency << relative_dual_solution_error_bound_efficiency << str ;
+                                fileAbsoluteSolutionDualErrorBoundEfficiency << absolute_dual_solution_error_bound_efficiency << str ;
+                                fileSolutionDualError << relative_dual_solution_error << str;
+                                fileSolutionDualErrorEstimated <<  relative_dual_solution_estimated_error << str;
+                                filePrimalResidualNorm << primal_residual_norm << str;
+                                fileDualResidualNorm <<  dual_residual_norm << str;
+                                fileCrbTimePrediction<< crb_time(0) << str;
+                                fileCrbTimeErrorEstimation<< crb_time(1) << str;
+                                fileFemTime<< time_fem << str;
+                            }
+                            if( boption(_name="crb.compute-matrix-information") )
+                            {
+                                auto matrix_info = o.template get<3>();// conditioning of primal reduced matrix + determinant
+                                double conditioning = matrix_info.template get<0>();
+                                double determinant = matrix_info.template get<1>();
+                                LOG( INFO ) << " primal reduced matrix information ";
+                                LOG( INFO ) << std::setprecision(15)<<"mu : \n"<<mu;
+                                LOG( INFO ) << std::setprecision(15)<<"conditioning : "<<conditioning;
+                                LOG( INFO ) << std::setprecision(15)<<"determinant : "<<determinant;
+                            }
+                            // if( relative_primal_solution_error_bound_efficiency < 1 )
+                            // {
+                            //     LOG( INFO ) << "N : "<<N;
+                            //     LOG( INFO ) << std::setprecision(15)<<"efficiency of error estimation on primal solution is "<<relative_primal_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                            //     LOG( INFO ) << std::setprecision(15)<<"mu : \n"<<mu;
+                            //     LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_estimated_error : "<<relative_primal_solution_estimated_error;
+                            //     LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_error : "<<relative_primal_solution_error;
+                            //     LOG( INFO ) << std::setprecision(15)<<"primal_solution_estimated_error : "<<solution_estimated_error;
+                            //     LOG( INFO ) << std::setprecision(15)<<"primal_solution_error : "<<solution_error;
+                            //     LOG( INFO ) << std::setprecision(15)<<"square error : "<<square_solution_error;
+                            //     //LOG( INFO ) << std::setprecision(15)<<"u_crb : \n"<<u_crb[size-1];
+                            //     LOG( INFO ) << std::setprecision(15)<<"primal solution norme  : "<<uN.l2Norm();
+                            // }
                             // if( relative_dual_solution_error_bound_efficiency < 1 )
                             // {
-                            //     vector_sampling_for_dual_efficiency_under_1[N-1]->push_back( mu , 0);
+                            //     LOG( INFO ) <<std::setprecision(15)<< "efficiency of error estimation on dual solution is "<<relative_dual_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                            //     LOG( INFO ) <<std::setprecision(15)<< "mu : \n"<<mu;
+                            //     LOG( INFO ) <<std::setprecision(15)<<"relative_dual_solution_estimated_error : "<<relative_dual_solution_estimated_error;
+                            //     LOG( INFO ) <<std::setprecision(15)<<"relative_dual_solution_error : "<<relative_dual_solution_error;
+                            //     LOG( INFO ) <<std::setprecision(15)<<"dual_solution_estimated_error : "<<dual_solution_estimated_error;
+                            //     LOG( INFO ) <<std::setprecision(15)<<"dual_solution_error : "<<dual_solution_error;
+                            //     LOG( INFO ) << std::setprecision(15)<<"square error : "<<square_dual_solution_error;
+                            //     //LOG( INFO ) << std::setprecision(15)<<"u_crb_du : \n"<<u_crb_du[0];
+                            //     LOG( INFO ) << std::setprecision(15)<<"dual solution norme  : "<<uNdu.l2Norm();
                             // }
-                        }
-                        conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , relative_estimated_error, condition_number , output_error_bound_efficiency , relative_primal_solution_error_bound_efficiency );
+                            // if( output_error_bound_efficiency < 1 )
+                            // {
+                            //     LOG( INFO ) <<std::setprecision(15)<<"efficiency of error estimation on output is "<<output_error_bound_efficiency<<" ( should be >= 1 )";
+                            //     LOG( INFO ) <<std::setprecision(15)<< "mu : \n"<<mu;
+                            //     LOG( INFO ) <<std::setprecision(15)<< "output_relative_estimated_error : "<<output_relative_estimated_error;
+                            //     LOG( INFO ) <<std::setprecision(15)<< "output_relative_error : "<<rel_err;
+                            //     LOG( INFO ) <<std::setprecision(15)<< "output_estimated_error : "<<output_estimated_error;
+                            //     LOG( INFO ) <<std::setprecision(15)<< "output_error : "<< std::abs( output_fem-ocrb );
+                            // }
 
-                        //LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
-                        if ( proc_number == Environment::worldComm().masterRank() )
-                        {
-                            std::cout << "N=" << N << " Output =  "<< output_fem <<" OutputError = "<<rel_err <<" OutputErrorEstimated = "<<relative_estimated_error
-                                      <<"  L2Error = "<< l2_error << "  H1Error = " << h1_error <<std::endl;
-
-                            if( N == Nmax )
-                                str="\n";
-                            fileL2 << l2_error <<str;
-                            fileH1 << h1_error <<str;
-                            fileOutputError << rel_err <<str;
-                            fileOutputEstimatedError << output_relative_estimated_error << str;
-                            fileOutputErrorBoundEfficiency <<  output_error_bound_efficiency << str;
-                            fileAbsoluteOutputErrorBoundEfficiency <<  absolute_output_error_bound_efficiency << str;
-                            fileSolutionErrorBoundEfficiency << relative_primal_solution_error_bound_efficiency << str;
-                            fileAbsoluteSolutionErrorBoundEfficiency << absolute_primal_solution_error_bound_efficiency << str;
-                            fileSolutionError << relative_primal_solution_error << str;
-                            fileSolutionErrorEstimated << relative_primal_solution_estimated_error << str;
-                            fileSolutionDualErrorBoundEfficiency << relative_dual_solution_error_bound_efficiency << str ;
-                            fileAbsoluteSolutionDualErrorBoundEfficiency << absolute_dual_solution_error_bound_efficiency << str ;
-                            fileSolutionDualError << relative_dual_solution_error << str;
-                            fileSolutionDualErrorEstimated <<  relative_dual_solution_estimated_error << str;
-                            filePrimalResidualNorm << primal_residual_norm << str;
-                            fileDualResidualNorm <<  dual_residual_norm << str;
-                            fileCrbTimePrediction<< crb_time(0) << str;
-                            fileCrbTimeErrorEstimation<< crb_time(1) << str;
-                            fileFemTime<< time_fem << str;
-                        }
-                        if( boption(_name="crb.compute-matrix-information") )
-                        {
-                            auto matrix_info = o.template get<3>();// conditioning of primal reduced matrix + determinant
-                            double conditioning = matrix_info.template get<0>();
-                            double determinant = matrix_info.template get<1>();
-                            LOG( INFO ) << " primal reduced matrix information ";
-                            LOG( INFO ) << std::setprecision(15)<<"mu : \n"<<mu;
-                            LOG( INFO ) << std::setprecision(15)<<"conditioning : "<<conditioning;
-                            LOG( INFO ) << std::setprecision(15)<<"determinant : "<<determinant;
-                        }
-                        // if( relative_primal_solution_error_bound_efficiency < 1 )
-                        // {
-                        //     LOG( INFO ) << "N : "<<N;
-                        //     LOG( INFO ) << std::setprecision(15)<<"efficiency of error estimation on primal solution is "<<relative_primal_solution_error_bound_efficiency<<" ( should be >= 1 )";
-                        //     LOG( INFO ) << std::setprecision(15)<<"mu : \n"<<mu;
-                        //     LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_estimated_error : "<<relative_primal_solution_estimated_error;
-                        //     LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_error : "<<relative_primal_solution_error;
-                        //     LOG( INFO ) << std::setprecision(15)<<"primal_solution_estimated_error : "<<solution_estimated_error;
-                        //     LOG( INFO ) << std::setprecision(15)<<"primal_solution_error : "<<solution_error;
-                        //     LOG( INFO ) << std::setprecision(15)<<"square error : "<<square_solution_error;
-                        //     //LOG( INFO ) << std::setprecision(15)<<"u_crb : \n"<<u_crb[size-1];
-                        //     LOG( INFO ) << std::setprecision(15)<<"primal solution norme  : "<<uN.l2Norm();
-                        // }
-                        // if( relative_dual_solution_error_bound_efficiency < 1 )
-                        // {
-                        //     LOG( INFO ) <<std::setprecision(15)<< "efficiency of error estimation on dual solution is "<<relative_dual_solution_error_bound_efficiency<<" ( should be >= 1 )";
-                        //     LOG( INFO ) <<std::setprecision(15)<< "mu : \n"<<mu;
-                        //     LOG( INFO ) <<std::setprecision(15)<<"relative_dual_solution_estimated_error : "<<relative_dual_solution_estimated_error;
-                        //     LOG( INFO ) <<std::setprecision(15)<<"relative_dual_solution_error : "<<relative_dual_solution_error;
-                        //     LOG( INFO ) <<std::setprecision(15)<<"dual_solution_estimated_error : "<<dual_solution_estimated_error;
-                        //     LOG( INFO ) <<std::setprecision(15)<<"dual_solution_error : "<<dual_solution_error;
-                        //     LOG( INFO ) << std::setprecision(15)<<"square error : "<<square_dual_solution_error;
-                        //     //LOG( INFO ) << std::setprecision(15)<<"u_crb_du : \n"<<u_crb_du[0];
-                        //     LOG( INFO ) << std::setprecision(15)<<"dual solution norme  : "<<uNdu.l2Norm();
-                        // }
-                        // if( output_error_bound_efficiency < 1 )
-                        // {
-                        //     LOG( INFO ) <<std::setprecision(15)<<"efficiency of error estimation on output is "<<output_error_bound_efficiency<<" ( should be >= 1 )";
-                        //     LOG( INFO ) <<std::setprecision(15)<< "mu : \n"<<mu;
-                        //     LOG( INFO ) <<std::setprecision(15)<< "output_relative_estimated_error : "<<output_relative_estimated_error;
-                        //     LOG( INFO ) <<std::setprecision(15)<< "output_relative_error : "<<rel_err;
-                        //     LOG( INFO ) <<std::setprecision(15)<< "output_estimated_error : "<<output_estimated_error;
-                        //     LOG( INFO ) <<std::setprecision(15)<< "output_error : "<< std::abs( output_fem-ocrb );
-                        // }
-
-                        if ( boption(_name="crb.check.residual")  && solve_dual_problem  )
-                        {
-                            std::vector < std::vector<double> > primal_residual_coefficients = all_upper_bounds.template get<3>();
-                            std::vector < std::vector<double> > dual_residual_coefficients = all_upper_bounds.template get<4>();
-                            if( model->isSteady() )
+                            if ( boption(_name="crb.check.residual")  && solve_dual_problem  )
                             {
-                                crb->checkResidual( mu , primal_residual_coefficients, dual_residual_coefficients, uN, uNdu );
-                            }
-                            else
-                            {
-                                std::vector< element_type > uNelement;
-                                std::vector< element_type > uNelement_old;
-                                std::vector< element_type > uNelement_du;
-                                std::vector< element_type > uNelement_du_old;
-
-                                auto u_crb_old = solutions.template get<2>();
-                                auto u_crb_du_old = solutions.template get<3>();
-
-                                //size is the number of time step
-                                for(int t=0; t<size; t++)
+                                std::vector < std::vector<double> > primal_residual_coefficients = all_upper_bounds.template get<3>();
+                                std::vector < std::vector<double> > dual_residual_coefficients = all_upper_bounds.template get<4>();
+                                if( model->isSteady() )
                                 {
-                                    uNelement.push_back( crb->expansion( u_crb[t], N, WN ) );
-                                    uNelement_old.push_back( crb->expansion( u_crb_old[t], N, WN ) );
-                                    uNelement_du.push_back( crb->expansion( u_crb_du[t], N, WNdu ) );
-                                    uNelement_du_old.push_back( crb->expansion( u_crb_du_old[t], N, WNdu ) );
-                                }//loop over time step
+                                    crb->checkResidual( mu , primal_residual_coefficients, dual_residual_coefficients, uN, uNdu );
+                                }
+                                else
+                                {
+                                    std::vector< element_type > uNelement;
+                                    std::vector< element_type > uNelement_old;
+                                    std::vector< element_type > uNelement_du;
+                                    std::vector< element_type > uNelement_du_old;
 
-                                crb->compareResidualsForTransientProblems(N, mu ,
-                                                                          uNelement, uNelement_old, uNelement_du, uNelement_du_old,
-                                                                          primal_residual_coefficients, dual_residual_coefficients );
-                            }//transient case
-                        }//check residuals computations
+                                    auto u_crb_old = solutions.template get<2>();
+                                    auto u_crb_du_old = solutions.template get<3>();
 
-                    }//loop over basis functions ( N )
+                                    //size is the number of time step
+                                    for(int t=0; t<size; t++)
+                                    {
+                                        uNelement.push_back( crb->expansion( u_crb[t], N, WN ) );
+                                        uNelement_old.push_back( crb->expansion( u_crb_old[t], N, WN ) );
+                                        uNelement_du.push_back( crb->expansion( u_crb_du[t], N, WNdu ) );
+                                        uNelement_du_old.push_back( crb->expansion( u_crb_du_old[t], N, WNdu ) );
+                                    }//loop over time step
+
+                                    crb->compareResidualsForTransientProblems(N, mu ,
+                                                                              uNelement, uNelement_old, uNelement_du, uNelement_du_old,
+                                                                              primal_residual_coefficients, dual_residual_coefficients );
+                                }//transient case
+                            }//check residuals computations
+
+                        }//loop over basis functions ( N )
 #if 0
-                    LOG(INFO) << "save in logfile\n";
-                    std::string mu_str;
-                    for ( int i=0; i<mu.size(); i++ )
-                        mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
-                    std::string file_name = "convergence"+mu_str+".dat";
-                    std::ofstream conv( file_name );
-                    for( auto en : conver )
-                        conv << en.first << "\t" << en.second.get<0>()  << "\t" << en.second.get<1>() << "\t" << en.second.get<2>() <<
-                            "\t"<< en.second.get<3>() << "\t"<< en.second.get<4>()<< "\t" <<en.second.get<5>()<< "\n";
+                        LOG(INFO) << "save in logfile\n";
+                        std::string mu_str;
+                        for ( int i=0; i<mu.size(); i++ )
+                            mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
+                        std::string file_name = "convergence"+mu_str+".dat";
+                        std::ofstream conv( file_name );
+                        for( auto en : conver )
+                            conv << en.first << "\t" << en.second.get<0>()  << "\t" << en.second.get<1>() << "\t" << en.second.get<2>() <<
+                                "\t"<< en.second.get<3>() << "\t"<< en.second.get<4>()<< "\t" <<en.second.get<5>()<< "\n";
 #endif
-                }//end of cvg-study
-            }//case CRB
-            break;
-            case  CRBModelMode::CRB_ONLINE:
-            {
-                std::cout << "CRB Online mode\n";
-                boost::mpi::timer ti;
-                ti.restart();
-                vectorN_type time_crb;
-                auto o = crb->run( mu, time_crb, doption(_name="crb.online-tolerance") );
-                auto output_vector=o.template get<0>();
-                double output_vector_size=output_vector.size();
-                double ocrb = output_vector[output_vector_size-1];//output at last time
-
-                if ( crb->errorType()==2 )
+                    }//end of cvg-study
+                }//case CRB
+                break;
+                case  CRBModelMode::CRB_ONLINE:
                 {
-                    std::vector<double> v{ocrb, ti.elapsed()};
-                    std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions\n";
-                    printEntry( ostr, mu, v );
+                    std::cout << "CRB Online mode\n";
+                    boost::mpi::timer ti;
+                    ti.restart();
+                    vectorN_type time_crb;
+                    auto o = crb->run( mu, time_crb, doption(_name="crb.online-tolerance") );
+                    auto output_vector=o.template get<0>();
+                    double output_vector_size=output_vector.size();
+                    double ocrb = output_vector[output_vector_size-1];//output at last time
+
+                    if ( crb->errorType()==2 )
+                    {
+                        std::vector<double> v{ocrb, ti.elapsed()};
+                        std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions\n";
+                        printEntry( ostr, mu, v );
+                    }
+
+                    else
+                    {
+                        auto all_upper_bounds = o.template get<6>();
+                        auto vector_output_estimated_error = all_upper_bounds.template get<0>();
+                        int last_time = vector_output_estimated_error.size()-1;
+                        //output estimated error for last time
+                        double output_estimated_error = vector_output_estimated_error[ last_time ];
+                        double relative_estimated_error = output_estimated_error / output_fem;
+                        auto output_vector = o.template get<0>();
+                        double output_vector_size = output_vector.size();
+                        double output = output_vector[ output_vector_size-1 ];
+                        std::vector<double> v{output, output_estimated_error, ti.elapsed()};
+                        std::cout << "output=" << ocrb << " with " << o.template get<1>() <<
+                            " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
+                        printEntry( ostr, mu, v );
+                    }
+
+                }
+                break;
+
+                case  CRBModelMode::SCM:
+                {
+
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "SCM mode\n";
+                    int kmax = crb->scm()->KMax();
+                    auto o = crb->scm()->run( mu, kmax );
+                    printEntry( file_summary_of_simulations, mu, o );
+                    printEntry( ostr, mu, o );
+
+                    scm_relative_error[curpar-1] = o[6];
+
+                    if (boption(_name="crb.scm.cvg-study")  )
+                    {
+                        LOG(INFO) << "start scm convergence study...\n";
+                        std::map<int, boost::tuple<double> > conver;
+                        for( int N = 1; N <= kmax; N++ )
+                        {
+                            auto o = crb->scm()->run( mu, N);
+                            double relative_error = o[6];
+                            conver[N]=boost::make_tuple( relative_error );
+                            if ( proc_number == Environment::worldComm().masterRank() )
+                                std::cout << "N=" << N << " " << relative_error <<std::endl;
+                            M_mapConvSCM["RelativeError"][N-1](curpar - 1) = relative_error;
+                        }
+                        if( proc_number == Environment::worldComm().masterRank() )
+                        {
+                            LOG(INFO) << "save in logfile\n";
+                            std::string mu_str;
+                            for ( int i=0; i<mu.size(); i++ )
+                                mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
+                            std::string file_name = "convergence-scm-"+mu_str+".dat";
+                            std::ofstream conv( file_name );
+                            for( auto en : conver )
+                                conv << en.first << "\t" << en.second.get<0>()  ;
+                        }
+                    }//end of cvg-study
+
+                }
+                break;
+
+                case  CRBModelMode::SCM_ONLINE:
+                {
+                    std::cout << "SCM online mode\n";
+                    auto o = crb->scm()->run( mu, crb->scm()->KMax() );
+                    printEntry( ostr, mu, o );
+                }
+                break;
+
                 }
 
+                LOG( INFO ) << "------------------------------------------------------------";
+            }
+        }
+
+        //one parameter change : plot
+        if( vary_mu_comp0 > -1 || vary_comp_time )
+        {
+            parameter_type user_mu ( model->parameterSpace() );
+            double mu_size = user_mu.size();
+            std::vector< int > sampling_each_direction ( mu_size );
+            for(int i=0; i<mu_size; i++)
+            {
+                if( i == vary_mu_comp0  )
+                    sampling_each_direction[i]=cutting_direction0;
                 else
+                    sampling_each_direction[i]=0;
+            }
+
+            int N =  ioption(_name="crb.dimension");
+            double online_tol = doption(_name="crb.online-tolerance");
+
+            vectorN_type outputs_storage;
+            vectorN_type mu0_storage;
+            vectorN_type estimated_error_outputs_storage;
+
+            //have min/max
+            Sampling->equidistribute( 2 );
+            vectorN_type time_crb;
+
+            curpar=1;
+            if( ! vary_comp_time )
+            {
+                outputs_storage.resize( cutting_direction0 );
+                mu0_storage.resize( cutting_direction0 );
+                auto mu_=Sampling->min().template get<0>();
+                if( select_parameter_via_one_feel )
                 {
+                    mu_ = user_mu_onefeel;
+                }
+                estimated_error_outputs_storage.resize( cutting_direction0 );
+                Sampling->logEquidistributeProduct( sampling_each_direction , mu_ );
+                for( auto mu : *Sampling )
+                {
+                    double x = mu(vary_mu_comp0);
+                    double mu0 = mu(vary_mu_comp0);
+                    auto o = crb->run( mu, time_crb, online_tol , N);
+                    auto output_vector=o.template get<0>();
+                    double output_vector_size=output_vector.size();
+                    double ocrb = output_vector[output_vector_size-1];//output at last time
                     auto all_upper_bounds = o.template get<6>();
                     auto vector_output_estimated_error = all_upper_bounds.template get<0>();
                     int last_time = vector_output_estimated_error.size()-1;
                     //output estimated error for last time
                     double output_estimated_error = vector_output_estimated_error[ last_time ];
-                    double relative_estimated_error = output_estimated_error / output_fem;
-                    auto output_vector = o.template get<0>();
-                    double output_vector_size = output_vector.size();
-                    double output = output_vector[ output_vector_size-1 ];
-                    std::vector<double> v{output, output_estimated_error, ti.elapsed()};
-                    std::cout << "output=" << ocrb << " with " << o.template get<1>() <<
-                        " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
-                    printEntry( ostr, mu, v );
+                    outputs_storage(curpar-1)=ocrb;
+                    mu0_storage(curpar-1)=mu0;
+                    estimated_error_outputs_storage(curpar-1)=output_estimated_error;
+                    curpar++;
                 }
-
             }
-            break;
-
-            case  CRBModelMode::SCM:
-            {
-
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-                    std::cout << "SCM mode\n";
-                int kmax = crb->scm()->KMax();
-                auto o = crb->scm()->run( mu, kmax );
-                printEntry( file_summary_of_simulations, mu, o );
-                printEntry( ostr, mu, o );
-
-                scm_relative_error[curpar-1] = o[6];
-
-                if (boption(_name="crb.scm.cvg-study")  )
-                {
-                    LOG(INFO) << "start scm convergence study...\n";
-                    std::map<int, boost::tuple<double> > conver;
-                    for( int N = 1; N <= kmax; N++ )
-                    {
-                        auto o = crb->scm()->run( mu, N);
-                        double relative_error = o[6];
-                        conver[N]=boost::make_tuple( relative_error );
-                        if ( proc_number == Environment::worldComm().masterRank() )
-                            std::cout << "N=" << N << " " << relative_error <<std::endl;
-                        M_mapConvSCM["RelativeError"][N-1](curpar - 1) = relative_error;
-                    }
-                    if( proc_number == Environment::worldComm().masterRank() )
-                    {
-                        LOG(INFO) << "save in logfile\n";
-                        std::string mu_str;
-                        for ( int i=0; i<mu.size(); i++ )
-                            mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
-                        std::string file_name = "convergence-scm-"+mu_str+".dat";
-                        std::ofstream conv( file_name );
-                        for( auto en : conver )
-                            conv << en.first << "\t" << en.second.get<0>()  ;
-                    }
-                }//end of cvg-study
-
-            }
-            break;
-
-            case  CRBModelMode::SCM_ONLINE:
-            {
-                std::cout << "SCM online mode\n";
-                auto o = crb->scm()->run( mu, crb->scm()->KMax() );
-                printEntry( ostr, mu, o );
-            }
-            break;
-
-            }
-
-            LOG( INFO ) << "------------------------------------------------------------";
-        }
-    }
-
-    //one parameter change : plot
-    if( vary_mu_comp0 > -1 || vary_comp_time )
-    {
-        parameter_type user_mu ( model->parameterSpace() );
-        double mu_size = user_mu.size();
-        std::vector< int > sampling_each_direction ( mu_size );
-        for(int i=0; i<mu_size; i++)
-        {
-            if( i == vary_mu_comp0  )
-                sampling_each_direction[i]=cutting_direction0;
             else
-                sampling_each_direction[i]=0;
-        }
-
-        int N =  ioption(_name="crb.dimension");
-        double online_tol = doption(_name="crb.online-tolerance");
-
-        vectorN_type outputs_storage;
-        vectorN_type mu0_storage;
-        vectorN_type estimated_error_outputs_storage;
-
-        //have min/max
-        Sampling->equidistribute( 2 );
-        vectorN_type time_crb;
-
-        curpar=1;
-        if( ! vary_comp_time )
-        {
-            outputs_storage.resize( cutting_direction0 );
-            mu0_storage.resize( cutting_direction0 );
-            auto mu_=Sampling->min().template get<0>();
-            if( select_parameter_via_one_feel )
             {
-                mu_ = user_mu_onefeel;
-            }
-            estimated_error_outputs_storage.resize( cutting_direction0 );
-            Sampling->logEquidistributeProduct( sampling_each_direction , mu_ );
-            for( auto mu : *Sampling )
-            {
-                double x = mu(vary_mu_comp0);
-                double mu0 = mu(vary_mu_comp0);
+                vectorN_type time_crb;
+                auto mu=Sampling->min().template get<0>();
+                if( select_parameter_via_one_feel )
+                {
+                    mu = user_mu_onefeel;
+                }
                 auto o = crb->run( mu, time_crb, online_tol , N);
                 auto output_vector=o.template get<0>();
-                double output_vector_size=output_vector.size();
-                double ocrb = output_vector[output_vector_size-1];//output at last time
                 auto all_upper_bounds = o.template get<6>();
                 auto vector_output_estimated_error = all_upper_bounds.template get<0>();
-                int last_time = vector_output_estimated_error.size()-1;
-                //output estimated error for last time
-                double output_estimated_error = vector_output_estimated_error[ last_time ];
-                outputs_storage(curpar-1)=ocrb;
-                mu0_storage(curpar-1)=mu0;
-                estimated_error_outputs_storage(curpar-1)=output_estimated_error;
-                curpar++;
+                int size=output_vector.size();
+                outputs_storage.resize( size );
+                mu0_storage.resize( size );
+                estimated_error_outputs_storage.resize( size );
+                double dt = model->timeStep();
+                double time=0;
+                for(int i=0; i<size; i++)
+                {
+                    mu0_storage(i)=time;
+                    outputs_storage(i)=output_vector[i];
+                    estimated_error_outputs_storage(i)=vector_output_estimated_error[i];
+                    time+=dt;
+                }
             }
+            model->generateGeoFileForOutputPlot( outputs_storage , mu0_storage, estimated_error_outputs_storage );
         }
-        else
+        //two parameters change : response surface
+        bool draw_surface=false;
+        if( vary_mu_comp0 > -1 && vary_mu_comp1 > -1 )
+            draw_surface=true;
+        if( vary_mu_comp1 > -1 && vary_comp_time )
+            draw_surface=true;
+        if( draw_surface )
         {
+
+            double Ti=model->timeInitial();
+            double Tf=model->timeFinal();
+            double dt=model->timeStep();
+
+            int N =  ioption(_name="crb.dimension");
+            double online_tol = doption(_name="crb.online-tolerance");
+            CHECK( Environment::worldComm().globalSize() == 1 )<<"implemented only in sequential (because of dof filling)\n";
+            typename crb_type::sampling_ptrtype S( new typename crb_type::sampling_type( model->parameterSpace() ) );
+            bool all_procs_have_same_sampling=true;
+            S->equidistribute( 2 , all_procs_have_same_sampling );
+            auto min = S->min().template get<0>();
+            auto max = S->max().template get<0>();
+            //vector of indices of components vary
+            std::vector<int> components_vary(2);
+            components_vary[0]=vary_mu_comp0;
+            components_vary[1]=vary_mu_comp1;
+            //vector containing parameters min and max
+            std::vector<parameter_type> extremums(2);
+            extremums[0]=min;
+            extremums[1]=max;
+            //cutting in each direction
+            std::vector<int> cutting(2);
+            cutting[0]=cutting_direction0;
+            cutting[1]=cutting_direction1;
+            std::vector<double> time_cutting(3);
+            time_cutting[0]=Ti;
+            time_cutting[1]=Tf;
+            time_cutting[2]=dt;
+
+            auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                        _desc = model->createStructuredGrid( components_vary, extremums , cutting, time_cutting, vary_comp_time ) );
+
+            auto Vh = Pch<1>( mesh );
+            auto px = project(_space=Vh, _expr=Px() );
+            auto py = project(_space=Vh, _expr=Py() );
+            int ndof=Vh->nDof();
+            auto u = Vh->element();
+            parameter_type mu ( model->parameterSpace() );
+            int time_index=0;
             vectorN_type time_crb;
-            auto mu=Sampling->min().template get<0>();
-            if( select_parameter_via_one_feel )
+            for(int i=0; i<ndof; i++)
             {
-                mu = user_mu_onefeel;
+                double mux=px(i);
+                double muy=py(i);
+                mu=min;//first, initialize all components at minimum
+                mu( vary_mu_comp0 ) = mux;
+
+                if( vary_comp_time )
+                {
+                    //time is always represented by the X-axis
+                    //look at which index mux is associated
+                    time_index=(mux-Ti)/dt;
+                }
+                else
+                {
+                    mu( vary_mu_comp1 ) = muy;
+                }
+
+                auto run = crb->run( mu, time_crb, online_tol, N );
+                auto output_vector=run.template get<0>();
+                double output=0;
+                if( vary_comp_time )
+                {
+                    output = output_vector[time_index];
+                }
+                else
+                {
+                    int output_vector_size=output_vector.size();
+                    output = output_vector[output_vector_size-1];//output at last time
+                }
+                u(i)=output;
             }
-            auto o = crb->run( mu, time_crb, online_tol , N);
-            auto output_vector=o.template get<0>();
-            auto all_upper_bounds = o.template get<6>();
-            auto vector_output_estimated_error = all_upper_bounds.template get<0>();
-            int size=output_vector.size();
-            outputs_storage.resize( size );
-            mu0_storage.resize( size );
-            estimated_error_outputs_storage.resize( size );
-            double dt = model->timeStep();
-            double time=0;
-            for(int i=0; i<size; i++)
+            auto exp = exporter( _mesh=mesh );
+            exp->add( "response surface", u );
+            exp->save();
+
+            /* Export geo file */
+            if(soption(_name="exporter.format") == "gmsh")
             {
-                mu0_storage(i)=time;
-                outputs_storage(i)=output_vector[i];
-                estimated_error_outputs_storage(i)=vector_output_estimated_error[i];
-                time+=dt;
-            }
-        }
-        model->generateGeoFileForOutputPlot( outputs_storage , mu0_storage, estimated_error_outputs_storage );
-    }
-    //two parameters change : response surface
-    bool draw_surface=false;
-    if( vary_mu_comp0 > -1 && vary_mu_comp1 > -1 )
-        draw_surface=true;
-    if( vary_mu_comp1 > -1 && vary_comp_time )
-        draw_surface=true;
-    if( draw_surface )
-    {
-
-        double Ti=model->timeInitial();
-        double Tf=model->timeFinal();
-        double dt=model->timeStep();
-
-        int N =  ioption(_name="crb.dimension");
-        double online_tol = doption(_name="crb.online-tolerance");
-        CHECK( Environment::worldComm().globalSize() == 1 )<<"implemented only in sequential (because of dof filling)\n";
-        typename crb_type::sampling_ptrtype S( new typename crb_type::sampling_type( model->parameterSpace() ) );
-        bool all_procs_have_same_sampling=true;
-        S->equidistribute( 2 , all_procs_have_same_sampling );
-        auto min = S->min().template get<0>();
-        auto max = S->max().template get<0>();
-        //vector of indices of components vary
-        std::vector<int> components_vary(2);
-        components_vary[0]=vary_mu_comp0;
-        components_vary[1]=vary_mu_comp1;
-        //vector containing parameters min and max
-        std::vector<parameter_type> extremums(2);
-        extremums[0]=min;
-        extremums[1]=max;
-        //cutting in each direction
-        std::vector<int> cutting(2);
-        cutting[0]=cutting_direction0;
-        cutting[1]=cutting_direction1;
-        std::vector<double> time_cutting(3);
-        time_cutting[0]=Ti;
-        time_cutting[1]=Tf;
-        time_cutting[2]=dt;
-
-        auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                    _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                    _desc = model->createStructuredGrid( components_vary, extremums , cutting, time_cutting, vary_comp_time ) );
-
-        auto Vh = Pch<1>( mesh );
-        auto px = project(_space=Vh, _expr=Px() );
-        auto py = project(_space=Vh, _expr=Py() );
-        int ndof=Vh->nDof();
-        auto u = Vh->element();
-        parameter_type mu ( model->parameterSpace() );
-        int time_index=0;
-        vectorN_type time_crb;
-        for(int i=0; i<ndof; i++)
-        {
-            double mux=px(i);
-            double muy=py(i);
-            mu=min;//first, initialize all components at minimum
-            mu( vary_mu_comp0 ) = mux;
-
-            if( vary_comp_time )
-            {
-                //time is always represented by the X-axis
-                //look at which index mux is associated
-                time_index=(mux-Ti)/dt;
-            }
-            else
-            {
-                mu( vary_mu_comp1 ) = muy;
-            }
-
-            auto run = crb->run( mu, time_crb, online_tol, N );
-            auto output_vector=run.template get<0>();
-            double output=0;
-            if( vary_comp_time )
-            {
-                output = output_vector[time_index];
-            }
-            else
-            {
-                int output_vector_size=output_vector.size();
-                output = output_vector[output_vector_size-1];//output at last time
-            }
-            u(i)=output;
-        }
-        auto exp = exporter( _mesh=mesh );
-        exp->add( "response surface", u );
-        exp->save();
-
-        /* Export geo file */
-        if(soption(_name="exporter.format") == "gmsh")
-        {
-            std::cout << exp->prefix() << std::endl;
-            std::ofstream of;
-            std::ostringstream oss;
-            oss.str("");
-            // To get the correct filename, we use the timeset name (The prefix is not used for exporting the data file)
-            // We might have to get the right one, if there are several ones
-            oss << exp->defaultTimeSet()->name() << "-" <<  Environment::worldComm().size() << "_" << Environment::worldComm().rank() << ".geo";
-            of.open(oss.str());
-
-            if(of.is_open())
-            {
+                std::cout << exp->prefix() << std::endl;
+                std::ofstream of;
+                std::ostringstream oss;
                 oss.str("");
-                oss << exp->defaultTimeSet()->name() << "-" <<  Environment::worldComm().size() << "_" << Environment::worldComm().rank() << ".msh";
+                // To get the correct filename, we use the timeset name (The prefix is not used for exporting the data file)
+                // We might have to get the right one, if there are several ones
+                oss << exp->defaultTimeSet()->name() << "-" <<  Environment::worldComm().size() << "_" << Environment::worldComm().rank() << ".geo";
+                of.open(oss.str());
 
-                of << "Merge \"" << oss.str() << "\";" << std::endl;
-                of << "vid = PostProcessing.NbViews;" << std::endl;
-                //of << "For i In {vid-N:vid-1}" << std::endl;
-                of << "View[vid-1].Axes = 1;" << std::endl;
-                //of << "EndFor" << std::endl;
+                if(of.is_open())
+                {
+                    oss.str("");
+                    oss << exp->defaultTimeSet()->name() << "-" <<  Environment::worldComm().size() << "_" << Environment::worldComm().rank() << ".msh";
+
+                    of << "Merge \"" << oss.str() << "\";" << std::endl;
+                    of << "vid = PostProcessing.NbViews;" << std::endl;
+                    //of << "For i In {vid-N:vid-1}" << std::endl;
+                    of << "View[vid-1].Axes = 1;" << std::endl;
+                    //of << "EndFor" << std::endl;
+                }
+
+                of.close();
             }
-
-            of.close();
         }
-    }
 
-    //model->computationalTimeEimStatistics();
-    if( export_solution )
-        e->save();
+        //model->computationalTimeEimStatistics();
+        if( export_solution )
+            e->save();
 
-    if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
+        if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
-    if (boption(_name="eim.cvg-study") && M_mode==CRBModelMode::CRB)
-        this->doTheEimConvergenceStat( Sampling->size() );
+        if (boption(_name="eim.cvg-study") && M_mode==CRBModelMode::CRB)
+            this->doTheEimConvergenceStat( Sampling->size() );
 
     if (boption(_name="crb.cvg-study") && compute_fem && M_mode==CRBModelMode::CRB )
         this->doTheCrbConvergenceStat( Sampling->size() );
@@ -1938,7 +1945,7 @@ OpusApp<ModelType,RM,Model>::run()
         }
 
     }//end of compute-stat SCM
-
+    }
 
 }
 
