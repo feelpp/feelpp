@@ -208,7 +208,7 @@ public:
                 LOG(INFO) << "[OpusApp] set Logs" << "\n";
                 LOG(INFO) << "[OpusApp] mode:" << ( int )M_mode << "\n";
 
-                model = crbmodel_ptrtype( new crbmodel_type( this->vm(),M_mode ) );
+                model = crbmodel_ptrtype( new crbmodel_type( M_mode ) );
                 LOG(INFO) << "[OpusApp] get model done" << "\n";
 
                 crb = crb_ptrtype( new crb_type( this->about().appName(),
@@ -701,7 +701,7 @@ public:
                 case SamplingMode::READFROMCOMMANDLINE:
                     std::vector<double> mu_list = option(_name=_o( this->about().appName(),"run.parameter" )).template as<std::vector<double>>();
                     parameter_type _mu = crb->Dmu()->element();
-                    if ( crbmodel_type::ParameterSpaceDimension != mu_list.size() )
+                    if ( crb->Dmu()->dimension() != mu_list.size() )
                         throw std::logic_error( "Parameter given by the command line option as note the expected size" );
                     Sampling->clear();
                     for ( int i=0 ; i<mu_list.size() ; i++ )
