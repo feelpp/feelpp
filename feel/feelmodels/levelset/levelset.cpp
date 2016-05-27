@@ -15,10 +15,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     //M_periodicity(periodicityLS),
     M_reinitializerIsUpdatedForUse(false),
     M_iterSinceReinit(0),
-    M_advection( prefixvm(prefix, "advection"), worldComm, subPrefix, rootRepository ),
     M_doUpdateMarkers(true)
 {
     this->loadParametersFromOptionsVm();
+
+    std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".LevelSetConstructor.data";
+    this->addTimerTool("Constructor", nameFileConstructor);
 
     /*// --------------- mesh adaptation -----------------
 #if defined (MESH_ADAPTATION)
@@ -26,18 +28,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     mesh_adapt.reset( new mesh_adaptation_type ( backend_mesh_adapt ));
 #endif*/
 
-    // in the case of fast marching method, strategy to set the first elements
-    strategyBeforeFm = (strategyBeforeFm_type) ioption(prefixvm(prefix,"fm-init-first-elts-strategy"));
 
     initWithMesh(mesh);
 
     __iter=0;
-
-    //M_phi = M_spaceLevelSet->elementPtr();
-    //M_phio = M_spaceLevelSet->elementPtr();
-    //M_phinl=M_spaceLevelSet->elementPtr();
-    M_heaviside = M_spaceLevelSet->elementPtr();
-    M_dirac = M_spaceLevelSet->elementPtr();
 
 /*#if defined (LEVELSET_CONSERVATIVE_ADVECTION)
     if (M_discrMethod==CN_CONSERVATIVE)
@@ -61,7 +55,69 @@ LEVELSET_CLASS_TEMPLATE_TYPE::New(
     return new_ls;
 }
 
+//----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::init()
+{
+    this->createMesh();
+    this->createAdvection();
+    this->createReinitialization();
+    this->createOthers();
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::initFromMesh( mesh_ptrtype const& mesh )
+{
+    M_mesh = mesh;
+
+    this->createAdvection();
+    this->createReinitialization();
+    this->createOthers();
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::createMesh()
+{
+    createMeshModel<mesh_type>(*this, M_mesh, this->fileNameMeshPath() );
+    CHECK( M_mesh ) << "mesh generation failed";
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::createAdvection()
+{
+    M_advection.reset( 
+            new advection_type(
+                prefixvm(this->prefix(), "advection"), 
+                this->worldComm(), 
+                this->subPrefix(), 
+                this->rootRepository()
+                ) );
+
+    M_advection->initFromMesh( M_mesh );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
+{
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
+{
+    M_spaceLevelSetVec = space_levelset_vectorial_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+    M_spaceMarkers = space_markers_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+
+    M_heaviside.reset( new element_levelset_type(this->spaceFunction(), "Heaviside") );
+    M_dirac.reset( new element_levelset_type(this->spaceFunction(), "Dirac") );
+}
+
+/*LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 {
@@ -134,7 +190,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
     M_l2pVec = projector(M_spaceLSVec, M_spaceLSVec, backend(_name="ls-l2pVec") );
     LOG(INFO)<<"end creating projectors for level set"<<std::endl;
 
-} // init
+} // init*/
 
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -218,7 +274,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::setStrategyBeforeFm( int strat )
 {
     if (reinitializerUpdated)
         LOG(INFO)<<" !!!  WARNING !!! : setStrategyBeforeFm set after the fast marching has been actually initialized ! \n";
-    strategyBeforeFm = (strategyBeforeFm_type) strat;
+    strategyBeforeFm = (strategy_before_FM_type) strat;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -244,28 +300,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
         M_reinitmethod = LevelSetReinitMethod::HJ;
     else
         CHECK( false ) << reinitmethod << " is not a valid reinitialization method\n";
-}
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-Feel::levelset::strategyBeforeFm_type
-LEVELSET_CLASS_TEMPLATE_TYPE::getStrategyBeforeFm()
-{
-    return strategyBeforeFm;
-}
-
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::setUseMarker2AsMarkerDoneFmm(bool value)
-{
-    M_useMarker2AsMarkerDoneFmm = value;
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::setThicknessInterface( double value )
-{
-    M_thicknessInterface = value;
+    M_strategyBeforeFM = (strategy_before_FM_type) ioption(prefixvm(prefix,"fm-init-first-elts-strategy"));
 }
 
 //----------------------------------------------------------------------------//

@@ -53,13 +53,6 @@ enum LevelSetTimeDiscretization {BDF2, /*CN,*/ EU, CN_CONSERVATIVE};
  */
 enum class LevelSetReinitMethod {FM, HJ};
 
-// type of the possibles strategy to initialize the elements around the interface in the case of a reinitialization by fast marching
-// ILP = Interface Local projection i.e : project phi* = phi / |grad phi| (nodal projection of phi, smoothed projection of |grad phi|)
-// HJ_EQ = Do few steps of Hamilton Jacobi equation
-// IL_HJ_EQ = "Interface Local HJ", solve Hamilton-Jacobi equation near the interface
-// NONE = don't do anything, before the fast marching
-enum strategyBeforeFm_type {NONE=0, ILP=1, HJ_EQ=2, IL_HJ_EQ=3};
-
 template<typename ConvexType, typename AdvectionType, int Order=1, typename PeriodicityType = NoPeriodicity>
 class LevelSet : 
     public ModelBase
@@ -134,6 +127,9 @@ public:
     typedef boost::shared_ptr< mesh_adaptation_type > mesh_adaptation_ptrtype;
 #endif
 
+    //--------------------------------------------------------------------//
+    // Advection
+    typedef AdvectionType advection_type;
 
     //--------------------------------------------------------------------//
     // Interpolation operators
@@ -158,8 +154,12 @@ public:
     typedef OperatorLagrangeP1<space_levelset_type> op_lagrangeP1_type;
     typedef boost::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
 
-    // ---------------- reinitializer ----------------
-    typedef ReinitializerFMS<space_levelset_reinitP1_type, PeriodicityType> reinitilizer_type;
+    //--------------------------------------------------------------------//
+    // Reinitialization
+    typedef Reinitializer<space_levelset_reinitP1_type> reinitializer_type;
+    typedef boost::shared_ptr<reinitializer_type> reinitializer_ptrtype;
+
+    enum strategy_before_FM_type {NONE=0, ILP=1, HJ_EQ=2, IL_HJ_EQ=3};
 
     //--------------------------------------------------------------------//
     // Backend
@@ -168,9 +168,6 @@ public:
 
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
-
-    // ------------------ Advection ------------
-    typedef AdvectionType advection_type;
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -200,17 +197,18 @@ public:
 
     //--------------------------------------------------------------------//
     // Initialization
-    void build();
     void init();
-    void initFromMesh( mesh_ptrtype mesh );
+    void initFromMesh( mesh_ptrtype const& mesh );
 
     virtual void loadParametersFromOptionsVm();
 
+    void createMesh();
     void createFunctionSpaces();
     void createAdvection();
+    void createReinitialization();
 
     //--------------------------------------------------------------------//
-    space_levelset_ptrtype const& functionSpace() const { return M_spaceLevelSet; }
+    space_levelset_ptrtype const& functionSpace() const { return M_advection->spaceFunction(); }
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
     space_levelset_vectorial_ptrtype const& functionsSpaceVectorial() const { return M_spaceLevelSetVec; }
     space_levelset_reinitP1_ptrtype const& functionSpaceReinitP1() const { return M_spaceReinitP1; }
@@ -292,22 +290,20 @@ public:
     std::string levelsetInfos( bool show = false );
 
 
-    // ----------- serialization, save, restart
+    /*// ----------- serialization, save, restart
     template<class Archive>
     void serialize(Archive& ar, const unsigned int version)
     {ar & *itersincereinit & *M_phi & *M_phio;}
 
     void restart(double restart_time);
     void save(double time);
-    static double getRestartTimeFromExporter( std::string name );
-
+    static double getRestartTimeFromExporter( std::string name );*/
 
     // ------------ setters -------------
-    void setDt(double dt);
     void setStrategyBeforeFm( int strat = 1 );
-    strategyBeforeFm_type getStrategyBeforeFm();
-    void setUseMarker2AsMarkerDoneFmm( bool val=true );
-    void setThicknessInterface( double ) ;
+    strategy_before_FM_Type strategyBeforeFm() { return M_strategyBeforeFM; }
+    void setUseMarker2AsMarkerDoneFmm( bool val=true ) { M_useMarker2AsMarkerDoneFmm = val; }
+    void setThicknessInterface( double value ) { M_thicknessInterface = value; }
 
     // ------------------- projectors ----------------
     //M_l2p : for projection (update H, D ...), M_smooth : only for reinit !
@@ -377,7 +373,7 @@ private:
 
     //--------------------------------------------------------------------//
     // Spaces
-    space_levelset_ptrtype M_spaceLevelSet;
+    //space_levelset_ptrtype M_spaceLevelSet;
     space_levelset_vectorial_ptrtype M_spaceLevelSetVec;
     space_markers_ptrtype M_spaceMarkers;
 
@@ -442,7 +438,7 @@ private:
     //bool M_enableReinit;
     //int M_reinitEvery;
     LevelSetReinitMethod M_reinitMethod;
-    strategyBeforeFm_type strategyBeforeFm;
+    strategy_before_FM_Type M_strategyBeforeFm;
     bool M_useMarker2AsMarkerDoneFmm;
     //int M_hjMaxIter;
     //double M_hjDtau;
