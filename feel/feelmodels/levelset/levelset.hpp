@@ -182,23 +182,25 @@ public:
             //std::string const& prefix, 
             //double TimeStep=0.1, 
             //PeriodicityType periodocity = NoPeriodicity() );
-    LevelSet(
-            std::string const& prefix,
-            WorldComm const& _worldComm = Environment::worldComm(),
-            std::string const& subPrefix = "",
-            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+    LevelSet( std::string const& prefix );
 
     LevelSet( self_type const& L ) = default;
 
-    //static self_ptrtype New( mesh_ptrtype mesh, std::string const& prefix, double TimeStep=0.1, PeriodicityType periodocity = NoPeriodicity() );
+    static self_ptrtype New( std::string const& prefix );
 
     //--------------------------------------------------------------------//
     // Initialization
     void build();
     void init();
-    void initFromMesh();
+    void initFromMesh( mesh_ptrtype mesh );
+
+    virtual void loadParametersFromOptionsVm();
+
+    void createFunctionSpaces();
+    void createAdvection();
+
     //--------------------------------------------------------------------//
-    space_levelset_ptrtype const& functionSpace() const { return M_advection->functionSpace(); }
+    space_levelset_ptrtype const& functionSpace() const { return M_spaceLevelSet; }
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
     space_levelset_vectorial_ptrtype const& functionsSpaceVectorial() const { return M_spaceLevelSetVec; }
     space_levelset_reinitP1_ptrtype const& functionSpaceReinitP1() const { return M_spaceReinitP1; }
@@ -386,28 +388,26 @@ private:
     bool M_doUpdateMarkers;
 
     //--------------------------------------------------------------------//
-    // Fast-marching
+    // Reinitialization
     op_interpolation_LS_to_P1_ptrtype M_opInterpolationLStoP1;
     op_interpolation_P1_to_LS_ptrtype M_opInterpolationP1toLS;
     op_lagrangeP1_ptrtype M_opLagrangeP1;
 
-    boost::shared_ptr<reinitilizer_type> M_reinitializerFMS;
-    boost::shared_ptr< Projector<space_levelset_type, space_levelset_type> >  M_smooth;
+    reinitializer_ptrtype M_reinitializer;
+    bool M_reinitializerIsUpdatedForUse;
 
-    bool reinitializerUpdated;
+    boost::shared_ptr< Projector<space_levelset_type, space_levelset_type> >  M_smooth;
 
     int M_iterSinceReinit;
 
     //--------------------------------------------------------------------//
     // Backends
-    backend_ptrtype M_backend_advrea;
     backend_ptrtype M_backend_smooth;
 
     //--------------------------------------------------------------------//
     // Advection
     boost::shared_ptr<advection_type> M_advection;
-    boost::shared_ptr<advection_type> M_advection_hj;
-    boost::shared_ptr<advection_type> M_advection_ilhj;
+    //boost::shared_ptr<advection_type> M_advection_hj;
 
 #if defined(LEVELSET_CONSERVATIVE_ADVECTION)
     spaceLSCorr_ptrtype M_spaceLSCorr;
@@ -425,24 +425,23 @@ private:
     //--------------------------------------------------------------------//
     // Parameters
     double M_thicknessInterface;
+    bool M_useRegularPhi;
 
-    int stabStrategy;
     int impose_inflow;
-    bool useRegularPhi;
     bool hdNodalProj;
     double k_correction;
     //--------------------------------------------------------------------//
     // Reinitialization
-    bool M_enableReinit;
+    //bool M_enableReinit;
+    //int M_reinitEvery;
     LevelSetReinitMethod M_reinitMethod;
-    int M_reinitEvery;
     strategyBeforeFm_type strategyBeforeFm;
     bool M_useMarker2AsMarkerDoneFmm;
-    int M_hjMaxIter;
-    double M_hjDtau;
-    double M_hjTol;
+    //int M_hjMaxIter;
+    //double M_hjDtau;
+    //double M_hjTol;
 
-    LevelSetTimeDiscretization M_discrMethod;
+    //LevelSetTimeDiscretization M_discrMethod;
 
 
     // -------------- variables -----------
