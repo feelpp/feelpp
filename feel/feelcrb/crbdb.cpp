@@ -55,36 +55,6 @@ CRBDB::CRBDB( std::string const& name, WorldComm const& worldComm )
                               % database_subdir ).str();
 }
 
-//! constructor from command line options
-CRBDB::CRBDB( std::string const& prefixdir,
-              std::string const& name,
-              std::string const& dbprefix,
-              WorldComm const& worldComm )
-    :
-    M_prefixdir( prefixdir ),
-    M_worldComm( worldComm ),
-    M_name( name ),
-    M_isloaded( false )
-{
-    LOG(INFO) << prefixdir << "," << name << "\n";
-
-    //this->setDBFilename( ( boost::format( "%1%.crbdb" ) % dbprefix ).str() );
-    this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
-                           %dbprefix
-                           %this->worldComm().globalRank()
-                           ).str() );
-    LOG(INFO) << "database name " << dbFilename() << "\n";
-
-    std::string database_subdir = "default_repo";
-    if( Environment::vm().count( "crb.results-repo-name" ) )
-        database_subdir = ( boost::format("%1%/np_%2%")
-                            %soption(_name="crb.results-repo-name")
-                            %this->worldComm().globalSize() ).str();
-    M_dbDirectory = ( boost::format( "%1%/db/crb/%2%" )
-                              % Feel::Environment::rootRepository()
-                              % database_subdir ).str();
-}
-
 //! destructor
 CRBDB::~CRBDB()
 {}
@@ -92,6 +62,7 @@ CRBDB::~CRBDB()
 fs::path
 CRBDB::dbSystemPath() const
 {
+#if 0
     std::vector<std::string> sysdir{Feel::Info::prefix(), "/usr", "/usr/local", "/opt/local"};
     BOOST_FOREACH( auto dir, sysdir )
     {
@@ -104,6 +75,7 @@ CRBDB::dbSystemPath() const
         if ( fs::exists( syspath ) )
             return syspath;
     }
+#endif
     return fs::path();
 }
 fs::path
