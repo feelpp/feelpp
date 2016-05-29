@@ -321,7 +321,6 @@ public:
 
     //! constructor from command line options
     CRB( std::string const& name,
-         po::variables_map const& vm,
          truth_model_ptrtype const & model )
         :
         CRB( name )
