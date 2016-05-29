@@ -73,10 +73,7 @@ public:
 
     //! default constructor
     CRBDB( std::string const& name = "defaultname_crbdb", WorldComm const& worldComm = Environment::worldComm() );
-    CRBDB( std::string const& prefixdir,
-           std::string const& name,
-           std::string const& dbprefix,
-           WorldComm const& worldComm = Environment::worldComm() );
+
     //! copy constructor
     CRBDB( CRBDB const & ) = default;
     //! destructor
@@ -100,12 +97,6 @@ public:
     //! \return the mpi communicators
     WorldComm const& worldComm() const { return M_worldComm; }
 
-    //! \return prefix directory
-    std::string const& prefixDirectory() const
-    {
-        return M_prefixdir;
-    }
-
     //! \return name
     std::string const& name() const
     {
@@ -116,6 +107,12 @@ public:
     std::string const& dbFilename() const
     {
         return M_dbfilename;
+    }
+
+    //! \return prefix directory
+    std::string const& dbDirectory() const
+    {
+        return M_dbDirectory;
     }
 
     //! \return the db local path
@@ -149,6 +146,18 @@ public:
     void setDBFilename( std::string const& filename )
     {
         M_dbfilename = filename;
+    }
+
+    //! set DB directory
+    void setDBDirectory( std::string const& directory )
+    {
+        M_dbDirectory = directory;
+    }
+
+    //! add a subdirectory to the database directory
+    void addDBSubDirectory( std::string const& subdirectory )
+    {
+        M_dbDirectory = ( fs::path( M_dbDirectory )/fs::path( subdirectory ) ).string();
     }
 
     //@}
@@ -189,8 +198,6 @@ protected:
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
-protected:
-    std::string M_prefixdir;
 private:
     //! mpi communicators
     WorldComm const& M_worldComm;
