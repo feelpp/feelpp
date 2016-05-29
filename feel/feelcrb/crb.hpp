@@ -270,56 +270,28 @@ public:
     //@{
 
     //! default constructor
-    CRB()
+    CRB( std::string const& name = "defaultname_crb",
+         WorldComm const& worldComm = Environment::worldComm() )
         :
-        super(),
-        M_elements_database(),
+        super( ( boost::format( "%1%-%2%-%3%" ) % name % ioption(_name="crb.output-index") % ioption(_name="crb.error-type") ).str(),
+               worldComm ),
+        M_elements_database( ( boost::format( "%1%-%2%-%3%-elements" ) % name % ioption(_name="crb.output-index") % ioption(_name="crb.error-type") ).str(),
+                             this->worldComm() ),
         M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
         M_model(),
-        M_output_index( 0 ),
-        M_tolerance( 1e-2 ),
-        M_iter_max( 3 ),
-        M_factor( -1 ),
-        M_error_type( CRB_NO_RESIDUAL ),
-        M_Dmu( new parameterspace_type ),
-        M_Xi( new sampling_type( M_Dmu ) ),
-        M_WNmu( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_WNmu_complement(),
-        M_primal_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_dual_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_rebuild( boption(_name="crb.rebuild-database") || ioption(_name="crb.restart-from-N") == 0 ),
-        M_SER_adapt( false ),
-        M_SER_maxerr( 0 )
-    {
-    }
-
-    //! constructor from command line options
-    CRB( std::string const& name,
-         po::variables_map const& vm,
-         truth_model_ptrtype const & model )
-        :
-        super( ( boost::format( "%1%" ) % ioption(_name="crb.error-type") ).str(),
-               name,
-               ( boost::format( "%1%-%2%-%3%" ) % name % ioption(_name="crb.output-index") % ioption(_name="crb.error-type") ).str() ),
-        M_elements_database( ( boost::format( "%1%" ) % ioption(_name="crb.error-type") ).str(),
-                             name,
-                             ( boost::format( "%1%-%2%-%3%-elements" ) % name % ioption(_name="crb.output-index") % ioption(_name="crb.error-type") ).str(),
-                             model ),
-        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
-        M_model( model ),
         M_output_index( ioption(_name="crb.output-index") ),
         M_tolerance( doption(_name="crb.error-max") ),
         M_iter_max( ioption(_name="crb.dimension-max") ),
         M_factor( ioption(_name="crb.factor") ),
         M_error_type( CRBErrorType( ioption(_name="crb.error-type" ) ) ),
-        M_Dmu( model->parameterSpace() ),
-        M_Xi( new sampling_type( M_Dmu ) ),
-        M_WNmu( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_WNmu_complement(),
-        M_primal_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_dual_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_scmA( new scm_type( name+"_scmA", model , false /*not scm for mass mastrix*/ )  ),
-        M_scmM( new scm_type( name+"_scmM", model , true /*scm for mass matrix*/ ) ),
+        // M_Dmu( new parameterspace_type ),
+        // M_Xi( new sampling_type( M_Dmu ) ),
+        // M_WNmu( new sampling_type( M_Dmu, 0, M_Xi ) ),
+        // M_WNmu_complement(),
+        // M_primal_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
+        // M_dual_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
+        M_scmA( new scm_type( name+"_scmA", false /*not scm for mass mastrix*/, this->worldComm() )  ),
+        M_scmM( new scm_type( name+"_scmM", true /*scm for mass matrix*/, this->worldComm() ) ),
         M_N( 0 ),
         M_solve_dual_problem( boption(_name="crb.solve-dual-problem") ),
         M_orthonormalize_primal( boption(_name="crb.orthonormalize-primal") ),
@@ -345,7 +317,16 @@ public:
         M_seekMuInComplement( boption(_name="crb.seek-mu-in-complement") ),
         M_showResidual( boption(_name="crb.show-residual") )
     {
+    }
 
+    //! constructor from command line options
+    CRB( std::string const& name,
+         po::variables_map const& vm,
+         truth_model_ptrtype const & model )
+        :
+        CRB( name )
+    {
+        this->setTruthModel( model );
 
         if ( !M_rebuild && this->loadDB() )
         {
@@ -587,9 +568,18 @@ public:
     //! set the truth offline model
     void setTruthModel( truth_model_ptrtype const& model )
     {
+        if ( !model )
+            return;
         M_model = model;
         M_Dmu = M_model->parameterSpace();
         M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
+        M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu, 0, M_Xi ) );
+        //M_WNmu_complement(),
+        M_primal_apee_mu = sampling_ptrtype( new sampling_type( M_Dmu, 0, M_Xi ) );
+        M_dual_apee_mu = sampling_ptrtype( new sampling_type( M_Dmu, 0, M_Xi ) );
+
+        M_elements_database.setModel( model );
+#if 0
 
         if ( ! loadDB() )
             M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu ) );
@@ -597,9 +587,11 @@ public:
         {
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
         }
-
-        //M_scmA->setTruthModel( M_model );
-        //M_scmM->setTruthModel( M_model );
+#endif
+        if ( M_scmA )
+            M_scmA->setTruthModel( M_model );
+        if ( M_scmM )
+            M_scmM->setTruthModel( M_model );
     }
 
     //! set max iteration number

@@ -34,12 +34,26 @@
 
 namespace Feel
 {
-CRBDB::CRBDB( WorldComm const& worldComm )
+CRBDB::CRBDB( std::string const& name, WorldComm const& worldComm )
     :
     M_worldComm( worldComm ),
-    M_name( "noname" ),
+    M_name( name ),
     M_isloaded( false )
-{}
+{
+    this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
+                           %M_name
+                           %this->worldComm().globalRank()
+                           ).str() );
+
+    std::string database_subdir = "default_repo";
+    if( Environment::vm().count( "crb.results-repo-name" ) )
+        database_subdir = ( boost::format("%1%/np_%2%")
+                            %soption(_name="crb.results-repo-name")
+                            %this->worldComm().globalSize() ).str();
+    M_dbDirectory = ( boost::format( "%1%/db/crb/%2%" )
+                              % Feel::Environment::rootRepository()
+                              % database_subdir ).str();
+}
 
 //! constructor from command line options
 CRBDB::CRBDB( std::string const& prefixdir,
