@@ -212,7 +212,6 @@ public:
                 LOG(INFO) << "[OpusApp] get model done" << "\n";
 
                 crb = crb_ptrtype( new crb_type( this->about().appName(),
-                                                 this->vm() ,
                                                  model ) );
                 LOG(INFO) << "[OpusApp] get crb done" << "\n";
 
