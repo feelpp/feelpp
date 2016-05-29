@@ -191,7 +191,7 @@ public:
         {}
     EIM( po::variables_map const& vm, model_type* model, sampling_ptrtype sampling, double __tol = 1e-8, bool offline_done=false )
         :
-        super(model->modelName(), model->name(), model->name(), vm ),
+        super(model->name()/*model->modelName()*//*, model->name(), model->name(), vm*/ ),
         M_vm( vm ),
         M_is_read( false ),
         M_is_written( false ),
@@ -1473,7 +1473,7 @@ public:
                  std::string const& name )
         :
         super( vm, space, model->parameterSpace(), sampling, model->modelName(), name ),
-        CRBDB( model->modelName()+"EIMFunction", name, name, vm ),
+        CRBDB( name/*model->modelName()+"EIMFunction"*//*, name, name, vm*/ ),
         M_vm( vm ),
         M_model( model ),
         M_expr( expr ),
@@ -1490,8 +1490,18 @@ public:
         M_ctx( this->functionSpace() ),
         M_B(),
         M_offline_error(),
-        M_eim( new eim_type( vm, this, sampling , 1e-8, loadDB() ) )
+        M_eim()
         {
+            this->addDBSubDirectory( "EIMFunction_"+model->modelName() );
+            if ( this->worldComm().isMasterRank() )
+            {
+                if ( !fs::exists( this->dbLocalPath() ) )
+                    fs::create_directories( this->dbLocalPath() );
+            }
+            this->worldComm().barrier();
+
+            M_eim.reset( new eim_type( vm, this, sampling , 1e-8, loadDB() ) );
+
             if ( !loadDB() )
             {
                 LOG(INFO) << "No EIMFunction database ";
@@ -2342,10 +2352,9 @@ public:
         //make sure that the CRB DB is already build
         if( !this->RBbuilt() )
             M_crb = crb_ptrtype( new crb_type( appname,
-                                               M_vm ,
                                                M_crbmodel ) );
 
-        if ( !M_crb->isDBLoaded() || M_crb->rebuildDB() )
+        if ( !M_crb->isDBLoaded() || M_crb->rebuild() )
         {
             if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                 LOG( INFO ) << "No CRB DB available, do crb offline computations...";
