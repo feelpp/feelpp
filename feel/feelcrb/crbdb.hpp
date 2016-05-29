@@ -72,7 +72,7 @@ public:
     //@{
 
     //! default constructor
-    CRBDB( WorldComm const& worldComm = Environment::worldComm() );
+    CRBDB( std::string const& name = "defaultname_crbdb", WorldComm const& worldComm = Environment::worldComm() );
     CRBDB( std::string const& prefixdir,
            std::string const& name,
            std::string const& dbprefix,

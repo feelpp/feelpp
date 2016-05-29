@@ -73,23 +73,12 @@ public :
     typedef std::vector<element_type> wn_type;
 
     //! constructors
-    CRBElementsDB()
+    CRBElementsDB( std::string const& name = "defaultname_crbelementdb",
+                   WorldComm const& worldComm = Environment::worldComm() )
     :
-        super()
-    {
-    }
-
-    CRBElementsDB( std::string const& prefixdir,
-                   std::string const& name,
-                   std::string const& dbprefix,
-                   model_ptrtype const & model )
-    :
-        super( prefixdir,
-               name,
-               dbprefix ),
+        super( name, worldComm ),
         M_fileFormat( soption(_name="crb.db.format") ),
-        M_N( 0 ),
-        M_model( model )
+        M_N( 0 )
     {
 #ifndef FEELPP_HAS_HDF5
         if ( M_fileFormat == "hdf5" )
@@ -100,14 +89,21 @@ public :
 #endif
         if ( M_fileFormat == "hdf5" )
             this->setDBFilename( ( boost::format( "%1%.h5" )
-                                   %dbprefix ).str() );
+                                   %this->name() ).str() );
         else
             this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
-                                   %dbprefix
+                                   %this->name()
                                    %this->worldComm().globalRank()
                                    ).str() );
     }
 
+    CRBElementsDB( std::string const& name,
+                   model_ptrtype const & model )
+        :
+        CRBElementsDB( name )
+        {
+            M_model = model;
+        }
 
     //! destructor
     ~CRBElementsDB()
@@ -152,6 +148,11 @@ public :
         auto dual = WN.template get<1>();
         M_WN = primal;
         M_WNdu = dual;
+    }
+
+    void setModel( model_ptrtype const& model )
+    {
+        M_model = model;
     }
 
 private :

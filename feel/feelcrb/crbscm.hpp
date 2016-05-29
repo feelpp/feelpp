@@ -114,45 +114,24 @@ public:
      */
     //@{
 
-    //! default constructor
-    CRBSCM()
+    //! constructor with no model
+    CRBSCM( std::string const& name = "defaultname_crbscm",
+            bool scm_for_mass_matrix = false,
+            WorldComm const& worldComm = Environment::worldComm() )
         :
-        super(),
-        M_is_initialized( false ),
-        M_model(),
-        M_tolerance( 1e-2 ),
-        M_iter_max( 3 ),
-        M_Mplus( 10 ),
-        M_Malpha( 4 ),
-        M_Dmu( new parameterspace_type ),
-        M_Xi( M_Dmu ),
-        M_C( M_Dmu, 0, M_Xi ),
-        M_C_complement( M_Dmu, 0, M_Xi ),
-        M_scm_for_mass_matrix( false ),
-        M_mu_ref( M_Dmu->element() ),
-        M_use_scm( boption(_name="crb.scm.use-scm") ),
-        M_rebuild( boption(_name="crb.scm.rebuild-database") )
-    {
-    }
-
-    //! constructor from command line options
-    CRBSCM( std::string const& name )
-        :
-        super( "scm",
-               ( boost::format( "%1%" ) % name ).str(),
-               ( boost::format( "%1%" ) % name ).str() ),
+        super( name, worldComm ),
         M_is_initialized( false ),
         M_model(),
         M_tolerance( doption(_name="crb.scm.tol" ) ),
         M_iter_max( ioption(_name="crb.scm.iter-max" ) ),
         M_Mplus( ioption(_name="crb.scm.Mplus" ) ),
         M_Malpha( ioption(_name="crb.scm.Malpha") ),
-        M_Dmu( new parameterspace_type ),
-        M_Xi( new sampling_type( M_Dmu ) ),
-        M_C( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_scm_for_mass_matrix( false ),
-        M_mu_ref( M_Dmu->element() ),
+        // M_Dmu( new parameterspace_type ),
+        // M_Xi( new sampling_type( M_Dmu ) ),
+        // M_C( new sampling_type( M_Dmu, 1, M_Xi ) ),
+        // M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
+        M_scm_for_mass_matrix( scm_for_mass_matrix ),
+        //M_mu_ref( M_Dmu->element() ),
         M_use_scm( boption(_name="crb.scm.use-scm") ),
         M_rebuild( boption(_name="crb.scm.rebuild-database") )
     {
@@ -161,31 +140,14 @@ public:
     }
 
 
-    //! constructor from command line options
+    //! constructor with model
     CRBSCM( std::string const& name,
             truth_model_ptrtype const & model ,
             bool scm_for_mass_matrix = false )
         :
-        super( "scm",
-               ( boost::format( "%1%" ) % name ).str(),
-               ( boost::format( "%1%" ) % name ).str() ),
-        M_is_initialized( false ),
-        M_model( model ),
-        M_tolerance( doption(_name="crb.scm.tol" ) ),
-        M_iter_max( ioption(_name="crb.scm.iter-max" ) ),
-        M_Mplus( ioption(_name="crb.scm.Mplus" ) ),
-        M_Malpha( ioption(_name="crb.scm.Malpha") ),
-        M_Dmu( model->parameterSpace() ),
-        M_Xi( new sampling_type( M_Dmu ) ),
-        M_C( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_C_complement( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_scm_for_mass_matrix( scm_for_mass_matrix ),
-        M_mu_ref( M_Dmu->element() ),
-        M_use_scm( boption(_name="crb.scm.use-scm") ),
-        M_rebuild( boption(_name="crb.scm.rebuild-database") )
-
+        CRBSCM( name,scm_for_mass_matrix )
     {
-        //this->setTruthModel( model );
+        this->setTruthModel( model );
         // if ( this->loadDB() )
         //     LOG( INFO ) << "Database " << this->lookForDB() << " available and loaded";
     }
@@ -299,15 +261,18 @@ public:
     //! set the truth offline model
     void setTruthModel( truth_model_ptrtype const& model )
     {
+        if ( !model )
+            return;
         M_model = model;
         M_Dmu = M_model->parameterSpace();
+        M_mu_ref = M_model->refParameter();
 
-        if ( ! loadDB() )
-        {
+        //if ( ! loadDB() )
+        //{
             M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
             M_C = sampling_ptrtype( new sampling_type( M_Dmu ) );
             M_C_complement = sampling_ptrtype( new sampling_type( M_Dmu ) );
-        }
+            //}
     }
 
     //! set Kmax
