@@ -453,6 +453,24 @@ public:
      */
     bool loadDB();
 
+    /**
+     * \brief update scm description in property_tree
+     * \param ptree to update
+     */
+    void updatePropertyTree( boost::property_tree::ptree & ptree ) const
+    {
+        ptree.add( "name", this->name() );
+        ptree.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
+    }
+    void setup( boost::property_tree::ptree const& ptree )
+    {
+        this->setName( ptree.template get<std::string>( "name" ) );
+        std::string dbname = ptree.template get<std::string>( "database-filename" );
+        this->setDBFilename( fs::path( dbname ).filename().string() );
+        this->setDBDirectory( fs::path( dbname ).parent_path().string() );
+        CHECK( this->loadDB() ) << "crbscm load fails";
+
+    }
     //@}
 
 

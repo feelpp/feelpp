@@ -1152,6 +1152,18 @@ public:
     }
 
     /**
+     * \brief load Crb from json
+     * \param input json filename
+     */
+    void loadJson( std::string const& filename );
+
+    /**
+     * \brief setup Crb from property_tree::ptree
+     * \param input property_tree::ptree
+     */
+    void setup( boost::property_tree::ptree const& ptree );
+
+    /**
      * save the CRB database
      */
     void saveDB();
@@ -10660,6 +10672,45 @@ CRB<TruthModelType>::showMuSelection()
     return show;
 }
 
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::loadJson( std::string const& filename )
+{
+    if ( !fs::exists( filename ) )
+    {
+        LOG(INFO) << "Could not find " << filename << std::endl;
+        return;
+    }
+
+    auto json_str_wo_comments = removeComments(readFromFile(filename));
+    //LOG(INFO) << "json file without comment:" << json_str_wo_comments;
+
+    boost::property_tree::ptree ptree;
+    std::istringstream istr( json_str_wo_comments );
+    boost::property_tree::read_json( istr, ptree );
+    this->setup( ptree );
+}
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree )
+{
+    auto const& ptreeCrb = ptree.get_child( "crb" );
+    M_N = ptreeCrb.template get<int>( "dimension" );
+    this->setName( ptreeCrb.template get<std::string>( "name" ) );
+    std::string dbname = ptreeCrb.template get<std::string>( "database-filename" );
+    this->setDBFilename( fs::path( dbname ).filename().string() );
+    this->setDBDirectory( fs::path( dbname ).parent_path().string() );
+    this->setIsLoaded( false );
+    CHECK( this->loadDB() ) << "crb load fails";
+    if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
+    {
+        auto const& ptreeScmA = ptree.get_child( "scmA" );
+        M_scmA->setup( ptreeScmA );
+        auto ptreeOptionalScmM = ptree.get_child_optional( "scmM" );
+        if ( ptreeOptionalScmM )
+            M_scmM->setup( *ptreeOptionalScmM );
+    }
+}
 
 template<typename TruthModelType>
 void
@@ -10685,9 +10736,23 @@ CRB<TruthModelType>::saveDB()
 
         boost::property_tree::ptree ptreeCrb;//Database;
         ptreeCrb.add( "dimension", M_N );
+        ptreeCrb.add( "name", this->name() );
         ptreeCrb.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
         ptreeCrb.add( "has-solve-dual-problem",M_solve_dual_problem );
         ptree.add_child( "crb", ptreeCrb );
+
+        if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
+        {
+            boost::property_tree::ptree ptreeParameterScmA;
+            M_scmA->updatePropertyTree( ptreeParameterScmA );
+            ptree.add_child( "scmA", ptreeParameterScmA );
+            if ( !M_model->isSteady() )
+            {
+                boost::property_tree::ptree ptreeParameterScmM;
+                M_scmM->updatePropertyTree( ptreeParameterScmM );
+                ptree.add_child( "scmM", ptreeParameterScmM );
+            }
+        }
 
         write_json( filenameJson, ptree );
     }
