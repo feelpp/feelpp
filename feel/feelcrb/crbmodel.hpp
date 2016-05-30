@@ -79,7 +79,6 @@ public:
      */
     //@{
 
-    static const uint16_type ParameterSpaceDimension = ModelType::ParameterSpaceDimension;
     static const bool is_time_dependent = ModelType::is_time_dependent;
     static const bool is_linear = ModelType::is_linear;
 
@@ -212,24 +211,7 @@ public:
      */
     //@{
 
-    CRBModel()
-        :
-        M_Aqm(),
-        M_Mqm(),
-        M_Fqm(),
-        M_mode( CRBModelMode::PFEM ),
-        M_is_initialized( false ),
-        M_model( new model_type() ),
-        M_backend( backend() ),
-        M_alreadyCountAffineDecompositionTerms( false ),
-        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
-        M_numberOfTimeStep( 1 ),
-        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
-    {
-        this->init();
-    }
-
-    CRBModel( po::variables_map const& vm, CRBModelMode mode = CRBModelMode::PFEM, int level=0 )
+    CRBModel( CRBModelMode mode = CRBModelMode::PFEM, bool doInit = true )
         :
         M_Aqm(),
         M_InitialGuessV(),
@@ -246,40 +228,14 @@ public:
         M_alreadyCountAffineDecompositionTerms( false ),
         M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
         M_numberOfTimeStep( 1 ),
+        M_has_eim( false ),
         M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
-
-        if ( level!=0 )
-            M_model->setModelName( M_model->modelName() + "-" + std::to_string(level) );
-        this->init();
+        if ( doInit )
+            this->init();
     }
 
-    /**
-     * \param model the model to be used
-     */
-    CRBModel( model_ptrtype & model )
-        :
-        M_Aqm(),
-        M_InitialGuessV(),
-        M_InitialGuessVector(),
-        M_Mqm(),
-        M_Fqm(),
-        M_model( model ),
-        M_is_initialized( false ),
-        M_mode( CRBModelMode::PFEM ),
-        M_backend( backend(_name="backend") ),
-        M_backend_primal( backend( _name="backend-primal") ),
-        M_backend_dual( backend( _name="backend-dual") ),
-        M_backend_l2( backend( _name="backend-l2") ),
-        M_alreadyCountAffineDecompositionTerms( false ),
-        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
-        M_numberOfTimeStep( 1 ),
-        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
-    {
-        this->init();
-    }
-
-    CRBModel( model_ptrtype & model , CRBModelMode mode )
+    CRBModel( model_ptrtype & model , CRBModelMode mode = CRBModelMode::PFEM, bool doInit = true )
         :
         M_Aqm(),
         M_InitialGuessV(),
@@ -296,9 +252,11 @@ public:
         M_alreadyCountAffineDecompositionTerms( false ),
         M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
         M_numberOfTimeStep( 1 ),
+        M_has_eim( false ),
         M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
-        this->init();
+        if ( doInit )
+            this->init();
     }
 
     /**
@@ -978,6 +936,100 @@ public:
     element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemUsingOfflineEim( parameter_type const& mu );
 
+
+    /**
+     * \brief update model description in property_tree
+     * \param ptree to update
+     */
+    void updatePropertyTree( boost::property_tree::ptree & ptree ) const
+    {
+        M_model->updatePropertyTree( ptree );
+
+        boost::property_tree::ptree ptree_mMaxA;
+        for (int k=0;k<M_mMaxA.size();++k )
+            ptree_mMaxA.add( "",M_mMaxA[k] );
+        boost::property_tree::ptree ptree_mMaxM;
+        for (int k=0;k<M_mMaxM.size();++k )
+            ptree_mMaxM.add( "",M_mMaxM[k] );
+        boost::property_tree::ptree ptree_mMaxF;
+        for (int k=0;k<M_mMaxF.size();++k )
+        {
+            boost::property_tree::ptree ptree_mMaxFsub;
+            for (int k2=0;k2<M_mMaxF[k].size();++k2 )
+                ptree_mMaxFsub.add( "",M_mMaxF[k][k2] );
+            ptree_mMaxF.add_child( "",ptree_mMaxFsub );
+        }
+        boost::property_tree::ptree ptree_mMaxLinearDecompositionA;
+        for (int k=0;k<M_mMaxLinearDecompositionA.size();++k )
+            ptree_mMaxLinearDecompositionA.add( "",M_mMaxLinearDecompositionA[k] );
+
+        boost::property_tree::ptree ptreeAffineDecomposition;
+        ptreeAffineDecomposition.add_child( "mMaxA", ptree_mMaxA );
+        ptreeAffineDecomposition.add_child( "mMaxM", ptree_mMaxM );
+        ptreeAffineDecomposition.add_child( "mMaxF", ptree_mMaxF );
+        ptreeAffineDecomposition.add_child( "mMaxLinearDecompositionA", ptree_mMaxLinearDecompositionA );
+
+        boost::property_tree::ptree ptreeCrbModel;
+        ptreeCrbModel.add_child( "affine-decomposition", ptreeAffineDecomposition );
+        ptree.add_child( "crbmodel", ptreeCrbModel );
+    }
+
+    /**
+     * \brief load CrbModel from json
+     * \param input json filename
+     */
+    void loadJson( std::string const& filename )
+        {
+            if ( !fs::exists( filename ) )
+            {
+                LOG(INFO) << "Could not find " << filename << std::endl;
+                return;
+            }
+
+            auto json_str_wo_comments = removeComments(readFromFile(filename));
+            //LOG(INFO) << "json file without comment:" << json_str_wo_comments;
+
+            boost::property_tree::ptree ptree;
+            std::istringstream istr( json_str_wo_comments );
+            boost::property_tree::read_json( istr, ptree );
+            this->setup( ptree );
+        }
+
+    void setup( boost::property_tree::ptree const& ptree )
+        {
+            auto const& ptreeCrbModel = ptree.get_child( "crbmodel" );
+            auto const& ptreeAffineDecomposition = ptreeCrbModel.get_child( "affine-decomposition" );
+
+            M_mMaxA.clear();
+            for ( auto const& item : ptreeAffineDecomposition.get_child("mMaxA") )
+                M_mMaxA.push_back( item.second.template get_value<int>() );
+            M_Qa=M_mMaxA.size();
+
+            M_mMaxM.clear();
+            for ( auto const& item : ptreeAffineDecomposition.get_child("mMaxM") )
+                M_mMaxM.push_back( item.second.template get_value<int>() );
+            M_Qm=M_mMaxM.size();
+
+            M_mMaxF.clear();
+            M_Ql.clear();
+            for ( auto const& item : ptreeAffineDecomposition.get_child("mMaxF") )
+            {
+                std::vector<int> sizeloaded;
+                for ( auto const& item2 : item.second.get_child("") )
+                    sizeloaded.push_back( item2.second.template get_value<int>() );
+                M_mMaxF.push_back( sizeloaded );
+                M_Ql.push_back( sizeloaded.size() );
+            }
+            M_Nl = M_mMaxF.size();
+
+            M_mMaxLinearDecompositionA.clear();
+            for ( auto const& item : ptreeAffineDecomposition.get_child("mMaxLinearDecompositionA") )
+                M_mMaxLinearDecompositionA.push_back( item.second.template get_value<int>() );
+            M_QLinearDecompositionA = M_mMaxLinearDecompositionA.size();
+
+            M_alreadyCountAffineDecompositionTerms = true;
+            M_is_initialized=true;
+        }
 
     /**
      * initialize the model

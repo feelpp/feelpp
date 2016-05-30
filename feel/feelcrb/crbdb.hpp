@@ -37,6 +37,7 @@
 #include <boost/serialization/version.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/environment.hpp>
 
 namespace Feel
 {
@@ -71,13 +72,10 @@ public:
     //@{
 
     //! default constructor
-    CRBDB();
-    CRBDB( std::string prefixdir,
-           std::string name,
-           std::string dbprefix,
-           po::variables_map const& vm );
+    CRBDB( std::string const& name = "defaultname_crbdb", WorldComm const& worldComm = Environment::worldComm() );
+
     //! copy constructor
-    CRBDB( CRBDB const & );
+    CRBDB( CRBDB const & ) = default;
     //! destructor
     virtual ~CRBDB();
 
@@ -88,25 +86,16 @@ public:
     //@{
 
     //! copy operator
-    CRBDB& operator=( CRBDB const & o )
-    {
-        if ( this != &o )
-        {
-        }
+    CRBDB& operator=( CRBDB const & o ) = default;
 
-        return *this;
-    }
     //@}
 
     /** @name Accessors
      */
     //@{
 
-    //! \return prefix directory
-    std::string const& prefixDirectory() const
-    {
-        return M_prefixdir;
-    }
+    //! \return the mpi communicators
+    WorldComm const& worldComm() const { return M_worldComm; }
 
     //! \return name
     std::string const& name() const
@@ -120,6 +109,12 @@ public:
         return M_dbfilename;
     }
 
+    //! \return prefix directory
+    std::string const& dbDirectory() const
+    {
+        return M_dbDirectory;
+    }
+
     //! \return the db local path
     virtual fs::path dbLocalPath() const;
 
@@ -130,15 +125,9 @@ public:
     virtual fs::path lookForDB() const;
 
     //! \return \c variables_map
-    po::variables_map vm()
+    po::variables_map const& vm() const
     {
-        return M_vm;
-    }
-
-    //! \return \c variables_map
-    po::variables_map vm() const
-    {
-        return M_vm;
+        return Environment::vm();
     }
 
     //! \return true if the DB has been loaded, false otherwise
@@ -157,6 +146,18 @@ public:
     void setDBFilename( std::string const& filename )
     {
         M_dbfilename = filename;
+    }
+
+    //! set DB directory
+    void setDBDirectory( std::string const& directory )
+    {
+        M_dbDirectory = directory;
+    }
+
+    //! add a subdirectory to the database directory
+    void addDBSubDirectory( std::string const& subdirectory )
+    {
+        M_dbDirectory = ( fs::path( M_dbDirectory )/fs::path( subdirectory ) ).string();
     }
 
     //@}
@@ -197,13 +198,13 @@ protected:
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
-protected:
-    std::string M_prefixdir;
 private:
+    //! mpi communicators
+    WorldComm const& M_worldComm;
 
     std::string M_name;
     std::string M_dbfilename;
-    po::variables_map M_vm;
+    std::string M_dbDirectory;
     bool M_isloaded;
 
 

@@ -169,7 +169,7 @@ public :
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
 
-    static const uint16_type ParameterSpaceDimension = ParameterDefinition::ParameterSpaceDimension ;
+    //static const uint16_type ParameterSpaceDimension = ParameterDefinition::ParameterSpaceDimension ;
 
     typedef std::vector< std::vector< double > > beta_vector_type;
     typedef std::vector< double > beta_vector_light_type;
@@ -268,9 +268,9 @@ public :
     typedef Bdf<space_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
-    ModelCrbBase()
+    ModelCrbBase( WorldComm const& worldComm = Environment::worldComm() )
         :
-        Dmu( new parameterspace_type ),
+        Dmu( parameterspace_type::New( 0,worldComm ) ),
         M_name( "generic-model-name" ),
         M_is_initialized( false )
     {
@@ -282,6 +282,7 @@ public :
         M_is_initialized( false )
         {
         }
+    
     virtual ~ModelCrbBase() {}
 
     /**
@@ -293,6 +294,9 @@ public :
      * set the model name
      */
     virtual void setModelName( std::string const& name ) { M_name = name; }
+
+    //! \return the mpi communicators
+    WorldComm const& worldComm() const { return Dmu->worldComm(); }
 
     /**
      * return directory path where symbolic expression (ginac) are built
@@ -440,6 +444,51 @@ public :
     {
         return M_funs_d;
     }
+
+    /**
+     * \brief update model description in property_tree
+     * \param ptree to update
+     */
+    void updatePropertyTree( boost::property_tree::ptree & ptree ) const
+    {
+        boost::property_tree::ptree ptreeParameterSpace;
+        this->parameterSpace()->updatePropertyTree( ptreeParameterSpace );
+        ptree.add_child( "parameter_space", ptreeParameterSpace );
+
+        this->updateSpecificityModelPropertyTree( ptree );
+    }
+    /**
+     * \brief load CrbModel from json
+     * \param input json filename
+     */
+    void loadJson( std::string const& filename )
+    {
+        if ( !fs::exists( filename ) )
+        {
+            LOG(INFO) << "Could not find " << filename << std::endl;
+            return;
+        }
+
+        auto json_str_wo_comments = removeComments(readFromFile(filename));
+        //LOG(INFO) << "json file without comment:" << json_str_wo_comments;
+
+        boost::property_tree::ptree ptree;
+        std::istringstream istr( json_str_wo_comments );
+        boost::property_tree::read_json( istr, ptree );
+        this->setup( ptree );
+    }
+    void setup( boost::property_tree::ptree const& ptree )
+    {
+        auto const& ptreeParameterSpace = ptree.get_child( "parameter_space" );
+        Dmu->setup( ptreeParameterSpace );
+
+        this->setupSpecificityModel( ptree );
+
+        this->setInitialized( true );
+    }
+
+    virtual void setupSpecificityModel( boost::property_tree::ptree const& ptree ) const {}
+    virtual void updateSpecificityModelPropertyTree( boost::property_tree::ptree & ptree ) const {}
 
     virtual void initModel() = 0;
 

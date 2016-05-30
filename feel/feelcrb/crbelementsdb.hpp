@@ -73,27 +73,37 @@ public :
     typedef std::vector<element_type> wn_type;
 
     //! constructors
-    CRBElementsDB()
+    CRBElementsDB( std::string const& name = "defaultname_crbelementdb",
+                   WorldComm const& worldComm = Environment::worldComm() )
     :
-        super()
-    {
-    }
-
-    CRBElementsDB( std::string prefixdir,
-                std::string name,
-                std::string dbprefix,
-                po::variables_map const& vm,
-                model_ptrtype const & model )
-    :
-        super( prefixdir,
-               name,
-               dbprefix,
-               vm ),
+        super( name, worldComm ),
+        M_fileFormat( soption(_name="crb.db.format") ),
         M_N( 0 )
     {
-        M_model = model;
+#ifndef FEELPP_HAS_HDF5
+        if ( M_fileFormat == "hdf5" )
+        {
+            LOG(INFO) << "CRB db format hdf5 unsupported. Switching to boost.";
+            M_fileFormat = "boost";
+        }
+#endif
+        if ( M_fileFormat == "hdf5" )
+            this->setDBFilename( ( boost::format( "%1%.h5" )
+                                   %this->name() ).str() );
+        else
+            this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
+                                   %this->name()
+                                   %this->worldComm().globalRank()
+                                   ).str() );
     }
 
+    CRBElementsDB( std::string const& name,
+                   model_ptrtype const & model )
+        :
+        CRBElementsDB( name )
+        {
+            M_model = model;
+        }
 
     //! destructor
     ~CRBElementsDB()
@@ -122,10 +132,6 @@ public :
     void loadHDF5DB();
 #endif
 
-    virtual fs::path lookForDB() const;
-
-    virtual fs::path dbLocalPath() const;
-
     boost::tuple<wn_type, wn_type> wn()
     {
         return boost::make_tuple( M_WN , M_WNdu );
@@ -144,6 +150,11 @@ public :
         M_WNdu = dual;
     }
 
+    void setModel( model_ptrtype const& model )
+    {
+        M_model = model;
+    }
+
 private :
 
     friend class boost::serialization::access;
@@ -158,6 +169,8 @@ private :
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
+    std::string M_fileFormat;
+
     size_type M_N;
 
     wn_type M_WN;
@@ -168,118 +181,23 @@ private :
 
 };//class CRBElementsDB
 
-template<typename ModelType>
-fs::path
-CRBElementsDB<ModelType>::dbLocalPath() const
-{
-    fs::path rep_path = "";
-    /* If we are using the boost implementation
-     * we use the original dbLocalPath from teh base class
-     */
-    if(soption(_name="crb.db.format").compare("boost") == 0)
-    {
-        rep_path = CRBDB::dbLocalPath();
-    }
-    /* otherwise we use a custom implementation
-     * to only output one hdf5 file in a common directory
-     */
-    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
-    {
-        std::string suf;
-        if( (this->vm()).count( "crb.results-repo-name" ) )
-        {
-            std::string database_name = (this->vm())["crb.results-repo-name"].template as<std::string>();
-            suf = database_name + "_common";
-        }
-        else
-        {
-            std::string database_name = "default_repo";
-            suf = database_name + "_common";
-        }
 
-        // generate the local repository db path
-        std::string localpath = ( boost::format( "%1%/db/crb/%2%/%3%" )
-                                  % Feel::Environment::rootRepository()
-                                  % M_prefixdir
-                                  % suf ).str();
-        rep_path = localpath;
-        fs::create_directories( rep_path );
-    }
-
-    return rep_path;
-}
-
-template<typename ModelType>
-fs::path
-CRBElementsDB<ModelType>::lookForDB() const
-{
-    if(soption(_name="crb.db.format").compare("boost") == 0)
-    {
-        //std::cout << "db fdilename=" << this->dbFilename() << "\n";
-        // look in local repository $HOME/feel/db/crb/...
-        if ( fs::exists( this->dbLocalPath() / this->dbFilename() ) )
-        {
-            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbLocalPath() << "\n";
-            return this->dbLocalPath() / this->dbFilename();
-        }
-
-        // then look into the system for install databases
-        if ( fs::exists( this->dbSystemPath() / this->dbFilename() ) )
-        {
-            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbSystemPath() << "\n";
-            return this->dbSystemPath() / this->dbFilename();
-        }
-    }
-    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
-    {
-        std::ostringstream oss;
-        /* build the filename of db 0 */
-        /* If this element exists, we load the database */
-        fs::path p = this->dbLocalPath() / fs::path(this->dbFilename());
-        p.replace_extension("");
-        oss << p.string() << ".h5";
-
-        //std::cout << "db fdilename=" << this->dbFilename() << "\n";
-        // look in local repository $HOME/feel/db/crb/...
-        if ( fs::exists( oss.str() ) )
-        {
-            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbLocalPath() << "\n";
-            return oss.str();
-        }
-
-        p = this->dbSystemPath() / fs::path(this->dbFilename());
-        p.replace_extension("");
-        oss << p.string() << ".h5";
-
-        // then look into the system for install databases
-        if ( fs::exists( oss.str() ) )
-        {
-            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbSystemPath() << "\n";
-            return oss.str();
-        }
-    }
-
-    return fs::path();
-}
 
 template<typename ModelType>
 void
 CRBElementsDB<ModelType>::saveDB()
 {
-#ifdef FEELPP_HAS_HDF5
-    if(soption(_name="crb.db.format").compare("hdf5") == 0)
+    if ( M_fileFormat == "hdf5" )
     {
+#ifdef FEELPP_HAS_HDF5
         this->saveHDF5DB();
+#else
+        CHECK(false) << "Feel++ not compiled with hdf5";
+#endif
     }
     else
-#endif
     /* save in boost format by default */
     {
-        if(soption(_name="crb.db.format").compare("boost") != 0)
-        {
-            LOG(INFO) << "CRB db format (" << soption(_name="crb.db.format") << " unsupported. Switching to boost.";
-        }
-
         fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
 
         if ( ofs )
@@ -312,22 +230,19 @@ CRBElementsDB<ModelType>::loadDB()
     if ( !fs::exists( db ) )
         return false;
 
-#ifdef FEELPP_HAS_HDF5
-    if(soption(_name="crb.db.format").compare("hdf5") == 0)
+    if ( M_fileFormat == "hdf5" )
     {
-        this->loadHDF5DB();    
+#ifdef FEELPP_HAS_HDF5
+        this->loadHDF5DB();
+#else
+        CHECK(false) << "Feel++ not compiled with hdf5";
+#endif
         std::cout << "Loading " << db << " done...\n";
         this->setIsLoaded( true );
         return true;
     }
     else
-#endif
     {
-        if(soption(_name="crb.db.format").compare("boost") != 0)
-        {
-            LOG(INFO) << "CRB db format (" << soption(_name="crb.db.format") << " unsupported. Switching to boost.";
-        }
-
         std::cout << "Loading " << db << "...\n";
         fs::ifstream ifs( db );
 
@@ -394,7 +309,7 @@ CRBElementsDB<ModelType>::saveHDF5DB()
     offset[0] = 0;
 
     /* only do this on proc 0 */
-    if(Environment::worldComm().isMasterRank())
+    if(this->worldComm().isMasterRank())
     {
         /* If a previous db already exists, we remove it */
         if( boost::filesystem::exists( hdf5File.str() ) )
@@ -409,13 +324,13 @@ CRBElementsDB<ModelType>::saveHDF5DB()
         else
         { memDataType = H5T_NATIVE_LLONG; }
 
-        hdf5.openFile( hdf5File.str(), Environment::worldComm().subWorldCommSeq(), true, true );
+        hdf5.openFile( hdf5File.str(), this->worldComm().subWorldCommSeq(), true, true );
         hdf5.createTable( "dbSize", memDataType, dims, 1 );
         hdf5.write( "dbSize", memDataType, dims, offset, &size, 1 );
         hdf5.closeTable( "dbSize" );
         hdf5.closeFile();
     }
-    Environment::worldComm().barrier();
+    this->worldComm().barrier();
 
     LOG( INFO ) << "saving HDF5 Elements DB";
     for(int i=0; i < size; i++)
@@ -523,7 +438,7 @@ CRBElementsDB<ModelType>::loadHDF5DB()
     else
     { memDataType = H5T_NATIVE_LLONG; }
 
-    hdf5.openFile( hdf5File.str(), Environment::worldComm(), true, false );
+    hdf5.openFile( hdf5File.str(), this->worldComm(), true, false );
     hdf5.openTable( "dbSize", dims);
     hdf5.read( "dbSize", memDataType, dims, offset, &size, 1 );
     hdf5.closeTable( "dbSize");
