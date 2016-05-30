@@ -59,19 +59,12 @@ template<typename ExprT>
 
     typedef Fit<ExprT> this_type;
 
-    explicit Fit( expression_type const & __expr, std::string dataFile = soption("fit.datafile"), int T = 3 ) : M_expr(__expr)
-    {
-        M_interpolator = Interpolator::New(static_cast<interpol_type>(T), dataFile);
-    }
-    Fit(Fit const & te) : M_expr(te.M_expr),M_interpolator(te.M_interpolator) {}
+    explicit Fit( expression_type const & __expr, std::string aDataFile = soption("fit.datafile"), int T = 3 ) : M_expr(__expr), dataFile(aDataFile), type(T){}
+    Fit(Fit const & te) : M_expr(te.M_expr), dataFile(te.dataFile), type(te.type){}
     //~Fit(){}
     expression_type const& expression() const
     {
           return M_expr;
-    }
-    Interpolator* const& interpolator() const
-    {
-          return M_interpolator;
     }
 
 
@@ -113,26 +106,26 @@ template<typename ExprT>
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
-            M_tensor_expr( expr.expression(), geom, fev, feu),
-            M_interpolator(expr.interpolator())
+            M_tensor_expr( expr.expression(), geom, fev, feu)
         {
+            M_interpolator = Interpolator::New(static_cast<InterpolationType>(expr.type), expr.dataFile);
         }
 
         // linear form
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             :
-            M_tensor_expr( expr.expression(), geom, fev ),
-            M_interpolator(expr.interpolator())
+            M_tensor_expr( expr.expression(), geom, fev )
         {
+            M_interpolator = Interpolator::New(static_cast<InterpolationType>(expr.type), expr.dataFile);
         }
 
         // evaluation
         tensor( this_type const& expr, Geo_t const& geom )
             :
-            M_tensor_expr( expr.expression(), geom ),
-            M_interpolator(expr.interpolator())
+            M_tensor_expr( expr.expression(), geom )
         {
+            M_interpolator = Interpolator::New(static_cast<InterpolationType>(expr.type), expr.dataFile);
         }
 
         // IM = 
@@ -198,12 +191,13 @@ template<typename ExprT>
 
     private:
         tensor_expr_type M_tensor_expr;
-        Interpolator* M_interpolator;
+        std::unique_ptr<Interpolator> M_interpolator;
     };
     /// end of tensor
     private:
         mutable expression_type  M_expr;
-        Interpolator*  M_interpolator;
+        std::string dataFile;
+        int type;
     };
 
 /**
