@@ -479,7 +479,7 @@ ENDIF()
 OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
 MARK_AS_ADVANCED(BOOST_ENABLE_TEST_DYN_LINK)
 
-set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" "1.46" "1.47" "1.48" "1.49" "1.50" "1.51" "1.52" "1.53" "1.54" "1.55")
+set(Boost_ADDITIONAL_VERSIONS "1.55" "1.56" "1.57" "1.58" "1.59" "1.60" "1.61")
 set( BOOST_PARAMETER_MAX_ARITY 24 )
 #set( BOOST_FILESYSTEM_VERSION 2)
 set( BOOST_FILESYSTEM_VERSION 3)
@@ -579,7 +579,6 @@ endif()
 #
 include(feelpp.module.hpddm)
 include(feelpp.module.nlopt)
-include(feelpp.module.ipopt)
 include(feelpp.module.cereal)
 include(feelpp.module.paralution)
 include(feelpp.module.jsonlab)
@@ -902,7 +901,7 @@ if ( PETSC_FOUND )
   INCLUDE_DIRECTORIES(${PETSC_INCLUDE_DIR} ${PETSC_INCLUDE_CONF})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PETSc" )
 
-endif( PETSC_FOUND )
+endif( PETSC_FOUND ) 
 
 # ML was already searched for, if it was not found then try again to look for it
 # in PETSC_DIR
@@ -988,8 +987,9 @@ if ( FEELPP_ENABLE_VTK )
         # Enable VTK exporter and insitu in config
         set(FEELPP_VTK_INSITU_ENABLED 1)
 
-        # Mark VTK as available
+        # Mark VTK and ParaView as available
         set(FEELPP_HAS_VTK 1)
+        set(FEELPP_HAS_PARAVIEW 1)
         # Check for version to ensure that we are able to
         # use an external communicator
         set(VTK_HAS_PARALLEL 0)
@@ -1152,6 +1152,11 @@ if ( GMSH_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
 endif()
 include(feelpp.module.gmsh)
+
+#
+# ipopt
+#
+include(feelpp.module.ipopt)
 
 #
 # if Feel++ has been installed on the system

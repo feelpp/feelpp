@@ -141,6 +141,9 @@
 /* Define to 1 if you have harts. */
 #cmakedefine FEELPP_HAS_HARTS
 
+/* Define to 1 if you have ipopt. */
+#cmakedefine FEELPP_HAS_IPOPT
+
 /* Define to 1 if you have nlopt. */
 #cmakedefine FEELPP_HAS_NLOPT
 
@@ -173,6 +176,9 @@
 
 /* Define to 1 if you have VTK . */
 #cmakedefine FEELPP_HAS_VTK
+
+/* Define to 1 if you have ParaView . */
+#cmakedefine FEELPP_HAS_PARAVIEW
 
 /* Define to 1 if you the insitu part is enabled for VTK . */
 #cmakedefine FEELPP_VTK_INSITU_ENABLED
