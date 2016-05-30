@@ -24,8 +24,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "interpolator.hpp"
 
-#ifndef __FEELPP_FIT_H
-#define __FEELPP_FIT_H 1
+#ifndef FEELPP_FIT_HPP
+#define FEELPP_FIT_HPP 1
 
 namespace Feel
 {
@@ -224,4 +224,4 @@ fit( ExprT v,
 }
 }
 
-#endif //__FEELPP_FIT_H
+#endif //FEELPP_FIT_HPP
