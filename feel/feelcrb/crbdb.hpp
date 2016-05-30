@@ -143,6 +143,12 @@ public:
     //@{
 
     //! set the DB filename
+    void setName( std::string const& name )
+    {
+        M_name = name;
+    }
+
+    //! set the DB filename
     void setDBFilename( std::string const& filename )
     {
         M_dbfilename = filename;
