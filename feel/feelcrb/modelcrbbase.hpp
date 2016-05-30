@@ -279,7 +279,7 @@ public :
     //! \return the mpi communicators
     WorldComm const& worldComm() const { return Dmu->worldComm(); }
 
-    virtual std::string modelName() { return "generic-model-name"; }
+    virtual std::string modelName() const { return "generic-model-name"; }
 
     /**
      * return directory path where symbolic expression (ginac) are built
@@ -434,6 +434,8 @@ public :
      */
     void updatePropertyTree( boost::property_tree::ptree & ptree ) const
     {
+        ptree.add( "model-name", this->modelName() );
+
         boost::property_tree::ptree ptreeParameterSpace;
         this->parameterSpace()->updatePropertyTree( ptreeParameterSpace );
         ptree.add_child( "parameter_space", ptreeParameterSpace );
@@ -444,7 +446,7 @@ public :
      * \brief load CrbModel from json
      * \param input json filename
      */
-    void loadJson( std::string const& filename )
+    void loadJson( std::string const& filename, std::string const& childname = "" )
     {
         if ( !fs::exists( filename ) )
         {
@@ -458,7 +460,13 @@ public :
         boost::property_tree::ptree ptree;
         std::istringstream istr( json_str_wo_comments );
         boost::property_tree::read_json( istr, ptree );
-        this->setup( ptree );
+        if ( childname.empty() )
+            this->setup( ptree );
+        else
+        {
+            auto const& ptreeChild = ptree.get_child( childname );
+            this->setup( ptreeChild );
+        }
     }
     void setup( boost::property_tree::ptree const& ptree )
     {
