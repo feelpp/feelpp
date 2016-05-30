@@ -30,44 +30,30 @@
 #include <boost/archive/text_iarchive.hpp>
 //#include <boost/assign/std/vector.hpp>
 
-#include <feel/feelcore/environment.hpp>
 #include <feel/feelcrb/crbdb.hpp>
 
 namespace Feel
 {
-CRBDB::CRBDB()
+CRBDB::CRBDB( std::string const& name, WorldComm const& worldComm )
     :
-    M_name( "noname" ),
-    M_vm(),
-    M_isloaded( false )
-{}
-
-//! constructor from command line options
-CRBDB::CRBDB( std::string prefixdir,
-              std::string name,
-              std::string dbprefix,
-              po::variables_map const& vm )
-    :
-    M_prefixdir( prefixdir ),
+    M_worldComm( worldComm ),
     M_name( name ),
-    M_vm( vm ),
     M_isloaded( false )
 {
-    LOG(INFO) << prefixdir << "," << name << "\n";
+    this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
+                           %M_name
+                           %this->worldComm().globalRank()
+                           ).str() );
 
-    this->setDBFilename( ( boost::format( "%1%.crbdb" ) % dbprefix ).str() );
-    LOG(INFO) << "database name " << dbFilename() << "\n";
-
-
+    std::string database_subdir = "default_repo";
+    if( Environment::vm().count( "crb.results-repo-name" ) )
+        database_subdir = ( boost::format("%1%/np_%2%")
+                            %soption(_name="crb.results-repo-name")
+                            %this->worldComm().globalSize() ).str();
+    M_dbDirectory = ( boost::format( "%1%/db/crb/%2%" )
+                              % Feel::Environment::rootRepository()
+                              % database_subdir ).str();
 }
-
-//! copy constructor
-CRBDB::CRBDB( CRBDB const & o )
-    :
-    M_name( o.M_name ),
-    M_vm( o.M_vm ),
-    M_isloaded( o.M_isloaded )
-{}
 
 //! destructor
 CRBDB::~CRBDB()
@@ -76,6 +62,7 @@ CRBDB::~CRBDB()
 fs::path
 CRBDB::dbSystemPath() const
 {
+#if 0
     std::vector<std::string> sysdir{Feel::Info::prefix(), "/usr", "/usr/local", "/opt/local"};
     BOOST_FOREACH( auto dir, sysdir )
     {
@@ -88,20 +75,21 @@ CRBDB::dbSystemPath() const
         if ( fs::exists( syspath ) )
             return syspath;
     }
+#endif
     return fs::path();
 }
 fs::path
 CRBDB::dbLocalPath() const
 {
-
+#if 0
     int proc_number =  Environment::worldComm().globalRank();
     int nb_proc = Environment::worldComm().globalSize();
     std::string suf;
-    if( M_vm.count( "crb.results-repo-name" ) )
-    {
-        std::string database_name = M_vm["crb.results-repo-name"].as<std::string>();
-        suf = M_name + "_" + database_name + ( boost::format("_proc%1%on%2%") %proc_number %nb_proc ).str() ;
-    }
+    if( Environment::vm().count( "crb.results-repo-name" ) )
+        {
+            std::string database_name = soption(_name="crb.results-repo-name");
+            suf = database_name + ( boost::format("_proc%1%on%2%") %proc_number %nb_proc ).str() ;
+        }
     else
     {
         std::string database_name = "default_repo";
@@ -115,7 +103,8 @@ CRBDB::dbLocalPath() const
                               % suf ).str();
     fs::path rep_path = localpath;
     fs::create_directories( rep_path );
-
+#endif
+    fs::path rep_path = M_dbDirectory;
     return rep_path;
 }
 
