@@ -521,7 +521,7 @@ endmacro( genLibFSI )
 #############################################################################
 macro( genLibAdvection )
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;T_ORDER;GEO_ORDER;"
+      "DIM;T_ORDER;GEO_ORDER;"
     "NO_UPDATE_MODEL_DEF;ADD_CMAKE_INSTALL"
     ${ARGN}
     )
@@ -619,3 +619,88 @@ macro( genLibAdvection )
 
 
 endmacro(genLibAdvection)
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+macro( genLibLevelset )
+    PARSE_ARGUMENTS(FEELMODELS_APP
+        "DIM;PHI_ORDER;GEO_ORDER;USE_PERIODICITY"
+        "NO_UPDATE_MODEL_DEF;ADD_CMAKE_INSTALL"
+        ${ARGN}
+        )
+
+    if ( NOT FEELMODELS_APP_NO_UPDATE_MODEL_DEF )
+        resetToZeroAllPhysicalVariables()
+        SET(LEVELSET 1 )
+    endif()
+
+    #CAR(LIB_NAME ${FEELMODELS_APP_DEFAULT_ARGS})
+
+    if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_T_ORDER OR  FEELMODELS_APP_GEO_ORDER ) )
+        message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_T_ORDER OR  FEELMODELS_APP_GEO_ORDER")
+    endif()
+
+    set(LEVELSET_DIM ${FEELMODELS_APP_DIM})
+    set(LEVELSET_ORDERPOLY ${FEELMODELS_APP_T_ORDER})
+    set(LEVELSET_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+    #######################################################
+    if (0)
+        MESSAGE("*** Arguments for advection application ${LIB_NAME}")
+        MESSAGE("*** DIM ${LEVELSET_DIM}")
+        MESSAGE("*** ORDERPOLY ${LEVELSET_ORDERPOLY}")
+        MESSAGE("*** ORDERGEO ${LEVELSET_ORDERGEO}")
+    endif()
+
+    #######################################################
+    if ( FEELMODELS_APP_USE_PERIODICITY )
+        set(LEVELSET_USE_PERIODICITY 1)
+        set(LEVELSET_USE_PERIODICITY_TAG Periodic)
+    else()
+        set(LEVELSET_USE_PERIODICITY 0)
+        unset(LEVELSET_USE_PERIODICITY_TAG)
+    endif()
+    #######################################################
+
+    set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${LEVELSET_DIM}dP${LEVELSET_ORDERPOLY}G${LEVELSET_ORDERGEO}${LEVELSET_USE_PERIODICITY_TAG} )
+    set(FEELMODELS_MODEL_SPECIFIC_NAME levelset${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
+    #set(FEELMODELS_MODEL_SPECIFIC_NAME ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
+    set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/levelset/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
+    set(LIBBASE_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
+    set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
+
+    if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
+
+        #write empty file in orter to check if this lib has already define
+        file(WRITE ${LIBBASE_CHECK_PATH} "")
+
+        # configure libmodelbase
+        set(CODEGEN_FILES_TO_COPY
+            ${FEELPP_MODELS_SOURCE_DIR}/levelset/levelset_inst.cpp )
+        set(CODEGEN_SOURCES
+            ${LIBBASE_DIR}/levelset_inst.cpp )
+        set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+
+        if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
+            set( LIBBASE_ADD_CMAKE_INSTALL 1 )
+        else()
+            set( LIBBASE_ADD_CMAKE_INSTALL 0 )
+        endif()
+
+        # generate libmodelbase
+        genLibBase(
+            LIB_NAME ${LIBBASE_NAME}
+            LIB_DIR ${LIBBASE_DIR}
+            LIB_DEPENDS ${LIB_DEPENDS}
+            PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
+            FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
+            FILES_SOURCES ${CODEGEN_SOURCES}
+            CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/levelset/levelsetconfig.h.in
+            ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
+            )
+
+    endif()
+
+
+endmacro(genLibLevelset)
