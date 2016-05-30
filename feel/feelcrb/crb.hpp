@@ -10732,7 +10732,10 @@ CRB<TruthModelType>::saveDB()
     {
         std::string filenameJson = (this->dbLocalPath()/fs::path("crb.json")).string();
         boost::property_tree::ptree ptree;
-        M_model->updatePropertyTree( ptree );
+
+        boost::property_tree::ptree ptreeCrbModel;
+        M_model->updatePropertyTree( ptreeCrbModel );
+        ptree.add_child( "crbmodel", ptreeCrbModel );
 
         boost::property_tree::ptree ptreeCrb;//Database;
         ptreeCrb.add( "dimension", M_N );

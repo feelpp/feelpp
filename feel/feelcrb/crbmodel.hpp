@@ -970,15 +970,16 @@ public:
         ptreeAffineDecomposition.add_child( "mMaxLinearDecompositionA", ptree_mMaxLinearDecompositionA );
 
         boost::property_tree::ptree ptreeCrbModel;
-        ptreeCrbModel.add_child( "affine-decomposition", ptreeAffineDecomposition );
-        ptree.add_child( "crbmodel", ptreeCrbModel );
+        ptree.add_child( "affine-decomposition", ptreeAffineDecomposition );
+        //ptreeCrbModel.add_child( "affine-decomposition", ptreeAffineDecomposition );
+        //ptree.add_child( "crbmodel", ptreeCrbModel );
     }
 
     /**
      * \brief load CrbModel from json
      * \param input json filename
      */
-    void loadJson( std::string const& filename )
+    void loadJson( std::string const& filename, std::string const& childname = "" )
         {
             if ( !fs::exists( filename ) )
             {
@@ -992,13 +993,20 @@ public:
             boost::property_tree::ptree ptree;
             std::istringstream istr( json_str_wo_comments );
             boost::property_tree::read_json( istr, ptree );
-            this->setup( ptree );
+            if ( childname.empty() )
+                this->setup( ptree );
+            else
+            {
+                auto const& ptreeChild = ptree.get_child( childname );
+                this->setup( ptreeChild );
+            }
+
         }
 
     void setup( boost::property_tree::ptree const& ptree )
         {
-            auto const& ptreeCrbModel = ptree.get_child( "crbmodel" );
-            auto const& ptreeAffineDecomposition = ptreeCrbModel.get_child( "affine-decomposition" );
+            //auto const& ptreeCrbModel = ptree.get_child( "crbmodel" );
+            auto const& ptreeAffineDecomposition = /*ptreeCrbModel*/ptree.get_child( "affine-decomposition" );
 
             M_mMaxA.clear();
             for ( auto const& item : ptreeAffineDecomposition.get_child("mMaxA") )
