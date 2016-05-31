@@ -211,7 +211,7 @@ public:
      */
     //@{
 
-    CRBModel( CRBModelMode mode = CRBModelMode::PFEM, bool doInit = true )
+    CRBModel( CRBModelMode mode = CRBModelMode::PFEM, int level=0, bool doInit = true )
         :
         M_Aqm(),
         M_InitialGuessV(),
@@ -231,6 +231,8 @@ public:
         M_has_eim( false ),
         M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
+        if ( level != 0 )
+            M_model->setModelName( M_model->modelName() + "-" + std::to_string(level) );
         if ( doInit )
             this->init();
     }

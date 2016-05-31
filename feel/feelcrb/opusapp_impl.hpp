@@ -383,7 +383,7 @@ OpusApp<ModelType,RM,Model>::run()
         case SamplingMode::READFROMCOMMANDLINE:
             std::vector<double> mu_list = option(_name=_o( this->about().appName(),"run.parameter" )).template as<std::vector<double>>();
             parameter_type _mu = crb->Dmu()->element();
-            if ( crbmodel_type::ParameterSpaceDimension != mu_list.size() )
+            if ( crb->Dmu()->dimension() != mu_list.size() )
                 throw std::logic_error( "Parameter given by the command line option as note the expected size" );
             Sampling->clear();
             for ( int i=0 ; i<mu_list.size() ; i++ )
@@ -1632,7 +1632,7 @@ OpusApp<ModelType,RM,Model>::run()
         {
             parameter_type user_mu ( model->parameterSpace() );
             double mu_size = user_mu.size();
-            std::vector< int > sampling_each_direction ( mu_size );
+            std::vector< size_type > sampling_each_direction ( mu_size );
             for(int i=0; i<mu_size; i++)
             {
                 if( i == vary_mu_comp0  )
@@ -1663,7 +1663,7 @@ OpusApp<ModelType,RM,Model>::run()
                     mu_ = user_mu_onefeel;
                 }
                 estimated_error_outputs_storage.resize( cutting_direction0 );
-                Sampling->logEquidistributeProduct( sampling_each_direction , mu_ );
+                Sampling->logEquidistributeProduct( sampling_each_direction /*, mu_*/ );
                 for( auto mu : *Sampling )
                 {
                     double x = mu(vary_mu_comp0);
