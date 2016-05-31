@@ -22,3 +22,4 @@ feelpp_add_test( forms )
 feelpp_add_test( idf_functor )
 feelpp_add_test( idf2_functor )
 
+feelpp_add_test( cross_disc )
