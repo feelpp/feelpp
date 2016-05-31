@@ -13,7 +13,8 @@ env:
 before_install:
 - echo $TRAVIS_OS_NAME
 - echo $HOME
-- docker pull feelpp/feelpp-env
+- docker --version
+- time docker pull feelpp/feelpp-env
 - git clone --depth=1 https://github.com/feelpp/docker
 - cd docker/dockerfiles/develop && docker build -f Dockerfile.dockerhub -t feelpp/develop:latest .
 install:
