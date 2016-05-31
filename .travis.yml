@@ -8,7 +8,13 @@ git:
 matrix:
   include:
       - env: BUILD="docker-full" TARGET_BRANCH="develop" CMAKE_FLAGS=""
+        sudo: required
+        services:
+            - docker
       - env: BUILD="docker-minimal" TARGET_BRANCH="feature/minimal" CMAKE_FLAGS="-DFEELPP_MINIMAL_BUILD=ON"
+        sudo: required
+        services:
+            - docker
 
 before_install:
 - echo $TRAVIS_OS_NAME
