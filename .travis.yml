@@ -1,4 +1,5 @@
-sudo: false
+sudo: required
+dist: trusty
 os: linux
 git:
   depth: 1
@@ -20,6 +21,11 @@ addons:
       - libglpk-dev
       - libxml2-dev
       - libfftw3-dev
+      - libcln-dev
+      - libgmsh-dev
+      - gmsh
+      - libpetsc3.4.2-dev
+      - libslepc3.4.2-dev
       - bison
       - flex
       - doxygen
@@ -111,12 +117,12 @@ before_install:
 - export NPROCS=3
 - bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost; echo
   $BOOSTROOT
-- bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh; echo
-  $GMSH_DIR
-- export M_PETSC_VERSION=3.7.0
-- bash ports/travis/petsc.sh ${M_PETSC_VERSION}; export PETSC_DIR=$HOME/software/install/petsc-${M_PETSC_VERSION};
-  echo $PETSC_DIR
-- bash ports/travis/cln.sh; export CLN_DIR=$HOME/software/install/cln; echo $CLN_DIR
+#- bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh; echo
+#  $GMSH_DIR
+#- export M_PETSC_VERSION=3.7.0
+#- bash ports/travis/petsc.sh ${M_PETSC_VERSION}; export PETSC_DIR=$HOME/software/install/petsc-${M_PETSC_VERSION};
+#  echo $PETSC_DIR
+#- bash ports/travis/cln.sh; export CLN_DIR=$HOME/software/install/cln; echo $CLN_DIR
 install:
 - $CXX --version
 - $CC --version
