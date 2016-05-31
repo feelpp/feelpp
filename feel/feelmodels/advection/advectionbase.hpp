@@ -222,7 +222,8 @@ public :
     // Linear PDE
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilization(sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart) const;
-    virtual void updateSourceTermLinearPDE(element_advection_ptrtype& fieldSource, bool buildCstPart) const =0;
+    virtual void updateSourceTermLinearPDE(element_advection_ptrtype& fieldSource, bool buildCstPart) const {}
+    virtual bool hasSourceTerm() const =0;
     virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const =0;
     virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const =0;
     
@@ -237,7 +238,6 @@ public :
     template<typename ExprT>
     void updateSourceAdded(vf::Expr<ExprT> const& expr);
     bool hasSourceAdded() const { return M_hasSourceAdded; }
-    virtual bool hasSourceTerm() const =0;
     //--------------------------------------------------------------------//
     // Diffusion-reaction parameters update
     diffusionreaction_model_ptrtype & diffusionReactionModel() { return M_diffusionReactionModel; }
