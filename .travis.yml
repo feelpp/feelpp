@@ -1,17 +1,14 @@
-sudo: required
-services:
-    - docker
 git:
   depth: 1
   submodules: false
 
 matrix:
   include:
-      - env: BUILD="docker-full" TARGET_BRANCH="develop" CMAKE_FLAGS=""
+      - env: TARGET_IMAGE="feelpp/feelpp-env:latest" TARGET_BRANCH="develop" CMAKE_FLAGS=""
         sudo: required
         services:
             - docker
-      - env: BUILD="docker-minimal" TARGET_BRANCH="feature/minimal" CMAKE_FLAGS="-DFEELPP_MINIMAL_BUILD=ON"
+      - env: TARGET_IMAGE="feelpp/feelpp-env:minimal" TARGET_BRANCH="feature/minimal" CMAKE_FLAGS="-DFEELPP_MINIMAL_BUILD=ON"
         sudo: required
         services:
             - docker
@@ -22,9 +19,9 @@ before_install:
 - docker --version
 - sudo apt-get update
 - sudo apt-get install -y -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker-engine
-- time docker pull feelpp/feelpp-env
+- docker pull ${TARGET_IMAGE}
 - git clone --depth=1 https://github.com/feelpp/docker
-- cd docker/dockerfiles/develop && docker build -f Dockerfile.dockerhub -t feelpp/develop:latest --build-arg=BRANCH=${TARGET_BRANCH} --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}" .
+- cd docker/dockerfiles/develop && docker build -f Dockerfile.dockerhub -t ${TARGET_IMAGE} --build-arg=BRANCH=${TARGET_BRANCH} --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}" .
 
 install:
 - docker run feelpp/develop:latest true
