@@ -153,6 +153,10 @@ public :
     //--------------------------------------------------------------------//
     // Initialization
     void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app );
+    void initFromMesh( 
+            mesh_ptrtype const& mesh,
+            bool buildModelAlgebraicFactory, 
+            model_algebraic_factory_type::appli_ptrtype const& app );
 
     virtual void loadParametersFromOptionsVm();
     virtual void loadConfigBCFile() =0;
@@ -276,6 +280,7 @@ protected:
     //--------------------------------------------------------------------//
     // Initialization
     void build();
+    void build( mesh_ptrtype const& mesh );
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//

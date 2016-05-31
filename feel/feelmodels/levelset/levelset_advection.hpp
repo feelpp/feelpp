@@ -29,7 +29,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Initialization
-    void init( bool buildModelAlgebraicFactory = true );
+    void initFromMesh( mesh_ptrtype const& mesh, bool buildModelAlgebraicFactory = true );
 
     //--------------------------------------------------------------------//
     // BC and source term assembly
@@ -43,9 +43,9 @@ public:
 template<typename ConvexType, typename BasisAdvectionType>
 LevelSetAdvection<ConvexType, BasisAdvectionType>::LevelSetAdvection(
         std::string const& prefix,
-        WorldComm const& _worldComm = Environment::worldComm(),
-        std::string const& subPrefix = "",
-        std::string const& rootRepository = ModelBase::rootRepositoryByDefault() )
+        WorldComm const& _worldComm,
+        std::string const& subPrefix,
+        std::string const& rootRepository )
 : super_type( prefix, worldComm, subPrefix, rootRepository )
 {
     this->log("LevelSetAdvection", "constructor", "start" );
@@ -60,11 +60,14 @@ LevelSetAdvection<ConvexType, BasisAdvectionType>::LevelSetAdvection(
 
 template<typename ConvexType, typename BasisAdvectionType>
 void
-LevelSetAdvection<ConvexType, BasisAdvectionType>::init( bool buildModelAlgebraicFactory )
+LevelSetAdvection<ConvexType, BasisAdvectionType>::initFromMesh( 
+        mesh_ptrtype const& mesh,
+        bool buildModelAlgebraicFactory )
 {
-    super_type::init( buildModelAlgebraicFactory, this->shared_from_this() );
+    super_type::initFromMesh( mesh, buildModelAlgebraicFactory, this->shared_from_this() );
 }
     
+}
+}
 
-}
-}
+#endif
