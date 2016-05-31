@@ -15,7 +15,7 @@ before_install:
 - echo $HOME
 - docker pull feelpp/feelpp-env
 - git clone --depth=1 https://github.com/feelpp/docker
-- docker build -f docker/dockerfiles/Dockerfile -t feelpp/develop:latest .
+- cd docker/dockerfiles/develop && docker build -f Dockerfile.dockerhub -t feelpp/develop:latest .
 install:
 - docker run feelpp/develop:latest true
 script:
