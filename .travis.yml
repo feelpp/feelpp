@@ -4,16 +4,10 @@ services:
 git:
   depth: 1
   submodules: false
-language: cpp
-compiler: clang
-env:
-  global:
-    FEELPP_STD_CPP=14
 
 matrix:
   include:
       - env: BUILD="docker-full" TARGET_BRANCH="develop" CMAKE_FLAGS=""
-  include:
       - env: BUILD="docker-minimal" TARGET_BRANCH="feature/minimal" CMAKE_FLAGS="-DFEELPP_MINIMAL_BUILD=ON"
 
 before_install:
