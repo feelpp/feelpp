@@ -69,6 +69,28 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build()
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh)
+{
+    this->log("Advection","build", "start");
+    
+    // Mesh
+    M_mesh = mesh;
+    // Function spaces
+    this->createFunctionSpaces();
+    // Algebraic data
+    this->createAlgebraicData();
+    // Bdf time scheme
+    this->createTimeDiscretization();
+    // Physical parameters
+    this->createOthers();
+    // Exporters
+    this->createExporters();
+
+    this->log("Advection","build", "finish");
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app )
 {
     if ( M_isUpdatedForUse ) return;
@@ -100,6 +122,44 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
     this->log("Advection","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::initFromMesh(
+        mesh_ptrtype const& mesh,
+        bool buildModelAlgebraicFactory, 
+        model_algebraic_factory_type::appli_ptrtype const& app )
+{
+    //if ( M_isUpdatedForUse ) return;
+
+    this->log("Advection","initFromMesh", "start" );
+    this->timerTool("Constructor").start();
+
+    this->build( mesh );
+
+    // Vector solution
+    M_blockVectorSolution.resize(1);
+    M_blockVectorSolution(0) = this->fieldSolutionPtr();
+    M_blockVectorSolution.buildVector( this->backend() );
+
+    // Time step
+    this->initTimeStep();
+    
+    // Algebraic factory
+    if( buildModelAlgebraicFactory )
+    {
+        // matrix sparsity graph
+        auto graph = this->buildMatrixGraph();
+        
+        M_algebraicFactory.reset( new model_algebraic_factory_type( app, this->backend(), graph, graph->mapRow().indexSplit() ) );
+    }
+
+    M_isUpdatedForUse = true;
+
+    double tElapsedInit = this->timerTool("Constructor").stop("init");
+    if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
+    this->log("Advection","initFromMesh",(boost::format("finish in %1% s")%tElapsedInit).str() );
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
