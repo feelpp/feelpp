@@ -10,6 +10,12 @@ env:
   global:
     FEELPP_STD_CPP=14
 
+matrix:
+  include:
+      - env: BUILD="docker-full" TARGET_BRANCH="develop" CMAKE_FLAGS=""
+  include:
+      - env: BUILD="docker-minimal" TARGET_BRANCH="feature/minimal" CMAKE_FLAGS="-DFEELPP_MINIMAL_BUILD=ON"
+
 before_install:
 - echo $TRAVIS_OS_NAME
 - echo $HOME
@@ -18,7 +24,7 @@ before_install:
 - sudo apt-get install -y -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker-engine
 - time docker pull feelpp/feelpp-env
 - git clone --depth=1 https://github.com/feelpp/docker
-- cd docker/dockerfiles/develop && docker build -f Dockerfile.dockerhub -t feelpp/develop:latest .
+- cd docker/dockerfiles/develop && docker build -f Dockerfile.dockerhub -t feelpp/develop:latest --build-arg=BRANCH=${TARGET_BRANCH} --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}" .
 
 install:
 - docker run feelpp/develop:latest true
