@@ -18,6 +18,12 @@ ADVECTION_CLASS_TEMPLATE_TYPE::Advection(
 
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Advection.info") );
     //-----------------------------------------------------------------------------//
+    // Set model from options
+    std::string advection_model = this->modelProperties().model();
+    if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
+        advection_model = soption(_name="model",_prefix=this->prefix());
+    this->setModelName( advection_model );
+    //-----------------------------------------------------------------------------//
     // load info from .bc file
     this->loadConfigBCFile();
     //-----------------------------------------------------------------------------//
