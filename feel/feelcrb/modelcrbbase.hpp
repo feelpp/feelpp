@@ -268,32 +268,24 @@ public :
     typedef Bdf<space_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
-    ModelCrbBase( WorldComm const& worldComm = Environment::worldComm() )
+    ModelCrbBase( std::string const& name = "generic-model-name", WorldComm const& worldComm = Environment::worldComm() )
         :
         Dmu( parameterspace_type::New( 0,worldComm ) ),
-        M_name( "generic-model-name" ),
-        M_is_initialized( false )
-    {
-    }
-    ModelCrbBase( std::string const& name )
-        :
-        Dmu( new parameterspace_type ),
         M_name( name ),
         M_is_initialized( false )
-        {
-        }
-    
+    {}
+
     virtual ~ModelCrbBase() {}
 
     /**
      * \return the name of the model
      */
-    virtual std::string modelName() { return M_name; }
+    std::string const& modelName() const { return M_name; }
 
     /**
      * set the model name
      */
-    virtual void setModelName( std::string const& name ) { M_name = name; }
+    void setModelName( std::string const& name ) { M_name = name; }
 
     //! \return the mpi communicators
     WorldComm const& worldComm() const { return Dmu->worldComm(); }
