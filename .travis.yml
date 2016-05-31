@@ -23,7 +23,9 @@ addons:
       - libfftw3-dev
       - libcln-dev
       - libgmsh-dev
+      - gmsh
       - libpetsc3.4.2-dev
+      - libslepc3.4.2-dev
       - bison
       - flex
       - doxygen
