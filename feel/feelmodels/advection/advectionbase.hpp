@@ -46,7 +46,10 @@ namespace FeelModels {
 
 enum class AdvectionStabMethod { NONE=0, GALS, CIP, SUPG, SGS };
 
-template< typename ConvexType, typename BasisAdvectionType, typename BasisDiffusionReactionType >
+template< 
+    typename ConvexType, typename BasisAdvectionType, 
+    typename BasisDiffusionReactionType = Lagrange<0, Scalar, Discontinuous>
+        >
 class AdvectionBase : 
     public ModelNumerical,
     public MarkerManagementDirichletBC,
