@@ -22,8 +22,6 @@ addons:
       - libxml2-dev
       - libfftw3-dev
       - libcln-dev
-      - libboost-all-dev
-      - libboost-mpi-dev
       - libgmsh-dev
       - libpetsc3.4.2-dev
       - bison
@@ -115,8 +113,8 @@ before_install:
 - git submodule update --init --recursive contrib/ipopt
 - git submodule update --init --recursive quickstart
 - export NPROCS=3
-#- bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost; echo
-#  $BOOSTROOT
+- bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost; echo
+  $BOOSTROOT
 #- bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh; echo
 #  $GMSH_DIR
 #- export M_PETSC_VERSION=3.7.0
