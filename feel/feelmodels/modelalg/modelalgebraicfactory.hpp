@@ -179,14 +179,14 @@ namespace FeelModels
 
     private :
 
-        void
+        FEELPP_NO_EXPORT  void
         init(graph_ptrtype const& graph,
              indexsplit_ptrtype const& indexSplit);
 
-        void
+        FEELPP_NO_EXPORT void
         buildMatrixVector(graph_ptrtype const& graph,
                           indexsplit_ptrtype const& indexSplit);
-        void
+        FEELPP_NO_EXPORT void
         buildOthers();
 
     private :
