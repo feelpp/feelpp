@@ -430,7 +430,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
 
     auto Pset = this->Dmu->sampling();
     //specify how many elements we take in each direction
-    std::vector<int> N(2);
+    std::vector<size_type> N(2);
     int Ne = ioption(_name="trainset-eim-size");
     std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
 
