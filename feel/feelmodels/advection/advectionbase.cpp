@@ -215,7 +215,12 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
         this->log("Advection","createFunctionSpaces", "use buildDofTableMPIExtended on advection" );
         extendedDT[0] = true;
     }
-    M_Xh = space_advection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(), _extended_doftable=extendedDT );
+    M_Xh = space_advection_type::New( 
+            _mesh=M_mesh, 
+            _worldscomm=this->worldsComm(), 
+            _extended_doftable=extendedDT,
+            _periodicity=this->periodicity()
+            );
     M_fieldSolution.reset( new element_advection_type(M_Xh, "phi") );
 
     // Advection velocity 
@@ -288,6 +293,15 @@ void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createOthers()
 {
     M_diffusionReactionModel->initFromMesh( this->mesh(), this->useExtendedDofTable() );
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::setPeriodicity( periodicity_type const& p )
+{
+    if( M_isUpdatedForUse )
+       LOG(WARNING) << "Setting periodicity after initialization ! You need to init() again !";
+    M_periodicity = p;
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS

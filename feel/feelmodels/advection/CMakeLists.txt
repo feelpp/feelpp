@@ -1,5 +1,5 @@
 
-# geo order 1
+# geo order 1 (non-periodic)
 foreach(_DIM 2 3)
   math(EXPR _T_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}-1')
   feelpp_max( MAX_ORDER 1 ${_T_ORDER})
@@ -9,13 +9,14 @@ foreach(_DIM 2 3)
       DIM     ${_DIM}
       T_ORDER ${_T_ORDER}
       GEO_ORDER 1
+      #USE_PERIODICITY
       ADD_CMAKE_INSTALL
       )
   set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME}  )
   endforeach()
 endforeach()
 
-# isoparametric
+# isoparametric (non-periodic)
 foreach(_DIM 2 3)
   math(EXPR _T_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}-1')
   feelpp_min( MAX_ORDER ${FEELPP_MESH_MAX_ORDER} ${_T_ORDER})
@@ -25,6 +26,7 @@ foreach(_DIM 2 3)
       DIM     ${_DIM}
       T_ORDER ${_T_ORDER}
       GEO_ORDER ${_T_ORDER}
+      #USE_PERIODICITY
       ADD_CMAKE_INSTALL
       )
   set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME} )

@@ -26,6 +26,8 @@ ADVECTION_CLASS_TEMPLATE_TYPE::Advection(
     //-----------------------------------------------------------------------------//
     // load info from .bc file
     this->loadConfigBCFile();
+    // get periodicity from options (if needed)
+    this->loadPeriodicityFromOptionsVm();
     //-----------------------------------------------------------------------------//
     // build mesh, space, exporter,...
     //if ( buildMesh ) this->build();
@@ -162,6 +164,39 @@ bool
 ADVECTION_CLASS_TEMPLATE_TYPE::hasSourceTerm() const
 {
     return !this->M_sources.empty(); 
+}
+
+namespace detail {
+
+template<typename AdvT> 
+void
+loadPeriodicityFromOptionsVm(AdvT &, mpl::false_)
+{}
+
+template<typename AdvT>
+void
+loadPeriodicityFromOptionsVm(AdvT & adv, mpl::true_)
+{
+    node_type translat( AdvT::nDim );
+    translat[0] = doption(_name="periodicity.translate-x",_prefix=adv.prefix());
+    if ( AdvT::nDim >=2 )
+        translat[1] = doption(_name="periodicity.translate-y",_prefix=adv.prefix());
+    if ( AdvT::nDim == 3 )
+        translat[2]= doption(_name="periodicity.translate-z",_prefix=adv.prefix());
+    std::string marker1 = soption(_name="periodicity.marker1",_prefix=adv.prefix());
+    std::string marker2 = soption(_name="periodicity.marker2",_prefix=adv.prefix());
+    auto theperiodicity = Periodic<>( adv.mesh()->markerName(marker1),adv.mesh()->markerName(marker2), translat );
+
+    adv.setPeriodicity( theperiodicity );
+}
+
+}
+
+ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTION_CLASS_TEMPLATE_TYPE::loadPeriodicityFromOptionsVm()
+{
+    detail::loadPeriodicityFromOptionsVm( *this, mpl::bool_<PeriodicityType::is_periodic>() );
 }
 
 } // namespace FeelModels
