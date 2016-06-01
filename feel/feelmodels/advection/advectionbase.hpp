@@ -48,8 +48,8 @@ enum class AdvectionStabMethod { NONE=0, GALS, CIP, SUPG, SGS };
 
 template< 
     typename ConvexType, typename BasisAdvectionType, 
-    typename BasisDiffusionReactionType = Lagrange<0, Scalar, Discontinuous>,
-    typename PeriodicityType = NoPeriodicity
+    typename PeriodicityType = NoPeriodicity,
+    typename BasisDiffusionReactionType = Lagrange<0, Scalar, Discontinuous>
         >
 class AdvectionBase : 
     public ModelNumerical,
@@ -60,7 +60,7 @@ class AdvectionBase :
 public :
     typedef ModelNumerical super_type;
 
-    typedef AdvectionBase< ConvexType, BasisAdvectionType, BasisDiffusionReactionType, PeriodicityType > self_type;
+    typedef AdvectionBase< ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType > self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     //--------------------------------------------------------------------//
