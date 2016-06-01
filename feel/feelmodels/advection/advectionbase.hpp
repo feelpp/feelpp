@@ -187,7 +187,7 @@ public :
     void setSolverName( std::string const& type );
 
     //--------------------------------------------------------------------//
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"AdvectionMesh.path"); }
+    virtual std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"AdvectionMesh.path"); }
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
 
