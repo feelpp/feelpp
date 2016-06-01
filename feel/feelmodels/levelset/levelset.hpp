@@ -6,15 +6,13 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/projector.hpp>
 
-#include <levelsetcore/advection.hpp>
-#include <levelsetcore/levelsetoptions.hpp>
-
-#include <iostream>
-#include <fstream>
+#include <feel/feelmodels/levelset/levelset_advection.hpp>
 
 #include <feel/feells/reinit_fms.hpp>
 #include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
+
+#include <feel/feelmodels/modelcore/modelbase.hpp>
 
 #if defined (MESH_ADAPTATION_LS)
  #include <levelsetmesh/meshadaptation.hpp>
@@ -53,11 +51,12 @@ enum LevelSetTimeDiscretization {BDF2, /*CN,*/ EU, CN_CONSERVATIVE};
  */
 enum class LevelSetReinitMethod {FM, HJ};
 
-template<typename ConvexType, typename AdvectionType, int Order=1, typename PeriodicityType = NoPeriodicity>
+template<typename ConvexType, int Order=1, typename PeriodicityType = NoPeriodicity>
 class LevelSet : 
     public ModelBase
 {
 public:
+    typedef ModelBase super_type;
     typedef LevelSet<ConvexType, Order, PeriodicityType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
@@ -73,18 +72,27 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     //--------------------------------------------------------------------//
-    // Space levelset
-    typedef Lagrange<Order, Scalar> basis_levelset_type;
-    typedef FunctionSpace<mesh_type, bases<basis_levelset_type>, value_type, Periodicity<PeriodicityType>> space_levelset_type;
+    // Periodicity
+    typedef PeriodicityType periodicity_type;
 
+    //--------------------------------------------------------------------//
+    // Advection
+    typedef Lagrange<Order, Scalar> basis_levelset_type;
+    //typedef FunctionSpace<mesh_type, bases<basis_levelset_type>, value_type, Periodicity<periodicity_type>> space_levelset_type;
+
+    typedef LevelSetAdvection<convex_type, basis_levelset_type, periodicity_type> advection_type;
+
+    //--------------------------------------------------------------------//
+    // Space levelset
+    typedef typename advection_type::space_advection_type space_levelset_type;
     typedef boost::shared_ptr<space_levelset_type> space_levelset_ptrtype;
     typedef typename space_levelset_type::element_type element_levelset_type;
-    typedef boost::shared_ptr<elementLS_type> element_levelset_ptrtype;
+    typedef boost::shared_ptr<element_levelset_type> element_levelset_ptrtype;
 
     //--------------------------------------------------------------------//
     // Space vectorial levelset
     typedef Lagrange<Order, Vectorial> basis_levelset_vectorial_type;
-    typedef FunctionSpace<mesh_type, bases<basis_levelset_vectorial_type>, value_type, Periodicity<PeriodicityType> > space_levelset_vectorial_type;
+    typedef FunctionSpace<mesh_type, bases<basis_levelset_vectorial_type>, value_type, Periodicity<periodicity_type> > space_levelset_vectorial_type;
     typedef boost::shared_ptr<space_levelset_vectorial_type> space_levelset_vectorial_ptrtype;
     typedef typename space_levelset_vectorial_type::element_type element_levelset_vectorial_type;
     typedef boost::shared_ptr< element_levelset_vectorial_type > element_levelset_vectorial_ptrtype;
@@ -101,7 +109,7 @@ public:
     // correction in the same space than phi
     typedef space_levelset_type spaceLSCorr_type;
     typedef space_levelset_ptrtype spaceLSCorr_ptrtype;
-    typedef elementLS_type elementLSCorr_type;
+    typedef element_levelset_type elementLSCorr_type;
     typedef element_levelset_ptrtype elementLSCorr_ptrtype;
 #endif
 
@@ -123,13 +131,9 @@ public:
     typedef boost::shared_ptr< element_markers_type > element_markers_ptrtype;
 
 #if defined (MESH_ADAPTATION_LS)
-    typedef MeshAdaptation<Dim, Order, 1, PeriodicityType > mesh_adaptation_type;
+    typedef MeshAdaptation<Dim, Order, 1, periodicity_type > mesh_adaptation_type;
     typedef boost::shared_ptr< mesh_adaptation_type > mesh_adaptation_ptrtype;
 #endif
-
-    //--------------------------------------------------------------------//
-    // Advection
-    typedef AdvectionType advection_type;
 
     //--------------------------------------------------------------------//
     // Interpolation operators
@@ -156,7 +160,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Reinitialization
-    typedef Reinitializer<space_levelset_reinitP1_type> reinitializer_type;
+    typedef Reinitializer<space_levelset_type> reinitializer_type;
     typedef boost::shared_ptr<reinitializer_type> reinitializer_ptrtype;
 
     enum strategy_before_FM_type {NONE=0, ILP=1, HJ_EQ=2, IL_HJ_EQ=3};
@@ -179,7 +183,7 @@ public:
             //mesh_ptrtype mesh, 
             //std::string const& prefix, 
             //double TimeStep=0.1, 
-            //PeriodicityType periodocity = NoPeriodicity() );
+            //periodicity_type periodocity = NoPeriodicity() );
     LevelSet(
             std::string const& prefix,
             WorldComm const& _worldComm = Environment::worldComm(),
@@ -202,19 +206,21 @@ public:
 
     virtual void loadParametersFromOptionsVm();
 
-    void createMesh();
     void createFunctionSpaces();
     void createAdvection();
     void createReinitialization();
+    void createOthers();
 
     //--------------------------------------------------------------------//
-    space_levelset_ptrtype const& functionSpace() const { return M_advection->spaceFunction(); }
+    space_levelset_ptrtype const& functionSpace() const { return M_advection->functionSpace(); }
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
     space_levelset_vectorial_ptrtype const& functionsSpaceVectorial() const { return M_spaceLevelSetVec; }
     space_levelset_reinitP1_ptrtype const& functionSpaceReinitP1() const { return M_spaceReinitP1; }
 
     space_levelset_ptrtype const& functionSubspace() const { return M_subspaceLevelSet; }
     space_levelset_vectorial_ptrtype const& functionSubspaceVectorial() const { return M_subspaceLevelSetVec; }
+
+    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
     mesh_ptrtype const& submesh() const { return M_submesh; }
@@ -231,8 +237,10 @@ public:
     // Levelset
     element_levelset_ptrtype const& phi() const { return M_advection->fieldSolutionPtr(); }
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
-    element_levelset_ptrtype const& H() const { return M_heaviside; }
-    element_levelset_ptrtype const& D() const { return M_dirac; }
+    element_levelset_ptrtype const& heaviside() const { return M_heaviside; }
+    element_levelset_ptrtype const& H() const { return this->heaviside(); }
+    element_levelset_ptrtype const& dirac() const { return M_dirac; }
+    element_levelset_ptrtype const& D() const { return this->dirac(); }
 
     double mass() const { return M_mass; }
 
@@ -265,23 +273,23 @@ public:
     // template < typename TVeloc >
     // void updateE(TVeloc& Velocity);
 
-    void initialize(element_levelset_ptrtype, bool doFirstReinit = false, LevelSetReinitMethod method=FM, int max_iter=-1, double dtau=0.01, double tol=0.1);
-    element_levelset_ptrtype circleShape(double r0, double x0, double y0, double z0=0);
-    element_levelset_ptrtype ellipseShape(double a_ell, double b_ell, double x0, double y0, double z0=0);
-    void imposePhi( element_levelset_ptrtype );
+    //void initialize(element_levelset_ptrtype, bool doFirstReinit = false, LevelSetReinitMethod method=FM, int max_iter=-1, double dtau=0.01, double tol=0.1);
+    //element_levelset_ptrtype circleShape(double r0, double x0, double y0, double z0=0);
+    //element_levelset_ptrtype ellipseShape(double a_ell, double b_ell, double x0, double y0, double z0=0);
+    //void imposePhi( element_levelset_ptrtype );
 
-    element_levelset_ptrtype makeDistFieldFromParametrizedCurve(std::function<double(double)> xexpr, std::function<double(double)> yexpr,
-                                                         double tStart, double tEnd, double dt,
-                                                         bool useRandomPt=true, double randomness=doption("gmsh.hsize") / 5.,
-                                                         bool export_points=false, std::string export_name="");
+    //element_levelset_ptrtype makeDistFieldFromParametrizedCurve(std::function<double(double)> xexpr, std::function<double(double)> yexpr,
+                                                         //double tStart, double tEnd, double dt,
+                                                         //bool useRandomPt=true, double randomness=doption("gmsh.hsize") / 5.,
+                                                         //bool export_points=false, std::string export_name="");
 
 
-    element_levelset_ptrtype makeDistFieldFromParametrizedCurve(std::tuple< std::function<double(double)>, std::function<double(double)>, double, double >  paramCurve,
-                                                         double dt, bool useRandomPt=true, double randomness=doption("gmsh.hsize") / 5.,
-                                                         bool export_points=false, std::string export_name="");
+    //element_levelset_ptrtype makeDistFieldFromParametrizedCurve(std::tuple< std::function<double(double)>, std::function<double(double)>, double, double >  paramCurve,
+                                                         //double dt, bool useRandomPt=true, double randomness=doption("gmsh.hsize") / 5.,
+                                                         //bool export_points=false, std::string export_name="");
 
-    template< typename Elt1, typename Elt2 >
-    std::vector<double> getStatReinit(Elt1 __phio, Elt2 __phi);
+    //template< typename Elt1, typename Elt2 >
+    //std::vector<double> getStatReinit(Elt1 __phio, Elt2 __phi);
 
     /* update the submesh and subspaces*/
     void updateSubMeshSubSpace(element_markers_ptrtype marker);
@@ -301,7 +309,7 @@ public:
 
     // ------------ setters -------------
     void setStrategyBeforeFm( int strat = 1 );
-    strategy_before_FM_Type strategyBeforeFm() { return M_strategyBeforeFM; }
+    strategy_before_FM_type strategyBeforeFm() { return M_strategyBeforeFM; }
     void setUseMarker2AsMarkerDoneFmm( bool val=true ) { M_useMarker2AsMarkerDoneFmm = val; }
     void setThicknessInterface( double value ) { M_thicknessInterface = value; }
 
@@ -314,17 +322,21 @@ protected:
     //--------------------------------------------------------------------//
     // Levelset data update functions
     void updateDirac();
-    void updateHeavyside();
+    void updateHeaviside();
     void updateMass();
 
     void updateMarkerDirac();
-    void updateMarkerHeaviside();
+    void updateMarkerHeaviside(bool invert, bool cut_at_half);
     void updateMarkerCrossedElements();
     void updateMarkerInterface();
 
 private:
     void initWithMesh(mesh_ptrtype mesh);
     void initFastMarching(mesh_ptrtype const& mesh);
+
+    //--------------------------------------------------------------------//
+    // Levelset previous step phi
+    element_levelset_ptrtype const& phio() const { return M_advection->timeStepBDF()->unknowns()[1]; }
 
     template < typename TVeloc >
     element_levelset_ptrtype advReactUpdate(TVeloc& Velocity, bool updateStabilization=true, bool updateBilinearForm=true);
@@ -338,7 +350,6 @@ private:
     void computeCorrection(element_levelset_ptrtype Hc);
 #endif
 
-    void reinitialize(int max_iter, double dtau, double tol, bool useMethodInOption = true, LevelSetReinitMethod givenMethod = FM );
     element_levelset_ptrtype explicitHJ(int, double, double);
     element_levelset_ptrtype explicitILHJ(int, double, double);
     double distToDist();
@@ -369,7 +380,7 @@ private:
     mesh_ptrtype M_submesh;
 
     //--------------------------------------------------------------------//
-    PeriodicityType M_periodicity;
+    periodicity_type M_periodicity;
 
     //--------------------------------------------------------------------//
     // Spaces
@@ -399,7 +410,7 @@ private:
     reinitializer_ptrtype M_reinitializer;
     bool M_reinitializerIsUpdatedForUse;
 
-    boost::shared_ptr< Projector<space_levelset_type, space_levelset_type> >  M_smooth;
+    boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smooth;
 
     int M_iterSinceReinit;
 
@@ -438,7 +449,7 @@ private:
     //bool M_enableReinit;
     //int M_reinitEvery;
     LevelSetReinitMethod M_reinitMethod;
-    strategy_before_FM_Type M_strategyBeforeFm;
+    strategy_before_FM_type M_strategyBeforeFM;
     bool M_useMarker2AsMarkerDoneFmm;
     //int M_hjMaxIter;
     //double M_hjDtau;
@@ -456,7 +467,7 @@ private:
 
 
 
-template<int Order, int Dim, typename PeriodicityType>
+/*template<int Order, int Dim, typename PeriodicityType>
 template< typename Elt1, typename Elt2 >
 std::vector<double>
 Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::getStatReinit(Elt1 __phio,  Elt2 __phi)
@@ -486,11 +497,8 @@ Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::getStatReinit(Elt1 __phio
     stat[2] /= integrate(elements(M_mesh), vf::cst(1.)).evaluate()(0,0);
 
     return stat;
-}//GetStatReinit
+}//GetStatReinit*/
 
-
-
-#include "levelset_instance.hpp"
 
 } //namespace FeelModels
 } //namespace Feel
