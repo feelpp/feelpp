@@ -314,7 +314,7 @@ public:
                 }
             }
 
-            if ( !crb->isDBLoaded() || crb->getRebuild() )
+            if ( !crb->isDBLoaded() || crb->rebuild() )
             {
                 if ( M_mode == CRBModelMode::CRB )
                     //|| M_mode == CRBModelMode::SCM )
@@ -327,7 +327,7 @@ public:
                         crb->setAdaptationSER( false ); //re-init to false
                         crb->offline();
                     }
-                    while(crb->getAdaptationSER());
+                    while(crb->adaptationSER());
 
                     if( write_memory_evolution )
                         this->generateMemoryEvolution(pslogfile);

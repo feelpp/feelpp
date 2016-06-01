@@ -48,9 +48,9 @@ OpusApp<ModelType,RM,Model>::SER()
         auto eim_sc_vector = model->scalarContinuousEim();
         auto eim_sd_vector = model->scalarDiscontinuousEim();
         for( auto eim_sc : eim_sc_vector )
-            do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
+            do_offline_eim = do_offline_eim || eim_sc->offlineStep();
         for( auto eim_sd : eim_sd_vector )
-            do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
+            do_offline_eim = do_offline_eim || eim_sd->offlineStep();
 
         do
         {
@@ -62,12 +62,12 @@ OpusApp<ModelType,RM,Model>::SER()
                 crb->setAdaptationSER( false ); //re-init to false
                 crb->offline();
             }
-            while(crb->getAdaptationSER());
+            while(crb->adaptationSER());
 
             crb->setRebuild( false ); //do not rebuild since co-build is not finished
             int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection") || boption(_name="ser.use-rb-in-eim-basis-build");
 
-            if( do_offline_eim && crb->getOfflineStep() ) //Continue to enrich EIM functionspace only is RB is not complete
+            if( do_offline_eim && crb->offlineStep() ) //Continue to enrich EIM functionspace only is RB is not complete
             {
                 do_offline_eim = false; //re-init
                 for( auto eim_sc : eim_sc_vector )
@@ -93,9 +93,9 @@ OpusApp<ModelType,RM,Model>::SER()
                         eim_sc->setAdaptationSER( false ); //re-init to false
                         eim_sc->offline();
                     }
-                    while( eim_sc->getAdaptationSER() );
+                    while( eim_sc->adaptationSER() );
 
-                    do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
+                    do_offline_eim = do_offline_eim || eim_sc->offlineStep();
                 }
                 for( auto eim_sd : eim_sd_vector )
                 {
@@ -121,15 +121,15 @@ OpusApp<ModelType,RM,Model>::SER()
                         eim_sd->setAdaptationSER( false ); //re-init to false
                         eim_sd->offline();
                     }
-                    while( eim_sd->getAdaptationSER() );
+                    while( eim_sd->adaptationSER() );
 
-                    do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
+                    do_offline_eim = do_offline_eim || eim_sd->offlineStep();
                 }
 
                 model->assemble(); //Affine decomposition has changed since eim has changed
             }
         }
-        while( crb->getOfflineStep() );
+        while( crb->offlineStep() );
     } // ser level
 }
 
