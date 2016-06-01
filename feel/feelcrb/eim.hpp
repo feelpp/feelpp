@@ -306,7 +306,7 @@ public:
         {
             M_offline_step = b;
         }
-    bool getOfflineStep() const
+    bool offlineStep() const
         {
             return M_offline_step;
         }
@@ -314,7 +314,7 @@ public:
         {
             M_adapt_SER = b;
         }
-    bool getAdaptationSER() const
+    bool adaptationSER() const
         {
             return M_adapt_SER;
         }
@@ -322,7 +322,7 @@ public:
         {
             M_correct_RB_SER = b;
         }
-    bool getRbCorrection() const
+    bool rbCorrection() const
         {
             return M_correct_RB_SER;
         }
@@ -330,7 +330,7 @@ public:
         {
             M_restart = b;
         }
-    bool Restart() const
+    bool restart() const
         {
             return M_restart;
         }
@@ -783,7 +783,7 @@ EIM<ModelType>::offline()
         if( cobuild_freq != 0 && use_rb )
         {
             // Cobuild : If the first group (FEM solve) of EIM basis has already been built, go to loadDB (crb)
-            if( M_model->mMax()-1 >= cobuild_freq && !M_model->RBbuilt() )
+            if( M_model->mMax()-1 >= cobuild_freq && !M_model->rbBuilt() )
             {
                 if( this->worldComm().isMasterRank() )
                     std::cout << "First group of EIM has already been built, start to load rb..." << std::endl;
@@ -806,7 +806,7 @@ EIM<ModelType>::offline()
     {
         if( M_restart ) // First EIM basis with SER : do only initialization step (require only one FEM approx)
             Mmax = 0;
-        else if ( M_model->getAdaptationSER() && M_model->mMax() < user_max ) // R-adaptation
+        else if ( M_model->adaptationSER() && M_model->mMax() < user_max ) // R-adaptation
             Mmax = M_model->mMax() + 1;
         else if ( M_model->mMax() + cobuild_freq  <= user_max )
             Mmax = M_model->mMax() + cobuild_freq;
@@ -823,7 +823,7 @@ EIM<ModelType>::offline()
     if( this->worldComm().isMasterRank() )
     {
         std::cout << "M_M = " << M_M << ", Mmax = " << Mmax << std::endl;
-        std::cout << "RB correction = " << this->getRbCorrection() << std::endl;
+        std::cout << "RB correction = " << this->rbCorrection() << std::endl;
     }
 
     // Print maxerror (greedy) to file
@@ -846,7 +846,7 @@ EIM<ModelType>::offline()
     LOG(INFO) << "start greedy algorithm...\n";
     for( ; M_M <=Mmax; ++M_M ) //err >= this->M_tol ) //Mmax == 1 : the basis has already been built at init step
     {
-        if( !this->getOfflineStep() )
+        if( !this->offlineStep() )
             break;
 
         timer3.restart();
@@ -913,7 +913,7 @@ EIM<ModelType>::offline()
             }
 
             // If criterion is satisfied,
-            if( !getAdaptationSER() )
+            if( !adaptationSER() )
                 M_greedy_maxerr = error;
         }
         else
@@ -1358,16 +1358,16 @@ public:
     virtual int maxZ() const = 0;
     virtual int maxSolution() const = 0;
 
-    virtual bool getOfflineStep() const = 0;
-    virtual bool getAdaptationSER() const = 0;
+    virtual bool offlineStep() const = 0;
+    virtual bool adaptationSER() const = 0;
     virtual void setAdaptationSER(bool b)=0;
-    virtual bool getRbCorrection() const = 0;
+    virtual bool rbCorrection() const = 0;
     virtual void setRbCorrection(bool b)=0;
     virtual void setRestart(bool b)=0;
     virtual void setRB( boost::any rb )=0;
     virtual void setModel( boost::any rbmodel )=0;
     virtual bool modelBuilt() const = 0;
-    virtual bool RBbuilt() const = 0;
+    virtual bool rbBuilt() const = 0;
     virtual void offline()=0;
 
     virtual void addBasis( element_type const &q ) = 0;
@@ -2097,7 +2097,7 @@ public:
      */
     model_solution_type computeRbExpansion( parameter_type const& mu )
     {
-        if( this->RBbuilt() )
+        if( this->rbBuilt() )
             return computeRbExpansion( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
             return M_model->solve( mu );
@@ -2116,7 +2116,7 @@ public:
 
     model_solution_type computeRbExpansion( parameter_type const& mu, std::vector<vectorN_type> uN)
     {
-        if( this->RBbuilt() )
+        if( this->rbBuilt() )
             return computeRbExpansion( mu, uN, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
             return M_model->solve( mu );
@@ -2163,7 +2163,7 @@ public:
 
     boost::tuple<double,std::vector<vectorN_type> > RieszResidualNorm( parameter_type const& mu )
     {
-        if( this->RBbuilt() )
+        if( this->rbBuilt() )
             return RieszResidualNorm( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
             return boost::make_tuple(0,std::vector<vectorN_type>());
@@ -2345,7 +2345,7 @@ public:
         if( !this->modelBuilt() )
             M_crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
         //make sure that the CRB DB is already build
-        if( !this->RBbuilt() )
+        if( !this->rbBuilt() )
             M_crb = crb_ptrtype( new crb_type( appname,
                                                M_crbmodel ) );
 
@@ -2395,13 +2395,13 @@ public:
 
     }
 
-    bool getOfflineStep() const { return M_eim->getOfflineStep(); }
-    bool getAdaptationSER() const { return M_eim->getAdaptationSER(); }
+    bool offlineStep() const { return M_eim->offlineStep(); }
+    bool adaptationSER() const { return M_eim->adaptationSER(); }
     void setAdaptationSER(bool b){M_eim->setAdaptationSER(b);}
-    bool getRbCorrection() const { return M_eim->getRbCorrection(); }
+    bool rbCorrection() const { return M_eim->rbCorrection(); }
     void setRbCorrection(bool b){M_eim->setRbCorrection(b);}
 
-    void offline(){M_eim->offline();}
+    void offline() { M_eim->offline(); }
     void setRestart(bool b){ M_eim->setRestart(b);}
 
     void setRB( boost::any rb )
@@ -2448,7 +2448,7 @@ public:
     }
 
     bool modelBuilt() const { return M_crbmodel_built; }
-    bool RBbuilt() const { return M_crb_built; }
+    bool rbBuilt() const { return M_crb_built; }
 
     void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
     element_type interpolant( parameter_type const& mu )
@@ -2849,7 +2849,7 @@ BOOST_PARAMETER_FUNCTION(
 #endif
     typedef typename Feel::detail::compute_eim_return<Args>::type eim_type;
     typedef typename Feel::detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
-    return  eim_ptrtype(new eim_type( model, space, element, parameter, expr, sampling, name ) );
+    return boost::make_shared<eim_type>( model, space, element, parameter, expr, sampling, name );
 } // eim
 
 template<typename ModelType>
@@ -2917,8 +2917,9 @@ struct EimFunctionNoSolve
         operator()( const T& t ) const
         {
             auto view = M_element.template element< T::value >();
-            auto space = view.functionSpace();
-            view = vf::project( _space=space, _expr=cst( boost::lexical_cast<value_type>("inf") ) );
+            view.setConstant( boost::lexical_cast<value_type>("inf") );
+            //auto space = view.functionSpace();
+            //view = vf::project( _space=space, _expr=cst( boost::lexical_cast<value_type>("inf") ) );
         }
 
         element_type element()

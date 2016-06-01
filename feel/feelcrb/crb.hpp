@@ -490,7 +490,7 @@ public:
     }
 
     //! \return the parameter space
-    parameterspace_ptrtype Dmu() const
+    parameterspace_ptrtype const& Dmu() const
     {
         return M_Dmu;
     }
@@ -508,7 +508,7 @@ public:
     }
 
     //! \return the train sampling used to generate the reduced basis space
-    sampling_ptrtype trainSampling() const
+    sampling_ptrtype const& trainSampling() const
     {
         return M_Xi;
     }
@@ -520,7 +520,7 @@ public:
     }
 
     //! \return the scm object
-    scm_ptrtype scm() const
+    scm_ptrtype const& scm() const
     {
         return M_scmA;
     }
@@ -611,7 +611,7 @@ public:
         M_offline_step = b;
     }
     //! get  boolean indicates if we are in offline_step or not
-    bool getOfflineStep()
+    bool offlineStep() const
     {
         return M_offline_step;
     }
@@ -1134,18 +1134,18 @@ public:
         return *M_Xi;
     }
 
-    sampling_ptrtype wnmu ( ) const
+    sampling_ptrtype const& wnmu ( ) const
     {
         return M_WNmu;
     }
 
-    wn_type & wn() const
+    wn_type const& wn() const
     {
         //return M_WN;
         return M_model->rBFunctionSpace()->primalRB();
     }
 
-    wn_type & wndu() const
+    wn_type const& wndu() const
     {
         //return M_WNdu;
         return M_model->rBFunctionSpace()->dualRB();
@@ -1182,7 +1182,7 @@ public:
     void projectionOnPodSpace( const element_type & u , element_ptrtype& projection ,const std::string& name_of_space="primal" );
 
 
-    bool useWNmu()
+    bool useWNmu() const
     {
         bool use = boption(_name="crb.run-on-WNmu");
         return use;
@@ -1193,12 +1193,11 @@ public:
      * if true, rebuild the database (if already exist)
      */
     bool rebuild() const { return M_rebuild; }
-    
-    void setRebuild( bool b ){ M_rebuild = b; } ;
-    bool getRebuild(){ return M_rebuild; } ;
 
-    void setAdaptationSER( bool b ) const {M_SER_adapt = b;} ;
-    bool getAdaptationSER() const {return M_SER_adapt;} ;
+    void setRebuild( bool b ) { M_rebuild = b; }
+
+    void setAdaptationSER( bool b ) const { M_SER_adapt = b; }
+    bool adaptationSER() const { return M_SER_adapt; }
     /**
      * if true, show the mu selected during the offline stage
      */
@@ -2388,7 +2387,7 @@ CRB<TruthModelType>::offline()
     int rb_frequency = ioption(_name="ser.rb-frequency");
     if( rb_frequency != 0 ) // SER
     {
-        if( M_N == 0 || (this->getAdaptationSER() && Nold < user_max) )
+        if( M_N == 0 || (this->adaptationSER() && Nold < user_max) )
             M_iter_max = Nold + 1; //Initialization step || add a suppl. basis is needed
         else if( Nold + rb_frequency <= user_max )
             M_iter_max = Nold + rb_frequency;
@@ -6317,8 +6316,8 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
             this->setAdaptationSER( true );
 
         if( this->worldComm().isMasterRank() )
-            std::cout << "[RB] SER adaptation : " << this->getAdaptationSER()  << std::endl;
-        if( !getAdaptationSER() )
+            std::cout << "[RB] SER adaptation : " << this->adaptationSER()  << std::endl;
+        if( !adaptationSER() )
             M_SER_maxerr = maxerr;
     }
 
