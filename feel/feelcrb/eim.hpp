@@ -125,9 +125,8 @@ class ModelCrbBaseBase {};
   @see
 */
 template<typename ModelType>
-class EIM : public CRBDB
+class EIM
 {
-    typedef  CRBDB super;
 
 public:
 
@@ -174,13 +173,12 @@ public:
      */
     //@{
 
-    EIM()
+    EIM( std::string const& name= "default", WorldComm const& worldComm = Environment::worldComm() )
         :
-        super(),
-        M_vm(),
+        M_worldComm( worldComm ),
         M_is_read( false ),
         M_is_written( false ),
-        M_name( "default" ),
+        M_name( name ),
         M_M( 1 ),
         M_offline_done( false ),
         M_offline_step( false ),
@@ -189,10 +187,9 @@ public:
         M_model( 0 ),
         M_correct_RB_SER( false )
         {}
-    EIM( po::variables_map const& vm, model_type* model, sampling_ptrtype sampling, double __tol = 1e-8, bool offline_done=false )
+    EIM( model_type* model, sampling_ptrtype sampling, double __tol = 1e-8, bool offline_done=false )
         :
-        super(model->name()/*model->modelName()*//*, model->name(), model->name(), vm*/ ),
-        M_vm( vm ),
+        M_worldComm( model->worldComm() ),
         M_is_read( false ),
         M_is_written( false ),
         M_name( model->name() ),
@@ -234,12 +231,12 @@ public:
 
                 if( enrich_database )
                 {
-                    if( Environment::worldComm().isMasterRank() )
+                    if( this->worldComm().isMasterRank() )
                         std::cout<<model->name()<<" enrich the existing database..."<<std::endl;
                 }
                 else if( cobuild )
                 {
-                    if( Environment::worldComm().isMasterRank() )
+                    if( this->worldComm().isMasterRank() )
                         std::cout<<model->name()<<" continue co-building process..."<<std::endl;
                 }
                 if( M_restart )
@@ -254,7 +251,6 @@ public:
 
     EIM( EIM const & __bbf )
         :
-        super(__bbf),
         M_is_read( __bbf.M_is_read ),
         M_is_written( __bbf.M_is_written ),
         M_name( __bbf.M_name ),
@@ -280,6 +276,9 @@ public:
     /** @name Accessors
      */
     //@{
+
+    //! \return the mpi communicators
+    WorldComm const& worldComm() const { return M_worldComm; }
 
     /**
        \return the number of DOF in space discretization
@@ -307,7 +306,7 @@ public:
         {
             M_offline_step = b;
         }
-    bool getOfflineStep()
+    bool getOfflineStep() const
         {
             return M_offline_step;
         }
@@ -315,7 +314,7 @@ public:
         {
             M_adapt_SER = b;
         }
-    bool getAdaptationSER()
+    bool getAdaptationSER() const
         {
             return M_adapt_SER;
         }
@@ -323,7 +322,7 @@ public:
         {
             M_correct_RB_SER = b;
         }
-    bool getRbCorrection()
+    bool getRbCorrection() const
         {
             return M_correct_RB_SER;
         }
@@ -331,7 +330,7 @@ public:
         {
             M_restart = b;
         }
-    bool Restart()
+    bool Restart() const
         {
             return M_restart;
         }
@@ -395,7 +394,9 @@ public:
     //@}
 protected:
 
-    po::variables_map M_vm;
+    //! mpi communicators
+    WorldComm const& M_worldComm;
+
     mutable bool M_is_read;
     mutable bool M_is_written;
 
@@ -528,7 +529,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     DVLOG(2) << "compute best fit  for m=" << __M
              << " and trainset of size " << trainset->size() << "...\n";
     using namespace vf;
-    int proc_number =  Environment::worldComm().globalRank();
+    int proc_number =  this->worldComm().globalRank();
 
     vector_type maxerr( trainset->size() );
     maxerr.setZero();
@@ -557,7 +558,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     bool ser = (ioption(_name="ser.eim-frequency") != 0);
     double rtol = doption(_name="ser.eim-greedy-rtol");
     std::vector<vectorN_type> uN; //eventually contains reduced basis approx.
-    for( auto mu : *subtrainset )
+    for( auto const& mu : *subtrainset )
     {
         DVLOG(2) << "compute best fit check mu...\n";
         mu.check();
@@ -607,7 +608,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         Feel::cout << "[computeBestFit] updated M_greedy_rbmaxerr = " << M_greedy_rbmaxerr << std::endl;
     }
 
-    if( Environment::worldComm().isMasterRank() )
+    if( this->worldComm().isMasterRank() )
     {
         std::cout << "-- Mean time to solve(mu) : " << time_solve/trainset->size() << std::endl;
         std::cout << "-- Mean time to compute resmax : " << time_exp/trainset->size() << std::endl;
@@ -622,7 +623,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     LOG_ASSERT( index <= subtrainset->size() ) << "Invalid index " << index << " should be inferior to trainset size = " << subtrainset->size() << "\n";
     auto err = maxerr.array().abs().maxCoeff( &index );
 
-    if( Environment::worldComm().isMasterRank() )
+    if( this->worldComm().isMasterRank() )
         std::cout << "err=" << err << " reached at index " << index << " and mu=" << subtrainset->at(index) << "\n";
     if( ! error_criterion[index] )
         M_criterion = false;
@@ -651,7 +652,7 @@ EIM<ModelType>::offline()
 
     if( M_restart )
     {
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<" ******************offline EIM for expression "<<M_model->name()<<" start "<<std::endl;
         }
@@ -663,7 +664,7 @@ EIM<ModelType>::offline()
             M_trainset = M_model->parameterSpace()->sampling();
         if ( M_trainset->empty() )
         {
-            int sampling_size = M_vm["eim.sampling-size"].template as<int>();
+            int sampling_size = ioption(_name="eim.sampling-size");
             std::string file_name = ( boost::format("eim_trainset_%1%") % sampling_size ).str();
             std::ifstream file ( file_name );
             bool all_procs_have_same_sampling=true;
@@ -696,7 +697,7 @@ EIM<ModelType>::offline()
 
         solution = M_model->solve( mu );
         time=timer2.elapsed();
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<" -- model solution computed in "<<time<<"s"<<std::endl;
         }
@@ -713,7 +714,7 @@ EIM<ModelType>::offline()
             max_solution++;
         }
 
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "compute finite element solution at mu_1 done";
         VLOG(2) << "compute finite element solution at mu_1 done";
 
@@ -725,7 +726,7 @@ EIM<ModelType>::offline()
         // store space coordinate where max absolute value occurs
         t = zmax.template get<1>();
         time=timer2.elapsed();
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<" -- maximum of expression computed in "<<time<<"s"<<std::endl;
         }
@@ -744,7 +745,7 @@ EIM<ModelType>::offline()
         timer2.restart();
         auto q = M_model->Residual(0,zero);
         time=timer2.elapsed();
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<" -- expression evaluated in mu in "<<time<<"s"<<std::endl;
         }
@@ -760,7 +761,7 @@ EIM<ModelType>::offline()
         M_model->fillInterpolationMatrixFirstTime( );
         time=timer2.elapsed();
         time_=timer3.elapsed();
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<" -- interpolation matrix filled in "<<time<<"s"<<std::endl;
             std::cout<<" -- time for this basis : "<<time_<<"s"<<std::endl;
@@ -784,7 +785,7 @@ EIM<ModelType>::offline()
             // Cobuild : If the first group (FEM solve) of EIM basis has already been built, go to loadDB (crb)
             if( M_model->mMax()-1 >= cobuild_freq && !M_model->RBbuilt() )
             {
-                if( Environment::worldComm().isMasterRank() )
+                if( this->worldComm().isMasterRank() )
                     std::cout << "First group of EIM has already been built, start to load rb..." << std::endl;
                 return;
             }
@@ -819,7 +820,7 @@ EIM<ModelType>::offline()
     if( Mmax == user_max  )
         Mmax++;
 
-    if( Environment::worldComm().isMasterRank() )
+    if( this->worldComm().isMasterRank() )
     {
         std::cout << "M_M = " << M_M << ", Mmax = " << Mmax << std::endl;
         std::cout << "RB correction = " << this->getRbCorrection() << std::endl;
@@ -829,7 +830,7 @@ EIM<ModelType>::offline()
     std::string eim_greedy_file_name = "cvg-eim-"+M_model->name()+"-Greedy-max-error.dat";
     std::string eim_greedy_inc_file_name = "cvg-eim-"+M_model->name()+"-Greedy-max-error-inc.dat";
     std::ofstream greedy_maxerr, greedy_maxerr_inc;
-    if( Environment::worldComm().isMasterRank() )
+    if( this->worldComm().isMasterRank() )
     {
         greedy_maxerr.open(eim_greedy_file_name, std::ios::app);
         if( doption(_name="ser.radapt-eim-rtol") != 0 )
@@ -850,7 +851,7 @@ EIM<ModelType>::offline()
 
         timer3.restart();
         //LOG(INFO) << "M=" << M_M << "...\n";
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
                 std::cout<<" ================================ "<<std::endl;
         }
@@ -866,7 +867,7 @@ EIM<ModelType>::offline()
 
         time=timer2.elapsed();
         double error=bestfit.template get<0>();
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<" -- best fit computed in "<<time<<"s -- absolute associated error : "<<error<<std::endl;
             greedy_maxerr << M_M << "\t" << error <<"\n";
@@ -889,7 +890,7 @@ EIM<ModelType>::offline()
                 // Need adapt group size (r-adaptation) ?
                 double increment = math::abs( error - M_greedy_maxerr );
                 double inc_relative = increment/math::abs( M_greedy_maxerr );
-                if( Environment::worldComm().isMasterRank() && doption(_name="ser.radapt-eim-rtol")!=0 )
+                if( this->worldComm().isMasterRank() && doption(_name="ser.radapt-eim-rtol")!=0 )
                 {
                     std::cout << " -- Absolute error (Greedy) relative increment = " << inc_relative
                               << ", rtol = " << doption(_name="ser.radapt-eim-rtol") << std::endl;
@@ -905,7 +906,7 @@ EIM<ModelType>::offline()
                 this->setRbCorrection( false ); //Re-init to false
                 if( increment > 1e-10 && inc_relative > 0 && inc_relative < doption(_name="ser.corrected-rb-rtol") )
                 {
-                    if( Environment::worldComm().isMasterRank() )
+                    if( this->worldComm().isMasterRank() )
                         std::cout << " -- Relative increment < tol : RB approx used for next EIM will be corrected " << std::endl;
                     this->setRbCorrection( true );
                 }
@@ -919,7 +920,7 @@ EIM<ModelType>::offline()
             solution = M_model->solve( mu ); //No use of SER : use FE model since we don't have affine decomposition yet
 
         time=timer2.elapsed();
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<" -- model solution computed in "<<time<<"s"<<std::endl;
         }
@@ -927,7 +928,7 @@ EIM<ModelType>::offline()
         timer2.restart();
         auto gmax = M_model->computeMaximumOfExpression( mu , solution  );
         time=timer2.elapsed();
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<" -- maximum of expression computed in "<<time<<"s"<<std::endl;
         }
@@ -953,7 +954,7 @@ EIM<ModelType>::offline()
             //M_model->addExpressionEvaluation( M_model->operator()( mu ) ); //projection de l'expression
             M_model->addExpressionEvaluation( M_model->operator()( solution, mu ) ); //projection de l'expression
             time=timer2.elapsed();
-            if( Environment::worldComm().isMasterRank() )
+            if( this->worldComm().isMasterRank() )
             {
                 std::cout<<" -- expression evaluated in mu in "<<time<<"s"<<std::endl;
             }
@@ -984,7 +985,7 @@ EIM<ModelType>::offline()
         timer2.restart();
         auto resmax = M_model->computeMaximumOfResidual( mu, solution , z );
         time=timer2.elapsed();
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<" -- Maximum of residual computed in "<<time<<"s"<<std::endl;
         }
@@ -1019,7 +1020,7 @@ EIM<ModelType>::offline()
         M_model->fillInterpolationMatrix( );
         time=timer2.elapsed();
         time_=timer3.elapsed();
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<" -- interpolation matrix filled in "<<time<<"s"<<std::endl;
             std::cout<<" -- time for this basis : "<<time_<<"s"<<std::endl;
@@ -1029,7 +1030,7 @@ EIM<ModelType>::offline()
         VLOG(2) << "================================================================================\n";
 
     }
-    if( Environment::worldComm().isMasterRank() )
+    if( this->worldComm().isMasterRank() )
     {
         greedy_maxerr.close();
         if( doption(_name="ser.radapt-eim-rtol") != 0 )
@@ -1037,7 +1038,7 @@ EIM<ModelType>::offline()
     }
 
     time=timer.elapsed();
-    if( Environment::worldComm().isMasterRank() )
+    if( this->worldComm().isMasterRank() )
         std::cout<<"Total time for offline step of EIM "<<M_model->name()<<" : "<<time<<"s\n"<<std::endl;
     DVLOG(2) << "[offline] M_max = " << M_M << "...\n";
 
@@ -1051,7 +1052,7 @@ void
 EIM<ModelType>::studyConvergence( parameter_type const & mu , model_solution_type & solution , std::vector<std::string> all_file_name ) const
 {
     LOG(INFO) << " Convergence study \n";
-    int proc_number =  Environment::worldComm().globalRank();
+    int proc_number =  this->worldComm().globalRank();
 
     std::vector<double> l2ErrorVec(M_model->mMax(), 0.0);
 
@@ -1082,7 +1083,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , model_solution_typ
 
     //As we print error estimation, we stop at max-1
     //because we need to access to the max^th basis function
-    if( Environment::worldComm().isMasterRank() )
+    if( this->worldComm().isMasterRank() )
     {
         Nmax = max;
         fileL2 << Nmax<< "\t";
@@ -1122,7 +1123,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , model_solution_typ
         std::string str = "\t";
         if( N == Nmax ) str = "\n";
 
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             fileL2            << relative_l2_error            <<str;
             fileLINF          << relative_linf_error          <<str;
@@ -1190,7 +1191,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , model_solution_typ
         std::remove( file_name.c_str() );
 
     std::ofstream conv;
-    if( proc_number == Environment::worldComm().masterRank() )
+    if( proc_number == this->worldComm().masterRank() )
         {
             conv.open(file_name, std::ios::app);
             conv << "#Nbasis" << "\t" << "L2_error \t L2_estimated \t ratio_l2 \t linf_error \t linf_estimated \t ratio_linf \t interpolation_error " <<"\n";
@@ -1201,8 +1202,10 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , model_solution_typ
 }
 
 template<typename SpaceType, typename ModelSpaceType, typename ParameterSpaceType>
-class EIMFunctionBase
+class EIMFunctionBase : public CRBDB
+
 {
+    typedef CRBDB super_type;
 public:
 
     typedef SpaceType functionspace_type;
@@ -1247,14 +1250,13 @@ public:
     typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
     typedef boost::tuple<double,parameter_type> parameter_residual_type;
 
-    EIMFunctionBase( po::variables_map const& vm,
-                     functionspace_ptrtype fspace,
-                     parameterspace_ptrtype pspace,
-                     sampling_ptrtype sampling,
+    EIMFunctionBase( functionspace_ptrtype const& fspace,
+                     parameterspace_ptrtype const& pspace,
+                     sampling_ptrtype const& sampling,
                      std::string const& modelname,
                      std::string const& name )
         :
-        M_vm( vm ),
+        super_type( name ),
         M_fspace( fspace ),
         M_pspace( pspace ),
         M_trainset( sampling ),
@@ -1265,17 +1267,15 @@ public:
         }
     virtual ~EIMFunctionBase()
         {}
-    std::string const& name() const { return M_name; }
-    void setName( std::string const& name ) { M_name = name; }
-    std::string modelName() const { return M_modelname; }
+    std::string const& modelName() const { return M_modelname; }
     void setModelName( std::string const& name ) { M_modelname = name; }
 
-    functionspace_ptrtype functionSpace() const { return M_fspace; }
+    functionspace_ptrtype const& functionSpace() const { return M_fspace; }
     functionspace_ptrtype functionSpace()  { return M_fspace; }
-    parameterspace_ptrtype parameterSpace() const { return M_pspace; }
+    parameterspace_ptrtype const& parameterSpace() const { return M_pspace; }
     parameterspace_ptrtype parameterSpace()  { return M_pspace; }
     sampling_ptrtype trainSet() { return M_trainset; }
-    sampling_ptrtype trainSet() const { return M_trainset; }
+    sampling_ptrtype const& trainSet() const { return M_trainset; }
     virtual void setTrainSet( sampling_ptrtype tset ) { M_trainset = tset; }
 
     void addOnlineTime( const double time )
@@ -1286,7 +1286,7 @@ public:
     }
     Eigen::VectorXd onlineTime() const { return M_online_time; }
 
-    mesh_ptrtype mesh() const { return M_fspace->mesh(); }
+    mesh_ptrtype const& mesh() const { return M_fspace->mesh(); }
     mesh_ptrtype mesh()  { return M_fspace->mesh(); }
 
     virtual element_type operator()( parameter_type const& ) = 0;
@@ -1353,21 +1353,21 @@ public:
     virtual void addInterpolationPoint( node_type t ) = 0;
 
     virtual void setMax(int m, int max_q, int max_g, int max_z, int max_solution) = 0;
-    virtual int maxQ() = 0;
-    virtual int maxG() = 0;
-    virtual int maxZ() = 0;
-    virtual int maxSolution() = 0;
+    virtual int maxQ() const = 0;
+    virtual int maxG() const = 0;
+    virtual int maxZ() const = 0;
+    virtual int maxSolution() const = 0;
 
-    virtual bool getOfflineStep()=0;
-    virtual bool getAdaptationSER()=0;
+    virtual bool getOfflineStep() const = 0;
+    virtual bool getAdaptationSER() const = 0;
     virtual void setAdaptationSER(bool b)=0;
-    virtual bool getRbCorrection()=0;
+    virtual bool getRbCorrection() const = 0;
     virtual void setRbCorrection(bool b)=0;
     virtual void setRestart(bool b)=0;
     virtual void setRB( boost::any rb )=0;
     virtual void setModel( boost::any rbmodel )=0;
-    virtual bool modelBuilt()=0;
-    virtual bool RBbuilt()=0;
+    virtual bool modelBuilt() const = 0;
+    virtual bool RBbuilt() const = 0;
     virtual void offline()=0;
 
     virtual void addBasis( element_type const &q ) = 0;
@@ -1396,7 +1396,6 @@ public:
     virtual boost::tuple<double,std::vector<vectorN_type> > RieszResidualNorm( parameter_type const& mu )=0;
     virtual sampling_ptrtype createSubTrainset( sampling_ptrtype const& trainset, int method )=0;
 
-    po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
     sampling_ptrtype M_trainset;
@@ -1409,8 +1408,7 @@ public:
 
 template<typename ModelType, typename SpaceType, typename ExprType>
 class EIMFunction
-    : public EIMFunctionBase<SpaceType, typename ModelType::functionspace_type, typename ModelType::parameterspace_type> ,
-      public CRBDB
+    : public EIMFunctionBase<SpaceType, typename ModelType::functionspace_type, typename ModelType::parameterspace_type>
 {
     typedef EIMFunctionBase<SpaceType, typename ModelType::functionspace_type, typename ModelType::parameterspace_type> super;
 public:
@@ -1463,8 +1461,7 @@ public:
 
     typedef Eigen::VectorXd vectorN_type;
 
-    EIMFunction( po::variables_map const& vm,
-                 model_ptrtype model,
+    EIMFunction( model_ptrtype model,
                  functionspace_ptrtype space,
                  model_solution_type& u,
                  parameter_type& mu,
@@ -1472,9 +1469,7 @@ public:
                  sampling_ptrtype sampling,
                  std::string const& name )
         :
-        super( vm, space, model->parameterSpace(), sampling, model->modelName(), name ),
-        CRBDB( name/*model->modelName()+"EIMFunction"*//*, name, name, vm*/ ),
-        M_vm( vm ),
+        super( space, model->parameterSpace(), sampling, model->modelName(), name ),
         M_model( model ),
         M_expr( expr ),
         M_u( &u ),
@@ -1500,7 +1495,7 @@ public:
             }
             this->worldComm().barrier();
 
-            M_eim.reset( new eim_type( vm, this, sampling , 1e-8, loadDB() ) );
+            M_eim.reset( new eim_type( this, sampling , 1e-8, loadDB() ) );
 
             if ( !loadDB() )
             {
@@ -1964,7 +1959,7 @@ public:
         bool expression_expansion = boption(_name="eim.compute-expansion-of-expression") ;
 
         //rank of the current processor
-        int proc_number = Environment::worldComm().globalRank();
+        int proc_number = this->worldComm().globalRank();
 
         int npoints = M_ctx.nPoints();
 
@@ -2014,7 +2009,7 @@ public:
             *M_u = M_solution_vector[m];
             auto residual =  M_expr - idv(z);
 
-            int proc_number = Environment::worldComm().globalRank();
+            int proc_number = this->worldComm().globalRank();
             auto interpolation_point = this->functionSpace()->context();
             int proc_having_the_point ;
             //we want to normalize the expression with its evaluation at
@@ -2057,7 +2052,7 @@ public:
         bool expression_expansion = boption(_name="eim.compute-expansion-of-expression") ;
 
         //rank of the current processor
-        int proc_number = Environment::worldComm().globalRank();
+        int proc_number = this->worldComm().globalRank();
 
         int size = M_ctx.nPoints();
         M_B.conservativeResize( size , size );
@@ -2194,7 +2189,7 @@ public:
         // Compute min/max of residual (Riesz) norm
         std::vector<double> norm( trainset->size() );
         int i=0;
-        for( auto mu : *trainset )
+        for( auto const& mu : *trainset )
         {
             norm[i] = RieszResidualNorm( mu ).template get<0>();
             i++;
@@ -2210,7 +2205,7 @@ public:
         double tol = ( *min + *max )/2.;
 
         // Proc zero build the vector of the selected inputs
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout << "[eim::createSubTrainset] error indicator min = " << *min << " reached at mu = " << trainset->at(min_idx) << std::endl;
             std::cout << "[eim::createSubTrainset] error indicator max = " << *max << " reached at mu = " << trainset->at(max_idx) << std::endl;
@@ -2226,15 +2221,15 @@ public:
             }
         }
         // All procs have the same sub-trainset
-        boost::mpi::broadcast( Environment::worldComm() , subvector, Environment::worldComm().masterRank() );
+        boost::mpi::broadcast( this->worldComm() , subvector, this->worldComm().masterRank() );
         subtrainset->setElements( subvector );
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "[createSubTrainset] Original trainset size = " << trainset->size() << ", sub-trainset size = " << subtrainset->size() << "\n";
         if( subtrainset->size() != 0 )
             return subtrainset;
         else
         {
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            if( this->worldComm().isMasterRank() )
                 std::cout << "[createSubTrainset] No elements added in subtrainset, consider full trainset \n";
             return trainset;
         }
@@ -2356,7 +2351,7 @@ public:
 
         if ( !M_crb->isDBLoaded() || M_crb->rebuild() )
         {
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            if( this->worldComm().isMasterRank() )
                 LOG( INFO ) << "No CRB DB available, do crb offline computations...";
             M_crb->setOfflineStep( true );
             M_crb->offline();
@@ -2400,10 +2395,10 @@ public:
 
     }
 
-    bool getOfflineStep(){return M_eim->getOfflineStep();}
-    bool getAdaptationSER(){return M_eim->getAdaptationSER();}
+    bool getOfflineStep() const { return M_eim->getOfflineStep(); }
+    bool getAdaptationSER() const { return M_eim->getAdaptationSER(); }
     void setAdaptationSER(bool b){M_eim->setAdaptationSER(b);}
-    bool getRbCorrection(){return M_eim->getRbCorrection();}
+    bool getRbCorrection() const { return M_eim->getRbCorrection(); }
     void setRbCorrection(bool b){M_eim->setRbCorrection(b);}
 
     void offline(){M_eim->offline();}
@@ -2452,8 +2447,8 @@ public:
         M_crbmodel_built = true;
     }
 
-    bool modelBuilt(){return M_crbmodel_built;}
-    bool RBbuilt(){return M_crb_built;}
+    bool modelBuilt() const { return M_crbmodel_built; }
+    bool RBbuilt() const { return M_crb_built; }
 
     void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
     element_type interpolant( parameter_type const& mu )
@@ -2478,7 +2473,7 @@ public:
 
     void printInterpolationPointsSelection() const
     {
-        if ( Environment::worldComm().isMasterRank() )
+        if ( this->worldComm().isMasterRank() )
         {
             std::ofstream file;
             std::string filename = "InterpolationPointsSelection-"+super::name()+".dat";
@@ -2504,7 +2499,7 @@ public:
 
     void printMuSelection() const
     {
-        if ( Environment::worldComm().isMasterRank() )
+        if ( this->worldComm().isMasterRank() )
         {
             std::ofstream file;
             std::string filename = "MuSelection-"+super::name()+".dat";
@@ -2533,7 +2528,7 @@ public:
 
     void printOfflineError() const
     {
-        if ( Environment::worldComm().isMasterRank() )
+        if ( this->worldComm().isMasterRank() )
         {
             std::ofstream file;
             std::string filename = "OfflineError-"+super::name()+".dat";
@@ -2551,7 +2546,7 @@ public:
 
     void printRbIterationsSER( int M ) const
     {
-        if ( Environment::worldComm().isMasterRank() )
+        if ( this->worldComm().isMasterRank() )
         {
             std::ofstream file;
             std::string filename = "EIM-" + super::name() + "-rb_online_greedy_summary.dat";
@@ -2644,19 +2639,19 @@ public:
         M_max_solution = max_solution;
     }
 
-    int maxQ()
+    int maxQ() const
     {
         return M_max_q;
     }
-    int maxG()
+    int maxG() const
     {
         return M_max_g;
     }
-    int maxZ()
+    int maxZ() const
     {
         return M_max_z;
     }
-    int maxSolution()
+    int maxSolution() const
     {
         return M_max_solution;
     }
@@ -2784,7 +2779,6 @@ public:
     }
 
 private:
-    po::variables_map M_vm;
     model_ptrtype M_model;
     expr_type M_expr;
     // model_solution_type& M_u;
@@ -2843,7 +2837,6 @@ BOOST_PARAMETER_FUNCTION(
       ( space, *)
         ) // required
     ( optional
-      ( options, *, Environment::vm())
       //( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ), model->functionSpace() )
       //( space, *, model->functionSpace() )
       ( sampling, *, model->parameterSpace()->sampling() )
@@ -2856,7 +2849,7 @@ BOOST_PARAMETER_FUNCTION(
 #endif
     typedef typename Feel::detail::compute_eim_return<Args>::type eim_type;
     typedef typename Feel::detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
-    return  eim_ptrtype(new eim_type( options, model, space, element, parameter, expr, sampling, name ) );
+    return  eim_ptrtype(new eim_type( model, space, element, parameter, expr, sampling, name ) );
 } // eim
 
 template<typename ModelType>
@@ -2896,7 +2889,8 @@ struct EimFunctionNoSolve
     element_type solve( parameter_type const& mu , mpl::bool_<false> )
     {
         value_type x = boost::lexical_cast<value_type>("inf");
-        M_elt = vf::project( _space=M_model->functionSpace(), _expr=cst(x) );
+        //M_elt = vf::project( _space=M_model->functionSpace(), _expr=cst(x) );
+        M_elt.setConstant( x );
         return M_elt;
     }
     element_type solve( parameter_type const& mu , mpl::bool_<true> )
@@ -2907,7 +2901,7 @@ struct EimFunctionNoSolve
         return project_inf_composite_case.element();
     }
 
-    std::string modelName() const { return M_model->modelName(); }
+    std::string /*const&*/ modelName() const { return M_model->modelName(); }
     functionspace_ptrtype functionSpace() { return M_model->functionSpace(); }
     parameterspace_ptrtype parameterSpace() { return M_model->parameterSpace(); }
 
