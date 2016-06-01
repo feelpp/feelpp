@@ -40,15 +40,21 @@ class MeshStructured: public Mesh<Hypercube<2>>
     MeshStructured() = default;
     MeshStructured( MeshStructured const& ) = default;
     MeshStructured( MeshStructured && ) = default;
-    MeshStructured& operator=()( MeshStructured const& ) = default;
-    MeshStructured& operator=()( MeshStructured && ) = default;
+    MeshStructured& operator=( MeshStructured const& ) = default;
+    MeshStructured& operator=( MeshStructured && ) = default;
 
-    MeshStructured( int nx, int ny );
+    //!
+    //! 
+    //! 
+    MeshStructured( int nx, int ny, double pixelsize, WorldComm const& );
+
+  private:
+    int M_nx;
+    int M_ny;
+    double M_pixelsize;
 };
 
-MeshStructured::MeshStructured( int nx, int ny,
-                                double pixelsize,
-                                WorldComm const& wc )
+MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm const& wc )
     :
     super( wc ),
     M_nx( nx ),
@@ -68,11 +74,10 @@ MeshStructured::MeshStructured( int nx, int ny,
             point_type pt( ptid, coords, false );
             pt.setProcessIdInPartition( partId );
             pt.setProcessId( partId );
-            mesh->addPoint( pt );
+            this->addPoint( pt );
         }
 
     int eltid = 0;
-    rank_type partId = mesh->worldComm().localRank();
     element_type e;
 
     for( int i = 0; i < M_nx; ++i )
@@ -91,7 +96,7 @@ MeshStructured::MeshStructured( int nx, int ny,
 
             for( int k = 0; k < 4; ++k )
                 e.setPoint( k, this->point( ptid[k]  ) );
-            mesh->addElement( e, true );
+            this->addElement( e, true );
         }
 }
 }
