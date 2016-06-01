@@ -108,9 +108,9 @@ extern "C"
     PetscErrorCode
     __feel_petsc_snes_monitor ( SNES snes, PetscInt its, PetscReal fnorm, void *ctx )
     {
-        // in petsc >3.7 that cast won't work.
         Feel::SolverNonLinearPetsc<double>* solver =
             static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
+
 
         //int ierr=0;
         //if (its > 0)
@@ -133,24 +133,23 @@ extern "C"
         ierr = KSPGetResidualNorm ( ksp, &final_resid );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         ///LOG(INFO) << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
-        Feel::cout << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
+        //std::cout << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
 #endif
         KSPConvergedReason reason;
         KSPGetConvergedReason( ksp,&reason );
         if ( reason> 0 )
         {
-            if ( solver && solver->showKSPConvergedReason() && its>0 )
-                Feel::cout<< "  Linear solve converged due to " << Feel::PetscConvertKSPReasonToString(reason)
+            if ( solver->showKSPConvergedReason() && solver->worldComm().globalRank() == solver->worldComm().masterRank() && its>0 )
+                std::cout<< "  Linear solve converged due to " << Feel::PetscConvertKSPReasonToString(reason)
                          << " iterations " << lits << std::endl;
         }
         else
         {
-            if ( solver && solver->showKSPConvergedReason() && its>0 )
-            {
-                Feel::cout<< "  Linear solve did not converge due to " << Feel::PetscConvertKSPReasonToString(reason)
+            if ( solver->showKSPConvergedReason() && solver->worldComm().globalRank() == solver->worldComm().masterRank() && its>0 )
+                std::cout<< "  Linear solve did not converge due to " << Feel::PetscConvertKSPReasonToString(reason)
                          << " iterations " << lits << std::endl;
-            }
         }
+
 
         //return ierr;
         return 0;
