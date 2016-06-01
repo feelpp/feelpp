@@ -4,7 +4,7 @@ git:
 
 matrix:
   include:
-      - env: DOCKERFILE="Dockerfile.dockerhub" TARGET_IMAGE="feelpp/develop:latest" TARGET_BRANCH="develop" CMAKE_FLAGS=""
+      - env: DOCKERFILE="Dockerfile.dockerhub" TARGET_IMAGE="feelpp/develop:latest" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS=""
         sudo: required
         services:
             - docker
