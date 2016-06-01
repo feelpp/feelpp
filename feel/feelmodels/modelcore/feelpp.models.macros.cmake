@@ -521,7 +521,7 @@ endmacro( genLibFSI )
 #############################################################################
 macro( genLibAdvection )
   PARSE_ARGUMENTS(FEELMODELS_APP
-      "DIM;T_ORDER;GEO_ORDER;"
+      "DIM;T_ORDER;GEO_ORDER;USE_PERIODICITY;"
     "NO_UPDATE_MODEL_DEF;ADD_CMAKE_INSTALL"
     ${ARGN}
     )
@@ -567,6 +567,15 @@ macro( genLibAdvection )
     set(ADVECTION_USE_CONTINUOUS_DIFFUSION_REACTION 0)
     unset(ADVECTION_DIFFUSION_REACTION_TAG) # default value P0d
   endif()
+
+  #######################################################
+  if ( FEELMODELS_APP_USE_PERIODICITY )
+      set(ADVECTION_USE_PERIODICITY 1)
+      set(ADVECTION_USE_PERIODICITY_TAG Periodic)
+  else()
+      set(ADVECTION_USE_PERIODICITY 0)
+      unset(ADVECTION_USE_PERIODICITY_TAG)
+  endif()
   #######################################################
 
   if (0)
@@ -574,9 +583,10 @@ macro( genLibAdvection )
     MESSAGE("*** DIM ${ADVECTION_DIM}")
     MESSAGE("*** ORDERPOLY ${ADVECTION_ORDERPOLY}")
     MESSAGE("*** ORDERGEO ${ADVECTION_ORDERGEO}")
+    MESSAGE("*** PERIODICITY ${ADVECTION_PERIODICITY_TAG}")
   endif()
 
-  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${ADVECTION_DIM}dP${ADVECTION_ORDERPOLY}G${ADVECTION_ORDERGEO} )
+  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${ADVECTION_DIM}dP${ADVECTION_ORDERPOLY}G${ADVECTION_ORDERGEO}${ADVECTION_PERIODICITY_TAG} )
   set(FEELMODELS_MODEL_SPECIFIC_NAME advection${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
   #set(FEELMODELS_MODEL_SPECIFIC_NAME ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
   set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/advection/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
@@ -643,7 +653,7 @@ macro( genLibLevelset )
     endif()
 
     set(LEVELSET_DIM ${FEELMODELS_APP_DIM})
-    set(LEVELSET_ORDERPOLY ${FEELMODELS_APP_T_ORDER})
+    set(LEVELSET_ORDERPOLY ${FEELMODELS_APP_PHI_ORDER})
     set(LEVELSET_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
     #######################################################
     if (0)

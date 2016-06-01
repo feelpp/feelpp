@@ -48,7 +48,8 @@ enum class AdvectionStabMethod { NONE=0, GALS, CIP, SUPG, SGS };
 
 template< 
     typename ConvexType, typename BasisAdvectionType, 
-    typename BasisDiffusionReactionType = Lagrange<0, Scalar, Discontinuous>
+    typename BasisDiffusionReactionType = Lagrange<0, Scalar, Discontinuous>,
+    typename PeriodicityType = NoPeriodicity
         >
 class AdvectionBase : 
     public ModelNumerical,
@@ -59,7 +60,7 @@ class AdvectionBase :
 public :
     typedef ModelNumerical super_type;
 
-    typedef AdvectionBase< ConvexType, BasisAdvectionType, BasisDiffusionReactionType > self_type;
+    typedef AdvectionBase< ConvexType, BasisAdvectionType, BasisDiffusionReactionType, PeriodicityType > self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     //--------------------------------------------------------------------//
@@ -75,8 +76,10 @@ public :
     // Space advection
     typedef BasisAdvectionType basis_advection_type;
     static const uint16_type nOrder = basis_advection_type::nOrder;
+
+    typedef PeriodicityType periodicity_type;
     
-    typedef FunctionSpace< mesh_type, bases<basis_advection_type> > space_advection_type;
+    typedef FunctionSpace< mesh_type, bases<basis_advection_type>, Periodicity<periodicity_type> > space_advection_type;
     typedef boost::shared_ptr<space_advection_type> space_advection_ptrtype;
     
     typedef typename space_advection_type::element_type element_advection_type;
@@ -168,6 +171,11 @@ public :
     void createExporters();
     void createOthers();
     
+    //--------------------------------------------------------------------//
+    // Periodicity
+    void setPeriodicity( periodicity_type const& p );
+    periodicity_type const& periodicity() const { return M_periodicity; }
+
     //--------------------------------------------------------------------//
     // Model and solver
     std::string const& modelName() const { return M_modelName; }
@@ -293,6 +301,8 @@ protected:
     //--------------------------------------------------------------------//
     // Mesh
     mesh_ptrtype M_mesh;
+    // Periodicity
+    periodicity_type M_periodicity;
     // Advection space
     space_advection_ptrtype M_Xh;
     // Time discretization
