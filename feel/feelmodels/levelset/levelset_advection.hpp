@@ -6,18 +6,19 @@
 namespace Feel {
 namespace FeelModels {
 
-template<typename ConvexType, typename BasisAdvectionType>
+template<typename ConvexType, typename BasisAdvectionType, typename PeriodicityType>
 class LevelSetAdvection
-    : public AdvectionBase<ConvexType, BasisAdvectionType>
-    , public boost::enable_shared_from_this< LevelSetAdvection<ConvexType, BasisAdvectionType> >
+    : public AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType>
+    , public boost::enable_shared_from_this< LevelSetAdvection<ConvexType, BasisAdvectionType, PeriodicityType> >
 {
 public:
-    typedef AdvectionBase<ConvexType, BasisAdvectionType> super_type;
+    typedef AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType> super_type;
 
-    typedef LevelSetAdvection<ConvexType, BasisAdvectionType> self_type;
+    typedef LevelSetAdvection<ConvexType, BasisAdvectionType, PeriodicityType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     typedef typename super_type::space_advection_ptrtype space_advection_ptrtype;
+    typedef typename super_type::mesh_ptrtype mesh_ptrtype;
 
     //--------------------------------------------------------------------//
     // Constructor
@@ -29,7 +30,12 @@ public:
 
     //--------------------------------------------------------------------//
     // Initialization
+    void init( bool buildModelAlgebraicFactory = true );
     void initFromMesh( mesh_ptrtype const& mesh, bool buildModelAlgebraicFactory = true );
+
+    //--------------------------------------------------------------------//
+    // Mesh
+    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
     //--------------------------------------------------------------------//
     // BC and source term assembly
@@ -40,10 +46,10 @@ public:
 
 };
 
-template<typename ConvexType, typename BasisAdvectionType>
-LevelSetAdvection<ConvexType, BasisAdvectionType>::LevelSetAdvection(
+template<typename ConvexType, typename BasisAdvectionType, typename PeriodicityType>
+LevelSetAdvection<ConvexType, BasisAdvectionType, PeriodicityType>::LevelSetAdvection(
         std::string const& prefix,
-        WorldComm const& _worldComm,
+        WorldComm const& worldComm,
         std::string const& subPrefix,
         std::string const& rootRepository )
 : super_type( prefix, worldComm, subPrefix, rootRepository )
@@ -58,9 +64,17 @@ LevelSetAdvection<ConvexType, BasisAdvectionType>::LevelSetAdvection(
     this->log("LevelSetAdvection", "constructor", "finish");
 }
 
-template<typename ConvexType, typename BasisAdvectionType>
+template<typename ConvexType, typename BasisAdvectionType, typename PeriodicityType>
 void
-LevelSetAdvection<ConvexType, BasisAdvectionType>::initFromMesh( 
+LevelSetAdvection<ConvexType, BasisAdvectionType, PeriodicityType>::init( 
+        bool buildModelAlgebraicFactory )
+{
+    super_type::init( buildModelAlgebraicFactory, this->shared_from_this() );
+}
+
+template<typename ConvexType, typename BasisAdvectionType, typename PeriodicityType>
+void
+LevelSetAdvection<ConvexType, BasisAdvectionType, PeriodicityType>::initFromMesh( 
         mesh_ptrtype const& mesh,
         bool buildModelAlgebraicFactory )
 {

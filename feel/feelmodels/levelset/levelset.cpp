@@ -1,4 +1,6 @@
-#include "levelset.hpp"
+#include <feel/feelmodels/levelset/levelset.hpp>
+
+#include <feel/feelmodels/modelmesh/createmesh.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -27,9 +29,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     auto backend_mesh_adapt = backend_type::build(Environment::vm(), "mesh-adapt-backend");
     mesh_adapt.reset( new mesh_adaptation_type ( backend_mesh_adapt ));
 #endif*/
-
-
-    initWithMesh(mesh);
 
     __iter=0;
 
@@ -60,7 +59,6 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::init()
 {
-    this->createMesh();
     this->createAdvection();
     this->createReinitialization();
     this->createOthers();
@@ -79,10 +77,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initFromMesh( mesh_ptrtype const& mesh )
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::createMesh()
+LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
-    createMeshModel<mesh_type>(*this, M_mesh, this->fileNameMeshPath() );
-    CHECK( M_mesh ) << "mesh generation failed";
+    M_spaceLevelSetVec = space_levelset_vectorial_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+    M_spaceMarkers = space_markers_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -97,24 +95,38 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createAdvection()
                 this->rootRepository()
                 ) );
 
-    M_advection->initFromMesh( M_mesh );
+    M_advection->init();
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
 {
+    switch( M_reinitMethod )
+    { 
+        case LevelSetReinitMethod::FM :
+        {
+            M_reinitializer.reset( 
+                    new ReinitializerFMS<space_levelset_reinitP1_type, periodicity_type>( M_spaceReinitP1, M_periodicity ) 
+                    );
+        }
+        break;
+        case LevelSetReinitMethod::HJ :
+        {
+            // TODO
+        }
+        break;
+    }
+
+    M_reinitializerIsUpdatedForUse = true;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 {
-    M_spaceLevelSetVec = space_levelset_vectorial_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
-    M_spaceMarkers = space_markers_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
-
-    M_heaviside.reset( new element_levelset_type(this->spaceFunction(), "Heaviside") );
-    M_dirac.reset( new element_levelset_type(this->spaceFunction(), "Dirac") );
+    M_heaviside.reset( new element_levelset_type(this->functionSpace(), "Heaviside") );
+    M_dirac.reset( new element_levelset_type(this->functionSpace(), "Dirac") );
 }
 
 /*LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -125,12 +137,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
     M_mesh = mesh;
 
     //  -------  spaces -------
-    M_spaceP0 = spaceP0_type::New(_mesh=M_mesh, _periodicity=periodicity(NoPeriodicity()) );
+    M_spaceP0 = space_markers_type::New(_mesh=M_mesh, _periodicity=periodicity(NoPeriodicity()) );
     M_spaceLSVec = spaceLSVec_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity) );
     if (M_advecstabmethod == CIP)
-        M_spaceLevelSet = space_levelset_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity), _extended_doftable=std::vector<bool>(1,true) );
+        this->functionSpace() = space_levelset_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity), _extended_doftable=std::vector<bool>(1,true) );
     else
-        M_spaceLevelSet = space_levelset_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity) );
+        this->functionSpace() = space_levelset_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity) );
 
     //  -------  backends ------
     M_backend_advrea = backend(_name="ls-advec");
@@ -138,14 +150,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 
     // ---------- advection -----------
     LOG(INFO)<<"start creating advection for level set"<<std::endl;
-    M_advection = advection_type::New( M_spaceLevelSet, M_backend_advrea, M_advecstabmethod, option(prefixvm(M_prefix,"coeff-stab")).template as<double>() );
+    M_advection = advection_type::New( this->functionSpace(), M_backend_advrea, M_advecstabmethod, option(prefixvm(this->prefix(),"coeff-stab")).template as<double>() );
     LOG(INFO)<<"end creating advection for level set"<<std::endl;
 
-    if ( (M_reinitmethod == HJ) || (strategyBeforeFm==HJ_EQ) )
+    if ( (M_reinitMethod == HJ) || (M_strategyBeforeFM==HJ_EQ) )
     {
         LOG(INFO)<<"start creating advection for hamilton jacobi"<<std::endl;
         auto backend_reinit_hj = backend(_name="ls-hj-reinit");
-        M_advection_hj = advection_type::New( M_spaceLevelSet, backend_reinit_hj, SUPG, option( prefixvm(M_prefix,"hj-coeff-stab")).template as<double>() );
+        M_advection_hj = advection_type::New( this->functionSpace(), backend_reinit_hj, SUPG, option( prefixvm(this->prefix(),"hj-coeff-stab")).template as<double>() );
         LOG(INFO)<<"end creating advection for hamilton jacobi"<<std::endl;
     }
 
@@ -159,7 +171,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 #if (LEVELSET_CONSERVATIVE_ADVECTION == 1)
             M_spaceLSCorr = spaceLSCorr_type::New(M_mesh);
 #else
-            M_spaceLSCorr = M_spaceLevelSet;
+            M_spaceLSCorr = this->functionSpace();
 #endif
 
             // to solve non linear problem for correction
@@ -173,11 +185,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 
             // to compute conservative heavyside function
             backend_h = backend(_name="ls-nl-advec-h");
-            D_h = backend_h->newMatrix(M_spaceLevelSet, M_spaceLevelSet );
-            form2( M_spaceLevelSet, M_spaceLevelSet, D_h);
+            D_h = backend_h->newMatrix(this->functionSpace(), this->functionSpace() );
+            form2( this->functionSpace(), this->functionSpace(), D_h);
 
-            F_h = backend_h->newVector(M_spaceLevelSet);
-            form1(M_spaceLevelSet, F_h);
+            F_h = backend_h->newVector(this->functionSpace());
+            form1(this->functionSpace(), F_h);
 
             // might be an option (one more !)
             k_correction = (LEVELSET_CONSERVATIVE_ADVECTION==1) ? 0. : M_thicknessInterface;
@@ -186,95 +198,67 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 
     // --------------- projectors ---------
     LOG(INFO)<<"start creating projectors for level set"<<std::endl;
-    M_l2p = projector(M_spaceLevelSet, M_spaceLevelSet, backend(_name="ls-l2p") );
+    M_l2p = projector(this->functionSpace(), this->functionSpace(), backend(_name="ls-l2p") );
     M_l2pVec = projector(M_spaceLSVec, M_spaceLSVec, backend(_name="ls-l2pVec") );
     LOG(INFO)<<"end creating projectors for level set"<<std::endl;
 
 } // init*/
 
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+/*LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void 
 LEVELSET_CLASS_TEMPLATE_TYPE::imposePhi( elementLS_ptrtype phi )
 {
     using namespace Feel::vf;
 
     // impose phi and save the old one in phio
-    M_phio= M_phi;
+    M_phio= this->phi();
     M_phi = phi;
-    updateHeavyside();
+    updateHeaviside();
     updateDirac();
     updateMass();
-}//imposePhi
+}//imposePhi*/
 
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+/*LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void LEVELSET_CLASS_TEMPLATE_TYPE::initialize(elementLS_ptrtype phi, bool doFirstReinit, ReinitMethod method, int max_iter, double dtau, double tol)
-    {
-        using namespace Feel;
-        using namespace Feel::vf;
-        using namespace Feel::levelset;
+{
+    using namespace Feel;
+    using namespace Feel::vf;
 
-        //if phi is not a distance function, force to do a reinitialization at first
-        *M_phi=*phi;
+    //if phi is not a distance function, force to do a reinitialization at first
+    *M_phi=*phi;
 
-        if (doFirstReinit==true)
+    if (doFirstReinit==true)
+        {
+
+          if ( (method == HJ) && (max_iter == -1) )
             {
-
-              if ( (method == HJ) && (max_iter == -1) )
-                {
-                  // if default value, use the one given in levelset options for the first reinit (this choice is done automatically for the other reinit)
-                      max_iter = hj_max_iter;
-                      dtau=hj_dtau;
-                      tol = hj_tol;
-                }
-
-              this->reinitialize(max_iter, dtau, tol, false, method);
-
+              // if default value, use the one given in levelset options for the first reinit (this choice is done automatically for the other reinit)
+                  max_iter = hj_max_iter;
+                  dtau=hj_dtau;
+                  tol = hj_tol;
             }
 
-        *M_phio=*M_phi;
+          this->reinitialize(max_iter, dtau, tol, false, method);
 
-        updateHeavyside();
-        updateDirac();
-        updateMass();
+        }
 
-    } //initialize
+    *M_phio=*this->phi();
 
+    updateHeaviside();
+    updateDirac();
+    updateMass();
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
-LEVELSET_CLASS_TEMPLATE_TYPE::circleShape(double r0, double x0, double y0, double z0)
-{
-    auto shape = M_spaceLevelSet->elementPtr();
-
-    *shape = vf::project(M_spaceLevelSet, elements(M_mesh),
-                         sqrt((Px()-x0)*(Px()-x0)
-                              + (Py()-y0)*(Py()-y0)
-                              + (Pz()-z0)*(Pz()-z0)) - r0 );
-    return shape;
-} //circleShape
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::elementLS_ptrtype
-LEVELSET_CLASS_TEMPLATE_TYPE::ellipseShape(double a_ell, double b_ell, double x0, double y0, double z0)
-{
-    auto shape = M_spaceLevelSet->elementPtr();
-    *shape = vf::project(M_spaceLevelSet, elements(M_mesh),
-                         sqrt((Px()-x0)*(Px()-x0) / (a_ell * a_ell)
-                              + (Py()-y0)*(Py()-y0) / (b_ell * b_ell)
-                              + (Pz()-z0)*(Pz()-z0) / (b_ell * b_ell) ) - 1 );
-    return shape;
-}//ellipseShape
-
+} //initialize*/
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::setStrategyBeforeFm( int strat )
 {
-    if (reinitializerUpdated)
+    if (M_reinitializerIsUpdatedForUse)
         LOG(INFO)<<" !!!  WARNING !!! : setStrategyBeforeFm set after the fast marching has been actually initialized ! \n";
-    strategyBeforeFm = (strategy_before_FM_type) strat;
+    M_strategyBeforeFM = (strategy_before_FM_type) strat;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -295,13 +279,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );
     if( reinitmethod == "fm" )
-        M_reinitmethod = LevelSetReinitMethod::FM;
+        M_reinitMethod = LevelSetReinitMethod::FM;
     else if( reinitmethod == "hj" )
-        M_reinitmethod = LevelSetReinitMethod::HJ;
+        M_reinitMethod = LevelSetReinitMethod::HJ;
     else
         CHECK( false ) << reinitmethod << " is not a valid reinitialization method\n";
 
-    M_strategyBeforeFM = (strategy_before_FM_type) ioption(prefixvm(prefix,"fm-init-first-elts-strategy"));
+    M_strategyBeforeFM = (strategy_before_FM_type) ioption(prefixvm(this->prefix(),"fm-init-first-elts-strategy"));
 }
 
 //----------------------------------------------------------------------------//
@@ -312,12 +296,12 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
 {
-    // derivative of Heavyside function
+    // derivative of Heaviside function
     auto eps = this->thicknessInterface();
 
     if (M_useRegularPhi)
     {
-        auto psi = idv(M_phi) / sqrt( gradv(M_phi) * trans(gradv(M_phi)) );
+        auto psi = idv(this->phi()) / sqrt( gradv(this->phi()) * trans(gradv(this->phi())) );
         auto D_expr = vf::chi( psi<-eps )*vf::constant(0.0)
             +
             vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
@@ -325,14 +309,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
             +
             vf::chi(psi>eps)*vf::constant(0.0);
 
-        if (boption(_name=prefixvm(M_prefix,"h-d-nodal-proj")))
-            *M_dirac = vf::project( M_spaceLevelSet, elements(M_mesh), D_expr );
+        if (boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj")))
+            *M_dirac = vf::project( this->functionSpace(), elements(M_mesh), D_expr );
         else
             *M_dirac = M_l2p->project(D_expr);
     }
     else
     {
-        auto psi = idv(M_phi) ;
+        auto psi = idv(this->phi()) ;
         auto D_expr = vf::chi( psi<-eps )*vf::constant(0.0)
             +
             vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
@@ -340,8 +324,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
             +
             vf::chi(psi>eps)*vf::constant(0.0);
 
-        if (boption(_name=prefixvm(M_prefix,"h-d-nodal-proj")))
-            *M_dirac = vf::project( M_spaceLevelSet, elements(M_mesh), D_expr );
+        if (boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj")))
+            *M_dirac = vf::project( this->functionSpace(), elements(M_mesh), D_expr );
         else
             *M_dirac = M_l2p->project(D_expr);
     }
@@ -355,7 +339,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
 
     if (M_useRegularPhi)
     {
-        auto psi = idv(M_phi) / vf::sqrt( gradv(M_phi) * trans(gradv(M_phi)) );
+        auto psi = idv(this->phi()) / vf::sqrt( gradv(this->phi()) * trans(gradv(this->phi())) );
         auto H_expr = vf::chi( psi<-eps )*vf::constant(0.0)
             +
             vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
@@ -363,14 +347,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
             +
             vf::chi(psi>eps)*vf::constant(1.0);
 
-        if (boption(_name=prefixvm(M_prefix,"h-d-nodal-proj")))
-            *M_heaviside = vf::project(M_spaceLevelSet, elements(M_mesh), H_expr);
+        if (boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj")))
+            *M_heaviside = vf::project(this->functionSpace(), elements(M_mesh), H_expr);
         else
             *M_heaviside = M_l2p->project(H_expr);
     }
     else
     {
-        auto psi = idv(M_phi);
+        auto psi = idv(this->phi());
         auto H_expr = vf::chi( psi<-eps )*vf::constant(0.0)
             +
             vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
@@ -378,8 +362,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
             +
             vf::chi(psi>eps)*vf::constant(1.0);
 
-        if (boption(_name=prefixvm(M_prefix,"h-d-nodal-proj")))
-            *M_heaviside = vf::project(M_spaceLevelSet, elements(M_mesh), H_expr);
+        if (boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj")))
+            *M_heaviside = vf::project(this->functionSpace(), elements(M_mesh), H_expr);
         else
             *M_heaviside = M_l2p->project(H_expr);
     }
@@ -392,7 +376,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMass()
     M_mass = integrate(
             _range=elements(M_mesh),
             _expr=(1-idv(this->heaviside())) ).evaluate()(0,0);
-            //_expr=vf::chi( idv(M_phi)<0.0) ).evaluate()(0,0); // gives very noisy results
+            //_expr=vf::chi( idv(this->phi())<0.0) ).evaluate()(0,0); // gives very noisy results
 }
 
 //----------------------------------------------------------------------------//
@@ -400,7 +384,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMass()
 //----------------------------------------------------------------------------//
 // Markers accessors
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::markerInterface()
 {
     if( !M_markerInterface )
@@ -413,7 +397,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerInterface()
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::markerDirac()
 {
     if( !M_markerDirac )
@@ -426,7 +410,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerDirac()
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::markerHeaviside()
 {
     if( !M_markerHeaviside )
@@ -439,7 +423,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerHeaviside()
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::markerCrossedElements()
 {
     if( !M_markerCrossedElements )
@@ -457,7 +441,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerCrossedElements()
 // Advection
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 template<typename ExprT>
-bool 
+void 
 LEVELSET_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
 {
     //output : true if reinitialized
@@ -496,7 +480,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
         {
             double dtd = distToDist();
             std::cout<<"dtd = "<<dtd<<std::endl;
-            double reinitif = option(prefixvm(M_prefix,"reinit-if-dist-smaller")).template as<double>();
+            double reinitif = option(prefixvm(this->prefix(),"reinit-if-dist-smaller")).template as<double>();
             timeToReinit = dtd > reinitif ;
         }
 
@@ -513,7 +497,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
         }
     }*/
     updateDirac();
-    updateHeavyside();
+    updateHeaviside();
     updateMass();
     M_doUpdateMarkers = true;
 }
@@ -525,24 +509,22 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 { 
     if( !M_reinitializerIsUpdatedForUse )
-        this->createReinitializer();
+        this->createReinitialization();
 
-    if ( M_reinitMethod == FM )
+    if ( M_reinitMethod == LevelSetReinitMethod::FM )
     {
         bool useMarker2AsMarkerDoneFmm = M_useMarker2AsMarkerDoneFmm;
 
-        elementP0_ptrtype markerdelta;
         if ( useMarker2AsMarkerDoneFmm )
         {
-            markerdelta = markerDelta();
-            M_mesh->updateMarker2( *markerdelta );
+            M_mesh->updateMarker2( *this->markerDirac() );
         }
 
         mesh_ptrtype mesh_reinit;
         auto phi_reinit = M_spaceReinitP1->element();
         auto phi = this->phi();
 
-        switch (strategyBeforeFm)
+        switch (M_strategyBeforeFM)
         {
             case ILP :
             {
@@ -562,8 +544,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
                     if (useMarker2AsMarkerDoneFmm)
                     {
-                        auto spaceP0OpLag = spaceP0_type::New( mesh_reinit );
-                        auto mark2opLag = vf::project(spaceP0OpLag, elements(mesh_reinit), idv( markerdelta ) > 1e-6 );
+                        auto spaceP0OpLag = space_markers_type::New( mesh_reinit );
+                        auto mark2opLag = vf::project(spaceP0OpLag, elements(mesh_reinit), idv( this->markerDirac() ) > 1e-6 );
                         mesh_reinit->updateMarker2( mark2opLag );
                     }
                 }
@@ -578,7 +560,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
             case HJ_EQ :
             case NONE :
             {
-                if (strategyBeforeFm == HJ_EQ)
+                if (M_strategyBeforeFM == HJ_EQ)
                 {
                     CHECK(false) << "TODO\n";
                     //*phi = *explicitHJ(max_iter, dtau, tol);
@@ -591,8 +573,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
                     if (useMarker2AsMarkerDoneFmm)
                     {
-                        auto spaceP0OpLag = spaceP0_type::New( mesh_reinit );
-                        auto mark2opLag = vf::project(spaceP0OpLag, elements(mesh_reinit), idv( markerdelta ) > 1e-6 );
+                        auto spaceP0OpLag = space_markers_type::New( mesh_reinit );
+                        auto mark2opLag = vf::project(spaceP0OpLag, elements(mesh_reinit), idv( this->markerDirac() ) > 1e-6 );
                         mesh_reinit->updateMarker2( mark2opLag );
                     }
                 }
@@ -608,11 +590,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
                             <<"please, consider setting the option fm-init-first-elts-strategy to 0, 1 or 2\n";
             }
             break;
-        } // switch strategyBeforeFm
+        } // switch M_strategyBeforeFM
 
 
         // Fast Marching Method
-        phi_reinit = M_reinitializerFMS->march(phi_reinit, useMarker2AsMarkerDoneFmm);
+        phi_reinit = M_reinitializer->march(phi_reinit, useMarker2AsMarkerDoneFmm);
 
         if (Order > 1)
             M_opInterpolationP1toLS->apply( phi_reinit, *phi );
@@ -624,7 +606,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
     } // Fast Marching
 
 
-    else if ( M_reinitMethod == HJ )
+    else if ( M_reinitMethod == LevelSetReinitMethod::HJ )
     {
         CHECK(false) << "TODO\n";
         //ch.restart();
@@ -706,7 +688,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerDirac()
         else
             M_markerDirac->assign(it_elt->id(), 0, 0, 0);
     }
-}//markerDelta
+}//markerDirac
 
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -762,7 +744,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
     auto phi = this->phi();
     auto phio = this->phio();
 
-    auto prod = vf::project(M_spaceLevelSet, elements(M_mesh),
+    auto prod = vf::project(this->functionSpace(), elements(M_mesh),
                             idv(phio) * idv(phi) );
 
 
@@ -787,7 +769,3 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
 
 } // FeelModels
 } // Feel
-
-//instantiation
-#define FEELPP_INSTANTIATE_LEVELSET 1
-#include "levelset_instance.hpp"

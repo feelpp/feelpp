@@ -6,6 +6,6 @@
 namespace Feel {
 namespace FeelModels {
 
-    LEVELSET_CLASS_INSTANCIATION
+    LEVELSET_CLASS_INSTANTIATION
 }
 }
