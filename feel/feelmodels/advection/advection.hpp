@@ -37,17 +37,17 @@ namespace FeelModels {
 
 template< 
     typename ConvexType, typename BasisAdvectionType, 
-    typename BasisDiffusionReactionType = Lagrange<0, Scalar, Discontinuous>,
-    typename PeriodicityType = NoPeriodicity
+    typename PeriodicityType = NoPeriodicity,
+    typename BasisDiffusionReactionType = Lagrange<0, Scalar, Discontinuous>
         >
 class Advection
-    : public AdvectionBase<ConvexType, BasisAdvectionType, BasisDiffusionReactionType, PeriodicityType>
-    , public boost::enable_shared_from_this< Advection<ConvexType, BasisAdvectionType, BasisDiffusionReactionType, PeriodicityType> >
+    : public AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType>
+    , public boost::enable_shared_from_this< Advection<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType> >
 {
 public:
-    typedef AdvectionBase<ConvexType, BasisAdvectionType, BasisDiffusionReactionType, PeriodicityType> super_type;
+    typedef AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType> super_type;
 
-    typedef Advection<ConvexType, BasisAdvectionType, BasisDiffusionReactionType, PeriodicityType> self_type;
+    typedef Advection<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     typedef typename super_type::space_advection_ptrtype space_advection_ptrtype;
