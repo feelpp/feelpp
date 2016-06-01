@@ -162,7 +162,6 @@ public :
             model_algebraic_factory_type::appli_ptrtype const& app );
 
     virtual void loadParametersFromOptionsVm();
-    virtual void loadConfigBCFile() =0;
 
     void createMesh();
     void createFunctionSpaces();

@@ -69,7 +69,7 @@ public:
     //--------------------------------------------------------------------//
     // Initialization
     void init( bool buildModelAlgebraicFactory = true );
-    void loadConfigBCFile();
+    virtual void loadConfigBCFile();
     //--------------------------------------------------------------------//
     // BC and source term assembly
     void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
