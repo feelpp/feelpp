@@ -133,7 +133,7 @@ extern "C"
         ierr = KSPGetResidualNorm ( ksp, &final_resid );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         ///LOG(INFO) << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
-        std::cout << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
+        Feel::cout << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
 #endif
         KSPConvergedReason reason;
         KSPGetConvergedReason( ksp,&reason );
