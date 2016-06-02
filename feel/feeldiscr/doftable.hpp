@@ -1651,6 +1651,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     VLOG(2) << "[build] call buildDofMap()\n";
     this->buildDofMap( M, start_next_free_dof );
     //std::cout << "[build] callFINISH buildDofMap() with god rank " << this->worldComm().godRank() <<"\n";
+    toc("DofTable::call buildDofMap", FLAGS_v>0);
+    tic();
 
 #if !defined(NDEBUG)
     VLOG(2) << "[build] check that all elements dof were assigned()\n";
@@ -1667,9 +1669,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
             {
                 em.push_back( boost::make_tuple( fit->id(), c, fit->marker().value() ) );
             }
-    }
-    toc("DofTable::check element dof", FLAGS_v>0);
-    tic();
+    } 
     if ( !em.empty() )
     {
         VLOG(2) << "[build] some element dof were not assigned\n";
@@ -1689,14 +1689,14 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 #endif // NDEBUG
     VLOG(2) << "[Dof::build] n_dof = " << this->nLocalDofWithGhost() << "\n";
 
+    toc("DofTable::checki dof element assignement",FLAGS_v>0);
     if ( !is_mortar )
     {
         VLOG(2) << "[build] call buildBoundaryDofMap()\n";
         this->buildBoundaryDofMap( M );
     }
-
-    toc("DofTable::buildBoundaryDofMap", FLAGS_v>0);
-    tic();
+    
+    tic( ); 
     // multi process
     if ( this->worldComm().localSize()>1 )
     {
