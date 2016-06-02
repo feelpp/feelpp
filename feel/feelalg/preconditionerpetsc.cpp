@@ -51,6 +51,26 @@ extern "C" {
 #include <feel/feelalg/preconditionerpetscfeelpp.cpp>
 
 
+PetscErrorCode __feel_petsc_prec_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm,void* ctx)
+{
+#if 0
+    // need to store the tree of prec/subsolver else object was already deleted when go here
+    Feel::ConfigureKSP *solver  = static_cast<Feel::ConfigureKSP*>( ctx );
+    if ( !solver ) return 0;
+    if ( solver->worldComm().isMasterRank() )
+        std::cout << "   " << it << " " << solver->prefix() << " KSP Residual norm " << std::scientific << rnorm << "\n";
+#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+    // a temporary solution (not quite good because because create/distroy viewer)
+    MPI_Comm comm = PETSC_COMM_WORLD;
+    PetscObjectGetComm((PetscObject)ksp,&comm);
+    PetscViewerAndFormat *vf;
+    PetscViewerAndFormatCreate( (comm == PETSC_COMM_SELF)? PETSC_VIEWER_STDOUT_SELF : PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_DEFAULT,&vf);
+    int ierr = KSPMonitorDefault( ksp,it,rnorm, vf );
+    PetscViewerAndFormatDestroy( &vf );
+#endif
+    return 0;
+}
+
 //------------------------------------------------------------------------------//
 typedef struct {
     PetscBool allocated;
@@ -1063,6 +1083,11 @@ void PreconditionerPetsc<T>::init ()
         {
             check( PCSetType( M_pc,( char* ) PCFIELDSPLIT ) );
             pmatrix->updatePCFieldSplit( M_pc );
+        }
+        else if (this->M_preconditioner_type==FEELPP_BLOCKMS_PRECOND)
+        {
+            check( PCSetType( M_pc, "blockms" ) );
+            this->init();
         }
         M_indexSplitHasChanged = true;
 
@@ -2218,11 +2243,14 @@ ConfigureKSP::run( KSP& ksp ) const
     this->check( KSPSetTolerances( ksp,M_rtol,PETSC_DEFAULT,PETSC_DEFAULT,M_maxit ) );
     // monitor
     if ( M_showMonitor )
+    {
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
-        this->check( KSPMonitorSet( ksp,__feel_petsc_monitor,PETSC_NULL,PETSC_NULL ) );
+        this->check( KSPMonitorSet( ksp,__feel_petsc_prec_ksp_monitor,(void*) this,PETSC_NULL ) );
 #else
         this->check( KSPMonitorSet( ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL ) );
 #endif
+    }
+
     // constant null space
     if ( M_constantNullSpace )
     {
