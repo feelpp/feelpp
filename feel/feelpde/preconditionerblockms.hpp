@@ -268,7 +268,7 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockMS] setup starts";
-    cout << "the relax (="<<doption(_prefix=M_prefix_11, _name="relax")<<") parameter is now provided thanks to the options" << std::endl;
+    //Feel::cout << "[PreconditionerBlockMS] relax (="<<doption(_prefix=M_prefix_11, _name="relax")<<") parameter is now provided thanks to the options" << std::endl;
     M_relax = doption(_prefix=M_prefix_11, _name="relax");
     this->setMatrix( AA );
     this->setName(M_prefix);
@@ -314,7 +314,7 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
         f2L += integrate(_range=markedfaces(M_Qh->mesh(),it.first),
                          _expr=M_er*inner(trans(gradt(phi)),N())*id(phi)
                          + (doption(_prefix=M_prefix,_name="penaldir")/hFace())*idt(phi)*id(phi)
-                         ); 
+                         );
     }
 
     for(auto const & it : m_dirichlet_p)
@@ -331,9 +331,8 @@ template < typename space_type >
 void
 PreconditionerBlockMS<space_type>::init( void )
 {
-    if( Environment::worldComm().isMasterRank() )
-        std::cout << "Init preconditioner blockms\n";
-    LOG(INFO) << "Init ...\n";
+    //Feel::cout << "Init preconditioner blockms\n";
+    LOG(INFO) << "Init preconditioner blockms...\n";
     tic();
     BoundaryConditions M_bc = M_model.boundaryConditions();
 
