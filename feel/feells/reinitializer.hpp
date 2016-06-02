@@ -4,7 +4,7 @@
 namespace Feel
 {
 
-enum ReinitializerType
+enum class ReinitializerType
 {
     FM,
     HJ
@@ -17,7 +17,7 @@ public:
     //--------------------------------------------------------------------//
     // Typedefs
     typedef Reinitializer<FunctionSpaceType> reinitializer_type;
-    typedef boost::shared_ptrtype<reinitializer_type> reinitializer_ptrtype;
+    typedef boost::shared_ptr<reinitializer_type> reinitializer_ptrtype;
 
     typedef FunctionSpaceType functionspace_type;
     typedef typename functionspace_type::element_type element_type;
@@ -28,7 +28,7 @@ public:
     Reinitializer( std::string const& prefix );
     virtual ~Reinitializer() {}
 
-    static reinitializer_ptrtype build( std::string const& type, std::string const& prefix="" );
+    //static reinitializer_ptrtype build( std::string const& type, std::string const& prefix="" );
     //--------------------------------------------------------------------//
     std::string const& prefix() const { return M_prefix; } 
     ReinitializerType type() const { return M_reinitializerType; }
@@ -44,6 +44,11 @@ protected:
 private:
     std::string M_prefix;
 };
+
+template<typename FunctionSpaceType>
+Reinitializer<FunctionSpaceType>::Reinitializer( std::string const& prefix )
+    : M_prefix( prefix )
+{}
 
 } // Feel
 
