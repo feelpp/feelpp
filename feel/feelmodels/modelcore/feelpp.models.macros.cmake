@@ -514,3 +514,108 @@ macro(genLibFSI)
 
 endmacro( genLibFSI )
 
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+macro( genLibAdvection )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;T_ORDER;GEO_ORDER;"
+    "NO_UPDATE_MODEL_DEF;ADD_CMAKE_INSTALL"
+    ${ARGN}
+    )
+
+  if ( NOT FEELMODELS_APP_NO_UPDATE_MODEL_DEF )
+    resetToZeroAllPhysicalVariables()
+    SET(ADVECTION 1 )
+  endif()
+
+  #CAR(LIB_NAME ${FEELMODELS_APP_DEFAULT_ARGS})
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_T_ORDER OR  FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_T_ORDER OR  FEELMODELS_APP_GEO_ORDER")
+  endif()
+
+  set(ADVECTION_DIM ${FEELMODELS_APP_DIM})
+  set(ADVECTION_ORDERPOLY ${FEELMODELS_APP_T_ORDER})
+  set(ADVECTION_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+  #######################################################
+  if (FEELMODELS_APP_DIFFUSION_REACTION_ORDER)
+      set(ADVECTION_ORDER_DIFFUSION_REACTION ${FEELMODELS_APP_DIFFUSION_REACTION_ORDER} )
+  else()
+    # default value
+    set(ADVECTION_ORDER_DIFFUSION_REACTION 0)
+  endif()
+  #######################################################
+  if (FEELMODELS_APP_DIFFUSION_REACTION_CONTINUITY)
+      if ("${FEELMODELS_APP_DIFFUSION_REACTION_CONTINUITY}" STREQUAL "Continuous" )
+          set(ADVECTION_USE_CONTINUOUS_DIFFUSION_REACTION 1)
+          set(ADVECTION_DIFFUSION_REACTION_TAG DRP${ADVECTION_ORDER_DIFFUSION_REACTION}c)
+      elseif ("${FEELMODELS_APP_DIFFUSION_REACTION_CONTINUITY}" STREQUAL "Discontinuous" )
+          set(ADVECTION_USE_CONTINUOUS_DIFFUSION_REACTION 0)
+          if ( "${ADVECTION_ORDER_DIFFUSION_REACTION}" STREQUAL "0" )
+              unset(ADVECTION_DIFFUSION_REACTION_TAG) # default value P0d
+      else()
+          set(ADVECTION_DIFFUSION_REACTION_TAG DRP${ADVECTION_ORDER_DIFFUSION_REACTION}d)
+      endif()
+    else()
+        message(FATAL_ERROR "DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_DIFFUSION_REACTION}_CONTINUITY : is not valid! It must be Continuous or Discontinuous")
+    endif()
+  else()
+    # default value
+    set(ADVECTION_USE_CONTINUOUS_DIFFUSION_REACTION 0)
+    unset(ADVECTION_DIFFUSION_REACTION_TAG) # default value P0d
+  endif()
+  #######################################################
+
+  if (0)
+    MESSAGE("*** Arguments for advection application ${LIB_NAME}")
+    MESSAGE("*** DIM ${THERMODYNAMICS_DIM}")
+    MESSAGE("*** ORDERPOLY ${THERMODYNAMICS_ORDERPOLY}")
+    MESSAGE("*** ORDERGEO ${THERMODYNAMICS_ORDERGEO}")
+  endif()
+
+  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${ADVECTION_DIM}dP${ADVECTION_ORDERPOLY}G${ADVECTION_ORDERGEO} )
+  set(FEELMODELS_MODEL_SPECIFIC_NAME advection${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
+  #set(FEELMODELS_MODEL_SPECIFIC_NAME ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
+  set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/advection/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
+  set(LIBBASE_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
+  set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
+
+  if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
+
+    #write empty file in orter to check if this lib has already define
+    file(WRITE ${LIBBASE_CHECK_PATH} "")
+
+    # configure libmodelbase
+    set(CODEGEN_FILES_TO_COPY
+      ${FEELPP_MODELS_SOURCE_DIR}/advection/advectionbase_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/advection/advection_inst.cpp )
+    set(CODEGEN_SOURCES
+      ${LIBBASE_DIR}/advectionbase_inst.cpp
+      ${LIBBASE_DIR}/advection_inst.cpp )
+    set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+
+    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
+      set( LIBBASE_ADD_CMAKE_INSTALL 1 )
+    else()
+      set( LIBBASE_ADD_CMAKE_INSTALL 0 )
+    endif()
+
+    # generate libmodelbase
+    genLibBase(
+      LIB_NAME ${LIBBASE_NAME}
+      LIB_DIR ${LIBBASE_DIR}
+      LIB_DEPENDS ${LIB_DEPENDS}
+      PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
+      FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/advection/advectionconfig.h.in
+      ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
+      )
+
+  endif()
+
+
+endmacro(genLibAdvection)

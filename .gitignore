@@ -4,6 +4,7 @@ build/
 *.hppbck
 *.log
 *.orig
+*.vim
 /#CTestConfig.cmake#
 /#ctest.make#
 /.DS_Store
