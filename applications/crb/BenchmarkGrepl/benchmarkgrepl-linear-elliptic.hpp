@@ -165,16 +165,13 @@ public:
 
     using super_type::computeBetaQm;
 
+    BenchmarkGreplLinearElliptic()
+        :
+        super_type( "BenchMarkGreplLinearElliptic" + std::to_string(Order) )
+        {}
     //! initialization of the model
     void initModel();
     //@}
-
-    std::string modelName()
-    {
-        std::ostringstream ostr;
-        ostr << "BenchMarkGreplLinearElliptic" <<  Order;
-        return ostr.str();
-    }
 
     //\return the list of EIM objects
     virtual funs_type scalarContinuousEim() const
@@ -430,7 +427,7 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
 
     auto Pset = this->Dmu->sampling();
     //specify how many elements we take in each direction
-    std::vector<int> N(2);
+    std::vector<size_type> N(2);
     int Ne = ioption(_name="trainset-eim-size");
     std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
 
