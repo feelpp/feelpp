@@ -9,12 +9,16 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
+#include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmesh/complement.hpp>
 #include <feel/feelalg/topetsc.hpp>
-
+#include <feel/feelts/bdf.hpp>
 #include <boost/algorithm/string.hpp>
+#include <feel/feelmodels/modelcore/options.hpp>
 
 namespace Feel {
+
+namespace FeelModels {
 
 inline
 po::options_description
@@ -31,6 +35,7 @@ makeMixedPoissonOptions( std::string prefix = "" )
         ( prefixvm( prefix, "conductivityNL_json").c_str(), po::value<std::string>()->default_value( "condNL" ), "key for non linear conductivity in json (depends on potential p)" )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ;
+    mpOptions.add ( envfeelmodels_options( prefix ) );
     return mpOptions;
 }
 
@@ -44,9 +49,10 @@ makeMixedPoissonLibOptions( std::string prefix = "" )
 }
 
 template<int Dim, int Order>
-class MixedPoisson
+class MixedPoisson    :	public ModelNumerical
 {
 public:
+    typedef ModelNumerical super_type;
 
     //! numerical type is double
     typedef double value_type;
@@ -54,6 +60,9 @@ public:
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
     typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
+
+    typedef MixedPoisson<Dim,Order> self_type;
+    typedef boost::shared_ptr<self_type> self_ptrtype;
 
     using sparse_matrix_type = backend_type::sparse_matrix_type;
     using sparse_matrix_ptrtype = backend_type::sparse_matrix_ptrtype;
@@ -70,7 +79,7 @@ public:
     typedef Simplex<Dim-1,1,Dim> face_convex_type;
     typedef Mesh<face_convex_type> face_mesh_type;
     typedef boost::shared_ptr<face_mesh_type> face_mesh_ptrtype;
-
+    
     // Vh
     using Vh_t = Pdhv_type<mesh_type,Order>;
     using Vh_ptr_t = Pdhv_ptrtype<mesh_type,Order>;
@@ -102,7 +111,11 @@ public:
     using model_prop_ptrtype = std::shared_ptr<model_prop_type>;
 
     using linearAssembly_function_type = boost::function<void ( sparse_matrix_ptrtype& A,vector_ptrtype& F )>;
-
+    
+    // time
+    typedef Bdf<Wh_t>  bdf_type;
+    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    
 private:
     model_prop_ptrtype M_modelProperties;
     std::string M_prefix;
@@ -122,16 +135,21 @@ private:
     BlocksBaseVector<double> M_hdg_sol;
     vector_ptrtype M_U;
 
-    Vh_element_ptr_t M_up;
-    Wh_element_ptr_t M_pp;
-
+    Vh_element_ptr_t M_up; // flux solution
+    Wh_element_ptr_t M_pp; // potential solution 
+    
+    // time discretization
+    bdf_ptrtype M_bdf_mixedpoisson;
+    
+    
     int M_tau_order;
-
+    
     bool M_integralCondition;
     bool M_isPicard;
 
     std::list<std::string> M_integralMarkersList;
-
+    
+    
     void initGraphs();
     void initGraphsWithIntegralCond();
     void assembleACst();
@@ -139,8 +157,20 @@ private:
 
 public:
     linearAssembly_function_type M_updateAssembly;
-
-    MixedPoisson( std::string prefix = "" );
+    
+    // constructor
+    // MixedPoisson( std::string prefix = "" );
+    MixedPoisson( std::string const& prefix = "",                   
+                    WorldComm const& _worldComm = Environment::worldComm(),
+                    std::string const& subPrefix = "",
+                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+    
+    MixedPoisson( self_type const& MP ) = default;
+    static self_ptrtype New( std::string const& prefix = "",
+                             WorldComm const& worldComm = Environment::worldComm(),
+                             std::string const& subPrefix = "",
+                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() ); 
+    
     void init( mesh_ptrtype mesh = NULL);
     void solve();
     void assembleF();
@@ -153,7 +183,7 @@ public:
     template<typename ExprT>
     void updateFluxRHS( Expr<ExprT> expr, std::string marker = "");
     void exportResults();
-
+    
     mesh_ptrtype mesh() const { return M_mesh; }
     Vh_ptr_t fluxSpace() const { return M_Vh; }
     Wh_ptr_t potentialSpace() const { return M_Wh; }
@@ -162,8 +192,112 @@ public:
     Wh_element_ptr_t potentialField() const { return M_pp; }
     model_prop_type modelProperties() const { return *M_modelProperties; }
     std::list<std::string> integralMarkersList() const { return M_integralMarkersList; }
+    
+    /*/ time step scheme
+    bdf_ptrtype timeStepBDF() { return M_bdf_mixedpoisson; }
+    bdf_ptrtype const& timeStepBDF() const { return M_bdf_mixedpoisson; }
+    boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
+    boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
+    // void updateTimeStepBDF();
+    void initTimeStep();
+    void updateTimeStep() { this->updateTimeStepBDF(); }
+    */
+    /*/ time tools
+    void updateTime(double time);
+    TimerToolBase & timerTool( std::string const& s ) const;
+    void addTimerTool( std::string const& s, std::string const& fileName ) const;
+    */
 };
+/*
+template<int Dim, int Order> 
+void MixedPoisson<Dim, Order>::initTimeStep()
+{
+        // start time step
+        M_bdf_mixedpoisson -> restart();
+        // load a previous solution as current solution
+        *M_pp = M_bdf_mixedpoisson->unknown(0);
+        // up initial time
+        this -> setTimeInitial( M_bdf_mixedpoisson->timeInitial() );
+        // restart exporter
+        //this->restartPostProcess();
+        // up current time
+        
+        this -> updateTime( M_bdf_mixedpoisson->time() );
+        this -> log("MixedPoisson","initTimeStep", "restart bdf/exporter done" );
+    
+}
 
+
+template<int Dim, int Order>
+void MixedPoisson<Dim, Order>::updateTimeStepBDF()
+{
+    this->log("MixedPoisson","updateTimeStepBDF", "start" );
+    this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
+    this->timerTool("TimeStepping").start();
+
+    // update to next timestep
+    int previousTimeOrder = this->timeStepBDF()->timeOrder();
+
+    M_bdf_mixedpoisson -> next ( *M_pp );
+
+    int currentTimeOrder = this->timeStepBDF()->timeOrder();
+
+    this->updateTime( M_bdf_mixedpoisson->time() );
+    
+    this->timerTool("TimeStepping").stop("updateBdf");
+    if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
+    // this->log("MixedPoisson","updateTimeStepBDF", "finish" );
+}
+*/
+
+template<int Dim, int Order>
+MixedPoisson<Dim, Order>::MixedPoisson( std::string const& prefix,
+                                                    WorldComm const& worldComm,
+                                                    std::string const& subPrefix,
+                                                    std::string const& rootRepository )
+    : super_type( prefix, worldComm, subPrefix, rootRepository )
+{
+    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedPoisson","constructor", "start",
+                                               this->worldComm(),this->verboseAllProc());
+
+
+    this->setFilenameSaveInfo( prefixvm(this->prefix(),"MixedPoisson.info") );
+
+    Feel::cout << __LINE__ << std::endl; 
+
+    M_prefix = prefix;
+    M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption( prefixvm(M_prefix, "model_json") ) ) );
+    if ( M_prefix.empty())
+        M_backend = backend( _rebuild=true);
+    else
+        M_backend = backend( _name=M_prefix, _rebuild=true);
+
+    M_tau_order = ioption( prefixvm(M_prefix, "tau_order") );
+
+    //-----------------------------------------------------------------------------//
+
+    std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".AdvectionConstructor.data";
+    std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".AdvectionSolve.data";
+    this->addTimerTool("Constructor",nameFileConstructor);
+    this->addTimerTool("Solve",nameFileSolve);
+
+    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedPoisson","constructor", "finish",
+                                               this->worldComm(),this->verboseAllProc());
+}
+
+
+template<int Dim, int Order>
+typename MixedPoisson<Dim,Order>::self_ptrtype
+MixedPoisson<Dim,Order>::New( std::string const& prefix,
+                                         WorldComm const& worldComm, std::string const& subPrefix,
+                                         std::string const& rootRepository )
+{
+    Feel::cout << __LINE__ << std::endl; 
+    return boost::make_shared<self_type> ( prefix,worldComm,subPrefix,rootRepository );
+
+}
+
+/*
 template<int Dim, int Order>
 MixedPoisson<Dim, Order>::MixedPoisson(std::string prefix )
 {
@@ -176,6 +310,7 @@ MixedPoisson<Dim, Order>::MixedPoisson(std::string prefix )
 
     M_tau_order = ioption( prefixvm(M_prefix, "tau_order") );
 }
+*/
 
 template<int Dim, int Order>
 void
@@ -187,6 +322,9 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
         M_mesh = loadMesh( new mesh_type);
     else
         M_mesh = mesh;
+    
+    // Stationary 
+    Feel::cout << __LINE__ << std::endl;
 
     // initialize marker lists for each boundary condition type
     M_integralMarkersList.clear();
@@ -257,6 +395,8 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
             cout << std::endl;
         }
     }
+    
+     Feel::cout << __LINE__ << std::endl;
 
     // Mh only on the faces whitout integral condition
     auto complement_integral_bdy = complement(faces(M_mesh),[this]( auto const& e ) {
@@ -269,6 +409,8 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
     auto face_mesh = createSubmesh( M_mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
 
     toc("mesh",true);
+    
+     Feel::cout << __LINE__ << std::endl;
 
     if ( M_integralMarkersList.empty() )
         M_integralCondition = false;
@@ -320,7 +462,7 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
     else
         this->initGraphs();
     toc("graphs",true);
-
+     Feel::cout << __LINE__ << std::endl;
     tic();
     assembleA();
     toc("assemble A", true);
@@ -512,8 +654,13 @@ MixedPoisson<Dim, Order>::assembleA()
                        rightfacet( pow(idv(H),M_tau_order)*idt(p))*rightface(id(w) )));
     a22 += integrate(_range=boundaryfaces(M_mesh),
                      _expr=(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
-
-
+    
+    /*/ (1/delta_t p, w)_Omega  [only if it is not stationary]
+    if ( !this->isStationary() ) {
+        a22 += integrate(_range=elements(M_mesh),
+                         _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*idt(w)) );
+    }*/
+    
     // <-tau phat, w>_Gamma\Gamma_I
     a23 += integrate(_range=internalfaces(M_mesh),
                      _expr=-tau_constant * idt(phat) *
@@ -686,6 +833,11 @@ MixedPoisson<Dim, Order>::assembleF()
                 // (f, w)_Omega
                 rhs2 += integrate( _range=markedelements(M_mesh,marker),
                                    _expr=g*id(w));
+                /*/ (p_old,w)_Omega
+                if ( !this->isStationary() ){
+                    rhs2 += integrate(_range=markedelements(M_mesh,marker),
+                                      _expr= this->timeStepBDF()->polyDeriv() * id(w));
+                }*/
             }
         }
         itType = mapField.find( "Dirichlet" );
@@ -866,6 +1018,9 @@ MixedPoisson<Dim, Order>::exportResults()
 
     e->save();
 }
+
+
+} // Namespace FeelModels
 
 } // Namespace Feel
 
