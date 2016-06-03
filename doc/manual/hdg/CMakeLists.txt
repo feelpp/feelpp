@@ -26,6 +26,13 @@ feelpp_add_application( electro-thermal SRCS et_main.cpp INCLUDE_IN_ALL CFG et.c
 feelpp_add_application( electro-thermal-2 SRCS et2_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 )
 feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 )
 
+# foreach(D 2)
+#   foreach(P 1)
+# 	configure_file(lc_main_model.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/lc${D}DP${P}_main.cpp )
+# 	feelpp_add_application( lamina-cribrosa-model_${D}DP${P} SRCS lc${D}DP${P}_main.cpp INCLUDE_IN_ALL )
+#   endforeach()
+# endforeach()
+
 foreach(D 2 3)
   foreach(P  RANGE 1 3 1)
     configure_file(et_main_model.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/et${D}DP${P}_main.cpp )
@@ -33,10 +40,10 @@ foreach(D 2 3)
   endforeach()
 endforeach()
 
-foreach(D 2 3)
-  foreach(P  RANGE 1 3 1)
+foreach(D 2) #3
+  foreach(P  RANGE 1 1 1) #3 
     configure_file(mixedpoisson_main.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/mp${D}DP${P}_main.cpp )
-    feelpp_add_application( mixed-poisson-model_${D}DP${P} SRCS mp${D}DP${P}_main.cpp mixedpoisson.hpp )
+    feelpp_add_application( mixed-poisson-model_${D}DP${P} SRCS mp${D}DP${P}_main.cpp mixedpoisson.hpp LINK_LIBRARIES feelpp_modelcore )
   endforeach()
 endforeach()
 
