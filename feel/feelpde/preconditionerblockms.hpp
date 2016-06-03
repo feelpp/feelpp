@@ -268,7 +268,7 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockMS] setup starts";
-    cout << "the relax (="<<doption(_prefix=M_prefix_11, _name="relax")<<") parameter is now provided thanks to the options" << std::endl;
+    //Feel::cout << "[PreconditionerBlockMS] relax (="<<doption(_prefix=M_prefix_11, _name="relax")<<") parameter is now provided thanks to the options" << std::endl;
     M_relax = doption(_prefix=M_prefix_11, _name="relax");
     this->setMatrix( AA );
     this->setName(M_prefix);
@@ -293,28 +293,28 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
     //    LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_11<<"\n";
     //    f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type="elimination_symmetric");
     //}
-    
+
     /* Compute the L (= er * grad grad) matrix (the second block) */
     auto f2L = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_L);
 #if 0
     //If you want to manage the relative permittivity materials per material,
     //here is the entry to deal with.
     for(auto it : M_model.materials() )
-    { 
+    {
         f2L += integrate(_range=markedelements(M_Qh->mesh(),marker(it)), _expr=M_er*inner(gradt(phi), grad(phi)));
     }
 #else
     f2L += integrate(_range=elements(M_Qh->mesh()), _expr=M_er*inner(gradt(phi), grad(phi)));
 #endif
     auto f1LQ = form1(_test=M_Qh);
-    
+
     for(auto const & it : m_weak_p)
     {
         LOG(INFO) << "Applying (weak) " << it.second << " on " << it.first << " for "<<M_prefix_22<<"\n";
         f2L += integrate(_range=markedfaces(M_Qh->mesh(),it.first),
                          _expr=M_er*inner(trans(gradt(phi)),N())*id(phi)
                          + (doption(_prefix=M_prefix,_name="penaldir")/hFace())*idt(phi)*id(phi)
-                         ); 
+                         );
     }
 
     for(auto const & it : m_dirichlet_p)
@@ -331,9 +331,8 @@ template < typename space_type >
 void
 PreconditionerBlockMS<space_type>::init( void )
 {
-    if( Environment::worldComm().isMasterRank() )
-        std::cout << "Init preconditioner blockms\n";
-    LOG(INFO) << "Init ...\n";
+    //Feel::cout << "Init preconditioner blockms\n";
+    LOG(INFO) << "Init preconditioner blockms...\n";
     tic();
     BoundaryConditions M_bc = M_model.boundaryConditions();
 
