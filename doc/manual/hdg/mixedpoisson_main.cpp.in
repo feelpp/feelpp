@@ -25,8 +25,10 @@ int main(int argc, char *argv[])
     Feel::Environment env( _argc=argc,
                            _argv=argv,
                            _about=makeAbout(),
-                           _desc=FeelModels::makeMixedPoissonOptions(),
-                           _desc_lib=FeelModels::makeMixedPoissonLibOptions().add(feel_options()) );
+                           _desc=FeelModels::makeMixedPoissonOptions().add(FeelModels::envfeelmodels_options()),
+                           _desc_lib=FeelModels::makeMixedPoissonLibOptions().add(feel_options())
+                           );
+
 
     typedef FeelModels::MixedPoisson<@D@,@P@> mp_type;
     Feel::cout << __LINE__ << std::endl;
