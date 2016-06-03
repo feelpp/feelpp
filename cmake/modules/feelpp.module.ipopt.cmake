@@ -21,12 +21,12 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-OPTION( FEELPP_ENABLE_IPOPT "Enable IPOPT (Interior Point OPTimizer Library)" ON )
+OPTION( FEELPP_ENABLE_IPOPT "Enable IPOPT (Interior Point OPTimizer Library)" OFF )
 
 if ( FEELPP_ENABLE_IPOPT )
 
   if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/ipopt )
-    
+
     if ( GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
 
       execute_process(
@@ -49,15 +49,22 @@ if ( FEELPP_ENABLE_IPOPT )
     endif()
 
     if ( EXISTS ${FEELPP_SOURCE_DIR}/contrib/ipopt/CMakeLists.txt )
-      
+
       message(STATUS "[feelpp] use contrib/ipopt : ${CMAKE_SOURCE_DIR}/contrib/ipopt/")
       SET(FEELPP_HAS_IPOPT 1)
       #ADD_DEFINITIONS( -DFEELPP_HAS_IPOPT )
       #ADD_DEFINITIONS( -fPIC )
-      
-      SET(FEELPP_LIBRARIES ipopt ${FEELPP_LIBRARIES})
+
+      SET(FEELPP_LIBRARIES feelpp_ipopt ${FEELPP_LIBRARIES})
       SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Ipopt/Contrib" )
       add_subdirectory(contrib/ipopt)
+
+      #SET(IPOPT_INCLUDE_DIR
+      #          ${FEELPP_SOURCE_DIR}/contrib/ipopt/Ipopt/src/Interfaces
+      #)
+
+      # Compile/copy header in cmake binary dirs.
+      include_directories(${CMAKE_BINARY_DIR}/contrib/ipopt/include/)
     endif()
   endif()
 endif()
