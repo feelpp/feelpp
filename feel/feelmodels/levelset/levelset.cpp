@@ -15,9 +15,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     super_type( prefix, worldComm, subPrefix, rootRepository ),
     M_mass(0.),
     //M_periodicity(periodicityLS),
+    M_doUpdateMarkers(true),
     M_reinitializerIsUpdatedForUse(false),
-    M_iterSinceReinit(0),
-    M_doUpdateMarkers(true)
+    M_iterSinceReinit(0)
 {
     this->loadParametersFromOptionsVm();
 
@@ -81,6 +81,26 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
     M_spaceLevelSetVec = space_levelset_vectorial_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
     M_spaceMarkers = space_markers_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+
+    // Init P1 reinitialization if required
+    if( M_reinitMethod == LevelSetReinitMethod::FM )
+    {
+        if( Order > 1 )
+        {
+            M_opLagrangeP1 = lagrangeP1( this->functionSpace() );
+            M_spaceReinitP1 = space_levelset_reinitP1_type::New( 
+                    _mesh = M_opLagrangeP1->mesh(), 
+                    _periodicity = periodicity(NoPeriodicity()) 
+                    );
+        }
+        else
+        {
+            M_spaceReinitP1 = space_levelset_reinitP1_type::New( 
+                    _mesh = this->mesh(), 
+                    _periodicity = periodicity(NoPeriodicity()) 
+                    );
+        }
+    }
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -106,9 +126,25 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
     { 
         case LevelSetReinitMethod::FM :
         {
-            M_reinitializer.reset( 
+            //M_reinitializer.reset( 
+                    //new ReinitializerFMS<space_levelset_reinitP1_type, periodicity_type>( M_spaceReinitP1, M_periodicity ) 
+                    //);
+            M_reinitializerFMS.reset( 
                     new ReinitializerFMS<space_levelset_reinitP1_type, periodicity_type>( M_spaceReinitP1, M_periodicity ) 
                     );
+            if( Order > 1)
+            {
+                M_opInterpolationLStoP1 = opInterpolation(
+                        _domainSpace = this->functionSpace(),
+                        _imageSpace = this->functionSpaceReinitP1(),
+                        _type = InterpolationNonConforme(false)
+                        );
+                M_opInterpolationP1toLS = opInterpolation(
+                        _domainSpace = this->functionSpaceReinitP1(),
+                        _imageSpace = this->functionSpace(),
+                        _type = InterpolationNonConforme(false)
+                        );
+            }
         }
         break;
         case LevelSetReinitMethod::HJ :
@@ -411,13 +447,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerDirac()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::markerHeaviside()
+LEVELSET_CLASS_TEMPLATE_TYPE::markerHeaviside(bool invert, bool cut_at_half)
 {
     if( !M_markerHeaviside )
         M_markerHeaviside.reset( new element_markers_type(M_spaceMarkers, "MarkerHeaviside") );
 
-    if( M_doUpdateMarkers )
-       this->updateMarkerHeaviside(); 
+    //if( M_doUpdateMarkers )
+       this->updateMarkerHeaviside( invert, cut_at_half );
 
     return M_markerHeaviside;
 }
@@ -594,7 +630,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
 
         // Fast Marching Method
-        phi_reinit = M_reinitializer->march(phi_reinit, useMarker2AsMarkerDoneFmm);
+        phi_reinit = M_reinitializerFMS->march(phi_reinit, useMarker2AsMarkerDoneFmm);
 
         if (Order > 1)
             M_opInterpolationP1toLS->apply( phi_reinit, *phi );
@@ -615,6 +651,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
     } //HJ explicit
 
     M_iterSinceReinit=0;
+}
+
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+std::string
+LEVELSET_CLASS_TEMPLATE_TYPE::levelsetInfos( bool show )
+{
 }
 
 //----------------------------------------------------------------------------//

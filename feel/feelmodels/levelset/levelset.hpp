@@ -6,8 +6,9 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/projector.hpp>
 
-#include <feel/feelmodels/levelset/levelset_advection.hpp>
+#include <feel/feelmodels/advection/advection.hpp>
 
+#include <feel/feells/reinitializer.hpp>
 #include <feel/feells/reinit_fms.hpp>
 #include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
@@ -80,7 +81,7 @@ public:
     typedef Lagrange<Order, Scalar> basis_levelset_type;
     //typedef FunctionSpace<mesh_type, bases<basis_levelset_type>, value_type, Periodicity<periodicity_type>> space_levelset_type;
 
-    typedef LevelSetAdvection<convex_type, basis_levelset_type, periodicity_type> advection_type;
+    typedef Advection<convex_type, basis_levelset_type, periodicity_type> advection_type;
 
     //--------------------------------------------------------------------//
     // Space levelset
@@ -179,11 +180,6 @@ public:
 
     //--------------------------------------------------------------------//
     // Constructor
-    //LevelSet(
-            //mesh_ptrtype mesh, 
-            //std::string const& prefix, 
-            //double TimeStep=0.1, 
-            //periodicity_type periodocity = NoPeriodicity() );
     LevelSet(
             std::string const& prefix,
             WorldComm const& _worldComm = Environment::worldComm(),
@@ -292,8 +288,8 @@ public:
     //std::vector<double> getStatReinit(Elt1 __phio, Elt2 __phi);
 
     /* update the submesh and subspaces*/
-    void updateSubMeshSubSpace(element_markers_ptrtype marker);
-    void updateSubMeshSubSpace();
+    //void updateSubMeshSubSpace(element_markers_ptrtype marker);
+    //void updateSubMeshSubSpace();
 
     std::string levelsetInfos( bool show = false );
 
@@ -407,7 +403,8 @@ private:
     op_interpolation_P1_to_LS_ptrtype M_opInterpolationP1toLS;
     op_lagrangeP1_ptrtype M_opLagrangeP1;
 
-    reinitializer_ptrtype M_reinitializer;
+    //reinitializer_ptrtype M_reinitializer;
+    boost::shared_ptr< ReinitializerFMS<space_levelset_reinitP1_type, PeriodicityType> > M_reinitializerFMS;
     bool M_reinitializerIsUpdatedForUse;
 
     boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smooth;
