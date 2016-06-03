@@ -35,7 +35,7 @@ makeMixedPoissonOptions( std::string prefix = "" )
         ( prefixvm( prefix, "conductivityNL_json").c_str(), po::value<std::string>()->default_value( "condNL" ), "key for non linear conductivity in json (depends on potential p)" )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ;
-    mpOptions.add ( envfeelmodels_options( prefix ) );
+    mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
     return mpOptions;
 }
 
