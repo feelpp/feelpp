@@ -77,6 +77,7 @@ BOOST_PARAMETER_FUNCTION(
       ( savehdf5,        *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.savehdf5") )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends") )
+      ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity") )
       )
                          )
 {
@@ -94,7 +95,7 @@ BOOST_PARAMETER_FUNCTION(
     fs::path mesh_name=fs::path(Environment::findFile(filenameExpand));
     int proc_rank = worldcomm.globalRank();
     //Environment::isMasterRank()
-   
+
     LOG_IF( WARNING,
             mesh_name.extension() != ".geo" &&
             mesh_name.extension() != ".json" &&
@@ -110,8 +111,7 @@ BOOST_PARAMETER_FUNCTION(
             auto json_fname = mesh_name.stem().string()+".json";
             if( fs::exists(json_fname) )
             {
-                if ( proc_rank == 0 )
-                    std::cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(json_fname) << "\n";
+                Feel::cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(json_fname) << "\n";
                 LOG(INFO) << " Loading mesh in format json+h5: " << json_fname;
                 CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
                 _mesh_ptrtype m( mesh );
@@ -121,8 +121,9 @@ BOOST_PARAMETER_FUNCTION(
             }
         }
 #endif
-        if ( proc_rank == 0 )
-            std::cout << "[loadMesh] Loading mesh in format geo+msh: " << fs::system_complete(mesh_name) << "\n";
+        Feel::cout << "[loadMesh] Loading mesh in format geo+msh: " << fs::system_complete(mesh_name) << "\n";
+        if ( !desc )
+            Feel::cout << "[loadMesh] Use default geo desc: " << mesh_name.string() << " " << h << " " << depends << "\n";
         auto m = createGMSHMesh(
             _mesh=mesh,
             _desc= (!desc) ? geo( _filename=mesh_name.string(),
@@ -141,7 +142,8 @@ BOOST_PARAMETER_FUNCTION(
             _rebuild_partitions_filename=rebuild_partitions_filename,
             _partitions=partitions,
             _partitioner=partitioner,
-            _partition_file=partition_file
+            _partition_file=partition_file,
+            _verbose=verbose
                                 );
 
 #if defined(FEELPP_HAS_HDF5)
@@ -153,8 +155,7 @@ BOOST_PARAMETER_FUNCTION(
 
     if ( mesh_name.extension() == ".msh"  )
     {
-        if ( proc_rank == 0 )
-            std::cout << "[loadMesh] Loading mesh in format msh: " << fs::system_complete(mesh_name) << "\n";
+        Feel::cout << "[loadMesh] Loading mesh in format msh: " << fs::system_complete(mesh_name) << "\n";
         auto m = loadGMSHMesh( _mesh=mesh,
                                _filename=mesh_name.string(),
                                _straighten=straighten,
@@ -167,7 +168,8 @@ BOOST_PARAMETER_FUNCTION(
                                _rebuild_partitions_filename=rebuild_partitions_filename,
                                _partitions=partitions,
                                _partitioner=partitioner,
-                               _partition_file=partition_file
+                               _partition_file=partition_file,
+                               _verbose=verbose
                                );
 #if defined(FEELPP_HAS_HDF5)
         if ( savehdf5 )
@@ -178,8 +180,7 @@ BOOST_PARAMETER_FUNCTION(
 #if defined(FEELPP_HAS_HDF5)
     if ( mesh_name.extension() == ".json"  )
     {
-        if ( proc_rank == 0 )
-            std::cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(mesh_name) << "\n";
+        Feel::cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(mesh_name) << "\n";
         LOG(INFO) << " Loading mesh in json+h5 format " << fs::system_complete(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         _mesh_ptrtype m( mesh );
@@ -192,8 +193,7 @@ BOOST_PARAMETER_FUNCTION(
     // Acusim Raw Mesh
     if ( mesh_name.extension() == ".arm"  )
     {
-        if ( proc_rank == 0 )
-            std::cout << "[loadMesh] Loading mesh in format arm(acusolve)h5: " << fs::system_complete(mesh_name) << "\n";
+        Feel::cout << "[loadMesh] Loading mesh in format arm(acusolve)h5: " << fs::system_complete(mesh_name) << "\n";
         LOG(INFO) << " Loading mesh in arm(acusolve) format " << fs::system_complete(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         _mesh_ptrtype m( mesh );
@@ -207,10 +207,9 @@ BOOST_PARAMETER_FUNCTION(
     }
 
     mesh_name = soption(_name="gmsh.domain.shape");
-    if ( proc_rank == 0 )
-        std::cout << "[loadMesh] no file name or unrecognized extension provided\n"
-                  << "[loadMesh] automatically generating amesh from gmsh.domain.shape in format geo+msh: " 
-                  << mesh_name << ".geo\n";
+    Feel:cout << "[loadMesh] no file name or unrecognized extension provided\n"
+              << "[loadMesh] automatically generating amesh from gmsh.domain.shape in format geo+msh: " 
+              << mesh_name << ".geo\n";
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
     auto m = createGMSHMesh(_mesh=mesh,
                             _desc=domain( _name=mesh_name.string(), _h=h, _worldcomm=worldcomm ),
@@ -225,7 +224,8 @@ BOOST_PARAMETER_FUNCTION(
                             _rebuild_partitions_filename=rebuild_partitions_filename,
                             _partitions=partitions,
                             _partitioner=partitioner,
-                            _partition_file=partition_file );
+                            _partition_file=partition_file,
+                            _verbose=verbose);
 
 #if defined(FEELPP_HAS_HDF5)
     if ( savehdf5 )
