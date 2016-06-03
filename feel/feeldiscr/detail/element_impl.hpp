@@ -355,6 +355,8 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::initSubElementView( mpl::true_ )
 {
+    if ( !M_functionspace )
+        return;
     fusion::for_each( M_elements,
                       Feel::detail::InitializeElement<Element<Y,Cont>>(this) );
 }
@@ -376,11 +378,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> c
         M_ct2 = __e.M_ct2;
         M_containersOffProcess = __e.M_containersOffProcess;
 
-        this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
-
-        this->resize( M_functionspace->nLocalDof() );
         super::operator=( __e );
-        this->outdateGlobalValues();
+        this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
     }
 
     return *this;
@@ -392,16 +391,11 @@ template<typename VectorExpr>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>&
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( VectorExpr const& __v )
 {
-    if (  __v.size() != this->size() )
-    {
-        std::ostringstream __err;
-        __err << "Invalid vector size this->size()=" << this->size()
-              << " and v.size()=" << __v.size();
-        throw std::logic_error( __err.str() );
-    }
-
-    this->outdateGlobalValues();
     super::operator=( __v );
+    this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
+    if ( !M_functionspace )
+        LOG(WARNING) << "no function space, only algebraic view is operational";
+
     return *this;
 }
 
