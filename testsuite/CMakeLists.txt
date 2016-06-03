@@ -33,4 +33,3 @@ foreach( testdir core math alg mesh poly filters material models interpolation i
 
 endforeach()
 
-feelpp_add_application(cp SRCS cp.cpp)
