@@ -1176,6 +1176,9 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
   if ( FEELPP_ENABLE_NLOPT )
     FIND_LIBRARY(FEELPP_NLOPT_LIBRARY feelpp_nlopt PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   endif()
+  if ( FEELPP_ENABLE_IPOPT )
+    FIND_LIBRARY(FEELPP_IPOPT_LIBRARY feelpp_ipopt PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  endif()
   FIND_LIBRARY(FEELPP_GINAC_LIBRARY feelpp_ginac PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   FIND_LIBRARY(FEELPP_LIBRARY feelpp PATHS $ENV{FEELPP_DIR}/lib NO_DEFAULT_PATH)
   FIND_LIBRARY(FEELPP_LIBRARY feelpp )
@@ -1191,14 +1194,14 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
   message(STATUS "[feelpp] Feel++ includes: ${FEELPP_INCLUDE_DIR}")
   message(STATUS "[feelpp] Feel++ library: ${FEELPP_LIBRARY}")
   message(STATUS "[feelpp] Feel++ data: ${FEELPP_DATADIR}")
-  
+
   MARK_AS_ADVANCED(
     FEELPP_INCLUDE_DIR
     FEELPP_LIBRARY
     )
-  SET(FEELPP_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_GINAC_LIBRARY} ${FEELPP_NLOPT_LIBRARY}  ${FEELPP_LIBRARIES})
+  SET(FEELPP_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_GINAC_LIBRARY} ${FEELPP_NLOPT_LIBRARY} ${FEELPP_IPOPT_LIBRARY} ${FEELPP_LIBRARIES})
 else()
-  set(FEELPP_LIBRARY feelpp) 
+  set(FEELPP_LIBRARY feelpp)
   SET(FEELPP_INCLUDE_DIR ${FEELPP_BUILD_DIR}/ ${FEELPP_SOURCE_DIR}/)
   INCLUDE_DIRECTORIES(${FEELPP_INCLUDE_DIR})
 endif()

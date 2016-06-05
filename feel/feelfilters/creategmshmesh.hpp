@@ -85,6 +85,7 @@ BOOST_PARAMETER_FUNCTION(
       ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm.localSize() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( partitioner,   *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
+      ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity") )
         )
     )
 {
@@ -107,6 +108,7 @@ BOOST_PARAMETER_FUNCTION(
         desc->setStructuredMesh( structured );
         desc->setPeriodic( periodic );
         desc->setInMemory( in_memory );
+        desc->setVerbosity( verbose );
 
         std::string fname;
         bool generated_or_modified;
@@ -122,6 +124,7 @@ BOOST_PARAMETER_FUNCTION(
 
         if ( rebuild_partitions )
         {
+            VLOG(1) << "Rebuild partitions\n";
             desc->rebuildPartitionMsh(fname,rebuild_partitions_filename);
             fname=rebuild_partitions_filename;
         }
