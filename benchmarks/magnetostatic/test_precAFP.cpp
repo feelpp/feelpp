@@ -121,7 +121,7 @@ class TestPrecAFP : public Application
     typedef typename lag_space_type::element_type lag_element_type;
 
     //! Pch 0 space
-    typedef Lagrange<0, Scalar, Discontinuous> lag_0_basis_type; 
+    typedef Lagrange<0, Scalar, Discontinuous> lag_0_basis_type;
     typedef FunctionSpace<mesh_type, bases<lag_0_basis_type>> lag_0_space_type;
     typedef boost::shared_ptr<lag_0_space_type> lag_0_space_ptrtype;
     typedef typename lag_0_space_type::element_type lag_0_element_type;
@@ -139,7 +139,7 @@ class TestPrecAFP : public Application
     //! Preconditioners
     typedef PreconditionerBlockMS<comp_space_type> preconditioner_type;
     typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
-    
+
     //! The exporter factory
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
@@ -193,7 +193,7 @@ class TestPrecAFP : public Application
         auto v = V.template element<0>();
         auto phi = U.template element<1>();
         auto psi = V.template element<1>();
-        
+
         auto f2 = form2(_test=Xh,_trial=Xh);
         auto f1 = form1(_test=Xh);
 
@@ -211,7 +211,7 @@ class TestPrecAFP : public Application
                        _expr = 
                          inner(trans(id(v)),gradt(phi)) // grad(phi)
                        + inner(trans(idt(u)),grad(psi)) // div(u) = 0
-                       + (1./idv(M_mu_r))*(trans(curlt_op(u))*curl_op(v)) // curl curl 
+                       + (1./idv(M_mu_r))*(trans(curlt_op(u))*curl_op(v)) // curl curl
                        );
         for(auto const & it : m_w_u)
         {
@@ -251,7 +251,7 @@ class TestPrecAFP : public Application
         if(soption("ms.pc-type") == "ms" ){
             // auto M_prec = blockms(
             //    _space = Xh,
-            //    _space2 = Mh, 
+            //    _space2 = Mh,
             //    _matrix = f2.matrixPtr(),
             //    _bc = model.boundaryConditions());
 
@@ -299,7 +299,7 @@ class TestPrecAFP : public Application
         M_prec->iterMinMaxMean();
         if(Environment::worldComm().globalRank()==0)
             /*
-             * to print * -> ./myCode --options >> sameResFile.txt 
+             * to print * -> ./myCode --options >> sameResFile.txt
              * + grep #TestCase > parseIt
              * #TestCase
              * #ksp-pc_ksp11-pc11_ksp11.1-pc11.1_ksp11.2-pc11.2_ksp22-pc22
@@ -329,11 +329,11 @@ class TestPrecAFP : public Application
             << Xh->template functionSpace<0>()->nDof() << "\t"
             << Xh->template functionSpace<1>()->nDof() << "\t"
             << ret.nIterations() << "\t"
-            << M_prec->printMinMaxMean(0,0) << "\t" 
-            << M_prec->printMinMaxMean(0,1) << "\t" 
-            << M_prec->printMinMaxMean(0,2) << "\t" 
-            << M_prec->printMinMaxMean(1,0) << "\t" 
-            << M_prec->printMinMaxMean(1,1) << "\t" 
+            << M_prec->printMinMaxMean(0,0) << "\t"
+            << M_prec->printMinMaxMean(0,1) << "\t"
+            << M_prec->printMinMaxMean(0,2) << "\t"
+            << M_prec->printMinMaxMean(1,0) << "\t"
+            << M_prec->printMinMaxMean(1,1) << "\t"
             << M_prec->printMinMaxMean(1,2) << "\t"
             << e21 << "\t"
             << e21/e22 << "\n"; 
@@ -342,11 +342,11 @@ class TestPrecAFP : public Application
             //    << nnz << "\t"
             //    << soption("functions.m") << "\t"
             //    << e21 << "\t"
-            //    << e21/e22 
+            //    << e21/e22
 #if 0
             //    << "\t"
             //    << e21_curl << "\t"
-            //    << e21_curl/e22_curl 
+            //    << e21_curl/e22_curl
 #endif
             //    << std::endl;
         /* report */
@@ -358,15 +358,15 @@ class TestPrecAFP : public Application
             std::ofstream outputFile( stringStream.str() );
             if( outputFile )
             {
-                outputFile 
+                outputFile
                         << "---\n"
                         << "title: \""<< soption("title") << "\"\n"
                         << "date: " << stringStream.str() << "\n"
                         << "categories: simu\n"
                         << "--- \n\n";
                 outputFile << "#Physique" << std::endl;
-                model.saveMD(outputFile);    
-                
+                model.saveMD(outputFile);
+
                 outputFile << "##Physique specifique" << std::endl;
                 outputFile << "| Variable | value | " << std::endl;
                 outputFile << "|---|---|" << std::endl;
@@ -375,10 +375,10 @@ class TestPrecAFP : public Application
                 outputFile << "| Exact | " << soption("functions.a") << "|" << std::endl;
 
                 outputFile << "#Numerics" << std::endl;
-                
+
                 outputFile << "##Mesh" << std::endl;
-                M_mesh->saveMD(outputFile); 
-               
+                M_mesh->saveMD(outputFile);
+
                 outputFile << "##Spaces" << std::endl;
                 outputFile << "|qDim|" << Xh->qDim()      << "|" << Xh->template functionSpace<1>()->qDim()      << "|" << Xh->template functionSpace<1>()->qDim()      << "|" << std::endl;
                 outputFile << "|---|---|---|---|" << std::endl;
@@ -386,7 +386,7 @@ class TestPrecAFP : public Application
                 outputFile << "|nDof|" << Xh->nDof()      << "|"<< Xh->template functionSpace<0>()->nDof()      << "|"<< Xh->template functionSpace<1>()->nDof()      << "|" << std::endl;
                 outputFile << "|nLocaldof|" << Xh->nLocalDof() << "|" << Xh->template functionSpace<0>()->nLocalDof() << "|" << Xh->template functionSpace<1>()->nLocalDof() << "|" << std::endl;
                 outputFile << "|nPerComponent|" << Xh->nDofPerComponent() << "|" << Xh->template functionSpace<0>()->nDofPerComponent() << "|" << Xh->template functionSpace<1>()->nDofPerComponent() << "|" << std::endl;
-                
+
                 outputFile << "##Solvers" << std::endl;
 
                 outputFile << "| x | ms | blocksms.11 | blockms.22 |" << std::endl;
@@ -401,9 +401,9 @@ class TestPrecAFP : public Application
                     outputFile << "|**Matrix**  |  " << nnz << "| 0 | 0 |" << std::endl;
                     outputFile << "|**nb Iter**  |  " << ret.nIterations() << "| 0 | 0 |" << std::endl;
                 }
-            
+
                 outputFile << "##Timers" << std::endl;
-                Environment::saveTimersMD(outputFile); 
+                Environment::saveTimersMD(outputFile);
             }
             else
             {
@@ -454,7 +454,7 @@ int main(int argc, char** argv )
     Feel::Environment env( _argc=argc, _argv=argv,
                            _about=makeAbout(),
                            _desc=makeOptions() );
-    
+
     TestPrecAFP<FEELPP_DIM> t_afp;
 
     return 0;
