@@ -250,7 +250,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
                                                              size_type __start,
                                                              ComponentType __ct )
     :
-    Element( __functionspace, __name, __name, __start, __ct ) 
+    Element( __functionspace, __name, __name, __start, __ct )
 {
 }
 
@@ -588,13 +588,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
             //for( typename array_type::index c2 = 0; c2 < nComponents2; ++c2 )
             for ( uint16_type q = 0; q < nq; ++q )
             {
-                for ( typename array_type::index i = 0; i < nComponents1; ++i )
-                    for( typename array_type::index j = 0; j < nComponents2; ++j )
-                {
-                    v[q]( i,j ) += s(ldof)*v_*context.id( ldof, i, j, q );
-                    //vsum +=v_*context.id( ldof, i, 0, q );
-                    //v[q](i,0) += v_*context.gmc()->J(*)*context.pc()->phi( ldof, i, 0, q );
-                }
+                v[q] += context.id(ldof,q)*(s(ldof)*v_);
             }
         }
     }
@@ -1005,7 +999,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
     auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
-        const int ncdof = is_product?nComponents1:1;
+        const int ncdof = is_product?nComponents:1;
+        const int ncdof2 = is_product?nComponents2:1;
 
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
@@ -1018,21 +1013,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
             ( this->size() )( this->localSize() )
             ( this->firstLocalIndex() )( this->lastLocalIndex() )
             .error( "FunctionSpace::Element invalid access index" );
-            //value_type v_ = (*this)( gdof );
             value_type v_ = this->globalValue( gdof );
-
             for ( size_type q = 0; q < Q; ++q )
             {
-#if 0
-                std::cout << "v(" << gdof << ")=" << v_ << "\n";
-                std::cout << "context.div(" << ldof << "," << q << ")="
-                          << context.div( ldof, 0, 0, q ) << "\n" ;
-#endif
-                v[q]( 0,0 ) += s(ldof)*v_*context.div( ldof, 0, 0, q );
+                v[q] += context.div( ldof, q )*(s(ldof)*v_);
             }
         }
     }
-
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -2076,7 +2063,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacian_( ContextType cons
             for ( size_type q = 0; q < context.xRefs().size2(); ++q )
             {
                 v[q]( 0,0 ) += v_*context.laplacian( ldof, 0, 0, q );
-            } 
+            }
 
         }
     }
@@ -2590,7 +2577,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
      auto IhLoc = __fe->edgeLocalInterpolant();
     for ( ; entity_it != entity_en; ++entity_it )
     {
-        
+
         auto const& curEntity = boost::unwrap_ref(*entity_it);
         auto entity_elt_info = curEntity.elements().begin();
         ptid_in_element = entity_elt_info->second;

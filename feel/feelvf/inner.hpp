@@ -296,7 +296,14 @@ public:
         {
             //if ( Type == 1 )
             {
-                return ( M_l_tensor_expr.evalijq( i,j,q ).adjoint()*M_r_tensor_expr.evalijq( i,j,q ) ).trace();
+                //return ( M_l_tensor_expr.evalijq( i,j,q ).adjoint()*M_r_tensor_expr.evalijq( i,j,q ) ).trace();
+                value_type res= 0;
+                for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += M_l_tensor_expr.evalijq( i,j,c1,c2,q )*M_r_tensor_expr.evalijq( i,j,c1,c2,q );
+                    }
+                return res;
             }
         }
         value_type
@@ -304,7 +311,13 @@ public:
         {
             //if ( Type == 1 )
             {
-                return ( M_l_tensor_expr.evalijq( i,j,q ).adjoint()*M_r_tensor_expr.evalijq( i,j,q ) ).trace();
+                //return ( M_l_tensor_expr.evalijq( i,j,q ).adjoint()*M_r_tensor_expr.evalijq( i,j,q ) ).trace();
+                value_type res= 0;
+                for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += M_l_tensor_expr.evalijq( i,j,c1,c2,q )*M_r_tensor_expr.evalijq( i,j,c1,c2,q );
+                    }
             }
         }
         value_type
@@ -393,7 +406,6 @@ public:
     private:
         l_tensor_expr_type M_l_tensor_expr;
         r_tensor_expr_type M_r_tensor_expr;
-        mutable Eigen::Matrix<value_type,left_shape::M,left_shape::N> M1,M2;
     };
 
 private:
