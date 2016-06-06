@@ -654,6 +654,22 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 }
 
 //----------------------------------------------------------------------------//
+// Initial value
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_ptrtype const& phiv, bool doReinitialize)
+{
+    *this->phi() = *phiv;
+
+    if (doReinitialize)
+        this->reinitialize();
+
+    updateHeaviside();
+    updateDirac();
+    updateMass();
+}
+
+//----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
