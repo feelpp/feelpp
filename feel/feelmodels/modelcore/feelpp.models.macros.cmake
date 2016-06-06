@@ -699,7 +699,6 @@ macro( genLibLevelset )
     set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
 
     set(LIB_DEPENDS ${ADVECTION_LIB_NAME} ${FEELPP_LIBRARIES} )
-    message( ${ADVECTION_LIB_NAME} )
 
     if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
 
