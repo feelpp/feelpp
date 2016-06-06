@@ -269,7 +269,23 @@ public:
     // template < typename TVeloc >
     // void updateE(TVeloc& Velocity);
 
-    //void initialize(element_levelset_ptrtype, bool doFirstReinit = false, LevelSetReinitMethod method=FM, int max_iter=-1, double dtau=0.01, double tol=0.1);
+    //--------------------------------------------------------------------//
+    // Initial value
+    void setInitialValue(element_levelset_ptrtype const& phiv, bool doReinitialize = false);
+    template<typename ExprT>
+    void setInitialValue(vf::Expr<ExprT> const& expr, bool doReinitialize = false)
+    {
+        this->phi()->on( 
+                _range=elements(this->mesh()),
+                _expr=expr
+                );
+        if(doReinitialize)
+            this->reinitialize();
+
+        updateHeaviside();
+        updateDirac();
+        updateMass();
+    }
     //element_levelset_ptrtype circleShape(double r0, double x0, double y0, double z0=0);
     //element_levelset_ptrtype ellipseShape(double a_ell, double b_ell, double x0, double y0, double z0=0);
     //void imposePhi( element_levelset_ptrtype );
@@ -331,7 +347,8 @@ private:
     void initFastMarching(mesh_ptrtype const& mesh);
 
     //--------------------------------------------------------------------//
-    // Levelset previous step phi
+    // Levelset
+    element_levelset_ptrtype & phi() { return M_advection->fieldSolutionPtr(); }
     element_levelset_ptrtype const& phio() const { return M_advection->timeStepBDF()->unknowns()[1]; }
 
     template < typename TVeloc >
