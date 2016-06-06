@@ -44,6 +44,22 @@ enum EvaluatorType
 };
 namespace details
 {
+template<typename ElementT, typename NodeT>
+class EvaluatorData: public boost::tuple<ElementT,NodeT>
+{
+public:
+    using super = boost::tuple<ElementT,NodeT>;
+    using element_type = ElementT;
+    using node_type = NodeT;
+
+    //! access to element i
+    element_type::value_type operator()( int i ) const { return this->get<0>()(i); }
+    
+    //! return the elements
+    element_type const& data() const { return this->get<0>(); }
+
+    node_type const& nodes() const { return this->get<1>(); }
+};
 /**
  * \class Evaluator
  * \brief work class to evaluate expressions at sets of points
@@ -77,9 +93,10 @@ public:
                               mpl::identity<typename Pset::template apply<mesh_element_type::nRealDim, value_type, Simplex>::type >,
                               mpl::identity<typename Pset::template apply<mesh_element_type::nRealDim, value_type, Hypercube>::type >
                               >::type::type pointset_type;
-    typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> element_type;
+    typedef Eigen::Tensor<value_type,3> element_type;
     typedef Eigen::Matrix<value_type,mesh_element_type::nRealDim,Eigen::Dynamic> node_type;
-    typedef boost::tuple<element_type,node_type> eval_element_type;
+    using eval_element_type = EvaluatorData<element_type,node_type> eval_element_type;
+    
     //@}
 
     /** @name Constructors, destructor
@@ -202,8 +219,8 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
     boost::tie( boost::tuples::ignore, it, en ) = M_range;
 
     int npoints = M_pset.points().size2();
-    element_type __v( M_pset.points().size2()*std::distance( it, en )*shape::M );
-    node_type __p( mesh_element_type::nDim, M_pset.points().size2()*std::distance( it, en ) );
+    element_type __v( std::distance( it, en ), shape::M, shape::N, npoints );
+    node_type __p( std::distance( it, en ), npoints );
     __v.setZero();
     __p.setZero();
 
@@ -211,7 +228,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
     // return if no elements
     if ( it == en )
-        return boost::make_tuple( __v, __p );
+        return eval_element_type( __v, __p );
 
     //
     // Precompute some data in the reference element for
@@ -248,12 +265,15 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
             {
                 for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
                 {
-                    __p(c1, e*npoints+p) = __c->xReal(p)[c1];
+                    __p(e,p)[c1] = __c->xReal(p)[c1];
                 }
 
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                 {
-                    __v( e*npoints*shape::M+shape::M*p+c1) = tensor_expr.evalq( c1, 0, p );
+                    for ( uint16_type c1 = 0; c2 < shape::N; ++c1 )
+                    {
+                        __v(e, c1, c2, p ) = tensor_expr.evalq( c1, c2, p );
+                    }
                 }
             }
         }
@@ -267,13 +287,13 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
             for ( uint16_type p = 0; p < npoints; ++p )
             {
-                for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
-                {
-                    __p(c1, e*npoints+p) = __c1->xReal(p)[c1];
-                }
+                __p(e, npoints) = __c1->xReal(p);
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                 {
-                    __v( e*npoints*shape::M+shape::M*p+c1) = tensor_expr1.evalq( c1, 0, p );
+                    for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+                    {
+                        __v( e, c1, c2, p ) = tensor_expr1.evalq( c1, c2, p );
+                    }
                 }
             }
         }
@@ -290,13 +310,14 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
                 for ( uint16_type p = 0; p < npoints; ++p )
                 {
-                    for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
-                    {
-                        __p(c1, e*npoints+p) = __c->xReal(p)[c1];
-                    }
+                    __p(e, p) = __c1->xReal(p);
+
                     for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                     {
-                        __v( e*npoints*shape::M+shape::M*p+c1) = tensor_expr.evalq( c1, 0, p );
+                        for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+                        {
+                            __v( e, c1, c2, p ) = tensor_expr.evalq( c1, c2, p );
+                        }
                     }
                 }
             }
@@ -310,13 +331,14 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
                 for ( uint16_type p = 0; p < npoints; ++p )
                 {
-                    for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
-                    {
-                        __p(c1, e*npoints+p) = __c1->xReal(p)[c1];
-                    }
+                    __p(e, p) = __c1->xReal(p);
+
                     for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                     {
-                        __v( e*npoints*shape::M+shape::M*p+c1) = tensor_expr1.evalq( c1, 0, p );
+                        for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+                        {
+                            __v( e, c1, c2, p ) = tensor_expr.evalq( c1, c2, p );
+                        }
                     }
                 }
             }
@@ -324,7 +346,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
         break;
         }
     }
-    return boost::make_tuple( __v, __p );
+    return eval_element_type( __v, __p );
 }
 
 template<EvaluatorType iDim, typename Iterator, typename Pset, typename ExprT>
@@ -508,7 +530,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     } // face_it
 
 
-    return boost::make_tuple( __v, __p );
+    return EvaluatorData( __v, __p, __s );
 }
 }
 /// \endcond
@@ -649,13 +671,13 @@ BOOST_PARAMETER_FUNCTION(
 
     auto e = evaluate_impl( range, pset, expr, geomap );
     int index=0;
-    double maxe = e.template get<0>().size()?e.template get<0>().array().abs().maxCoeff(&index):-1e30;
+    double maxe = e.data().size()?e.data().array().abs().maxCoeff(&index):-1e30;
 
     constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
     Eigen::Matrix<double, nRealDim,1> n;
-    if ( e.template get<1>().size() )
-        n = e.template get<1>().col(index);
-    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().size() << ") is maximal: "<< index << " coord = \n"<<n<<"\n";
+    if ( e.nodes().size() )
+        n = e.nodes().col(index);
+    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.data().size() << ") is maximal: "<< index << " coord = \n"<<n<<"\n";
 
     int world_size = worldcomm.size();
     std::vector<normLinfData<nRealDim>> D_world( world_size );
@@ -675,11 +697,11 @@ BOOST_PARAMETER_FUNCTION(
     {
         int index2=0;
         double maxe2 = 0;
-        for( int i = 0; i < e.template get<0>().size(); ++i )
+        for( int i = 0; i < e.size(); ++i )
         {
-            if ( math::abs(e.template get<0>()(i)) > maxe2 )
+            if ( math::abs(e(i)) > maxe2 )
             {
-                maxe2 = math::abs(e.template get<0>()(i));
+                maxe2 = math::abs(e(i));
                 index2 = i;
             }
         }
