@@ -316,6 +316,42 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
     }
 }
 template<typename MeshType, int N>
+template<typename Iterator,typename TSt>
+void
+ExporterEnsightGold<MeshType,N>::writeCaseFileVariables( Iterator it, Iterator end,
+                                                         std::string const& loc,
+                                                         std::string const& type,
+                                                         std::string const& ext,
+                                                         TSt const& __ts,
+                                                         std::ostream& __out ) const
+{
+    for( ; it != end; ++it )
+    {
+        if( boption( _name="exporter.ensightgold.merge.timesteps") )
+        {
+            __out << type << " per " << loc << ": "
+                  << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
+                  << it->second.name() << " " << __ts->name() << "." << it->first;
+            if( ! boption( _name="exporter.ensightgold.merge.markers") )
+            { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
+            /* if we want to pack data in several files instead of one, we add an index to the filename */
+            if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
+            { __out << ".*"; }
+            __out << "." << ext << std::endl;
+        }
+        else
+        {
+            __out << type << " per " << loc << ": "
+                  << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                  << it->second.name() << " " << __ts->name() << "." << it->first;
+            if( ! boption( _name="exporter.ensightgold.merge.markers") )
+            { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
+            __out << "." << ext << "." << std::string(M_timeExponent, '*') << std::endl;
+        }
+    }
+}
+
+template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 {
@@ -439,179 +475,39 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                     }
                 }
 
-                typename timeset_type::step_type::nodal_scalar_const_iterator __it = ( *__tstp_it )->beginNodalScalar();
-                typename timeset_type::step_type::nodal_scalar_const_iterator __end = ( *__tstp_it )->endNodalScalar();
+                writeCaseFileVariables( ( *__tstp_it )->beginNodalScalar(),
+                                        ( *__tstp_it )->endNodalScalar(),
+                                        "node", "scalar", "scl",
+                                        __ts, __out );
+                writeCaseFileVariables( ( *__tstp_it )->beginNodalVector(),
+                                        ( *__tstp_it )->endNodalVector(),
+                                        "node", "vector", "vec",
+                                        __ts, __out );
+                writeCaseFileVariables( ( *__tstp_it )->beginNodalTensor2(),
+                                        ( *__tstp_it )->endNodalTensor2(),
+                                        "node", "tensor asym", "tsr",
+                                        __ts, __out );
+                writeCaseFileVariables( ( *__tstp_it )->beginNodalTensor2Symm(),
+                                        ( *__tstp_it )->endNodalTensor2Symm(),
+                                        "node", "tensor symm", "tsrs",
+                                        __ts, __out );
+                writeCaseFileVariables( ( *__tstp_it )->beginElementScalar(),
+                                        ( *__tstp_it )->endElementScalar(),
+                                        "element",  "scalar", "scl",
+                                        __ts, __out );
+                writeCaseFileVariables( ( *__tstp_it )->beginElementVector(),
+                                        ( *__tstp_it )->endElementVector(),
+                                        "element", "vector", "vec",
+                                        __ts, __out );
+                writeCaseFileVariables( ( *__tstp_it )->beginElementTensor2(),
+                                        ( *__tstp_it )->endElementTensor2(),
+                                        "element", "tensor asym", "tsr",
+                                        __ts, __out );
+                writeCaseFileVariables( ( *__tstp_it )->beginElementTensor2Symm(),
+                                        ( *__tstp_it )->endElementTensor2Symm(),
+                                        "element", "tensor symm", "tsrs",
+                                        __ts, __out );
 
-                while ( __it != __end )
-                {
-                    if( boption( _name="exporter.ensightgold.merge.timesteps") )
-                    {
-                        __out << "scalar per node: "
-                            << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                            << __it->second.name() << " " << __ts->name() << "." << __it->first;
-                        if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                        { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                        /* if we want to pack data in several files instead of one, we add an index to the filename */
-                        if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-                        { __out << ".*"; }
-                        __out << ".scl" << std::endl;
-                    }
-                    else
-                    {
-                        __out << "scalar per node: "
-                            << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                            << __it->second.name() << " " << __ts->name() << "." << __it->first;
-                        if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                        { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                        __out << ".scl" << "." << std::string(M_timeExponent, '*') << std::endl;
-                    }
-                    ++__it;
-                }
-
-                typename timeset_type::step_type::nodal_vector_const_iterator __itv = ( *__tstp_it )->beginNodalVector();
-                typename timeset_type::step_type::nodal_vector_const_iterator __env = ( *__tstp_it )->endNodalVector();
-
-                while ( __itv != __env )
-                {
-                    if( boption( _name="exporter.ensightgold.merge.timesteps") )
-                    {
-                        __out << "vector per node: "
-                            << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                            << __itv->second.name() << " " << __ts->name() << "." << __itv->first;
-                          if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                        { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                        /* if we want to pack data in several files instead of one, we add an index to the filename */
-                        if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-                        { __out << ".*"; }
-                        __out << ".vec" << std::endl;
-                    }
-                    else
-                    {
-                        __out << "vector per node: "
-                            << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                            << __itv->second.name() << " " << __ts->name() << "." << __itv->first;
-                        if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                        { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                        __out << ".vec" << "." << std::string(M_timeExponent, '*') << std::endl;
-                    }
-                    ++__itv;
-                }
-
-                typename timeset_type::step_type::nodal_tensor2_const_iterator __itt = ( *__tstp_it )->beginNodalTensor2();
-                typename timeset_type::step_type::nodal_tensor2_const_iterator __ent = ( *__tstp_it )->endNodalTensor2();
-
-                while ( __itt != __ent )
-                {
-                    if( boption( _name="exporter.ensightgold.merge.timesteps") )
-                    {
-                        __out << "tensor per node: "
-                            << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                            << __itt->second.name() << " " << __ts->name() << "." << __itt->first;
-                        if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                        { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                        /* if we want to pack data in several files instead of one, we add an index to the filename */
-                        if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-                        { __out << ".*"; }
-                        __out << ".tsr" << std::endl;
-                    }
-                    else
-                    {
-                        __out << "tensor per node: "
-                            << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                            << __itt->second.name() << " " << __ts->name() << "." << __itt->first;
-                        if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                        { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                        __out << ".tsr" << "." << std::string(M_timeExponent, '*') << std::endl;
-                    }
-                    ++__itt;
-                }
-
-                typename timeset_type::step_type::element_scalar_const_iterator __it_el = ( *__tstp_it )->beginElementScalar();
-                typename timeset_type::step_type::element_scalar_const_iterator __end_el = ( *__tstp_it )->endElementScalar();
-
-                while ( __it_el != __end_el )
-                {
-                    if( boption( _name="exporter.ensightgold.merge.timesteps") )
-                    {
-                        __out << "scalar per element: "
-                            << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                            << __it_el->second.name() << " " << __ts->name() << "." << __it_el->first;
-                        if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                        { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                        /* if we want to pack data in several files instead of one, we add an index to the filename */
-                        if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-                        { __out << ".*"; }
-                        __out << ".scl" << std::endl;
-                    }
-                    else
-                    {
-                        __out << "scalar per element: "
-                            << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                            << __it_el->second.name() << " " << __ts->name() << "." << __it_el->first;
-                        if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                        { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                        __out << ".scl" << "." << std::string(M_timeExponent, '*') << std::endl;
-                    }
-                    ++__it_el;
-                }
-
-                typename timeset_type::step_type::element_vector_const_iterator __itv_el = ( *__tstp_it )->beginElementVector();
-                typename timeset_type::step_type::element_vector_const_iterator __env_el = ( *__tstp_it )->endElementVector();
-
-                while ( __itv_el != __env_el )
-                {
-                    if( boption( _name="exporter.ensightgold.merge.timesteps") )
-                    {
-                        __out << "vector per element: "
-                            << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                            << __itv_el->second.name() << " " << __ts->name() << "." << __itv_el->first;
-                        if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                        { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                        /* if we want to pack data in several files instead of one, we add an index to the filename */
-                        if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-                        { __out << ".*"; }
-                        __out << ".vec" << std::endl;
-                    }
-                    else
-                    {
-                        __out << "vector per element: "
-                            << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                            << __itv_el->second.name() << " " << __ts->name() << "." << __itv_el->first;
-                        if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                        { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                        __out << ".vec" << "." << std::string(M_timeExponent, '*') << std::endl;
-                    }
-                    ++__itv_el;
-                }
-
-                typename timeset_type::step_type::element_tensor2_const_iterator __itt_el = ( *__tstp_it )->beginElementTensor2();
-                typename timeset_type::step_type::element_tensor2_const_iterator __ent_el = ( *__tstp_it )->endElementTensor2();
-
-                while ( __itt_el != __ent_el )
-                {
-                    if( boption( _name="exporter.ensightgold.merge.timesteps") )
-                    {
-                        __out << "tensor per element: "
-                            << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                            << __itt_el->second.name() << " " << __ts->name() << "." << __itt_el->first;
-                        if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                        { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                        /* if we want to pack data in several files instead of one, we add an index to the filename */
-                        if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-                        { __out << ".*"; }
-                        __out << ".tsr" << std::endl;
-                    }
-                    else
-                    {
-                        __out << "tensor per element: "
-                            << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                            << __itt_el->second.name() << " " << __ts->name() << "." << __itt_el->first;
-                        if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                        { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                        __out << ".tsr" << "." << std::string(M_timeExponent, '*') << std::endl;
-                    }
-                    ++__itt_el;
-                }
             }
 
             __out << "TIME:\n";
@@ -1777,20 +1673,26 @@ ExporterEnsightGold<MeshType,N>::writeVariableFiles() const
                 { LOG(INFO) << "NodalVector: " << dist << std::endl; }
                 if( (dist = std::distance(__step->beginNodalTensor2(), __step->endNodalTensor2())) != 0)
                 { LOG(INFO) << "NodalTensor2: " << dist << std::endl; }
+                if( (dist = std::distance(__step->beginNodalTensor2Symm(), __step->endNodalTensor2Symm())) != 0)
+                { LOG(INFO) << "NodalTensor2Symm: " << dist << std::endl; }
                 if( (dist = std::distance(__step->beginElementScalar(), __step->endElementScalar())) != 0)
                 { LOG(INFO) << "ElementScalar: " << dist << std::endl; }
                 if( (dist = std::distance(__step->beginElementVector(), __step->endElementVector())) != 0)
                 { LOG(INFO) << "ElementVector: " << dist << std::endl; }
                 if( (dist = std::distance(__step->beginElementTensor2(), __step->endElementTensor2())) != 0)
                 { LOG(INFO) << "ElementTensor2: " << dist << std::endl; }
+                if( (dist = std::distance(__step->beginElementTensor2Symm(), __step->endElementTensor2Symm())) != 0)
+                { LOG(INFO) << "ElementTensor2Symm: " << dist << std::endl; }
 
                 saveNodal( __ts, __step, (__it == __ts->beginStep()), __step->beginNodalScalar(), __step->endNodalScalar() );
                 saveNodal( __ts, __step, (__it == __ts->beginStep()), __step->beginNodalVector(), __step->endNodalVector() );
                 saveNodal( __ts, __step, (__it == __ts->beginStep()), __step->beginNodalTensor2(), __step->endNodalTensor2() );
+                saveNodal( __ts, __step, (__it == __ts->beginStep()), __step->beginNodalTensor2Symm(), __step->endNodalTensor2Symm() );
 
                 saveElement( __ts, __step, (__it == __ts->beginStep()), __step->beginElementScalar(), __step->endElementScalar() );
                 saveElement( __ts, __step, (__it == __ts->beginStep()), __step->beginElementVector(), __step->endElementVector() );
                 saveElement( __ts, __step, (__it == __ts->beginStep()), __step->beginElementTensor2(), __step->endElementTensor2() );
+                saveElement( __ts, __step, (__it == __ts->beginStep()), __step->beginElementTensor2Symm(), __step->endElementTensor2Symm() );
 
             }
 
@@ -1845,8 +1747,10 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
         { __varfname << ".vec"; }
         else if(__var->second.is_tensor2)
         { __varfname << ".tsr"; }
+        else if(__var->second.is_tensor2symm)
+        { __varfname << ".tsrs"; }
         else
-        { __varfname << ".scl"; LOG(ERROR) << "Could not detect data type (scalar, vector, tensor2). Defaulted to scalar." << std::endl; }
+        { __varfname << ".scl"; LOG(ERROR) << "Could not detect data type (scalar, vector, tensor2,tensor2symm). Defaulted to scalar." << std::endl; }
 
         if( ! boption( _name="exporter.ensightgold.merge.timesteps") )
         {
@@ -1983,6 +1887,10 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                 uint16_type nComponents = __var->second.nComponents;
                 if ( __var->second.is_vectorial )
                     nComponents = 3;
+                if ( __var->second.is_tensor2  )
+                    nComponents = 9;
+                if ( __var->second.is_tensor2symm  )
+                    nComponents = 6;
 
                 int nfaces = mp.ids.size();
                 std::vector<float> field( nComponents*nfaces, 0.0 );
@@ -2058,6 +1966,11 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                 nComponents = 9;
                 VLOG(1) << "nComponents field(is_tensor2): " << nComponents;
             }
+            if ( __var->second.is_tensor2symm )
+            {
+                nComponents = 6;
+                VLOG(1) << "nComponents field(is_tensor2): " << nComponents;
+            }
 
             /* we get that from the local processor */
             /* We do not need the renumbered global index */
@@ -2075,16 +1988,22 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                 __field_size *= 3;
             if ( __var->second.is_tensor2 )
                 __field_size *= 9;
+            if ( __var->second.is_tensor2symm )
+                __field_size *= 6;
             ublas::vector<float> __field( __field_size, 0.0 );
             size_type e = 0;
             VLOG(1) << "field size=" << __field_size;
             if ( !__var->second.areGlobalValuesUpdated() )
                 __var->second.updateGlobalValues();
+            int nc = __var->second.nComponents;
+            if ( __var->second.is_tensor2symm )
+                nc = __var->second.nComponents1*(__var->second.nComponents1+1)/2;
 
             /*
             std::cout << this->worldComm().rank() << " marker=" << *mit << " nbPts:" << npts << " nComp:" << nComponents
                       << " __evar->second.nComponents:" << __var->second.nComponents << std::endl;
             */
+            int reorder_tensor2symm[6] = { 0, 3, 1, 4, 5, 2 };
 
             /* loop on the elements */
             int index = 0;
@@ -2095,17 +2014,20 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                 /* because we need to pack the data in the x1 x2 ... xn y1 y2 ... yn z1 z2 ... zn order */
                 for ( uint16_type c = 0; c < nComponents; ++c )
                 {
+                    uint16_type c1= c;
+                    if ( __var->second.is_tensor2symm )
+                        c1 = reorder_tensor2symm[c];
                     for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
                     {
                         size_type ptid = mp.old2new[elt_it->get().point( p ).id()]-1;
-                        size_type global_node_id = mp.ids.size()*c + ptid ;
+                        size_type global_node_id = mp.ids.size()*c1 + ptid ;
                         //LOG(INFO) << elt_it->get().point( p ).id() << " " << ptid << " " << global_node_id << std::endl;
                         DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt_it->get().id()
                                                                      << " local pt:" << p
                                                                      << " mesh numPoints: " << __step->mesh()->numPoints();
                         DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
 
-                        if ( c < __var->second.nComponents )
+                        if ( c < nc )
                         {
                             size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->get().id(), p, c ) );
 
@@ -2210,8 +2132,10 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
         { __evarfname << ".vec"; }
         else if(__evar->second.is_tensor2)
         { __evarfname << ".tsr"; }
+        else if(__evar->second.is_tensor2symm)
+        { __evarfname << ".tsrs"; }
         else
-        { __evarfname << ".scl"; LOG(ERROR) << "Could not detect data type (scalar, vector, tensor2). Defaulted to scalar." << std::endl; }
+        { __evarfname << ".scl"; LOG(ERROR) << "Could not detect data type (scalar, vector, tensor2, tensor2symm). Defaulted to scalar." << std::endl; }
 
         if(! boption( _name="exporter.ensightgold.merge.timesteps") )
         {
@@ -2314,8 +2238,14 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
                 nComponents = 3;
             if ( __evar->second.is_tensor2 )
                 nComponents = 9;
+            if ( __evar->second.is_tensor2symm )
+                nComponents = 6;
 
-            size_type __field_size = nComponents * __evar->second.size()/__evar->second.nComponents;
+            int nc = __evar->second.nComponents;
+            if ( __evar->second.is_tensor2symm )
+                nc = __evar->second.nComponents1*(__evar->second.nComponents1+1)/2;
+
+            size_type __field_size = nComponents * __evar->second.size()/nc;
 
             ublas::vector<float> __field( __field_size );
             __field.clear();
@@ -2338,9 +2268,16 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
             std::cout << this->worldComm().rank() << " marker=" << *mit << " nbElts:" << ncells << " nComp:" << nComponents
                       << " __evar->second.nComponents:" << __evar->second.nComponents << std::endl;
             */
+            int reorder_tensor2symm[6] = { 0, 3, 1, 4, 5, 2 };
 
             for ( int c = 0; c < nComponents; ++c )
             {
+                uint16_type c1= c;
+                if ( __evar->second.is_tensor2symm )
+                    c1=reorder_tensor2symm[c];
+                int nc = __evar->second.nComponents;
+                if ( __evar->second.is_tensor2symm )
+                    nc = __evar->second.nComponents1*(__evar->second.nComponents1+1)/2;
                 size_type e = 0;
                 for ( auto elt_it = elt_st ; elt_it != elt_en; ++elt_it, ++e )
                 {
@@ -2349,9 +2286,9 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
                              << " elt_it :  " << elt.id()
                              << " e : " << e << "\n";
 
-                    size_type global_node_id = c*ncells+e ;
+                    size_type global_node_id = c1*ncells+e ;
 
-                    if ( c < __evar->second.nComponents )
+                    if ( c < nc)
                     {
                         size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt.id(),0, c ) );
 

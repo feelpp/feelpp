@@ -7,7 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2010-2016 Feel++ Consortium 
+  Copyright (C) 2010-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -321,7 +321,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 typedef boost::shared_ptr<pc_type> pc_ptrtype;          \
                 typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type; \
                 typedef boost::shared_ptr<ctx_type> ctx_ptrtype;        \
-                typedef Eigen::Matrix<value_type,shape::M,shape::N> loc_type; \
+                /*typedef Eigen::Matrix<value_type,shape::M,shape::N> loc_type;*/ \
+                using loc_type = Eigen::Tensor<value_type,2>;           \
                 typedef Eigen::Matrix<value_type,shape::M,shape::N> ret_type; \
                 typedef boost::multi_array<loc_type,1> array_type;    \
                                                                         \
@@ -358,11 +359,13 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     /*M_pcf(),*/                                        \
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), (new ctx_type( M_expr.e().functionSpace()->fe(), M_geot, (pc_ptrtype const&)M_pc ) ) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), M_expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*M_geot) ) ), \
+                    M_mzero( shape::M, shape::N ),                      \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( t.M_did_init ),                         \
                     M_hasRelationMesh( t.M_hasRelationMesh ),           \
                     M_same_mesh( t.M_same_mesh )                        \
                         {                                               \
+                            M_mzero.setZero();                          \
                         }                                               \
                                                                         \
                 tensor( this_type const& expr,                          \
@@ -382,11 +385,13 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
                                                 ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
+                    M_mzero( shape::M, shape::N ),                      \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
                     M_hasRelationMesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ), \
                     M_same_mesh( M_hasRelationMesh && isSameGeo )         \
                         {                                               \
+                            M_mzero.setZero();                          \
                             if(!M_same_mesh)                            \
                                     expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
                         }                                               \
@@ -404,11 +409,13 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
                                                 ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
+                    M_mzero( shape::M, shape::N ),                      \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
                     M_hasRelationMesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ), \
                     M_same_mesh( M_hasRelationMesh && isSameGeo )         \
                         {                                               \
+                            M_mzero.setZero();                          \
                             if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
                             /*update( geom );*/                         \
@@ -424,11 +431,13 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
                                                     ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
+                    M_mzero( shape::M, shape::N ),                      \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
                     M_hasRelationMesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ), \
                     M_same_mesh( M_hasRelationMesh && isSameGeo )         \
                         {                                               \
+                            M_mzero.setZero();                          \
                             if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
                             /*update( geom ); */                        \
@@ -510,7 +519,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 template <typename CTX>                                 \
                     void updateContext( CTX const& ctx )                \
                 {                                                       \
-                    std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), loc_type::Zero() ); \
+                    std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), M_mzero.constant(0.) ); \
                     M_expr.e().VF_OPERATOR_SYMBOL( O )( *ctx, M_loc ); \
                 }                                                       \
                 void update( Geo_t const& geom )                        \
@@ -525,7 +534,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
                 void update( Geo_t const& geom, uint16_type face1, mpl::bool_<true> ) \
                 {                                                       \
-                    std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), loc_type::Zero() ); \
+                    std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), M_mzero.constant(0.) ); \
                     this->updateCtxFaceIfSameGeom(geom,mpl::bool_<isSameGeo>() ); \
                     if (M_same_mesh)                                   \
                         M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
@@ -537,7 +546,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<true> )      \
                 {                                                       \
-                    std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), loc_type::Zero() ); \
+                    std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), M_mzero.constant(0.) ); \
                     this->updateCtxIfSameGeom(geom,mpl::bool_<isSameGeo>() ); \
                     if (M_same_mesh) {                                  \
                         /*std::cout << "\n idv no interp \n";*/         \
@@ -734,6 +743,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 /*std::vector<std::map<uint16_type, pc_ptrtype> > M_pcf;*/ \
                 ctx_ptrtype M_ctx;                                      \
                 array_type M_loc;                                      \
+                loc_type M_mzero;                                       \
                 ret_type M_zero;                                        \
                 /*typename element_type::BOOST_PP_CAT( VF_OPERATOR_TERM( O ), _type) M_loc;*/ \
                 bool M_did_init;                                        \

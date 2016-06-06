@@ -46,7 +46,8 @@ if (NOT FEELPP_MINIMAL_CONFIGURATION)
       opt
       eikonal
       eigen
-      magnetostatic )
+      magnetostatic
+      hdg )
     add_subdirectory(${DIR})
   endforeach()
 endif()

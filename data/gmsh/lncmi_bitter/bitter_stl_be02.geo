@@ -21,3 +21,5 @@ Physical Surface("TieRods") = {51, 52};
 Physical Surface("Channel0") = {54, 55};
 Physical Surface("Channel1") = {7, 58};
 Physical Surface("CoolingHoles") = {3, 6, 5, 35, 38, 37, 36, 32, 33, 8, 34, 31, 10, 9, 18, 17, 30, 29, 22, 21, 26, 25, 27, 28, 15, 16, 19, 20, 23, 24, 50, 47, 48, 14, 11, 12, 39, 40, 43, 44, 46, 42, 49, 13, 41, 45};
+Physical Surface("top") = {2};
+Physical Surface("bottom") = {4};

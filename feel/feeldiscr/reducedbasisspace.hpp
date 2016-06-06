@@ -545,14 +545,23 @@ public :
                 return result;
             }//d
 
+        auto id( int ldof, int q ) const -> decltype( super::id( ldof, q ) )
+            {
+                return super::id( ldof, q );
+            }
         value_type id( int ldof, int c1, int c2, int q ) const
             {
                 return super::id( ldof, c1, c2, q );
+            }
+        auto grad( int ldof, int q ) const -> decltype( super::grad( ldof, q ) )
+            {
+                return super::grad( ldof, q );
             }
         value_type grad( int ldof, int c1, int c2, int q ) const
             {
                 return super::grad( ldof, c1, c2, q );
             }
+
         value_type d( int ldof, int c1, int c2, int q ) const
             {
                 return super::d( ldof, c1, c2, q );
@@ -663,17 +672,17 @@ public :
             }
 
         std::pair<iterator,bool>
-        add( node_type t )
+        add( node_type const& t )
         {
             return add( t, mpl::bool_<is_composite>() );
         }
         std::pair<iterator,bool>
-        add( node_type t, mpl::bool_<true> )
+        add( node_type const& t, mpl::bool_<true> )
         {
             return std::make_pair( this->end(), false );
         }
         std::pair<iterator,bool>
-        add( node_type t, mpl::bool_<false> )
+        add( node_type const& t, mpl::bool_<false> )
         {
             // we suppose here that the point will be added which means that it
             // has been located in the underlying mesh
@@ -842,8 +851,14 @@ public :
         static const uint16_type nComponents2 = functionspace_type::nComponents2;
 
         typedef boost::multi_array<value_type,3> array_type;
+#if 0
         typedef Eigen::Matrix<value_type,nComponents1,1> _id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nRealDim> _grad_type;
+#else
+        using _id_type = Eigen::Tensor<value_type,2>;
+        using _grad_type = Eigen::Tensor<value_type,2>;
+        using eigen_matrix_to_tensor_map = TensorMap<Tensor<int, 1> > 
+#endif
         typedef boost::multi_array<_id_type,1> id_array_type;
         typedef boost::multi_array<_grad_type,1> grad_array_type;
 
@@ -1315,7 +1330,8 @@ template<typename Context_t>
 void
 ReducedBasisSpace<ModelType>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
 {
-    v[0] = context.id( *this );
+    eigen_matrix_to_tensor_map m( context.id( *this ) );
+    v[0] = m;
 }
 
 template<typename ModelType>

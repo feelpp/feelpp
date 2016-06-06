@@ -25,7 +25,9 @@
 #include <feel/feel.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 #include <feel/feelalg/vectorblock.hpp>
-using namespace Feel;
+
+namespace Feel {
+
 
 inline
 po::options_description
@@ -99,23 +101,12 @@ public:
     typedef Mesh<face_convex_type> face_mesh_type;
     typedef boost::shared_ptr<face_mesh_type> face_mesh_ptrtype;
 
-    //! the basis type of our approximation space
-    //    typedef bases<RaviartThomas<OrderU> > RT_basis_type; //RT vectorial space
-    typedef bases<Lagrange<OrderP,Vectorial,Discontinuous> > lagrange_basis_v_type; //Lagrange vectorial space
-    typedef bases<Lagrange<OrderP,Scalar,Discontinuous> > lagrange_basis_s_type; //Lagrange scalar space
-    typedef bases<Lagrange<OrderP,Scalar,Discontinuous> > lagrange_multiplier_basis_type; //PK scalar space
-
-    // Wh
-    typedef FunctionSpace<mesh_type, lagrange_basis_s_type> lagrange_space_s_type;
-    // Vh
-    typedef FunctionSpace<mesh_type, lagrange_basis_v_type> lagrange_space_v_type;
-    // Mh
-    typedef FunctionSpace<face_mesh_type, lagrange_multiplier_basis_type> lagrange_space_multiplier_type;
-
-    //! the approximation function space type (shared_ptr<> type)
-    typedef boost::shared_ptr<lagrange_space_s_type> lagrange_space_s_ptrtype;
-    typedef boost::shared_ptr<lagrange_space_v_type> lagrange_space_v_ptrtype;
-    typedef boost::shared_ptr<lagrange_space_multiplier_type> lagrange_space_multiplier_ptrtype;
+    using Vh_t =  Pdhv_type<mesh_type,OrderP>;
+    using Vh_ptr_t =  Pdhv_ptrtype<mesh_type,OrderP>;
+    using Wh_t =  Pdh_type<mesh_type,OrderP>;
+    using Wh_ptr_t =  Pdh_ptrtype<mesh_type,OrderP>;
+    using Mh_t =  Pdh_type<face_mesh_type,OrderP>;
+    using Mh_ptr_t =  Pdh_ptrtype<face_mesh_type,OrderP>;
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
@@ -138,8 +129,6 @@ public:
         M_tau_constant( doption("tau_constant") ),
         M_tau_order( ioption("tau_order") )
     {
-        if(Environment::isMasterRank())
-            std::cout << "[TestHDiv]\n";
         this->changeRepository( boost::format( "benchmark_hdg/%1%/h_%2%/" )
                                 % this->about().appName()
                                 % doption("hsize")
@@ -194,13 +183,11 @@ Hdg<Dim, OrderP>::convergence()
     auto u_exact = -K*trans(gradp_exact);
     auto f = -K*laplacian(p_exact);
 
-    if( Environment::isMasterRank()){
-        std::cout << "k : " << K /*<< "\tlambda : " << lambda*/ << std::endl;
-        std::cout << "p : " << p_exact << std::endl;
-        std::cout << "gradp : " << gradp_exact << std::endl;
-        // std::cout << "u : " << u_exact << std::endl;
-        // std::cout << "divu : " << f << std::endl;
-    }
+    cout << "k : " << K /*<< "\tlambda : " << lambda*/ << std::endl;
+    cout << "p : " << p_exact << std::endl;
+    cout << "gradp : " << gradp_exact << std::endl;
+    //cout << "u : " << u_exact << std::endl;
+    cout << "f : " << laplacian(p_exact) << std::endl;
 
 
     // Coeff for stabilization terms
@@ -209,25 +196,10 @@ Hdg<Dim, OrderP>::convergence()
     // auto d3 = cst(M_d3);
     auto tau_constant = cst(M_tau_constant);
 
-    std::ofstream cvg_p, cvg_u, cvg_divu, cvg_projL2, cvg_projHDIV, cvg_inter;
-    if( proc_rank == 0 )
-    {
-        // Open
-        cvg_p.open( "convergence_p.dat", std::ios::out | std::ios::trunc);
-        cvg_u.open( "convergence_u.dat", std::ios::out | std::ios::trunc);
-        cvg_divu.open( "convergence_divu.dat", std::ios::out | std::ios::trunc);
-        cvg_projL2.open( "convergence_projL2.dat", std::ios::out | std::ios::trunc);
-        cvg_projHDIV.open( "convergence_projHDIV.dat", std::ios::out | std::ios::trunc);
-        cvg_inter.open( "convergence_inter.dat", std::ios::out | std::ios::trunc);
-
-        // Head
-        cvg_u << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\n";
-        cvg_p << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\t" << "h1err" << "\n";
-        cvg_divu << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\n";
-        cvg_projL2 << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\n";
-        cvg_projHDIV << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\n";
-        cvg_inter << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\n";
-    }
+    std::ofstream out;
+    MasterStream cvg( out );
+    cvg.open("data.csv");
+    cvg << "hsize" << "\t" << "nDofu" << "\t" << "l2err_u"  << "\t" << "nDofp"  << "\t" << "l2err_p" << "\n";
 
     double current_hsize = meshSize;
     for(int i=0; i<ioption("nb_refine"); i++)
@@ -273,13 +245,13 @@ Hdg<Dim, OrderP>::convergence()
         toc("mesh",true);
 
         // ****** Hybrid-mixed formulation ******
-        // We try to treat Vh, Wh, and Mh separately
+        // We treat Vh, Wh, and Mh separately
         tic();
 
-        lagrange_space_v_ptrtype Vh = lagrange_space_v_type::New( mesh );
-        lagrange_space_s_ptrtype Wh = lagrange_space_s_type::New( mesh );
+        Vh_ptr_t Vh = Pdhv<OrderP>( mesh, true );
+        Wh_ptr_t Wh = Pdh<OrderP>( mesh, true );
         auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
-        lagrange_space_multiplier_ptrtype Mh = lagrange_space_multiplier_type::New( face_mesh );
+        Mh_ptr_t Mh = Pdh<OrderP>( face_mesh,true );
 
         toc("spaces",true);
 
@@ -290,10 +262,9 @@ Hdg<Dim, OrderP>::convergence()
         auto uf = Xh->element(cst(1.));
         CHECK( uf.size() == nFaceInParallelMesh ) << "check faces failed " << uf.size() << " " << nFaceInParallelMesh;
 
-        if( Environment::isMasterRank() )
-            std::cout << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
-                      << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
-                      << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
+        cout << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
+             << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
+             << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
 
         auto up = Vh->elementPtr( "u" );
         auto pp = Wh->elementPtr( "p" );
@@ -313,7 +284,10 @@ Hdg<Dim, OrderP>::convergence()
         auto nDofphat = phat.functionSpace()->nDof();
 
         tic();
-        // build the big matrix associated to bilinear form over Vh x Wh x Mh
+        // build csr graph blocks from set of function spaces Vh Wh and Mh
+#if 0
+        auto A = backend()->newBlockMatrix(_block=csrGraphBlocks(Vh,Wh,Mh));
+#else
         BlocksBaseGraphCSR hdg_graph(3,3);
         hdg_graph(0,0) = stencil( _test=Vh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
         hdg_graph(1,0) = stencil( _test=Wh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
@@ -324,19 +298,19 @@ Hdg<Dim, OrderP>::convergence()
         hdg_graph(0,2) = stencil( _test=Vh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
         hdg_graph(1,2) = stencil( _test=Wh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
         hdg_graph(2,2) = stencil( _test=Mh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
-
         auto A = backend()->newBlockMatrix(_block=hdg_graph);
+#endif
 
+
+        // build vector blocks from sub-vector of size given by set of function spaces
         BlocksBaseVector<double> hdg_vec(3);
         hdg_vec(0,0) = backend()->newVector( Vh );
         hdg_vec(1,0) = backend()->newVector( Wh );
         hdg_vec(2,0) = backend()->newVector( Mh );
         auto F = backend()->newBlockVector(_block=hdg_vec, _copy_values=false);
 
-        BlocksBaseVector<double> hdg_sol(3);
-        hdg_sol(0,0) = up;
-        hdg_sol(1,0) = pp;
-        hdg_sol(2,0) = phatp;
+        // build vector blocks from concatenation of subvectors up pp and phatp
+        auto hdg_sol = vectorBlocks(up,pp,phatp);
         auto U = backend()->newBlockVector(_block=hdg_sol, _copy_values=false);
 
         assemble_A_and_F( A, F, Vh, Wh, Mh, p_exact, gradp_exact );
@@ -347,62 +321,38 @@ Hdg<Dim, OrderP>::convergence()
 
         hdg_sol.localize(U);
         toc("solve",true);
-        if( Environment::isMasterRank())
-            std::cout << "[Hdg] solve done" << std::endl;
+
+        cout << "[Hdg] solve done" << std::endl;
 
         // ****** Compute error ******
 
-#if 0
+
         tic();
 
+        bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
 
-        auto mean_p_exact = mean( elements(mesh), p_exact )(0,0);
-        auto mean_p = mean( elements(mesh), idv(p) )(0,0);
 
-        auto l2err_u = normL2( _range=elements(mesh), _expr=u_exact - idv(u) );
-        auto l2err_p = normL2( elements(mesh),
-                               (p_exact - cst(mean_p_exact)) - (idv(p) - cst(mean_p)) ); // moyenne nulle
-        auto l2err_divu = normL2( _range=elements(mesh), _expr=f - divv(u) );
-        auto h1err_p = normH1( elements(mesh),
-                               (p_exact - cst(mean_p_exact)) - (idv(p) - cst(mean_p)),
-                               _grad_expr=trans(gradp_exact) - trans(gradv(p)) );
-        auto divu_h = vf::project(Wh, elements(mesh), divv(u) );
-
-        // ****** Projection Operators (L2 - HDIV) : check proj( div u ) = proj( f ) ******
-        // L2 projection
-        auto l2_v = opProjection( _domainSpace=Vh, _imageSpace=Vh, _type=L2 ); //l2 vectorial proj
-        auto l2_s = opProjection( _domainSpace=Wh, _imageSpace=Wh, _type=L2 ); //l2 scalar proj
-        auto E_l2 = l2_v->project( _expr= u_exact );
-        auto l2error_L2 = normL2( _range=elements(mesh), _expr=divv(E_l2) - f );
-
-        // auto hdiv = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=HDIV ); //hdiv proj (RT elts)
-        // auto E_hdiv = hdiv->project( _expr= (u_exact), _div_expr=f );
-        // auto l2error_HDIV = normL2( _range=elements(mesh), _expr=divv(E_hdiv) - f );
-
-        // interpolant
-        v.on( elements(mesh), u_exact);
-        auto l2error_inter = normL2( elements(mesh), idv(v) - u_exact);
-
+        auto l2err_u = normL2( _range=elements(mesh), _expr=u_exact - idv(*up) );
+        double l2err_p = 1e+30;
+        if ( has_dirichlet )
+        {
+            l2err_p = normL2( _range=elements(mesh), _expr=p_exact - idv(*pp) );
+        }
+        else
+        {
+            auto mean_p_exact = mean( elements(mesh), p_exact )(0,0);
+            auto mean_p = mean( elements(mesh), idv(*pp) )(0,0);
+            l2err_p = normL2( elements(mesh),
+                              (p_exact - cst(mean_p_exact)) - (idv(*pp) - cst(mean_p)) );
+        }
         toc("error");
 
-        if( proc_rank == 0 )
-        {
-            std::cout << "[" << i << "]||u_exact - u||_L2 = " << l2err_u << std::endl;
-            std::cout << "[" << i << "]||p_exact - p||_L2 = " << l2err_p << std::endl;
-            std::cout << "[" << i << "]||f - divu||_L2 = " << l2err_divu << std::endl;
-            std::cout << "[" << i << "]||p_exact - p||_H1 = " << h1err_p << std::endl;
-            std::cout << "[" << i << "]||I_h(p_exact) - p_exact||_L2 = " << l2error_inter << std::endl;
+        cout << "[" << i << "]||u_exact - u||_L2 = " << l2err_u << std::endl;
+        cout << "[" << i << "]||p_exact - p||_L2 = " << l2err_p << std::endl;
+        cvg << current_hsize
+            << "\t" << Vh->nDof() << "\t" << l2err_u
+            << "\t" << Wh->nDof() << "\t" << l2err_p << std::endl;
 
-            cvg_u << current_hsize << "\t" << nDofu << "\t" << l2err_u << "\n";
-            cvg_p << current_hsize << "\t" << nDofp << "\t" << l2err_p << "\t" << h1err_p << "\n";
-            cvg_divu << current_hsize << "\t" << nDofu << "\t" << l2err_divu << "\n";
-            cvg_projL2 << current_hsize << "\t" << Vh->nDof() << "\t" << l2error_L2 << "\n";
-            // cvg_projHDIV << current_hsize << "\t" << RTh->nDof() << "\t" << l2error_HDIV << "\n";
-            // cvg_inter << current_hsize << "\t" << RTh->nDof() << "\t" << l2error_inter << "\n";
-        }
-#endif
-
-        // ****** Export results ******
 
         tic();
         std::string exportName =  ( boost::format( "%1%-refine-%2%" ) % this->about().appName() % i ).str();
@@ -416,8 +366,8 @@ Hdg<Dim, OrderP>::convergence()
         export_ptrtype exporter_cvg( export_type::New( exportName ) );
 
         exporter_cvg->step( i )->setMesh( mesh );
-        exporter_cvg->step( i )->add( uName, u );
-        exporter_cvg->step( i )->add( pName, p );
+        exporter_cvg->step( i )->add( uName, *up );
+        exporter_cvg->step( i )->add( pName, *pp );
         exporter_cvg->step( i )->add( u_exName, v );
         exporter_cvg->step( i )->add( p_exName, q );
         exporter_cvg->save();
@@ -425,19 +375,9 @@ Hdg<Dim, OrderP>::convergence()
         current_hsize /= 2.0;
         toc("export");
 
-
-
     }
 
-    if( proc_rank == 0 )
-    {
-        cvg_u.close();
-        cvg_p.close();
-        cvg_divu.close();
-        cvg_projL2.close();
-        cvg_projHDIV.close();
-        cvg_inter.close();
-    }
+    cvg.close();
 }
 
 template<int Dim, int OrderP>
@@ -472,45 +412,71 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
     // How to identify Dirichlet/Neumann boundaries?
     auto rhs2 = form1( _test=Wh, _vector=F,
-                       _rowstart=Vh->nLocalDofWithGhost() );
+                       _rowstart=1 );
 
     rhs2 += integrate(_range=elements(mesh),
-                      _expr=-f*id(w));
-    auto rhs3 = form1( _test=Mh, _vector=F,
-                       _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost() );
+                      _expr=f*id(w));
 
+    cout << "rhs2 works fine" << std::endl;
+
+    // begin dp: changed signs (to move terms to the left)
+    auto rhs3 = form1( _test=Mh, _vector=F,
+                       _rowstart=2);
     rhs3 += integrate(_range=markedfaces(mesh,"Neumann"),
-                      _expr=( -id(l)*K*gradp_exact*N() ));
+                      _expr=-id(l)*K*gradp_exact*N());
     rhs3 += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                      _expr=( id(l)*p_exact) );
+                      _expr=id(l)*p_exact);
+    // end dp
+
+    cout << "rhs3 works fine" << std::endl;
 
     auto a11 = form2( _trial=Vh, _test=Vh,_matrix=A );
     a11 += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
 
-    // Watch out the negative sign!
+    cout << "a11 works fine" << std::endl;
+
     auto a12 = form2( _trial=Wh, _test=Vh,_matrix=A,
-                      _rowstart=0, _colstart=Vh->nLocalDofWithGhost() );
+                      _rowstart=0, _colstart=1 );
     a12 += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
 
+    cout << "a12 works fine" << std::endl;
+
+    // begin dp: added extended pattern, multiplied by 0.5 when integrating over internalfaces
     auto a13 = form2( _trial=Mh, _test=Vh,_matrix=A,
-                      _rowstart=0, _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost() );
+                      _rowstart=0, _colstart=2);
+
     a13 += integrate(_range=internalfaces(mesh),
                      _expr=( idt(phat)*leftface(trans(id(v))*N())+
                              idt(phat)*rightface(trans(id(v))*N())) );
     a13 += integrate(_range=boundaryfaces(mesh),
-                     _expr=(idt(phat)*trans(id(v))*N()));
+                     _expr=idt(phat)*trans(id(v))*N());
+    // end dp
 
+    cout << "a13 works fine" << std::endl;
+
+    // begin dp: added extended pattern
     auto a21 = form2( _trial=Vh, _test=Wh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost(), _colstart=0 );
+                      _rowstart=1, _colstart=0);
+
+    // end dp
     a21 += integrate(_range=elements(mesh),_expr=(-grad(w)*idt(u)));
+    cout << " . a211 ok" << std::endl;
     a21 += integrate(_range=internalfaces(mesh),
-                     _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N())+
-                             rightface(id(w))*rightfacet(trans(idt(u))*N())) );
+                     _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N()) ) );
+    cout << " . a212l ok" << std::endl;
+    a21 += integrate(_range=internalfaces(mesh),
+                     _expr=(rightface(id(w))*rightfacet(trans(idt(u))*N())) );
+    cout << " . a212r ok" << std::endl;
     a21 += integrate(_range=boundaryfaces(mesh),
                      _expr=(id(w)*trans(idt(u))*N()));
+    cout << " . a213 ok" << std::endl;
+    cout << "a21 works fine" << std::endl;
 
+    // begin dp: added extended pattern
     auto a22 = form2( _trial=Wh, _test=Wh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost() );
+                      _rowstart=1, _colstart=1 );
+
+    // end dp
     a22 += integrate(_range=internalfaces(mesh),
                      _expr=tau_constant *
                      ( leftfacet( pow(h(),M_tau_order)*idt(p))*leftface(id(w)) +
@@ -518,42 +484,62 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a22 += integrate(_range=boundaryfaces(mesh),
                      _expr=(tau_constant * pow(h(),M_tau_order)*id(w)*idt(p)));
 
+    cout << "a22 works fine" << std::endl;
+
+    // begin dp: added extended pattern, multiplied by 0.5
     auto a23 = form2( _trial=Mh, _test=Wh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost() );
+                      _rowstart=1, _colstart=2);
     a23 += integrate(_range=internalfaces(mesh),
                      _expr=-tau_constant * idt(phat) *
                      ( leftface( pow(h(),M_tau_order)*id(w) )+
                        rightface( pow(h(),M_tau_order)*id(w) )));
+    // end dp
     a23 += integrate(_range=boundaryfaces(mesh),
                      _expr=-tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
 
+    cout << "a23 works fine" << std::endl;
+
+    // begin dp: added extended pattern, multiplied by 0.5
     auto a31 = form2( _trial=Vh, _test=Mh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=0 );
+                      _rowstart=2, _colstart=0);
     a31 += integrate(_range=internalfaces(mesh),
                      _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
                                     rightfacet(trans(idt(u))*N())) ) );
+    // end dp
+
     // BC
     a31 += integrate(_range=markedfaces(mesh,"Neumann"),
                      _expr=( id(l)*(trans(idt(u))*N()) ));
 
+    cout << "a31 works fine" << std::endl;
 
+    // begin dp: added extended pattern, mulitplied by 0.5
     auto a32 = form2( _trial=Wh, _test=Mh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost());
+                      _rowstart=2, _colstart=1);
     a32 += integrate(_range=internalfaces(mesh),
                      _expr=tau_constant * id(l) * ( leftfacet( pow(h(),M_tau_order)*idt(p) )+
                                                     rightfacet( pow(h(),M_tau_order)*idt(p) )));
+    // end do
     a32 += integrate(_range=markedfaces(mesh,"Neumann"),
                      _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
 
+    cout << "a32 works fine" << std::endl;
+
     auto a33 = form2(_trial=Mh, _test=Mh,_matrix=A,
-                     _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
+                     _rowstart=2, _colstart=2);
+    // begin dp: mulitplied by 0.25
     a33 += integrate(_range=internalfaces(mesh),
                      _expr=-tau_constant * idt(phat) * id(l) * ( leftface( pow(h(),M_tau_order) )+
                                                                  rightface( pow(h(),M_tau_order) )));
+    // end dp
     a33 += integrate(_range=markedfaces(mesh,"Neumann"),
                      _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );
     a33 += integrate(_range=markedfaces(mesh,"Dirichlet"),
                      _expr=idt(phat) * id(l) );
 
+    cout << "a33 works fine" << std::endl;
 
 }
+
+
+} // Feel
