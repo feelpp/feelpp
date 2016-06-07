@@ -32,6 +32,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionBase(
         std::string const& rootRepository )
 :
     super_type( prefix, worldComm, subPrefix, rootRepository ),
+    M_isBuilt(false),
     M_isUpdatedForUse(false),
     M_diffusionReactionModel( new diffusionreaction_model_type( prefix ) ),
     M_gamma1(std::pow(nOrder, -3.5))
@@ -64,6 +65,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build()
     // Exporters
     this->createExporters();
 
+    M_isBuilt = true;
+
     this->log("Advection","build", "finish");
 }
 
@@ -86,6 +89,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh)
     // Exporters
     this->createExporters();
 
+    M_isBuilt = true;
+
     this->log("Advection","build", "finish");
 }
 
@@ -98,7 +103,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
     this->log("Advection","init", "start" );
     this->timerTool("Constructor").start();
 
-    this->build();
+    if( !M_isBuilt )
+        this->build();
 
     // Vector solution
     M_blockVectorSolution.resize(1);
@@ -124,43 +130,44 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
     this->log("Advection","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
 }
 
-ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-ADVECTIONBASE_CLASS_TEMPLATE_TYPE::initFromMesh(
-        mesh_ptrtype const& mesh,
-        bool buildModelAlgebraicFactory, 
-        model_algebraic_factory_type::appli_ptrtype const& app )
-{
-    //if ( M_isUpdatedForUse ) return;
+//ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+//void
+//ADVECTIONBASE_CLASS_TEMPLATE_TYPE::initFromMesh(
+        //mesh_ptrtype const& mesh,
+        //bool buildModelAlgebraicFactory, 
+        //model_algebraic_factory_type::appli_ptrtype const& app )
+//{
+    ////if ( M_isUpdatedForUse ) return;
 
-    this->log("Advection","initFromMesh", "start" );
-    this->timerTool("Constructor").start();
+    //this->log("Advection","initFromMesh", "start" );
+    //this->timerTool("Constructor").start();
 
-    this->build( mesh );
+    //if( !M_isBuilt )
+        //this->build( mesh );
 
-    // Vector solution
-    M_blockVectorSolution.resize(1);
-    M_blockVectorSolution(0) = this->fieldSolutionPtr();
-    M_blockVectorSolution.buildVector( this->backend() );
+    //// Vector solution
+    //M_blockVectorSolution.resize(1);
+    //M_blockVectorSolution(0) = this->fieldSolutionPtr();
+    //M_blockVectorSolution.buildVector( this->backend() );
 
-    // Time step
-    this->initTimeStep();
+    //// Time step
+    //this->initTimeStep();
     
-    // Algebraic factory
-    if( buildModelAlgebraicFactory )
-    {
-        // matrix sparsity graph
-        auto graph = this->buildMatrixGraph();
+    //// Algebraic factory
+    //if( buildModelAlgebraicFactory )
+    //{
+        //// matrix sparsity graph
+        //auto graph = this->buildMatrixGraph();
         
-        M_algebraicFactory.reset( new model_algebraic_factory_type( app, this->backend(), graph, graph->mapRow().indexSplit() ) );
-    }
+        //M_algebraicFactory.reset( new model_algebraic_factory_type( app, this->backend(), graph, graph->mapRow().indexSplit() ) );
+    //}
 
-    M_isUpdatedForUse = true;
+    //M_isUpdatedForUse = true;
 
-    double tElapsedInit = this->timerTool("Constructor").stop("init");
-    if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
-    this->log("Advection","initFromMesh",(boost::format("finish in %1% s")%tElapsedInit).str() );
-}
+    //double tElapsedInit = this->timerTool("Constructor").stop("init");
+    //if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
+    //this->log("Advection","initFromMesh",(boost::format("finish in %1% s")%tElapsedInit).str() );
+//}
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void

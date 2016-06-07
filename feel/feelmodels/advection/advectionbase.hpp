@@ -153,13 +153,16 @@ public :
 
     AdvectionBase( self_type const& A ) = default;
 
+    void build();
+    void build( mesh_ptrtype const& mesh );
+
     //--------------------------------------------------------------------//
     // Initialization
     void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app );
-    void initFromMesh( 
-            mesh_ptrtype const& mesh,
-            bool buildModelAlgebraicFactory, 
-            model_algebraic_factory_type::appli_ptrtype const& app );
+    //void initFromMesh( 
+            //mesh_ptrtype const& mesh,
+            //bool buildModelAlgebraicFactory, 
+            //model_algebraic_factory_type::appli_ptrtype const& app );
 
     virtual void loadParametersFromOptionsVm();
 
@@ -219,8 +222,8 @@ public :
     boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
     boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
     void updateTimeStepBDF();
-    void initTimeStep();
     void updateTimeStep() { this->updateTimeStepBDF(); }
+    void initTimeStep();
 
     //--------------------------------------------------------------------//
     // Stabilization
@@ -285,13 +288,9 @@ public :
 
 protected:
     //--------------------------------------------------------------------//
-    // Initialization
-    void build();
-    void build( mesh_ptrtype const& mesh );
-
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
-    //--------------------------------------------------------------------//
+    bool M_isBuilt;
     bool M_isUpdatedForUse;
     //--------------------------------------------------------------------//
     // Model and solver
