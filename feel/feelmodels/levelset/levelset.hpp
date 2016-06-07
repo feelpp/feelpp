@@ -173,6 +173,10 @@ public:
 
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
+    //--------------------------------------------------------------------//
+    // Exporter
+    typedef Exporter<mesh_type, nOrderGeo> exporter_type;
+    typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -195,16 +199,20 @@ public:
             std::string const& subPrefix = "",
             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
+    void build();
+    void build( mesh_ptrtype const& mesh );
+
     //--------------------------------------------------------------------//
     // Initialization
     void init();
-    void initFromMesh( mesh_ptrtype const& mesh );
 
     virtual void loadParametersFromOptionsVm();
 
-    void createFunctionSpaces();
     void createAdvection();
+    void createAdvection( mesh_ptrtype const& mesh );
+    void createFunctionSpaces();
     void createReinitialization();
+    void createExporters();
     void createOthers();
 
     //--------------------------------------------------------------------//
@@ -218,7 +226,7 @@ public:
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
-    mesh_ptrtype const& mesh() const { return M_mesh; }
+    mesh_ptrtype const& mesh() const { return M_advection->mesh(); }
     mesh_ptrtype const& submesh() const { return M_submesh; }
 
     //--------------------------------------------------------------------//
@@ -309,6 +317,10 @@ public:
 
     std::string levelsetInfos( bool show = false );
 
+    //--------------------------------------------------------------------//
+    // Export results
+    void exportResults() { this->exportResults( M_advection->currentTime() ); }
+    void exportResults( double time );
 
     /*// ----------- serialization, save, restart
     template<class Archive>
@@ -389,7 +401,7 @@ protected:
 private:
     //--------------------------------------------------------------------//
     // Mesh 
-    mesh_ptrtype M_mesh;
+    //mesh_ptrtype M_mesh;
     mesh_ptrtype M_submesh;
 
     //--------------------------------------------------------------------//
@@ -451,12 +463,15 @@ private:
 #endif
 
     //--------------------------------------------------------------------//
+    // Export
+    exporter_ptrtype M_exporter;
+    //--------------------------------------------------------------------//
     // Parameters
     double M_thicknessInterface;
     bool M_useRegularPhi;
+    bool M_useHeavisideDiracNodalProj;
 
     //int impose_inflow;
-    bool hdNodalProj;
     double k_correction;
     //--------------------------------------------------------------------//
     // Reinitialization
