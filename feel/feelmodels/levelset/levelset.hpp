@@ -210,7 +210,7 @@ public:
     //--------------------------------------------------------------------//
     space_levelset_ptrtype const& functionSpace() const { return M_advection->functionSpace(); }
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
-    space_levelset_vectorial_ptrtype const& functionsSpaceVectorial() const { return M_spaceLevelSetVec; }
+    space_levelset_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceLevelSetVec; }
     space_levelset_reinitP1_ptrtype const& functionSpaceReinitP1() const { return M_spaceReinitP1; }
 
     space_levelset_ptrtype const& functionSubspace() const { return M_subspaceLevelSet; }
@@ -455,7 +455,7 @@ private:
     double M_thicknessInterface;
     bool M_useRegularPhi;
 
-    int impose_inflow;
+    //int impose_inflow;
     bool hdNodalProj;
     double k_correction;
     //--------------------------------------------------------------------//
