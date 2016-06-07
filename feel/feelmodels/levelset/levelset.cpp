@@ -109,7 +109,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createAdvection()
 {
     M_advection.reset( 
             new advection_type(
-                prefixvm(this->prefix(), "advection"), 
+                this->prefix(), 
                 this->worldComm(), 
                 this->subPrefix(), 
                 this->rootRepository()
@@ -303,14 +303,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
     //M_enableReinit = boption(prefixvm(this->prefix(),"enable-reinit"));
     //M_reinitEvery = ioption(prefixvm(this->prefix(),"reinit-every"));
-    M_useMarker2AsMarkerDoneFmm = boption(prefixvm(this->prefix(),"fm-use-markerdelta"));
+    M_useMarker2AsMarkerDoneFmm = boption(prefixvm(this->prefix(),"fm-use-markerdirac"));
     //hj_max_iter = ioption(prefixvm(this->prefix(),"hj-max-iter"));
     //hj_dtau = doption(prefixvm(this->prefix(),"hj-dtau"));
     //hj_tol = doption(prefixvm(this->prefix(),"hj-tol"));
-    impose_inflow = ioption(prefixvm(this->prefix(),"impose-inflow"));
+    //impose_inflow = ioption(prefixvm(this->prefix(),"impose-inflow"));
     //stabStrategy = ioption(prefixvm(this->prefix(),"stabilization-strategy"));
     M_useRegularPhi = boption(_name=prefixvm(this->prefix(),"use-regularized-phi"));
-    hdNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
+    //hdNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
     M_thicknessInterface=doption(prefixvm(this->prefix(),"thickness-interface"));
 
     std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );
@@ -676,6 +676,56 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 std::string
 LEVELSET_CLASS_TEMPLATE_TYPE::levelsetInfos( bool show )
 {
+    /* print some info when creating levelset instance */
+    std::ostringstream infos;
+    infos<< "\n||==============================================||"
+         << "\n||----------Info :   LEVELSET    ---------------||"
+         << "\n||==============================================||"
+         << "\n   Prefix : " << this->prefix()
+         << "\n   Dim : " << nDim
+         << "\n   Order : " << Order
+         << "\n   Periodicity : " << M_periodicity.isPeriodic()
+         << "\n   Nb proc : " << this->worldComm().globalSize()
+         << "\n\n  Level set parameters :"
+         << "\n     -- thickness interface : " << this->thicknessInterface()
+         << "\n     -- use regular phi (phi / |grad(phi)|) " << this->M_useRegularPhi
+#if defined (LEVELSET_CONSERVATIVE_ADVECTION)
+         << "\n levelset built with conservative advection mode : "<<LEVELSET_CONSERVATIVE_ADVECTION
+#else
+         << "\n levelset built without conservative advection mode"
+#endif
+         << "\n     -- stabilization of advection : "<< soption( _name="advec-stab-method", _prefix=this->prefix() )
+         //<< "\n     -- impose dirichlet at inflow : " << impose_inflow
+         << "\n\n  Reinitialization parameters :"
+         //<< "\n     -- enable reinitialization : "<<enable_reinit
+         ;
+    //if (enable_reinit)
+    //{
+        const std::string reinitmethod = soption( _name"reinit-method", _prefix=this->prefix() );
+        infos << "\n     -- reinitialization method : " << reinitmethod;
+        //if (reinitmethod == "hj")
+        //{
+            //infos << "\n      * hj maximum iteration per reinit : " << hj_max_iter
+                  //<< "\n      * hj pseudo time step dtau : " << hj_dtau
+                  //<< "\n      * hj stabilization : SUPG"
+                  //<< "\n      * hj coeff stab : " << option( prefixvm(M_prefix,"hj-coeff-stab")).template as<double>()
+                  //<< "\n      * hj tolerence on dist to dist error : "<<hj_tol;
+        //}
+        //else
+        //{
+            //infos << "\n      * fm smoothing coefficient for ILP : " << Environment::vm()[prefixvm(M_prefix,"fm-smooth-coeff")].template as< double >();
+        //}
+    //}
+    infos << "\n\n  Level set spaces :"
+          << "\n     -- scalar LS space ndof : "<< this->functionSpace->nDof()
+          << "\n     -- vectorial LS ndof : "<< this->functionSpaceVectorial()->nDof()
+          << "\n     -- scalar P0 space ndof : "<< this->functionSpaceMarkers()->nDof()
+          <<"\n||==============================================||\n\n";
+
+    if (show)
+        LOG(INFO)<<infos.str();
+
+    return infos.str();
 }
 
 //----------------------------------------------------------------------------//
