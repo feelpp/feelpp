@@ -4,4 +4,4 @@ add_subdirectory( fluid )
 add_subdirectory( solid )
 add_subdirectory( fsi )
 add_subdirectory( advection )
-
+add_subdirectory( levelset )
