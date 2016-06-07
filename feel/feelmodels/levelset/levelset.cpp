@@ -54,33 +54,73 @@ LEVELSET_CLASS_TEMPLATE_TYPE::New(
     return new_ls;
 }
 
-//----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::init()
+LEVELSET_CLASS_TEMPLATE_TYPE::build()
 {
     this->createAdvection();
+    this->createFunctionSpaces();
     this->createReinitialization();
+    this->createExporters();
     this->createOthers();
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::initFromMesh( mesh_ptrtype const& mesh )
+LEVELSET_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh )
 {
-    M_mesh = mesh;
-
-    this->createAdvection();
+    this->createAdvection( mesh );
+    this->createFunctionSpaces();
     this->createReinitialization();
+    this->createExporters();
     this->createOthers();
+}
+
+//----------------------------------------------------------------------------//
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::init()
+{
+    M_advection->setModelName("Advection");
+    M_advection->init();
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::createAdvection()
+{
+    M_advection.reset( 
+            new advection_type(
+                this->prefix(), 
+                this->worldComm(), 
+                this->subPrefix(), 
+                this->rootRepository()
+                ) );
+
+    M_advection->build();
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::createAdvection( mesh_ptrtype const& mesh )
+{
+    M_advection.reset( 
+            new advection_type(
+                this->prefix(), 
+                this->worldComm(), 
+                this->subPrefix(), 
+                this->rootRepository()
+                ) );
+
+    M_advection->build( mesh );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
-    M_spaceLevelSetVec = space_levelset_vectorial_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
-    M_spaceMarkers = space_markers_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+    M_spaceLevelSetVec = space_levelset_vectorial_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+    M_spaceMarkers = space_markers_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
 
     // Init P1 reinitialization if required
     if( M_reinitMethod == LevelSetReinitMethod::FM )
@@ -101,21 +141,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
                     );
         }
     }
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::createAdvection()
-{
-    M_advection.reset( 
-            new advection_type(
-                this->prefix(), 
-                this->worldComm(), 
-                this->subPrefix(), 
-                this->rootRepository()
-                ) );
-
-    M_advection->init();
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -159,6 +184,23 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
+LEVELSET_CLASS_TEMPLATE_TYPE::createExporters()
+{
+    this->log("LevelSet","createExporters", "start");
+    this->timerTool("Constructor").start();
+
+    std::string geoExportType="static";//change_coords_only, change, static
+    M_exporter = exporter( _mesh=this->mesh(),
+                           _name="Export",
+                           _geo=geoExportType,
+                           _path=M_advection->exporterPath() );
+
+    double tElpased = this->timerTool("Constructor").stop("createExporters");
+    this->log("LevelSet","createExporters",(boost::format("finish in %1% s")%tElpased).str() );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
 LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 {
     M_heaviside.reset( new element_levelset_type(this->functionSpace(), "Heaviside") );
@@ -170,15 +212,15 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 {
     // +++++++++ initialize every quantities which need the mesh +++++++++++
-    M_mesh = mesh;
+    this->mesh() = mesh;
 
     //  -------  spaces -------
-    M_spaceP0 = space_markers_type::New(_mesh=M_mesh, _periodicity=periodicity(NoPeriodicity()) );
-    M_spaceLSVec = spaceLSVec_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity) );
+    M_spaceP0 = space_markers_type::New(_mesh=this->mesh(), _periodicity=periodicity(NoPeriodicity()) );
+    M_spaceLSVec = spaceLSVec_type::New(_mesh=this->mesh(), _periodicity= periodicity(M_periodicity) );
     if (M_advecstabmethod == CIP)
-        this->functionSpace() = space_levelset_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity), _extended_doftable=std::vector<bool>(1,true) );
+        this->functionSpace() = space_levelset_type::New(_mesh=this->mesh(), _periodicity= periodicity(M_periodicity), _extended_doftable=std::vector<bool>(1,true) );
     else
-        this->functionSpace() = space_levelset_type::New(_mesh=M_mesh, _periodicity= periodicity(M_periodicity) );
+        this->functionSpace() = space_levelset_type::New(_mesh=this->mesh(), _periodicity= periodicity(M_periodicity) );
 
     //  -------  backends ------
     M_backend_advrea = backend(_name="ls-advec");
@@ -205,7 +247,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
     if (M_discrMethod==CN_CONSERVATIVE)
         {
 #if (LEVELSET_CONSERVATIVE_ADVECTION == 1)
-            M_spaceLSCorr = spaceLSCorr_type::New(M_mesh);
+            M_spaceLSCorr = spaceLSCorr_type::New(this->mesh());
 #else
             M_spaceLSCorr = this->functionSpace();
 #endif
@@ -309,9 +351,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     //hj_tol = doption(prefixvm(this->prefix(),"hj-tol"));
     //impose_inflow = ioption(prefixvm(this->prefix(),"impose-inflow"));
     //stabStrategy = ioption(prefixvm(this->prefix(),"stabilization-strategy"));
-    M_useRegularPhi = boption(_name=prefixvm(this->prefix(),"use-regularized-phi"));
-    //hdNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
     M_thicknessInterface=doption(prefixvm(this->prefix(),"thickness-interface"));
+    M_useRegularPhi = boption(_name=prefixvm(this->prefix(),"use-regularized-phi"));
+    M_useHeavisideDiracNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
 
     std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );
     if( reinitmethod == "fm" )
@@ -345,8 +387,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
             +
             vf::chi(psi>eps)*vf::constant(0.0);
 
-        if (boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj")))
-            *M_dirac = vf::project( this->functionSpace(), elements(M_mesh), D_expr );
+        if ( M_useHeavisideDiracNodalProj )
+            *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()), D_expr );
         else
             *M_dirac = M_l2p->project(D_expr);
     }
@@ -360,8 +402,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
             +
             vf::chi(psi>eps)*vf::constant(0.0);
 
-        if (boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj")))
-            *M_dirac = vf::project( this->functionSpace(), elements(M_mesh), D_expr );
+        if (M_useHeavisideDiracNodalProj)
+            *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()), D_expr );
         else
             *M_dirac = M_l2p->project(D_expr);
     }
@@ -383,8 +425,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
             +
             vf::chi(psi>eps)*vf::constant(1.0);
 
-        if (boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj")))
-            *M_heaviside = vf::project(this->functionSpace(), elements(M_mesh), H_expr);
+        if (M_useHeavisideDiracNodalProj)
+            *M_heaviside = vf::project(this->functionSpace(), elements(this->mesh()), H_expr);
         else
             *M_heaviside = M_l2p->project(H_expr);
     }
@@ -398,8 +440,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
             +
             vf::chi(psi>eps)*vf::constant(1.0);
 
-        if (boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj")))
-            *M_heaviside = vf::project(this->functionSpace(), elements(M_mesh), H_expr);
+        if (M_useHeavisideDiracNodalProj)
+            *M_heaviside = vf::project(this->functionSpace(), elements(this->mesh()), H_expr);
         else
             *M_heaviside = M_l2p->project(H_expr);
     }
@@ -410,7 +452,7 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateMass()
 {
     M_mass = integrate(
-            _range=elements(M_mesh),
+            _range=elements(this->mesh()),
             _expr=(1-idv(this->heaviside())) ).evaluate()(0,0);
             //_expr=vf::chi( idv(this->phi())<0.0) ).evaluate()(0,0); // gives very noisy results
 }
@@ -553,7 +595,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
         if ( useMarker2AsMarkerDoneFmm )
         {
-            M_mesh->updateMarker2( *this->markerDirac() );
+            this->mesh()->updateMarker2( *this->markerDirac() );
         }
 
         mesh_ptrtype mesh_reinit;
@@ -587,8 +629,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
                 }
                 else
                 {
-                    phi_reinit = vf::project(M_spaceReinitP1, elements(M_mesh), idv(phi) / idv(modgradphi) );
-                    mesh_reinit = M_mesh;
+                    phi_reinit = vf::project(M_spaceReinitP1, elements(this->mesh()), idv(phi) / idv(modgradphi) );
+                    mesh_reinit = this->mesh();
                 }
             }
             break;
@@ -616,7 +658,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
                 }
                 // if P1 periodic, project on non periodic space for reinit
                 else if ( this->M_periodicity.isPeriodic() )
-                    phi_reinit = vf::project(M_spaceReinitP1, elements(M_mesh), idv(phi) );
+                    phi_reinit = vf::project(M_spaceReinitP1, elements(this->mesh()), idv(phi) );
             }
             break;
 
@@ -635,7 +677,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
         if (Order > 1)
             M_opInterpolationP1toLS->apply( phi_reinit, *phi );
         else
-            *phi = vf::project(this->functionSpace(), elements(M_mesh), idv(phi_reinit));
+            *phi = vf::project(this->functionSpace(), elements(this->mesh()), idv(phi_reinit));
 
         LOG(INFO)<< "reinit with FMM done"<<std::endl;
 
@@ -701,7 +743,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::levelsetInfos( bool show )
          ;
     //if (enable_reinit)
     //{
-        const std::string reinitmethod = soption( _name"reinit-method", _prefix=this->prefix() );
+        const std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );
         infos << "\n     -- reinitialization method : " << reinitmethod;
         //if (reinitmethod == "hj")
         //{
@@ -716,16 +758,38 @@ LEVELSET_CLASS_TEMPLATE_TYPE::levelsetInfos( bool show )
             //infos << "\n      * fm smoothing coefficient for ILP : " << Environment::vm()[prefixvm(M_prefix,"fm-smooth-coeff")].template as< double >();
         //}
     //}
-    infos << "\n\n  Level set spaces :"
-          << "\n     -- scalar LS space ndof : "<< this->functionSpace->nDof()
-          << "\n     -- vectorial LS ndof : "<< this->functionSpaceVectorial()->nDof()
-          << "\n     -- scalar P0 space ndof : "<< this->functionSpaceMarkers()->nDof()
-          <<"\n||==============================================||\n\n";
+    //infos << "\n\n  Level set spaces :"
+          //<< "\n     -- scalar LS space ndof : "<< this->functionSpace()->nDof()
+          //<< "\n     -- vectorial LS ndof : "<< this->functionSpaceVectorial()->nDof()
+          //<< "\n     -- scalar P0 space ndof : "<< this->functionSpaceMarkers()->nDof()
+          //<<"\n||==============================================||\n\n";
 
     if (show)
         LOG(INFO)<<infos.str();
 
     return infos.str();
+}
+
+//----------------------------------------------------------------------------//
+// Export results
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
+{
+    this->log("LevelSet","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    M_advection->exportResults( time );
+    
+    if ( !M_exporter->doExport() ) return;
+
+    M_exporter->step( time )->add( prefixvm(this->prefix(),"Dirac"),
+                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Dirac")),
+                                   this->dirac() );
+    M_exporter->save();
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    this->log("LevelSet","exportResults", "finish");
 }
 
 //----------------------------------------------------------------------------//
@@ -744,10 +808,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerInterface()
 
     const int ndofv = space_levelset_type::fe_type::nDof;
 
+    mesh_ptrtype const& mesh = this->mesh();
     auto phi = this->phi();
 
-    auto it_elt = M_mesh->beginElementWithProcessId(M_mesh->worldComm().localRank());
-    auto en_elt = M_mesh->endElementWithProcessId(M_mesh->worldComm().localRank());
+    auto it_elt = mesh->beginElementWithProcessId(mesh->worldComm().localRank());
+    auto en_elt = mesh->endElementWithProcessId(mesh->worldComm().localRank());
     if (it_elt == en_elt) return;
 
     for (; it_elt!=en_elt; it_elt++)
@@ -777,8 +842,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerDirac()
 {
     const int ndofv = space_levelset_type::fe_type::nDof;
 
-    auto it_elt = M_mesh->beginElementWithProcessId(M_mesh->worldComm().localRank());
-    auto en_elt = M_mesh->endElementWithProcessId(M_mesh->worldComm().localRank());
+    mesh_ptrtype const& mesh = this->mesh();
+
+    auto it_elt = mesh->beginElementWithProcessId(mesh->worldComm().localRank());
+    auto en_elt = mesh->endElementWithProcessId(mesh->worldComm().localRank());
     if (it_elt == en_elt) return;
 
     double dirac_cut = M_dirac->max() / 10.;
@@ -814,8 +881,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerHeaviside(bool invert, bool cut_at_hal
 
     const int ndofv = space_levelset_type::fe_type::nDof;
 
-    auto it_elt = M_mesh->beginElementWithProcessId(M_mesh->worldComm().localRank());
-    auto en_elt = M_mesh->endElementWithProcessId(M_mesh->worldComm().localRank());
+    mesh_ptrtype const& mesh = this->mesh();
+
+    auto it_elt = mesh->beginElementWithProcessId(mesh->worldComm().localRank());
+    auto en_elt = mesh->endElementWithProcessId(mesh->worldComm().localRank());
     if (it_elt == en_elt) return;
 
     double cut;
@@ -848,14 +917,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
     // ie : mark as 1 is one of the dof of the element has  (phi * phio < 0)
     const int ndofv = space_levelset_type::fe_type::nDof;
 
-    auto it_elt = M_mesh->beginElementWithProcessId(M_mesh->worldComm().localRank());
-    auto en_elt = M_mesh->endElementWithProcessId(M_mesh->worldComm().localRank());
+    mesh_ptrtype const& mesh = this->mesh();
+
+    auto it_elt = mesh->beginElementWithProcessId(mesh->worldComm().localRank());
+    auto en_elt = mesh->endElementWithProcessId(mesh->worldComm().localRank());
     if (it_elt == en_elt) return;
 
     auto phi = this->phi();
     auto phio = this->phio();
 
-    auto prod = vf::project(this->functionSpace(), elements(M_mesh),
+    auto prod = vf::project(this->functionSpace(), elements(mesh),
                             idv(phio) * idv(phi) );
 
 
