@@ -93,7 +93,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createAdvection()
                 this->prefix(), 
                 this->worldComm(), 
                 "advection", 
-                this->rootRepository()
+                this->rootRepositoryWithoutNumProc()
                 ) );
 
     M_advection->build();
