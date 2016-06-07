@@ -465,6 +465,7 @@ private:
     //--------------------------------------------------------------------//
     // Export
     exporter_ptrtype M_exporter;
+    bool M_doExportAdvection;
     //--------------------------------------------------------------------//
     // Parameters
     double M_thicknessInterface;

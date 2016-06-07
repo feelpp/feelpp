@@ -81,7 +81,6 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::init()
 {
-    M_advection->setModelName("Advection");
     M_advection->init();
 }
 
@@ -93,7 +92,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createAdvection()
             new advection_type(
                 this->prefix(), 
                 this->worldComm(), 
-                this->subPrefix(), 
+                "advection", 
                 this->rootRepository()
                 ) );
 
@@ -190,10 +189,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createExporters()
     this->timerTool("Constructor").start();
 
     std::string geoExportType="static";//change_coords_only, change, static
+    std::string exporterPath = this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports"));
     M_exporter = exporter( _mesh=this->mesh(),
                            _name="Export",
                            _geo=geoExportType,
-                           _path=M_advection->exporterPath() );
+                           _path=exporterPath );
 
     double tElpased = this->timerTool("Constructor").stop("createExporters");
     this->log("LevelSet","createExporters",(boost::format("finish in %1% s")%tElpased).str() );
@@ -364,6 +364,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
         CHECK( false ) << reinitmethod << " is not a valid reinitialization method\n";
 
     M_strategyBeforeFM = (strategy_before_FM_type) ioption(prefixvm(this->prefix(),"fm-init-first-elts-strategy"));
+
+    M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
 }
 
 //----------------------------------------------------------------------------//
@@ -778,15 +780,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     this->log("LevelSet","exportResults", "start");
     this->timerTool("PostProcessing").start();
-
-    M_advection->exportResults( time );
-    
+ 
     if ( !M_exporter->doExport() ) return;
 
+    M_exporter->step( time )->add( prefixvm(this->prefix(),"phi"),
+                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"phi")),
+                                   this->phi() );
     M_exporter->step( time )->add( prefixvm(this->prefix(),"Dirac"),
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Dirac")),
                                    this->dirac() );
     M_exporter->save();
+
+    if( M_doExportAdvection )
+        M_advection->exportResults( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
     this->log("LevelSet","exportResults", "finish");
