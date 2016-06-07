@@ -341,6 +341,23 @@ advection_options(std::string const& prefix)
 }
 
 Feel::po::options_description
+levelset_options(std::string const& prefix)
+{
+    Feel::po::options_description levelsetOptions("Levelset options");
+    levelsetOptions.add_options()
+        (prefixvm(prefix,"fm-use-markerdirac").c_str(), Feel::po::value<bool>()->default_value( false ), "use markerDirac to mark initially done elements in fast-marching")
+        (prefixvm(prefix,"use-regularized-phi").c_str(), Feel::po::value<bool>()->default_value( false ), "use grad(phi)/|grad(phi)| to evaluate Dirac and Heaviside functions")
+        (prefixvm(prefix,"thickness-interface").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "thickness of the interface (support for Dirac and Heaviside functions)")
+        (prefixvm(prefix,"reinit-method").c_str(), Feel::po::value<std::string>()->default_value( "fm" ), "levelset reinitialization method (fm: fast-marching, hj: hamilton-jacobi)")
+        (prefixvm(prefix,"fm-init-first-elts-strategy").c_str(), Feel::po::value<int>()->default_value(1), "strategy to initialize the first elements before the fast marching:\n0 = do nothing\n1 = interface local projection by nodal (phi) and smooth (|grad phi|) projections, smoothing coeff given by option fm-smooth-coeff \n2 = Hamilton Jacoby equation (with parameters given in options)")
+        ;
+
+    levelsetOptions.add( advection_options( prefix ) );
+
+    return levelsetOptions;
+}
+
+Feel::po::options_description
 alemesh_options(std::string const& prefix)
 {
     po::options_description desc_options("alemesh options");
@@ -391,6 +408,8 @@ feelmodels_options(std::string type)
             .add(fluidStructInteraction_options("fsi"));
     else if (type == "advection")
         FSIoptions.add(advection_options("advection"));
+    else if (type == "levelset")
+        FSIoptions.add(levelset_options("levelset"));
 
     else
         CHECK( false ) << "invalid type : " << type << " -> must be fluid,solid,thermo-dynamics,fsi";
