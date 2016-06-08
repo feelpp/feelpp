@@ -378,6 +378,7 @@ BenchmarkGreplLinearElliptic<Order>::createGeo( double hsize )
 template<int Order>
 void BenchmarkGreplLinearElliptic<Order>::initModel()
 {
+
     std::string mshfile_name = option("mshfile").as<std::string>();
 
     /*
@@ -388,18 +389,20 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
     {
         double hsize=doption(_name="hsize");
         mesh = createGMSHMesh( _mesh=new mesh_type,
-                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                               _update=MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                                _desc = createGeo( hsize ) );
 
         //mesh = unitSquare( hsize );
     }
     else
     {
-        mesh = loadGMSHMesh( _mesh=new mesh_type,
-                             _filename=option("mshfile").as<std::string>(),
-                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
+        mesh = loadMesh( _mesh=new mesh_type,
+                         _filename=mshfile_name,
+                         _update=MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+        // mesh = loadGMSHMesh( _mesh=new mesh_type,
+        //                      _filename=option("mshfile").as<std::string>(),
+        //                      _update=MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
     }
-
 
     /*
      * The function space and some associate elements are then defined
@@ -429,11 +432,6 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
     //specify how many elements we take in each direction
     std::vector<size_type> N(2);
     int Ne = ioption(_name="trainset-eim-size");
-    std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
-
-    // std::string file_name = ( boost::format("eim_trainset_Ne%1%-proc%2%on%3%") % Ne %proc_number %total_proc).str();
-    std::ifstream file ( supersamplingname );
-
     //40 elements in each direction
     N[0]=Ne; N[1]=Ne;
 
@@ -442,12 +440,17 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
     //else for a given mu we are not able to evaluate g at a node wich
     //is not on the same proc than mu (so it leads to wrong results !)
     bool all_proc_same_sampling=true;
+    std::string sampling_mode = "log-equidistribute";
+    std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
+    // std::string file_name = ( boost::format("eim_trainset_Ne%1%-proc%2%on%3%") % Ne %proc_number %total_proc).str();
+    std::ifstream file ( supersamplingname );
 
     if( ! file )
     {
         //std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
-        Pset->equidistributeProduct( N , all_proc_same_sampling , supersamplingname );
-        Pset->writeOnFile( supersamplingname );
+        //Pset->equidistributeProduct( N , all_proc_same_sampling , supersamplingname );
+        //Pset->writeOnFile( supersamplingname );
+        Pset->sample( N, sampling_mode, all_proc_same_sampling, supersamplingname );
     }
     else
     {
