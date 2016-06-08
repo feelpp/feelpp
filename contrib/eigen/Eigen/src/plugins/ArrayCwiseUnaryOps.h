@@ -11,6 +11,7 @@ typedef CwiseUnaryOp<internal::scalar_boolean_not_op<Scalar>, const Derived> Boo
 
 typedef CwiseUnaryOp<internal::scalar_exp_op<Scalar>, const Derived> ExpReturnType;
 typedef CwiseUnaryOp<internal::scalar_log_op<Scalar>, const Derived> LogReturnType;
+typedef CwiseUnaryOp<internal::scalar_log1p_op<Scalar>, const Derived> Log1pReturnType;
 typedef CwiseUnaryOp<internal::scalar_log10_op<Scalar>, const Derived> Log10ReturnType;
 typedef CwiseUnaryOp<internal::scalar_cos_op<Scalar>, const Derived> CosReturnType;
 typedef CwiseUnaryOp<internal::scalar_sin_op<Scalar>, const Derived> SinReturnType;
@@ -109,6 +110,20 @@ inline const LogReturnType
 log() const
 {
   return LogReturnType(derived());
+}
+
+/** \returns an expression of the coefficient-wise logarithm of 1 plus \c *this.
+  *
+  * In exact arithmetic, \c x.log() is equivalent to \c (x+1).log(),
+  * however, with finite precision, this function is much more accurate when \c x is close to zero.
+  *
+  * \sa log()
+  */
+EIGEN_DEVICE_FUNC
+inline const Log1pReturnType
+log1p() const
+{
+  return Log1pReturnType(derived());
 }
 
 /** \returns an expression of the coefficient-wise base-10 logarithm of *this.
@@ -233,6 +248,7 @@ tan() const
   *
   * \sa tan(), asin(), acos()
   */
+EIGEN_DEVICE_FUNC
 inline const AtanReturnType
 atan() const
 {
@@ -274,6 +290,7 @@ asin() const
   *
   * \sa tan(), sinh(), cosh()
   */
+EIGEN_DEVICE_FUNC
 inline const TanhReturnType
 tanh() const
 {
@@ -287,6 +304,7 @@ tanh() const
   *
   * \sa sin(), tanh(), cosh()
   */
+EIGEN_DEVICE_FUNC
 inline const SinhReturnType
 sinh() const
 {
@@ -300,19 +318,25 @@ sinh() const
   *
   * \sa tan(), sinh(), cosh()
   */
+EIGEN_DEVICE_FUNC
 inline const CoshReturnType
 cosh() const
 {
   return CoshReturnType(derived());
 }
 
-/** \returns an expression of the coefficient-wise ln(|gamma(*this)|).
- *
- * Example: \include Cwise_lgamma.cpp
- * Output: \verbinclude Cwise_lgamma.out
- *
- * \sa cos(), sin(), tan()
- */
+/** \cpp11 \returns an expression of the coefficient-wise ln(|gamma(*this)|).
+  *
+  * Example: \include Cwise_lgamma.cpp
+  * Output: \verbinclude Cwise_lgamma.out
+  *
+  * \note This function supports only float and double scalar types in c++11 mode. To support other scalar types,
+  * or float/double in non c++11 mode, the user has to provide implementations of lgamma(T) for any scalar
+  * type T to be supported.
+  *
+  * \sa digamma()
+  */
+EIGEN_DEVICE_FUNC
 inline const LgammaReturnType
 lgamma() const
 {
@@ -320,37 +344,52 @@ lgamma() const
 }
 
 /** \returns an expression of the coefficient-wise digamma (psi, derivative of lgamma).
- *
- * \sa cos(), sin(), tan()
- */
+  *
+  * \note This function supports only float and double scalar types. To support other scalar types,
+  * the user has to provide implementations of digamma(T) for any scalar
+  * type T to be supported.
+  *
+  * \sa Eigen::digamma(), Eigen::polygamma(), lgamma()
+  */
+EIGEN_DEVICE_FUNC
 inline const DigammaReturnType
 digamma() const
 {
   return DigammaReturnType(derived());
 }
 
-/** \returns an expression of the coefficient-wise Gauss error
- * function of *this.
- *
- * Example: \include Cwise_erf.cpp
- * Output: \verbinclude Cwise_erf.out
- *
- * \sa cos(), sin(), tan()
- */
+/** \cpp11 \returns an expression of the coefficient-wise Gauss error
+  * function of *this.
+  *
+  * Example: \include Cwise_erf.cpp
+  * Output: \verbinclude Cwise_erf.out
+  *
+  * \note This function supports only float and double scalar types in c++11 mode. To support other scalar types,
+  * or float/double in non c++11 mode, the user has to provide implementations of erf(T) for any scalar
+  * type T to be supported.
+  *
+  * \sa erfc()
+  */
+EIGEN_DEVICE_FUNC
 inline const ErfReturnType
 erf() const
 {
   return ErfReturnType(derived());
 }
 
-/** \returns an expression of the coefficient-wise Complementary error
- * function of *this.
- *
- * Example: \include Cwise_erfc.cpp
- * Output: \verbinclude Cwise_erfc.out
- *
- * \sa cos(), sin(), tan()
- */
+/** \cpp11 \returns an expression of the coefficient-wise Complementary error
+  * function of *this.
+  *
+  * Example: \include Cwise_erfc.cpp
+  * Output: \verbinclude Cwise_erfc.out
+  *
+  * \note This function supports only float and double scalar types in c++11 mode. To support other scalar types,
+  * or float/double in non c++11 mode, the user has to provide implementations of erfc(T) for any scalar
+  * type T to be supported.
+  *
+  * \sa erf()
+  */
+EIGEN_DEVICE_FUNC
 inline const ErfcReturnType
 erfc() const
 {
@@ -424,6 +463,7 @@ cube() const
   *
   * \sa ceil(), floor()
   */
+EIGEN_DEVICE_FUNC
 inline const RoundReturnType
 round() const
 {
@@ -437,6 +477,7 @@ round() const
   *
   * \sa ceil(), round()
   */
+EIGEN_DEVICE_FUNC
 inline const FloorReturnType
 floor() const
 {
@@ -450,6 +491,7 @@ floor() const
   *
   * \sa floor(), round()
   */
+EIGEN_DEVICE_FUNC
 inline const CeilReturnType
 ceil() const
 {
@@ -463,6 +505,7 @@ ceil() const
   *
   * \sa isfinite(), isinf()
   */
+EIGEN_DEVICE_FUNC
 inline const IsNaNReturnType
 isNaN() const
 {
@@ -476,6 +519,7 @@ isNaN() const
   *
   * \sa isnan(), isfinite()
   */
+EIGEN_DEVICE_FUNC
 inline const IsInfReturnType
 isInf() const
 {
@@ -489,6 +533,7 @@ isInf() const
   *
   * \sa isnan(), isinf()
   */
+EIGEN_DEVICE_FUNC
 inline const IsFiniteReturnType
 isFinite() const
 {
