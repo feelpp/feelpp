@@ -62,16 +62,13 @@ int main(int argc, char**argv )
                              _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
         typedef FunctionSpace<Mesh<Simplex<2> >, bases<Lagrange<1, Scalar>, Lagrange<0, Scalar> > > space_type;
 
-        {
-            auto Vh = space_type::New( mesh );
-            auto U = Vh->element();
-            auto u = U.element<0>() ;
-            auto l = U.element<1>() ;
-
-            cout << "Vh Dofs(level " << i << "): " << Vh->nDof() << "["
-                 << u.functionSpace()->nDof() << "," << l.functionSpace()->nDof() <<"]"
-                 << std::endl;
-
-        }
+        auto Vh = space_type::New( mesh );
+        auto U = Vh->element();
+        auto u = U.element<0>() ;
+        auto l = U.element<1>() ;
+        
+        cout << "Vh Dofs(level " << i << "): " << Vh->nDof() << "["
+             << u.functionSpace()->nDof() << "," << l.functionSpace()->nDof() <<"]"
+             << std::endl;
     }
 }
