@@ -45,32 +45,33 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    double meshSize = doption("gmsh.hsize");
-    cout << "hsize: " << meshSize << std::endl;
+    
 
     std::string geofile = soption("gmsh.filename");
     cout << "geofile: " << geofile << std::endl;
 
     for( int i = 0 ; i < 2; ++i )
     {
-    auto mesh = loadMesh(_mesh = new Mesh<Simplex<2>>,
-                         _filename = geofile, // geofile = "/home/LNCMI-G/trophime/feelpp_build/B_Map/clang-3.7/testsuite/feelvf/cube.geo"
-                         _savehdf5=false,
-                         _h = meshSize,
-                         _force_rebuild = true,
-                         _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
-    typedef FunctionSpace<Mesh<Simplex<2> >, bases<Lagrange<1, Scalar>, Lagrange<0, Scalar> > > space_type;
+        double meshSize = doption("gmsh.hsize")/std::pow(2,i);
+        cout << "hsize: " << meshSize << std::endl;
+        auto mesh = loadMesh(_mesh = new Mesh<Simplex<2>>,
+                             _filename = geofile, // geofile = "/home/LNCMI-G/trophime/feelpp_build/B_Map/clang-3.7/testsuite/feelvf/cube.geo"
+                             _savehdf5=false,
+                             _h = meshSize,
+                             _force_rebuild = true,
+                             _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+        typedef FunctionSpace<Mesh<Simplex<2> >, bases<Lagrange<1, Scalar>, Lagrange<0, Scalar> > > space_type;
 
-    {
-        auto Vh = space_type::New( mesh );
-        auto U = Vh->element();
-        auto u = U.element<0>() ;
-        auto l = U.element<1>() ;
+        {
+            auto Vh = space_type::New( mesh );
+            auto U = Vh->element();
+            auto u = U.element<0>() ;
+            auto l = U.element<1>() ;
 
-        cout << "Vh Dofs(level " << i << "): " << Vh->nDof() << "["
-             << u.functionSpace()->nDof() << "," << l.functionSpace()->nDof() <<"]"
-             << std::endl;
+            cout << "Vh Dofs(level " << i << "): " << Vh->nDof() << "["
+                 << u.functionSpace()->nDof() << "," << l.functionSpace()->nDof() <<"]"
+                 << std::endl;
 
-    }
+        }
     }
 }
