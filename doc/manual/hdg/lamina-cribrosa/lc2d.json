@@ -1,0 +1,66 @@
+{
+    "Name": "HDG-Mixed-Poisson for lamina cribrosa",
+    "ShortName":"MP_LC",
+    "Model":"hdg",
+
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+            "cond":"-1",
+	    "R_ext":"0.095",
+	    "k":"1.0",
+	    "H":"0.03" // "0.03"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+                    "expr":"4*k*( x*x * sin(x*x+y*y) - cos(x*x+y*y) + y*y * sin(x*x + y*y) ):x:y:k" // "-sin(Pi*x)*sin(Pi*y):x:y"
+                }
+            },
+            "Dirichlet":
+	    {
+	    	"top":
+        	{
+                     "expr":"2 + sin(x*x+y*y) + 16*Pi*R_ext*R_ext :k:x:y:R_ext"   // "sin(Pi*x)/(2*Pi):x"
+               	}
+	    }
+	},
+	"flux":
+	{
+	    "Integral":
+	    {
+        	"bottom":
+                {
+                     "expr":"-4*Pi*R_ext*R_ext*k*cos(R_ext*R_ext):k:R_ext" //"-4*Pi*R_ext*R_ext*k*cos(R_ext*R_ext):R_ext:k"    // "-sin(Pi*x)/(2*Pi):x"
+                }
+            }
+        }
+    },/*
+    "Functions":
+    {
+        "u":
+        {
+            "expr":"{1/(2*Pi)*cos(Pi*x)*sin(Pi*y),1/(2*Pi)*sin(Pi*x)*cos(Pi*y)}:x:y"
+        },
+        "p":
+        {
+            "expr":"1/(2*Pi*Pi)*sin(Pi*x)*sin(Pi*y):x:y"
+        }
+    },*/
+    "PostProcess":
+    {
+        "Fields":["potential","flux"]
+    }
+}
+
+
+
+
