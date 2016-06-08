@@ -73,7 +73,7 @@ set(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO "")
 
 if(NOT STANDARD_MATH_LIBRARY_FOUND)
 
-  message(FATAL_ERROR
+  message(WARNING
     "Can't link to the standard math library. Please report to the Eigen developers, telling them about your platform.")
 
 else()
@@ -402,84 +402,84 @@ endif(EIGEN_BUILD_PKGCONFIG)
 
 add_subdirectory(Eigen)
 
-add_subdirectory(doc EXCLUDE_FROM_ALL)
+# add_subdirectory(doc EXCLUDE_FROM_ALL)
 
-include(EigenConfigureTesting)
+# include(EigenConfigureTesting)
 
-# fixme, not sure this line is still needed:
-enable_testing() # must be called from the root CMakeLists, see man page
+# # fixme, not sure this line is still needed:
+# enable_testing() # must be called from the root CMakeLists, see man page
 
 
-if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
-  add_subdirectory(test) # can't do EXCLUDE_FROM_ALL here, breaks CTest
-else()
-  add_subdirectory(test EXCLUDE_FROM_ALL)
-endif()
+# if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
+#   add_subdirectory(test) # can't do EXCLUDE_FROM_ALL here, breaks CTest
+# else()
+#   add_subdirectory(test EXCLUDE_FROM_ALL)
+# endif()
 
-if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
-  add_subdirectory(blas)
-  add_subdirectory(lapack)
-else()
-  add_subdirectory(blas EXCLUDE_FROM_ALL)
-  add_subdirectory(lapack EXCLUDE_FROM_ALL)
-endif()
+# if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
+#   add_subdirectory(blas)
+#   add_subdirectory(lapack)
+# else()
+#   add_subdirectory(blas EXCLUDE_FROM_ALL)
+#   add_subdirectory(lapack EXCLUDE_FROM_ALL)
+# endif()
 
 add_subdirectory(unsupported)
 
-add_subdirectory(demos EXCLUDE_FROM_ALL)
+# add_subdirectory(demos EXCLUDE_FROM_ALL)
 
-# must be after test and unsupported, for configuring buildtests.in
-add_subdirectory(scripts EXCLUDE_FROM_ALL)
+# # must be after test and unsupported, for configuring buildtests.in
+# add_subdirectory(scripts EXCLUDE_FROM_ALL)
 
-# TODO: consider also replacing EIGEN_BUILD_BTL by a custom target "make btl"?
-if(EIGEN_BUILD_BTL)
-  add_subdirectory(bench/btl EXCLUDE_FROM_ALL)
-endif(EIGEN_BUILD_BTL)
+# # TODO: consider also replacing EIGEN_BUILD_BTL by a custom target "make btl"?
+# if(EIGEN_BUILD_BTL)
+#   add_subdirectory(bench/btl EXCLUDE_FROM_ALL)
+# endif(EIGEN_BUILD_BTL)
 
-if(NOT WIN32)
-  add_subdirectory(bench/spbench EXCLUDE_FROM_ALL)
-endif(NOT WIN32)
+# if(NOT WIN32)
+#   add_subdirectory(bench/spbench EXCLUDE_FROM_ALL)
+# endif(NOT WIN32)
 
-configure_file(scripts/cdashtesting.cmake.in cdashtesting.cmake @ONLY)
+# configure_file(scripts/cdashtesting.cmake.in cdashtesting.cmake @ONLY)
 
-ei_testing_print_summary()
+# ei_testing_print_summary()
 
-message(STATUS "")
-message(STATUS "Configured Eigen ${EIGEN_VERSION_NUMBER}")
-message(STATUS "")
+# message(STATUS "")
+# message(STATUS "Configured Eigen ${EIGEN_VERSION_NUMBER}")
+# message(STATUS "")
 
-option(EIGEN_FAILTEST "Enable failtests." OFF)
-if(EIGEN_FAILTEST)
-  add_subdirectory(failtest)
-endif()
+# option(EIGEN_FAILTEST "Enable failtests." OFF)
+# if(EIGEN_FAILTEST)
+#   add_subdirectory(failtest)
+# endif()
 
-string(TOLOWER "${CMAKE_GENERATOR}" cmake_generator_tolower)
-if(cmake_generator_tolower MATCHES "makefile")
-  message(STATUS "Some things you can do now:")
-  message(STATUS "--------------+--------------------------------------------------------------")
-  message(STATUS "Command       |   Description")
-  message(STATUS "--------------+--------------------------------------------------------------")
-  message(STATUS "make install  | Install Eigen. Headers will be installed to:")
-  message(STATUS "              |     <CMAKE_INSTALL_PREFIX>/<INCLUDE_INSTALL_DIR>")
-  message(STATUS "              |   Using the following values:")
-  message(STATUS "              |     CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
-  message(STATUS "              |     INCLUDE_INSTALL_DIR:  ${INCLUDE_INSTALL_DIR}")
-  message(STATUS "              |   Change the install location of Eigen headers using:")
-  message(STATUS "              |     cmake . -DCMAKE_INSTALL_PREFIX=yourprefix")
-  message(STATUS "              |   Or:")
-  message(STATUS "              |     cmake . -DINCLUDE_INSTALL_DIR=yourdir")
-  message(STATUS "make doc      | Generate the API documentation, requires Doxygen & LaTeX")
-  message(STATUS "make check    | Build and run the unit-tests. Read this page:")
-  message(STATUS "              |   http://eigen.tuxfamily.org/index.php?title=Tests")
-  message(STATUS "make blas     | Build BLAS library (not the same thing as Eigen)")
-  message(STATUS "make uninstall| Removes files installed by make install")
-  message(STATUS "--------------+--------------------------------------------------------------")
-else()
-  message(STATUS "To build/run the unit tests, read this page:")
-  message(STATUS "  http://eigen.tuxfamily.org/index.php?title=Tests")
-endif()
+# string(TOLOWER "${CMAKE_GENERATOR}" cmake_generator_tolower)
+# if(cmake_generator_tolower MATCHES "makefile")
+#   message(STATUS "Some things you can do now:")
+#   message(STATUS "--------------+--------------------------------------------------------------")
+#   message(STATUS "Command       |   Description")
+#   message(STATUS "--------------+--------------------------------------------------------------")
+#   message(STATUS "make install  | Install Eigen. Headers will be installed to:")
+#   message(STATUS "              |     <CMAKE_INSTALL_PREFIX>/<INCLUDE_INSTALL_DIR>")
+#   message(STATUS "              |   Using the following values:")
+#   message(STATUS "              |     CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
+#   message(STATUS "              |     INCLUDE_INSTALL_DIR:  ${INCLUDE_INSTALL_DIR}")
+#   message(STATUS "              |   Change the install location of Eigen headers using:")
+#   message(STATUS "              |     cmake . -DCMAKE_INSTALL_PREFIX=yourprefix")
+#   message(STATUS "              |   Or:")
+#   message(STATUS "              |     cmake . -DINCLUDE_INSTALL_DIR=yourdir")
+#   message(STATUS "make doc      | Generate the API documentation, requires Doxygen & LaTeX")
+#   message(STATUS "make check    | Build and run the unit-tests. Read this page:")
+#   message(STATUS "              |   http://eigen.tuxfamily.org/index.php?title=Tests")
+#   message(STATUS "make blas     | Build BLAS library (not the same thing as Eigen)")
+#   message(STATUS "make uninstall| Removes files installed by make install")
+#   message(STATUS "--------------+--------------------------------------------------------------")
+# else()
+#   message(STATUS "To build/run the unit tests, read this page:")
+#   message(STATUS "  http://eigen.tuxfamily.org/index.php?title=Tests")
+# endif()
 
-message(STATUS "")
+# message(STATUS "")
 
 
 set ( EIGEN_VERSION_STRING ${EIGEN_VERSION_NUMBER} )
@@ -502,5 +502,5 @@ install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseEigen3.cmake
         )
 
 # Add uninstall target
-add_custom_target ( uninstall
+add_custom_target ( eigen-uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/EigenUninstall.cmake)
