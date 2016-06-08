@@ -1762,6 +1762,8 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
 CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptrtype & dual_initial_field) //const sparse_matrix_ptrtype & A, const element_type & u )
 {
+    if ( M_model->isSteady() )
+        M_model->solveFemDualUsingAffineDecompositionFixedPoint( mu );
 
     //M_backend_dual = backend_type::build( BACKEND_PETSC );
     bool reuse_prec = boption(_name="crb.reuse-prec") ;
@@ -4745,14 +4747,112 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K) const
 {
-    double time_for_output = 1e30;
-    double time_step = 1e30;
-    //double time_final=0;
-    int number_of_time_step = M_model->numberOfTimeStep();
     size_type Qm = 0;
 
     int Qa=M_model->Qa();
     int Ql=M_model->Ql(M_output_index);
+
+    beta_vector_type betaAqm;
+    beta_vector_type betaMqm;
+    beta_vector_type betaMFqm;
+    std::vector<beta_vector_type> betaFqm, betaLqm;
+
+    matrixN_type Adu ( ( int )N, ( int )N ) ;
+    matrixN_type Mdu ( ( int )N, ( int )N ) ;
+    vectorN_type Fdu ( ( int )N );
+    vectorN_type Ldu ( ( int )N );
+
+    matrixN_type Aprdu( ( int )N, ( int )N );
+    matrixN_type Mprdu( ( int )N, ( int )N );
+
+    std::vector<int> mMaxA(Qa);
+    std::vector<int> mMaxM(Qm);
+    std::vector<int> mMaxF( Ql );
+    for ( size_type q = 0; q < Qa; ++q )
+    {
+        mMaxA[q]=M_model->mMaxA(q);
+    }
+    for ( size_type q = 0; q < Qm; ++q )
+    {
+        mMaxM[q]=M_model->mMaxM(q);
+    }
+    for ( size_type q = 0; q < Ql; ++q )
+    {
+        mMaxF[q]=M_model->mMaxF(M_output_index,q);
+    }
+
+
+    double increment = M_fixedpointIncrementTol;
+    bool is_linear = M_model->isLinear();
+
+    if ( M_model->isSteady() )
+    {
+        if ( is_linear )
+        {
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu );
+            Adu.setZero( N,N );
+            for ( size_type q = 0; q < Qa; ++q )
+            {
+                for(int m=0; m < mMaxA[q]; m++)
+                    Adu += betaAqm[q][m]*M_Aqm_du[q][m].block( 0,0,N,N );
+            }
+            Fdu.setZero( N );
+            for ( size_type q = 0; q < Ql ; ++q )
+            {
+                for(int m=0; m < mMaxF[q]; m++)
+                    Fdu -= betaFqm[M_output_index][q][m]*M_Lqm_du[q][m].head( N );
+            }
+            uNdu[0] = Adu.lu().solve( Fdu );
+        }
+        else
+        {
+            vectorN_type next_uNdu( M_N );
+            uNdu[0].setZero( N );
+            int fi=0;
+            do
+            {
+                // backup uNdu
+                next_uNdu = uNdu[0];
+                // update coefficients of affine decomposition
+                boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                    M_model->computeBetaQm( this->expansion( uNdu[0], N ,M_model->rBFunctionSpace()->dualRB() ), mu );
+                // assemble rb matrix
+                Adu.setZero( N,N );
+                for ( size_type q = 0; q < Qa; ++q )
+                {
+                    for(int m=0; m < mMaxA[q]; m++)
+                        Adu += betaAqm[q][m]*M_Aqm_du[q][m].block( 0,0,N,N );
+                }
+                // assemble rb rhs
+                Fdu.setZero( N );
+                for ( size_type q = 0; q < Ql ; ++q )
+                {
+                    for(int m=0; m < mMaxF[q]; m++)
+                        Fdu -= betaFqm[M_output_index][q][m]*M_Lqm_du[q][m].head( N );
+                }
+                // solve rb system
+                uNdu[0] = Adu.lu().solve( Fdu );
+
+                increment = (uNdu[0]-next_uNdu).norm();
+                if( M_fixedpointVerbose  && this->worldComm().isMasterRank() )
+                {
+                    VLOG(2)<<"[CRB::fixedPointDual] fixedpoint iteration " << fi << " increment error: " << increment;
+                    std::cout<<"[CRB::fixedPointDual] fixedpoint iteration " << fi << " increment error: " << increment << "\n";
+                }
+                fi++;
+
+            } while ( increment > M_fixedpointIncrementTol && fi<M_fixedpointMaxIterations );
+
+        }
+        return;
+    }
+
+
+    double time_for_output = 1e30;
+    double time_step = 1e30;
+    //double time_final=0;
+    int number_of_time_step = M_model->numberOfTimeStep();
+
     if ( !M_model->isSteady() )
     {
         Qm = M_model->Qm();
@@ -4772,38 +4872,7 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
     }
 
     int time_index = number_of_time_step-1;
-
-    beta_vector_type betaAqm;
-    beta_vector_type betaMqm;
-    beta_vector_type betaMFqm;
-    std::vector<beta_vector_type> betaFqm, betaLqm;
-
-    matrixN_type Adu ( ( int )N, ( int )N ) ;
-    matrixN_type Mdu ( ( int )N, ( int )N ) ;
-    vectorN_type Fdu ( ( int )N );
-    vectorN_type Ldu ( ( int )N );
-
-    matrixN_type Aprdu( ( int )N, ( int )N );
-    matrixN_type Mprdu( ( int )N, ( int )N );
-
     double time = time_for_output;
-
-    std::vector<int> mMaxA(Qa);
-    std::vector<int> mMaxM(Qm);
-    std::vector<int> mMaxF( Ql );
-    for ( size_type q = 0; q < Qa; ++q )
-    {
-        mMaxA[q]=M_model->mMaxA(q);
-    }
-    for ( size_type q = 0; q < Qm; ++q )
-    {
-        mMaxM[q]=M_model->mMaxM(q);
-    }
-    for ( size_type q = 0; q < Ql; ++q )
-    {
-        mMaxF[q]=M_model->mMaxF(M_output_index,q);
-    }
-
 
     if ( ! M_model->isSteady() )
     {
@@ -4813,12 +4882,8 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
         }
     }
 
-     /**/
-    double increment = M_fixedpointIncrementTol;
     //uNdu[0] = Adu.lu().solve( -Ldu );
     Adu.setZero( N,N );
-
-    bool is_linear = M_model->isLinear();
 
     int time_iter=0;
     double tini = M_model->timeInitial();
@@ -4894,7 +4959,10 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
             increment = (uNdu[time_index]-next_uNdu).norm();
 
             if( M_fixedpointVerbose  && this->worldComm().isMasterRank() )
+            {
                 VLOG(2)<<"[CRB::fixedPointDual] fixedpoint iteration " << fi << " increment error: " << increment;
+                std::cout<<"[CRB::fixedPointDual] fixedpoint iteration " << fi << " increment error: " << increment << "\n";
+            }
 
         }while ( increment > M_fixedpointIncrementTol && fi<M_fixedpointMaxIterations );
 
