@@ -434,6 +434,61 @@ public:
         }
 
         /**
+         * \brief create a sampling with global number of samples
+         * \param N the number of samples
+         * \param samplingMode : random, log-random, log-equidistribute, equidistribute
+         * \param all_procs_have_same_sampling (boolean)
+         * \param filename : file name where the sampling is written
+         */
+        void sample( size_type N, std::string const& samplingMode, bool all_procs_have_same_sampling=true, std::string const& filename="" )
+        {
+            if( samplingMode == "random" )
+                this->randomize( N , all_procs_have_same_sampling, "", false );
+            else if( samplingMode == "log-random" )
+                this->randomize( N , all_procs_have_same_sampling, "", true );
+            else if( samplingMode == "log-equidistribute" )
+                this->logEquidistribute( N , all_procs_have_same_sampling );
+            else if( samplingMode == "equidistribute" )
+                this->equidistribute( N , all_procs_have_same_sampling  );
+            else
+                CHECK( false ) << "invalid sampling-mode, please select between log-random, log-equidistribute or equidistribute";
+
+            if ( !filename.empty() )
+            {
+                //if ( all_procs_have_same_sampling )
+                //    M_space->worldComm().barrier();
+                if ( !all_procs_have_same_sampling || M_space->worldComm().isMasterRank() )
+                    this->writeOnFile(filename);
+            }
+        }
+
+        /**
+         * \brief create a sampling with number of samples in each direction
+         * \param N the number of samples in each direction
+         * \param samplingMode : random, log-random, log-equidistribute, equidistribute
+         * \param all_procs_have_same_sampling (boolean)
+         * \param filename : file name where the sampling is written
+         */
+        void sample( std::vector<size_type> const& N, std::string const& samplingMode, bool all_procs_have_same_sampling=true, std::string const& filename="" )
+        {
+            if( samplingMode == "log-equidistribute" )
+                this->logEquidistributeProduct( N, all_procs_have_same_sampling );
+            else if( samplingMode == "equidistribute" )
+                this->equidistributeProduct( N, all_procs_have_same_sampling  );
+            else
+                CHECK( false ) << "invalid sampling-mode, log-equidistribute or equidistribute";
+
+            if ( !filename.empty() )
+            {
+                //if ( all_procs_have_same_sampling )
+                //    M_space->worldComm().barrier();
+                if ( !all_procs_have_same_sampling || M_space->worldComm().isMasterRank() )
+                    this->writeOnFile(filename);
+            }
+
+        }
+
+        /**
          * \brief create a sampling with random elements
          * \param N the number of samples
          * \param all_procs_have_same_sampling (boolean)
