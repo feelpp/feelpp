@@ -19,10 +19,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_reinitializerIsUpdatedForUse(false),
     M_iterSinceReinit(0)
 {
+    this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
+    //-----------------------------------------------------------------------------//
+    // Set advection model
+    this->setModelName( "Advection" );
+    //-----------------------------------------------------------------------------//
+    // Load parameters
     this->loadParametersFromOptionsVm();
-
-    std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".LevelSetConstructor.data";
-    this->addTimerTool("Constructor", nameFileConstructor);
+    // Get periodicity from options (if needed)
+    //this->loadPeriodicityFromOptionsVm();
 
     /*// --------------- mesh adaptation -----------------
 #if defined (MESH_ADAPTATION)
@@ -39,6 +44,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     }
 #endif*/
 
+    //-----------------------------------------------------------------------------//
+    // Print infos
     this->levelsetInfos(true);
 }
 
@@ -58,10 +65,11 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::build()
 {
-    this->createAdvection();
+    //this->createAdvection();
+    super_type::build();
     this->createFunctionSpaces();
     this->createReinitialization();
-    this->createExporters();
+    //this->createExporters();
     this->createOthers();
 }
 
@@ -69,10 +77,11 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh )
 {
-    this->createAdvection( mesh );
+    //this->createAdvection( mesh );
+    super_type::build( mesh );
     this->createFunctionSpaces();
     this->createReinitialization();
-    this->createExporters();
+    //this->createExporters();
     this->createOthers();
 }
 
@@ -81,38 +90,38 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::init()
 {
-    M_advection->init();
+    super_type::init( true, this->shared_from_this() );
 }
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::createAdvection()
-{
-    M_advection.reset( 
-            new advection_type(
-                this->prefix(), 
-                this->worldComm(), 
-                "advection", 
-                this->rootRepositoryWithoutNumProc()
-                ) );
+//LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+//void
+//LEVELSET_CLASS_TEMPLATE_TYPE::createAdvection()
+//{
+    //M_advection.reset( 
+            //new advection_type(
+                //this->prefix(), 
+                //this->worldComm(), 
+                //"advection", 
+                //this->rootRepositoryWithoutNumProc()
+                //) );
 
-    M_advection->build();
-}
+    //M_advection->build();
+//}
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::createAdvection( mesh_ptrtype const& mesh )
-{
-    M_advection.reset( 
-            new advection_type(
-                this->prefix(), 
-                this->worldComm(), 
-                this->subPrefix(), 
-                this->rootRepository()
-                ) );
+//LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+//void
+//LEVELSET_CLASS_TEMPLATE_TYPE::createAdvection( mesh_ptrtype const& mesh )
+//{
+    //M_advection.reset( 
+            //new advection_type(
+                //this->prefix(), 
+                //this->worldComm(), 
+                //this->subPrefix(), 
+                //this->rootRepository()
+                //) );
 
-    M_advection->build( mesh );
-}
+    //M_advection->build( mesh );
+//}
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -181,23 +190,23 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
     M_reinitializerIsUpdatedForUse = true;
 }
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::createExporters()
-{
-    this->log("LevelSet","createExporters", "start");
-    this->timerTool("Constructor").start();
+//LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+//void
+//LEVELSET_CLASS_TEMPLATE_TYPE::createExporters()
+//{
+    //this->log("LevelSet","createExporters", "start");
+    //this->timerTool("Constructor").start();
 
-    std::string geoExportType="static";//change_coords_only, change, static
-    std::string exporterPath = this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports"));
-    M_exporter = exporter( _mesh=this->mesh(),
-                           _name="Export",
-                           _geo=geoExportType,
-                           _path=exporterPath );
+    //std::string geoExportType="static";//change_coords_only, change, static
+    //std::string exporterPath = this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports"));
+    //M_exporter = exporter( _mesh=this->mesh(),
+                           //_name="Export",
+                           //_geo=geoExportType,
+                           //_path=exporterPath );
 
-    double tElpased = this->timerTool("Constructor").stop("createExporters");
-    this->log("LevelSet","createExporters",(boost::format("finish in %1% s")%tElpased).str() );
-}
+    //double tElpased = this->timerTool("Constructor").stop("createExporters");
+    //this->log("LevelSet","createExporters",(boost::format("finish in %1% s")%tElpased).str() );
+//}
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -343,6 +352,8 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
+    super_type::loadParametersFromOptionsVm();
+
     //M_enableReinit = boption(prefixvm(this->prefix(),"enable-reinit"));
     //M_reinitEvery = ioption(prefixvm(this->prefix(),"reinit-every"));
     M_useMarker2AsMarkerDoneFmm = boption(prefixvm(this->prefix(),"fm-use-markerdirac"));
@@ -365,7 +376,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     M_strategyBeforeFM = (strategy_before_FM_type) ioption(prefixvm(this->prefix(),"fm-init-first-elts-strategy"));
 
-    M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
+    //M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
 }
 
 //----------------------------------------------------------------------------//
@@ -534,18 +545,18 @@ LEVELSET_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
        3 - update stab every n iterations (not implemented yet)
        */
 
-    if( M_iterSinceReinit >= M_advection->timeSchemeOrder()-1 )
+    if( M_iterSinceReinit >= this->timeSchemeOrder()-1 )
     {
-        M_advection->updateAdvectionVelocity(velocity);
-        M_advection->solve();
+        this->updateAdvectionVelocity(velocity);
+        this->solve();
 
         M_iterSinceReinit++;
     }
     else
     {
-        M_advection->setTimeOrder( M_iterSinceReinit + 1 );
-        M_advection->updateAdvectionVelocity(velocity);
-        M_advection->solve();
+        this->setTimeOrder( M_iterSinceReinit + 1 );
+        this->updateAdvectionVelocity(velocity);
+        this->solve();
 
         M_iterSinceReinit++;
     }
@@ -576,6 +587,17 @@ LEVELSET_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
                 M_phinl.swap(this->phi());
         }
     }*/
+    updateDirac();
+    updateHeaviside();
+    updateMass();
+    M_doUpdateMarkers = true;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::solve()
+{
+    super_type::solve();
     updateDirac();
     updateHeaviside();
     updateMass();
@@ -781,18 +803,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("LevelSet","exportResults", "start");
     this->timerTool("PostProcessing").start();
  
-    if ( !M_exporter->doExport() ) return;
+    if ( !this->M_exporter->doExport() ) return;
 
-    M_exporter->step( time )->add( prefixvm(this->prefix(),"phi"),
-                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"phi")),
-                                   this->phi() );
-    M_exporter->step( time )->add( prefixvm(this->prefix(),"Dirac"),
+    this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Dirac"),
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Dirac")),
-                                   this->dirac() );
-    M_exporter->save();
+                                   *this->dirac() );
 
-    if( M_doExportAdvection )
-        M_advection->exportResults( time );
+    super_type::exportResults( time );
+    //if( M_doExportAdvection )
+        //M_advection->exportResults( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
     this->log("LevelSet","exportResults", "finish");

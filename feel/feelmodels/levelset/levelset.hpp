@@ -53,11 +53,12 @@ enum LevelSetTimeDiscretization {BDF2, /*CN,*/ EU, CN_CONSERVATIVE};
 enum class LevelSetReinitMethod {FM, HJ};
 
 template<typename ConvexType, int Order=1, typename PeriodicityType = NoPeriodicity>
-class LevelSet : 
-    public ModelBase
+class LevelSet 
+    : public AdvectionBase< ConvexType, Lagrange<Order, Scalar>, PeriodicityType >
+    , public boost::enable_shared_from_this< LevelSet<ConvexType, Order, PeriodicityType> >
 {
 public:
-    typedef ModelBase super_type;
+    typedef AdvectionBase< ConvexType, Lagrange<Order, Scalar>, PeriodicityType > super_type;
     typedef LevelSet<ConvexType, Order, PeriodicityType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
@@ -78,14 +79,19 @@ public:
 
     //--------------------------------------------------------------------//
     // Advection
-    typedef Lagrange<Order, Scalar> basis_levelset_type;
+    //typedef Lagrange<Order, Scalar> basis_levelset_type;
     //typedef FunctionSpace<mesh_type, bases<basis_levelset_type>, value_type, Periodicity<periodicity_type>> space_levelset_type;
 
-    typedef Advection<convex_type, basis_levelset_type, periodicity_type> advection_type;
+    //typedef Advection<convex_type, basis_levelset_type, periodicity_type> advection_type;
+    //typedef boost::shared_ptr<advection_type> advection_ptrtype;
+    
+    bool hasSourceTerm() const { return false; }
+    void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const {}
+    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const {}
 
     //--------------------------------------------------------------------//
     // Space levelset
-    typedef typename advection_type::space_advection_type space_levelset_type;
+    typedef typename super_type::space_advection_type space_levelset_type;
     typedef boost::shared_ptr<space_levelset_type> space_levelset_ptrtype;
     typedef typename space_levelset_type::element_type element_levelset_type;
     typedef boost::shared_ptr<element_levelset_type> element_levelset_ptrtype;
@@ -208,15 +214,15 @@ public:
 
     virtual void loadParametersFromOptionsVm();
 
-    void createAdvection();
-    void createAdvection( mesh_ptrtype const& mesh );
+    //void createAdvection();
+    //void createAdvection( mesh_ptrtype const& mesh );
     void createFunctionSpaces();
     void createReinitialization();
-    void createExporters();
+    //void createExporters();
     void createOthers();
 
     //--------------------------------------------------------------------//
-    space_levelset_ptrtype const& functionSpace() const { return M_advection->functionSpace(); }
+    //space_levelset_ptrtype const& functionSpace() const { return M_advection->functionSpace(); }
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
     space_levelset_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceLevelSetVec; }
     space_levelset_reinitP1_ptrtype const& functionSpaceReinitP1() const { return M_spaceReinitP1; }
@@ -226,7 +232,7 @@ public:
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
-    mesh_ptrtype const& mesh() const { return M_advection->mesh(); }
+    //mesh_ptrtype const& mesh() const { return M_advection->mesh(); }
     mesh_ptrtype const& submesh() const { return M_submesh; }
 
     //--------------------------------------------------------------------//
@@ -239,7 +245,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Levelset
-    element_levelset_ptrtype const& phi() const { return M_advection->fieldSolutionPtr(); }
+    element_levelset_ptrtype const& phi() const { return this->fieldSolutionPtr(); }
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
     element_levelset_ptrtype const& heaviside() const { return M_heaviside; }
     element_levelset_ptrtype const& H() const { return this->heaviside(); }
@@ -263,13 +269,14 @@ public:
     // Advection
     template<typename ExprT>
     void advect(vf::Expr<ExprT> const& velocity);
+    void solve();
 
     /* returns phi after advection by Velocity
       do not change the value of this->M_phi or any other variable (delta heavyside ...) */
     template < typename TVeloc >
     element_levelset_ptrtype phiAdvected(TVeloc const& Velocity, bool stabilization = true)
     { return this->advReactUpdate(Velocity, stabilization); }
-    
+
     //--------------------------------------------------------------------//
     // Reinitialization
     void reinitialize();
@@ -319,7 +326,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Export results
-    void exportResults() { this->exportResults( M_advection->currentTime() ); }
+    using super_type::exportResults;
     void exportResults( double time );
 
     /*// ----------- serialization, save, restart
@@ -360,8 +367,8 @@ private:
 
     //--------------------------------------------------------------------//
     // Levelset
-    element_levelset_ptrtype & phi() { return M_advection->fieldSolutionPtr(); }
-    element_levelset_ptrtype const& phio() const { return M_advection->timeStepBDF()->unknowns()[1]; }
+    element_levelset_ptrtype & phi() { return this->fieldSolutionPtr(); }
+    element_levelset_ptrtype const& phio() const { return this->timeStepBDF()->unknowns()[1]; }
 
     template < typename TVeloc >
     element_levelset_ptrtype advReactUpdate(TVeloc& Velocity, bool updateStabilization=true, bool updateBilinearForm=true);
@@ -446,7 +453,7 @@ private:
 
     //--------------------------------------------------------------------//
     // Advection
-    boost::shared_ptr<advection_type> M_advection;
+    //advection_ptrtype M_advection;
     //boost::shared_ptr<advection_type> M_advection_hj;
 
 #if defined(LEVELSET_CONSERVATIVE_ADVECTION)
@@ -464,8 +471,8 @@ private:
 
     //--------------------------------------------------------------------//
     // Export
-    exporter_ptrtype M_exporter;
-    bool M_doExportAdvection;
+    //exporter_ptrtype M_exporter;
+    //bool M_doExportAdvection;
     //--------------------------------------------------------------------//
     // Parameters
     double M_thicknessInterface;
