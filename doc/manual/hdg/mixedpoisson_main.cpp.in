@@ -21,7 +21,6 @@ makeAbout()
 int main(int argc, char *argv[])
 {
     using namespace Feel;
-
     Feel::Environment env( _argc=argc,
                            _argv=argv,
                            _about=makeAbout(),
@@ -31,15 +30,23 @@ int main(int argc, char *argv[])
 
 
     typedef FeelModels::MixedPoisson<@D@,@P@> mp_type;
-    Feel::cout << __LINE__ << std::endl;
-    
+
     auto MP = mp_type::New("mixedpoisson");
+    MP -> init();
+    if ( MP -> isStationary() ) {
+        MP->solve();    
+	MP->exportResults();
+    } else {
+        for ( ; !MP->timeStepBase()->isFinished() ; MP->updateTimeStep() ) {
+            Feel::cout << "============================================================\n";
+            Feel::cout << "time simulation: " << MP->time() << "s \n";
+            Feel::cout << "============================================================\n";
+            MP->solve();
+	    MP->exportResults();
+        }
+    }
 
-    Feel::cout << __LINE__ << std::endl;
-    MP->init();
-    Feel::cout << __LINE__ << std::endl;
-    MP->solve();
-    MP->exportResults();
-
+    MP->computeError(); 
+ 
     return 0;
 }
