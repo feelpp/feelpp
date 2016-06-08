@@ -311,6 +311,7 @@ public:
         M_fixedpointIncrementTol( doption(_name="crb.increment-fixedpoint-tol") ),
         M_fixedpointVerbose( boption(_name="crb.fixedpoint-verbose") ),
         M_fixedpointCriticalValue( doption(_name="crb.fixedpoint-critical-value") ),
+        M_fixedpointUseAitken( boption(_name="crb.use-aitken") ),
         M_loadElementsDb( boption(_name="crb.load-elements-database") ),
         M_useAccurateApee( boption(_name="crb.use-accurate-apee") ),
         M_computeApeeForEachTimeStep( boption(_name="crb.compute-apee-for-each-time-step") ),
@@ -378,6 +379,10 @@ public:
                 std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
             LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
         }
+
+        // fe vector is requiert in online : must not be TODO
+        if ( M_use_newton && M_loadElementsDb && M_Rqm.empty() )
+            boost::tie( boost::tuples::ignore, boost::tuples::ignore/*M_Jqm*/, M_Rqm ) = M_model->computeAffineDecomposition();
 
         // define offline backend and preconditioner
         M_backend =  backend();
@@ -1407,6 +1412,9 @@ protected:
     vectorN_type M_coeff_pr_ini_online;
     vectorN_type M_coeff_du_ini_online;
 
+    // inner_product operator
+    matrixN_type M_algebraicInnerProductPrimal;
+
 
     friend class boost::serialization::access;
     // When the class Archive corresponds to an output archive, the
@@ -1507,6 +1515,7 @@ protected:
     double M_fixedpointIncrementTol;
     bool M_fixedpointVerbose;
     double M_fixedpointCriticalValue;
+    bool M_fixedpointUseAitken;
 
     bool M_loadElementsDb;
 
@@ -1529,6 +1538,9 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
 CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, sparse_matrix_ptrtype & A )
 {
+    if ( M_model->isSteady() )
+        return M_model->solveFemUsingAffineDecompositionFixedPoint( mu );
+
     auto u = M_model->functionSpace()->element();
 
     sparse_matrix_ptrtype M = M_model->newMatrix();
@@ -1954,6 +1966,8 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
 CRB<TruthModelType>::offlineNewtonPrimal( parameter_type const& mu )
 {
+    return M_model->solveFemUsingAffineDecompositionNewton( mu );
+#if 0
     sparse_matrix_ptrtype J = M_model->newMatrix();
     vector_ptrtype R = M_model->newVector();
 
@@ -1969,13 +1983,16 @@ CRB<TruthModelType>::offlineNewtonPrimal( parameter_type const& mu )
                                                           boost::ref( *this ), _1, _2, mu );
     M_backend_primal->nlSolver()->residual = boost::bind( &self_type::offlineUpdateResidual,
                                                           boost::ref( *this ), _1, _2, mu );
+#if 0
     M_backend_primal->nlSolver()->setType( TRUST_REGION );
-
+#endif
     auto solution = M_model->functionSpace()->element();
     M_backend_primal->nlSolve(_jacobian=J, _solution=solution, _residual=R);
 
-    return solution;
+    M_model->solve( mu );// supp
 
+    return solution;
+#endif
 }
 
 template<typename TruthModelType>
@@ -2913,17 +2930,13 @@ CRB<TruthModelType>::offline()
                     {
                         for ( size_type j = 0; j < M_N; ++j )
                         {
-                            M_Jqm_pr[q][m]( i, j ) = M_Jqm[q][m]->energy( M_model->rBFunctionSpace()->primalBasisElement(i),
-                                                                          M_model->rBFunctionSpace()->primalBasisElement(j) );
-                        }
-                    }
-
-                    for ( size_type j=M_N - number_of_elements_to_update; j < M_N; j++ )
-                    {
-                        for ( size_type i = 0; i < M_N; ++i )
-                        {
-                            M_Jqm_pr[q][m]( i, j ) = M_Jqm[q][m]->energy( M_model->rBFunctionSpace()->primalBasisElement(i),
-                                                                          M_model->rBFunctionSpace()->primalBasisElement(j) );
+                            M_Jqm_pr[q][m]( i, j ) = M_model->Jqm(q , m ,
+                                                                  M_model->rBFunctionSpace()->primalBasisElement(j),
+                                                                  M_model->rBFunctionSpace()->primalBasisElement(i) );
+                            if (i!=j)
+                                M_Jqm_pr[q][m]( j, i ) = M_model->Jqm(q , m ,
+                                                                      M_model->rBFunctionSpace()->primalBasisElement(i),
+                                                                      M_model->rBFunctionSpace()->primalBasisElement(j) );
                         }
                     }
                 }//loop over m
@@ -3156,6 +3169,22 @@ CRB<TruthModelType>::offline()
                 }
             }
         }
+
+        if ( true )
+        {
+            M_algebraicInnerProductPrimal.conservativeResize( M_N, M_N );
+            for ( size_type i=M_N - number_of_elements_to_update; i<M_N; i++ )
+            {
+                for ( size_type j=0; j<M_N; j++ )
+                {
+                    M_algebraicInnerProductPrimal(i,j) = inner_product( M_model->rBFunctionSpace()->primalBasisElement(i),
+                                                                        M_model->rBFunctionSpace()->primalBasisElement(j) );
+                    if ( i!=j )
+                        M_algebraicInnerProductPrimal(j,i) = M_algebraicInnerProductPrimal(i,j);
+                }
+            }
+        }
+
 
         time=timer3.elapsed();
         if( this->worldComm().isMasterRank() )
@@ -4602,6 +4631,7 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::matrix_info_tuple
 CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_type & uN, double& output) const
 {
+
     matrixN_type J ( ( int )N, ( int )N ) ;
     vectorN_type R ( ( int )N );
 
@@ -5006,7 +5036,12 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     {
         computeProjectionInitialGuess( mu , N , uN[0] );
     }
-
+#if 1 // AITKEN
+    bool useAitkenRelaxation = M_fixedpointUseAitken;
+    vectorN_type rbaitkenAux( ( int )N );
+    vectorN_type rbPreviousResidual( ( int )N );
+    double rbAitkenTheta = 1.;//aitkenRelax.theta();
+#endif
     //for ( double time=time_step; time<time_for_output+time_step; time+=time_step )
     for ( double time=time_step; math::abs(time - time_for_output - time_step) > 1e-9; time+=time_step )
     {
@@ -5024,6 +5059,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         vectorN_type previous_uN( M_N );
         int fi=0;
 
+        bool fixPointIsFinished = false;
         do
         {
             if( is_linear )
@@ -5188,24 +5224,64 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                break;
            //previous_uN=uN[time_index];
 
-            increment = (uN[time_index]-previous_uN).norm();
-            auto increment_abs = (uN[time_index]-previous_uN).array().abs();
-            //auto increment_abs2 = increment_abs1.array();
-            //auto increment_abs = increment_abs2.norm();
+           if ( useAitkenRelaxation )
+           {
+#if 1 // AITKEN
+               auto rbresidual = uN[time_index]-previous_uN;
 
-            this->online_iterations_summary.first = fi;
-            this->online_iterations_summary.second = increment;
+               double residualConvergence = 1;
+               if ( fi >= 1 )
+               {
+                   double oldEltL2Norm = previous_uN.norm();
+                   if ( oldEltL2Norm > 1e-13 )
+                       residualConvergence = rbresidual.norm()/oldEltL2Norm;
+                   else
+                       residualConvergence = rbresidual.norm();
 
-            if( M_fixedpointVerbose  && this->worldComm().isMasterRank() )
-            {
-                DVLOG(2) << "iteration " << fi << " increment error: " << increment << "\n";
-                VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
-                double residual_norm = (A * uN[time_index] - F).norm() ;
-                VLOG(2) << " residual_norm :  "<<residual_norm;
-            }
+                   if ( residualConvergence <  M_fixedpointIncrementTol || fi>=M_fixedpointMaxIterations )
+                       fixPointIsFinished=true;
+                   else
+                   {
+                       rbaitkenAux = rbresidual- rbPreviousResidual;
+                       double scalar = rbaitkenAux.dot( M_algebraicInnerProductPrimal.block( 0,0,N,N )*rbaitkenAux );
+                       rbaitkenAux *= ( 1.0/scalar );
+                       scalar =  -rbAitkenTheta*rbPreviousResidual.dot(M_algebraicInnerProductPrimal*rbaitkenAux);
+                       if ( scalar > 1 || scalar < 1e-4 )
+                           scalar = 1.;
+
+                       rbAitkenTheta = scalar;
+                   }
+               }
+               if( M_fixedpointVerbose  && this->worldComm().isMasterRank() )
+                   std::cout << "iteration=" << fi << " theta="<< rbAitkenTheta << " residualConv=" << residualConvergence <<"\n";
+
+               rbPreviousResidual = rbresidual;
+               // apply relaxation
+               uN[time_index] = previous_uN + rbAitkenTheta*rbresidual;
+#endif
+           }
+           else
+           {
+               increment = (uN[time_index]-previous_uN).norm();
+               auto increment_abs = (uN[time_index]-previous_uN).array().abs();
+               fixPointIsFinished = increment < M_fixedpointIncrementTol || fi>=M_fixedpointMaxIterations;
+               //auto increment_abs2 = increment_abs1.array();
+               //auto increment_abs = increment_abs2.norm();
+
+               this->online_iterations_summary.first = fi;
+               this->online_iterations_summary.second = increment;
+
+               if( M_fixedpointVerbose  && this->worldComm().isMasterRank() )
+               {
+                   DVLOG(2) << "iteration " << fi << " increment error: " << increment << "\n";
+                   VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
+                   double residual_norm = (A * uN[time_index] - F).norm() ;
+                   VLOG(2) << " residual_norm :  "<<residual_norm;
+               }
+           }
             ++fi;
         }
-        while ( increment > M_fixedpointIncrementTol && fi<M_fixedpointMaxIterations );
+        while ( !fixPointIsFinished );// increment > M_fixedpointIncrementTol && fi<M_fixedpointMaxIterations );
         //while ( math::abs(output - old_output) >  output_fixedpoint_tol && fi < max_fixedpoint_iterations );
 
         if( increment > M_fixedpointIncrementTol )
@@ -6261,6 +6337,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
     delta_du = vect_delta_du( index );
     parameter_type mu;
 
+#if 0
     std::vector<double>::iterator it = std::max_element( check_err.begin(), check_err.end() );
     int check_index = it - check_err.begin() ;
     double check_maxerr = *it;
@@ -6270,7 +6347,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
         std::cout<<"[CRB::maxErrorBounds] index = "<<index<<" / check_index = "<<check_index<<"   and   maxerr = "<<maxerr<<" / "<<check_maxerr<<std::endl;
         throw std::logic_error( "[CRB::maxErrorBounds] index and check_index have different values" );
     }
-
+#endif
     int _index=0;
 
     if ( M_seekMuInComplement )
@@ -10385,6 +10462,8 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
             ar & BOOST_SERIALIZATION_NVP( M_Cmm_du );
     }
 
+    ar & BOOST_SERIALIZATION_NVP( M_algebraicInnerProductPrimal );
+
     ar & BOOST_SERIALIZATION_NVP ( M_database_contains_variance_info );
     if( M_database_contains_variance_info )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
@@ -10528,6 +10607,8 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
             ar & BOOST_SERIALIZATION_NVP( M_Cma_du );
             ar & BOOST_SERIALIZATION_NVP( M_Cmm_du );
     }
+
+    ar & BOOST_SERIALIZATION_NVP( M_algebraicInnerProductPrimal );
 
     ar & BOOST_SERIALIZATION_NVP ( M_database_contains_variance_info );
     if( M_database_contains_variance_info )
