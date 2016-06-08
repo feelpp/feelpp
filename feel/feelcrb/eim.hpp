@@ -182,6 +182,7 @@ public:
         M_M( 1 ),
         M_offline_done( false ),
         M_offline_step( false ),
+        M_adapt_SER( false ),
         M_tol( 1e-8 ),
         M_index_max(),
         M_model( 0 ),
@@ -197,6 +198,7 @@ public:
         M_M( 1 ),
         M_offline_done( offline_done ),
         M_offline_step( false ),
+        M_adapt_SER( false ),
         M_tol( __tol ),
         M_index_max(),
         M_model( model ),
@@ -1228,6 +1230,7 @@ public:
     typedef typename model_functionspace_type::element_type model_element_type;
     typedef typename model_functionspace_type::element_type model_solution_type;
     typedef typename model_functionspace_type::element_ptrtype model_element_ptrtype;
+    typedef typename model_functionspace_type::Context model_solution_context_type;
 
     static const uint16_type nDim = mesh_type::nDim;
 
@@ -1344,15 +1347,18 @@ public:
             return res;
         }
 
-    virtual vector_type operator()( context_type const& ctx, parameter_type const& mu , int M=-1) = 0;
-    virtual vector_type operator()( model_solution_type const& T, context_type const& ctx, parameter_type const& mu , int M=-1) = 0;
+    virtual vector_type operator()( model_solution_context_type/*context_type*/ const& ctx, parameter_type const& mu , int M=-1) = 0;
+    virtual vector_type operator()( model_solution_type const& T, model_solution_context_type/*context_type*/ const& ctx, parameter_type const& mu , int M=-1) = 0;
 
     virtual element_type const& q( int m )  const = 0;
     virtual std::vector<element_type> const& q() const = 0;
     virtual vector_type  beta( parameter_type const& mu ) /*const*/ = 0;
     virtual vector_type  beta( parameter_type const& mu, model_solution_type const& T ) /*const*/ = 0;
+    virtual vector_type  beta( parameter_type const& mu, vectorN_type const& T ) /*const*/ = 0;
     virtual vector_type  beta( parameter_type const& mu , size_type M )  = 0;
     virtual vector_type  beta( parameter_type const& mu, model_solution_type const& T , size_type M)  = 0;
+    virtual vector_type  beta( parameter_type const& mu, vectorN_type const& T , size_type M)  = 0;
+
     virtual size_type  mMax(bool & error) const = 0;
     virtual size_type  mMax() const = 0;
 
@@ -1463,6 +1469,7 @@ public:
 
     typedef typename super::model_functionspace_type model_functionspace_type;
     typedef boost::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
+    typedef typename super::model_solution_context_type model_solution_context_type;
 
 
     typedef typename SpaceType::mesh_type mesh_type;
@@ -1473,6 +1480,12 @@ public:
 
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
     typedef typename parameterspace_type::sampling_type sampling_type;
+
+    // reduced basis space
+    typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
+    typedef typename model_type::rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
+    typedef typename rbfunctionspace_type::ctxrbset_type rbfunctionspace_context_type;
+    typedef typename rbfunctionspace_type::ctxrbset_ptrtype rbfunctionspace_context_ptrtype;
 
     typedef ExprType expr_type;
     typedef boost::shared_ptr<expr_type> expr_ptrtype;
@@ -1516,7 +1529,8 @@ public:
         M_z_vector(),
         M_solution_vector(),
         M_t(),
-        M_ctx( this->functionSpace() ),
+        M_ctxFeBasisEim( new context_type( this->functionSpace() ) ),
+        M_ctxFeModelSolution( new model_solution_context_type( M_model->functionSpace() ) ),
         M_B(),
         M_offline_error(),
         M_eim(),
@@ -1613,7 +1627,8 @@ public:
     void initializeDataStructures()
     {
         M_mu_sampling->clear();
-        M_ctx.removeCtx();
+        M_ctxFeBasisEim->removeCtx();
+        M_ctxFeModelSolution->removeCtx();
         M_t.clear();
         M_M_max=0;
         M_B.resize(0,0);
@@ -1623,14 +1638,15 @@ public:
         M_solution_vector.clear();
     }
 
-    vector_type beta( parameter_type const& mu ) /*const*/ { return this->beta( mu, this->mMax() ); /*M_eim->beta( mu );*/ }
-    vector_type beta( parameter_type const& mu, model_solution_type const& T ) /*const*/ { return this->beta( mu, T, this->mMax() );/*M_eim->beta( mu, T );*/ }
+    vector_type beta( parameter_type const& mu ) /*const*/ { return this->beta( mu, this->mMax() ); }
+    vector_type beta( parameter_type const& mu, model_solution_type const& T ) /*const*/ { return this->beta( mu, T, this->mMax() ); }
+    vector_type beta( parameter_type const& mu, vectorN_type const& T ) /*const*/ { return this->beta( mu, T, this->mMax() ); }
 
     vector_type
     beta( parameter_type const& mu, size_type __M )
     {
         vector_type __beta( __M );
-        __beta = this->operator()( M_ctx, mu , __M );
+        __beta = this->operator()( /**M_ctxFeBasisEim*/ *M_ctxFeModelSolution, mu , __M );
         //M_mu = mu;
         //__beta = evaluateFromContext( _context=M_ctx, _expr=M_expr );
         DCHECK( __beta.size() == __M ) << "Invalid size beta: " << __beta.size() << " M=" << __M  << " beta = " << __beta << "\n";
@@ -1645,7 +1661,7 @@ public:
     {
         // beta=B_M\g(Od(indx),mut(i))'
         vector_type __beta( __M );
-        __beta = this->operator()( T, M_ctx, mu , __M );
+        __beta = this->operator()( T,/**M_ctxFeBasisEim*/ *M_ctxFeModelSolution, mu , __M );
         //M_mu = mu;
         //M_u=T;
         //__beta = evaluateFromContext( _context=M_ctx, _expr=M_expr );
@@ -1653,6 +1669,13 @@ public:
 
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
         return __beta;
+    }
+
+    vector_type
+    beta( parameter_type const& mu, vectorN_type const& T, size_type __M )
+    {
+        CHECK( false ) << "TODO";
+        return this->beta( mu, __M );
     }
 
 
@@ -1665,7 +1688,8 @@ public:
         typename Feel::node<value_type>::type no(nDim);
         for(int i =0;i < nDim; ++i ) no(i) = M_t.back()(i);
         // add in precompute object the last magic point
-        M_ctx.add( no );
+        M_ctxFeBasisEim->add( no );
+        M_ctxFeModelSolution->add( no );
         std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { DVLOG(2) << "t=" << t << "\n"; } );
     }
 
@@ -1749,7 +1773,7 @@ public:
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
 
-    vector_type operator()( context_type const& ctx, parameter_type const& mu , int M)
+    vector_type operator()( model_solution_context_type/*context_type*/ const& ctx, parameter_type const& mu , int M)
         {
             M_mu=mu;
             //*M_u = M_model->solve( mu );
@@ -1765,18 +1789,18 @@ public:
 
             //auto projected_expr = vf::project( _space=this->functionSpace(), _expr=M_expr );
             //return evaluateFromContext( _context=ctx, _expr=idv(projected_expr) , _max_points_used=M );
-            bool applyProjection= true;//false; //true
+            bool applyProjection = false;//true;//false; //true
             bool doMpiComm = true;//false; // true
             return evaluateFromContext( _context=ctx, _expr=M_expr , _max_points_used=M,
                                         _mpi_communications=doMpiComm, _projection=applyProjection );
         }
-    vector_type operator()( model_solution_type const& T, context_type const& ctx, parameter_type const& mu , int M)
+    vector_type operator()( model_solution_type const& T, model_solution_context_type/*context_type*/ const& ctx, parameter_type const& mu , int M)
         {
             M_mu = mu;
             *M_u = T;
             //auto projected_expr = vf::project( _space=this->functionSpace(), _expr=M_expr );
             //return evaluateFromContext( _context=ctx, _expr=idv(projected_expr) , _max_points_used=M );
-            bool applyProjection= true;//false; //true
+            bool applyProjection= false;//true;//false; //true
             bool doMpiComm = true;//false; // true
 #if 0
             //auto expr2=idv(*M_u);
@@ -1804,13 +1828,13 @@ public:
 
         if( 0 )// boption(_name="eim.compute-expansion-of-expression") )
         {
-            rhs = evaluateFromContext( _context=M_ctx, _expr=M_expr );
+            rhs = evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=M_expr );
         }
         else
         {
             //auto proj_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
             //rhs = proj_g.evaluate( M_ctx );
-            rhs = evaluateFromContext( _context=M_ctx, _expr=M_expr , _max_points_used=M, _projection=true );
+            rhs = evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=M_expr , _max_points_used=M, _projection=true );
         }
 
         M_B.block(0,0,M,M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
@@ -1824,11 +1848,11 @@ public:
     {
         M_mu = mu;
         *M_u = solution;
-        return evaluateFromContext( _context=M_ctx, _expr=M_expr , _max_points_used=M, _projection=true );
+        return evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=M_expr , _max_points_used=M, _projection=true );
     }
     vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M)
     {
-        return evaluateFromContext( _context=M_ctx, _expr=idv(element) , _max_points_used=M, _projection=true );
+        return evaluateFromContext( _context=*M_ctxFeBasisEim, _expr=idv(element) , _max_points_used=M, _projection=true );
     }
 
     // compute the maximum of the residual using either real expression
@@ -2003,31 +2027,31 @@ public:
         M_B.resize(1 , 1 );
         M_B(0,0) = 1;
 
-        CHECK( M_ctx.nPoints() == 1 );
+        CHECK( M_ctxFeBasisEim->nPoints() == 1 );
 
         if( this->M_computeExpansionOfExpression )
         {
             M_mu = M_mu_sampling->at(0);
             *M_u = M_solution_vector[0];
-            auto expression_evaluated = evaluateFromContext( _context=M_ctx, _expr=M_expr );
+            auto expression_evaluated = evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=M_expr );
             double eval = expression_evaluated(0);
             auto expression_q = M_expr / eval ; // normalization
-            auto q_evaluated = evaluateFromContext( _context=M_ctx, _expr=expression_q );
+            auto q_evaluated = evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=expression_q );
             eval = q_evaluated(0);
             CHECK( math::abs(eval-1) < 1e-10 )
-                << "q[0](t[0])) != 1 " << "q[0] = " << eval << " t[0] = \n "<<M_ctx.node(0)<<" \n" ;
+                << "q[0](t[0])) != 1 " << "q[0] = " << eval << " t[0] = \n "<<M_ctxFeBasisEim->node(0)<<" \n" ;
         }
         else
         {
             auto projected_g = vf::project( _space=this->functionSpace(),_expr=M_expr );
 
-            auto projected_g_evaluated = evaluateFromContext( _context=M_ctx, _expr=idv( projected_g ) );
+            auto projected_g_evaluated = evaluateFromContext( _context=*M_ctxFeBasisEim, _expr=idv( projected_g ) );
             double eval = projected_g_evaluated(0);
             projected_g.scale( 1./eval );
-            auto q_evaluated = evaluateFromContext( _context=M_ctx, _expr=idv( projected_g ) );
+            auto q_evaluated = evaluateFromContext( _context=*M_ctxFeBasisEim, _expr=idv( projected_g ) );
             eval = q_evaluated(0);
             CHECK( math::abs(eval-1) < 1e-10 )
-                << "q[0](t[0])) != 1 " << "q[0] = " << eval << " t[0] = \n "<<M_ctx.node(0)<<" \n" ;
+                << "q[0](t[0])) != 1 " << "q[0] = " << eval << " t[0] = \n "<<M_ctxFeBasisEim->node(0)<<" \n" ;
         }
 
         DVLOG( 2 )<<" M_B : \n "<<M_B;
@@ -2043,7 +2067,7 @@ public:
         //rank of the current processor
         int proc_number = this->worldComm().globalRank();
 
-        int npoints = M_ctx.nPoints();
+        int npoints = M_ctxFeBasisEim->nPoints();
 
         CHECK( m < npoints ) << "m = "<<m<<" and there is "<<npoints<<" interpolation points" ;
         if( this->M_computeExpansionOfExpression )
@@ -2057,10 +2081,10 @@ public:
             //we want to normalize the expression with its evaluation at
             //the interpolation point
             interpolation_point.clear();
-            proc_having_the_point = M_ctx.processorHavingPoint( m );
+            proc_having_the_point = M_ctxFeBasisEim->processorHavingPoint( m );
             if( proc_number == proc_having_the_point )
             {
-                auto basis = M_ctx.at( m );
+                auto basis = M_ctxFeBasisEim->at( m );
                 interpolation_point.addCtx( basis , proc_number );
             }
 
@@ -2096,10 +2120,10 @@ public:
             //we want to normalize the expression with its evaluation at
             //the interpolation point
             interpolation_point.clear();
-            proc_having_the_point = M_ctx.processorHavingPoint( m );
+            proc_having_the_point = M_ctxFeBasisEim->processorHavingPoint( m );
             if( proc_number == proc_having_the_point )
             {
-                auto basis = M_ctx.at( m );
+                auto basis = M_ctxFeBasisEim->at( m );
                 interpolation_point.addCtx( basis , proc_number );
             }
             vector_type expression_evaluated;
@@ -2133,7 +2157,7 @@ public:
         //rank of the current processor
         int proc_number = this->worldComm().globalRank();
 
-        int size = M_ctx.nPoints();
+        int size = M_ctxFeBasisEim->nPoints();
         M_B.conservativeResize( size , size );
 
         DVLOG( 2 ) << "solution.size() : "<<M_solution_vector.size();
@@ -2153,14 +2177,14 @@ public:
                 if (!boost::any_cast<expression_type>(&any_q))
                     throw std::logic_error( "[EIM::fillInterpolationMatrix] not cast possible for eim basis function expression" );
                 auto q = boost::any_cast<expression_type>( any_q );
-                M_B.col( __j ) = evaluateFromContext( _context=M_ctx, _expr=q );
+                M_B.col( __j ) = evaluateFromContext( _context=*M_ctxFeBasisEim, _expr=q );
             }
             else
             {
                 if (!boost::any_cast<element_type>(&any_q))
                     throw std::logic_error( "[EIM::fillInterpolationMatrix] not cast possible for eim basis function projected in function space" );
                 auto q = boost::any_cast<element_type>( any_q );
-                M_B.col( __j ) = q.evaluate( M_ctx );
+                M_B.col( __j ) = q.evaluate( *M_ctxFeBasisEim );
             }
         }
 
@@ -2814,7 +2838,7 @@ public:
             DVLOG(2) << "vector of solutions saved/loaded ( "<<M_max_solution<<" elements ) \n";
 
             //add interpolation points to the context
-            if( M_ctx.nPoints()==0 )
+            if( M_ctxFeBasisEim->nPoints()==0 )
             {
                 typename Feel::node<value_type>::type no(nDim);
                 for(int i=0 ; i<M_t.size(); i++)
@@ -2822,7 +2846,8 @@ public:
                     node_type t = M_t[i];
                     for(int dim =0; dim < nDim; ++dim )
                         no(dim) = t(dim);
-                    M_ctx.add( no );
+                    M_ctxFeBasisEim->add( no );
+                    M_ctxFeModelSolution->add( no );
                 }
             }
         }
@@ -2877,8 +2902,10 @@ private:
     int M_max_z;
     int M_max_solution;
     std::vector<node_type> M_t;
-    typename functionspace_type::Context M_ctx;
-    //boost::shared_ptr<context_type> M_ctx;
+    //typename functionspace_type::Context M_ctx;
+    boost::shared_ptr<context_type> M_ctxFeBasisEim;
+    boost::shared_ptr<model_solution_context_type> M_ctxFeModelSolution;
+    rbfunctionspace_context_ptrtype M_ctxRbModelSolution;
     matrix_type M_B;
     std::vector<double> M_offline_error;
     eim_ptrtype M_eim;
@@ -2944,6 +2971,10 @@ struct EimFunctionNoSolve
     typedef typename parameterspace_type::sampling_type sampling_type;
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
     typedef typename functionspace_type::value_type value_type;
+
+    // reduced basis space
+    typedef typename ModelType::rbfunctionspace_type rbfunctionspace_type;
+    typedef typename ModelType::rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
 
     typedef boost::shared_ptr<ModelType> model_ptrtype;
 
