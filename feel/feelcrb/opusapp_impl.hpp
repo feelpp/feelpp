@@ -857,7 +857,10 @@ OpusApp<ModelType,RM,Model>::run()
                             else
                             {
                                 //use affine decomposition
-                                u_fem = model->solveFemUsingAffineDecompositionFixedPoint( mu );
+                                if ( !model->isLinear() && use_newton )
+                                    u_fem = model->solveFemUsingAffineDecompositionNewton( mu );
+                                else
+                                    u_fem = model->solveFemUsingAffineDecompositionFixedPoint( mu );
                             }
                         }
                         else
