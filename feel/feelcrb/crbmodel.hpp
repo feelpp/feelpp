@@ -45,6 +45,7 @@
 
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcore/pslogger.hpp>
+#include <feel/feelalg/aitken.hpp>
 
 
 namespace Feel
@@ -225,6 +226,7 @@ public:
         M_backend_primal( backend( _name="backend-primal") ),
         M_backend_dual( backend( _name="backend-dual") ),
         M_backend_l2( backend( _name="backend-l2") ),
+        M_fixedpointUseAitken( boption(_name="crb.use-aitken") ),
         M_alreadyCountAffineDecompositionTerms( false ),
         M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
         M_numberOfTimeStep( 1 ),
@@ -2307,6 +2309,23 @@ public:
         }
     }
 
+    value_type Jqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
+    {
+        if( boption(_name="crb.stock-matrices") )
+        {
+            //in this case matrices have already been stocked
+            if ( M_Jqm.empty() )
+                return M_Aqm[q][m]->energy( xi_j, xi_i, transpose );
+            else
+                return M_Jqm[q][m]->energy( xi_j, xi_i, transpose );
+        }
+        else
+        {
+            CHECK( false ) << "TODO : Jqm operatorComposite";
+            return 0;
+        }
+    }
+
     element_ptrtype InitialGuessQm( uint16_type q, int m ) const
     {
         return M_InitialGuessV[q][m];
@@ -2707,6 +2726,7 @@ private:
     preconditioner_ptrtype M_preconditioner_primal;
     preconditioner_ptrtype M_preconditioner_dual;
     preconditioner_ptrtype M_preconditioner_l2;
+    bool M_fixedpointUseAitken;
 
     //number of terms in affine decomposition
     int M_Qa; //A
@@ -3408,16 +3428,75 @@ template<typename TruthModelType>
 typename CRBModel<TruthModelType>::element_type
 CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu )
 {
-    auto Xh= this->functionSpace();
-    bdf_ptrtype mybdf;
-    mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
-    sparse_matrix_ptrtype A;
-    sparse_matrix_ptrtype M;
-    std::vector<vector_ptrtype> F;
-    element_ptrtype InitialGuess = Xh->elementPtr();
+    auto Xh = this->functionSpace();
     auto u = Xh->element("u");
     auto uold = Xh->element("u_old");
+
+    sparse_matrix_ptrtype A;
+    std::vector<vector_ptrtype> F;
+
+    int max_fixedpoint_iterations = ioption(_name="crb.max-fixedpoint-iterations");
+    double increment_fixedpoint_tol = doption(_name="crb.increment-fixedpoint-tol");
+
+    double norm=0;
+    int iter=0;
+
+
+    if ( this->isSteady() )
+    {
+        if ( is_linear )
+        {
+            boost::tie(boost::tuples::ignore, A, F) = this->update( mu );
+            M_preconditioner_primal->setMatrix( A );
+            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+        }
+        else
+        {
+            u = *this->assembleInitialGuess( mu );
+
+            bool useAitkenRelaxation = M_fixedpointUseAitken;
+            auto residual = Xh->element();
+            auto aitkenRelax = aitken( _space=Xh );
+            aitkenRelax.initialize( residual, u );
+            aitkenRelax.restart();
+            bool fixPointIsFinished = false;
+            do {
+                uold = u;
+
+                boost::tie(boost::tuples::ignore, A, F) = this->update( mu , u );
+
+                M_preconditioner_primal->setMatrix( A );
+                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+
+                if ( !useAitkenRelaxation )
+                {
+                    norm = this->computeNormL2( uold , u );
+                    fixPointIsFinished = norm < increment_fixedpoint_tol || iter>=max_fixedpoint_iterations;
+                }
+                else
+                {
+                    residual = u-uold;
+                    aitkenRelax.apply2(_newElt=u,_residual=residual, _currentElt=u );
+                    aitkenRelax.printInfo();
+                    ++aitkenRelax;
+                    if ( aitkenRelax.isFinished() )
+                        fixPointIsFinished=true;
+                }
+
+                iter++;
+            } while( !fixPointIsFinished );//norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
+
+        }
+        return u;
+    }
+
+
+
+    bdf_ptrtype mybdf;
+    mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
+    sparse_matrix_ptrtype M;
     vector_ptrtype Rhs( M_backend->newVector( Xh ) );
+    element_ptrtype initialGuess = Xh->elementPtr();
 
     double time_initial;
     double time_step;
@@ -3429,31 +3508,27 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
         time_step = 1e30;
         time_final = 1e30;
         //we want to have the initial guess given by function update
-        InitialGuess = this->assembleInitialGuess( mu ) ;
+        initialGuess = this->assembleInitialGuess( mu ) ;
     }
     else
     {
         time_initial=this->timeInitial();
         time_step=this->timeStep();
         time_final=this->timeFinal();
-        this->initializationField( InitialGuess, mu );
+        this->initializationField( initialGuess, mu );
     }
 
     mybdf->setTimeInitial( time_initial );
     mybdf->setTimeStep( time_step );
     mybdf->setTimeFinal( time_final );
 
-    u=*InitialGuess;
-    double norm=0;
-    int iter=0;
+    u=*initialGuess;
 
     double bdf_coeff ;
     auto vec_bdf_poly = M_backend->newVector( Xh );
 
-    int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
-    double increment_fixedpoint_tol  = this->vm()["crb.increment-fixedpoint-tol"].template as<double>();
 
-    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*initialGuess); !mybdf->isFinished(); mybdf->next() )
     {
         iter=0;
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
@@ -3495,18 +3570,20 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionNewton( parameter_type
 
     // auto initialguess = this->functionSpace()->elementPtr();
     // initialguess = this->assembleInitialGuess( mu ) ;
+    auto initialguess = this->assembleInitialGuess( mu ) ;
 
 
     boost::tie( boost::tuples::ignore , M_Jqm, M_Rqm ) = this->computeAffineDecomposition();
 
-    backend()->nlSolver()->jacobian = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateJacobian,
+    M_backend_primal->nlSolver()->jacobian = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateJacobian,
                                                           boost::ref( *this ), _1, _2, mu );
-    backend()->nlSolver()->residual = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateResidual,
+    M_backend_primal->nlSolver()->residual = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateResidual,
                                                           boost::ref( *this ), _1, _2, mu );
-    backend()->nlSolver()->setType( TRUST_REGION );
+    //M_backend_primal->nlSolver()->setType( TRUST_REGION );
 
     auto solution = this->functionSpace()->element();
-    backend()->nlSolve(_jacobian=J, _solution=solution, _residual=R);
+    M_preconditioner_primal->setMatrix( J );
+    M_backend_primal->nlSolve(_jacobian=J, _solution=solution, _residual=R,_prec=M_preconditioner_primal);
     return solution;
 }
 
