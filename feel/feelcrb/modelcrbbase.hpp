@@ -136,6 +136,8 @@ public :
     /*reduced basis space*/
     typedef ReducedBasisSpace<self_type> rbfunctionspace_type;
     typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
+    typedef typename rbfunctionspace_type::ctxrbset_type rbfunctionspace_context_type;
+    typedef typename rbfunctionspace_type::ctxrbset_ptrtype rbfunctionspace_context_ptrtype;
 
     /*backend*/
     typedef Backend<value_type> backend_type;
