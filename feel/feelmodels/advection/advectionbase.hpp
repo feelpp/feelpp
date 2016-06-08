@@ -284,7 +284,7 @@ public :
     // Export results
     void exportMeasures( double time );
     void exportResults() { this->exportResults( this->currentTime() ); }
-    void exportResults( double time );
+    virtual void exportResults( double time );
 
 protected:
     //--------------------------------------------------------------------//
