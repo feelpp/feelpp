@@ -387,6 +387,23 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> c
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
+template<typename ContOtherType>
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>&
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,ContOtherType> const& v )
+{
+    if ( !M_functionspace )
+    {
+        M_functionspace = v.M_functionspace;
+        if ( v.M_name != "unknown" )
+            M_name = v.M_name;
+    }
+    super::operator=( v );
+    this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
+    return *this;
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
 template<typename VectorExpr>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>&
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( VectorExpr const& __v )

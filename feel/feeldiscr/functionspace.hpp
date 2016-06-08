@@ -1991,8 +1991,12 @@ public:
             return *this;
         }
 #endif
+
+        template<typename ContOtherType>
+        Element& operator=( Element<T,ContOtherType> const& v );
+
         template<typename VectorExpr>
-        Element& operator=( VectorExpr const& __v );
+        Element& operator=( VectorExpr const& v );
 
 
         /**
