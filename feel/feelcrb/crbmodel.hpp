@@ -3717,7 +3717,10 @@ CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type cons
         auto bdf_poly = mybdf->polyDeriv();
         *vec_bdf_poly = bdf_poly;
 
-        boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+        if ( is_linear )
+            boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+        else
+            boost::tie(M, A, F) = this->computeMonolithicFormulationU( mu , udu );
 
         if( ! isSteady() )
         {
@@ -3756,15 +3759,81 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     int output_index = ioption(_name="crb.output-index");
 
     auto Xh= this->functionSpace();
+    auto udu = Xh->element();
+    auto uold = Xh->element();
+    sparse_matrix_ptrtype A, Adu;
+    std::vector<vector_ptrtype> F;
+    vector_ptrtype Rhs = M_backend_dual->newVector( Xh );
+
+    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
+    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
+
+    double norm=0;
+    int iter=0;
+
+    if ( this->isSteady() )
+    {
+        if ( is_linear )
+        {
+            boost::tie(boost::tuples::ignore, A, F) = this->update( mu , 0 );
+
+            *Rhs = *F[output_index];
+            Rhs->scale( -1 );
+
+            if( boption("crb.use-symmetric-matrix") )
+                Adu = A;
+            else
+                A->transpose( Adu );
+
+            //uold = udu;
+            M_preconditioner_dual->setMatrix( Adu );
+            M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual);
+        }
+        else
+        {
+            Adu = M_backend_dual->newMatrix(_test=Xh,_trial=Xh);
+            bool useAitkenRelaxation = M_fixedpointUseAitken;
+            auto residual = Xh->element();
+            auto aitkenRelax = aitken( _space=Xh );
+            aitkenRelax.initialize( residual, udu );
+            aitkenRelax.restart();
+            bool fixPointIsFinished = false;
+            do {
+                uold = udu;
+
+                boost::tie(boost::tuples::ignore, A, F) = this->update( mu , udu );
+                //Adu = A;
+                A->transpose( Adu );
+                *Rhs = *F[output_index];
+                Rhs->scale( -1 );
+
+                M_preconditioner_dual->setMatrix( Adu );
+                M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual );
+
+                if ( !useAitkenRelaxation )
+                {
+                    norm = this->computeNormL2( uold , udu );
+                    fixPointIsFinished = norm < increment_fixedpoint_tol || iter>=max_fixedpoint_iterations;
+                }
+                else
+                {
+                    residual = udu-uold;
+                    aitkenRelax.apply2(_newElt=udu,_residual=residual, _currentElt=udu );
+                    aitkenRelax.printInfo();
+                    ++aitkenRelax;
+                    if ( aitkenRelax.isFinished() )
+                        fixPointIsFinished=true;
+                }
+
+                iter++;
+            } while( !fixPointIsFinished );//norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
+        }
+        return udu;
+    }
 
     bdf_ptrtype mybdf;
     mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
-    sparse_matrix_ptrtype A,Adu;
     sparse_matrix_ptrtype M;
-    std::vector<vector_ptrtype> F;
-    auto udu = Xh->element();
-    auto uold = Xh->element();
-    vector_ptrtype Rhs( M_backend->newVector( Xh ) );
     auto dual_initial_field = Xh->elementPtr();
 
     double time_initial;
@@ -3789,9 +3858,6 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     mybdf->setTimeStep( time_step );
     mybdf->setTimeFinal( time_final );
 
-    double norm=0;
-    int iter=0;
-
     double bdf_coeff ;
     auto vec_bdf_poly = M_backend->newVector( Xh );
 
@@ -3807,8 +3873,6 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     }
 
 
-    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
-    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
     for( mybdf->start(udu); !mybdf->isFinished(); mybdf->next() )
     {
         iter=0;
