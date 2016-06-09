@@ -313,6 +313,7 @@ public:
         M_fixedpointCriticalValue( doption(_name="crb.fixedpoint-critical-value") ),
         M_fixedpointUseAitken( boption(_name="crb.use-aitken") ),
         M_loadElementsDb( boption(_name="crb.load-elements-database") ),
+        M_hasEimRbSpaceContext( false ),
         M_useAccurateApee( boption(_name="crb.use-accurate-apee") ),
         M_computeApeeForEachTimeStep( boption(_name="crb.compute-apee-for-each-time-step") ),
         M_seekMuInComplement( boption(_name="crb.seek-mu-in-complement") ),
@@ -1518,6 +1519,7 @@ protected:
     bool M_fixedpointUseAitken;
 
     bool M_loadElementsDb;
+    bool M_hasEimRbSpaceContext;
 
     bool M_useAccurateApee;
     bool M_computeApeeForEachTimeStep;
@@ -3216,6 +3218,12 @@ CRB<TruthModelType>::offline()
             throw std::logic_error( "[CRB::offline] ERROR : build variance is not actived" );
         //buildVarianceMatrixPhi( M_N );
 
+        if ( false )
+        {
+            M_model->updateEimRbSpaceContext();
+            M_hasEimRbSpaceContext = true;
+        }
+
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
             if( this->worldComm().isMasterRank() )
@@ -4814,6 +4822,7 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
                 // backup uNdu
                 next_uNdu = uNdu[0];
                 // update coefficients of affine decomposition
+                // warning! should be uN[0] instead of uNdu[0] but no access to uN[0] at this time
                 boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
                     M_model->computeBetaQm( this->expansion( uNdu[0], N ,M_model->rBFunctionSpace()->dualRB() ), mu );
                 // assemble rb matrix
@@ -5023,31 +5032,10 @@ typename CRB<TruthModelType>::matrix_info_tuple
 CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & /*uNold*/,
                                         std::vector< double > & output_vector , int K, bool print_rb_matrix, bool computeOutput ) const
 {
-    double time_for_output = 1e30;
-    double time_step = 1e30;
-    //double time_final = 1e30;
-
-    int number_of_time_step = M_model->numberOfTimeStep();
-    //int number_of_time_step=1;
-    size_type Qm = 0;
-    int time_index = 0;
+    //size_type Qm = 0;
     double output = 0;
 
 
-    if ( !M_model->isSteady() )
-    {
-        Qm = M_model->Qm();
-        time_step = M_model->timeStep();
-        //time_final = M_model->timeFinal();
-
-        if ( K > 0 )
-            time_for_output = K * time_step;
-        else
-        {
-            //number_of_time_step = (time_final / time_step)+1;
-            time_for_output = (number_of_time_step-1) * time_step;
-        }
-    }
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
     beta_vector_type betaMFqm;
@@ -5058,6 +5046,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     int Qa=M_model->Qa();
     int Ql=M_model->Ql(M_output_index);
     int Qf=M_model->Ql(0);
+    int Qm=M_model->Qm();
     std::vector<int> mMaxA(Qa);
     std::vector<int> mMaxM(Qm);
     std::vector<int> mMaxL( Ql );
@@ -5083,8 +5072,168 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     vectorN_type F ( ( int )N );
     vectorN_type L ( ( int )N );
 
-    if ( !M_model->isSteady() )
+    double increment = M_fixedpointIncrementTol;
+    bool is_linear = M_model->isLinear();
+
+    if ( M_model->isSteady() )
     {
+        if ( is_linear )
+        {
+            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu );
+            A.setZero( N,N );
+            for ( size_type q = 0; q < Qa; ++q )
+            {
+                for(int m=0; m<mMaxA[q]; m++)
+                {
+                    A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
+                }
+            }
+            F.setZero( N );
+            for ( size_type q = 0; q < Qf; ++q )
+            {
+                for(int m=0; m<mMaxF[q]; m++)
+                {
+                    F += betaFqm[0][q][m]*M_Fqm_pr[q][m].head( N );
+                }
+            }
+            uN[0] = A.lu().solve( F );
+        }
+        else // nonlinear
+        {
+            vectorN_type previous_uN( M_N );
+            //uN[0].setZero( N );
+            computeProjectionInitialGuess( mu , N , uN[0] );
+            int fi=0;
+
+#if 1 // AITKEN
+            bool useAitkenRelaxation = M_fixedpointUseAitken;
+            vectorN_type rbaitkenAux( ( int )N );
+            vectorN_type rbPreviousResidual( ( int )N );
+            double rbAitkenTheta = 1.;//aitkenRelax.theta();
+#endif
+            bool fixPointIsFinished = false;
+            do
+            {
+                // backup uNdu
+                previous_uN = uN[0];
+                // update coefficients of affine decomposition
+                if ( M_hasEimRbSpaceContext )
+                    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( uN[0], mu/*, N*/ );
+                else
+                    boost::tie( betaMqm, betaAqm, betaFqm ) =
+                        M_model->computeBetaQm( this->expansion( uN[0], N , M_model->rBFunctionSpace()->primalRB() ), mu );
+                // assemble rb matrix
+                A.setZero( N,N );
+                for ( size_type q = 0; q < Qa; ++q )
+                {
+                    for(int m=0; m<mMaxA[q]; m++)
+                    {
+                        A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
+                    }
+                }
+                // assemble rb rhs
+                F.setZero( N );
+                for ( size_type q = 0; q < Qf; ++q )
+                {
+                    for(int m=0; m<mMaxF[q]; m++)
+                    {
+                        F += betaFqm[0][q][m]*M_Fqm_pr[q][m].head( N );
+                    }
+                }
+                // solve rb system
+                uN[0] = A.lu().solve( F );
+
+                if ( useAitkenRelaxation )
+                {
+                    auto rbresidual = uN[0]-previous_uN;
+
+                    double residualConvergence = 1;
+                    if ( fi >= 1 )
+                    {
+                        double oldEltL2Norm = previous_uN.norm();
+                        if ( oldEltL2Norm > 1e-13 )
+                            residualConvergence = rbresidual.norm()/oldEltL2Norm;
+                        else
+                            residualConvergence = rbresidual.norm();
+
+                        if ( residualConvergence <  M_fixedpointIncrementTol || fi>=M_fixedpointMaxIterations )
+                            fixPointIsFinished=true;
+                        else
+                        {
+                            rbaitkenAux = rbresidual- rbPreviousResidual;
+                            double scalar = rbaitkenAux.dot( M_algebraicInnerProductPrimal.block( 0,0,N,N )*rbaitkenAux );
+                            rbaitkenAux *= ( 1.0/scalar );
+                            scalar =  -rbAitkenTheta*rbPreviousResidual.dot(M_algebraicInnerProductPrimal*rbaitkenAux);
+                            if ( scalar > 1 || scalar < 1e-4 )
+                                scalar = 1.;
+
+                            rbAitkenTheta = scalar;
+                        }
+                    }
+                    if( M_fixedpointVerbose  && this->worldComm().isMasterRank() )
+                        std::cout << "iteration=" << fi << " theta="<< rbAitkenTheta << " residualConv=" << residualConvergence <<"\n";
+
+                    rbPreviousResidual = rbresidual;
+                    // apply relaxation
+                    uN[0] = previous_uN + rbAitkenTheta*rbresidual;
+                }
+                else
+                {
+                    increment = (uN[0]-previous_uN).norm();
+                    auto increment_abs = (uN[0]-previous_uN).array().abs();
+                    fixPointIsFinished = increment < M_fixedpointIncrementTol || fi>=M_fixedpointMaxIterations;
+
+                    this->online_iterations_summary.first = fi;
+                    this->online_iterations_summary.second = increment;
+
+                    if( M_fixedpointVerbose  && this->worldComm().isMasterRank() )
+                    {
+                        DVLOG(2) << "iteration " << fi << " increment error: " << increment << "\n";
+                        VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
+                        double residual_norm = (A * uN[0] - F).norm() ;
+                        VLOG(2) << " residual_norm :  "<<residual_norm;
+                    }
+                }
+                ++fi;
+            }
+            while ( !fixPointIsFinished );// increment > M_fixedpointIncrementTol && fi<M_fixedpointMaxIterations );
+
+        } // nonlinear
+
+        if ( computeOutput )
+        {
+            L.setZero( N );
+            for ( size_type q = 0; q < Ql; ++q )
+            {
+                for(int m=0; m < mMaxL[q]; m++)
+                {
+                    L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
+                }
+            }
+            output = L.dot( uN[0] );
+            output_vector[0] = output;
+        }
+
+    }
+    else // unsteady case
+    {
+        double time_for_output = 1e30;
+        double time_step = 1e30;
+        //double time_final = 1e30;
+        int time_index = 0;
+        int number_of_time_step = M_model->numberOfTimeStep();
+
+        time_step = M_model->timeStep();
+        //time_final = M_model->timeFinal();
+
+        if ( K > 0 )
+            time_for_output = K * time_step;
+        else
+        {
+            //number_of_time_step = (time_final / time_step)+1;
+            time_for_output = (number_of_time_step-1) * time_step;
+        }
+
         for ( size_type n=0; n<N; n++ )
         {
             //uNold[1]( n ) = M_coeff_pr_ini_online(n);
@@ -5093,85 +5242,46 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
         if ( time_index<number_of_time_step-1 )
             time_index++;
-    }
 
 
-    double increment = M_fixedpointIncrementTol;
-    bool is_linear = M_model->isLinear();
-    int time_iter=0;
+        int time_iter=0;
 
-    if( !is_linear )
-    {
-        computeProjectionInitialGuess( mu , N , uN[0] );
-    }
+        // if( !is_linear )
+        // {
+        //     computeProjectionInitialGuess( mu , N , uN[0] );
+        // }
 #if 1 // AITKEN
-    bool useAitkenRelaxation = M_fixedpointUseAitken;
-    vectorN_type rbaitkenAux( ( int )N );
-    vectorN_type rbPreviousResidual( ( int )N );
-    double rbAitkenTheta = 1.;//aitkenRelax.theta();
+        bool useAitkenRelaxation = M_fixedpointUseAitken;
+        vectorN_type rbaitkenAux( ( int )N );
+        vectorN_type rbPreviousResidual( ( int )N );
+        double rbAitkenTheta = 1.;//aitkenRelax.theta();
 #endif
-    //for ( double time=time_step; time<time_for_output+time_step; time+=time_step )
-    for ( double time=time_step; math::abs(time - time_for_output - time_step) > 1e-9; time+=time_step )
-    {
-
-        time_iter++;
-        //computeProjectionInitialGuess( mu , N , uN[time_index] );
-
-        //vectorN_type error;
-        //const element_type expansion_uN = this->expansion( uN[time_index] , N , M_WN);
-        //checkInitialGuess( expansion_uN , mu , error);
-        //std::cout<<"***************************************************************error.sum : "<<error.sum()<<std::endl;
-
-        VLOG(2) << "lb: start fix point\n";
-
-        vectorN_type previous_uN( M_N );
-        int fi=0;
-
-        bool fixPointIsFinished = false;
-        do
+        //for ( double time=time_step; time<time_for_output+time_step; time+=time_step )
+        for ( double time=time_step; math::abs(time - time_for_output - time_step) > 1e-9; time+=time_step )
         {
-            if( is_linear )
+
+            time_iter++;
+            //computeProjectionInitialGuess( mu , N , uN[time_index] );
+
+            //vectorN_type error;
+            //const element_type expansion_uN = this->expansion( uN[time_index] , N , M_WN);
+            //checkInitialGuess( expansion_uN , mu , error);
+            //std::cout<<"***************************************************************error.sum : "<<error.sum()<<std::endl;
+
+            VLOG(2) << "lb: start fix point\n";
+
+            vectorN_type previous_uN( M_N );
+            int fi=0;
+
+            bool fixPointIsFinished = false;
+            do
             {
-                if( time_iter==1 )
-                {
-                    bool only_terms_time_dependent=false;
-                    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
-                    A.setZero( N,N );
-                    for ( size_type q = 0; q < Qa; ++q )
-                    {
-                        for(int m=0; m<mMaxA[q]; m++)
-                        {
-                            A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
-                        }
-                    }
-                    for ( size_type q = 0; q < Qm; ++q )
-                    {
-                        for(int m=0; m<mMaxM[q]; m++)
-                        {
-                            A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
-                        }
-                    }
-                }
-                else
-                {
-                    bool only_terms_time_dependent=true;
-                    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
-                }
-            }
-            else
-            {
-                //important note :
-                //when lambda expressions will be totally operational
-                //we will call computeBetaQm( uN, mu, tim )
-                //and the test if( load_elements_db ) will disappear
-                if( M_loadElementsDb )
+                if( is_linear )
                 {
                     if( time_iter==1 )
                     {
                         bool only_terms_time_dependent=false;
-                        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index], N , M_model->rBFunctionSpace()->primalRB() ),
-                                                                                          mu , time, only_terms_time_dependent );
-
+                        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
                         A.setZero( N,N );
                         for ( size_type q = 0; q < Qa; ++q )
                         {
@@ -5191,194 +5301,230 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     else
                     {
                         bool only_terms_time_dependent=true;
-                        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) =
-                            M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ),
-                                                    mu ,time , only_terms_time_dependent );
+                        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
                     }
                 }
                 else
                 {
-                    bool only_terms_time_dependent=false;
-                    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
-
-                    A.setZero( N,N );
-                    for ( size_type q = 0; q < Qa; ++q )
+                    //important note :
+                    //when lambda expressions will be totally operational
+                    //we will call computeBetaQm( uN, mu, tim )
+                    //and the test if( load_elements_db ) will disappear
+                    if( M_loadElementsDb )
                     {
-                        for(int m=0; m< mMaxA[q]; m++)
+                        if( time_iter==1 )
                         {
-                            A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
+                            bool only_terms_time_dependent=false;
+                            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index], N , M_model->rBFunctionSpace()->primalRB() ),
+                                                                                              mu , time, only_terms_time_dependent );
+
+                            A.setZero( N,N );
+                            for ( size_type q = 0; q < Qa; ++q )
+                            {
+                                for(int m=0; m<mMaxA[q]; m++)
+                                {
+                                    A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
+                                }
+                            }
+                            for ( size_type q = 0; q < Qm; ++q )
+                            {
+                                for(int m=0; m<mMaxM[q]; m++)
+                                {
+                                    A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            bool only_terms_time_dependent=true;
+                            boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) =
+                                M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ),
+                                                        mu ,time , only_terms_time_dependent );
                         }
                     }
-                    for ( size_type q = 0; q < Qm; ++q )
+                    else
                     {
-                        for(int m=0; m< mMaxM[q]; m++)
+                        bool only_terms_time_dependent=false;
+                        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
+
+                        A.setZero( N,N );
+                        for ( size_type q = 0; q < Qa; ++q )
                         {
-                            A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
+                            for(int m=0; m< mMaxA[q]; m++)
+                            {
+                                A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
+                            }
+                        }
+                        for ( size_type q = 0; q < Qm; ++q )
+                        {
+                            for(int m=0; m< mMaxM[q]; m++)
+                            {
+                                A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
+                            }
                         }
                     }
                 }
-            }
 
-            F.setZero( N );
-            for ( size_type q = 0; q < Qf; ++q )
-            {
-                for(int m=0; m<mMaxF[q]; m++)
+                F.setZero( N );
+                for ( size_type q = 0; q < Qf; ++q )
                 {
-                    F += betaFqm[0][q][m]*M_Fqm_pr[q][m].head( N );
+                    for(int m=0; m<mMaxF[q]; m++)
+                    {
+                        F += betaFqm[0][q][m]*M_Fqm_pr[q][m].head( N );
+                    }
                 }
-            }
 
-            for ( size_type q = 0; q < Qm; ++q )
-            {
-                for(int m=0; m<mMaxM[q]; m++)
+                for ( size_type q = 0; q < Qm; ++q )
                 {
-                    //F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
-                    F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uN[time_index-1]/time_step;
+                    for(int m=0; m<mMaxM[q]; m++)
+                    {
+                        //F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
+                        F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uN[time_index-1]/time_step;
+                    }
                 }
-            }
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-            if(ioption(_name="parallel.debug"))
-            {
-                int nbelemAq = N * N * M_model->Qa();
-                double * arrayAq = new double[nbelemAq];
-                for( size_type q = 0; q < nbelemAq; ++q )
-                    memcpy(arrayAq + q * N * N, M_Aqm_pr[q][0].block( 0,0,N,N ).data(), N * N * sizeof(double));
-                this->dumpData("./out.cpu.dump", "[CPU] Aq: ", arrayAq, nbelemAq);
-                delete[] arrayAq;
-
-                int nbelemFq = N * M_model->Ql(0);
-                double * arrayFq = new double[nbelemFq];
-                for( size_type q = 0; q < nbelemFq; ++q )
-                    memcpy(arrayFq + q * N, M_Fqm_pr[q][0].head(N).data(), N * sizeof(double));
-                this->dumpData("./out.cpu.dump", "[CPU] Aq: ", arrayFq, nbelemFq);
-                delete[] arrayFq;
-
-                int nbelemBetaAq = M_model->Qa();
-                double * arrayBetaAq = new double[nbelemBetaAq];
-                for( size_type q = 0; q < nbelemBetaAq; ++q )
-                    memcpy(arrayBetaAq + q, &(betaAqm[q][0]), sizeof(double));
-                this->dumpData("./out.gpu.dump", "[CPU] betaAq: ", arrayBetaAq, nbelemBetaAq);
-                delete[] arrayBetaAq;
-
-                int nbelemBetaFq = M_model->Ql(0);
-                double * arrayBetaFq = new double[nbelemBetaFq];
-                for( size_type q = 0; q < nbelemBetaFq; ++q )
-                    memcpy(arrayBetaFq + q, &(betaFqm[0][q][0]), sizeof(double));
-                this->dumpData("./out.gpu.dump", "[CPU] betaFq: ", arrayBetaFq, nbelemBetaFq);
-                delete[] arrayBetaFq;
-
-                this->dumpData("./out.cpu.dump", "[CPU] A: ", A.data(), N * N);
-                this->dumpData("./out.cpu.dump", "[CPU] F: ", F.data(), N);
-            }
-#endif
-
-            // backup uN
-            previous_uN = uN[time_index];
-
-            // solve for new fix point iteration
-            uN[time_index] = A.lu().solve( F );
-
-            //vectorN_type full_lu; full_lu.resize(2);
-            //full_lu=A.fullPivLu().solve( F );
-            //LOG( INFO ) << " oooooooooooooooooooooooooo mu = \n"<<mu;
-            //LOG( INFO )<<std::setprecision(14)<<" norm of full LU : "<<full_lu.norm();
-            //LOG( INFO )<<std::setprecision(14)<<" norm of  LU     : "<<uN[time_index].norm();
-
-            //if ( time_index<number_of_time_step-1 )
-            //    uNold[time_index+1] = uN[time_index];
-
-           if( is_linear )
-               break;
-           //previous_uN=uN[time_index];
-
-           if ( useAitkenRelaxation )
-           {
-#if 1 // AITKEN
-               auto rbresidual = uN[time_index]-previous_uN;
-
-               double residualConvergence = 1;
-               if ( fi >= 1 )
-               {
-                   double oldEltL2Norm = previous_uN.norm();
-                   if ( oldEltL2Norm > 1e-13 )
-                       residualConvergence = rbresidual.norm()/oldEltL2Norm;
-                   else
-                       residualConvergence = rbresidual.norm();
-
-                   if ( residualConvergence <  M_fixedpointIncrementTol || fi>=M_fixedpointMaxIterations )
-                       fixPointIsFinished=true;
-                   else
-                   {
-                       rbaitkenAux = rbresidual- rbPreviousResidual;
-                       double scalar = rbaitkenAux.dot( M_algebraicInnerProductPrimal.block( 0,0,N,N )*rbaitkenAux );
-                       rbaitkenAux *= ( 1.0/scalar );
-                       scalar =  -rbAitkenTheta*rbPreviousResidual.dot(M_algebraicInnerProductPrimal*rbaitkenAux);
-                       if ( scalar > 1 || scalar < 1e-4 )
-                           scalar = 1.;
-
-                       rbAitkenTheta = scalar;
-                   }
-               }
-               if( M_fixedpointVerbose  && this->worldComm().isMasterRank() )
-                   std::cout << "iteration=" << fi << " theta="<< rbAitkenTheta << " residualConv=" << residualConvergence <<"\n";
-
-               rbPreviousResidual = rbresidual;
-               // apply relaxation
-               uN[time_index] = previous_uN + rbAitkenTheta*rbresidual;
-#endif
-           }
-           else
-           {
-               increment = (uN[time_index]-previous_uN).norm();
-               auto increment_abs = (uN[time_index]-previous_uN).array().abs();
-               fixPointIsFinished = increment < M_fixedpointIncrementTol || fi>=M_fixedpointMaxIterations;
-               //auto increment_abs2 = increment_abs1.array();
-               //auto increment_abs = increment_abs2.norm();
-
-               this->online_iterations_summary.first = fi;
-               this->online_iterations_summary.second = increment;
-
-               if( M_fixedpointVerbose  && this->worldComm().isMasterRank() )
-               {
-                   DVLOG(2) << "iteration " << fi << " increment error: " << increment << "\n";
-                   VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
-                   double residual_norm = (A * uN[time_index] - F).norm() ;
-                   VLOG(2) << " residual_norm :  "<<residual_norm;
-               }
-           }
-            ++fi;
-        }
-        while ( !fixPointIsFinished );// increment > M_fixedpointIncrementTol && fi<M_fixedpointMaxIterations );
-        //while ( math::abs(output - old_output) >  output_fixedpoint_tol && fi < max_fixedpoint_iterations );
-
-        if( increment > M_fixedpointIncrementTol )
-            DVLOG(2)<<"[CRB::fixedPointPrimal] fixed point, proc "<<this->worldComm().globalRank()
-                    <<" fixed point has no converged : increment = "<<increment
-                    <<" and tolerance : "<<M_fixedpointIncrementTol<<" so "<<M_fixedpointMaxIterations<<" iterations were done"<<std::endl;
-
-        if( increment > M_fixedpointCriticalValue )
-            throw std::logic_error( "[CRB::fixedPointPrimal] fixed point ERROR : increment > critical value " );
-
-        if ( computeOutput )
-        {
-            L.setZero( N );
-            for ( size_type q = 0; q < Ql; ++q )
-            {
-                for(int m=0; m < mMaxL[q]; m++)
+                if(ioption(_name="parallel.debug"))
                 {
-                    L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
+                    int nbelemAq = N * N * M_model->Qa();
+                    double * arrayAq = new double[nbelemAq];
+                    for( size_type q = 0; q < nbelemAq; ++q )
+                        memcpy(arrayAq + q * N * N, M_Aqm_pr[q][0].block( 0,0,N,N ).data(), N * N * sizeof(double));
+                    this->dumpData("./out.cpu.dump", "[CPU] Aq: ", arrayAq, nbelemAq);
+                    delete[] arrayAq;
+
+                    int nbelemFq = N * M_model->Ql(0);
+                    double * arrayFq = new double[nbelemFq];
+                    for( size_type q = 0; q < nbelemFq; ++q )
+                        memcpy(arrayFq + q * N, M_Fqm_pr[q][0].head(N).data(), N * sizeof(double));
+                    this->dumpData("./out.cpu.dump", "[CPU] Aq: ", arrayFq, nbelemFq);
+                    delete[] arrayFq;
+
+                    int nbelemBetaAq = M_model->Qa();
+                    double * arrayBetaAq = new double[nbelemBetaAq];
+                    for( size_type q = 0; q < nbelemBetaAq; ++q )
+                        memcpy(arrayBetaAq + q, &(betaAqm[q][0]), sizeof(double));
+                    this->dumpData("./out.gpu.dump", "[CPU] betaAq: ", arrayBetaAq, nbelemBetaAq);
+                    delete[] arrayBetaAq;
+
+                    int nbelemBetaFq = M_model->Ql(0);
+                    double * arrayBetaFq = new double[nbelemBetaFq];
+                    for( size_type q = 0; q < nbelemBetaFq; ++q )
+                        memcpy(arrayBetaFq + q, &(betaFqm[0][q][0]), sizeof(double));
+                    this->dumpData("./out.gpu.dump", "[CPU] betaFq: ", arrayBetaFq, nbelemBetaFq);
+                    delete[] arrayBetaFq;
+
+                    this->dumpData("./out.cpu.dump", "[CPU] A: ", A.data(), N * N);
+                    this->dumpData("./out.cpu.dump", "[CPU] F: ", F.data(), N);
                 }
+#endif
+
+                // backup uN
+                previous_uN = uN[time_index];
+
+                // solve for new fix point iteration
+                uN[time_index] = A.lu().solve( F );
+
+                //vectorN_type full_lu; full_lu.resize(2);
+                //full_lu=A.fullPivLu().solve( F );
+                //LOG( INFO ) << " oooooooooooooooooooooooooo mu = \n"<<mu;
+                //LOG( INFO )<<std::setprecision(14)<<" norm of full LU : "<<full_lu.norm();
+                //LOG( INFO )<<std::setprecision(14)<<" norm of  LU     : "<<uN[time_index].norm();
+
+                //if ( time_index<number_of_time_step-1 )
+                //    uNold[time_index+1] = uN[time_index];
+
+                if( is_linear )
+                    break;
+                //previous_uN=uN[time_index];
+
+                if ( useAitkenRelaxation )
+                {
+#if 1 // AITKEN
+                    auto rbresidual = uN[time_index]-previous_uN;
+
+                    double residualConvergence = 1;
+                    if ( fi >= 1 )
+                    {
+                        double oldEltL2Norm = previous_uN.norm();
+                        if ( oldEltL2Norm > 1e-13 )
+                            residualConvergence = rbresidual.norm()/oldEltL2Norm;
+                        else
+                            residualConvergence = rbresidual.norm();
+
+                        if ( residualConvergence <  M_fixedpointIncrementTol || fi>=M_fixedpointMaxIterations )
+                            fixPointIsFinished=true;
+                        else
+                        {
+                            rbaitkenAux = rbresidual- rbPreviousResidual;
+                            double scalar = rbaitkenAux.dot( M_algebraicInnerProductPrimal.block( 0,0,N,N )*rbaitkenAux );
+                            rbaitkenAux *= ( 1.0/scalar );
+                            scalar =  -rbAitkenTheta*rbPreviousResidual.dot(M_algebraicInnerProductPrimal*rbaitkenAux);
+                            if ( scalar > 1 || scalar < 1e-4 )
+                                scalar = 1.;
+
+                            rbAitkenTheta = scalar;
+                        }
+                    }
+                    if( M_fixedpointVerbose  && this->worldComm().isMasterRank() )
+                        std::cout << "iteration=" << fi << " theta="<< rbAitkenTheta << " residualConv=" << residualConvergence <<"\n";
+
+                    rbPreviousResidual = rbresidual;
+                    // apply relaxation
+                    uN[time_index] = previous_uN + rbAitkenTheta*rbresidual;
+#endif
+                }
+                else
+                {
+                    increment = (uN[time_index]-previous_uN).norm();
+                    auto increment_abs = (uN[time_index]-previous_uN).array().abs();
+                    fixPointIsFinished = increment < M_fixedpointIncrementTol || fi>=M_fixedpointMaxIterations;
+                    //auto increment_abs2 = increment_abs1.array();
+                    //auto increment_abs = increment_abs2.norm();
+
+                    this->online_iterations_summary.first = fi;
+                    this->online_iterations_summary.second = increment;
+
+                    if( M_fixedpointVerbose  && this->worldComm().isMasterRank() )
+                    {
+                        DVLOG(2) << "iteration " << fi << " increment error: " << increment << "\n";
+                        VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
+                        double residual_norm = (A * uN[time_index] - F).norm() ;
+                        VLOG(2) << " residual_norm :  "<<residual_norm;
+                    }
+                }
+                ++fi;
             }
-            output = L.dot( uN[time_index] );
-            output_vector[time_index] = output;
+            while ( !fixPointIsFinished );// increment > M_fixedpointIncrementTol && fi<M_fixedpointMaxIterations );
+            //while ( math::abs(output - old_output) >  output_fixedpoint_tol && fi < max_fixedpoint_iterations );
+
+            if( increment > M_fixedpointIncrementTol )
+                DVLOG(2)<<"[CRB::fixedPointPrimal] fixed point, proc "<<this->worldComm().globalRank()
+                        <<" fixed point has no converged : increment = "<<increment
+                        <<" and tolerance : "<<M_fixedpointIncrementTol<<" so "<<M_fixedpointMaxIterations<<" iterations were done"<<std::endl;
+
+            if( increment > M_fixedpointCriticalValue )
+                throw std::logic_error( "[CRB::fixedPointPrimal] fixed point ERROR : increment > critical value " );
+
+            if ( computeOutput )
+            {
+                L.setZero( N );
+                for ( size_type q = 0; q < Ql; ++q )
+                {
+                    for(int m=0; m < mMaxL[q]; m++)
+                    {
+                        L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
+                    }
+                }
+                output = L.dot( uN[time_index] );
+                output_vector[time_index] = output;
+            }
+
+            if ( time_index<number_of_time_step-1 )
+                time_index++;
+
         }
-
-        if ( time_index<number_of_time_step-1 )
-            time_index++;
-
-    }
-
+    } // unsteady case
     double condition_number = 0;
     double determinant = 0;
     if( M_computeMatrixInfo )
