@@ -94,7 +94,8 @@ public:
                               mpl::identity<typename Pset::template apply<mesh_element_type::nRealDim, value_type, Hypercube>::type >
                               >::type::type pointset_type;
     typedef Eigen::Tensor<value_type,3> element_type;
-    typedef Eigen::Matrix<value_type,mesh_element_type::nRealDim,Eigen::Dynamic> node_type;
+    using node_type = Eigen::Tensor<value_type,3>;
+    //typedef Eigen::Matrix<value_type,mesh_element_type::nRealDim,Eigen::Dynamic> node_type;
     using eval_element_type = EvaluatorData<element_type,node_type>;
 
     //@}
@@ -219,8 +220,9 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
     boost::tie( boost::tuples::ignore, it, en ) = M_range;
 
     int npoints = M_pset.points().size2();
-    element_type __v( std::distance( it, en ), shape::M, shape::N, npoints );
-    node_type __p( std::distance( it, en ), npoints );
+    element_type __v( std::distance( it, en ), npoints, shape::M, shape::N );
+    node_type __p( std::distance(it,en), npoints, mesh_element_type::nRealDim );
+    //node_type __p( std::distance( it, en ), npoints );
     __v.setZero();
     __p.setZero();
 
@@ -265,14 +267,14 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
             {
                 for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
                 {
-                    __p(e,p)[c1] = __c->xReal(p)[c1];
+                    __p(e,p) = __c->xReal(p);
                 }
 
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                 {
-                    for ( uint16_type c2 = 0; c2 < shape::N; ++c1 )
+                    for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                     {
-                        __v(e, c1, c2, p ) = tensor_expr.evalq( c1, c2, p );
+                        __v(e, p, c1, c2 ) = tensor_expr.evalq( c1, c2, p );
                     }
                 }
             }
@@ -292,7 +294,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
                 {
                     for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                     {
-                        __v( e, c1, c2, p ) = tensor_expr1.evalq( c1, c2, p );
+                        __v( e, p, c1, c2 ) = tensor_expr1.evalq( c1, c2, p );
                     }
                 }
             }
@@ -316,7 +318,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
                     {
                         for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                         {
-                            __v( e, c1, c2, p ) = tensor_expr.evalq( c1, c2, p );
+                            __v( e, p, c1, c2 ) = tensor_expr.evalq( c1, c2, p );
                         }
                     }
                 }
@@ -337,7 +339,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
                     {
                         for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                         {
-                            __v( e, c1, c2, p ) = tensor_expr.evalq( c1, c2, p );
+                            __v( e, p, c1, c2 ) = tensor_expr.evalq( c1, c2, p );
                         }
                     }
                 }
@@ -396,8 +398,11 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     boost::tie( boost::tuples::ignore, __face_it, __face_en ) = M_range;
 
     int npoints = M_pset.fpoints(0,1).size2();
-    element_type __v( M_pset.fpoints(0,1).size2()*std::distance( __face_it, __face_en )*shape::M );
-    node_type __p( mesh_element_type::nRealDim, M_pset.fpoints(0,1).size2()*std::distance( __face_it, __face_en ) );
+    //element_type __v( M_pset.fpoints(0,1).size2()*std::distance( __face_it, __face_en )*shape::M );
+    element_type __v( std::distance( __face_it, __face_en ), npoints, shape::M, shape::N );
+    //node_type __p( mesh_element_type::nRealDim, M_pset.fpoints(0,1).size2()*std::distance( __face_it, __face_en ) );
+    node_type __p( std::distance( __face_it, __face_en ), npoints, mesh_element_type::nRealDim );
+
     __v.setZero();
     __p.setZero();
     VLOG(2) << "pset: " << M_pset.fpoints(0,1);
@@ -489,12 +494,15 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
             {
                 for ( uint16_type c1 = 0; c1 < mesh_element_type::nRealDim; ++c1 )
                 {
-                    __p(c1, e*npoints+p) = __c->xReal(p)[c1];
+                    __p(e,p) = __c->xReal(p);
                 }
 
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                 {
-                    __v( e*npoints*shape::M+shape::M*p+c1) = expr.evalq( c1, 0, p );
+                    for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+                    {
+                        __v( e,p,c1,c2) = expr.evalq( c1, c2, p );
+                    }
                 }
             }
         }
@@ -514,12 +522,15 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
             {
                 for ( uint16_type c1 = 0; c1 < mesh_element_type::nRealDim; ++c1 )
                 {
-                    __p(c1, e*npoints+p) = __c1->xReal(p)[c1];
+                    __p(e,p) = __c1->xReal(p);
                 }
 
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                 {
-                    __v( e*npoints*shape::M+shape::M*p+c1) = expr1.evalq( c1, 0, p );
+                    for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+                    {
+                        __v( e,p,c1,c2) = expr1.evalq( c1, c2, p );
+                    }
                 }
 
             }
