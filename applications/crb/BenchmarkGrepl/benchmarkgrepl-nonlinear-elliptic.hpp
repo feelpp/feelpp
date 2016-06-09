@@ -184,12 +184,6 @@ public:
     void initModel();
     //@}
 
-    //\return the list of EIM objects
-    virtual funs_type scalarContinuousEim() const
-    {
-        return M_funs;
-    }
-
     virtual beta_vector_type computeBetaInitialGuess( parameter_type const& mu )
     {
 
@@ -209,8 +203,24 @@ public:
     beta_type
     computeBetaQm( element_type const& T,parameter_type const& mu )
     {
-        auto eim_g = M_funs[0];
+        auto eim_g = this->scalarContinuousEim()[0];
         vectorN_type beta_g = eim_g->beta( mu , T );
+
+        std::vector<vectorN_type*> betas;
+        betas.push_back(&beta_g);
+
+        fillBetaQm(betas, mu);
+        if( M_use_newton )
+            return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
+        else
+            return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
+    }
+
+    beta_type
+    computeBetaQm( vectorN_type const& urb, parameter_type const& mu )
+    {
+        auto eim_g = this->scalarContinuousEim()[0];
+        vectorN_type beta_g = eim_g->beta( mu , urb );
 
         std::vector<vectorN_type*> betas;
         betas.push_back(&beta_g);
@@ -225,7 +235,7 @@ public:
     beta_type
     computeBetaQm( parameter_type const& mu )
     {
-        auto eim_g = M_funs[0];
+        auto eim_g = this->scalarContinuousEim()[0];
         vectorN_type beta_g = eim_g->beta( mu );
 
         std::vector<vectorN_type*> betas;
@@ -242,7 +252,7 @@ public:
     beta_type
     computePicardBetaQm( element_type const& T,parameter_type const& mu )
     {
-        auto eim_g = M_funs[0];
+        auto eim_g = this->scalarContinuousEim()[0];
         vectorN_type beta_g = eim_g->beta( mu , T );
 
         std::vector<vectorN_type*> betas;
@@ -256,7 +266,7 @@ public:
     beta_type
     computePicardBetaQm( parameter_type const& mu )
     {
-        auto eim_g = M_funs[0];
+        auto eim_g = this->scalarContinuousEim()[0];
         vectorN_type beta_g = eim_g->beta( mu );
 
         std::vector<vectorN_type*> betas;
@@ -269,7 +279,7 @@ public:
 
     void fillBetaQm(std::vector<vectorN_type*> betas, parameter_type const& mu)
     {
-        auto eim_g = M_funs[0];
+        auto eim_g = this->scalarContinuousEim()[0];
         int M = eim_g->mMax();
 
         auto beta_g=*betas[0];
@@ -360,9 +370,7 @@ private:
     element_ptrtype pT;
     parameter_type M_mu;
 
-    funs_type M_funs;
-
-   sparse_matrix_ptrtype M_monoA;
+    sparse_matrix_ptrtype M_monoA;
     std::vector<vector_ptrtype> M_monoF;
 
     bool M_use_newton;
@@ -460,13 +468,14 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
                       _element=*pT,
                       _space=Xh_eimg,
                       _parameter=M_mu,
-                      _expr=( cst_ref(M_mu(0))/cst_ref(M_mu(1)) )*( exp( cst_ref(M_mu(1))*idv(*pT) ) - 1 ),
+                      //_expr=( cst_ref(M_mu(0))/cst_ref(M_mu(1)) )*( exp( cst_ref(M_mu(1))*idv(*pT) ) - 1 ),
+                      _expr=( cst_ref(M_mu(0))/cst_ref(M_mu(1)) )*( exp( cst_ref(M_mu(1))*_e1 ) - 1 ),
                       _sampling=Pset,
                       _name="eim_g" );
 
-    M_funs.push_back( eim_g );
+    this->addEim( eim_g );
 
-    int M = M_funs[0]->mMax();
+    int M = this->scalarContinuousEim()[0]->mMax();
 
     //resize data structure
     if( M_use_newton )
@@ -554,7 +563,7 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleJacobianWithAffineDecomposition(
     auto Xh = this->Xh;
     auto v = Xh->element(); //test
     auto u = Xh->element(); //trial
-    auto eim_g = M_funs[0];
+    auto eim_g = this->scalarContinuousEim()[0];
     int M = eim_g->mMax();
     double gamma = doption(_name="gamma");
 
@@ -589,7 +598,7 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleResidualWithAffineDecomposition(
 {
     auto Xh = this->Xh;
     auto v = Xh->element(); //test
-    auto eim_g = M_funs[0];
+    auto eim_g = this->scalarContinuousEim()[0];
     int M = eim_g->mMax();
 
     auto u = Xh->element();
@@ -733,7 +742,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::assemble()
     if( !M_use_newton || boption(_name="ser.error-estimation") )
     {
         auto v = Xh->element();
-        auto eim_g = M_funs[0];
+        auto eim_g = this->scalarContinuousEim()[0];
         int M = eim_g->mMax();
         double gamma = doption(_name="gamma");
 
