@@ -434,6 +434,16 @@ public:
     }
 
     /**
+     * \return model
+     */
+    model_ptrtype const& model() const { return M_model; }
+
+    /**
+     * \return model
+     */
+    model_ptrtype & model() { return M_model; }
+
+    /**
      * create a new matrix
      * \return the newly created matrix
      */
@@ -805,6 +815,49 @@ public:
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
 
+    betaqm_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
+    {
+        return computeBetaQm( urb , mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms);
+    }
+    betaqm_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu , mpl::bool_<true>, double time=0 , bool only_time_dependent_terms=false )
+    {
+        return M_model->computeBetaQm( urb, mu, time , only_time_dependent_terms );
+    }
+    betaqm_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu , mpl::bool_<false>, double time=0 , bool only_time_dependent_terms=false )
+    {
+        beta_vector_type betaAqm, betaMqm ;
+        std::vector<beta_vector_type>  betaFqm;
+        boost::tuple<
+            beta_vector_type,
+            std::vector<beta_vector_type> >
+            steady_beta;
+
+        steady_beta = M_model->computeBetaQm( urb, mu );
+        betaAqm = steady_beta.template get<0>();
+        betaFqm = steady_beta.template get<1>();
+
+        int nspace = functionspace_type::nSpaces;
+        if ( M_model->constructOperatorCompositeM() )
+        {
+            betaMqm.resize( nspace );
+            for(int q=0; q<nspace; q++)
+            {
+                betaMqm[q].resize(1);
+                betaMqm[q][0] = 1 ;
+            }
+        }
+        else
+        {
+            betaMqm.resize( 1 );
+            betaMqm[0].resize(1);
+            betaMqm[0][0] = 1 ;
+        }
+
+
+        return boost::make_tuple( betaMqm, betaAqm, betaFqm );
+    }
+
+
     betaqm_type computePicardBetaQm( parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
     {
         return computePicardBetaQm( mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms );
@@ -918,6 +971,21 @@ public:
 
         offline_merge_type offline_merge;
 
+        if( boption(_name="crb.stock-matrices") )
+            offline_merge = offlineMerge( all_beta , only_time_dependent_terms );
+        else
+            offline_merge = offlineMergeOnFly( all_beta, only_time_dependent_terms );
+
+        return offline_merge;
+
+    }
+    offline_merge_type update( parameter_type const& mu, vectorN_type const& urb, double time=0 , bool only_time_dependent_terms=false )
+    {
+#if !defined(NDEBUG)
+        mu.check();
+#endif
+        auto all_beta = this->computeBetaQm( urb, mu , time , only_time_dependent_terms );
+        offline_merge_type offline_merge;
         if( boption(_name="crb.stock-matrices") )
             offline_merge = offlineMerge( all_beta , only_time_dependent_terms );
         else
@@ -1057,6 +1125,11 @@ public:
     bool isInitialized()
     {
         return M_model->isInitialized();
+    }
+
+    void updateEimRbSpaceContext()
+    {
+        M_model->updateEimRbSpaceContext();
     }
 
     /**
