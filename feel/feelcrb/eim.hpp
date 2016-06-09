@@ -1385,7 +1385,9 @@ public:
 
     virtual model_functionspace_ptrtype modelFunctionSpace() const = 0;
     virtual model_functionspace_ptrtype modelFunctionSpace() = 0;
-    virtual void addInterpolationPoint( node_type t ) = 0;
+    virtual void addInterpolationPoint( node_type const& t ) = 0;
+
+    virtual void updateRbSpaceContext( boost::any const& rbspacebase ) = 0;
 
     virtual void setMax(int m, int max_q, int max_g, int max_z, int max_solution) = 0;
     virtual int maxQ() const = 0;
@@ -1556,22 +1558,31 @@ public:
             }
         }
 
-    expr_type const& expr( parameter_type const& mu ) const
+    auto expr( parameter_type const& mu ) const
     {
         M_mu = mu;
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        return M_expr;
+        return M_expr( idv(*M_u) );
     }
-    expr_type const& expr( parameter_type const& mu, model_solution_type const& u ) const
+
+    auto expr( parameter_type const& mu, model_solution_type const& u ) const
     {
         M_mu = mu;
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
         *M_u = u;
-        return M_expr;
+        return M_expr( idv(u) );
+    }
+    auto expr( parameter_type const& mu, typename rbfunctionspace_type::element_type const& urb ) const
+    {
+        M_mu = mu;
+#if !defined(NDEBUG)
+        M_mu.check();
+#endif
+        return M_expr( idv(urb) );
     }
 
     void saveDB()
@@ -1640,15 +1651,13 @@ public:
 
     vector_type beta( parameter_type const& mu ) /*const*/ { return this->beta( mu, this->mMax() ); }
     vector_type beta( parameter_type const& mu, model_solution_type const& T ) /*const*/ { return this->beta( mu, T, this->mMax() ); }
-    vector_type beta( parameter_type const& mu, vectorN_type const& T ) /*const*/ { return this->beta( mu, T, this->mMax() ); }
+    vector_type beta( parameter_type const& mu, vectorN_type const& urb ) /*const*/ { return this->beta( mu, urb, this->mMax() ); }
 
     vector_type
     beta( parameter_type const& mu, size_type __M )
     {
         vector_type __beta( __M );
-        __beta = this->operator()( /**M_ctxFeBasisEim*/ *M_ctxFeModelSolution, mu , __M );
-        //M_mu = mu;
-        //__beta = evaluateFromContext( _context=M_ctx, _expr=M_expr );
+        __beta = this->operator()( *M_ctxFeModelSolution, mu , __M );
         DCHECK( __beta.size() == __M ) << "Invalid size beta: " << __beta.size() << " M=" << __M  << " beta = " << __beta << "\n";
 
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
@@ -1661,10 +1670,7 @@ public:
     {
         // beta=B_M\g(Od(indx),mut(i))'
         vector_type __beta( __M );
-        __beta = this->operator()( T,/**M_ctxFeBasisEim*/ *M_ctxFeModelSolution, mu , __M );
-        //M_mu = mu;
-        //M_u=T;
-        //__beta = evaluateFromContext( _context=M_ctx, _expr=M_expr );
+        __beta = this->operator()( T, *M_ctxFeModelSolution, mu , __M );
         DCHECK( __beta.size() == __M ) << "Invalid size beta: " << __beta.size() << " M=" << __M  << " beta = " << __beta << "\n";
 
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
@@ -1672,17 +1678,20 @@ public:
     }
 
     vector_type
-    beta( parameter_type const& mu, vectorN_type const& T, size_type __M )
+    beta( parameter_type const& mu, vectorN_type const& urb, size_type __M )
     {
-        CHECK( false ) << "TODO";
-        return this->beta( mu, __M );
+        CHECK( M_ctxRbModelSolution ) << "no rbspace context";
+        vector_type __beta( __M );
+        __beta = this->operator()( urb, *M_ctxRbModelSolution, mu , __M );
+        this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
+        return __beta;
     }
 
 
     model_functionspace_ptrtype modelFunctionSpace() const { return M_model->functionSpace();}
     model_functionspace_ptrtype modelFunctionSpace() { return M_model->functionSpace();}
 
-    void addInterpolationPoint( node_type t )
+    void addInterpolationPoint( node_type const& t )
     {
         M_t.push_back( t );
         typename Feel::node<value_type>::type no(nDim);
@@ -1691,6 +1700,26 @@ public:
         M_ctxFeBasisEim->add( no );
         M_ctxFeModelSolution->add( no );
         std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { DVLOG(2) << "t=" << t << "\n"; } );
+    }
+    void updateRbSpaceContext( boost::any const& rbspacebase )
+    {
+        if ( !boost::any_cast<rbfunctionspace_ptrtype>( &rbspacebase ) )
+        {
+            //std::cout << "not rbfunctionspace_ptrtype\n";
+            return;
+        }
+
+        rbfunctionspace_ptrtype rbspace = boost::any_cast<rbfunctionspace_ptrtype>( rbspacebase );
+
+        M_ctxRbModelSolution.reset( new rbfunctionspace_context_type( rbspace ) );
+        typename Feel::node<value_type>::type no(nDim);
+        for (auto const& pt : M_t )
+        {
+            for(int i =0;i < nDim; ++i ) no(i) = pt(i);
+            M_ctxRbModelSolution->add( no );
+        }
+        M_ctxRbModelSolution->update();
+
     }
 
     node_type interpolationPoint( int position ) const
@@ -1744,10 +1773,6 @@ public:
 
     element_type operator()( parameter_type const&  mu )
         {
-            M_mu = mu;
-#if !defined(NDEBUG)
-            M_mu.check();
-#endif
             if( ioption(_name="ser.eim-frequency") != 0 ) //Use SER
             {
                 if( boption(_name="ser.use-rb-in-eim-basis-build") )
@@ -1757,26 +1782,18 @@ public:
             }
             else
                 *M_u = M_model->solve( mu ); //FEM
-
+            auto eimexpr = this->expr( mu, *M_u );
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
-            return vf::project( _space=this->functionSpace(), _expr=M_expr );
+            return vf::project( _space=this->functionSpace(), _expr=eimexpr );
         }
     element_type operator()( model_solution_type const& T, parameter_type const&  mu )
         {
-            M_mu = mu;
-#if !defined(NDEBUG)
-            M_mu.check();
-#endif
-            // no need to solve we have already an approximation (typically from
-            // an nonlinear iteration procedure)
-            *M_u = T;
-            return vf::project( _space=this->functionSpace(), _expr=M_expr );
+            auto eimexpr = this->expr( mu, T );
+            return vf::project( _space=this->functionSpace(), _expr=eimexpr );
         }
 
-    vector_type operator()( model_solution_context_type/*context_type*/ const& ctx, parameter_type const& mu , int M)
+    vector_type operator()( model_solution_context_type const& ctx, parameter_type const& mu , int M)
         {
-            M_mu=mu;
-            //*M_u = M_model->solve( mu );
             if( ioption(_name="ser.eim-frequency") != 0 ) //Use SER
             {
                 if( boption(_name="ser.use-rb-in-eim-basis-build") )
@@ -1787,54 +1804,49 @@ public:
             else
                 *M_u = M_model->solve( mu ); //FEM
 
+            auto eimexpr = this->expr( mu, *M_u );
+
             //auto projected_expr = vf::project( _space=this->functionSpace(), _expr=M_expr );
             //return evaluateFromContext( _context=ctx, _expr=idv(projected_expr) , _max_points_used=M );
-            bool applyProjection = false;//true;//false; //true
-            bool doMpiComm = true;//false; // true
-            return evaluateFromContext( _context=ctx, _expr=M_expr , _max_points_used=M,
+            bool applyProjection = false;//true;
+            bool doMpiComm = true;//false;
+            return evaluateFromContext( _context=ctx, _expr=eimexpr, _max_points_used=M,
                                         _mpi_communications=doMpiComm, _projection=applyProjection );
         }
     vector_type operator()( model_solution_type const& T, model_solution_context_type/*context_type*/ const& ctx, parameter_type const& mu , int M)
         {
-            M_mu = mu;
-            *M_u = T;
+            auto eimexpr = this->expr( mu,T );
             //auto projected_expr = vf::project( _space=this->functionSpace(), _expr=M_expr );
             //return evaluateFromContext( _context=ctx, _expr=idv(projected_expr) , _max_points_used=M );
-            bool applyProjection= false;//true;//false; //true
-            bool doMpiComm = true;//false; // true
-#if 0
-            //auto expr2=idv(*M_u);
-            //auto expr2=cst(3.1415);//mu(0);//idv(T);
-            auto hola = this->functionSpace()->element(cst(3.14));
-            // auto hola = M_model->functionSpace()->element(cst(3.14));
-            auto expr2=idv(hola);
-            auto ec1 = evaluateFromContext( _context=ctx, _expr=expr2 , _max_points_used=M,
-                                              _mpi_communications=doMpiComm, _projection=true );
-            auto ec2 = evaluateFromContext( _context=ctx, _expr=expr2 , _max_points_used=M,
-                                              _mpi_communications=doMpiComm, _projection=false );
-            std::cout << "op2 ec1="<<ec1<<" ec2 " << ec2 << "\n";
-            std::cout << "npoints ctx " << M_ctx.nPoints() << "\n";
-#endif
-            return evaluateFromContext( _context=ctx, _expr=M_expr , _max_points_used=M,
+            bool applyProjection= false;//true;
+            bool doMpiComm = true;//false;
+            return evaluateFromContext( _context=ctx, _expr=eimexpr , _max_points_used=M,
                                         _mpi_communications=doMpiComm, _projection=applyProjection );
+        }
+    vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, parameter_type const& mu , int M)
+        {
+            auto urbelt = ctx.rbFunctionSpace()->element();
+            urbelt.container() = urb;
+            auto eimexpr = this->expr( mu,urbelt );
+            return evaluateFromContext( _context=ctx, _expr=eimexpr , _max_points_used=M,
+                                        _mpi_communications=false, _projection=false );
         }
 
     vector_type computeExpansionCoefficients( parameter_type const& mu, model_solution_type const& solution,  int M)
     {
         vector_type rhs( M );
 
-        M_mu = mu;
-        *M_u = solution;
+        auto eimexpr = this->expr( mu, solution );
 
         if( 0 )// boption(_name="eim.compute-expansion-of-expression") )
         {
-            rhs = evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=M_expr );
+            rhs = evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=eimexpr );
         }
         else
         {
             //auto proj_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
             //rhs = proj_g.evaluate( M_ctx );
-            rhs = evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=M_expr , _max_points_used=M, _projection=true );
+            rhs = evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=eimexpr , _max_points_used=M, _projection=true );
         }
 
         M_B.block(0,0,M,M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
@@ -1846,9 +1858,8 @@ public:
 
     vector_type evaluateExpressionAtInterpolationPoints(model_solution_type const &solution, parameter_type const& mu, int M)
     {
-        M_mu = mu;
-        *M_u = solution;
-        return evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=M_expr , _max_points_used=M, _projection=true );
+        auto eimexpr = this->expr( mu, solution );
+        return evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=eimexpr , _max_points_used=M, _projection=true );
     }
     vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M)
     {
@@ -1866,10 +1877,8 @@ public:
         node_type node(mesh_type::nDim);
         for(int d=0; d<nDim; d++) node(d)=0;
 
-        M_mu = mu;
-        *M_u = solution;
-
-        auto residual_expr = M_expr - idv(z);
+        auto eimexpr = this->expr( mu, solution );
+        auto residual_expr = eimexpr - idv(z);
 
         // auto proj_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
         // auto residual_projected_expr = idv(proj_g)-idv(z);
@@ -1915,13 +1924,10 @@ public:
         node_type node(mesh_type::nDim);
         for(int d=0; d<nDim; d++) node(d)=0;
 
-        M_mu = mu;
-        *M_u = solution;
-
-        auto expr = M_expr;
+        auto eimexpr = this->expr( mu, solution );
 #if 1
         if ( !this->M_computeExpansionOfExpression || ( this->M_normUsedForResidual == super::ResidualNormType::LinftyVec ) )
-            this->M_internalModelFeFunc->on(_range=elements(this->mesh()),_expr=M_expr );
+            this->M_internalModelFeFunc->on(_range=elements(this->mesh()),_expr=eimexpr );
         auto projected_expr = idv( this->M_internalModelFeFunc );
 
         switch ( this->M_normUsedForResidual )
@@ -1929,7 +1935,7 @@ public:
         case super::ResidualNormType::Linfty:
         {
             if( this->M_computeExpansionOfExpression )
-                boost::tie( max, node ) = normLinf( _range=elements( this->mesh()), _pset=_Q<0>(), _expr= expr );
+                boost::tie( max, node ) = normLinf( _range=elements( this->mesh()), _pset=_Q<0>(), _expr= eimexpr );
             else
                 boost::tie( max, node ) = normLinf( _range=elements( this->mesh()), _pset=_Q<0>(), _expr= projected_expr );
         }
@@ -1937,7 +1943,7 @@ public:
         case super::ResidualNormType::L2:
         {
             if( this->M_computeExpansionOfExpression )
-                max = normL2( _range=elements( this->mesh()), _expr=expr );
+                max = normL2( _range=elements( this->mesh()), _expr=eimexpr );
             else
                 max = normL2( _range=elements( this->mesh()), _expr=projected_expr );
         }
@@ -1950,7 +1956,7 @@ public:
         }
 
 #else
-        auto proj_g = vf::project( _space=this->functionSpace(),_expr=M_expr );
+        auto proj_g = vf::project( _space=this->functionSpace(),_expr=eimexpr/*M_expr*/ );
         auto projected_expr = idv( proj_g );
 
         std::string norm_used = soption(_name="eim.norm-used-for-residual");
@@ -1961,7 +1967,7 @@ public:
             check_name_norm=true;
             if( boption(_name="eim.compute-expansion-of-expression") )
             {
-                auto exprmax = normLinf( _range=elements(this->mesh()), _pset=_Q<0>(), _expr= expr );
+                auto exprmax = normLinf( _range=elements(this->mesh()), _pset=_Q<0>(), _expr= eimexpr );
                 max = exprmax.template get<0>();
                 node = exprmax.template get<1>();
             }
@@ -1977,7 +1983,7 @@ public:
             check_name_norm=true;
             if( boption(_name="eim.compute-expansion-of-expression") )
             {
-                double norm = math::sqrt( integrate( _range=elements(this->mesh() ) ,_expr=expr*expr).evaluate()( 0,0 ) );
+                double norm = math::sqrt( integrate( _range=elements(this->mesh() ) ,_expr=eimexpr*eimexpr).evaluate()( 0,0 ) );
                 max = norm;
             }
             else
@@ -1991,7 +1997,7 @@ public:
             check_name_norm=true;
             if( boption(_name="eim.compute-expansion-of-expression") )
             {
-                auto projection = vf::project( _space=this->functionSpace(),_expr=expr );
+                auto projection = vf::project( _space=this->functionSpace(),_expr=eimexpr );
                 double norm = projection.linftyNorm();
                 max = norm ;
             }
@@ -2033,9 +2039,11 @@ public:
         {
             M_mu = M_mu_sampling->at(0);
             *M_u = M_solution_vector[0];
-            auto expression_evaluated = evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=M_expr );
+            auto eimexpr = this->expr( M_mu, *M_u );
+
+            auto expression_evaluated = evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=eimexpr );
             double eval = expression_evaluated(0);
-            auto expression_q = M_expr / eval ; // normalization
+            auto expression_q = eimexpr / eval ; // normalization
             auto q_evaluated = evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=expression_q );
             eval = q_evaluated(0);
             CHECK( math::abs(eval-1) < 1e-10 )
@@ -2043,7 +2051,8 @@ public:
         }
         else
         {
-            auto projected_g = vf::project( _space=this->functionSpace(),_expr=M_expr );
+            auto eimexpr = this->expr( M_mu, *M_u );
+            auto projected_g = vf::project( _space=this->functionSpace(),_expr=eimexpr );
 
             auto projected_g_evaluated = evaluateFromContext( _context=*M_ctxFeBasisEim, _expr=idv( projected_g ) );
             double eval = projected_g_evaluated(0);
@@ -2090,7 +2099,8 @@ public:
 
             vector_type expression_evaluated;
 
-            auto residual = M_expr - idv( M_z_vector[m] );
+            auto eimexpr = this->expr( M_mu, *M_u );
+            auto residual = eimexpr - idv( M_z_vector[m] );
             expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=residual );
             double eval = expression_evaluated( 0 );
             auto expression_q  = residual / eval; // __j^th normalized basis function
@@ -2112,7 +2122,8 @@ public:
         {
             M_mu = M_mu_sampling->at(m);
             *M_u = M_solution_vector[m];
-            auto residual =  M_expr - idv(z);
+            auto eimexpr = this->expr( M_mu, *M_u );
+            auto residual =  eimexpr - idv(z);
 
             int proc_number = this->worldComm().globalRank();
             auto interpolation_point = this->functionSpace()->context();
@@ -2130,9 +2141,9 @@ public:
             element_type res;
             if( m == 0 )
             {
-                expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=M_expr );
+                expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=eimexpr );
                 double eval = expression_evaluated( 0 );
-                res = vf::project( _space=this->functionSpace(), _expr=M_expr/eval );
+                res = vf::project( _space=this->functionSpace(), _expr=eimexpr/eval );
             }
             else
             {
@@ -2163,8 +2174,10 @@ public:
         DVLOG( 2 ) << "solution.size() : "<<M_solution_vector.size();
         DVLOG( 2 ) << "q.size() : "<<M_q_vector.size();
 
+        auto eimexpr = this->expr( M_mu, *M_u );
+
         auto element_zero = project( _space=this->functionSpace(), _expr=cst(0) );
-        auto example_of_q = ( M_expr - idv(element_zero) )/1.0;
+        auto example_of_q = ( eimexpr - idv(element_zero) )/1.0;
 
         typedef decltype( example_of_q ) expression_type ;
 
@@ -2342,27 +2355,19 @@ public:
     //here is computed its l2 norm : || g ||_L2
     double expressionL2Norm( model_solution_type const& T , parameter_type const& mu ) const
     {
-        M_mu = mu;
-#if !defined(NDEBUG)
-        M_mu.check();
-#endif
-        *M_u = T;
+        auto eimexpr = this->expr( mu, T );
         auto mesh = this->functionSpace()->mesh();
-        return math::sqrt( integrate( _range=elements( mesh ), _expr=M_expr*M_expr ).evaluate()( 0,0 ) );
+        return normL2( _range=elements( mesh ), _expr=eimexpr );
     }
 
     //Let geim the eim expansion of g
     //here is computed || g - geim ||_L2
     double diffL2Norm(  model_solution_type const& T , parameter_type const& mu , element_type const & eim_expansion ) const
     {
-        M_mu = mu;
-#if !defined(NDEBUG)
-        M_mu.check();
-#endif
-        *M_u = T;
+        auto eimexpr = this->expr( mu, T );
         auto mesh = this->modelFunctionSpace()->mesh();
-        auto difference = M_expr - idv(eim_expansion);
-        return math::sqrt( integrate( _range=elements( mesh ), _expr=difference*difference ).evaluate()( 0,0 ) );
+        auto difference = eimexpr - idv(eim_expansion);
+        return normL2( _range=elements( mesh ), _expr=difference );
     }
 
 
@@ -2370,40 +2375,28 @@ public:
     //here is computed || \pi_g ||_L2
     double projExpressionL2Norm( model_solution_type const& T , parameter_type const& mu ) const
     {
-        M_mu = mu;
-#if !defined(NDEBUG)
-        M_mu.check();
-#endif
-        *M_u = T;
+        auto eimexpr = this->expr( mu, T );
         auto mesh = this->functionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
-        return math::sqrt( integrate( _range=elements( mesh ), _expr=idv(pi_g)*idv(pi_g) ).evaluate()( 0,0 ) );
+        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
+        return normL2( _range=elements( mesh ), _expr=idv(pi_g) );
     }
 
     //here is computed || \pi_g - geim ||_L2
     double projDiffL2Norm( model_solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
     {
-        M_mu = mu;
-#if !defined(NDEBUG)
-        M_mu.check();
-#endif
-        *M_u = T;
+        auto eimexpr = this->expr( mu, T );
         auto mesh = this->functionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
+        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
         auto diff = pi_g - eim_expansion;
-        return math::sqrt( integrate( _range=elements( mesh ), _expr=idv(diff)*idv(diff) ).evaluate()( 0,0 ) );
+        return normL2( _range=elements( mesh ), _expr=idv(diff) );
     }
 
     //here is computed || \pi_g - geim ||_Linf
     double projDiffLinfNorm( model_solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
     {
-        M_mu = mu;
-#if !defined(NDEBUG)
-        M_mu.check();
-#endif
-        *M_u = T;
+        auto eimexpr = this->expr( mu, T );
         auto mesh = this->modelFunctionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
+        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
         auto diff = pi_g - eim_expansion;
         auto linf = normLinf( _range=elements( mesh ), _pset=_Q<5>(), _expr=idv(diff) );
         return linf.template get<0>();
@@ -2412,28 +2405,20 @@ public:
     //here is computed || \pi_g  ||_Linf
     double projExprLinfNorm( model_solution_type const& T , parameter_type const& mu ) const
     {
-        M_mu = mu;
-#if !defined(NDEBUG)
-        M_mu.check();
-#endif
-        *M_u = T;
+        auto eimexpr = this->expr( mu, T );
         auto mesh = this->functionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
+        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
         auto linf = normLinf( _range=elements( mesh ), _pset=_Q<5>(), _expr=idv(pi_g) );
         return linf.template get<0>();
     }
 
     double interpolationError(model_solution_type const& T , parameter_type const& mu ) const
     {
-        M_mu = mu;
-#if !defined(NDEBUG)
-        M_mu.check();
-#endif
-        *M_u = T;
+        auto eimexpr = this->expr( mu, T );
         auto mesh = this->modelFunctionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
-        auto difference = M_expr - idv(pi_g);
-        return math::sqrt( integrate( _range=elements( mesh ), _expr=difference*difference ).evaluate()( 0,0 ) );
+        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
+        auto difference = eimexpr - idv(pi_g);
+        return normL2( _range=elements( mesh ), _expr=difference );
     }
 
     void computationalTimeStatistics( std::string appname )
