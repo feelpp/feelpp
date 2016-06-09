@@ -53,12 +53,12 @@ public:
     using node_type = NodeT;
 
     //! access to element i
-    element_type::value_type operator()( int i ) const { return this->get<0>()(i); }
-    
-    //! return the elements
-    element_type const& data() const { return this->get<0>(); }
+    typename element_type::value_type operator()( int i ) const { return this->template get<0>()(i); }
 
-    node_type const& nodes() const { return this->get<1>(); }
+    //! return the elements
+    element_type const& data() const { return this->template get<0>(); }
+
+    node_type const& nodes() const { return this->template get<1>(); }
 };
 /**
  * \class Evaluator
@@ -95,8 +95,8 @@ public:
                               >::type::type pointset_type;
     typedef Eigen::Tensor<value_type,3> element_type;
     typedef Eigen::Matrix<value_type,mesh_element_type::nRealDim,Eigen::Dynamic> node_type;
-    using eval_element_type = EvaluatorData<element_type,node_type> eval_element_type;
-    
+    using eval_element_type = EvaluatorData<element_type,node_type>;
+
     //@}
 
     /** @name Constructors, destructor
@@ -270,7 +270,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                 {
-                    for ( uint16_type c1 = 0; c2 < shape::N; ++c1 )
+                    for ( uint16_type c2 = 0; c2 < shape::N; ++c1 )
                     {
                         __v(e, c1, c2, p ) = tensor_expr.evalq( c1, c2, p );
                     }
@@ -530,7 +530,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     } // face_it
 
 
-    return EvaluatorData( __v, __p, __s );
+    return eval_element_type( __v, __p );
 }
 }
 /// \endcond
