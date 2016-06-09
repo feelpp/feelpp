@@ -611,10 +611,10 @@ public :
         ~ContextRBSet() {}
 
         ContextRBSet( super const& s )
-        :
-        super( s ),
-        M_ctx_fespace(s.begin()->second->rbSpace()->functionSpace()),
-        M_rbspace(s.begin()->second->rbSpace())
+            :
+            super( s ),
+            M_ctx_fespace(s.begin()->second->rbSpace()->functionSpace()),
+            M_rbspace(s.begin()->second->rbSpace())
             {
                 for( auto& m : s )
                 {
@@ -623,10 +623,10 @@ public :
             }
 
         ContextRBSet( rbspace_ptrtype rbspace )
-        :
-        super(),
-        M_ctx_fespace( rbspace->functionSpace() ),
-        M_rbspace( rbspace )
+            :
+            super(),
+            M_ctx_fespace( rbspace->functionSpace() ),
+            M_rbspace( rbspace )
             {
                 update();
             }
@@ -634,19 +634,20 @@ public :
         //only because the function functionSpace()
         //returns an object : rb_functionspaceptrtype
         ContextRBSet( functionspace_ptrtype functionspace )
-        :
-        super(),
-        M_ctx_fespace( functionspace )
+            :
+            super(),
+            M_ctx_fespace( functionspace )
             {
                 update();
             }
+
 
         functionspace_ptrtype functionSpace() const
             {
                 return M_rbspace->functionSpace();
             }
 
-        void update ( )
+        void update()
             {
                 for( auto& c : *this )
                     c.second->update();
@@ -663,17 +664,17 @@ public :
             }
 
         std::pair<iterator,bool>
-        add( node_type t )
+        add( node_type const& t )
         {
             return add( t, mpl::bool_<is_composite>() );
         }
         std::pair<iterator,bool>
-        add( node_type t, mpl::bool_<true> )
+        add( node_type const& t, mpl::bool_<true> )
         {
             return std::make_pair( this->end(), false );
         }
         std::pair<iterator,bool>
-        add( node_type t, mpl::bool_<false> )
+        add( node_type const& t, mpl::bool_<false> )
         {
             // we suppose here that the point will be added which means that it
             // has been located in the underlying mesh
