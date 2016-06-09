@@ -18,17 +18,19 @@ makeOptions()
     ( "ms.11.setAlphaBeta", po::value<bool>()->default_value( false ), "[ams] set Alpha and Beta" )
     ;
     return opts.add( Feel::feel_options() )
-        .add(Feel::ams_options("ms"));
+        .add(Feel::blockms_options("ms"))
+        .add(Feel::backend_options("ms"))
+        ;
 }
 
 inline
 AboutData
 makeAbout()
 {
-    AboutData about( "precAFP3D" ,
-                     "precAFP3D" ,
+    AboutData about( "saddle" ,
+                     "saddle" ,
                      "0.1",
-                     "test precAFP3D",
+                     "test saddle",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2015 Feel++ Consortium" );
 
@@ -77,8 +79,6 @@ typedef typename comp_space_type::element_type comp_element_type;
   auto v = U.element<0>(); 
   auto q = U.element<1>(); 
 
-  auto e=exporter(_mesh = mesh );
-
   auto a = form2(_test=Xh, _trial=Xh);
   auto l = form1( Xh );
     
@@ -95,8 +95,11 @@ typedef typename comp_space_type::element_type comp_element_type;
   map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { model.boundaryConditions().getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" )};
   map_vector_field<FEELPP_DIM,1,2> m_weak_u { model.boundaryConditions().getVectorFields<FEELPP_DIM> ( "u", "Weakdir" ) };
   
-  map_scalar_field<2> m_dirichlet_p { model.boundaryConditions().getScalarFields ( "p", "Dirichlet" )};
-  map_scalar_field<2> m_weak_p { model.boundaryConditions().getScalarFields ( "p", "Weakdir" )};
+  map_scalar_field<2> m_dirichlet_p { model.boundaryConditions().getScalarFields ( "phi", "Dirichlet" )};
+  map_scalar_field<2> m_weak_p { model.boundaryConditions().getScalarFields ( "phi", "Weakdir" )};
+  /*
+   * BC(u)
+   */
   for(auto it : m_dirichlet_u)
   {
     LOG(INFO) << it.second << " on " << it.first << "\n";
@@ -107,6 +110,9 @@ typedef typename comp_space_type::element_type comp_element_type;
       _type="elimination_symmetric"
       );
   }
+  /*
+   * BC(p)
+   */
   for(auto it : m_dirichlet_p)
   {
     LOG(INFO) << it.second << " on " << it.first << "\n";
@@ -124,10 +130,20 @@ typedef typename comp_space_type::element_type comp_element_type;
         U.functionSpace(),
         model,
         "ms",
-        a.matrixPtr(), doption("relax"));
+        a.matrixPtr(), 1.);
     
     preconditioner(_backend=backend(_name="ms"), _pc=FEELPP_BLOCKMS_PRECOND, _prefix="ms")->attachInHousePreconditioners("blockms",prec);
   }
   a.solveb(_rhs=l, _solution=U, _backend=backend(_name="ms"));
+  if(boption("exporter.export"))
+  {
+    auto ue = vf::project(_space=Xh->functionSpace<0>(),_range=elements(mesh), _expr=expr<3,1>(soption("functions.u")));
+    auto e=exporter(_mesh = mesh );
+    e->add("u",u);
+    e->add("ue",ue);
+    e->add("p",p);
+    e->save();
+  }
+
 
 }
