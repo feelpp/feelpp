@@ -429,6 +429,24 @@ public :
         return M_is_initialized;
     }
 
+    void updateEimRbSpaceContext()
+    {
+        for ( int k=0;k<M_funs.size();++k )
+            M_funs[k]->updateRbSpaceContext( this->rBFunctionSpace() );
+        for ( int k=0;k<M_funs_d.size();++k )
+            M_funs_d[k]->updateRbSpaceContext( this->rBFunctionSpace() );
+    }
+
+    void addEim( fun_ptrtype const& fun )
+    {
+        M_funs.push_back( fun );
+    }
+
+    void addEimDiscontinuous( fund_ptrtype const& fund)
+    {
+        M_funs_d.push_back( fund );
+    }
+
     virtual funs_type scalarContinuousEim () const
     {
         return M_funs;
@@ -964,6 +982,30 @@ public :
             std::cout<<"** You are using the function computeBetaQm( u , mu ) but     **"<<std::endl;
             std::cout<<"** your model has only implemented computeBetaQm( mu )        **"<<std::endl;
             std::cout<<"****************************************************************"<<std::endl;
+        }
+        betaqm_type dummy_beta_coeff;
+        return dummy_beta_coeff;
+    }
+    virtual betaqm_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu , double time , bool only_time_dependent_terms=false )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"*******************************************************************"<<std::endl;
+            std::cout<<"** You are using the function computeBetaQm( u , mu , time ) but **"<<std::endl;
+            std::cout<<"** your model doesnt implement this function                     **"<<std::endl;
+            std::cout<<"*******************************************************************"<<std::endl;
+        }
+        betaqm_type dummy_beta_coeff;
+        return dummy_beta_coeff;
+    }
+    virtual betaqm_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"*******************************************************************"<<std::endl;
+            std::cout<<"** You are using the function computeBetaQm( urb , mu ) but      **"<<std::endl;
+            std::cout<<"** your model doesnt implement this function                     **"<<std::endl;
+            std::cout<<"*******************************************************************"<<std::endl;
         }
         betaqm_type dummy_beta_coeff;
         return dummy_beta_coeff;
@@ -1540,14 +1582,14 @@ public:
     /**
      * \brief Returns the function space
      */
-    mesh_ptrtype mesh()
+    mesh_ptrtype const& mesh() const
     {
         return Xh->mesh();
     }
     /**
      * \brief Returns the function space
      */
-    space_ptrtype functionSpace()
+    space_ptrtype const& functionSpace() const
     {
         return Xh;
     }
@@ -1555,14 +1597,14 @@ public:
     /**
      * \brief Returns the reduced basis function space
      */
-    rbfunctionspace_ptrtype rBFunctionSpace()
+    rbfunctionspace_ptrtype const& rBFunctionSpace() const
     {
         return XN;
     }
 
 
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const
+    parameterspace_ptrtype const& parameterSpace() const
     {
         return Dmu;
     }
