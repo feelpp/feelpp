@@ -1,6 +1,8 @@
 #ifndef _REINITIALIZER_FM_HPP
 #define _REINITIALIZER_FM_HPP 1
 
+#include <feel/feells/reinit_fms_impl.hpp>
+
 namespace Feel
 {
 
@@ -24,10 +26,22 @@ public:
     typedef typename functionspace_type::mesh_type mesh_type;
     typedef typename functionspace_type::value_type value_type;
 
-    typedef typename functionspace_type::periodicity_type periodicity_type;
+    typedef typename functionspace_type::periodicity_0_type periodicity_type;
     static const bool is_periodic = functionspace_type::is_periodic;
 
-    typedef /*TODO*/ basis_reinitP1_type;
+    template< template<uint16_type Dim> class PointSetT >
+    struct BasisReinitP1
+    {
+        typedef Lagrange<1, PointSetT> type;
+    };
+    typedef typename 
+        mpl::if_<mpl::bool_<functionspace_type::is_scalar>,
+            mpl::identity<typename BasisReinitP1<Scalar>::type>,
+            typename mpl::if_<mpl::bool_<functionspace_type::is_vectorial>,
+                mpl::identity<typename BasisReinitP1<Vectorial>::type>,
+                mpl::identity<typename BasisReinitP1<Tensor2>::type> 
+            >::type
+        >::type::type basis_reinitP1_type;
     typedef FunctionSpace<
         mesh_type, 
         bases<basis_reinitP1_type>, 
@@ -52,34 +66,34 @@ private:
     {
         static constexpr bool value = !( FST::fe_type::nOrder == 1 && !FST::is_periodic );
     };
-    static constexpr use_reinitP1_space = UseReinitP1Space<functionspace_type>::value;
+    static constexpr bool use_reinitP1_space = UseReinitP1Space<functionspace_type>::value;
 
-    template<typename FST>
-    struct ReinitFunctionSpace
-    {
-        typedef typename mpl::if_< 
-            use_reinitP1_space,
-            functionspace_reinitP1_type,
-            functionspace_type
-                >::type type;
-    };
+    //template<typename FST>
+    //struct ReinitFunctionSpace
+    //{
+        //typedef typename mpl::if_< 
+            //use_reinitP1_space,
+            //functionspace_reinitP1_type,
+            //functionspace_type
+                //>::type type;
+    //};
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     template<typename FST>
     void init( functionspace_ptrtype const& space, 
-            std::enable_if< UseReinitP1Space<FST>::value >::type* =0);
+            typename std::enable_if< UseReinitP1Space<FST>::value >::type* =0);
     template<typename FST>
     void init( functionspace_ptrtype const& space, 
-            std::enable_if< !UseReinitP1Space<FST>::value >::type* =0);
+            typename std::enable_if< !UseReinitP1Space<FST>::value >::type* =0);
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     template<typename FST>
-    void run_impl( element_type const& phi, 
-            std::enable_if< UseReinitP1Space<FST>::value >::type* =0);
+    element_type run_impl( element_type const& phi, 
+            typename std::enable_if< UseReinitP1Space<FST>::value >::type* =0);
     template<typename FST>
-    void run_impl( element_type const& phi, 
-            std::enable_if< !UseReinitP1Space<FST>::value >::type* =0);
+    element_type run_impl( element_type const& phi, 
+            typename std::enable_if< !UseReinitP1Space<FST>::value >::type* =0);
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -106,7 +120,7 @@ private:
     typedef boost::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
 
     op_interpolation_to_P1_ptrtype M_opInterpolationToP1;
-    op_interpolation_from_P1__ptrtype M_opInterpolationFromP1;
+    op_interpolation_from_P1_ptrtype M_opInterpolationFromP1;
     op_lagrangeP1_ptrtype M_opLagrangeP1;
     //--------------------------------------------------------------------//
     // Reinit P1 space
@@ -114,9 +128,14 @@ private:
 
     //--------------------------------------------------------------------//
     // ReinitializerFMS (takes only P1 non-periodic space)
-    typedef typename ReinitFunctionSpace<functionspace_type>::type reinitializerFMS_functionspace_type;
+    typedef typename mpl::if_< 
+        mpl::bool_<use_reinitP1_space>,
+        functionspace_reinitP1_type,
+        functionspace_type
+            >::type reinitializerFMS_functionspace_type;
+    //typedef typename ReinitFunctionSpace<functionspace_type>::type reinitializerFMS_functionspace_type;
     
-    typedef Reinitializer< reinitializerFMS_functionspace_type, periodicity_type > reinitializerFMS_type;
+    typedef ReinitializerFMS< reinitializerFMS_functionspace_type, periodicity_type > reinitializerFMS_type;
     typedef boost::shared_ptr<reinitializerFMS_type> reinitializerFMS_ptrtype;
 
     reinitializerFMS_ptrtype M_reinitializerFMS;
@@ -124,15 +143,16 @@ private:
 
 template<typename FunctionSpaceType>
 ReinitializerFM<FunctionSpaceType>::ReinitializerFM( functionspace_ptrtype const& space )
+    : super_type( space )
 {
-    this->init<functionspace_type>( space );
+    this->init<FunctionSpaceType>( space );
 }
 
 template<typename FunctionSpaceType>
-ReinitializerFM<FunctionSpaceType>::element_type 
+typename ReinitializerFM<FunctionSpaceType>::element_type 
 ReinitializerFM<FunctionSpaceType>::run( element_type const& phi )
 {
-    return run_impl<FunctionSpaceType>(phi);
+    return run_impl<FunctionSpaceType>( phi );
 }
 
 // Init if using own reinit P1 space
@@ -140,7 +160,7 @@ template<typename FunctionSpaceType>
 template<typename FST>
 void 
 ReinitializerFM<FunctionSpaceType>::init(functionspace_ptrtype const& space, 
-        std::enable_if< UseReinitP1Space<FST>::value >::type*)
+        typename std::enable_if< UseReinitP1Space<FST>::value >::type*)
 {
     M_opLagrangeP1 = lagrangeP1( space );
     M_spaceReinitP1 = functionspace_reinitP1_type::New(
@@ -148,7 +168,7 @@ ReinitializerFM<FunctionSpaceType>::init(functionspace_ptrtype const& space,
             _periodicity=periodicity(NoPeriodicity())
             );
     M_reinitializerFMS.reset(
-            new reinitializerFMS_type( M_spaceReinitP1, space->periodicity() )
+            new reinitializerFMS_type( M_spaceReinitP1, this->M_periodicity )
             );
 
     if( nOrder > 1 )
@@ -171,32 +191,33 @@ template<typename FunctionSpaceType>
 template<typename FST>
 void 
 ReinitializerFM<FunctionSpaceType>::init(functionspace_ptrtype const& space, 
-        std::enable_if< !UseReinitP1Space<FST>::value >::type*)
+        typename std::enable_if< !UseReinitP1Space<FST>::value >::type*)
 {
     M_reinitializerFMS.reset(
-            new reinitializerFMS_type( space, space->periodicity() );
+            new reinitializerFMS_type( space, this->M_periodicity )
+            );
 }
 
 // Run if using own reinit P1 space
 template<typename FunctionSpaceType>
 template<typename FST>
-void 
+typename ReinitializerFM<FunctionSpaceType>::element_type 
 ReinitializerFM<FunctionSpaceType>::run_impl( element_type const& phi, 
-        std::enable_if< UseReinitP1Space<FST>::value >::type*)
+        typename std::enable_if< UseReinitP1Space<FST>::value >::type*)
 {
     auto phi_reinit = this->functionSpace()->element();
     auto phi_reinitP1 = M_spaceReinitP1->element();
 
     if( nOrder > 1 )
     {
-        M_opInterpolationToP1->apply( phi, phi_reinit );
+        M_opInterpolationToP1->apply( phi, phi_reinitP1 );
     }
     else
     {
-        phi_reinit = vf::project( M_spaceReinitP1, elements(this->mesh()), idv(phi) );
+        phi_reinitP1 = vf::project( M_spaceReinitP1, elements(this->mesh()), idv(phi) );
     }
 
-    phi_reinit = M_reinitializerFMS->march( phi_reinit, this->M_useMarker2AsMarkerDone() );
+    phi_reinitP1 = M_reinitializerFMS->march( phi_reinitP1, this->useMarker2AsMarkerDone() );
 
     if( nOrder > 1 )
     {
@@ -213,11 +234,11 @@ ReinitializerFM<FunctionSpaceType>::run_impl( element_type const& phi,
 // Run if using provided space
 template<typename FunctionSpaceType>
 template<typename FST>
-void 
-ReinitializerFM<functionSpaceType>::run_impl( element_type const& phi, 
-        std::enable_if< !UseReinitP1Space<FST>::value >::type*)
+typename ReinitializerFM<FunctionSpaceType>::element_type 
+ReinitializerFM<FunctionSpaceType>::run_impl( element_type const& phi, 
+        typename std::enable_if< !UseReinitP1Space<FST>::value >::type*)
 {
-    return M_reinitializerFMS->march( phi, this->M_useMarker2AsMarkerDone() );
+    return M_reinitializerFMS->march( phi, this->useMarker2AsMarkerDone() );
 }
 
 } // namespace Feel
