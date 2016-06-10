@@ -20,35 +20,43 @@ public:
     typedef boost::shared_ptr<reinitializer_type> reinitializer_ptrtype;
 
     typedef FunctionSpaceType functionspace_type;
+    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
     
     //--------------------------------------------------------------------//
     // Constructor/Destructor
-    Reinitializer( std::string const& prefix );
-    virtual ~Reinitializer() {}
+    Reinitializer( functionspace_ptrtype const& space ) : 
+        M_space(space),
+        M_useMarker2AsMarkerDone(false)
+        {}
+    virtual ~Reinitializer() = default;
 
     //static reinitializer_ptrtype build( std::string const& type, std::string const& prefix="" );
     //--------------------------------------------------------------------//
-    std::string const& prefix() const { return M_prefix; } 
-    ReinitializerType type() const { return M_reinitializerType; }
+    //ReinitializerType type() const { return M_reinitializerType; }
     //--------------------------------------------------------------------//
-    // Run reintialization
+    functionspace_ptrtype const& functionSpace() const { return M_space; }
+    mesh_ptrtype const& mesh() const { return M_space->mesh(); }
+    //--------------------------------------------------------------------//
+    // Options
+    // FM
+    void setUseMarker2AsMarkerDone( bool val = true ) { M_useMarker2AsMarkerDone = val; }
+    bool useMarker2AsMarkerDone() const { return M_useMarker2AsMarkerDone; }
+    // HJ
+    //--------------------------------------------------------------------//
+    // Run reinitialization
     virtual element_type run( element_type const& phi ) =0;
 
     element_type operator() ( element_type const& phi ) { return this->run(phi); }
 
 protected:
-    ReinitializerType M_reinitializerType;
+    //ReinitializerType M_reinitializerType;
 
-private:
-    std::string M_prefix;
+    functionspace_ptrtype M_space;
+
+    bool M_useMarker2AsMarkerDone;
 };
-
-template<typename FunctionSpaceType>
-Reinitializer<FunctionSpaceType>::Reinitializer( std::string const& prefix )
-    : M_prefix( prefix )
-{}
 
 } // Feel
 
