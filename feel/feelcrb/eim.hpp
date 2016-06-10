@@ -1347,9 +1347,10 @@ public:
             return res;
         }
 
+#if 0
     virtual vector_type operator()( model_solution_context_type/*context_type*/ const& ctx, parameter_type const& mu , int M=-1) = 0;
     virtual vector_type operator()( model_solution_type const& T, model_solution_context_type/*context_type*/ const& ctx, parameter_type const& mu , int M=-1) = 0;
-
+#endif
     virtual element_type const& q( int m )  const = 0;
     virtual std::vector<element_type> const& q() const = 0;
     virtual vector_type  beta( parameter_type const& mu ) /*const*/ = 0;
@@ -1446,7 +1447,7 @@ protected :
 
 
 
-template<typename ModelType, typename SpaceType, typename ExprType>
+template<typename ModelType, typename SpaceType, typename ExprType, int SubSpaceId = -1>
 class EIMFunction
     : public EIMFunctionBase<SpaceType, typename ModelType::functionspace_type, typename ModelType::parameterspace_type>
 {
@@ -1472,7 +1473,27 @@ public:
     typedef typename super::model_functionspace_type model_functionspace_type;
     typedef boost::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
     typedef typename super::model_solution_context_type model_solution_context_type;
+    static const bool use_subspace_element = (SubSpaceId != -1 && model_functionspace_type::is_composite);
 
+    struct fake_element_composite_type
+    {
+        template<int i>
+        struct sub_element
+        {
+            typedef typename functionspace_type::element_type type;
+        };
+    };
+    typedef typename mpl::if_< mpl::bool_<model_functionspace_type::is_composite>,
+                               typename model_functionspace_type::element_type,
+                               fake_element_composite_type >::type model_element_composite_type;
+    typedef typename mpl::if_< mpl::bool_<use_subspace_element>,
+                               //mpl::identity<typename model_functionspace_type::element_type::template sub_element<SubSpaceId>::type>,
+                               mpl::identity<typename model_element_composite_type::template sub_element<SubSpaceId>::type>,
+                               mpl::identity<typename model_functionspace_type::element_type> >::type::type model_element_expr_type;
+
+    typedef typename model_element_expr_type::functionspace_type  model_element_expr_functionspace_type;
+    typedef typename model_element_expr_functionspace_type::Context model_element_expr_context_type;
+    typedef boost::shared_ptr<model_element_expr_context_type> model_element_expr_context_ptrtype;
 
     typedef typename SpaceType::mesh_type mesh_type;
     static const uint16_type nDim = mesh_type::nDim;
@@ -1512,7 +1533,7 @@ public:
 
     EIMFunction( model_ptrtype model,
                  functionspace_ptrtype space,
-                 model_solution_type& u,
+                 model_element_expr_type &u,
                  parameter_type& mu,
                  expr_type& expr,
                  sampling_ptrtype sampling,
@@ -1532,12 +1553,13 @@ public:
         M_solution_vector(),
         M_t(),
         M_ctxFeBasisEim( new context_type( this->functionSpace() ) ),
-        M_ctxFeModelSolution( new model_solution_context_type( M_model->functionSpace() ) ),
         M_B(),
         M_offline_error(),
         M_eim(),
-        M_internalModelFeFunc( M_model->functionSpace()->elementPtr() )
+        M_internalModelFeFunc( this->functionSpace()->elementPtr() )
         {
+            this->initExprFeContex( mpl::bool_<use_subspace_element>() );
+
             this->addDBSubDirectory( "EIMFunction_"+model->modelName() );
             if ( this->worldComm().isMasterRank() )
             {
@@ -1558,6 +1580,15 @@ public:
             }
         }
 
+    void initExprFeContex( mpl::false_ /**/ )
+        {
+            M_ctxFeModelSolution.reset( new model_element_expr_context_type( M_model->functionSpace() ) );
+        }
+    void initExprFeContex( mpl::true_ /**/ )
+        {
+            M_ctxFeModelSolution.reset( new model_element_expr_context_type( M_model->functionSpace()->template functionSpace<SubSpaceId>() ) );
+        }
+
     auto expr( parameter_type const& mu ) const
     {
         M_mu = mu;
@@ -1573,18 +1604,37 @@ public:
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
+        return this->expr( u,mpl::bool_<use_subspace_element>() );
+    }
+    auto expr( model_solution_type const& u, mpl::false_ /**/ ) const
+    {
         *M_u = u;
         return M_expr( idv(u) );
     }
+    auto expr( model_solution_type const& u, mpl::true_ /**/ ) const
+    {
+        auto uexpr = u.template element<SubSpaceId>();
+        *M_u = uexpr;
+        return M_expr( idv(uexpr) );
+    }
+
     auto expr( parameter_type const& mu, typename rbfunctionspace_type::element_type const& urb ) const
     {
         M_mu = mu;
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
+        return this->expr( urb, mpl::bool_<use_subspace_element>() );
+    }
+    auto expr( typename rbfunctionspace_type::element_type const& urb, mpl::false_ /**/ ) const
+    {
         return M_expr( idv(urb) );
     }
-
+    auto expr( typename rbfunctionspace_type::element_type const& urb, mpl::true_ /**/ ) const
+    {
+        CHECK( false ) << "TODO rbspace composite";
+        return M_expr;
+    }
     void saveDB()
     {
         fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
@@ -1703,6 +1753,10 @@ public:
     }
     void updateRbSpaceContext( boost::any const& rbspacebase )
     {
+        this->updateRbSpaceContext( rbspacebase, mpl::bool_<use_subspace_element>() );
+    }
+    void updateRbSpaceContext( boost::any const& rbspacebase, mpl::false_ )
+    {
         if ( !boost::any_cast<rbfunctionspace_ptrtype>( &rbspacebase ) )
         {
             //std::cout << "not rbfunctionspace_ptrtype\n";
@@ -1719,8 +1773,12 @@ public:
             M_ctxRbModelSolution->add( no );
         }
         M_ctxRbModelSolution->update();
-
     }
+    void updateRbSpaceContext( boost::any const& rbspacebase, mpl::true_ )
+        {
+            CHECK( false ) << "TODO rbspace composite";
+        }
+
 
     node_type interpolationPoint( int position ) const
     {
@@ -1773,16 +1831,17 @@ public:
 
     element_type operator()( parameter_type const&  mu )
         {
+            model_solution_type sol;
             if( ioption(_name="ser.eim-frequency") != 0 ) //Use SER
             {
                 if( boption(_name="ser.use-rb-in-eim-basis-build") )
-                    *M_u = this->computeRbExpansion( mu ); //RB
+                    sol = this->computeRbExpansion( mu ); //RB
                 else
-                    *M_u = this->computePfem( mu ); //PFEM
+                    sol = this->computePfem( mu ); //PFEM
             }
             else
-                *M_u = M_model->solve( mu ); //FEM
-            auto eimexpr = this->expr( mu, *M_u );
+                sol = M_model->solve( mu ); //FEM
+            auto eimexpr = this->expr( mu, sol );
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=eimexpr );
         }
@@ -1792,19 +1851,20 @@ public:
             return vf::project( _space=this->functionSpace(), _expr=eimexpr );
         }
 
-    vector_type operator()( model_solution_context_type const& ctx, parameter_type const& mu , int M)
+    vector_type operator()( model_element_expr_context_type const& ctx, parameter_type const& mu , int M)
         {
+            model_solution_type sol;
             if( ioption(_name="ser.eim-frequency") != 0 ) //Use SER
             {
                 if( boption(_name="ser.use-rb-in-eim-basis-build") )
-                    *M_u = this->computeRbExpansion( mu ); //RB
+                    sol = this->computeRbExpansion( mu ); //RB
                 else
-                    *M_u = this->computePfem( mu ); //PFEM
+                    sol = this->computePfem( mu ); //PFEM
             }
             else
-                *M_u = M_model->solve( mu ); //FEM
+                sol = M_model->solve( mu ); //FEM
 
-            auto eimexpr = this->expr( mu, *M_u );
+            auto eimexpr = this->expr( mu, sol );
 
             //auto projected_expr = vf::project( _space=this->functionSpace(), _expr=M_expr );
             //return evaluateFromContext( _context=ctx, _expr=idv(projected_expr) , _max_points_used=M );
@@ -1813,7 +1873,7 @@ public:
             return evaluateFromContext( _context=ctx, _expr=eimexpr, _max_points_used=M,
                                         _mpi_communications=doMpiComm, _projection=applyProjection );
         }
-    vector_type operator()( model_solution_type const& T, model_solution_context_type/*context_type*/ const& ctx, parameter_type const& mu , int M)
+    vector_type operator()( model_solution_type const& T, model_element_expr_context_type const& ctx, parameter_type const& mu , int M)
         {
             auto eimexpr = this->expr( mu,T );
             //auto projected_expr = vf::project( _space=this->functionSpace(), _expr=M_expr );
@@ -1825,11 +1885,21 @@ public:
         }
     vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, parameter_type const& mu , int M)
         {
+            return this->operator()( urb,ctx,mu,M,mpl::bool_<use_subspace_element>() );
+        }
+    vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, parameter_type const& mu , int M, mpl::false_ )
+        {
             auto urbelt = ctx.rbFunctionSpace()->element();
             urbelt.container() = urb;
             auto eimexpr = this->expr( mu,urbelt );
             return evaluateFromContext( _context=ctx, _expr=eimexpr , _max_points_used=M,
                                         _mpi_communications=false, _projection=false );
+        }
+    vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, parameter_type const& mu , int M, mpl::true_ )
+        {
+            CHECK( false ) << "TODO rbspace composite";
+            vector_type res;
+            return res;
         }
 
     vector_type computeExpansionCoefficients( parameter_type const& mu, model_solution_type const& solution,  int M)
@@ -2038,8 +2108,7 @@ public:
         if( this->M_computeExpansionOfExpression )
         {
             M_mu = M_mu_sampling->at(0);
-            *M_u = M_solution_vector[0];
-            auto eimexpr = this->expr( M_mu, *M_u );
+            auto eimexpr = this->expr( M_mu, M_solution_vector[0] );
 
             auto expression_evaluated = evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=eimexpr );
             double eval = expression_evaluated(0);
@@ -2051,7 +2120,7 @@ public:
         }
         else
         {
-            auto eimexpr = this->expr( M_mu, *M_u );
+            auto eimexpr = this->expr( M_mu );//, *M_u );
             auto projected_g = vf::project( _space=this->functionSpace(),_expr=eimexpr );
 
             auto projected_g_evaluated = evaluateFromContext( _context=*M_ctxFeBasisEim, _expr=idv( projected_g ) );
@@ -2084,9 +2153,6 @@ public:
             auto interpolation_point = this->functionSpace()->context();
             int proc_having_the_point ;
 
-            M_mu = M_mu_sampling->at(m);
-            *M_u = M_solution_vector[m];
-
             //we want to normalize the expression with its evaluation at
             //the interpolation point
             interpolation_point.clear();
@@ -2099,7 +2165,8 @@ public:
 
             vector_type expression_evaluated;
 
-            auto eimexpr = this->expr( M_mu, *M_u );
+            M_mu = M_mu_sampling->at(m);
+            auto eimexpr = this->expr( M_mu, M_solution_vector[m] );
             auto residual = eimexpr - idv( M_z_vector[m] );
             expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=residual );
             double eval = expression_evaluated( 0 );
@@ -2121,8 +2188,7 @@ public:
         if( this->M_computeExpansionOfExpression )
         {
             M_mu = M_mu_sampling->at(m);
-            *M_u = M_solution_vector[m];
-            auto eimexpr = this->expr( M_mu, *M_u );
+            auto eimexpr = this->expr( M_mu, M_solution_vector[m] );
             auto residual =  eimexpr - idv(z);
 
             int proc_number = this->worldComm().globalRank();
@@ -2174,7 +2240,7 @@ public:
         DVLOG( 2 ) << "solution.size() : "<<M_solution_vector.size();
         DVLOG( 2 ) << "q.size() : "<<M_q_vector.size();
 
-        auto eimexpr = this->expr( M_mu, *M_u );
+        auto eimexpr = this->expr( M_mu );//, *M_u );
 
         auto element_zero = project( _space=this->functionSpace(), _expr=cst(0) );
         auto example_of_q = ( eimexpr - idv(element_zero) )/1.0;
@@ -2869,7 +2935,7 @@ private:
     model_ptrtype M_model;
     expr_type M_expr;
     // model_solution_type& M_u;
-    model_solution_type * M_u;
+    model_element_expr_type * M_u;
     parameter_type& M_mu;
     crbmodel_ptrtype M_crbmodel;
     crb_ptrtype M_crb;
@@ -2887,9 +2953,8 @@ private:
     int M_max_z;
     int M_max_solution;
     std::vector<node_type> M_t;
-    //typename functionspace_type::Context M_ctx;
     boost::shared_ptr<context_type> M_ctxFeBasisEim;
-    boost::shared_ptr<model_solution_context_type> M_ctxFeModelSolution;
+    boost::shared_ptr<model_element_expr_context_type> M_ctxFeModelSolution;
     rbfunctionspace_context_ptrtype M_ctxRbModelSolution;
     matrix_type M_B;
     std::vector<double> M_offline_error;
@@ -2898,7 +2963,7 @@ private:
     std::vector<int> M_rb_online_iterations;
     std::vector<double> M_rb_online_increments;
 
-    boost::shared_ptr<model_element_type> M_internalModelFeFunc;
+    boost::shared_ptr<element_type> M_internalModelFeFunc;
 };
 
 namespace detail
@@ -2911,8 +2976,13 @@ struct compute_eim_return
     typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::expr>::type>::type expr_type;
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
-    typedef EIMFunction<model_type, space_type, expr_type> type;
-    typedef boost::shared_ptr<EIMFunction<model_type, space_type, expr_type> > ptrtype;
+    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::element>::type>::type element_type;
+    static const int subspaceid = mpl::if_< mpl::bool_< model_type::functionspace_type::is_composite>,
+                                            mpl::int_<element_type::functionspace_type::basis_type::TAG>,// must be improve! loop on subspaces and detect the same
+                                            mpl::int_<-1> >::type::value;
+
+    typedef EIMFunction<model_type, space_type, expr_type, subspaceid> type;
+    typedef boost::shared_ptr<type> ptrtype;
 };
 }
 
@@ -2974,7 +3044,9 @@ struct EimFunctionNoSolve
         :
         M_model( model ),
         M_elt( M_model->functionSpace()->element() )
-        {}
+        {
+            M_elt.setConstant( boost::lexical_cast<value_type>("inf") );
+        }
 
     element_type solve( parameter_type const& mu )
     {
@@ -2991,16 +3063,20 @@ struct EimFunctionNoSolve
     }
     element_type solve( parameter_type const& mu , mpl::bool_<true> )
     {
+#if 0
         ProjectInfCompositeCase project_inf_composite_case( M_elt );
         index_vector_type index_vector;
         fusion::for_each( index_vector, project_inf_composite_case );
         return project_inf_composite_case.element();
+#else
+        return M_elt;
+#endif
     }
 
     std::string /*const&*/ modelName() const { return M_model->modelName(); }
     functionspace_ptrtype functionSpace() { return M_model->functionSpace(); }
     parameterspace_ptrtype parameterSpace() { return M_model->parameterSpace(); }
-
+#if 0
     struct ProjectInfCompositeCase
     {
         ProjectInfCompositeCase( element_type & composite_element)
@@ -3026,7 +3102,7 @@ struct EimFunctionNoSolve
         element_type M_element;
 
     }; //struct ProjectInfOnSubspace
-
+#endif
     model_ptrtype M_model;
     element_type M_elt;
 };
