@@ -4755,11 +4755,6 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K) const
 {
-    size_type Qm = 0;
-
-    int Qa=M_model->Qa();
-    int Ql=M_model->Ql(M_output_index);
-
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
     beta_vector_type betaMFqm;
@@ -4773,22 +4768,18 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
     matrixN_type Aprdu( ( int )N, ( int )N );
     matrixN_type Mprdu( ( int )N, ( int )N );
 
+    int Qa=M_model->Qa();
+    int Ql=M_model->Ql(M_output_index);
     std::vector<int> mMaxA(Qa);
-    std::vector<int> mMaxM(Qm);
     std::vector<int> mMaxF( Ql );
     for ( size_type q = 0; q < Qa; ++q )
     {
         mMaxA[q]=M_model->mMaxA(q);
     }
-    for ( size_type q = 0; q < Qm; ++q )
-    {
-        mMaxM[q]=M_model->mMaxM(q);
-    }
     for ( size_type q = 0; q < Ql; ++q )
     {
         mMaxF[q]=M_model->mMaxF(M_output_index,q);
     }
-
 
     double increment = M_fixedpointIncrementTol;
     bool is_linear = M_model->isLinear();
@@ -4858,41 +4849,37 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
 
     double time_for_output = 1e30;
-    double time_step = 1e30;
-    //double time_final=0;
     int number_of_time_step = M_model->numberOfTimeStep();
-
-    if ( !M_model->isSteady() )
+    double time_step = M_model->timeStep();
+    //time_final = M_model->timeFinal();
+    if ( K > 0 )
     {
-        Qm = M_model->Qm();
-        time_step = M_model->timeStep();
-        //time_final = M_model->timeFinal();
-
-        if ( K > 0 )
-        {
-            time_for_output = K * time_step;
-            number_of_time_step = K;
-        }
-        else
-        {
-            //number_of_time_step = (time_final / time_step)+1;
-            time_for_output = (number_of_time_step-1) * time_step;
-        }
+        time_for_output = K * time_step;
+        number_of_time_step = K;
     }
-
+    else
+    {
+        //number_of_time_step = (time_final / time_step)+1;
+        time_for_output = (number_of_time_step-1) * time_step;
+    }
     int time_index = number_of_time_step-1;
     double time = time_for_output;
 
-    if ( ! M_model->isSteady() )
+    size_type Qm = M_model->Qm();
+    std::vector<int> mMaxM(Qm);
+    for ( size_type q = 0; q < Qm; ++q )
     {
-        for ( size_type n=0; n<N; n++ )
-        {
-            uNduold[time_index]( n ) = M_coeff_du_ini_online(n);
-        }
+        mMaxM[q]=M_model->mMaxM(q);
+    }
+
+
+    for ( size_type n=0; n<N; n++ )
+    {
+        uNduold[time_index]( n ) = M_coeff_du_ini_online(n);
     }
 
     //uNdu[0] = Adu.lu().solve( -Ldu );
-    Adu.setZero( N,N );
+    //Adu.setZero( N,N );
 
     int time_iter=0;
     double tini = M_model->timeInitial();
@@ -4909,6 +4896,7 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
                 bool only_terms_time_dependent=false;
                 boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
 
+                Adu.setZero( N,N );
                 for ( size_type q = 0; q < Qa; ++q )
                 {
                     for(int m=0; m < mMaxA[q]; m++)
@@ -4917,9 +4905,7 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
                 for ( size_type q = 0; q < Qm; ++q )
                 {
                     for(int m=0; m < mMaxM[q]; m++)
-                    {
                         Adu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )/time_step;
-                    }
                 }
             }
             else
@@ -4930,32 +4916,18 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
             Fdu.setZero( N );
             //Ldu.setZero( N );
-            if ( M_model->isSteady() )
+            //No Rhs for adjoint problem except mass contribution
+            for ( size_type q = 0; q < Qm; ++q )
             {
-                //Fdu = -Ldu;
-                for ( size_type q = 0; q < Ql ; ++q )
+                for(int m=0; m < mMaxM[q]; m++)
                 {
-                    for(int m=0; m < mMaxF[q]; m++)
-                        Fdu -= betaFqm[M_output_index][q][m]*M_Lqm_du[q][m].head( N );
-                }
-            }
-            else
-            {
-                //No Rhs for adjoint problem except mass contribution
-                for ( size_type q = 0; q < Qm; ++q )
-                {
-                    for(int m=0; m < mMaxM[q]; m++)
-                    {
-                        Fdu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )*uNduold[time_index]/time_step;
-                    }
+                    Fdu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )*uNduold[time_index]/time_step;
                 }
             }
 
             // backup uNdu
             next_uNdu = uNdu[time_index];
 
-            //if ( M_model->isSteady() )
-            //    Fdu = -Ldu;
             uNdu[time_index] = Adu.lu().solve( Fdu );
 
             fi++;
@@ -4987,7 +4959,6 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
             uNduold[time_index-1] = uNdu[time_index];
 
         time_index--;
-
 
     }//end of non steady case
 
