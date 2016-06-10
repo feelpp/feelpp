@@ -178,6 +178,17 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
                         _type = InterpolationNonConforme(false)
                         );
             }
+            if( M_strategyBeforeFM == ILP )
+            {
+                M_backend_smooth = backend(_name=prefixvm(this->prefix(), "ls-smooth"));
+                M_smooth = projector(
+                        this->functionSpace(),/*domainSpace*/
+                        this->functionSpace(),/*imageSpace*/
+                        M_backend_smooth,
+                        DIFF,
+                        doption(_name="fm-smooth-coeff", _prefix=this->prefix())
+                        );
+            }
         }
         break;
         case LevelSetReinitMethod::HJ :
