@@ -21,13 +21,21 @@ public:
 
     typedef FunctionSpaceType functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+
+    typedef typename functionspace_type::mesh_type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
     typedef typename functionspace_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
+
+    typedef typename functionspace_type::periodicity_0_type periodicity_type;
+    static const bool is_periodic = functionspace_type::is_periodic;
     
     //--------------------------------------------------------------------//
     // Constructor/Destructor
     Reinitializer( functionspace_ptrtype const& space ) : 
         M_space(space),
+        M_periodicity(boost::fusion::at_c<0>(space->periodicity())),
         M_useMarker2AsMarkerDone(false)
         {}
     virtual ~Reinitializer() = default;
@@ -54,6 +62,7 @@ protected:
     //ReinitializerType M_reinitializerType;
 
     functionspace_ptrtype M_space;
+    periodicity_type M_periodicity;
 
     bool M_useMarker2AsMarkerDone;
 };
