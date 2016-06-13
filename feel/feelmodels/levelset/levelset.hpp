@@ -8,8 +8,7 @@
 
 #include <feel/feelmodels/advection/advection.hpp>
 
-#include <feel/feells/reinitializer.hpp>
-#include <feel/feells/reinit_fms.hpp>
+#include <feel/feelmodels/levelset/reinitializer.hpp>
 #include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 
@@ -121,15 +120,6 @@ public:
 #endif
 
     //--------------------------------------------------------------------//
-    // Space levelset reinitP1
-    // used for FM reinitialization, always P1 non-periodic !
-    typedef Lagrange<1, Scalar> basis_levelset_reinitP1_type;
-    typedef FunctionSpace<mesh_type, bases<basis_levelset_reinitP1_type>, value_type, Periodicity<NoPeriodicity>, mortars<NoMortar> > space_levelset_reinitP1_type;
-    typedef boost::shared_ptr<space_levelset_reinitP1_type> space_levelset_reinitP1_ptrtype;
-    typedef typename space_levelset_reinitP1_type::element_type element_levelset_reinitP1_type;
-    typedef boost::shared_ptr< element_levelset_reinitP1_type > element_levelset_reinitP1_ptrtype;
-
-    //--------------------------------------------------------------------//
     // Space markers P0
     typedef Lagrange<0, Scalar, Discontinuous> basis_markers_type;
     typedef FunctionSpace<mesh_type, bases<basis_markers_type>, value_type, Periodicity<NoPeriodicity> > space_markers_type;
@@ -141,29 +131,6 @@ public:
     typedef MeshAdaptation<Dim, Order, 1, periodicity_type > mesh_adaptation_type;
     typedef boost::shared_ptr< mesh_adaptation_type > mesh_adaptation_ptrtype;
 #endif
-
-    //--------------------------------------------------------------------//
-    // Interpolation operators
-    typedef boost::tuple<
-        boost::mpl::size_t<MESH_ELEMENTS>,
-        typename MeshTraits<mesh_type>::element_const_iterator,
-        typename MeshTraits<mesh_type>::element_const_iterator> range_visu_ho_type;
-
-    typedef OperatorInterpolation<
-        space_levelset_type, // from space
-        space_levelset_reinitP1_type, // to space
-        range_visu_ho_type> op_interpolation_LS_to_P1_type;
-
-    typedef OperatorInterpolation<
-        space_levelset_reinitP1_type, // from space
-        space_levelset_type, // to space
-        range_visu_ho_type> op_interpolation_P1_to_LS_type;
-
-    typedef boost::shared_ptr<op_interpolation_LS_to_P1_type> op_interpolation_LS_to_P1_ptrtype;
-    typedef boost::shared_ptr<op_interpolation_P1_to_LS_type> op_interpolation_P1_to_LS_ptrtype;
-
-    typedef OperatorLagrangeP1<space_levelset_type> op_lagrangeP1_type;
-    typedef boost::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
 
     //--------------------------------------------------------------------//
     // Reinitialization
@@ -225,7 +192,6 @@ public:
     //space_levelset_ptrtype const& functionSpace() const { return M_advection->functionSpace(); }
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
     space_levelset_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceLevelSetVec; }
-    space_levelset_reinitP1_ptrtype const& functionSpaceReinitP1() const { return M_spaceReinitP1; }
 
     space_levelset_ptrtype const& functionSubspace() const { return M_subspaceLevelSet; }
     space_levelset_vectorial_ptrtype const& functionSubspaceVectorial() const { return M_subspaceLevelSetVec; }
@@ -423,8 +389,6 @@ private:
     space_levelset_ptrtype M_subspaceLevelSet;
     space_levelset_vectorial_ptrtype M_subspaceLevelSetVec;
 
-    space_levelset_reinitP1_ptrtype M_spaceReinitP1;
-    
     //--------------------------------------------------------------------//
     // Markers
     element_markers_ptrtype M_markerDirac;
@@ -435,12 +399,7 @@ private:
 
     //--------------------------------------------------------------------//
     // Reinitialization
-    op_interpolation_LS_to_P1_ptrtype M_opInterpolationLStoP1;
-    op_interpolation_P1_to_LS_ptrtype M_opInterpolationP1toLS;
-    op_lagrangeP1_ptrtype M_opLagrangeP1;
-
-    //reinitializer_ptrtype M_reinitializer;
-    boost::shared_ptr< ReinitializerFMS<space_levelset_reinitP1_type, PeriodicityType> > M_reinitializerFMS;
+    reinitializer_ptrtype M_reinitializer;
     bool M_reinitializerIsUpdatedForUse;
 
     boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smooth;

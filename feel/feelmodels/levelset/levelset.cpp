@@ -1,6 +1,7 @@
 #include <feel/feelmodels/levelset/levelset.hpp>
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
+#include <feel/feelmodels/levelset/reinitializer_fm.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -129,26 +130,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
     M_spaceLevelSetVec = space_levelset_vectorial_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
     M_spaceMarkers = space_markers_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
-
-    // Init P1 reinitialization if required
-    if( M_reinitMethod == LevelSetReinitMethod::FM )
-    {
-        if( Order > 1 )
-        {
-            M_opLagrangeP1 = lagrangeP1( this->functionSpace() );
-            M_spaceReinitP1 = space_levelset_reinitP1_type::New( 
-                    _mesh = M_opLagrangeP1->mesh(), 
-                    _periodicity = periodicity(NoPeriodicity()) 
-                    );
-        }
-        else
-        {
-            M_spaceReinitP1 = space_levelset_reinitP1_type::New( 
-                    _mesh = this->mesh(), 
-                    _periodicity = periodicity(NoPeriodicity()) 
-                    );
-        }
-    }
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -159,25 +140,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
     { 
         case LevelSetReinitMethod::FM :
         {
-            //M_reinitializer.reset( 
-                    //new ReinitializerFMS<space_levelset_reinitP1_type, periodicity_type>( M_spaceReinitP1, M_periodicity ) 
-                    //);
-            M_reinitializerFMS.reset( 
-                    new ReinitializerFMS<space_levelset_reinitP1_type, periodicity_type>( M_spaceReinitP1, M_periodicity ) 
+            M_reinitializer.reset( 
+                    new ReinitializerFM<space_levelset_type>( this->functionSpace() ) 
                     );
-            if( Order > 1)
-            {
-                M_opInterpolationLStoP1 = opInterpolation(
-                        _domainSpace = this->functionSpace(),
-                        _imageSpace = this->functionSpaceReinitP1(),
-                        _type = InterpolationNonConforme(false)
-                        );
-                M_opInterpolationP1toLS = opInterpolation(
-                        _domainSpace = this->functionSpaceReinitP1(),
-                        _imageSpace = this->functionSpace(),
-                        _type = InterpolationNonConforme(false)
-                        );
-            }
+
             if( M_strategyBeforeFM == ILP )
             {
                 M_backend_smooth = backend(_name=prefixvm(this->prefix(), "ls-smooth"));
@@ -626,15 +592,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
     if ( M_reinitMethod == LevelSetReinitMethod::FM )
     {
-        bool useMarker2AsMarkerDoneFmm = M_useMarker2AsMarkerDoneFmm;
-
-        if ( useMarker2AsMarkerDoneFmm )
+        if ( M_useMarker2AsMarkerDoneFmm )
         {
             this->mesh()->updateMarker2( *this->markerDirac() );
         }
 
-        mesh_ptrtype mesh_reinit;
-        auto phi_reinit = M_spaceReinitP1->element();
         auto phi = this->phi();
 
         switch (M_strategyBeforeFM)
@@ -643,81 +605,37 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
             {
                 // save the smoothed gradient magnitude of phi
                 auto modgradphi = M_smooth->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
-
-                if (Order > 1)
-                {
-                    auto modgradphiP1 = M_spaceReinitP1->element();
-                    M_opInterpolationLStoP1->apply( *phi, phi_reinit );
-                    M_opInterpolationLStoP1->apply( modgradphi, modgradphiP1 );
-
-                    mesh_reinit = M_opLagrangeP1->mesh();
-
-                    phi_reinit = vf::project(M_spaceReinitP1, elements(mesh_reinit),
-                                               idv(phi_reinit) / idv(modgradphiP1) );
-
-                    if (useMarker2AsMarkerDoneFmm)
-                    {
-                        auto spaceP0OpLag = space_markers_type::New( mesh_reinit );
-                        auto mark2opLag = vf::project(spaceP0OpLag, elements(mesh_reinit), idv( this->markerDirac() ) > 1e-6 );
-                        mesh_reinit->updateMarker2( mark2opLag );
-                    }
-                }
-                else
-                {
-                    phi_reinit = vf::project(M_spaceReinitP1, elements(this->mesh()), idv(phi) / idv(modgradphi) );
-                    mesh_reinit = this->mesh();
-                }
+                
+                *phi = vf::project(this->functionSpace(), elements(this->mesh()), idv(phi)/idv(modgradphi) );
             }
             break;
 
             case HJ_EQ :
-            case NONE :
             {
-                if (M_strategyBeforeFM == HJ_EQ)
-                {
-                    CHECK(false) << "TODO\n";
-                    //*phi = *explicitHJ(max_iter, dtau, tol);
-                }
-
-                if (Order > 1)
-                {
-                    M_opInterpolationLStoP1->apply( *phi, phi_reinit );
-                    mesh_reinit = M_opLagrangeP1->mesh();
-
-                    if (useMarker2AsMarkerDoneFmm)
-                    {
-                        auto spaceP0OpLag = space_markers_type::New( mesh_reinit );
-                        auto mark2opLag = vf::project(spaceP0OpLag, elements(mesh_reinit), idv( this->markerDirac() ) > 1e-6 );
-                        mesh_reinit->updateMarker2( mark2opLag );
-                    }
-                }
-                // if P1 periodic, project on non periodic space for reinit
-                else if ( this->M_periodicity.isPeriodic() )
-                    phi_reinit = vf::project(M_spaceReinitP1, elements(this->mesh()), idv(phi) );
+                CHECK(false) << "TODO\n";
+                //*phi = *explicitHJ(max_iter, dtau, tol);
             }
+            break;
+            case NONE :
+            {}
             break;
 
             default:
             {
                 CHECK(false)<<"no strategy chosen to initialize first elements before fast marching\n"
-                            <<"please, consider setting the option fm-init-first-elts-strategy to 0, 1 or 2\n";
+                            <<"please, consider setting the option fm-init-first-elts-strategy\n";
             }
             break;
         } // switch M_strategyBeforeFM
 
 
         // Fast Marching Method
-        phi_reinit = M_reinitializerFMS->march(phi_reinit, useMarker2AsMarkerDoneFmm);
-
-        if (Order > 1)
-            M_opInterpolationP1toLS->apply( phi_reinit, *phi );
-        else
-            *phi = vf::project(this->functionSpace(), elements(this->mesh()), idv(phi_reinit));
+        M_reinitializer->setUseMarker2AsMarkerDone( M_useMarker2AsMarkerDoneFmm );
+        *phi = M_reinitializer->run( *phi );
 
         LOG(INFO)<< "reinit with FMM done"<<std::endl;
 
     } // Fast Marching
-
 
     else if ( M_reinitMethod == LevelSetReinitMethod::HJ )
     {
