@@ -373,7 +373,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
         auto D_expr = vf::chi( psi<-eps )*vf::constant(0.0)
             +
             vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
-            1/(2*eps) *( 1 + cos(pi*psi/eps) )
+            1/(2*eps) *( 1 + cos(M_PI*psi/eps) )
             +
             vf::chi(psi>eps)*vf::constant(0.0);
 
@@ -388,7 +388,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
         auto D_expr = vf::chi( psi<-eps )*vf::constant(0.0)
             +
             vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
-            1/(2*eps) *( 1 + cos(pi*psi/eps) )
+            1/(2*eps) *( 1 + cos(M_PI*psi/eps) )
             +
             vf::chi(psi>eps)*vf::constant(0.0);
 
@@ -411,7 +411,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         auto H_expr = vf::chi( psi<-eps )*vf::constant(0.0)
             +
             vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
-            1/2*(1 + psi/eps + 1/pi*vf::sin( pi*psi/eps ) )
+            1/2*(1 + psi/eps + 1/M_PI*vf::sin( M_PI*psi/eps ) )
             +
             vf::chi(psi>eps)*vf::constant(1.0);
 
@@ -426,7 +426,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         auto H_expr = vf::chi( psi<-eps )*vf::constant(0.0)
             +
             vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
-            1/2*(1 + psi/eps + 1/pi*vf::sin( pi*psi/eps ) )
+            1/2*(1 + psi/eps + 1/M_PI*vf::sin( M_PI*psi/eps ) )
             +
             vf::chi(psi>eps)*vf::constant(1.0);
 
