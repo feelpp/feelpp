@@ -74,7 +74,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh)
 {
-    this->log("Advection","build", "start");
+    this->log("Advection","build(mesh)", "start");
     
     // Mesh
     M_mesh = mesh;
@@ -91,7 +91,35 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh)
 
     M_isBuilt = true;
 
-    this->log("Advection","build", "finish");
+    this->log("Advection","build(mesh)", "finish");
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build( space_advection_ptrtype const& space)
+{
+    this->log("Advection","build(space)", "start");
+    
+    // Mesh
+    M_mesh = space->mesh();
+    // Function spaces
+    if( this->stabilizationMethod() == AdvectionStabMethod::CIP )
+    {
+        CHECK(space->extendedDofTable()) << "CIP stabilization can only be used with extended dof table built.";
+    }
+    M_Xh = space;
+    // Algebraic data
+    this->createAlgebraicData();
+    // Bdf time scheme
+    this->createTimeDiscretization();
+    // Physical parameters
+    this->createOthers();
+    // Exporters
+    this->createExporters();
+
+    M_isBuilt = true;
+
+    this->log("Advection","build(space)", "finish");
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -215,7 +243,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     this->log("Advection","createFunctionSpaces","start");
     this->timerTool("Constructor").start();
     
-    // Advection 
+    // Create advection function space
     std::vector<bool> extendedDT( space_advection_type::nSpaces, false );
     if( this->stabilizationMethod() == AdvectionStabMethod::CIP )
     {
@@ -228,24 +256,6 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
             _extended_doftable=extendedDT,
             _periodicity=this->periodicity()
             );
-    M_fieldSolution.reset( new element_advection_type(M_Xh, "phi") );
-
-    // Advection velocity 
-    M_XhAdvectionVelocity = space_advection_velocity_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
-    M_fieldAdvectionVelocity.reset( new element_advection_velocity_type(M_XhAdvectionVelocity, "AdvectionVelocity") );
-    
-    // Load the field velocity convection from a math expr
-    if ( Environment::vm().count(prefixvm(this->prefix(),"advection-velocity").c_str()) )
-    {
-        std::string pathGinacExpr = this->directoryLibSymbExpr() + "/advection-velocity";
-        M_exprAdvectionVelocity = expr<nDim,1>( soption(_prefix=this->prefix(),_name="advection-velocity"),
-                                                                 this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
-        //this->updateFieldVelocityConvection();
-        M_fieldAdvectionVelocity->on( _range=elements(this->mesh()), _expr=*M_exprAdvectionVelocity );
-    }
-
-    // Source term
-    M_fieldSource.reset( new element_advection_type(M_Xh, "SourceAdded") );
 
     double tElapsed = this->timerTool("Constructor").stop("create");
     this->log("Advection","createFunctionSpaces", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -299,6 +309,25 @@ ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createOthers()
 {
+    M_fieldSolution.reset( new element_advection_type(M_Xh, "phi") );
+
+    // Advection velocity 
+    M_XhAdvectionVelocity = space_advection_velocity_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+    M_fieldAdvectionVelocity.reset( new element_advection_velocity_type(M_XhAdvectionVelocity, "AdvectionVelocity") );
+    
+    // Load the field velocity convection from a math expr
+    if ( Environment::vm().count(prefixvm(this->prefix(),"advection-velocity").c_str()) )
+    {
+        std::string pathGinacExpr = this->directoryLibSymbExpr() + "/advection-velocity";
+        M_exprAdvectionVelocity = expr<nDim,1>( soption(_prefix=this->prefix(),_name="advection-velocity"),
+                                                                 this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
+        //this->updateFieldVelocityConvection();
+        M_fieldAdvectionVelocity->on( _range=elements(this->mesh()), _expr=*M_exprAdvectionVelocity );
+    }
+
+    // Source term
+    M_fieldSource.reset( new element_advection_type(M_Xh, "SourceAdded") );
+    // Diffusion-reaction model
     M_diffusionReactionModel->initFromMesh( this->mesh(), this->useExtendedDofTable() );
 }
 
