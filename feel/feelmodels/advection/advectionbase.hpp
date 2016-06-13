@@ -165,15 +165,6 @@ public :
             //bool buildModelAlgebraicFactory, 
             //model_algebraic_factory_type::appli_ptrtype const& app );
 
-    virtual void loadParametersFromOptionsVm();
-
-    void createMesh();
-    void createFunctionSpaces();
-    void createAlgebraicData();
-    void createTimeDiscretization();
-    void createExporters();
-    void createOthers();
-    
     //--------------------------------------------------------------------//
     // Periodicity
     void setPeriodicity( periodicity_type const& p );
@@ -288,6 +279,14 @@ public :
     virtual void exportResults( double time );
 
 protected:
+    virtual void loadParametersFromOptionsVm();
+
+    void createMesh();
+    void createFunctionSpaces();
+    void createAlgebraicData();
+    void createTimeDiscretization();
+    void createExporters();
+    void createOthers();
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
