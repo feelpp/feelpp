@@ -155,6 +155,7 @@ public :
 
     void build();
     void build( mesh_ptrtype const& mesh );
+    void build( space_advection_ptrtype const& space );
 
     //--------------------------------------------------------------------//
     // Initialization
