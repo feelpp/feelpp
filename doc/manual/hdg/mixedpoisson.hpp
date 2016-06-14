@@ -130,7 +130,8 @@ public:
     // typedef Bdf<Pdh_type<mesh_type,Order>> bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
     
-private:
+//private:
+protected:
     model_prop_ptrtype M_modelProperties;
     std::string M_prefix;
 
@@ -155,7 +156,10 @@ private:
     // time discretization
     bdf_ptrtype M_bdf_mixedpoisson;
     
-    
+    map_scalar_field<2> M_dirichlet;
+    // map_vector_field<Dim,1,2> M_neumann;
+    map_scalar_field<2> M_source;    
+
     int M_tau_order;
     
     bool M_integralCondition;
@@ -199,15 +203,21 @@ public:
     // void exportResults();
     void computeError();    
 
+    // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
     Vh_ptr_t fluxSpace() const { return M_Vh; }
     Wh_ptr_t potentialSpace() const { return M_Wh; }
     Mh_ptr_t traceSpace() const { return M_Mh; }
+    M0h_ptr_t traceSpaceOrder0() const { return M_M0h; }
+    Ch_ptr_t constantSpace() const {return M_Ch;}
+    
     Vh_element_ptr_t fluxField() const { return M_up; }
     Wh_element_ptr_t potentialField() const { return M_pp; }
     model_prop_type modelProperties() const { return *M_modelProperties; }
     std::list<std::string> integralMarkersList() const { return M_integralMarkersList; }
-
+    int tau_order() const { return M_tau_order; }
+    backend_ptrtype get_backend() { return M_backend; }
+    
     // time step scheme
     void createTimeDiscretization() ;
     bdf_ptrtype timeStepBDF() { return M_bdf_mixedpoisson; }
@@ -359,6 +369,9 @@ MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh)
     else
         M_mesh = mesh;
     
+    M_dirichlet = M_modelProperties -> boundaryConditions().getScalarFields( "potential", "Dirichlet");
+    // M_neumann = M_modelProperties -> boundaryConditions().template getVectorFields<Dim> ( "flux", "Neumann" );
+    M_source = M_modelProperties -> boundaryConditions().getScalarFields( "potential", "SourceTerm");
 
     // initialize marker lists for each boundary condition type
     M_integralMarkersList.clear();
@@ -488,12 +501,12 @@ MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh)
     M_up = M_Vh->elementPtr( "u" );
     M_pp = M_Wh->elementPtr( "p" );
 
-    tic();
     if(!this->isStationary()){
+        tic();
         this->createTimeDiscretization();
         this->initTimeStep();
+	toc("timeDiscretization",true);
     }
-    toc("timeDiscretization",true);
 
     tic();
     if ( M_integralCondition )
@@ -636,7 +649,7 @@ void
 MixedPoisson<Dim, Order, G_Order>::solve()
 {
     tic();
-    // M_modelProperties -> parameters().updateParameterValues();
+    M_modelProperties -> parameters().updateParameterValues();
     updateConductivityTerm();
     assembleF();
     if ( M_updateAssembly != NULL )
@@ -899,13 +912,35 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
     auto rhs1 = form1( _test=M_Wh, _vector=M_F, _rowstart=0);
     auto rhs2 = form1( _test=M_Wh, _vector=M_F, _rowstart=1);
     auto rhs3 = form1( _test=M_Mh, _vector=M_F, _rowstart=2);
+    M_source.setParameterValues( M_modelProperties->parameters().toParameterValues() );
+    if (!this->isStationary())
+        M_source.setParameterValues( {{"t",M_bdf_mixedpoisson->time()}} ); 
+    for ( auto const& s : M_source ){
+	// (f, w)_Omega
+	rhs2 += integrate( _range = markedelements(M_mesh,marker(s)), 
+			   _expr = expression(s)*id(w) );
+        // (p_old,w)_Omega
+        if ( !this->isStationary() ){
+            rhs2 += integrate( _range = markedelements(M_mesh,marker(s)),
+                               _expr = idv(this->timeStepBDF()->polyDeriv()) * id(w));
+        }
+    }
+    // Dirichlet potential BC
+    M_dirichlet.setParameterValues( M_modelProperties->parameters().toParameterValues() );
+    if (!this->isStationary() )
+        M_dirichlet.setParameterValues( {{"t",M_bdf_mixedpoisson->time()}} );
+    for ( auto const& d : M_dirichlet ){
+        // <g_D, mu>_Gamma_D
+        rhs3 += integrate( _range = markedfaces(M_mesh,marker(d)),
+                           _expr = id(l)*expression(d));
 
+    }
     auto itField = M_modelProperties->boundaryConditions().find( "potential");
     if ( itField != M_modelProperties->boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "SourceTerm" );
-        if ( itType != mapField.end() )
+        /*if ( itType != mapField.end() )
         {
             for ( auto const& exAtMarker : (*itType).second )
             {
@@ -921,6 +956,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                 }
             }
         }
+
         itType = mapField.find( "Dirichlet" );
         if ( itType != mapField.end() )
         {
@@ -932,7 +968,8 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                 rhs3 += integrate(_range=markedfaces(M_mesh,marker),
                                   _expr=id(l)*g);
             }
-        }
+        }*/
+
         itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
         {
@@ -1040,7 +1077,7 @@ MixedPoisson<Dim, Order, G_Order>::updateConductivityTerm( bool isNL)
         else
         {
             auto cond = material.getScalar(soption(prefixvm(M_prefix,"conductivityNL_json")), "p", idv(*M_pp));
-            // (sigma(p)^-1 j, v)
+	    // (sigma(p)^-1 j, v)
             a11 += integrate(_range=markedelements(M_mesh,marker),
                              _expr=(trans(idt(u))*id(v))/cond );
         }
@@ -1121,16 +1158,27 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time )
     }
    
     // Export exact solutions
-    auto K = expr(soption(prefixvm(M_prefix,"conductivity_json") ));
-    auto p_exact = expr(soption(prefixvm(M_prefix,"p_exact") ));
-    auto gradp_exact = grad<Dim>(p_exact);
-    auto u_exact = -K*trans(gradp_exact);
-    auto p_exact_proj = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact);
-    auto u_exact_proj = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact);
+    if ( this->isStationary() ){
+	auto K = -10;
+	auto p_exact = expr(soption(prefixvm(M_prefix,"p_exact") ));
+    	auto gradp_exact = grad<Dim>(p_exact);
+	auto u_exact = -K*trans(gradp_exact);
+        
+	/*
+    	for( auto const& pairMat : M_modelProperties->materials() )
+    	{
+             auto marker = pairMat.first;
+             auto material = pairMat.second;
+             auto K = material.getScalar(soption(prefixvm(M_prefix,"conductivity_json")));
+             u_exact = -K*trans(gradp_exact) ;
+	}*/
 
-    M_exporter -> add(prefixvm(M_prefix, "p_exact"), p_exact_proj);
+    	auto p_exact_proj = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact);
+    	auto u_exact_proj = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact);
+   	M_exporter -> step (0) -> add(prefixvm(M_prefix, "p_exact"), p_exact_proj);
 
-    M_exporter -> add(prefixvm(M_prefix, "u_exact"), u_exact_proj);
+	M_exporter -> step (0) -> add(prefixvm(M_prefix, "u_exact"), u_exact_proj);
+    }
 
     M_exporter->save();
 
@@ -1148,12 +1196,20 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time )
 template<int Dim, int Order, int G_Order>
 void
 MixedPoisson<Dim, Order, G_Order>::computeError(){
-    
-    auto K = expr(soption(prefixvm(M_prefix,"conductivity_json") ));
+
+    auto K = 10;
     auto p_exact = expr(soption(prefixvm(M_prefix,"p_exact") ));
     auto gradp_exact = grad<Dim>(p_exact);
     auto u_exact = -K*trans(gradp_exact);
-
+    /*
+    for( auto const& pairMat : M_modelProperties->materials() )
+    {
+         auto marker = pairMat.first;
+         auto material = pairMat.second;
+         auto K = material.getScalar(soption(prefixvm(M_prefix,"conductivity_json")));
+	 u_exact = -K*trans(gradp_exact) ;
+    } */   
+    
     tic();
 
     bool has_dirichlet = nelements(markedfaces(M_mesh,"Dirichlet"),true) >= 1;
