@@ -52,8 +52,12 @@ public:
     using element_type = ElementT;
     using node_type = NodeT;
 
+    EvaluatorData( element_type e, node_type n ) :
+        super( e, n )
+        {}
+
     //! access to element i
-    typename element_type::value_type operator()( int i ) const { return this->template get<0>()(i); }
+    typename element_type::Scalar operator()( int i ) const { return this->template get<0>()(i); }
 
     //! return the elements
     element_type const& data() const { return this->template get<0>(); }
@@ -93,7 +97,7 @@ public:
                               mpl::identity<typename Pset::template apply<mesh_element_type::nRealDim, value_type, Simplex>::type >,
                               mpl::identity<typename Pset::template apply<mesh_element_type::nRealDim, value_type, Hypercube>::type >
                               >::type::type pointset_type;
-    typedef Eigen::Tensor<value_type,3> element_type;
+    typedef Eigen::Tensor<value_type,4> element_type;
     using node_type = Eigen::Tensor<value_type,3>;
     //typedef Eigen::Matrix<value_type,mesh_element_type::nRealDim,Eigen::Dynamic> node_type;
     using eval_element_type = EvaluatorData<element_type,node_type>;
@@ -267,7 +271,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
             {
                 for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
                 {
-                    __p(e,p) = __c->xReal(p);
+                    __p(e,p,c1) = __c->xReal(p)[c1];
                 }
 
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
@@ -289,7 +293,10 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
             for ( uint16_type p = 0; p < npoints; ++p )
             {
-                __p(e, npoints) = __c1->xReal(p);
+                for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
+                {
+                    __p(e,p,c1) = __c->xReal(p)[c1];
+                }
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                 {
                     for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
@@ -312,7 +319,10 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
                 for ( uint16_type p = 0; p < npoints; ++p )
                 {
-                    __p(e, p) = __c1->xReal(p);
+                    for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
+                    {
+                        __p(e,p,c1) = __c->xReal(p)[c1];
+                    }
 
                     for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                     {
@@ -333,7 +343,10 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
                 for ( uint16_type p = 0; p < npoints; ++p )
                 {
-                    __p(e, p) = __c1->xReal(p);
+                    for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
+                    {
+                        __p(e,p,c1) = __c->xReal(p)[c1];
+                    }
 
                     for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                     {
@@ -409,7 +422,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     VLOG(2) << "Checking trivial result...";
 
     if ( __face_it == __face_en )
-        return boost::make_tuple( __v, __p );
+        return eval_element_type( __v, __p );
 
     gm_ptrtype __gm( new gm_type );
     gm1_ptrtype __gm1( new gm1_type );
@@ -494,7 +507,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
             {
                 for ( uint16_type c1 = 0; c1 < mesh_element_type::nRealDim; ++c1 )
                 {
-                    __p(e,p) = __c->xReal(p);
+                    __p(e,p,c1) = __c->xReal(p)[c1];
                 }
 
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
@@ -522,7 +535,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
             {
                 for ( uint16_type c1 = 0; c1 < mesh_element_type::nRealDim; ++c1 )
                 {
-                    __p(e,p) = __c1->xReal(p);
+                    __p(e,p,c1) = __c1->xReal(p)[c1];
                 }
 
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
@@ -616,6 +629,7 @@ template<int Dim>
 struct normLinfData : public boost::tuple<double, Eigen::Matrix<double, Dim,1> >
 {
     typedef boost::tuple<double, Eigen::Matrix<double, Dim,1> > super;
+
     normLinfData( double v, Eigen::Matrix<double, Dim,1> const& x  ) : super( v, x ) {}
     normLinfData() = default;
     normLinfData( normLinfData const&  ) = default;
@@ -675,19 +689,64 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
+    typedef typename detail::clean_type<Args,tag::expr>::type _expr_type;
+    typedef typename detail::clean_type<Args,tag::pset>::type _pset_type;
+    typedef typename detail::clean_type<Args,tag::range>::type _range_type;
+    typedef typename details::Evaluator<EVAL_NODAL, _range_type, _pset_type, Expr<_expr_type>>::eval_element_type eval_element_type;
+    typedef typename eval_element_type::element_type element_type;
 
     int proc_number = worldcomm.globalRank();
+
 
     LOG(INFO) << "evaluate expression..." << std::endl;
 
     auto e = evaluate_impl( range, pset, expr, geomap );
     int index=0;
-    double maxe = e.data().size()?e.data().array().abs().maxCoeff(&index):-1e30;
+
+    Eigen::Tensor<Eigen::DenseIndex, 0> arg_max = e.data().abs().argmax();
 
     constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
     Eigen::Matrix<double, nRealDim,1> n;
+
     if ( e.nodes().size() )
-        n = e.nodes().col(index);
+    {
+        std::array<int,4> am_arr;
+        auto dimensions = e.data().dimensions();
+
+        cout << "dimensions = " << dimensions[0] <<", "<< dimensions[1] <<", "<< dimensions[2] <<", "<< dimensions[3] <<", " <<std::endl;
+        int am = arg_max(0);
+
+        if ( element_type::Options&Eigen::RowMajor )
+        {
+            div_t res = std::div( am, (int) (dimensions[3]*dimensions[2]*dimensions[1]) );
+            am_arr[0] = res.quot;
+            res = std::div( res.rem, (int) (dimensions[3]*dimensions[2]) );
+            am_arr[1] = res.quot;
+            res = std::div( res.rem, (int) dimensions[3] );
+            am_arr[2] = res.quot;
+            am_arr[3] = res.rem;
+        }
+        else
+        {
+            div_t res = std::div( am, (int) (dimensions[0]*dimensions[1]*dimensions[2]) );
+            am_arr[3] = res.quot;
+            res = std::div( res.rem, (int) (dimensions[0]*dimensions[1]) );
+            am_arr[2] = res.quot;
+            res = std::div( res.rem, (int) dimensions[0] );
+            am_arr[1] = res.quot;
+            am_arr[0] = res.rem;
+        }
+
+
+        std::cout << "argmax = "<< am << std::endl;
+
+        std::cout << "argmax_array = "<< am_arr[0] <<", "<< am_arr[1] <<", "<< am_arr[2] <<", "<< am_arr[3] <<", " <<std::endl;
+
+        for (int i=0; i<nRealDim; i++ )
+            n[i]=e.nodes()(am_arr[0],am_arr[1],i);
+    }
+
+#if 0
     LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.data().size() << ") is maximal: "<< index << " coord = \n"<<n<<"\n";
 
     int world_size = worldcomm.size();
@@ -718,8 +777,11 @@ BOOST_PARAMETER_FUNCTION(
         }
         LOG_ASSERT( index2 == index ) << " index2 = " << index2 <<  " and index  = " << index << "\n";
     }
+
     LOG(INFO) << "evaluate expression done." << std::endl;
     return normLinfData<nRealDim>( it_max->value(), it_max->arg() );
+#endif
+    return normLinfData<nRealDim>( 1, n );
 }
 
 
@@ -804,7 +866,9 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
-
+    constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
+    Eigen::Matrix<double, nRealDim,2> coords;
+#if 0
     int proc_number = worldcomm.globalRank();
 
     LOG(INFO) << "evaluate minmax(expression)..." << std::endl;
@@ -815,7 +879,7 @@ BOOST_PARAMETER_FUNCTION(
     double mine = e.template get<0>().size()?e.template get<0>().array().minCoeff(&indexmin):1e30;
     double maxe = e.template get<0>().size()?e.template get<0>().array().maxCoeff(&indexmax):-1e30;
 
-    Eigen::Matrix<double, nRealDim,2> n;
+
     Eigen::Matrix<double, nRealDim,1> z = Eigen::Matrix<double, nRealDim,1>::Zero();
     n.col(0) = e.template get<1>().size()?e.template get<1>().col(indexmin):z;
     n.col(1) = e.template get<1>().size()?e.template get<1>().col(indexmax):z;
@@ -845,7 +909,10 @@ BOOST_PARAMETER_FUNCTION(
 
     LOG(INFO) << "evaluate minmax(expression) done." << std::endl;
 
+
     return minmaxData<nRealDim> (boost::make_tuple( it_min->min(), it_max->max(), coords ));
+#endif
+    return minmaxData<nRealDim> (boost::make_tuple( 1, 2, coords ) );
 }
 
 } // vf
