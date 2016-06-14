@@ -130,7 +130,8 @@ public:
     // typedef Bdf<Pdh_type<mesh_type,Order>> bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
     
-private:
+//private:
+protected:
     model_prop_ptrtype M_modelProperties;
     std::string M_prefix;
 
@@ -143,8 +144,10 @@ private:
     M0h_ptr_t M_M0h;
 
     backend_ptrtype M_backend;
+    BlocksBaseGraphCSR M_hdg_graph;
     sparse_matrix_ptrtype M_A;
     sparse_matrix_ptrtype M_A_cst;
+    BlocksBaseVector<double> M_hdg_vec;
     vector_ptrtype M_F;
     BlocksBaseVector<double> M_hdg_sol;
     vector_ptrtype M_U;
@@ -155,7 +158,10 @@ private:
     // time discretization
     bdf_ptrtype M_bdf_mixedpoisson;
     
-    
+    map_scalar_field<2> M_dirichlet;
+    // map_vector_field<Dim,1,2> M_neumann;
+    map_scalar_field<2> M_source;    
+
     int M_tau_order;
     
     bool M_integralCondition;
@@ -167,7 +173,6 @@ private:
     void initGraphs();
     void initGraphsWithIntegralCond();
     void assembleACst();
-    void assembleA();
 
 public:
     linearAssembly_function_type M_updateAssembly;
@@ -184,8 +189,13 @@ public:
                              WorldComm const& worldComm = Environment::worldComm(),
                              std::string const& subPrefix = "",
                              std::string const& rootRepository = ModelBase::rootRepositoryByDefault() ); 
-    
-    void init( mesh_ptrtype mesh = NULL);
+
+    void init( mesh_ptrtype mesh = nullptr, int extraRow = 0, int extraCol = 0);
+    virtual void initModel();
+    virtual void initSpaces();
+    virtual void initGraphs(int extraRow, int extraCol);
+    virtual void initExporter();
+    virtual void assembleA();
     void solve();
     void assembleF();
     void solveNL();
@@ -199,23 +209,29 @@ public:
     // void exportResults();
     void computeError();    
 
+    // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
     Vh_ptr_t fluxSpace() const { return M_Vh; }
     Wh_ptr_t potentialSpace() const { return M_Wh; }
     Mh_ptr_t traceSpace() const { return M_Mh; }
+    M0h_ptr_t traceSpaceOrder0() const { return M_M0h; }
+    Ch_ptr_t constantSpace() const {return M_Ch;}
+    
     Vh_element_ptr_t fluxField() const { return M_up; }
     Wh_element_ptr_t potentialField() const { return M_pp; }
     model_prop_type modelProperties() const { return *M_modelProperties; }
     std::list<std::string> integralMarkersList() const { return M_integralMarkersList; }
-
+    int tau_order() const { return M_tau_order; }
+    backend_ptrtype get_backend() { return M_backend; }
+    
     // time step scheme
-    void createTimeDiscretization() ;
+    virtual void createTimeDiscretization() ;
     bdf_ptrtype timeStepBDF() { return M_bdf_mixedpoisson; }
     bdf_ptrtype const& timeStepBDF() const { return M_bdf_mixedpoisson; }
     boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
     boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
-    void updateTimeStepBDF();
-    void initTimeStep();
+    virtual void updateTimeStepBDF();
+    virtual void initTimeStep();
     void updateTimeStep() { this->updateTimeStepBDF(); }
    
     // Exporter
@@ -350,15 +366,60 @@ MixedPoisson<Dim, Order, G_Order>::MixedPoisson(std::string prefix )
 
 template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh)
+MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh, int extraRow, int extraCol)
 {
     tic();
-
     if ( !mesh )
         M_mesh = loadMesh( new mesh_type);
     else
         M_mesh = mesh;
-    
+    toc("mesh");
+
+    if ( M_prefix.empty())
+        M_backend = backend( _rebuild=true);
+    else
+        M_backend = backend( _name=M_prefix, _rebuild=true);
+
+
+    tic();
+    this->initModel();
+    toc("model");
+
+    tic();
+    this->initSpaces();
+    toc("spaces");
+
+    if(!this->isStationary()){
+        tic();
+        this->createTimeDiscretization();
+        this->initTimeStep();
+        toc("timeDiscretization",true);
+    }
+
+    tic();
+    this->initGraphs(extraRow, extraCol);
+    M_A = M_backend->newBlockMatrix(_block=M_hdg_graph);
+    M_A_cst = M_backend->newBlockMatrix(_block=M_hdg_graph);
+    M_F = M_backend->newBlockVector(_block=M_hdg_vec, _copy_values=false);
+    M_U = M_backend->newBlockVector(_block=M_hdg_sol, _copy_values=false);
+    toc("graphs");
+
+    tic();
+    this->initExporter();
+    toc("exporter");
+
+    tic();
+    this->assembleA();
+    toc("assemble");
+}
+
+template<int Dim, int Order, int G_Order>
+void
+MixedPoisson<Dim, Order, G_Order>::initModel()
+{
+    M_dirichlet = M_modelProperties -> boundaryConditions().getScalarFields( "potential", "Dirichlet");
+    // M_neumann = M_modelProperties -> boundaryConditions().template getVectorFields<Dim> ( "flux", "Neumann" );
+    M_source = M_modelProperties -> boundaryConditions().getScalarFields( "potential", "SourceTerm");
 
     // initialize marker lists for each boundary condition type
     M_integralMarkersList.clear();
@@ -429,8 +490,21 @@ MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh)
             cout << std::endl;
         }
     }
-    
 
+    if ( M_integralMarkersList.empty() )
+        M_integralCondition = false;
+    else
+        M_integralCondition = true;
+    if ( boost::icontains(M_modelProperties->model(),"picard") )
+        M_isPicard = true;
+    else
+        M_isPicard = false;
+}
+
+template<int Dim, int Order, int G_Order>
+void
+MixedPoisson<Dim, Order, G_Order>::initSpaces()
+{
     // Mh only on the faces whitout integral condition
     auto complement_integral_bdy = complement(faces(M_mesh),[this]( auto const& e ) {
             for( auto marker : this->M_integralMarkersList)
@@ -441,81 +515,33 @@ MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh)
             return false; });
     auto face_mesh = createSubmesh( M_mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
 
-    toc("mesh",true);
-    
-
-    if ( M_integralMarkersList.empty() )
-        M_integralCondition = false;
-    else
-        M_integralCondition = true;
-    if ( boost::icontains(M_modelProperties->model(),"picard") )
-        M_isPicard = true;
-    else
-        M_isPicard = false;
-
-    cout << "Model : " << M_modelProperties->model()
-         << " using ";
-    if ( M_integralCondition )
-        cout << "integral condition on the flux and ";
-    if ( M_isPicard )
-        cout << "Picard algorithm" << std::endl;
-    else
-        cout << "linear case" << std::endl;
-
-    // ****** Hybrid-mixed formulation ******
-    // We treat Vh, Wh, and Mh separately
-    tic();
-
     M_Vh = Pdhv<Order>( M_mesh, true );
     M_Wh = Pdh<Order>( M_mesh, true );
     M_Mh = Pdh<Order>( face_mesh, true );
     M_Ch = Pch<0>( M_mesh );
     M_M0h = Pdh<0>( face_mesh, true );
 
-    toc("spaces",true);
+    M_up = M_Vh->elementPtr( "u" );
+    M_pp = M_Wh->elementPtr( "p" );
+
 
     cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
          << "Wh<" << Order << "> : " << M_Wh->nDof() << std::endl
          << "Mh<" << Order << "> : " << M_Mh->nDof() << std::endl;
     if ( M_integralCondition )
         cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
+}
 
-    if ( M_prefix.empty())
-        M_backend = backend( _rebuild=true);
-    else
-        M_backend = backend( _name=M_prefix, _rebuild=true);
 
-    M_up = M_Vh->elementPtr( "u" );
-    M_pp = M_Wh->elementPtr( "p" );
-
-    tic();
-    if(!this->isStationary()){
-        this->createTimeDiscretization();
-        this->initTimeStep();
-    }
-    toc("timeDiscretization",true);
-
-    tic();
-    if ( M_integralCondition )
-        this->initGraphsWithIntegralCond();
-    else
-        this->initGraphs();
-
-    toc("graphs",true);
-
-    tic();
+template<int Dim, int Order, int G_Order>
+void
+MixedPoisson<Dim, Order, G_Order>::initExporter()
+{
     std::string geoExportType="static"; //change_coords_only, change, static
     M_exporter = exporter ( _mesh=this->mesh() ,
                             _name="Export",
                             _geo=geoExportType,
                             _path=this->exporterPath() ); 
-
-    toc("Exporter",true);
-
-    tic();
-    assembleA();
-    toc("assemble A", true);
-
 
 }
 
@@ -549,86 +575,55 @@ MixedPoisson<Dim,Order,G_Order>::createTimeDiscretization()
     this->log("MixedPoisson","createTimeDiscretization", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
-
+// when a derived class need to add extra block,
+// redefine initGraphs by calling the super method
+// and just specify the extra block
 template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order, G_Order>::initGraphs()
+MixedPoisson<Dim, Order, G_Order>::initGraphs(int extraRow, int extraCol)
 {
+    int baseRow = M_integralCondition ? 4 : 3;
+    int baseCol = M_integralCondition ? 4 : 3;
+    M_hdg_graph = BlocksBaseGraphCSR(baseRow+extraRow,baseCol+extraCol);
+    M_hdg_vec = BlocksBaseVector<double>(baseRow+extraRow);
+    M_hdg_sol = BlocksBaseVector<double>(baseCol+extraCol);
+
+    M_hdg_graph(0,0) = stencil( _test=M_Vh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
+    M_hdg_graph(1,0) = stencil( _test=M_Wh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
+    M_hdg_graph(2,0) = stencil( _test=M_Mh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
+
+    M_hdg_graph(0,1) = stencil( _test=M_Vh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
+    M_hdg_graph(1,1) = stencil( _test=M_Wh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
+    M_hdg_graph(2,1) = stencil( _test=M_Mh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
+
+    M_hdg_graph(0,2) = stencil( _test=M_Vh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
+    M_hdg_graph(1,2) = stencil( _test=M_Wh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
+    M_hdg_graph(2,2) = stencil( _test=M_Mh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
+
+    M_hdg_vec(0,0) = M_backend->newVector( M_Vh );
+    M_hdg_vec(1,0) = M_backend->newVector( M_Wh );
+    M_hdg_vec(2,0) = M_backend->newVector( M_Mh );
+
     auto phatp = M_Mh->elementPtr( "phat" );
 
-    BlocksBaseGraphCSR hdg_graph(3,3);
-    hdg_graph(0,0) = stencil( _test=M_Vh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(1,0) = stencil( _test=M_Wh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,0) = stencil( _test=M_Mh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-
-    hdg_graph(0,1) = stencil( _test=M_Vh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(1,1) = stencil( _test=M_Wh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,1) = stencil( _test=M_Mh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-
-    hdg_graph(0,2) = stencil( _test=M_Vh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(1,2) = stencil( _test=M_Wh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,2) = stencil( _test=M_Mh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-
-    M_A = M_backend->newBlockMatrix(_block=hdg_graph);
-    M_A_cst = M_backend->newBlockMatrix(_block=hdg_graph);
-
-    BlocksBaseVector<double> hdg_vec(3);
-    hdg_vec(0,0) = M_backend->newVector( M_Vh );
-    hdg_vec(1,0) = M_backend->newVector( M_Wh );
-    hdg_vec(2,0) = M_backend->newVector( M_Mh );
-    M_F = M_backend->newBlockVector(_block=hdg_vec, _copy_values=false);
-
-    M_hdg_sol = BlocksBaseVector<double>(3);
     M_hdg_sol(0,0) = M_up;
     M_hdg_sol(1,0) = M_pp;
     M_hdg_sol(2,0) = phatp;
-    M_U = M_backend->newBlockVector(_block=M_hdg_sol, _copy_values=false);
-}
 
-template<int Dim, int Order, int G_Order>
-void
-MixedPoisson<Dim, Order, G_Order>::initGraphsWithIntegralCond()
-{
-    auto phatp = M_Mh->elementPtr( "phat" );
-    auto mup = M_Ch->elementPtr( "c1" );
+    if ( M_integralCondition )
+    {
+        M_hdg_graph(3,0) = stencil( _test=M_Ch,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
+        M_hdg_graph(3,1) = stencil( _test=M_Ch,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
+        M_hdg_graph(3,2) = stencil( _test=M_Ch,_trial=M_Mh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+        M_hdg_graph(0,3) = stencil( _test=M_Vh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
+        M_hdg_graph(1,3) = stencil( _test=M_Wh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
+        M_hdg_graph(2,3) = stencil( _test=M_Mh,_trial=M_Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+        M_hdg_graph(3,3) = stencil( _test=M_Ch,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
 
-    BlocksBaseGraphCSR hdg_graph(4,4);
-    hdg_graph(0,0) = stencil( _test=M_Vh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(1,0) = stencil( _test=M_Wh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,0) = stencil( _test=M_Mh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(3,0) = stencil( _test=M_Ch,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-
-    hdg_graph(0,1) = stencil( _test=M_Vh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(1,1) = stencil( _test=M_Wh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,1) = stencil( _test=M_Mh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(3,1) = stencil( _test=M_Ch,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-
-    hdg_graph(0,2) = stencil( _test=M_Vh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(1,2) = stencil( _test=M_Wh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,2) = stencil( _test=M_Mh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(3,2) = stencil( _test=M_Ch,_trial=M_Mh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-
-    hdg_graph(0,3) = stencil( _test=M_Vh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(1,3) = stencil( _test=M_Wh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,3) = stencil( _test=M_Mh,_trial=M_Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(3,3) = stencil( _test=M_Ch,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
-
-    M_A = M_backend->newBlockMatrix(_block=hdg_graph);
-    M_A_cst = M_backend->newBlockMatrix(_block=hdg_graph);
-
-    BlocksBaseVector<double> hdg_vec(4);
-    hdg_vec(0,0) = M_backend->newVector( M_Vh );
-    hdg_vec(1,0) = M_backend->newVector( M_Wh );
-    hdg_vec(2,0) = M_backend->newVector( M_Mh );
-    hdg_vec(3,0) = M_backend->newVector( M_Ch );
-    M_F = M_backend->newBlockVector(_block=hdg_vec, _copy_values=false);
-
-    M_hdg_sol = BlocksBaseVector<double>(4);
-    M_hdg_sol(0,0) = M_up;
-    M_hdg_sol(1,0) = M_pp;
-    M_hdg_sol(2,0) = phatp;
-    M_hdg_sol(3,0) = mup;
-    M_U = M_backend->newBlockVector(_block=M_hdg_sol, _copy_values=false);
+        M_hdg_vec(3,0) = M_backend->newVector( M_Ch );
+        auto mup = M_Ch->elementPtr( "c1" );
+        M_hdg_sol(3,0) = mup;
+    }
 }
 
 template<int Dim, int Order, int G_Order>
@@ -636,7 +631,7 @@ void
 MixedPoisson<Dim, Order, G_Order>::solve()
 {
     tic();
-    // M_modelProperties -> parameters().updateParameterValues();
+    M_modelProperties -> parameters().updateParameterValues();
     updateConductivityTerm();
     assembleF();
     if ( M_updateAssembly != NULL )
@@ -899,13 +894,35 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
     auto rhs1 = form1( _test=M_Wh, _vector=M_F, _rowstart=0);
     auto rhs2 = form1( _test=M_Wh, _vector=M_F, _rowstart=1);
     auto rhs3 = form1( _test=M_Mh, _vector=M_F, _rowstart=2);
+    M_source.setParameterValues( M_modelProperties->parameters().toParameterValues() );
+    if (!this->isStationary())
+        M_source.setParameterValues( {{"t",M_bdf_mixedpoisson->time()}} ); 
+    for ( auto const& s : M_source ){
+	// (f, w)_Omega
+	rhs2 += integrate( _range = markedelements(M_mesh,marker(s)), 
+			   _expr = expression(s)*id(w) );
+        // (p_old,w)_Omega
+        if ( !this->isStationary() ){
+            rhs2 += integrate( _range = markedelements(M_mesh,marker(s)),
+                               _expr = idv(this->timeStepBDF()->polyDeriv()) * id(w));
+        }
+    }
+    // Dirichlet potential BC
+    M_dirichlet.setParameterValues( M_modelProperties->parameters().toParameterValues() );
+    if (!this->isStationary() )
+        M_dirichlet.setParameterValues( {{"t",M_bdf_mixedpoisson->time()}} );
+    for ( auto const& d : M_dirichlet ){
+        // <g_D, mu>_Gamma_D
+        rhs3 += integrate( _range = markedfaces(M_mesh,marker(d)),
+                           _expr = id(l)*expression(d));
 
+    }
     auto itField = M_modelProperties->boundaryConditions().find( "potential");
     if ( itField != M_modelProperties->boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "SourceTerm" );
-        if ( itType != mapField.end() )
+        /*if ( itType != mapField.end() )
         {
             for ( auto const& exAtMarker : (*itType).second )
             {
@@ -921,6 +938,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                 }
             }
         }
+
         itType = mapField.find( "Dirichlet" );
         if ( itType != mapField.end() )
         {
@@ -932,7 +950,8 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                 rhs3 += integrate(_range=markedfaces(M_mesh,marker),
                                   _expr=id(l)*g);
             }
-        }
+        }*/
+
         itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
         {
@@ -1040,7 +1059,7 @@ MixedPoisson<Dim, Order, G_Order>::updateConductivityTerm( bool isNL)
         else
         {
             auto cond = material.getScalar(soption(prefixvm(M_prefix,"conductivityNL_json")), "p", idv(*M_pp));
-            // (sigma(p)^-1 j, v)
+	    // (sigma(p)^-1 j, v)
             a11 += integrate(_range=markedelements(M_mesh,marker),
                              _expr=(trans(idt(u))*id(v))/cond );
         }
@@ -1121,16 +1140,27 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time )
     }
    
     // Export exact solutions
-    auto K = expr(soption(prefixvm(M_prefix,"conductivity_json") ));
-    auto p_exact = expr(soption(prefixvm(M_prefix,"p_exact") ));
-    auto gradp_exact = grad<Dim>(p_exact);
-    auto u_exact = -K*trans(gradp_exact);
-    auto p_exact_proj = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact);
-    auto u_exact_proj = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact);
+    if ( this->isStationary() ){
+	auto K = -10;
+	auto p_exact = expr(soption(prefixvm(M_prefix,"p_exact") ));
+    	auto gradp_exact = grad<Dim>(p_exact);
+	auto u_exact = -K*trans(gradp_exact);
+        
+	/*
+    	for( auto const& pairMat : M_modelProperties->materials() )
+    	{
+             auto marker = pairMat.first;
+             auto material = pairMat.second;
+             auto K = material.getScalar(soption(prefixvm(M_prefix,"conductivity_json")));
+             u_exact = -K*trans(gradp_exact) ;
+	}*/
 
-    M_exporter -> add(prefixvm(M_prefix, "p_exact"), p_exact_proj);
+    	auto p_exact_proj = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact);
+    	auto u_exact_proj = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact);
+   	M_exporter -> step (0) -> add(prefixvm(M_prefix, "p_exact"), p_exact_proj);
 
-    M_exporter -> add(prefixvm(M_prefix, "u_exact"), u_exact_proj);
+	M_exporter -> step (0) -> add(prefixvm(M_prefix, "u_exact"), u_exact_proj);
+    }
 
     M_exporter->save();
 
@@ -1148,12 +1178,20 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time )
 template<int Dim, int Order, int G_Order>
 void
 MixedPoisson<Dim, Order, G_Order>::computeError(){
-    
-    auto K = expr(soption(prefixvm(M_prefix,"conductivity_json") ));
+
+    auto K = 10;
     auto p_exact = expr(soption(prefixvm(M_prefix,"p_exact") ));
     auto gradp_exact = grad<Dim>(p_exact);
     auto u_exact = -K*trans(gradp_exact);
-
+    /*
+    for( auto const& pairMat : M_modelProperties->materials() )
+    {
+         auto marker = pairMat.first;
+         auto material = pairMat.second;
+         auto K = material.getScalar(soption(prefixvm(M_prefix,"conductivity_json")));
+	 u_exact = -K*trans(gradp_exact) ;
+    } */   
+    
     tic();
 
     bool has_dirichlet = nelements(markedfaces(M_mesh,"Dirichlet"),true) >= 1;
