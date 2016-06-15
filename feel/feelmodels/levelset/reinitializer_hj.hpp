@@ -1,6 +1,9 @@
 #ifndef _REINITIALIZER_HJ_HPP
 #define _REINITIALIZER_HJ_HPP 1
 
+#include <feel/feelmodels/levelset/reinitializer.hpp>
+#include <feel/feelmodels/advection/advectionbase.hpp>
+
 namespace Feel
 {
 
@@ -13,7 +16,7 @@ public:
     // Typedefs
     typedef Reinitializer<FunctionSpaceType> super_type;
     typedef ReinitializerHJ<FunctionSpaceType> self_type;
-    typedef boost:shared_ptr<self_type> self_ptrtype;
+    typedef boost::shared_ptr<self_type> self_ptrtype;
 
     typedef FunctionSpaceType functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
@@ -31,17 +34,17 @@ public:
     // Hamilton-Jacobi advection
     template<typename SpaceType>
     class AdvectionHJ
-        : public AdvectionBase<
-            typename SpaceType::convex_type, 
-            typename SpaceType::basis_type, 
+        : public FeelModels::AdvectionBase<
+            typename SpaceType::mesh_type::shape_type, 
+            typename SpaceType::template Basis<0>::type,
             typename SpaceType::periodicity_0_type
           >
         , public boost::enable_shared_from_this< AdvectionHJ<SpaceType> >
     {
     public:
-        typedef AdvectionBase<
-            typename SpaceType::convex_type, 
-            typename SpaceType::basis_type, 
+        typedef FeelModels::AdvectionBase<
+            typename SpaceType::mesh_type::shape_type, 
+            typename SpaceType::template Basis<0>::type,
             typename SpaceType::periodicity_0_type
           > super_type;
 
@@ -90,8 +93,8 @@ public:
     int maxIterations() const { return M_maxIterations; }
     void setMaxIterations( int max ) { M_maxIterations = max; }
 
-    double heavisideThickness const { return M_heavisideThickness; }
-    void setHeavisideThickness ( double eps ) { M_heavisideThickness = eps; }
+    double heavisideThickness() const { return M_heavisideThickness; }
+    void setHeavisideThickness( double eps ) { M_heavisideThickness = eps; }
     //--------------------------------------------------------------------//
     // Run reinitialization
     element_type run( element_type const& phi );
@@ -163,7 +166,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
         M_advectionHJ->updateSourceAdded( Sign );
         // Update advection velocity
         auto beta = Sign * trans(gradv(phi_reinit)) / vf::max( vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit))), 0.92 );
-        M_advection->updateAdvectionVelocity( beta );
+        M_advectionHJ->updateAdvectionVelocity( beta );
 
         // Solve
         M_advectionHJ->solve();
@@ -184,7 +187,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
 
         if ( (i!=0) && (relativeRateChangePhiL2 <= M_tolerance ) )
         {
-            LOG(INFO) << "stop Hamilton Jacobi iterations because tolerence threshold has been reached\n";
+            LOG(INFO) << "stop Hamilton Jacobi iterations because tolerance threshold has been reached\n";
             LOG(INFO) << "relative rate of change = " << relativeRateChangePhiL2 << std::endl;
             break;
         }
@@ -194,7 +197,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
         rateChangePhiL2o = rateChangePhiL2;
     }
 
-    Feel::cout << "reinit done in " << __iter - start_iter << " iter\n";
+    //Feel::cout << "reinit done in " << __iter - start_iter << " iter\n";
     Feel::cout << "final relative rate of change = " << relativeRateChangePhiL2 << std::endl;
 
     return M_advectionHJ->fieldSolution();
@@ -205,9 +208,9 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
 //--------------------------------------------------------------------//
 // Hamilton-Jacobi advection
 #define ADVECTIONHJ_CLASS_TEMPLATE_DECLARATIONS \
-    template<typename ConvexType, typename BasisAdvectionType, typename PeriodicityType>
+    template<typename SpaceType>
 #define ADVECTIONHJ_CLASS_TEMPLATE_TYPE \
-    AdvectionHJ<ConvexType, BasisAdvectionType, PeriodicityType>
+    AdvectionHJ<SpaceType>
 
 REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS
 ADVECTIONHJ_CLASS_TEMPLATE_DECLARATIONS
@@ -221,7 +224,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::ADVECTIONHJ_CLASS_TEMPLATE_TYPE::AdvectionH
 
 REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS
 ADVECTIONHJ_CLASS_TEMPLATE_DECLARATIONS
-REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::ADVECTIONHJ_CLASS_TEMPLATE_TYPE::self_ptrtype
+typename REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::template ADVECTIONHJ_CLASS_TEMPLATE_TYPE::self_ptrtype
 REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::ADVECTIONHJ_CLASS_TEMPLATE_TYPE::New(
         functionspace_ptrtype const& space,
         std::string const& prefix )
