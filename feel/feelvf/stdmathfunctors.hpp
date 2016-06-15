@@ -236,12 +236,12 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         template<typename... TheExpr>                                      \
         struct Lambda                                                   \
         {                                                               \
-            typedef VF_FUNC_NAME( O )<TheExpr...> type;                    \
+            typedef VF_FUNC_NAME( O )<typename ExprT1::template Lambda<TheExpr...>::type> type; \
         };                                                              \
                                                                         \
         template<typename... TheExpr>                                        \
-            typename Lambda<TheExpr...>::type                               \
-        operator()( TheExpr... e ) { return VF_FUNC_NAME(O)<TheExpr...>( e... ); } \
+            typename Lambda<TheExpr...>::type                           \
+        operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr_1( e... ) ); } \
                                                                         \
                                                                         \
         expression_1_type const& expression() const { return M_expr_1; } \
@@ -434,12 +434,12 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         template<typename... TheExpr>                                   \
         struct Lambda                                                   \
         {                                                               \
-            typedef VF_FUNC_NAME( O )<TheExpr...> type;                    \
+            typedef VF_FUNC_NAME( O )<typename ExprT1::template Lambda<TheExpr...>::type, typename ExprT2::template Lambda<TheExpr...>::type > type; \
         };                                                              \
                                                                         \
         template<typename... TheExpr>                                        \
             typename Lambda<TheExpr...>::type                               \
-        operator()( TheExpr... e ) { return VF_FUNC_NAME(O)<TheExpr...>( e... ); } \
+        operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr_1( e... ), M_expr_2( e... ) ); } \
                                                                         \
                                                                         \
         expression_1_type const& expression1() const { return M_expr_1; } \

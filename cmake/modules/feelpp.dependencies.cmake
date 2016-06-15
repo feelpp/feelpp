@@ -1005,6 +1005,8 @@ if ( FEELPP_ENABLE_VTK )
     else()
         FIND_PACKAGE(VTK)
         if( VTK_FOUND )
+            include(${VTK_USE_FILE})
+
             set(FEELPP_HAS_VTK 1)
             MESSAGE(STATUS "[feelpp] Found VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")# ${VTK_LIBRARIES}")
 
@@ -1033,9 +1035,9 @@ if ( FEELPP_ENABLE_VTK )
                 unset(__test_vtk_parallel)
             endif() 
 
-            if ( NOT FEELPP_ENABLE_OPENGL )
-                SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
-            endif()
+            #if ( NOT FEELPP_ENABLE_OPENGL )
+                #SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
+            #endif()
             INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
             MARK_AS_ADVANCED( VTK_DIR )
 

@@ -1,5 +1,6 @@
 #include <feel/feel.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
+#include <feel/feelmodels/modelproperties.hpp>
 
 #define curl_op curl
 #define curlt_op curlt
@@ -24,22 +25,12 @@ inline
 AboutData
 makeAbout()
 {
-#if FEELPP_DIM==2
-    AboutData about( "precAFP2D" ,
-                     "precAFP2D" ,
+    AboutData about( "ams" ,
+                     "ams" ,
                      "0.1",
-                     "test precAFP2D",
+                     "test ams",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2015 Feel++ Consortium" );
-#else
-    AboutData about( "precAFP3D" ,
-                     "precAFP3D" ,
-                     "0.1",
-                     "test precAFP3D",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2015 Feel++ Consortium" );
-#endif
-
     about.addAuthor( "Vincent HUBER", "developer", "vincent.huber@cemosis.fr", "" );
 
     return about;
@@ -68,6 +59,10 @@ int main( int argc, char** argv )
 
   auto a = form2(_test=Xh, _trial=Xh);
   auto l = form1( Xh );
+  
+  ModelProperties model;
+  map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { model.boundaryConditions().getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" )};
+  map_vector_field<FEELPP_DIM,1,2> m_weak_u { model.boundaryConditions().getVectorFields<FEELPP_DIM> ( "u", "Weakdir" ) };
 
   a = integrate(_range=elements(mesh),
       _expr = 
@@ -76,13 +71,16 @@ int main( int argc, char** argv )
       );
   l = integrate(_range=elements(mesh),
       _expr = inner(expr<3,1>(soption("functions.j")),id(v)));
-  a += on(_range=boundaryfaces(mesh),
-      _expr=expr<3,1>(soption("functions.u")),
+  for(auto it : m_dirichlet_u)
+  {
+    LOG(INFO) << it.second << " on " << it.first << "\n";
+  a += on(_range=markedfaces(mesh,it.first),
+      _expr=it.second,
       _rhs=l,
       _element=u,
       _type="elimination_symmetric"
       );
-
+  }
   auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption("ms.pc-type")),
       _backend=backend(_name="ms"),
       _prefix="ms",
@@ -128,5 +126,14 @@ int main( int argc, char** argv )
       prec->attachAuxiliarySparseMatrix("a_beta",NULL);
   }
   a.solveb(_rhs=l, _solution=u, _backend=backend(_name="ms"), _prec=prec);
+  
+  if(boption("exporter.export"))
+  {
+    auto ue = vf::project(_space=Xh,_range=elements(mesh), _expr=expr<3,1>(soption("functions.u")));
+    auto e=exporter(_mesh = mesh );
+    e->add("u",u);
+    e->add("ue",ue);
+    e->save();
+  }
 
 }
