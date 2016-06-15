@@ -341,11 +341,37 @@ advection_options(std::string const& prefix)
 }
 
 Feel::po::options_description
+reinitializer_fm_options(std::string const& prefix)
+{
+    Feel::po::options_description reinitializerFMOptions("ReinitializerFM options");
+    reinitializerFMOptions.add_options()
+        (prefixvm(prefix,"use-marker2-as-done").c_str(), Feel::po::value<bool>()->default_value( false ), "use marker2 to mark initially done elements in fast-marching algorithm")
+        ;
+
+    return reinitializerFMOptions;
+}
+
+Feel::po::options_description
+reinitializer_hj_options(std::string const& prefix)
+{
+    Feel::po::options_description reinitializerHJOptions("ReinitializerHJ options");
+    reinitializerHJOptions.add_options()
+        (prefixvm(prefix,"tol").c_str(), Feel::po::value<double>()->default_value( 0.03 ), "tolerance on residual to \"distance function\" of HJ reinitialized level set")
+        (prefixvm(prefix,"max-iter").c_str(), Feel::po::value<int>()->default_value( 15 ), "maximum number of iterations for Hamilton-Jacobi reinitialization")
+        (prefixvm(prefix,"thickness-heaviside").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "thickness of the interface (support for Heaviside used to compute sign function)")
+        ;
+
+    reinitializerHJOptions.add( advection_options( prefix ) );
+
+    return reinitializerHJOptions;
+}
+
+Feel::po::options_description
 levelset_options(std::string const& prefix)
 {
     Feel::po::options_description levelsetOptions("Levelset options");
     levelsetOptions.add_options()
-        (prefixvm(prefix,"fm-use-markerdirac").c_str(), Feel::po::value<bool>()->default_value( false ), "use markerDirac to mark initially done elements in fast-marching")
+        //(prefixvm(prefix,"fm-use-markerdirac").c_str(), Feel::po::value<bool>()->default_value( false ), "use markerDirac to mark initially done elements in fast-marching")
         (prefixvm(prefix,"fm-smooth-coeff").c_str(), Feel::po::value<double>()->default_value(-1.), "smoothing coefficient for interface local projection, if <0 nodal projection is done instead")
         (prefixvm(prefix,"use-regularized-phi").c_str(), Feel::po::value<bool>()->default_value( false ), "use grad(phi)/|grad(phi)| to evaluate Dirac and Heaviside functions")
         (prefixvm(prefix,"h-d-nodal-proj").c_str(), Feel::po::value<bool>()->default_value( true ), "use nodal projection to compute dirac and heaviside functions (if false, use L2 projection)")
@@ -358,6 +384,8 @@ levelset_options(std::string const& prefix)
     levelsetOptions
         .add( advection_options( prefix ) )
         .add( backend_options( prefixvm(prefix, "ls-smooth") ) )
+        .add( reinitializer_fm_options( prefixvm(prefix, "reinit-fm") ) )
+        .add( reinitializer_hj_options( prefixvm(prefix, "reinit-hj") ) )
         ;
 
     return levelsetOptions;

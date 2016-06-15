@@ -307,7 +307,7 @@ public:
     // ------------ setters -------------
     void setStrategyBeforeFm( int strat = 1 );
     strategy_before_FM_type strategyBeforeFm() { return M_strategyBeforeFM; }
-    void setUseMarker2AsMarkerDoneFmm( bool val=true ) { M_useMarker2AsMarkerDoneFmm = val; }
+    void setUseMarkerDiracAsMarkerDoneFM( bool val = true ) { M_useMarkerDiracAsMarkerDoneFM  = val; }
     void setThicknessInterface( double value ) { M_thicknessInterface = value; }
 
     // ------------------- projectors ----------------
@@ -446,7 +446,7 @@ private:
     //int M_reinitEvery;
     LevelSetReinitMethod M_reinitMethod;
     strategy_before_FM_type M_strategyBeforeFM;
-    bool M_useMarker2AsMarkerDoneFmm;
+    bool M_useMarkerDiracAsMarkerDoneFM;
     //int M_hjMaxIter;
     //double M_hjDtau;
     //double M_hjTol;
