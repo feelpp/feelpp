@@ -622,6 +622,30 @@ BOOST_PARAMETER_FUNCTION(
     LOG(INFO) << "evaluate expression done." << std::endl;
 }
 
+template<typename Dimensions>
+std::array<int,2> indices2Array( const int& index, const Dimensions& dimensions, const int options )
+{
+    std::array<int,2> out;
+
+    if ( options&Eigen::RowMajor )
+    {
+        div_t res = std::div( index, (int) (dimensions[3]*dimensions[2]*dimensions[1]) );
+        out[0] = res.quot;
+        res = std::div( res.rem, (int) (dimensions[3]*dimensions[2]) );
+        out[1] = res.quot;
+    }
+    else
+    {
+        div_t res = std::div( index, (int) (dimensions[0]*dimensions[1]*dimensions[2]) );
+        res = std::div( res.rem, (int) (dimensions[0]*dimensions[1]) );
+        res = std::div( res.rem, (int) dimensions[0] );
+        out[1] = res.quot;
+        out[0] = res.rem;
+    }
+
+    return out;
+}
+
 /**
  * \brief data returned by normLinf
  */
@@ -696,62 +720,42 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename eval_element_type::element_type element_type;
 
     int proc_number = worldcomm.globalRank();
+    int world_size = worldcomm.size();
+    constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
 
 
     LOG(INFO) << "evaluate expression..." << std::endl;
 
     auto e = evaluate_impl( range, pset, expr, geomap );
-    int index=0;
 
-    Eigen::Tensor<Eigen::DenseIndex, 0> arg_max = e.data().abs().argmax();
-
-    constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
+    int index = 0;
+    double maxe = 1e-30;
     Eigen::Matrix<double, nRealDim,1> n;
+
+    if ( e.data().size() )
+    {
+        Eigen::Tensor<Eigen::DenseIndex, 0> arg_max =  e.data().abs().argmax() ;
+        index = arg_max(0);
+        maxe = std::abs( e.data()(index) );
+    }
 
     if ( e.nodes().size() )
     {
-        std::array<int,4> am_arr;
         auto dimensions = e.data().dimensions();
+        auto ids = indices2Array( index, dimensions, element_type::Options );
 
-        cout << "dimensions = " << dimensions[0] <<", "<< dimensions[1] <<", "<< dimensions[2] <<", "<< dimensions[3] <<", " <<std::endl;
-        int am = arg_max(0);
-
-        if ( element_type::Options&Eigen::RowMajor )
-        {
-            div_t res = std::div( am, (int) (dimensions[3]*dimensions[2]*dimensions[1]) );
-            am_arr[0] = res.quot;
-            res = std::div( res.rem, (int) (dimensions[3]*dimensions[2]) );
-            am_arr[1] = res.quot;
-            res = std::div( res.rem, (int) dimensions[3] );
-            am_arr[2] = res.quot;
-            am_arr[3] = res.rem;
-        }
-        else
-        {
-            div_t res = std::div( am, (int) (dimensions[0]*dimensions[1]*dimensions[2]) );
-            am_arr[3] = res.quot;
-            res = std::div( res.rem, (int) (dimensions[0]*dimensions[1]) );
-            am_arr[2] = res.quot;
-            res = std::div( res.rem, (int) dimensions[0] );
-            am_arr[1] = res.quot;
-            am_arr[0] = res.rem;
-        }
-
-
-        std::cout << "argmax = "<< am << std::endl;
-
-        std::cout << "argmax_array = "<< am_arr[0] <<", "<< am_arr[1] <<", "<< am_arr[2] <<", "<< am_arr[3] <<", " <<std::endl;
+        int elem_id=ids[0];
+        int pt_id=ids[1];
 
         for (int i=0; i<nRealDim; i++ )
-            n[i]=e.nodes()(am_arr[0],am_arr[1],i);
+            n[i]=e.nodes()( elem_id, pt_id ,i );
     }
 
-#if 0
-    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.data().size() << ") is maximal: "<< index << " coord = \n"<<n<<"\n";
+    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.data().size() << ") is maximal: "<< index << " coord = \n"<< n <<"\n";
 
-    int world_size = worldcomm.size();
     std::vector<normLinfData<nRealDim>> D_world( world_size );
     normLinfData<nRealDim> D( maxe, n );
+
     mpi::all_gather( worldcomm.globalComm(),
                      D,
                      D_world );
@@ -759,6 +763,7 @@ BOOST_PARAMETER_FUNCTION(
     auto it_max = std::max_element( D_world.begin() , D_world.end(),
                                     []( auto const& d1, auto const& d2 )
                                     { return d1.value() < d2.value(); } );
+
     int position = it_max - D_world.begin();
     LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<it_max->value()<<" at position "<<position<<" with coord : \n "<<it_max->arg()<<"\n";
 
@@ -767,11 +772,11 @@ BOOST_PARAMETER_FUNCTION(
     {
         int index2=0;
         double maxe2 = 0;
-        for( int i = 0; i < e.size(); ++i )
+        for( int i = 0; i < e.data().size(); ++i )
         {
-            if ( math::abs(e(i)) > maxe2 )
+            if ( math::abs(e.data()(i) ) > maxe2 )
             {
-                maxe2 = math::abs(e(i));
+                maxe2 = math::abs(e.data()(i));
                 index2 = i;
             }
         }
@@ -780,8 +785,7 @@ BOOST_PARAMETER_FUNCTION(
 
     LOG(INFO) << "evaluate expression done." << std::endl;
     return normLinfData<nRealDim>( it_max->value(), it_max->arg() );
-#endif
-    return normLinfData<nRealDim>( 1, n );
+
 }
 
 
@@ -866,37 +870,68 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
+    typedef typename detail::clean_type<Args,tag::expr>::type _expr_type;
+    typedef typename detail::clean_type<Args,tag::pset>::type _pset_type;
+    typedef typename detail::clean_type<Args,tag::range>::type _range_type;
+    typedef typename details::Evaluator<EVAL_NODAL, _range_type, _pset_type, Expr<_expr_type>>::eval_element_type eval_element_type;
+    typedef typename eval_element_type::element_type element_type;
+
     constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
-    Eigen::Matrix<double, nRealDim,2> coords;
-#if 0
     int proc_number = worldcomm.globalRank();
 
     LOG(INFO) << "evaluate minmax(expression)..." << std::endl;
-    constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
     auto e = evaluate_impl( range, pset, expr, geomap );
-    int indexmin=0;
-    int indexmax=0;
-    double mine = e.template get<0>().size()?e.template get<0>().array().minCoeff(&indexmin):1e30;
-    double maxe = e.template get<0>().size()?e.template get<0>().array().maxCoeff(&indexmax):-1e30;
 
+    int indexmin = 0;
+    int indexmax = 0;
+    double mine = 1e-30;
+    double maxe = 1e-30;
 
-    Eigen::Matrix<double, nRealDim,1> z = Eigen::Matrix<double, nRealDim,1>::Zero();
-    n.col(0) = e.template get<1>().size()?e.template get<1>().col(indexmin):z;
-    n.col(1) = e.template get<1>().size()?e.template get<1>().col(indexmax):z;
-    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is minimal: "<< indexmin << " coord = \n"<<n.col(0)<<"\n";
-    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is maximal: "<< indexmax << " coord = \n"<<n.col(1)<<"\n";
+    if ( e.data().size() )
+    {
+        Eigen::Tensor<Eigen::DenseIndex, 0> arg_max = e.data().argmax() ;
+        Eigen::Tensor<Eigen::DenseIndex, 0> arg_min = e.data().argmin() ;
+
+        indexmin = arg_min(0);
+        indexmax = arg_max(0);
+        mine = e.data()(indexmin);
+        maxe = e.data()(indexmax);
+    }
+
+    Eigen::Matrix<double, nRealDim,2> n = Eigen::Matrix<double, nRealDim,2>::Zero();
+
+    if ( e.nodes().size() )
+    {
+        auto dimensions = e.data().dimensions();
+        const int options = element_type::Options;
+
+        auto ids = indices2Array( indexmin, dimensions, options );
+        int elem_id=ids[0];
+        int pt_id=ids[1];
+        for (int i=0; i<nRealDim; i++ )
+            n(i,0)=e.nodes()( elem_id, pt_id ,i );
+
+        ids = indices2Array( indexmax, dimensions, options );
+        elem_id=ids[0];
+        pt_id=ids[1];
+        for (int i=0; i<nRealDim; i++ )
+            n(i,1)=e.nodes()( elem_id, pt_id ,i );
+    }
+
+    LOG(INFO) << "proc "<<proc_number <<" index at which function (size: " << e.data().size() << ") is minimal: " << indexmin << " coord = \n"<<n.col(0)<<"\n";
+    LOG(INFO) << "proc "<<proc_number <<" index at which function (size: " << e.data().size() << ") is maximal: " << indexmax << " coord = \n"<<n.col(1)<<"\n";
 
     int world_size = worldcomm.size();
     minmaxData<nRealDim> D( boost::make_tuple( mine, maxe, n) );
     std::vector<minmaxData<nRealDim>> D_world( world_size );
-    mpi::all_gather( worldcomm.globalComm(),D,D_world );
+    mpi::all_gather( worldcomm.globalComm(), D, D_world );
 
     auto it_min = std::min_element( D_world.begin() , D_world.end(),
                                     []( auto const& d1, auto const& d2 )
                                     { return d1.min() < d2.min(); } );
-
     int positionmin = it_min - D_world.begin();
     LOG(INFO)<<"proc "<<proc_number<<" : global min = "<<it_min->min()<<" at position "<<positionmin<<" with coord : \n "<< it_min->argmin()<<"\n";
+
     auto it_max = std::max_element( D_world.begin() , D_world.end(),
                                     []( auto const& d1, auto const& d2 )
                                     { return d1.max() < d2.max(); } );
@@ -909,10 +944,7 @@ BOOST_PARAMETER_FUNCTION(
 
     LOG(INFO) << "evaluate minmax(expression) done." << std::endl;
 
-
     return minmaxData<nRealDim> (boost::make_tuple( it_min->min(), it_max->max(), coords ));
-#endif
-    return minmaxData<nRealDim> (boost::make_tuple( 1, 2, coords ) );
 }
 
 } // vf
