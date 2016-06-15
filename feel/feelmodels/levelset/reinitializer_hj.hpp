@@ -81,9 +81,13 @@ public:
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     // Constructor
-    ReinitializerHJ( functionspace_ptrtype const& space );
+    ReinitializerHJ( 
+            functionspace_ptrtype const& space,
+            std::string const& prefix = "" );
     //--------------------------------------------------------------------//
     // Parameters
+    void loadParametersFromOptionsVm();
+
     double tolerance() const { return M_tolerance; }
     void setTolerance( double tol ) { M_tolerance = tol; }
     
@@ -113,11 +117,24 @@ private:
     ReinitializerHJ<FunctionSpaceType>
 
 REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS
-REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::ReinitializerHJ( functionspace_ptrtype const& space )
-    : super_type( space )
+REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::ReinitializerHJ( 
+        functionspace_ptrtype const& space,
+        std::string const& prefix )
+    : super_type( space, prefix )
 {
-    M_advectionHJ = advectionhj_type::New( space );
+    this->loadParametersFromOptionsVm();
+
+    M_advectionHJ = advectionhj_type::New( space, prefix );
     M_advectionHJ->init();
+}
+
+REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS
+void
+REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
+{
+    M_tolerance = doption( _name="tol", _prefix=this->prefix() );
+    M_maxIterations = ioption( _name="max-iter", _prefix=this->prefix() );
+    M_heavisideThickness = doption( _name="thickness-heaviside", _prefix=this->prefix() );
 }
 
 REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS

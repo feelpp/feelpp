@@ -33,25 +33,24 @@ public:
     
     //--------------------------------------------------------------------//
     // Constructor/Destructor
-    Reinitializer( functionspace_ptrtype const& space ) : 
+    Reinitializer( 
+            functionspace_ptrtype const& space,
+            std::string const& prefix ) : 
         M_space(space),
         M_periodicity(boost::fusion::at_c<0>(space->periodicity())),
-        M_useMarker2AsMarkerDone(false)
+        M_prefix(prefix)
         {}
     virtual ~Reinitializer() = default;
 
     //static reinitializer_ptrtype build( std::string const& type, std::string const& prefix="" );
     //--------------------------------------------------------------------//
     //ReinitializerType type() const { return M_reinitializerType; }
+    std::string const& prefix() const { return M_prefix; }
+
+    virtual void loadParametersFromOptionsVm() {}
     //--------------------------------------------------------------------//
     functionspace_ptrtype const& functionSpace() const { return M_space; }
     mesh_ptrtype const& mesh() const { return M_space->mesh(); }
-    //--------------------------------------------------------------------//
-    // Options
-    // FM
-    void setUseMarker2AsMarkerDone( bool val = true ) { M_useMarker2AsMarkerDone = val; }
-    bool useMarker2AsMarkerDone() const { return M_useMarker2AsMarkerDone; }
-    // HJ
     //--------------------------------------------------------------------//
     // Run reinitialization
     virtual element_type run( element_type const& phi ) =0;
@@ -64,7 +63,7 @@ protected:
     functionspace_ptrtype M_space;
     periodicity_type M_periodicity;
 
-    bool M_useMarker2AsMarkerDone;
+    std::string M_prefix;
 };
 
 } // Feel

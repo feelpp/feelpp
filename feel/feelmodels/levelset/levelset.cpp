@@ -142,8 +142,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
         case LevelSetReinitMethod::FM :
         {
             M_reinitializer.reset( 
-                    new ReinitializerFM<space_levelset_type>( this->functionSpace() ) 
+                    new ReinitializerFM<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-fm") ) 
                     );
+
+            M_useMarkerDiracAsMarkerDoneFM = 
+                boost::dynamic_pointer_cast<ReinitializerFM<space_levelset_type>>( M_reinitializer )->useMarker2AsMarkerDone();
 
             if( M_strategyBeforeFM == ILP )
             {
@@ -161,7 +164,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
         case LevelSetReinitMethod::HJ :
         {
             M_reinitializer.reset(
-                    new ReinitializerHJ<space_levelset_type>( this->functionSpace() )
+                    new ReinitializerHJ<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-hj") )
                     );
         }
         break;
@@ -336,7 +339,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     //M_enableReinit = boption(prefixvm(this->prefix(),"enable-reinit"));
     //M_reinitEvery = ioption(prefixvm(this->prefix(),"reinit-every"));
-    M_useMarker2AsMarkerDoneFmm = boption(prefixvm(this->prefix(),"fm-use-markerdirac"));
+    //M_useMarker2AsMarkerDoneFmm = boption(prefixvm(this->prefix(),"fm-use-markerdirac"));
     //hj_max_iter = ioption(prefixvm(this->prefix(),"hj-max-iter"));
     //hj_dtau = doption(prefixvm(this->prefix(),"hj-dtau"));
     //hj_tol = doption(prefixvm(this->prefix(),"hj-tol"));
@@ -597,7 +600,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
     if ( M_reinitMethod == LevelSetReinitMethod::FM )
     {
-        if ( M_useMarker2AsMarkerDoneFmm )
+        if ( M_useMarkerDiracAsMarkerDoneFM )
         {
             this->mesh()->updateMarker2( *this->markerDirac() );
         }
@@ -631,17 +634,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
             break;
         } // switch M_strategyBeforeFM
 
-
         // Fast Marching Method
-        M_reinitializer->setUseMarker2AsMarkerDone( M_useMarker2AsMarkerDoneFmm );
+        //boost::dynamic_pointer_cast<ReinitializerFM<space_levelset_type>>( M_reinitializer )->setUseMarker2AsMarkerDone( M_useMarker2AsMarkerDoneFmm );
 
         LOG(INFO)<< "reinit with FMM done"<<std::endl;
-
     } // Fast Marching
 
     else if ( M_reinitMethod == LevelSetReinitMethod::HJ )
     {
-        CHECK(false) << "TODO\n";
         //ch.restart();
         //*phi = *explicitHJ(max_iter, dtau, tol);
         //LOG(INFO)<<"reinit done in "<<ch.elapsed()<<" s\n";

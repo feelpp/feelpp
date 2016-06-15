@@ -56,10 +56,18 @@ public:
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     // Constructor
-    ReinitializerFM( functionspace_ptrtype const& space );
+    ReinitializerFM( 
+            functionspace_ptrtype const& space,
+            std::string const& prefix = "" );
     //--------------------------------------------------------------------//
     // Run reinitialization
     element_type run( element_type const& phi );
+    //--------------------------------------------------------------------//
+    // Parameters
+    void loadParametersFromOptionsVm();
+
+    void setUseMarker2AsMarkerDone( bool val = true ) { M_useMarker2AsMarkerDone = val; }
+    bool useMarker2AsMarkerDone() const { return M_useMarker2AsMarkerDone; }
 
 private:
     template<typename FST>
@@ -140,12 +148,20 @@ private:
     typedef boost::shared_ptr<reinitializerFMS_type> reinitializerFMS_ptrtype;
 
     reinitializerFMS_ptrtype M_reinitializerFMS;
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
+    // Options
+    bool M_useMarker2AsMarkerDone;
 };
 
 template<typename FunctionSpaceType>
-ReinitializerFM<FunctionSpaceType>::ReinitializerFM( functionspace_ptrtype const& space )
-    : super_type( space )
+ReinitializerFM<FunctionSpaceType>::ReinitializerFM( 
+        functionspace_ptrtype const& space,
+        std::string const& prefix )
+    : super_type( space, prefix )
 {
+    this->loadParametersFromOptionsVm();
     this->init<FunctionSpaceType>( space );
 }
 
@@ -154,6 +170,13 @@ typename ReinitializerFM<FunctionSpaceType>::element_type
 ReinitializerFM<FunctionSpaceType>::run( element_type const& phi )
 {
     return run_impl<FunctionSpaceType>( phi );
+}
+
+template<typename FunctionSpaceType>
+void
+ReinitializerFM<FunctionSpaceType>::loadParametersFromOptionsVm()
+{
+    M_useMarker2AsMarkerDone = boption( _name="use-marker2-as-done", _prefix=this->prefix() );
 }
 
 // Init if using own reinit P1 space
