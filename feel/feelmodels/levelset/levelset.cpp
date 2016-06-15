@@ -2,6 +2,7 @@
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/levelset/reinitializer_fm.hpp>
+#include <feel/feelmodels/levelset/reinitializer_hj.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -159,7 +160,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
         break;
         case LevelSetReinitMethod::HJ :
         {
-            // TODO
+            M_reinitializer.reset(
+                    new ReinitializerHJ<space_levelset_type>( this->functionSpace() )
+                    );
         }
         break;
     }
@@ -590,14 +593,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
     if( !M_reinitializerIsUpdatedForUse )
         this->createReinitialization();
 
+    auto phi = this->phi();
+
     if ( M_reinitMethod == LevelSetReinitMethod::FM )
     {
         if ( M_useMarker2AsMarkerDoneFmm )
         {
             this->mesh()->updateMarker2( *this->markerDirac() );
         }
-
-        auto phi = this->phi();
 
         switch (M_strategyBeforeFM)
         {
@@ -631,7 +634,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
         // Fast Marching Method
         M_reinitializer->setUseMarker2AsMarkerDone( M_useMarker2AsMarkerDoneFmm );
-        *phi = M_reinitializer->run( *phi );
 
         LOG(INFO)<< "reinit with FMM done"<<std::endl;
 
@@ -643,7 +645,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
         //ch.restart();
         //*phi = *explicitHJ(max_iter, dtau, tol);
         //LOG(INFO)<<"reinit done in "<<ch.elapsed()<<" s\n";
-    } //HJ explicit
+    } // Hamilton-Jacobi
+
+    *phi = M_reinitializer->run( *phi );
 
     M_iterSinceReinit=0;
 }
