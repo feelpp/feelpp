@@ -104,7 +104,7 @@ public:
     };
     template<typename... TheExpr>
     typename Lambda<TheExpr...>::type
-    operator()( TheExpr... e  ) { return trans(M_expr(e...)); }
+    operator()( TheExpr... e  ) { return typename Lambda<TheExpr...>::type( M_expr(e...) ); }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
