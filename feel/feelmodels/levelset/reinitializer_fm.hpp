@@ -1,6 +1,7 @@
 #ifndef _REINITIALIZER_FM_HPP
 #define _REINITIALIZER_FM_HPP 1
 
+#include <feel/feelmodels/levelset/reinitializer.hpp>
 #include <feel/feells/reinit_fms_impl.hpp>
 
 namespace Feel
