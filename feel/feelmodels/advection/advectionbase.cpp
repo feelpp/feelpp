@@ -854,35 +854,6 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F )
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
-// Advection velocity update
-ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
-template<typename ExprT>
-void
-ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr)
-{
-    M_exprAdvectionVelocity.reset(); // remove symbolic expr
-    M_fieldAdvectionVelocity->on(_range=elements(this->mesh()), _expr=v_expr );
-}
-//----------------------------------------------------------------------------//
-//----------------------------------------------------------------------------//
-//----------------------------------------------------------------------------//
-// Source update
-ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
-template<typename ExprT>
-void 
-ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateSourceAdded(vf::Expr<ExprT> const& f_expr)
-{
-    if (!M_fieldSource)
-    {
-        M_fieldSource.reset( new element_advection_type(M_Xh, "SourceAdded") );
-    }
-    M_fieldSource->on(_range=elements( this->mesh() ), _expr=f_expr );
-    M_hasSourceAdded=true;
-}
-
-//----------------------------------------------------------------------------//
-//----------------------------------------------------------------------------//
-//----------------------------------------------------------------------------//
 // Solve
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
