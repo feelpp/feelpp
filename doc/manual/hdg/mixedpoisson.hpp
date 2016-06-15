@@ -1,5 +1,5 @@
-#ifndef _ADVECTION_HPP
-#define _ADVECTION_HPP 
+#ifndef _MIXEDPOISSON_HPP
+#define _MIXEDPOISSON_HPP 
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
@@ -196,8 +196,8 @@ public:
     virtual void initGraphs(int extraRow, int extraCol);
     virtual void initExporter();
     virtual void assembleA();
+    virtual void assembleF();
     void solve();
-    void assembleF();
     void solveNL();
     template<typename ExprT>
     void updateConductivityTerm( Expr<ExprT> expr, std::string marker = "");
@@ -206,7 +206,6 @@ public:
     void updatePotentialRHS( Expr<ExprT> expr, std::string marker = "");
     template<typename ExprT>
     void updateFluxRHS( Expr<ExprT> expr, std::string marker = "");
-    // void exportResults();
     void computeError();    
 
     // Get Methods
@@ -219,8 +218,10 @@ public:
     
     Vh_element_ptr_t fluxField() const { return M_up; }
     Wh_element_ptr_t potentialField() const { return M_pp; }
+    model_prop_type modelProperties() { return *M_modelProperties; }
     model_prop_type modelProperties() const { return *M_modelProperties; }
     std::list<std::string> integralMarkersList() const { return M_integralMarkersList; }
+    bool integralCondition() const { return M_integralCondition; }
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
     
@@ -235,9 +236,10 @@ public:
     void updateTimeStep() { this->updateTimeStepBDF(); }
    
     // Exporter
-    void exportResults() {this->exportResults (this->currentTime() ); }
-    void exportResults ( double Time) ;
+    void exportResults() { this->exportResults (this->currentTime() ); M_exporter->save(); }
+    virtual void exportResults ( double Time) ;
     exporter_ptrtype M_exporter;
+    exporter_ptrtype exporterMP() { return M_exporter; }
 };
 
 
@@ -287,17 +289,6 @@ void MixedPoisson<Dim, Order, G_Order>::updateTimeStepBDF()
 
     this->updateTime( M_bdf_mixedpoisson->time() );
 
-    /*/ maybe rebuild linear
-    if ( M_algebraicFactory &&
-         previousTimeOrder!=currentTimeOrder &&
-         this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
-    {
-        if (!this->rebuildCstPartInLinearSystem())
-        {
-            this->log("Advection","updateTimeStepBDF", "do rebuildCstLinearPDE" );
-            M_algebraicFactory->rebuildCstLinearPDE(M_fieldSolution);
-        }
-    }*/
 
     this->timerTool("TimeStepping").stop("updateBdf");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
@@ -330,8 +321,8 @@ MixedPoisson<Dim, Order, G_Order>::MixedPoisson( std::string const& prefix,
 
     //-----------------------------------------------------------------------------//
 
-    std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".AdvectionConstructor.data";
-    std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".AdvectionSolve.data";
+    std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".MixedPoissonConstructor.data";
+    std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".MixedPoissonSolve.data";
     this->addTimerTool("Constructor",nameFileConstructor);
     this->addTimerTool("Solve",nameFileSolve);
 
@@ -396,20 +387,20 @@ MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh, int extraRow, int ex
         toc("timeDiscretization",true);
     }
 
+
     tic();
     this->initGraphs(extraRow, extraCol);
-    M_A = M_backend->newBlockMatrix(_block=M_hdg_graph);
-    M_A_cst = M_backend->newBlockMatrix(_block=M_hdg_graph);
-    M_F = M_backend->newBlockVector(_block=M_hdg_vec, _copy_values=false);
-    M_U = M_backend->newBlockVector(_block=M_hdg_sol, _copy_values=false);
+    M_A = this->get_backend()->newBlockMatrix(_block=M_hdg_graph);
+    M_A_cst = this->get_backend()->newBlockMatrix(_block=M_hdg_graph);
+    M_F = this->get_backend()->newBlockVector(_block=M_hdg_vec, _copy_values=false);
+    M_U = this->get_backend()->newBlockVector(_block=M_hdg_sol, _copy_values=false);
     toc("graphs");
-
     tic();
     this->initExporter();
     toc("exporter");
-
     tic();
     this->assembleA();
+    M_A_cst->close();
     toc("assemble");
 }
 
@@ -621,7 +612,7 @@ MixedPoisson<Dim, Order, G_Order>::initGraphs(int extraRow, int extraCol)
         M_hdg_graph(3,3) = stencil( _test=M_Ch,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
 
         M_hdg_vec(3,0) = M_backend->newVector( M_Ch );
-        auto mup = M_Ch->elementPtr( "c1" );
+        auto mup = M_Ch->elementPtr( "mup" );
         M_hdg_sol(3,0) = mup;
     }
 }
@@ -876,7 +867,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleA()
         }
     }
 
-    M_A_cst->close();
+    
 }
 
 template<int Dim, int Order, int G_Order>
@@ -1162,7 +1153,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time )
 	M_exporter -> step (0) -> add(prefixvm(M_prefix, "u_exact"), u_exact_proj);
     }
 
-    M_exporter->save();
+    
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
