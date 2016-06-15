@@ -340,6 +340,42 @@ protected:
     
 };//AdvectionBase
 
+//----------------------------------------------------------------------------//
+// Advection velocity update
+template< 
+    typename ConvexType, typename BasisAdvectionType, 
+    typename PeriodicityType,
+    typename BasisDiffusionReactionType
+        >
+template<typename ExprT>
+void
+AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType>::updateAdvectionVelocity(
+        vf::Expr<ExprT> const& v_expr)
+{
+    M_exprAdvectionVelocity.reset(); // remove symbolic expr
+    M_fieldAdvectionVelocity->on(_range=elements(this->mesh()), _expr=v_expr );
+}
+
+//----------------------------------------------------------------------------//
+// Source update
+template< 
+    typename ConvexType, typename BasisAdvectionType, 
+    typename PeriodicityType,
+    typename BasisDiffusionReactionType
+        >
+template<typename ExprT>
+void 
+AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType>::updateSourceAdded(
+        vf::Expr<ExprT> const& f_expr)
+{
+    if (!M_fieldSource)
+    {
+        M_fieldSource.reset( new element_advection_type(M_Xh, "SourceAdded") );
+    }
+    M_fieldSource->on(_range=elements( this->mesh() ), _expr=f_expr );
+    M_hasSourceAdded=true;
+}
+
 } // namespace FeelModels
 } // namespace Feel
 
