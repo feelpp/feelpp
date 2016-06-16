@@ -146,7 +146,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
                     );
 
             M_useMarkerDiracAsMarkerDoneFM = 
-                boost::dynamic_pointer_cast<ReinitializerFM<space_levelset_type>>( M_reinitializer )->useMarker2AsMarkerDone();
+                dynamic_cast<ReinitializerFM<space_levelset_type>&>( *M_reinitializer ).useMarker2AsMarkerDone();
 
             if( M_strategyBeforeFM == ILP )
             {
@@ -166,6 +166,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
             M_reinitializer.reset(
                     new ReinitializerHJ<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-hj") )
                     );
+            
+            if( Environment::vm( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj") ).defaulted() )
+            {
+                dynamic_cast<ReinitializerHJ<space_levelset_type>&>(*M_reinitializer).setThicknessHeaviside( M_thicknessInterface );
+            }
         }
         break;
     }

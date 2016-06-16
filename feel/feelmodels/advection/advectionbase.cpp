@@ -289,7 +289,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretization()
     M_bdf = bdf( _vm=Environment::vm(), _space=M_Xh,
                        _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"phi"+suffixName)),
                        _prefix=this->prefix(),
-                       // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
+                       // don't use the advection.bdf {initial,final,step}time but the general bdf info, the order will be from advection.bdf
                        _initial_time=this->timeInitial(),
                        _final_time=this->timeFinal(),
                        _time_step=this->timeStep(),
