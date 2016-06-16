@@ -364,6 +364,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     M_strategyBeforeFM = (strategy_before_FM_type) ioption(prefixvm(this->prefix(),"fm-init-first-elts-strategy"));
 
+    M_reinitInitialValue = boption( _name="reinit-initial-value", _prefix=this->prefix() );
+
     //M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
 }
 
