@@ -10,6 +10,16 @@ foreach(_DIM 2 3)
       T_ORDER ${_T_ORDER}
       GEO_ORDER 1
       #USE_PERIODICITY
+      POINT_SET EquiSpaced 
+      ADD_CMAKE_INSTALL
+      )
+  set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME}  )
+      genLibAdvection(
+      DIM     ${_DIM}
+      T_ORDER ${_T_ORDER}
+      GEO_ORDER 1
+      #USE_PERIODICITY
+      POINT_SET Fekete 
       ADD_CMAKE_INSTALL
       )
   set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME}  )
@@ -26,6 +36,16 @@ foreach(_DIM 2 3)
       DIM     ${_DIM}
       T_ORDER ${_T_ORDER}
       GEO_ORDER ${_T_ORDER}
+      POINT_SET EquiSpaced 
+      #USE_PERIODICITY
+      ADD_CMAKE_INSTALL
+      )
+  set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME} )
+      genLibAdvection(
+      DIM     ${_DIM}
+      T_ORDER ${_T_ORDER}
+      GEO_ORDER ${_T_ORDER}
+      POINT_SET Fekete 
       #USE_PERIODICITY
       ADD_CMAKE_INSTALL
       )
