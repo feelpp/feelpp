@@ -252,9 +252,13 @@ public:
 
     //--------------------------------------------------------------------//
     // Initial value
-    void setInitialValue(element_levelset_ptrtype const& phiv, bool doReinitialize = false);
+    void setInitialValue(element_levelset_ptrtype const& phiv, bool doReinitialize);
+    void setInitialValue(element_levelset_ptrtype const& phiv)
+    {
+        this->setInitialValue(phiv, M_reinitInitialValue);
+    }
     template<typename ExprT>
-    void setInitialValue(vf::Expr<ExprT> const& expr, bool doReinitialize = false)
+    void setInitialValue(vf::Expr<ExprT> const& expr, bool doReinitialize)
     {
         this->phi()->on( 
                 _range=elements(this->mesh()),
@@ -266,6 +270,11 @@ public:
         updateHeaviside();
         updateDirac();
         updateMass();
+    }
+    template<typename ExprT>
+    void setInitialValue(vf::Expr<ExprT> const& expr)
+    {
+        this->setInitialValue(expr, M_reinitInitialValue );
     }
     //element_levelset_ptrtype circleShape(double r0, double x0, double y0, double z0=0);
     //element_levelset_ptrtype ellipseShape(double a_ell, double b_ell, double x0, double y0, double z0=0);
@@ -450,6 +459,7 @@ private:
     //int M_hjMaxIter;
     //double M_hjDtau;
     //double M_hjTol;
+    bool M_reinitInitialValue;
 
     //LevelSetTimeDiscretization M_discrMethod;
 
