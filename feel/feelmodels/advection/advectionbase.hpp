@@ -276,7 +276,7 @@ public :
     // Export results
     void exportMeasures( double time );
     void exportResults() { this->exportResults( this->currentTime() ); }
-    virtual void exportResults( double time );
+    void exportResults( double time );
 
 protected:
     virtual void loadParametersFromOptionsVm();
