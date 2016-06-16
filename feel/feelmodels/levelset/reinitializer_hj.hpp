@@ -97,8 +97,8 @@ public:
     int maxIterations() const { return M_maxIterations; }
     void setMaxIterations( int max ) { M_maxIterations = max; }
 
-    double heavisideThickness() const { return M_heavisideThickness; }
-    void setHeavisideThickness( double eps ) { M_heavisideThickness = eps; }
+    double thicknessHeaviside() const { return M_thicknessHeaviside; }
+    void setThicknessHeaviside( double eps ) { M_thicknessHeaviside = eps; }
     //--------------------------------------------------------------------//
     // Run reinitialization
     element_type run( element_type const& phi );
@@ -108,7 +108,7 @@ private:
 
     double M_tolerance;
     int M_maxIterations;
-    double M_heavisideThickness;
+    double M_thicknessHeaviside;
 };
 
 #define REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS \
@@ -134,7 +134,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
     M_tolerance = doption( _name="tol", _prefix=this->prefix() );
     M_maxIterations = ioption( _name="max-iter", _prefix=this->prefix() );
-    M_heavisideThickness = doption( _name="thickness-heaviside", _prefix=this->prefix() );
+    M_thicknessHeaviside = doption( _name="thickness-heaviside", _prefix=this->prefix() );
 }
 
 REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS
@@ -170,12 +170,12 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
                 space, 
                 elements(mesh),
                 vf::abs(
-                    ( phi_sign < -M_heavisideThickness )*vf::constant(0.0)
+                    ( phi_sign < -M_thicknessHeaviside )*vf::constant(0.0)
                     +
-                    ( phi_sign >= -M_heavisideThickness && phi_sign <= M_heavisideThickness )*
-                    0.5*(1 + phi_sign/M_heavisideThickness + 1/M_PI*vf::sin( M_PI*phi_sign/M_heavisideThickness ) )
+                    ( phi_sign >= -M_thicknessHeaviside && phi_sign <= M_thicknessHeaviside )*
+                    0.5*(1 + phi_sign/M_thicknessHeaviside + 1/M_PI*vf::sin( M_PI*phi_sign/M_thicknessHeaviside ) )
                     +
-                    ( phi_sign > M_heavisideThickness )*vf::constant(1.0) )
+                    ( phi_sign > M_thicknessHeaviside )*vf::constant(1.0) )
                 );
         auto Sign = 2*( idv(H_reinit)-0.5 );
 
