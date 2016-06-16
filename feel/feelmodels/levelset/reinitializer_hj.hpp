@@ -187,6 +187,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
 
         // Solve
         M_advectionHJ->solve();
+        M_advectionHJ->exportResults();
 
         // Test convergence
         err_dist = integrate(
