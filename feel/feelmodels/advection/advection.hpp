@@ -71,6 +71,9 @@ public:
     void init( bool buildModelAlgebraicFactory = true );
     virtual void loadConfigBCFile();
     //--------------------------------------------------------------------//
+    // Solve
+    void solve();
+    //--------------------------------------------------------------------//
     // BC and source term assembly
     void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
     void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;

@@ -76,6 +76,21 @@ ADVECTION_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 void
+ADVECTION_CLASS_TEMPLATE_TYPE::solve()
+{
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+
+    M_bcDirichlet.setParameterValues( paramValues );
+    M_bcNeumann.setParameterValues( paramValues );
+    M_bcRobin.setParameterValues( paramValues );
+    M_sources.setParameterValues( paramValues );
+
+    super_type::solve(); 
+}
+
+ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+void
 ADVECTION_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const
 {
 
