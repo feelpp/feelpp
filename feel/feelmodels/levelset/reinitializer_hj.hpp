@@ -109,6 +109,8 @@ private:
     double M_tolerance;
     int M_maxIterations;
     double M_thicknessHeaviside;
+
+    int M_nGlobalIter;
 };
 
 #define REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS \
@@ -121,6 +123,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::ReinitializerHJ(
         functionspace_ptrtype const& space,
         std::string const& prefix )
     : super_type( space, prefix )
+    , M_nGlobalIter(0)
 {
     this->loadParametersFromOptionsVm();
 
@@ -133,7 +136,9 @@ void
 REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
     M_tolerance = doption( _name="tol", _prefix=this->prefix() );
+
     M_maxIterations = ioption( _name="max-iter", _prefix=this->prefix() );
+
     M_thicknessHeaviside = doption( _name="thickness-heaviside", _prefix=this->prefix() );
 }
 
@@ -145,7 +150,9 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
     auto space = M_advectionHJ->functionSpace();
     // Set initial value
     M_advectionHJ->fieldSolution() = phi;
-    M_advectionHJ->init( false );
+    //M_advectionHJ->init( false );
+    M_advectionHJ->timeStepBase()->setTimeFinal( M_advectionHJ->timeStep() * M_maxIterations );
+    M_advectionHJ->initTimeStep();
     // Init convergence test utilities
     double err_dist;
     double err_disto = integrate(
@@ -158,6 +165,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
     double relativeRateChangePhiL2;
 
     for(int i = 0; i < this->maxIterations(); ++i)
+    //for( int i = 0; !M_advectionHJ->timeStepBase()->isFinished(); M_advectionHJ->updateTimeStep(), ++i )
     {
         LOG(INFO) << "iter reinit : " << i << std::endl;
 
@@ -187,7 +195,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
 
         // Solve
         M_advectionHJ->solve();
-        M_advectionHJ->exportResults();
+        M_advectionHJ->exportResults(M_nGlobalIter);
 
         // Test convergence
         err_dist = integrate(
@@ -202,6 +210,8 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
                 (idv(phi_reinit) - idv(phi_reinito))*(idv(phi_reinit) - idv(phi_reinito))
                 ).evaluate()(0,0) );
         relativeRateChangePhiL2 = std::abs( rateChangePhiL2 - rateChangePhiL2o) / rateChangePhiL2o;
+
+        ++M_nGlobalIter;
 
         if ( (i!=0) && (relativeRateChangePhiL2 <= M_tolerance ) )
         {
