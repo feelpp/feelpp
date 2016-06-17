@@ -28,6 +28,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     //-----------------------------------------------------------------------------//
     // Load parameters
     this->loadParametersFromOptionsVm();
+    // Load initial value
+    this->loadConfigICFile();
     // Get periodicity from options (if needed)
     //this->loadPeriodicityFromOptionsVm();
 
@@ -92,6 +94,35 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::init()
 {
+    // Set initial value
+    this->modelProperties().parameters().updateParameterValues();
+    if( !this->M_icDirichlet.empty() )
+    {
+        M_icDirichlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+
+        auto phi_init = this->functionSpace()->element();
+        for( auto const& iv : M_icDirichlet )
+        {
+            if( marker(iv).empty() )
+            {
+                phi_init.on(
+                        _range=elements(this->mesh()),
+                        _expr=expression(iv),
+                        _geomap=this->geomap()
+                        );
+            }
+            else
+            {
+                phi_init.on(
+                        _range=markedelements(this->mesh(), marker(iv)),
+                        _expr=expression(iv),
+                        _geomap=this->geomap()
+                        );
+            }
+        }
+        this->setInitialValue( phi_init );
+    }
+    // Init advection
     super_type::init( true, this->shared_from_this() );
 }
 
@@ -367,6 +398,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_reinitInitialValue = boption( _name="reinit-initial-value", _prefix=this->prefix() );
 
     //M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
+{
+    this->M_icDirichlet = this->modelProperties().initialConditions().getScalarFields( std::string(this->prefix()), "Dirichlet" );
 }
 
 //----------------------------------------------------------------------------//
@@ -663,9 +701,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 // Initial value
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_ptrtype const& phiv, bool doReinitialize)
+LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_type const& phiv, bool doReinitialize)
 {
-    *this->phi() = *phiv;
+    *this->phi() = phiv;
 
     if (doReinitialize)
         this->reinitialize();
