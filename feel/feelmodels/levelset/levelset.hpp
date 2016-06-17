@@ -180,6 +180,7 @@ public:
     void init();
 
     virtual void loadParametersFromOptionsVm();
+    virtual void loadConfigICFile();
 
     //void createAdvection();
     //void createAdvection( mesh_ptrtype const& mesh );
@@ -252,10 +253,18 @@ public:
 
     //--------------------------------------------------------------------//
     // Initial value
-    void setInitialValue(element_levelset_ptrtype const& phiv, bool doReinitialize);
-    void setInitialValue(element_levelset_ptrtype const& phiv)
+    void setInitialValue(element_levelset_type const& phiv, bool doReinitialize);
+    void setInitialValue(element_levelset_type const& phiv)
     {
         this->setInitialValue(phiv, M_reinitInitialValue);
+    }
+    void setInitialValue(element_levelset_ptrtype const& phiv, bool doReinitialize) 
+    { 
+        this->setInitialValue(*phiv, doReinitialize);
+    }
+    void setInitialValue(element_levelset_ptrtype const& phiv)
+    {
+        this->setInitialValue(*phiv, M_reinitInitialValue);
     }
     template<typename ExprT>
     void setInitialValue(vf::Expr<ExprT> const& expr, bool doReinitialize)
@@ -375,6 +384,10 @@ protected:
     element_levelset_ptrtype M_dirac;
     double M_mass;
 
+    //--------------------------------------------------------------------//
+    // Levelset initial value
+    map_scalar_field<2> M_icDirichlet;
+
 #if defined(LEVELSET_CONSERVATIVE_ADVECTION)
     elementLSCorr_ptrtype phic;
 #endif
@@ -387,6 +400,7 @@ private:
     mesh_ptrtype M_submesh;
 
     //--------------------------------------------------------------------//
+    // Periodicity
     periodicity_type M_periodicity;
 
     //--------------------------------------------------------------------//
