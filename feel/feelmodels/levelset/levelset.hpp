@@ -48,25 +48,6 @@
 #endif
 
 
-/*
-about time discretization and saving :
-- BDF2 is implemented but the save() option saves only one iteration back in time which is incompatible with BDF2. If needed, do not implement the saving of earlier levelset but use the BDF2() class of Feel++ which does it already (and even at higher order).
-- In practice, higher order time discretization is not compatible with reinitialization, CN sheme should be prefered. (and this explains why I didn't add Feel::BDF2 in levelset)
-*/
-
-/*
-  about reinitialization :
-Fast Marching Method is faster and more precise than solving Hamilton Jacobi equation :
-
-- for periodic boundary conditions, FMM takes care of periodic boundary condition but needs a non periodic space. Thus, one has to give to the reinitialization a non periodic mesh and separately give the appropriate periodicity to apply on it.
-(in reinitialization, the periodicity is given has a template parameter and has to be instantiated properly)
-
-
-- at order > 1, since reinitFM accepts only P1 spaces, one pass by OperatorLagrange to reinit a P1 levelset and reset it to a Pn space. So this method is exact at quadrature points only.
--------> the reinitialization space is always P1 NON PERIODIC !
-
-*/
-
 namespace Feel {
 namespace FeelModels {
 
@@ -103,18 +84,6 @@ public:
     //--------------------------------------------------------------------//
     // Periodicity
     typedef PeriodicityType periodicity_type;
-
-    //--------------------------------------------------------------------//
-    // Advection
-    //typedef Lagrange<Order, Scalar> basis_levelset_type;
-    //typedef FunctionSpace<mesh_type, bases<basis_levelset_type>, value_type, Periodicity<periodicity_type>> space_levelset_type;
-
-    //typedef Advection<convex_type, basis_levelset_type, periodicity_type> advection_type;
-    //typedef boost::shared_ptr<advection_type> advection_ptrtype;
-    
-    bool hasSourceTerm() const { return false; }
-    void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const {}
-    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const {}
 
     //--------------------------------------------------------------------//
     // Space levelset
@@ -210,15 +179,11 @@ public:
     virtual void loadParametersFromOptionsVm();
     virtual void loadConfigICFile();
 
-    //void createAdvection();
-    //void createAdvection( mesh_ptrtype const& mesh );
     void createFunctionSpaces();
     void createReinitialization();
-    //void createExporters();
     void createOthers();
 
     //--------------------------------------------------------------------//
-    //space_levelset_ptrtype const& functionSpace() const { return M_advection->functionSpace(); }
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
     space_levelset_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceLevelSetVec; }
 
@@ -262,6 +227,10 @@ public:
 
     //--------------------------------------------------------------------//
     // Advection
+    bool hasSourceTerm() const { return false; }
+    void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const {}
+    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const {}
+
     template<typename ExprT>
     void advect(vf::Expr<ExprT> const& velocity);
     void solve();
