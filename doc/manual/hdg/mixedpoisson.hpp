@@ -154,7 +154,8 @@ protected:
 
     Vh_element_ptr_t M_up; // flux solution
     Wh_element_ptr_t M_pp; // potential solution 
-    
+    Ch_element_ptr_t M_mup; // potential solution on the integral boundary condition
+
     // time discretization
     bdf_ptrtype M_bdf_mixedpoisson;
     
@@ -514,7 +515,7 @@ MixedPoisson<Dim, Order, G_Order>::initSpaces()
 
     M_up = M_Vh->elementPtr( "u" );
     M_pp = M_Wh->elementPtr( "p" );
-
+    
 
     cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
          << "Wh<" << Order << "> : " << M_Wh->nDof() << std::endl
@@ -612,8 +613,8 @@ MixedPoisson<Dim, Order, G_Order>::initGraphs(int extraRow, int extraCol)
         M_hdg_graph(3,3) = stencil( _test=M_Ch,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
 
         M_hdg_vec(3,0) = M_backend->newVector( M_Ch );
-        auto mup = M_Ch->elementPtr( "mup" );
-        M_hdg_sol(3,0) = mup;
+        M_mup = M_Ch->elementPtr( "mup" );
+        M_hdg_sol(3,0) = M_mup;
     }
 }
 
@@ -1124,15 +1125,28 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time )
         for ( auto const& field : (*itField).second )
         {
             if ( field == "flux" )
+	    {
                 M_exporter->step( time )->add(prefixvm(M_prefix, "flux"), *M_up);
+		if (M_integralCondition)
+		{
+                    double j_integral = 0;
+		    for( auto marker : this->M_integralMarkersList)
+			j_integral += integrate(_range=markedfaces(M_mesh,marker),_expr=trans(idv(M_up))*N()).evaluate()(0,0);
+		    M_exporter->step( time )->add(prefixvm(M_prefix, "integralFlux"), j_integral);
+   		}
+	    }
             if ( field == "potential" )
+	    {
                 M_exporter->step( time )->add(prefixvm(M_prefix, "potential"), *M_pp);
+		if (M_integralCondition)
+                    M_exporter->step( time )->add(prefixvm(M_prefix, "cstPotential"),(*M_mup)[0] );
+	    }
         }
     }
    
     // Export exact solutions
     if ( this->isStationary() ){
-	auto K = -10;
+	auto K = 10;
 	auto p_exact = expr(soption(prefixvm(M_prefix,"p_exact") ));
     	auto gradp_exact = grad<Dim>(p_exact);
 	auto u_exact = -K*trans(gradp_exact);
@@ -1188,9 +1202,14 @@ MixedPoisson<Dim, Order, G_Order>::computeError(){
     bool has_dirichlet = nelements(markedfaces(M_mesh,"Dirichlet"),true) >= 1;
 
     auto l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(*M_up) );
-    // double l2err_p = 1e+30;
+    auto l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
+    if (l2norm_uex < 1)
+	l2norm_uex = 1.0;
+    
     auto l2err_p = normL2( _range=elements(M_mesh), _expr=p_exact - idv(*M_pp) );
-   
+    auto l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact );
+    if (l2norm_pex < 1)
+	l2norm_pex = 1.0;
     // Feel::cout << "Has Dirichlet: " << has_dirichlet << std::endl;
    
     if ( !has_dirichlet ){
@@ -1200,8 +1219,8 @@ MixedPoisson<Dim, Order, G_Order>::computeError(){
     }
     
     Feel::cout << "============================================" << std::endl;
-    Feel::cout << "||p-p_ex||_L2=\t" << l2err_p << std::endl;
-    Feel::cout << "||u-u_ex||_L2=\t" << l2err_u << std::endl;
+    Feel::cout << "||p-p_ex||_L2=\t" << l2err_p/l2norm_pex << std::endl;
+    Feel::cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
     Feel::cout << "============================================" << std::endl;
     toc("error");
 
