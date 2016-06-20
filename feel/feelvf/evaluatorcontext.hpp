@@ -81,8 +81,10 @@ public:
                       int max_points_used,
                       GeomapStrategyType geomap_strategy,
                       bool mpi_communications,
-                      bool projection)
+                      bool projection,
+                      WorldComm const& worldComm )
         :
+        M_worldComm( worldComm ),
         M_ctx( ctx ),
         M_expr( __expr ),
         M_max_points_used( max_points_used ),
@@ -96,6 +98,7 @@ public:
 
     EvaluatorContext( EvaluatorContext const& __vfi )
         :
+        M_worldComm( __vfi.M_worldComm ),
         M_ctx( __vfi.M_ctx ),
         M_expr( __vfi.M_expr ),
         M_max_points_used( __vfi.M_max_points_used ),
@@ -162,6 +165,9 @@ public:
 
 private:
 
+    //! mpi communicators
+    WorldComm const& M_worldComm;
+
     context_type M_ctx;
     expression_type const&  M_expr;
     int M_max_points_used;
@@ -179,7 +185,7 @@ EvaluatorContext<CTX, ExprT>::operator()() const
         return evaluateProjection();
 
     auto Xh = M_ctx.ptrFunctionSpace();
-    auto const& worldComm = Xh->worldComm();
+    auto const& worldComm = M_worldComm;//Xh->worldComm();
     //rank of the current processor
     int proc_number = worldComm.globalRank();
 
@@ -413,10 +419,11 @@ evaluatecontext_impl( Ctx const& ctx,
                       int max_points_used = -1,
                       GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO,
                       bool mpi_communications = true,
-                      bool projection = false )
+                      bool projection = false,
+                      WorldComm const& worldComm = Environment::worldComm() )
 {
     typedef details::EvaluatorContext<Ctx, Expr<ExprT> > proj_t;
-    proj_t p( ctx, __expr, max_points_used, geomap , mpi_communications , projection );
+    proj_t p( ctx, __expr, max_points_used, geomap , mpi_communications , projection, worldComm );
     return p();
 }
 
@@ -448,11 +455,12 @@ BOOST_PARAMETER_FUNCTION(
       ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
       ( mpi_communications, (bool), true )
       ( projection, (bool), false )
+      ( worldcomm,  (WorldComm), (mpi_communications)? context.functionSpace()->worldComm() : context.functionSpace()->worldComm().subWorldCommSeq() )
     )
 )
 {
     //LOG(INFO) << "evaluate expression..." << std::endl;
-    return evaluatecontext_impl( context, expr, max_points_used, geomap , mpi_communications, projection );
+    return evaluatecontext_impl( context, expr, max_points_used, geomap , mpi_communications, projection, worldcomm );
     //LOG(INFO) << "evaluate expression done." << std::endl;
 }
 

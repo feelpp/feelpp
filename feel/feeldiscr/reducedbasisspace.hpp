@@ -857,7 +857,7 @@ public :
 #else
         using _id_type = Eigen::Tensor<value_type,2>;
         using _grad_type = Eigen::Tensor<value_type,2>;
-        using eigen_matrix_to_tensor_map = TensorMap<Tensor<int, 1> > 
+        using eigen_matrix_to_tensor_map = Eigen::TensorMap<Eigen::Matrix<value_type, nComponents1, 1> >;
 #endif
         typedef boost::multi_array<_id_type,1> id_array_type;
         typedef boost::multi_array<_grad_type,1> grad_array_type;
