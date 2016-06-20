@@ -53,8 +53,12 @@ public:
             std::string const& subPrefix = "",
             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
+    static std::string expandStringFromSpec( std::string const& expr );
+
     //--------------------------------------------------------------------//
     // Initialization
+    void build( uint16_type nLevelSets );
+
     void init();
 
     //--------------------------------------------------------------------//
