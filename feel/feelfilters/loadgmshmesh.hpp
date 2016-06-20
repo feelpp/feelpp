@@ -53,7 +53,7 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( mesh, * )
       ( filename, * )
-        ) // 4. one required parameter, and
+      ) // 4. one required parameter, and
 
     ( optional
       ( prefix,(std::string), "" )
@@ -68,8 +68,9 @@ BOOST_PARAMETER_FUNCTION(
       ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
       ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
-        )
-    )
+      ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity") )
+      )
+                         )
 {
     typedef typename Feel::detail::mesh<Args>::type _mesh_type;
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
