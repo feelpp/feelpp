@@ -233,6 +233,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 {
     M_heaviside.reset( new element_levelset_type(this->functionSpace(), "Heaviside") );
     M_dirac.reset( new element_levelset_type(this->functionSpace(), "Dirac") );
+
+    M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "ls-l2p")) );
+    M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "ls-l2pVec")) );
 }
 
 /*LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -304,8 +307,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initWithMesh(mesh_ptrtype mesh)
 
     // --------------- projectors ---------
     LOG(INFO)<<"start creating projectors for level set"<<std::endl;
-    M_l2p = projector(this->functionSpace(), this->functionSpace(), backend(_name="ls-l2p") );
-    M_l2pVec = projector(M_spaceLSVec, M_spaceLSVec, backend(_name="ls-l2pVec") );
+    M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name="ls-l2p") );
+    M_projectorL2Vec = projector(M_spaceLSVec, M_spaceLSVec, backend(_name="ls-l2pVec") );
     LOG(INFO)<<"end creating projectors for level set"<<std::endl;
 
 } // init*/
@@ -431,7 +434,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
         if ( M_useHeavisideDiracNodalProj )
             *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()), D_expr );
         else
-            *M_dirac = M_l2p->project(D_expr);
+            *M_dirac = M_projectorL2->project(D_expr);
     }
     else
     {
@@ -446,7 +449,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
         if (M_useHeavisideDiracNodalProj)
             *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()), D_expr );
         else
-            *M_dirac = M_l2p->project(D_expr);
+            *M_dirac = M_projectorL2->project(D_expr);
     }
 }
 
@@ -469,7 +472,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         if (M_useHeavisideDiracNodalProj)
             *M_heaviside = vf::project(this->functionSpace(), elements(this->mesh()), H_expr);
         else
-            *M_heaviside = M_l2p->project(H_expr);
+            *M_heaviside = M_projectorL2->project(H_expr);
     }
     else
     {
@@ -484,7 +487,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         if (M_useHeavisideDiracNodalProj)
             *M_heaviside = vf::project(this->functionSpace(), elements(this->mesh()), H_expr);
         else
-            *M_heaviside = M_l2p->project(H_expr);
+            *M_heaviside = M_projectorL2->project(H_expr);
     }
 }
 
