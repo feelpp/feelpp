@@ -22,35 +22,35 @@
 #
 #
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-feelpp_add_application( electro-thermal SRCS et_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 )
-feelpp_add_application( electro-thermal-2 SRCS et2_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 )
-feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 )
-
-# foreach(D 2)
-#   foreach(P 1)
-# 	configure_file(lc_main_model.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/lc${D}DP${P}_main.cpp )
-# 	feelpp_add_application( lamina-cribrosa-model_${D}DP${P} SRCS lc${D}DP${P}_main.cpp INCLUDE_IN_ALL )
-#   endforeach()
-# endforeach()
+feelpp_add_application( electro-thermal SRCS et_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore )
+feelpp_add_application( electro-thermal-2 SRCS et2_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore)
+feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore)
 
 foreach(D 2 3)
-  foreach(P  RANGE 1 3 1)
+   foreach(P RANGE 1 3 1)
+	configure_file(lc_main_model.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/lc${D}DP${P}_main.cpp )
+ 	feelpp_add_application( lamina-cribrosa-model_${D}DP${P} SRCS lc${D}DP${P}_main.cpp INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore)
+   endforeach()
+ endforeach()
+
+foreach(D 2 3)
+  foreach(P  RANGE 1 3 1) 
     configure_file(et_main_model.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/et${D}DP${P}_main.cpp )
-    feelpp_add_application( electro-thermal-model_${D}DP${P} SRCS et${D}DP${P}_main.cpp INCLUDE_IN_ALL )
+    feelpp_add_application( electro-thermal-model_${D}DP${P} SRCS et${D}DP${P}_main.cpp INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore )
   endforeach()
 endforeach()
 
-foreach(D 2) #3
-  foreach(P  RANGE 1 1 1) #3 
+foreach(D 2 3)  
+  foreach(P  RANGE 1 3 1)   
     configure_file(mixedpoisson_main.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/mp${D}DP${P}_main.cpp )
-    feelpp_add_application( mixed-poisson-model_${D}DP${P} SRCS mp${D}DP${P}_main.cpp mixedpoisson.hpp LINK_LIBRARIES feelpp_modelcore )
+    feelpp_add_application( mixed-poisson-model_${D}DP${P} SRCS mp${D}DP${P}_main.cpp INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore )
   endforeach()
 endforeach()
 
 foreach(D 2 3)
-  foreach(P RANGE 1 3 1)
+  foreach(P RANGE 1 3 1) 
     configure_file(conv_main.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/conv${D}DP${P}_main.cpp )
-    feelpp_add_application( conv_${D}DP${P} SRCS conv${D}DP${P}_main.cpp mixedpoisson.hpp conv.hpp DEFS FEELPP_DIM=${D} )
+    feelpp_add_application( conv_${D}DP${P} SRCS conv${D}DP${P}_main.cpp DEFS FEELPP_DIM=${D} INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore )
   endforeach()
 endforeach()
 
@@ -58,4 +58,5 @@ feelpp_add_testcase(quarter-turn)
 feelpp_add_testcase(bitter)
 feelpp_add_testcase(cylinder)
 feelpp_add_testcase(testDarcy)
+feelpp_add_testcase(lamina-cribrosa)
 
