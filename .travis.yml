@@ -1,165 +1,30 @@
-sudo: false
-os: linux
 git:
   depth: 1
   submodules: false
-language: cpp
-compiler: clang
-env:
-  global:
-    FEELPP_STD_CPP=14
 
-addons:
-  apt:
-    packages:
-    - &1
-      - gfortran
-      - cmake
-      - libtbb-dev
-      - libopenmpi-dev
-      - libglpk-dev
-      - libxml2-dev
-      - libfftw3-dev
-      - bison
-      - flex
-      - doxygen
-      - imagemagick
-      - g++-4.9
-    - clang-3.5
-    sources:
-    - ubuntu-toolchain-r-test
-    - llvm-toolchain-precise-3.5
 matrix:
   include:
-  - env: BUILD="llvm-3.5-debug" COMPILER_VERSION="clang-3.5" FEELPP_CXX=clang++-3.5
-      FEELPP_CC=clang-3.5 BUILDTYPE=Debug TARGET=quickstart
-    addons:
-      apt:
-        sources:
-        - ubuntu-toolchain-r-test
-        - llvm-toolchain-precise-3.5
-        packages:
-        - *1
-        - clang-3.5
-  - env: BUILD="llvm-3.6" COMPILER_VERSION="clang-3.6" FEELPP_CXX=clang++-3.6
-      FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-    addons:
-      apt:
-        sources:
-        - ubuntu-toolchain-r-test
-        - llvm-toolchain-precise-3.6
-        packages:
-        - *1
-        - clang-3.6
-  - env: BUILD="llvm-3.7" COMPILER_VERSION="clang-3.7" FEELPP_CXX=clang++-3.7
-      FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-    addons:
-      apt:
-        sources:
-        - ubuntu-toolchain-r-test
-        - llvm-toolchain-precise-3.7
-        packages:
-        - *1
-        - clang-3.7
-  - env: BUILD="llvm-3.8" COMPILER_VERSION="clang-3.8" FEELPP_CXX=clang++-3.8
-      FEELPP_CC=clang-3.8 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-    addons:
-      apt:
-        sources:
-        - ubuntu-toolchain-r-test
-        - llvm-toolchain-precise-3.8
-        packages:
-        - *1
-        - clang-3.8
-  - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5
-      FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O0 -DNDEBUG"
-    addons:
-      apt:
-        sources:
-        - ubuntu-toolchain-r-test
-        packages:
-        - *1
-        - g++-5
-  - env: BUILD="gcc-6" COMPILER_VERSION="g++-6" FEELPP_CXX=g++-6
-      FEELPP_CC=gcc-6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O0 -DNDEBUG"
-    addons:
-      apt:
-        sources:
-        - ubuntu-toolchain-r-test
-        packages:
-        - *1
-        - g++-6
-  allow_failures:
-  - os: osx
-  - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5
-      FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O0 -DNDEBUG"
-  - env: BUILD="gcc-6" COMPILER_VERSION="g++-6" FEELPP_CXX=g++-6
-      FEELPP_CC=gcc-6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O0 -DNDEBUG"
+      - env: DOCKERFILE="Dockerfile.dockerhub" TARGET_IMAGE="feelpp/develop:latest" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS=""
+        sudo: required
+        services:
+            - docker
+      - env: DOCKERFILE="Dockerfile.minimal" TARGET_IMAGE="feelpp/develop:minimal" TARGET_BRANCH="feature/minimal" CMAKE_FLAGS="-DFEELPP_MINIMAL_BUILD=ON"
+        sudo: required
+        services:
+            - docker
+
 before_install:
 - echo $TRAVIS_OS_NAME
 - echo $HOME
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then apt-cache search clang; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then if test "x$FEELPP_CC" != "x"; then export
-  CC=$FEELPP_CC; export CXX=$FEELPP_CXX; else export CC=clang-3.5; export CXX=clang++-3.5; fi; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew update; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew outdated xctool || brew upgrade xctool;
-  fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install open-mpi; fi
-- git submodule update --init --recursive contrib/nlopt
-- git submodule update --init --recursive contrib/ipopt
-- git submodule update --init --recursive quickstart
-- export NPROCS=3
-- bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost; echo
-  $BOOSTROOT
-- bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh; echo
-  $GMSH_DIR
-- export M_PETSC_VERSION=3.7.0
-- bash ports/travis/petsc.sh ${M_PETSC_VERSION}; export PETSC_DIR=$HOME/software/install/petsc-${M_PETSC_VERSION};
-  echo $PETSC_DIR
-- bash ports/travis/cln.sh; export CLN_DIR=$HOME/software/install/cln; echo $CLN_DIR
-install:
-- $CXX --version
-- $CC --version
-- mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
-  --std=c++$FEELPP_STD_CPP --prefix=$HOME/software/install/feelpp --max-order=1
-script:
-- make -j16 feelpp_nlopt
-- make -j16 feelpp_ginac
-- make -j1 feelpp
-- make -j1 feelpp-models-algebra
-- make install-feelpp-lib
-- ls $HOME/software/install/feelpp/include/feel
+- docker --version
+- sudo apt-get update
+- sudo apt-get install -y -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker-engine
+- git clone --depth=1 https://github.com/feelpp/docker
+- cd docker/dockerfiles/develop && docker build -f ${DOCKERFILE} -t ${TARGET_IMAGE} --build-arg=BRANCH=${TARGET_BRANCH} --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}" .
 
-branches:
-  only:
-  - develop
-  - master
-cache:
-  directories:
-  - $HOME/software
-notifications:
-  webhooks:
-    urls:
-    - https://webhooks.gitter.im/e/cf3f3fee0056f865adb2
-    on_success: always
-    on_failure: always
-before_deploy:
-- cd $HOME/software/install &&  tar cjf feelpp-${TRAVIS_OS_NAME}-${TRAVIS_BRANCH}-latest.tar.bz2 `find
-  . -maxdepth 1 -mindepth 1     -type d -exec basename {} \;`
-- mkdir $HOME/travis-builds && mv $HOME/software/install/feelpp-${TRAVIS_OS_NAME}-${TRAVIS_BRANCH}-latest.tar.bz2
-  $HOME/travis-builds
-- ls $HOME/ && ls $HOME/travis-builds
-deploy:
-  provider: s3
-  access_key_id: AKIAII5MVUJW72VPYDXA
-  bucket: feelpp
-  region: eu-central-1
-  local-dir: $HOME/travis-builds/
-  upload-dir: travis-builds
-  skip_cleanup: true
-  acl: public_read
-  on:
-    all_branches: true
-    repo: feelpp/feelpp
-  secret_access_key:
-    secure: k/25KvWW4jC/04SL4oLROtUfUVmeBT3yxtX0S7jPT0Gtw+gnqvAx9CaNjJ2U6IQ04vsu/P7ngQmKOu18Ns/1fAPpW4sgswPAiHz/lEeoej/yshA1ikBuBxxbCtgMPQfzva2jo2dnXvwDMEfWkucBy4wIipaYkeAUTfk/V3RNyHg=
+install:
+- docker run feelpp/develop:latest true
+
+script:
+- true
+

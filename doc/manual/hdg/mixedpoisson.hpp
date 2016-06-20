@@ -1003,10 +1003,32 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                 {
                     std::string marker = exAtMarker.marker();
                     double meas = integrate( _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
-                    auto g = expr(exAtMarker.expression());
-                    // <I_target,m>_Gamma_I
-                    rhs4 += integrate(_range=markedfaces(M_mesh,marker),
-                                      _expr=g*id(nu)/meas);
+                    if ( exAtMarker.isExpression() )
+                    {
+                        auto g = expr(exAtMarker.expression());
+                        // <I_target,m>_Gamma_I
+                        rhs4 += integrate(_range=markedfaces(M_mesh,marker),
+                                          _expr=g*id(nu)/meas);
+                    }
+                    else if ( exAtMarker.isFile() )
+                    {
+                        double g = 0;
+                        if ( !this->isStationary() )
+                        {
+                            std::cout << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
+                            LOG(INFO) << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
+                            
+                            // data may depend on time
+                            g = exAtMarker.data(M_bdf_mixedpoisson->time());
+                        }
+                        else
+                            g = exAtMarker.data(0.1);
+                            
+                            LOG(INFO) << "use g=" << g << std::endl;
+                            std::cout << "g=" << g << std::endl;
+                            rhs4 += integrate(_range=markedfaces(M_mesh,marker),
+                                              _expr=g*id(nu)/meas);
+                    }
                 }
             }
         }

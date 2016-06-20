@@ -29,49 +29,114 @@
 #include <string>
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelvf/ginac.hpp>
+#include <feel/feelfilters/loadcsv.hpp>
 
 #include <boost/property_tree/ptree.hpp>
 
 namespace Feel
 {
 namespace pt =  boost::property_tree;
-struct ExpressionStringAtMarker : public std::tuple<std::string,std::string,std::string>
-{
-    typedef std::tuple<std::string,std::string,std::string> super;
 
-    ExpressionStringAtMarker( super && s ) : super( s ) { M_meshMarkers.push_back( this->marker() ); }
+//! Boundary condition at marker is an e≈pression string
+class ExpressionStringAtMarker : public std::tuple<std::string,std::string,std::string,std::string,std::string>
+{
+public:
+    typedef std::tuple<std::string,std::string,std::string,std::string,std::string> super;
+    enum boundarycondition_t { EXPRESSION = 0, FILE = 1 };
+    
+    ExpressionStringAtMarker( super && s )
+        :
+        super( s ),
+        M_type( EXPRESSION )
+        
+        {
+            M_meshMarkers.push_back( this->marker() );
+            if ( typeStr() == "file" )
+            {
+                M_type = FILE;
+                M_filename = Environment::expand( std::get<2>( *this ) );
+                M_data = loadXYFromCSV( M_filename, std::get<3>( *this ), std::get<4>( *this ) );
+            }
+        }
+
+    //! type of boundary condition : expression or data
+    std::string typeStr() const { return std::get<0>( *this ); }
+
+    //! return type
+    boundarycondition_t type() const { return M_type; }
+
+    //! @return true if boundary condition is an expression, false otherwise
+    bool isExpression() const { return M_type == EXPRESSION; }
+
+    //! @return true
+    bool isFile() const { return M_type == FILE; }
     
     /**
      * @return the marker
      */
-    std::string const& marker() const { return std::get<0>( *this ); }
+    std::string const& marker() const { return std::get<1>( *this ); }
     
     /**
      * @return the expression
      */
-    std::string const& expression() const { return std::get<1>( *this ); }
+    std::string const& expression() const { return std::get<2>( *this ); }
     
     /**
      * @return the expression
      */
-    std::string const& expression1() const { return std::get<1>( *this ); }
+    std::string const& expression1() const { return std::get<2>( *this ); }
 
     /**
      * @return the expression
      */
-    std::string const& expression2() const { return std::get<2>( *this ); }
+    std::string const& expression2() const { return std::get<3>( *this ); }
 
-    bool hasExpression() const { return !std::get<1>( *this ).empty(); } 
-    bool hasExpression1() const { return !std::get<1>( *this ).empty(); } 
-    bool hasExpression2() const { return !std::get<2>( *this ).empty(); }
+    bool hasExpression() const { return isExpression() && !std::get<2>( *this ).empty(); } 
+    bool hasExpression1() const { return isExpression() && !std::get<2>( *this ).empty(); } 
+    bool hasExpression2() const { return isExpression() && !std::get<3>( *this ).empty(); }
 
+    std::string filename() const { LOG_IF( ERROR, !isFile() ) << "boundary condition is not given by a file"; return M_filename; }
+    bool hasFilename() const { return isFile() && !M_filename.empty(); }
+    
     std::list<std::string> const& meshMarkers() const { return M_meshMarkers; }
 
     void setMeshMarkers( std::list<std::string> const& s ) { M_meshMarkers=s; }
 
+    double data( double time, double epsilon = 1e-7 ) const;
 private :
+    
     std::list<std::string> M_meshMarkers;
+    boundarycondition_t M_type;
+    std::string M_filename;
+    std::map<double,double> M_data;
 };
+// works on both `const` and non-`const` associative containers:
+template<class Container>
+inline
+auto floating_equal_range( Container&& container, double target, double epsilon = 0.00001 )
+    -> decltype( container.equal_range(target) )
+{
+    auto lower = container.lower_bound( target-epsilon );
+    auto upper = container.upper_bound( target+epsilon );
+    return std::make_pair(lower, upper);
+}
+template<typename Container>
+inline
+auto floating_key_exists( Container const& container, double target, double epsilon = 0.00001 )
+    -> decltype( std::make_pair( true, floating_equal_range( container, target, epsilon ) ) )
+{
+    auto range = floating_equal_range(container, target, epsilon);
+    return std::make_pair( range.first != range.second, range );
+}
+inline double
+ExpressionStringAtMarker::data( double time, double epsilon ) const
+{
+    auto r = floating_key_exists( M_data, time, epsilon );
+    LOG(INFO) << "Look for " << time << " in data file, found: " << r.first;
+    if ( r.first )
+        return r.second.first->second;
+    throw std::logic_error( "invalid time "+std::to_string(time)+" not found in data file " + this->filename() );
+}
 /**
  * Defines boundary conditions dictionary
  */

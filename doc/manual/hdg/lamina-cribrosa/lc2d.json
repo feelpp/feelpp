@@ -47,13 +47,33 @@
 	{
 	    "Integral":
 	    {
-        	"bottom":
-                {
-                     "expr":"0" //-4*Pi*R_ext*R_ext*k*cos(R_ext*R_ext):k:R_ext"  // "-sin(Pi*x)/(2*Pi):x"
-                }
-            }
+            /*
+        	  "bottom":
+              {
+              "expr":"-4*Pi*R_ext*R_ext*k*cos(R_ext*R_ext):k:R_ext" //"-4*Pi*R_ext*R_ext*k*cos(R_ext*R_ext):R_ext:k"    // "-sin(Pi*x)/(2*Pi):x"
+              }
+            */
+            "bottom":
+            {
+                "type":"file",
+                "filetype":"csv",
+                "filename":"$cfgdir/data.csv",
+                "abscissa":"time",
+                "ordinate": "sineVoltage1.v"
+            }  
         }
-    },
+    },/*
+        "Functions":
+        {
+        "u":
+        {
+            "expr":"{1/(2*Pi)*cos(Pi*x)*sin(Pi*y),1/(2*Pi)*sin(Pi*x)*cos(Pi*y)}:x:y"
+        },
+        "p":
+        {
+            "expr":"1/(2*Pi*Pi)*sin(Pi*x)*sin(Pi*y):x:y"
+        }
+    },*/
     "PostProcess":
     {
         "Fields":["potential","flux","state variable"]
