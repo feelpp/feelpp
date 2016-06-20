@@ -584,7 +584,12 @@ VectorUblas<T,Storage>::operator= ( const Vector<value_type> &v )
         return *this;
 
     if ( !this->map().isCompatible( v.map() ) )
+    {
         this->setMap( v.mapPtr() );
+        this->resize( this->map().nLocalDofWithGhost() );
+    }
+
+#if !defined(NDEBUG)
     checkInvariant();
 
     FEELPP_ASSERT( this->localSize() == v.localSize() &&
@@ -592,6 +597,7 @@ VectorUblas<T,Storage>::operator= ( const Vector<value_type> &v )
     ( this->localSize() )( this->map().nLocalDofWithoutGhost() )
     ( this->vec().size() )
     ( v.localSize() )( v.map().nLocalDofWithoutGhost() ).warn( "may be vector invalid  copy" );
+#endif
 
     typedef VectorUblas<T> the_vector_ublas_type;
     typedef typename the_vector_ublas_type::range::type the_vector_ublas_range_type;

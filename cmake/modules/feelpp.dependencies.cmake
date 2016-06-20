@@ -801,7 +801,7 @@ if ( NOT GFORTRAN_LIBRARY )
     /opt/local/lib
     /usr/lib/gcc/x86_64-linux-gnu/
     PATH_SUFFIXES
-    gcc47 gcc46 gcc45 gcc44 4.7 4.6 4.5 4.4
+    gcc5 gcc49 gcc48 gcc47 gcc46 gcc45 gcc44 4.7 4.6 4.5 4.4
     )
 endif()
 
@@ -1005,6 +1005,8 @@ if ( FEELPP_ENABLE_VTK )
     else()
         FIND_PACKAGE(VTK)
         if( VTK_FOUND )
+            include(${VTK_USE_FILE})
+
             set(FEELPP_HAS_VTK 1)
             MESSAGE(STATUS "[feelpp] Found VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")# ${VTK_LIBRARIES}")
 
@@ -1033,9 +1035,9 @@ if ( FEELPP_ENABLE_VTK )
                 unset(__test_vtk_parallel)
             endif() 
 
-            if ( NOT FEELPP_ENABLE_OPENGL )
-                SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
-            endif()
+            #if ( NOT FEELPP_ENABLE_OPENGL )
+                #SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
+            #endif()
             INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
             MARK_AS_ADVANCED( VTK_DIR )
 
@@ -1176,6 +1178,9 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
   if ( FEELPP_ENABLE_NLOPT )
     FIND_LIBRARY(FEELPP_NLOPT_LIBRARY feelpp_nlopt PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   endif()
+  if ( FEELPP_ENABLE_IPOPT )
+    FIND_LIBRARY(FEELPP_IPOPT_LIBRARY feelpp_ipopt PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  endif()
   FIND_LIBRARY(FEELPP_GINAC_LIBRARY feelpp_ginac PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   FIND_LIBRARY(FEELPP_LIBRARY feelpp PATHS $ENV{FEELPP_DIR}/lib NO_DEFAULT_PATH)
   FIND_LIBRARY(FEELPP_LIBRARY feelpp )
@@ -1191,14 +1196,14 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
   message(STATUS "[feelpp] Feel++ includes: ${FEELPP_INCLUDE_DIR}")
   message(STATUS "[feelpp] Feel++ library: ${FEELPP_LIBRARY}")
   message(STATUS "[feelpp] Feel++ data: ${FEELPP_DATADIR}")
-  
+
   MARK_AS_ADVANCED(
     FEELPP_INCLUDE_DIR
     FEELPP_LIBRARY
     )
-  SET(FEELPP_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_GINAC_LIBRARY} ${FEELPP_NLOPT_LIBRARY}  ${FEELPP_LIBRARIES})
+  SET(FEELPP_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_GINAC_LIBRARY} ${FEELPP_NLOPT_LIBRARY} ${FEELPP_IPOPT_LIBRARY} ${FEELPP_LIBRARIES})
 else()
-  set(FEELPP_LIBRARY feelpp) 
+  set(FEELPP_LIBRARY feelpp)
   SET(FEELPP_INCLUDE_DIR ${FEELPP_BUILD_DIR}/ ${FEELPP_SOURCE_DIR}/)
   INCLUDE_DIRECTORIES(${FEELPP_INCLUDE_DIR})
 endif()
