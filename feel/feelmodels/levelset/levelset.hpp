@@ -130,6 +130,14 @@ public:
 #endif
 
     //--------------------------------------------------------------------//
+    // Projectors
+    typedef Projector<space_levelset_type, space_levelset_type> projector_levelset_type;
+    typedef boost::shared_ptr<projector_levelset_type> projector_levelset_ptrtype;
+    
+    typedef Projector<space_levelset_vectorial_type, space_levelset_vectorial_type> projector_levelset_vectorial_type;
+    typedef boost::shared_ptr<projector_levelset_vectorial_type> projector_levelset_vectorial_ptrtype;
+
+    //--------------------------------------------------------------------//
     // Reinitialization
     typedef Reinitializer<space_levelset_type> reinitializer_type;
     typedef boost::shared_ptr<reinitializer_type> reinitializer_ptrtype;
@@ -325,10 +333,6 @@ public:
     void setUseMarkerDiracAsMarkerDoneFM( bool val = true ) { M_useMarkerDiracAsMarkerDoneFM  = val; }
     void setThicknessInterface( double value ) { M_thicknessInterface = value; }
 
-    // ------------------- projectors ----------------
-    //M_l2p : for projection (update H, D ...), M_smooth : only for reinit !
-    boost::shared_ptr< Projector<space_levelset_type, space_levelset_type> >  M_l2p;
-    boost::shared_ptr< Projector<space_levelset_vectorial_type, space_levelset_vectorial_type> >  M_l2pVec;
 
 protected:
     //--------------------------------------------------------------------//
@@ -416,6 +420,10 @@ private:
     element_markers_ptrtype M_markerCrossedElements;
     element_markers_ptrtype M_markerInterface;
     bool M_doUpdateMarkers;
+    //--------------------------------------------------------------------//
+    // Projectors
+    projector_levelset_ptrtype M_projectorL2;
+    projector_levelset_vectorial_ptrtype M_projectorL2Vec;
 
     //--------------------------------------------------------------------//
     // Reinitialization
