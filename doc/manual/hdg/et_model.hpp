@@ -26,6 +26,7 @@
 #include "mixedpoisson.hpp"
 
 namespace Feel {
+namespace FeelModels{
 
 inline
 po::options_description
@@ -279,5 +280,5 @@ ElectroThermal<Dim, Order>::run()
 
 }
 
-
+} // FeelModels
 } // Feel
