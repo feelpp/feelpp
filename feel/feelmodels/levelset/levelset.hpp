@@ -253,6 +253,10 @@ public:
 
     int iterSinceReinit() const { return M_iterSinceReinit; }
 
+    projector_levelset_ptrtype const& projectorL2 const { return M_projectorL2; }
+    projector_levelset_vectorial_ptrtype const& projectorL2Vectorial() const { return M_projectorL2Vec; }
+    projector_levelset_ptrtype const& smootherCurvature() const { return M_smootherCurvature; }
+
     //--------------------------------------------------------------------//
     // Markers
     element_markers_ptrtype const& markerInterface();
@@ -279,6 +283,8 @@ public:
     void setStrategyBeforeFm( int strat = 1 );
     strategy_before_FM_type strategyBeforeFm() { return M_strategyBeforeFM; }
     void setUseMarkerDiracAsMarkerDoneFM( bool val = true ) { M_useMarkerDiracAsMarkerDoneFM  = val; }
+
+    reinitializer_ptrtype const& reinitializer() const { return M_reinitializer; }
 
     //--------------------------------------------------------------------//
     // Initial value
