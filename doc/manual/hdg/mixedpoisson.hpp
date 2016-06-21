@@ -1220,7 +1220,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
             }
         }
     }
-   
+    M_exporter->save();
     /*/ Export exact solutions
      if ( this->isStationary() ){
      auto K = 10;
