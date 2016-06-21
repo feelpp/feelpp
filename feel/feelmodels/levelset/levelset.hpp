@@ -100,22 +100,6 @@ public:
     typedef typename space_levelset_vectorial_type::element_type element_levelset_vectorial_type;
     typedef boost::shared_ptr< element_levelset_vectorial_type > element_levelset_vectorial_ptrtype;
 
-    // ---------------- Correction levelset space -------
-#if (LEVELSET_CONSERVATIVE_ADVECTION == 1)
-    // correction only one ddl
-    typedef bases<Lagrange<0, Scalar, Continuous> > basisLSCorr_type;
-    typedef FunctionSpace<mesh_type, basisLSCorr_type > spaceLSCorr_type;
-    typedef boost::shared_ptr<spaceLSCorr_type> spaceLSCorr_ptrtype;
-    typedef typename spaceLSCorr_type::element_type elementLSCorr_type;
-    typedef boost::shared_ptr< elementLSCorr_type > elementLSCorr_ptrtype;
-#elif (LEVELSET_CONSERVATIVE_ADVECTION == 2)
-    // correction in the same space than phi
-    typedef space_levelset_type spaceLSCorr_type;
-    typedef space_levelset_ptrtype spaceLSCorr_ptrtype;
-    typedef element_levelset_type elementLSCorr_type;
-    typedef element_levelset_ptrtype elementLSCorr_ptrtype;
-#endif
-
     //--------------------------------------------------------------------//
     // Space markers P0
     typedef Lagrange<0, Scalar, Discontinuous> basis_markers_type;
@@ -228,6 +212,7 @@ public:
     double mass() const { return M_mass; }
 
     double thicknessInterface() const { return M_thicknessInterface; }
+    void setThicknessInterface( double value ) { M_thicknessInterface = value; }
 
     int iterSinceReinit() const { return M_iterSinceReinit; }
 
@@ -250,18 +235,13 @@ public:
 
     void updateInterfaceQuantities();
 
-    /* returns phi after advection by Velocity
-      do not change the value of this->M_phi or any other variable (delta heavyside ...) */
-    template < typename TVeloc >
-    element_levelset_ptrtype phiAdvected(TVeloc const& Velocity, bool stabilization = true)
-    { return this->advReactUpdate(Velocity, stabilization); }
-
     //--------------------------------------------------------------------//
     // Reinitialization
     void reinitialize();
 
-    // template < typename TVeloc >
-    // void updateE(TVeloc& Velocity);
+    void setStrategyBeforeFm( int strat = 1 );
+    strategy_before_FM_type strategyBeforeFm() { return M_strategyBeforeFM; }
+    void setUseMarkerDiracAsMarkerDoneFM( bool val = true ) { M_useMarkerDiracAsMarkerDoneFM  = val; }
 
     //--------------------------------------------------------------------//
     // Initial value
@@ -297,22 +277,6 @@ public:
     {
         this->setInitialValue(expr, M_reinitInitialValue );
     }
-    //element_levelset_ptrtype circleShape(double r0, double x0, double y0, double z0=0);
-    //element_levelset_ptrtype ellipseShape(double a_ell, double b_ell, double x0, double y0, double z0=0);
-    //void imposePhi( element_levelset_ptrtype );
-
-    //element_levelset_ptrtype makeDistFieldFromParametrizedCurve(std::function<double(double)> xexpr, std::function<double(double)> yexpr,
-                                                         //double tStart, double tEnd, double dt,
-                                                         //bool useRandomPt=true, double randomness=doption("gmsh.hsize") / 5.,
-                                                         //bool export_points=false, std::string export_name="");
-
-
-    //element_levelset_ptrtype makeDistFieldFromParametrizedCurve(std::tuple< std::function<double(double)>, std::function<double(double)>, double, double >  paramCurve,
-                                                         //double dt, bool useRandomPt=true, double randomness=doption("gmsh.hsize") / 5.,
-                                                         //bool export_points=false, std::string export_name="");
-
-    //template< typename Elt1, typename Elt2 >
-    //std::vector<double> getStatReinit(Elt1 __phio, Elt2 __phi);
 
     /* update the submesh and subspaces*/
     //void updateSubMeshSubSpace(element_markers_ptrtype marker);
@@ -324,22 +288,6 @@ public:
     // Export results
     using super_type::exportResults;
     void exportResults( double time );
-
-    /*// ----------- serialization, save, restart
-    template<class Archive>
-    void serialize(Archive& ar, const unsigned int version)
-    {ar & *itersincereinit & *M_phi & *M_phio;}
-
-    void restart(double restart_time);
-    void save(double time);
-    static double getRestartTimeFromExporter( std::string name );*/
-
-    // ------------ setters -------------
-    void setStrategyBeforeFm( int strat = 1 );
-    strategy_before_FM_type strategyBeforeFm() { return M_strategyBeforeFM; }
-    void setUseMarkerDiracAsMarkerDoneFM( bool val = true ) { M_useMarkerDiracAsMarkerDoneFM  = val; }
-    void setThicknessInterface( double value ) { M_thicknessInterface = value; }
-
 
 protected:
     //--------------------------------------------------------------------//
@@ -365,25 +313,6 @@ private:
     element_levelset_ptrtype & phi() { return this->fieldSolutionPtr(); }
     element_levelset_ptrtype const& phio() const { return this->timeStepBDF()->unknowns()[1]; }
 
-    template < typename TVeloc >
-    element_levelset_ptrtype advReactUpdate(TVeloc& Velocity, bool updateStabilization=true, bool updateBilinearForm=true);
-
-#if defined(LEVELSET_CONSERVATIVE_ADVECTION)
-    template < typename TVeloc >
-    void conservativeH(TVeloc& Velocity, element_levelset_ptrtype Hc);
-
-    void updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J);
-    void updateResidual(const vector_ptrtype& X, vector_ptrtype& R, element_levelset_ptrtype Hc);
-    void computeCorrection(element_levelset_ptrtype Hc);
-#endif
-
-    element_levelset_ptrtype explicitHJ(int, double, double);
-    element_levelset_ptrtype explicitILHJ(int, double, double);
-    double distToDist();
-    //        element_levelset_reinitP1_ptrtype makeShape(std::function<double(double)> xexpr, std::function<double(double)> yexpr, double tStart, double tEnd, double dt, space_markers_ptrtype mspaceP0, mesh_ptrtype msmesh, bool useRandomPt=false);
-
-
-
 protected:
     //--------------------------------------------------------------------//
     // Levelset data
@@ -398,11 +327,6 @@ protected:
     //--------------------------------------------------------------------//
     // Levelset initial value
     map_scalar_field<2> M_icDirichlet;
-
-#if defined(LEVELSET_CONSERVATIVE_ADVECTION)
-    elementLSCorr_ptrtype phic;
-#endif
-
 
 private:
     //--------------------------------------------------------------------//
@@ -459,19 +383,6 @@ private:
     //advection_ptrtype M_advection;
     //boost::shared_ptr<advection_type> M_advection_hj;
 
-#if defined(LEVELSET_CONSERVATIVE_ADVECTION)
-    spaceLSCorr_ptrtype M_spaceLSCorr;
-
-    backend_ptrtype backend_nl;
-    backend_ptrtype backend_h;
-
-    sparse_matrix_ptrtype J;
-    vector_ptrtype R;
-
-    sparse_matrix_ptrtype D_h;
-    vector_ptrtype F_h;
-#endif
-
     //--------------------------------------------------------------------//
     // Export
     //exporter_ptrtype M_exporter;
@@ -505,48 +416,5 @@ private:
     int __iter;
 
 }; //class LevelSet
-
-
-
-/*template<int Order, int Dim, typename PeriodicityType>
-template< typename Elt1, typename Elt2 >
-std::vector<double>
-Feel::levelset::LevelSet<Order, Dim, PeriodicityType>::getStatReinit(Elt1 __phio,  Elt2 __phi)
-{
-
-    using namespace Feel;
-    using namespace Feel::vf;
-
-    // double& MassError, double& SignChangeError, double& distDist;
-    std::vector< double > stat(3);
-
-    //Mass_Error=mass(phi)/mass(phio)-1;
-
-    double mass_phi = integrate(elements(M_mesh),
-                                idv(__phi) < 0 ).evaluate()(0,0);
-    double mass_phio= integrate(elements(M_mesh),
-                                idv(__phio) < 0 ).evaluate()(0,0);
-
-    stat[0] = mass_phi / mass_phio - 1.0 ; // MassError
-
-    stat[1] = integrate(elements(M_mesh),
-                        idv(__phi)*idv(__phio) < 0. ).evaluate()(0,0); // SignChangeError
-
-    stat[2] = integrate(elements(M_mesh),
-                vf::abs(sqrt(gradv(__phi)*trans(gradv(__phi)))-1.0)).evaluate()(0,0); // distDist
-
-    stat[2] /= integrate(elements(M_mesh), vf::cst(1.)).evaluate()(0,0);
-
-    return stat;
-}//GetStatReinit*/
-
-
-} //namespace FeelModels
-} //namespace Feel
-
-// #if CONSERVATIVE_ADVECTION
-// #include "nonlinearcorrection.cpp"
-// #endif
-
 
 #endif
