@@ -161,9 +161,9 @@ protected:
     // time discretization
     bdf_ptrtype M_bdf_mixedpoisson;
     
-    map_scalar_field<2> M_dirichlet;
+    // map_scalar_field<2> M_dirichlet;
     // map_vector_field<Dim,1,2> M_neumann;
-    map_scalar_field<2> M_source;    
+    // map_scalar_field<2> M_source;    
 
     int M_tau_order;
     
@@ -419,9 +419,9 @@ template<int Dim, int Order, int G_Order>
 void
 MixedPoisson<Dim, Order, G_Order>::initModel()
 {
-    M_dirichlet = M_modelProperties -> boundaryConditions().getScalarFields( "potential", "Dirichlet");
+    // M_dirichlet = M_modelProperties -> boundaryConditions().getScalarFields( "potential", "Dirichlet");
     // M_neumann = M_modelProperties -> boundaryConditions().template getVectorFields<Dim> ( "flux", "Neumann" );
-    M_source = M_modelProperties -> boundaryConditions().getScalarFields( "potential", "SourceTerm");
+    // M_source = M_modelProperties -> boundaryConditions().getScalarFields( "potential", "SourceTerm");
 
     // initialize marker lists for each boundary condition type
     M_integralMarkersList.clear();
@@ -430,7 +430,8 @@ MixedPoisson<Dim, Order, G_Order>::initModel()
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Dirichlet" );
-        if ( itType != mapField.end() )
+        /*
+	if ( itType != mapField.end() )
         {
             cout << "Dirichlet: ";
             for ( auto const& exAtMarker : (*itType).second )
@@ -443,6 +444,7 @@ MixedPoisson<Dim, Order, G_Order>::initModel()
             }
             cout << std::endl;
         }
+	*/ 
         itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
         {
@@ -736,7 +738,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleA()
     // (1/delta_t p, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
         a22 += integrate(_range=elements(M_mesh),
-                         _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*idt(w)) );
+                         _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
     }
     
     // <-tau phat, w>_Gamma\Gamma_I
@@ -895,6 +897,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
     auto rhs1 = form1( _test=M_Wh, _vector=M_F, _rowstart=0);
     auto rhs2 = form1( _test=M_Wh, _vector=M_F, _rowstart=1);
     auto rhs3 = form1( _test=M_Mh, _vector=M_F, _rowstart=2);
+    /*
     M_source.setParameterValues( M_modelProperties->parameters().toParameterValues() );
     if (!this->isStationary())
         M_source.setParameterValues( {{"t",M_bdf_mixedpoisson->time()}} ); 
@@ -917,13 +920,13 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
         rhs3 += integrate( _range = markedfaces(M_mesh,marker(d)),
                            _expr = id(l)*expression(d));
 
-    }
+    }*/
     auto itField = M_modelProperties->boundaryConditions().find( "potential");
     if ( itField != M_modelProperties->boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "SourceTerm" );
-        /*if ( itType != mapField.end() )
+        if ( itType != mapField.end() )
         {
             for ( auto const& exAtMarker : (*itType).second )
             {
@@ -939,19 +942,43 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                 }
             }
         }
-
+	
         itType = mapField.find( "Dirichlet" );
         if ( itType != mapField.end() )
         {
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                auto g = expr(exAtMarker.expression());
-                // <g_D, mu>_Gamma_D
-                rhs3 += integrate(_range=markedfaces(M_mesh,marker),
-                                  _expr=id(l)*g);
+                if ( exAtMarker.isExpression() )
+                {
+                    auto g = expr(exAtMarker.expression());
+		    // <g_D, mu>_Gamma_D
+		    rhs3 += integrate(_range=markedfaces(M_mesh,marker),
+                                  _expr=id(l)*g);                    
+                }
+                else if ( exAtMarker.isFile() )
+                {
+                    double g = 0;
+                    if ( !this->isStationary() )
+                    {
+                    	std::cout << "use data file to set rhs for Dirichlet BC at time " << M_bdf_mixedpoisson->time() << std::endl;
+                        LOG(INFO) << "use data file to set rhs for Dirichlet BC at time " << M_bdf_mixedpoisson->time() << std::endl;
+
+                        // data may depend on time
+                        g = exAtMarker.data(M_bdf_mixedpoisson->time());
+                    }
+                    else
+                    	g = exAtMarker.data(0.1);
+
+                    LOG(INFO) << "use g=" << g << std::endl;
+                    std::cout << "g=" << g << std::endl;
+ 		    // <g_D, mu>_Gamma_D
+		    rhs3 += integrate(_range=markedfaces(M_mesh,marker),
+                                      _expr=id(l)*g);
+                }
+
             }
-        }*/
+        }
 
         itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
@@ -1179,36 +1206,45 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
 	    }*/
             {
                 M_exporter->step( time )->add(prefixvm(M_prefix, "flux"), Idhv?(*Idhv)( *M_up):*M_up );
+		if (M_integralCondition)
+                {
+                    double j_integral = 0;
+                    for( auto marker : this->M_integralMarkersList)
+                        j_integral += integrate(_range=markedfaces(M_mesh,marker),_expr=trans(idv(M_up))*N()).evaluate()(0,0);
+                    M_exporter->step( time )->add(prefixvm(M_prefix, "integralFlux"), j_integral);
+                }
             }
             if ( field == "potential" )
             {
                 M_exporter->step( time )->add(prefixvm(M_prefix, "potential"), Idh?(*Idh)(*M_pp):*M_pp);
+		if (M_integralCondition)
+                    M_exporter->step( time )->add(prefixvm(M_prefix, "cstPotential"),(*M_mup)[0] );
             }
         }
     }
    
-    // Export exact solutions
+    /*/ Export exact solutions
     if ( this->isStationary() ){
 	auto K = 10;
 	auto p_exact = expr(soption(prefixvm(M_prefix,"p_exact") ));
     	auto gradp_exact = grad<Dim>(p_exact);
 	auto u_exact = -K*trans(gradp_exact);
         
-	/*
+	*
     	for( auto const& pairMat : M_modelProperties->materials() )
     	{
              auto marker = pairMat.first;
              auto material = pairMat.second;
              auto K = material.getScalar(soption(prefixvm(M_prefix,"conductivity_json")));
              u_exact = -K*trans(gradp_exact) ;
-	}*/
+	}*
 
     	auto p_exact_proj = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact);
     	auto u_exact_proj = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact);
    	M_exporter -> step (0) -> add(prefixvm(M_prefix, "p_exact"), p_exact_proj);
 
 	M_exporter -> step (0) -> add(prefixvm(M_prefix, "u_exact"), u_exact_proj);
-    }
+    }*/
 
     
 
