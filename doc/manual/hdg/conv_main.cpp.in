@@ -26,11 +26,11 @@ int main(int argc, char *argv[])
                            _argv=argv,
                            _about=makeAbout(),
                            _desc=makeConvOptions(),
-                           _desc_lib=makeConvLibOptions() );
+                           _desc_lib=makeConvLibOptions().add(feel_options()) );
 
     typedef ConvergenceTest<@D@,@P@> cv_type;
 
-    cv_type CV;;
+    cv_type CV;
     CV.run();
     return 0;
 }
