@@ -27,11 +27,11 @@ feelpp_add_application( electro-thermal-2 SRCS et2_main.cpp INCLUDE_IN_ALL CFG e
 feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore)
 
 foreach(D 2 3)
-   foreach(P RANGE 1 3 1)
-	configure_file(lc_main_model.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/lc${D}DP${P}_main.cpp )
- 	feelpp_add_application( lamina-cribrosa-model_${D}DP${P} SRCS lc${D}DP${P}_main.cpp INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore)
+   foreach(P RANGE 1 1 1)
+	#configure_file(lc_main_model.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/lc${D}DP${P}_main.cpp )
+	feelpp_add_application( lamina-cribrosa-model_${D}DP${P} SRCS lc_main_model.cpp INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} )
    endforeach()
- endforeach()
+endforeach()
 
 foreach(D 2 3)
   foreach(P  RANGE 1 3 1) 
