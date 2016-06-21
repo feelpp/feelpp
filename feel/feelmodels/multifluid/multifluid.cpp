@@ -12,7 +12,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
         WorldComm const& wc,
         std::string const& subPrefix,
         std::string const& rootRepository )
-: super_type( prefix, wc, subPrefix, self_type::expandStringFromSpec( rootRepository ) ) 
+: super_type( prefix, wc, subPrefix, self_type::expandStringFromSpec( rootRepository ) )
 {}
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -35,16 +35,45 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build( uint16_type nLevelSets )
             ); 
     M_fluid->build();
 
+    M_fluidDensityViscosityModel.reset( new densityviscosity_model_type(*M_fluid->densityViscosityModel()) );
+
+    M_globalLevelset = levelset_ptrtype(
+            new levelset_type( "levelset", this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
+            );
+    M_globalLevelset->build( M_fluid->mesh() );
+
     M_levelsets.resize( nLevelSets );
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
         M_levelsets[i] = levelset_ptrtype(
-                new levelset_type( (boost::format("levelset%1%")%i).str(), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
+                new levelset_type( "levelset", this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
                 );
-        M_levelsets[i]->build( M_fluid->mesh() );
+        M_levelsets[i]->build(
+                _space=M_globalLevelset->functionSpace(),
+                _space_vectorial=M_globalLevelset->functionSpaceVectorial(),
+                _space_markers=M_globalLevelset->functionSpaceMarkers(),
+                _reinitializer=M_globalLevelset->reinitializer(),
+                _projectorL2=M_globalLevelset->projectorL2(),
+                _projectorL2_vectorial=M_globalLevelset->projectorL2Vectorial(),
+                _smoother_curvature=M_globalLevelset->smootherCurvature()
+                );
     }
 
     this->log("MultiFluid", "build", "finish");
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
+{
+
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateDensityViscosity()
+{
+
 }
 
 } // namespace FeelModels
