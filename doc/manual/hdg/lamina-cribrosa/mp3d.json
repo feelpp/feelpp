@@ -10,7 +10,9 @@
             "name":"copper",
 	    "R_ext":"0.095",
 	    "k":"0.015192", 
-	    "H":"0.03" 
+	    "H":"0.03",
+	    "areaCRA":"0.2277e-3",
+	    "areaCRV":"0.4369e-4"
         }
     },
     "BoundaryConditions":
@@ -68,11 +70,47 @@
                      "ordinate":"lcR.p.i"
                 }
             }
-        }
+        },
+	"Other quantities":
+	{
+	    "CRAflow":
+	    {
+		"out":
+                {
+                     "type":"file",
+                     "filetype":"csv",
+                     "filename":"$cfgdir/data.csv",
+                     "abscissa":"time",
+                     "ordinate":"R1a.p.i"
+		}
+            },
+            "CRVflow":
+            {
+		"out":
+		{
+                     "type":"file",
+                     "filetype":"csv",
+                     "filename":"$cfgdir/data.csv",
+                     "abscissa":"time",
+                     "ordinate":"R5a.n.i"
+		}
+            },
+	    "Pin":
+            {
+                "out":
+                {
+                     "type":"file",
+                     "filetype":"csv",
+                     "filename":"$cfgdir/data.csv",
+                     "abscissa":"time",
+                     "ordinate":"Pin.p.v"
+                }
+            }
+	}
     },
     "PostProcess":
     {
-        "Fields":["potential","flux"]
+        "Fields":["potential","flux","lamina_variables"]
     }
 }
 

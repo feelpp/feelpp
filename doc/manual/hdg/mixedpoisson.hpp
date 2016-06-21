@@ -430,7 +430,7 @@ MixedPoisson<Dim, Order, G_Order>::initModel()
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Dirichlet" );
-        /*
+        
 	if ( itType != mapField.end() )
         {
             cout << "Dirichlet: ";
@@ -444,7 +444,7 @@ MixedPoisson<Dim, Order, G_Order>::initModel()
             }
             cout << std::endl;
         }
-	*/ 
+	 
         itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
         {
@@ -1199,13 +1199,16 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                 M_exporter->step( time )->add(prefixvm(M_prefix, "flux"), Idhv?(*Idhv)( *M_up):*M_up );
                 if (M_integralCondition)
                 {
+		    double meas = 0.0;
                     double j_integral = 0;
                     for( auto marker : this->M_integralMarkersList)
                     {
                         LOG(INFO) << "exporting integral flux at time " << time << " on marker " << marker;
                         j_integral += integrate(_range=markedfaces(M_mesh,marker),_expr=trans(idv(M_up))*N()).evaluate()(0,0);
+			meas += integrate(_range=markedfaces(M_mesh,marker),_expr=cst(1.0)).evaluate()(0,0);
                     }
                     M_exporter->step( time )->add(prefixvm(M_prefix, "integralFlux"), j_integral);
+		    M_exporter->step( time )->add(prefixvm(M_prefix, "integralVelocity"), j_integral/meas);
                 }
             }
             if ( field == "potential" )
@@ -1218,8 +1221,85 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                     M_exporter->step( time )->add(prefixvm(M_prefix, "cstPotential"),(*M_mup)[0] );
                 }
             }
+	    if (field == "lamina_variables")
+	    {
+		// Import data
+		LOG(INFO) << "importing lamina variables at time " << time;
+		double areaCRA = 0.0;
+		double areaCRV = 0.0;
+		double Pin = 0.0;
+		double CRAflow = 0.0;
+		double CRVflow = 0.0;
+		for( auto const& pairMat : M_modelProperties->materials() )
+    		{	
+        	    auto marker = pairMat.first;
+        	    auto material = pairMat.second;
+		    areaCRA = material.getDouble("areaCRA");
+		    areaCRV = material.getDouble("areaCRV");
+		}
+		
+		
+		auto itField = M_modelProperties->boundaryConditions().find( "Other quantities");
+  		if ( itField != M_modelProperties->boundaryConditions().end() )
+    		{
+		    auto mapField = (*itField).second;
+		    // CRAflow 
+		    auto itType = mapField.find( "CRAflow" );
+		    if ( itType != mapField.end() )
+        	    {		
+            	    	for ( auto const& exAtMarker : (*itType).second )
+            		{
+                	    if ( exAtMarker.isFile() )
+                	    {
+                        	CRAflow = exAtMarker.data(M_bdf_mixedpoisson->time());
+                    	    }
+
+               		}
+
+            	    }
+		    // CRVflow
+                    itType = mapField.find( "CRVflow" );
+                    if ( itType != mapField.end() )
+                    {
+                        for ( auto const& exAtMarker : (*itType).second )
+                        {
+                            if ( exAtMarker.isFile() )
+                            {
+                                CRVflow = exAtMarker.data(M_bdf_mixedpoisson->time());
+                            }
+
+                        }
+
+                    }
+		    // Pin
+		    itType = mapField.find( "Pin" );
+                    if ( itType != mapField.end() )
+                    {
+                        for ( auto const& exAtMarker : (*itType).second )
+                        {
+                            if ( exAtMarker.isFile() )
+                            {
+                                Pin = exAtMarker.data(M_bdf_mixedpoisson->time());
+                            }
+                        }
+                    }
+        	}
+
+		// Transform data
+		auto CRAvelocity = CRAflow/areaCRA ;
+		auto CRVvelocity = CRVflow/areaCRV ;
+		
+		// Export data
+		LOG(INFO) << "exporting lamina variables at time " << time;
+		M_exporter->step( time )->add(prefixvm(M_prefix, "Pin"), Pin);
+		M_exporter->step( time )->add(prefixvm(M_prefix, "CRAflow"), CRAflow );		
+		M_exporter->step( time )->add(prefixvm(M_prefix, "CRVflow"), CRVflow );
+		M_exporter->step( time )->add(prefixvm(M_prefix, "CRAvelocity"), CRAvelocity );
+		M_exporter->step( time )->add(prefixvm(M_prefix, "CRVvelocity"), CRVvelocity );
+	    }	
         }
     }
+
     M_exporter->save();
     /*/ Export exact solutions
      if ( this->isStationary() ){
