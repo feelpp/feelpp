@@ -10,6 +10,7 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmesh/complement.hpp>
@@ -31,7 +32,7 @@ makeMixedPoissonOptions( std::string prefix = "mixedpoisson" )
 {
     po::options_description mpOptions( "Mixed Poisson HDG options");
     mpOptions.add_options()
-        ( prefixvm( prefix, "gmsh.submesh").c_str(), po::value<double>()->default_value( "" ), "submesh extraction" )
+        ( prefixvm( prefix, "gmsh.submesh").c_str(), po::value<std::string>()->default_value( "" ), "submesh extraction" )
         ( prefixvm( prefix, "tau_constant").c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( prefixvm( prefix, "tau_order").c_str(), po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( prefixvm( prefix, "picard.itol").c_str(), po::value<double>()->default_value( 1e-4 ), "tolerance" )
@@ -191,7 +192,10 @@ public:
                              std::string const& subPrefix = "",
                              std::string const& rootRepository = ModelBase::rootRepositoryByDefault() ); 
 
-    void init( mesh_ptrtype mesh = nullptr, int extraRow = 0, int extraCol = 0, mesh_ptrtype meshVisu = nullptr );
+    using op_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Wh_t, Pdh_type<mesh_type,1>>>;
+    using opv_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Vh_t, Pdhv_type<mesh_type,1>>>;
+    void init( mesh_ptrtype mesh = nullptr, int extraRow = 0, int extraCol = 0, mesh_ptrtype meshVisu = nullptr);
+               
     virtual void initModel();
     virtual void initSpaces();
     virtual void initGraphs(int extraRow, int extraCol);
@@ -236,8 +240,11 @@ public:
     void updateTimeStep() { this->updateTimeStepBDF(); }
    
     // Exporter
-    void exportResults( mesh_ptrtype mesh = nullptr ) { this->exportResults (this->currentTime(), mesh ); }
-    void exportResults ( double Time, mesh_ptrtype mesh = nullptr ) ;
+    void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr )
+        {
+            this->exportResults (this->currentTime(), mesh, Idh, Idhv );
+        }
+    void exportResults ( double Time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  ) ;
     exporter_ptrtype M_exporter;
 };
 
@@ -536,14 +543,13 @@ MixedPoisson<Dim, Order, G_Order>::initSpaces()
 
 template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order, G_Order>::initExporter( mesh_ptrtype meshVisu )
+MixedPoisson<Dim, Order, G_Order>::initExporter( mesh_ptrtype meshVisu ) 
 {
     std::string geoExportType="static"; //change_coords_only, change, static
     M_exporter = exporter ( _mesh=meshVisu?meshVisu:this->mesh() ,
                             _name="Export",
                             _geo=geoExportType,
                             _path=this->exporterPath() ); 
-
 }
 
 template<int Dim, int Order, int G_Order>
@@ -1142,7 +1148,7 @@ MixedPoisson<Dim, Order, G_Order>::exportResults()
 
 template <int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh )
+MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh, op_interp_ptrtype Idh, opv_interp_ptrtype Idhv  )
 {
 
     this->log("MixedPoisson","exportResults", "start");
@@ -1161,9 +1167,13 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh 
         for ( auto const& field : (*itField).second )
         {
             if ( field == "flux" )
-                M_exporter->step( time )->add(prefixvm(M_prefix, "flux"), *M_up);
+            {
+                M_exporter->step( time )->add(prefixvm(M_prefix, "flux"), Idhv?(*Idhv)( *M_up):*M_up );
+            }
             if ( field == "potential" )
-                M_exporter->step( time )->add(prefixvm(M_prefix, "potential"), *M_pp);
+            {
+                M_exporter->step( time )->add(prefixvm(M_prefix, "potential"), Idh?(*Idh)(*M_pp):*M_pp);
+            }
         }
     }
    
