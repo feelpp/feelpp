@@ -10,6 +10,7 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmesh/complement.hpp>
@@ -31,6 +32,7 @@ makeMixedPoissonOptions( std::string prefix = "mixedpoisson" )
 {
     po::options_description mpOptions( "Mixed Poisson HDG options");
     mpOptions.add_options()
+        ( prefixvm( prefix, "gmsh.submesh").c_str(), po::value<std::string>()->default_value( "" ), "submesh extraction" )
         ( prefixvm( prefix, "tau_constant").c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( prefixvm( prefix, "tau_order").c_str(), po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( prefixvm( prefix, "picard.itol").c_str(), po::value<double>()->default_value( 1e-4 ), "tolerance" )
@@ -191,11 +193,14 @@ public:
                              std::string const& subPrefix = "",
                              std::string const& rootRepository = ModelBase::rootRepositoryByDefault() ); 
 
-    void init( mesh_ptrtype mesh = nullptr, int extraRow = 0, int extraCol = 0);
+    using op_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Wh_t, Pdh_type<mesh_type,1>>>;
+    using opv_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Vh_t, Pdhv_type<mesh_type,1>>>;
+    void init( mesh_ptrtype mesh = nullptr, int extraRow = 0, int extraCol = 0, mesh_ptrtype meshVisu = nullptr);
+               
     virtual void initModel();
     virtual void initSpaces();
     virtual void initGraphs(int extraRow, int extraCol);
-    virtual void initExporter();
+    virtual void initExporter( mesh_ptrtype meshVisu = nullptr );
     virtual void assembleA();
     virtual void assembleF();
     void solve();
@@ -237,8 +242,13 @@ public:
     void updateTimeStep() { this->updateTimeStepBDF(); }
    
     // Exporter
-    void exportResults() { this->exportResults (this->currentTime() ); M_exporter->save(); }
-    virtual void exportResults ( double Time) ;
+    // void exportResults() { this->exportResults (this->currentTime() ); M_exporter->save(); }
+    // virtual void exportResults ( double Time) ;
+    void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr )
+        {
+            this->exportResults (this->currentTime(), mesh, Idh, Idhv );
+        }
+    void exportResults ( double Time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  ) ;
     exporter_ptrtype M_exporter;
     exporter_ptrtype exporterMP() { return M_exporter; }
 };
@@ -358,7 +368,7 @@ MixedPoisson<Dim, Order, G_Order>::MixedPoisson(std::string prefix )
 
 template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh, int extraRow, int extraCol)
+MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh, int extraRow, int extraCol, mesh_ptrtype meshVisu )
 {
     tic();
     if ( !mesh )
@@ -397,7 +407,7 @@ MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh, int extraRow, int ex
     M_U = this->get_backend()->newBlockVector(_block=M_hdg_sol, _copy_values=false);
     toc("graphs");
     tic();
-    this->initExporter();
+    this->initExporter( meshVisu );
     toc("exporter");
     tic();
     this->assembleA();
@@ -527,14 +537,13 @@ MixedPoisson<Dim, Order, G_Order>::initSpaces()
 
 template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order, G_Order>::initExporter()
+MixedPoisson<Dim, Order, G_Order>::initExporter( mesh_ptrtype meshVisu ) 
 {
     std::string geoExportType="static"; //change_coords_only, change, static
-    M_exporter = exporter ( _mesh=this->mesh() ,
+    M_exporter = exporter ( _mesh=meshVisu?meshVisu:this->mesh() ,
                             _name="Export",
                             _geo=geoExportType,
                             _path=this->exporterPath() ); 
-
 }
 
 template<int Dim, int Order, int G_Order>
@@ -1133,12 +1142,17 @@ MixedPoisson<Dim, Order, G_Order>::exportResults()
 
 template <int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim,Order, G_Order>::exportResults( double time )
+MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh, op_interp_ptrtype Idh, opv_interp_ptrtype Idhv  )
 {
 
     this->log("MixedPoisson","exportResults", "start");
     this->timerTool("PostProcessing").start();
-   
+
+    if ( M_exporter->exporterGeometry() != EXPORTER_GEOMETRY_STATIC && mesh  )
+        M_exporter->step( time )->setMesh( mesh );
+    else if ( M_exporter->exporterGeometry() != EXPORTER_GEOMETRY_STATIC )
+        M_exporter->step( time )->setMesh( M_mesh );
+    
     // Export computed solutions
     auto postProcess = M_modelProperties->postProcess();
     auto itField = postProcess.find( "Fields");
@@ -1147,7 +1161,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time )
         for ( auto const& field : (*itField).second )
         {
             if ( field == "flux" )
-	    {
+	    /*{
                 M_exporter->step( time )->add(prefixvm(M_prefix, "flux"), *M_up);
 		if (M_integralCondition)
 		{
@@ -1162,7 +1176,14 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time )
                 M_exporter->step( time )->add(prefixvm(M_prefix, "potential"), *M_pp);
 		if (M_integralCondition)
                     M_exporter->step( time )->add(prefixvm(M_prefix, "cstPotential"),(*M_mup)[0] );
-	    }
+	    }*/
+            {
+                M_exporter->step( time )->add(prefixvm(M_prefix, "flux"), Idhv?(*Idhv)( *M_up):*M_up );
+            }
+            if ( field == "potential" )
+            {
+                M_exporter->step( time )->add(prefixvm(M_prefix, "potential"), Idh?(*Idh)(*M_pp):*M_pp);
+            }
         }
     }
    

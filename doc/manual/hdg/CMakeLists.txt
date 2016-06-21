@@ -40,10 +40,10 @@ foreach(D 2 3)
   endforeach()
 endforeach()
 
-foreach(D 2 3)  
-  foreach(P  RANGE 1 3 1)   
-    configure_file(mixedpoisson_main.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/mp${D}DP${P}_main.cpp )
-    feelpp_add_application( mixed-poisson-model_${D}DP${P} SRCS mp${D}DP${P}_main.cpp INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore )
+foreach(D 2 3 )
+  foreach(P  RANGE 1 1 1) #3 
+    #configure_file(mixedpoisson_main.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/mp${D}DP${P}_main.cpp )
+    feelpp_add_application( mixed-poisson-model_${D}DP${P} SRCS mixedpoisson_main.cpp mixedpoisson.hpp LINK_LIBRARIES feelpp_modelcore DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P})
   endforeach()
 endforeach()
 
