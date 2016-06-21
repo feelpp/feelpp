@@ -48,10 +48,10 @@ int main(int argc, char *argv[])
     Feel::Environment env( _argc=argc,
                            _argv=argv,
                            _about=makeAbout(),
-                           _desc=makeETHDGOptions(),
-                           _desc_lib=makeETHDGLibOptions() );
+                           _desc=FeelModels::makeETHDGOptions(),
+                           _desc_lib=FeelModels::makeETHDGLibOptions() );
 
-    typedef ElectroThermal<@D@,@P@> et_type;
+    typedef FeelModels::ElectroThermal<@D@,@P@> et_type;
 
     et_type ET;
     ET.run();

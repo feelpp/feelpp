@@ -30,7 +30,7 @@
 #include <feel/feeldiscr/pdhv.hpp>
 
 namespace Feel {
-
+namespace FeelModels{
 
 
 template<int Dim, int OrderP>
@@ -539,5 +539,5 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a55 += integrate(_range=markedfaces(mesh,"R"), _expr=doption("h")*idt(T)*id(q));
 }
 
-
+} // FeelModels
 } // Feel

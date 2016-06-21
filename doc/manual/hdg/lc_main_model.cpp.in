@@ -21,40 +21,18 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <et2.hpp>
+#include <lc_model.hpp>
 
 using namespace Feel;
-inline
-po::options_description
-makeOptions()
-{
-    po::options_description testhdivoptions( "Electro-Thermal Model options" );
-    testhdivoptions.add_options()
-        ( "sigma", po::value<std::string>()->default_value( "1" ), "electric conductivity" )
-        ( "k", po::value<std::string>()->default_value( "1" ), "thermal conductivity" )
-        ( "h", po::value<double>()->default_value( 1 ), "heat transfert coefficient" )
-        ( "Tw", po::value<double>()->default_value( 1 ), "water temperature" )
-        ( "V", po::value<double>()->default_value( 1 ), "electric potential" )
-        ( "I_target", po::value<double>()->default_value( 1 ), "target current" )
-        ( "tau_constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
-        ( "tau_order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
-        ( "picard.itol", po::value<double>()->default_value( 1e-4 ), "tolerance" )
-        ( "picard.itmax", po::value<int>()->default_value( 10 ), "iterations max" )
-        ("Kp", po::value<double>()->default_value(100.), "PID proportional coefficient")
-        ("Ki", po::value<double>()->default_value(0.), "PID integral coefficient")
-        ("Kd", po::value<double>()->default_value(0.), "PID derivative coefficient")
-        ;
-    return testhdivoptions;
-}
 
 inline
 AboutData
 makeAbout()
 {
-    AboutData about( "electro-thermal" ,
-                     "electro-thermal" ,
+    AboutData about( "laminacribrosa_@D@D_P@P@" ,
+                     "laminacribrosa_@D@D_P@P@" ,
                      "0.1",
-                     "Electro-Thermal Model",
+                     "Lamina cribrosa Model",
                      AboutData::License_GPL,
                      "Copyright (c) 2016 Feel++ Consortium" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
@@ -70,8 +48,15 @@ int main(int argc, char *argv[])
     Feel::Environment env( _argc=argc,
                            _argv=argv,
                            _about=makeAbout(),
-                           _desc=makeOptions() );
-    FeelModels::ElectroThermal<2,1> ET;
-    ET.run();
+                           _desc=FeelModels::makeMixedPoissonOptions("mixedpoisson"),             
+                           _desc_lib=FeelModels::makeMixedPoissonLibOptions("mixedpoisson").add(feel_options())
+                           /*_desc=FeelModels::makeLCHDGOptions(),
+                           _desc_lib=FeelModels::makeLCHDGLibOptions().add(feel_options())*/ );
+
+    typedef FeelModels::LaminaCribrosa<@D@,@P@> lc_type;
+
+    lc_type LC;
+    LC.run();
     return 0;
 }
+

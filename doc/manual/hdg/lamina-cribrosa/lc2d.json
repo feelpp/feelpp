@@ -8,10 +8,19 @@
         "omega":
         {
             "name":"copper",
-            "cond":"-1",
-	        "R_ext":"0.095",
-	        "k":"1.0",
-	        "H":"0.03" // "0.03"
+	    "R_ext":"0.095",
+	    "k":"0.015192",
+	    "H":"0.03",
+	    // ODE parameters:
+	    "CC":"1",
+	    "RR":"1",
+	    "Piout":"4.5453",
+	    "C1":"1", 
+	    "C2":"1",
+	    "C3":"1",
+	    "R12":"1",
+	    "R23":"1",
+ 	    "Rout":"1"
         }
     },
     "BoundaryConditions":
@@ -22,14 +31,14 @@
             {
                 "omega":
                 {
-                    "expr":"4*k*( x*x * sin(x*x+y*y) - cos(x*x+y*y) + y*y * sin(x*x + y*y) ):x:y:k" // "-sin(Pi*x)*sin(Pi*y):x:y"
+                    "expr":"4*k*(sin(t)+1.5)*( (x*x+y*y)*sin(x*x+y*y) + cos(x*x+y*y) ):x:y:k:t" // "4*k*( x*x * sin(x*x+y*y) - cos(x*x+y*y) + y*y * sin(x*x + y*y) ):x:y:k:t" // "-sin(Pi*x)*sin(Pi*y):x:y"
                 }
             },
             "Dirichlet":
 	    {
 	    	"top":
         	{
-                     "expr":"2 + sin(x*x+y*y) + 16*Pi*R_ext*R_ext :k:x:y:R_ext"   // "sin(Pi*x)/(2*Pi):x"
+                     "expr":"(sin(t)+1.5)*(2+sin(x*x+y*y)):x:y:t" // "2 + sin(x*x+y*y) + 16*Pi*R_ext*R_ext :k:x:y:R_ext"   // "sin(Pi*x)/(2*Pi):x"
                	}
 	    }
 	},
@@ -66,7 +75,7 @@
     },*/
     "PostProcess":
     {
-        "Fields":["potential","flux"]
+        "Fields":["potential","flux","state variable"]
     }
 }
 
