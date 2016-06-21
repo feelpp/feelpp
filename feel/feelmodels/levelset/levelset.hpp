@@ -42,6 +42,8 @@
 
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 
+#include <boost/parameter/preprocessor.hpp>
+
 #if defined (MESH_ADAPTATION_LS)
  #include <levelsetmesh/meshadaptation.hpp>
 // #warning MESH_ADAPTATION_LS is defined in levelset. Need to be defined identically in the application
@@ -49,6 +51,15 @@
 
 
 namespace Feel {
+
+    // LevelSet::build parameters
+    BOOST_PARAMETER_NAME(space_vectorial)
+    BOOST_PARAMETER_NAME(space_markers)
+    BOOST_PARAMETER_NAME(reinitializer)
+    BOOST_PARAMETER_NAME(projectorL2)
+    BOOST_PARAMETER_NAME(projectorL2_vectorial)
+    BOOST_PARAMETER_NAME(smoother_curvature)
+
 namespace FeelModels {
 
 // time discretization of the advection equation
@@ -164,6 +175,31 @@ public:
     void build();
     void build( mesh_ptrtype const& mesh );
 
+    BOOST_PARAMETER_MEMBER_FUNCTION( 
+            (void), build, tag,
+            ( required
+              ( space, * )
+            )
+            ( optional
+              ( space_vectorial, (space_levelset_vectorial_ptrtype), space_levelset_vectorial_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
+              ( space_markers, (space_markers_ptrtype), space_markers_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
+              ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ),  buildReinitializer(this->M_reinitMethod, space, this->prefix()) )
+              ( projectorL2, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"ls-l2p"))) )
+              ( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"ls-l2pVec"))) )
+              ( smoother_curvature, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix,"smoother-curvature")), DIFF, space->mesh()->hAverage()*doption(_name="curvature-smooth-coeff", _prefix=this->prefix())/Order, 30) )
+            )
+            )
+    {
+        super_type::build( space );
+        M_spaceLevelSetVec = space_vectorial;
+        M_spaceMarkers = space_markers;
+        M_projectorL2 = projectorL2;
+        M_projectorL2Vec = projectorL2_vectorial;
+        M_smootherCurvature = smoother_curvature;
+
+        this->createInterfaceQuantities();
+    }
+
     //--------------------------------------------------------------------//
     // Initialization
     void init();
@@ -172,6 +208,7 @@ public:
     virtual void loadConfigICFile();
 
     void createFunctionSpaces();
+    void createInterfaceQuantities();
     void createReinitialization();
     void createOthers();
 
@@ -288,6 +325,13 @@ public:
     // Export results
     using super_type::exportResults;
     void exportResults( double time );
+
+    //--------------------------------------------------------------------//
+    // Utility functions
+    static reinitializer_ptrtype buildReinitializer( 
+            LevelSetReinitMethod method, 
+            space_levelset_ptrtype const& space,
+            std::string const& prefix = "" );
 
 protected:
     //--------------------------------------------------------------------//
@@ -416,5 +460,8 @@ private:
     int __iter;
 
 }; //class LevelSet
+
+} // namespace FeelModels
+} // namespace Feel
 
 #endif
