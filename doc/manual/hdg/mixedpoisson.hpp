@@ -544,8 +544,8 @@ MixedPoisson<Dim, Order, G_Order>::initExporter( mesh_ptrtype meshVisu )
     std::string geoExportType="static"; //change_coords_only, change, static
     M_exporter = exporter ( _mesh=meshVisu?meshVisu:this->mesh() ,
                             _name="Export",
-                            _geo=geoExportType,
-                            _path=this->exporterPath() ); 
+                            _geo=geoExportType );
+        //_path=this->exporterPath() ); 
 }
 
 template<int Dim, int Order, int G_Order>
@@ -1176,9 +1176,15 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
     this->timerTool("PostProcessing").start();
 
     if ( M_exporter->exporterGeometry() != EXPORTER_GEOMETRY_STATIC && mesh  )
+    {
+        LOG(INFO) << "exporting on visualisation mesh at time " << time;
         M_exporter->step( time )->setMesh( mesh );
+    }
     else if ( M_exporter->exporterGeometry() != EXPORTER_GEOMETRY_STATIC )
+    {
+        LOG(INFO) << "exporting on computational mesh at time " << time;
         M_exporter->step( time )->setMesh( M_mesh );
+    }
     
     // Export computed solutions
     auto postProcess = M_modelProperties->postProcess();
@@ -1188,63 +1194,55 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
         for ( auto const& field : (*itField).second )
         {
             if ( field == "flux" )
-	    /*{
-                M_exporter->step( time )->add(prefixvm(M_prefix, "flux"), *M_up);
-		if (M_integralCondition)
-		{
-                    double j_integral = 0;
-		    for( auto marker : this->M_integralMarkersList)
-			j_integral += integrate(_range=markedfaces(M_mesh,marker),_expr=trans(idv(M_up))*N()).evaluate()(0,0);
-		    M_exporter->step( time )->add(prefixvm(M_prefix, "integralFlux"), j_integral);
-   		}
-	    }
-            if ( field == "potential" )
-	    {
-                M_exporter->step( time )->add(prefixvm(M_prefix, "potential"), *M_pp);
-		if (M_integralCondition)
-                    M_exporter->step( time )->add(prefixvm(M_prefix, "cstPotential"),(*M_mup)[0] );
-	    }*/
             {
+                LOG(INFO) << "exporting flux at time " << time;
                 M_exporter->step( time )->add(prefixvm(M_prefix, "flux"), Idhv?(*Idhv)( *M_up):*M_up );
-		if (M_integralCondition)
+                if (M_integralCondition)
                 {
                     double j_integral = 0;
                     for( auto marker : this->M_integralMarkersList)
+                    {
+                        LOG(INFO) << "exporting integral flux at time " << time << " on marker " << marker;
                         j_integral += integrate(_range=markedfaces(M_mesh,marker),_expr=trans(idv(M_up))*N()).evaluate()(0,0);
+                    }
                     M_exporter->step( time )->add(prefixvm(M_prefix, "integralFlux"), j_integral);
                 }
             }
             if ( field == "potential" )
             {
+                LOG(INFO) << "exporting potential at time " << time;
                 M_exporter->step( time )->add(prefixvm(M_prefix, "potential"), Idh?(*Idh)(*M_pp):*M_pp);
-		if (M_integralCondition)
+                if (M_integralCondition)
+                {
+                    LOG(INFO) << "exporting IBC potential at time " << time << " value " << (*M_mup)[0];
                     M_exporter->step( time )->add(prefixvm(M_prefix, "cstPotential"),(*M_mup)[0] );
+                }
             }
         }
     }
    
     /*/ Export exact solutions
-    if ( this->isStationary() ){
-	auto K = 10;
-	auto p_exact = expr(soption(prefixvm(M_prefix,"p_exact") ));
-    	auto gradp_exact = grad<Dim>(p_exact);
-	auto u_exact = -K*trans(gradp_exact);
+     if ( this->isStationary() ){
+     auto K = 10;
+     auto p_exact = expr(soption(prefixvm(M_prefix,"p_exact") ));
+     auto gradp_exact = grad<Dim>(p_exact);
+     auto u_exact = -K*trans(gradp_exact);
         
-	*
-    	for( auto const& pairMat : M_modelProperties->materials() )
-    	{
-             auto marker = pairMat.first;
-             auto material = pairMat.second;
-             auto K = material.getScalar(soption(prefixvm(M_prefix,"conductivity_json")));
-             u_exact = -K*trans(gradp_exact) ;
-	}*
+     *
+     for( auto const& pairMat : M_modelProperties->materials() )
+     {
+     auto marker = pairMat.first;
+     auto material = pairMat.second;
+     auto K = material.getScalar(soption(prefixvm(M_prefix,"conductivity_json")));
+     u_exact = -K*trans(gradp_exact) ;
+     }*
 
-    	auto p_exact_proj = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact);
-    	auto u_exact_proj = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact);
-   	M_exporter -> step (0) -> add(prefixvm(M_prefix, "p_exact"), p_exact_proj);
+     auto p_exact_proj = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact);
+     auto u_exact_proj = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact);
+     M_exporter -> step (0) -> add(prefixvm(M_prefix, "p_exact"), p_exact_proj);
 
-	M_exporter -> step (0) -> add(prefixvm(M_prefix, "u_exact"), u_exact_proj);
-    }*/
+     M_exporter -> step (0) -> add(prefixvm(M_prefix, "u_exact"), u_exact_proj);
+     }*/
 
     
 
