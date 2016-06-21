@@ -182,7 +182,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
             if( M_strategyBeforeFM == ILP )
             {
                 M_backend_smooth = backend(_name=prefixvm(this->prefix(), "ls-smooth"));
-                M_smooth = projector(
+                M_smootherFM = projector(
                         this->functionSpace(),/*domainSpace*/
                         this->functionSpace(),/*imageSpace*/
                         M_backend_smooth,
@@ -236,6 +236,17 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 
     M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "ls-l2p")) );
     M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "ls-l2pVec")) );
+
+    if( M_doSmoothCurvature )
+    {
+        M_smootherCurvature = projector( 
+                this->functionSpace() , this->functionSpace(), 
+                //backend(_name="projectors-smooth"), 
+                M_backend_smooth,
+                DIFF, 
+                this->mesh()->hAverage()*doption(_name="curvature-smooth-coeff", _prefix=this->prefix())/Order,
+                30);
+    }
 }
 
 /*LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -400,6 +411,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     M_reinitInitialValue = boption( _name="reinit-initial-value", _prefix=this->prefix() );
 
+    M_doSmoothCurvature = boption( _name="smooth-curvature", _prefix=this->prefix() );
+
     //M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
 }
 
@@ -499,6 +512,28 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMass()
             _range=elements(this->mesh()),
             _expr=(1-idv(this->heaviside())) ).evaluate()(0,0);
             //_expr=vf::chi( idv(this->phi())<0.0) ).evaluate()(0,0); // gives very noisy results
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateNormal()
+{
+    auto phi = this->phi();
+    M_levelsetNormal = M_projectorL2Vec->project( _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
+{
+    if( M_doSmoothCurvature )
+    {
+        M_levelsetCurvature = M_smootherCurvature->project( _expr=divv(M_levelsetNormal) );
+    }
+    else
+    {
+        M_levelsetCurvature = M_projectorL2->project( _expr=divv(M_levelsetNormal) );
+    }
 }
 
 //----------------------------------------------------------------------------//
@@ -618,10 +653,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
                 M_phinl.swap(this->phi());
         }
     }*/
-    updateDirac();
-    updateHeaviside();
-    updateMass();
-    M_doUpdateMarkers = true;
+    this->updateInterfaceQuantities();
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -629,9 +661,18 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::solve()
 {
     super_type::solve();
+    this->updateInterfaceQuantities();
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
+{
     updateDirac();
     updateHeaviside();
     updateMass();
+    updateNormal();
+    updateCurvature();
     M_doUpdateMarkers = true;
 }
 
@@ -658,7 +699,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
             case ILP :
             {
                 // save the smoothed gradient magnitude of phi
-                auto modgradphi = M_smooth->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
+                auto modgradphi = M_smootherFM->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
                 
                 *phi = vf::project(this->functionSpace(), elements(this->mesh()), idv(phi)/idv(modgradphi) );
             }
@@ -711,9 +752,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_type const& phiv,
     if (doReinitialize)
         this->reinitialize();
 
-    updateHeaviside();
-    updateDirac();
-    updateMass();
+    this->updateInterfaceQuantities();
 }
 
 //----------------------------------------------------------------------------//

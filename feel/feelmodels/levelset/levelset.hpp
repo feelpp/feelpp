@@ -220,6 +220,11 @@ public:
     element_levelset_ptrtype const& dirac() const { return M_dirac; }
     element_levelset_ptrtype const& D() const { return this->dirac(); }
 
+    element_levelset_ptrtype const& normal() const { return M_levelsetNormal; }
+    element_levelset_ptrtype const& N() const { return this->normal(); }
+    element_levelset_ptrtype const& curvature() const { return M_levelsetCurvature; }
+    element_levelset_ptrtype const& K() const { return this->curvature(); }
+
     double mass() const { return M_mass; }
 
     double thicknessInterface() const { return M_thicknessInterface; }
@@ -242,6 +247,8 @@ public:
     template<typename ExprT>
     void advect(vf::Expr<ExprT> const& velocity);
     void solve();
+
+    void updateInterfaceQuantities();
 
     /* returns phi after advection by Velocity
       do not change the value of this->M_phi or any other variable (delta heavyside ...) */
@@ -341,6 +348,9 @@ protected:
     void updateHeaviside();
     void updateMass();
 
+    void updateNormal();
+    void updateCurvature();
+
     void updateMarkerDirac();
     void updateMarkerHeaviside(bool invert, bool cut_at_half);
     void updateMarkerCrossedElements();
@@ -424,13 +434,19 @@ private:
     // Projectors
     projector_levelset_ptrtype M_projectorL2;
     projector_levelset_vectorial_ptrtype M_projectorL2Vec;
+    projector_levelset_ptrtype M_smootherCurvature;
+    //--------------------------------------------------------------------//
+    // Normal, curvature
+    element_levelset_ptrtype M_levelsetNormal;
+    element_levelset_ptrtype M_levelsetCurvature;
+    bool M_doSmoothCurvature;
 
     //--------------------------------------------------------------------//
     // Reinitialization
     reinitializer_ptrtype M_reinitializer;
     bool M_reinitializerIsUpdatedForUse;
 
-    boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smooth;
+    boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smootherFM;
 
     int M_iterSinceReinit;
 
