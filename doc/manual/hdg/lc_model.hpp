@@ -136,7 +136,8 @@ public:
     using convex_type = typename super_type::convex_type;
     using mesh_type = typename super_type::mesh_type;
     using mesh_ptrtype = typename super_type::mesh_ptrtype;
-
+    using op_interp_ptrtype = typename super_type::op_interp_ptrtype;
+    using opv_interp_ptrtype = typename super_type::opv_interp_ptrtype;
     
     // Ch
     using Ch_t = typename super_type::Ch_t;
@@ -167,21 +168,25 @@ public:
     
     LaminaCribrosa() : super_type() {
 	// with one extra row and 1 extra column
-        this -> init(this->mesh(),1,1);
+        // this -> init(this->mesh(),1,1);
     }
 
 
     virtual void initModel();
     virtual void initSpaces();
     virtual void initGraphs(int extraRow, int extraCol);
-    virtual void initExporter();
+    virtual void initExporter(mesh_ptrtype meshVisu = nullptr);
     virtual void assembleA();
     virtual void assembleF();
-    virtual void exportResults(double time);
-    void exportResults() { this->exportResults (this->currentTime() ); this->exporterMP()->save(); }
+    virtual void exportResults( double time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr );
+    void exportResults(mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr) 
+	{ 
+	   this->exportResults (this->currentTime(), mesh, Idh, Idhv ); 
+	   this->exporterMP()->save(); 
+	}
     
     // void updateLcAssembly();
-    void run();
+    // void run();
     // void updateLcAssembly( sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
         
     // time step scheme
@@ -344,8 +349,8 @@ LaminaCribrosa<Dim, Order>::initSpaces(){
 // Overriding of init Exporter
 template<int Dim, int Order>
 void
-LaminaCribrosa<Dim, Order>::initExporter()  {  
-    super_type::initExporter();
+LaminaCribrosa<Dim, Order>::initExporter(mesh_ptrtype meshVisu)  {  
+    super_type::initExporter(meshVisu);
     
 }
 
@@ -523,9 +528,9 @@ LaminaCribrosa<Dim, Order>::assembleF()
 
 template <int Dim, int Order>
 void
-LaminaCribrosa<Dim,Order>::exportResults( double time )
+LaminaCribrosa<Dim,Order>::exportResults( double time, mesh_ptrtype mesh, op_interp_ptrtype Idh, opv_interp_ptrtype Idhv)
 {
-    super_type::exportResults( time );
+    super_type::exportResults( time, mesh, Idh, Idhv );
     this->log("LaminaCribrosa","exportResults", "start");
      
     // Export computed solutions
@@ -536,10 +541,13 @@ LaminaCribrosa<Dim,Order>::exportResults( double time )
         for ( auto const& field : (*itField).second )
         {
             if ( field == "state variable" ){
-                this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "State variable"), *M_Y );
+                /*this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "State variable"), *M_Y );
 		this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "Pi_1"), project( _space=this->M_Ch, _expr= cst(M_statevar_solution[0])) );
 		this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "Pi_2"), project( _space=this->M_Ch, _expr= cst(M_statevar_solution[1])) );
-		this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "Pi_3"), project( _space=this->M_Ch, _expr= cst(M_statevar_solution[2])) );
+		this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "Pi_3"), project( _space=this->M_Ch, _expr= cst(M_statevar_solution[2])) );*/
+		this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "Pi_1"), M_statevar_solution[0] );
+		this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "Pi_2"), M_statevar_solution[1] );
+		this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "Pi_3"), M_statevar_solution[2] );
 	    }
         }
     }
@@ -547,6 +555,7 @@ LaminaCribrosa<Dim,Order>::exportResults( double time )
     this->log("LaminaCribrosa","exportResults", "finish");
 }
 
+/*
 template<int Dim, int Order>
 void
 LaminaCribrosa<Dim, Order>::run()
@@ -571,6 +580,7 @@ LaminaCribrosa<Dim, Order>::run()
 
     } // end time cycle
 }
+*/
 
 template<int Dim, int Order>
 void
