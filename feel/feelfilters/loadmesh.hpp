@@ -63,6 +63,7 @@ BOOST_PARAMETER_FUNCTION(
       ( desc, *,boost::shared_ptr<gmsh_type>() )  // geo() can't be used here as default !!
 
       ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
+      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.scale") )
       ( straighten,          (bool), boption(_prefix=prefix,_name="gmsh.straighten") )
       ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
@@ -131,6 +132,7 @@ BOOST_PARAMETER_FUNCTION(
                                   _depends=depends,
                                   _worldcomm=worldcomm  ) : desc ,
             _h=h,
+            _scale=scale,
             _straighten=straighten,
             _refine=refine,
             _update=update,
@@ -160,6 +162,7 @@ BOOST_PARAMETER_FUNCTION(
                                _filename=mesh_name.string(),
                                _straighten=straighten,
                                _refine=refine,
+                               _scale=scale,
                                _update=update,
                                _physical_are_elementary_regions=physical_are_elementary_regions,
                                _worldcomm=worldcomm,
