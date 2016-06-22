@@ -550,8 +550,8 @@ macro( genLibAdvection )
       endif()
   else()
       # default value
-      set(ADVECTION_POINT_SET PointSetEquiSpaced)
-      unset(ADVECTION_POINT_SET) #default value PointSetEquiSpaced
+      set(ADVECTION_POINT_SET EquiSpaced)
+      unset(ADVECTION_POINT_SET_TAG) #default value PointSetEquiSpaced
   endif()
   #######################################################
   if (FEELMODELS_APP_DIFFUSION_REACTION_ORDER)
@@ -649,7 +649,7 @@ endmacro(genLibAdvection)
 #############################################################################
 macro( genLibLevelset )
     PARSE_ARGUMENTS(FEELMODELS_APP
-        "DIM;PHI_ORDER;GEO_ORDER;USE_PERIODICITY;ADVECTION_DIFFUSION_REACTION_ORDER;ADVECTION_DIFFUSION_REACTION_CONTINUITY;"
+        "DIM;LEVELSET_ORDER;USE_PERIODICITY;GEO_ORDER;ADVECTION_DIFFUSION_REACTION_ORDER;ADVECTION_DIFFUSION_REACTION_CONTINUITY;ADD_CMAKE_INSTALL_BIS"
         "NO_UPDATE_MODEL_DEF;ADD_CMAKE_INSTALL"
         ${ARGN}
         )
@@ -661,19 +661,22 @@ macro( genLibLevelset )
 
     #CAR(LIB_NAME ${FEELMODELS_APP_DEFAULT_ARGS})
 
-    if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_PHI_ORDER OR  FEELMODELS_APP_GEO_ORDER ) )
-        message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_T_ORDER OR  FEELMODELS_APP_GEO_ORDER")
+    if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_LEVELSET_ORDER OR  FEELMODELS_APP_GEO_ORDER ) )
+        message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_LEVELSET_ORDER OR  FEELMODELS_APP_GEO_ORDER")
     endif()
 
     set(LEVELSET_DIM ${FEELMODELS_APP_DIM})
-    set(LEVELSET_ORDERPOLY ${FEELMODELS_APP_PHI_ORDER})
+    set(LEVELSET_ORDERPOLY ${FEELMODELS_APP_LEVELSET_ORDER})
     set(LEVELSET_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
     #######################################################
     if ( FEELMODELS_APP_USE_PERIODICITY )
         set(LEVELSET_USE_PERIODICITY 1)
-        set(LEVELSET_USE_PERIODICITY_TAG Periodic)
     else()
         set(LEVELSET_USE_PERIODICITY 0)
+    endif()
+    if( LEVELSET_USE_PERIODICITY )
+        set(LEVELSET_USE_PERIODICITY_TAG Periodic)
+    else()
         unset(LEVELSET_USE_PERIODICITY_TAG)
     endif()
     ###############################################################
@@ -682,16 +685,20 @@ macro( genLibLevelset )
     else()
         set( LIBBASE_ADD_CMAKE_INSTALL 0 )
     endif()
+    # overwrite options
+    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL_BIS )
+      set( LIBBASE_ADD_CMAKE_INSTALL ${FEELMODELS_APP_ADD_CMAKE_INSTALL_BIS} )
+    endif()
     #######################################################
     # advection
     genLibAdvection(
         DIM          ${FEELMODELS_APP_DIM}
         GEO_ORDER    ${FEELMODELS_APP_GEO_ORDER}
-        T_ORDER      ${FEELMODELS_APP_PHI_ORDER}
+        T_ORDER      ${FEELMODELS_APP_LEVELSET_ORDER}
         POINT_SET       EquiSpaced 
         DIFFUSION_REACTION_ORDER      ${FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_ORDER}
         DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_CONTINUITY}
-        USE_PERIODICITY ${FEELMODELS_USE_PERIODICITY}
+        USE_PERIODICITY ${FEELMODELS_APP_USE_PERIODICITY}
         ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
         )
     set(ADVECTION_LIB_NAME ${LIBBASE_NAME})
@@ -732,6 +739,101 @@ macro( genLibLevelset )
             )
 
     endif()
-
-
 endmacro(genLibLevelset)
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+
+macro(genLibMultiFluid)
+  PARSE_ARGUMENTS(FEELMODELS_APP
+      "DIM;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;GEO_ORDER;FLUID_DENSITY_VISCOSITY_CONTINUITY;FLUID_DENSITY_VISCOSITY_ORDER;LEVELSET_ORDER;USE_PERIODICITY"
+    "ADD_CMAKE_INSTALL"
+    ${ARGN}
+    )
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_FLUID_GEO_ORDER OR FEELMODELS_APP_FLUID_U_ORDER OR FEELMODELS_APP_FLUID_P_ORDER OR
+      LEVELSET_ORDER ) )
+    message(FATAL_ERROR "miss argument!")
+  endif()
+
+  ###############################################################
+  if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
+    set( LIBBASE_ADD_CMAKE_INSTALL 1 )
+  else()
+    set( LIBBASE_ADD_CMAKE_INSTALL 0 )
+  endif()
+  ###############################################################
+  # fluid lib
+  if ( FEELMODELS_APP_USE_PERIODICITY )
+    set( FEELMODELS_FLUID_USE_PERIODICITY 1 )
+  else()
+    set( FEELMODELS_FLUID_USE_PERIODICITY 0 )
+  endif()
+  genLibFluidMechanics(
+    DIM          ${FEELMODELS_APP_DIM}
+    GEO_ORDER    ${FEELMODELS_APP_GEO_ORDER}
+    U_ORDER      ${FEELMODELS_APP_FLUID_U_ORDER}
+    P_ORDER      ${FEELMODELS_APP_FLUID_P_ORDER}
+    P_CONTINUITY ${FEELMODELS_APP_FLUID_P_CONTINUITY}
+    DENSITY_VISCOSITY_CONTINUITY ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_CONTINUITY}
+    DENSITY_VISCOSITY_ORDER      ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_ORDER}
+    USE_PERIODICITY_BIS ${FEELMODELS_FLUID_USE_PERIODICITY}
+    ADD_CMAKE_INSTALL_BIS ${LIBBASE_ADD_CMAKE_INSTALL}
+    )
+  set(FLUID_LIB_NAME ${LIBBASE_NAME})
+  set(FLUID_MODEL_SPECIFIC_NAME_SUFFIX ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX}  )
+  ###############################################################
+  # levelset lib
+  genLibLevelset(
+    DIM ${FEELMODELS_APP_DIM}
+    LEVELSET_ORDER ${FEELMODELS_APP_LEVELSET_ORDER}
+    USE_PERIODICITY ${FEELMODELS_FLUID_USE_PERIODICITY}
+    GEO_ORDER ${FEELMODELS_APP_GEO_ORDER}
+    ADD_CMAKE_INSTALL_BIS ${LIBBASE_ADD_CMAKE_INSTALL}
+    )
+  set(LEVELSET_LIB_NAME ${LIBBASE_NAME})
+  set(LEVELSET_MODEL_SPECIFIC_NAME_SUFFIX ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX}  )
+  ###############################################################
+  # multifluid lib base
+  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${FLUID_MODEL_SPECIFIC_NAME_SUFFIX}_${LEVELSET_MODEL_SPECIFIC_NAME_SUFFIX}  )
+  set(FEELMODELS_MODEL_SPECIFIC_NAME multifluid_${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
+
+  set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/multifluid/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
+  set(LIBBASE_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
+  set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
+
+  set(LIB_DEPENDS ${FLUID_LIB_NAME} ${LEVELSET_LIB_NAME})
+
+  if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
+    #write empty file in orter to check if this lib has already define
+    file(WRITE ${LIBBASE_CHECK_PATH} "")
+
+    # configure libmodelbase
+    set(CODEGEN_FILES_TO_COPY
+      ${FEELPP_MODELS_SOURCE_DIR}/multifluid/multifluid_inst.cpp
+      )
+    set(CODEGEN_SOURCES
+      ${LIBBASE_DIR}/multifluid_inst.cpp
+      )
+
+    # generate libmodelbase
+    genLibBase(
+      LIB_NAME ${LIBBASE_NAME}
+      LIB_DIR ${LIBBASE_DIR}
+      LIB_DEPENDS ${LIB_DEPENDS}
+      PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
+      FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/multifluid/multifluidconfig.h.in
+      ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
+      )
+
+    # fluid and solid dependencies in install process
+    if ( ${LIBBASE_ADD_CMAKE_INSTALL} )
+        add_dependencies(install-${LIBBASE_NAME} install-${FLUID_LIB_NAME} install-${LEVELSET_LIB_NAME} )
+    endif()
+
+  endif()
+
+endmacro( genLibMultiFluid )
