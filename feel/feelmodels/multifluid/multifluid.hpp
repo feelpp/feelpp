@@ -26,8 +26,6 @@ public:
 
     typedef typename levelset_type::element_levelset_type element_levelset_type;
     typedef typename levelset_type::element_levelset_ptrtype element_levelset_ptrtype; 
-
-    typedef std::vector<levelset_ptrtype> vector_levelset_ptrtype;
     
     //--------------------------------------------------------------------//
     // Mesh
@@ -73,21 +71,27 @@ public:
     //--------------------------------------------------------------------//
     // Solve
     void solve();
+    //--------------------------------------------------------------------//
+    // Time step
+    void updateTimeStep();
 
 protected:
     void updateGlobalLevelset();
 
-    void updateDensityViscosity();
+    void updateFluidDensityViscosity();
+    void updateInterfaceForces();
+    void advectLevelsets();
 
 private:
     //--------------------------------------------------------------------//
     fluid_ptrtype M_fluid;
-    levelset_ptrtype M_globalLevelset; 
-    vector_levelset_ptrtype M_levelsets;
+    levelset_ptrtype M_globalLevelset;
+    std::vector<levelset_ptrtype> M_levelsets;
 
     //--------------------------------------------------------------------//
     // Parameters
     densityviscosity_model_ptrtype M_fluidDensityViscosityModel;
+    std::vector<densityviscosity_model_ptrtype> M_levelsetDensityViscosityModels;
 
 };
         

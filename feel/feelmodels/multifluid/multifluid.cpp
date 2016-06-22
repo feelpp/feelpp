@@ -28,6 +28,8 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::build( uint16_type nLevelSets )
 {
+    CHECK( nLevelSets > 0 ) << "Multifluid must contain at least 1 level-set.\n";
+
     this->log("MultiFluid", "build", "start");
 
     M_fluid = fluid_ptrtype( 
@@ -43,10 +45,12 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build( uint16_type nLevelSets )
     M_globalLevelset->build( M_fluid->mesh() );
 
     M_levelsets.resize( nLevelSets );
+    M_levelsetDensityViscosityModels.resize( nLevelSets );
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
-        M_levelsets[i] = levelset_ptrtype(
-                new levelset_type( "levelset", this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
+        auto levelset_prefix = (boost::format( "levelset%1%" ) %i).str();
+        M_levelsets[i].reset(
+                new levelset_type( levelset_prefix, this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
                 );
         M_levelsets[i]->build(
                 _space=M_globalLevelset->functionSpace(),
@@ -57,6 +61,12 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build( uint16_type nLevelSets )
                 _projectorL2_vectorial=M_globalLevelset->projectorL2Vectorial(),
                 _smoother_curvature=M_globalLevelset->smootherCurvature()
                 );
+
+        M_levelsetDensityViscosityModels[i].reset(
+                new densityviscosity_model_type( levelset_prefix )
+                );
+        M_levelsetDensityViscosityModels[i]->initFromMesh( M_fluid->mesh(), M_fluid->useExtendedDofTable() );
+        M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelset[i]->modelProperties().materials() );
     }
 
     this->log("MultiFluid", "build", "finish");
@@ -66,14 +76,119 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
 {
+    this->log("MultiFluid", "solve", "start");
+    this->timerTool("Solve").start();
 
+    // Update density and viscosity
+    this->updateFluidDensityViscosity();
+    // Update interface forces
+    // TODO
+    // Solve fluid equations
+    M_fluid->solve();
+    // Advect levelsets
+    this->advectLevelsets();
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("MultiFluid","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::updateDensityViscosity()
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
+    this->log("MultiFluid", "updateTimeStep", "start");
+    // Fluid mechanics
+    M_fluid->updateTimeStep();
+    // Levelsets
+    for( uint16_type i = 0; i < M_levelsets.size(); ++i)
+    {
+        M_levelsets[i]->updateTimeStep();
+    }
+    this->log("MultiFluid", "updateTimeStep", "finish");
+}
 
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateGlobalLevelset()
+{
+    this->log("MultiFluid", "updateGlobalLevelset", "start");
+
+    auto minPhi = M_globalLevelset->phi();
+
+    *minPhi = *M_levelsets[0]->phi();
+    for( uint16_type i = 1; i < M_levelsets.size(); ++i )
+    {
+        *minPhi = vf::project( 
+                M_globalLevelset->functionSpace(), 
+                elements(M_globalLevelset->mesh()),
+                vf::min( idv(minPhi), idv(M_levelsets[i]->phi()) )
+                );
+    }
+
+    this->log("MultiFluid", "updateGlobalLevelset", "finish");
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
+{
+    this->log("MultiFluid", "updateFluidDensityViscosity", "start");
+    this->timerTool("Solve").start();
+
+    auto globalH = M_globalLevelset->H();
+
+    auto rho = vf::project( 
+            M_fluid->densityViscosityModel()->dynamicViscositySpace(),
+            elements(M_fluid->mesh()),
+            idv(M_fluidDensityViscosityModel->fieldRho())*idv(globalH)
+            );
+
+    auto mu = vf::project( 
+            M_fluid->densityViscosityModel()->dynamicViscositySpace(),
+            elements(M_fluid->mesh()),
+            idv(M_fluidDensityViscosityModel->fieldMu())*idv(globalH)
+            );
+
+    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    {
+        rho += vf::project( 
+                M_fluid->densityViscosityModel()->dynamicViscositySpace(),
+                elements(M_fluid->mesh()),
+                idv(M_levelsetDensityViscosityModels[i]->fieldRho())*(1 - idv(M_levelset[i]->H()))
+                );
+        mu += vf::project( 
+                M_fluid->densityViscosityModel()->dynamicViscositySpace(),
+                elements(M_fluid->mesh()),
+                idv(M_levelsetDensityViscosityModels[i]->fieldMu())*(1 - idv(M_levelset[i]->H()))
+                );
+    }
+
+    M_fluid->updateRho( idv(rho) );
+    M_fluid->updateMu( idv(mu) );
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log( "MultiFluid", "updateFluidDensityViscosity", 
+            "fluid density/viscosity update in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::advectLevelsets()
+{
+    this->log("MultiFluid", "advectLevelsets", "start");
+    this->timerTool("Solve").start();
+
+    auto u = M_fluid->fieldVelocity();
+    
+    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    {
+        M_levelsets[i]->advect( idv(u) );
+    }
+     this->updateGlobalLevelset();
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log( "MultiFluid", "advectLevelsets", 
+            "level-sets advection done in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 } // namespace FeelModels
