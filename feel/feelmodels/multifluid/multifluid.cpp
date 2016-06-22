@@ -1,7 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
  */
 
-#include <feel/feelmodels/multifluid.hpp>
+#include <feel/feelmodels/multifluid/multifluid.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -66,7 +66,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build( uint16_type nLevelSets )
                 new densityviscosity_model_type( levelset_prefix )
                 );
         M_levelsetDensityViscosityModels[i]->initFromMesh( M_fluid->mesh(), M_fluid->useExtendedDofTable() );
-        M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelset[i]->modelProperties().materials() );
+        M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelsets[i]->modelProperties().materials() );
     }
 
     this->log("MultiFluid", "build", "finish");
@@ -154,12 +154,12 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
         rho += vf::project( 
                 M_fluid->densityViscosityModel()->dynamicViscositySpace(),
                 elements(M_fluid->mesh()),
-                idv(M_levelsetDensityViscosityModels[i]->fieldRho())*(1 - idv(M_levelset[i]->H()))
+                idv(M_levelsetDensityViscosityModels[i]->fieldRho())*(1 - idv(M_levelsets[i]->H()))
                 );
         mu += vf::project( 
                 M_fluid->densityViscosityModel()->dynamicViscositySpace(),
                 elements(M_fluid->mesh()),
-                idv(M_levelsetDensityViscosityModels[i]->fieldMu())*(1 - idv(M_levelset[i]->H()))
+                idv(M_levelsetDensityViscosityModels[i]->fieldMu())*(1 - idv(M_levelsets[i]->H()))
                 );
     }
 

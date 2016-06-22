@@ -29,7 +29,7 @@ public:
     
     //--------------------------------------------------------------------//
     // Mesh
-    typedef ConvexType convex_type;
+    typedef typename fluid_type::convex_type convex_type;
     static const uint16_type nDim = convex_type::nDim;
     static const uint16_type nOrderGeo = convex_type::nOrder;
     static const uint16_type nRealDim = convex_type::nRealDim;
@@ -49,14 +49,14 @@ public:
     // Constructor
     MultiFluid(
             std::string const& prefix,
-            WorldComm const& wc = Environment::wordlComm(),
+            WorldComm const& wc = Environment::worldComm(),
             std::string const& subPrefix = "",
             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     MultiFluid( self_type const& M ) = default;
 
     static self_ptrtype New(
             std::string const& prefix,
-            WorldComm const& wc = Environment::wordlComm(),
+            WorldComm const& wc = Environment::worldComm(),
             std::string const& subPrefix = "",
             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
