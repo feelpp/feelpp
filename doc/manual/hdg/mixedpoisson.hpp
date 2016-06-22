@@ -351,20 +351,6 @@ MixedPoisson<Dim,Order,G_Order>::New( std::string const& prefix,
     return boost::make_shared<self_type> ( prefix,worldComm,subPrefix,rootRepository );
 }
 
-/*
-template<int Dim, int Order, int G_Order>
-MixedPoisson<Dim, Order, G_Order>::MixedPoisson(std::string prefix )
-{
-    M_prefix = prefix;
-    M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption( prefixvm(M_prefix, "model_json") ) ) );
-    if ( M_prefix.empty())
-        M_backend = backend( _rebuild=true);
-    else
-        M_backend = backend( _name=M_prefix, _rebuild=true);
-
-    M_tau_order = ioption( prefixvm(M_prefix, "tau_order") );
-}
-*/
 
 template<int Dim, int Order, int G_Order>
 void
@@ -433,45 +419,45 @@ MixedPoisson<Dim, Order, G_Order>::initModel()
         
 	if ( itType != mapField.end() )
         {
-            cout << "Dirichlet: ";
+            Feel::cout << "Dirichlet: ";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    cout << " " << marker;
+                    Feel::cout << " " << marker;
                 else
-                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            cout << std::endl;
+            Feel::cout << std::endl;
         }
 	 
         itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
         {
-            cout << "Neumann:";
+            Feel::cout << "Neumann:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    cout << " " << marker;
+                    Feel::cout << " " << marker;
                 else
-                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            cout << std::endl;
+            Feel::cout << std::endl;
         }
         itType = mapField.find( "Robin" );
         if ( itType != mapField.end() )
         {
-            cout << "Robin:";
+            Feel::cout << "Robin:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    cout << " " << marker;
+                    Feel::cout << " " << marker;
                 else
-                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            cout << std::endl;
+            Feel::cout << std::endl;
         }
     }
     itField = M_modelProperties->boundaryConditions().find( "flux");
@@ -481,17 +467,17 @@ MixedPoisson<Dim, Order, G_Order>::initModel()
         auto itType = mapField.find( "Integral" );
         if ( itType != mapField.end() )
         {
-            cout << "Integral:";
+            Feel::cout << "Integral:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    cout << " " << marker;
+                    Feel::cout << " " << marker;
                 else
-                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
                 M_integralMarkersList.push_back(marker);
             }
-            cout << std::endl;
+            Feel::cout << std::endl;
         }
     }
 
@@ -529,11 +515,11 @@ MixedPoisson<Dim, Order, G_Order>::initSpaces()
     M_pp = M_Wh->elementPtr( "p" );
     
 
-    cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
+    Feel::cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
          << "Wh<" << Order << "> : " << M_Wh->nDof() << std::endl
          << "Mh<" << Order << "> : " << M_Mh->nDof() << std::endl;
     if ( M_integralCondition )
-        cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
+        Feel::cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
 }
 
 
@@ -544,8 +530,8 @@ MixedPoisson<Dim, Order, G_Order>::initExporter( mesh_ptrtype meshVisu )
     std::string geoExportType="static"; //change_coords_only, change, static
     M_exporter = exporter ( _mesh=meshVisu?meshVisu:this->mesh() ,
                             _name="Export",
-                            _geo=geoExportType );
-        //_path=this->exporterPath() ); 
+                            _geo=geoExportType,
+        		    _path=this->exporterPath() ); 
 }
 
 template<int Dim, int Order, int G_Order>
@@ -961,7 +947,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                     double g = 0;
                     if ( !this->isStationary() )
                     {
-                    	std::cout << "use data file to set rhs for Dirichlet BC at time " << M_bdf_mixedpoisson->time() << std::endl;
+                    	Feel::cout << "use data file to set rhs for Dirichlet BC at time " << M_bdf_mixedpoisson->time() << std::endl;
                         LOG(INFO) << "use data file to set rhs for Dirichlet BC at time " << M_bdf_mixedpoisson->time() << std::endl;
 
                         // data may depend on time
@@ -971,7 +957,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                     	g = exAtMarker.data(0.1);
 
                     LOG(INFO) << "use g=" << g << std::endl;
-                    std::cout << "g=" << g << std::endl;
+                    Feel::cout << "g=" << g << std::endl;
  		    // <g_D, mu>_Gamma_D
 		    rhs3 += integrate(_range=markedfaces(M_mesh,marker),
                                       _expr=id(l)*g);
@@ -1051,7 +1037,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                         double g = 0;
                         if ( !this->isStationary() )
                         {
-                            std::cout << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
+                            Feel::cout << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
                             LOG(INFO) << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
                             
                             // data may depend on time
@@ -1061,7 +1047,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                             g = exAtMarker.data(0.1);
                             
                             LOG(INFO) << "use g=" << g << std::endl;
-                            std::cout << "g=" << g << std::endl;
+                            Feel::cout << "g=" << g << std::endl;
                             rhs4 += integrate(_range=markedfaces(M_mesh,marker),
                                               _expr=g*id(nu)/meas);
                     }
@@ -1144,28 +1130,6 @@ MixedPoisson<Dim, Order, G_Order>::updateFluxRHS( Expr<ExprT> expr, std::string 
                           _expr=inner(expr,id(v)) );
 }
 
-/*
-template<int Dim, int Order, int G_Order>
-void
-MixedPoisson<Dim, Order, G_Order>::exportResults()
-{
-    auto e = exporter( M_mesh);
-
-    auto postProcess = M_modelProperties->postProcess();
-    auto itField = postProcess.find( "Fields");
-    if ( itField != postProcess.end() )
-    {
-        for ( auto const& field : (*itField).second )
-        {
-            if ( field == "flux" )
-                e->add(prefixvm(M_prefix, "flux"), *M_up);
-            if ( field == "potential" )
-                e->add(prefixvm(M_prefix, "potential"), *M_pp);
-        }
-    }
-
-    e->save();
-}*/
 
 template <int Dim, int Order, int G_Order>
 void
@@ -1211,7 +1175,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
 		    M_exporter->step( time )->add(prefixvm(M_prefix, "integralVelocity"), j_integral/meas);
                 }
             }
-            if ( field == "potential" )
+            else if ( field == "potential" )
             {
                 LOG(INFO) << "exporting potential at time " << time;
                 M_exporter->step( time )->add(prefixvm(M_prefix, "potential"), Idh?(*Idh)(*M_pp):*M_pp);
@@ -1220,7 +1184,31 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                     LOG(INFO) << "exporting IBC potential at time " << time << " value " << (*M_mup)[0];
                     M_exporter->step( time )->add(prefixvm(M_prefix, "cstPotential"),(*M_mup)[0] );
                 }
+            } else
+            {
+       		// Import data
+		LOG(INFO) << "importing " << field << " at time " << time;
+                double extra_export = 0.0;
+                auto itField = M_modelProperties->boundaryConditions().find( "Other quantities");
+  		if ( itField != M_modelProperties->boundaryConditions().end() )
+    		{
+		    auto mapField = (*itField).second;
+		    auto itType = mapField.find( field );
+		    if ( itType != mapField.end() )
+        	    {		
+            	    	for ( auto const& exAtMarker : (*itType).second )
+            		{
+                	    if ( exAtMarker.isFile() )
+                	    {
+                        	extra_export = exAtMarker.data(M_bdf_mixedpoisson->time());
+                    	    }
+               		}
+            	    }
+                }
+                LOG(INFO) << "exporting " << field << " at time " << time;
+		M_exporter->step( time )->add(prefixvm(M_prefix, field), extra_export);
             }
+            /*
 	    if (field == "lamina_variables")
 	    {
 		// Import data
@@ -1296,35 +1284,12 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
 		M_exporter->step( time )->add(prefixvm(M_prefix, "CRVflow"), CRVflow );
 		M_exporter->step( time )->add(prefixvm(M_prefix, "CRAvelocity"), CRAvelocity );
 		M_exporter->step( time )->add(prefixvm(M_prefix, "CRVvelocity"), CRVvelocity );
-	    }	
+	    }*/	
         }
     }
 
     M_exporter->save();
-    /*/ Export exact solutions
-     if ( this->isStationary() ){
-     auto K = 10;
-     auto p_exact = expr(soption(prefixvm(M_prefix,"p_exact") ));
-     auto gradp_exact = grad<Dim>(p_exact);
-     auto u_exact = -K*trans(gradp_exact);
-        
-     *
-     for( auto const& pairMat : M_modelProperties->materials() )
-     {
-     auto marker = pairMat.first;
-     auto material = pairMat.second;
-     auto K = material.getScalar(soption(prefixvm(M_prefix,"conductivity_json")));
-     u_exact = -K*trans(gradp_exact) ;
-     }*
-
-     auto p_exact_proj = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact);
-     auto u_exact_proj = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact);
-     M_exporter -> step (0) -> add(prefixvm(M_prefix, "p_exact"), p_exact_proj);
-
-     M_exporter -> step (0) -> add(prefixvm(M_prefix, "u_exact"), u_exact_proj);
-     }*/
-
-    
+      
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -1341,18 +1306,18 @@ template<int Dim, int Order, int G_Order>
 void
 MixedPoisson<Dim, Order, G_Order>::computeError(){
 
-    auto K = 10;
+    auto K = 1;
     auto p_exact = expr(soption(prefixvm(M_prefix,"p_exact") ));
     auto gradp_exact = grad<Dim>(p_exact);
     auto u_exact = -K*trans(gradp_exact);
-    /*
+    
     for( auto const& pairMat : M_modelProperties->materials() )
     {
          auto marker = pairMat.first;
          auto material = pairMat.second;
-         auto K = material.getScalar(soption(prefixvm(M_prefix,"conductivity_json")));
+         K = material.getDouble("k");
 	 u_exact = -K*trans(gradp_exact) ;
-    } */   
+    }    
     
     tic();
 
@@ -1367,7 +1332,6 @@ MixedPoisson<Dim, Order, G_Order>::computeError(){
     auto l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact );
     if (l2norm_pex < 1)
 	l2norm_pex = 1.0;
-    // Feel::cout << "Has Dirichlet: " << has_dirichlet << std::endl;
    
     if ( !has_dirichlet ){
 	auto mean_p_exact = mean( elements(M_mesh), p_exact )(0,0);

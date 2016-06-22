@@ -11,8 +11,8 @@
 	    "R_ext":"0.095",
 	    "k":"0.015192", 
 	    "H":"0.03",
-	    "areaCRA":"0.2277e-3",
-	    "areaCRV":"0.4369e-4"
+	    "areaCRA":"2.405281875404686e-04",
+	    "areaCRV":"3.300635781677777e-04"
         }
     },
     "BoundaryConditions":
@@ -110,7 +110,7 @@
     },
     "PostProcess":
     {
-        "Fields":["potential","flux","lamina_variables"]
+        "Fields":["potential","flux","Pin","CRVflow","CRAflow"]
     }
 }
 
