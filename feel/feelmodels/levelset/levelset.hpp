@@ -234,6 +234,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Levelset
+    element_levelset_ptrtype & phi() { return this->fieldSolutionPtr(); }
     element_levelset_ptrtype const& phi() const { return this->fieldSolutionPtr(); }
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
     element_levelset_ptrtype const& heaviside() const { return M_heaviside; }
@@ -359,8 +360,6 @@ private:
     void initFastMarching(mesh_ptrtype const& mesh);
 
     //--------------------------------------------------------------------//
-    // Levelset
-    element_levelset_ptrtype & phi() { return this->fieldSolutionPtr(); }
     element_levelset_ptrtype const& phio() const { return this->timeStepBDF()->unknowns()[1]; }
 
 protected:
@@ -466,6 +465,56 @@ private:
     int __iter;
 
 }; //class LevelSet
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+template<typename ExprT>
+void 
+LEVELSET_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
+{
+    if( M_iterSinceReinit >= this->timeSchemeOrder()-1 )
+    {
+        this->updateAdvectionVelocity(velocity);
+        this->solve();
+
+        M_iterSinceReinit++;
+    }
+    else
+    {
+        this->setTimeOrder( M_iterSinceReinit + 1 );
+        this->updateAdvectionVelocity(velocity);
+        this->solve();
+
+        M_iterSinceReinit++;
+    }
+
+    /*//        if ( enable_reinit && (ForceReinit || doReinit() ))
+    if (M_discrMethod != CN_CONSERVATIVE)
+    {
+        bool timeToReinit;
+        if (reinitevery > 0)
+            timeToReinit = (M_iterSinceReinit == 0) ? false : (M_iterSinceReinit%reinitevery)==0 ;
+        else
+        {
+            double dtd = distToDist();
+            std::cout<<"dtd = "<<dtd<<std::endl;
+            double reinitif = option(prefixvm(this->prefix(),"reinit-if-dist-smaller")).template as<double>();
+            timeToReinit = dtd > reinitif ;
+        }
+
+
+        if ( enable_reinit && (ForceReinit || timeToReinit ) && (updateTime) )
+        {
+
+            if (!updateTime)
+                M_phinl.swap(this->phi());
+            this->reinitialize(hj_max_iter, hj_dtau, hj_tol, true);
+            didReinit=true;
+            if (!updateTime)
+                M_phinl.swap(this->phi());
+        }
+    }*/
+    this->updateInterfaceQuantities();
+}
 
 } // namespace FeelModels
 } // namespace Feel

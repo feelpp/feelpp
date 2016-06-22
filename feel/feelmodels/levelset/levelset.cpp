@@ -455,66 +455,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerCrossedElements()
 //----------------------------------------------------------------------------//
 // Advection
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-template<typename ExprT>
-void 
-LEVELSET_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
-{
-    //output : true if reinitialized
-    bool didReinit=false;
-
-    /*
-       update stabilization strategy
-       1 - update stab every iteration
-       2 - update stab when reinitialize
-       3 - update stab every n iterations (not implemented yet)
-       */
-
-    if( M_iterSinceReinit >= this->timeSchemeOrder()-1 )
-    {
-        this->updateAdvectionVelocity(velocity);
-        this->solve();
-
-        M_iterSinceReinit++;
-    }
-    else
-    {
-        this->setTimeOrder( M_iterSinceReinit + 1 );
-        this->updateAdvectionVelocity(velocity);
-        this->solve();
-
-        M_iterSinceReinit++;
-    }
-
-    /*//        if ( enable_reinit && (ForceReinit || doReinit() ))
-    if (M_discrMethod != CN_CONSERVATIVE)
-    {
-        bool timeToReinit;
-        if (reinitevery > 0)
-            timeToReinit = (M_iterSinceReinit == 0) ? false : (M_iterSinceReinit%reinitevery)==0 ;
-        else
-        {
-            double dtd = distToDist();
-            std::cout<<"dtd = "<<dtd<<std::endl;
-            double reinitif = option(prefixvm(this->prefix(),"reinit-if-dist-smaller")).template as<double>();
-            timeToReinit = dtd > reinitif ;
-        }
-
-
-        if ( enable_reinit && (ForceReinit || timeToReinit ) && (updateTime) )
-        {
-
-            if (!updateTime)
-                M_phinl.swap(this->phi());
-            this->reinitialize(hj_max_iter, hj_dtau, hj_tol, true);
-            didReinit=true;
-            if (!updateTime)
-                M_phinl.swap(this->phi());
-        }
-    }*/
-    this->updateInterfaceQuantities();
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::solve()
 {
