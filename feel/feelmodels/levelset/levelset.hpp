@@ -253,7 +253,7 @@ public:
 
     int iterSinceReinit() const { return M_iterSinceReinit; }
 
-    projector_levelset_ptrtype const& projectorL2 const { return M_projectorL2; }
+    projector_levelset_ptrtype const& projectorL2() const { return M_projectorL2; }
     projector_levelset_vectorial_ptrtype const& projectorL2Vectorial() const { return M_projectorL2Vec; }
     projector_levelset_ptrtype const& smootherCurvature() const { return M_smootherCurvature; }
 
