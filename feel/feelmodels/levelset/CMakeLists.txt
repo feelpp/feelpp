@@ -7,7 +7,7 @@ foreach(_DIM 2 3)
   foreach( _PHI_ORDER RANGE 1 ${MAX_ORDER} )
       genLibLevelset(
           DIM     ${_DIM}
-          PHI_ORDER ${_PHI_ORDER}
+          LEVELSET_ORDER ${_PHI_ORDER}
           GEO_ORDER 1 
           #USE_PERIODICITY
           ADD_CMAKE_INSTALL
