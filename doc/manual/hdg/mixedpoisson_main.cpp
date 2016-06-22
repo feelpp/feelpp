@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    MP->computeError(); 
+    // MP->computeError(); 
  
     return 0;
 }
