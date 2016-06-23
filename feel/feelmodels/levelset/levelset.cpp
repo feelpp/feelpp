@@ -19,7 +19,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     //M_periodicity(periodicityLS),
     M_doUpdateMarkers(true),
     M_reinitializerIsUpdatedForUse(false),
-    M_iterSinceReinit(0)
+    M_iterSinceReinit(0),
+    M_hasReinitialized(false)
 {
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
     //-----------------------------------------------------------------------------//
@@ -122,6 +123,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     }
     // Init advection
     super_type::init( true, this->shared_from_this() );
+
+    M_timeOrder = this->timeStepBDF()->timeOrder(); 
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -460,21 +463,34 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::solve()
 {
-    if( M_iterSinceReinit < this->timeStepBDF()->timeOrder()-1 )
-    {
-        this->timeStepBDF()->setOrder( M_iterSinceReinit + 1 );
-    }
-
     super_type::solve();
     this->updateInterfaceQuantities();
+
+    // Reset hasReinitialized
+    M_hasReinitialized = false;
+
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
+    double current_time = this->timeStepBDF()->time();
+
     super_type::updateTimeStep();
-    M_iterSinceReinit++;
+
+    if( M_hasReinitialized )
+        M_iterSinceReinit = 0;
+    else
+        ++M_iterSinceReinit;
+
+    if( M_iterSinceReinit < M_timeOrder )
+    {
+        this->timeStepBDF()->setOrder( M_iterSinceReinit + 1 );
+        this->timeStepBDF()->setTimeInitial( current_time ); 
+        this->timeStepBDF()->restart();
+        this->timeStepBDF()->setTimeInitial( this->timeInitial() );
+    }
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -551,7 +567,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
     *phi = M_reinitializer->run( *phi );
 
-    M_iterSinceReinit=0;
+    M_hasReinitialized = true;
 }
 
 //----------------------------------------------------------------------------//
