@@ -184,8 +184,8 @@ public:
               ( space_vectorial, (space_levelset_vectorial_ptrtype), space_levelset_vectorial_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
               ( space_markers, (space_markers_ptrtype), space_markers_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
               ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ),  buildReinitializer(this->M_reinitMethod, space, this->prefix()) )
-              ( projectorL2, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"ls-l2p"))) )
-              ( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"ls-l2pVec"))) )
+              ( projectorL2, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"projector-l2"))) )
+              ( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"projector-l2-vec"))) )
               ( smoother_curvature, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix,"smoother-curvature")), DIFF, space->mesh()->hAverage()*doption(_name="curvature-smooth-coeff", _prefix=this->prefix())/Order, 30) )
             )
             )
@@ -242,8 +242,8 @@ public:
     element_levelset_ptrtype const& dirac() const { return M_dirac; }
     element_levelset_ptrtype const& D() const { return this->dirac(); }
 
-    element_levelset_ptrtype const& normal() const { return M_levelsetNormal; }
-    element_levelset_ptrtype const& N() const { return this->normal(); }
+    element_levelset_vectorial_ptrtype const& normal() const { return M_levelsetNormal; }
+    element_levelset_vectorial_ptrtype const& N() const { return this->normal(); }
     element_levelset_ptrtype const& curvature() const { return M_levelsetCurvature; }
     element_levelset_ptrtype const& K() const { return this->curvature(); }
 
@@ -274,6 +274,8 @@ public:
     template<typename ExprT>
     void advect(vf::Expr<ExprT> const& velocity);
     void solve();
+
+    void updateTimeStep();
 
     void updateInterfaceQuantities();
 
@@ -410,7 +412,7 @@ private:
     projector_levelset_ptrtype M_smootherCurvature;
     //--------------------------------------------------------------------//
     // Normal, curvature
-    element_levelset_ptrtype M_levelsetNormal;
+    element_levelset_vectorial_ptrtype M_levelsetNormal;
     element_levelset_ptrtype M_levelsetCurvature;
     bool M_doSmoothCurvature;
 
@@ -466,54 +468,13 @@ private:
 
 }; //class LevelSet
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+template<typename ConvexType, int Order, typename PeriodicityType>
 template<typename ExprT>
 void 
-LEVELSET_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
+LevelSet<ConvexType, Order, PeriodicityType>::advect(vf::Expr<ExprT> const& velocity)
 {
-    if( M_iterSinceReinit >= this->timeSchemeOrder()-1 )
-    {
-        this->updateAdvectionVelocity(velocity);
-        this->solve();
-
-        M_iterSinceReinit++;
-    }
-    else
-    {
-        this->setTimeOrder( M_iterSinceReinit + 1 );
-        this->updateAdvectionVelocity(velocity);
-        this->solve();
-
-        M_iterSinceReinit++;
-    }
-
-    /*//        if ( enable_reinit && (ForceReinit || doReinit() ))
-    if (M_discrMethod != CN_CONSERVATIVE)
-    {
-        bool timeToReinit;
-        if (reinitevery > 0)
-            timeToReinit = (M_iterSinceReinit == 0) ? false : (M_iterSinceReinit%reinitevery)==0 ;
-        else
-        {
-            double dtd = distToDist();
-            std::cout<<"dtd = "<<dtd<<std::endl;
-            double reinitif = option(prefixvm(this->prefix(),"reinit-if-dist-smaller")).template as<double>();
-            timeToReinit = dtd > reinitif ;
-        }
-
-
-        if ( enable_reinit && (ForceReinit || timeToReinit ) && (updateTime) )
-        {
-
-            if (!updateTime)
-                M_phinl.swap(this->phi());
-            this->reinitialize(hj_max_iter, hj_dtau, hj_tol, true);
-            didReinit=true;
-            if (!updateTime)
-                M_phinl.swap(this->phi());
-        }
-    }*/
-    this->updateInterfaceQuantities();
+    this->updateAdvectionVelocity(velocity);
+    this->solve();
 }
 
 } // namespace FeelModels
