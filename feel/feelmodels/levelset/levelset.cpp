@@ -138,6 +138,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
 {
     M_heaviside.reset( new element_levelset_type(this->functionSpace(), "Heaviside") );
     M_dirac.reset( new element_levelset_type(this->functionSpace(), "Dirac") );
+    M_levelsetNormal.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "Normal") );
+    M_levelsetCurvature.reset( new element_levelset_type(this->functionSpace(), "Curvature") );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -156,7 +158,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
 
             if( M_strategyBeforeFM == ILP )
             {
-                M_backend_smooth = backend(_name=prefixvm(this->prefix(), "ls-smooth"));
+                M_backend_smooth = backend(_name=prefixvm(this->prefix(), "smoother-fm"));
                 M_smootherFM = projector(
                         this->functionSpace(),/*domainSpace*/
                         this->functionSpace(),/*imageSpace*/
@@ -188,8 +190,8 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 {
-    M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "ls-l2p")) );
-    M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "ls-l2pVec")) );
+    M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "projector-l2")) );
+    M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "projector-l2-vec")) );
 
     if( M_doSmoothCurvature )
     {
@@ -458,8 +460,21 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::solve()
 {
+    if( M_iterSinceReinit < this->timeStepBDF()->timeOrder()-1 )
+    {
+        this->timeStepBDF()->setOrder( M_iterSinceReinit + 1 );
+    }
+
     super_type::solve();
     this->updateInterfaceQuantities();
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
+{
+    super_type::updateTimeStep();
+    M_iterSinceReinit++;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
