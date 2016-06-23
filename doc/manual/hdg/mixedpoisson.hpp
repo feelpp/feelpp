@@ -161,9 +161,6 @@ protected:
     // time discretization
     bdf_ptrtype M_bdf_mixedpoisson;
     
-    // map_scalar_field<2> M_dirichlet;
-    // map_vector_field<Dim,1,2> M_neumann;
-    // map_scalar_field<2> M_source;    
 
     int M_tau_order;
     
@@ -405,9 +402,6 @@ template<int Dim, int Order, int G_Order>
 void
 MixedPoisson<Dim, Order, G_Order>::initModel()
 {
-    // M_dirichlet = M_modelProperties -> boundaryConditions().getScalarFields( "potential", "Dirichlet");
-    // M_neumann = M_modelProperties -> boundaryConditions().template getVectorFields<Dim> ( "flux", "Neumann" );
-    // M_source = M_modelProperties -> boundaryConditions().getScalarFields( "potential", "SourceTerm");
 
     // initialize marker lists for each boundary condition type
     M_integralMarkersList.clear();
@@ -1188,93 +1182,40 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
         	    {		
             	    	for ( auto const& exAtMarker : (*itType).second )
             		{
-                	    if ( exAtMarker.isFile() )
+			    if ( exAtMarker.isExpression() )
+                            {
+				 LOG(INFO) << "WARNING: you are trying to export a single expression";
+                	    }
+                	    else if ( exAtMarker.isFile() )
                 	    {
-                        	extra_export = exAtMarker.data(M_bdf_mixedpoisson->time());
-                    	    }
-               		}
+                    		if ( !this->isStationary() )
+                    		{
+                        	    extra_export = exAtMarker.data(M_bdf_mixedpoisson->time());
+                    		}
+                   	    	else
+                        	    extra_export = exAtMarker.data(0.1);
+			    }
+             		}
             	    }
                 }
+
+		// Transform data if necessary
+		LOG(INFO) << "transforming" << field << "at time " << time;
+		std::string field_k = field;
+		field_k += "_k";
+		double kk = 0.0;
+		for( auto const& pairMat : M_modelProperties->materials() )
+                {
+                    auto material = pairMat.second;
+                    kk = material.getDouble( field_k );
+                }
+		if (std::abs(kk) > 1e-10)
+		    extra_export *= kk;
+
+		// Export data
                 LOG(INFO) << "exporting " << field << " at time " << time;
 		M_exporter->step( time )->add(prefixvm(M_prefix, field), extra_export);
             }
-            /*
-	    if (field == "lamina_variables")
-	    {
-		// Import data
-		LOG(INFO) << "importing lamina variables at time " << time;
-		double areaCRA = 0.0;
-		double areaCRV = 0.0;
-		double Pin = 0.0;
-		double CRAflow = 0.0;
-		double CRVflow = 0.0;
-		for( auto const& pairMat : M_modelProperties->materials() )
-    		{	
-        	    auto marker = pairMat.first;
-        	    auto material = pairMat.second;
-		    areaCRA = material.getDouble("areaCRA");
-		    areaCRV = material.getDouble("areaCRV");
-		}
-		
-		
-		auto itField = M_modelProperties->boundaryConditions().find( "Other quantities");
-  		if ( itField != M_modelProperties->boundaryConditions().end() )
-    		{
-		    auto mapField = (*itField).second;
-		    // CRAflow 
-		    auto itType = mapField.find( "CRAflow" );
-		    if ( itType != mapField.end() )
-        	    {		
-            	    	for ( auto const& exAtMarker : (*itType).second )
-            		{
-                	    if ( exAtMarker.isFile() )
-                	    {
-                        	CRAflow = exAtMarker.data(M_bdf_mixedpoisson->time());
-                    	    }
-
-               		}
-
-            	    }
-		    // CRVflow
-                    itType = mapField.find( "CRVflow" );
-                    if ( itType != mapField.end() )
-                    {
-                        for ( auto const& exAtMarker : (*itType).second )
-                        {
-                            if ( exAtMarker.isFile() )
-                            {
-                                CRVflow = exAtMarker.data(M_bdf_mixedpoisson->time());
-                            }
-
-                        }
-
-                    }
-		    // Pin
-		    itType = mapField.find( "Pin" );
-                    if ( itType != mapField.end() )
-                    {
-                        for ( auto const& exAtMarker : (*itType).second )
-                        {
-                            if ( exAtMarker.isFile() )
-                            {
-                                Pin = exAtMarker.data(M_bdf_mixedpoisson->time());
-                            }
-                        }
-                    }
-        	}
-
-		// Transform data
-		auto CRAvelocity = CRAflow/areaCRA ;
-		auto CRVvelocity = CRVflow/areaCRV ;
-		
-		// Export data
-		LOG(INFO) << "exporting lamina variables at time " << time;
-		M_exporter->step( time )->add(prefixvm(M_prefix, "Pin"), Pin);
-		M_exporter->step( time )->add(prefixvm(M_prefix, "CRAflow"), CRAflow );		
-		M_exporter->step( time )->add(prefixvm(M_prefix, "CRVflow"), CRVflow );
-		M_exporter->step( time )->add(prefixvm(M_prefix, "CRAvelocity"), CRAvelocity );
-		M_exporter->step( time )->add(prefixvm(M_prefix, "CRVvelocity"), CRVvelocity );
-	    }*/	
         }
     }
 
