@@ -52,7 +52,7 @@ makeMixedPoissonLibOptions( std::string prefix = "mixedpoisson" )
 {
     po::options_description mpLibOptions( "Mixed Poisson HDG Lib options");
     // if ( !prefix.empty() )
-    //    mpLibOptions.add( backend_options( prefix ) );
+    //     mpLibOptions.add( backend_options( prefix ) );
     return mpLibOptions;
 }
 
@@ -621,6 +621,7 @@ MixedPoisson<Dim, Order, G_Order>::solve()
 {
     tic();
     M_modelProperties -> parameters().updateParameterValues();
+    // M_modelProperties -> boundaryConditions().setParameterValues( { {t, M_bdf_mixedpoisson->time()} } ); 
     updateConductivityTerm();
     assembleF();
     if ( M_updateAssembly != NULL )
@@ -883,30 +884,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
     auto rhs1 = form1( _test=M_Wh, _vector=M_F, _rowstart=0);
     auto rhs2 = form1( _test=M_Wh, _vector=M_F, _rowstart=1);
     auto rhs3 = form1( _test=M_Mh, _vector=M_F, _rowstart=2);
-    /*
-    M_source.setParameterValues( M_modelProperties->parameters().toParameterValues() );
-    if (!this->isStationary())
-        M_source.setParameterValues( {{"t",M_bdf_mixedpoisson->time()}} ); 
-    for ( auto const& s : M_source ){
-	// (f, w)_Omega
-	rhs2 += integrate( _range = markedelements(M_mesh,marker(s)), 
-			   _expr = expression(s)*id(w) );
-        // (p_old,w)_Omega
-        if ( !this->isStationary() ){
-            rhs2 += integrate( _range = markedelements(M_mesh,marker(s)),
-                               _expr = idv(this->timeStepBDF()->polyDeriv()) * id(w));
-        }
-    }
-    // Dirichlet potential BC
-    M_dirichlet.setParameterValues( M_modelProperties->parameters().toParameterValues() );
-    if (!this->isStationary() )
-        M_dirichlet.setParameterValues( {{"t",M_bdf_mixedpoisson->time()}} );
-    for ( auto const& d : M_dirichlet ){
-        // <g_D, mu>_Gamma_D
-        rhs3 += integrate( _range = markedfaces(M_mesh,marker(d)),
-                           _expr = id(l)*expression(d));
 
-    }*/
     auto itField = M_modelProperties->boundaryConditions().find( "potential");
     if ( itField != M_modelProperties->boundaryConditions().end() )
     {
@@ -918,7 +896,9 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
             {
                 std::string marker = exAtMarker.marker();
                 auto g = expr(exAtMarker.expression());
-                // (f, w)_Omega
+                if ( !this->isStationary() )
+                    g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+		// (f, w)_Omega
                 rhs2 += integrate( _range=markedelements(M_mesh,marker),
                                    _expr=g*id(w));
                 // (p_old,w)_Omega
@@ -938,6 +918,8 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                 if ( exAtMarker.isExpression() )
                 {
                     auto g = expr(exAtMarker.expression());
+		    if ( !this->isStationary() )
+                        g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
 		    // <g_D, mu>_Gamma_D
 		    rhs3 += integrate(_range=markedfaces(M_mesh,marker),
                                   _expr=id(l)*g);                    
@@ -973,7 +955,9 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
             {
                 std::string marker = exAtMarker.marker();
                 auto g = expr(exAtMarker.expression());
-                // <g_N,mu>_Gamma_N
+                if ( !this->isStationary() )
+                       g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+		// <g_N,mu>_Gamma_N
                 rhs3 += integrate( _range=markedfaces(M_mesh, marker),
                                    _expr=id(l)*g);
             }
@@ -985,6 +969,8 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
             {
                 std::string marker = exAtMarker.marker();
                 auto g = expr(exAtMarker.expression2());
+		if ( !this->isStationary() )
+                       g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 // <g_R^2,mu>_Gamma_R
                 rhs3 += integrate( _range=markedfaces(M_mesh, marker),
                                    _expr=id(l)*g);
@@ -1003,6 +989,8 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
             {
                 std::string marker = exAtMarker.marker();
                 auto g = expr<3,1>(exAtMarker.expression());
+		if ( !this->isStationary() )
+                       g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 // (g, v)_Omega
                 rhs2 += integrate( _range=markedelements(M_mesh,marker),
                                    _expr=inner(g,id(v)));
@@ -1028,6 +1016,8 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                     if ( exAtMarker.isExpression() )
                     {
                         auto g = expr(exAtMarker.expression());
+		       	if ( !this->isStationary() )
+                             g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                         // <I_target,m>_Gamma_I
                         rhs4 += integrate(_range=markedfaces(M_mesh,marker),
                                           _expr=g*id(nu)/meas);
