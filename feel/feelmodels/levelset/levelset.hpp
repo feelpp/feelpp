@@ -424,6 +424,7 @@ private:
     boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smootherFM;
 
     int M_iterSinceReinit;
+    bool M_hasReinitialized;
 
     //--------------------------------------------------------------------//
     // Backends
@@ -431,8 +432,7 @@ private:
 
     //--------------------------------------------------------------------//
     // Advection
-    //advection_ptrtype M_advection;
-    //boost::shared_ptr<advection_type> M_advection_hj;
+    int M_timeOrder;
 
     //--------------------------------------------------------------------//
     // Export
