@@ -399,6 +399,29 @@ levelset_options(std::string const& prefix)
 }
 
 Feel::po::options_description
+multifluid_options(std::string const& prefix, uint16_type nls = 1)
+{
+    Feel::po::options_description multifluidOptions("MultiFluid options");
+    multifluidOptions.add_options()
+        (prefixvm(prefix,"nfluids").c_str(), Feel::po::value<int>()->default_value( 2 ), "total number of fluids (including surrounding one)")
+        (prefixvm(prefix, "enable-surface-tension").c_str(), Feel::po::value<bool>()->default_value( true ), "enable surface tension between fluids")
+        (prefixvm(prefix,"surface-tension-coeff").c_str(), po::value<std::vector<double> >()->multitoken(), "surface tension coefficients" )
+        ;
+
+    multifluidOptions
+        .add( modelnumerical_options( prefix ) )
+        .add( fluidMechanics_options( prefixvm(prefix, "fluid") ) )
+        .add( levelset_options( prefixvm(prefix, "levelset") ) )
+        ;
+    for( uint16_type n = 0; n < nls; ++n )
+    {
+        multifluidOptions.add( levelset_options( prefixvm(prefix, (boost::format( "levelset%1%" ) %(n+1)).str()) ) );
+    }
+
+    return multifluidOptions;
+}
+
+Feel::po::options_description
 alemesh_options(std::string const& prefix)
 {
     po::options_description desc_options("alemesh options");
@@ -451,6 +474,8 @@ feelmodels_options(std::string type)
         FSIoptions.add(advection_options("advection"));
     else if (type == "levelset")
         FSIoptions.add(levelset_options("levelset"));
+    else if (type == "multifluid")
+        FSIoptions.add(multifluid_options("multifluid"));
 
     else
         CHECK( false ) << "invalid type : " << type << " -> must be fluid,solid,thermo-dynamics,fsi";
