@@ -67,7 +67,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
     {
         auto levelset_prefix = (boost::format( "levelset%1%" ) %(i+1)).str();
         M_levelsets[i].reset(
-                new levelset_type( prefixvm(this->prefix(),levelset_prefix), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
+                new levelset_type( prefixvm(this->prefix(), levelset_prefix), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
                 );
         M_levelsets[i]->build(
                 _space=M_globalLevelset->functionSpace(),
@@ -80,7 +80,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
                 );
 
         M_levelsetDensityViscosityModels[i].reset(
-                new densityviscosity_model_type( levelset_prefix )
+                new densityviscosity_model_type( prefixvm(this->prefix(), levelset_prefix) )
                 );
         M_levelsetDensityViscosityModels[i]->initFromMesh( M_fluid->mesh(), M_fluid->useExtendedDofTable() );
         M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelsets[i]->modelProperties().materials() );
@@ -123,6 +123,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
                                                << "You must at least provide the surface tension coefficients between the "
                                                << M_nFluids - 1
                                                << " levelset fluids and the surrounding fluid.\n";
+
+        M_surfaceTensionCoeff = ublas::symmetric_matrix<double, ublas::upper>(M_nFluids, M_nFluids);
         uint16_type k = 0;
         for( uint16_type i = 0; i < M_surfaceTensionCoeff.size1(); ++i )
             for( uint16_type j = i+1; j < M_surfaceTensionCoeff.size2(); ++j )
@@ -156,7 +158,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
     if( this->hasInterfaceForces() )
         this->updateInterfaceForces();
     // Solve fluid equations
-    M_fluid->solve();
+    this->solveFluid();
     // Advect levelsets
     this->advectLevelsets();
 
@@ -177,6 +179,17 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
         M_levelsets[i]->updateTimeStep();
     }
     this->log("MultiFluid", "updateTimeStep", "finish");
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults()
+{
+    this->log("MultiFluid","exportResults", "start");
+
+    M_fluid->exportResults();
+
+    this->log("MultiFluid", "exportResults", "finish");
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -247,6 +260,9 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
 {
+    this->log("MultiFluid", "updateInterfaceForces", "start");
+    this->timerTool("Solve").start();
+
     M_interfaceForces->zero();
 
     if( this->hasSurfaceTension() )
@@ -262,6 +278,24 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
     }
 
     M_fluid->updateSourceAdded( idv(M_interfaceForces) );
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log( "MultiFluid", "updateInterfaceForces", 
+            "interface forces update in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::solveFluid()
+{
+    this->log("MultiFluid", "solveFluid", "start");
+    this->timerTool("Solve").start();
+
+    M_fluid->solve();
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log( "MultiFluid", "solveFluid", 
+            "fluid problem solved in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
