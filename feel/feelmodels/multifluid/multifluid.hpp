@@ -98,11 +98,16 @@ public:
     boost::shared_ptr<TSBase> timeStepBase() const { return M_fluid->timeStepBase(); }
     void updateTimeStep();
 
+    //--------------------------------------------------------------------//
+    // Export
+    void exportResults();
+
 protected:
     void updateGlobalLevelset();
 
     void updateFluidDensityViscosity();
     void updateInterfaceForces();
+    void solveFluid();
     void advectLevelsets();
 
 private:
