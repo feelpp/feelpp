@@ -24,8 +24,16 @@ public:
     typedef LevelSetType levelset_type;
     typedef boost::shared_ptr<levelset_type> levelset_ptrtype;
 
+    //--------------------------------------------------------------------//
+    // Function spaces
+    typedef typename levelset_type::space_levelset_ptrtype space_levelset_ptrtype;
+    typedef typename levelset_type::space_levelset_vectorial_ptrtype space_levelset_vectorial_ptrtype;
+    typedef typename levelset_type::space_markers_ptrtype space_levelset_markers_ptrtype;
+
     typedef typename levelset_type::element_levelset_type element_levelset_type;
     typedef typename levelset_type::element_levelset_ptrtype element_levelset_ptrtype; 
+    typedef typename levelset_type::element_levelset_vectorial_type element_levelset_vectorial_type;
+    typedef typename levelset_type::element_levelset_vectorial_ptrtype element_levelset_vectorial_ptrtype; 
     
     //--------------------------------------------------------------------//
     // Mesh
@@ -68,6 +76,20 @@ public:
 
     void init();
 
+    virtual void loadParametersFromOptionsVm();
+
+    //--------------------------------------------------------------------//
+    // Function spaces
+    space_levelset_ptrtype const& functionSpaceLevelset() const { return M_globalLevelset->functionSpace(); }
+    space_levelset_vectorial_ptrtype const& functionSpaceLevelsetVectorial() const { return M_globalLevelset->functionSpaceVectorial(); }
+    space_levelset_markers_ptrtype const& functionSpaceLevelsetMarkers() const { return M_globalLevelset->functionSpaceMarkers(); }
+    //--------------------------------------------------------------------//
+    // Mesh
+    mesh_ptrtype const& mesh() const { return M_fluid->mesh(); }
+    //--------------------------------------------------------------------//
+    bool hasSurfaceTension() const { return M_enableSurfaceTension; }
+    bool hasInterfaceForces() const;
+
     //--------------------------------------------------------------------//
     // Solve
     void solve();
@@ -88,11 +110,18 @@ private:
     levelset_ptrtype M_globalLevelset;
     std::vector<levelset_ptrtype> M_levelsets;
 
+    uint16_type M_nFluids;
+
     //--------------------------------------------------------------------//
     // Parameters
     densityviscosity_model_ptrtype M_fluidDensityViscosityModel;
     std::vector<densityviscosity_model_ptrtype> M_levelsetDensityViscosityModels;
+    //--------------------------------------------------------------------//
+    // Forces
+    bool M_enableSurfaceTension;
+    ublas::symmetric_matrix<double, ublas::upper> M_surfaceTensionCoeff;
 
+    element_levelset_vectorial_ptrtype M_interfaceForces; 
 };
         
 
