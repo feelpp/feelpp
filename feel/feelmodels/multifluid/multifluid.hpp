@@ -72,7 +72,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Initialization
-    void build( uint16_type nLevelSets );
+    void build();
 
     void init();
 
@@ -95,6 +95,7 @@ public:
     void solve();
     //--------------------------------------------------------------------//
     // Time step
+    boost::shared_ptr<TSBase> timeStepBase() const { return M_fluid->timeStepBase(); }
     void updateTimeStep();
 
 protected:

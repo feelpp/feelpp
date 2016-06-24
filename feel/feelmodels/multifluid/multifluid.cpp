@@ -20,6 +20,18 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+typename MULTIFLUID_CLASS_TEMPLATE_TYPE::self_ptrtype
+MULTIFLUID_CLASS_TEMPLATE_TYPE::New(
+        std::string const& prefix,
+        WorldComm const& wc,
+        std::string const& subPrefix,
+        std::string const& rootRepository )
+{
+    self_ptrtype new_multifluid( new self_type(prefix, wc, subPrefix, rootRepository) );
+    return new_multifluid;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 std::string
 MULTIFLUID_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const& s )
 {
@@ -32,20 +44,20 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 {
-    CHECK( M_nFluids > 2 ) << "Multifluid must contain at least 2 fluids.\n";
+    CHECK( M_nFluids >= 2 ) << "Multifluid must contain at least 2 fluids.\n";
     uint16_type nLevelSets = M_nFluids - 1;
 
     this->log("MultiFluid", "build", "start");
 
     M_fluid = fluid_ptrtype( 
-            new fluid_type("fluid", false, this->worldComm(), "", this->rootRepositoryWithoutNumProc() ) 
+            new fluid_type( prefixvm(this->prefix(),"fluid"), false, this->worldComm(), "", this->rootRepositoryWithoutNumProc() ) 
             ); 
     M_fluid->build();
 
     M_fluidDensityViscosityModel.reset( new densityviscosity_model_type(*M_fluid->densityViscosityModel()) );
 
     M_globalLevelset = levelset_ptrtype(
-            new levelset_type( "levelset", this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
+            new levelset_type( prefixvm(this->prefix(),"levelset"), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
             );
     M_globalLevelset->build( M_fluid->mesh() );
 
@@ -53,9 +65,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
     M_levelsetDensityViscosityModels.resize( nLevelSets );
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
-        auto levelset_prefix = (boost::format( "levelset%1%" ) %i).str();
+        auto levelset_prefix = (boost::format( "levelset%1%" ) %(i+1)).str();
         M_levelsets[i].reset(
-                new levelset_type( levelset_prefix, this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
+                new levelset_type( prefixvm(this->prefix(),levelset_prefix), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
                 );
         M_levelsets[i]->build(
                 _space=M_globalLevelset->functionSpace(),
@@ -77,6 +89,22 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
     M_interfaceForces.reset( new element_levelset_vectorial_type(this->functionSpaceLevelsetVectorial(), "InterfaceForces") ); 
 
     this->log("MultiFluid", "build", "finish");
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
+{
+    this->log("MultiFluid", "init", "start");
+
+    M_fluid->init();
+    M_globalLevelset->init();
+    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    {
+        M_levelsets[i]->init();
+    }
+
+    this->log("MultiFluid", "init", "finish");
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
