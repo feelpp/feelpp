@@ -13,7 +13,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
         std::string const& subPrefix,
         std::string const& rootRepository )
 : super_type( prefix, wc, subPrefix, self_type::expandStringFromSpec( rootRepository ) )
-{}
+{
+    //-----------------------------------------------------------------------------//
+    // Load parameters
+    this->loadParametersFromOptionsVm();
+}
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 std::string
@@ -26,9 +30,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const& s )
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::build( uint16_type nLevelSets )
+MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 {
-    CHECK( nLevelSets > 0 ) << "Multifluid must contain at least 1 level-set.\n";
+    CHECK( M_nFluids > 2 ) << "Multifluid must contain at least 2 fluids.\n";
+    uint16_type nLevelSets = M_nFluids - 1;
 
     this->log("MultiFluid", "build", "start");
 
@@ -69,7 +74,45 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build( uint16_type nLevelSets )
         M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelsets[i]->modelProperties().materials() );
     }
 
+    M_interfaceForces.reset( new element_levelset_vectorial_type(this->functionSpaceLevelsetVectorial(), "InterfaceForces") ); 
+
     this->log("MultiFluid", "build", "finish");
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
+{
+    M_nFluids = ioption( _name="nfluids", _prefix=this->prefix() );
+
+    M_enableSurfaceTension = boption( _name="enable-surface-tension", _prefix=this->prefix() );
+
+    if( M_enableSurfaceTension )
+    {
+        std::vector<double> sigma = Environment::vm()[prefixvm(this->prefix(),"surface-tension-coeff").c_str()].template as<std::vector<double> >();
+
+        CHECK( sigma.size() >= M_nFluids - 1 ) << sigma.size() << " surface tension coefficients found.\n"
+                                               << "You must at least provide the surface tension coefficients between the "
+                                               << M_nFluids - 1
+                                               << " levelset fluids and the surrounding fluid.\n";
+        uint16_type k = 0;
+        for( uint16_type i = 0; i < M_surfaceTensionCoeff.size1(); ++i )
+            for( uint16_type j = i+1; j < M_surfaceTensionCoeff.size2(); ++j )
+            {
+                if( k < sigma.size() )
+                    M_surfaceTensionCoeff(i,j) = sigma[k];
+                else
+                    M_surfaceTensionCoeff(i,j) = 0;
+                ++k;
+            }
+    }
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+bool
+MULTIFLUID_CLASS_TEMPLATE_TYPE::hasInterfaceForces() const
+{
+    return this->hasSurfaceTension();
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -82,7 +125,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
     // Update density and viscosity
     this->updateFluidDensityViscosity();
     // Update interface forces
-    // TODO
+    if( this->hasInterfaceForces() )
+        this->updateInterfaceForces();
     // Solve fluid equations
     M_fluid->solve();
     // Advect levelsets
@@ -169,6 +213,27 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
     double timeElapsed = this->timerTool("Solve").stop();
     this->log( "MultiFluid", "updateFluidDensityViscosity", 
             "fluid density/viscosity update in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
+{
+    M_interfaceForces->zero();
+
+    if( this->hasSurfaceTension() )
+    {
+        for( uint16_type n = 0; n < M_levelsets.size(); ++n )
+        {
+            *M_interfaceForces += vf::project( 
+                    this->functionSpaceLevelsetVectorial(),
+                    elements(this->mesh()),
+                    - M_surfaceTensionCoeff(0,n+1)*idv(M_levelsets[n]->K())*idv(M_levelsets[n]->N())*idv(M_levelsets[n]->D())
+                    );
+        }
+    }
+
+    M_fluid->updateSourceAdded( idv(M_interfaceForces) );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
