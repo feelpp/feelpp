@@ -112,17 +112,10 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
  * generate options for the fluid solver
  */
 Feel::po::options_description
-fluidMechanics_options(std::string const& prefix)
+densityviscosity_options(std::string const& prefix)
 {
-    Feel::po::options_description fluidOptions("Fluid Mechanics options");
-    fluidOptions.add_options()
-        (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >(), "fluid model : Navier-Stokes,Stokes")
-        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "fluid solver")
-        ( prefixvm(prefix,"start-by-solve-newtonian").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-newtonian")
-        ( prefixvm(prefix,"start-by-solve-stokes-stationary").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-stokes-stationary")
-        ( prefixvm(prefix,"start-by-solve-stokes-stationary.do-export").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-stokes-stationary.do-export")
-        ( prefixvm(prefix,"start-by-solve-stokes-stationary.time-value-used-in-bc").c_str(), Feel::po::value<double>()->default_value( 0. ), "time-value-used-in-bc")
-        //(prefixvm(prefix,"strain_tensor.use-sym-tensor").c_str(), Feel::po::value< bool >()->default_value(true), "sym tensor or not ")
+    Feel::po::options_description densityviscosityOptions("DensityViscosity options");
+    densityviscosityOptions.add_options()
         (prefixvm(prefix,"rho").c_str(), Feel::po::value<double>()->default_value( 1050 ), "density [ kg.m^3]")
         (prefixvm(prefix,"mu").c_str(), Feel::po::value<double>()->default_value( 0.00345 ), "dynamic viscosity [ Pa.s = kg/(m.s^2) ]")
         (prefixvm(prefix,"viscosity.law").c_str(), Feel::po::value< std::string >()->default_value("newtonian"), "newtonian, power_law, walburn-schneck_law, carreau_law, carreau-yasuda_law ")
@@ -141,6 +134,23 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"walburn-schneck_law.C3").c_str(), Feel::po::value< double >()->default_value( 0.00499 ), "parameter C3 in walburn-schneck_law ")
         (prefixvm(prefix,"walburn-schneck_law.C4").c_str(), Feel::po::value< double >()->default_value( 14.585 ), "parameter C4 in walburn-schneck_law [l/g] ")
         (prefixvm(prefix,"TPMA").c_str(), Feel::po::value< double >()->default_value( 25.9 ), "parameter TPMA (Total Proteins Minus Albumin) [ g/l ] ")
+        ;
+    
+    return densityviscosityOptions;
+}
+
+Feel::po::options_description
+fluidMechanics_options(std::string const& prefix)
+{
+    Feel::po::options_description fluidOptions("Fluid Mechanics options");
+    fluidOptions.add_options()
+        (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >(), "fluid model : Navier-Stokes,Stokes")
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "fluid solver")
+        ( prefixvm(prefix,"start-by-solve-newtonian").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-newtonian")
+        ( prefixvm(prefix,"start-by-solve-stokes-stationary").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-stokes-stationary")
+        ( prefixvm(prefix,"start-by-solve-stokes-stationary.do-export").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-stokes-stationary.do-export")
+        ( prefixvm(prefix,"start-by-solve-stokes-stationary.time-value-used-in-bc").c_str(), Feel::po::value<double>()->default_value( 0. ), "time-value-used-in-bc")
+        //(prefixvm(prefix,"strain_tensor.use-sym-tensor").c_str(), Feel::po::value< bool >()->default_value(true), "sym tensor or not ")
 
         (prefixvm(prefix,"stabilisation-pspg").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
         (prefixvm(prefix,"stabilisation-gls").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
@@ -201,8 +211,14 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"gravity-force").c_str(), Feel::po::value<std::string>(), "gravity-force : (default is {0,-9.80665} or {0,0,-9.80665}")
         ;
 
-    fluidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).
-        add( alemesh_options( prefix ) ).add( backend_options( prefixvm(prefix,"fluidinlet") ) );
+    fluidOptions
+        .add( modelnumerical_options( prefix ) )
+        .add( bdf_options( prefix ) )
+        .add( ts_options( prefix ) )
+        .add( alemesh_options( prefix ) )
+        .add( backend_options( prefixvm(prefix,"fluidinlet") ) )
+        .add( densityviscosity_options( prefix ) )
+        ;
 
 
     fluidOptions.add_options()
@@ -416,6 +432,7 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
     for( uint16_type n = 0; n < nls; ++n )
     {
         multifluidOptions.add( levelset_options( prefixvm(prefix, (boost::format( "levelset%1%" ) %(n+1)).str()) ) );
+        multifluidOptions.add( densityviscosity_options( prefixvm(prefix, (boost::format( "levelset%1%" ) %(n+1)).str()) ) );
     }
 
     return multifluidOptions;
