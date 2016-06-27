@@ -307,16 +307,12 @@ public:
     template<typename ExprT>
     void setInitialValue(vf::Expr<ExprT> const& expr, bool doReinitialize)
     {
-        this->phi()->on( 
+        auto phi_init = this->functionSpace()->element();
+        phi_init.on( 
                 _range=elements(this->mesh()),
                 _expr=expr
                 );
-        if(doReinitialize)
-            this->reinitialize();
-
-        updateHeaviside();
-        updateDirac();
-        updateMass();
+        this->setInitialValue( phi_init, doReinitialize );
     }
     template<typename ExprT>
     void setInitialValue(vf::Expr<ExprT> const& expr)

@@ -70,22 +70,30 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::build()
 {
+    this->log("LevelSet", "build", "start");
+
     super_type::build();
     this->createFunctionSpaces();
     this->createInterfaceQuantities();
     this->createReinitialization();
     this->createOthers();
+
+    this->log("LevelSet", "build", "finish");
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh )
 {
+    this->log("LevelSet", "build (from mesh)", "start");
+
     super_type::build( mesh );
     this->createFunctionSpaces();
     this->createInterfaceQuantities();
     this->createReinitialization();
     this->createOthers();
+
+    this->log("LevelSet", "build (from mesh)", "finish");
 }
 
 //----------------------------------------------------------------------------//
@@ -93,6 +101,8 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::init()
 {
+    this->log("LevelSet", "init", "start");
+
     // Set initial value
     this->modelProperties().parameters().updateParameterValues();
     if( !this->M_icDirichlet.empty() )
@@ -125,6 +135,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     super_type::init( true, this->shared_from_this() );
 
     M_timeOrder = this->timeStepBDF()->timeOrder(); 
+
+    this->log("LevelSet", "init", "finish");
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -294,6 +306,8 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
 {
+    this->log("LevelSet", "updateDirac", "start");
+
     // derivative of Heaviside function
     auto eps = this->thicknessInterface();
 
@@ -327,12 +341,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
         else
             *M_dirac = M_projectorL2->project(D_expr);
     }
+
+    this->log("LevelSet", "updateDirac", "finish");
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
 { 
+    this->log("LevelSet", "updateHeaviside", "start");
+
     auto eps = this->thicknessInterface();
 
     if (M_useRegularPhi)
@@ -365,30 +383,42 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         else
             *M_heaviside = M_projectorL2->project(H_expr);
     }
+
+    this->log("LevelSet", "updateHeaviside", "finish");
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateMass()
 {
+    this->log("LevelSet", "updateMass", "start");
+
     M_mass = integrate(
             _range=elements(this->mesh()),
             _expr=(1-idv(this->heaviside())) ).evaluate()(0,0);
             //_expr=vf::chi( idv(this->phi())<0.0) ).evaluate()(0,0); // gives very noisy results
+
+    this->log("LevelSet", "updateMass", "finish");
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateNormal()
 {
+    this->log("LevelSet", "updateNormal", "start");
+
     auto phi = this->phi();
     *M_levelsetNormal = M_projectorL2Vec->project( _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) );
+
+    this->log("LevelSet", "updateNormal", "finish");
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
 {
+    this->log("LevelSet", "updateCurvature", "start");
+
     if( M_doSmoothCurvature )
     {
         *M_levelsetCurvature = M_smootherCurvature->project( _expr=divv(M_levelsetNormal) );
@@ -397,6 +427,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
     {
         *M_levelsetCurvature = M_projectorL2->project( _expr=divv(M_levelsetNormal) );
     }
+
+    this->log("LevelSet", "updateCurvature", "finish");
 }
 
 //----------------------------------------------------------------------------//
@@ -463,12 +495,17 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::solve()
 {
+    this->log("LevelSet", "solve", "start");
+    this->timerTool("Solve").start();
+
     super_type::solve();
     this->updateInterfaceQuantities();
 
     // Reset hasReinitialized
     M_hasReinitialized = false;
 
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("LevelSet","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -511,6 +548,9 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 { 
+    this->log("LevelSet", "reinitialize", "start");
+    this->timerTool("Reinit").start();
+
     if( !M_reinitializerIsUpdatedForUse )
         this->createReinitialization();
 
@@ -568,6 +608,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
     *phi = M_reinitializer->run( *phi );
 
     M_hasReinitialized = true;
+
+    double timeElapsed = this->timerTool("Reinit").stop();
+    this->log("LevelSet","reinitialize","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 //----------------------------------------------------------------------------//
