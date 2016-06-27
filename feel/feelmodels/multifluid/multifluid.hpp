@@ -87,6 +87,10 @@ public:
     // Mesh
     mesh_ptrtype const& mesh() const { return M_fluid->mesh(); }
     //--------------------------------------------------------------------//
+    // Models
+    fluid_ptrtype const& fluidModel() const { return M_fluid; }
+    levelset_ptrtype const& levelsetModel(uint16_type n) const { return M_levelsets.at(n); }
+    //--------------------------------------------------------------------//
     bool hasSurfaceTension() const { return M_enableSurfaceTension; }
     bool hasInterfaceForces() const;
 
@@ -96,11 +100,15 @@ public:
     //--------------------------------------------------------------------//
     // Time step
     boost::shared_ptr<TSBase> timeStepBase() const { return M_fluid->timeStepBase(); }
+    boost::shared_ptr<TSBase> fluidTimeStepBase() const { return this->fluidModel()->timeStepBase(); }
+    boost::shared_ptr<TSBase> levelsetTimeStepBase(uint16_type n) const { return this->levelsetModel(n)->timeStepBase(); }
+    void updateTime( double time );
     void updateTimeStep();
 
     //--------------------------------------------------------------------//
     // Export
-    void exportResults();
+    void exportResults( double time );
+    void exportResults() { this->exportResults( this->currentTime() ); }
 
 protected:
     void updateGlobalLevelset();
