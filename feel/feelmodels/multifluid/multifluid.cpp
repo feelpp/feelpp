@@ -104,6 +104,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
         M_levelsets[i]->init();
     }
 
+    this->updateGlobalLevelset();
+
     this->log("MultiFluid", "init", "finish");
 }
 
@@ -156,7 +158,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
     this->updateFluidDensityViscosity();
     // Update interface forces
     if( this->hasInterfaceForces() )
+    {
         this->updateInterfaceForces();
+    }
     // Solve fluid equations
     this->solveFluid();
     // Advect levelsets
@@ -164,6 +168,21 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("MultiFluid","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateTime( double time )
+{
+    // Fluid mechanics
+    M_fluid->updateTime(time);
+    // Levelsets
+    for( uint16_type i = 0; i < M_levelsets.size(); ++i)
+    {
+        M_levelsets[i]->updateTime(time);
+    }
+    // This
+    super_type::updateTime(time);
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -178,16 +197,24 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
     {
         M_levelsets[i]->updateTimeStep();
     }
+
+    this->updateTime( this->timeStepBase()->time() );
+
     this->log("MultiFluid", "updateTimeStep", "finish");
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults()
+MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     this->log("MultiFluid","exportResults", "start");
 
-    M_fluid->exportResults();
+    M_fluid->exportResults(time);
+    M_globalLevelset->exportResults(time);
+    for( uint16_type i = 0; i < M_levelsets.size(); ++i)
+    {
+        M_levelsets[i]->exportResults(time);
+    }
 
     this->log("MultiFluid", "exportResults", "finish");
 }
@@ -200,7 +227,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateGlobalLevelset()
 
     auto minPhi = M_globalLevelset->phi();
 
-    *minPhi = *M_levelsets[0]->phi();
+    *minPhi = *(M_levelsets[0]->phi());
     for( uint16_type i = 1; i < M_levelsets.size(); ++i )
     {
         *minPhi = vf::project( 
@@ -209,6 +236,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateGlobalLevelset()
                 vf::min( idv(minPhi), idv(M_levelsets[i]->phi()) )
                 );
     }
+
+    M_globalLevelset->updateInterfaceQuantities();
 
     this->log("MultiFluid", "updateGlobalLevelset", "finish");
 }
