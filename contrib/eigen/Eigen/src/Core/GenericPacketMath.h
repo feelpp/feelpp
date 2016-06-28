@@ -62,7 +62,8 @@ struct default_packet_traits
     HasRsqrt  = 0,
     HasExp    = 0,
     HasLog    = 0,
-    HasLog10    = 0,
+    HasLog1p  = 0,
+    HasLog10  = 0,
     HasPow    = 0,
 
     HasSin    = 0,
@@ -71,15 +72,18 @@ struct default_packet_traits
     HasASin   = 0,
     HasACos   = 0,
     HasATan   = 0,
-    HasSinh    = 0,
-    HasCosh    = 0,
-    HasTanh    = 0,
+    HasSinh   = 0,
+    HasCosh   = 0,
+    HasTanh   = 0,
     HasLGamma = 0,
     HasDiGamma = 0,
+    HasZeta = 0,
+    HasPolygamma = 0,
     HasErf = 0,
     HasErfc = 0,
     HasIGamma = 0,
     HasIGammac = 0,
+    HasBetaInc = 0,
 
     HasRound  = 0,
     HasFloor  = 0,
@@ -344,22 +348,6 @@ template<typename Packet> EIGEN_DEVICE_FUNC inline typename unpacket_traits<Pack
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet preverse(const Packet& a)
 { return a; }
 
-template<size_t offset, typename Packet>
-struct protate_impl
-{
-  // Empty so attempts to use this unimplemented path will fail to compile.
-  // Only specializations of this template should be used.
-};
-
-/** \internal \returns a packet with the coefficients rotated to the right in little-endian convention,
-  * by the given offset, e.g. for offset == 1:
-  *     (packet[3], packet[2], packet[1], packet[0]) becomes (packet[0], packet[3], packet[2], packet[1])
-  */
-template<size_t offset, typename Packet> EIGEN_DEVICE_FUNC inline Packet protate(const Packet& a)
-{
-  return offset ? protate_impl<offset, Packet>::run(a) : a;
-}
-
 /** \internal \returns \a a with real and imaginary part flipped (for complex type only) */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet pcplxflip(const Packet& a)
 {
@@ -417,6 +405,10 @@ Packet pexp(const Packet& a) { using std::exp; return exp(a); }
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet plog(const Packet& a) { using std::log; return log(a); }
 
+/** \internal \returns the log1p of \a a (coeff-wise) */
+template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+Packet plog1p(const Packet& a) { return numext::log1p(a); }
+
 /** \internal \returns the log10 of \a a (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet plog10(const Packet& a) { using std::log10; return log10(a); }
@@ -450,6 +442,14 @@ Packet plgamma(const Packet& a) { using numext::lgamma; return lgamma(a); }
 /** \internal \returns the derivative of lgamma, psi(\a a) (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet pdigamma(const Packet& a) { using numext::digamma; return digamma(a); }
+    
+/** \internal \returns the zeta function of two arguments (coeff-wise) */
+template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+Packet pzeta(const Packet& x, const Packet& q) { using numext::zeta; return zeta(x, q); }
+
+/** \internal \returns the polygamma function (coeff-wise) */
+template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+Packet ppolygamma(const Packet& n, const Packet& x) { using numext::polygamma; return polygamma(n, x); }
 
 /** \internal \returns the erf(\a a) (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
@@ -466,6 +466,10 @@ Packet pigamma(const Packet& a, const Packet& x) { using numext::igamma; return 
 /** \internal \returns the complementary incomplete gamma function igammac(\a a, \a x) */
 template<typename Packet> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
 Packet pigammac(const Packet& a, const Packet& x) { using numext::igammac; return igammac(a, x); }
+
+/** \internal \returns the complementary incomplete gamma function betainc(\a a, \a b, \a x) */
+template<typename Packet> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+Packet pbetainc(const Packet& a, const Packet& b,const Packet& x) { using numext::betainc; return betainc(a, b, x); }
 
 /***************************************************************************
 * The following functions might not have to be overwritten for vectorized types

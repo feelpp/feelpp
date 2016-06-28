@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
                            _argv=argv,
                            _about=makeAbout(),
                            _desc=makeOptions() );
-    ElectroThermal<2,1> ET;
+    FeelModels::ElectroThermal<2,1> ET;
     ET.run();
     return 0;
 }
