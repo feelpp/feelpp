@@ -246,7 +246,6 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
     if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
     {
         geometric_mapping_context_type* thegmc = __gmc.get();
-        LOG(INFO) << "use no_optimization_p2_t element " << thegmc->id();
         precompute_type* __pc = M_pc.get().get();
         auto* __gmc_pc = thegmc->pc().get();
         const uint16_type Q = do_optimization_p2?1:M_npoints;//__gmc->nPoints();//M_grad.size2();
@@ -259,7 +258,10 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
             {
                 Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(1, 1)}};
                 Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 0)}};
-                M_hessian[i][q] = B.contract( __pc->hessian(i,q).contract(B,dims1), dims2);
+                //M_hessian[i][q] = B.contract( __pc->hessian(i,q).contract(B,dims1), dims2);
+                auto H1 = __pc->hessian(i,q).contract(B,dims1);
+                M_hessian[i][q] = B.contract( H1, dims2 );
+                
                 if ( vm::has_laplacian<context>::value  )
                 {
                     M_laplacian[i][q].setZero();
@@ -280,6 +282,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
 {
     geometric_mapping_context_type* thegmc = __gmc.get();
     const uint16_type I = M_phi.shape()[0];
+    const int Qid = M_npoints;
     const int Q = do_optimization_p1?1:M_npoints;
 
     Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
@@ -287,7 +290,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
     {
         for ( uint16_type ii = 0; ii < I; ++ii )
         {
-            for ( uint16_type q = 0; q < Q; ++q )
+            for ( uint16_type q = 0; q < Qid; ++q )
             {
                 tensor_eigen_ublas_type K ( thegmc->K( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
                 tensor_eigen_ublas_type Bt ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
@@ -302,7 +305,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
     {
         for ( uint16_type ii = 0; ii < I; ++ii )
         {
-            for ( uint16_type q = 0; q < Q; ++q )
+            for ( uint16_type q = 0; q < Qid; ++q )
             {
                 tensor_eigen_ublas_type K ( thegmc->K( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
                 tensor_eigen_ublas_type Bt ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
@@ -333,10 +336,12 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
 
                 if ( is_hdiv_conforming )
                 {
-                    M_grad[i][q] =  K.contract((*M_gradphi)[i][q].contract(B,dims1),dims2)/thegmc->J(q);
+                    auto v = (*M_gradphi)[i][q].contract(B,dims1);
+                    M_grad[i][q] =  K.contract(v,dims2)/thegmc->J(q);
                 }
                 else if ( is_hcurl_conforming )
                 {
+                    //auto v = (*M_gradphi)[i][q].contract(B,dims1);
                     M_grad[i][q] =  B.contract((*M_gradphi)[i][q].contract(B,dims1),dims2);
                 }
                 else
@@ -418,7 +423,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                 tensor_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
                 Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(2, 1)}};
                 Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 1)}};
-                M_hessian[i][q] = B.contract( __pc->hessian(i,q).contract(B,dims1), dims2);
+                auto H1 = __pc->hessian(i,q).contract(B,dims1);
+                M_hessian[i][q] = B.contract( H1, dims2);
 
                 M_laplacian[i][q].setZero();
                 for ( uint16_type c1 = 0; c1 < nComponents1; ++c1 )

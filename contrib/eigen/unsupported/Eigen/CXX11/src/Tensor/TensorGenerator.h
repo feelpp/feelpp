@@ -134,7 +134,7 @@ struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device>
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE PacketReturnType packet(Index index) const
   {
     const int packetSize = internal::unpacket_traits<PacketReturnType>::size;
-    EIGEN_STATIC_ASSERT(packetSize > 1, YOU_MADE_A_PROGRAMMING_MISTAKE)
+    EIGEN_STATIC_ASSERT((packetSize > 1), YOU_MADE_A_PROGRAMMING_MISTAKE)
     eigen_assert(index+packetSize-1 < dimensions().TotalSize());
 
     EIGEN_ALIGN_MAX typename internal::remove_const<CoeffReturnType>::type values[packetSize];
@@ -143,6 +143,14 @@ struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device>
     }
     PacketReturnType rslt = internal::pload<PacketReturnType>(values);
     return rslt;
+  }
+
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorOpCost
+  costPerCoeff(bool) const {
+    // TODO(rmlarsen): This is just a placeholder. Define interface to make
+    // generators return their cost.
+    return TensorOpCost(0, 0, TensorOpCost::AddCost<Scalar>() +
+                                  TensorOpCost::MulCost<Scalar>());
   }
 
   EIGEN_DEVICE_FUNC Scalar* data() const { return NULL; }
