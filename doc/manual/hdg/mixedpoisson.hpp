@@ -239,11 +239,10 @@ public:
     void updateTimeStep() { this->updateTimeStepBDF(); }
    
     // Exporter
-    // void exportResults() { this->exportResults (this->currentTime() ); M_exporter->save(); }
-    // virtual void exportResults ( double Time) ;
-    void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr )
+    virtual void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr )
         {
             this->exportResults (this->currentTime(), mesh, Idh, Idhv );
+	    M_exporter -> save();
         }
     void exportResults ( double Time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  ) ;
     exporter_ptrtype M_exporter;
@@ -1168,6 +1167,51 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                     LOG(INFO) << "exporting IBC potential at time " << time << " value " << (*M_mup)[0];
                     M_exporter->step( time )->add(prefixvm(M_prefix, "cstPotential"),(*M_mup)[0] );
                 }
+		auto itField = M_modelProperties->boundaryConditions().find("Exact solution");
+		if ( itField != M_modelProperties->boundaryConditions().end() )
+		{
+		    auto mapField = (*itField).second;
+		    auto itType = mapField.find( "p_exact" );
+		    if (itType != mapField.end() )
+		    {
+			for (auto const& exAtMarker : (*itType).second )
+			{
+   			    if (exAtMarker.isExpression() )
+			    {
+				auto p_exact = expr(exAtMarker.expression() );
+				if ( !this->isStationary() )
+    			      	    p_exact.setParameterValues( { {"t", time } } );
+    				double K = 1; 
+				for( auto const& pairMat : M_modelProperties->materials() )
+                		{
+                    		   auto material = pairMat.second;
+                    		   K = material.getDouble( "k" );
+                		}
+    				auto gradp_exact = grad<Dim>(p_exact);
+   				auto u_exact = expr(-K*trans(gradp_exact));
+				M_exporter->step( time )->add(prefixvm(M_prefix, "p_exact"), project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact) );	
+				M_exporter->step( time )->add(prefixvm(M_prefix, "u_exact"), project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact) );
+				
+				auto l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(*M_up) );
+				auto l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
+				if (l2norm_uex < 1)
+				    l2norm_uex = 1.0;
+
+    				auto l2err_p = normL2( _range=elements(M_mesh), _expr=p_exact - idv(*M_pp) );
+    				auto l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact );
+    				if (l2norm_pex < 1)
+				    l2norm_pex = 1.0;
+						
+    				Feel::cout << "----- Computed Errors -----" << std::endl;
+    				Feel::cout << "||p-p_ex||_L2=\t" << l2err_p/l2norm_pex << std::endl;
+				Feel::cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
+				Feel::cout << "---------------------------" << std::endl;
+			    } 
+			}
+		    }
+
+		}
+			
             } else
             {
        		// Import data
@@ -1219,7 +1263,6 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
         }
     }
 
-    M_exporter->save();
       
 
     this->timerTool("PostProcessing").stop("exportResults");
