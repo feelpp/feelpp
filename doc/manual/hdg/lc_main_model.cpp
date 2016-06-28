@@ -29,8 +29,8 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "laminacribrosa_@D@D_P@P@" ,
-                     "laminacribrosa_@D@D_P@P@" ,
+    AboutData about( "laminacribrosa" ,
+                     "laminacribrosa" ,
                      "0.1",
                      "Lamina cribrosa Model",
                      AboutData::License_GPL,
@@ -59,14 +59,14 @@ int main(int argc, char *argv[])
     auto mesh = loadMesh( _mesh=new lc_type::mesh_type );
     decltype( IPtr( _domainSpace=Pdh<FEELPP_ORDER>(mesh), _imageSpace=Pdh<1>(mesh) ) ) Idh ;
     decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<1>(mesh) ) ) Idhv;
-    if ( soption( "gmsh.submesh" ).empty() )
-        LC.init();
+    if ( soption( "mixedpoisson.gmsh.submesh" ).empty() )
+        LC.init(mesh, 1, 1);
     else
     {
-        auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
+        auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("mixedpoisson.gmsh.submesh")), Environment::worldComm() );
         Idh = IPtr( _domainSpace=Pdh<FEELPP_ORDER>(cmesh), _imageSpace=Pdh<1>(mesh) );
         Idhv = IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(cmesh), _imageSpace=Pdhv<1>(mesh) );
-        LC.init( cmesh, 0, 0, mesh );
+        LC.init( cmesh, 1, 1, mesh );
     }
     
     if ( LC.isStationary() )

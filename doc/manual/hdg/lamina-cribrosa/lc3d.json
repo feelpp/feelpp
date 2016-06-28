@@ -2,26 +2,27 @@
     "Name": "HDG-Mixed-Poisson for lamina cribrosa",
     "ShortName":"MP_LC",
     "Model":"hdg",
-
     "Materials":
     {
         "omega":
         {
             "name":"copper",
-            "cond":"1",
 	    "R_ext":"0.095",
-	    "k":"10",
+	    "k":"0.015192",
 	    "H":"0.03", 
             // ODE parameters:                                                                    
             "CC":"1",
-            "RR":"1",                                                                                        
-            "Piout":"4.5453",
+            "RR":"1",                                                               
+            "Piout":"0.0092",
 	    "C1":"1",                                                                            
             "C2":"1",        
             "C3":"1",
    	    "R12":"1",
 	    "R23":"1",                                                                          
-            "Rout":"1"	    
+            "Rout":"1",
+	    "P1_exact":"0.0092",
+	    "P2_exact":"0.0092",
+	    "P3_exact":"0.0092" 
         }
     },
     "BoundaryConditions":
@@ -32,14 +33,14 @@
             {
                 "omega":
                 {
-                    "expr":"4*k*( x*x * sin(x*x+y*y) - cos(x*x+y*y) + y*y * sin(x*x+y*y) ):x:y:k:H" // "-sin(Pi*x)*sin(Pi*y):x:y"
+                    "expr":"2000*k*( 500*(x^2+y^2)*sin(500*x^2+500*y^2) - cos(500*x^2+500*y^2) ):t:k:y:x"  // "4*k*( (x^2+y^2)*sin(x^2+y^2)-cos(x^2+y^2) ):x:y:k"
                 }
             },
             "Dirichlet":
 	    {
 	    	"in":
         	{
-                     "expr":"2 + sin(x*x+y*y) + 16*Pi*H*R_ext*R_ext :H:x:y:R_ext"   // "sin(Pi*x)/(2*Pi):x"
+                     "expr":"sin(500*x^2+500*y^2):t:y:x"  // "sin(x^2+y^2):x:y" // "2.0001"   // "0.323039206"
                	}
 	    },
             "Neumann":
@@ -60,28 +61,21 @@
 	    {
         	"out":
                 {
-		     "type":"constant"
-                     "expr":"0" // "-4*Pi*H*R_ext*R_ext*k*cos(R_ext*R_ext):R_ext:H:k"    // "-sin(Pi*x)/(2*Pi):x"
-                },
-		"out":
-                {
-                     "type":"file"
-                     "filename":"I_target.dat" 
+		     "expr":"-4*3.14*H*Rext^2*k*cos(Rext^2):H:Rext:k" 
                 }
-            }/*,
-	    "Neumann":
+ 	    }
+    	},
+	"Exact solution":
+	{
+	    "p_exact":
 	    {
-		"bottom":
+		"omega":
 		{
-		     "expr":"0"
-		},
-                "top":
-                {
-                     "expr":"0"
-                }	
-	    }*/
-        }
-    },
+		     "expr":"sin(500*x^2+500*y^2):t:y:x"// "sin(x^2+y^2):x:y" 
+		}
+	    }
+	}
+     },
     "PostProcess":
     {
         "Fields":["potential","flux","state variable"]
