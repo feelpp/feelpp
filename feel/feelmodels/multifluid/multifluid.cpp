@@ -3,6 +3,8 @@
 
 #include <feel/feelmodels/multifluid/multifluid.hpp>
 
+#include <feel/feelmodels/modelmesh/createmesh.hpp>
+
 namespace Feel {
 namespace FeelModels {
 
@@ -49,17 +51,19 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
     this->log("MultiFluid", "build", "start");
 
-    M_fluid = fluid_ptrtype( 
+    M_fluid.reset( 
             new fluid_type( prefixvm(this->prefix(),"fluid"), false, this->worldComm(), "", this->rootRepositoryWithoutNumProc() ) 
             ); 
-    M_fluid->build();
-
-    M_fluidDensityViscosityModel.reset( new densityviscosity_model_type(*M_fluid->densityViscosityModel()) );
-
-    M_globalLevelset = levelset_ptrtype(
+    M_globalLevelset.reset(
             new levelset_type( prefixvm(this->prefix(),"levelset"), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
             );
-    M_globalLevelset->build( M_fluid->mesh() );
+
+    this->createMesh();
+
+    M_fluid->loadMesh( M_mesh );
+    M_globalLevelset->build( this->mesh() );
+
+    M_fluidDensityViscosityModel.reset( new densityviscosity_model_type(*M_fluid->densityViscosityModel()) );
 
     M_levelsets.resize( nLevelSets );
     M_levelsetDensityViscosityModels.resize( nLevelSets );
@@ -82,13 +86,29 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
         M_levelsetDensityViscosityModels[i].reset(
                 new densityviscosity_model_type( prefixvm(this->prefix(), levelset_prefix) )
                 );
-        M_levelsetDensityViscosityModels[i]->initFromMesh( M_fluid->mesh(), M_fluid->useExtendedDofTable() );
+        M_levelsetDensityViscosityModels[i]->initFromMesh( this->mesh(), M_fluid->useExtendedDofTable() );
         M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelsets[i]->modelProperties().materials() );
     }
 
     M_interfaceForces.reset( new element_levelset_vectorial_type(this->functionSpaceLevelsetVectorial(), "InterfaceForces") ); 
 
     this->log("MultiFluid", "build", "finish");
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::createMesh()
+{
+    this->log("MultiFluid","createMesh", "start");
+    this->timerTool("Constructor").start();
+
+    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
+    CHECK( M_mesh ) << "mesh generation fail";
+
+    M_fluid->setMshfileStr( this->mshfileStr() );
+
+    double tElapsed = this->timerTool("Constructor").stop("createMesh");
+    this->log("MultiFluid","createMesh", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -300,7 +320,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
         {
             *M_interfaceForces += vf::project( 
                     this->functionSpaceLevelsetVectorial(),
-                    elements(this->mesh()),
+                    elements(M_fluid->mesh()),
                     - M_surfaceTensionCoeff(0,n+1)*idv(M_levelsets[n]->K())*idv(M_levelsets[n]->N())*idv(M_levelsets[n]->D())
                     );
         }
