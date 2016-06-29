@@ -13,16 +13,16 @@
             // ODE parameters:                                                                    
             "CC":"1",
             "RR":"1",                                                               
-            "Piout":"0.0092",
+            "Piout":"2.181733",
 	    "C1":"1",                                                                            
             "C2":"1",        
             "C3":"1",
    	    "R12":"1",
 	    "R23":"1",                                                                          
             "Rout":"1",
-	    "P1_exact":"0.0092",
-	    "P2_exact":"0.0092",
-	    "P3_exact":"0.0092" 
+	    "P1_exact":"2.104444",
+	    "P2_exact":"2.130205",
+	    "P3_exact":"2.155969" 
         }
     },
     "BoundaryConditions":
@@ -40,7 +40,7 @@
 	    {
 	    	"in":
         	{
-                     "expr":"sin(500*x^2+500*y^2):t:y:x"  // "sin(x^2+y^2):x:y" // "2.0001"   // "0.323039206"
+                     "expr":"2+sin(500*x^2+500*y^2):t:y:x"  // "sin(x^2+y^2):x:y" // "2.0001"   // "0.323039206"
                	}
 	    },
             "Neumann":
@@ -61,7 +61,7 @@
 	    {
         	"out":
                 {
-		     "expr":"-4*3.14*H*Rext^2*k*cos(Rext^2):H:Rext:k" 
+		     "expr":"-2000*pi*H*Rext^2*k*cos(Rext^2):H:Rext:k" 
                 }
  	    }
     	},
@@ -71,7 +71,7 @@
 	    {
 		"omega":
 		{
-		     "expr":"sin(500*x^2+500*y^2):t:y:x"// "sin(x^2+y^2):x:y" 
+		     "expr":"2+sin(500*x^2+500*y^2):t:y:x"// "sin(x^2+y^2):x:y" 
 		}
 	    }
 	}
