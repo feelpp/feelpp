@@ -73,6 +73,7 @@ public:
     //--------------------------------------------------------------------//
     // Initialization
     void build();
+    void createMesh();
 
     void init();
 
@@ -85,7 +86,8 @@ public:
     space_levelset_markers_ptrtype const& functionSpaceLevelsetMarkers() const { return M_globalLevelset->functionSpaceMarkers(); }
     //--------------------------------------------------------------------//
     // Mesh
-    mesh_ptrtype const& mesh() const { return M_fluid->mesh(); }
+    mesh_ptrtype const& mesh() const { return M_mesh; }
+    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"MultiFluidMesh.path"); }
     //--------------------------------------------------------------------//
     // Models
     fluid_ptrtype const& fluidModel() const { return M_fluid; }
@@ -120,6 +122,7 @@ protected:
 
 private:
     //--------------------------------------------------------------------//
+    mesh_ptrtype M_mesh;
     fluid_ptrtype M_fluid;
     levelset_ptrtype M_globalLevelset;
     std::vector<levelset_ptrtype> M_levelsets;
@@ -136,6 +139,9 @@ private:
     ublas::symmetric_matrix<double, ublas::upper> M_surfaceTensionCoeff;
 
     element_levelset_vectorial_ptrtype M_interfaceForces; 
+    //--------------------------------------------------------------------//
+    // Reinitialization
+    std::vector<int> M_levelsetReinitEvery;
 };
         
 

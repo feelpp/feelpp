@@ -619,12 +619,16 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_type const& phiv, bool doReinitialize)
 {
+    this->log("LevelSet", "setInitialValue", "start");
+
     *this->phi() = phiv;
 
     if (doReinitialize)
         this->reinitialize();
 
     this->updateInterfaceQuantities();
+
+    this->log("LevelSet", "setInitialValue", "finish");
 }
 
 //----------------------------------------------------------------------------//

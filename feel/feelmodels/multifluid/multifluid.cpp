@@ -124,6 +124,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
         M_levelsets[i]->init();
     }
 
+    this->updateTime( this->timeStepBase()->time() );
+
     this->updateGlobalLevelset();
 
     this->log("MultiFluid", "init", "finish");
@@ -158,6 +160,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
                 ++k;
             }
     }
+
+    uint16_type nLevelSets = M_nFluids - 1;
+    M_levelsetReinitEvery.resize(nLevelSets);
+    for( uint16_type n = 0; n < nLevelSets; ++n )
+    {
+        auto levelset_prefix = (boost::format( "levelset%1%" ) %(n+1)).str();
+        M_levelsetReinitEvery[n] = ioption( _name="reinit-every", _prefix=prefixvm(this->prefix(), levelset_prefix) );
+    }
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -185,6 +195,15 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
     this->solveFluid();
     // Advect levelsets
     this->advectLevelsets();
+    // Reinitialize
+    for( uint16_type n = 0; n < M_levelsets.size(); ++n )
+    {
+        if( M_levelsetReinitEvery[n] > 0 
+                && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitEvery[n] == 0 )
+            M_levelsets[n]->reinitialize();
+    }
+    // Update global levelset
+    this->updateGlobalLevelset();
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("MultiFluid","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
@@ -360,7 +379,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::advectLevelsets()
     {
         M_levelsets[i]->advect( idv(u) );
     }
-     this->updateGlobalLevelset();
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log( "MultiFluid", "advectLevelsets", 

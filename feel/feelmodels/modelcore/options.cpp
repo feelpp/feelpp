@@ -431,8 +431,12 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
         ;
     for( uint16_type n = 0; n < nls; ++n )
     {
-        multifluidOptions.add( levelset_options( prefixvm(prefix, (boost::format( "levelset%1%" ) %(n+1)).str()) ) );
-        multifluidOptions.add( densityviscosity_options( prefixvm(prefix, (boost::format( "levelset%1%" ) %(n+1)).str()) ) );
+        std::string levelset_prefix = prefixvm(prefix, (boost::format( "levelset%1%" ) %(n+1)).str());
+        multifluidOptions.add( levelset_options( levelset_prefix ) );
+        multifluidOptions.add( densityviscosity_options( levelset_prefix ) );
+        multifluidOptions.add_options()
+            (prefixvm(levelset_prefix,"reinit-every").c_str(), Feel::po::value<int>()->default_value( 10 ), "reinitialize levelset every n iterations" )
+            ;
     }
 
     return multifluidOptions;
