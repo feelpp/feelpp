@@ -624,7 +624,7 @@ if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CM
   set(EIGEN_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/feel)
   add_subdirectory(contrib/eigen)
   set( EIGEN3_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/eigen ${FEELPP_SOURCE_DIR}/contrib/eigen/unsupported
-                          ${CMAKE_INSTALL_PREFIX}/contrib/eigen ${CMAKE_INSTALL_PREFIX}/contrib/eigen/unsupported)
+      ${EIGEN_INCLUDE_INSTALL_DIR} ${EIGEN_INCLUDE_INSTALL_DIR}/unsupported)
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/Contrib" )
 elseif( EIGEN3_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/System" )
