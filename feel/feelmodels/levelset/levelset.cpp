@@ -705,6 +705,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Dirac")),
                                    *this->dirac() );
 
+    this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Heaviside"),
+                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Heaviside")),
+                                   *this->heaviside() );
+
     super_type::exportResults( time );
     //if( M_doExportAdvection )
         //M_advection->exportResults( time );
