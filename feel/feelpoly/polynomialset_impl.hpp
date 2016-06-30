@@ -223,20 +223,25 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
 #endif
             }
         }
-#if 0
+#if 1
         // we need the normal derivative
         if ( vm::has_first_derivative_normal<context>::value )
         {
-            const uint16_type I = M_ref_ele->nbDof()*nComponents;
-            const uint16_type Q = nPoints();
+            // const uint16_type I = M_ref_ele->nbDof()*nComponents;
+            // const uint16_type Q = nPoints();
+            const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
+            const uint16_type I = nDof;
 
-            for ( int i = 0; i < I; ++i )
+            for ( uint16_type i = 0; i < I; ++i )
             {
                 for ( uint16_type q = 0; q < Q; ++q )
                 {
-                    for ( uint16_type l = 0; l < NDim; ++l )
+                    M_dn[i][q].setZero();
+                    //M_dn[i][q]( 0,0 ) = 0;
+                    for ( uint16_type l = 0; l < gmc_type::NDim; ++l )
                     {
-                        M_dn[i][q]( 0,0 ) += M_grad[i][q]( 0,l ) * thegmc->unitNormal( l, q );
+                        //M_dn[i][q]( 0,0 ) += M_grad[i][q]( 0,l,0 ) * thegmc->unitNormal( l, q );
+                        M_dn[i][q]( 0,0 ) += this->grad(i,q)( 0,l,0 ) * thegmc->unitNormal( l, q );
                     }
                 }
             }
@@ -386,21 +391,26 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                 }
             }
         }
-#if 0
+#if 1
         // we need the normal derivative
         if ( vm::has_first_derivative_normal<context>::value )
         {
-            const uint16_type I = nDof*nComponents1;
-            const uint16_type Q = nPoints();
+            // const uint16_type I = nDof*nComponents1;
+            // const uint16_type Q = nPoints();
+            const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
+            const uint16_type I = M_dn.shape()[0];
 
-            for ( int i = 0; i < I; ++i )
+            for ( uint16_type i = 0; i < I; ++i )
                 for ( uint16_type q = 0; q < Q; ++q )
                 {
-                    for ( uint16_type c1 = 0; c1 < NDim; ++c1 )
+                    M_dn[i][q].setZero();
+                    for ( uint16_type c1 = 0; c1 < gmc_type::NDim; ++c1 )
                     {
-                        for ( uint16_type l = 0; l < NDim; ++l )
+                        //M_dn[i][q]( c1,0 ) = 0;
+                        for ( uint16_type l = 0; l < gmc_type::NDim; ++l )
                         {
-                            M_dn[i][q]( c1,0 ) += M_grad[i][q]( c1,l ) * thegmc->unitNormal( l, q );
+                            //M_dn[i][q]( c1,0 ) += M_grad[i][q]( c1,l ) * thegmc->unitNormal( l, q );
+                            M_dn[i][q]( c1,0 ) += this->grad(i,q)( c1,l,0 ) * thegmc->unitNormal( l, q );
                         }
                     }
                 }
@@ -424,7 +434,9 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                 Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(2, 1)}};
                 Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 1)}};
                 auto H1 = __pc->hessian(i,q).contract(B,dims1);
-                M_hessian[i][q] = B.contract( H1, dims2);
+                Eigen::array<int, 3> myperm = {{1, 0, 2}};
+                M_hessian[i][q] = (B.contract( H1, dims2)).shuffle( myperm );
+                //M_hessian[i][q] = B.contract( H1, dims2);
 
                 M_laplacian[i][q].setZero();
                 for ( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
