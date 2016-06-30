@@ -2659,6 +2659,9 @@ public:
             shape[0] = 1;
 
             id_array_type v( shape );
+            _id_type idzero( ncdof, 1 );
+            std::fill( v.data(), v.data()+v.num_elements(), idzero.constant(0.));
+
             if( context.size() > 0 )
             {
                 for( int i = 0 ; it != en; ++it, ++i )
@@ -2696,6 +2699,9 @@ public:
             boost::array<typename array_type::index, 1> shape;
             shape[0] = 1;
             id_array_type v( shape );
+            const int ncdof  = is_product?nComponents:1;
+            _id_type idzero( ncdof, 1 );
+            std::fill( v.data(), v.data()+v.num_elements(), idzero.constant(0.));
 
             value_type result=0;
             int proc_having_the_point = context.processorHavingPoint( i );
