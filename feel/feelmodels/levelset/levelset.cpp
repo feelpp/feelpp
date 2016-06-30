@@ -260,7 +260,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     M_reinitInitialValue = boption( _name="reinit-initial-value", _prefix=this->prefix() );
 
-    M_doSmoothCurvature = boption( _name="smooth-curvature", _prefix=this->prefix() );
+    if( Environment::vm( _name="smooth-curvature", _prefix=this->prefix()).defaulted() && Order < 2 )
+        M_doSmoothCurvature = true;
+    else
+        M_doSmoothCurvature = boption( _name="smooth-curvature", _prefix=this->prefix() );
 
     //M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
 }
