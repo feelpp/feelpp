@@ -1263,7 +1263,15 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
         }
     }
 
-      
+    double Ui_mean = 0;
+    for( auto marker : this->M_integralMarkersList)
+    {
+        Ui_mean += integrate(_range=markedfaces(this->mesh(),marker),_expr=idv(*M_pp) ).evaluate()(0,0);
+    }
+
+    Feel::cout << "Integral value of potential(mup): \t " << (*M_mup)[0] << std::endl;
+    Feel::cout << "Integral value of potential(mean u): \t " << Ui_mean << std::endl;
+ 
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
