@@ -2,6 +2,7 @@ set_directory_properties(PROPERTIES LABEL testvf )
 
 feelpp_add_test( ginac )
 feelpp_add_test( inner CFG test_inner.cfg )
+feelpp_add_test( vf_operators )
 feelpp_add_test( laplacianv CFG test_laplacianv.cfg )
 feelpp_add_test( laplacian CFG test_laplacian.cfg )
 feelpp_add_test( laplaciant CFG test_laplaciant.cfg )
@@ -24,3 +25,4 @@ feelpp_add_test( idf2_functor )
 
 feelpp_add_test( divergence )
 feelpp_add_test(productspace_dofs)
+

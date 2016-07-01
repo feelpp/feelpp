@@ -992,6 +992,56 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_nod
 
 }
 
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename ContextType>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dn_( ContextType const & context, dn_array_type& v ) const
+{
+    size_type elt_id = context.eId();
+    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
+        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
+    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
+        elt_id = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elt_id == invalid_size_type_value )
+        return;
+
+    const size_type Q = context.xRefs().size2();
+
+    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
+    for ( int l = 0; l < basis_type::nDof; ++l )
+    {
+        const int ncdof = is_product?nComponents1:1;
+
+        for ( int c1 = 0; c1 < ncdof; ++c1 )
+        {
+            int ldof = c1*basis_type::nDof+l;
+            //size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
+            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
+                           gdof < this->lastLocalIndex() )
+            ( context.eId() )
+            ( l )( c1 )( ldof )( gdof )
+            ( this->size() )( this->localSize() )
+            ( this->firstLocalIndex() )( this->lastLocalIndex() )
+            .error( "FunctionSpace::Element invalid access index" );
+
+            value_type v_ = this->globalValue( gdof );
+
+            for ( size_type q = 0; q < Q; ++q )
+                v[q] += context.dn( ldof, q )*(s(ldof)*v_);
+        }
+    }
+
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dnInterpolate( matrix_node_type __ptsReal, dn_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+{
+    CHECK( false ) << "TODO";
+}
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
