@@ -422,6 +422,7 @@ interfaceforces_options(std::string const& prefix)
     interfaceForcesOptions.add_options()
         (prefixvm(prefix,"helfrich-bending-modulus").c_str(), Feel::po::value<double>()->default_value(0.), "Helfrich bending modulus k_B" )
         (prefixvm(prefix,"helfrich-force-impl").c_str(), Feel::po::value<int>()->default_value(0), "Implementation of Helfrich force" )
+        ;
 
     return interfaceForcesOptions;
 }
@@ -451,7 +452,7 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
             // Reinitialization
             (prefixvm(levelset_prefix,"reinit-every").c_str(), Feel::po::value<int>()->default_value( 10 ), "reinitialize levelset every n iterations" )
             // Interface forces model
-            (prefixvm(levelset_prefix,"interface-forces-model").c_str(), Feel::po::value<std::string>, "model for interface forces (helfrich, ...)" )
+            (prefixvm(levelset_prefix,"interface-forces-model").c_str(), Feel::po::value<std::string>(), "model for interface forces (helfrich, ...)" )
             ;
     }
 
