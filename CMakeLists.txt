@@ -38,6 +38,13 @@ if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
 	#message(STATUS "[feelpp] use NEW policy CMP0046" )
 	#cmake_policy(SET CMP0046 NEW)
 endif()
+# CMake 3.5.2 warns about this policy introduced in 3.1
+# Use the old behavior for now to suppress warnings
+# for more info : cmake --help-policy CMP0053
+if ( ${CMAKE_VERSION} VERSION_GREATER 3.1 )
+    message(STATUS "[feelpp] use old policy CMP0053" )
+    cmake_policy(SET CMP0053 OLD)
+endif()
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable

@@ -50,6 +50,7 @@
 #include <feel/feelcore/worldscomm.hpp>
 #include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/about.hpp>
+#include <feel/feelcore/termcolor.hpp>
 #include <feel/options.hpp>
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
@@ -61,6 +62,8 @@
 
 namespace Feel
 {
+namespace tc = termcolor;
+
 class TimerTable;
 struct MemoryUsage
 {

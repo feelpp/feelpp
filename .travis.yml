@@ -1,23 +1,30 @@
-sudo: required
-services:
-    - docker
 git:
   depth: 1
   submodules: false
-language: cpp
-compiler: clang
-env:
-  global:
-    FEELPP_STD_CPP=14
+
+matrix:
+  include:
+      - env: DOCKERFILE="Dockerfile.dockerhub" TARGET_IMAGE="feelpp/develop:latest" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS=""
+        sudo: required
+        services:
+            - docker
+      - env: DOCKERFILE="Dockerfile.minimal" TARGET_IMAGE="feelpp/develop:minimal" TARGET_BRANCH="feature/minimal" CMAKE_FLAGS="-DFEELPP_MINIMAL_BUILD=ON"
+        sudo: required
+        services:
+            - docker
 
 before_install:
 - echo $TRAVIS_OS_NAME
 - echo $HOME
-- docker pull feelpp/feelpp-env
+- docker --version
+- sudo apt-get update
+- sudo apt-get install -y -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker-engine
 - git clone --depth=1 https://github.com/feelpp/docker
-- docker build -f docker/dockerfiles/Dockerfile -t feelpp/develop:latest .
+- cd docker/dockerfiles/develop && docker build -f ${DOCKERFILE} -t ${TARGET_IMAGE} --build-arg=BRANCH=${TARGET_BRANCH} --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}" .
+
 install:
 - docker run feelpp/develop:latest true
+
 script:
 - true
 

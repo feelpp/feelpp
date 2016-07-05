@@ -67,9 +67,9 @@ template<typename T, int Value> class variable_if_dynamic
 {
   public:
     EIGEN_EMPTY_STRUCT_CTOR(variable_if_dynamic)
-    EIGEN_DEVICE_FUNC explicit variable_if_dynamic(T v) { EIGEN_ONLY_USED_FOR_DEBUG(v); eigen_assert(v == T(Value)); }
-    EIGEN_DEVICE_FUNC static T value() { return T(Value); }
-    EIGEN_DEVICE_FUNC void setValue(T) {}
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamic(T v) { EIGEN_ONLY_USED_FOR_DEBUG(v); eigen_assert(v == T(Value)); }
+    EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE T value() { return T(Value); }
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void setValue(T) {}
 };
 
 template<typename T> class variable_if_dynamic<T, Dynamic>
@@ -77,9 +77,9 @@ template<typename T> class variable_if_dynamic<T, Dynamic>
     T m_value;
     EIGEN_DEVICE_FUNC variable_if_dynamic() { eigen_assert(false); }
   public:
-    EIGEN_DEVICE_FUNC explicit variable_if_dynamic(T value) : m_value(value) {}
-    EIGEN_DEVICE_FUNC T value() const { return m_value; }
-    EIGEN_DEVICE_FUNC void setValue(T value) { m_value = value; }
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamic(T value) : m_value(value) {}
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE T value() const { return m_value; }
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void setValue(T value) { m_value = value; }
 };
 
 /** \internal like variable_if_dynamic but for DynamicIndex
@@ -88,9 +88,9 @@ template<typename T, int Value> class variable_if_dynamicindex
 {
   public:
     EIGEN_EMPTY_STRUCT_CTOR(variable_if_dynamicindex)
-    EIGEN_DEVICE_FUNC explicit variable_if_dynamicindex(T v) { EIGEN_ONLY_USED_FOR_DEBUG(v); eigen_assert(v == T(Value)); }
-    EIGEN_DEVICE_FUNC static T value() { return T(Value); }
-    EIGEN_DEVICE_FUNC void setValue(T) {}
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamicindex(T v) { EIGEN_ONLY_USED_FOR_DEBUG(v); eigen_assert(v == T(Value)); }
+    EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE T value() { return T(Value); }
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void setValue(T) {}
 };
 
 template<typename T> class variable_if_dynamicindex<T, DynamicIndex>
@@ -98,9 +98,9 @@ template<typename T> class variable_if_dynamicindex<T, DynamicIndex>
     T m_value;
     EIGEN_DEVICE_FUNC variable_if_dynamicindex() { eigen_assert(false); }
   public:
-    EIGEN_DEVICE_FUNC explicit variable_if_dynamicindex(T value) : m_value(value) {}
-    EIGEN_DEVICE_FUNC T value() const { return m_value; }
-    EIGEN_DEVICE_FUNC void setValue(T value) { m_value = value; }
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamicindex(T value) : m_value(value) {}
+    EIGEN_DEVICE_FUNC T EIGEN_STRONG_INLINE value() const { return m_value; }
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void setValue(T value) { m_value = value; }
 };
 
 template<typename T> struct functor_traits
@@ -448,52 +448,6 @@ template<typename Derived, typename XprKind>
 struct generic_xpr_base<Derived, XprKind, Dense>
 {
   typedef typename dense_xpr_base<Derived,XprKind>::type type;
-};
-
-/** \internal Helper base class to add a scalar multiple operator
-  * overloads for complex types */
-template<typename Derived, typename Scalar, typename OtherScalar, typename BaseType,
-         bool EnableIt = !is_same<Scalar,OtherScalar>::value >
-struct special_scalar_op_base : public BaseType
-{
-  // dummy operator* so that the
-  // "using special_scalar_op_base::operator*" compiles
-  struct dummy {};
-  void operator*(dummy) const;
-  void operator/(dummy) const;
-};
-
-template<typename Derived,typename Scalar,typename OtherScalar, typename BaseType>
-struct special_scalar_op_base<Derived,Scalar,OtherScalar,BaseType,true>  : public BaseType
-{
-  const CwiseUnaryOp<scalar_multiple2_op<Scalar,OtherScalar>, const Derived>
-  operator*(const OtherScalar& scalar) const
-  {
-#ifdef EIGEN_SPECIAL_SCALAR_MULTIPLE_PLUGIN
-    EIGEN_SPECIAL_SCALAR_MULTIPLE_PLUGIN
-#endif
-    return CwiseUnaryOp<scalar_multiple2_op<Scalar,OtherScalar>, const Derived>
-      (*static_cast<const Derived*>(this), scalar_multiple2_op<Scalar,OtherScalar>(scalar));
-  }
-
-  inline friend const CwiseUnaryOp<scalar_multiple2_op<Scalar,OtherScalar>, const Derived>
-  operator*(const OtherScalar& scalar, const Derived& matrix)
-  {
-#ifdef EIGEN_SPECIAL_SCALAR_MULTIPLE_PLUGIN
-    EIGEN_SPECIAL_SCALAR_MULTIPLE_PLUGIN
-#endif
-    return static_cast<const special_scalar_op_base&>(matrix).operator*(scalar);
-  }
-  
-  const CwiseUnaryOp<scalar_quotient2_op<Scalar,OtherScalar>, const Derived>
-  operator/(const OtherScalar& scalar) const
-  {
-#ifdef EIGEN_SPECIAL_SCALAR_MULTIPLE_PLUGIN
-    EIGEN_SPECIAL_SCALAR_MULTIPLE_PLUGIN
-#endif
-    return CwiseUnaryOp<scalar_quotient2_op<Scalar,OtherScalar>, const Derived>
-      (*static_cast<const Derived*>(this), scalar_quotient2_op<Scalar,OtherScalar>(scalar));
-  }
 };
 
 template<typename XprType, typename CastType> struct cast_return_type

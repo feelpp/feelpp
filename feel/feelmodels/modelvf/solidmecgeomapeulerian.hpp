@@ -139,7 +139,7 @@ public:
         void update( Geo_t const& geom )
         {
             std::fill( this->M_locRes.data(), this->M_locRes.data()+this->M_locRes.num_elements(), super_type::matrix_shape_type::Zero() );
-            std::fill( this->M_locGradDisplacement.data(), this->M_locGradDisplacement.data()+this->M_locGradDisplacement.num_elements(), super_type::loc_tensor2_type::Zero() );
+            std::fill( this->M_locGradDisplacement.data(), this->M_locGradDisplacement.data()+this->M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*super_type::loc_tensor2_type::Zero()*/ );
 
             this->M_ctxDisp->update( this->gmc(),  (pc_disp_ptrtype const&) this->M_pcDisp );
             this->M_expr.disp().grad( *this->M_ctxDisp, this->M_locGradDisplacement );
@@ -176,7 +176,7 @@ public:
                 auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
                 const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1);
                 const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
-                typename super_type::loc_tensor2_type & theLocRes = this->M_locRes[q];
+                typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->M_locRes[q];
                 theLocRes(0,0) = 1+du2vdy;
                 theLocRes(0,1) = -du2vdx;
                 theLocRes(1,0) = -du1vdy;
@@ -192,7 +192,7 @@ public:
                 const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1), du1vdz = gradDisplacementEval(0,2);
                 const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1), du2vdz = gradDisplacementEval(1,2);
                 const value_type du3vdx = gradDisplacementEval(2,0), du3vdy = gradDisplacementEval(2,1), du3vdz = gradDisplacementEval(2,2);
-                typename super_type::loc_tensor2_type & theLocRes = this->M_locRes[q];
+                typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->M_locRes[q];
                 theLocRes(0,0) = (1+du2vdy)*(1+du3vdz) - du2vdz*du3vdy;
                 theLocRes(0,1) = du2vdz*du3vdx - du2vdx*(1+du3vdz);
                 theLocRes(0,2) = du2vdx*du3vdy - (1+du2vdy)*du3vdx;
@@ -232,8 +232,8 @@ public:
         {
             CHECK( false ) << "TODO mat";
             auto const& gradTrial = this->fecTrial()->grad( j, q );
-            const value_type dF11 = gradTrial( 0, 0 ), dF12 = gradTrial( 0, 1 );
-            const value_type dF21 = gradTrial( 1, 0 ), dF22 = gradTrial( 1, 1 );
+            const value_type dF11 = gradTrial( 0, 0, 0 ), dF12 = gradTrial( 0, 1, 0 );
+            const value_type dF21 = gradTrial( 1, 0, 0 ), dF22 = gradTrial( 1, 1, 0 );
             matrix_shape_type & thelocRes = this->locMatrixShape();
             thelocRes(0,0) =  dF22;
             thelocRes(0,1) = -dF21;
@@ -246,9 +246,9 @@ public:
         {
             CHECK( false ) << "TODO mat";
             auto const& gradTrial = this->fecTrial()->grad( j, q );
-            const value_type dF11 = gradTrial( 0, 0 ), dF12 = gradTrial( 0, 1 ), dF13 = gradTrial( 0, 2 );
-            const value_type dF21 = gradTrial( 1, 0 ), dF22 = gradTrial( 1, 1 ), dF23 = gradTrial( 1, 2 );
-            const value_type dF31 = gradTrial( 2, 0 ), dF32 = gradTrial( 2, 1 ), dF33 = gradTrial( 2, 2 );
+            const value_type dF11 = gradTrial( 0, 0, 0 ), dF12 = gradTrial( 0, 1, 0 ), dF13 = gradTrial( 0, 2, 0 );
+            const value_type dF21 = gradTrial( 1, 0, 0 ), dF22 = gradTrial( 1, 1, 0 ), dF23 = gradTrial( 1, 2, 0 );
+            const value_type dF31 = gradTrial( 2, 0, 0 ), dF32 = gradTrial( 2, 1, 0 ), dF33 = gradTrial( 2, 2, 0 );
             auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
             const value_type Fv11 = 1+gradDisplacementEval(0,0), Fv12 =   gradDisplacementEval(0,1), Fv13 =   gradDisplacementEval(0,2);
             const value_type Fv21 =   gradDisplacementEval(1,0), Fv22 = 1+gradDisplacementEval(1,1), Fv23 =   gradDisplacementEval(1,2);
@@ -299,9 +299,9 @@ public:
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ,mpl::int_<3> /*Dim*/ ) const
         {
             auto const& gradTrial = this->fecTrial()->grad( j, q );
-            const value_type dF11 = gradTrial( 0, 0 ), dF12 = gradTrial( 0, 1 ), dF13 = gradTrial( 0, 2 );
-            const value_type dF21 = gradTrial( 1, 0 ), dF22 = gradTrial( 1, 1 ), dF23 = gradTrial( 1, 2 );
-            const value_type dF31 = gradTrial( 2, 0 ), dF32 = gradTrial( 2, 1 ), dF33 = gradTrial( 2, 2 );
+            const value_type dF11 = gradTrial( 0, 0, 0 ), dF12 = gradTrial( 0, 1, 0 ), dF13 = gradTrial( 0, 2, 0 );
+            const value_type dF21 = gradTrial( 1, 0, 0 ), dF22 = gradTrial( 1, 1, 0 ), dF23 = gradTrial( 1, 2, 0 );
+            const value_type dF31 = gradTrial( 2, 0, 0 ), dF32 = gradTrial( 2, 1, 0 ), dF33 = gradTrial( 2, 2, 0 );
             auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
             const value_type Fv11 = 1+gradDisplacementEval(0,0), Fv12 = gradDisplacementEval(0,1), Fv13 = gradDisplacementEval(0,2);
             const value_type Fv21 = gradDisplacementEval(1,0), Fv22 = 1+gradDisplacementEval(1,1), Fv23 = gradDisplacementEval(1,2);

@@ -43,6 +43,7 @@ int main( int argc, char** argv )
         auto curlnu = curl(nu);
         auto chi = mat.getMatrix<2>( "chi" );
         auto xhi = mat.getMatrix<3>( "xhi" );
+
         std::cout << "\t" << rho << std::endl;
         std::cout << "\t" << mu << std::endl;
         std::cout << "\t" << nu << std::endl;

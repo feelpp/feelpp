@@ -335,7 +335,7 @@ ExporterVTK<MeshType,N>::write( int stepIndex, std::string filename, vtkSmartPoi
 
     vtkSmartPointer<vtkXMLPMultiBlockDataWriter> xmlpw = vtkSmartPointer<vtkXMLPMultiBlockDataWriter>::New();
         xmlpw->SetController(mpictrl);
-        xmlpw->SetTimeStep(stepIndex - TS_INITIAL_INDEX);
+        //xmlpw->SetTimeStep(stepIndex - TS_INITIAL_INDEX);
         xmlpw->SetFileName(filename.c_str());
         xmlpw->SetInputData(mbds);
         /* only write the meta file on the first processor */
@@ -346,7 +346,7 @@ ExporterVTK<MeshType,N>::write( int stepIndex, std::string filename, vtkSmartPoi
         xmlpw->Update();
 #else
     vtkSmartPointer<vtkXMLMultiBlockDataWriter> mbw = vtkSmartPointer<vtkXMLMultiBlockDataWriter>::New();
-        mbw->SetTimeStep(stepIndex - TS_INITIAL_INDEX);
+        //mbw->SetTimeStep(stepIndex - TS_INITIAL_INDEX);
         mbw->SetFileName(filename.c_str());
 #if VTK_MAJOR_VERSION <= 5
         mbw->SetInput(mbds);

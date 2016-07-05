@@ -36,9 +36,9 @@ endif()
 SET(SRC
   unitsegment.cpp unitsquare.cpp unitcube.cpp
   #exporterfactorysimplex.cpp exporterfactoryhypercube.cpp
-  ${FEELFILTERS_GMSH_SRCS}
-  ${FEELFILTERS_INST_SRCS}
-  detail/fileindex.cpp 
+  gmsh.cpp  ${FEELFILTERS_INST_SRCS} geotool.cpp
+  detail/fileindex.cpp
+  loadcsv.cpp
   straightenmesh_inst_1d.cpp straightenmesh_inst_1d_p2.cpp straightenmesh_inst_2d.cpp straightenmesh_inst_2d_ho.cpp straightenmesh_inst_3d.cpp straightenmesh_inst_3d_ho.cpp
   )
 
