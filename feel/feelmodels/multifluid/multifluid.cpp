@@ -80,7 +80,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
                 _reinitializer=M_globalLevelset->reinitializer(),
                 _projectorL2=M_globalLevelset->projectorL2(),
                 _projectorL2_vectorial=M_globalLevelset->projectorL2Vectorial(),
-                _smoother=M_globalLevelset->smoother()
+                _smoother=M_globalLevelset->smoother(),
+                _smoother_vectorial=M_globalLevelset->smootherVectorial()
                 );
 
         M_levelsetDensityViscosityModels[i].reset(
