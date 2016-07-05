@@ -1,5 +1,5 @@
 set_directory_properties(PROPERTIES LABEL testalg )
-foreach(TEST petsc umfpack ublas graph sub_matrix topetsc eigen3_tensor)
+foreach(TEST petsc umfpack ublas graph sub_matrix eigen3_tensor)
   feelpp_add_test( ${TEST}  NO_MPI_TEST )
 endforeach()
 
@@ -12,7 +12,6 @@ if(FEELPP_HAS_PETSC)
 endif()
 
 feelpp_add_test( backend )
-
 
 feelpp_add_test( nlsolve_eigen NO_MPI_TEST )
 feelpp_add_test( matrix_block )
