@@ -87,9 +87,9 @@ namespace FeelModels
         void update( Geo_t const& geom ) { CHECK( false ) << "TODO"; }
         void update( Geo_t const& geom, uint16_type face ) { CHECK( false ) << "TODO"; }
         virtual
-        void updateImpl( ctx_mechprop_scalar_type const& ctxMechProp, typename super_type::array_tensor2_type const& locGradEval )
+        void updateImpl( ctx_mechprop_scalar_type const& ctxMechProp, typename super_type::array_matrix_tensor2_type const& locGradEval )
         {
-            std::fill( M_locEvalBulkModulus.data(), M_locEvalBulkModulus.data()+M_locEvalBulkModulus.num_elements(), super_type::loc_scalar_type::Zero() );
+            std::fill( M_locEvalBulkModulus.data(), M_locEvalBulkModulus.data()+M_locEvalBulkModulus.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
             M_expr.mechanicalPropertiesDesc().fieldBulkModulus().id( ctxMechProp, M_locEvalBulkModulus );
         }
 
@@ -98,7 +98,7 @@ namespace FeelModels
         typename super_type::matrix_shape_type const&
         evalijq( uint16_type i, uint16_type j, uint16_type q,
                  const value_type detFv, const value_type ddetF,
-                 typename super_type::loc_tensor2_type const& dFmt ) const = 0;
+                 typename super_type::loc_matrix_tensor2_type const& dFmt ) const = 0;
 
         expr_type const& expr() const { return M_expr; }
         typename super_type::array_shape_type const& locRes() const { return M_locRes; }
@@ -169,19 +169,19 @@ namespace FeelModels
             M_locEvalFmt( boost::extents[ this->gmc()->xRefs().size2()] )
             {}
 
-        void updateImpl( typename super_type::ctx_mechprop_scalar_type const& ctxMechProp, typename super_type::array_tensor2_type const& locGradEval )
+        void updateImpl( typename super_type::ctx_mechprop_scalar_type const& ctxMechProp, typename super_type::array_matrix_tensor2_type const& locGradEval )
         {
             super_type::updateImpl( ctxMechProp, locGradEval );
             updateImpl( locGradEval );
         }
-        void updateImpl( typename super_type::array_tensor2_type const& locGradEval )
+        void updateImpl( typename super_type::array_matrix_tensor2_type const& locGradEval )
         {
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
                 // F*\kappa*(J-1)*J*C^{-1} = \kappa*(J-1)*J*F^{-T}
                 const value_type bulkModulus = this->M_locEvalBulkModulus[q](0,0);
                 auto const& gradDisplacementEval = locGradEval[q];
-                auto Id = super_type::loc_tensor2_type::Identity();
+                auto Id = super_type::loc_matrix_tensor2_type::Identity();
                 auto F = Id + gradDisplacementEval;
                 const value_type detFv = F.determinant();
 
@@ -200,7 +200,7 @@ namespace FeelModels
         typename super_type::matrix_shape_type const&
         evalijq( uint16_type i, uint16_type j, uint16_type q,
                  const value_type detFv, const value_type ddetF,
-                 typename super_type::loc_tensor2_type const& dFmt ) const
+                 typename super_type::loc_matrix_tensor2_type const& dFmt ) const
         {
             const value_type bulkModulus = this->M_locEvalBulkModulus[q](0,0);
             this->locMatrixShape() = bulkModulus*(detFv*(detFv-1)*dFmt + ddetF*(2*detFv-1)*M_locEvalFmt[q]);
@@ -208,7 +208,7 @@ namespace FeelModels
         }
 
     private :
-        typename super_type::array_tensor2_type M_locEvalFmt;
+        typename super_type::array_matrix_tensor2_type M_locEvalFmt;
     };
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ExprType>
@@ -237,19 +237,19 @@ namespace FeelModels
             M_locEvalFmt( boost::extents[ this->gmc()->xRefs().size2()] )
             {}
 
-        void updateImpl( typename super_type::ctx_mechprop_scalar_type const& ctxMechProp, typename super_type::array_tensor2_type const& locGradEval )
+        void updateImpl( typename super_type::ctx_mechprop_scalar_type const& ctxMechProp, typename super_type::array_matrix_tensor2_type const& locGradEval )
         {
             super_type::updateImpl( ctxMechProp, locGradEval );
             updateImpl( locGradEval );
         }
-        void updateImpl( typename super_type::array_tensor2_type const& locGradEval )
+        void updateImpl( typename super_type::array_matrix_tensor2_type const& locGradEval )
         {
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
                 // F*\kappa*ln(J)*C^{-1} = \kappa*ln(J)*F^{-T}
                 const value_type bulkModulus = this->M_locEvalBulkModulus[q](0,0);
                 auto const& gradDisplacementEval = locGradEval[q];
-                auto Id = super_type::loc_tensor2_type::Identity();
+                auto Id = super_type::loc_matrix_tensor2_type::Identity();
                 auto F = Id + gradDisplacementEval;
                 const value_type detFv = F.determinant();
 
@@ -261,7 +261,7 @@ namespace FeelModels
                 else
                 {
                     M_locEvalFmt[q] = F.inverse().transpose();
-                    M_locEvalPrecomputeLogDetF[q](0,0) = bulkModulus*math::log(detFv);
+                    M_locEvalPrecomputeLogDetF[q] = bulkModulus*math::log(detFv);
                 }
             }
         }
@@ -269,21 +269,21 @@ namespace FeelModels
         typename super_type::matrix_shape_type const&
         evalijq( uint16_type i, uint16_type j, uint16_type q,
                  const value_type detFv, const value_type ddetF,
-                 typename super_type::loc_tensor2_type const& dFmt ) const
+                 typename super_type::loc_matrix_tensor2_type const& dFmt ) const
         {
             typename super_type::matrix_shape_type& locMat = this->locMatrixShape();
             const value_type bulkModulus = this->M_locEvalBulkModulus[q](0,0);
-            const value_type precomputeLog = M_locEvalPrecomputeLogDetF[q](0,0);
+            const value_type precomputeLog = M_locEvalPrecomputeLogDetF[q];
             locMat = precomputeLog*dFmt;
             const value_type factorOther2 = bulkModulus*ddetF/detFv;
-            typename super_type::loc_tensor2_type const& Fmt = M_locEvalFmt[q];
+            typename super_type::loc_matrix_tensor2_type const& Fmt = M_locEvalFmt[q];
             locMat += factorOther2*Fmt;
             return this->locMatrixShape();
         }
 
     private :
-        typename super_type::array_scalar_type M_locEvalPrecomputeLogDetF;
-        typename super_type::array_tensor2_type M_locEvalFmt;
+        typename super_type::array_value_type M_locEvalPrecomputeLogDetF;
+        typename super_type::array_matrix_tensor2_type M_locEvalFmt;
     };
 
 
@@ -308,6 +308,11 @@ namespace FeelModels
         typedef typename super_type::matrix_shape_type matrix_shape_type;
         typedef typename super_type::array_shape_type array_shape_type;
 
+        typedef typename super_type::loc_tensor2_type loc_tensor2_type;
+        typedef typename super_type::array_tensor2_type array_tensor2_type;
+        typedef typename super_type::loc_matrix_tensor2_type loc_matrix_tensor2_type;
+        typedef typename super_type::array_matrix_tensor2_type array_matrix_tensor2_type;
+
         tensorFirstPiolaKirchhoffBase( expr_type const& expr,
                                      Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
@@ -316,7 +321,8 @@ namespace FeelModels
             M_pcDisplacement( new pc_displacement_type( expr.displacement().functionSpace()->fe(), this->gmc()->xRefs() ) ),
             M_ctxDisplacement( new ctx_displacement_type( expr.displacement().functionSpace()->fe(),this->gmc(),(pc_displacement_ptrtype const&)M_pcDisplacement ) ),
             M_locRes( expr.displacement().gradExtents(*this->gmc()) ),
-            M_locGradDisplacement( expr.displacement().gradExtents(*this->gmc()) )
+            M_locGradDisplacement( expr.displacement().gradExtents(*this->gmc()) ),
+            M_locMatrixGradDisplacement( expr.displacement().gradExtents(*this->gmc()) )
         {}
         tensorFirstPiolaKirchhoffBase( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
             :
@@ -325,7 +331,8 @@ namespace FeelModels
             M_pcDisplacement( new pc_displacement_type( expr.displacement().functionSpace()->fe(), this->gmc()->xRefs() ) ),
             M_ctxDisplacement( new ctx_displacement_type( expr.displacement().functionSpace()->fe(),this->gmc(),(pc_displacement_ptrtype const&)M_pcDisplacement ) ),
             M_locRes( expr.displacement().gradExtents(*this->gmc()) ),
-            M_locGradDisplacement( expr.displacement().gradExtents(*this->gmc()) )
+            M_locGradDisplacement( expr.displacement().gradExtents(*this->gmc()) ),
+            M_locMatrixGradDisplacement( expr.displacement().gradExtents(*this->gmc()) )
         {}
 
         tensorFirstPiolaKirchhoffBase( expr_type const& expr, Geo_t const& geom )
@@ -335,14 +342,15 @@ namespace FeelModels
             M_pcDisplacement( new pc_displacement_type( expr.displacement().functionSpace()->fe(), this->gmc()->xRefs() ) ),
             M_ctxDisplacement( new ctx_displacement_type( expr.displacement().functionSpace()->fe(),this->gmc(),(pc_displacement_ptrtype const&)M_pcDisplacement ) ),
             M_locRes( expr.displacement().gradExtents(*this->gmc()) ),
-            M_locGradDisplacement( expr.displacement().gradExtents(*this->gmc()) )
+            M_locGradDisplacement( expr.displacement().gradExtents(*this->gmc()) ),
+            M_locMatrixGradDisplacement( expr.displacement().gradExtents(*this->gmc()) )
         {}
 
 
         expr_type const& expr() const { return M_expr; }
 
-        array_shape_type const& locGradDisplacement() const { return M_locGradDisplacement; }
-        matrix_shape_type const& locGradDisplacement( uint16_type q ) const { return M_locGradDisplacement[q]; }
+        array_matrix_tensor2_type const& locGradDisplacement() const { return M_locMatrixGradDisplacement; }
+        loc_matrix_tensor2_type const& locGradDisplacement( uint16_type q ) const { return M_locMatrixGradDisplacement[q]; }
 
         array_shape_type & locRes() { return M_locRes; }
         array_shape_type const& locRes() const { return M_locRes; }
@@ -352,16 +360,28 @@ namespace FeelModels
         void update( Geo_t const& geom )
         {
             M_ctxDisplacement->update( this->gmc(),  (pc_displacement_ptrtype const&) M_pcDisplacement );
-            std::fill( M_locGradDisplacement.data(), M_locGradDisplacement.data()+M_locGradDisplacement.num_elements(), matrix_shape_type::Zero() );
+            std::fill( M_locGradDisplacement.data(), M_locGradDisplacement.data()+M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*matrix_shape_type::Zero()*/ );
             this->expr().displacement().grad( *M_ctxDisplacement, M_locGradDisplacement );
+            for ( uint16_type q=0;q<this->gmc()->nPoints();++q )
+            {
+                Eigen::Map< Eigen::Matrix<typename super_type::value_type,Eigen::Dynamic,Eigen::Dynamic/*,Eigen::ColMajor*/ > >
+                    gradDisplacementEval( M_locGradDisplacement[q].data(), super_type::shape_tensor2::M,super_type::shape_tensor2::N);
+                M_locMatrixGradDisplacement[q] = gradDisplacementEval;
+            }
         }
         void update( Geo_t const& geom, uint16_type face )
         {
             if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
                 M_pcDisplacement->update( this->gmc()->pc()->nodes() );
             M_ctxDisplacement->update( this->gmc(),  (pc_displacement_ptrtype const&) M_pcDisplacement );
-            std::fill( M_locGradDisplacement.data(), M_locGradDisplacement.data()+M_locGradDisplacement.num_elements(), matrix_shape_type::Zero() );
+            std::fill( M_locGradDisplacement.data(), M_locGradDisplacement.data()+M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*matrix_shape_type::Zero()*/ );
             this->expr().displacement().grad( *M_ctxDisplacement, M_locGradDisplacement );
+            for ( uint16_type q=0;q<this->gmc()->nPoints();++q )
+            {
+                Eigen::Map< Eigen::Matrix<typename super_type::value_type,Eigen::Dynamic,Eigen::Dynamic/*,Eigen::ColMajor*/ > >
+                    gradDisplacementEval( M_locGradDisplacement[q].data(), super_type::shape_tensor2::M,super_type::shape_tensor2::N);
+                M_locMatrixGradDisplacement[q] = gradDisplacementEval;
+            }
         }
 
         matrix_shape_type const&
@@ -374,8 +394,10 @@ namespace FeelModels
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            CHECK( false ) << "not allow\n";
-            return 0;
+            //CHECK( false ) << "not allow\n";
+            //LOG(WARNING) << "evalijq non optimized";
+            return this->evalijq(i,j,q)(c1,c2);
+            //return 0;
         }
 
         value_type
@@ -397,7 +419,8 @@ namespace FeelModels
         ctx_displacement_ptrtype M_ctxDisplacement;
 
         array_shape_type M_locRes;
-        array_shape_type M_locGradDisplacement;
+        array_tensor2_type M_locGradDisplacement;
+        typename super_type::array_matrix_tensor2_type M_locMatrixGradDisplacement;
 
     };
 
@@ -473,10 +496,10 @@ namespace FeelModels
             M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
             if ( !useDispPresForm )
             {
-                std::fill( M_locEvalFieldCoefflame1.data(), M_locEvalFieldCoefflame1.data()+M_locEvalFieldCoefflame1.num_elements(), /*typename*/ super_type::loc_scalar_type::Zero() );
+                std::fill( M_locEvalFieldCoefflame1.data(), M_locEvalFieldCoefflame1.data()+M_locEvalFieldCoefflame1.num_elements(), /*typename*/ this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
                 this->expr().mechanicalPropertiesDesc().fieldCoeffLame1().id( *M_ctxMechPropField, M_locEvalFieldCoefflame1 );
             }
-            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), /*typename*/ super_type::loc_scalar_type::Zero() );
+            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), /*typename*/ this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
             this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
 
             std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
@@ -498,7 +521,7 @@ namespace FeelModels
                 const value_type E21 = 0.5*( du2vdx + du1vdy + du1vdy*du1vdx + du2vdy*du2vdx );
                 const value_type E22 = du2vdy + subtraceE2;
 
-                typename super_type::loc_tensor2_type & theLocRes = this->locRes(q);
+                typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->locRes(q);
 
                 if ( useDispPresForm )
                 {
@@ -575,7 +598,7 @@ namespace FeelModels
                 const value_type E32 = 0.5*( du3vdy + du2vdz + du1vdz*du1vdy + du2vdz*du2vdy + du3vdz*du3vdy );
                 const value_type E33 = du3vdz + subtraceE3;
 
-                typename super_type::loc_tensor2_type & theLocRes = this->locRes(q);
+                typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->locRes(q);
                 if ( useDispPresForm )
                 {
                     const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
@@ -687,8 +710,8 @@ namespace FeelModels
             const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
 
             auto const& gradTrial = this->fecTrial()->grad( j, q );
-            const value_type du1tdx = gradTrial( 0, 0 ), du1tdy = gradTrial( 0, 1 );
-            const value_type du2tdx = gradTrial( 1, 0 ), du2tdy = gradTrial( 1, 1 );
+            const value_type du1tdx = gradTrial( 0, 0, 0 ), du1tdy = gradTrial( 0, 1, 0 );
+            const value_type du2tdx = gradTrial( 1, 0, 0 ), du2tdy = gradTrial( 1, 1, 0 );
 
             // dFSv = dF*val(Sv)
             auto const& localEval = this->locRes(q);
@@ -760,9 +783,9 @@ namespace FeelModels
             const value_type du3vdx = gradDisplacementEval(2,0), du3vdy = gradDisplacementEval(2,1), du3vdz = gradDisplacementEval(2,2);
 
             auto const& gradTrial = this->fecTrial()->grad( j, q );
-            const value_type du1tdx = gradTrial( 0, 0 ), du1tdy = gradTrial( 0, 1 ), du1tdz=gradTrial( 0, 2 );
-            const value_type du2tdx = gradTrial( 1, 0 ), du2tdy = gradTrial( 1, 1 ), du2tdz=gradTrial( 1, 2 );
-            const value_type du3tdx = gradTrial( 2, 0 ), du3tdy = gradTrial( 2, 1 ), du3tdz=gradTrial( 2, 2 );
+            const value_type du1tdx = gradTrial( 0, 0, 0 ), du1tdy = gradTrial( 0, 1, 0 ), du1tdz=gradTrial( 0, 2, 0 );
+            const value_type du2tdx = gradTrial( 1, 0, 0 ), du2tdy = gradTrial( 1, 1, 0 ), du2tdz=gradTrial( 1, 2, 0 );
+            const value_type du3tdx = gradTrial( 2, 0, 0 ), du3tdy = gradTrial( 2, 1, 0 ), du3tdz=gradTrial( 2, 2, 0 );
 
             // dFSv = dF*val(Sv)
             auto const& localEval = this->locRes(q);
@@ -996,7 +1019,7 @@ namespace FeelModels
         void updateImpl( Geo_t const& geom )
         {
             M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
-            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), super_type::loc_scalar_type::Zero() );
+            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
             this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
 
             if ( !useDispPresForm )
@@ -1011,7 +1034,7 @@ namespace FeelModels
         void updateImpl( Geo_t const& geom )
         {
             M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
-            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), super_type::loc_scalar_type::Zero() );
+            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
             this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
 
             if ( !useDispPresForm )
@@ -1022,7 +1045,7 @@ namespace FeelModels
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
                 const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
-                auto Id = super_type::loc_tensor2_type::Identity();
+                auto Id = super_type::loc_matrix_tensor2_type::Identity();
                 auto const& gradDisplacementEval = this->locGradDisplacement(q);
                 auto F = Id + gradDisplacementEval;
                 const value_type detFv = F.determinant();
@@ -1042,14 +1065,14 @@ namespace FeelModels
                     const value_type factorWithDetFv2 = -(2./expr_type::nRealDim)*coefflame2*math::pow(detFv,( (expr_type::nRealDim==2)?-4.:-5.)/expr_type::nRealDim);
                     //const value_type factorWithDetFv2 = -(2./3.)*coefflame2*math::pow(detFv,-5./3.);
                     const value_type factorWithDetFv3 = coefflame2*math::pow(detFv,-2./expr_type::nRealDim);
-                    M_locEvalPrecomputeInvDetF[q](0,0) = 1./detFv;
-                    M_locEvalPrecomputeDetF1[q](0,0) = factorWithDetFv1;
+                    M_locEvalPrecomputeInvDetF[q] = 1./detFv;
+                    M_locEvalPrecomputeDetF1[q] = factorWithDetFv1;
                     //M_locEvalPrecomputeDetF2[q](0,0) = factorWithDetFv2;
-                    M_locEvalPrecomputeDetF3[q](0,0) = factorWithDetFv3;
-                    M_locEvalPrecomputeTraceC[q](0,0) = traceCv;
+                    M_locEvalPrecomputeDetF3[q] = factorWithDetFv3;
+                    M_locEvalPrecomputeTraceC[q] = traceCv;
                     //TODO here
                     const value_type factorTrialDetF = (1./expr_type::nRealDim)*traceCv;
-                    typename super_type::loc_tensor2_type & matLocTrialDetF = M_locEvalPrecomputeTrialDetF[q];
+                    typename super_type::loc_matrix_tensor2_type & matLocTrialDetF = M_locEvalPrecomputeTrialDetF[q];
                     matLocTrialDetF = factorWithDetFv2*(F - factorTrialDetF*F.inverse().transpose() );
                 }
             }
@@ -1088,14 +1111,14 @@ namespace FeelModels
                     const value_type factorWithDetFv1 = 1./math::pow(detFv,2);
                     const value_type factorWithDetFv2 = -(2./2.)*coefflame2*math::pow(detFv,-4./2.);
                     const value_type factorWithDetFv3 = coefflame2*math::pow(detFv,-2./2.);
-                    M_locEvalPrecomputeInvDetF[q](0,0) = 1./detFv;
-                    M_locEvalPrecomputeDetF1[q](0,0) = factorWithDetFv1;
+                    M_locEvalPrecomputeInvDetF[q] = 1./detFv;
+                    M_locEvalPrecomputeDetF1[q] = factorWithDetFv1;
                     //M_locEvalPrecomputeDetF2[q](0,0) = factorWithDetFv2;
-                    M_locEvalPrecomputeDetF3[q](0,0) = factorWithDetFv3;
-                    M_locEvalPrecomputeTraceC[q](0,0) = traceCv;
+                    M_locEvalPrecomputeDetF3[q] = factorWithDetFv3;
+                    M_locEvalPrecomputeTraceC[q] = traceCv;
 #if 1 // NEW
                     const value_type factorTrialDetF = (1./2.)*traceCv*(1./detFv);
-                    typename super_type::loc_tensor2_type & matLocTrialDetF = M_locEvalPrecomputeTrialDetF[q];
+                    typename super_type::loc_matrix_tensor2_type & matLocTrialDetF = M_locEvalPrecomputeTrialDetF[q];
                     matLocTrialDetF(0,0) = factorWithDetFv2*( Fv11 - factorTrialDetF*Fv22 );
                     matLocTrialDetF(0,1) = factorWithDetFv2*( Fv12 + factorTrialDetF*Fv21 );
                     matLocTrialDetF(1,0) = factorWithDetFv2*( Fv21 + factorTrialDetF*Fv12 );
@@ -1172,14 +1195,14 @@ namespace FeelModels
                     const value_type factorWithDetFv1 = 1./math::pow(detFv,2);
                     const value_type factorWithDetFv2 = -(2./3.)*coefflame2*math::pow(detFv,-5./3.);
                     const value_type factorWithDetFv3 = coefflame2*math::pow(detFv,-2./3.);
-                    M_locEvalPrecomputeInvDetF[q](0,0) = 1./detFv;
-                    M_locEvalPrecomputeDetF1[q](0,0) = factorWithDetFv1;
+                    M_locEvalPrecomputeInvDetF[q] = 1./detFv;
+                    M_locEvalPrecomputeDetF1[q] = factorWithDetFv1;
                     //M_locEvalPrecomputeDetF2[q](0,0) = factorWithDetFv2;
-                    M_locEvalPrecomputeDetF3[q](0,0) = factorWithDetFv3;
-                    M_locEvalPrecomputeTraceC[q](0,0) = traceCv;
+                    M_locEvalPrecomputeDetF3[q] = factorWithDetFv3;
+                    M_locEvalPrecomputeTraceC[q] = traceCv;
 #if 1 // NEW
                     const value_type factorTrialDetF = (1./3.)*traceCv*(1./detFv);
-                    typename super_type::loc_tensor2_type & matLocTrialDetF = M_locEvalPrecomputeTrialDetF[q];
+                    typename super_type::loc_matrix_tensor2_type & matLocTrialDetF = M_locEvalPrecomputeTrialDetF[q];
                     matLocTrialDetF(0,0) = factorWithDetFv2*( Fv11 - factorTrialDetF*InvFv11 );
                     matLocTrialDetF(0,1) = factorWithDetFv2*( Fv12 - factorTrialDetF*InvFv21 );
                     matLocTrialDetF(0,2) = factorWithDetFv2*( Fv13 - factorTrialDetF*InvFv31 );
@@ -1225,17 +1248,17 @@ namespace FeelModels
             const value_type Fv21 = gradDisplacementEval(1,0), Fv22 = 1.+gradDisplacementEval(1,1);
 
             auto const& gradTrial = this->fecTrial()->grad( j, q );
-            const value_type dF11/*du1tdx*/ = gradTrial(0,0), dF12/*du1tdy*/ = gradTrial(0,1);
-            const value_type dF21/*du2tdx*/ = gradTrial(1,0), dF22/*du2tdy*/ = gradTrial(1,1);
+            const value_type dF11/*du1tdx*/ = gradTrial(0,0,0), dF12/*du1tdy*/ = gradTrial(0,1,0);
+            const value_type dF21/*du2tdx*/ = gradTrial(1,0,0), dF22/*du2tdy*/ = gradTrial(1,1,0);
 
             const value_type ddetF = dF11*Fv22 + Fv11*dF22 - Fv21*dF12 - dF21*Fv12;
             const value_type dtraceC = 2*Fv11*dF11 + 2*Fv21*dF21 + 2*Fv12*dF12 + 2*Fv22*dF22;
 
-            const value_type traceCv = M_locEvalPrecomputeTraceC[q](0,0);
+            const value_type traceCv = M_locEvalPrecomputeTraceC[q];
             // 1./detFv
-            const value_type precomputeInvDetF = M_locEvalPrecomputeInvDetF[q](0,0);
+            const value_type precomputeInvDetF = M_locEvalPrecomputeInvDetF[q];
             // 1./math::pow(detFv,2);
-            const value_type precomputeDetF1 = M_locEvalPrecomputeDetF1[q](0,0);
+            const value_type precomputeDetF1 = M_locEvalPrecomputeDetF1[q];
 
             // F^{-T} trial
             const value_type dFmt11 = -ddetF*precomputeDetF1*Fv22+precomputeInvDetF*dF22;
@@ -1243,13 +1266,13 @@ namespace FeelModels
             const value_type dFmt21 =  ddetF*precomputeDetF1*Fv12-precomputeInvDetF*dF12;
             const value_type dFmt22 = -ddetF*precomputeDetF1*Fv11+precomputeInvDetF*dF11;
 #if 0 // NEW
-            const value_type precomputeDetF2 = M_locEvalPrecomputeDetF2[q](0,0);
+            const value_type precomputeDetF2 = M_locEvalPrecomputeDetF2[q];
             const value_type dFS_neohookean_a11 = precomputeDetF2*ddetF*( Fv11 - (1./2.)*traceCv*precomputeInvDetF*Fv22 );
             const value_type dFS_neohookean_a12 = precomputeDetF2*ddetF*( Fv12 + (1./2.)*traceCv*precomputeInvDetF*Fv21 );
             const value_type dFS_neohookean_a21 = precomputeDetF2*ddetF*( Fv21 + (1./2.)*traceCv*precomputeInvDetF*Fv12 );
             const value_type dFS_neohookean_a22 = precomputeDetF2*ddetF*( Fv22 - (1./2.)*traceCv*precomputeInvDetF*Fv11 );
 
-            const value_type precomputeDetF3 = M_locEvalPrecomputeDetF3[q](0,0);
+            const value_type precomputeDetF3 = M_locEvalPrecomputeDetF3[q];
             const value_type dFS_neohookean_b11 = precomputeDetF3*( dF11 - (1./2.)*(dtraceC*precomputeInvDetF*Fv22+traceCv*dFmt11) );
             const value_type dFS_neohookean_b12 = precomputeDetF3*( dF12 - (1./2.)*(-dtraceC*precomputeInvDetF*Fv21+traceCv*dFmt12) );
             const value_type dFS_neohookean_b21 = precomputeDetF3*( dF21 - (1./2.)*(-dtraceC*precomputeInvDetF*Fv12+traceCv*dFmt21) );
@@ -1263,7 +1286,7 @@ namespace FeelModels
 #else
             typename super_type::matrix_shape_type & matLoc = this->locMatrixShape();
             matLoc = ddetF*M_locEvalPrecomputeTrialDetF[q];
-            const value_type precomputeDetF3 = M_locEvalPrecomputeDetF3[q](0,0);
+            const value_type precomputeDetF3 = M_locEvalPrecomputeDetF3[q];
             matLoc(0,0) += precomputeDetF3*( dF11 - (1./2.)*(dtraceC*precomputeInvDetF*Fv22+traceCv*dFmt11) );
             matLoc(0,1) += precomputeDetF3*( dF12 - (1./2.)*(-dtraceC*precomputeInvDetF*Fv21+traceCv*dFmt12) );
             matLoc(1,0) += precomputeDetF3*( dF21 - (1./2.)*(-dtraceC*precomputeInvDetF*Fv12+traceCv*dFmt21) );
@@ -1271,7 +1294,7 @@ namespace FeelModels
 #endif
             if ( !useDispPresForm )
             {
-                typename super_type::loc_tensor2_type dFmt;
+                typename super_type::loc_matrix_tensor2_type dFmt;
                 dFmt(0,0) = dFmt11;dFmt(0,1) = dFmt12;
                 dFmt(1,0) = dFmt21;dFmt(1,1) = dFmt22;
                 const value_type detFv = 1./precomputeInvDetF;
@@ -1294,9 +1317,9 @@ namespace FeelModels
             const value_type Fav31 = Fv31, Fav32 = Fv32, Fav33 = gradDisplacementEval(2,2);
 
             auto const& gradTrial = this->fecTrial()->grad( j, q );
-            const value_type dF11/*du1tdx*/ = gradTrial(0,0), dF12/*du1tdy*/ = gradTrial(0,1), dF13/*du1tdz*/ = gradTrial(0,2);
-            const value_type dF21/*du2tdx*/ = gradTrial(1,0), dF22/*du2tdy*/ = gradTrial(1,1), dF23/*du2tdz*/ = gradTrial(1,2);
-            const value_type dF31/*du3tdx*/ = gradTrial(2,0), dF32/*du3tdy*/ = gradTrial(2,1), dF33/*du3tdz*/ = gradTrial(2,2);
+            const value_type dF11/*du1tdx*/ = gradTrial(0,0,0), dF12/*du1tdy*/ = gradTrial(0,1,0), dF13/*du1tdz*/ = gradTrial(0,2,0);
+            const value_type dF21/*du2tdx*/ = gradTrial(1,0,0), dF22/*du2tdy*/ = gradTrial(1,1,0), dF23/*du2tdz*/ = gradTrial(1,2,0);
+            const value_type dF31/*du3tdx*/ = gradTrial(2,0,0), dF32/*du3tdy*/ = gradTrial(2,1,0), dF33/*du3tdz*/ = gradTrial(2,2,0);
 
             /*auto InvFvMat = mat<3,3>( Fv22*Fv33-Fv23*Fv32 , Fv13*Fv32-Fv12*Fv33 , Fv12*Fv23-Fv13*Fv22,
               Fv23*Fv31-Fv21*Fv33 , Fv11*Fv33-Fv13*Fv31 , Fv13*Fv21-Fv11*Fv23,
@@ -1345,9 +1368,9 @@ namespace FeelModels
             //auto dFS_neohookean_b = idv(CoeffLame2)*pow(detFv,-2./3.)*( dF - (1./3.)*(dtraceC*trans(InvFv)+traceCv*dFmt) );
             //auto dFS_neohookean = dFS_neohookean_a+dFS_neohookean_b;
 
-            const value_type traceCv = M_locEvalPrecomputeTraceC[q](0,0);
-            const value_type precomputeInvDetF = M_locEvalPrecomputeInvDetF[q](0,0); // 1./detFv;
-            const value_type precomputeDetF1 = M_locEvalPrecomputeDetF1[q](0,0); // 1./math::pow(detFv,2);
+            const value_type traceCv = M_locEvalPrecomputeTraceC[q];
+            const value_type precomputeInvDetF = M_locEvalPrecomputeInvDetF[q];
+            const value_type precomputeDetF1 = M_locEvalPrecomputeDetF1[q];
             const value_type dFmt11 = -ddetF*precomputeDetF1*InvFv11 + precomputeInvDetF*FmtNL11;
             const value_type dFmt12 = -ddetF*precomputeDetF1*InvFv21 + precomputeInvDetF*FmtNL12;
             const value_type dFmt13 = -ddetF*precomputeDetF1*InvFv31 + precomputeInvDetF*FmtNL13;
@@ -1358,7 +1381,7 @@ namespace FeelModels
             const value_type dFmt32 = -ddetF*precomputeDetF1*InvFv23 + precomputeInvDetF*FmtNL32;
             const value_type dFmt33 = -ddetF*precomputeDetF1*InvFv33 + precomputeInvDetF*FmtNL33;
 #if 0 // NEW
-            const value_type precomputeDetF2 = M_locEvalPrecomputeDetF2[q](0,0);
+            const value_type precomputeDetF2 = M_locEvalPrecomputeDetF2[q];
             const value_type dFS_neohookean_a11 = precomputeDetF2*ddetF*( Fv11 - (1./3.)*traceCv*precomputeInvDetF*InvFv11 );
             const value_type dFS_neohookean_a12 = precomputeDetF2*ddetF*( Fv12 - (1./3.)*traceCv*precomputeInvDetF*InvFv21 );
             const value_type dFS_neohookean_a13 = precomputeDetF2*ddetF*( Fv13 - (1./3.)*traceCv*precomputeInvDetF*InvFv31 );
@@ -1369,7 +1392,7 @@ namespace FeelModels
             const value_type dFS_neohookean_a32 = precomputeDetF2*ddetF*( Fv32 - (1./3.)*traceCv*precomputeInvDetF*InvFv23 );
             const value_type dFS_neohookean_a33 = precomputeDetF2*ddetF*( Fv33 - (1./3.)*traceCv*precomputeInvDetF*InvFv33 );
 
-            const value_type precomputeDetF3 = M_locEvalPrecomputeDetF3[q](0,0);
+            const value_type precomputeDetF3 = M_locEvalPrecomputeDetF3[q];
             const value_type dFS_neohookean_b11 = precomputeDetF3*( dF11 - (1./3.)*(dtraceC*precomputeInvDetF*InvFv11+traceCv*dFmt11) );
             const value_type dFS_neohookean_b12 = precomputeDetF3*( dF12 - (1./3.)*(dtraceC*precomputeInvDetF*InvFv21+traceCv*dFmt12) );
             const value_type dFS_neohookean_b13 = precomputeDetF3*( dF13 - (1./3.)*(dtraceC*precomputeInvDetF*InvFv31+traceCv*dFmt13) );
@@ -1393,7 +1416,7 @@ namespace FeelModels
 #else
             typename super_type::matrix_shape_type & matLoc = this->locMatrixShape();
             matLoc = ddetF*M_locEvalPrecomputeTrialDetF[q];
-            const value_type precomputeDetF3 = M_locEvalPrecomputeDetF3[q](0,0);
+            const value_type precomputeDetF3 = M_locEvalPrecomputeDetF3[q];
             matLoc(0,0) += precomputeDetF3*( dF11 - (1./3.)*(dtraceC*precomputeInvDetF*InvFv11+traceCv*dFmt11) );
             matLoc(0,1) += precomputeDetF3*( dF12 - (1./3.)*(dtraceC*precomputeInvDetF*InvFv21+traceCv*dFmt12) );
             matLoc(0,2) += precomputeDetF3*( dF13 - (1./3.)*(dtraceC*precomputeInvDetF*InvFv31+traceCv*dFmt13) );
@@ -1406,7 +1429,7 @@ namespace FeelModels
 #endif
             if ( !useDispPresForm )
             {
-                typename super_type::loc_tensor2_type dFmt;
+                typename super_type::loc_matrix_tensor2_type dFmt;
                 dFmt(0,0) = dFmt11;dFmt(0,1) = dFmt12;dFmt(0,2) = dFmt13;
                 dFmt(1,0) = dFmt21;dFmt(1,1) = dFmt22;dFmt(1,2) = dFmt23;
                 dFmt(2,0) = dFmt31;dFmt(2,1) = dFmt32;dFmt(2,2) = dFmt33;
@@ -1421,8 +1444,8 @@ namespace FeelModels
         ctx_mechprop_scalar_ptrtype M_ctxMechPropField;
 
         typename super_type::array_scalar_type M_locEvalFieldCoefflame2;
-        typename super_type::array_scalar_type M_locEvalPrecomputeDetF1/*,M_locEvalPrecomputeDetF2*/,M_locEvalPrecomputeDetF3, M_locEvalPrecomputeInvDetF, M_locEvalPrecomputeTraceC;
-        typename super_type::array_tensor2_type M_locEvalPrecomputeTrialDetF;
+        typename super_type::array_value_type M_locEvalPrecomputeDetF1/*,M_locEvalPrecomputeDetF2*/,M_locEvalPrecomputeDetF3, M_locEvalPrecomputeInvDetF, M_locEvalPrecomputeTraceC;
+        typename super_type::array_matrix_tensor2_type M_locEvalPrecomputeTrialDetF;
 
         boost::shared_ptr<tensor_volumic_part_type> M_tensorVolumicPart;
     };
@@ -1503,7 +1526,7 @@ namespace FeelModels
         void updateImpl( Geo_t const& geom )
         {
             M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
-            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), super_type::loc_scalar_type::Zero() );
+            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
             this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
             //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::loc_res_type::Zero() );
 
@@ -1518,7 +1541,7 @@ namespace FeelModels
             {
                 const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
                 auto const& gradDisplacementEval = this->locGradDisplacement(q);
-                auto Id = super_type::loc_tensor2_type::Identity();
+                auto Id = super_type::loc_matrix_tensor2_type::Identity();
                 auto F = Id + gradDisplacementEval;
                 const value_type detFv = F.determinant();
                 if ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
@@ -1530,8 +1553,8 @@ namespace FeelModels
                 }
                 else
                 {
-                    M_locEvalPrecomputePowDetF[q](0,0) = math::pow(detFv,2);
-                    M_locEvalPrecomputeDetF[q](0,0) = detFv;
+                    M_locEvalPrecomputePowDetF[q] = math::pow(detFv,2);
+                    M_locEvalPrecomputeDetF[q] = detFv;
                 }
             }
         }
@@ -1564,19 +1587,22 @@ namespace FeelModels
             const value_type Fv11 = 1.+gradDisplacementEval(0,0), Fv12 = gradDisplacementEval(0,1);
             const value_type Fv21 = gradDisplacementEval(1,0), Fv22 = 1.+gradDisplacementEval(1,1);
 
-            auto const& gradTrial = this->fecTrial()->grad( j, q );
-            const value_type dF11/*du1tdx*/ = gradTrial(0,0), dF12/*du1tdy*/ = gradTrial(0,1);
-            const value_type dF21/*du2tdx*/ = gradTrial(1,0), dF22/*du2tdy*/ = gradTrial(1,1);
+
+            auto const& _gradTrial = this->fecTrial()->grad( j, q );
+            const value_type dF11/*du1tdx*/ = _gradTrial(0,0,0), dF12/*du1tdy*/ = _gradTrial(0,1,0);
+            const value_type dF21/*du2tdx*/ = _gradTrial(1,0,0), dF22/*du2tdy*/ = _gradTrial(1,1,0);
+            Eigen::Map< const Eigen::Matrix<typename super_type::value_type,Eigen::Dynamic,Eigen::Dynamic/*,Eigen::ColMajor*/ > >
+                gradTrial( _gradTrial.data(), super_type::shape_tensor2::M,super_type::shape_tensor2::N);
 
             const value_type ddetF = dF11*Fv22 + Fv11*dF22 - Fv21*dF12 - dF21*Fv12;
-            const value_type detFv = M_locEvalPrecomputeDetF[q](0,0);
+            const value_type detFv = M_locEvalPrecomputeDetF[q];
 
             const value_type scaleUsedWithInvFv = 1./detFv;
-            const value_type precomputePowDetF = M_locEvalPrecomputePowDetF[q](0,0);
+            const value_type precomputePowDetF = M_locEvalPrecomputePowDetF[q];
 
             const value_type factorOther = ddetF/precomputePowDetF;
 
-            typename super_type::loc_tensor2_type dFmt;
+            typename super_type::loc_matrix_tensor2_type dFmt;
             dFmt(0,0) = -factorOther*Fv22 + scaleUsedWithInvFv*dF22;
             dFmt(0,1) =  factorOther*Fv21 - scaleUsedWithInvFv*dF21;
             dFmt(1,0) =  factorOther*Fv12 - scaleUsedWithInvFv*dF12;
@@ -1604,9 +1630,9 @@ namespace FeelModels
             const value_type Fav31 = Fv31, Fav32 = Fv32, Fav33 = gradDisplacementEval(2,2);
 
             auto const& gradTrial = this->fecTrial()->grad( j, q );
-            const value_type dF11/*du1tdx*/ = gradTrial(0,0), dF12/*du1tdy*/ = gradTrial(0,1), dF13/*du1tdz*/ = gradTrial(0,2);
-            const value_type dF21/*du2tdx*/ = gradTrial(1,0), dF22/*du2tdy*/ = gradTrial(1,1), dF23/*du2tdz*/ = gradTrial(1,2);
-            const value_type dF31/*du3tdx*/ = gradTrial(2,0), dF32/*du3tdy*/ = gradTrial(2,1), dF33/*du3tdz*/ = gradTrial(2,2);
+            const value_type dF11/*du1tdx*/ = gradTrial(0,0,0), dF12/*du1tdy*/ = gradTrial(0,1,0), dF13/*du1tdz*/ = gradTrial(0,2,0);
+            const value_type dF21/*du2tdx*/ = gradTrial(1,0,0), dF22/*du2tdy*/ = gradTrial(1,1,0), dF23/*du2tdz*/ = gradTrial(1,2,0);
+            const value_type dF31/*du3tdx*/ = gradTrial(2,0,0), dF32/*du3tdy*/ = gradTrial(2,1,0), dF33/*du3tdz*/ = gradTrial(2,2,0);
 
             const value_type ddetF = dF11 + dF22 + dF33 + (dF22*Fav33 + Fav22*dF33) + (dF11*Fav22 + Fav11*dF22) + (dF11*Fav33 + Fav11*dF33)
             + dF11*Fav22*Fav33 + Fav11*dF22*Fav33 + Fav11*Fav22*dF33
@@ -1647,13 +1673,13 @@ namespace FeelModels
                                   FmtNL31,FmtNL32,FmtNL33 );*/
             //auto dFmt = -(ddetF/pow(detFv,2))*trans(InvFvMat)+(cst(1.)/detFv)*/*trans*/(InvFtMat) ;
 
-            const value_type detFv = M_locEvalPrecomputeDetF[q](0,0);
+            const value_type detFv = M_locEvalPrecomputeDetF[q];
             const value_type scaleUsedWithInvFv = 1./detFv;
-            const value_type precomputePowDetF = M_locEvalPrecomputePowDetF[q](0,0);//pow(detFv,2)  //idv(CoeffLame1)/pow(detFv,2)
+            const value_type precomputePowDetF = M_locEvalPrecomputePowDetF[q];//pow(detFv,2)  //idv(CoeffLame1)/pow(detFv,2)
 
             const value_type factorOther = ddetF/precomputePowDetF;//math::pow(detFv,2);
 
-            typename super_type::loc_tensor2_type dFmt;
+            typename super_type::loc_matrix_tensor2_type dFmt;
             dFmt(0,0) = -factorOther*InvFv11 + scaleUsedWithInvFv*FmtNL11;
             dFmt(0,1) = -factorOther*InvFv21 + scaleUsedWithInvFv*FmtNL12;
             dFmt(0,2) = -factorOther*InvFv31 + scaleUsedWithInvFv*FmtNL13;
@@ -1674,7 +1700,7 @@ namespace FeelModels
         pc_mechprop_scalar_ptrtype M_pcMechPropField;
         ctx_mechprop_scalar_ptrtype M_ctxMechPropField;
         typename super_type::array_scalar_type M_locEvalFieldCoefflame2;
-        typename super_type::array_scalar_type M_locEvalPrecomputePowDetF,M_locEvalPrecomputeDetF;
+        typename super_type::array_value_type M_locEvalPrecomputePowDetF,M_locEvalPrecomputeDetF;
         boost::shared_ptr<tensor_volumic_part_type> M_tensorVolumicPart;
     };
 
@@ -1756,8 +1782,8 @@ namespace FeelModels
         void updateImpl( Geo_t const& geom )
         {
             M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
-            std::fill( M_locEvalBulkModulus.data(), M_locEvalBulkModulus.data()+M_locEvalBulkModulus.num_elements(), /*typename*/ super_type::loc_scalar_type::Zero() );
-            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), /*typename*/ super_type::loc_scalar_type::Zero() );
+            std::fill( M_locEvalBulkModulus.data(), M_locEvalBulkModulus.data()+M_locEvalBulkModulus.num_elements(), /*typename*/ this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
+            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), /*typename*/ this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
             this->expr().mechanicalPropertiesDesc().fieldBulkModulus().id( *M_ctxMechPropField, M_locEvalBulkModulus );
             this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
 
@@ -1799,9 +1825,9 @@ namespace FeelModels
                 {
                     //const value_type precomputeLog = M_locEvalPrecomputeLog[q](0,0); // idv(CoeffLame1)*vf::log(/*vf::abs*/(detFv)) -idv(CoeffLame2)
                     //const value_type precomputePowDetF = M_locEvalPrecomputePowDetF[q](0,0);//idv(CoeffLame1)/pow(detFv,2)
-                    M_locEvalPrecomputeLogDetF[q](0,0) = bulkModulus*math::log(detFv) - coefflame2;
-                    M_locEvalPrecomputePowDetF[q](0,0) = /*coefflame1/*/math::pow(detFv,2);
-                    M_locEvalPrecomputeDetF[q](0,0) = detFv;
+                    M_locEvalPrecomputeLogDetF[q] = bulkModulus*math::log(detFv) - coefflame2;
+                    M_locEvalPrecomputePowDetF[q] = /*coefflame1/*/math::pow(detFv,2);
+                    M_locEvalPrecomputeDetF[q] = detFv;
                 }
             }
         }
@@ -1853,9 +1879,9 @@ namespace FeelModels
                 }
                 else
                 {
-                    M_locEvalPrecomputeLogDetF[q](0,0) = bulkModulus*math::log(detFv) - coefflame2;
-                    M_locEvalPrecomputePowDetF[q](0,0) = /*coefflame1/*/math::pow(detFv,2);
-                    M_locEvalPrecomputeDetF[q](0,0) = detFv;
+                    M_locEvalPrecomputeLogDetF[q] = bulkModulus*math::log(detFv) - coefflame2;
+                    M_locEvalPrecomputePowDetF[q] = /*coefflame1/*/math::pow(detFv,2);
+                    M_locEvalPrecomputeDetF[q] = detFv;
                 }
 
             }
@@ -1890,8 +1916,8 @@ namespace FeelModels
             const value_type Fv21 = gradDisplacementEval(1,0), Fv22 = 1.+gradDisplacementEval(1,1);
 
             auto const& gradTrial = this->fecTrial()->grad( j, q );
-            const value_type dF11/*du1tdx*/ = gradTrial(0,0), dF12/*du1tdy*/ = gradTrial(0,1);
-            const value_type dF21/*du2tdx*/ = gradTrial(1,0), dF22/*du2tdy*/ = gradTrial(1,1);
+            const value_type dF11/*du1tdx*/ = gradTrial(0,0,0), dF12/*du1tdy*/ = gradTrial(0,1,0);
+            const value_type dF21/*du2tdx*/ = gradTrial(1,0,0), dF22/*du2tdy*/ = gradTrial(1,1,0);
 
             const value_type ddetF = dF11*Fv22 + Fv11*dF22 - Fv21*dF12 - dF21*Fv12;
             //const value_type ddetF = dF22+dF11+dF11*Fv22+Fv11*dF22 -Fv21*dF12 - dF21*Fv12;
@@ -1900,9 +1926,9 @@ namespace FeelModels
             //auto InvFtMat = mat<2,2>( dF22,-dF21,-dF12,dF11);//already transpose
             //auto InvFvMat = mat<2,2>( Fv22,-Fv12,-Fv21,Fv11);
             //auto dFmt = -(ddetF/pow(detFv,2))*trans(InvFvMat)+(cst(1.)/detFv)*/*trans*/(InvFtMat);
-            const value_type detFv = M_locEvalPrecomputeDetF[q](0,0);
+            const value_type detFv = M_locEvalPrecomputeDetF[q];
             const value_type scaleUsedWithInvFv = 1./detFv;
-            const value_type precomputePowDetF = M_locEvalPrecomputePowDetF[q](0,0);//pow(detFv,2)  //idv(CoeffLame1)/pow(detFv,2)
+            const value_type precomputePowDetF = M_locEvalPrecomputePowDetF[q];//pow(detFv,2)  //idv(CoeffLame1)/pow(detFv,2)
 
             const value_type factorOther = ddetF/precomputePowDetF;//math::pow(detFv,2);
             const value_type dFmt11 = -factorOther*Fv22 + scaleUsedWithInvFv*dF22;
@@ -1918,7 +1944,7 @@ namespace FeelModels
             const value_type dFS_neohookean_a22 = coefflame2*dF22;
 
             // _expr= val( idv(CoeffLame1)*vf::log(/*vf::abs*/(detFv)) -idv(CoeffLame2) )*trace(dFmt*trans(grad(v)) ),
-            const value_type precomputeLog = M_locEvalPrecomputeLogDetF[q](0,0); // idv(CoeffLame1)*vf::log(/*vf::abs*/(detFv)) -idv(CoeffLame2)
+            const value_type precomputeLog = M_locEvalPrecomputeLogDetF[q]; // idv(CoeffLame1)*vf::log(/*vf::abs*/(detFv)) -idv(CoeffLame2)
             const value_type dFS_neohookean_b11 = precomputeLog*dFmt11;
             const value_type dFS_neohookean_b12 = precomputeLog*dFmt12;
             const value_type dFS_neohookean_b21 = precomputeLog*dFmt21;
@@ -1960,9 +1986,9 @@ namespace FeelModels
             const value_type Fav31 = Fv31, Fav32 = Fv32, Fav33 = gradDisplacementEval(2,2);
 
             auto const& gradTrial = this->fecTrial()->grad( j, q );
-            const value_type dF11/*du1tdx*/ = gradTrial(0,0), dF12/*du1tdy*/ = gradTrial(0,1), dF13/*du1tdz*/ = gradTrial(0,2);
-            const value_type dF21/*du2tdx*/ = gradTrial(1,0), dF22/*du2tdy*/ = gradTrial(1,1), dF23/*du2tdz*/ = gradTrial(1,2);
-            const value_type dF31/*du3tdx*/ = gradTrial(2,0), dF32/*du3tdy*/ = gradTrial(2,1), dF33/*du3tdz*/ = gradTrial(2,2);
+            const value_type dF11/*du1tdx*/ = gradTrial(0,0,0), dF12/*du1tdy*/ = gradTrial(0,1,0), dF13/*du1tdz*/ = gradTrial(0,2,0);
+            const value_type dF21/*du2tdx*/ = gradTrial(1,0,0), dF22/*du2tdy*/ = gradTrial(1,1,0), dF23/*du2tdz*/ = gradTrial(1,2,0);
+            const value_type dF31/*du3tdx*/ = gradTrial(2,0,0), dF32/*du3tdy*/ = gradTrial(2,1,0), dF33/*du3tdz*/ = gradTrial(2,2,0);
 
             const value_type ddetF = dF11 + dF22 + dF33 + (dF22*Fav33 + Fav22*dF33) + (dF11*Fav22 + Fav11*dF22) + (dF11*Fav33 + Fav11*dF33)
             + dF11*Fav22*Fav33 + Fav11*dF22*Fav33 + Fav11*Fav22*dF33
@@ -2003,9 +2029,9 @@ namespace FeelModels
                                   FmtNL31,FmtNL32,FmtNL33 );*/
             //auto dFmt = -(ddetF/pow(detFv,2))*trans(InvFvMat)+(cst(1.)/detFv)*/*trans*/(InvFtMat) ;
 
-            const value_type detFv = M_locEvalPrecomputeDetF[q](0,0);
+            const value_type detFv = M_locEvalPrecomputeDetF[q];
             const value_type scaleUsedWithInvFv = 1./detFv;
-            const value_type precomputePowDetF = M_locEvalPrecomputePowDetF[q](0,0);//pow(detFv,2)  //idv(CoeffLame1)/pow(detFv,2)
+            const value_type precomputePowDetF = M_locEvalPrecomputePowDetF[q];//pow(detFv,2)  //idv(CoeffLame1)/pow(detFv,2)
 
             const value_type factorOther = ddetF/precomputePowDetF;//math::pow(detFv,2);
             const value_type dFmt11 = -factorOther*InvFv11 + scaleUsedWithInvFv*FmtNL11;
@@ -2031,7 +2057,7 @@ namespace FeelModels
             const value_type dFS_neohookean_a33 = coefflame2*dF33;
 
             // _expr= val( idv(CoeffLame1)*vf::log(/*vf::abs*/(detFv)) -idv(CoeffLame2) )*trace(dFmt*trans(grad(v)) ),
-            const value_type precomputeLog = M_locEvalPrecomputeLogDetF[q](0,0); // idv(CoeffLame1)*vf::log(/*vf::abs*/(detFv)) -idv(CoeffLame2)
+            const value_type precomputeLog = M_locEvalPrecomputeLogDetF[q]; // idv(CoeffLame1)*vf::log(/*vf::abs*/(detFv)) -idv(CoeffLame2)
             const value_type dFS_neohookean_b11 = precomputeLog*dFmt11;
             const value_type dFS_neohookean_b12 = precomputeLog*dFmt12;
             const value_type dFS_neohookean_b13 = precomputeLog*dFmt13;
@@ -2072,7 +2098,7 @@ namespace FeelModels
         ctx_mechprop_scalar_ptrtype M_ctxMechPropField;
 
         typename super_type::array_scalar_type M_locEvalBulkModulus, M_locEvalFieldCoefflame2;
-        typename super_type::array_scalar_type M_locEvalPrecomputeLogDetF,M_locEvalPrecomputePowDetF,M_locEvalPrecomputeDetF;
+        typename super_type::array_value_type M_locEvalPrecomputeLogDetF,M_locEvalPrecomputePowDetF,M_locEvalPrecomputeDetF;
     };
 
 

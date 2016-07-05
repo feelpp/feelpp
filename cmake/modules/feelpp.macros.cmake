@@ -264,6 +264,8 @@ macro(feelpp_add_test)
 
 
     if ( NOT FEELPP_TEST_NO_TEST )
+      # split command line options by whitespace into cmake list
+      separate_arguments(FEELPP_TEST_CLI)
       set(BOOST_TEST_SEPARATOR "")
       if ( Boost_MAJOR_VERSION GREATER 0 AND Boost_MINOR_VERSION GREATER 59 AND FEELPP_TEST_CLI )
         set(BOOST_TEST_SEPARATOR "--")
@@ -421,7 +423,7 @@ endmacro(feelpp_min)
 # This macros cleans up a variable containing a list of paths
 # It:
 # - Removes any reference to the original git source directory used for builds (important for instal with tarball)
-# - Removes any reference to the original build directory (important for instal with tarball)
+# - Removes any reference to the original build directory (important for install with tarball)
 function(feelpp_clean_variable old_var new_var)
     set(tmp_var "")
     foreach(_entry ${old_var})

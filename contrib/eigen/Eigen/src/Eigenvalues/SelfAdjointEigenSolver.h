@@ -414,7 +414,7 @@ SelfAdjointEigenSolver<MatrixType>& SelfAdjointEigenSolver<MatrixType>
 
   if(n==1)
   {
-    m_eivalues.coeffRef(0,0) = numext::real(matrix(0,0));
+    m_eivalues.coeffRef(0,0) = numext::real(matrix.diagonal()[0]);
     if(computeEigenvectors)
       m_eivec.setOnes(n,n);
     m_info = Success;
@@ -458,7 +458,7 @@ SelfAdjointEigenSolver<MatrixType>& SelfAdjointEigenSolver<MatrixType>
   {
     m_eivec.setIdentity(diag.size(), diag.size());
   }
-  m_info = computeFromTridiagonal_impl(m_eivalues, m_subdiag, m_maxIterations, computeEigenvectors, m_eivec);
+  m_info = internal::computeFromTridiagonal_impl(m_eivalues, m_subdiag, m_maxIterations, computeEigenvectors, m_eivec);
 
   m_isInitialized = true;
   m_eigenvectorsOk = computeEigenvectors;

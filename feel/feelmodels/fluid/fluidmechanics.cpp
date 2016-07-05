@@ -397,7 +397,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             std::list<std::string> markList;
             for ( auto const& bcOutlet : this->M_fluidOutletsBCType )
                 markList.push_back( std::get<0>(bcOutlet) );
-            ExpressionStringAtMarker myBcDesc2( std::make_tuple( "wind","0","" ) );
+            ExpressionStringAtMarker myBcDesc2( std::make_tuple( "expression","wind","0","","" ) );
             myBcDesc2.setMeshMarkers( markList );
             bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
         }

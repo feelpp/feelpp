@@ -1,0 +1,93 @@
+{
+    "Name": "HDG-Mixed-Poisson for lamina cribrosa",
+    "ShortName":"MP_LC",
+    "Model":"hdg",
+
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+            "cond":"1",
+	    "R_ext":"0.095",
+	    "k":"10",
+	    "H":"0.03", 
+            // ODE parameters:                                                                    
+            "CC":"1",
+            "RR":"1",                                                                                        
+            "Piout":"4.5453",
+	    "C1":"1",                                                                            
+            "C2":"1",        
+            "C3":"1",
+   	    "R12":"1",
+	    "R23":"1",                                                                          
+            "Rout":"1"	    
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+                    "expr":"4*k*( x*x * sin(x*x+y*y) - cos(x*x+y*y) + y*y * sin(x*x+y*y) ):x:y:k:H" // "-sin(Pi*x)*sin(Pi*y):x:y"
+                }
+            },
+            "Dirichlet":
+	    {
+	    	"in":
+        	{
+                     "expr":"2 + sin(x*x+y*y) + 16*Pi*H*R_ext*R_ext :H:x:y:R_ext"   // "sin(Pi*x)/(2*Pi):x"
+               	}
+	    },
+            "Neumann":
+            {
+                "bottom":
+                {
+                     "expr":"0"
+                },
+                "top":
+                {
+                     "expr":"0"
+                }
+            }
+	},
+	"flux":
+	{
+	    "Integral":
+	    {
+        	"out":
+                {
+		     "type":"constant"
+                     "expr":"0" // "-4*Pi*H*R_ext*R_ext*k*cos(R_ext*R_ext):R_ext:H:k"    // "-sin(Pi*x)/(2*Pi):x"
+                },
+		"out":
+                {
+                     "type":"file"
+                     "filename":"I_target.dat" 
+                }
+            }/*,
+	    "Neumann":
+	    {
+		"bottom":
+		{
+		     "expr":"0"
+		},
+                "top":
+                {
+                     "expr":"0"
+                }	
+	    }*/
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["potential","flux","state variable"]
+    }
+}
+
+
+
+

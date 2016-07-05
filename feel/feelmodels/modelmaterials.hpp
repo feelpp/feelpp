@@ -204,7 +204,7 @@ struct ModelMaterial
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e, std::map<std::string, double> params )
         {
             auto ex = expr( M_p.get( key, "0" ), sym, e );
-            ex->setParameterValues( params );
+            ex.setParameterValues( params );
             return ex;
         }
     template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key )
@@ -223,17 +223,6 @@ struct ModelMaterial
             s += "}";
             return expr<T,1>( M_p.get( key, s ), params );
         }
-    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::map<std::string,double> const& params )
-        {
-            std::string s = "{0";
-            for ( auto i : range(T-1) )
-                s += ",0";
-            s += "}";
-            return expr<T,1>( M_p.get( key, s ), params );
-        }
-    // template<int T, typename ExprT> Expr<GinacMatrixVF<ExprT> > getVector( std::string const& key, std::string const& sym, ExprT e );
-    // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e );
-    // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e );
     template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key )
         {
             std::string s = "{0";
@@ -263,11 +252,12 @@ struct ModelMaterial
     // template<int T1, int T2, typename ExprT> Expr<GinacExVF<ExprT> > getMatrix( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e );
 
 private:
-    std::string M_name;
+
+    std::string M_name; /*!< Material name*/
     pt::ptree M_p;
 
-    double M_rho;
-    double M_mu;
+    double M_rho; /*!< Density */
+    double M_mu;  /*!< Molecular(dynamic) viscosity */
 
     double M_Cp; /*!< Constant-pressure specific heat Cp */
     double M_Cv; /*!< Constant-volume specific heat Cv */
