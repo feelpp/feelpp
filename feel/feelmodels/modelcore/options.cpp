@@ -416,6 +416,17 @@ levelset_options(std::string const& prefix)
 }
 
 Feel::po::options_description
+interfaceforces_options(std::string const& prefix)
+{
+    Feel::po::options_description interfaceForcesOptions("InterfaceForces options");
+    interfaceForcesOptions.add_options()
+        (prefixvm(prefix,"helfrich-bending-modulus").c_str(), Feel::po::value<double>()->default_value(0.), "Helfrich bending modulus k_B" )
+        (prefixvm(prefix,"helfrich-force-impl").c_str(), Feel::po::value<int>()->default_value(0), "Implementation of Helfrich force" )
+
+    return interfaceForcesOptions;
+}
+
+Feel::po::options_description
 multifluid_options(std::string const& prefix, uint16_type nls = 1)
 {
     Feel::po::options_description multifluidOptions("MultiFluid options");
@@ -435,8 +446,12 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
         std::string levelset_prefix = prefixvm(prefix, (boost::format( "levelset%1%" ) %(n+1)).str());
         multifluidOptions.add( levelset_options( levelset_prefix ) );
         multifluidOptions.add( densityviscosity_options( levelset_prefix ) );
+        multifluidOptions.add( interfaceforces_options( levelset_prefix ) );
         multifluidOptions.add_options()
+            // Reinitialization
             (prefixvm(levelset_prefix,"reinit-every").c_str(), Feel::po::value<int>()->default_value( 10 ), "reinitialize levelset every n iterations" )
+            // Interface forces model
+            (prefixvm(levelset_prefix,"interface-forces-model").c_str(), Feel::po::value<std::string>, "model for interface forces (helfrich, ...)" )
             ;
     }
 
