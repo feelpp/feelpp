@@ -141,6 +141,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
 
     // Time step
     this->initTimeStep();
+    // Post-process
+    this->initPostProcess();
     
     // Algebraic factory
     if( buildModelAlgebraicFactory )
@@ -875,6 +877,16 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::solve()
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Export results
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
+{
+    if (this->doRestart() && this->restartPath().empty() )
+    {
+        if ( M_exporter->doExport() ) M_exporter->restart(this->timeInitial());
+    }
+}
+
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )

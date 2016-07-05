@@ -273,7 +273,9 @@ public :
     // Solve
     virtual void solve();
 
+    //--------------------------------------------------------------------//
     // Export results
+    void initPostProcess();
     void exportMeasures( double time );
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
