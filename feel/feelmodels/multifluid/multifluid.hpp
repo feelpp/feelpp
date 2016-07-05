@@ -3,6 +3,7 @@
 
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 #include <feel/feelmodels/levelset/levelset.hpp>
+#include <feel/feelmodels/multifluid/interfaceforcesmodel.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -48,7 +49,10 @@ public:
     // Density/viscosity
     typedef typename fluid_type::densityviscosity_model_type densityviscosity_model_type;
     typedef typename fluid_type::densityviscosity_model_ptrtype densityviscosity_model_ptrtype;
-
+    //--------------------------------------------------------------------//
+    // Interface forces model
+    typedef InterfaceForcesModel<levelset_type> interfaceforces_model_type;
+    typedef boost::shared_ptr<interfaceforces_model_type> interfaceforces_model_ptrtype;
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -133,6 +137,7 @@ private:
     // Parameters
     densityviscosity_model_ptrtype M_fluidDensityViscosityModel;
     std::vector<densityviscosity_model_ptrtype> M_levelsetDensityViscosityModels;
+    std::vector<interfaceforces_model_ptrtype> M_levelsetInterfaceForcesModels;
     //--------------------------------------------------------------------//
     // Forces
     bool M_enableSurfaceTension;

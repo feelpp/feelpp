@@ -67,6 +67,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
     M_levelsets.resize( nLevelSets );
     M_levelsetDensityViscosityModels.resize( nLevelSets );
+    M_levelsetInterfaceForcesModels.resize( nLevelSets );
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
         auto levelset_prefix = (boost::format( "levelset%1%" ) %(i+1)).str();
@@ -89,6 +90,12 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
                 );
         M_levelsetDensityViscosityModels[i]->initFromMesh( this->mesh(), M_fluid->useExtendedDofTable() );
         M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelsets[i]->modelProperties().materials() );
+
+        M_levelsetInterfaceForcesModels[i] = interfaceforces_model_type::build(
+                soption( _name="interface-forces-model", _prefix=this->prefix() )
+                this->prefix(),
+                M_levelset[i]
+                );
     }
 
     M_interfaceForces.reset( new element_levelset_vectorial_type(this->functionSpaceLevelsetVectorial(), "InterfaceForces") ); 
