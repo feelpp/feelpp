@@ -439,7 +439,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
 //----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_levelset_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::smoother() const
+LEVELSET_CLASS_TEMPLATE_TYPE::smoother()
 {
     if( !M_smoother )
         M_smoother = projector( 
@@ -453,7 +453,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smoother() const
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_levelset_vectorial_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::smoother() const
+LEVELSET_CLASS_TEMPLATE_TYPE::smootherVectorial()
 {
     if( !M_smootherVectorial )
         M_smootherVectorial = projector( 

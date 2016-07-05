@@ -187,8 +187,8 @@ public:
               ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ),  buildReinitializer(this->M_reinitMethod, space, this->prefix()) )
               ( projectorL2, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"projector-l2"))) )
               ( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"projector-l2-vec"))) )
-              ( smoother, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix,"smoother")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
-              ( smoother_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix,"smoother-vec")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
+              ( smoother, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"smoother")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
+              ( smoother_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"smoother-vec")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
             )
             )
     {
