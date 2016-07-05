@@ -208,15 +208,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
     M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "projector-l2")) );
     M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "projector-l2-vec")) );
 
-    if( M_doSmoothCurvature )
-    {
-        M_smootherCurvature = projector( 
-                this->functionSpace() , this->functionSpace(), 
-                backend(_name=prefixvm(this->prefix(),"smoother-curvature")), 
-                DIFF, 
-                this->mesh()->hAverage()*doption(_name="curvature-smooth-coeff", _prefix=this->prefix())/Order,
-                30);
-    }
+    //if( M_doSmoothCurvature )
+    //{
+        //M_smoother = projector( 
+                //this->functionSpace() , this->functionSpace(), 
+                //backend(_name=prefixvm(this->prefix(),"smoother")), 
+                //DIFF, 
+                //this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order,
+                //30);
+    //}
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -424,16 +424,46 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
 
     if( M_doSmoothCurvature )
     {
-        *M_levelsetCurvature = M_smootherCurvature->project( _expr=divv(M_levelsetNormal) );
+        *M_levelsetCurvature = this->smoother()->project( _expr=divv(M_levelsetNormal) );
     }
     else
     {
-        *M_levelsetCurvature = M_projectorL2->project( _expr=divv(M_levelsetNormal) );
+        *M_levelsetCurvature = this->projectorL2()->project( _expr=divv(M_levelsetNormal) );
     }
 
     this->log("LevelSet", "updateCurvature", "finish");
 }
 
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_levelset_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::smoother() const
+{
+    if( !M_smoother )
+        M_smoother = projector( 
+                this->functionSpace() , this->functionSpace(), 
+                backend(_name=prefixvm(this->prefix(),"smoother")), 
+                DIFF, 
+                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order,
+                30);
+    return M_smoother; 
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_levelset_vectorial_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::smoother() const
+{
+    if( !M_smootherVectorial )
+        M_smootherVectorial = projector( 
+                this->functionSpaceVectorial() , this->functionSpaceVectorial(), 
+                backend(_name=prefixvm(this->prefix(),"smoother-vec")), 
+                DIFF, 
+                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order,
+                30);
+    return M_smootherVectorial; 
+}
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
@@ -711,6 +741,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Heaviside"),
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Heaviside")),
                                    *this->heaviside() );
+
+    this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Normal"),
+                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Normal")),
+                                   *this->normal() );
+
+    this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Curvature"),
+                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Curvature")),
+                                   *this->curvature() );
 
     super_type::exportResults( time );
     //if( M_doExportAdvection )

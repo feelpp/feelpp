@@ -58,7 +58,7 @@ namespace Feel {
     BOOST_PARAMETER_NAME(reinitializer)
     BOOST_PARAMETER_NAME(projectorL2)
     BOOST_PARAMETER_NAME(projectorL2_vectorial)
-    BOOST_PARAMETER_NAME(smoother_curvature)
+    BOOST_PARAMETER_NAME(smoother)
 
 namespace FeelModels {
 
@@ -186,7 +186,7 @@ public:
               ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ),  buildReinitializer(this->M_reinitMethod, space, this->prefix()) )
               ( projectorL2, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"projector-l2"))) )
               ( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"projector-l2-vec"))) )
-              ( smoother_curvature, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix,"smoother-curvature")), DIFF, space->mesh()->hAverage()*doption(_name="curvature-smooth-coeff", _prefix=this->prefix())/Order, 30) )
+              ( smoother, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix,"smoother")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
             )
             )
     {
@@ -195,7 +195,7 @@ public:
         M_spaceMarkers = space_markers;
         M_projectorL2 = projectorL2;
         M_projectorL2Vec = projectorL2_vectorial;
-        M_smootherCurvature = smoother_curvature;
+        M_smoother = smoother;
 
         this->createInterfaceQuantities();
     }
@@ -256,7 +256,8 @@ public:
 
     projector_levelset_ptrtype const& projectorL2() const { return M_projectorL2; }
     projector_levelset_vectorial_ptrtype const& projectorL2Vectorial() const { return M_projectorL2Vec; }
-    projector_levelset_ptrtype const& smootherCurvature() const { return M_smootherCurvature; }
+    projector_levelset_ptrtype const& smoother() const;
+    projector_levelset_vectorial_ptrtype const& smootherVectorial() const;
 
     //--------------------------------------------------------------------//
     // Markers
@@ -405,7 +406,8 @@ private:
     // Projectors
     projector_levelset_ptrtype M_projectorL2;
     projector_levelset_vectorial_ptrtype M_projectorL2Vec;
-    projector_levelset_ptrtype M_smootherCurvature;
+    projector_levelset_ptrtype M_smoother;
+    projector_levelset_vectorial_ptrtype M_smootherVectorial;
     //--------------------------------------------------------------------//
     // Normal, curvature
     element_levelset_vectorial_ptrtype M_levelsetNormal;
