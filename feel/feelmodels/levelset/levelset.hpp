@@ -259,8 +259,8 @@ public:
 
     projector_levelset_ptrtype const& projectorL2() const { return M_projectorL2; }
     projector_levelset_vectorial_ptrtype const& projectorL2Vectorial() const { return M_projectorL2Vec; }
-    projector_levelset_ptrtype const& smoother() const;
-    projector_levelset_vectorial_ptrtype const& smootherVectorial() const;
+    projector_levelset_ptrtype const& smoother();
+    projector_levelset_vectorial_ptrtype const& smootherVectorial();
 
     //--------------------------------------------------------------------//
     // Markers
