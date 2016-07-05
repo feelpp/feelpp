@@ -59,6 +59,7 @@ namespace Feel {
     BOOST_PARAMETER_NAME(projectorL2)
     BOOST_PARAMETER_NAME(projectorL2_vectorial)
     BOOST_PARAMETER_NAME(smoother)
+    BOOST_PARAMETER_NAME(smoother_vectorial)
 
 namespace FeelModels {
 
@@ -187,6 +188,7 @@ public:
               ( projectorL2, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"projector-l2"))) )
               ( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"projector-l2-vec"))) )
               ( smoother, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix,"smoother")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
+              ( smoother_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix,"smoother-vec")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
             )
             )
     {
@@ -196,6 +198,7 @@ public:
         M_projectorL2 = projectorL2;
         M_projectorL2Vec = projectorL2_vectorial;
         M_smoother = smoother;
+        M_smootherVectorial = smoother_vectorial;
 
         this->createInterfaceQuantities();
     }
