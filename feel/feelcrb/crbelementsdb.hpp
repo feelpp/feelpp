@@ -70,6 +70,9 @@ public :
     typedef typename model_type::space_type space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
 
+    typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
+    typedef typename model_type::rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
+
     typedef std::vector<element_type> wn_type;
 
     //! constructors
@@ -109,6 +112,20 @@ public :
     ~CRBElementsDB()
     {}
 
+    void setup( boost::property_tree::ptree const& ptree )
+        {
+            CHECK( M_rbSpace ) << "no rbspace";
+            if ( !M_rbSpace->mesh/*functionSpace*/() )
+                M_rbSpace->setup( ptree );
+            size_type rbdim = ptree.template get<int>( "dimension" );
+            this->setMN( rbdim );
+            std::string dbname = ptree.template get<std::string>( "database-filename" );
+            this->setDBFilename( fs::path( dbname ).filename().string() );
+            this->setDBDirectory( fs::path( dbname ).parent_path().string() );
+            this->setIsLoaded( false );
+            CHECK( this->loadDB() ) << "loading of crb basis function fails";
+        }
+
 
     /**
      * save the database
@@ -132,9 +149,11 @@ public :
     void loadHDF5DB();
 #endif
 
-    boost::tuple<wn_type, wn_type> wn()
+    boost::tuple<wn_type, wn_type> wn() const
     {
-        return boost::make_tuple( M_WN , M_WNdu );
+        //return boost::make_tuple( M_WN , M_WNdu );
+        CHECK( M_rbSpace ) << "no reduced basis space defined";
+        return boost::make_tuple( M_rbSpace->primalRB(), M_rbSpace->dualRB() );
     }
 
     void setMN( size_type MN )
@@ -142,17 +161,16 @@ public :
         M_N = MN;
     }
 
-    void setWn( boost::tuple< wn_type, wn_type > WN )
+    void setWn( boost::tuple< wn_type, wn_type > const& WN )
     {
-        auto primal = WN.template get<0>();
-        auto dual = WN.template get<1>();
-        M_WN = primal;
-        M_WNdu = dual;
+        M_rbSpace->setPrimalBasis( WN.template get<0>() );
+        M_rbSpace->setDualBasis( WN.template get<1>() );
     }
 
     void setModel( model_ptrtype const& model )
     {
         M_model = model;
+        M_rbSpace = model->rBFunctionSpace();
     }
 
 private :
@@ -173,8 +191,7 @@ private :
 
     size_type M_N;
 
-    wn_type M_WN;
-    wn_type M_WNdu;
+    rbfunctionspace_ptrtype M_rbSpace;
 
     model_ptrtype M_model;
 
@@ -214,10 +231,12 @@ template<typename ModelType>
 bool
 CRBElementsDB<ModelType>::loadDB()
 {
+#if 0
     bool rebuild_db = boption(_name="crb.rebuild-database");
     int Nrestart = ioption(_name="crb.restart-from-N");
     if ( rebuild_db && Nrestart < 1 )
         return false;
+#endif
 
     if( this->isDBLoaded() )
         return true;
@@ -278,13 +297,15 @@ CRBElementsDB<ModelType>::save( Archive & ar, const unsigned int version ) const
         mesh->save( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
     }
 #endif
-
-    int size = M_WN.size();
+    auto const& M_WN = M_rbSpace->primalRB();
+    auto const& M_WNdu = M_rbSpace->dualRB();
+    int sizepr = M_WN.size();
+    int sizedu = M_WNdu.size();
 
     LOG( INFO ) << "saving Elements DB";
-    for(int i=0; i<size; i++)
+    for(int i=0; i<sizepr; i++)
         ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
-    for(int i=0; i<size; i++)
+    for(int i=0; i<sizedu; i++)
         ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
     LOG( INFO ) << "Elements DB saved";
 }
@@ -294,6 +315,9 @@ template<typename ModelType>
 void
 CRBElementsDB<ModelType>::saveHDF5DB()
 {
+    auto & M_WN = M_rbSpace->primalRB();
+    auto & M_WNdu = M_rbSpace->dualRB();
+
     int size = M_WN.size();
 
     std::ostringstream hdf5File;
@@ -355,28 +379,35 @@ CRBElementsDB<ModelType>::load( Archive & ar, const unsigned int version )
 {
     LOG( INFO ) << " loading Elements DB ... ";
 
+    auto & M_WN = M_rbSpace->primalRB();
+    auto & M_WNdu = M_rbSpace->dualRB();
+
     M_WN.resize( M_N );
     M_WNdu.resize( M_N );
 
-    mesh_ptrtype mesh;
+    //mesh_ptrtype mesh;
     space_ptrtype Xh;
 
-    if ( !M_model )
-    {
-        LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
-        mesh = mesh_type::New();
-        bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
-        Xh = space_type::New( mesh );
-        LOG(INFO) << "[load] loading fdb files done.\n";
-    }
+    if ( M_rbSpace && M_rbSpace->functionSpace() )
+        Xh = M_rbSpace->functionSpace();
     else
     {
-        LOG(INFO) << "[load] get mesh/Xh from model...\n";
-        mesh = M_model->functionSpace()->mesh();
-        Xh = M_model->functionSpace();
-        LOG(INFO) << "[load] get mesh/Xh from model done.\n";
+        if ( !M_model )
+        {
+            LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
+            auto mesh = mesh_type::New();
+            bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
+            Xh = space_type::New( mesh );
+            LOG(INFO) << "[load] loading fdb files done.\n";
+        }
+        else
+        {
+            LOG(INFO) << "[load] get mesh/Xh from model...\n";
+            //mesh = M_model->functionSpace()->mesh();
+            Xh = M_model->functionSpace();
+            LOG(INFO) << "[load] get mesh/Xh from model done.\n";
+        }
     }
-
     element_type temp = Xh->element();
 
     LOG( INFO ) << "loading Elements DB (boost)";
@@ -445,6 +476,9 @@ CRBElementsDB<ModelType>::loadHDF5DB()
     hdf5.closeFile();
 
     this->setMN(size);
+
+    auto & M_WN = M_rbSpace->primalRB();
+    auto & M_WNdu = M_rbSpace->dualRB();
 
     M_WN.resize( M_N );
     M_WNdu.resize( M_N );
