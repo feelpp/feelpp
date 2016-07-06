@@ -462,12 +462,15 @@ public:
         ptree.add( "name", this->name() );
         ptree.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
     }
-    void setup( boost::property_tree::ptree const& ptree )
+    void setup( boost::property_tree::ptree const& ptree, std::string const& dbDir )
     {
         this->setName( ptree.template get<std::string>( "name" ) );
         std::string dbname = ptree.template get<std::string>( "database-filename" );
         this->setDBFilename( fs::path( dbname ).filename().string() );
-        this->setDBDirectory( fs::path( dbname ).parent_path().string() );
+        if ( dbDir.empty() )
+            this->setDBDirectory( fs::path( dbname ).parent_path().string() );
+        else
+            this->setDBDirectory( dbDir );
         CHECK( this->loadDB() ) << "crbscm load fails";
 
     }

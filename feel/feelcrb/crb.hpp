@@ -1170,7 +1170,7 @@ public:
      * \param ptree : input property_tree::ptree
      * \param loadingContext : 0 minimal crb online run, 1 with fe reduced basis
      */
-    void setup( boost::property_tree::ptree const& ptree, size_type loadingContext );
+    void setup( boost::property_tree::ptree const& ptree, size_type loadingContext, std::string const& dbDir );
 
     /**
      * save the CRB database
@@ -10960,17 +10960,19 @@ CRB<TruthModelType>::loadJson( std::string const& filename, size_type loadingCon
         return;
     }
 
+    std::string dbDir = fs::path( filename ).parent_path().string();
+
     auto json_str_wo_comments = removeComments(readFromFile(filename));
     //LOG(INFO) << "json file without comment:" << json_str_wo_comments;
 
     boost::property_tree::ptree ptree;
     std::istringstream istr( json_str_wo_comments );
     boost::property_tree::read_json( istr, ptree );
-    this->setup( ptree, loadingContext );
+    this->setup( ptree, loadingContext, dbDir );
 }
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type loadingContext )
+CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type loadingContext, std::string const& dbDir )
 {
     auto const& ptreeCrb = ptree.get_child( "crb" );
     M_N = ptreeCrb.template get<int>( "dimension" );
@@ -10978,16 +10980,19 @@ CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type 
     M_solve_dual_problem = ptreeCrb.template get<bool>( "has-solve-dual-problem" );
     std::string dbname = ptreeCrb.template get<std::string>( "database-filename" );
     this->setDBFilename( fs::path( dbname ).filename().string() );
-    this->setDBDirectory( fs::path( dbname ).parent_path().string() );
+    if ( dbDir.empty() )
+        this->setDBDirectory( fs::path( dbname ).parent_path().string() );
+    else
+        this->setDBDirectory( dbDir );
     this->setIsLoaded( false );
     CHECK( this->loadDB() ) << "crb load fails";
     if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
     {
         auto const& ptreeScmA = ptree.get_child( "scmA" );
-        M_scmA->setup( ptreeScmA );
+        M_scmA->setup( ptreeScmA, dbDir );
         auto ptreeOptionalScmM = ptree.get_child_optional( "scmM" );
         if ( ptreeOptionalScmM )
-            M_scmM->setup( *ptreeOptionalScmM );
+            M_scmM->setup( *ptreeOptionalScmM, dbDir );
     }
 
     if ( (loadingContext == 1 || M_loadElementsDb ) && M_model )
@@ -10996,7 +11001,7 @@ CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type 
         M_model->rBFunctionSpace()->setModel( M_model->model() );
         //M_model->rBFunctionSpace()->setup( ptreeReducedBasisSpace );
         M_elements_database.setModel( M_model );
-        M_elements_database.setup( ptreeReducedBasisSpace );
+        M_elements_database.setup( ptreeReducedBasisSpace, dbDir );
         M_loadElementsDb = true;
     }
 

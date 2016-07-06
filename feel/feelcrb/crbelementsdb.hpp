@@ -112,16 +112,19 @@ public :
     ~CRBElementsDB()
     {}
 
-    void setup( boost::property_tree::ptree const& ptree )
+    void setup( boost::property_tree::ptree const& ptree, std::string const& dbDir )
         {
             CHECK( M_rbSpace ) << "no rbspace";
             if ( !M_rbSpace->mesh/*functionSpace*/() )
-                M_rbSpace->setup( ptree );
+                M_rbSpace->setup( ptree, dbDir );
             size_type rbdim = ptree.template get<int>( "dimension" );
             this->setMN( rbdim );
             std::string dbname = ptree.template get<std::string>( "database-filename" );
             this->setDBFilename( fs::path( dbname ).filename().string() );
-            this->setDBDirectory( fs::path( dbname ).parent_path().string() );
+            if ( dbDir.empty() )
+                this->setDBDirectory( fs::path( dbname ).parent_path().string() );
+            else
+                this->setDBDirectory( dbDir );
             this->setIsLoaded( false );
             CHECK( this->loadDB() ) << "loading of crb basis function fails";
         }
