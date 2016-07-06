@@ -29,7 +29,9 @@
 #define FEELPP_INSTANTIATE_PRECONDITIONER 1
 
 #include <feel/feelalg/preconditioner.hpp>
+#if FEELPP_HAS_PETSC
 #include <feel/feelalg/preconditionerpetsc.hpp>
+#endif
 
 namespace Feel
 {
@@ -39,6 +41,7 @@ Preconditioner<T>::build( std::string const& name,
                           BackendType backend,
                           WorldComm const& worldComm )
 {
+#if FEELPP_HAS_PETSC
     switch ( backend )
     {
     default:
@@ -46,7 +49,9 @@ Preconditioner<T>::build( std::string const& name,
     {
         return preconditioner_ptrtype( new PreconditionerPetsc<T>( name, worldComm ) );
     }
+    return preconditioner_ptrtype();
     }
+#endif
     return preconditioner_ptrtype();
 }
 
@@ -56,7 +61,7 @@ Preconditioner<std::complex<double>>::build( std::string const& name,
                                              BackendType backend,
                                              WorldComm const& worldComm )
 {
-#if defined(PETSC_HAS_COMPLEX_SUPPORT ) 
+#if FEELPP_HAS_PETSC && defined(PETSC_HAS_COMPLEX_SUPPORT ) 
     switch ( backend )
     {
     default:

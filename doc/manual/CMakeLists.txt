@@ -27,6 +27,7 @@ INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 
 add_subdirectory(python)
 
+if( FEELPP_HAS_GMSH )
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
   foreach(DIR laplacian
       stokes
@@ -50,4 +51,5 @@ if (NOT FEELPP_MINIMAL_CONFIGURATION)
       hdg )
     add_subdirectory(${DIR})
   endforeach()
+endif()
 endif()

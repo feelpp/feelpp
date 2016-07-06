@@ -814,9 +814,11 @@ public:
         {
             if ( bt == BACKEND_EIGEN ) return "eigen";
             if ( bt == BACKEND_EIGEN_DENSE ) return "eigen_dense";
+#if FEELPP_HAS_PETSC
             if ( bt == BACKEND_PETSC ) return "petsc";
-            LOG(WARNING) << "Unknown backend, setting up for 'petsc'";
-            return "petsc";
+#endif
+            LOG(WARNING) << "Unknown backend, setting up for 'none'";
+            return "none";
         }
 
     /**
@@ -1592,6 +1594,7 @@ BOOST_PARAMETER_FUNCTION(
 template<typename T>
 bool isMatrixInverseSymmetric ( boost::shared_ptr<MatrixSparse<T> >& A, boost::shared_ptr<MatrixSparse<T> >& At, bool print=false  )
 {
+#if FEELPP_HAS_PETSC
     auto u = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());
     auto v = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());
 
@@ -1640,6 +1643,10 @@ bool isMatrixInverseSymmetric ( boost::shared_ptr<MatrixSparse<T> >& A, boost::s
     }
 
     return  res < 1e-12;
+#else
+    LOG(WARNING) << "isMatrixInverseSymmetric: Petsc is not available. This function will always return false.";
+    return false;
+#endif
 
 }
 
