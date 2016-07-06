@@ -1048,6 +1048,32 @@ public:
     }
 
     /**
+     * \brief copy additional files in a directory (can be usefull in online loading)
+     * \param dirDataBase : directory copy
+     */
+    void copyAdditionalModelFiles( std::string const& dir )
+        {
+            if ( !M_model )
+                return;
+
+            if ( !M_model->additionalModelFiles().empty() )
+            {
+                for ( auto const& inputFilenamePair : M_model->additionalModelFiles() )
+                {
+                    std::string const& inputFilename = inputFilenamePair.second;
+                    fs::path inputPath = inputFilename;
+                    fs::path copyPath = fs::path(dir)/fs::path(inputFilename).filename();
+                    boost::system::error_code ec;
+                    if ( M_model->worldComm().isMasterRank() )
+                        fs::copy_file( inputPath, copyPath, fs::copy_option::overwrite_if_exists, ec );
+                    // replace entry with copy path
+                    M_model->addModelFile( inputFilenamePair.first, copyPath.string() );
+                }
+                M_model->worldComm().barrier();
+            }
+        }
+
+    /**
      * \brief load CrbModel from json
      * \param input json filename
      */
