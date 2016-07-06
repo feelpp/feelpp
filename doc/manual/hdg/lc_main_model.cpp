@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        for ( ; !( LC.timeStepBase()->isFinished() && LC.timeStepBase_statevar()->isFinished() ) ; LC.updateTimeStep() )
+        for ( ; !( LC.timeStepBase()->isFinished() && LC.timeStepBase_statevar()->isFinished() ) ; LC.updateTimeStepBDF() )
         {
             Feel::cout << "============================================================\n";
             Feel::cout << "time simulation: " << LC.time() << "s \n";

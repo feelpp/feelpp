@@ -62,7 +62,7 @@ struct ode_model {
 	*/	
 	// solution
         dxdt[0] = -Cinv(0,0) * ( A(0,0)*x[0] + A(0,1)*x[1] + A(0,2)*x[2] );
-        dxdt[1] =  -Cinv(1,1) * ( A(1,0)*x[0] + A(1,1)*x[1] + A(1,2)*x[2] );
+        dxdt[1] = -Cinv(1,1) * ( A(1,0)*x[0] + A(1,1)*x[1] + A(1,2)*x[2] );
         dxdt[2] = Cinv(2,2) * g(2) - Cinv(2,2) * ( A(2,0)*x[0] + A(2,1)*x[1] + A(2,2)*x[2] );
     }
 };
@@ -123,7 +123,6 @@ private:
     boost::numeric::ublas::matrix<value_type> M_A0d ;
     boost::numeric::ublas::matrix<value_type> M_Cinv ;
     boost::numeric::ublas::vector<value_type> M_g ;
-    std::string M_marker_GammaI;
 
 public:
    
@@ -150,8 +149,8 @@ public:
     virtual void initTimeStep();    
     statevar_bdf_ptrtype timeStepBDF_statevar() { return M_bdf_statevariable; }
     statevar_bdf_ptrtype const& timeStepBDF_statevar() const { return M_bdf_statevariable; }
-    boost::shared_ptr<TSBase> timeStepBase_statevar() { return this->timeStepBDF(); }
-    boost::shared_ptr<TSBase> timeStepBase_statevar() const { return this->timeStepBDF(); }
+    boost::shared_ptr<TSBase> timeStepBase_statevar() { return this->timeStepBDF_statevar(); }
+    boost::shared_ptr<TSBase> timeStepBase_statevar() const { return this->timeStepBDF_statevar(); }
    
     // For the second step 
     void second_step();
@@ -200,9 +199,9 @@ LaminaCribrosa<Dim, Order>::updateTimeStepBDF()
     this->timerTool("TimeStepping").setAdditionalParameter("time_Y",this->currentTime());
     this->timerTool("TimeStepping").start();
 
-    // int previousTimeOrder = this->timeStepBDF()->timeOrder();
     int previousTimeOrder_statevar = this->timeStepBDF_statevar()->timeOrder();
     
+     
     M_bdf_statevariable->next( *M_Y );
 
     int currentTimeOrder_statevar = this->timeStepBDF_statevar()->timeOrder();
@@ -325,14 +324,14 @@ LaminaCribrosa<Dim, Order>::initGraphs(int extraRow, int extraCol)
     this->M_hdg_graph(4,0) = stencil( _test=Ch, _trial=Vh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     this->M_hdg_graph(4,1) = stencil( _test=Ch, _trial=Wh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     this->M_hdg_graph(4,2) = stencil( _test=Ch, _trial=Mh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    this->M_hdg_graph(4,3) = stencil( _test=Ch, _trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
-
+    this->M_hdg_graph(4,3) = stencil( _test=Ch, _trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
 
     this->M_hdg_graph(0,4) = stencil( _test=Vh, _trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
     this->M_hdg_graph(1,4) = stencil( _test=Wh, _trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
     this->M_hdg_graph(2,4) = stencil( _test=Mh, _trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     this->M_hdg_graph(3,4) = stencil( _test=Ch, _trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
     this->M_hdg_graph(4,4) = stencil( _test=Ch, _trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
+
     this->M_hdg_vec(4,0) = this->get_backend()->newVector( Ch );
     this->M_hdg_sol(4,0) = M_Y;
     
@@ -364,8 +363,8 @@ LaminaCribrosa<Dim, Order>::assembleA( )
 
     // stabilisation parameter
     auto tau_constant = cst(doption(prefixvm(this->prefix(), "tau_constant")));
-    
-    // Add extra equation for the coupling
+
+    // Add extra equation for the coupling 
     auto a15 = form2(_trial=this->constantSpace(), _test=this->fluxSpace(),_matrix=this->M_A_cst,
                      _rowstart=0,
                      _colstart=4);
@@ -397,8 +396,12 @@ LaminaCribrosa<Dim, Order>::assembleA( )
                      _rowstart=4,
                      _colstart=4);
 
-
-    
+    double meas = 0;
+    for( auto marker : this->M_integralMarkersList)
+    {
+	meas += integrate(_range=markedfaces(this->mesh(),marker),_expr=cst(1.0)).evaluate()(0,0);
+    }
+ 
     auto itField = this->M_modelProperties->boundaryConditions().find( "flux");
     if ( itField != this->M_modelProperties->boundaryConditions().end() )
     {
@@ -410,34 +413,31 @@ LaminaCribrosa<Dim, Order>::assembleA( )
             {
 
             std::string marker = exAtMarker.marker();
-	    double meas = integrate( _range=markedfaces(this->mesh(),marker), _expr=cst(1.0)).evaluate()(0,0);
-    	    // -<tau uI, mu2>_Gamma_I
-            a44 += integrate( _range=markedfaces(this->mesh(),marker), _expr=-pow(idv(H),this->tau_order())*idt(uI)*id(mu2) );
-        
+	    	    
             // - <j.n, mu3>_Gamma_I
             a51 += integrate( _range=markedfaces(this->mesh(),marker), _expr= -trans(idt(u))*N()*id(mu3) );
-
 
             // - <tau p, mu3>_Gamma_I
             a52 += integrate( _range=markedfaces(this->mesh(),marker), _expr= -tau_constant*( pow(idv(H),this->tau_order())*idt(p) )*id(mu3) );
             
-            if (this->integralCondition()){
-                // + <tau u_I, mu3>_Gamma_I
-                a54 += integrate( _range=markedfaces(this->mesh(),marker), _expr= pow(idv(H),this->tau_order())*id(mu3)*idt(uI) );
-            }
-
-
+            // + <tau u_I, mu3>_Gamma_I
+            a54 += integrate( _range=markedfaces(this->mesh(),marker), _expr= tau_constant * (pow(idv(H),this->tau_order())*idt(uI)*id(mu3)) );
+            
             for( auto const& pairMat : this->M_modelProperties->materials() )
             {
             	auto material = pairMat.second;
         	auto RR = material.getScalar("RR");       // Resistence of the buffer
         	auto CC = material.getScalar("CC");       // Capacitance of the buffer
-	        // -1/(R |Gamma_I|) <u_I, mu2>_Gamma_I
-                a44 += integrate( _range=markedfaces(this->mesh(),marker), _expr = - idt(uI)*id(mu2)/(RR*meas) ) ;
+	        
+		// -1/(R |Gamma_I|) <u_I, mu2>_Gamma_I
+                a44 += integrate( _range=markedfaces(this->mesh(),marker), _expr = - idt(uI)*id(mu2)/RR/meas ) ;
 		// +1/(R |Gamma_I|) <Y,mu2>_Gamma_I
-		a45 += integrate( _range=markedfaces(this->mesh(),marker), _expr = idt(yy)*id(mu2)/(RR*meas) ) ;
+		a45 += integrate( _range=markedfaces(this->mesh(),marker), _expr = idt(yy)*id(mu2)/RR/meas ) ;
+
             	// < C/|Gamma_I| Y/dt, mu3>_Gamma_I
-            	a55 += integrate( _range=markedfaces(this->mesh(),marker), _expr= CC/meas*this->timeStepBDF_statevar()->polyDerivCoefficient(0)*idt(yy)*id(mu3) );
+            	a55 += integrate(_range=markedfaces(this->mesh(),marker), 
+				 _expr= CC*this->timeStepBDF_statevar()->polyDerivCoefficient(0) * idt(yy)*id(mu3)/meas );
+
 	    }
             }
 	}    
@@ -453,32 +453,27 @@ LaminaCribrosa<Dim, Order>::assembleF()
 
     auto mu3 = this->constantSpace()->element( "mu3" );
     int RowStart = this->integralCondition() ? 4 : 3;
-    
+ 
     auto rhs5 = form1( _test=this->constantSpace(), _vector=this->M_F, 
-						   _rowstart=RowStart);
-    					   
-    auto itField = this->M_modelProperties->boundaryConditions().find( "flux");
-    if ( itField != this->M_modelProperties->boundaryConditions().end() )
+						   _rowstart=RowStart );
+
+    double meas = 0;
+    for( auto marker : this->M_integralMarkersList)
     {
-        auto mapField = (*itField).second;
-        auto itType = mapField.find( "Integral" );
-        if ( itType != mapField.end() )
-        {
-            for ( auto const& exAtMarker : (*itType).second )
-            {
-                std::string marker = exAtMarker.marker();
-                double meas = integrate( _range=markedfaces(this->mesh(),M_marker_GammaI), _expr=cst(1.0)).evaluate()(0,0);
-		for( auto const& pairMat : this->M_modelProperties->materials() )
-    		{
-        	    auto material = pairMat.second;
-                    auto CC = material.getScalar("CC");       // Capacitance of the buffer
-                    // < C/|Gamma_I| Yold/dt, mu3>
-		    rhs5 += integrate( _range = markedelements(this->mesh(),M_marker_GammaI),
-                                       _expr = CC/meas*idv(this->timeStepBDF_statevar()->polyDeriv()) * id(mu3));
-		}
-            }
-        }
+	meas += integrate(_range=markedfaces(this->mesh(),marker),_expr=cst(1.0)).evaluate()(0,0);
     }
+    
+    for( auto const& pairMat : this->M_modelProperties->materials() )
+    {
+        auto material = pairMat.second;
+        auto CC = material.getScalar("CC");       // Capacitance of the buffer
+	for (auto marker : this->M_integralMarkersList)
+	{
+             // < C/|Gamma_I| Yold/dt, mu3>
+	     rhs5 += integrate( _range = markedfaces(this->mesh(),marker),
+                               _expr = CC*idv(this->timeStepBDF_statevar()->polyDeriv()) * id(mu3)/meas);
+	}
+    }		
 }
 
 template <int Dim, int Order>
@@ -532,30 +527,33 @@ LaminaCribrosa<Dim, Order>::second_step(){
 	using namespace boost::numeric::ublas;
 
 	// Update the initial solution for Pi1 (for step 2)  
-	// M_statevar_solution[0] = mean( _range= elements(this->mesh()), _expr=idv(*M_Y) )(0,0) ;
-	// M_statevar_solution[0] = (*M_Y)[0];
-	
-	Feel::cout << "Integral value of potential: \t " << M_statevar_solution[0] << std::endl;
+	M_statevar_solution[0] = mean( _range= elements(this->mesh()), _expr=idv(*M_Y) )(0,0) ;
+	M_statevar_solution[0] = (*M_Y)[0];
+        	
+	Feel::cout << "Value of P1 after first step : \t " << (*M_Y)[0] << std::endl;
+
         double j_integral = 0;
         for( auto marker : this->M_integralMarkersList)
         {
             j_integral += integrate(_range=markedfaces(this->mesh(),marker),_expr=trans(idv(this->M_up))*N()).evaluate()(0,0);
-        }	
+        }
+	
 	Feel::cout << "Integral value of the flow: \t " << j_integral << std::endl;
 
 	// solve the problem
 	boost::numeric::odeint::integrate(ode_model(M_Cinv,M_A0d,M_g), M_statevar_solution, 
 			M_bdf_statevariable->time(),                      		// initial time
 			M_bdf_statevariable->time()+M_bdf_statevariable->timeStep(), 	// final time
-			M_bdf_statevariable->timeStep()/1000 ); 				// time step
+			M_bdf_statevariable->timeStep()/100 ); 				// time step
 	Feel::cout << "Pi1: \t" << M_statevar_solution[0] << std::endl;
 	Feel::cout << "Pi2: \t" << M_statevar_solution[1] << std::endl;
 	Feel::cout << "Pi3: \t" << M_statevar_solution[2] << std::endl;
 
-	/*/ Update the initial solution for Pi1 (for step 1)
+	// Update the initial solution for Pi1 (for step 1)
 	*M_Y = project ( _space = this->M_Ch, _expr = cst(M_statevar_solution[0]) );
 	M_bdf_statevariable -> setUnknown(0,*M_Y);
-        */
+  
+	Feel::cout << "Value of P1 after second step : \t " << (*M_Y)[0] << std::endl;
 
 	this->log("LaminaCribrosa","0D model", "finish");
 	toc("0D model");
