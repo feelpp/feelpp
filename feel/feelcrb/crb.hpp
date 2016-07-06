@@ -300,6 +300,7 @@ public:
         M_computeMatrixInfo( boption(_name="crb.compute-matrix-information") ),
         M_database_contains_variance_info( boption(_name="crb.save-information-for-variance") ),
         M_use_newton( boption(_name="crb.use-newton") ),
+        M_offline_step( false ),
         M_rebuild( boption(_name="crb.rebuild-database") || ioption(_name="crb.restart-from-N") == 0 ),
         M_SER_adapt( false ),
         M_SER_maxerr( 0 ),
@@ -1159,15 +1160,17 @@ public:
 
     /**
      * \brief load Crb from json
-     * \param input json filename
+     * \param filename : input json filename
+     * \param loadingContext : 0 minimal crb online run, 1 with fe reduced basis
      */
-    void loadJson( std::string const& filename );
+    void loadJson( std::string const& filename, size_type loadingContext = 0 );
 
     /**
      * \brief setup Crb from property_tree::ptree
-     * \param input property_tree::ptree
+     * \param ptree : input property_tree::ptree
+     * \param loadingContext : 0 minimal crb online run, 1 with fe reduced basis
      */
-    void setup( boost::property_tree::ptree const& ptree );
+    void setup( boost::property_tree::ptree const& ptree, size_type loadingContext );
 
     /**
      * save the CRB database
@@ -2118,6 +2121,7 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::convergence_type
 CRB<TruthModelType>::offline()
 {
+    this->setOfflineStep( true );
 
     if ( this->worldComm().isMasterRank() )
     {
@@ -2295,6 +2299,15 @@ CRB<TruthModelType>::offline()
         delta_pr = 0;
         delta_du = 0;
         //boost::tie( M_maxerror, mu, index ) = maxErrorBounds( N );
+
+        // save mesh of rbspace
+        if ( true )
+        {
+            std::string meshFilenameBase = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
+            std::string meshFilename = (M_elements_database.dbLocalPath() / fs::path(meshFilenameBase)).string();
+            M_model->rBFunctionSpace()->saveMesh( meshFilename );
+        }
+        M_model->copyAdditionalModelFiles( this->dbDirectory() );
 
     }//end of if( rebuild_database )
     else
@@ -10939,7 +10952,7 @@ CRB<TruthModelType>::showMuSelection()
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::loadJson( std::string const& filename )
+CRB<TruthModelType>::loadJson( std::string const& filename, size_type loadingContext )
 {
     if ( !fs::exists( filename ) )
     {
@@ -10953,15 +10966,16 @@ CRB<TruthModelType>::loadJson( std::string const& filename )
     boost::property_tree::ptree ptree;
     std::istringstream istr( json_str_wo_comments );
     boost::property_tree::read_json( istr, ptree );
-    this->setup( ptree );
+    this->setup( ptree, loadingContext );
 }
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree )
+CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type loadingContext )
 {
     auto const& ptreeCrb = ptree.get_child( "crb" );
     M_N = ptreeCrb.template get<int>( "dimension" );
     this->setName( ptreeCrb.template get<std::string>( "name" ) );
+    M_solve_dual_problem = ptreeCrb.template get<bool>( "has-solve-dual-problem" );
     std::string dbname = ptreeCrb.template get<std::string>( "database-filename" );
     this->setDBFilename( fs::path( dbname ).filename().string() );
     this->setDBDirectory( fs::path( dbname ).parent_path().string() );
@@ -10975,6 +10989,17 @@ CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree )
         if ( ptreeOptionalScmM )
             M_scmM->setup( *ptreeOptionalScmM );
     }
+
+    if ( (loadingContext == 1 || M_loadElementsDb ) && M_model )
+    {
+        auto const& ptreeReducedBasisSpace = ptree.get_child( "reduced-basis-space" );
+        M_model->rBFunctionSpace()->setModel( M_model->model() );
+        //M_model->rBFunctionSpace()->setup( ptreeReducedBasisSpace );
+        M_elements_database.setModel( M_model );
+        M_elements_database.setup( ptreeReducedBasisSpace );
+        M_loadElementsDb = true;
+    }
+
 }
 
 template<typename TruthModelType>
@@ -10995,12 +11020,21 @@ CRB<TruthModelType>::saveDB()
 
     if ( this->worldComm().isMasterRank() )
     {
-        std::string filenameJson = (this->dbLocalPath()/fs::path("crb.json")).string();
+        std::string crbjsonFilename = (boost::format("%1%.crb.json")%this->name()).str();
+        //std::string filenameJson = (this->dbLocalPath()/fs::path("crb.json")).string();
+        std::string filenameJson = (this->dbLocalPath()/fs::path(crbjsonFilename)).string();
         boost::property_tree::ptree ptree;
 
         boost::property_tree::ptree ptreeCrbModel;
         M_model->updatePropertyTree( ptreeCrbModel );
         ptree.add_child( "crbmodel", ptreeCrbModel );
+
+        boost::property_tree::ptree ptreeReducedBasisSpace;
+        std::string meshFilename = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
+        ptreeReducedBasisSpace.add( "mesh-filename",(M_elements_database.dbLocalPath() / fs::path(meshFilename)).string() );
+        ptreeReducedBasisSpace.add( "database-filename", (M_elements_database.dbLocalPath() / M_elements_database.dbFilename()).string() );
+        ptreeReducedBasisSpace.add( "dimension", M_N );
+        ptree.add_child( "reduced-basis-space", ptreeReducedBasisSpace );
 
         boost::property_tree::ptree ptreeCrb;//Database;
         ptreeCrb.add( "dimension", M_N );
