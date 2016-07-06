@@ -27,6 +27,9 @@ foreach(O 1 2 3)
     configure_file( benchmarkgrepl-linear-elliptic.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-linear-elliptic${O}.cfg )
     configure_file( benchmarkgrepl-nonlinear-elliptic.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-nonlinear-elliptic${O}.cfg )
     crb_add_model(
+      benchmarkgrepl-nonlinear-parabolic${O} BenchmarkGreplNonLinearParabolic CLASS BenchmarkGreplNonLinearParabolic<${O}> 
+      HDRS benchmarkgrepl-nonlinear-parabolic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-nonlinear-parabolic${O}.cfg XML benchmarkgrepl-nonlinear-parabolic${O}.xml )
+    crb_add_model(
       benchmarkgrepl-linear-elliptic${O} BenchmarkGreplLinearElliptic CLASS BenchmarkGreplLinearElliptic<${O}> 
       HDRS benchmarkgrepl-linear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-linear-elliptic${O}.cfg XML benchmarkgrepl-linear-elliptic${O}.xml )
     crb_add_model(
