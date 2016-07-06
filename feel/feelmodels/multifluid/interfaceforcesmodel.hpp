@@ -28,13 +28,10 @@ public:
 
     //--------------------------------------------------------------------//
     // Construction
-    InterfaceForcesModel( std::string const& prefix, levelset_ptrtype const& ls );
+    InterfaceForcesModel() = default;
     InterfaceForcesModel( InterfaceForcesModel const& i ) = default;
 
-    static self_ptrtype build( 
-            std::string const& type, 
-            std::string const& prefix, 
-            levelset_ptrtype const& levelset );
+    void build( std::string const& prefix, levelset_ptrtype const& ls );
 
     //--------------------------------------------------------------------//
     std::string const& prefix() const { return M_prefix; }
@@ -57,13 +54,14 @@ private:
 };
 
 template<typename LevelSetType>
-InterfaceForcesModel<LevelSetType>::InterfaceForcesModel( 
+void
+InterfaceForcesModel<LevelSetType>::build(
         std::string const& prefix,
         levelset_ptrtype const& ls 
-        ) :
-    M_prefix( prefix ),
-    M_levelset( ls )
+        )
 {
+    M_prefix = prefix;
+    M_levelset = ls;
     this->loadParametersFromOptionsVm();
 }
 
@@ -75,6 +73,16 @@ InterfaceForcesModel<LevelSetType>::updateInterfaceForces( element_ptrtype & F, 
         F.zero();
     this->updateInterfaceForcesImpl( F );
 }
+
+namespace detail {
+
+template<template <typename> class ModelType, typename LevelSetType>
+InterfaceForcesModel<LevelSetType>* createInterfaceForcesModel()
+{
+    return new ModelType<LevelSetType>;
+}
+
+} // namespace detail
 
 } // namespace FeelModels
 } // namespace Feel
