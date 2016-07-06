@@ -230,12 +230,14 @@ public :
             //M_rbbasis = rbbasis_ptrtype( new rb_basis_type() );
         }
 
-    void setup( boost::property_tree::ptree const& ptree )
+    void setup( boost::property_tree::ptree const& ptree, std::string const& dbDir )
         {
             tic();
             // WorldComm const& worldcomm = (M_model)? M_model->worldComm() : Environment::worldComm();
             WorldComm const& worldcomm = this->worldComm();
             std::string meshFilename = ptree.template get<std::string>( "mesh-filename" );
+            if ( !dbDir.empty() )
+                meshFilename = (fs::path(dbDir)/fs::path(meshFilename).filename()).string();
             auto mesh = loadMesh(_mesh=new mesh_type(worldcomm),_filename=meshFilename,
                                  //_update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
                                  _update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));

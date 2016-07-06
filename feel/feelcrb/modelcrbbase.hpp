@@ -518,6 +518,8 @@ public :
             return;
         }
 
+        std::string dbDir = fs::path( filename ).parent_path().string();
+
         auto json_str_wo_comments = removeComments(readFromFile(filename));
         //LOG(INFO) << "json file without comment:" << json_str_wo_comments;
 
@@ -525,14 +527,14 @@ public :
         std::istringstream istr( json_str_wo_comments );
         boost::property_tree::read_json( istr, ptree );
         if ( childname.empty() )
-            this->setup( ptree );
+            this->setup( ptree, dbDir );
         else
         {
             auto const& ptreeChild = ptree.get_child( childname );
-            this->setup( ptreeChild );
+            this->setup( ptreeChild, dbDir );
         }
     }
-    void setup( boost::property_tree::ptree const& ptree )
+    void setup( boost::property_tree::ptree const& ptree, std::string const& dbDir )
     {
         auto const& ptreeParameterSpace = ptree.get_child( "parameter_space" );
         Dmu->setup( ptreeParameterSpace );
@@ -543,9 +545,12 @@ public :
             {
                 std::string const& key = ptreeModelFilePair.first;
                 auto const& ptreeModelFile = ptreeModelFilePair.second;
-                std::string filename  = ptreeModelFile.template get<std::string>( "filename" );
-                std::cout << "additional-model-files : key=" << key << " filename=" << filename << "\n";
-                this->addModelFile( key, filename );
+                std::string filenameAdded  = ptreeModelFile.template get<std::string>( "filename" );
+                if ( !dbDir.empty() )
+                    filenameAdded = (fs::path(dbDir)/fs::path(filenameAdded).filename()).string();
+
+                std::cout << "additional-model-files : key=" << key << " filename=" << filenameAdded << "\n";
+                this->addModelFile( key, filenameAdded );
             }
 
         this->setupSpecificityModel( ptree );
