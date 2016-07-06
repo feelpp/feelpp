@@ -273,6 +273,7 @@ public :
     ModelCrbBase( std::string const& name = "generic-model-name", WorldComm const& worldComm = Environment::worldComm() )
         :
         Dmu( parameterspace_type::New( 0,worldComm ) ),
+        XN( new rbfunctionspace_type( worldComm ) ),
         M_name( name ),
         M_is_initialized( false )
     {}
@@ -289,7 +290,9 @@ public :
      */
     void setModelName( std::string const& name ) { M_name = name; }
 
-    //! \return the mpi communicators
+    /**
+     * \return the mpi communicators
+     */
     WorldComm const& worldComm() const { return Dmu->worldComm(); }
 
     /**
@@ -301,6 +304,27 @@ public :
      * set directory path where symbolic expression (ginac) are built
      */
     void setSymbolicExpressionBuildDir( std::string const& dir ) { M_symbolicExpressionBuildDir=dir; }
+
+    /**
+     * list of files to copy in database
+     */
+    std::map<std::string,std::string> const& additionalModelFiles() const { return M_additionalModelFiles; }
+
+    /**
+     * add file to copy in database
+     */
+    void addModelFile( std::string const& key, std::string const& filename )
+        {
+            M_additionalModelFiles[key] = filename;
+        }
+
+    /**
+     * return true if model has registered a file with this key
+     */
+    bool hasModelFile( std::string const& key ) const
+        {
+            return ( M_additionalModelFiles.find( key ) != M_additionalModelFiles.end() );
+        }
 
 
     void addLhs( boost::tuple< form2_type, std::string > const & tuple )
@@ -469,6 +493,17 @@ public :
         this->parameterSpace()->updatePropertyTree( ptreeParameterSpace );
         ptree.add_child( "parameter_space", ptreeParameterSpace );
 
+        boost::property_tree::ptree ptreeModelFiles;
+        for ( auto const& filenamePair : this->additionalModelFiles() )
+        {
+            boost::property_tree::ptree ptreeModelFile;
+            std::string const& key = filenamePair.first;
+            std::string const& filename = filenamePair.second;
+            ptreeModelFile.add("filename",filename );
+            ptreeModelFiles.add_child( key, ptreeModelFile );
+        }
+        ptree.add_child( "additional-model-files", ptreeModelFiles );
+
         this->updateSpecificityModelPropertyTree( ptree );
     }
     /**
@@ -501,6 +536,17 @@ public :
     {
         auto const& ptreeParameterSpace = ptree.get_child( "parameter_space" );
         Dmu->setup( ptreeParameterSpace );
+
+        auto ptreeModelFiles = ptree.get_child_optional( "additional-model-files" );
+        if ( ptreeModelFiles )
+            for ( auto const& ptreeModelFilePair : *ptreeModelFiles/*ptree.get_child( "additional-model-files" )*/ )
+            {
+                std::string const& key = ptreeModelFilePair.first;
+                auto const& ptreeModelFile = ptreeModelFilePair.second;
+                std::string filename  = ptreeModelFile.template get<std::string>( "filename" );
+                std::cout << "additional-model-files : key=" << key << " filename=" << filename << "\n";
+                this->addModelFile( key, filename );
+            }
 
         this->setupSpecificityModel( ptree );
 
@@ -1577,7 +1623,7 @@ public:
      * Set the finite element space to \p Vh and then build the reduced basis
      * space from the finite element space.
      */
-    void setFunctionSpaces( functionspace_ptrtype Vh );
+    void setFunctionSpaces( functionspace_ptrtype const& Vh );
 
     /**
      * \brief Returns the function space
@@ -1674,6 +1720,9 @@ protected :
     std::map<int,double> M_eim_error_mq;
     std::map<int,double> M_eim_error_aq;
     std::vector< std::map<int,double> > M_eim_error_fq;
+
+private :
+    std::map<std::string,std::string > M_additionalModelFiles;
 };
 template <typename ParameterDefinition,
           typename FunctionSpaceDefinition,
@@ -1681,10 +1730,12 @@ template <typename ParameterDefinition,
           typename EimDefinition
           >
 void
-ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,_Options,EimDefinition>::setFunctionSpaces( functionspace_ptrtype Vh )
+ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,_Options,EimDefinition>::setFunctionSpaces( functionspace_ptrtype const& Vh )
 {
     Xh = Vh;
-    XN = rbfunctionspace_type::New( _model=this->shared_from_this() );
+    //XN = rbfunctionspace_type::New( _model=this->shared_from_this() );
+    //XN->setFunctionSpace( Vh );
+    XN->setModel( this->shared_from_this() );
 }
 
 
