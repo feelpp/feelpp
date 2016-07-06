@@ -79,7 +79,7 @@ makeBenchmarkGreplNonLinearParabolicAbout( std::string const& str = "benchmarkGr
 class ParameterDefinition
 {
 public :
-    static const uint16_type ParameterSpaceDimension = 3;
+    static const uint16_type ParameterSpaceDimension = 4;
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
 };
 
@@ -140,11 +140,11 @@ public :
  */
 template<int Order>
 class BenchmarkGreplNonLinearParabolic :
-    public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order> ,NonLinear&TimeDependent, EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Order> > >
+    public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order> ,TimeDependent, EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Order> > >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order>, NonLinear&TimeDependent, EimDefinition<ParameterDefinition,FunctionSpaceDefinition<Order> > > super_type;
+    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order>, TimeDependent, EimDefinition<ParameterDefinition,FunctionSpaceDefinition<Order> > > super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -171,7 +171,7 @@ public:
     typedef std::vector< std::vector<sparse_matrix_ptrtype> > vector_sparse_matrix;
 
     using super_type::computeBetaQm;
-    typedef boost::tuple<beta_vector_type,  std::vector<beta_vector_type> > beta_type;
+    typedef boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> > beta_type;
   
     typedef BenchmarkGreplNonLinearParabolic<Order> self_type;
     
@@ -194,18 +194,6 @@ public:
         return M_funs;
     }
 
-    virtual beta_vector_type computeBetaInitialGuess( parameter_type const& mu )
-    {
-
-        this->M_betaInitialGuess.resize( 1 );
-        this->M_betaInitialGuess[0].resize( 1 );
-
-        this->M_betaInitialGuess[0][0] = 1;
-
-        return this->M_betaInitialGuess;
-    }
-
-
     /**
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
@@ -213,126 +201,20 @@ public:
     beta_type
     computeBetaQm( element_type const& T,parameter_type const& mu )
     {
-        auto eim_g = M_funs[0];
-        vectorN_type beta_g = eim_g->beta( mu , T );
-
-        std::vector<vectorN_type*> betas;
-        betas.push_back(&beta_g);
-
-        fillBetaQm(betas, mu);
-        if( M_use_newton )
-            return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
-        else
-            return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
+      return computeBetaQm( mu );
     }
 
     beta_type
     computeBetaQm( parameter_type const& mu )
     {
-        auto eim_g = M_funs[0];
-        vectorN_type beta_g = eim_g->beta( mu );
-
-        std::vector<vectorN_type*> betas;
-        betas.push_back(&beta_g);
-
-        fillBetaQm(betas, mu);
-
-        if( M_use_newton )
-            return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
-        else
-            return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
+      for(int i = 0; i < M_funs[0]->mMax(); i++)
+        this->M_betaFqm[0][0][i] = M_funs[0]->beta(mu)(0,0);
+        
+      return boost::make_tuple( this->M_betaMqm, this->M_betaAqm, this->M_betaFqm );
     }
 
-    beta_type
-    computePicardBetaQm( element_type const& T,parameter_type const& mu )
-    {
-        auto eim_g = M_funs[0];
-        vectorN_type beta_g = eim_g->beta( mu , T );
-
-        std::vector<vectorN_type*> betas;
-        betas.push_back(&beta_g);
-
-        fillBetaQm(betas, mu);
-        return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
-
-    }
-
-    beta_type
-    computePicardBetaQm( parameter_type const& mu )
-    {
-        auto eim_g = M_funs[0];
-        vectorN_type beta_g = eim_g->beta( mu );
-
-        std::vector<vectorN_type*> betas;
-        betas.push_back(&beta_g);
-
-        fillBetaQm(betas, mu);
-        return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
-
-    }
-
-    void fillBetaQm(std::vector<vectorN_type*> betas, parameter_type const& mu)
-    {
-        auto eim_g = M_funs[0];
-        int M = eim_g->mMax();
-
-        auto beta_g=*betas[0];
-
-        if( M_use_newton )
-        {
-            this->M_betaJqm[0][0] = 1;
-            this->M_betaJqm[1].resize(M); //needed if cobuild
-            for(int m=0; m<M; m++)
-            {
-                this->M_betaJqm[1][m] = mu(1)*beta_g(m);
-            }
-            this->M_betaJqm[2][0] = mu(0);
-
-            this->M_betaRqm[0][0][0] = this->computeBetaInitialGuess( mu )[0][0];
-            this->M_betaRqm[0][1].resize(M);
-            for(int m=0; m<M; m++)
-            {
-                this->M_betaRqm[0][1][m] = beta_g(m);
-            }
-            this->M_betaRqm[0][2][0] = -100;
-            //output
-            this->M_betaRqm[1][0][0] = 1;
-        }
-        //else
-        if( !M_use_newton || boption(_name="ser.error-estimation") )
-        {
-            this->M_betaAqm[0][0]=1;
-            this->M_betaFqm[0][0].resize(M);
-            for(int m=0; m<M; m++)
-            {
-                this->M_betaFqm[0][0][m]=-beta_g(m) ;
-            }
-            this->M_betaFqm[0][1][0]=100;
-            this->M_betaFqm[1][0][0]=1;
-        }
-
-    }
-
-    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu , double time=1e30 )
-    {
-        beta_vector_type beta;
-        beta.resize(1);
-        beta[0].resize(1);
-        beta[0][0]=1;
-        return beta;
-    }
-
-    /**
-     * \brief Returns the affine decomposition
-     */
-    affine_decomposition_type computeAffineDecomposition();
-    affine_decomposition_type computePicardAffineDecomposition();
     std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA();
-
     void assemble();
-
-    std::vector< std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition( );
-
 
     //@}
 
@@ -343,19 +225,6 @@ public:
      */
     value_type output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false );
 
-    gmsh_ptrtype createGeo( double hsize );
-
-    void assembleResidualWithAffineDecomposition(std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm);
-    void assembleJacobianWithAffineDecomposition(std::vector<std::vector<sparse_matrix_ptrtype> > & Jqm);
-    void assembleFunctionalWithAffineDecomposition(std::vector<std::vector<sparse_matrix_ptrtype> > & RF_Aqm,
-                                                   std::vector< std::vector<std::vector<vector_ptrtype> > >& RF_Fqm);
-    bool updateResidual(element_type const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm);
-    void updateResidualMonolithic(vector_ptrtype const& X, vector_ptrtype & R, parameter_type const& mu);
-    void updateJacobianMonolithic(vector_ptrtype const& X, sparse_matrix_ptrtype & J, parameter_type const& mu);
-    monolithic_type computeMonolithicFormulationU( parameter_type const& mu , element_type const& solution );
-
-    element_type solve( parameter_type const& mu );
-    
     bdf_ptrtype bdfModel(){ return M_bdf; }
 
 private:
@@ -414,7 +283,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::initModel()
     mu_min <<  1.08, 1.08, 1.08, 0.5;
     this->Dmu->setMin( mu_min );
     auto mu_max = this->Dmu->element();
-    mu_max << 1.32, 1.32, 1.32, 2;
+    mu_max << 1.32, 1.32, 1.32, 2.0;
     this->Dmu->setMax( mu_max );
 
     M_mu = this->Dmu->element();
@@ -467,11 +336,12 @@ void BenchmarkGreplNonLinearParabolic<Order>::initModel()
                       _name="eim_g" );
     LOG(INFO) << "EIM Finished\n";
 
+#if 0
     int cpt = 0;
     auto exporter_eim = exporter(_mesh=mesh,_name="eim");
     BOOST_FOREACH( auto mu, *Pset )
     {
-      Feel::cout<<"check gM for mu = ["<< mu(0)<<" , "<<mu(1)<<" , "<<mu(2)<<"]"<<std::endl;
+      Feel::cout<<"check gM for mu = ["<< mu(0)<<" , "<<mu(1)<<" , "<<mu(2)<<" , " << mu(3) << "]"<<std::endl;
       auto g = vf::project(_space=Xh,
                            _range=elements(mesh),
                            _expr= exp( -(Px()*Px())/(mu(0)*mu(0)))
@@ -483,7 +353,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::initModel()
       exporter_eim->save();
       cpt++;
     }
-
+#endif
     M_funs.push_back( eim_g );
 
     assemble();
@@ -491,6 +361,36 @@ void BenchmarkGreplNonLinearParabolic<Order>::initModel()
 } // BenchmarkGreplNonLinearParabolic::init
 
 
+template<int Order>
+typename BenchmarkGreplNonLinearParabolic<Order>::vector_sparse_matrix
+BenchmarkGreplNonLinearParabolic<Order>::computeLinearDecompositionA()
+{
+    auto Xh = this->Xh;
+    auto u = Xh->element();
+
+    ///TODO Mettre le nombre de Peclet
+    this->M_linearAqm.resize( 2 );
+    this->M_linearAqm[0].resize( 1 );
+    this->M_linearAqm[1].resize( 1 );
+    tic();
+    this->M_linearAqm[0][0] = backend()->newMatrix( Xh, Xh );
+    this->M_linearAqm[1][0] = backend()->newMatrix( Xh, Xh );
+    toc("CreateMatrices", FLAGS_v>0);
+    tic();
+    // Evolution
+    form2(_test=Xh, _trial=Xh, _matrix=this->M_linearAqm[0][0]) = 
+      integrate(_range=elements(mesh), 
+        _expr=inner(inner(vec(cst(-0.1),cst(0),cst(0)),trans(gradt(u))),id(u)));
+    toc("Evolution", FLAGS_v>0);
+    tic(); 
+    // Diffusion
+    form2(_test=Xh, _trial=Xh, _matrix=this->M_linearAqm[1][0]) = 
+      integrate(_range=elements(mesh), 
+        _expr=inner(gradt(u), grad(u)));
+    toc("Diffusion", FLAGS_v>0);
+
+    return this->M_linearAqm;
+}
 
 template<int Order>
 void BenchmarkGreplNonLinearParabolic<Order>::assemble()
@@ -498,33 +398,51 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
     auto Xh = this->Xh;
     auto u = Xh->element();
 
+    tic();
     // Mass Matrix
-    auto mass = form2(_test=Xh, _trial=Xh);
-    mass = integrate(_range=elements(mesh), _expr=inner(idv(u),id(u)));
-    this->addMass( {mass, "1"} );
+    this->M_Mqm.resize( 1 );
+    this->M_Mqm[0].resize( 1 );
+    this->M_Mqm[0][0] = backend()->newMatrix(Xh, Xh);
+    form2(_test=Xh, _trial=Xh, _matrix=this->M_Mqm[0][0])
+      = integrate(_range=elements(mesh), _expr=inner(idv(u),id(u)));
+    toc("MassMatrix", FLAGS_v>0);
+    
+    tic();
+    ///TODO Mettre le nombre de Peclet
+    this->M_Aqm.resize( 2 );
+    this->M_Aqm[0].resize( 1 );
+    this->M_Aqm[1].resize( 1 );
+    this->M_Aqm[0][0] = backend()->newMatrix( Xh, Xh );
+    this->M_Aqm[1][0] = backend()->newMatrix( Xh, Xh );
+    toc("CreateMatrices", FLAGS_v>0);
+    tic();
 
     // Evolution
-    ///TODO Mettre le nombre de Peclet
-    auto convection = form2(_test=Xh, _trial=Xh);
-    convection = integrate(_range=elements(mesh), 
-        _expr=inner(vec(-0.1,0,0)*gradt(u),id(u)));
-    this->addLhs( { convection, "1"} );
+    form2(_test=Xh, _trial=Xh, _matrix=this->M_Aqm[0][0]) = 
+      integrate(_range=elements(mesh), 
+        _expr=inner(inner(vec(cst(-0.1),cst(0),cst(0)),trans(gradt(u))),id(u)));
+    toc("Evolution", FLAGS_v>0);
 
+    tic();
     // Diffusion
-    auto diffusion = form2(_test=Xh, _trial=Xh);
-    diffusion = integrate(_range=elements(mesh), 
+    form2(_test=Xh, _trial=Xh, _matrix=this->M_Aqm[1][0]) = 
+      integrate(_range=elements(mesh), 
         _expr=inner(gradt(u), grad(u)));
-    this->addLhs( { convection, "mu3"} );
+    toc("Diffusion", FLAGS_v>0);
 
     // Rhs (eim)
     // g = sum_{i=1}^{mMax} w_m(mu) g(x)
+    this->M_Fqm.resize( 2 );
+    this->M_Fqm[0].resize( 1 );
+    this->M_Fqm[1].resize( 1 );
+    this->M_Fqm[0][0].resize(M_funs[0]->mMax());
     for(int i=0; i < M_funs[0]->mMax(); i++)
     {
-      auto lhs = form1(_test=Xh);
-      lhs = integrate(_range=elements(mesh),
+    tic();
+      this->M_Fqm[0][0][i] = backend()->newVector( Xh );
+      form1(_test=Xh, _vector=this->M_Fqm[0][0][i]) = integrate(_range=elements(mesh),
           _expr=inner(idv(M_funs[0]->q(i)),id(u)));
-      // je veux que M_funs[0]->beta(mu) * lhs
-      this->addLhs( { lhs, "mu0:mu1:mu2"} );
+    toc("Rhs", FLAGS_v>0);
     }
 
 }
