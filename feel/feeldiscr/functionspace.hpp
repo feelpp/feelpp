@@ -1606,7 +1606,7 @@ public:
         typedef typename super::value_type bc_type;
         typedef typename matrix_node<value_type>::type matrix_node_type;
         typedef typename super::iterator iterator;
-        Context( functionspace_ptrtype Xh ) : M_Xh( Xh ) {}
+        Context( functionspace_ptrtype const& Xh ) : M_Xh( Xh ) {}
         virtual ~Context() {}
 
         std::pair<iterator, bool>
@@ -3788,7 +3788,13 @@ public:
         this->init( mesh, 0, dofindices, periodicity );
     }
 
-    FunctionSpace() {}
+    FunctionSpace( WorldComm const& worldcomm = Environment::worldComm() )
+        :
+        M_worldsComm( std::vector<WorldComm>(nSpaces,worldcomm) ),
+        M_worldComm( new WorldComm( worldcomm ) ),
+        M_extendedDofTableComposite( std::vector<bool>(nSpaces,false) ),
+        M_extendedDofTable( false )
+        {}
     // template<typename... FSpaceList>
     // FunctionSpace( FSpaceList... space_list )
     //     :
