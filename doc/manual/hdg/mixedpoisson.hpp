@@ -646,6 +646,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleA()
     auto q = M_Wh->element( "p" );
     auto w = M_Wh->element( "w" );
     auto nu = M_Ch->element( "nu" );
+    auto uI = M_Ch->element( "uI" );
     auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
     auto H = M_M0h->element( "H" );
@@ -698,6 +699,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleA()
 
     // -(j, grad(w))
     a21 += integrate(_range=elements(M_mesh),_expr=(-grad(w)*idt(u)));
+    
     // <j.n,w>_Gamma
     a21 += integrate(_range=internalfaces(M_mesh),
                      _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N()) ) );
@@ -839,11 +841,11 @@ MixedPoisson<Dim, Order, G_Order>::assembleA()
                     std::string marker = exAtMarker.marker();
                     // <lambda, v.n>_Gamma_I
                     a14 += integrate( _range=markedfaces(M_mesh,marker),
-                                      _expr=trans(id(u))*N()*idt(nu) );
+                                      _expr=trans(id(u))*N()*idt(uI) );
 
                     // <lambda, tau w>_Gamma_I
                     a24 += integrate( _range=markedfaces(M_mesh,marker),
-                                      _expr=-tau_constant * ( pow(idv(H),M_tau_order)*id(w) ) * idt(nu) );
+                                      _expr=-tau_constant * ( pow(idv(H),M_tau_order)*id(w) ) * idt(uI) );
 
                     // <j.n, m>_Gamma_I
                     a41 += integrate( _range=markedfaces(M_mesh,marker), _expr=trans(idt(u))*N()*id(nu) );
@@ -853,7 +855,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleA()
                           ( pow(idv(H),M_tau_order)*idt(p) ) * id(nu) );
 
                     // -<lambda2, m>_Gamma_I
-                    a44 += integrate( _range=markedfaces(M_mesh,marker), _expr=-pow(idv(H),M_tau_order)*id(nu)*idt(nu) );
+                    a44 += integrate( _range=markedfaces(M_mesh,marker), _expr=-  tau_constant * (pow(idv(H),M_tau_order)*id(nu)) *idt(uI) );
                 }
             }
         }
@@ -1264,13 +1266,15 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
     }
 
     double Ui_mean = 0;
+    double meas = 0;
     for( auto marker : this->M_integralMarkersList)
     {
         Ui_mean += integrate(_range=markedfaces(this->mesh(),marker),_expr=idv(*M_pp) ).evaluate()(0,0);
+	meas += integrate(_range=markedfaces(M_mesh,marker),_expr=cst(1.0)).evaluate()(0,0);
     }
 
     Feel::cout << "Integral value of potential(mup): \t " << (*M_mup)[0] << std::endl;
-    Feel::cout << "Integral value of potential(mean u): \t " << Ui_mean << std::endl;
+    Feel::cout << "Integral value of potential(mean u): \t " << Ui_mean/meas << std::endl;
  
 
     this->timerTool("PostProcessing").stop("exportResults");
