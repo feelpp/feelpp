@@ -112,6 +112,11 @@ struct TensorEvaluator<const TensorIndexTupleOp<ArgType>, Device>
     return CoeffReturnType(index, m_impl.coeff(index));
   }
 
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorOpCost
+  costPerCoeff(bool vectorized) const {
+    return m_impl.costPerCoeff(vectorized) + TensorOpCost(0, 0, 1);
+  }
+
   EIGEN_DEVICE_FUNC Scalar* data() const { return NULL; }
 
  protected:
@@ -248,6 +253,14 @@ struct TensorEvaluator<const TensorTupleReducerOp<ReduceOp, Dims, ArgType>, Devi
   }
 
   EIGEN_DEVICE_FUNC Scalar* data() const { return NULL; }
+
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorOpCost
+  costPerCoeff(bool vectorized) const {
+    const double compute_cost = 1.0 +
+        (m_return_dim < 0 ? 0.0 : (TensorOpCost::ModCost<Index>() + TensorOpCost::DivCost<Index>()));
+    return m_orig_impl.costPerCoeff(vectorized) +
+           m_impl.costPerCoeff(vectorized) + TensorOpCost(0, 0, compute_cost);
+  }
 
  private:
   EIGEN_DEVICE_FUNC void gen_strides(const InputDimensions& dims, StrideDims& strides) {

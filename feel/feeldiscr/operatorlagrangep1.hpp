@@ -34,7 +34,9 @@
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelfilters/pointsettomesh.hpp>
 //#include <feel/feelfilters/exporterquick.hpp>
+#ifdef FEELPP_HAS_GMSH
 #include <feel/feelfilters/loadgmshmesh.hpp>
+#endif
 
 namespace Feel
 {

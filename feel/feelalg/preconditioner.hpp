@@ -113,7 +113,14 @@ public:
     //! destructor
     ~Preconditioner();
 
-    static preconditioner_ptrtype build( std::string const& name = "", BackendType = BACKEND_PETSC, WorldComm const& worldComm=Environment::worldComm() );
+    static preconditioner_ptrtype build( 
+            std::string const& name = "", 
+#if FEELPP_HAS_PETSC
+            BackendType = BACKEND_PETSC, 
+#else
+            BackendType = BACKEND_NONE,
+#endif
+            WorldComm const& worldComm=Environment::worldComm() );
 
     /**
      * Initialize data structures if not done so already.
@@ -383,7 +390,11 @@ M_worldComm(worldComm),
 M_matrix(),
 M_side( LEFT ),
 M_preconditioner_type   ( ILU_PRECOND ),
+#if FEELPP_HAS_PETSC
 M_matSolverPackage_type ( MATSOLVER_PETSC ),
+#else
+M_matSolverPackage_type ( MATSOLVER_NONE ),
+#endif
 M_prec_matrix_structure ( MatrixStructure::SAME_NONZERO_PATTERN ),
 M_is_initialized        ( false ),
 M_mat_has_changed       ( false )

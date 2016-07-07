@@ -27,8 +27,10 @@
 #define FEELPP_ALG_ENUMS_HPP 1
 
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/feelpetsc.hpp>
 
+#if FEELPP_HAS_PETSC
+    #include <feel/feelcore/feelpetsc.hpp>
+#endif
 
 namespace Feel
 {
@@ -78,8 +80,11 @@ enum MatrixTranspose
  */
 enum BackendType
 {
-    BACKEND_GMM = 0,
+    BACKEND_NONE = -1,
+    BACKEND_GMM,
+#if FEELPP_HAS_PETSC
     BACKEND_PETSC,
+#endif
     BACKEND_TRILINOS,
     BACKEND_EIGEN,
     BACKEND_EIGEN_DENSE
@@ -243,7 +248,9 @@ enum SolverPackage
     SOLVERS_FEEL=0,
     SOLVERS_GMM,
     SOLVERS_EIGEN,
+#if FEELPP_HAS_PETSC
     SOLVERS_PETSC,
+#endif
     SOLVERS_TRILINOS,
     SOLVERS_SLEPC,
     SOLVER_INVALID_PACKAGE
@@ -306,7 +313,8 @@ enum ProjectorType
 
 enum MatSolverPackageType
 {
-    MATSOLVER_SPOOLES=0,
+    MATSOLVER_NONE=-1,
+    MATSOLVER_SPOOLES,
     MATSOLVER_SUPERLU,
     MATSOLVER_SUPERLU_DIST,
     MATSOLVER_UMFPACK,
@@ -317,7 +325,9 @@ enum MatSolverPackageType
     MATSOLVER_PASTIX,
     MATSOLVER_DSCPACK,
     MATSOLVER_MATLAB,
+#if FEELPP_HAS_PETSC
     MATSOLVER_PETSC,
+#endif
     MATSOLVER_PLAPACK,
     MATSOLVER_BAS,
     MATSOLVER_BOOMERAMG,
@@ -326,17 +336,23 @@ enum MatSolverPackageType
     MATSOLVER_PILUT,
 
 };
-#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
-const auto MATSOLVER_DEFAULT = MATSOLVER_MUMPS;
+#if FEELPP_HAS_PETSC
+    #if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+        const auto MATSOLVER_DEFAULT = MATSOLVER_MUMPS;
+    #else
+        const auto MATSOLVER_DEFAULT = MATSOLVER_PETSC;
+    #endif
 #else
-const auto MATSOLVER_DEFAULT = MATSOLVER_PETSC;
+const auto MATSOLVER_DEFAULT = MATSOLVER_NONE;
 #endif
 
 PreconditionerType
 pcTypeConvertStrToEnum( std::string const& type );
 
+#if FEELPP_HAS_PETSC
 KSPNormType
 kspNormTypeConvertStrToEnum( std::string const& type );
+#endif
 
 SolverType
 kspTypeConvertStrToEnum( std::string const& type );

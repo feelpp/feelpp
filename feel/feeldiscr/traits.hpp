@@ -74,6 +74,19 @@ template<typename T>
 constexpr bool is_tensor2_field_v = is_tensor2_field<T>::value;
 
 /**
+ * if \p T has base class \p Tensor2SymmBase then @return the member constant value equal
+ * to true, false otherwise
+ */
+template<typename T>
+using is_tensor2symm_field  =typename std::is_base_of<Tensor2SymmBase, T>::type;
+
+/**
+ * helper variable template for is_tensor2symm_field
+ */
+template<typename T>
+constexpr bool is_tensor2symm_field_v = is_tensor2symm_field<T>::value;
+
+/**
  * if \p T has base class \p FunctionSpaceBase (hense if it is a function space)
  * then provides the member constant value equal to true, false otherwise
  */
