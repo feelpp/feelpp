@@ -8,3 +8,6 @@
 #define MULTIFLUID_CLASS_TEMPLATE_TYPE \
     MultiFluid<FluidType, LevelSetType> \
     /**/ 
+#define MULTIFLUID_CLASS_INSTANTIATION \
+    MultiFluid< FLUIDMECHANICS_CLASS_TYPE, LEVELSET_CLASS_TYPE > \
+    /**/
