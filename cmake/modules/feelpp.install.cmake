@@ -100,6 +100,8 @@ add_custom_target(install-apps-models-fluid
   install-feelpp-models-common
   install-feelpp_model_fluidmec2dP2P1G1
   install-feelpp_model_fluidmec3dP2P1G1
+  feelpp_application_fluid_2d
+  feelpp_application_fluid_3d
   COMMAND
       "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
       -P "${CMAKE_BINARY_DIR}/applications/models/fluid/cmake_install.cmake"
