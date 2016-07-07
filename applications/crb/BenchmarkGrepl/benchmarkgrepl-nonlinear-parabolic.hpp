@@ -214,6 +214,17 @@ public:
     }
 
     std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA();
+    
+    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu , double time=1e30 )
+    {
+        beta_vector_type beta;
+        beta.resize(2);
+        beta[0].resize(1);
+        beta[1].resize(1);
+        beta[0][0]=1;
+        beta[1][0]=1;
+        return beta;
+    }
     void assemble();
 
     //@}
