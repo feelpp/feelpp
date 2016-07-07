@@ -26,7 +26,7 @@ could be express in various ways such as :
  
 ##Organisation of this manual
 
-The user documentation has moved to [GitBook](book.feelpp.org).
+The user documentation has moved to [GitBook](http://book.feelpp.org).
 
 ##Credits
 
