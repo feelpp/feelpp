@@ -91,11 +91,15 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
         M_levelsetDensityViscosityModels[i]->initFromMesh( this->mesh(), M_fluid->useExtendedDofTable() );
         M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelsets[i]->modelProperties().materials() );
 
-        M_levelsetInterfaceForcesModels[i] = interfaceforces_model_type::build(
-                soption( _name="interface-forces-model", _prefix=this->prefix() )
-                this->prefix(),
-                M_levelset[i]
-                );
+        if( Environment::vm().count( prefixvm(this->prefix(), "interface-forces-model").c_str() ) )
+        {
+            M_levelsetInterfaceForcesModels[i].reset( 
+                    interfaceforces_factory_type::instance().createObject( 
+                        soption( _name="interface-forces-model", _prefix=this->prefix() ) 
+                        )
+                    );
+            M_levelsetInterfaceForcesModels[i]->build( this->prefix(), M_levelsets[i] );
+        }
     }
 
     M_interfaceForces.reset( new element_levelset_vectorial_type(this->functionSpaceLevelsetVectorial(), "InterfaceForces") ); 

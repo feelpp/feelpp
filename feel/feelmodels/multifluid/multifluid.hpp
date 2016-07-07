@@ -53,6 +53,7 @@ public:
     // Interface forces model
     typedef InterfaceForcesModel<levelset_type> interfaceforces_model_type;
     typedef boost::shared_ptr<interfaceforces_model_type> interfaceforces_model_ptrtype;
+    typedef Singleton<Feel::Factory<interfaceforces_model_type, std::string>> interfaceforces_factory_type;
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
