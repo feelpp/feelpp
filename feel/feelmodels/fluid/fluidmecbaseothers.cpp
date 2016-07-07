@@ -91,6 +91,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
         doExport_str=(doExport_str.empty())?"normal stress":doExport_str+" - normal stress";
     if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::WallShearStress ) )
         doExport_str=(doExport_str.empty())?"wall shear stress":doExport_str+" - wall shear stress";
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Density ) )
+        doExport_str=(doExport_str.empty())?"density":doExport_str+" - density";
     if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Viscosity ) )
         doExport_str=(doExport_str.empty())?"viscosity":doExport_str+" - viscosity";
     if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Pid ) )
@@ -443,6 +445,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
         M_exporter->step( time )->add( prefixvm(this->prefix(),"wallshearstress"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"wallshearstress")),
                                        this->fieldWallShearStress() );
+    }
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Density ) )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"density"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"density")),
+                                       this->densityViscosityModel()->fieldDensity() );
+        hasFieldToExport = true;
     }
     if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Viscosity ) )
     {
