@@ -73,13 +73,14 @@ HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int imp
             auto k_l2 = this->levelset()->K();
             auto t_int = vf::vec(trans(idv(n_l2)) * vf::oneY(),  - trans(idv(n_l2)) * vf::oneX() );
             auto modgradphi = this->levelset()->smoother()->project( sqrt( gradv( phi ) * trans(gradv(phi)) ) );
-            auto AA = this->levelset()->projectorL2Vectorial->project( - idv(k_l2) * idv(k_l2) / 2. * trans(idv(n_l2)) );
-            auto BB = this->levelset()->smootherVectorial()->project( trans(t_int) * ( ( gradv(modgradphi) * idv(k_l2) ) * t_int) / max(idv(modgradphi), 0.01) );
-            auto Fc_global = this->levelset()->smootherVectorial()->project( this->bendingModulus() * ( divv( AA ) + divv( BB ) ) * gradv( phi ) );
-            F += vf::project(
-                    this->levelset()->functionSpaceVectorial(), 
-                    elements(this->levelset()->mesh()), 
-                    idv(Fc_global) * idv(this->levelset()->D()) 
+            auto AA = this->levelset()->projectorL2Vectorial()->project( - idv(k_l2) * idv(k_l2) / 2. * idv(n_l2) );
+            auto BB = this->levelset()->smootherVectorial()->project( trans( trans(t_int) * ( ( gradv(modgradphi) * idv(k_l2) ) * t_int) / max(idv(modgradphi), 0.01) ) );
+            auto Fc_global = this->levelset()->smootherVectorial()->project( this->bendingModulus() * ( divv( AA ) + divv( BB ) ) * trans(gradv( phi )) );
+            *F += vf::project(
+                    _space=this->levelset()->functionSpaceVectorial(), 
+                    _range=elements(this->levelset()->mesh()), 
+                    //idv(Fc_global) * idv(this->levelset()->D()) 
+                    _expr=trans(gradv(phi))
                     );
         }
         break;
