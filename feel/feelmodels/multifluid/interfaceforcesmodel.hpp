@@ -30,6 +30,7 @@ public:
     // Construction
     InterfaceForcesModel() = default;
     InterfaceForcesModel( InterfaceForcesModel const& i ) = default;
+    virtual ~InterfaceForcesModel() = default;
 
     void build( std::string const& prefix, levelset_ptrtype const& ls );
 
