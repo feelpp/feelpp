@@ -158,6 +158,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_wallshearstress").c_str()) )
         if ( boption(_name="do_export_wallshearstress",_prefix=this->prefix()) )
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::WallShearStress );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_density").c_str()) )
+        if ( boption(_name="do_export_density",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Density );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_viscosity").c_str()) )
         if ( boption(_name="do_export_viscosity",_prefix=this->prefix()) )
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
@@ -174,6 +177,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Vorticity );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::NormalStress );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::WallShearStress );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Density );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );
