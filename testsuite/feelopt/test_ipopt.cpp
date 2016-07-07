@@ -30,6 +30,7 @@
 #include <iostream>
 #include <cassert>
 #include <feel/feelconfig.h>
+#include <feel/feelcore/environment.hpp>
 
 #if defined( FEELPP_HAS_IPOPT )
 
@@ -191,8 +192,14 @@ class MyNLP : public TNLP
 };
 
 
-int main(int argv, char* argc[])
+int main(int argc, char* argv[])
 {
+    using namespace Feel;
+	Environment env( _argc=argc, _argv=argv,
+                     _about=about(_name="test_ipopt",
+                                  _author="Feel++ Consortium",
+                                  _email="feelpp-devel@feelpp.org"));
+
     SmartPtr<TNLP> mynlp = new MyNLP();
     SmartPtr<IpoptApplication> app = IpoptApplicationFactory();
 

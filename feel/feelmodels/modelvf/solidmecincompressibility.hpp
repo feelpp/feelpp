@@ -81,6 +81,7 @@ struct tensorSolidMecPressureFormulationMultiplierBase : public tensorBase<Geo_t
         M_ctxPressure( new ctx_pressure_type( expr.pressure().functionSpace()->fe(), this->gmc(),(pc_pressure_ptrtype const&)M_pcPressure ) ),
         M_locRes( boost::extents[ this->gmc()->xRefs().size2()] ),
         M_locGradDisplacement( boost::extents[ this->gmc()->xRefs().size2()] ),
+        //M_locMatrixGradDisplacement( boost::extents[ this->gmc()->xRefs().size2()] ),
         M_locIdPressure( boost::extents[ this->gmc()->xRefs().size2()] )
         {}
 
@@ -95,6 +96,7 @@ struct tensorSolidMecPressureFormulationMultiplierBase : public tensorBase<Geo_t
         M_ctxPressure( new ctx_pressure_type( expr.pressure().functionSpace()->fe(),this->gmc(),(pc_pressure_ptrtype const&)M_pcPressure ) ),
         M_locRes( expr.disp().gradExtents(*this->gmc()) ),
         M_locGradDisplacement( expr.disp().gradExtents(*this->gmc()) ),
+        //M_locMatrixGradDisplacement( boost::extents[ this->gmc()->xRefs().size2()] ),
         M_locIdPressure( expr.pressure().idExtents(*this->gmc()) )
         {}
 
@@ -108,6 +110,7 @@ struct tensorSolidMecPressureFormulationMultiplierBase : public tensorBase<Geo_t
         M_ctxPressure( new ctx_pressure_type( expr.pressure().functionSpace()->fe(),this->gmc(),(pc_pressure_ptrtype const&)M_pcPressure ) ),
         M_locRes( expr.disp().gradExtents(*this->gmc()) ),
         M_locGradDisplacement( expr.disp().gradExtents(*this->gmc()) ),
+        //M_locMatrixGradDisplacement( boost::extents[ this->gmc()->xRefs().size2()] ),
         M_locIdPressure( expr.pressure().idExtents(*this->gmc()) )
         {}
 
@@ -147,6 +150,7 @@ protected :
 
     typename super_type::array_shape_type M_locRes;
     typename super_type::array_tensor2_type M_locGradDisplacement;
+    //typename super_type::array_matrix_tensor2_type M_locMatrixGradDisplacement;
     typename super_type::array_scalar_type M_locIdPressure;
 };
 
@@ -175,8 +179,8 @@ struct tensorSolidMecPressureFormulationMultiplierClassic : public tensorSolidMe
     void update( Geo_t const& geom )
     {
         std::fill( this->M_locRes.data(), this->M_locRes.data()+this->M_locRes.num_elements(), super_type::matrix_shape_type::Zero() );
-        std::fill( this->M_locGradDisplacement.data(), this->M_locGradDisplacement.data()+this->M_locGradDisplacement.num_elements(), super_type::loc_tensor2_type::Zero() );
-        std::fill( this->M_locIdPressure.data(), this->M_locIdPressure.data()+this->M_locIdPressure.num_elements(), super_type::loc_scalar_type::Zero() );
+        std::fill( this->M_locGradDisplacement.data(), this->M_locGradDisplacement.data()+this->M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*super_type::loc_tensor2_type::Zero()*/ );
+        std::fill( this->M_locIdPressure.data(), this->M_locIdPressure.data()+this->M_locIdPressure.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
 
         this->M_ctxDisp->update( this->gmc(),  (typename super_type::pc_disp_ptrtype const&) this->M_pcDisp );
         this->M_expr.disp().grad( *this->M_ctxDisp, this->M_locGradDisplacement );
@@ -185,6 +189,14 @@ struct tensorSolidMecPressureFormulationMultiplierClassic : public tensorSolidMe
             this->M_ctxPressure->update( this->gmc(),  (typename super_type::pc_pressure_ptrtype const&) this->M_pcPressure );
             this->M_expr.pressure().id( *this->M_ctxPressure, this->M_locIdPressure );
         }
+#if 0
+        for ( uint16_type q=0;q<this->gmc()->nPoints();++q )
+        {
+            Eigen::Map< Eigen::Matrix<typename super_type::value_type,Eigen::Dynamic,Eigen::Dynamic/*,Eigen::ColMajor*/ > >
+                gradDisplacementEval( this->M_locGradDisplacement[q].data(), super_type::shape_tensor2::M,super_type::shape_tensor2::N);
+            this->M_locMatrixGradDisplacement[q] = gradDisplacementEval;
+        }
+#endif
         updateImpl( mpl::int_<SpecificExprType::value>() );
     }
     matrix_shape_type const&
@@ -218,7 +230,7 @@ private:
             auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
             const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1);
             const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
-            typename super_type::loc_tensor2_type & theLocRes = this->M_locRes[q];
+            typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->M_locRes[q];
             theLocRes(0,0) = 1+du2vdy;
             theLocRes(0,1) = -du2vdx;
             theLocRes(1,0) = -du1vdy;
@@ -239,7 +251,7 @@ private:
             const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1), du1vdz = gradDisplacementEval(0,2);
             const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1), du2vdz = gradDisplacementEval(1,2);
             const value_type du3vdx = gradDisplacementEval(2,0), du3vdy = gradDisplacementEval(2,1), du3vdz = gradDisplacementEval(2,2);
-            typename super_type::loc_tensor2_type & theLocRes = this->M_locRes[q];
+            typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->M_locRes[q];
             theLocRes(0,0) = (1+du2vdy)*(1+du3vdz) - du2vdz*du3vdy;
             theLocRes(0,1) = du2vdz*du3vdx - du2vdx*(1+du3vdz);
             theLocRes(0,2) = du2vdx*du3vdy - (1+du2vdy)*du3vdx;
@@ -301,8 +313,8 @@ private:
     evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_DISP> ,mpl::int_<2> /*Dim*/ ) const
     {
         auto const& gradTrial = this->fecTrial()->grad( j, q );
-        const value_type dF11 = gradTrial( 0, 0 ), dF12 = gradTrial( 0, 1 );
-        const value_type dF21 = gradTrial( 1, 0 ), dF22 = gradTrial( 1, 1 );
+        const value_type dF11 = gradTrial( 0, 0, 0 ), dF12 = gradTrial( 0, 1, 0 );
+        const value_type dF21 = gradTrial( 1, 0, 0 ), dF22 = gradTrial( 1, 1, 0 );
         matrix_shape_type & thelocRes = this->locMatrixShape();
         thelocRes(0,0) =  dF22;
         thelocRes(0,1) = -dF21;
@@ -316,9 +328,9 @@ private:
     evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_DISP> ,mpl::int_<3> /*Dim*/ ) const
     {
         auto const& gradTrial = this->fecTrial()->grad( j, q );
-        const value_type dF11 = gradTrial( 0, 0 ), dF12 = gradTrial( 0, 1 ), dF13 = gradTrial( 0, 2 );
-        const value_type dF21 = gradTrial( 1, 0 ), dF22 = gradTrial( 1, 1 ), dF23 = gradTrial( 1, 2 );
-        const value_type dF31 = gradTrial( 2, 0 ), dF32 = gradTrial( 2, 1 ), dF33 = gradTrial( 2, 2 );
+        const value_type dF11 = gradTrial( 0, 0, 0 ), dF12 = gradTrial( 0, 1, 0 ), dF13 = gradTrial( 0, 2, 0 );
+        const value_type dF21 = gradTrial( 1, 0, 0 ), dF22 = gradTrial( 1, 1, 0 ), dF23 = gradTrial( 1, 2, 0 );
+        const value_type dF31 = gradTrial( 2, 0, 0 ), dF32 = gradTrial( 2, 1, 0 ), dF33 = gradTrial( 2, 2, 0 );
         auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
         const value_type Fv11 = 1+gradDisplacementEval(0,0), Fv12 =   gradDisplacementEval(0,1), Fv13 =   gradDisplacementEval(0,2);
         const value_type Fv21 =   gradDisplacementEval(1,0), Fv22 = 1+gradDisplacementEval(1,1), Fv23 =   gradDisplacementEval(1,2);
@@ -353,66 +365,72 @@ private:
     value_type
     evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_PRES> ) const
     {
-        CHECK( false ) << "TODO";return 0;
+        //CHECK( false ) << "TODO";return 0;
+        // compute -idt(p)*(Fv*Cv^{-1}) and Fv*Cv^{-1} is computed in update
+        const value_type idTrialPressure = this->fecTrial()->id( j, 0, 0, q );
+        return  /*-*/idTrialPressure*this->M_locRes[q](c1,c2);
     }
     value_type
     evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_DISP> ,mpl::int_<2> /*Dim*/ ) const
     {
-        CHECK( false ) << "TO UPGRADE WITH PRESSURE";
+        //CHECK( false ) << "TO UPGRADE WITH PRESSURE";
+        const value_type idPressureEval = this->M_locIdPressure[q](0,0);
         if (c1==0)
         {
             if (c2==0)
-                return this->fecTrial()->grad( j, 1, 1, q );
+                return idPressureEval*this->fecTrial()->grad( j, 1, 1, q );
             else
-                return -this->fecTrial()->grad( j, 1, 0, q );
+                return -idPressureEval*this->fecTrial()->grad( j, 1, 0, q );
         }
         else
         {
             if (c2==0)
-                return -this->fecTrial()->grad( j, 0, 1, q );
+                return -idPressureEval*this->fecTrial()->grad( j, 0, 1, q );
             else
-                return this->fecTrial()->grad( j, 0, 0, q );
+                return idPressureEval*this->fecTrial()->grad( j, 0, 0, q );
         }
     }
     value_type
     evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_DISP> ,mpl::int_<3> /*Dim*/ ) const
     {
-        CHECK( false ) << "TO UPGRADE WITH PRESSURE";
+        //CHECK( false ) << "TO UPGRADE WITH PRESSURE";
         auto const& gradTrial = this->fecTrial()->grad( j, q );
-        const value_type dF11 = gradTrial( 0, 0 ), dF12 = gradTrial( 0, 1 ), dF13 = gradTrial( 0, 2 );
-        const value_type dF21 = gradTrial( 1, 0 ), dF22 = gradTrial( 1, 1 ), dF23 = gradTrial( 1, 2 );
-        const value_type dF31 = gradTrial( 2, 0 ), dF32 = gradTrial( 2, 1 ), dF33 = gradTrial( 2, 2 );
+        const value_type dF11 = gradTrial( 0, 0, 0 ), dF12 = gradTrial( 0, 1, 0 ), dF13 = gradTrial( 0, 2, 0 );
+        const value_type dF21 = gradTrial( 1, 0, 0 ), dF22 = gradTrial( 1, 1, 0 ), dF23 = gradTrial( 1, 2, 0 );
+        const value_type dF31 = gradTrial( 2, 0, 0 ), dF32 = gradTrial( 2, 1, 0 ), dF33 = gradTrial( 2, 2, 0 );
         auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
         const value_type Fv11 = 1+gradDisplacementEval(0,0), Fv12 = gradDisplacementEval(0,1), Fv13 = gradDisplacementEval(0,2);
         const value_type Fv21 = gradDisplacementEval(1,0), Fv22 = 1+gradDisplacementEval(1,1), Fv23 = gradDisplacementEval(1,2);
         const value_type Fv31 = gradDisplacementEval(2,0), Fv32 = gradDisplacementEval(2,1), Fv33 = 1+gradDisplacementEval(2,2);
 
+        const value_type idPressureEval = this->M_locIdPressure[q](0,0);
+
         if (c1==0)
         {
             if (c2==0)
-                return dF22+dF33+dF22*Fv33+Fv22*dF33-dF23*Fv32-Fv23*dF32;
+                return idPressureEval*(dF22+dF33+dF22*Fv33+Fv22*dF33-dF23*Fv32-Fv23*dF32);
             else if (c2==1)
-                return dF23*Fv31+Fv23*dF31-dF21-dF21*Fv33-Fv21*dF33;
+                return idPressureEval*(dF23*Fv31+Fv23*dF31-dF21-dF21*Fv33-Fv21*dF33);
             else
-                return dF21*Fv32+Fv21*dF32-dF31-dF31*Fv22-Fv31*dF22;
+                return idPressureEval*(dF21*Fv32+Fv21*dF32-dF31-dF31*Fv22-Fv31*dF22);
         }
         else if (c1==1)
         {
             if (c2==0)
-                return dF13*Fv32+Fv13*dF32-dF12-dF12*Fv33-Fv12*dF33;
+                return idPressureEval*(dF13*Fv32+Fv13*dF32-dF12-dF12*Fv33-Fv12*dF33);
             else if (c2==1)
-                return dF11+dF33+dF11*Fv33+Fv11*dF33-dF13*Fv31-Fv13*dF31;
+                return idPressureEval*(dF11+dF33+dF11*Fv33+Fv11*dF33-dF13*Fv31-Fv13*dF31);
             else
-                return dF12*Fv31+Fv12*dF31-dF32-dF32*Fv11-Fv32*dF11;
+                return idPressureEval*(dF12*Fv31+Fv12*dF31-dF32-dF32*Fv11-Fv32*dF11);
         }
         else
         {
             if (c2==0)
-                return dF12*Fv23+Fv12*dF23-dF13-dF13*Fv22-Fv13*dF22;
+                return idPressureEval*(dF12*Fv23+Fv12*dF23-dF13-dF13*Fv22-Fv13*dF22);
             else if (c2==1)
-                return dF13*Fv21+Fv13*dF21-dF23-dF23*Fv11-Fv23*dF11;
+                return idPressureEval*(dF13*Fv21+Fv13*dF21-dF23-dF23*Fv11-Fv23*dF11);
             else
-                return dF11+dF22+dF11*Fv22+Fv11*dF22-dF12*Fv21-Fv12*dF21;
+                return idPressureEval*(dF11+dF22+dF11*Fv22+Fv11*dF22-dF12*Fv21-Fv12*dF21);
         }
     }
 
@@ -443,8 +461,8 @@ struct tensorSolidMecPressureFormulationMultiplierStVenantKirchhoff : public ten
     void update( Geo_t const& geom )
     {
         std::fill( this->M_locRes.data(), this->M_locRes.data()+this->M_locRes.num_elements(), super_type::matrix_shape_type::Zero() );
-        std::fill( this->M_locGradDisplacement.data(), this->M_locGradDisplacement.data()+this->M_locGradDisplacement.num_elements(), super_type::loc_tensor2_type::Zero() );
-        std::fill( this->M_locIdPressure.data(), this->M_locIdPressure.data()+this->M_locIdPressure.num_elements(), super_type::loc_scalar_type::Zero() );
+        std::fill( this->M_locGradDisplacement.data(), this->M_locGradDisplacement.data()+this->M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*super_type::loc_tensor2_type::Zero()*/ );
+        std::fill( this->M_locIdPressure.data(), this->M_locIdPressure.data()+this->M_locIdPressure.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
 
         this->M_ctxDisp->update( this->gmc(),  (typename super_type::pc_disp_ptrtype const&) this->M_pcDisp );
         this->M_expr.disp().grad( *this->M_ctxDisp, this->M_locGradDisplacement );
@@ -460,8 +478,10 @@ struct tensorSolidMecPressureFormulationMultiplierStVenantKirchhoff : public ten
     value_type
     evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
     {
-        CHECK( false ) << "TODO";
-        return 0;
+        //CHECK( false ) << "TODO";
+        //return 0;
+        //LOG(WARNING) << "evalijq non optimized";
+        return this->evalijq(i,j,q)(c1,c2);
     }
     value_type
     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -482,7 +502,7 @@ private:
         {
             // compute : F*(-p*I)
             auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
-            typename super_type::loc_tensor2_type & theLocRes = this->M_locRes[q];
+            typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->M_locRes[q];
             theLocRes(0,0) = 1+gradDisplacementEval(0,0);
             theLocRes(0,1) =   gradDisplacementEval(0,1);
             theLocRes(1,0) =   gradDisplacementEval(1,0);
@@ -500,7 +520,7 @@ private:
         {
             // compute : F*(-p*I)
             auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
-            typename super_type::loc_tensor2_type & theLocRes = this->M_locRes[q];
+            typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->M_locRes[q];
             theLocRes(0,0) = 1+gradDisplacementEval(0,0);
             theLocRes(0,1) =   gradDisplacementEval(0,1);
             theLocRes(0,2) =   gradDisplacementEval(0,2);
@@ -549,7 +569,9 @@ private:
     evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_DISP> ) const
     {
         // compute -idv(p)*dF and Fv is computed in update
-        auto const& gradTrial = this->fecTrial()->grad( j, q );
+        auto const& _gradTrial = this->fecTrial()->grad( j, q );
+        Eigen::Map< const Eigen::Matrix<typename super_type::value_type,Eigen::Dynamic,Eigen::Dynamic/*,Eigen::ColMajor*/ > >
+            gradTrial( _gradTrial.data(), super_type::shape_tensor2::M,super_type::shape_tensor2::N);
         const value_type idPressureEval = this->M_locIdPressure[q](0,0);
         matrix_shape_type & thelocRes = this->locMatrixShape();
         thelocRes = /*-*/idPressureEval*gradTrial;
@@ -858,7 +880,7 @@ struct tensorSolidMecPressureFormulationConstraintClassic : public tensorSolidMe
     void update( Geo_t const& geom )
     {
         std::fill( this->M_locRes.data(), this->M_locRes.data()+this->M_locRes.num_elements(), super_type::matrix_shape_type::Zero() );
-        std::fill( this->M_locGradDisplacement.data(), this->M_locGradDisplacement.data()+this->M_locGradDisplacement.num_elements(), super_type::loc_tensor2_type::Zero() );
+        std::fill( this->M_locGradDisplacement.data(), this->M_locGradDisplacement.data()+this->M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*super_type::loc_tensor2_type::Zero()*/ );
         this->M_ctxDisp->update( this->gmc(),  (typename super_type::pc_disp_ptrtype const&) this->M_pcDisp );
         this->M_expr.disp().grad( *this->M_ctxDisp, this->M_locGradDisplacement );
 
@@ -932,8 +954,8 @@ private:
     evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN>, mpl::int_<2> /*Dim*/ ) const
     {
         auto const& gradTrial = this->fecTrial()->grad( j, q );
-        const value_type Fat11 = gradTrial( 0, 0 ), Fat12 = gradTrial( 0, 1 );
-        const value_type Fat21 = gradTrial( 1, 0 ), Fat22 = gradTrial( 1, 1 );
+        const value_type Fat11 = gradTrial( 0, 0, 0 ), Fat12 = gradTrial( 0, 1, 0 );
+        const value_type Fat21 = gradTrial( 1, 0, 0 ), Fat22 = gradTrial( 1, 1, 0 );
         auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
         const value_type Fav11 = gradDisplacementEval(0,0), Fav12 = gradDisplacementEval(0,1);
         const value_type Fav21 = gradDisplacementEval(1,0), Fav22 = gradDisplacementEval(1,1);
@@ -945,9 +967,9 @@ private:
     evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN>, mpl::int_<3> /*Dim*/ ) const
     {
         auto const& gradTrial = this->fecTrial()->grad( j, q );
-        const value_type Fat11 = gradTrial( 0, 0 ), Fat12 = gradTrial( 0, 1 ), Fat13 = gradTrial( 0, 2 );
-        const value_type Fat21 = gradTrial( 1, 0 ), Fat22 = gradTrial( 1, 1 ), Fat23 = gradTrial( 1, 2 );
-        const value_type Fat31 = gradTrial( 2, 0 ), Fat32 = gradTrial( 2, 1 ), Fat33 = gradTrial( 2, 2 );
+        const value_type Fat11 = gradTrial( 0, 0, 0 ), Fat12 = gradTrial( 0, 1, 0 ), Fat13 = gradTrial( 0, 2, 0 );
+        const value_type Fat21 = gradTrial( 1, 0, 0 ), Fat22 = gradTrial( 1, 1, 0 ), Fat23 = gradTrial( 1, 2, 0 );
+        const value_type Fat31 = gradTrial( 2, 0, 0 ), Fat32 = gradTrial( 2, 1, 0 ), Fat33 = gradTrial( 2, 2, 0 );
         auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
         const value_type Fav11 = gradDisplacementEval(0,0), Fav12 = gradDisplacementEval(0,1), Fav13 = gradDisplacementEval(0,2);
         const value_type Fav21 = gradDisplacementEval(1,0), Fav22 = gradDisplacementEval(1,1), Fav23 = gradDisplacementEval(1,2);
@@ -991,7 +1013,7 @@ struct tensorSolidMecPressureFormulationConstraintStVenantKirchhoff : public ten
     void update( Geo_t const& geom )
     {
         std::fill( this->M_locRes.data(), this->M_locRes.data()+this->M_locRes.num_elements(), super_type::matrix_shape_type::Zero() );
-        std::fill( this->M_locGradDisplacement.data(), this->M_locGradDisplacement.data()+this->M_locGradDisplacement.num_elements(), super_type::loc_tensor2_type::Zero() );
+        std::fill( this->M_locGradDisplacement.data(), this->M_locGradDisplacement.data()+this->M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*super_type::loc_tensor2_type::Zero()*/ );
         this->M_ctxDisp->update( this->gmc(),  (typename super_type::pc_disp_ptrtype const&) this->M_pcDisp );
         this->M_expr.disp().grad( *this->M_ctxDisp, this->M_locGradDisplacement );
         updateImpl( mpl::int_<SpecificExprType::value>() );
@@ -1075,8 +1097,8 @@ private:
     evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN>, mpl::int_<2> /*Dim*/ ) const
     {
         auto const& gradTrial = this->fecTrial()->grad( j, q );
-        const value_type du1tdx = gradTrial( 0, 0 ), du1tdy = gradTrial( 0, 1 );
-        const value_type du2tdx = gradTrial( 1, 0 ), du2tdy = gradTrial( 1, 1 );
+        const value_type du1tdx = gradTrial( 0, 0, 0 ), du1tdy = gradTrial( 0, 1, 0 );
+        const value_type du2tdx = gradTrial( 1, 0, 0 ), du2tdy = gradTrial( 1, 1, 0 );
         auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
         const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1);
         const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
@@ -1091,9 +1113,9 @@ private:
     evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN>, mpl::int_<3> /*Dim*/ ) const
     {
         auto const& gradTrial = this->fecTrial()->grad( j, q );
-        const value_type du1tdx = gradTrial( 0, 0 ), du1tdy = gradTrial( 0, 1 ), du1tdz=gradTrial( 0, 2 );
-        const value_type du2tdx = gradTrial( 1, 0 ), du2tdy = gradTrial( 1, 1 ), du2tdz=gradTrial( 1, 2 );
-        const value_type du3tdx = gradTrial( 2, 0 ), du3tdy = gradTrial( 2, 1 ), du3tdz=gradTrial( 2, 2 );
+        const value_type du1tdx = gradTrial( 0, 0, 0 ), du1tdy = gradTrial( 0, 1, 0 ), du1tdz=gradTrial( 0, 2, 0 );
+        const value_type du2tdx = gradTrial( 1, 0, 0 ), du2tdy = gradTrial( 1, 1, 0 ), du2tdz=gradTrial( 1, 2, 0 );
+        const value_type du3tdx = gradTrial( 2, 0, 0 ), du3tdy = gradTrial( 2, 1, 0 ), du3tdz=gradTrial( 2, 2, 0 );
         auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
         const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1), du1vdz = gradDisplacementEval(0,2);
         const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1), du2vdz = gradDisplacementEval(1,2);

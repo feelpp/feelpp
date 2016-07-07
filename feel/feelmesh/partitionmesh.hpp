@@ -27,7 +27,9 @@
 #include <boost/iterator/counting_iterator.hpp>
 #include <feel/feelmesh/meshpartitionset.hpp>
 #include <feel/feelpartition/partitioner.hpp>
+#if FEELPP_HAS_METIS
 #include <feel/feelpartition/partitionermetis.hpp>
+#endif
 
 
 
@@ -45,12 +47,16 @@ std::unique_ptr<MeshPartitionSet<MeshType>>
 partitionMesh( boost::shared_ptr<MeshType> mesh,
                rank_type nGlobalParts )
 {
+#if FEELPP_HAS_METIS
     // metis is hard coded for now, this will be customizable with different
     // partitioners
     PartitionerMetis<MeshType> metis;
     metis.partition( mesh, nGlobalParts );
     std::set<rank_type> localPartitionIds (boost::counting_iterator<int>(0), boost::counting_iterator<int>(nGlobalParts));
     return std::make_unique<MeshPartitionSet<MeshType>>( mesh, nGlobalParts, localPartitionIds );
+#else
+    return NULL;
+#endif
 }
 
 
