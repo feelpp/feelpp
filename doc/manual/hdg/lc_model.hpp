@@ -321,16 +321,45 @@ LaminaCribrosa<Dim, Order>::initGraphs(int extraRow, int extraCol)
     auto Mh = this->traceSpace();
     auto Ch = this->constantSpace();
 
+    // Calculate how many integral conditions there are
+    int rowMax = 3;
+    int colMax = 3;
+    if ( this->integralCondition() )
+    {
+	rowMax++;
+	colMax++;
+    }
+
+
     this->M_hdg_graph(4,0) = stencil( _test=Ch, _trial=Vh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     this->M_hdg_graph(4,1) = stencil( _test=Ch, _trial=Wh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     this->M_hdg_graph(4,2) = stencil( _test=Ch, _trial=Mh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    this->M_hdg_graph(4,3) = stencil( _test=Ch, _trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    this->M_hdg_graph(4,3) = stencil( _test=Ch, _trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
 
     this->M_hdg_graph(0,4) = stencil( _test=Vh, _trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
     this->M_hdg_graph(1,4) = stencil( _test=Wh, _trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
     this->M_hdg_graph(2,4) = stencil( _test=Mh, _trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     this->M_hdg_graph(3,4) = stencil( _test=Ch, _trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
     this->M_hdg_graph(4,4) = stencil( _test=Ch, _trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
+
+    /*
+    if (this-> integralCondition2() )
+    {
+	this->M_hdg_graph(5,0) =  stencil( _test=Ch, _trial=Vh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+	this->M_hdg_graph(5,1) =  stencil( _test=Ch, _trial=Wh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+	this->M_hdg_graph(5,2) =  stencil( _test=Ch, _trial=Mh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+	this->M_hdg_graph(5,3) =  stencil( _test=Ch, _trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+	this->M_hdg_graph(5,4) =  stencil( _test=Ch, _trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    
+	this->M_hdg_graph(0,5) = stencil( _test=Vh, _trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
+    	this->M_hdg_graph(1,5) = stencil( _test=Wh, _trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
+    	this->M_hdg_graph(2,5) = stencil( _test=Mh, _trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    	this->M_hdg_graph(3,5) = stencil( _test=Ch, _trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
+    	this->M_hdg_graph(4,5) = stencil( _test=Ch, _trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
+	
+	this->M_hdg_vec(5,0) = this->get_backend()->newVector( Ch );
+	this->M_hdg_sol(4.0) = M_Y2;
+    }*/
 
     this->M_hdg_vec(4,0) = this->get_backend()->newVector( Ch );
     this->M_hdg_sol(4,0) = M_Y;
@@ -360,9 +389,17 @@ LaminaCribrosa<Dim, Order>::assembleA( )
         H.on( _range=elements(this->traceSpaceOrder0()->mesh()), _expr=cst(this->fluxSpace()->mesh()->hAverage()) );
     else
         H.on( _range=elements(this->traceSpaceOrder0()->mesh()), _expr=h() );
-
     // stabilisation parameter
     auto tau_constant = cst(doption(prefixvm(this->prefix(), "tau_constant")));
+
+    // Calculate how many integral conditions there are
+    int rowMax = 3;
+    int colMax = 3;
+    if ( this->integralCondition() )
+    {
+	rowMax++;
+	colMax++;
+    }
 
     // Add extra equation for the coupling 
     auto a15 = form2(_trial=this->constantSpace(), _test=this->fluxSpace(),_matrix=this->M_A_cst,
@@ -508,6 +545,11 @@ LaminaCribrosa<Dim,Order>::exportResults( double time, mesh_ptrtype mesh, op_int
     		   Feel::cout << "||P2-P2_ex|=\t" << std::abs(P2_exact - M_statevar_solution[1]) << std::endl;
     		   Feel::cout << "||P3-P3_ex|=\t" << std::abs(P3_exact - M_statevar_solution[2]) << std::endl;
 		   Feel::cout << "---------------------------" << std::endl;
+
+    		   // Export the errors
+		   this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P1_error"),  std::abs(P1_exact - M_statevar_solution[0]) );
+		   this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P2_error"),  std::abs(P2_exact - M_statevar_solution[1]) );
+		   this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P3_error"),  std::abs(P3_exact - M_statevar_solution[2]) );
                 }
 	    }
         }
