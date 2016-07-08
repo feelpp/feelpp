@@ -27,14 +27,14 @@ foreach(O 1 2 3)
     configure_file( benchmarkgrepl-linear-elliptic.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-linear-elliptic${O}.cfg )
     configure_file( benchmarkgrepl-nonlinear-elliptic.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-nonlinear-elliptic${O}.cfg )
     crb_add_model(
-      benchmarkgrepl-nonlinear-parabolic${O} BenchmarkGreplNonLinearParabolic CLASS BenchmarkGreplNonLinearParabolic<${O}> 
-      HDRS benchmarkgrepl-nonlinear-parabolic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-nonlinear-parabolic${O}.cfg XML benchmarkgrepl-nonlinear-parabolic${O}.xml )
-    crb_add_model(
       benchmarkgrepl-linear-elliptic${O} BenchmarkGreplLinearElliptic CLASS BenchmarkGreplLinearElliptic<${O}> 
       HDRS benchmarkgrepl-linear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-linear-elliptic${O}.cfg XML benchmarkgrepl-linear-elliptic${O}.xml )
-endforeach()
     crb_add_model(
-      benchmarkgrepl-nonlinear-elliptic3 BenchmarkGreplNonlinearElliptic CLASS BenchmarkGreplNonlinearElliptic<3> 
-      HDRS benchmarkgrepl-nonlinear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-nonlinear-elliptic3.cfg XML benchmarkgrepl-nonlinear-elliptic3.xml )
+      benchmarkgrepl-nonlinear-elliptic${O} BenchmarkGreplNonlinearElliptic CLASS BenchmarkGreplNonlinearElliptic<${O}> 
+      HDRS benchmarkgrepl-nonlinear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-nonlinear-elliptic${O}.cfg XML benchmarkgrepl-nonlinear-elliptic${O}.xml )
+endforeach()
+crb_add_model(
+  benchmarkgrepl-nonlinear-parabolic3 BenchmarkGreplNonLinearParabolic CLASS BenchmarkGreplNonLinearParabolic<3> 
+  HDRS benchmarkgrepl-nonlinear-parabolic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-nonlinear-parabolic3.cfg XML benchmarkgrepl-nonlinear-parabolic3.xml )
 
 feelpp_add_application(grepl_fem SRCS grepl_fem.cpp)
