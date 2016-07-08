@@ -35,7 +35,7 @@ int main( int argc, char** argv )
     auto mats = model_props.materials();
     for ( auto matPair : mats )
     {
-        std::cout << "properties for " << matPair.first << std::endl;
+        cout << "properties for " << matPair.first << std::endl;
         auto mat = matPair.second;
         auto rho = mat.getScalar( "rho" );
         auto mu = mat.getVector<2>( "mu" );
