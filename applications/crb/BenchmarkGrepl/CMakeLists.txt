@@ -32,9 +32,9 @@ foreach(O 1 2 3)
     crb_add_model(
       benchmarkgrepl-linear-elliptic${O} BenchmarkGreplLinearElliptic CLASS BenchmarkGreplLinearElliptic<${O}> 
       HDRS benchmarkgrepl-linear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-linear-elliptic${O}.cfg XML benchmarkgrepl-linear-elliptic${O}.xml )
-    crb_add_model(
-      benchmarkgrepl-nonlinear-elliptic${O} BenchmarkGreplNonlinearElliptic CLASS BenchmarkGreplNonlinearElliptic<${O}> 
-      HDRS benchmarkgrepl-nonlinear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-nonlinear-elliptic${O}.cfg XML benchmarkgrepl-nonlinear-elliptic${O}.xml )
 endforeach()
+    crb_add_model(
+      benchmarkgrepl-nonlinear-elliptic3 BenchmarkGreplNonlinearElliptic CLASS BenchmarkGreplNonlinearElliptic<3> 
+      HDRS benchmarkgrepl-nonlinear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-nonlinear-elliptic3.cfg XML benchmarkgrepl-nonlinear-elliptic3.xml )
 
 feelpp_add_application(grepl_fem SRCS grepl_fem.cpp)
