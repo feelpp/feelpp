@@ -203,10 +203,41 @@ public:
     {
       return computeBetaQm( mu );
     }
+    beta_type
+    computeBetaQm( parameter_type const& mu, double time, bool only_terms_time_dependent )
+    {
+      return computeBetaQm( mu );
+    }
 
     beta_type
     computeBetaQm( parameter_type const& mu )
     {
+      /*
+       * name ?
+       * The first matrix is for the convection
+       * The second matrix is for the diffusion - PARAMETER HERE !
+       */
+       this->M_betaAqm.resize(2);
+       this->M_betaAqm[0].resize(1);
+       this->M_betaAqm[1].resize(1);
+       this->M_betaAqm[0][0]=1;
+       this->M_betaAqm[1][0]=mu(3);
+      
+       /* 
+        * Mass 
+        * No coefficient here
+        */ 
+       this->M_betaMqm.resize(1);
+       this->M_betaMqm[0].resize(1);
+       this->M_betaMqm[0][0]=1;
+
+       /* 
+        * Rhs 
+        * We give the coefficient of the EIM expansion here
+        */
+      this->M_betaFqm.resize(1);
+      this->M_betaFqm[0].resize(1);
+      this->M_betaFqm[0][0].resize(M_funs[0]->mMax());
       for(int i = 0; i < M_funs[0]->mMax(); i++)
         this->M_betaFqm[0][0][i] = M_funs[0]->beta(mu)(0,0);
         
@@ -222,7 +253,7 @@ public:
         beta[0].resize(1);
         beta[1].resize(1);
         beta[0][0]=1;
-        beta[1][0]=1;
+        beta[1][0]=mu(3);
         return beta;
     }
     void assemble();
@@ -248,7 +279,7 @@ private:
 
     funs_type M_funs;
 
-   sparse_matrix_ptrtype M_monoA;
+    sparse_matrix_ptrtype M_monoA;
     std::vector<vector_ptrtype> M_monoF;
 
     bool M_use_newton;
@@ -367,6 +398,10 @@ void BenchmarkGreplNonLinearParabolic<Order>::initModel()
 #endif
     M_funs.push_back( eim_g );
 
+    /*
+     * Basically, we solve
+     * d_t sum(beta_M M) + sum(beta_A A) = sum(beta_F F)
+     */
     assemble();
 
 } // BenchmarkGreplNonLinearParabolic::init
@@ -391,7 +426,13 @@ BenchmarkGreplNonLinearParabolic<Order>::computeLinearDecompositionA()
     // Evolution
     form2(_test=Xh, _trial=Xh, _matrix=this->M_linearAqm[0][0]) = 
       integrate(_range=elements(mesh), 
-        _expr=inner(inner(vec(cst(-0.1),cst(0),cst(0)),trans(gradt(u))),id(u)));
+        _expr=inner(inner(vec(cst(-0.1),cst(0),cst(0)),trans(gradt(u))),id(u)))
+      +
+        integrate( _range=markedfaces( mesh, "Dirichlet" ), 
+                   _expr=doption("gamma")*idt( u )*id( u )/hFace() // Penalisation 
+                         -gradt( u )*vf::N()*id( u )           // comes from the integration
+                         //-grad( u )*vf::N()*idt( u )           // add symmetrization
+            );
     toc("Evolution", FLAGS_v>0);
     tic(); 
     // Diffusion
@@ -431,30 +472,43 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
     // Evolution
     form2(_test=Xh, _trial=Xh, _matrix=this->M_Aqm[0][0]) = 
       integrate(_range=elements(mesh), 
-        _expr=inner(inner(vec(cst(-0.1),cst(0),cst(0)),trans(gradt(u))),id(u)));
+        _expr=inner(inner(vec(cst(-0.1),cst(0),cst(0)),trans(gradt(u))),id(u)))
+      +
+        integrate( _range=markedfaces( mesh, "Dirichlet" ), 
+                   _expr=doption("gamma")*idt( u )*id( u )/hFace() // Penalisation 
+                         -gradt( u )*vf::N()*id( u )           // comes from the integration
+                         //-grad( u )*vf::N()*idt( u )           // add symmetrization
+            );
     toc("Evolution", FLAGS_v>0);
 
     tic();
-    // Diffusion
+    // Diffusion + bc
     form2(_test=Xh, _trial=Xh, _matrix=this->M_Aqm[1][0]) = 
       integrate(_range=elements(mesh), 
-        _expr=inner(gradt(u), grad(u)));
+        _expr=inner(gradt(u), grad(u)))
+      ;
     toc("Diffusion", FLAGS_v>0);
 
     // Rhs (eim)
     // g = sum_{i=1}^{mMax} w_m(mu) g(x)
+    tic();
     this->M_Fqm.resize( 2 );
     this->M_Fqm[0].resize( 1 );
     this->M_Fqm[1].resize( 1 );
-    this->M_Fqm[0][0].resize(M_funs[0]->mMax());
+    this->M_Fqm[0][0].resize(M_funs[0]->mMax()+1);
     for(int i=0; i < M_funs[0]->mMax(); i++)
     {
-    tic();
       this->M_Fqm[0][0][i] = backend()->newVector( Xh );
       form1(_test=Xh, _vector=this->M_Fqm[0][0][i]) = integrate(_range=elements(mesh),
           _expr=inner(idv(M_funs[0]->q(i)),id(u)));
-    toc("Rhs", FLAGS_v>0);
     }
+    toc("Rhs", FLAGS_v>0);
+    tic();
+    this->M_Fqm[0][0][M_funs[0]->mMax()] = backend()->newVector( Xh );
+    form1(_test=Xh, _vector=this->M_Fqm[0][0][M_funs[0]->mMax()]) = integrate(_range=markedfaces(mesh,"Dirichlet"),
+                   _expr=doption("gamma")*cst(26)*id( u )/hFace() // Penalisation 
+        );
+    toc("Rhs(bc)", FLAGS_v>0);
 
 }
 
