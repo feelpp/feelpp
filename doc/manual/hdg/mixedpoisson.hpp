@@ -209,7 +209,6 @@ public:
     void updatePotentialRHS( Expr<ExprT> expr, std::string marker = "");
     template<typename ExprT>
     void updateFluxRHS( Expr<ExprT> expr, std::string marker = "");
-    void computeError();    
 
     // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
@@ -1208,6 +1207,10 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
     				Feel::cout << "||p-p_ex||_L2=\t" << l2err_p/l2norm_pex << std::endl;
 				Feel::cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
 				Feel::cout << "---------------------------" << std::endl;
+				
+    				// Export the errors
+				M_exporter -> step( time )->add(prefixvm(M_prefix, "p_error_L2"), l2err_p/l2norm_pex );
+				M_exporter -> step( time )->add(prefixvm(M_prefix, "u_error_L2"), l2err_u/l2norm_uex );
 			    } 
 			}
 		    }
@@ -1285,52 +1288,6 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
         this->timerTool("PostProcessing").save();
     }
     this->log("MixedPoisson","exportResults", "finish");
-}
-
-
-template<int Dim, int Order, int G_Order>
-void
-MixedPoisson<Dim, Order, G_Order>::computeError(){
-
-    auto K = 1;
-    auto p_exact = expr(soption(prefixvm(M_prefix,"p_exact") ));
-    auto gradp_exact = grad<Dim>(p_exact);
-    auto u_exact = -K*trans(gradp_exact);
-    
-    for( auto const& pairMat : M_modelProperties->materials() )
-    {
-         auto marker = pairMat.first;
-         auto material = pairMat.second;
-         K = material.getDouble("k");
-	 u_exact = -K*trans(gradp_exact) ;
-    }    
-    
-    tic();
-
-    bool has_dirichlet = nelements(markedfaces(M_mesh,"Dirichlet"),true) >= 1;
-
-    auto l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(*M_up) );
-    auto l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
-    if (l2norm_uex < 1)
-	l2norm_uex = 1.0;
-    
-    auto l2err_p = normL2( _range=elements(M_mesh), _expr=p_exact - idv(*M_pp) );
-    auto l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact );
-    if (l2norm_pex < 1)
-	l2norm_pex = 1.0;
-   
-    if ( !has_dirichlet ){
-	auto mean_p_exact = mean( elements(M_mesh), p_exact )(0,0);
-	auto mean_p = mean( _range=elements(this->mesh()), _expr=idv(*M_pp) )(0,0);
-	l2err_p = normL2( elements(M_mesh), (p_exact - cst(mean_p_exact)) - (idv(*M_pp) - cst(mean_p)) );
-    }
-    
-    Feel::cout << "============================================" << std::endl;
-    Feel::cout << "||p-p_ex||_L2=\t" << l2err_p/l2norm_pex << std::endl;
-    Feel::cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
-    Feel::cout << "============================================" << std::endl;
-    toc("error");
-
 
 }
 
