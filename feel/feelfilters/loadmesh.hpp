@@ -206,6 +206,10 @@ BOOST_PARAMETER_FUNCTION(
         m->components().reset();
         m->components().set( update );
         m->updateForUse();
+#if defined(FEELPP_HAS_HDF5)
+        if ( savehdf5 )
+            m->saveHDF5( fs::path(filenameExpand).stem().string()+".json" );
+#endif
         return m;
     }
 
