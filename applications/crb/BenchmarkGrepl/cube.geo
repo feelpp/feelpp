@@ -39,6 +39,8 @@ out[] += Extrude{0,0,-(z1-z0)+0.1}{ Surface{74}; };
 sl1 = newsl; Surface Loop(sl1) = {1,23,52,31,35,27,96,61,65,69,73,74};
 v = newv; Volume(v) = {sl1};
 
+// No need to mark Neumann
+Physical Surface("Dirichlet") = {35,27};
 Physical Volume("v1") = {v};
 Physical Volume("v2") = {out[11]};
 
