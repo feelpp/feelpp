@@ -71,7 +71,7 @@ void
 InterfaceForcesModel<LevelSetType>::updateInterfaceForces( element_ptrtype & F, bool overwrite )
 {
     if( overwrite )
-        F.zero();
+        F->zero();
     this->updateInterfaceForcesImpl( F );
 }
 
