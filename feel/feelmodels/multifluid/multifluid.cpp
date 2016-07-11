@@ -63,7 +63,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
     M_fluid->loadMesh( M_mesh );
     M_globalLevelset->build( this->mesh() );
 
-    M_fluidDensityViscosityModel.reset( new densityviscosity_model_type(*M_fluid->densityViscosityModel()) );
+    // "Deep" copy
+    M_fluidDensityViscosityModel.reset( new densityviscosity_model_type( M_fluid->prefix() ) );
+    M_fluidDensityViscosityModel->initFromSpace( M_fluid->densityViscosityModel()->dynamicViscositySpace() );
+    M_fluidDensityViscosityModel->updateFromModelMaterials( M_fluid->modelProperties().materials() );
 
     M_levelsets.resize( nLevelSets );
     M_levelsetDensityViscosityModels.resize( nLevelSets );
@@ -322,12 +325,12 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
         rho += vf::project( 
                 M_fluid->densityViscosityModel()->dynamicViscositySpace(),
                 elements(M_fluid->mesh()),
-                idv(M_levelsetDensityViscosityModels[i]->fieldRho())*(1 - idv(M_levelsets[i]->H()))
+                idv(M_levelsetDensityViscosityModels[i]->fieldRho())*(1. - idv(M_levelsets[i]->H()))
                 );
         mu += vf::project( 
                 M_fluid->densityViscosityModel()->dynamicViscositySpace(),
                 elements(M_fluid->mesh()),
-                idv(M_levelsetDensityViscosityModels[i]->fieldMu())*(1 - idv(M_levelsets[i]->H()))
+                idv(M_levelsetDensityViscosityModels[i]->fieldMu())*(1. - idv(M_levelsets[i]->H()))
                 );
     }
 
