@@ -70,9 +70,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
     M_levelsetInterfaceForcesModels.resize( nLevelSets );
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
-        auto levelset_prefix = (boost::format( "levelset%1%" ) %(i+1)).str();
+        auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
         M_levelsets[i].reset(
-                new levelset_type( prefixvm(this->prefix(), levelset_prefix), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
+                new levelset_type( levelset_prefix, this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
                 );
         M_levelsets[i]->build(
                 _space=M_globalLevelset->functionSpace(),
@@ -86,19 +86,19 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
                 );
 
         M_levelsetDensityViscosityModels[i].reset(
-                new densityviscosity_model_type( prefixvm(this->prefix(), levelset_prefix) )
+                new densityviscosity_model_type( levelset_prefix )
                 );
         M_levelsetDensityViscosityModels[i]->initFromMesh( this->mesh(), M_fluid->useExtendedDofTable() );
         M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelsets[i]->modelProperties().materials() );
 
-        if( Environment::vm().count( prefixvm(this->prefix(), "interface-forces-model").c_str() ) )
+        if( Environment::vm().count( prefixvm(levelset_prefix, "interface-forces-model").c_str() ) )
         {
             M_levelsetInterfaceForcesModels[i].reset( 
                     interfaceforces_factory_type::instance().createObject( 
-                        soption( _name="interface-forces-model", _prefix=this->prefix() ) 
+                        soption( _name="interface-forces-model", _prefix=levelset_prefix ) 
                         )
                     );
-            M_levelsetInterfaceForcesModels[i]->build( this->prefix(), M_levelsets[i] );
+            M_levelsetInterfaceForcesModels[i]->build( levelset_prefix, M_levelsets[i] );
         }
     }
 
@@ -177,8 +177,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_levelsetReinitEvery.resize(nLevelSets);
     for( uint16_type n = 0; n < nLevelSets; ++n )
     {
-        auto levelset_prefix = (boost::format( "levelset%1%" ) %(n+1)).str();
-        M_levelsetReinitEvery[n] = ioption( _name="reinit-every", _prefix=prefixvm(this->prefix(), levelset_prefix) );
+        auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(n+1)).str());
+        M_levelsetReinitEvery[n] = ioption( _name="reinit-every", _prefix=levelset_prefix );
     }
 }
 

@@ -399,14 +399,15 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"reinit-initial-value").c_str(), Feel::po::value<bool>()->default_value( false ), "reinitialize levelset after setting initial value")
 
         (prefixvm(prefix,"smooth-curvature").c_str(), Feel::po::value<bool>()->default_value( false ), "smooth curvature (use if the levelset has order < 2)")
-        (prefixvm(prefix,"curvature-smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.01), "smoothing coefficient for curvature smoothing")
+        (prefixvm(prefix,"smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.01), "smoothing coefficient for curvature smoothing")
         ;
 
     levelsetOptions
         .add( advection_options( prefix ) )
         .add( backend_options( prefixvm(prefix, "projector-l2") ) )
         .add( backend_options( prefixvm(prefix, "projector-l2-vec") ) )
-        .add( backend_options( prefixvm(prefix, "smoother-curvature") ) )
+        .add( backend_options( prefixvm(prefix, "smoother") ) )
+        .add( backend_options( prefixvm(prefix, "smoother-vec") ) )
         .add( backend_options( prefixvm(prefix, "smoother-fm") ) )
         .add( reinitializer_fm_options( prefixvm(prefix, "reinit-fm") ) )
         .add( reinitializer_hj_options( prefixvm(prefix, "reinit-hj") ) )
