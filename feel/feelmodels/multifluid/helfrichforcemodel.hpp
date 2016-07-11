@@ -50,7 +50,7 @@ void
 HelfrichForceModel<LevelSetType>::loadParametersFromOptionsVm()
 {
     M_helfrichBendingModulus = doption( _name="helfrich-bending-modulus", _prefix=this->prefix() ); 
-    M_forceImpl = doption( _name="helfrich-force-impl", _prefix=this->prefix() );
+    M_forceImpl = ioption( _name="helfrich-force-impl", _prefix=this->prefix() );
 }
 
 template<typename LevelSetType>
