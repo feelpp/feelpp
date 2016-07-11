@@ -142,6 +142,7 @@ private:
     //--------------------------------------------------------------------//
     // Forces
     bool M_enableSurfaceTension;
+    bool M_hasInterfaceForcesModel;
     ublas::symmetric_matrix<double, ublas::upper> M_surfaceTensionCoeff;
 
     element_levelset_vectorial_ptrtype M_interfaceForces; 

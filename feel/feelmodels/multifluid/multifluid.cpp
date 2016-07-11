@@ -99,6 +99,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
                         )
                     );
             M_levelsetInterfaceForcesModels[i]->build( levelset_prefix, M_levelsets[i] );
+
+            M_hasInterfaceForcesModel = true;
         }
     }
 
@@ -150,6 +152,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_nFluids = ioption( _name="nfluids", _prefix=this->prefix() );
 
     M_enableSurfaceTension = boption( _name="enable-surface-tension", _prefix=this->prefix() );
+    M_hasInterfaceForcesModel = false;
 
     if( M_enableSurfaceTension )
     {
@@ -186,7 +189,7 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 bool
 MULTIFLUID_CLASS_TEMPLATE_TYPE::hasInterfaceForces() const
 {
-    return this->hasSurfaceTension();
+    return this->hasSurfaceTension() || M_hasInterfaceForcesModel;
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -347,6 +350,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
 
     if( this->hasSurfaceTension() )
     {
+        this->timerTool("Solve").start();
         for( uint16_type n = 0; n < M_levelsets.size(); ++n )
         {
             *M_interfaceForces += vf::project( 
@@ -355,13 +359,29 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
                     - M_surfaceTensionCoeff(0,n+1)*idv(M_levelsets[n]->K())*idv(M_levelsets[n]->N())*idv(M_levelsets[n]->D())
                     );
         }
+        double timeElapsedSurfaceTension = this->timerTool("Solve").stop();
+        this->log("MultiFluid", "updateInterfaceForces", "update surface tension forces in "+(boost::format("%1% s")%timeElapsedSurfaceTension).str() );
+    }
+
+    if( M_hasInterfaceForcesModel )
+    {
+        this->timerTool("Solve").start();
+        for( uint16_type n = 0; n < M_levelsets.size(); ++n )
+        {
+            if( M_levelsetInterfaceForcesModels[n] )
+            {
+                M_levelsetInterfaceForcesModels[n]->updateInterfaceForces( M_interfaceForces, false );
+            }
+        }
+        double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
+        this->log("MultiFluid", "updateInterfaceForces", "update interface (model) forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
     }
 
     M_fluid->updateSourceAdded( idv(M_interfaceForces) );
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log( "MultiFluid", "updateInterfaceForces", 
-            "interface forces update in "+(boost::format("%1% s") %timeElapsed).str() );
+            "interface forces updated in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
