@@ -151,6 +151,15 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
 {
+    if( Environment::vm().count( prefixvm(this->prefix(),"thickness-interface").c_str() ) )
+    {
+        M_thicknessInterface = doption(prefixvm(this->prefix(),"thickness-interface"));
+    }
+    else
+    {
+        M_thicknessInterface = 1.5 * this->mesh()->hAverage();
+    }
+
     M_heaviside.reset( new element_levelset_type(this->functionSpace(), "Heaviside") );
     M_dirac.reset( new element_levelset_type(this->functionSpace(), "Dirac") );
     M_levelsetNormal.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "Normal") );
@@ -190,10 +199,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
                     new ReinitializerHJ<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-hj") )
                     );
             
-            if( Environment::vm( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj") ).defaulted() )
+            double thickness_heaviside;
+            if( Environment::vm().count( prefixvm(prefixvm(this->prefix(), "reinit-hj"), "thickness-heaviside") ) )
             {
-                dynamic_cast<ReinitializerHJ<space_levelset_type>&>(*M_reinitializer).setThicknessHeaviside( M_thicknessInterface );
+                thickness_heaviside =  doption( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj") );
             }
+            else
+            {
+                thickness_heaviside =  M_thicknessInterface;
+            }
+            dynamic_cast<ReinitializerHJ<space_levelset_type>&>(*M_reinitializer).setThicknessHeaviside( M_thicknessInterface );
         }
         break;
     }
@@ -242,7 +257,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     //hj_tol = doption(prefixvm(this->prefix(),"hj-tol"));
     //impose_inflow = ioption(prefixvm(this->prefix(),"impose-inflow"));
     //stabStrategy = ioption(prefixvm(this->prefix(),"stabilization-strategy"));
-    M_thicknessInterface=doption(prefixvm(this->prefix(),"thickness-interface"));
     M_useRegularPhi = boption(_name=prefixvm(this->prefix(),"use-regularized-phi"));
     M_useHeavisideDiracNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
 
@@ -501,7 +515,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerHeaviside(bool invert, bool cut_at_half)
     if( !M_markerHeaviside )
         M_markerHeaviside.reset( new element_markers_type(M_spaceMarkers, "MarkerHeaviside") );
 
-    //if( M_doUpdateMarkers )
+    if( M_doUpdateMarkers )
        this->updateMarkerHeaviside( invert, cut_at_half );
 
     return M_markerHeaviside;

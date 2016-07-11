@@ -375,7 +375,7 @@ reinitializer_hj_options(std::string const& prefix)
     reinitializerHJOptions.add_options()
         (prefixvm(prefix,"tol").c_str(), Feel::po::value<double>()->default_value( 0.03 ), "tolerance on residual to \"distance function\" of HJ reinitialized level set")
         (prefixvm(prefix,"max-iter").c_str(), Feel::po::value<int>()->default_value( 15 ), "maximum number of iterations for Hamilton-Jacobi reinitialization")
-        (prefixvm(prefix,"thickness-heaviside").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "thickness of the interface (support for Heaviside used to compute sign function)")
+        (prefixvm(prefix,"thickness-heaviside").c_str(), Feel::po::value<double>(), "thickness of the interface (support for Heaviside used to compute sign function)")
         ;
 
     reinitializerHJOptions.add( advection_options( prefix ) );
@@ -392,7 +392,7 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"fm-smooth-coeff").c_str(), Feel::po::value<double>()->default_value(-1.), "smoothing coefficient for interface local projection, if <0 nodal projection is done instead")
         (prefixvm(prefix,"use-regularized-phi").c_str(), Feel::po::value<bool>()->default_value( false ), "use grad(phi)/|grad(phi)| to evaluate Dirac and Heaviside functions")
         (prefixvm(prefix,"h-d-nodal-proj").c_str(), Feel::po::value<bool>()->default_value( true ), "use nodal projection to compute dirac and heaviside functions (if false, use L2 projection)")
-        (prefixvm(prefix,"thickness-interface").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "thickness of the interface (support for Dirac and Heaviside functions)")
+        (prefixvm(prefix,"thickness-interface").c_str(), Feel::po::value<double>(), "thickness of the interface (support for Dirac and Heaviside functions)")
         (prefixvm(prefix,"reinit-method").c_str(), Feel::po::value<std::string>()->default_value( "fm" ), "levelset reinitialization method (fm: fast-marching, hj: hamilton-jacobi)")
         (prefixvm(prefix,"fm-init-first-elts-strategy").c_str(), Feel::po::value<int>()->default_value(1), "strategy to initialize the first elements before the fast marching:\n0 = do nothing\n1 = interface local projection by nodal (phi) and smooth (|grad phi|) projections, smoothing coeff given by option fm-smooth-coeff \n2 = Hamilton Jacoby equation (with parameters given in options)")
 
