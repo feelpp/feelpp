@@ -47,24 +47,7 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","pid"],
-        "Measures":
-        {
-            "Forces":"wall2",
-            "Points":
-            {
-                "pointA":
-                {
-                    "coord":"{0.6,0.2,0}",
-                    "fields":"pressure"
-                },
-                "pointB":
-                {
-                    "coord":"{0.15,0.2,0}",
-                    "fields":"pressure"
-                }
-            }
-        }
+        "Fields":["velocity","pressure","density", "viscosity", "pid"]
     }
 
 }
