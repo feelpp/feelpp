@@ -475,9 +475,15 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
                 if ( vm::has_div<context>::value )
                 {
                     M_div[i][q].setZero();
-                    for( uint16_type j = 0; j < nComponents2; ++j )
-                        for( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
-                            M_div[i][q]( j,0 ) +=  M_grad[i][q]( c1, j, c1 );
+                    // div_i = sum_j \frac{\partial u_ij}{\partial x_j}
+                    for( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
+                        for( uint16_type j = 0; j < nComponents2; ++j )
+                            M_div[i][q]( c1,0 ) +=  M_grad[i][q]( c1, j, j );
+
+                    // div_j = sum_i \frac{\partial u_ij}{\partial x_i}
+                    // for( uint16_type j = 0; j < nComponents2; ++j )
+                    //     for( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
+                    //         M_div[i][q]( j,0 ) +=  M_grad[i][q]( c1, j, c1 );
                 }
             }
         } // i

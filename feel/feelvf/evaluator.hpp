@@ -295,7 +295,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
             {
                 for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
                 {
-                    __p(e,p,c1) = __c->xReal(p)[c1];
+                    __p(e,p,c1) = __c1->xReal(p)[c1];
                 }
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                 {
@@ -345,14 +345,14 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
                 {
                     for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
                     {
-                        __p(e,p,c1) = __c->xReal(p)[c1];
+                        __p(e,p,c1) = __c1->xReal(p)[c1];
                     }
 
                     for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                     {
                         for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                         {
-                            __v( e, p, c1, c2 ) = tensor_expr.evalq( c1, c2, p );
+                            __v( e, p, c1, c2 ) = tensor_expr1.evalq( c1, c2, p );
                         }
                     }
                 }

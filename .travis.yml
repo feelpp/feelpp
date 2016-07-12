@@ -8,7 +8,7 @@ matrix:
         sudo: required
         services:
             - docker
-      - env: DOCKERFILE="Dockerfile.minimal" TARGET_IMAGE="feelpp/develop:minimal" TARGET_BRANCH="feature/minimal" CMAKE_FLAGS="-DFEELPP_MINIMAL_BUILD=ON"
+      - env: DOCKERFILE="Dockerfile.minimal" TARGET_IMAGE="feelpp/develop:minimal" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MINIMAL_BUILD=ON"
         sudo: required
         services:
             - docker
