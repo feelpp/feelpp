@@ -237,7 +237,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_vectorial_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::gradPhi() const
+LEVELSET_CLASS_TEMPLATE_TYPE::gradPhi()
 {
     if( !M_levelsetGradPhi )
         M_levelsetGradPhi.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "GradPhi") );

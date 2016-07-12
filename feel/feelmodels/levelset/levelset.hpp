@@ -240,7 +240,7 @@ public:
     element_levelset_ptrtype & phi() { return this->fieldSolutionPtr(); }
     element_levelset_ptrtype const& phi() const { return this->fieldSolutionPtr(); }
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
-    element_levelset_vectorial_ptrtype const& gradPhi() const;
+    element_levelset_vectorial_ptrtype const& gradPhi();
     element_levelset_ptrtype const& heaviside() const { return M_heaviside; }
     element_levelset_ptrtype const& H() const { return this->heaviside(); }
     element_levelset_ptrtype const& dirac() const { return M_dirac; }
