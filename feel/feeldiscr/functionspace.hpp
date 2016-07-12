@@ -4579,6 +4579,7 @@ public:
     element_external_storage_type
     element( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
+#if FEELPP_HAS_PETSC
         VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
         //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
         CHECK( vecPetsc ) << "only petsc vector";
@@ -4592,6 +4593,10 @@ public:
         value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
         element_external_storage_type u( this->shared_from_this(),nActiveDof,arrayActiveDof,
                                          nGhostDof, arrayGhostDof );
+#else
+        LOG(WARNING) << "element(Vector<value_type> const& vec, int blockIdStart): This function is disabled when Feel++ is not built with PETSc";
+        element_external_storage_type u;
+#endif
         return u;
     }
 
@@ -4603,6 +4608,7 @@ public:
     element_external_storage_ptrtype
     elementPtr( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
+#if FEELPP_HAS_PETSC
         VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
         //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
         CHECK( vecPetsc ) << "only petsc vector";
@@ -4616,6 +4622,10 @@ public:
         value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
         element_external_storage_ptrtype u( new element_external_storage_type( this->shared_from_this(),nActiveDof,arrayActiveDof,
                                                                                nGhostDof, arrayGhostDof ) );
+#else
+        LOG(WARNING) << "element(Vector<value_type> const& vec, int blockIdStart): This function is disabled when Feel++ is not built with PETSc";
+        element_external_storage_type u;
+#endif
         return u;
     }
 

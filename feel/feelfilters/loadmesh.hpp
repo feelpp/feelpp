@@ -29,6 +29,8 @@
 #if !defined(FEELPP_LOADMESH_HPP)
 #define FEELPP_LOADMESH_HPP 1
 
+#ifdef FEELPP_HAS_GMSH
+
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
 #include <feel/feelfilters/importeracusimrawmesh.hpp>
@@ -245,5 +247,7 @@ BOOST_PARAMETER_FUNCTION(
 } // loadMesh
 
 } // Feel namespace
+
+#endif
 
 #endif /* FEELPP_LOADMESH_HPP */

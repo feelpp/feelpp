@@ -1629,10 +1629,12 @@ namespace FeelModels
             const value_type Fav21 = Fv21, Fav22 = gradDisplacementEval(1,1), Fav23 = Fv23;
             const value_type Fav31 = Fv31, Fav32 = Fv32, Fav33 = gradDisplacementEval(2,2);
 
-            auto const& gradTrial = this->fecTrial()->grad( j, q );
-            const value_type dF11/*du1tdx*/ = gradTrial(0,0,0), dF12/*du1tdy*/ = gradTrial(0,1,0), dF13/*du1tdz*/ = gradTrial(0,2,0);
-            const value_type dF21/*du2tdx*/ = gradTrial(1,0,0), dF22/*du2tdy*/ = gradTrial(1,1,0), dF23/*du2tdz*/ = gradTrial(1,2,0);
-            const value_type dF31/*du3tdx*/ = gradTrial(2,0,0), dF32/*du3tdy*/ = gradTrial(2,1,0), dF33/*du3tdz*/ = gradTrial(2,2,0);
+            auto const& _gradTrial = this->fecTrial()->grad( j, q );
+            const value_type dF11/*du1tdx*/ = _gradTrial(0,0,0), dF12/*du1tdy*/ = _gradTrial(0,1,0), dF13/*du1tdz*/ = _gradTrial(0,2,0);
+            const value_type dF21/*du2tdx*/ = _gradTrial(1,0,0), dF22/*du2tdy*/ = _gradTrial(1,1,0), dF23/*du2tdz*/ = _gradTrial(1,2,0);
+            const value_type dF31/*du3tdx*/ = _gradTrial(2,0,0), dF32/*du3tdy*/ = _gradTrial(2,1,0), dF33/*du3tdz*/ = _gradTrial(2,2,0);
+            Eigen::Map< const Eigen::Matrix<typename super_type::value_type,Eigen::Dynamic,Eigen::Dynamic/*,Eigen::ColMajor*/ > >
+                gradTrial( _gradTrial.data(), super_type::shape_tensor2::M,super_type::shape_tensor2::N);
 
             const value_type ddetF = dF11 + dF22 + dF33 + (dF22*Fav33 + Fav22*dF33) + (dF11*Fav22 + Fav11*dF22) + (dF11*Fav33 + Fav11*dF33)
             + dF11*Fav22*Fav33 + Fav11*dF22*Fav33 + Fav11*Fav22*dF33

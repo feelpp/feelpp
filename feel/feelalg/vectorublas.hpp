@@ -1302,6 +1302,8 @@ extern template class VectorUblas<double,ublas::vector_slice<ublas::vector<doubl
 #endif
 
 }
+
+#if FEELPP_HAS_PETSC
 #include <feel/feelalg/vectorpetsc.hpp>
 
 namespace Feel
@@ -1396,6 +1398,7 @@ toPETSc( boost::shared_ptr<VectorUblas<T,Storage>> & v )
 
 
 } // Feel
+#endif
 
 
 #endif /* __VectorUblas_H */
