@@ -8,7 +8,7 @@ namespace FeelModels {
 
 template<class LevelSetType>
 class HelfrichForceModel
-: public InterfaceForcesModel<LevelSetType>
+: public virtual InterfaceForcesModel<LevelSetType>
 {
     typedef HelfrichForceModel<LevelSetType> self_type;
     typedef InterfaceForcesModel<LevelSetType> super_type;
