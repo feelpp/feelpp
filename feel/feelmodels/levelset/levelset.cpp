@@ -15,6 +15,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
         std::string const& rootRepository ) 
 :
     super_type( prefix, worldComm, subPrefix, rootRepository ),
+    M_doUpdateGradPhi(true),
     M_mass(0.),
     //M_periodicity(periodicityLS),
     M_doUpdateMarkers(true),
@@ -235,6 +236,20 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_vectorial_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::gradPhi() const
+{
+    if( !M_levelsetGradPhi )
+        M_levelsetGradPhi.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "GradPhi") );
+
+    //if( M_doUpdateGradPhi ) // TODO: ensure correctness of M_doUpdateGradPhi
+       this->updateGradPhi(); 
+
+    return M_levelsetGradPhi;
+
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::setStrategyBeforeFm( int strat )
 {
@@ -319,6 +334,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::buildReinitializer(
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Update levelset-dependent functions
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
+{
+    auto phi = this->phi();
+    *M_levelsetGradPhi = M_projectorL2Vec->project( _expr=trans(gradv(phi)) );
+
+    M_doUpdateGradPhi = false;
+}
+
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
