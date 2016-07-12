@@ -696,7 +696,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_type const& phiv,
     *this->phi() = phiv;
 
     if (doReinitialize)
+    {
         this->reinitialize();
+        // The initial reinitialization is not a "real" one
+        M_hasReinitialized = false;
+    }
 
     this->updateInterfaceQuantities();
 
