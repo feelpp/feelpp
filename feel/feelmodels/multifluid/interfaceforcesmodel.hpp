@@ -32,7 +32,7 @@ public:
     InterfaceForcesModel( InterfaceForcesModel const& i ) = default;
     virtual ~InterfaceForcesModel() = default;
 
-    void build( std::string const& prefix, levelset_ptrtype const& ls );
+    virtual void build( std::string const& prefix, levelset_ptrtype const& ls );
 
     //--------------------------------------------------------------------//
     std::string const& prefix() const { return M_prefix; }
