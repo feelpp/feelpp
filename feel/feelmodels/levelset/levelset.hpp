@@ -240,6 +240,7 @@ public:
     element_levelset_ptrtype & phi() { return this->fieldSolutionPtr(); }
     element_levelset_ptrtype const& phi() const { return this->fieldSolutionPtr(); }
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
+    element_levelset_vectorial_ptrtype const& gradPhi() const;
     element_levelset_ptrtype const& heaviside() const { return M_heaviside; }
     element_levelset_ptrtype const& H() const { return this->heaviside(); }
     element_levelset_ptrtype const& dirac() const { return M_dirac; }
@@ -293,6 +294,8 @@ public:
 
     reinitializer_ptrtype const& reinitializer() const { return M_reinitializer; }
 
+    bool hasReinitialized() const { return M_hasReinitialized; }
+
     //--------------------------------------------------------------------//
     // Initial value
     void setInitialValue(element_levelset_type const& phiv, bool doReinitialize);
@@ -345,6 +348,7 @@ public:
 protected:
     //--------------------------------------------------------------------//
     // Levelset data update functions
+    void updateGradPhi();
     void updateDirac();
     void updateHeaviside();
     void updateMass();
@@ -370,6 +374,9 @@ protected:
     //element_levelset_ptrtype M_phi;
     //element_levelset_ptrtype M_phio;
     //element_levelset_ptrtype M_phinl;
+
+    element_levelset_vectorial_ptrtype M_levelsetGradPhi;
+    bool M_doUpdateGradPhi;
 
     element_levelset_ptrtype M_heaviside;
     element_levelset_ptrtype M_dirac;
