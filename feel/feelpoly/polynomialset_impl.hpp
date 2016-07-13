@@ -379,7 +379,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                     {
                         M_curl[i][q]( 0 ) =  M_grad[i][q]( 1,0,0 ) - M_grad[i][q]( 0,1,0 );
                         M_curl[i][q]( 1 ) =  M_curl[i][q]( 0 );
-                        M_curl[i][q]( 2 ) =  M_curl[i][q]( 0 );
+                        //M_curl[i][q]( 2 ) =  M_curl[i][q]( 0 );
                     }
 
                     else if ( NDim == 3 )
