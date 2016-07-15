@@ -86,7 +86,7 @@ BoundaryConditions::setup()
             for( auto const& c : f.second ) // condition
             {
                 auto bcdatatype  = c.second.get("type","expression");
-                std::cout << "bcdatatype = " << bcdatatype << std::endl;
+                //std::cout << "bcdatatype = " << bcdatatype << std::endl;
                 if ( bcdatatype == "file" )
                 {
                     try
