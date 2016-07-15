@@ -295,30 +295,53 @@ public:
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<1>, mpl::false_ ) const
         {
             //if ( Type == 1 )
-            {
+            //{
                 //return ( M_l_tensor_expr.evalijq( i,j,q ).adjoint()*M_r_tensor_expr.evalijq( i,j,q ) ).trace();
+#if 0
                 value_type res= 0;
                 for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
                     for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
                     {
                         res += M_l_tensor_expr.evalijq( i,j,c1,c2,q )*M_r_tensor_expr.evalijq( i,j,c1,c2,q );
                     }
+#else
+                value_type res= 0;
+                auto const& ltensor = M_l_tensor_expr.evalijq( i,j,q );
+                auto const& rtensor = M_r_tensor_expr.evalijq( i,j,q );
+                for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += ltensor(c1,c2)*rtensor(c1,c2);
+                    }
+#endif
                 return res;
-            }
+                //}
         }
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<1>, mpl::true_ ) const
         {
             //if ( Type == 1 )
-            {
+            //{
                 //return ( M_l_tensor_expr.evalijq( i,j,q ).adjoint()*M_r_tensor_expr.evalijq( i,j,q ) ).trace();
+#if 0
                 value_type res= 0;
                 for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
                     for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
                     {
                         res += M_l_tensor_expr.evalijq( i,j,c1,c2,q )*M_r_tensor_expr.evalijq( i,j,c1,c2,q );
                     }
-            }
+#else
+                value_type res= 0;
+                auto const& ltensor = M_l_tensor_expr.evalijq( i,j,q );
+                for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        value_type val=ltensor(c1,c2);
+                        res += val*val;
+                    }
+#endif
+                return res;
+                //}
         }
         value_type
         evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q ) const
