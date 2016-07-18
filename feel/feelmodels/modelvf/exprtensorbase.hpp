@@ -156,26 +156,8 @@ namespace FeelModels
         virtual void update( Geo_t const& geom ) = 0;
         virtual void update( Geo_t const& geom, uint16_type face ) = 0;
 
-
-#if 0
         virtual
-        Eigen::Matrix<value_type, shape_type::M, shape_type::N> const&
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const = 0;
-
-        virtual
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
-
-        virtual
-        value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
-
-        virtual
-        value_type
-        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
-#else
-        virtual
-        Eigen::Matrix<value_type, shape_type::M, shape_type::N> const&
+        matrix_shape_type const&
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             CHECK( false ) << "not allow\n";
@@ -197,6 +179,13 @@ namespace FeelModels
             CHECK( false ) << "not allow\n";
             return value_type(0);
         }
+        virtual
+        matrix_shape_type const&
+        evaliq( uint16_type i, uint16_type q ) const
+        {
+            CHECK( false ) << "not allow\n";
+            return M_locMatrixShape;
+        }
 
         virtual
         value_type
@@ -205,8 +194,14 @@ namespace FeelModels
             CHECK( false ) << "not allow\n";
             return value_type(0);
         }
+        virtual
+        matrix_shape_type const&
+        evalq( uint16_type q ) const
+        {
+            CHECK( false ) << "not allow\n";
+            return M_locMatrixShape;
+        }
 
-#endif
     private:
         gmc_ptrtype M_geot;
         basis_fec_test_ptrtype M_fecTest;
