@@ -205,20 +205,25 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            if ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL ||
-                 expr_type::specific_expr_type::value == FMSTExprApplyType::FM_VISCOSITY_EVAL )
-                return evalq( c1,c2,q );
-            else
-            {
-                CHECK( false ) << "not allow";
-                return value_type(0);
-            }
+            DCHECK( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL ||
+                    expr_type::specific_expr_type::value == FMSTExprApplyType::FM_VISCOSITY_EVAL ) << "wrong expr type";
+            return M_locRes[q]( c1,c2 );
+        }
+        matrix_shape_type const&
+        evaliq( uint16_type i, uint16_type q ) const
+        {
+            return M_locRes[q];
         }
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return M_locRes[q]( c1,c2 );
+        }
+        matrix_shape_type const&
+        evalq( uint16_type q ) const
+        {
+            return M_locRes[q];
         }
 
     private :
@@ -1317,13 +1322,15 @@ public:
 
         typedef typename detail::GetShapeExpr<this_type::nRealDim, SpecificExprType>::shape_type shape;
 
-        typedef Eigen::Matrix<value_type,shape::M,shape::N> matrix_shape_type;
+        // typedef Eigen::Matrix<value_type,shape::M,shape::N> matrix_shape_type;
         //typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> locAssembly_LinearForm_type;
 
         //----------------------------------------------------------------------------------------------------//
 
         typedef tensorBase<Geo_t, Basis_i_t, Basis_j_t,shape,value_type> tensorbase_type;
         typedef boost::shared_ptr<tensorbase_type> tensorbase_ptrtype;
+
+        typedef typename tensorbase_type::matrix_shape_type matrix_shape_type;
 
         //----------------------------------------------------------------------------------------------------//
         struct is_zero
@@ -1412,11 +1419,21 @@ public:
         {
             return M_tensorbase->evaliq( i,c1,c2,q );
         }
+        matrix_shape_type const&
+        evaliq( uint16_type i, uint16_type q ) const
+        {
+            return M_tensorbase->evaliq( i, q );
+        }
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return M_tensorbase->evalq( c1,c2,q );
+        }
+        matrix_shape_type const&
+        evalq( uint16_type q ) const
+        {
+            return M_tensorbase->evalq( q );
         }
 
     private:

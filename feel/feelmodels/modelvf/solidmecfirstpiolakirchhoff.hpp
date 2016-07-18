@@ -405,11 +405,21 @@ namespace FeelModels
         {
             return evalq( c1,c2,q );
         }
+        matrix_shape_type const&
+        evaliq( uint16_type i, uint16_type q ) const
+        {
+            return M_locRes[q];
+        }
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return M_locRes[q]( c1,c2 );
+        }
+        matrix_shape_type const&
+        evalq( uint16_type q ) const
+        {
+            return M_locRes[q];
         }
 
     private :
@@ -2197,7 +2207,7 @@ public:
     static const bool imIsPoly = true;
 
     typedef Shape<nDim, Tensor2, false, false> shape_type;
-    typedef Eigen::Matrix<value_type,shape_type::M,shape_type::N> matrix_shape_type;
+    //typedef Eigen::Matrix<value_type,shape_type::M,shape_type::N> matrix_shape_type;
 
 
     template<typename Func>
@@ -2243,6 +2253,8 @@ public:
 
         typedef tensorBase<Geo_t, Basis_i_t, Basis_j_t,shape,value_type> tensorbase_type;
         typedef boost::shared_ptr<tensorbase_type> tensorbase_ptrtype;
+
+        typedef typename tensorbase_type::matrix_shape_type matrix_shape_type;
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -2379,7 +2391,7 @@ public:
             M_tensorbase->update( geom, face );
         }
 
-        Eigen::Matrix<value_type, shape::M, shape::N> const&
+        matrix_shape_type const&
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             return M_tensorbase->evalijq( i,j,q );
@@ -2395,11 +2407,21 @@ public:
         {
             return M_tensorbase->evaliq( i,c1,c2,q );
         }
+        matrix_shape_type const&
+        evaliq( uint16_type i, uint16_type q ) const
+        {
+            return M_tensorbase->evaliq( i, q );
+        }
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return M_tensorbase->evalq( c1,c2,q );
+        }
+        matrix_shape_type const&
+        evalq( uint16_type q ) const
+        {
+            return M_tensorbase->evalq( q );
         }
 
     private:
