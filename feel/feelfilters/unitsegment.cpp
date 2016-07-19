@@ -28,7 +28,9 @@
  */
 
 #include <feel/feelfilters/unitsegment.hpp>
+#ifdef FEELPP_HAS_GMSH
 #include <feel/feelfilters/creategmshmesh.hpp>
+#endif
 #include <feel/feelfilters/domain.hpp>
 
 namespace Feel {
@@ -41,6 +43,7 @@ unitSegment( double h, std::string prefix, WorldComm const& wc )
         ofs << prefix  << ".segment";
     else
         ofs << "segment";
+#ifdef FEELPP_HAS_GMSH
     return createGMSHMesh(_mesh=new Mesh<Simplex<1> >,
                           _prefix=prefix,
                           _worldcomm=wc,
@@ -49,6 +52,10 @@ unitSegment( double h, std::string prefix, WorldComm const& wc )
                                         _shape="hypercube",
                                         _dim=1,
                                         _h=h ) );
+#else
+    LOG(WARNING) << "unitSegment: Feel++ was not built with Gmsh. This function will return a empty mesh.";
+    return boost::make_shared<Mesh<Simplex<1> > >();
+#endif
 }
 
 }

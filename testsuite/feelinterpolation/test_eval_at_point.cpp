@@ -67,8 +67,8 @@ void run()
         pt[1] = 0.5;
     if ( DimGeo >= 3 )
         pt[2] = 0.5;
-    auto eval = u(pt)[0];
-
+    auto evaltensor = u(pt)[0];
+    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> eval( evaltensor.data(), evaltensor.dimension(0), evaltensor.dimension(1) );
     if ( DimGeo >= 2 )
     {
         e.setParameterValues( { { "x", 0.5 },{ "y", 0.5 } } );

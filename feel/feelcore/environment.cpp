@@ -58,7 +58,9 @@ extern "C"
 
 #include <feel/feelcore/environment.hpp>
 
+#if FEELPP_HAS_PETSC
 #include <feel/feelcore/feelpetsc.hpp>
+#endif
 #include <feel/feelcore/timertable.hpp>
 #include <feel/feeltiming/tic.hpp>
 #include <feel/options.hpp>
@@ -426,18 +428,18 @@ Environment::Environment( int argc, char** argv,
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
 
-    
+
     if ( S_vm.count( "nochdir" ) == 0 )
     {
         if ( S_vm.count( "directory" ) )
             directory = S_vm["directory"].as<std::string>();
-        
+
         boost::format f( directory );
         bool createSubdir = add_subdir_np && S_vm["npdir"].as<bool>();
         changeRepository( _directory=f,_subdir=createSubdir );
     }
     S_scratchdir = fs::current_path() / "logs"; //scratchdir();
-    
+
     fs::path a0 = std::string( argv[0] );
     const int Nproc = 200;
 
@@ -534,7 +536,7 @@ Environment::Environment( int argc, char** argv,
 
     boost::gregorian::date today = boost::gregorian::day_clock::local_day();
     tic();
-    cout << "[ Starting Feel++ ] " << tc::green << "application "  << about.appName() 
+    cout << "[ Starting Feel++ ] " << tc::green << "application "  << about.appName()
          <<  " version " << about.version() << " date " << today << tc::reset << std::endl;
     cout << " . Results are stored in "
          << tc::red << fs::current_path().string() << tc::reset << std::endl;
@@ -2024,7 +2026,7 @@ Environment::expand( std::string const& expr )
               << "\n";
 
     std::string res=expr;
-    
+
     boost::replace_all( res, "${feelpp_srcdir}", topSrcDir );
     boost::replace_all( res, "${feelpp_builddir}", topBuildDir );
     boost::replace_all( res, "${feelpp_databasesdir}", topSrcDir + "/databases/" );
@@ -2036,7 +2038,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "${datadir}", dataDir );
     boost::replace_all( res, "${exprdbdir}", exprdbDir );
     boost::replace_all( res, "${h}", std::to_string(doption("gmsh.hsize") ) );
-    
+
     boost::replace_all( res, "$feelpp_srcdir", topSrcDir );
     boost::replace_all( res, "$feelpp_builddir", topBuildDir );
     boost::replace_all( res, "$feelpp_databasesdir", topSrcDir + "/databases/" );
@@ -2068,7 +2070,7 @@ Environment::expand( std::string const& expr )
         VLOG(2) << oo2.str() << " : " << topBuildDir + "/research/" + s;
         boost::replace_all( res, oo3.str(),  topSrcDir + "/research/" + s + "/databases/" );
         VLOG(2) << oo3.str() << " : " << topSrcDir + "/research/" + s + "/databases/";;
-        
+
         std::ostringstream o1,o2,o3;
         o1 << "$" << s << "_srcdir";
         o2 << "$" << s << "_builddir";

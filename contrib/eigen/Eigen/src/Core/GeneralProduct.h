@@ -81,6 +81,8 @@ public:
  * This is a compile time mapping from {1,Small,Large}^3 -> {product types} */
 // FIXME I'm not sure the current mapping is the ideal one.
 template<int M, int N>  struct product_type_selector<M,N,1>              { enum { ret = OuterProduct }; };
+template<int M>         struct product_type_selector<M, 1, 1>            { enum { ret = LazyCoeffBasedProductMode }; };
+template<int N>         struct product_type_selector<1, N, 1>            { enum { ret = LazyCoeffBasedProductMode }; };
 template<int Depth>     struct product_type_selector<1,    1,    Depth>  { enum { ret = InnerProduct }; };
 template<>              struct product_type_selector<1,    1,    1>      { enum { ret = InnerProduct }; };
 template<>              struct product_type_selector<Small,1,    Small>  { enum { ret = CoeffBasedProductMode }; };
@@ -170,7 +172,7 @@ struct gemv_static_vector_if<Scalar,Size,MaxSize,true>
   internal::plain_array<Scalar,EIGEN_SIZE_MIN_PREFER_FIXED(Size,MaxSize)+(ForceAlignment?PacketSize:0),0> m_data;
   EIGEN_STRONG_INLINE Scalar* data() {
     return ForceAlignment
-            ? reinterpret_cast<Scalar*>((reinterpret_cast<size_t>(m_data.array) & ~(size_t(EIGEN_MAX_ALIGN_BYTES-1))) + EIGEN_MAX_ALIGN_BYTES)
+            ? reinterpret_cast<Scalar*>((internal::UIntPtr(m_data.array) & ~(size_t(EIGEN_MAX_ALIGN_BYTES-1))) + EIGEN_MAX_ALIGN_BYTES)
             : m_data.array;
   }
   #endif
