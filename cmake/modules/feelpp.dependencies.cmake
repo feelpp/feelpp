@@ -387,7 +387,7 @@ endif(FEELPP_ENABLE_MKL)
 # - do not install hdf5-helpers, otherwise it will pick the serial version by default
 # - install only the libhdf5-openmpi-dev package
 
-cmake_dependent_option(FEELPP_ENABLE_PETSC "Enable HDF5 Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+cmake_dependent_option(FEELPP_ENABLE_HDF5 "Enable HDF5 Support" OFF "FEELPP_MINIMAL_BUILD" ON)
 
 if ( FEELPP_ENABLE_HDF5 )
   find_package(HDF5)
