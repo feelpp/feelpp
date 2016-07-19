@@ -62,7 +62,11 @@ public:
 
     FsFunctionalLinearFree( space_ptrtype space , expr_type expr ) :
         super_type( space ),
+#if FEELPP_HAS_PETSC
         M_backend( backend_type::build( BACKEND_PETSC ) ),
+#else
+        M_backend( backend_type::build( BACKEND_EIGEN ) ),
+#endif
         M_expr( expr )
     {}
 

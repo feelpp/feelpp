@@ -275,8 +275,12 @@ inline void verify_impl(bool condition, const char *testname, const char *file, 
 
 #define VERIFY(a) ::verify_impl(a, g_test_stack.back().c_str(), __FILE__, __LINE__, EI_PP_MAKE_STRING(a))
 
-#define VERIFY_IS_EQUAL(a, b) VERIFY(test_is_equal(a, b))
-#define VERIFY_IS_NOT_EQUAL(a, b) VERIFY(!test_is_equal(a, b))
+#define VERIFY_GE(a, b) ::verify_impl(a >= b, g_test_stack.back().c_str(), __FILE__, __LINE__, EI_PP_MAKE_STRING(a >= b))
+#define VERIFY_LE(a, b) ::verify_impl(a <= b, g_test_stack.back().c_str(), __FILE__, __LINE__, EI_PP_MAKE_STRING(a <= b))
+
+
+#define VERIFY_IS_EQUAL(a, b) VERIFY(test_is_equal(a, b, true))
+#define VERIFY_IS_NOT_EQUAL(a, b) VERIFY(test_is_equal(a, b, false))
 #define VERIFY_IS_APPROX(a, b) VERIFY(verifyIsApprox(a, b))
 #define VERIFY_IS_NOT_APPROX(a, b) VERIFY(!test_isApprox(a, b))
 #define VERIFY_IS_MUCH_SMALLER_THAN(a, b) VERIFY(test_isMuchSmallerThan(a, b))
@@ -298,7 +302,7 @@ namespace Eigen {
 template<typename T> inline typename NumTraits<T>::Real test_precision() { return NumTraits<T>::dummy_precision(); }
 template<> inline float test_precision<float>() { return 1e-3f; }
 template<> inline double test_precision<double>() { return 1e-6; }
-template<> inline long double test_precision<long double>() { return 1e-6; }
+template<> inline long double test_precision<long double>() { return 1e-6l; }
 template<> inline float test_precision<std::complex<float> >() { return test_precision<float>(); }
 template<> inline double test_precision<std::complex<double> >() { return test_precision<double>(); }
 template<> inline long double test_precision<std::complex<long double> >() { return test_precision<long double>(); }
@@ -316,9 +320,9 @@ inline bool test_isMuchSmallerThan(const float& a, const float& b)
 { return internal::isMuchSmallerThan(a, b, test_precision<float>()); }
 inline bool test_isApproxOrLessThan(const float& a, const float& b)
 { return internal::isApproxOrLessThan(a, b, test_precision<float>()); }
+
 inline bool test_isApprox(const double& a, const double& b)
 { return internal::isApprox(a, b, test_precision<double>()); }
-
 inline bool test_isMuchSmallerThan(const double& a, const double& b)
 { return internal::isMuchSmallerThan(a, b, test_precision<double>()); }
 inline bool test_isApproxOrLessThan(const double& a, const double& b)
@@ -359,6 +363,12 @@ inline bool test_isApproxOrLessThan(const long double& a, const long double& b)
 { return internal::isApproxOrLessThan(a, b, test_precision<long double>()); }
 #endif // EIGEN_TEST_NO_LONGDOUBLE
 
+inline bool test_isApprox(const half& a, const half& b)
+{ return internal::isApprox(a, b, test_precision<half>()); }
+inline bool test_isMuchSmallerThan(const half& a, const half& b)
+{ return internal::isMuchSmallerThan(a, b, test_precision<half>()); }
+inline bool test_isApproxOrLessThan(const half& a, const half& b)
+{ return internal::isApproxOrLessThan(a, b, test_precision<half>()); }
 
 // test_relative_error returns the relative difference between a and b as a real scalar as used in isApprox.
 template<typename T1,typename T2>
@@ -426,9 +436,7 @@ template<typename T1,typename T2>
 typename NumTraits<T1>::Real test_relative_error(const T1 &a, const T2 &b, typename internal::enable_if<internal::is_arithmetic<typename NumTraits<T1>::Real>::value, T1>::type* = 0)
 {
   typedef typename NumTraits<T1>::Real RealScalar; 
-  using std::min;
-  using std::sqrt;
-  return sqrt(RealScalar(numext::abs2(a-b))/RealScalar((min)(numext::abs2(a),numext::abs2(b))));
+  return numext::sqrt(RealScalar(numext::abs2(a-b))/RealScalar((numext::mini)(numext::abs2(a),numext::abs2(b))));
 }
 
 template<typename T>
@@ -509,17 +517,17 @@ inline bool test_isUnitary(const MatrixBase<Derived>& m)
 
 // Forward declaration to avoid ICC warning
 template<typename T, typename U>
-bool test_is_equal(const T& actual, const U& expected);
+bool test_is_equal(const T& actual, const U& expected, bool expect_equal=true);
 
 template<typename T, typename U>
-bool test_is_equal(const T& actual, const U& expected)
+bool test_is_equal(const T& actual, const U& expected, bool expect_equal)
 {
-    if (actual==expected)
+    if ((actual==expected) == expect_equal)
         return true;
     // false:
     std::cerr
-        << std::endl << "    actual   = " << actual
-        << std::endl << "    expected = " << expected << std::endl << std::endl;
+        << "\n    actual   = " << actual
+        << "\n    expected " << (expect_equal ? "= " : "!=") << expected << "\n\n";
     return false;
 }
 
@@ -727,4 +735,9 @@ int main(int argc, char *argv[])
   // warning #279: controlling expression is constant
   // remark #1572: floating-point equality and inequality comparisons are unreliable
   #pragma warning disable 279 383 1418 1572
+#endif
+
+#ifdef _MSC_VER
+  // 4503 - decorated name length exceeded, name was truncated
+  #pragma warning( disable : 4503)
 #endif

@@ -57,6 +57,7 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( prefix,(std::string), "" )
+      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.scale") )
       ( straighten,          *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.straighten") )
       ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), 0 )
@@ -112,6 +113,7 @@ BOOST_PARAMETER_FUNCTION(
     {
         import.setElementRegionAsPhysicalRegion( physical_are_elementary_regions );
     }
+    import.setScaling( scale );
     import.setRespectPartition( respect_partition );
     _mesh->accept( import );
 

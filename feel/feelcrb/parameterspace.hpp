@@ -153,6 +153,7 @@ public:
                     LOG(INFO) << "No need to check element since parameter space is no valid (yet)\n";
                     return;
                 }
+
                 if ( M_space->dimension() == 0 )
                     return;
                 Element sum( M_space );
@@ -1678,6 +1679,7 @@ public:
 
         double min = min_element(direction);
         double max = max_element(direction);
+
         if ( N > 1 )
         {
             for(int i=0; i<N; i++)
