@@ -31,3 +31,5 @@ feelpp_add_application( mesh2d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELP
 feelpp_add_application( mesh1d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=1 CONVEX=Hypercube)
 
 feelpp_add_application( mesh_partitioner SRCS mesh_partitioner.cpp INCLUDE_IN_ALL )
+
+feelpp_add_application( mesh_submesh SRCS submesh.cpp INCLUDE_IN_ALL )
