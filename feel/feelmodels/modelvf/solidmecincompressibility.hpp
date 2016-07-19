@@ -130,13 +130,29 @@ struct tensorSolidMecPressureFormulationMultiplierBase : public tensorBase<Geo_t
     virtual
     value_type evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
 
-    virtual
-    value_type evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
-
     //virtual
+    //value_type evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
+
+    value_type evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
+    {
+        DCHECK( SpecificExprType::value == ExprApplySolidMecPresFormType::EVAL ) << "only for EVAL expression";
+        return M_locRes[q]( c1,c2 );
+    }
+    matrix_shape_type const&
+    evaliq( uint16_type i, uint16_type q ) const
+    {
+        DCHECK( SpecificExprType::value == ExprApplySolidMecPresFormType::EVAL ) << "only for EVAL expression";
+        return M_locRes[q];
+    }
+
     value_type evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
     {
         return M_locRes[q]( c1,c2 );
+    }
+    matrix_shape_type const&
+    evalq( uint16_type q ) const
+    {
+        return M_locRes[q];
     }
 
 
@@ -209,11 +225,11 @@ struct tensorSolidMecPressureFormulationMultiplierClassic : public tensorSolidMe
     {
         return evalijq( i,j,c1,c2,q, mpl::int_<SpecificExprType::value>() );
     }
-    value_type
+    /*value_type
     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
     {
         return evaliq( i,c1,c2,q, mpl::int_<SpecificExprType::value>() );
-    }
+     }*/
 
 private:
 
@@ -274,7 +290,7 @@ private:
         updateImpl( mpl::int_<ExprApplySolidMecPresFormType::EVAL>() );
     }
     //---------------------------------------------------------//
-    value_type
+    /*value_type
     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplySolidMecPresFormType::EVAL> ) const
     {
         return this->evalq( c1,c2,q );
@@ -288,7 +304,7 @@ private:
     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_PRES> ) const
     {
         CHECK( false ) << "not allow"; return 0;
-    }
+     }*/
     //---------------------------------------------------------//
     matrix_shape_type const&
     evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplySolidMecPresFormType::EVAL> ) const
@@ -483,11 +499,11 @@ struct tensorSolidMecPressureFormulationMultiplierStVenantKirchhoff : public ten
         //LOG(WARNING) << "evalijq non optimized";
         return this->evalijq(i,j,q)(c1,c2);
     }
-    value_type
+    /*value_type
     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
     {
         return evaliq( i,c1,c2,q, mpl::int_<SpecificExprType::value>() );
-    }
+     }*/
 
 private:
 
@@ -543,7 +559,7 @@ private:
         updateImpl( mpl::int_<ExprApplySolidMecPresFormType::EVAL>() );
     }
     //---------------------------------------------------------//
-    value_type
+    /*value_type
     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplySolidMecPresFormType::EVAL> ) const
     {
         return this->evalq( c1,c2,q );
@@ -557,7 +573,7 @@ private:
     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_PRES> ) const
     {
         CHECK( false ) << "not allow"; return 0;
-    }
+     }*/
     //---------------------------------------------------------//
     matrix_shape_type const&
     evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplySolidMecPresFormType::EVAL> ) const
@@ -687,6 +703,8 @@ public:
 
         typedef typename tensorbase_type::value_type value_type;
         typedef typename tensorbase_type::shape_type shape;
+        typedef typename tensorbase_type::matrix_shape_type matrix_shape_type;
+
         struct is_zero { static const bool value = false; };
 
         tensor( self_type const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -746,10 +764,20 @@ public:
         {
             return M_tensorbase->evaliq( i,c1,c2,q );
         }
+        matrix_shape_type const&
+        evaliq( uint16_type i, uint16_type q ) const
+        {
+            return M_tensorbase->evaliq( i, q );
+        }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return M_tensorbase->evalq( c1,c2,q );
+        }
+        matrix_shape_type const&
+        evalq( uint16_type q ) const
+        {
+            return M_tensorbase->evalq( q );
         }
 
     private:
@@ -838,14 +866,30 @@ struct tensorSolidMecPressureFormulationConstraintBase : public tensorBase<Geo_t
     virtual
     value_type evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
 
-    virtual
-    value_type evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
-
     //virtual
+    //value_type evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
+    value_type evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
+    {
+        DCHECK( SpecificExprType::value == ExprApplyType::EVAL ) << "only for EVAL expression";
+        return M_locRes[q]( c1,c2 );
+    }
+    matrix_shape_type const&
+    evaliq( uint16_type i, uint16_type q ) const
+    {
+        DCHECK( SpecificExprType::value == ExprApplyType::EVAL ) << "only for EVAL expression";
+        return M_locRes[q];
+    }
+
     value_type evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
     {
         return M_locRes[q]( c1,c2 );
     }
+    matrix_shape_type const&
+    evalq( uint16_type q ) const
+    {
+        return M_locRes[q];
+    }
+
 
 protected:
     expr_type const& M_expr;
@@ -892,11 +936,11 @@ struct tensorSolidMecPressureFormulationConstraintClassic : public tensorSolidMe
     {
         return evalijq( i,j,c1,c2,q, mpl::int_<SpecificExprType::value>() );
     }
-    value_type
+    /*value_type
     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
     {
         return evaliq( i,c1,c2,q, mpl::int_<SpecificExprType::value>() );
-    }
+     }*/
 
 private:
 
@@ -929,7 +973,7 @@ private:
     }
     void updateImpl( mpl::int_<ExprApplyType::JACOBIAN> ) {}
 
-    value_type
+    /*value_type
     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::EVAL> ) const
     {
         return this->evalq( c1,c2,q );
@@ -938,7 +982,7 @@ private:
     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ) const
     {
         CHECK( false ) << "not allow";return 0;
-    }
+     }*/
     using super_type::evalijq; // fix clang warning
     value_type
     evalijq( uint16_type i,uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::EVAL> ) const
@@ -1024,11 +1068,11 @@ struct tensorSolidMecPressureFormulationConstraintStVenantKirchhoff : public ten
     {
         return evalijq( i,j,c1,c2,q, mpl::int_<SpecificExprType::value>() );
     }
-    value_type
+    /*value_type
     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
     {
         return evaliq( i,c1,c2,q, mpl::int_<SpecificExprType::value>() );
-    }
+     }*/
 
 private:
 
@@ -1072,7 +1116,7 @@ private:
     }
     void updateImpl( mpl::int_<ExprApplyType::JACOBIAN> ) {}
 
-    value_type
+    /*value_type
     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::EVAL> ) const
     {
         return this->evalq( c1,c2,q );
@@ -1081,7 +1125,7 @@ private:
     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ) const
     {
         CHECK( false ) << "not allow";return 0;
-    }
+     }*/
     using super_type::evalijq; // fix clang warning
     value_type
     evalijq( uint16_type i,uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::EVAL> ) const
@@ -1210,6 +1254,8 @@ public:
 
         typedef typename tensorbase_type::value_type value_type;
         typedef typename tensorbase_type::shape_type shape;
+        typedef typename tensorbase_type::matrix_shape_type matrix_shape_type;
+
         struct is_zero { static const bool value = false; };
 
         tensor( self_type const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -1271,10 +1317,20 @@ public:
         {
             return M_tensorbase->evaliq( i,c1,c2,q );
         }
+        matrix_shape_type const&
+        evaliq( uint16_type i, uint16_type q ) const
+        {
+            return M_tensorbase->evaliq( i, q );
+        }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return M_tensorbase->evalq( c1,c2,q );
+        }
+        matrix_shape_type const&
+        evalq( uint16_type q ) const
+        {
+            return M_tensorbase->evalq( q );
         }
 
     private:

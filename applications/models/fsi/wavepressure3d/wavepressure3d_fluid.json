@@ -50,7 +50,7 @@
                     "expr":"0",                       // avoid to have a warning in output
                     "number":1,                       // number of outlet [default=1]
                     "alemesh_bc":"free",              // fixed,free [default=fixed]
-                    "type":"windkessel",              // free,windkessel [default=free]
+                    "model":"windkessel",             // free,windkessel [default=free]
                     "windkessel_coupling":"explicit", // explicit, implicit [default=implicit]
                     "windkessel_Rd":6.2e3,            // resistance distal [default=1.0]
                     "windkessel_Rp":400,              // resistance proximal [default=1.0]

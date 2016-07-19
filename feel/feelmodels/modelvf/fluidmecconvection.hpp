@@ -528,11 +528,21 @@ public:
         {
             return evalq( c1, c2, q );
         }
+        loc_matrix_vectorial_type const&
+        evaliq( uint16_type i, uint16_type q ) const
+        {
+            return M_loc[q];
+        }
 
         value_type
         evalq( uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
         {
             return M_loc[q](c1,0);
+        }
+        loc_matrix_vectorial_type const&
+        evalq( uint16_type q ) const
+        {
+            return M_loc[q];
         }
 
     private:
