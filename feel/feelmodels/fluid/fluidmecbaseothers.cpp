@@ -66,8 +66,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
             hovisuMode = "ON (with OperatorLagrangeP1 on "+hovisuSpaceUsed+")";
         else if ( hovisuSpaceUsed == "p1" )
             hovisuMode = "ON (with createP1mesh)";
-#if defined(FEELPP_HAS_VTK)
-        myexporterType=M_exporter_ho->type();
+#if 1//defined(FEELPP_HAS_VTK)
+        myexporterType = M_exporter_ho->type();
         myexporterFreq = M_exporter_ho->freq();
 #endif
     }
@@ -311,9 +311,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setDoExport(bool b)
     }
     else
     {
-#if defined(FEELPP_HAS_VTK)
-        CHECK( M_exporter )  << "hoexport not init\n";
-        M_exporter_ho->setDoExport(b);
+#if 1 //defined(FEELPP_HAS_VTK)
+        //CHECK( M_exporter_ho )  << "hoexport not init\n";
+        if ( M_exporter_ho )
+            M_exporter_ho->setDoExport(b);
 #endif
     }
 }
@@ -508,7 +509,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 {
-#if defined(FEELPP_HAS_VTK)
+#if 1//defined(FEELPP_HAS_VTK)
     if ( !M_exporter_ho->doExport() ) return;
 
     // because write geofile at each step ( TODO fix !!! )
@@ -1386,7 +1387,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
 
     //-------------------------------------------------------------------//
     //ho visu
-#if defined(FEELPP_HAS_VTK)
+#if 0 //defined(FEELPP_HAS_VTK)
     if (M_isHOVisu && false) // useless now ( this export mesh stay fix!)
     {
         auto drm = M_meshALE->dofRelationShipMap();
