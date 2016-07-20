@@ -189,17 +189,18 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_operations )
         mat1a->set( k,k, myrank);
     mat1a->close();
     BOOST_CHECK_SMALL( mat1a->l1Norm() - (worldsize-1), tolCheck );
+    // scale
+    mat1a->scale(1./3.);
+    BOOST_CHECK_SMALL( mat1a->l1Norm() - (worldsize-1)/3., tolCheck );
+    mat1a->scale(3.);
     // add values (on ghost only)
-    for ( size_type k=0;k<nDofGhostsMat1aRow;++k )
+    for ( size_type k=nDofActivesMat1Row;k<(nDofActivesMat1Row+nDofGhostsMat1aRow);++k )
         mat1a->add( k,k, 4.);
     mat1a->close();
     double valExact = worldsize-1;
     if ( Environment::worldComm().size() > 1 )
         valExact += 4.;
-    BOOST_CHECK_SMALL( mat1a->l1Norm() - valExact, tolCheck );
-    // scale
-    mat1a->scale(1./3.);
-    BOOST_CHECK_SMALL( mat1a->l1Norm() - valExact/3., tolCheck );
+    BOOST_CHECK( mat1a->l1Norm() >= (valExact-tolCheck) );
 
     // energy
     vec1a->setConstant( 2. );
