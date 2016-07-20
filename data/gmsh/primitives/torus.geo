@@ -1,5 +1,5 @@
 NL=20;
-h = 0.005;
+h = 0.05;
 R=0.2;
 C=2;
 
@@ -7,12 +7,12 @@ R1=C-R/2;
 R2=C+R/2;
 shape = 1; // square=1 circle=2
 alpha1=0;
-alpha2=2*Pi/3;
+alpha2=Pi/3;
 If ( shape == 1 )
-  Point(1) = {0,-R/2,-R/2,h};
-  Point(2) = {0,R/2,-R/2,h};
-  Point(3) = {0,R/2,R/2,h};
-  Point(4) = {0,-R/2,R/2,h};
+  Point(1) = {C,C-R/2,C-R/2,h};
+  Point(2) = {C,C+R/2,C-R/2,h};
+  Point(3) = {C,C+R/2,C+R/2,h};
+  Point(4) = {C,C-R/2,C+R/2,h};
   Line(1) = {1,2};
   Line(2) = {2,3};
   Line(3) = {3,4};
@@ -34,7 +34,7 @@ EndIf
 Line Loop(5) = {1,2,3,4};
 Plane Surface(6) = {5};
 
-Extrude Surface {6, {0,0,1}, {0,-C,0}, alpha2-alpha1}{Layers{C*(alpha2-alpha1)*R/h};};
+Extrude Surface {6, {0,0,1}, {0,0,0}, alpha2-alpha1}{Layers{C*(alpha2-alpha1)*R/h};};
 //Extrude Surface {6, {0,0,1}, {0,-C,0}, alpha2-alpha1}{Layers{10};};
 
 Physical Surface("inlet") = {28};
