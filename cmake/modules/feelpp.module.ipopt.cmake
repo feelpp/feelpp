@@ -63,6 +63,16 @@ if ( FEELPP_ENABLE_IPOPT )
       #          ${FEELPP_SOURCE_DIR}/contrib/ipopt/Ipopt/src/Interfaces
       #)
 
+      # Link lapack to avail IPOpt quasi-newton methods.
+      # FindLAPACK module provide LAPACK_FOUND (see feelpp.dependencies.cmake).
+      Find_Package(LAPACK)
+      if(LAPACK_FOUND)
+          message( STATUS "[ipopt] LAPACK found!" )
+          SET(COIN_HAS_LAPACK 1 CACHE STRING "Enable LAPACK for Ipopt")
+      else()
+          message( WARNING "[ipopt] LAPACK not found. Quasi-Newton method will be disabled." )
+      endif()
+
       # Compile/copy header in cmake binary dirs.
       include_directories(${CMAKE_BINARY_DIR}/contrib/ipopt/include/)
     endif()
