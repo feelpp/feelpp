@@ -150,6 +150,7 @@ BOOST_AUTO_TEST_CASE( test1 )
     auto mysamplingComplement = mysampling2->complement();
     BOOST_CHECK( mysampling->size() == ( mysampling2->size() + mysamplingComplement->size() ) );
 
+#if defined(FEELPP_HAS_ANN_H)
     // test searchNearestNeighbors
     auto muSearch = muspace->element();
     for ( uint16_type d=0;d<muspace->dimension();++d)
@@ -158,7 +159,7 @@ BOOST_AUTO_TEST_CASE( test1 )
     auto mysamplingNeighbors = mysampling->searchNearestNeighbors( muSearch,5,indexNeighbors );
     BOOST_CHECK( mysamplingNeighbors->size() == 5 );
     mysamplingNeighbors->saveJson("mysamplingNeighbors.json");
-
+#endif
     // min/max (identical for all process)
     std::vector<size_type> nSampleDir2 = { 5, 5, 13, 5 };
     mysampling->equidistributeProduct( nSampleDir2, true );
@@ -180,7 +181,6 @@ BOOST_AUTO_TEST_CASE( test1 )
     auto const& muMaxRes2 = boost::get<0>( maxRes2 );
     BOOST_CHECK( muMinRes2(0) == 2 && muMinRes2(1) == 3 && muMinRes2(2) == 0 && muMinRes2(3) == 5 );
     BOOST_CHECK( muMaxRes2(0) == 6 && muMaxRes2(1) == 7 && muMaxRes2(2) == 8 && muMaxRes2(3) == 9 );
-
 }
 BOOST_AUTO_TEST_CASE( test2 )
 {
@@ -209,6 +209,5 @@ BOOST_AUTO_TEST_CASE( test2 )
         BOOST_CHECK_CLOSE( muspace->min()(d),muspaceReloaded->min()(d),1e-9 );
         BOOST_CHECK( muspace->parameterName(d) == muspaceReloaded->parameterName(d) );
     }
-
 }
 BOOST_AUTO_TEST_SUITE_END()
