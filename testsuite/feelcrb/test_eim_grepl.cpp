@@ -151,7 +151,7 @@ public:
 
             auto Pset = Dmu->sampling();
             //specify how many elements we take in each direction
-            std::vector<int> N(2);
+            std::vector<size_type> N(2);
             //40 elements in each direction
             N[0]=40; N[1]=40;
             Pset->equidistributeProduct( N );
