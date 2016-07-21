@@ -56,6 +56,7 @@
 
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 
 #include <Eigen/Core>
 
@@ -1505,8 +1506,9 @@ public:
     typedef typename parameterspace_type::sampling_type sampling_type;
 
     // reduced basis space
-    typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
-    typedef typename model_type::rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
+    typedef ReducedBasisSpace<model_type> rbfunctionspace_type;
+    //typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
+    typedef boost::shared_ptr<rbfunctionspace_type> rbfunctionspace_ptrtype;
     typedef typename rbfunctionspace_type::ctxrbset_type rbfunctionspace_context_type;
     typedef typename rbfunctionspace_type::ctxrbset_ptrtype rbfunctionspace_context_ptrtype;
 
@@ -3028,8 +3030,8 @@ struct EimFunctionNoSolve
     typedef typename functionspace_type::value_type value_type;
 
     // reduced basis space
-    typedef typename ModelType::rbfunctionspace_type rbfunctionspace_type;
-    typedef typename ModelType::rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
+    //typedef typename ModelType::rbfunctionspace_type rbfunctionspace_type;
+    //typedef boost::shared_ptr<rbfunctionspace_type> rbfunctionspace_ptrtype;
 
     typedef boost::shared_ptr<ModelType> model_ptrtype;
 
