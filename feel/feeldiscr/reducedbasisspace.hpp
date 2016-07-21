@@ -177,9 +177,9 @@ public :
 #else
     ReducedBasisSpace( WorldComm const& worldcomm = Environment::worldComm() ) {}
 
-    ReducedBasisSpace( model_ptrtype const& model )
+    ReducedBasisSpace( model_ptrtype const& model, WorldComm const& worldcomm = Environment::worldComm() )
         :
-        super( model->worldComm() ),
+        super( worldcomm ),
         M_mesh(),
         M_model( model )
         {
@@ -1627,7 +1627,7 @@ ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::idInterpolate( matrix
     LOG( INFO ) << "not yet implemented";
 }
 
-template<typename ModelType,typename FeSpaceType>
+template<typename ModelType,typename FeSpaceType=typename ModelType::functionspace_type>
 inline
 boost::shared_ptr<ReducedBasisSpace<ModelType,FeSpaceType> >
 RbSpacePch(  boost::shared_ptr<ModelType> const& model )
@@ -1635,7 +1635,7 @@ RbSpacePch(  boost::shared_ptr<ModelType> const& model )
     return ReducedBasisSpace<ModelType,FeSpaceType>::New( model );
 }
 
-template<int Order, typename ModelType,typename FeSpaceType>
+template<int Order, typename ModelType,typename FeSpaceType=typename ModelType::functionspace_type>
 inline
 boost::shared_ptr<ReducedBasisSpace<ModelType,FeSpaceType>>
 RbSpacePchv(  boost::shared_ptr<ModelType> const& model)
