@@ -135,6 +135,11 @@ public:
         {
             return M_locRes[q]( c1,c2 );
         }
+        matrix_shape_type const&
+        evalq( uint16_type q ) const
+        {
+            return M_locRes[q];
+        }
 
         void update( Geo_t const& geom )
         {
@@ -159,6 +164,12 @@ public:
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return evaliq( i,c1,c2,q, mpl::int_<SpecificExprType::value>() );
+        }
+        matrix_shape_type const&
+        evaliq( uint16_type i, uint16_type q ) const
+        {
+            DCHECK( SpecificExprType::value == ExprApplyType::EVAL ) << "only for EVAL expression";
+            return M_locRes[q];
         }
 
     private:

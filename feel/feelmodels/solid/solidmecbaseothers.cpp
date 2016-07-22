@@ -24,20 +24,20 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters( double time )
         {
             if (!M_isHOVisu)
             {
-                if ( M_exporter->doExport() )
+                if ( M_exporter && M_exporter->doExport() )
                     M_exporter->restart(this->timeInitial());
             }
             else
             {
-#if defined(FEELPP_HAS_VTK)
-                if ( M_exporter_ho->doExport() )
+#if 1 // defined(FEELPP_HAS_VTK)
+                if ( M_exporter_ho && M_exporter_ho->doExport() )
                     M_exporter_ho->restart(this->timeInitial());
 #endif
             }
         }
         else
         {
-            if ( M_exporter_1dReduced->doExport() )
+            if ( M_exporter_1dReduced && M_exporter_1dReduced->doExport() )
                 M_exporter_1dReduced->restart(this->timeInitial());
         }
     }
@@ -72,7 +72,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
                 hovisuMode = "ON (with OperatorLagrangeP1 on "+hovisuSpaceUsed+")";
             else if ( hovisuSpaceUsed == "p1" )
                 hovisuMode = "ON (with createP1mesh)";
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
             myexporterType = M_exporter_ho->type();
             myexporterFreq = M_exporter_ho->freq();
 #endif
@@ -463,7 +463,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportFieldsImplHO( double time )
 {
     if (this->isStandardModel())
     {
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
         if ( !M_exporter_ho->doExport() ) return;
         //M_exporter_ho->step( time )->setMesh( M_displacementVisuHO->mesh() );
 
