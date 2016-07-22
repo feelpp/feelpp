@@ -24,3 +24,7 @@
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 feelpp_add_application(doc_stokes1D_P2P1 SRCS stokes1D.cpp LABELS doc GEO tige1D.geo cylinder3D.geo cylinder2D.geo INCLUDE_IN_ALL CFG stokes1D.cfg DEFS FEELPP_DIM=3 FEELPP_ORDER_P=1)
+
+feelpp_add_application(doc_stokes1D_P2P1_2D SRCS stokes1D.cpp LABELS doc GEO tige1D.geo cylinder3D.geo cylinder2D.geo INCLUDE_IN_ALL CFG stokes1D.cfg DEFS FEELPP_DIM=2 FEELPP_ORDER_P=1)
+
+feelpp_add_application(doc_mesh1D_P2P1 SRCS mesh1D.cpp LABELS doc GEO tige1D.geo INCLUDE_IN_ALL DEFS FEELPP_DIM=3 FEELPP_ORDER_P=1)
