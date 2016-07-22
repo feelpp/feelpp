@@ -996,6 +996,10 @@ public:
     void buildGlobalProcessToGlobalClusterDofMapDiscontinuous();
 
     void buildGhostDofMapExtended( mesh_type& mesh );
+    void buildGhostDofMapExtended( mesh_type& mesh, ext_elements_t<mesh_type> const& ghostEltRange, ext_elements_t<mesh_type> const& activeEltTouchInterProcessRange );
+    void buildGlobalProcessToGlobalClusterDofMapOthersMesh( mesh_type& mesh );
+    void buildGlobalProcessToGlobalClusterDofMapOthersMeshNonBlockingComm( mesh_type& mesh,
+                                                                           std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend );
 
     bool buildDofTableMPIExtended() const { return M_buildDofTableMPIExtended; }
     void setBuildDofTableMPIExtended( bool b ) { M_buildDofTableMPIExtended = b; }
@@ -1407,8 +1411,7 @@ private:
     void generateDofPoints( mesh_type& M, bool buildMinimalParallel = false ) const;
     void generatePeriodicDofPoints( mesh_type& M, periodic_element_list_type const& periodic_elements, dof_periodic_points_type& periodic_dof_points );
     void generateDofPointsExtendedGhostMap( mesh_type& M ) const;
-
-
+    void generateDofPoints( ext_elements_t<mesh_type> const& range ) const;
 
 private:
     void generateDofPoints( mesh_type& M, bool buildMinimalParallel, mpl::bool_<true> ) const;
@@ -1751,10 +1754,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
             VLOG(2) << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
             this->buildGhostDofMap( M );
             VLOG(2) << "[build] callFINISH buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
-
-            if ( this->buildDofTableMPIExtended() )
-                this->buildGhostDofMapExtended( M );
-
         }
         else
         {

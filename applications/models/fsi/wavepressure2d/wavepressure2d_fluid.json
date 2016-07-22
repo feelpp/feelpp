@@ -43,7 +43,7 @@
                 {
                     "number":1,                       // number of outlet [default=1]
                     "alemesh_bc":"fixed",             // fixed,free [default=fixed]
-                    "type":"windkessel",              // free,windkessel [default=free]
+                    "model":"windkessel",              // free,windkessel [default=free]
                     "windkessel_coupling":"implicit", // explicit, implicit [default=implicit]
                     "windkessel_Rd":6.2e3,            // resistance distal [default=1.0]
                     "windkessel_Rp":400,              // resistance proximal [default=1.0]

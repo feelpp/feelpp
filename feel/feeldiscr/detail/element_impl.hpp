@@ -1212,15 +1212,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
 
             for ( uint16_type q = 0; q < nq ; ++q )
             {
-                if ( nDim == 3 )
+                if ( nRealDim == 3 )
                 {
-                    for ( typename array_type::index i = 0; i < nDim; ++i )
+                    for ( typename array_type::index i = 0; i < nRealDim; ++i )
                     {
                         v[q]( i,0 ) += s(ldof)*v_*context.curl( ldof, i, 0, q );
                     }
                 }
 
-                else if ( nDim == 2 )
+                else if ( nRealDim == 2 )
                 {
                     v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, 0, 0, q );
                 }
@@ -1272,14 +1272,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
 
             for ( uint16_type q = 0; q < nq ; ++q )
             {
-                if ( nDim == 3 )
+                if ( nRealDim == 3 )
                 {
                     v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, comp, 0, q );
                 }
 
-                else if ( nDim == 2 )
+                else if ( nRealDim == 2 )
                 {
-                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, 2, 0, q );
+                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, 0, 0, q );
                 }
 
             }
@@ -1361,7 +1361,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
         //update the output data
         itL=it->second.begin();
 
-        if ( nDim == 3 )
+        if ( nRealDim == 3 )
         {
             itL=it->second.begin();
 
@@ -1373,7 +1373,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
             }
         }
 
-        else if ( nDim == 2 )
+        else if ( nRealDim == 2 )
         {
             itL=it->second.begin();
 
@@ -1458,7 +1458,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( matrix_nod
         //update the output data
         itL=it->second.begin();
 
-        if ( nDim == 3 )
+        if ( nRealDim == 3 )
         {
             itL=it->second.begin();
 
@@ -1470,7 +1470,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( matrix_nod
             }
         }
 
-        else if ( nDim == 2 )
+        else if ( nRealDim == 2 )
         {
             itL=it->second.begin();
 
@@ -1553,7 +1553,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
         //update the output data
         itL=it->second.begin();
 
-        if ( nDim == 3 )
+        if ( nRealDim == 3 )
         {
             itL=it->second.begin();
 
@@ -1565,7 +1565,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
             }
         }
 
-        else if ( nDim == 2 )
+        else if ( nRealDim == 2 )
         {
             itL=it->second.begin();
 
@@ -1648,7 +1648,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
         //update the output data
         itL=it->second.begin();
 
-        if ( nDim == 3 )
+        if ( nRealDim == 3 )
         {
             itL=it->second.begin();
 
@@ -1660,7 +1660,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
             }
         }
 
-        else if ( nDim == 2 )
+        else if ( nRealDim == 2 )
         {
             itL=it->second.begin();
 

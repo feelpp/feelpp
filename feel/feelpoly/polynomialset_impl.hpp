@@ -43,13 +43,11 @@ resizeAndSet( rank_t<0> )
     {
         Eigen::Tensor<value_type,3> i_hessian( nRealDim, nRealDim, 1 );
         std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), i_hessian.constant(0.) );
-    }
-    if ( vm::has_laplacian<context>::value || vm::has_second_derivative<context>::value  )
-    {
-        Eigen::Tensor<value_type,3> i_hessian( nRealDim, nRealDim, 1 );
-        std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), i_hessian.constant(0.) );
-        Eigen::Tensor<value_type,2> i_lap( 1, 1 );
-        std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), i_lap.constant(0.) );
+        if ( vm::has_laplacian<context>::value )
+        {
+            Eigen::Tensor<value_type,2> i_lap( 1, 1 );
+            std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), i_lap.constant(0.) );
+        }
     }
 
 }
@@ -85,13 +83,11 @@ resizeAndSet( rank_t<1> )
     {
         Eigen::Tensor<value_type,3> i_hessian( nComponents1, nRealDim, nRealDim );
         std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), i_hessian.constant(0.) );
-    }
-    if ( vm::has_laplacian<context>::value || vm::has_second_derivative<context>::value  )
-    {
-        Eigen::Tensor<value_type,3> i_hessian( nComponents1, nRealDim, nRealDim );
-        std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), i_hessian.constant(0.) );
-        Eigen::Tensor<value_type,2> i_lap( nComponents1, 1 );
-        std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), i_lap.constant(0.) );
+        if ( vm::has_laplacian<context>::value || vm::has_second_derivative<context>::value  )
+        {
+            Eigen::Tensor<value_type,2> i_lap( nComponents1, 1 );
+            std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), i_lap.constant(0.) );
+        }
     }
 
 }
@@ -204,14 +200,15 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
     {
         const uint16_type Q = do_optimization_p1?1:M_npoints;
         const uint16_type I = nDof;
-
+        Eigen::array<int, 3> tensorGradShapeAfterContract{{1, 1, nRealDim}};
+        Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 1)}};
         for ( uint16_type i = 0; i < I; ++i )
         {
             for ( uint16_type q = 0; q < Q; ++q )
             {
                 tensor_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-                Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 1)}};
-                M_grad[i][q] = (*M_gradphi)[i][q].contract( B,dims );
+                // grad = (gradphi_1,...,gradphi_nRealDim) * B^T
+                M_grad[i][q].reshape( tensorGradShapeAfterContract ) = ((*M_gradphi)[i][q].contract( B,dims ));
 #if 0
                 M_dx[i][q] = M_grad[i][q].col( 0 );
 
@@ -256,17 +253,18 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
         const uint16_type Q = do_optimization_p2?1:M_npoints;//__gmc->nPoints();//M_grad.size2();
         const uint16_type I = nDof; //M_ref_ele->nbDof();
         hess_type L;
+        Eigen::array<int, 3> tensorHessShapeAfterContract{{nRealDim, 1, nRealDim}};
+        Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(1, 1)}};
+        Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 0)}};
         for ( uint16_type q = 0; q < Q; ++q )
         {
             tensor_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
             for ( uint16_type i = 0; i < I; ++i )
             {
-                Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(1, 1)}};
-                Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 0)}};
                 //M_hessian[i][q] = B.contract( __pc->hessian(i,q).contract(B,dims1), dims2);
                 auto H1 = __pc->hessian(i,q).contract(B,dims1);
-                M_hessian[i][q] = B.contract( H1, dims2 );
-                
+                M_hessian[i][q].reshape( tensorHessShapeAfterContract ) = B.contract( H1, dims2 );
+
                 if ( vm::has_laplacian<context>::value  )
                 {
                     M_laplacian[i][q].setZero();
@@ -328,6 +326,9 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
         const uint16_type I = M_grad.shape()[0];
 
         typedef typename boost::multi_array<value_type,4>::index_range range;
+        Eigen::array<int, 3> tensorGradShapeAfterContract{{nComponents1, 1, nRealDim}};
+        Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(1, 1)}};
+        Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 0)}};
 
         for ( uint16_type q = 0; q < Q; ++q )
         {
@@ -335,8 +336,6 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
             tensor_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
             for ( uint16_type i = 0; i < I; ++i )
             {
-                Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(1, 1)}};
-                Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 0)}};
                 //M_grad[i][q] = (*M_gradphi)[i][q].contract( B,dims );
 
                 if ( is_hdiv_conforming )
@@ -350,7 +349,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                     M_grad[i][q] =  B.contract((*M_gradphi)[i][q].contract(B,dims1),dims2);
                 }
                 else
-                    M_grad[i][q] =  (*M_gradphi)[i][q].contract(B,dims1);
+                    M_grad[i][q].reshape( tensorGradShapeAfterContract ) = (*M_gradphi)[i][q].contract(B,dims1);
 
                 // update divergence if needed
                 if ( vm::has_div<context>::value )
@@ -379,7 +378,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                     {
                         M_curl[i][q]( 0 ) =  M_grad[i][q]( 1,0,0 ) - M_grad[i][q]( 0,1,0 );
                         M_curl[i][q]( 1 ) =  M_curl[i][q]( 0 );
-                        M_curl[i][q]( 2 ) =  M_curl[i][q]( 0 );
+                        //M_curl[i][q]( 2 ) =  M_curl[i][q]( 0 );
                     }
 
                     else if ( NDim == 3 )
