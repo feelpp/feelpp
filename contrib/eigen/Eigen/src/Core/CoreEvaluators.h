@@ -41,9 +41,18 @@ template<> struct storage_kind_to_shape<TranspositionsStorage>  { typedef Transp
 // We currently distinguish the following kind of evaluators:
 // - unary_evaluator    for expressions taking only one arguments (CwiseUnaryOp, CwiseUnaryView, Transpose, MatrixWrapper, ArrayWrapper, Reverse, Replicate)
 // - binary_evaluator   for expression taking two arguments (CwiseBinaryOp)
+// - ternary_evaluator   for expression taking three arguments (CwiseTernaryOp)
 // - product_evaluator  for linear algebra products (Product); special case of binary_evaluator because it requires additional tags for dispatching.
 // - mapbase_evaluator  for Map, Block, Ref
 // - block_evaluator    for Block (special dispatching to a mapbase_evaluator or unary_evaluator)
+
+template< typename T,
+          typename Arg1Kind   = typename evaluator_traits<typename T::Arg1>::Kind,
+          typename Arg2Kind   = typename evaluator_traits<typename T::Arg2>::Kind,
+          typename Arg3Kind   = typename evaluator_traits<typename T::Arg3>::Kind,
+          typename Arg1Scalar = typename traits<typename T::Arg1>::Scalar,
+          typename Arg2Scalar = typename traits<typename T::Arg2>::Scalar,
+          typename Arg3Scalar = typename traits<typename T::Arg3>::Scalar> struct ternary_evaluator;
 
 template< typename T,
           typename LhsKind   = typename evaluator_traits<typename T::Lhs>::Kind,
@@ -442,6 +451,96 @@ protected:
   evaluator<ArgType> m_argImpl;
 };
 
+// -------------------- CwiseTernaryOp --------------------
+
+// this is a ternary expression
+template<typename TernaryOp, typename Arg1, typename Arg2, typename Arg3>
+struct evaluator<CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3> >
+  : public ternary_evaluator<CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3> >
+{
+  typedef CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3> XprType;
+  typedef ternary_evaluator<CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3> > Base;
+  
+  EIGEN_DEVICE_FUNC explicit evaluator(const XprType& xpr) : Base(xpr) {}
+};
+
+template<typename TernaryOp, typename Arg1, typename Arg2, typename Arg3>
+struct ternary_evaluator<CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3>, IndexBased, IndexBased>
+  : evaluator_base<CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3> >
+{
+  typedef CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3> XprType;
+  
+  enum {
+    CoeffReadCost = evaluator<Arg1>::CoeffReadCost + evaluator<Arg2>::CoeffReadCost + evaluator<Arg3>::CoeffReadCost + functor_traits<TernaryOp>::Cost,
+    
+    Arg1Flags = evaluator<Arg1>::Flags,
+    Arg2Flags = evaluator<Arg2>::Flags,
+    Arg3Flags = evaluator<Arg3>::Flags,
+    SameType = is_same<typename Arg1::Scalar,typename Arg2::Scalar>::value && is_same<typename Arg1::Scalar,typename Arg3::Scalar>::value,
+    StorageOrdersAgree = (int(Arg1Flags)&RowMajorBit)==(int(Arg2Flags)&RowMajorBit) && (int(Arg1Flags)&RowMajorBit)==(int(Arg3Flags)&RowMajorBit),
+    Flags0 = (int(Arg1Flags) | int(Arg2Flags) | int(Arg3Flags)) & (
+        HereditaryBits
+        | (int(Arg1Flags) & int(Arg2Flags) & int(Arg3Flags) &
+           ( (StorageOrdersAgree ? LinearAccessBit : 0)
+           | (functor_traits<TernaryOp>::PacketAccess && StorageOrdersAgree && SameType ? PacketAccessBit : 0)
+           )
+        )
+     ),
+    Flags = (Flags0 & ~RowMajorBit) | (Arg1Flags & RowMajorBit),
+    Alignment = EIGEN_PLAIN_ENUM_MIN(
+        EIGEN_PLAIN_ENUM_MIN(evaluator<Arg1>::Alignment, evaluator<Arg2>::Alignment),
+        evaluator<Arg3>::Alignment)
+  };
+
+  EIGEN_DEVICE_FUNC explicit ternary_evaluator(const XprType& xpr)
+    : m_functor(xpr.functor()),
+      m_arg1Impl(xpr.arg1()), 
+      m_arg2Impl(xpr.arg2()), 
+      m_arg3Impl(xpr.arg3())  
+  {
+    EIGEN_INTERNAL_CHECK_COST_VALUE(functor_traits<TernaryOp>::Cost);
+    EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
+  }
+
+  typedef typename XprType::CoeffReturnType CoeffReturnType;
+
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+  CoeffReturnType coeff(Index row, Index col) const
+  {
+    return m_functor(m_arg1Impl.coeff(row, col), m_arg2Impl.coeff(row, col), m_arg3Impl.coeff(row, col));
+  }
+
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+  CoeffReturnType coeff(Index index) const
+  {
+    return m_functor(m_arg1Impl.coeff(index), m_arg2Impl.coeff(index), m_arg3Impl.coeff(index));
+  }
+
+  template<int LoadMode, typename PacketType>
+  EIGEN_STRONG_INLINE
+  PacketType packet(Index row, Index col) const
+  {
+    return m_functor.packetOp(m_arg1Impl.template packet<LoadMode,PacketType>(row, col),
+                              m_arg2Impl.template packet<LoadMode,PacketType>(row, col),
+                              m_arg3Impl.template packet<LoadMode,PacketType>(row, col));
+  }
+
+  template<int LoadMode, typename PacketType>
+  EIGEN_STRONG_INLINE
+  PacketType packet(Index index) const
+  {
+    return m_functor.packetOp(m_arg1Impl.template packet<LoadMode,PacketType>(index),
+                              m_arg2Impl.template packet<LoadMode,PacketType>(index),
+                              m_arg3Impl.template packet<LoadMode,PacketType>(index));
+  }
+
+protected:
+  const TernaryOp m_functor;
+  evaluator<Arg1> m_arg1Impl;
+  evaluator<Arg2> m_arg2Impl;
+  evaluator<Arg3> m_arg3Impl;
+};
+
 // -------------------- CwiseBinaryOp --------------------
 
 // this is a binary expression
@@ -755,9 +854,7 @@ struct evaluator<Block<ArgType, BlockRows, BlockCols, InnerPanel> >
     OuterStrideAtCompileTime = HasSameStorageOrderAsArgType
                              ? int(outer_stride_at_compile_time<ArgType>::ret)
                              : int(inner_stride_at_compile_time<ArgType>::ret),
-    MaskPacketAccessBit = (InnerSize == Dynamic || (InnerSize % packet_traits<Scalar>::size) == 0)
-                       && (InnerStrideAtCompileTime == 1)
-                        ? PacketAccessBit : 0,
+    MaskPacketAccessBit = (InnerStrideAtCompileTime == 1) ? PacketAccessBit : 0,
     
     FlagsLinearAccessBit = (RowsAtCompileTime == 1 || ColsAtCompileTime == 1 || (InnerPanel && (evaluator<ArgType>::Flags&LinearAccessBit))) ? LinearAccessBit : 0,    
     FlagsRowMajorBit = XprType::Flags&RowMajorBit,
@@ -850,14 +947,14 @@ struct unary_evaluator<Block<ArgType, BlockRows, BlockCols, InnerPanel>, IndexBa
   template<int StoreMode, typename PacketType>
   EIGEN_STRONG_INLINE
   void writePacket(Index row, Index col, const PacketType& x) 
-  { 
+  {
     return m_argImpl.template writePacket<StoreMode,PacketType>(m_startRow.value() + row, m_startCol.value() + col, x); 
   }
   
   template<int StoreMode, typename PacketType>
   EIGEN_STRONG_INLINE
   void writePacket(Index index, const PacketType& x) 
-  { 
+  {
     return writePacket<StoreMode,PacketType>(RowsAtCompileTime == 1 ? 0 : index,
                                              RowsAtCompileTime == 1 ? index : 0,
                                              x);
@@ -884,7 +981,7 @@ struct block_evaluator<ArgType, BlockRows, BlockCols, InnerPanel, /* HasDirectAc
     : mapbase_evaluator<XprType, typename XprType::PlainObject>(block) 
   {
     // TODO: for the 3.3 release, this should be turned to an internal assertion, but let's keep it as is for the beta lifetime
-    eigen_assert(((size_t(block.data()) % EIGEN_PLAIN_ENUM_MAX(1,evaluator<XprType>::Alignment)) == 0) && "data is not aligned");
+    eigen_assert(((internal::UIntPtr(block.data()) % EIGEN_PLAIN_ENUM_MAX(1,evaluator<XprType>::Alignment)) == 0) && "data is not aligned");
   }
 };
 
@@ -1325,7 +1422,7 @@ struct evaluator<Diagonal<ArgType, DiagIndex> >
   enum {
     CoeffReadCost = evaluator<ArgType>::CoeffReadCost,
     
-    Flags = (unsigned int)evaluator<ArgType>::Flags & (HereditaryBits | LinearAccessBit | DirectAccessBit) & ~RowMajorBit,
+    Flags = (unsigned int)(evaluator<ArgType>::Flags & (HereditaryBits | DirectAccessBit) & ~RowMajorBit) | LinearAccessBit,
     
     Alignment = 0
   };

@@ -160,12 +160,6 @@ void run( Application_ptrtype & theApp )
     BOOST_CHECK_SMALL( const_extention_error1,1e-10 );
     BOOST_CHECK_SMALL( const_extention_error2,5e-4 );
 
-    auto exporter = export_type::New( theApp->vm(), "Export" );
-
-    auto trace_exporter = trace_export_type::New( theApp->vm(), "Trace_Export" ) ;
-
-    auto trace_trace_exporter = trace_trace_export_type::New( theApp->vm(), "Trace_Trace_Export" );
-
 
     //-------------------------------------------------------------------------------------------------------
     auto mesh3D = createGMSHMesh( _mesh=new mesh_type,
@@ -200,18 +194,17 @@ void run( Application_ptrtype & theApp )
     FEELPP_ASSERT( std::distance(dft.first,dft.second) != 0 )( std::distance(dft.first,dft.second) ).error( "invalid wirebasket nDof" );
 
     //-------------------------------------------------------------------------------------------------------
+    auto myexporter = exporter(_mesh=mesh,_name="Export" );
+    myexporter->step( 0 )->add( "g", projection_g );
+    myexporter->step( 0 )->add( "glift", glift );
+    myexporter->save();
 
-    exporter->step( 0 )->setMesh( mesh );
-    exporter->step( 0 )->add( "g", projection_g );
-    exporter->step( 0 )->add( "glift", glift );
-    exporter->save();
-
-    trace_exporter->step( 0 )->setMesh( TXh->mesh() );
+    auto trace_exporter = exporter(_mesh=TXh->mesh() ,_name="Trace_Export" );
     trace_exporter->step( 0 )->add( "traceg", trace_projection_g );
     trace_exporter->step( 0 )->add( "const_extension", const_extension );
     trace_exporter->save();
 
-    trace_trace_exporter->step( 0 )->setMesh( TTXh->mesh() );
+    auto trace_trace_exporter = exporter(_mesh=TTXh->mesh() ,_name="Trace_Trace_Export" );
     trace_trace_exporter->step( 0 )->add( "tracetrace_g", trace_trace_projection_g );
     trace_trace_exporter->save();
 

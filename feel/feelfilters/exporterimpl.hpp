@@ -36,7 +36,9 @@
 #include <feel/feelcore/factory.hpp>
 #include <feel/feelcore/singleton.hpp>
 
+#ifdef FEELPP_HAS_GMSH
 #include <feel/feelfilters/exportergmsh.hpp>
+#endif
 #include <feel/feelfilters/exporterensight.hpp>
 
 #ifdef FEELPP_HAS_MPIIO
@@ -63,7 +65,9 @@ template<typename MeshType, int N> class ExporterEnsight;
 template<typename MeshType, int N> class ExporterEnsightGold;
 #endif
 
+#ifdef FEELPP_HAS_GMSH
 template<typename MeshType, int N> class ExporterGmsh;
+#endif
 #if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
 template<typename MeshType, int N> class Exporterhdf5;
 #endif
@@ -189,8 +193,10 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
     else if ( N == 1 && ( exportername == "vtk"  ) )
         exporter = new ExporterVTK<MeshType, N>( worldComm );
 #endif
+#ifdef FEELPP_HAS_GMSH
     else if ( N > 1 || ( exportername == "gmsh" ) )
         exporter = new ExporterGmsh<MeshType,N>( worldComm );
+#endif
     else // fallback
     {
         LOG(INFO) << "[Exporter] The exporter format " << exportername << " Cannot be found. Falling back to Ensight exporter." << std::endl;
@@ -236,8 +242,10 @@ Exporter<MeshType, N>::New( std::string prefix, WorldComm const& worldComm )
     else if ( N == 1 && ( estr == "vtk"  ) )
         exporter = new ExporterVTK<MeshType, N>( prefix, worldComm );
 #endif
+#ifdef FEELPP_HAS_GMSH
     else if ( N > 1 || estr == "gmsh" )
         exporter = new ExporterGmsh<MeshType,N>( prefix, worldComm );
+#endif
     else // fallback
     {
         LOG(INFO) << "[Exporter] The exporter format " << estr << " Cannot be found. Falling back to Ensight exporter." << std::endl;

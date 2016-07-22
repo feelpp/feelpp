@@ -520,27 +520,41 @@ private:
             const bool trial_sibling_of_test = _M_X2->mesh()->isSiblingOf( _M_X1->mesh() );
             if ( test_related_to_trial )
             {
-                auto const& theface = _M_X2->mesh()->face(_M_X1->mesh()->subMeshToMesh( test_eid ));
-                size_type domain_eid = invalid_size_type_value;
-                if ( !theface.element0().isGhostCell() )
-                    domain_eid = theface.element0().id();
-                else if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
-                    domain_eid = theface.element1().id();
-                else
-                    CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
+                size_type face_id = _M_X1->mesh()->subMeshToMesh( test_eid );
+                auto const& theface = _M_X2->mesh()->face(face_id);
+                if ( theface.isConnectedTo1() )
+                {
+                    if ( !theface.element0().isGhostCell() && !theface.element1().isGhostCell() )
+                    {
+                        idsFind.insert( theface.element0().id() );
+                        idsFind.insert( theface.element1().id() );
+                    }
+                    else if ( !theface.element0().isGhostCell() && theface.element1().isGhostCell() )
+                    {
+                        idsFind.insert( theface.element0().id() );
+                        idsFind.insert( theface.element1().id() );
+                    }
+                    else if ( theface.element0().isGhostCell() && !theface.element1().isGhostCell() )
+                    {
+                        idsFind.insert( theface.element0().id() );
+                        idsFind.insert( theface.element1().id() );
+                    }
+                }
+                else if ( theface.isConnectedTo0() )
+                    idsFind.insert( theface.element0().id() );
+                DVLOG(1) << "[test_related_to_trial<1>] test element id: "  << test_eid << " trial element ids : " << idsFind << "\n";
 
-                DVLOG(2) << "[test_related_to_trial<1>] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
-                if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
             }
             else if( trial_related_to_test )
             {
                 auto const& eltTest = _M_X1->mesh()->element(test_eid);
                 for (uint16_type f=0;f< _M_X1->mesh()->numLocalFaces();++f)
-                    {
-                        const size_type idFind = _M_X2->mesh()->meshToSubMesh( eltTest.face(f).id() );
-                        if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
-                    }
-                DVLOG(2) << "[trial_related_to_test<1>] test element id: "  << test_eid << " idsFind.size() "<< idsFind.size() << "\n";
+                {
+                    const size_type idFind = _M_X2->mesh()->meshToSubMesh( eltTest.face(f).id() );
+                    if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
+                }
+                DVLOG(1) << "[trial_related_to_test<1>] ids : " << idsFind;
+                DVLOG(1) << "[trial_related_to_test<1>] test element id: "  << test_eid << " idsFind.size() "<< idsFind.size() << "\n";
             }
             else if ( trial_sibling_of_test )
             {
@@ -559,6 +573,7 @@ private:
             {
                 CHECK ( false ) << "[trial_related_to_test<1>] : test and trial mesh can not be the same here\n";
             }
+            google::FlushLogFiles( google::GLOG_INFO );
             return idsFind;
         }
     std::set<size_type> trialElementId( size_type test_eid, mpl::int_<2> /**/ )

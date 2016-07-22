@@ -584,7 +584,12 @@ VectorUblas<T,Storage>::operator= ( const Vector<value_type> &v )
         return *this;
 
     if ( !this->map().isCompatible( v.map() ) )
+    {
         this->setMap( v.mapPtr() );
+        this->resize( this->map().nLocalDofWithGhost() );
+    }
+
+#if !defined(NDEBUG)
     checkInvariant();
 
     FEELPP_ASSERT( this->localSize() == v.localSize() &&
@@ -592,6 +597,7 @@ VectorUblas<T,Storage>::operator= ( const Vector<value_type> &v )
     ( this->localSize() )( this->map().nLocalDofWithoutGhost() )
     ( this->vec().size() )
     ( v.localSize() )( v.map().nLocalDofWithoutGhost() ).warn( "may be vector invalid  copy" );
+#endif
 
     typedef VectorUblas<T> the_vector_ublas_type;
     typedef typename the_vector_ublas_type::range::type the_vector_ublas_range_type;
@@ -636,6 +642,7 @@ VectorUblas<T,Storage>::operator= ( const Vector<value_type> &v )
         this->assignWithUblasImpl( *vecUblasExtArraySlice );
         return *this;
     }
+#if FEELPP_HAS_PETSC
     const VectorPetsc<T> * vecPetsc = dynamic_cast<VectorPetsc<T> const*>( &v );
     if ( vecPetsc && !is_slice_vector )
     {
@@ -643,6 +650,7 @@ VectorUblas<T,Storage>::operator= ( const Vector<value_type> &v )
         toPETScPtr( *this )->operator=( *vecPetsc );
         return *this;
     }
+#endif
 
     // default operator=
     for ( size_type i = 0; i < this->localSize(); ++i )
@@ -778,6 +786,8 @@ VectorUblas<T,Storage>::add( const T& a, const Vector<T>& v )
         this->addWithUblasImpl( a,*vecUblasExtArraySlice );
         return;
     }
+    
+#if FEELPP_HAS_PETSC
     const VectorPetsc<T> * vecPetsc = dynamic_cast<VectorPetsc<T> const*>( &v );
     if ( vecPetsc && !is_slice_vector )
     {
@@ -785,6 +795,7 @@ VectorUblas<T,Storage>::add( const T& a, const Vector<T>& v )
         toPETScPtr( *this )->add( a,*vecPetsc );
         return;
     }
+#endif
 
     // default add operator
     for ( size_type i = 0; i < this->localSize(); ++i )
@@ -1136,11 +1147,14 @@ VectorUblas<T,Storage>::dot( Vector<T> const& v ) const
     {
         return this->dotWithUblasImpl( *vecUblasExtArraySlice );
     }
+
+#if FEELPP_HAS_PETSC
     const VectorPetsc<T> * vecPetsc = dynamic_cast<VectorPetsc<T> const*>( &v );
     if ( vecPetsc && !is_slice_vector )
     {
         return toPETScPtr( *this )->dot( *vecPetsc );
     }
+#endif
 
     // default dot operator
     value_type localResult = 0;

@@ -527,12 +527,22 @@ public:
         {
             return M_tensor_expr.evaliq( i, c1, c2, q );
         }
+        Eigen::Matrix<value_type, shape::M, shape::N> const&
+        evaliq( uint16_type i, uint16_type q ) const
+        {
+            return M_tensor_expr.evaliq( i, q );
+        }
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             value_type e = M_tensor_expr.evalq( c1, c2, q );
             return e;
+        }
+        Eigen::Matrix<value_type, shape::M, shape::N> const&
+        evalq( uint16_type q ) const
+        {
+            return M_tensor_expr.evalq( q );
         }
 
         gmc_ptrtype M_geo;

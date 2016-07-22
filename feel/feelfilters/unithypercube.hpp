@@ -32,7 +32,9 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
+#ifdef FEELPP_HAS_GMSH
 #include <feel/feelfilters/creategmshmesh.hpp>
+#endif
 #include <feel/feelfilters/domain.hpp>
 
 namespace Feel {
@@ -45,12 +47,17 @@ inline
 boost::shared_ptr<Mesh<Convex> >
 unitHypercube( double h = doption(_name="gmsh.hsize") )
 {
+#ifdef FEELPP_HAS_GMSH
     return createGMSHMesh(_mesh=new Mesh<Convex>,
                           _desc=domain( _name="hypercube",
                                         _shape="hypercube",
                                         _convex=Convex::type(),
                                         _dim=Dim,
                                         _h=h ) );
+#else
+    LOG(WARNING) << "unitHypercube: Feel++ was not built with Gmsh. This function will return a empty mesh.";
+    return boost::make_shared<Mesh<Convex> >();
+#endif
 }
 
 }
