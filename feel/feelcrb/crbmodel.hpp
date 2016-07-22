@@ -1153,9 +1153,9 @@ public:
         return M_model->isInitialized();
     }
 
-    void updateEimRbSpaceContext()
+    void updateRbSpaceContextEim()
     {
-        M_model->updateEimRbSpaceContext();
+        M_model->updateRbSpaceContextEim();
     }
 
     /**
