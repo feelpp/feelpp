@@ -471,6 +471,10 @@ public :
 
             }
 
+        ContextRB() = default;
+        ContextRB( ContextRB const& rbCtx ) = default;
+        ContextRB& operator=( ContextRB const& ) = default;
+
         int pointIndex() const
             {
                 return M_index;
@@ -640,6 +644,20 @@ public :
                 return super::d( ldof, c1, c2, q );
             }
 
+    private :
+
+        friend class boost::serialization::access;
+
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & BOOST_SERIALIZATION_NVP( M_index );
+                ar & BOOST_SERIALIZATION_NVP( M_phi );
+                ar & BOOST_SERIALIZATION_NVP( M_grad );
+                if ( Archive::is_loading::value )
+                    std::cout << "M_phi="<<M_phi<<"\n";
+            }
+
 
     private :
         int M_index;
@@ -702,13 +720,15 @@ public :
                 {
                     M_ctx_fespace.addCtx( m.second, Environment::worldComm().globalRank() );
                 }
+                M_nPoints = M_ctx_fespace.nPoints();
             }
 
         ContextRBSet( rbspace_ptrtype const& rbspace )
             :
             super(),
             M_ctx_fespace( rbspace->functionSpace() ),
-            M_rbspace( rbspace )
+            M_rbspace( rbspace ),
+            M_nPoints( M_ctx_fespace.nPoints() )
             {
                 update();
             }
@@ -718,10 +738,18 @@ public :
         ContextRBSet( functionspace_ptrtype const& functionspace )
             :
             super(),
-            M_ctx_fespace( functionspace )
+            M_ctx_fespace( functionspace ),
+            M_nPoints( M_ctx_fespace.nPoints() )
             {
                 update();
             }
+
+        ContextRBSet()
+            :
+            M_nPoints( 0 )
+            {}
+        ContextRBSet( ContextRBSet const& ctxRbSet ) = default;
+        ContextRBSet& operator=( ContextRBSet const& ) = default;
 
 
         functionspace_ptrtype functionSpace() const
@@ -745,6 +773,11 @@ public :
                 return M_rbspace.get();
             }
 
+        void setRbFunctionSpace( rbspace_ptrtype const& rbSpace )
+            {
+                M_rbspace = rbSpace;
+            }
+
         std::pair<iterator,bool>
         add( node_type const& t )
         {
@@ -761,6 +794,7 @@ public :
             // we suppose here that the point will be added which means that it
             // has been located in the underlying mesh
             auto ret = M_ctx_fespace.add( t );
+            M_nPoints = M_ctx_fespace.nPoints();
             // if the current processor handles the point previously located
             // add it to the ContextRB set
             if ( ret.second )
@@ -771,14 +805,25 @@ public :
         }
         int nPoints() const
         {
-            return M_ctx_fespace.nPoints();
+            return M_nPoints;//M_ctx_fespace.nPoints();
         }
 
         fe_context_type const& feContext() { return M_ctx_fespace; }
 
     private :
+        friend class boost::serialization::access;
+
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version)
+        {
+            ar & boost::serialization::base_object<super>(*this);
+            ar & BOOST_SERIALIZATION_NVP( M_nPoints );
+        }
+
+    private :
         fe_context_type M_ctx_fespace;
         rbspace_ptrtype M_rbspace;
+        int M_nPoints;
     };
     typedef ContextRBSet ctxrbset_type;
     typedef boost::shared_ptr<ctxrbset_type> ctxrbset_ptrtype;
