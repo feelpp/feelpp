@@ -1627,6 +1627,9 @@ public:
         typedef typename matrix_node<value_type>::type matrix_node_type;
         typedef typename super::iterator iterator;
         Context( functionspace_ptrtype const& Xh ) : M_Xh( Xh ) {}
+        Context() = default;
+        Context( Context const& ) = default;
+        Context& operator=( Context const& ) = default;
         virtual ~Context() {}
 
         std::pair<iterator, bool>
