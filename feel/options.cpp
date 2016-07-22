@@ -617,6 +617,8 @@ crbOptions( std::string const& prefix )
 
     ("crb.minimization-func", Feel::po::value<std::string>(), "giving a functional f(output) - give the output which minimizes f(output)" )
     ("crb.minimization-param-name", Feel::po::value<std::string>()->default_value( "output" ), "name of the parameter to be replaced by the output in expression given by crb.minimization-func")
+
+    ( "crb.use-fast-eim",Feel::po::value<bool>()->default_value( false ), "use fast eim algo (with rbspace context)")
     ;
 
     crboptions
