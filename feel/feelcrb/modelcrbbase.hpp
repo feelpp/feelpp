@@ -453,7 +453,55 @@ public :
         return M_is_initialized;
     }
 
-    void updateEimRbSpaceContext()
+    std::map<std::string,rbfunctionspace_context_ptrtype>
+    rbSpaceContextEim() const
+    {
+        std::map<std::string,rbfunctionspace_context_ptrtype> res;
+        for ( int k=0;k<M_funs.size();++k )
+        {
+            boost::any const& ctxRbAny = M_funs[k]->rbSpaceContext();
+            if ( !boost::any_cast<rbfunctionspace_context_ptrtype>( &ctxRbAny ) )
+                continue;
+            auto ctxRb = boost::any_cast<rbfunctionspace_context_ptrtype>( ctxRbAny );
+            res[M_funs[k]->name()] = ctxRb;
+        }
+        for ( int k=0;k<M_funs_d.size();++k )
+        {
+            boost::any const& ctxRbAny = M_funs_d[k]->rbSpaceContext();
+            if ( !boost::any_cast<rbfunctionspace_context_ptrtype>( &ctxRbAny ) )
+                continue;
+            auto ctxRb = boost::any_cast<rbfunctionspace_context_ptrtype>( ctxRbAny );
+            res[M_funs_d[k]->name()] = ctxRb;
+        }
+        return res;
+    }
+
+    void
+    setRbSpaceContextEim( std::map<std::string,rbfunctionspace_context_ptrtype> const& rbCtx )
+    {
+        for ( int k=0;k<M_funs.size();++k )
+        {
+            std::string const& eimName = M_funs[k]->name();
+            auto itFindRbCtx = rbCtx.find( eimName );
+            if ( itFindRbCtx == rbCtx.end() )
+                continue;
+            rbfunctionspace_context_ptrtype rbCtx2 = itFindRbCtx->second;
+            rbCtx2->setRbFunctionSpace( this->rBFunctionSpace() );
+            M_funs[k]->setRbSpaceContext( rbCtx2 );
+        }
+        for ( int k=0;k<M_funs_d.size();++k )
+        {
+            std::string const& eimName = M_funs_d[k]->name();
+            auto itFindRbCtx = rbCtx.find( eimName );
+            if ( itFindRbCtx == rbCtx.end() )
+                continue;
+            rbfunctionspace_context_ptrtype rbCtx2 = itFindRbCtx->second;
+            rbCtx2->setRbFunctionSpace( this->rBFunctionSpace() );
+            M_funs_d[k]->setRbSpaceContext( rbCtx2 );
+        }
+    }
+
+    void updateRbSpaceContextEim()
     {
         for ( int k=0;k<M_funs.size();++k )
             M_funs[k]->updateRbSpaceContext( this->rBFunctionSpace() );
