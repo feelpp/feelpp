@@ -19,7 +19,7 @@ Line(7) = {6, 7};
 Line(8) = {3, 4};
 Line(9) = {4, 5};
 Line(10) = {5, 6};
-Line(11) = {1, 2, 3, 4};
+//Line(11) = {1, 2, 3, 4};
 Line Loop(11) = {1, 2, 3, 4};
 Plane Surface(11) = {11};
 Line Loop(12) = {5, 6, 7, -2};
@@ -43,7 +43,7 @@ Extrude {{0, 0, 1}, {0, 0, 0}, Pi/2} {
 Extrude {{0, 0, 1}, {0, 0, 0}, Pi/2} {
   Surface{132, 149, 166};
 }
-Physical Line("centerline") = {11};
+Physical Line("centerline") = {1,5,8};
 Physical Surface("inlet") = {29, 182, 131, 80};
 Physical Surface("section1") = {175, 124, 73, 22};
 Physical Surface("section2") = {141, 90, 39, 191};

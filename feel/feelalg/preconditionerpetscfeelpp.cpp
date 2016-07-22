@@ -65,8 +65,8 @@ static PetscErrorCode PCApply_FEELPP(PC pc,Vec x,Vec y)
     }
     else
     {
-        x_vec.reset( new Feel::VectorPetsc<double>( x ) );
-        y_vec.reset( new Feel::VectorPetsc<double>( y ) );
+        x_vec.reset( new Feel::VectorPetsc<double>( x, preconditioner->matrix()->mapColPtr() ) );
+        y_vec.reset( new Feel::VectorPetsc<double>( y, preconditioner->matrix()->mapColPtr() ) );
     }
     preconditioner->apply( *x_vec,*y_vec );
 
