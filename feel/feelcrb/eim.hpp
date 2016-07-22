@@ -63,6 +63,7 @@
 namespace Feel
 {
 class ModelCrbBaseBase {};
+class EimFunctionNoSolveBase {};
 
 /**
   \class EIM
@@ -1390,6 +1391,8 @@ public:
     virtual void addInterpolationPoint( node_type const& t ) = 0;
 
     virtual void updateRbSpaceContext( boost::any const& rbspacebase ) = 0;
+    virtual boost::any rbSpaceContext() const = 0;
+    virtual void setRbSpaceContext( boost::any const& rbCtxBase ) = 0;
 
     virtual void setMax(int m, int max_q, int max_g, int max_z, int max_solution) = 0;
     virtual int maxQ() const = 0;
@@ -1458,7 +1461,9 @@ public:
     //typedef ModelType* model_ptrtype;
     typedef boost::shared_ptr<model_type> model_ptrtype;
 
-    static const bool model_use_solve = boost::is_base_of<ModelCrbBaseBase,model_type>::type::value;
+    static const bool model_use_solve = !boost::is_base_of<EimFunctionNoSolveBase,model_type>::type::value;
+    //static const bool model_use_solve = boost::is_base_of<ModelCrbBaseBase,model_type>::type::value;
+    static const bool model_is_modelcrbbase = boost::is_base_of<ModelCrbBaseBase,model_type>::type::value;
 
     typedef SpaceType functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
@@ -1505,9 +1510,22 @@ public:
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
     typedef typename parameterspace_type::sampling_type sampling_type;
 
+
     // reduced basis space
-    typedef ReducedBasisSpace<model_type> rbfunctionspace_type;
-    //typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
+    //typedef ReducedBasisSpace<model_type> rbfunctionspace_type;
+    // typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
+    template <typename TheModelType,typename TheModelHasRbSpaceType>
+    struct RbSpaceFromModel
+    {
+        typedef ReducedBasisSpace<TheModelType> type;
+    };
+    template <typename TheModelType>
+    struct RbSpaceFromModel<TheModelType,mpl::bool_<true> >
+    {
+        typedef typename TheModelType::rbfunctionspace_type type;
+    };
+    typedef typename RbSpaceFromModel<model_type,mpl::bool_<model_is_modelcrbbase> >::type rbfunctionspace_type;
+
     typedef boost::shared_ptr<rbfunctionspace_type> rbfunctionspace_ptrtype;
     typedef typename rbfunctionspace_type::ctxrbset_type rbfunctionspace_context_type;
     typedef typename rbfunctionspace_type::ctxrbset_ptrtype rbfunctionspace_context_ptrtype;
@@ -1753,6 +1771,11 @@ public:
         M_ctxFeModelSolution->add( no );
         std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { DVLOG(2) << "t=" << t << "\n"; } );
     }
+    boost::any rbSpaceContext() const
+    {
+        return M_ctxRbModelSolution;
+    }
+
     void updateRbSpaceContext( boost::any const& rbspacebase )
     {
         this->updateRbSpaceContext( rbspacebase, mpl::bool_<use_subspace_element>() );
@@ -1761,10 +1784,10 @@ public:
     {
         if ( !boost::any_cast<rbfunctionspace_ptrtype>( &rbspacebase ) )
         {
-            //std::cout << "not rbfunctionspace_ptrtype\n";
+            std::cout << "[EIMFunction::updateRbSpaceContext] cast fails with rbfunctionspace_ptrtype\n";
             return;
         }
-
+        std::cout << "[EIMFunction::updateRbSpaceContext] cast ok\n";
         rbfunctionspace_ptrtype rbspace = boost::any_cast<rbfunctionspace_ptrtype>( rbspacebase );
 
         M_ctxRbModelSolution.reset( new rbfunctionspace_context_type( rbspace ) );
@@ -1780,6 +1803,16 @@ public:
         {
             CHECK( false ) << "TODO rbspace composite";
         }
+    void setRbSpaceContext( boost::any const& rbCtxBase )
+    {
+        if ( !boost::any_cast<rbfunctionspace_context_ptrtype>( &rbCtxBase ) )
+        {
+            std::cout << "[EIMFunction::setRbSpaceContext] cast fails with rbfunctionspace_context_ptrtype\n";
+            return;
+        }
+        std::cout << "[EIMFunction::setRbSpaceContext] cast ok\n";
+        M_ctxRbModelSolution = boost::any_cast<rbfunctionspace_context_ptrtype>( rbCtxBase );
+    }
 
 
     node_type interpolationPoint( int position ) const
@@ -3016,8 +3049,9 @@ BOOST_PARAMETER_FUNCTION(
     return boost::make_shared<eim_type>( model, space, element, parameter, expr, sampling, name );
 } // eim
 
+
 template<typename ModelType>
-struct EimFunctionNoSolve
+struct EimFunctionNoSolve : public EimFunctionNoSolveBase
 {
     typedef typename ModelType::functionspace_type functionspace_type;
     typedef typename ModelType::functionspace_ptrtype functionspace_ptrtype;
