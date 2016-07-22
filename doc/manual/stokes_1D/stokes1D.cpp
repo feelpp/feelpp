@@ -46,17 +46,17 @@ struct f_evaluate
     using node_t = boost::numeric::ublas::vector<double>;
     f_evaluate( element1_type& u1, element2_type& u2, double R ) : M_u1(u1), M_u2(u2), M_R(R), M_z(3)
     {
-        /*M_z[0]=0;
-        M_z[1]=0;*/
+        M_z[0]=0;
         M_z[1]=0;
-        M_z[2]=0;
+        //M_z[1]=0;
+        //M_z[2]=0;
         
     }
     double operator()( uint16_type c1, uint16_type c2, boost::numeric::ublas::vector<double> const& x, boost::numeric::ublas::vector<double> const& ) const
     {
-        M_z[0]=x[0];//M_z[2]=x[2];
-        //return M_u1(M_z)(0,0,0)*((c1==0)*x[0]/M_R+(c1==1)*x[1]/M_R)+M_u2(M_z)(0,0,0)*((c1==2)*(1-(x[0]*x[0]+x[1]*x[1])/(M_R*M_R)));
-        return M_u1(M_z)(0,0,0)*((c1==1)*x[1]/M_R+(c1==2)*x[2]/M_R)+M_u2(M_z)(0,0,0)*((c1==0)*(1-(x[1]*x[1]+x[2]*x[2])/(M_R*M_R)));
+        M_z[2]=x[2];//M_z[0]=x[0];
+        return M_u1(M_z)(0,0,0)*((c1==0)*x[0]/M_R+(c1==1)*x[1]/M_R)+M_u2(M_z)(0,0,0)*((c1==2)*(1-(x[0]*x[0]+x[1]*x[1])/(M_R*M_R)));
+        //return M_u1(M_z)(0,0,0)*((c1==1)*x[1]/M_R+(c1==2)*x[2]/M_R)+M_u2(M_z)(0,0,0)*((c1==0)*(1-(x[1]*x[1]+x[2]*x[2])/(M_R*M_R)));
     }
     element1_type& M_u1;
     element2_type& M_u2;
