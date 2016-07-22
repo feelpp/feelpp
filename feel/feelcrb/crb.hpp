@@ -314,7 +314,8 @@ public:
         M_fixedpointCriticalValue( doption(_name="crb.fixedpoint-critical-value") ),
         M_fixedpointUseAitken( boption(_name="crb.use-aitken") ),
         M_loadElementsDb( boption(_name="crb.load-elements-database") ),
-        M_hasEimRbSpaceContext( false ),
+        M_useRbSpaceContextEim( boption(_name="crb.use-fast-eim") ),
+        M_hasRbSpaceContextEim( false ),
         M_useAccurateApee( boption(_name="crb.use-accurate-apee") ),
         M_computeApeeForEachTimeStep( boption(_name="crb.compute-apee-for-each-time-step") ),
         M_seekMuInComplement( boption(_name="crb.seek-mu-in-complement") ),
@@ -908,12 +909,14 @@ public:
      * fixed point ( dual problem ) - ONLINE step
      * \param N : dimension of the reduced basis
      * \param mu :current parameter
+     * \param uN : primal reduced solution ( vectorN_type )
      * \param uNdu : dual reduced solution ( vectorN_type )
      * \param uNduold : dual old reduced solution ( vectorN_type )
      * \param output : vector of outpus at each time step
      * \param K : number of time step ( default value, must be >0 if used )
      */
-    void fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K=0) const;
+    void fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > const& uN,
+                          std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K=0) const;
 
     /**
      * fixed point ( main ) - ONLINE step
@@ -1522,7 +1525,8 @@ protected:
     bool M_fixedpointUseAitken;
 
     bool M_loadElementsDb;
-    bool M_hasEimRbSpaceContext;
+    bool M_useRbSpaceContextEim;
+    bool M_hasRbSpaceContextEim;
 
     bool M_useAccurateApee;
     bool M_computeApeeForEachTimeStep;
@@ -3231,10 +3235,10 @@ CRB<TruthModelType>::offline()
             throw std::logic_error( "[CRB::offline] ERROR : build variance is not actived" );
         //buildVarianceMatrixPhi( M_N );
 
-        if ( false )
+        if ( M_useRbSpaceContextEim )
         {
-            M_model->updateEimRbSpaceContext();
-            M_hasEimRbSpaceContext = true;
+            M_model->updateRbSpaceContextEim();
+            M_hasRbSpaceContextEim = true;
         }
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
@@ -4401,18 +4405,14 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
     int N = uN[0].size();
 
     matrixN_type Aprdu ( (int)N, (int)N ) ;
-    matrixN_type Mprdu ( (int)N, (int)N ) ;
     vectorN_type Fdu ( (int)N );
     vectorN_type du ( (int)N );
     vectorN_type pr ( (int)N );
-    vectorN_type oldpr ( (int)N );
-
-
-    double time = 1e30;
 
     beta_vector_type betaAqm;
-    beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
+
+    bool is_linear = M_model->isLinear();
 
     double correction=0;
 
@@ -4421,7 +4421,20 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
         Aprdu.setZero( N , N );
         Fdu.setZero( N );
 
+#if 0
         boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time);
+#else
+        if ( is_linear )
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu/* ,time*/);
+        else
+        {
+            if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
+                boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( uN[0], mu/*, N*/ );
+            else
+                boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                    M_model->computeBetaQm( this->expansion( uN[0], N ,M_model->rBFunctionSpace()->primalRB() ), mu );
+        }
+#endif
 
         for(size_type q = 0;q < M_model->Ql(0); ++q)
         {
@@ -4440,7 +4453,11 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
     }
     else
     {
+        matrixN_type Mprdu ( (int)N, (int)N ) ;
+        vectorN_type oldpr ( (int)N );
+        beta_vector_type betaMqm;
 
+        double time = 1e30;
         double dt = M_model->timeStep();
         double Tf = M_model->timeFinal();
         int K = Tf/dt;
@@ -4766,7 +4783,8 @@ CRB<TruthModelType>::computeConditioning( matrixN_type & A ) const
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K) const
+CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > const& uN,
+                                      std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K ) const
 {
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
@@ -4827,8 +4845,11 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
                 next_uNdu = uNdu[0];
                 // update coefficients of affine decomposition
                 // warning! should be uN[0] instead of uNdu[0] but no access to uN[0] at this time
-                boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
-                    M_model->computeBetaQm( this->expansion( uNdu[0], N ,M_model->rBFunctionSpace()->dualRB() ), mu );
+                if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
+                    boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( uN[0], mu/*, N*/ );
+                else
+                    boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                        M_model->computeBetaQm( this->expansion( uN[0]/*uNdu[0]*/, N ,M_model->rBFunctionSpace()->primalRB/*dualRB*/() ), mu );
                 // assemble rb matrix
                 Adu.setZero( N,N );
                 for ( size_type q = 0; q < Qa; ++q )
@@ -5101,7 +5122,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                 // backup uNdu
                 previous_uN = uN[0];
                 // update coefficients of affine decomposition
-                if ( M_hasEimRbSpaceContext )
+                if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
                     boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( uN[0], mu/*, N*/ );
                 else
                     boost::tie( betaMqm, betaAqm, betaFqm ) =
@@ -6030,7 +6051,7 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 
     if( M_solve_dual_problem )
     {
-        fixedPointDual( N, mu , uNdu , uNduold , output_vector , K ) ;
+        fixedPointDual( N, mu , uN, uNdu , uNduold , output_vector , K ) ;
 
         if ( computeOutput )
         {
@@ -10709,6 +10730,15 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 
     }
 
+
+
+    ar & BOOST_SERIALIZATION_NVP( M_hasRbSpaceContextEim );
+    if ( M_hasRbSpaceContextEim )
+    {
+        auto rbSpaceContextEim = M_model->model()->rbSpaceContextEim();
+        ar & BOOST_SERIALIZATION_NVP( rbSpaceContextEim );
+    }
+
 #if 0
         for(int i=0; i<M_N; i++)
             ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
@@ -10878,6 +10908,16 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
         }
 
     }// version > 0 => EIM error estimation
+
+
+    ar & BOOST_SERIALIZATION_NVP( M_hasRbSpaceContextEim );
+    if ( M_hasRbSpaceContextEim )
+    {
+        std::map<std::string,typename model_type::model_type::rbfunctionspace_context_ptrtype> rbSpaceContextEim;
+        ar & BOOST_SERIALIZATION_NVP( rbSpaceContextEim );
+        M_model->model()->setRbSpaceContextEim( rbSpaceContextEim );
+    }
+
 
 #if 0
     std::cout << "[loadDB] output index : " << M_output_index << "\n"
