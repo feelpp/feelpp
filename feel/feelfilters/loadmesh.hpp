@@ -102,7 +102,8 @@ BOOST_PARAMETER_FUNCTION(
     LOG_IF( WARNING,
             mesh_name.extension() != ".geo" &&
             mesh_name.extension() != ".json" &&
-            mesh_name.extension() != ".msh" )
+            mesh_name.extension() != ".msh" &&
+            mesh_name.extension() != ".arm" )
         << "Invalid filename " << filenameExpand << " it should have either the .geo. .json or .msh extension\n";
 
 
