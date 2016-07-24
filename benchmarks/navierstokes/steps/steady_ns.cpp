@@ -225,7 +225,7 @@ int main(int argc, char**argv )
     }
     else
     {
-        b->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=l.vectorPtr(),_prec=precPetscStokes );
+        bb->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=l.vectorPtr(),_prec=precPetscStokes );
     }
     toc(" - Solving Stokes...");
 
@@ -301,6 +301,7 @@ int main(int argc, char**argv )
             }
             else
             {
+                auto b = backend(_name="picard",_rebuild=true);
                 auto precPetsc = preconditioner( _prefix="picard",
                                                 _matrix=at.matrixPtr(),_pc=b->pcEnumType(),
                                                 _pcfactormatsolverpackage=b->matSolverPackageEnumType(),
@@ -403,6 +404,13 @@ int main(int argc, char**argv )
             }
             else
             {
+                auto b = backend(_name="newton",_rebuild=true);
+                auto precPetsc = preconditioner( _prefix="newton",
+                                                _matrix=at.matrixPtr(),_pc=b->pcEnumType(),
+                                                _pcfactormatsolverpackage=b->matSolverPackageEnumType(),
+                                                _backend=b->shared_from_this(),
+                                                _worldcomm=b->comm() );
+                
                 //at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_rebuild=true) );
                 backend(_name="newton",_rebuild=true)->solve(_matrix=at.matrixPtr(),_solution=deltaU,_rhs=r.vectorPtr(),_prec=precPetsc );
             }
