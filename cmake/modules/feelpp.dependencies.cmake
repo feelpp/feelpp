@@ -104,6 +104,7 @@ INCLUDE(CheckFunctionExists)
 INCLUDE(CheckSymbolExists)
 INCLUDE(CheckCXXSourceCompiles)
 INCLUDE(CheckLibraryExists)
+INCLUDE(CMakeDependentOption)
 
 OPTION(FEELPP_ENABLE_SYSTEM_EIGEN3 "enable system eigen3 support" OFF)
 
@@ -116,14 +117,13 @@ OPTION(FEELPP_ENABLE_SCHED_SLURM "Enable Feel++ slurm submission scripts generat
 OPTION(FEELPP_ENABLE_SCHED_CCC "Enable Feel++ tgcc/ccc submission scripts generation" OFF)
 OPTION(FEELPP_ENABLE_SCHED_LOADLEVELER "Enable Feel++ ibm(supermuc) submission scripts generation" OFF)
 OPTION(FEELPP_ENABLE_TBB "enable feel++ TBB support" OFF)
-OPTION(FEELPP_ENABLE_SLEPC "enable feel++ SLEPc support" ON)
 OPTION(FEELPP_ENABLE_TRILINOS "enable feel++ Trilinos support" OFF)
 OPTION(FEELPP_ENABLE_EXODUS "enable feel++ Exodus support" OFF)
-if ( APPLE )
-  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" OFF)
-else()
-  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
-endif()
+#if ( APPLE )
+  #OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" OFF)
+#else()
+  #OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
+#endif()
 OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
 
 
@@ -386,7 +386,9 @@ endif(FEELPP_ENABLE_MKL)
 # On debian, 
 # - do not install hdf5-helpers, otherwise it will pick the serial version by default
 # - install only the libhdf5-openmpi-dev package
-OPTION( FEELPP_ENABLE_HDF5 "Enable the HDF5 library" ON )
+
+cmake_dependent_option(FEELPP_ENABLE_HDF5 "Enable HDF5 Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+
 if ( FEELPP_ENABLE_HDF5 )
   find_package(HDF5)
   if( HDF5_FOUND ) 
@@ -564,18 +566,22 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   
 endif()
 
-find_package(FFTW)
-if( FFTW_FOUND )
-  set(FEELPP_HAS_FFTW 1)
-  INCLUDE_DIRECTORIES( ${FFTW_INCLUDES} )
-  set(FEELPP_LIBRARIES ${FFTW_LIBRARIES} ${FEELPP_LIBRARIES})
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} fftw" )
+cmake_dependent_option(FEELPP_ENABLE_FFTW "Enable fftw Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_ENABLE_FFTW)
+  find_package(FFTW)
+  if( FFTW_FOUND )
+    set(FEELPP_HAS_FFTW 1)
+    INCLUDE_DIRECTORIES( ${FFTW_INCLUDES} )
+    set(FEELPP_LIBRARIES ${FFTW_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} fftw" )
+  endif()
 endif()
 
 #
 # submodules
 #
 include(feelpp.module.hpddm)
+cmake_dependent_option(FEELPP_ENABLE_NLOPT "Enable NlOpt Support" OFF "FEELPP_MINIMAL_BUILD" ON)
 include(feelpp.module.nlopt)
 include(feelpp.module.cereal)
 include(feelpp.module.paralution)
@@ -623,7 +629,8 @@ if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CM
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
   set(EIGEN_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/feel)
   add_subdirectory(contrib/eigen)
-  set( EIGEN3_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/eigen ${FEELPP_SOURCE_DIR}/contrib/eigen/unsupported)
+  set( EIGEN3_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/eigen ${FEELPP_SOURCE_DIR}/contrib/eigen/unsupported
+      ${EIGEN_INCLUDE_INSTALL_DIR} ${EIGEN_INCLUDE_INSTALL_DIR}/unsupported)
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/Contrib" )
 elseif( EIGEN3_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/System" )
@@ -647,12 +654,18 @@ message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
 #
 # Ann
 #
+
+cmake_dependent_option(FEELPP_ENABLE_ANN "Enable ANN Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+
+if(FEELPP_ENABLE_ANN)
 FIND_PACKAGE(ANN)
-if ( ANN_FOUND )
-  set(FEELPP_HAS_ANN_H 1)
-  INCLUDE_DIRECTORIES( ${ANN_INCLUDE_DIR} )
-  SET(FEELPP_LIBRARIES ${ANN_LIBRARIES} ${FEELPP_LIBRARIES})
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ANN" )
+  if ( ANN_FOUND )
+    set(FEELPP_HAS_ANN 1)
+    set(FEELPP_HAS_ANN_H 1)
+    INCLUDE_DIRECTORIES( ${ANN_INCLUDE_DIR} )
+    SET(FEELPP_LIBRARIES ${ANN_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ANN" )
+  endif()
 endif()
 
 #
@@ -729,68 +742,91 @@ endif()
 
 
 # xml
-find_package(LibXml2 2.6.27)
-if ( LIBXML2_FOUND )
-    message(STATUS "[feelpp] LibXml2: ${LIBXML2_INCLUDE_DIR} ${LIBXML2_LIBRARIES}")
-    INCLUDE_DIRECTORIES(${LIBXML2_INCLUDE_DIR})
-    SET(FEELPP_LIBRARIES ${LIBXML2_LIBRARIES} ${FEELPP_LIBRARIES})
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} LibXml2" )
-    set( FEELPP_HAS_LIBXML2 1 )
+cmake_dependent_option(FEELPP_ENABLE_LIBXML2 "Enable libxml2 Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_ENABLE_LIBXML2)
+  find_package(LibXml2 2.6.27)
+  if ( LIBXML2_FOUND )
+      message(STATUS "[feelpp] LibXml2: ${LIBXML2_INCLUDE_DIR} ${LIBXML2_LIBRARIES}")
+      INCLUDE_DIRECTORIES(${LIBXML2_INCLUDE_DIR})
+      SET(FEELPP_LIBRARIES ${LIBXML2_LIBRARIES} ${FEELPP_LIBRARIES})
+      SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} LibXml2" )
+      set( FEELPP_HAS_LIBXML2 1 )
+  endif()
 endif()
 
 # Python libs
-FIND_PACKAGE(PythonLibs)
-if ( PYTHONLIBS_FOUND )
-  message(STATUS "[feelpp] PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
-  INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
-  SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
-  set( FEELPP_HAS_PYTHON 1 )
+
+cmake_dependent_option(FEELPP_ENABLE_PYTHON "Enable Python Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+
+if(FEELPP_ENABLE_PYTHON)
+  FIND_PACKAGE(PythonLibs)
+  if ( PYTHONLIBS_FOUND )
+    message(STATUS "[feelpp] PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
+    INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
+    SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
+    set( FEELPP_HAS_PYTHON 1 )
+  endif()
+
+  #
+  # Python interp
+  #
+  FIND_PACKAGE(PythonInterp REQUIRED)
+  if(PYTHONINTERP_FOUND)
+    execute_process(COMMAND
+      ${PYTHON_EXECUTABLE}
+      -c "import sys; print sys.version[0:3]"
+      OUTPUT_VARIABLE PYTHON_VERSION
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    message(STATUS "[feelpp] Found python version ${PYTHON_VERSION}")
+  endif()
 endif()
 
-#
-# Python interp
-#
-FIND_PACKAGE(PythonInterp REQUIRED)
-if(PYTHONINTERP_FOUND)
-  execute_process(COMMAND
-    ${PYTHON_EXECUTABLE}
-    -c "import sys; print sys.version[0:3]"
-    OUTPUT_VARIABLE PYTHON_VERSION
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
+cmake_dependent_option(FEELPP_ENABLE_METIS "Enable Metis Support" OFF "FEELPP_MINIMAL_BUILD" ON)
 
-  message(STATUS "[feelpp] Found python version ${PYTHON_VERSION}")
+if(FEELPP_ENABLE_METIS)
+  include(feelpp.module.metis)
 endif()
 
-include(feelpp.module.metis)
+cmake_dependent_option(FEELPP_ENABLE_PARMETIS "Enable Parmetis Support" OFF "FEELPP_MINIMAL_BUILD" ON)
 
-FIND_LIBRARY(PARMETIS_LIBRARY
-  NAMES
-  parmetis
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  )
+if(FEELPP_ENABLE_PARMETIS)
+  FIND_LIBRARY(PARMETIS_LIBRARY
+    NAMES
+    parmetis
+    PATHS
+    $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+    )
+  
+  IF( PARMETIS_LIBRARY )
+    message(STATUS "[feelpp] Parmetis: ${PARMETIS_LIBRARY}" )
+    SET(FEELPP_LIBRARIES ${PARMETIS_LIBRARY} ${FEELPP_LIBRARIES})
+  ENDIF()
+endif()
 
+cmake_dependent_option(FEELPP_ENABLE_SCOTCH "Enable Scotch Support" OFF "FEELPP_MINIMAL_BUILD" ON)
 
-IF( PARMETIS_LIBRARY )
-  message(STATUS "[feelpp] Parmetis: ${PARMETIS_LIBRARY}" )
-  SET(FEELPP_LIBRARIES ${PARMETIS_LIBRARY} ${FEELPP_LIBRARIES})
-ENDIF()
+if(FEELPP_ENABLE_SCOTCH)
+  FIND_PACKAGE(Scotch)
+  IF( SCOTCH_FOUND )
+    message(STATUS "[feelpp] SCOTCH: ${SCOTCH_LIBRARIES}" )
+    SET(FEELPP_LIBRARIES ${SCOTCH_LIBRARIES} ${FEELPP_LIBRARIES})
+  ENDIF()
+endif()
 
-FIND_PACKAGE(Scotch)
-IF( SCOTCH_FOUND )
-  message(STATUS "[feelpp] SCOTCH: ${SCOTCH_LIBRARIES}" )
-  SET(FEELPP_LIBRARIES ${SCOTCH_LIBRARIES} ${FEELPP_LIBRARIES})
-ENDIF()
+cmake_dependent_option(FEELPP_ENABLE_ML "Enable ML Support" OFF "FEELPP_MINIMAL_BUILD" ON)
 
-find_package(ML)
-message(STATUS "[feelpp] ML: ${ML_LIBRARY}" )
-IF ( ML_FOUND )
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ML" )
-  INCLUDE_DIRECTORIES(${ML_INCLUDE_DIR})
-  SET(FEELPP_LIBRARIES ${ML_LIBRARY} ${FEELPP_LIBRARIES})
-ENDIF()
+if(FEELPP_ENABLE_ML)
+  find_package(ML)
+  message(STATUS "[feelpp] ML: ${ML_LIBRARY}" )
+  IF ( ML_FOUND )
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ML" )
+    INCLUDE_DIRECTORIES(${ML_INCLUDE_DIR})
+    SET(FEELPP_LIBRARIES ${ML_LIBRARY} ${FEELPP_LIBRARIES})
+  ENDIF()
+endif()
 
 if ( NOT GFORTRAN_LIBRARY )
   FIND_LIBRARY(GFORTRAN_LIBRARY
@@ -809,68 +845,97 @@ message(STATUS "[feelpp] gfortran lib: ${GFORTRAN_LIBRARY} ")
 if ( GFORTRAN_LIBRARY )
   set( FEELPP_LIBRARIES ${GFORTRAN_LIBRARY} ${FEELPP_LIBRARIES})
 endif()
-FIND_PACKAGE(MUMPS)
-if ( GFORTRAN_LIBRARY AND MUMPS_FOUND )
-  set( FEELPP_HAS_MUMPS 1 )
-  set( FEELPP_LIBRARIES ${MUMPS_LIBRARIES} ${FEELPP_LIBRARIES} )
-endif()
-FIND_LIBRARY(SUITESPARSECONFIG_LIBRARY
-  NAMES
-  suitesparseconfig
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  $ENV{SUITESPARSE_DIR}/lib
-  )
-IF ( SUITESPARSECONFIG_LIBRARY )
-  SET(FEELPP_LIBRARIES  ${SUITESPARSECONFIG_LIBRARY} ${FEELPP_LIBRARIES})
-endif()
-FIND_LIBRARY(AMD_LIBRARY
-  NAMES
-  amd
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  $ENV{SUITESPARSE_DIR}/lib
-  )
-IF ( AMD_LIBRARY )
-  SET(FEELPP_LIBRARIES  ${AMD_LIBRARY} ${FEELPP_LIBRARIES})
+
+cmake_dependent_option(FEELPP_ENABLE_MUMPS "Enable MUMPS Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+
+if( FEELPP_ENABLE_MUMPS)
+  FIND_PACKAGE(MUMPS)
+  if ( GFORTRAN_LIBRARY AND MUMPS_FOUND )
+    set( FEELPP_HAS_MUMPS 1 )
+    set( FEELPP_LIBRARIES ${MUMPS_LIBRARIES} ${FEELPP_LIBRARIES} )
+  endif()
 endif()
 
-FIND_LIBRARY(COLAMD_LIBRARY
-  NAMES
-  colamd
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  $ENV{SUITESPARSE_DIR}/lib
-  )
-IF ( COLAMD_LIBRARY )
-  SET(FEELPP_LIBRARIES  ${COLAMD_LIBRARY} ${FEELPP_LIBRARIES})
+cmake_dependent_option(FEELPP_ENABLE_SUITESPARSE "Enable SuiteSparse Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+
+if(FEELPP_ENABLE_SUITESPARSE)
+  FIND_LIBRARY(SUITESPARSECONFIG_LIBRARY
+    NAMES
+    suitesparseconfig
+    PATHS
+    $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+    $ENV{SUITESPARSE_DIR}/lib
+    )
+  IF ( SUITESPARSECONFIG_LIBRARY )
+    SET(FEELPP_LIBRARIES  ${SUITESPARSECONFIG_LIBRARY} ${FEELPP_LIBRARIES})
+  endif()
+  message(STATUS "[feelpp] SuiteSparseConfig: ${SUITESPARSECONFIG_LIBRARY}" )
 endif()
 
-FIND_LIBRARY(CHOLMOD_LIBRARY
-  NAMES
-  cholmod
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  $ENV{SUITESPARSE_DIR}/lib
-  )
+cmake_dependent_option(FEELPP_ENABLE_AMD "Enable AMD Library Support" OFF "FEELPP_MINIMAL_BUILD" ON)
 
-FIND_LIBRARY(UMFPACK_LIBRARY
-  NAMES
-  umfpack
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  $ENV{SUITESPARSE_DIR}/lib
-  )
-message(STATUS "[feelpp] SuiteSparseConfig: ${SUITESPARSECONFIG_LIBRARY}" )
-message(STATUS "[feelpp] Amd: ${AMD_LIBRARY}" )
-message(STATUS "[feelpp] ColAmd: ${COLAMD_LIBRARY}" )
-message(STATUS "[feelpp] Cholmod: ${CHOLMOD_LIBRARY}" )
-message(STATUS "[feelpp] Umfpack: ${UMFPACK_LIBRARY}" )
+if(FEELPP_ENABLE_AMD)
+  FIND_LIBRARY(AMD_LIBRARY
+    NAMES
+    amd
+    PATHS
+    $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+    $ENV{SUITESPARSE_DIR}/lib
+    )
+  
+  IF ( AMD_LIBRARY )
+    SET(FEELPP_LIBRARIES  ${AMD_LIBRARY} ${FEELPP_LIBRARIES})
+  endif()
+  message(STATUS "[feelpp] Amd: ${AMD_LIBRARY}" )
+endif()
+
+cmake_dependent_option(FEELPP_ENABLE_COLAMD "Enable COLAMD Library Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+
+if(FEELPP_ENABLE_COLAMD)
+  FIND_LIBRARY(COLAMD_LIBRARY
+    NAMES
+    colamd
+    PATHS
+    $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+    $ENV{SUITESPARSE_DIR}/lib
+    )
+  IF ( COLAMD_LIBRARY )
+    SET(FEELPP_LIBRARIES  ${COLAMD_LIBRARY} ${FEELPP_LIBRARIES})
+  endif()
+  message(STATUS "[feelpp] ColAmd: ${COLAMD_LIBRARY}" )
+endif()
+
+cmake_dependent_option(FEELPP_ENABLE_CHOLMOD "Enable CHOLMOD Library Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+
+if(FEELPP_ENABLE_CHOLMOD)
+  FIND_LIBRARY(CHOLMOD_LIBRARY
+    NAMES
+    cholmod
+    PATHS
+    $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+    $ENV{SUITESPARSE_DIR}/lib
+    )
+  message(STATUS "[feelpp] Cholmod: ${CHOLMOD_LIBRARY}" )
+endif()
+
+cmake_dependent_option(FEELPP_ENABLE_UMFPACK "Enable UMFPACK Library Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+
+if(FEELPP_ENABLE_UMFPACK)
+  FIND_LIBRARY(UMFPACK_LIBRARY
+    NAMES
+    umfpack
+    PATHS
+    $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+    $ENV{SUITESPARSE_DIR}/lib
+    )
+  message(STATUS "[feelpp] Umfpack: ${UMFPACK_LIBRARY}" )
+endif()
+
 if ( AMD_LIBRARY AND CHOLMOD_LIBRARY AND UMFPACK_LIBRARY )
   SET(FEELPP_LIBRARIES ${UMFPACK_LIBRARY} ${CHOLMOD_LIBRARY} ${FEELPP_LIBRARIES})
 endif()
@@ -891,41 +956,57 @@ endif()
 #
 # Petsc
 #
-FIND_PACKAGE( PETSc REQUIRED)
-if ( PETSC_FOUND )
-  SET(CMAKE_REQUIRED_INCLUDES "${PETSC_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
-  SET(FEELPP_LIBRARIES ${PETSC_LIBRARIES} ${FEELPP_LIBRARIES})
-  SET(BACKEND_PETSC petsc)
-  INCLUDE_DIRECTORIES(${PETSC_INCLUDE_DIR} ${PETSC_INCLUDE_CONF})
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PETSc" )
 
-endif( PETSC_FOUND ) 
+cmake_dependent_option(FEELPP_ENABLE_PETSC "Enable PETSc Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+
+if(FEELPP_ENABLE_PETSC)
+  FIND_PACKAGE( PETSc REQUIRED)
+  if ( PETSC_FOUND )
+    add_definitions( -DFEELPP_HAS_PETSC -DFEELPP_HAS_PETSC_H )
+    set(FEELPP_HAS_PETSC 1)
+    set(FEELPP_HAS_PETSC_H 1)
+
+    SET(CMAKE_REQUIRED_INCLUDES "${PETSC_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
+    SET(FEELPP_LIBRARIES ${PETSC_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(BACKEND_PETSC petsc)
+    INCLUDE_DIRECTORIES(${PETSC_INCLUDE_DIR} ${PETSC_INCLUDE_CONF})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PETSc" )
+  endif( PETSC_FOUND )
+endif()
 
 # ML was already searched for, if it was not found then try again to look for it
 # in PETSC_DIR
-if ( NOT ML_FOUND )
-  find_package(ML)
-  message(STATUS "[feelpp] ML(PETSc): ${ML_LIBRARY}" )
-  IF ( ML_LIBRARY )
-    SET(FEELPP_LIBRARIES ${ML_LIBRARY} ${FEELPP_LIBRARIES})
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ML" )
-  ENDIF()
+if( FEELPP_ENABLE_ML )
+  if ( NOT ML_FOUND )
+    find_package(ML)
+    message(STATUS "[feelpp] ML(PETSc): ${ML_LIBRARY}" )
+    IF ( ML_LIBRARY )
+      SET(FEELPP_LIBRARIES ${ML_LIBRARY} ${FEELPP_LIBRARIES})
+      SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ML" )
+    ENDIF()
+  endif()
 endif()
 
 #
 # parpack
 #
-FIND_LIBRARY(PARPACK_LIBRARY NAMES parpack)
-if (PARPACK_LIBRARY)
-  SET(PARPACK_LIBRARIES ${PARPACK_LIBRARY})
-  SET(FEELPP_LIBRARIES ${PARPACK_LIBRARIES} ${FEELPP_LIBRARIES})
+cmake_dependent_option(FEELPP_ENABLE_PARPACK "Enable ParPack Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_ENABLE_PARPACK)
+  FIND_LIBRARY(PARPACK_LIBRARY NAMES parpack)
+  if (PARPACK_LIBRARY)
+    SET(PARPACK_LIBRARIES ${PARPACK_LIBRARY})
+    SET(FEELPP_LIBRARIES ${PARPACK_LIBRARIES} ${FEELPP_LIBRARIES})
+  endif()
+  MARK_AS_ADVANCED( PARPACK_LIBRARY )
 endif()
-MARK_AS_ADVANCED( PARPACK_LIBRARY )
 
 
 #
 # SLEPc
 #
+
+cmake_dependent_option(FEELPP_ENABLE_SLEPC "Enable SLEPc Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+
 if (FEELPP_ENABLE_SLEPC)
   FIND_PACKAGE( SLEPc )
   if ( SLEPC_FOUND )
@@ -953,6 +1034,9 @@ endif (FEELPP_ENABLE_TRILINOS)
 #
 # OpenTURNS
 #
+
+cmake_dependent_option(FEELPP_ENABLE_OPENTURNS "Enable OpenTurns Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+
 IF ( FEELPP_ENABLE_OPENTURNS )
   FIND_PACKAGE( OpenTURNS )
   if ( OPENTURNS_FOUND )
@@ -968,9 +1052,12 @@ endif()
 #
 # VTK
 #
-OPTION( FEELPP_ENABLE_VTK "Enable the VTK library" ON )
-OPTION( FEELPP_ENABLE_VTK_INSITU "Enable In-Situ Visualization using VTK/Paraview" OFF )
+
+cmake_dependent_option(FEELPP_ENABLE_VTK "Enable VTK Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+
 if ( FEELPP_ENABLE_VTK )
+
+    OPTION( FEELPP_ENABLE_VTK_INSITU "Enable In-Situ Visualization using VTK/Paraview" OFF )
 
     # If we enable in-situ visualization
     # We need to look for the Paraview package for the corresponding headers
@@ -1119,39 +1206,45 @@ endif( FEELPP_ENABLE_OCTAVE)
 #
 # Gmsh
 #
-if(FEELPP_USE_GMSH_PACKAGE)
+
+cmake_dependent_option(FEELPP_ENABLE_GMSH "Enable Gmsh Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+
+if( FEELPP_ENABLE_GMSH )
+  if(FEELPP_USE_GMSH_PACKAGE)
 	FIND_PACKAGE(Gmsh)
-else()
+  else()
 	set(GMSH_FOUND false)
-endif()
-if(NOT GMSH_FOUND)#Download and Instal it
-  message(STATUS "[feelpp] GMSH NOT FOUND - Downloading and Installing it" )
-  execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gmsh-compile)
-  message(STATUS "[feelpp] Building gmsh in ${CMAKE_BINARY_DIR}/contrib/gmsh-compile...")
-  execute_process(
-    COMMAND ${FEELPP_HOME_DIR}/contrib/gmsh/gmsh.sh ${CMAKE_BINARY_DIR}/contrib/gmsh/ ${FEELPP_HOME_DIR}/contrib/gmsh/patches ${NProcs2} ${CMAKE_CXX_COMPILER}
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gmsh-compile
-    #      OUTPUT_QUIET
-    OUTPUT_FILE "gmsh-configure"
+  endif()
+  if(NOT GMSH_FOUND)#Download and Instal it
+    message(STATUS "[feelpp] GMSH NOT FOUND - Downloading and Installing it" )
+    execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gmsh-compile)
+    message(STATUS "[feelpp] Building gmsh in ${CMAKE_BINARY_DIR}/contrib/gmsh-compile...")
+    execute_process(
+      COMMAND ${FEELPP_HOME_DIR}/contrib/gmsh/gmsh.sh ${CMAKE_BINARY_DIR}/contrib/gmsh/ ${FEELPP_HOME_DIR}/contrib/gmsh/patches ${NProcs2} ${CMAKE_CXX_COMPILER}
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gmsh-compile
+      #      OUTPUT_QUIET
+      OUTPUT_FILE "gmsh-configure"
     )
 
-  FIND_PACKAGE(Gmsh REQUIRED)
-endif()
-if ( GMSH_FOUND )
-  ADD_DEFINITIONS( -DFEELPP_HAS_GMSH=1 -D_FEELPP_HAS_GMSH_ -DGMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
-  if ( GL2PS_LIBRARY )
-    if ( GL_LIBRARY AND FEELPP_ENABLE_OPENGL )
-      SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${GL2PS_LIBRARY} ${GL_LIBRARY} ${FEELPP_LIBRARIES})
-    else()
-      SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${GL2PS_LIBRARY} ${FEELPP_LIBRARIES})
-    endif()
-  else()
-    SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${FEELPP_LIBRARIES})
+    FIND_PACKAGE(Gmsh REQUIRED)
   endif()
-  INCLUDE_DIRECTORIES(${GMSH_INCLUDE_DIR})
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
+  if ( GMSH_FOUND )
+    ADD_DEFINITIONS( -DFEELPP_HAS_GMSH=1 -D_FEELPP_HAS_GMSH_ -DGMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
+    if ( GL2PS_LIBRARY )
+      if ( GL_LIBRARY AND FEELPP_ENABLE_OPENGL )
+        SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${GL2PS_LIBRARY} ${GL_LIBRARY} ${FEELPP_LIBRARIES})
+      else()
+        SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${GL2PS_LIBRARY} ${FEELPP_LIBRARIES})
+      endif()
+    else()
+      SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${FEELPP_LIBRARIES})
+    endif()
+    INCLUDE_DIRECTORIES(${GMSH_INCLUDE_DIR})
+    SET(FEELPP_HAS_GMSH 1)
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
+  endif()
+  include(feelpp.module.gmsh)
 endif()
-include(feelpp.module.gmsh)
 
 #
 # ipopt

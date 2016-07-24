@@ -528,6 +528,11 @@ public:
         {
             return M_loc[q]( c1,c2 );
         }
+        matrix_shape_type const&
+        evalq( uint16_type q ) const
+        {
+            return M_loc[q];
+        }
 
     private:
 

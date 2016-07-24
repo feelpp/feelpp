@@ -1,12 +1,18 @@
-h = 0.05;
+NL=20;
+h = 0.005;
 R=0.2;
-tier=1; // one third of a torus
-shape=2; // square=1 circle=2
+C=2;
+
+R1=C-R/2;
+R2=C+R/2;
+shape = 1; // square=1 circle=2
+alpha1=0;
+alpha2=Pi/3;
 If ( shape == 1 )
-  Point(1) = {-R,-R,0,h};
-  Point(2) = {R,-R,0,h};
-  Point(3) = {R,R,0,h};
-  Point(4) = {-R,R,0,h};
+  Point(1) = {0,C-R/2,C-R/2,h};
+  Point(2) = {0,C+R/2,C-R/2,h};
+  Point(3) = {0,C+R/2,C+R/2,h};
+  Point(4) = {0,C-R/2,C+R/2,h};
   Line(1) = {1,2};
   Line(2) = {2,3};
   Line(3) = {3,4};
@@ -27,22 +33,14 @@ EndIf
 
 Line Loop(5) = {1,2,3,4};
 Plane Surface(6) = {5};
-If ( tier == 1 )
-  Extrude Surface {6, {0,0,1}, {0,-2,0}, 2*Pi/3}{Layers{1./h};};
-  
-  Physical Surface("inlet") = {28};
-  Physical Surface("outlet") = {6};
-  Physical Surface("wall") = {19, 15, 27, 23};
-  
-  Physical Volume("fluid") = {1};
-EndIf
-If ( tier == 2 )
-  Extrude Surface {28, {0,0,1}, {0,-2,0}, 2*Pi/3}{Layers{1/.h};};
-EndIf
-If ( tier == 3 )
-  Extrude Surface {50, {0,0,1}, {0,-2,0}, 2*Pi/3}{Layers{1/.h};};
-EndIf
 
+Extrude Surface {6, {0,0,1}, {0,0,0}, alpha2-alpha1}{Layers{C*(alpha2-alpha1)*R/h};};
+//Extrude Surface {6, {0,0,1}, {0,-C,0}, alpha2-alpha1}{Layers{10};};
 
+Physical Surface("inlet") = {28};
+Physical Surface("outlet") = {6};
+Physical Surface("wall") = {19, 15, 27, 23};
+
+Physical Volume("fluid") = {1};
 
 

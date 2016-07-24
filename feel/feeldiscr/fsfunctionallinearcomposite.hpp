@@ -62,7 +62,11 @@ public:
 
     FsFunctionalLinearComposite( space_ptrtype space ) :
         super_type( space ),
+#if FEELPP_HAS_PETSC
         M_backend( backend_type::build( BACKEND_PETSC ) )
+#else
+        M_backend( backend_type::build( BACKEND_EIGEN ) )
+#endif
     {}
 
     FsFunctionalLinearComposite( space_ptrtype space, backend_ptrtype backend ) :
