@@ -1330,7 +1330,9 @@ template<typename Context_t>
 void
 ReducedBasisSpace<ModelType>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
 {
-    eigen_matrix_to_tensor_map m( context.id( *this ) );
+    //eigen_matrix_to_tensor_map m( context.id( *this ) );
+    auto idEigenMatrix = context.id( *this );
+    Eigen::TensorMap<_id_type> m( idEigenMatrix.data(), nComponents1, 1 );
     v[0] = m;
 }
 

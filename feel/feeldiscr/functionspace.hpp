@@ -2450,12 +2450,14 @@ public:
 #else
         typedef Eigen::Tensor<value_type,2> _id_type;
         typedef Eigen::Tensor<value_type,2> _grad_type;
+        typedef Eigen::Tensor<value_type,2> _dn_type;
         typedef Eigen::Tensor<value_type,2> _hess_type;
         typedef Eigen::Tensor<value_type,2> _div_type;
         typedef Eigen::Tensor<value_type,2> _curl_type;
 #endif
         typedef boost::multi_array<_id_type,1> id_array_type;
         typedef boost::multi_array<_grad_type,1> grad_array_type;
+        typedef boost::multi_array<_dn_type,1> dn_array_type;
         typedef boost::multi_array<_hess_type,1> hess_array_type;
         typedef boost::multi_array<_div_type,1> div_array_type;
         typedef boost::multi_array<_curl_type,1> curl_array_type;
@@ -2657,6 +2659,9 @@ public:
             shape[0] = 1;
 
             id_array_type v( shape );
+            _id_type idzero( ncdof, 1 );
+            std::fill( v.data(), v.data()+v.num_elements(), idzero.constant(0.));
+
             if( context.size() > 0 )
             {
                 for( int i = 0 ; it != en; ++it, ++i )
@@ -2694,6 +2699,9 @@ public:
             boost::array<typename array_type::index, 1> shape;
             shape[0] = 1;
             id_array_type v( shape );
+            const int ncdof  = is_product?nComponents:1;
+            _id_type idzero( ncdof, 1 );
+            std::fill( v.data(), v.data()+v.num_elements(), idzero.constant(0.));
 
             value_type result=0;
             int proc_having_the_point = context.processorHavingPoint( i );
@@ -2938,6 +2946,27 @@ public:
 
         void
         dzInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
+
+
+        template<typename ContextType>
+        boost::array<typename array_type::index, 1>
+        dnExtents( ContextType const & context ) const
+        {
+            boost::array<typename array_type::index, 1> shape;
+            shape[0] = context.xRefs().size2();
+            return shape;
+        }
+        template<typename ContextType>
+        void
+        dn( ContextType const & context, dn_array_type& v ) const
+        {
+            dn_( context, v );
+        }
+        template<typename ContextType>
+        void dn_( ContextType const & context, dn_array_type& v ) const;
+
+        void
+        dnInterpolate( matrix_node_type __ptsReal, dn_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
 
 
         //@}
@@ -4550,6 +4579,7 @@ public:
     element_external_storage_type
     element( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
+#if FEELPP_HAS_PETSC
         VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
         //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
         CHECK( vecPetsc ) << "only petsc vector";
@@ -4563,6 +4593,10 @@ public:
         value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
         element_external_storage_type u( this->shared_from_this(),nActiveDof,arrayActiveDof,
                                          nGhostDof, arrayGhostDof );
+#else
+        LOG(WARNING) << "element(Vector<value_type> const& vec, int blockIdStart): This function is disabled when Feel++ is not built with PETSc";
+        element_external_storage_type u;
+#endif
         return u;
     }
 
@@ -4574,6 +4608,7 @@ public:
     element_external_storage_ptrtype
     elementPtr( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
+#if FEELPP_HAS_PETSC
         VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
         //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
         CHECK( vecPetsc ) << "only petsc vector";
@@ -4587,6 +4622,10 @@ public:
         value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
         element_external_storage_ptrtype u( new element_external_storage_type( this->shared_from_this(),nActiveDof,arrayActiveDof,
                                                                                nGhostDof, arrayGhostDof ) );
+#else
+        LOG(WARNING) << "element(Vector<value_type> const& vec, int blockIdStart): This function is disabled when Feel++ is not built with PETSc";
+        element_external_storage_type u;
+#endif
         return u;
     }
 

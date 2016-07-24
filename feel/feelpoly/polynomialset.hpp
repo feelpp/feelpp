@@ -1030,11 +1030,11 @@ public:
             //std::cout << "ncdof = " << ncdof << ", nldof = " << nldof << "\n";
             M_phi.resize( boost::extents[nldof][__pts.size2()] );
             M_grad.resize( boost::extents[nldof][__pts.size2()] );
-            M_hessian.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
+            M_hessian.resize( boost::extents[nldof][__pts.size2()] );
 
             id_type i_phi( nComponents1, 1 );
             std::fill( M_phi.data(), M_phi.data()+M_phi.num_elements(), i_phi.constant(0.));
-            g_type i_grad( nComponents1, nRealDim, 1 );
+            g_type i_grad( nComponents1, nDim, 1 );
             std::fill( M_grad.data(), M_grad.data()+M_grad.num_elements(), i_grad.constant(0.));
             h_type i_hessian( nComponents1, nDim, nDim );
             std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), i_hessian.constant(0.));
@@ -1056,7 +1056,7 @@ public:
                     //M_phi[I*c1+i][q](j,0) = phiv( nDim*I*c1+nDim*i+j, q );
 
                     for ( index q = 0; q < Q; ++q )
-                        for ( index j = 0; j < nRealDim; ++j )
+                        for ( index j = 0; j < nComponents1; ++j )
                             for ( index l = 0; l < nDim; ++l )
                             {
                                 //M_grad[I*c1+i][j](l,q) = __grad[l]( nDim*I*c1+nDim*i+j, q );
@@ -1067,8 +1067,8 @@ public:
 
                     for ( index q = 0; q < Q; ++q )
                         for ( index l = 0; l < nComponents1; ++l )
-                            for ( index j = 0; j < nRealDim; ++j )
-                                for ( index k = j; k < nRealDim; ++k )
+                            for ( index j = 0; j < nDim; ++j )
+                                for ( index k = j; k < nDim; ++k )
                                 {
                                     value_type t = __hess(j,k)( nldof*c1+nRealDim*i+l,q);
                                     M_hessian[I*c1+i][q]( l,j,k ) = t;

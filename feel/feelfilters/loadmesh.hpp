@@ -29,6 +29,8 @@
 #if !defined(FEELPP_LOADMESH_HPP)
 #define FEELPP_LOADMESH_HPP 1
 
+#ifdef FEELPP_HAS_GMSH
+
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
 #include <feel/feelfilters/importeracusimrawmesh.hpp>
@@ -100,7 +102,8 @@ BOOST_PARAMETER_FUNCTION(
     LOG_IF( WARNING,
             mesh_name.extension() != ".geo" &&
             mesh_name.extension() != ".json" &&
-            mesh_name.extension() != ".msh" )
+            mesh_name.extension() != ".msh" &&
+            mesh_name.extension() != ".arm" )
         << "Invalid filename " << filenameExpand << " it should have either the .geo. .json or .msh extension\n";
 
 
@@ -206,6 +209,10 @@ BOOST_PARAMETER_FUNCTION(
         m->components().reset();
         m->components().set( update );
         m->updateForUse();
+#if defined(FEELPP_HAS_HDF5)
+        if ( savehdf5 )
+            m->saveHDF5( fs::path(filenameExpand).stem().string()+".json" );
+#endif
         return m;
     }
 
@@ -241,5 +248,7 @@ BOOST_PARAMETER_FUNCTION(
 } // loadMesh
 
 } // Feel namespace
+
+#endif
 
 #endif /* FEELPP_LOADMESH_HPP */

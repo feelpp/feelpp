@@ -222,7 +222,7 @@ class BoundaryConditions
         for ( auto f : itFindType->second )
         {
             LOG(INFO) << "Building expr " << f.expression() << " for " << f.marker();
-            m_f[std::get<0>(f)] = expr<Order>( f.expression(), "", M_worldComm, M_directoryLibExpr );
+            m_f[f.marker()] = expr<Order>( f.expression(), "", M_worldComm, M_directoryLibExpr );
         }
         return std::move(m_f);
     }
@@ -282,8 +282,8 @@ class BoundaryConditions
         if ( itFindType == itFindField->second.end() ) return std::move(m_f);
         for ( auto f : itFindType->second )
         {
-            LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
-            m_f[std::get<0>(f)] = expr<d,1,2>( f.expression(), "", M_worldComm, M_directoryLibExpr );
+            LOG(INFO) << "Building expr " << f.expression() << " for " << f.marker();
+            m_f[f.marker()] = expr<d,1,2>( f.expression(), "", M_worldComm, M_directoryLibExpr );
         }
         return std::move(m_f);
     }
@@ -311,9 +311,9 @@ class BoundaryConditions
         for ( auto f : itFindType->second )
         {
             CHECK( f.hasExpression1() && f.hasExpression2() ) << "Invalid call";
-            LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
-            m_f[std::get<0>(f)].push_back( expr<d,1,2>( f.expression1(), "", M_worldComm, M_directoryLibExpr ) );
-            m_f[std::get<0>(f)].push_back( expr<d,1,2>( f.expression2(), "", M_worldComm, M_directoryLibExpr ) );
+            LOG(INFO) << "Building expr " << f.expression() << " for " << f.marker();
+            m_f[f.marker()].push_back( expr<d,1,2>( f.expression1(), "", M_worldComm, M_directoryLibExpr ) );
+            m_f[f.marker()].push_back( expr<d,1,2>( f.expression2(), "", M_worldComm, M_directoryLibExpr ) );
         }
         return std::move(m_f);
     }
@@ -339,8 +339,8 @@ class BoundaryConditions
         if ( itFindType == itFindField->second.end() ) return std::move(m_f);
         for ( auto f : itFindType->second )
         {
-            LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
-            m_f[std::get<0>(f)] = expr<d,d,2>( f.expression(), "", M_worldComm, M_directoryLibExpr );
+            LOG(INFO) << "Building expr " << f.expression() << " for " << f.marker();
+            m_f[f.marker()] = expr<d,d,2>( f.expression(), "", M_worldComm, M_directoryLibExpr );
         }
         return std::move(m_f);
     }

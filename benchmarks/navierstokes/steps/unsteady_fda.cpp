@@ -48,8 +48,10 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
     constexpr int dim = FEELPP_DIM;
     constexpr int p_order = FEELPP_ORDER_P;
+    constexpr int geo_order = FEELPP_ORDER_GEO;
+    
     tic();
-    auto mesh = loadMesh( new Mesh<Simplex<dim>> );
+    auto mesh = loadMesh( new Mesh<Simplex<dim,geo_order,dim>> );
     size_type nbdyfaces = nelements(boundaryfaces(mesh));
     if ( Environment::isMasterRank() )
     {
@@ -73,6 +75,7 @@ int main(int argc, char**argv )
     toc("mesh");tic();
     // Taylor Hood P_N+1 velocity P_N  pressure space (N==p_order)
     auto Vh = THch<p_order>( mesh );
+    //auto P1h = lagrangeP1( _space=Vh->functionSpace<0>() );
     auto U = Vh->element();
     auto V = Vh->element();
     auto u = U.element<0>();
@@ -102,32 +105,6 @@ int main(int argc, char**argv )
         std::cout << std::left << Vh->functionSpace<0>()->nDof();
         std::cout.width(16);
         std::cout << std::left << Vh->functionSpace<1>()->nDof() << "\n";
-        if( soption("ns.preconditioner") != "petsc" )
-        {
-            std::cout << "[blockns]\n";
-            std::cout << " - cd: " << boption( "blockns.cd" ) << "\n";
-            std::cout << " - pcd: " << boption( "blockns.pcd" ) << "\n";
-            std::cout << " - pcd.inflow: " << soption( "blockns.pcd.inflow" ) << "\n";
-            std::cout << " - pcd.outflow: " << soption( "blockns.pcd.outflow" ) << "\n";
-            std::cout << " - pcd.order: " << ioption( "blockns.pcd.order" ) << "\n\n";
-            
-            /*std::cout << " - Stokes rtol: " << doption( "stokes.ksp-rtol" ) << "\n";
-             std::cout << " - Picard rtol: " << doption( "picard.ksp-rtol" ) << "\n\n";
-            
-             std::cout << " - Ap preconditioner: " << soption( "Ap.pc-type" ) << "\n";
-             std::cout << " - Ap relative tolerence: " << doption( "Ap.ksp-rtol" ) << "\n";
-             std::cout << " - Ap reuse-prec: " << boption( "Ap.reuse-prec" ) << "\n\n";
-            
-             std::cout << " - Mp preconditioner: " << soption( "Mp.pc-type" ) << "\n";
-             std::cout << " - Mp relative tolerence: " << doption( "Mp.ksp-rtol" ) << "\n";
-             std::cout << " - Mp reuse-prec: " << boption( "Mp.reuse-prec" ) << "\n\n";
-            
-             std::cout << " - Fu preconditioner: " << soption( "Fu.pc-type" ) << "\n";
-             std::cout << " - Fu relative tolerence: " << doption( "Fu.ksp-rtol" ) << "\n";
-             std::cout << " - Fu reuse-prec: " << boption( "Fu.reuse-prec" ) << "\n\n";*/
-
-        }
-        
     }
 
     toc("space");tic();
@@ -271,6 +248,7 @@ int main(int argc, char**argv )
         
         toc("Postprocess");
         tic();
+        //e->step(mybdf->time())->setMesh( P1h->mesh() );
         e->step(mybdf->time())->add( "u", u );
         w.on( _range=elements(mesh), _expr=curlv(u) );
         e->step(mybdf->time())->add( "w", w );

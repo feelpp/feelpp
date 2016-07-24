@@ -841,6 +841,7 @@ GraphCSR::close()
         int nbRequestToSend = 0, nbRequestToRecv = 0;
         for ( rank_type procIdNeigh : M_mapRow->neighborSubdomains() )
         {
+#if 0
             if ( procIdNeigh < myrank )
             {
                 vecToSend[procIdNeigh].resize(memory_n_send[procIdNeigh]);
@@ -861,6 +862,22 @@ GraphCSR::close()
             {
                 ++nbRequestToRecv;
             }
+#else
+                vecToSend[procIdNeigh].resize(memory_n_send[procIdNeigh]);
+                vecToSend_nElt[procIdNeigh].resize( memory_graphMPI[procIdNeigh].size() );
+                auto vtsit = vecToSend[procIdNeigh].begin();
+                auto it_mem = memory_graphMPI[procIdNeigh].begin();
+                auto const en_mem = memory_graphMPI[procIdNeigh].end();
+                for ( int cpt = 0 ; it_mem !=en_mem ; ++it_mem)
+                {
+                    vtsit = std::copy( it_mem->begin(), it_mem->end(), vtsit );
+                    vecToSend_nElt[procIdNeigh][cpt] = it_mem->size();
+                    ++cpt;
+                }
+                vecToSendBase[procIdNeigh] = boost::make_tuple( vecToSend[procIdNeigh],vecToSend_nElt[procIdNeigh] );
+                ++nbRequestToSend;
+                ++nbRequestToRecv;
+#endif
         }
 
         // do isend/irecv
@@ -869,6 +886,7 @@ GraphCSR::close()
         int cptRequest=0;
         for ( rank_type procIdNeigh : M_mapRow->neighborSubdomains() )
         {
+#if 0
             if ( procIdNeigh < myrank )
             {
                 reqs[cptRequest] = this->worldComm().globalComm().isend( procIdNeigh, 0, vecToSendBase[procIdNeigh] );
@@ -879,6 +897,10 @@ GraphCSR::close()
                 reqs[cptRequest] = this->worldComm().globalComm().irecv( procIdNeigh, 0, vecToRecvBase[procIdNeigh] );
                 ++cptRequest;
             }
+#else
+            reqs[cptRequest++] = this->worldComm().globalComm().isend( procIdNeigh, 0, vecToSendBase[procIdNeigh] );
+            reqs[cptRequest++] = this->worldComm().globalComm().irecv( procIdNeigh, 0, vecToRecvBase[procIdNeigh] );
+#endif
         }
         // wait all requests
         mpi::wait_all(reqs, reqs + nbRequest);
@@ -887,7 +909,10 @@ GraphCSR::close()
 
         for ( rank_type procIdNeigh : M_mapRow->neighborSubdomains() )
         {
+
+#if 0
             if ( procIdNeigh > myrank )
+#endif
             {
                 vecToRecv[procIdNeigh] = vecToRecvBase[procIdNeigh].get<0>();
                 vecToRecv_nElt[procIdNeigh] = vecToRecvBase[procIdNeigh].get<1>();

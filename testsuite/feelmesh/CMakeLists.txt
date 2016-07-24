@@ -1,7 +1,13 @@
 set_directory_properties(PROPERTIES LABEL testmesh )
 foreach(TEST entity mesh regiontree mesh_codim1 kdtree P1mesh meshmarker updatemarker partitioner_metis elementswithmarkedfaces)
 
-  feelpp_add_test( ${TEST} )
+  if(TEST MATCHES partitioner_metis)
+      if(FEELPP_HAS_METIS)
+          feelpp_add_test( ${TEST} )
+      endif()
+  else()
+      feelpp_add_test( ${TEST} )
+  endif()
 
 endforeach()
 
