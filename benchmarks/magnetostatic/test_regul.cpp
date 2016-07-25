@@ -107,7 +107,7 @@ public:
     /// Init the geometry with a circle/sphere from radius and characteristic length
     ///     \param radius   Circle or sphere radius.
     ///     \param h        Mesh size.
-    TestRegul( ) 
+    TestRegul( )
     {
         LOG(INFO) << "DIM = " << DIM << std::endl;
         auto M_mesh = loadMesh(_mesh=new Mesh<Simplex<DIM>>);
@@ -204,14 +204,14 @@ public:
         // Now, we solve the pb
         auto u = curl_h->element(); // Potenial - unknown
         auto e = curl_h->element(); // exact
-        auto v = curl_h->element(); // test 
+        auto v = curl_h->element(); // test
         auto w = div_h->element();  // curl(potentential)
         auto ec= div_h->element();  // curl(exact)
 
         auto f2 = form2(_test=curl_h,_trial=curl_h,_properties=MatrixProperties::SPD);
         auto f1 = form1(_test=curl_h);
         if(boption("solveIt"))
-        { 
+        {
 
             ModelProperties model;
 
@@ -227,7 +227,7 @@ public:
                 std::string entry = "Materials.";
                 entry += marker(it)+".ex";
                 LOG(INFO) << "reading " << entry << "...\n";
-                // Exact 
+                // Exact
                 e.on(_range=markedelements(M_mesh,marker(it)),
                      _expr=expr<DIM,1>(model.getEntry(entry)));
                 // Rhs
@@ -239,7 +239,7 @@ public:
             }
             // Lhs
             f2 = integrate(_range=elements(M_mesh),
-                           _expr = 
+                           _expr =
                            a*(trans(curlt_op(u))*curl_op(v)) // (curl, curl)
                            + b*inner(idt(u),id(v))             // regul
                           );
@@ -249,11 +249,11 @@ public:
                 std::Feel::cout << "Using weak BC\n";
                 for(auto it: model.boundaryConditions().getVectorFields<DIM> ( "u", "Dirichlet" ) )
                 {
-                    f1 += integrate(_range=markedfaces(M_mesh,it.first), 
+                    f1 += integrate(_range=markedfaces(M_mesh,it.first),
                                     _expr=
-                                    - a*trans(curl_op(v))*cross(N(),it.second) 
+                                    - a*trans(curl_op(v))*cross(N(),it.second)
                                     + a*doption("penaldir")/(hFace())*inner(cross(it.second,N()),cross(id(v),N())) );
-                    f2 += integrate(_range=boundaryfaces(M_mesh), 
+                    f2 += integrate(_range=boundaryfaces(M_mesh),
                                     _expr=
                                     - a*trans(curlt_op(u))*(cross(N(),id(v)) )
                                     - a*trans(curl_op(v))*(cross(N(),idt(u)) )

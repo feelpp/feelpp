@@ -23,3 +23,5 @@ feelpp_add_test( idf_functor )
 feelpp_add_test( idf2_functor )
 
 feelpp_add_test( cross_disc )
+feelpp_add_test( divergence )
+feelpp_add_test(productspace_dofs)

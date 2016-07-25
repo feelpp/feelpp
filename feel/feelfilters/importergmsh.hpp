@@ -351,7 +351,8 @@ public:
         M_version( FEELPP_GMSH_FORMAT_VERSION ),
         M_in_memory( false ),
         M_use_elementary_region_as_physical_region( false ),
-        M_respect_partition( false )
+        M_respect_partition( false ),
+        M_scale( 1 )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
         //showMe();
@@ -364,7 +365,8 @@ public:
         M_version( _version ),
         M_in_memory( false ),
         M_use_elementary_region_as_physical_region( false ),
-        M_respect_partition( false )
+        M_respect_partition( false ),
+        M_scale( 1 )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
         //showMe();
@@ -377,7 +379,8 @@ public:
         M_use_elementary_region_as_physical_region( false ),
         M_ignorePhysicalGroup( i.M_ignorePhysicalGroup ),
         M_ignorePhysicalName( i.M_ignorePhysicalName ),
-        M_respect_partition( i.M_respect_partition )
+        M_respect_partition( i.M_respect_partition ),
+        M_scale( i.M_scale )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
         //showMe();
@@ -417,7 +420,11 @@ public:
     /** @name  Mutators
      */
     //@{
-
+    void setScaling( double scale )
+    {
+        M_scale = scale;
+    }
+    
     void setVersion( std::string const& version )
     {
         M_version = version;
@@ -501,6 +508,7 @@ private:
 private:
 
     std::string M_version;
+    
     bool M_in_memory;
     std::map<int,int> M_n_vertices;
     //std::vector<int> M_n_b_vertices;
@@ -509,6 +517,7 @@ private:
     std::set<std::string> M_ignorePhysicalName;
     bool M_use_elementary_region_as_physical_region;
     bool M_respect_partition;
+    double M_scale;
     //std::map<int,int> itoii;
     //std::vector<int> ptseen;
     GModel* M_gmodel;
@@ -574,7 +583,7 @@ ImporterGmsh<MeshType>::addVertices( mesh_type* mesh, Feel::detail::GMSHElement 
 
         auto const& gmshpt = gmshpts.find(ptid)->second;
         for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
-            coords[j] = gmshpt.x[j];
+            coords[j] = gmshpt.x[j]*M_scale;
 
         point_type pt( ptid, coords, gmshpt.onbdy );
         pt.setProcessIdInPartition( this->worldComm().localRank() );
@@ -649,7 +658,7 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
         {
             auto const& pt = entities[i]->mesh_vertices[j];
             int id = pt->getIndex();
-            Eigen::Vector3d x(pt->x(), pt->y(), pt->z());
+            Eigen::Vector3d x(pt->x()*M_scale, pt->y()*M_scale, pt->z()*M_scale);
             gmshpts[id].id = id;
             gmshpts[id].x = x;
             gmshpts[id].parametric = false;
@@ -1203,7 +1212,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
 
             auto const& gmshpt = gmshpts.find(ptid)->second;
             for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
-                coords[j] = gmshpt.x[j];
+                coords[j] = gmshpt.x[j]*M_scale;
 
             point_type pt( ptid, coords, gmshpt.onbdy );
             pt.setProcessIdInPartition( this->worldComm().localRank() );

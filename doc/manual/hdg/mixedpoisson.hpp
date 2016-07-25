@@ -1,3 +1,6 @@
+#ifndef _MIXEDPOISSON_HPP
+#define _MIXEDPOISSON_HPP 
+
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelalg/vectorblock.hpp>
@@ -6,15 +9,18 @@
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelmodels/modelproperties.hpp>
-#include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmesh/complement.hpp>
 #include <feel/feelalg/topetsc.hpp>
 #include <feel/feelts/bdf.hpp>
 #include <boost/algorithm/string.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
+#include <feel/feelmodels/modelproperties.hpp>
+#include <feel/feelmodels/modelcore/modelnumerical.hpp>
+
 
 namespace Feel {
 
@@ -22,16 +28,18 @@ namespace FeelModels {
 
 inline
 po::options_description
-makeMixedPoissonOptions( std::string prefix = "" )
+makeMixedPoissonOptions( std::string prefix = "mixedpoisson" )
 {
     po::options_description mpOptions( "Mixed Poisson HDG options");
     mpOptions.add_options()
+        ( prefixvm( prefix, "gmsh.submesh").c_str(), po::value<std::string>()->default_value( "" ), "submesh extraction" )
         ( prefixvm( prefix, "tau_constant").c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( prefixvm( prefix, "tau_order").c_str(), po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( prefixvm( prefix, "picard.itol").c_str(), po::value<double>()->default_value( 1e-4 ), "tolerance" )
         ( prefixvm( prefix, "picard.itmax").c_str(), po::value<int>()->default_value( 10 ), "iterations max" )
         ( prefixvm( prefix, "hface").c_str(), po::value<int>()->default_value( 0 ), "hface" )
         ( prefixvm( prefix, "conductivity_json").c_str(), po::value<std::string>()->default_value( "cond" ), "key for conductivity in json" )
+	( prefixvm( prefix, "p_exact").c_str(), po::value<std::string>()->default_value( "1.0" ), "p exact" )
         ( prefixvm( prefix, "conductivityNL_json").c_str(), po::value<std::string>()->default_value( "condNL" ), "key for non linear conductivity in json (depends on potential p)" )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ;
@@ -40,15 +48,15 @@ makeMixedPoissonOptions( std::string prefix = "" )
 }
 
 inline po::options_description
-makeMixedPoissonLibOptions( std::string prefix = "" )
+makeMixedPoissonLibOptions( std::string prefix = "mixedpoisson" )
 {
     po::options_description mpLibOptions( "Mixed Poisson HDG Lib options");
-    if ( !prefix.empty() )
-        mpLibOptions.add( backend_options( prefix ) );
+    // if ( !prefix.empty() )
+    //     mpLibOptions.add( backend_options( prefix ) );
     return mpLibOptions;
 }
 
-template<int Dim, int Order>
+template<int Dim, int Order, int G_Order = 1>
 class MixedPoisson    :	public ModelNumerical
 {
 public:
@@ -61,7 +69,7 @@ public:
     //! linear algebra backend factory shared_ptr<> type
     typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
 
-    typedef MixedPoisson<Dim,Order> self_type;
+    typedef MixedPoisson<Dim,Order,G_Order> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     using sparse_matrix_type = backend_type::sparse_matrix_type;
@@ -70,13 +78,13 @@ public:
     using vector_ptrtype = backend_type::vector_ptrtype;
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order G_order
-    typedef Simplex<Dim,1> convex_type;
+    typedef Simplex<Dim,G_Order> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     // The Lagrange multiplier lives in R^n-1
-    typedef Simplex<Dim-1,1,Dim> face_convex_type;
+    typedef Simplex<Dim-1,G_Order,Dim> face_convex_type;
     typedef Mesh<face_convex_type> face_mesh_type;
     typedef boost::shared_ptr<face_mesh_type> face_mesh_ptrtype;
     
@@ -111,12 +119,21 @@ public:
     using model_prop_ptrtype = std::shared_ptr<model_prop_type>;
 
     using linearAssembly_function_type = boost::function<void ( sparse_matrix_ptrtype& A,vector_ptrtype& F )>;
-    
+
+    typedef Exporter<mesh_type,G_Order> exporter_type;
+    typedef boost::shared_ptr <exporter_type> exporter_ptrtype;
+   
     // time
-    typedef Bdf<Wh_t>  bdf_type;
+    // typedef Lagrange<Order,Scalar,Discontinuous> basis_scalar_type;
+    // typedef FunctionSpace<mesh_type, bases<basis_scalar_type>> space_mixedpoisson_type;
+    
+    // typedef Bdf<space_mixedpoisson_type>  bdf_type;
+    typedef Bdf <Wh_t> bdf_type;
+    // typedef Bdf<Pdh_type<mesh_type,Order>> bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
     
-private:
+//private:
+protected:
     model_prop_ptrtype M_modelProperties;
     std::string M_prefix;
 
@@ -129,22 +146,26 @@ private:
     M0h_ptr_t M_M0h;
 
     backend_ptrtype M_backend;
+    BlocksBaseGraphCSR M_hdg_graph;
     sparse_matrix_ptrtype M_A;
     sparse_matrix_ptrtype M_A_cst;
+    BlocksBaseVector<double> M_hdg_vec;
     vector_ptrtype M_F;
     BlocksBaseVector<double> M_hdg_sol;
     vector_ptrtype M_U;
 
     Vh_element_ptr_t M_up; // flux solution
     Wh_element_ptr_t M_pp; // potential solution 
-    
+    Ch_element_ptr_t M_mup; // potential solution on the first integral boundary condition
+    Ch_element_ptr_t M_mup2; // potential solution on the second integral boundary condition
+
     // time discretization
     bdf_ptrtype M_bdf_mixedpoisson;
-    
-    
+ 
+
     int M_tau_order;
     
-    bool M_integralCondition;
+    int M_integralCondition;
     bool M_isPicard;
 
     std::list<std::string> M_integralMarkersList;
@@ -153,27 +174,34 @@ private:
     void initGraphs();
     void initGraphsWithIntegralCond();
     void assembleACst();
-    void assembleA();
 
 public:
     linearAssembly_function_type M_updateAssembly;
     
     // constructor
     // MixedPoisson( std::string prefix = "" );
-    MixedPoisson( std::string const& prefix = "",                   
+    MixedPoisson( std::string const& prefix = "mixedpoisson",                   
                     WorldComm const& _worldComm = Environment::worldComm(),
                     std::string const& subPrefix = "",
                     std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     
     MixedPoisson( self_type const& MP ) = default;
-    static self_ptrtype New( std::string const& prefix = "",
+    static self_ptrtype New( std::string const& prefix = "mixedpoisson",
                              WorldComm const& worldComm = Environment::worldComm(),
                              std::string const& subPrefix = "",
                              std::string const& rootRepository = ModelBase::rootRepositoryByDefault() ); 
-    
-    void init( mesh_ptrtype mesh = NULL);
+
+    using op_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Wh_t, Pdh_type<mesh_type,1>>>;
+    using opv_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Vh_t, Pdhv_type<mesh_type,1>>>;
+    void init( mesh_ptrtype mesh = nullptr, int extraRow = 0, int extraCol = 0, mesh_ptrtype meshVisu = nullptr);
+               
+    virtual void initModel();
+    virtual void initSpaces();
+    virtual void initGraphs(int extraRow, int extraCol);
+    virtual void initExporter( mesh_ptrtype meshVisu = nullptr );
+    virtual void assembleA();
+    virtual void assembleF();
     void solve();
-    void assembleF();
     void solveNL();
     template<typename ExprT>
     void updateConductivityTerm( Expr<ExprT> expr, std::string marker = "");
@@ -182,76 +210,101 @@ public:
     void updatePotentialRHS( Expr<ExprT> expr, std::string marker = "");
     template<typename ExprT>
     void updateFluxRHS( Expr<ExprT> expr, std::string marker = "");
-    void exportResults();
-    
+
+    // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
     Vh_ptr_t fluxSpace() const { return M_Vh; }
     Wh_ptr_t potentialSpace() const { return M_Wh; }
     Mh_ptr_t traceSpace() const { return M_Mh; }
+    M0h_ptr_t traceSpaceOrder0() const { return M_M0h; }
+    Ch_ptr_t constantSpace() const {return M_Ch;}
+    
     Vh_element_ptr_t fluxField() const { return M_up; }
     Wh_element_ptr_t potentialField() const { return M_pp; }
+    model_prop_type modelProperties() { return *M_modelProperties; }
     model_prop_type modelProperties() const { return *M_modelProperties; }
     std::list<std::string> integralMarkersList() const { return M_integralMarkersList; }
+    int integralCondition() const { return M_integralCondition; }
+    int tau_order() const { return M_tau_order; }
+    backend_ptrtype get_backend() { return M_backend; }
     
-    /*/ time step scheme
+    // time step scheme
+    virtual void createTimeDiscretization() ;
     bdf_ptrtype timeStepBDF() { return M_bdf_mixedpoisson; }
     bdf_ptrtype const& timeStepBDF() const { return M_bdf_mixedpoisson; }
     boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
     boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
-    // void updateTimeStepBDF();
-    void initTimeStep();
+    virtual void updateTimeStepBDF();
+    virtual void initTimeStep();
     void updateTimeStep() { this->updateTimeStepBDF(); }
-    */
-    /*/ time tools
-    void updateTime(double time);
-    TimerToolBase & timerTool( std::string const& s ) const;
-    void addTimerTool( std::string const& s, std::string const& fileName ) const;
-    */
+   
+    // Exporter
+    virtual void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr )
+        {
+            this->exportResults (this->currentTime(), mesh, Idh, Idhv );
+	    M_exporter -> save();
+        }
+    void exportResults ( double Time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  ) ;
+    exporter_ptrtype M_exporter;
+    exporter_ptrtype exporterMP() { return M_exporter; }
 };
-/*
-template<int Dim, int Order> 
-void MixedPoisson<Dim, Order>::initTimeStep()
+
+
+
+template<int Dim, int Order, int G_Order> 
+void MixedPoisson<Dim, Order, G_Order>::initTimeStep()
 {
+        // start or restart time step scheme
+    if (!this->doRestart())
+    {
         // start time step
-        M_bdf_mixedpoisson -> restart();
+        M_bdf_mixedpoisson -> start( *M_pp );
+        // up current time
+        this->updateTime( M_bdf_mixedpoisson -> time() );
+    }
+    else
+    {
+        // start time step
+        M_bdf_mixedpoisson->restart();
         // load a previous solution as current solution
         *M_pp = M_bdf_mixedpoisson->unknown(0);
         // up initial time
-        this -> setTimeInitial( M_bdf_mixedpoisson->timeInitial() );
+        this->setTimeInitial( M_bdf_mixedpoisson->timeInitial() );
         // restart exporter
         //this->restartPostProcess();
         // up current time
-        
-        this -> updateTime( M_bdf_mixedpoisson->time() );
-        this -> log("MixedPoisson","initTimeStep", "restart bdf/exporter done" );
+        this->updateTime( M_bdf_mixedpoisson->time() );
+
+        this->log("MixedPoisson","initTimeStep", "restart bdf/exporter done" );
+    }
     
 }
 
 
-template<int Dim, int Order>
-void MixedPoisson<Dim, Order>::updateTimeStepBDF()
+template<int Dim, int Order, int G_Order>
+void MixedPoisson<Dim, Order, G_Order>::updateTimeStepBDF()
 {
     this->log("MixedPoisson","updateTimeStepBDF", "start" );
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
-    // update to next timestep
     int previousTimeOrder = this->timeStepBDF()->timeOrder();
 
-    M_bdf_mixedpoisson -> next ( *M_pp );
+    M_bdf_mixedpoisson->next( *M_pp );
 
     int currentTimeOrder = this->timeStepBDF()->timeOrder();
 
     this->updateTime( M_bdf_mixedpoisson->time() );
-    
+
+
     this->timerTool("TimeStepping").stop("updateBdf");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
-    // this->log("MixedPoisson","updateTimeStepBDF", "finish" );
+    this->log("MixedPoisson","updateTimeStepBDF", "finish" );
 }
-*/
 
-template<int Dim, int Order>
-MixedPoisson<Dim, Order>::MixedPoisson( std::string const& prefix,
+
+template<int Dim, int Order, int G_Order>
+MixedPoisson<Dim, Order, G_Order>::MixedPoisson( std::string const& prefix,
                                                     WorldComm const& worldComm,
                                                     std::string const& subPrefix,
                                                     std::string const& rootRepository )
@@ -263,7 +316,6 @@ MixedPoisson<Dim, Order>::MixedPoisson( std::string const& prefix,
 
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"MixedPoisson.info") );
 
-    Feel::cout << __LINE__ << std::endl; 
 
     M_prefix = prefix;
     M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption( prefixvm(M_prefix, "model_json") ) ) );
@@ -276,8 +328,8 @@ MixedPoisson<Dim, Order>::MixedPoisson( std::string const& prefix,
 
     //-----------------------------------------------------------------------------//
 
-    std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".AdvectionConstructor.data";
-    std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".AdvectionSolve.data";
+    std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".MixedPoissonConstructor.data";
+    std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".MixedPoissonSolve.data";
     this->addTimerTool("Constructor",nameFileConstructor);
     this->addTimerTool("Solve",nameFileSolve);
 
@@ -286,45 +338,69 @@ MixedPoisson<Dim, Order>::MixedPoisson( std::string const& prefix,
 }
 
 
-template<int Dim, int Order>
-typename MixedPoisson<Dim,Order>::self_ptrtype
-MixedPoisson<Dim,Order>::New( std::string const& prefix,
+template<int Dim, int Order, int G_Order>
+typename MixedPoisson<Dim,Order, G_Order>::self_ptrtype
+MixedPoisson<Dim,Order,G_Order>::New( std::string const& prefix,
                                          WorldComm const& worldComm, std::string const& subPrefix,
                                          std::string const& rootRepository )
 {
-    Feel::cout << __LINE__ << std::endl; 
     return boost::make_shared<self_type> ( prefix,worldComm,subPrefix,rootRepository );
-
 }
 
-/*
-template<int Dim, int Order>
-MixedPoisson<Dim, Order>::MixedPoisson(std::string prefix )
+
+template<int Dim, int Order, int G_Order>
+void
+MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh, int extraRow, int extraCol, mesh_ptrtype meshVisu )
 {
-    M_prefix = prefix;
-    M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption( prefixvm(M_prefix, "model_json") ) ) );
+    tic();
+    if ( !mesh )
+        M_mesh = loadMesh( new mesh_type);
+    else
+        M_mesh = mesh;
+    toc("mesh");
+
     if ( M_prefix.empty())
         M_backend = backend( _rebuild=true);
     else
         M_backend = backend( _name=M_prefix, _rebuild=true);
 
-    M_tau_order = ioption( prefixvm(M_prefix, "tau_order") );
-}
-*/
 
-template<int Dim, int Order>
-void
-MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
-{
     tic();
+    this->initModel();
+    toc("model");
 
-    if ( !mesh )
-        M_mesh = loadMesh( new mesh_type);
-    else
-        M_mesh = mesh;
-    
-    // Stationary 
-    Feel::cout << __LINE__ << std::endl;
+    tic();
+    this->initSpaces();
+    toc("spaces");
+
+    if(!this->isStationary()){
+        tic();
+        this->createTimeDiscretization();
+        this->initTimeStep();
+        toc("timeDiscretization",true);
+    }
+
+
+    tic();
+    this->initGraphs(extraRow, extraCol);
+    M_A = this->get_backend()->newBlockMatrix(_block=M_hdg_graph);
+    M_A_cst = this->get_backend()->newBlockMatrix(_block=M_hdg_graph);
+    M_F = this->get_backend()->newBlockVector(_block=M_hdg_vec, _copy_values=false);
+    M_U = this->get_backend()->newBlockVector(_block=M_hdg_sol, _copy_values=false);
+    toc("graphs");
+    tic();
+    this->initExporter( meshVisu );
+    toc("exporter");
+    tic();
+    this->assembleA();
+    M_A_cst->close();
+    toc("assemble");
+}
+
+template<int Dim, int Order, int G_Order>
+void
+MixedPoisson<Dim, Order, G_Order>::initModel()
+{
 
     // initialize marker lists for each boundary condition type
     M_integralMarkersList.clear();
@@ -333,46 +409,48 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Dirichlet" );
-        if ( itType != mapField.end() )
+        
+	if ( itType != mapField.end() )
         {
-            cout << "Dirichlet: ";
+            Feel::cout << "Dirichlet: ";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    cout << " " << marker;
+                    Feel::cout << " " << marker;
                 else
-                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            cout << std::endl;
+            Feel::cout << std::endl;
         }
+	 
         itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
         {
-            cout << "Neumann:";
+            Feel::cout << "Neumann:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    cout << " " << marker;
+                    Feel::cout << " " << marker;
                 else
-                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            cout << std::endl;
+            Feel::cout << std::endl;
         }
         itType = mapField.find( "Robin" );
         if ( itType != mapField.end() )
         {
-            cout << "Robin:";
+            Feel::cout << "Robin:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    cout << " " << marker;
+                    Feel::cout << " " << marker;
                 else
-                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            cout << std::endl;
+            Feel::cout << std::endl;
         }
     }
     itField = M_modelProperties->boundaryConditions().find( "flux");
@@ -382,22 +460,35 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
         auto itType = mapField.find( "Integral" );
         if ( itType != mapField.end() )
         {
-            cout << "Integral:";
+            Feel::cout << "Integral:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    cout << " " << marker;
+                    Feel::cout << " " << marker;
                 else
-                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
                 M_integralMarkersList.push_back(marker);
             }
-            cout << std::endl;
+            Feel::cout << std::endl;
         }
     }
-    
-     Feel::cout << __LINE__ << std::endl;
 
+    if ( M_integralMarkersList.empty() )
+        M_integralCondition = 0;
+    else  
+        M_integralCondition = M_integralMarkersList.size();
+
+    if ( boost::icontains(M_modelProperties->model(),"picard") )
+        M_isPicard = true;
+    else
+        M_isPicard = false;
+}
+
+template<int Dim, int Order, int G_Order>
+void
+MixedPoisson<Dim, Order, G_Order>::initSpaces()
+{
     // Mh only on the faces whitout integral condition
     auto complement_integral_bdy = complement(faces(M_mesh),[this]( auto const& e ) {
             for( auto marker : this->M_integralMarkersList)
@@ -408,155 +499,142 @@ MixedPoisson<Dim, Order>::init( mesh_ptrtype mesh)
             return false; });
     auto face_mesh = createSubmesh( M_mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
 
-    toc("mesh",true);
-    
-     Feel::cout << __LINE__ << std::endl;
-
-    if ( M_integralMarkersList.empty() )
-        M_integralCondition = false;
-    else
-        M_integralCondition = true;
-    if ( boost::icontains(M_modelProperties->model(),"picard") )
-        M_isPicard = true;
-    else
-        M_isPicard = false;
-
-    cout << "Model : " << M_modelProperties->model()
-         << " using ";
-    if ( M_integralCondition )
-        cout << "integral condition on the flux and ";
-    if ( M_isPicard )
-        cout << "Picard algorithm" << std::endl;
-    else
-        cout << "linear case" << std::endl;
-
-    // ****** Hybrid-mixed formulation ******
-    // We treat Vh, Wh, and Mh separately
-    tic();
-
     M_Vh = Pdhv<Order>( M_mesh, true );
     M_Wh = Pdh<Order>( M_mesh, true );
     M_Mh = Pdh<Order>( face_mesh, true );
     M_Ch = Pch<0>( M_mesh );
     M_M0h = Pdh<0>( face_mesh, true );
 
-    toc("spaces",true);
+    M_up = M_Vh->elementPtr( "u" );
+    M_pp = M_Wh->elementPtr( "p" );
+    
 
-    cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
+    Feel::cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
          << "Wh<" << Order << "> : " << M_Wh->nDof() << std::endl
          << "Mh<" << Order << "> : " << M_Mh->nDof() << std::endl;
     if ( M_integralCondition )
-        cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
-
-    if ( M_prefix.empty())
-        M_backend = backend( _rebuild=true);
-    else
-        M_backend = backend( _name=M_prefix, _rebuild=true);
-
-    M_up = M_Vh->elementPtr( "u" );
-    M_pp = M_Wh->elementPtr( "p" );
-
-    tic();
-    if ( M_integralCondition )
-        this->initGraphsWithIntegralCond();
-    else
-        this->initGraphs();
-    toc("graphs",true);
-     Feel::cout << __LINE__ << std::endl;
-    tic();
-    assembleA();
-    toc("assemble A", true);
+        Feel::cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
 }
 
-template<int Dim, int Order>
+
+template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order>::initGraphs()
+MixedPoisson<Dim, Order, G_Order>::initExporter( mesh_ptrtype meshVisu ) 
 {
+    std::string geoExportType="static"; //change_coords_only, change, static
+    M_exporter = exporter ( _mesh=meshVisu?meshVisu:this->mesh() ,
+                            _name="Export",
+                            _geo=geoExportType,
+        		    _path=this->exporterPath() ); 
+}
+
+template<int Dim, int Order, int G_Order>
+void
+MixedPoisson<Dim,Order,G_Order>::createTimeDiscretization()
+{
+    this->log("MixedPoisson","createTimeDiscretization", "start" );
+    this->timerTool("Constructor").start();
+    
+    
+    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
+    std::string suffixName = "";
+    if ( myFileFormat == "binary" )
+         suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+    M_bdf_mixedpoisson = bdf( _vm=Environment::vm(), _space=M_Wh ,
+                       _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"p"+suffixName)) ,
+                       _prefix="",
+                       _initial_time=this->timeInitial(),
+                       _final_time=this->timeFinal(),
+                       _time_step=this->timeStep(),
+                       _restart=this->doRestart(),
+                       _restart_path=this->restartPath(),
+                       _restart_at_last_save=this->restartAtLastSave(),
+                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() ); 
+    M_bdf_mixedpoisson->setfileFormat( myFileFormat );
+    M_bdf_mixedpoisson->setPathSave( (fs::path(this->rootRepository()) /
+                               fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%M_bdf_mixedpoisson->bdfOrder()%this->timeStep() ).str() ) ) ).string() );
+
+    double tElapsed = this->timerTool("Constructor").stop("createTimeDiscr");
+    this->log("MixedPoisson","createTimeDiscretization", (boost::format("finish in %1% s") %tElapsed).str() );
+}
+
+// when a derived class need to add extra block,
+// redefine initGraphs by calling the super method
+// and just specify the extra block
+template<int Dim, int Order, int G_Order>
+void
+MixedPoisson<Dim, Order, G_Order>::initGraphs(int extraRow, int extraCol)
+{
+    int baseRow = 3 + M_integralCondition; 
+    int baseCol = 3 + M_integralCondition;
+    M_hdg_graph = BlocksBaseGraphCSR(baseRow+extraRow,baseCol+extraCol);
+    M_hdg_vec = BlocksBaseVector<double>(baseRow+extraRow);
+    M_hdg_sol = BlocksBaseVector<double>(baseCol+extraCol);
+
+    M_hdg_graph(0,0) = stencil( _test=M_Vh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
+    M_hdg_graph(1,0) = stencil( _test=M_Wh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
+    M_hdg_graph(2,0) = stencil( _test=M_Mh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
+
+    M_hdg_graph(0,1) = stencil( _test=M_Vh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
+    M_hdg_graph(1,1) = stencil( _test=M_Wh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
+    M_hdg_graph(2,1) = stencil( _test=M_Mh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
+
+    M_hdg_graph(0,2) = stencil( _test=M_Vh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
+    M_hdg_graph(1,2) = stencil( _test=M_Wh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
+    M_hdg_graph(2,2) = stencil( _test=M_Mh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
+
+    M_hdg_vec(0,0) = M_backend->newVector( M_Vh );
+    M_hdg_vec(1,0) = M_backend->newVector( M_Wh );
+    M_hdg_vec(2,0) = M_backend->newVector( M_Mh );
+
     auto phatp = M_Mh->elementPtr( "phat" );
 
-    BlocksBaseGraphCSR hdg_graph(3,3);
-    hdg_graph(0,0) = stencil( _test=M_Vh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(1,0) = stencil( _test=M_Wh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,0) = stencil( _test=M_Mh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-
-    hdg_graph(0,1) = stencil( _test=M_Vh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(1,1) = stencil( _test=M_Wh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,1) = stencil( _test=M_Mh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-
-    hdg_graph(0,2) = stencil( _test=M_Vh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(1,2) = stencil( _test=M_Wh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,2) = stencil( _test=M_Mh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-
-    M_A = M_backend->newBlockMatrix(_block=hdg_graph);
-    M_A_cst = M_backend->newBlockMatrix(_block=hdg_graph);
-
-    BlocksBaseVector<double> hdg_vec(3);
-    hdg_vec(0,0) = M_backend->newVector( M_Vh );
-    hdg_vec(1,0) = M_backend->newVector( M_Wh );
-    hdg_vec(2,0) = M_backend->newVector( M_Mh );
-    M_F = M_backend->newBlockVector(_block=hdg_vec, _copy_values=false);
-
-    M_hdg_sol = BlocksBaseVector<double>(3);
     M_hdg_sol(0,0) = M_up;
     M_hdg_sol(1,0) = M_pp;
     M_hdg_sol(2,0) = phatp;
-    M_U = M_backend->newBlockVector(_block=M_hdg_sol, _copy_values=false);
+
+
+    for ( int i = 3; i < 3+M_integralCondition ; i++)
+    {
+        M_hdg_graph(i,0) = stencil( _test=M_Ch,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
+        M_hdg_graph(i,1) = stencil( _test=M_Ch,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
+        M_hdg_graph(i,2) = stencil( _test=M_Ch,_trial=M_Mh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+        M_hdg_graph(0,i) = stencil( _test=M_Vh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
+        M_hdg_graph(1,i) = stencil( _test=M_Wh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
+        M_hdg_graph(2,i) = stencil( _test=M_Mh,_trial=M_Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+	M_hdg_graph(i,i) = stencil( _test=M_Ch,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
+	if (M_integralCondition == 2)
+	{
+	    M_hdg_graph(3,4) = stencil( _test=M_Ch,_trial=M_Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+	    M_hdg_graph(4,3) = stencil( _test=M_Ch,_trial=M_Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+	}
+
+        M_hdg_vec(i,0) = M_backend->newVector( M_Ch );
+        
+    }
+
+    if (M_integralCondition)
+    {
+    	M_mup = M_Ch->elementPtr( "mup" );
+    	M_hdg_sol(3,0) = M_mup;
+    }
+    if (M_integralCondition == 2)
+    {
+	M_mup2 = M_Ch->elementPtr( "mup2" );
+	M_hdg_sol(4,0) = M_mup2;
+    }
+
 }
 
-template<int Dim, int Order>
+template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order>::initGraphsWithIntegralCond()
-{
-    auto phatp = M_Mh->elementPtr( "phat" );
-    auto mup = M_Ch->elementPtr( "c1" );
-
-    BlocksBaseGraphCSR hdg_graph(4,4);
-    hdg_graph(0,0) = stencil( _test=M_Vh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(1,0) = stencil( _test=M_Wh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,0) = stencil( _test=M_Mh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(3,0) = stencil( _test=M_Ch,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-
-    hdg_graph(0,1) = stencil( _test=M_Vh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(1,1) = stencil( _test=M_Wh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,1) = stencil( _test=M_Mh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(3,1) = stencil( _test=M_Ch,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-
-    hdg_graph(0,2) = stencil( _test=M_Vh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(1,2) = stencil( _test=M_Wh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,2) = stencil( _test=M_Mh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(3,2) = stencil( _test=M_Ch,_trial=M_Mh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-
-    hdg_graph(0,3) = stencil( _test=M_Vh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(1,3) = stencil( _test=M_Wh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(2,3) = stencil( _test=M_Mh,_trial=M_Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(3,3) = stencil( _test=M_Ch,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
-
-    M_A = M_backend->newBlockMatrix(_block=hdg_graph);
-    M_A_cst = M_backend->newBlockMatrix(_block=hdg_graph);
-
-    BlocksBaseVector<double> hdg_vec(4);
-    hdg_vec(0,0) = M_backend->newVector( M_Vh );
-    hdg_vec(1,0) = M_backend->newVector( M_Wh );
-    hdg_vec(2,0) = M_backend->newVector( M_Mh );
-    hdg_vec(3,0) = M_backend->newVector( M_Ch );
-    M_F = M_backend->newBlockVector(_block=hdg_vec, _copy_values=false);
-
-    M_hdg_sol = BlocksBaseVector<double>(4);
-    M_hdg_sol(0,0) = M_up;
-    M_hdg_sol(1,0) = M_pp;
-    M_hdg_sol(2,0) = phatp;
-    M_hdg_sol(3,0) = mup;
-    M_U = M_backend->newBlockVector(_block=M_hdg_sol, _copy_values=false);
-}
-
-template<int Dim, int Order>
-void
-MixedPoisson<Dim, Order>::solve()
+MixedPoisson<Dim, Order, G_Order>::solve()
 {
     tic();
+    M_modelProperties -> parameters().updateParameterValues();
+    // M_modelProperties -> boundaryConditions().setParameterValues( { {t, M_bdf_mixedpoisson->time()} } ); 
     updateConductivityTerm();
     assembleF();
-
     if ( M_updateAssembly != NULL )
         this->M_updateAssembly( M_A, M_F );
     M_backend->solve( _matrix=M_A, _rhs=M_F, _solution=M_U);
@@ -564,9 +642,9 @@ MixedPoisson<Dim, Order>::solve()
     toc("solve", true);
 }
 
-template<int Dim, int Order>
+template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order>::solveNL()
+MixedPoisson<Dim, Order, G_Order>::solveNL()
 {
     tic();
     if ( M_updateAssembly != NULL )
@@ -576,9 +654,9 @@ MixedPoisson<Dim, Order>::solveNL()
     toc("solve", true);
 }
 
-template<int Dim, int Order>
+template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order>::assembleA()
+MixedPoisson<Dim, Order, G_Order>::assembleA()
 {
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
@@ -586,6 +664,9 @@ MixedPoisson<Dim, Order>::assembleA()
     auto q = M_Wh->element( "p" );
     auto w = M_Wh->element( "w" );
     auto nu = M_Ch->element( "nu" );
+    auto uI = M_Ch->element( "uI" );
+    auto uI2 = M_Ch->element( "uI2" );
+    
     auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
     auto H = M_M0h->element( "H" );
@@ -638,6 +719,7 @@ MixedPoisson<Dim, Order>::assembleA()
 
     // -(j, grad(w))
     a21 += integrate(_range=elements(M_mesh),_expr=(-grad(w)*idt(u)));
+    
     // <j.n,w>_Gamma
     a21 += integrate(_range=internalfaces(M_mesh),
                      _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N()) ) );
@@ -655,11 +737,11 @@ MixedPoisson<Dim, Order>::assembleA()
     a22 += integrate(_range=boundaryfaces(M_mesh),
                      _expr=(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
     
-    /*/ (1/delta_t p, w)_Omega  [only if it is not stationary]
+    // (1/delta_t p, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
         a22 += integrate(_range=elements(M_mesh),
-                         _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*idt(w)) );
-    }*/
+                         _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
+    }
     
     // <-tau phat, w>_Gamma\Gamma_I
     a23 += integrate(_range=internalfaces(M_mesh),
@@ -777,37 +859,107 @@ MixedPoisson<Dim, Order>::assembleA()
                 for ( auto const& exAtMarker : (*itType).second )
                 {
                     std::string marker = exAtMarker.marker();
-                    // <lambda, v.n>_Gamma_I
-                    a14 += integrate( _range=markedfaces(M_mesh,marker),
-                                      _expr=trans(id(u))*N()*idt(nu) );
+		    if ( marker == M_integralMarkersList.front() )
+		    {
+                    	// <lambda, v.n>_Gamma_I
+                    	a14 += integrate( _range=markedfaces(M_mesh,marker),
+                                          _expr=trans(id(u))*N()*idt(uI) );
 
-                    // <lambda, tau w>_Gamma_I
-                    a24 += integrate( _range=markedfaces(M_mesh,marker),
-                                      _expr=-tau_constant * ( pow(idv(H),M_tau_order)*id(w) ) * idt(nu) );
+                    	// <lambda, tau w>_Gamma_I
+                    	a24 += integrate( _range=markedfaces(M_mesh,marker),
+                                          _expr=-tau_constant * ( pow(idv(H),M_tau_order)*id(w) ) * idt(uI) );
 
-                    // <j.n, m>_Gamma_I
-                    a41 += integrate( _range=markedfaces(M_mesh,marker), _expr=trans(idt(u))*N()*id(nu) );
+                    	// <j.n, m>_Gamma_I
+                    	a41 += integrate( _range=markedfaces(M_mesh,marker), _expr=trans(idt(u))*N()*id(nu) );
 
-                    // <tau p, m>_Gamma_I
-                    a42 += integrate( _range=markedfaces(M_mesh,marker), _expr=tau_constant *
-                          ( pow(idv(H),M_tau_order)*idt(p) ) * id(nu) );
+                    	// <tau p, m>_Gamma_I
+                    	a42 += integrate( _range=markedfaces(M_mesh,marker), 
+					  _expr=tau_constant * ( pow(idv(H),M_tau_order)*idt(p) ) * id(nu) );
 
-                    // -<lambda2, m>_Gamma_I
-                    a44 += integrate( _range=markedfaces(M_mesh,marker), _expr=-pow(idv(H),M_tau_order)*id(nu)*idt(nu) );
+                    	// -<lambda2, m>_Gamma_I
+                    	a44 += integrate( _range=markedfaces(M_mesh,marker), 
+					  _expr=-tau_constant * (pow(idv(H),M_tau_order)*id(nu)) *idt(uI) );
+		    }
+                }
+            }
+        }
+    }
+    if (M_integralCondition == 2)
+    {
+
+        auto a15 = form2(_trial=M_Ch, _test=M_Vh,_matrix=M_A_cst,
+                         _rowstart=0,
+                         _colstart=4);
+        auto a25 = form2(_trial=M_Ch, _test=M_Wh,_matrix=M_A_cst,
+                         _rowstart=1,
+                         _colstart=4);
+        auto a35 = form2(_trial=M_Ch, _test=M_Mh,_matrix=M_A_cst,
+                         _rowstart=2,
+                         _colstart=4);
+        auto a45 = form2(_trial=M_Ch, _test=M_Ch,_matrix=M_A_cst,
+                         _rowstart=3,
+                         _colstart=4);
+        auto a51 = form2(_trial=M_Vh, _test=M_Ch,_matrix=M_A_cst,
+                         _rowstart=4,
+                         _colstart=0);
+        auto a52 = form2(_trial=M_Wh, _test=M_Ch,_matrix=M_A_cst,
+                         _rowstart=4,
+                         _colstart=1);
+        auto a53 = form2(_trial=M_Mh, _test=M_Ch,_matrix=M_A_cst,
+                         _rowstart=4,
+                         _colstart=2);
+        auto a54 = form2(_trial=M_Ch, _test=M_Ch,_matrix=M_A_cst,
+                         _rowstart=4,
+                         _colstart=3);
+        auto a55 = form2(_trial=M_Ch, _test=M_Ch,_matrix=M_A_cst,
+                         _rowstart=4,
+                         _colstart=4);
+
+        auto itField = M_modelProperties->boundaryConditions().find( "flux");
+        if ( itField != M_modelProperties->boundaryConditions().end() )
+        {
+            auto mapField = (*itField).second;
+            auto itType = mapField.find( "Integral" );
+            if ( itType != mapField.end() )
+            {
+                for ( auto const& exAtMarker : (*itType).second )
+                {
+                    std::string marker = exAtMarker.marker();
+		    if (marker == M_integralMarkersList.back() )
+	    	    {
+                    	
+			// <lambda, v.n>_Gamma_I2
+                    	a15 += integrate( _range=markedfaces(M_mesh,marker),
+                        	          _expr=trans(id(u))*N()*idt(uI2) );
+
+                    	// <lambda, tau w>_Gamma_I2
+                    	a25 += integrate( _range=markedfaces(M_mesh,marker),
+                                          _expr=-tau_constant * ( pow(idv(H),M_tau_order)*id(w) ) * idt(uI2) );
+
+                    	// <j.n, m>_Gamma_I2
+                    	a51 += integrate( _range=markedfaces(M_mesh,marker), _expr=trans(idt(u))*N()*id(nu) );
+
+                    	// <tau p, m>_Gamma_I2
+                    	a52 += integrate( _range=markedfaces(M_mesh,marker), 
+					  _expr=tau_constant * ( pow(idv(H),M_tau_order)*idt(p) ) * id(nu) );
+
+                    	// -<tau lambda3, m>_Gamma_I2
+                    	a55 += integrate( _range=markedfaces(M_mesh,marker), 
+					  _expr=-tau_constant * (pow(idv(H),M_tau_order)*id(nu)) *idt(uI2) );
+		    }
                 }
             }
         }
     }
 
-    M_A_cst->close();
+    
 }
 
-template<int Dim, int Order>
+template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order>::assembleF()
+MixedPoisson<Dim, Order, G_Order>::assembleF()
 {
     M_F->zero();
-
     auto nu = M_Ch->element( "nu" );
     auto l = M_Mh->element( "lambda" );
     auto w = M_Wh->element();
@@ -830,28 +982,58 @@ MixedPoisson<Dim, Order>::assembleF()
             {
                 std::string marker = exAtMarker.marker();
                 auto g = expr(exAtMarker.expression());
-                // (f, w)_Omega
+                if ( !this->isStationary() )
+                    g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+		// (f, w)_Omega
                 rhs2 += integrate( _range=markedelements(M_mesh,marker),
                                    _expr=g*id(w));
-                /*/ (p_old,w)_Omega
+                // (p_old,w)_Omega
                 if ( !this->isStationary() ){
-                    rhs2 += integrate(_range=markedelements(M_mesh,marker),
-                                      _expr= this->timeStepBDF()->polyDeriv() * id(w));
-                }*/
+                    rhs2 += integrate( _range=markedelements(M_mesh,marker),
+                                      _expr= idv(this->timeStepBDF()->polyDeriv()) * id(w));
+                }
             }
         }
+	
         itType = mapField.find( "Dirichlet" );
         if ( itType != mapField.end() )
         {
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                auto g = expr(exAtMarker.expression());
-                // <g_D, mu>_Gamma_D
-                rhs3 += integrate(_range=markedfaces(M_mesh,marker),
-                                  _expr=id(l)*g);
+                if ( exAtMarker.isExpression() )
+                {
+                    auto g = expr(exAtMarker.expression());
+		    if ( !this->isStationary() )
+                        g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+		    // <g_D, mu>_Gamma_D
+		    rhs3 += integrate(_range=markedfaces(M_mesh,marker),
+                                  _expr=id(l)*g);                    
+                }
+                else if ( exAtMarker.isFile() )
+                {
+                    double g = 0;
+                    if ( !this->isStationary() )
+                    {
+                    	Feel::cout << "use data file to set rhs for Dirichlet BC at time " << M_bdf_mixedpoisson->time() << std::endl;
+                        LOG(INFO) << "use data file to set rhs for Dirichlet BC at time " << M_bdf_mixedpoisson->time() << std::endl;
+
+                        // data may depend on time
+                        g = exAtMarker.data(M_bdf_mixedpoisson->time());
+                    }
+                    else
+                    	g = exAtMarker.data(0.1);
+
+                    LOG(INFO) << "use g=" << g << std::endl;
+                    Feel::cout << "g=" << g << std::endl;
+ 		    // <g_D, mu>_Gamma_D
+		    rhs3 += integrate(_range=markedfaces(M_mesh,marker),
+                                      _expr=id(l)*g);
+                }
+
             }
         }
+
         itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
         {
@@ -859,7 +1041,9 @@ MixedPoisson<Dim, Order>::assembleF()
             {
                 std::string marker = exAtMarker.marker();
                 auto g = expr(exAtMarker.expression());
-                // <g_N,mu>_Gamma_N
+                if ( !this->isStationary() )
+                       g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+		// <g_N,mu>_Gamma_N
                 rhs3 += integrate( _range=markedfaces(M_mesh, marker),
                                    _expr=id(l)*g);
             }
@@ -871,6 +1055,8 @@ MixedPoisson<Dim, Order>::assembleF()
             {
                 std::string marker = exAtMarker.marker();
                 auto g = expr(exAtMarker.expression2());
+		if ( !this->isStationary() )
+                       g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 // <g_R^2,mu>_Gamma_R
                 rhs3 += integrate( _range=markedfaces(M_mesh, marker),
                                    _expr=id(l)*g);
@@ -889,6 +1075,8 @@ MixedPoisson<Dim, Order>::assembleF()
             {
                 std::string marker = exAtMarker.marker();
                 auto g = expr<3,1>(exAtMarker.expression());
+		if ( !this->isStationary() )
+                       g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 // (g, v)_Omega
                 rhs2 += integrate( _range=markedelements(M_mesh,marker),
                                    _expr=inner(g,id(v)));
@@ -910,27 +1098,107 @@ MixedPoisson<Dim, Order>::assembleF()
                 for ( auto const& exAtMarker : (*itType).second )
                 {
                     std::string marker = exAtMarker.marker();
-                    double meas = integrate( _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
-                    auto g = expr(exAtMarker.expression());
-                    // <I_target,m>_Gamma_I
-                    rhs4 += integrate(_range=markedfaces(M_mesh,marker),
-                                      _expr=g*id(nu)/meas);
+		    if ( marker == M_integralMarkersList.front() )
+		    {
+                    
+			double meas = integrate( _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
+
+
+                    	if ( exAtMarker.isExpression() )
+                    	{
+                            auto g = expr(exAtMarker.expression());
+		       	    if ( !this->isStationary() )
+                             	g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+                            // <I_target,m>_Gamma_I
+                            rhs4 += integrate(_range=markedfaces(M_mesh,marker),
+                                              _expr=g*id(nu)/meas);
+                    	}
+                        else if ( exAtMarker.isFile() )
+                    	{
+                            double g = 0;
+                            if ( !this->isStationary() )
+                            {
+                            	Feel::cout << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
+                            	LOG(INFO) << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
+                            
+                            	// data may depend on time
+                            	g = exAtMarker.data(M_bdf_mixedpoisson->time());
+                            }
+                            else
+                                g = exAtMarker.data(0.1);
+                            
+                            LOG(INFO) << "use g=" << g << std::endl;
+                            Feel::cout << "g=" << g << std::endl;
+                            rhs4 += integrate(_range=markedfaces(M_mesh,marker),
+                                              _expr=g*id(nu)/meas);
+                    	}
+		    }
                 }
             }
         }
+	if (M_integralCondition == 2)
+	{
+	    auto rhs5 = form1( _test=M_Ch, _vector=M_F,
+                               _rowstart=4);
+            itField = M_modelProperties->boundaryConditions().find( "flux");
+            if ( itField != M_modelProperties->boundaryConditions().end() )
+            {
+           	auto mapField = (*itField).second;
+            	auto itType = mapField.find( "Integral" );
+            	if ( itType != mapField.end() )
+                {
+                    for ( auto const& exAtMarker : (*itType).second )
+                    {
+                    	std::string marker = exAtMarker.marker();
+		    	if ( marker == M_integralMarkersList.back() )
+		    	{
+      			    double meas = integrate( _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
+
+
+                    	    if ( exAtMarker.isExpression() )
+                    	    {
+                            	auto g = expr(exAtMarker.expression());
+		       	    	if ( !this->isStationary() )
+                             	g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+                            	// <I_target,m>_Gamma_I
+                             	rhs5 += integrate(_range=markedfaces(M_mesh,marker),
+                        	                  _expr=g*id(nu)/meas);
+                    	    }
+                            else if ( exAtMarker.isFile() )
+                    	    {
+                            	double g = 0;
+                            	if ( !this->isStationary() )
+                            	{
+                            	     Feel::cout << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
+                            	     LOG(INFO) << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
+                            
+                           	     // data may depend on time
+                            	     g = exAtMarker.data(M_bdf_mixedpoisson->time());
+                            	}
+                            	else
+                                     g = exAtMarker.data(0.1);
+                            
+                            	LOG(INFO) << "use g=" << g << std::endl;
+                            	Feel::cout << "g=" << g << std::endl;
+                            	rhs5 += integrate(_range=markedfaces(M_mesh,marker),
+                                                 _expr=g*id(nu)/meas);
+                    	     }
+		    	}
+                    }
+            	}
+	    }
+	}
     }
 }
 
-template<int Dim, int Order>
+template<int Dim, int Order, int G_Order>
 template<typename ExprT>
 void
-MixedPoisson<Dim, Order>::updateConductivityTerm( Expr<ExprT> expr, std::string marker)
+MixedPoisson<Dim, Order, G_Order>::updateConductivityTerm( Expr<ExprT> expr, std::string marker)
 {
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
-
     MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
-
     auto a11 = form2( _trial=M_Vh, _test=M_Vh,_matrix=M_A );
     if ( marker.empty() )
         a11 += integrate( _range=elements(M_mesh), _expr=inner(idt(u),id(v))/expr);
@@ -938,13 +1206,12 @@ MixedPoisson<Dim, Order>::updateConductivityTerm( Expr<ExprT> expr, std::string 
         a11 += integrate( _range=markedelements(M_mesh, marker), _expr=inner(idt(u),id(v))/expr);
 }
 
-template<int Dim, int Order>
+template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order>::updateConductivityTerm( bool isNL)
+MixedPoisson<Dim, Order, G_Order>::updateConductivityTerm( bool isNL)
 {
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
-
     MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
 
     auto a11 = form2( _trial=M_Vh, _test=M_Vh, _matrix=M_A );
@@ -962,17 +1229,17 @@ MixedPoisson<Dim, Order>::updateConductivityTerm( bool isNL)
         else
         {
             auto cond = material.getScalar(soption(prefixvm(M_prefix,"conductivityNL_json")), "p", idv(*M_pp));
-            // (sigma(p)^-1 j, v)
+	    // (sigma(p)^-1 j, v)
             a11 += integrate(_range=markedelements(M_mesh,marker),
                              _expr=(trans(idt(u))*id(v))/cond );
         }
     }
 }
 
-template<int Dim, int Order>
+template<int Dim, int Order, int G_Order>
 template<typename ExprT>
 void
-MixedPoisson<Dim, Order>::updatePotentialRHS( Expr<ExprT> expr, std::string marker)
+MixedPoisson<Dim, Order, G_Order>::updatePotentialRHS( Expr<ExprT> expr, std::string marker)
 {
     auto rhs = form1( _test=M_Wh, _vector=M_F, _rowstart=1);
     auto w = M_Wh->element();
@@ -983,10 +1250,10 @@ MixedPoisson<Dim, Order>::updatePotentialRHS( Expr<ExprT> expr, std::string mark
                           _expr=inner(expr,id(w)) );
 }
 
-template<int Dim, int Order>
+template<int Dim, int Order, int G_Order>
 template<typename ExprT>
 void
-MixedPoisson<Dim, Order>::updateFluxRHS( Expr<ExprT> expr, std::string marker)
+MixedPoisson<Dim, Order, G_Order>::updateFluxRHS( Expr<ExprT> expr, std::string marker)
 {
     auto rhs = form1( _test=M_Vh, _vector=M_F, _rowstart=0);
     auto v = M_Vh->element();
@@ -997,12 +1264,27 @@ MixedPoisson<Dim, Order>::updateFluxRHS( Expr<ExprT> expr, std::string marker)
                           _expr=inner(expr,id(v)) );
 }
 
-template<int Dim, int Order>
-void
-MixedPoisson<Dim, Order>::exportResults()
-{
-    auto e = exporter( M_mesh);
 
+template <int Dim, int Order, int G_Order>
+void
+MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh, op_interp_ptrtype Idh, opv_interp_ptrtype Idhv  )
+{
+
+    this->log("MixedPoisson","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    if ( M_exporter->exporterGeometry() != EXPORTER_GEOMETRY_STATIC && mesh  )
+    {
+        LOG(INFO) << "exporting on visualisation mesh at time " << time;
+        M_exporter->step( time )->setMesh( mesh );
+    }
+    else if ( M_exporter->exporterGeometry() != EXPORTER_GEOMETRY_STATIC )
+    {
+        LOG(INFO) << "exporting on computational mesh at time " << time;
+        M_exporter->step( time )->setMesh( M_mesh );
+    }
+    
+    // Export computed solutions
     auto postProcess = M_modelProperties->postProcess();
     auto itField = postProcess.find( "Fields");
     if ( itField != postProcess.end() )
@@ -1010,17 +1292,166 @@ MixedPoisson<Dim, Order>::exportResults()
         for ( auto const& field : (*itField).second )
         {
             if ( field == "flux" )
-                e->add(prefixvm(M_prefix, "flux"), *M_up);
-            if ( field == "potential" )
-                e->add(prefixvm(M_prefix, "potential"), *M_pp);
+            {
+                LOG(INFO) << "exporting flux at time " << time;
+                M_exporter->step( time )->add(prefixvm(M_prefix, "flux"), Idhv?(*Idhv)( *M_up):*M_up );
+                if (M_integralCondition)
+                {
+		    double meas = 0.0;
+                    double j_integral = 0;
+                    for( auto marker : this->M_integralMarkersList)
+                    {
+                        LOG(INFO) << "exporting integral flux at time " << time << " on marker " << marker;
+                        j_integral += integrate(_range=markedfaces(M_mesh,marker),_expr=trans(idv(M_up))*N()).evaluate()(0,0);
+			meas += integrate(_range=markedfaces(M_mesh,marker),_expr=cst(1.0)).evaluate()(0,0);
+                    }
+                    M_exporter->step( time )->add(prefixvm(M_prefix, "integralFlux"), j_integral);
+		    M_exporter->step( time )->add(prefixvm(M_prefix, "integralVelocity"), j_integral/meas);
+                }
+            }
+            else if ( field == "potential" )
+            {
+                LOG(INFO) << "exporting potential at time " << time;
+                M_exporter->step( time )->add(prefixvm(M_prefix, "potential"), Idh?(*Idh)(*M_pp):*M_pp);
+                if (M_integralCondition)
+                {
+                    LOG(INFO) << "exporting IBC potential at time " << time << " value " << (*M_mup)[0];
+                    M_exporter->step( time )->add(prefixvm(M_prefix, "cstPotential_1"),(*M_mup)[0] );
+                }
+		if (M_integralCondition == 2)
+		{
+                    LOG(INFO) << "exporting IBC_2 potential at time " << time << " value " << (*M_mup2)[0];
+                    M_exporter->step( time )->add(prefixvm(M_prefix, "cstPotential_2"),(*M_mup2)[0] );
+		}
+		auto itField = M_modelProperties->boundaryConditions().find("Exact solution");
+		if ( itField != M_modelProperties->boundaryConditions().end() )
+		{
+		    auto mapField = (*itField).second;
+		    auto itType = mapField.find( "p_exact" );
+		    if (itType != mapField.end() )
+		    {
+			for (auto const& exAtMarker : (*itType).second )
+			{
+   			    if (exAtMarker.isExpression() )
+			    {
+				auto p_exact = expr(exAtMarker.expression() );
+				if ( !this->isStationary() )
+    			      	    p_exact.setParameterValues( { {"t", time } } );
+    				double K = 1; 
+				for( auto const& pairMat : M_modelProperties->materials() )
+                		{
+                    		   auto material = pairMat.second;
+                    		   K = material.getDouble( "k" );
+                		}
+    				auto gradp_exact = grad<Dim>(p_exact);
+   				auto u_exact = expr(-K*trans(gradp_exact));
+				M_exporter->step( time )->add(prefixvm(M_prefix, "p_exact"), project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact) );	
+				M_exporter->step( time )->add(prefixvm(M_prefix, "u_exact"), project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact) );
+				
+				auto l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(*M_up) );
+				auto l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
+				if (l2norm_uex < 1)
+				    l2norm_uex = 1.0;
+
+    				auto l2err_p = normL2( _range=elements(M_mesh), _expr=p_exact - idv(*M_pp) );
+    				auto l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact );
+    				if (l2norm_pex < 1)
+				    l2norm_pex = 1.0;
+						
+    				Feel::cout << "----- Computed Errors -----" << std::endl;
+    				Feel::cout << "||p-p_ex||_L2=\t" << l2err_p/l2norm_pex << std::endl;
+				Feel::cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
+				Feel::cout << "---------------------------" << std::endl;
+				
+    				// Export the errors
+				M_exporter -> step( time )->add(prefixvm(M_prefix, "p_error_L2"), l2err_p/l2norm_pex );
+				M_exporter -> step( time )->add(prefixvm(M_prefix, "u_error_L2"), l2err_u/l2norm_uex );
+			    } 
+			}
+		    }
+
+		}
+			
+            } else
+            {
+       		// Import data
+		LOG(INFO) << "importing " << field << " at time " << time;
+                double extra_export = 0.0;
+                auto itField = M_modelProperties->boundaryConditions().find( "Other quantities");
+  		if ( itField != M_modelProperties->boundaryConditions().end() )
+    		{
+		    auto mapField = (*itField).second;
+		    auto itType = mapField.find( field );
+		    if ( itType != mapField.end() )
+        	    {		
+            	    	for ( auto const& exAtMarker : (*itType).second )
+            		{
+			    if ( exAtMarker.isExpression() )
+                            {
+				 LOG(INFO) << "WARNING: you are trying to export a single expression";
+                	    }
+                	    else if ( exAtMarker.isFile() )
+                	    {
+                    		if ( !this->isStationary() )
+                    		{
+                        	    extra_export = exAtMarker.data(M_bdf_mixedpoisson->time());
+                    		}
+                   	    	else
+                        	    extra_export = exAtMarker.data(0.1);
+			    }
+             		}
+            	    }
+                }
+
+		// Transform data if necessary
+		LOG(INFO) << "transforming" << field << "at time " << time;
+		std::string field_k = field;
+		field_k += "_k";
+		double kk = 0.0;
+		for( auto const& pairMat : M_modelProperties->materials() )
+                {
+                    auto material = pairMat.second;
+                    kk = material.getDouble( field_k );
+                }
+		if (std::abs(kk) > 1e-10)
+		    extra_export *= kk;
+
+		// Export data
+                LOG(INFO) << "exporting " << field << " at time " << time;
+		M_exporter->step( time )->add(prefixvm(M_prefix, field), extra_export);
+            }
         }
     }
 
-    e->save();
+    /*
+    double Ui_mean = 0;
+    double meas = 0;
+    for( auto marker : this->M_integralMarkersList)
+    {
+        Ui_mean += integrate(_range=markedfaces(this->mesh(),marker),_expr=idv(*M_pp) ).evaluate()(0,0);
+	meas += integrate(_range=markedfaces(M_mesh,marker),_expr=cst(1.0)).evaluate()(0,0);
+    }*/
+
+    Feel::cout << "Integral value of potential(mup) on " << M_integralMarkersList.front() << " : \t " << (*M_mup)[0] << std::endl;
+    Feel::cout << "Integral value of potential(mup) on " << M_integralMarkersList.back() << " : \t " << (*M_mup2)[0] << std::endl;
+    // Feel::cout << "Integral value of potential(mean u): \t " << Ui_mean/meas << std::endl;
+ 
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("MixedPoisson","exportResults", "finish");
+
 }
+
 
 
 } // Namespace FeelModels
 
 } // Namespace Feel
 
+#endif
