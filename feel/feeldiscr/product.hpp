@@ -29,10 +29,80 @@
 #if !defined(FEELPP_PRODUCT_HPP)
 #define FEELPP_PRODUCT_HPP 1
 
+#include <feel/feelalg/vectorblock.hpp>
+
 #include <boost/fusion/view/joint_view.hpp>
+
 
 namespace Feel {
 
+
+
+template<typename... SpaceList>
+class ProductSpaces : public  hana::tuple<SpaceList...>, ProductSpacesBase
+{
+public:
+    using super =  hana::tuple<SpaceList...>;
+    //using value_type = typename decay_type<decltype(super[0_c])>::value_type;
+    using value_type = double;
+    using functionspace_type = ProductSpaces<SpaceList...>;
+
+    ProductSpaces( SpaceList... l ) : super( l... ){}
+    int numberOfSpaces() const { return hana::size( *this ); }
+
+    //! \return the total number of degrees of freedom
+    size_type nDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nDof(); } ); }
+    //! \return the number of degrees of freedom owned by the process
+    size_type nLocalDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nLocalDof(); } ); }
+
+
+    class Element : public BlocksBaseVector<double>, FunctionSpaceBase::ElementBase
+    {
+    public:
+        using super = BlocksBaseVector<double>;
+        Element() = default;
+        Element( Element const& ) = default;
+        Element( Element && ) = default;
+
+        Element& operator=( Element const& ) = default;
+        Element& operator=( Element && ) = default;
+
+        Element( functionspace_type X ): super(X),  M_fspace(X) {}
+
+        template<typename N>
+        decltype(auto)
+        operator[]( N const& n1 ) const
+            {
+                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*((*this)(n1,0)));
+            }
+        functionspace_type functionSpace() { return M_fspace; }
+        //void zero() { super::zero(); }
+        functionspace_type M_fspace;
+    };
+
+    Element element() { Element u( *this ); return u; }
+};
+
+template<typename PS>
+constexpr auto is_product_spaces( PS&& ps )
+{
+    return hana::traits::is_base_of(ps);
+}
+template<typename... SpaceList>
+std::unique_ptr<ProductSpaces<SpaceList...>>
+productPtr( SpaceList... spaces )
+{
+    return std::make_unique<ProductSpaces<SpaceList...>>( spaces... );
+}
+template<typename... SpaceList>
+ProductSpaces<SpaceList...>
+product( SpaceList... spaces )
+{
+    return ProductSpaces<SpaceList...>( spaces... );
+}
+
+
+#if 0
 namespace detail {
 
 namespace product {
@@ -87,6 +157,9 @@ product( SpaceList... spaces )
     space_ptrtype Rh( space_type::NewFromList( spaces... ) );
     return Rh;
 }
+
+
+#endif
 
 } // Feel++
 #endif

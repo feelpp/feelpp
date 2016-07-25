@@ -41,6 +41,8 @@ namespace Feel
 
 template<typename T> class Backend;
 
+struct ProductSpacesBase {};
+
 
 template <typename T=double>
 class BlocksBaseVector : public vf::BlocksBase<boost::shared_ptr<Vector<T> > >
@@ -57,7 +59,7 @@ public :
                      backend_ptr_t<T> b = backend() )
         :
         super_type(nr,1),
-        M_backend( b ) 
+        M_backend( b )
     {}
 
     BlocksBaseVector(self_type const & b) = default;
@@ -68,6 +70,22 @@ public :
         M_backend( backend() )
     {}
 
+    template<typename PS>
+    BlocksBaseVector( PS&& ps, backend_ptr_t<T> b = backend(),
+                      std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
+        :
+        super_type( int(hana::size( ps )), 1 ),
+        M_backend( b )
+        {
+            int n = 0;
+            hana::for_each( ps, [&]( auto const& e )
+                            {
+                                cout << "creating vector block (" << n  << ")\n";
+                                (*this)(n,0) = e->elementPtr();//b->newVector( e );
+                                ++n;
+                            });
+
+        }
     /**
      * push_back method
      */
@@ -105,7 +123,7 @@ public :
     vector_ptrtype const& vector() const { return M_vector; }
 
     /**
-     * termination function to fill 
+     * termination function to fill
      */
     void fill( int r  ) {}
 
@@ -119,7 +137,7 @@ public :
      */
     template<typename Arg1, typename ...Args>
     void
-    fillWithNewVector( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args ) 
+    fillWithNewVector( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args )
         {
             this->operator()( n ) = M_backend->newBlockVector( arg1 );
             // do submatrix (n+1,n+1)
@@ -131,7 +149,7 @@ public :
      */
     template<typename Arg1, typename ...Args>
     void
-    fill( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args ) 
+    fill( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args )
         {
             this->operator()( n ) = arg1;
             // do submatrix (n+1,n+1)
@@ -340,6 +358,51 @@ vectorBlocks( const Arg1& arg1, const Args&... args )
     BlocksBaseVector<typename decay_type<Arg1>::value_type> g( size, backend() );
     int n = 0;
     g.fill( n, arg1, args... );
+    return g;
+}
+
+/**
+ * Build blocks of CSR graphs with function spaces \p
+ * (args1,args2,argn). Variadic template is used to handle an arbitrary number of
+ * function spaces.
+ * The blocks are organized then matrix wise with the stencil associated of pairs of function spaces in \p (arg1,...,argn)
+ *
+ */
+template<typename PS>
+//BlocksBaseVector<typename decay_type<PS>::value_type>
+BlocksBaseVector<double>
+blockVector( PS && ps, backend_ptrtype b = backend() )
+{
+    const int size = hana::size(ps);
+    //BlocksBaseVector<typename decay_type<PS>::value_type> g( size, backend() );
+    BlocksBaseVector<double> g( size, b );
+
+    int n = 0;
+    hana::for_each( ps, [&]( auto const& e )
+                    {
+                        cout << "creating vector block (" << n  << ")\n";
+                        g(n,0) = b->newVector( e );
+                        ++n;
+                    });
+    return g;
+}
+
+template<typename PS>
+//BlocksBaseVector<typename decay_type<PS>::value_type>
+BlocksBaseVector<double>
+blockElement( PS && ps, backend_ptrtype b = backend() )
+{
+    const int size = hana::size(ps);
+    //BlocksBaseVector<typename decay_type<PS>::value_type> g( size, backend() );
+    BlocksBaseVector<double> g( size, b );
+
+    int n = 0;
+    hana::for_each( ps, [&]( auto const& e )
+                    {
+                        cout << "creating vector element (" << n  << ")\n";
+                        g(n,0) = e->elementPtr();
+                        ++n;
+                    });
     return g;
 }
 
