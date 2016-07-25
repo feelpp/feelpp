@@ -1256,14 +1256,18 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
      */
     if ( name != "NULL" )
     {
+#if 0
         ierr = PetscViewerBinaryOpen( this->comm(),
                                      name.c_str(),
                                      FILE_MODE_WRITE,
                                      &petsc_viewer );
-        //ierr = PetscViewerASCIIOpen( this->comm(),
-        //                             name.c_str(),
-        //                             &petsc_viewer );
+#else
+        ierr = PetscViewerASCIIOpen( this->comm(),
+                                     name.c_str(),
+                                     &petsc_viewer );
+#endif
         CHKERRABORT( this->comm(),ierr );
+#if 0
 #if PETSC_VERSION_LESS_THAN(3,7,0)
         ierr = PetscViewerSetFormat ( petsc_viewer,
                                       PETSC_VIEWER_BINARY_MATLAB );
@@ -1272,6 +1276,10 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
                                       PETSC_VIEWER_BINARY_MATLAB );
 #endif
         //PETSC_VIEWER_ASCII_PYTHON );
+#else
+        ierr = PetscViewerPushFormat ( petsc_viewer,
+                                       PETSC_VIEWER_ASCII_MATLAB );
+#endif
         CHKERRABORT( this->comm(),ierr );
 
         ierr = MatView ( M_mat, petsc_viewer );
