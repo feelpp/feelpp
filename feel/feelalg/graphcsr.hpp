@@ -514,14 +514,23 @@ private :
  * The blocks are organized then matrix wise with the stencil associated of pairs of function spaces in \p (arg1,...,argn)
  *
  */
-template<typename Arg1, typename ...Args>
+template<typename PS>
 BlocksBaseGraphCSR
-csrGraphBlocks( const Arg1& arg1, const Args&... args )
+csrGraphBlocks( PS&& ps )
 {
-    const int size = sizeof...(Args)+1;
-    BlocksBaseGraphCSR g( size, size );
+    int s = ps.numberOfSpaces();
+    BlocksBaseGraphCSR g( s, s );
+
     int n = 0;
-    g.rowcol( n, arg1, args...);
+    auto cp = hana::cartesian_product( hana::make_tuple( ps, ps ) );
+    hana::for_each( cp, [&]( auto const& e )
+                    {
+                        int r = n/s;
+                        int c = n%s;
+                        g( r, c ) = stencil( _test=e[0_c],_trial=e[1_c], _diag_is_nonzero=false, _close=false)->graph();
+                        cout << "filling out stencil (" << r << "," << c << ")\n";
+                        ++n;
+                    });
     return g;
 }
 
