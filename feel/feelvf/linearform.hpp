@@ -853,11 +853,14 @@ public:
      * scale linear form by \p s
      */
     void scale( value_type s ) { M_F->scale( s ); }
-    
+
     LinearForm& operator+=( LinearForm& f )
         {
             if ( this == &f )
+            {
+                M_F->scale( 2. );
                 return *this;
+            }
 
             *M_F += *f.M_F;
 
@@ -898,7 +901,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
 {
     // add the vector contrib
     *M_F += *__vf.M_F;
-    
+
     DVLOG(2) << "LinearForm copy constructor\n";
     DVLOG(2) << "     n Dof : " << M_X->nDof() << "\n";
     DVLOG(2) << "    F size : " << M_F->size() << "\n";
@@ -1110,7 +1113,7 @@ struct LinearForm
 }
 
 /**
- * @brief provide the type of the linear form 
+ * @brief provide the type of the linear form
  */
 template<typename FE1,
          typename VectorType=typename Backend<typename functionspace_type<FE1>::value_type>::vector_type,
@@ -1118,7 +1121,7 @@ template<typename FE1,
 using form1_type = Feel::vf::detail::LinearForm<FE1,VectorType,ElemContType>;
 
 /**
- * @brief provide the type of the linear form 
+ * @brief provide the type of the linear form
  */
 template<typename FE1,
          typename VectorType=typename Backend<typename functionspace_type<FE1>::value_type>::vector_type,
@@ -1126,7 +1129,7 @@ template<typename FE1,
 using form1_t = form1_type<FE1,VectorType,ElemContType>;
 
 /**
- * @brief provide the type of the space associated to the linear form 
+ * @brief provide the type of the space associated to the linear form
  */
 template<typename FE1,
          typename VectorType=typename Backend<typename functionspace_type<FE1>::value_type>::vector_type,
