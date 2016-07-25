@@ -40,6 +40,20 @@ template <typename Scalar>
 struct functor_traits<scalar_mod2_op<Scalar> >
 { enum { Cost = NumTraits<Scalar>::template Div<false>::Cost, PacketAccess = false }; };
 
+template <typename Scalar>
+struct scalar_fmod_op {
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_fmod_op);
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar
+  operator()(const Scalar& a, const Scalar& b) const {
+    return numext::fmod(a, b);
+  }
+};
+template <typename Scalar>
+struct functor_traits<scalar_fmod_op<Scalar> > {
+  enum { Cost = 13,  // Reciprocal throughput of FPREM on Haswell.
+         PacketAccess = false };
+};
+
 
 /** \internal
   * \brief Template functor to compute the sigmoid of a scalar
@@ -50,12 +64,12 @@ struct scalar_sigmoid_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_sigmoid_op)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE T operator()(const T& x) const {
     const T one = T(1);
-    return one / (one + std::exp(-x));
+    return one / (one + numext::exp(-x));
   }
 
   template <typename Packet> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
   Packet packetOp(const Packet& x) const {
-    const Packet one = pset1<Packet>(1);
+    const Packet one = pset1<Packet>(T(1));
     return pdiv(one, padd(one, pexp(pnegate(x))));
   }
 };
@@ -73,7 +87,7 @@ struct functor_traits<scalar_sigmoid_op<T> > {
 // Standard reduction functors
 template <typename T> struct SumReducer
 {
-  static const bool PacketAccess = true;
+  static const bool PacketAccess = packet_traits<T>::HasAdd;
   static const bool IsStateful = false;
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void reduce(const T t, T* accum) const {
@@ -107,7 +121,7 @@ template <typename T> struct SumReducer
 
 template <typename T> struct MeanReducer
 {
-  static const bool PacketAccess = !NumTraits<T>::IsInteger;
+  static const bool PacketAccess = packet_traits<T>::HasAdd && !NumTraits<T>::IsInteger;
   static const bool IsStateful = true;
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
@@ -144,13 +158,13 @@ template <typename T> struct MeanReducer
   }
 
   protected:
-    int scalarCount_;
-    int packetCount_;
+    DenseIndex scalarCount_;
+    DenseIndex packetCount_;
 };
 
 template <typename T> struct MaxReducer
 {
-  static const bool PacketAccess = true;
+  static const bool PacketAccess = packet_traits<T>::HasMax;
   static const bool IsStateful = false;
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void reduce(const T t, T* accum) const {
@@ -183,7 +197,7 @@ template <typename T> struct MaxReducer
 
 template <typename T> struct MinReducer
 {
-  static const bool PacketAccess = true;
+  static const bool PacketAccess = packet_traits<T>::HasMin;
   static const bool IsStateful = false;
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void reduce(const T t, T* accum) const {
@@ -217,7 +231,7 @@ template <typename T> struct MinReducer
 
 template <typename T> struct ProdReducer
 {
-  static const bool PacketAccess = true;
+  static const bool PacketAccess = packet_traits<T>::HasMul;
   static const bool IsStateful = false;
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void reduce(const T t, T* accum) const {
@@ -322,7 +336,7 @@ __device__ int get_random_seed() {
     return clock();
 }
 #else
-int get_random_seed() {
+static inline int get_random_seed() {
 #ifdef _WIN32
     SYSTEMTIME st;
     GetSystemTime(&st);
@@ -580,6 +594,8 @@ template <> class UniformRandomGenerator<std::complex<double> > {
 template <typename Scalar>
 struct functor_traits<UniformRandomGenerator<Scalar> > {
   enum {
+    // Rough estimate.
+    Cost = 100 * NumTraits<Scalar>::MulCost,
     PacketAccess = UniformRandomGenerator<Scalar>::PacketAccess
   };
 };
@@ -760,6 +776,8 @@ template <typename T> class NormalRandomGenerator {
 template <typename Scalar>
 struct functor_traits<NormalRandomGenerator<Scalar> > {
   enum {
+    // Rough estimate.
+    Cost = 100 * NumTraits<Scalar>::MulCost,
     PacketAccess = NormalRandomGenerator<Scalar>::PacketAccess
   };
 };
@@ -785,7 +803,7 @@ class GaussianGenerator {
       T offset = coordinates[i] - m_means[i];
       tmp += offset * offset / m_two_sigmas[i];
     }
-    return std::exp(-tmp);
+    return numext::exp(-tmp);
   }
 
  private:
@@ -793,6 +811,15 @@ class GaussianGenerator {
   array<T, NumDims> m_two_sigmas;
 };
 
+template <typename T, typename Index, size_t NumDims>
+struct functor_traits<GaussianGenerator<T, Index, NumDims> > {
+  enum {
+    Cost = NumDims * (2 * NumTraits<T>::AddCost + NumTraits<T>::MulCost +
+                      functor_traits<scalar_quotient_op<T, T> >::Cost) +
+           functor_traits<scalar_exp_op<T> >::Cost,
+    PacketAccess = GaussianGenerator<T, Index, NumDims>::PacketAccess
+  };
+};
 
 } // end namespace internal
 } // end namespace Eigen

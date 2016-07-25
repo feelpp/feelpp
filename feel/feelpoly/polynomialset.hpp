@@ -1067,8 +1067,8 @@ public:
 
                     for ( index q = 0; q < Q; ++q )
                         for ( index l = 0; l < nComponents1; ++l )
-                            for ( index j = 0; j < nDim; ++j )
-                                for ( index k = j; k < nDim; ++k )
+                            for ( index j = 0; j < nRealDim; ++j )
+                                for ( index k = j; k < nRealDim; ++k )
                                 {
                                     value_type t = __hess(j,k)( nldof*c1+nRealDim*i+l,q);
                                     M_hessian[I*c1+i][q]( l,j,k ) = t;
@@ -1848,6 +1848,14 @@ public:
          */
         curl_type const& curl( uint16_type i, uint32_type q ) const
             {
+                return curl( i, q, do_optimization_p1_t() );
+            }
+        curl_type const& curl( uint16_type i, uint32_type q, optimization_p1_t ) const
+            {
+                return M_curl[i][0];
+            }
+        curl_type const& curl( uint16_type i, uint32_type q, no_optimization_p1_t ) const
+            {
                 return M_curl[i][q];
             }
         value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
@@ -1871,12 +1879,12 @@ public:
             {
                 return curl( i, c1, c2, q, do_optimization_p1_t() );
             }
-        value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+        value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, optimization_p1_t ) const
             {
                 Feel::detail::ignore_unused_variable_warning( c2 );
                 return M_curl[i][0]( c1 );
             }
-        value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+        value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, no_optimization_p1_t ) const
             {
                 Feel::detail::ignore_unused_variable_warning( c2 );
                 return M_curl[i][q]( c1 );
@@ -1936,12 +1944,12 @@ public:
             {
                 return curly( i, c1, c2, q, do_optimization_p1_t() );
             }
-        value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+        value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, optimization_p1_t ) const
             {
                 Feel::detail::ignore_unused_variable_warning( c2 );
                 return M_curl[i][0]( 1 );
             }
-        value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+        value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, no_optimization_p1_t ) const
             {
                 Feel::detail::ignore_unused_variable_warning( c2 );
                 return M_curl[i][q]( 1 );
@@ -1968,12 +1976,12 @@ public:
             {
                 return curlz( i, c1, c2, q, do_optimization_p1_t() );
             }
-        value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+        value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, optimization_p1_t ) const
             {
                 Feel::detail::ignore_unused_variable_warning( c2 );
                 return M_curl[i][0]( 2 );
             }
-        value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+        value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, no_optimization_p1_t ) const
             {
                 Feel::detail::ignore_unused_variable_warning( c2 );
                 return M_curl[i][q]( 2 );
@@ -1985,17 +1993,37 @@ public:
             }
         value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                return hess( i, c1, c2, q, mpl::int_<rank>() );
+                return hess( i, c1, c2, q, mpl::int_<rank>(), do_optimization_p2_t() );
             }
-        value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<0> ) const
+        value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<0>, optimization_p2_t ) const
+            {
+                return M_hessian[i][0]( c1,c2,0 );
+            }
+        value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<0>, no_optimization_p2_t ) const
             {
                 return M_hessian[i][q]( c1,c2,0 );
             }
         laplacian_type const& laplacian( uint16_type i, uint32_type q ) const
             {
+                return laplacian( i, q, do_optimization_p2_t() );
+            }
+        laplacian_type const& laplacian( uint16_type i, uint32_type q, optimization_p2_t ) const
+            {
+                return M_laplacian[i][0];
+            }
+        laplacian_type const& laplacian( uint16_type i, uint32_type q, no_optimization_p2_t ) const
+            {
                 return M_laplacian[i][q];
             }
         value_type laplacian( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
+            {
+                return laplacian( i, c1, c2, q, do_optimization_p2_t() );
+            }
+        value_type laplacian( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, optimization_p2_t ) const
+            {
+                return M_laplacian[i][0](c1,c2);
+            }
+        value_type laplacian( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, no_optimization_p2_t ) const
             {
                 return M_laplacian[i][q](c1,c2);
             }

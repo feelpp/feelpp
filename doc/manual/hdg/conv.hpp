@@ -2,6 +2,8 @@
 
 namespace Feel {
 
+// namespace FeelModels {
+
 inline
 po::options_description
 makeConvOptions()
@@ -10,7 +12,7 @@ makeConvOptions()
     options.add_options()
         ( "nb_refine", po::value<int>()->default_value(3), "number of refinement" )
         ;
-    options.add( makeMixedPoissonOptions());
+    options.add( FeelModels::makeMixedPoissonOptions() );
     return options;
 }
 
@@ -19,22 +21,23 @@ po::options_description
 makeConvLibOptions()
 {
     po::options_description options ( "Electro-Thermal lib options");
-    options.add( makeMixedPoissonLibOptions());
-    return options.add( feel_options());
+    options.add( FeelModels::makeMixedPoissonLibOptions() );
+    return options ;
 }
 
-template<int Dim, int Order>
+template<int Dim, int Order,int G_Order = 1>
 class ConvergenceTest
 {
 public:
-    using convex_type = Simplex<Dim,1>;
+    using convex_type = Simplex<Dim,G_Order>;
     using mesh_type = Mesh<convex_type>;
     using mesh_ptrtype = boost::shared_ptr<mesh_type>;
 
     using expr_scalar_type = scalar_field_expression<2>;
-    using expr_vectorial_type = vector_field_expression<Dim,1,2>;
+    using expr_vectorial_type = vector_field_expression<Dim,G_Order,2>;
 
-    using mixed_poisson_type = MixedPoisson<Dim,Order>;
+    using mixed_poisson_type = FeelModels::MixedPoisson<Dim,Order,G_Order>;
+    using mixed_poisson_ptrtype = boost::shared_ptr<mixed_poisson_type> ;
 
     using flux_ptrtype = typename mixed_poisson_type::Vh_element_ptr_t;
     using potential_ptrtype = typename mixed_poisson_type::Wh_element_ptr_t;
@@ -47,7 +50,7 @@ public:
 private:
     mesh_ptrtype M_mesh;
 
-    mixed_poisson_type M_model;
+    mixed_poisson_ptrtype M_model;
 
     flux_ptrtype M_u;
     potential_ptrtype M_p;
@@ -59,21 +62,21 @@ public:
     void run();
 };
 
-template<int Dim, int Order>
-ConvergenceTest<Dim,Order>::ConvergenceTest()
+template<int Dim, int Order, int G_Order>
+ConvergenceTest<Dim,Order,G_Order>::ConvergenceTest()
 {
-    M_model = mixed_poisson_type();
+    M_model = mixed_poisson_type::New("mixedpoisson");
 #if FEELPP_DIM == 2
-    M_u_exact = M_model.modelProperties().functions()["u"].expressionVectorial2();
+    M_u_exact = M_model -> modelProperties().functions()["u"].expressionVectorial2();
 #else
-    M_u_exact = M_model.modelProperties().functions()["u"].expressionVectorial3();
+    M_u_exact = M_model -> modelProperties().functions()["u"].expressionVectorial3();
 #endif
-    M_p_exact = M_model.modelProperties().functions()["p"].expressionScalar();
+    M_p_exact = M_model -> modelProperties().functions()["p"].expressionScalar();
 }
 
-template<int Dim, int Order>
+template<int Dim, int Order, int G_Order>
 void
-ConvergenceTest<Dim,Order>::run()
+ConvergenceTest<Dim,Order,G_Order>::run()
 {
     double h = doption("gmsh.hsize");
 
@@ -88,18 +91,18 @@ ConvergenceTest<Dim,Order>::run()
     for ( int i = 0; i < ioption("nb_refine"); i++)
     {
         M_mesh = loadMesh( _mesh=new mesh_type, _h=h);
-        M_model.init(M_mesh);
+        M_model -> init(M_mesh);
 
-        auto nDofU = M_model.fluxSpace()->nDof();
-        auto nDofP = M_model.potentialSpace()->nDof();
-        auto u_ex = M_model.fluxSpace()->element();
-        auto p_ex = M_model.potentialSpace()->element();
-        auto p_mean = M_model.potentialSpace()->element();
+        auto nDofU = M_model -> fluxSpace()->nDof();
+        auto nDofP = M_model -> potentialSpace()->nDof();
+        auto u_ex = M_model -> fluxSpace()->element();
+        auto p_ex = M_model -> potentialSpace()->element();
+        auto p_mean = M_model -> potentialSpace()->element();
 
-        M_model.solve();
+        M_model -> solve();
 
-        M_u = M_model.fluxField();
-        M_p = M_model.potentialField();
+        M_u = M_model -> fluxField();
+        M_p = M_model -> potentialField();
 
         double errU = normL2(_range=elements(M_mesh), _expr=idv(*M_u)-M_u_exact);
         double mean_p_exact = mean( elements(M_mesh), M_p_exact)(0,0);
@@ -131,4 +134,5 @@ ConvergenceTest<Dim,Order>::run()
     cvg_p.close();
 }
 
-}
+// } // end namespace FeelModels
+} // end namespace Feel
