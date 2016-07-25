@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     decltype( IPtr( _domainSpace=Pdh<FEELPP_ORDER>(mesh), _imageSpace=Pdh<1>(mesh) ) ) Idh ;
     decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<1>(mesh) ) ) Idhv;
     if ( soption( "mixedpoisson.gmsh.submesh" ).empty() )
-        MP -> init();
+        MP -> init(mesh);
     else
     {
         auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("mixedpoisson.gmsh.submesh")), Environment::worldComm() );
