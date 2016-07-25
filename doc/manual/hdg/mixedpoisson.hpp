@@ -1317,11 +1317,13 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                 {
                     LOG(INFO) << "exporting IBC potential at time " << time << " value " << (*M_mup)[0];
                     M_exporter->step( time )->add(prefixvm(M_prefix, "cstPotential_1"),(*M_mup)[0] );
+		    Feel::cout << "Integral value of potential(mup) on " << M_integralMarkersList.front() << " : \t " << (*M_mup)[0] << std::endl;
                 }
 		if (M_integralCondition == 2)
 		{
                     LOG(INFO) << "exporting IBC_2 potential at time " << time << " value " << (*M_mup2)[0];
                     M_exporter->step( time )->add(prefixvm(M_prefix, "cstPotential_2"),(*M_mup2)[0] );
+		    Feel::cout << "Integral value of potential(mup) on " << M_integralMarkersList.back() << " : \t " << (*M_mup2)[0] << std::endl;
 		}
 		auto itField = M_modelProperties->boundaryConditions().find("Exact solution");
 		if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -1404,7 +1406,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                 }
 
 		// Transform data if necessary
-		LOG(INFO) << "transforming" << field << "at time " << time;
+		LOG(INFO) << "transforming " << field << "at time " << time;
 		std::string field_k = field;
 		field_k += "_k";
 		double kk = 0.0;
@@ -1430,12 +1432,13 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
     {
         Ui_mean += integrate(_range=markedfaces(this->mesh(),marker),_expr=idv(*M_pp) ).evaluate()(0,0);
 	meas += integrate(_range=markedfaces(M_mesh,marker),_expr=cst(1.0)).evaluate()(0,0);
-    }*/
-
-    Feel::cout << "Integral value of potential(mup) on " << M_integralMarkersList.front() << " : \t " << (*M_mup)[0] << std::endl;
-    Feel::cout << "Integral value of potential(mup) on " << M_integralMarkersList.back() << " : \t " << (*M_mup2)[0] << std::endl;
+    }
+    if (M_integralCondition)
+	Feel::cout << "Integral value of potential(mup) on " << M_integralMarkersList.front() << " : \t " << (*M_mup)[0] << std::endl;
+    if ( M_integralCondition == 2)
+	Feel::cout << "Integral value of potential(mup) on " << M_integralMarkersList.back() << " : \t " << (*M_mup2)[0] << std::endl;
     // Feel::cout << "Integral value of potential(mean u): \t " << Ui_mean/meas << std::endl;
- 
+    */
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
