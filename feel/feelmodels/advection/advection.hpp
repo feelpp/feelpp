@@ -52,6 +52,14 @@ public:
 
     typedef typename super_type::space_advection_ptrtype space_advection_ptrtype;
     typedef typename super_type::element_advection_ptrtype element_advection_ptrtype;
+    //--------------------------------------------------------------------//
+    typedef typename map_scalar_field<2> map_scalar_field_type;
+    typedef typename map_vector_field<super_type::nDim, 1, 2> map_vector_field_type;
+    typedef typename mpl::if_< 
+        mpl::bool_<BasisAdvectionType::is_vectorial>,
+            map_vector_field_type,
+            map_scalar_field_type
+        >::type bc_map_field_type;
 
     //--------------------------------------------------------------------//
     // Constructor
@@ -83,11 +91,11 @@ public:
 
 protected:
     // Boundary conditions
-    map_scalar_field<2> M_bcDirichlet;
-    map_scalar_field<2> M_bcNeumann;
-    map_scalar_fields<2> M_bcRobin;
+    bc_map_field_type M_bcDirichlet;
+    bc_map_field_type M_bcNeumann;
+    //map_scalar_fields<2> M_bcRobin;
 
-    map_scalar_field<2> M_sources;
+    bc_map_field_type M_sources;
 
 private:
     void loadPeriodicityFromOptionsVm();
