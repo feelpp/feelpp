@@ -1,18 +1,10 @@
 {
     "Name": "Square2d",
-    "ShortName":"Fluid",
+    "ShortName":"Square2d",
     "Model":"Navier-Stokes",
     "Parameters":
     {
         "ubar":"0.2"
-    },
-    "Materials":
-    {
-        "Fluid":{
-            "name":"myFluidMat",
-            "rho":"1.0e3",
-            "mu":"1.0"
-        }
     },
     "BoundaryConditions":
     {
