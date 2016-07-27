@@ -174,16 +174,16 @@ SelfLabel<space_type, space_P0_type>::propagateLabel( int labelValue, elementP0_
         eltsToVisit.insert( elt.id() );
     }
 
-    auto exp = exporter(_mesh=submesh, _name="propagation");
-    int iter=0;
+    // auto exp = exporter(_mesh=submesh, _name="propagation");
+    // int iter=0;
 
     while( ! eltsToVisit.empty() )
     {
         auto elt_id = eltsToVisit.begin();
         auto const & elt = submesh->element( *elt_id );
 
-        exp->step(iter++)->add("labelOnSubMesh", *labelOnSubMesh);
-        exp->save();
+        // exp->step(iter++)->add("labelOnSubMesh", *labelOnSubMesh);
+        // exp->save();
 
         for (uint16_type face_id = 0; face_id<elt.nTopologicalFaces(); ++face_id)
         {
@@ -200,11 +200,11 @@ SelfLabel<space_type, space_P0_type>::propagateLabel( int labelValue, elementP0_
 
             // check if the neighbor elt is already labelized
             auto condition = ( std::abs(int(labelOnSubMesh->localToGlobal(elt_neigh_id, 0, 0))-labelValue) > 1e-6 );
-            std::cout<<"iter = "<< iter <<", face id= "<< face_id <<", condition = " << condition << std::endl;
+            // std::cout<<"iter = "<< iter <<", face id= "<< face_id <<", condition = " << condition << std::endl;
 
             if (condition)
             {
-                std::cout<<"adding neighbor\n";
+                // std::cout<<"adding neighbor\n";
                 eltsToVisit.insert(elt_neigh_id);
             }
         }

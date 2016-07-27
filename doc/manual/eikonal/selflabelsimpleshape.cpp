@@ -12,18 +12,16 @@ using namespace Feel;
 
 int main( int argc, char** argv )
 {
-    const int dim = 2;
-
     Feel::Environment env( argc, argv );
 
-    auto mesh = unitHypercube<dim>();
-    auto Xh = Pch<1>(mesh);
+    auto mesh = unitHypercube<FEELPP_DIM>();
+    auto Xh = Pch<FEELPP_ORDER>(mesh);
     auto Xh0 = Pdh<0>(mesh);
 
         // some ellipse parameters:
     const double x0=0.6;
     const double y0=0.5;
-    const double z0 = dim==2 ? 0 : 0.5;
+    const double z0 = FEELPP_ORDER==2 ? 0 : 0.5;
     const double aAxis = 0.1;
     const double bAxis = 0.3;
 
@@ -40,14 +38,19 @@ int main( int argc, char** argv )
 
     auto initlabel = Xh->elementPtr();
     *initlabel = vf::project(_space=Xh, _range=elements(mesh),
-                                 _expr= vf::chi( (X0*X0+Y0*Y0+Z0*Z0)< (aAxis*aAxis)/8.) );
+                                 _expr= vf::chi( (X0*X0+Y0*Y0+Z0*Z0) < (aAxis*aAxis)/2.) );
+
+    // init label must be unchanged, selflabel will modify the label
+    auto lab = Xh->elementPtr();
+    *lab = *initlabel;
 
     auto selflabelgenerator = selfLabel(Xh, Xh0);
-    selflabelgenerator->setLabel( initlabel );
+    selflabelgenerator->setLabel( lab );
     selflabelgenerator->updateLabel(ellipseShape);
 
     auto exp = exporter(_mesh=mesh, _name="selflabel");
     exp->step(0)->add("L0", *(selflabelgenerator->getLabel()) );
+    exp->step(0)->add("ellipseShape", *ellipseShape );
     exp->step(0)->add("L0_P0", *(selflabelgenerator->getP0Label()) );
     exp->step(0)->add("initlabel", *initlabel );
     exp->save();
