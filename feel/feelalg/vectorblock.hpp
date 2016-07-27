@@ -33,7 +33,7 @@
 #include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelvf/block.hpp>
-
+#include <feel/feelalg/products.hpp>
 
 namespace Feel
 {
@@ -41,7 +41,6 @@ namespace Feel
 
 template<typename T> class Backend;
 
-struct ProductSpacesBase {};
 
 
 template <typename T=double>
@@ -86,6 +85,22 @@ public :
                             });
 
         }
+
+    template<typename PS>
+    BlocksBaseVector( PS&& ps, backend_ptr_t<T> b = backend(),
+                      std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
+        :
+        super_type( ps.numberOfSpaces(), 1 ),
+        M_backend( b )
+        {
+            for( int i = 0; i < ps.numberOfSpaces(); ++i )
+            {
+                cout << "creating dyn vector block (" << i  << ")\n";
+                (*this)(i,0) = ps[i]->elementPtr();
+            }
+
+        }
+
     /**
      * push_back method
      */
@@ -352,12 +367,24 @@ newVectorBlocks( const Arg1& arg1, const Args&... args )
  */
 template<typename Arg1, typename ...Args>
 BlocksBaseVector<typename decay_type<Arg1>::value_type>
-vectorBlocks( const Arg1& arg1, const Args&... args )
+vectorBlocks( const Arg1& arg1, const Args&... args,
+              std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<Arg1>>::value>* = nullptr )
 {
     const int size = sizeof...(Args)+1;
     BlocksBaseVector<typename decay_type<Arg1>::value_type> g( size, backend() );
     int n = 0;
     g.fill( n, arg1, args... );
+    return g;
+}
+
+template<typename Arg>
+BlocksBaseVector<typename decay_type<Arg>::value_type>
+vectorBlocks( const Arg& arg,
+              std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<Arg>>::value>* = nullptr )
+{
+    BlocksBaseVector<typename decay_type<Arg>::value_type> g( arg.numberOfSpaces(), backend() );
+    for( int i = 0; i < arg.numberOfSpaces(); ++i )
+        g(i) = arg.elementPtr();
     return g;
 }
 
@@ -371,7 +398,8 @@ vectorBlocks( const Arg1& arg1, const Args&... args )
 template<typename PS>
 //BlocksBaseVector<typename decay_type<PS>::value_type>
 BlocksBaseVector<double>
-blockVector( PS && ps, backend_ptrtype b = backend() )
+blockVector( PS && ps, backend_ptrtype b = backend(),
+             std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
     const int size = hana::size(ps);
     //BlocksBaseVector<typename decay_type<PS>::value_type> g( size, backend() );
@@ -388,9 +416,22 @@ blockVector( PS && ps, backend_ptrtype b = backend() )
 }
 
 template<typename PS>
+BlocksBaseVector<double>
+blockVector( PS && ps, backend_ptrtype b = backend(),
+             std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
+{
+    BlocksBaseVector<double> g( ps.numberOfSpaces(), b );
+
+    for( int i = 0; i < ps.numberOfSpaces(); ++i )
+        g(i,0) = b->newVector( ps[i] );
+    return g;
+}
+
+template<typename PS>
 //BlocksBaseVector<typename decay_type<PS>::value_type>
 BlocksBaseVector<double>
-blockElement( PS && ps, backend_ptrtype b = backend() )
+blockElement( PS && ps, backend_ptrtype b = backend(),
+              std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
     const int size = hana::size(ps);
     //BlocksBaseVector<typename decay_type<PS>::value_type> g( size, backend() );
@@ -403,6 +444,20 @@ blockElement( PS && ps, backend_ptrtype b = backend() )
                         g(n,0) = e->elementPtr();
                         ++n;
                     });
+    return g;
+}
+
+template<typename PS>
+//BlocksBaseVector<typename decay_type<PS>::value_type>
+BlocksBaseVector<double>
+blockElement( PS && ps, backend_ptrtype b = backend(),
+              std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
+{
+    BlocksBaseVector<double> g( ps.numberOfSpaces(), b );
+
+    int n = 0;
+    for( int i = 0;i < ps.numberOfSpaces(); ++i )
+        g(i,0) = ps[i]->elementPtr();
     return g;
 }
 
