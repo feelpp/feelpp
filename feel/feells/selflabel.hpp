@@ -64,8 +64,6 @@ private :
     void genereatesubmesh();
     void propagateLabel( int labelValue, elementP0_ptrtype labelOnSubMesh );
 
-    void checkEltsAreLabeled();
-
     void pushLabelOnMesh( elementP0_ptrtype labelOnSubMesh );
 
     elementP0_ptrtype makeMarkerElementsWithLabelOnSubmesh();
@@ -199,14 +197,8 @@ SelfLabel<space_type, space_P0_type>::propagateLabel( int labelValue, elementP0_
             // pid courant : mesh->worldComm().localRank();
 
             // check if the neighbor elt is already labelized
-            auto condition = ( std::abs(int(labelOnSubMesh->localToGlobal(elt_neigh_id, 0, 0))-labelValue) > 1e-6 );
-            // std::cout<<"iter = "<< iter <<", face id= "<< face_id <<", condition = " << condition << std::endl;
-
-            if (condition)
-            {
-                // std::cout<<"adding neighbor\n";
+            if ( std::abs(int(labelOnSubMesh->localToGlobal(elt_neigh_id, 0, 0))-labelValue) > 1e-6 )
                 eltsToVisit.insert(elt_neigh_id);
-            }
         }
 
         labelOnSubMesh->assign(*elt_id, 0,0, labelValue);
@@ -215,18 +207,6 @@ SelfLabel<space_type, space_P0_type>::propagateLabel( int labelValue, elementP0_
 
 }// propagateLabel
 
-
-
-template< typename space_type, typename space_P0_type >
-void
-SelfLabel<space_type, space_P0_type>::checkEltsAreLabeled()
-{
-    for (auto const & elt : elements(submesh))
-    {
-        CHECK( std::abs(int(elt.marker2().value())-markerfluid)>1e-6 )
-            <<"element " << elt.id() << " has still a marker 'fluid'. It is supposed to have the value of one of the domain label\n";
-    }
-}// checkEltsAreLabeled
 
 
 template< typename space_type, typename space_P0_type >
@@ -246,6 +226,8 @@ SelfLabel<space_type, space_P0_type>::pushLabelOnMesh( elementP0_ptrtype labelOn
         const size_type idOnMesh = submesh->subMeshToMesh( elt_submesh.id() );
 
         const int labelElt = boost::math::iround( labelOnSubMesh->localToGlobal( elt_submesh.id(), 0, 0 ) );
+
+        labelP0->assign( idOnMesh, 0, 0, labelElt );
 
         for (int j=0; j<space_type::fe_type::nDof; ++j)
         {
