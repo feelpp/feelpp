@@ -45,6 +45,11 @@ public :
         M_ps(ps),
         M_matrix(backend()->newBlockMatrix(_block=csrGraphBlocks(M_ps)))
         {}
+    BlockBilinearForm(product_space_t&& ps, sparse_matrix_ptrtype&& m)
+        :
+        M_ps(ps),
+        M_matrix(m)
+        {}
 
     template<typename N1,typename N2>
     decltype(auto) operator()( N1 n1, N2 n2 )
@@ -98,6 +103,12 @@ blockform2( PS&& ps )
 {
     return BlockBilinearForm<PS>( std::forward<PS>(ps) );
 }
+template<typename PS>
+BlockBilinearForm<PS>
+blockform2( PS&& ps, sparse_matrix_ptrtype m )
+{
+    return BlockBilinearForm<PS>( std::forward<PS>(ps), std::forward<sparse_matrix_ptrtype>(m) );
+}
 /**
  * Handles linear form over a product of spaces
  */
@@ -112,6 +123,11 @@ public :
         :
         M_ps(ps),
         M_vector(backend()->newBlockVector(_block=blockVector(M_ps), _copy_values=false))
+        {}
+    BlockLinearForm(product_space_t&& ps, vector_ptrtype&& v )
+        :
+        M_ps(ps),
+        M_vector(v)
         {}
     BlockLinearForm( BlockLinearForm&& ) = default;
     BlockLinearForm( BlockLinearForm& ) = default;
