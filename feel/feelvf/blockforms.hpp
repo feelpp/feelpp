@@ -35,7 +35,7 @@ namespace Feel {
  * Handles bilinear form over a product of spaces
  */
 template<typename PS>
-class BlockBilinearForm
+class BlockBilinearForm\
 {
 public :
     using product_space_t = PS;
@@ -52,6 +52,13 @@ public :
             cout << "filling out matrix block (" << n1 << "," << n2 << ")\n";
             return form2(_test=M_ps[n1],_trial=M_ps[n2], _matrix=M_matrix, _rowstart=int(n1), _colstart=int(n2) );
         }
+
+    decltype(auto) operator()( int n1, int n2 )
+        {
+            cout << "filling out matrix block (" << n1 << "," << n2 << ")\n";
+            return form2(_test=M_ps[n1],_trial=M_ps[n2], _matrix=M_matrix, _rowstart=int(n1), _colstart=int(n2) );
+        }
+
     void close()
         {
             M_matrix->close();
@@ -82,10 +89,7 @@ public :
                                                                    _pre=pre,
                                                                    _post=post
                                                                    );
-            U->printMatlab("U.m");
             solution.localize(U);
-            solution(0,0)->printMatlab("u.m");
-            solution(1,0)->printMatlab("v.m");
             return r;
         }
     product_space_t M_ps;
@@ -120,6 +124,12 @@ public :
 
     template<typename N1>
     decltype(auto) operator()( N1 n1 )
+        {
+            cout << "filling out vector block (" << n1 << ")\n";
+            return form1(_test=M_ps[n1],_vector=M_vector, _rowstart=int(n1) );
+        }
+
+    decltype(auto) operator()( int n1 )
         {
             cout << "filling out vector block (" << n1 << ")\n";
             return form1(_test=M_ps[n1],_vector=M_vector, _rowstart=int(n1) );

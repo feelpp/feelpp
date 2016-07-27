@@ -116,25 +116,38 @@ makeAbout()
      ex->save();
  }
 
-BOOST_AUTO_TEST_CASE( test2 )
+BOOST_AUTO_TEST_CASE( test3 )
 {
     using namespace Feel;
     using Feel::cout;
     using namespace boost::hana::literals;
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
-    auto Xh=Pch<1>(mesh);
-    auto Wh=Pchv<2>(mesh);
-    auto Zh=Pdh<2>(mesh);
-    auto sp = product(Xh,Wh,Zh);
-    BOOST_CHECK_EQUAL( sp.numberOfSpaces(), 3 );
-    cout << tc::red << "number of spaces " << tc::reset << sp.numberOfSpaces() << std::endl;
-    BOOST_CHECK_EQUAL( sp.nDof(), Xh->nDof()+Wh->nDof()+Zh->nDof() );
-    cout << tc::red << "total number of dof " << tc::reset << sp.nDof() << std::endl;
-    BOOST_CHECK_EQUAL( sp.nLocalDof(), Xh->nLocalDof()+Wh->nLocalDof()+Zh->nLocalDof());
-    cout << tc::red << "local number of dof " << tc::reset << sp.nLocalDof() << std::endl;
-    BOOST_CHECK_EQUAL( sp[0_c], Xh );
-    BOOST_CHECK_EQUAL( sp[1_c], Wh );
-    BOOST_CHECK_EQUAL( sp[2_c], Zh );
+
+    backend(_rebuild=true);
+    int n = int(doption("parameters.n"));
+    auto ps = ProductSpace<decltype(Pch<1>(mesh)), true>( n, mesh );
+    BOOST_CHECK_EQUAL( ps.numberOfSpaces(), n );
+    cout << tc::red << "number of spaces " << tc::reset << ps.numberOfSpaces() << std::endl;
+
+    auto U = ps.element();
+    auto u = U[0];
+    auto b = blockform2( ps );
+    auto l = blockform1( ps );
+    std::vector<std::string> alphabet { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa", "lambda", "mu", "nu", "xi", "omicron", "pi", "rho", "sigma", "tau", "upsilon", "phi", "chi", "psi", "omega" };
+
+    for( int i = 0; i < n; ++i )
+    {
+        b(i,i) += integrate( _range=elements(mesh), _expr=idt(u)*id(u));
+        l(i) += integrate( _range=elements(mesh), _expr=expr(soption("functions."+alphabet[i]))*id(u));
+    }
+    b.solve( _rhs=l, _solution=U );
+    auto ex = exporter(_mesh=mesh);
+    for(int i = 0; i < n; ++i )
+    {
+        ex->add(alphabet[i],U[i]);
+        U[i].printMatlab(alphabet[i]+".m");
+    }
+    ex->save();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

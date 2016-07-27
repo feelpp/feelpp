@@ -37,7 +37,6 @@
 namespace Feel {
 
 
-
 template<typename... SpaceList>
 class ProductSpaces : public  hana::tuple<SpaceList...>, ProductSpacesBase
 {
@@ -81,6 +80,87 @@ public:
     };
 
     Element element() { Element u( *this ); return u; }
+};
+
+
+template<typename T, bool same_mesh = false>
+class ProductSpace : public std::vector<boost::shared_ptr<decay_type<T>>>, ProductSpaceBase
+{
+public:
+    using super =  std::vector<boost::shared_ptr<decay_type<T>>>;
+    //using value_type = typename decay_type<decltype(super[0_c])>::value_type;
+    using value_type = double;
+    using functionspace_type = ProductSpace<T,same_mesh>;
+    using underlying_functionspace_type = decay_type<T>;
+    using underlying_functionspace_ptrtype = boost::shared_ptr<underlying_functionspace_type>;
+    using mesh_type = typename underlying_functionspace_type::mesh_type;
+    using mesh_ptrtype = typename underlying_functionspace_type::mesh_ptrtype;
+
+    ProductSpace( int n, mesh_ptrtype m  )
+        :
+        super( 1, underlying_functionspace_type::New( m ) ),
+        M_nspaces(n)
+        {
+
+        }
+
+    int numberOfSpaces() const { return M_nspaces; }
+
+    //! \return the total number of degrees of freedom
+    size_type nDof() const
+        {
+            if ( same_mesh )
+                return M_nspaces*this->front()->nDof();
+            else
+                return std::accumulate( this->begin(), this->end(), size_type(0), []( auto i, auto const& e ) { return i+e.nDof(); } );
+
+        }
+
+    //! \return the number of degrees of freedom owned by the process
+    size_type nLocalDof() const
+        {
+            if ( same_mesh )
+                return M_nspaces*this->front()->nLocalDof();
+            else
+                return std::accumulate( this->begin(), this->end(), size_type(0), []( auto i, auto const& e ) { return i+e.nLocalDof(); } );
+
+        }
+
+    underlying_functionspace_ptrtype& operator[]( int i ) { return same_mesh?this->front():this->at(i); }
+    underlying_functionspace_ptrtype const& operator[]( int i ) const { return same_mesh?this->front():this->at(i); }
+
+    class Element : public BlocksBaseVector<double>, FunctionSpaceBase::ElementBase
+    {
+    public:
+        using super = BlocksBaseVector<double>;
+        using underlying_element_type = typename underlying_functionspace_type::element_type;
+        using underlying_element_ptrtype = typename underlying_functionspace_type::element_ptrtype;
+        Element() = default;
+        Element( Element const& ) = default;
+        Element( Element && ) = default;
+
+        Element& operator=( Element const& ) = default;
+        Element& operator=( Element && ) = default;
+
+        Element( functionspace_type X ): super(X),  M_fspace(X) {}
+
+        underlying_element_type&
+        operator[]( int n1 )
+            {
+                return dynamic_cast<underlying_element_type &>(*((*this)(n1,0)));
+            }
+        underlying_element_type const&
+        operator[]( int n1 ) const
+            {
+                return dynamic_cast<underlying_element_type const&>(*((*this)(n1,0)));
+            }
+        functionspace_type functionSpace() { return M_fspace; }
+        //void zero() { super::zero(); }
+        functionspace_type M_fspace;
+    };
+
+    Element element() { Element u( *this ); return u; }
+    size_type M_nspaces;
 };
 
 template<typename PS>

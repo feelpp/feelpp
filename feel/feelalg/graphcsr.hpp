@@ -42,6 +42,7 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelalg/datamap.hpp>
 #include <feel/feelvf/block.hpp>
+#include <feel/feelalg/products.hpp>
 
 namespace Feel
 {
@@ -516,7 +517,8 @@ private :
  */
 template<typename PS>
 BlocksBaseGraphCSR
-csrGraphBlocks( PS&& ps )
+csrGraphBlocks( PS&& ps,
+                std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
     int s = ps.numberOfSpaces();
     BlocksBaseGraphCSR g( s, s );
@@ -531,6 +533,23 @@ csrGraphBlocks( PS&& ps )
                         cout << "filling out stencil (" << r << "," << c << ")\n";
                         ++n;
                     });
+    return g;
+}
+
+template<typename PS>
+BlocksBaseGraphCSR
+csrGraphBlocks( PS&& ps,
+                std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
+{
+    int s = ps.numberOfSpaces();
+    BlocksBaseGraphCSR g( s, s );
+
+    for( int i = 0; i < ps.numberOfSpaces(); ++i )
+        for( int j = 0; j < ps.numberOfSpaces(); ++j )
+        {
+            g( i, j ) = stencil( _test=ps[i],_trial=ps[j], _diag_is_nonzero=false, _close=false)->graph();
+            cout << "filling out stencil (" << i << "," << j << ")\n";
+        }
     return g;
 }
 
