@@ -93,7 +93,7 @@ SelfLabel<space_type, space_P0_type>::genereatesubmesh()
         {
             if ( phi->localToGlobal(elt.id(), j, 0)<0 )
             {
-                mark->assign(elt.id(), j, 0, eltIsInPhiNeg);
+                mark->assign(elt.id(), 0, 0, eltIsInPhiNeg);
                 break;
             }
         }
@@ -114,14 +114,17 @@ SelfLabel<space_type, space_P0_type>::makeMarkerElementsWithLabelOnSubmesh()
     auto mark = XhP0Submesh->elementPtr();
     *mark = vf::project( _space=XhP0Submesh, _range=elements(submesh), _expr=cst( markerfluid ) );
 
-    for (auto const& elt : elements(submesh) )
+    for (auto const& elt_submesh : elements(submesh) )
     {
+        const size_type idOnMesh = submesh->subMeshToMesh( elt_submesh.id() );
+
         for (int j=0; j<space_type::fe_type::nDof; ++j)
         {
-            if ( std::abs( label->localToGlobal( elt.id(), j, 0 ) - markerfluid ) > 1e-6 )
+
+            if ( std::abs( label->localToGlobal( idOnMesh, j, 0 ) - markerfluid ) > 1e-6 )
             {
                 // label is not fluid
-                mark->assign( elt.id(), j, 0, label->localToGlobal( elt.id(), j, 0 ) );
+                mark->assign( elt_submesh.id(), 0, 0, label->localToGlobal( idOnMesh, j, 0 ) );
                 break;
             }
         }
@@ -150,7 +153,7 @@ SelfLabel<space_type, space_P0_type>::updateLabel(element_ptrtype newphi)
         this->propagateLabel( i, labelOnSubMesh );
 
     // to enable only in debug maybe
-    this->checkEltsAreLabeled();
+    //this->checkEltsAreLabeled();
 
     // label is updated here
     this->pushLabelOnMesh( labelOnSubMesh );
@@ -171,15 +174,24 @@ SelfLabel<space_type, space_P0_type>::propagateLabel( int labelValue, elementP0_
         eltsToVisit.insert( elt.id() );
     }
 
+    auto exp = exporter(_mesh=submesh, _name="propagation");
+    int iter=0;
+
     while( ! eltsToVisit.empty() )
     {
-        const size_type elt_id = *eltsToVisit.begin();
-        auto const & elt = submesh->element( elt_id );
+        auto elt_id = eltsToVisit.begin();
+        auto const & elt = submesh->element( *elt_id );
+
+        exp->step(iter++)->add("labelOnSubMesh", *labelOnSubMesh);
+        exp->save();
 
         for (uint16_type face_id = 0; face_id<elt.nTopologicalFaces(); ++face_id)
         {
             auto const & elt_neigh = elt.neighbor( face_id );
             size_type elt_neigh_id = elt_neigh.first;
+
+            if ( elt_neigh_id == invalid_size_type_value )
+                continue;
 
             // pid auquel appartient l'element
             rank_type pid = elt_neigh.second;
@@ -187,11 +199,17 @@ SelfLabel<space_type, space_P0_type>::propagateLabel( int labelValue, elementP0_
             // pid courant : mesh->worldComm().localRank();
 
             // check if the neighbor elt is already labelized
-            if ( std::abs(labelOnSubMesh->localToGlobal(elt_id, 0, 0)-labelValue) > 1e-6 )
+            auto condition = ( std::abs(int(labelOnSubMesh->localToGlobal(elt_neigh_id, 0, 0))-labelValue) > 1e-6 );
+            std::cout<<"iter = "<< iter <<", face id= "<< face_id <<", condition = " << condition << std::endl;
+
+            if (condition)
+            {
+                std::cout<<"adding neighbor\n";
                 eltsToVisit.insert(elt_neigh_id);
+            }
         }
 
-        labelOnSubMesh->assign(elt_id, 0,0, labelValue);
+        labelOnSubMesh->assign(*elt_id, 0,0, labelValue);
         eltsToVisit.erase( elt_id );
     }
 
@@ -205,7 +223,7 @@ SelfLabel<space_type, space_P0_type>::checkEltsAreLabeled()
 {
     for (auto const & elt : elements(submesh))
     {
-        CHECK( std::abs(elt.marker2().value()-markerfluid)>1e-6 )
+        CHECK( std::abs(int(elt.marker2().value())-markerfluid)>1e-6 )
             <<"element " << elt.id() << " has still a marker 'fluid'. It is supposed to have the value of one of the domain label\n";
     }
 }// checkEltsAreLabeled
@@ -222,18 +240,19 @@ SelfLabel<space_type, space_P0_type>::pushLabelOnMesh( elementP0_ptrtype labelOn
 
     labelP0 = Xh0->elementPtr();
     labelP0->setConstant( markerfluid );
-    labelP0->on(_range=marked2elements(Xh0->mesh(), eltIsInPhiNeg), _expr=idv(labelOnSubMesh) );
 
-    for (auto const& elt: elements(Xh->mesh()))
+    for (auto const& elt_submesh : elements(submesh) )
     {
-        const int labelElt = boost::math::iround(labelP0->localToGlobal(elt.id(), 0, 0));
+        const size_type idOnMesh = submesh->subMeshToMesh( elt_submesh.id() );
+
+        const int labelElt = boost::math::iround( labelOnSubMesh->localToGlobal( elt_submesh.id(), 0, 0 ) );
+
         for (int j=0; j<space_type::fe_type::nDof; ++j)
         {
-            label->assign( elt.id(), j, 0,
-                           phi->localToGlobal(elt.id(), j, 0) < 0 ? labelElt : markerfluid );
+            label->assign( idOnMesh, j, 0,
+                           phi->localToGlobal(idOnMesh, j, 0) < 0 ? labelElt : markerfluid );
         }
     }
-
 } // pushLabelOnMesh
 
 
