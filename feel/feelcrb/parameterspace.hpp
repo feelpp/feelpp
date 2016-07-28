@@ -161,6 +161,8 @@ public:
                     LOG(INFO) << "No need to check element since parameter space is no valid (yet)\n";
                     return;
                 }
+                if( Environment::numberOfProcessors() == 1)
+                  return ;
                 Element sum;
                 sum.setZero();
                 // verify that the element is the same on all processors
@@ -170,7 +172,7 @@ public:
                 if( (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() > 1e-7 )
                 {
                     std::cout << "Parameter not identical on all processors: "<< "current parameter on proc "<<proc_number<<" : [";
-                    for(int i=0; i<this->size(); i++) std::cout <<std::setprecision(15)<< this->operator()(i) <<", ";
+                    for(int i=0; i<this->size()-1; i++) std::cout <<std::setprecision(15)<< this->operator()(i) <<", ";
                     std::cout<<std::setprecision(15)<<this->operator()(this->size()-1)<<" ]";
                     std::cout <<std::setprecision(15)<< " and test" << (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() << "\n";
                 }
@@ -1359,11 +1361,17 @@ public:
 
         double min = min_element(direction);
         double max = max_element(direction);
-
-        for(int i=0; i<N; i++)
+        double delta = (max-min)/(N-1);
+        if(N == 1)
         {
-            double factor = (double)(i)/(N-1);
-            result[i] = min+factor*( max-min );
+          result[0] = min + (max-min)*0.5;
+        }
+        else
+        {
+          for(int i=0; i<N; i++)
+          {
+              result[i] = min+i*delta;
+          }
         }
 
         return result;

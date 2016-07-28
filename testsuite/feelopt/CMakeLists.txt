@@ -30,3 +30,9 @@ if ( FEELPP_HAS_NLOPT )
   feelpp_add_test( nlopt )
 
 endif()
+
+if ( FEELPP_HAS_IPOPT )
+
+  feelpp_add_test( ipopt )
+
+endif()

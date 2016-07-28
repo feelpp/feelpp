@@ -3,7 +3,9 @@
 #include <unistd.h>
 #include <sstream>
 
+#if FEELPP_HAS_PETSC
 #include <petscsys.h>
+#endif
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/pslogger.hpp>

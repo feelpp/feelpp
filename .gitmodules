@@ -54,9 +54,6 @@
 [submodule "contrib/nlopt"]
 	path = contrib/nlopt
 	url = https://github.com/feelpp/nlopt.git
-[submodule "contrib/ipopt"]
-	path = contrib/ipopt
-	url = https://github.com/feelpp/ipopt.git
 [submodule "contrib/nt2"]
 	path = contrib/nt2
 	url = https://github.com/feelpp/nt2.git
@@ -99,3 +96,6 @@
 [submodule "projects/hamm"]
 	path = projects/hamm
 	url = https://github.com/feelpp/hamm.git
+[submodule "contrib/ipopt"]
+	path = contrib/ipopt
+	url = https://github.com/feelpp/Ipopt.git

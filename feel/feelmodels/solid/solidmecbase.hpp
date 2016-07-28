@@ -187,7 +187,7 @@ public:
     typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
     //typedef Exporter<mesh_type,nOrderGeo> gmsh_export_type;
     //typedef boost::shared_ptr<gmsh_export_type> gmsh_export_ptrtype;
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
     //fais comme ca car bug dans opeartorlagrangeP1 pour les champs vectorielles
     typedef FunctionSpace<mesh_type,bases<Lagrange<nOrder,Scalar,Continuous,PointSetFekete> > > space_create_ho_type;
 
@@ -696,7 +696,7 @@ protected:
     exporter_ptrtype M_exporter;
     // ho exporter
     bool M_isHOVisu;
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
     export_ho_ptrtype M_exporter_ho;
     space_vectorial_visu_ho_ptrtype M_XhVectorialVisuHO;
     element_vectorial_visu_ho_ptrtype M_displacementVisuHO;

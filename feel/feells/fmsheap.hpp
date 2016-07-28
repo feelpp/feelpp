@@ -117,6 +117,11 @@ public:
         return removed;
     }
 
+    void clear()
+    {
+        M_heap.clear();
+    }
+
 
     static heap_entry_type min(heap_entry_type a, heap_entry_type b)
     {
