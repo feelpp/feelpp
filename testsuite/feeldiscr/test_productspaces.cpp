@@ -125,9 +125,11 @@ BOOST_AUTO_TEST_CASE( test3 )
 
     backend(_rebuild=true);
     int n = int(doption("parameters.n"));
+    if ( n <= 0 || n >= 10 ) return;
     auto ps = ProductSpace<decltype(Pch<1>(mesh)), true>( n, mesh );
     BOOST_CHECK_EQUAL( ps.numberOfSpaces(), n );
     cout << tc::red << "number of spaces " << tc::reset << ps.numberOfSpaces() << std::endl;
+
 
     auto U = ps.element();
     auto u = U[0];
@@ -164,7 +166,7 @@ BOOST_AUTO_TEST_CASE( test4 )
     auto ps = boost::make_shared<ProductSpace<decltype(Pch<2>(mesh)), true>>( n, mesh );
     auto p = product2( ps, Xh, Yh );
 
-    BOOST_CHECK_EQUAL( p.numberOfSpaces(), n+1 );
+    BOOST_CHECK_EQUAL( p.numberOfSpaces(), n+2 );
     cout << tc::red << "number of spaces " << tc::reset << p.numberOfSpaces() << std::endl;
 
     auto U = p.element();
@@ -173,7 +175,6 @@ BOOST_AUTO_TEST_CASE( test4 )
 
     auto u = U(0_c);
     auto w = U(1_c);
-    auto v = U(2_c,0);
     auto l = blockform1( p );
     auto b = blockform2( p );
 
@@ -184,6 +185,8 @@ BOOST_AUTO_TEST_CASE( test4 )
     b(1_c,1_c) += integrate( _range=elements(mesh), _expr=trans(idt(w))*id(w));
     for( int i = 0; i < n; ++i )
     {
+        auto v = U(2_c,i);
+
         b(2_c,2_c,i,i) += integrate( _range=elements(mesh), _expr=idt(v)*id(v));
         l(2_c,i) += integrate( _range=elements(mesh), _expr=expr(soption("functions."+alphabet[2+i]))*id(v));
     }
