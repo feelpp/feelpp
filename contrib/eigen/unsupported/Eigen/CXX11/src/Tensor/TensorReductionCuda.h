@@ -117,6 +117,7 @@ template <int BlockSize, int NumPerThread, typename Self,
           typename Reducer, typename Index>
 __global__ void FullReductionKernel(Reducer reducer, const Self input, Index num_coeffs,
                                     typename Self::CoeffReturnType* output, unsigned int* semaphore) {
+#if __CUDA_ARCH__ >= 300
   // Initialize the output value
   const Index first_index = blockIdx.x * BlockSize * NumPerThread + threadIdx.x;
   if (gridDim.x == 1) {
@@ -171,6 +172,9 @@ __global__ void FullReductionKernel(Reducer reducer, const Self input, Index num
     // Let the last block reset the semaphore
     atomicInc(semaphore, gridDim.x + 1);
   }
+#else
+  assert(0 && "Shouldn't be called on unsupported device");
+#endif
 }
 
 
@@ -328,13 +332,15 @@ struct FullReducer<Self, Op, GpuDevice, Vectorizable> {
   // Unfortunately nvidia doesn't support well exotic types such as complex,
   // so reduce the scope of the optimized version of the code to the simple case
   // of floats and half floats.
-  #ifdef EIGEN_HAS_CUDA_FP16
+#ifdef EIGEN_HAS_CUDA_FP16
   static const bool HasOptimizedImplementation = !Op::IsStateful &&
       (internal::is_same<typename Self::CoeffReturnType, float>::value ||
-       (internal::is_same<typename Self::CoeffReturnType, Eigen::half>::value && Op::PacketAccess));
-#else
+       (internal::is_same<typename Self::CoeffReturnType, Eigen::half>::value && reducer_traits<Op, GpuDevice>::PacketAccess));
+#elif __CUDA_ARCH__ >= 300
   static const bool HasOptimizedImplementation = !Op::IsStateful &&
                                                  internal::is_same<typename Self::CoeffReturnType, float>::value;
+#else
+  static const bool HasOptimizedImplementation = false;
 #endif
 
   template <typename OutputType>
@@ -346,7 +352,7 @@ struct FullReducer<Self, Op, GpuDevice, Vectorizable> {
       return;
     }
 
-    FullReductionLauncher<Self, Op, OutputType, Op::PacketAccess>::run(self, reducer, device, output, num_coeffs);
+    FullReductionLauncher<Self, Op, OutputType, reducer_traits<Op, GpuDevice>::PacketAccess>::run(self, reducer, device, output, num_coeffs);
   }
 };
 
@@ -355,6 +361,7 @@ template <int NumPerThread, typename Self,
           typename Reducer, typename Index>
 __global__ void InnerReductionKernel(Reducer reducer, const Self input, Index num_coeffs_to_reduce, Index num_preserved_coeffs,
                                          typename Self::CoeffReturnType* output) {
+#if __CUDA_ARCH__ >= 300
   eigen_assert(blockDim.y == 1);
   eigen_assert(blockDim.z == 1);
   eigen_assert(gridDim.y == 1);
@@ -414,6 +421,9 @@ __global__ void InnerReductionKernel(Reducer reducer, const Self input, Index nu
       }
     }
   }
+#else
+  assert(0 && "Shouldn't be called on unsupported device");
+#endif
 }
 
 #ifdef EIGEN_HAS_CUDA_FP16
@@ -608,10 +618,12 @@ struct InnerReducer<Self, Op, GpuDevice> {
 #ifdef EIGEN_HAS_CUDA_FP16
   static const bool HasOptimizedImplementation = !Op::IsStateful &&
       (internal::is_same<typename Self::CoeffReturnType, float>::value ||
-       (internal::is_same<typename Self::CoeffReturnType, Eigen::half>::value && Op::PacketAccess));
-#else
+       (internal::is_same<typename Self::CoeffReturnType, Eigen::half>::value && reducer_traits<Op, GpuDevice>::PacketAccess));
+#elif __CUDA_ARCH__ >= 300
   static const bool HasOptimizedImplementation = !Op::IsStateful &&
                                                  internal::is_same<typename Self::CoeffReturnType, float>::value;
+#else
+  static const bool HasOptimizedImplementation = false;
 #endif
 
   template <typename OutputType>
@@ -627,7 +639,7 @@ struct InnerReducer<Self, Op, GpuDevice> {
       return true;
     }
 
-    return InnerReductionLauncher<Self, Op, OutputType, Op::PacketAccess>::run(self, reducer, device, output, num_coeffs_to_reduce, num_preserved_vals);
+    return InnerReductionLauncher<Self, Op, OutputType, reducer_traits<Op, GpuDevice>::PacketAccess>::run(self, reducer, device, output, num_coeffs_to_reduce, num_preserved_vals);
   }
 };
 
@@ -666,8 +678,12 @@ struct OuterReducer<Self, Op, GpuDevice> {
   // Unfortunately nvidia doesn't support well exotic types such as complex,
   // so reduce the scope of the optimized version of the code to the simple case
   // of floats.
+#if __CUDA_ARCH__ >= 300
   static const bool HasOptimizedImplementation = !Op::IsStateful &&
                                                  internal::is_same<typename Self::CoeffReturnType, float>::value;
+#else
+  static const bool HasOptimizedImplementation = false;
+#endif
 
   template <typename Device, typename OutputType>
   static EIGEN_DEVICE_FUNC bool run(const Self&, Op&, const Device&, OutputType*, typename Self::Index, typename Self::Index) {
