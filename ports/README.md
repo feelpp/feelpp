@@ -71,7 +71,7 @@ make -j $3
  
 ## VTK (not needed if ParaView is installed)
 ```
-cmake /data/software/src/VTK/VTK5.10.1 -DCMAKE_INSTALL_PREFIX=/data/software/install/VTK/5.10.1/gcc-4.9.0/openmpi-1.10 -DCMAKE_BUILT_TYPE=Release -DVTK_USE_PARALLEL=ON -DBUILD_SHARED_LIBS=ON -DVTK_WRAP_PYTHON=ON -DVTK_USE_MPI=ON
+cmake /data/software/src/VTK/VTK5.10.1 -DCMAKE_INSTALL_PREFIX=/data/software/install/VTK/5.10.1/gcc-4.9.0/openmpi-1.10 -DCMAKE_BUILD_TYPE=Release -DVTK_USE_PARALLEL=ON -DBUILD_SHARED_LIBS=ON -DVTK_WRAP_PYTHON=ON -DVTK_USE_MPI=ON
 make install
 ```
 
