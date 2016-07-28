@@ -15,13 +15,13 @@ int main( int argc, char** argv )
     Feel::Environment env( argc, argv );
 
     auto mesh = unitHypercube<FEELPP_DIM>();
-    auto Xh = Pch<FEELPP_ORDER>(mesh);
+    auto Xh = Pch<FEELPP_DIM>(mesh);
     auto Xh0 = Pdh<0>(mesh);
 
         // some ellipse parameters:
     const double x0=0.6;
     const double y0=0.5;
-    const double z0 = FEELPP_ORDER==2 ? 0 : 0.5;
+    const double z0 = (FEELPP_DIM==2) ? 0 : 0.5;
     const double aAxis = 0.1;
     const double bAxis = 0.3;
 
@@ -34,7 +34,7 @@ int main( int argc, char** argv )
     *ellipseShape = vf::project(_space=Xh, _range=elements(mesh),
                                     _expr=sqrt( (X0/aAxis) * (X0/aAxis)
                                                 + (Y0/bAxis) * (Y0/bAxis)
-                                                + (Z0/bAxis) * (Z0/bAxis) ) - 1 );
+                                                + (Z0/bAxis) * (Z0/bAxis) ) - 1. );
 
     auto initlabel = Xh->elementPtr();
     *initlabel = vf::project(_space=Xh, _range=elements(mesh),
@@ -53,6 +53,7 @@ int main( int argc, char** argv )
     exp->step(0)->add("ellipseShape", *ellipseShape );
     exp->step(0)->add("L0_P0", *(selflabelgenerator->getP0Label()) );
     exp->step(0)->add("initlabel", *initlabel );
+    exp->step(0)->addRegions();
     exp->save();
 
 }
