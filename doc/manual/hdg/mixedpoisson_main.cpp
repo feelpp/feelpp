@@ -33,8 +33,8 @@ int main(int argc, char *argv[])
 
     auto MP = mp_type::New("mixedpoisson");
     auto mesh = loadMesh( _mesh=new mp_type::mesh_type );
-    // decltype( IPtr( _domainSpace=Pdh<FEELPP_ORDER>(mesh), _imageSpace=Pdh<1>(mesh) ) ) Idh ;
-    // decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<1>(mesh) ) ) Idhv;
+    decltype( IPtr( _domainSpace=Pdh<FEELPP_ORDER>(mesh), _imageSpace=Pdh<1>(mesh) ) ) Idh ;
+    decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<1>(mesh) ) ) Idhv;
     // if ( soption( "mixedpoisson.gmsh.submesh" ).empty() )
         MP -> init(mesh);
     // else
@@ -45,11 +45,11 @@ int main(int argc, char *argv[])
     //     MP -> init( cmesh, 0, 0, mesh );
     // }
     
-    // if ( MP -> isStationary() )
-    // {
-    //     MP->solve();    
-    //     MP->exportResults( mesh );
-    // }
+    if ( MP -> isStationary() )
+    {
+        MP->solve();
+        MP->exportResults( mesh );
+    }
     // else
     // {
     //     for ( ; !MP->timeStepBase()->isFinished() ; MP->updateTimeStep() )

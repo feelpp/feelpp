@@ -54,10 +54,15 @@ endforeach()
 #  endforeach()
 #endforeach()
 
+
+feelpp_add_application( mixed-elasticity-model_2DP1 SRCS mixedelasticity_main.cpp mixedelasticity.hpp LINK_LIBRARIES feelpp_modelcore )
+#feelpp_add_application( hdg-linear-elasticity_3DP1 SRCS hdg_linear_elasticity_main.cpp hdg_linear_elasticity.hpp LINK_LIBRARIES feelpp_modelcore )
+
+
 feelpp_add_testcase(quarter-turn)
 feelpp_add_testcase(bitter)
 feelpp_add_testcase(cylinder)
 feelpp_add_testcase(testDarcy)
 feelpp_add_testcase(lamina-cribrosa)
 feelpp_add_testcase(double-integral)
-
+feelpp_add_testcase(LinearElasticity)
