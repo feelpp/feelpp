@@ -73,7 +73,7 @@ set(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO "")
 
 if(NOT STANDARD_MATH_LIBRARY_FOUND)
 
-  message(WARNING
+  message(FATAL_ERROR
     "Can't link to the standard math library. Please report to the Eigen developers, telling them about your platform.")
 
 else()
@@ -402,7 +402,7 @@ endif(EIGEN_BUILD_PKGCONFIG)
 
 add_subdirectory(Eigen)
 
-# add_subdirectory(doc EXCLUDE_FROM_ALL)
+add_subdirectory(doc EXCLUDE_FROM_ALL)
 
 # include(EigenConfigureTesting)
 
@@ -425,6 +425,7 @@ add_subdirectory(Eigen)
 # endif()
 
 add_subdirectory(unsupported)
+
 
 # add_subdirectory(demos EXCLUDE_FROM_ALL)
 
@@ -502,5 +503,5 @@ install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseEigen3.cmake
         )
 
 # Add uninstall target
-add_custom_target ( eigen-uninstall
+add_custom_target ( uninstall-eigen
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/EigenUninstall.cmake)
