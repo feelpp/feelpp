@@ -170,7 +170,93 @@ public:
     };
 
     Element element() { Element u( *this ); return u; }
+    using element_type = Element;
+    using element_ptrtype = boost::shared_ptr<element_type>;
+};
 
+template<typename T,typename... SpaceList>
+class ProductSpaces2 : public  hana::tuple<SpaceList...,boost::shared_ptr<ProductSpace<T,true>>>, ProductSpacesBase
+{
+public:
+
+    using super = typename mpl::if_<mpl::is_void_<T>,
+                                    mpl::identity<hana::tuple<SpaceList...>>,
+                                    mpl::identity<hana::tuple<SpaceList...,boost::shared_ptr<ProductSpace<T,true>>>>
+                                    >::type::type ;//hana::if_(is_void(T),,>);
+
+    //using value_type = typename decay_type<decltype(super[0_c])>::value_type;
+    using value_type = double;
+    using functionspace_type = ProductSpaces2<T,SpaceList...>;
+    using mesh_type = typename decay_type<T>::mesh_type;
+    using mesh_ptrtype = typename decay_type<T>::mesh_ptrtype;
+
+    ProductSpaces2( boost::shared_ptr<ProductSpace<T,true>> const& p, SpaceList... l ) : super( l..., p) {}
+    int numberOfSpaces() const { return int(hana::size( *this ))+hana::back(*this)->numberOfSpaces()-1; }
+
+    //! \return the total number of degrees of freedom
+    //size_type nDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nDof(); } ); }
+    //! \return the number of degrees of freedom owned by the process
+    //size_type nLocalDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nLocalDof(); } ); }
+
+    class Element : public BlocksBaseVector<double>, FunctionSpaceBase::ElementBase
+    {
+    public:
+        using super = BlocksBaseVector<double>;
+        Element() = default;
+        Element( Element const& ) = default;
+        Element( Element && ) = default;
+
+        Element& operator=( Element const& ) = default;
+        Element& operator=( Element && ) = default;
+
+        Element( functionspace_type& X ): super(X),  M_fspace(X) {}
+
+        template<typename N>
+        decltype(auto)
+            operator[]( N const& n1 ) const
+            {
+                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*((*this)(n1,0)));
+            }
+        template<typename N>
+        decltype(auto)
+            operator[]( N const& n1 )
+            {
+                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*((*this)(n1,0)));
+            }
+        template<typename N>
+        decltype(auto)
+            operator()( N const& n1, int i = 0 ) const
+            {
+                return hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(M_fspace[n1])>>{},
+                                 [&] (auto&& x) {
+                                     return dynamic_cast<decltype((*M_fspace[n1])[i]->element()) const&>(x);
+                                 },
+                                 [&] (auto&& x){
+                                     return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(x);
+                                 })(*(super::operator()(int(n1)+i,0)));
+
+            }
+
+        template<typename N>
+        decltype(auto)
+            operator()( N const& n1, int i = 0 )
+            {
+                return hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(M_fspace[n1])>>{},
+                                 [&] (auto&& x, auto & s) {
+                                     return dynamic_cast<decltype((*s)[i]->element())&>(std::forward<decltype(x)>(x));
+                                 },
+                                 [&] (auto&& x, auto &s){
+                                     return dynamic_cast<decltype(s->element()) &>(std::forward<decltype(x)>(x));
+                                 })(*(super::operator()(int(n1)+i,0)), M_fspace[n1] );
+
+            }
+        functionspace_type functionSpace() { return M_fspace; }
+        //void zero() { super::zero(); }
+        functionspace_type M_fspace;
+    };
+
+    Element element() { Element u( *this ); return u; }
+    boost::shared_ptr<Element> elementPtr() { return boost::make_shared<Element>( *this );  }
     using element_type = Element;
     using element_ptrtype = boost::shared_ptr<element_type>;
 };
