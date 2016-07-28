@@ -35,7 +35,7 @@ namespace Feel {
  * Handles bilinear form over a product of spaces
  */
 template<typename PS>
-class BlockBilinearForm\
+class BlockBilinearForm
 {
 public :
     using product_space_t = PS;
@@ -50,12 +50,52 @@ public :
         M_ps(ps),
         M_matrix(m)
         {}
-
+#if 0
     template<typename N1,typename N2>
     decltype(auto) operator()( N1 n1, N2 n2 )
         {
             cout << "filling out matrix block (" << n1 << "," << n2 << ")\n";
-            return form2(_test=M_ps[n1],_trial=M_ps[n2], _matrix=M_matrix, _rowstart=int(n1), _colstart=int(n2) );
+
+        }
+#endif
+    template<typename N1, typename N2>
+    decltype(auto) operator()( N1 n1, N2 n2, int s1 = 0, int s2 = 0 )
+        {
+            int n = 0;
+            auto&& spaces=remove_shared_ptr_f( M_ps );
+            #if 0
+            hana::if_( hana::bool_<Feel::is_shared_ptr_v<PS>>{},
+                                     []( auto&& x ) { return *x; },
+                                     []( auto&& x ) { return x; } )(M_ps);
+            #endif
+            auto test_space = hana::at( spaces, n1 );
+            auto trial_space = hana::at( spaces, n2 );
+
+            return hana::eval_if(std::is_base_of<ProductSpaceBase,decay_type<decltype(test_space)>>{},
+                                 [&]( auto _ ) { return hana::eval_if( std::is_base_of<ProductSpaceBase,decay_type<decltype(trial_space)>>{},
+                                                                 [&] (auto _) {
+                                                                     cout << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
+                                                                     return form2(_test=(*_(test_space))[s1],_trial=(*_(trial_space))[s2],
+                                                                                  _matrix=M_matrix, _rowstart=int(n1)+s1, _colstart=int(n2)+s2 );
+                                                                 },
+                                                                 [&] (auto _){
+                                                                     cout << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
+                                                                     return form2(_test=(*_(test_space))[s1],_trial=_(trial_space),
+                                                                                  _matrix=M_matrix, _rowstart=int(n1)+s1, _colstart=int(n2) );
+                                                                 }); },
+                                 [&]( auto _ ) { return hana::eval_if( std::is_base_of<ProductSpaceBase,decay_type<decltype(trial_space)>>{},
+                                                                 [&] (auto _) {
+                                                                     cout << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
+                                                                     return form2(_test=_(test_space),_trial=(*_(trial_space))[s2],
+                                                                                  _matrix=M_matrix, _rowstart=int(n1), _colstart=int(n2)+s2 );
+                                                                 },
+                                                                 [&] (auto _){
+                                                                     cout << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
+                                                                     return form2(_test=_(test_space),_trial=_(trial_space),
+                                                                                  _matrix=M_matrix, _rowstart=int(n1), _colstart=int(n2) );
+                                                                 }); });
+
+
         }
 
     decltype(auto) operator()( int n1, int n2 )
@@ -138,11 +178,32 @@ public :
     BlockLinearForm& operator=( BlockLinearForm && lf ) = default;
     BlockLinearForm& operator=( BlockLinearForm const& lf ) = default;
 
+#if 0
     template<typename N1>
     decltype(auto) operator()( N1 n1 )
         {
             cout << "filling out vector block (" << n1 << ")\n";
             return form1(_test=M_ps[n1],_vector=M_vector, _rowstart=int(n1) );
+        }
+#endif
+    template<typename N1>
+    decltype(auto) operator()( N1 n1, int s = 0 )
+        {
+            int n = 0;
+            auto&& spaces=hana::if_( hana::bool_<Feel::is_shared_ptr_v<PS>>{},
+                                     []( auto&& x ) { return *x; },
+                                     []( auto&& x ) { return x; } )(M_ps);
+            auto space = hana::at( spaces, n1 );
+
+            return hana::eval_if(std::is_base_of<ProductSpaceBase,decay_type<decltype(space)>>{},
+                                 [&] (auto _) {
+                                     cout << "filling out dyn vector block (" << int(n1) + s  << ")\n";
+                                     return form1(_test=(*_(space))[s],_vector=M_vector, _rowstart=int(n1)+s );
+                                 },
+                                 [&] (auto _){
+                                     cout << "filling out vector block (" << n1  << ")\n";
+                                     return form1(_test=_(space),_vector=M_vector, _rowstart=int(n1) );
+                                 });
         }
 
     decltype(auto) operator()( int n1 )

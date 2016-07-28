@@ -97,6 +97,8 @@ struct remove_shared_ptr<boost::shared_ptr<T> >
     typedef T type;
 };
 
+template<class T>
+constexpr bool is_shared_ptr_v = is_shared_ptr<T>::value;
 
 template<typename T>
 struct is_ptr_or_shared_ptr : mpl::or_<is_shared_ptr<T>, boost::is_pointer<T> >::type {};
@@ -107,7 +109,13 @@ using remove_shared_ptr_type = typename mpl::if_<is_shared_ptr<T>, mpl::identity
 template<typename T>
 using decay_type = typename std::decay<remove_shared_ptr_type<typename std::decay<T>::type>>::type;
 
+template<typename T>
+decltype(auto) remove_shared_ptr_f( T&& e )
+{
+    return hana::if_( hana::bool_<is_shared_ptr_v<T>>{},
+                     []( auto&& x ) { return *x; },
+                     []( auto&& x ) { return x; } )( std::forward<T>(e) );
+
+}
 } // namespace Feel
 #endif
-
-

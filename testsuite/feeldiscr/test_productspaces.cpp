@@ -150,4 +150,54 @@ BOOST_AUTO_TEST_CASE( test3 )
     ex->save();
 }
 
+BOOST_AUTO_TEST_CASE( test4 )
+{
+    using namespace Feel;
+    using Feel::cout;
+    using namespace boost::hana::literals;
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+
+    backend(_rebuild=true);
+    int n = int(doption("parameters.n"));
+    auto Xh = Pch<1>(mesh);
+    auto Yh = Pchv<3>(mesh);
+    auto ps = boost::make_shared<ProductSpace<decltype(Pch<2>(mesh)), true>>( n, mesh );
+    auto p = product2( ps, Xh, Yh );
+
+    BOOST_CHECK_EQUAL( p.numberOfSpaces(), n+1 );
+    cout << tc::red << "number of spaces " << tc::reset << p.numberOfSpaces() << std::endl;
+
+    auto U = p.element();
+
+    std::vector<std::string> alphabet { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa", "lambda", "mu", "nu", "xi", "omicron", "pi", "rho", "sigma", "tau", "upsilon", "phi", "chi", "psi", "omega" };
+
+    auto u = U(0_c);
+    auto w = U(1_c);
+    auto v = U(2_c,0);
+    auto l = blockform1( p );
+    auto b = blockform2( p );
+
+
+    l(0_c) = integrate( _range=elements(mesh), _expr=expr(soption("functions."+alphabet[0]))*id(u));
+    b(0_c,0_c) += integrate( _range=elements(mesh), _expr=idt(u)*id(u));
+    l(1_c) = integrate( _range=elements(mesh), _expr=expr(soption("functions."+alphabet[1]))*trans(id(w))*one());
+    b(1_c,1_c) += integrate( _range=elements(mesh), _expr=trans(idt(w))*id(w));
+    for( int i = 0; i < n; ++i )
+    {
+        b(2_c,2_c,i,i) += integrate( _range=elements(mesh), _expr=idt(v)*id(v));
+        l(2_c,i) += integrate( _range=elements(mesh), _expr=expr(soption("functions."+alphabet[2+i]))*id(v));
+    }
+    b.solve( _rhs=l, _solution=U );
+    auto ex = exporter(_mesh=mesh);
+    ex->add(alphabet[0],U(0_c));
+    ex->add(alphabet[1],U(1_c));
+    for(int i = 0; i < ps->numberOfSpaces(); ++i )
+    {
+        ex->add(alphabet[i+2],U(2_c,i));
+        //U[i].printMatlab(alphabet[i]+".m");
+    }
+    ex->save();
+
+}
+
 BOOST_AUTO_TEST_SUITE_END()
