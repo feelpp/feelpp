@@ -1,6 +1,8 @@
 #ifndef SELFLABEL_HPP
 #define SELFLABEL_HPP 1
 
+#include <boost/serialization/set.hpp>
+
 namespace Feel
 {
 
@@ -166,6 +168,11 @@ void
 SelfLabel<space_type, space_P0_type>::propagateLabel( int labelValue, elementP0_ptrtype labelOnSubMesh )
 {
     std::unordered_set< size_type > eltsToVisit;
+    // communicate to neighbors which ghost has to be visited
+    int neighborSubdomains = submesh->neighborSubdomains().size();
+    int nbRequest = 2*neighborSubdomains;
+    mpi::request * reqs = new mpi::request[nbRequest];
+    int cptRequest=0;
 
     for ( auto const& elt : marked2elements(submesh, labelValue) )
     {
@@ -175,35 +182,79 @@ SelfLabel<space_type, space_P0_type>::propagateLabel( int labelValue, elementP0_
     // auto exp = exporter(_mesh=submesh, _name="propagation");
     // int iter=0;
 
-    while( ! eltsToVisit.empty() )
+    bool eltsToVisitAreEmptyOnAllProc = false;
+
+    while( !eltsToVisitAreEmptyOnAllProc )
     {
-        auto elt_id = eltsToVisit.begin();
-        auto const & elt = submesh->element( *elt_id );
+        // contains the dof ghost which have been marked
+        std::map<rank_type, std::set<size_type> > dataToRecv;
+        std::map<rank_type, std::set<size_type> > dataToSend;
 
-        // exp->step(iter++)->add("labelOnSubMesh", *labelOnSubMesh);
-        // exp->save();
-
-        for (uint16_type face_id = 0; face_id<elt.nTopologicalFaces(); ++face_id)
+        while( ! eltsToVisit.empty() )
         {
-            auto const & elt_neigh = elt.neighbor( face_id );
-            size_type elt_neigh_id = elt_neigh.first;
+            auto elt_id = eltsToVisit.begin();
+            auto const & elt = submesh->element( *elt_id );
 
-            if ( elt_neigh_id == invalid_size_type_value )
-                continue;
+            // exp->step(iter++)->add("labelOnSubMesh", *labelOnSubMesh);
+            // exp->save();
 
-            // pid auquel appartient l'element
-            rank_type pid = elt_neigh.second;
+            for (uint16_type face_id = 0; face_id<elt.nTopologicalFaces(); ++face_id)
+            {
+                auto const & elt_neigh = elt.neighbor( face_id );
+                size_type elt_neigh_id = elt_neigh.first;
 
-            // pid courant : mesh->worldComm().localRank();
+                if ( elt_neigh_id == invalid_size_type_value )
+                    continue;
 
-            // check if the neighbor elt is already labelized
-            if ( std::abs(int(labelOnSubMesh->localToGlobal(elt_neigh_id, 0, 0))-labelValue) > 1e-6 )
-                eltsToVisit.insert(elt_neigh_id);
+                // pid of the subdomain owning the element
+                const rank_type pid = elt_neigh.second;
+
+                // element is a ghost, need to tell it's owner to visit it
+                if (pid != submesh->worldComm().localRank() )
+                {
+                    size_type idOnOwner = submesh->element( elt_neigh_id, pid ).idInOthersPartitions(pid) ;
+                    dataToSend[pid].insert( idOnOwner );
+                }
+                else
+                {
+                    // check if the neighbor elt is already labelized
+                    if ( std::abs(int(labelOnSubMesh->localToGlobal(elt_neigh_id, 0, 0))-labelValue) > 1e-6 )
+                        eltsToVisit.insert(elt_neigh_id);
+                }
+            }
+
+            labelOnSubMesh->assign(*elt_id, 0,0, labelValue);
+            eltsToVisit.erase( elt_id );
         }
 
-        labelOnSubMesh->assign(*elt_id, 0,0, labelValue);
-        eltsToVisit.erase( elt_id );
+        // communicate to neighbors which ghost has to be visited
+        cptRequest=0;
+        for ( rank_type neighborRank : submesh->neighborSubdomains() )
+        {
+            reqs[cptRequest++] = submesh->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank] );
+            reqs[cptRequest++] = submesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank] );
+        }
+
+        mpi::wait_all(reqs, reqs + nbRequest);
+
+        // add the elements added by others
+        for (auto const& id_set_pair : dataToRecv )
+        {
+            for (auto const& elt_candidate_id : id_set_pair.second)
+            {
+                if ( std::abs(int(labelOnSubMesh->localToGlobal(elt_candidate_id, 0, 0))-labelValue) > 1e-6 )
+                    eltsToVisit.insert(elt_candidate_id);
+            }
+        }
+
+        bool eltstovisit_isempty = eltsToVisit.empty();
+        // loop until all the proc have a null value of neighbors to add
+        eltsToVisitAreEmptyOnAllProc = mpi::all_reduce(submesh->worldComm(),
+                                                       eltstovisit_isempty,
+                                                       std::logical_and<bool>() );
     }
+
+    delete [] reqs;
 
 }// propagateLabel
 
