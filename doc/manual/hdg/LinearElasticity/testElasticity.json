@@ -8,7 +8,7 @@
         {
             "name":"copper",
             "lambda":"1",
-	    "mu":"1"
+	    	"mu":"1"
         }
     },
     "BoundaryConditions":
@@ -19,9 +19,9 @@
             {
                 "omega":
                 {
-                   "expr":"4"
+                   "expr":"{-3*sin(pi*x)*cos(pi*y),-3*sin(pi*y)*cos(pi*x)}:x:y"
                 }
-            },
+            }/*,
             "Neumann":
             {
                 "bottom":
@@ -32,23 +32,40 @@
                 {
                      "expr":"0.0"
                 }
-            }
-	},
-	"displacement":
-	{
-	    "Dirichlet":
-	    {
-        	"left":
-                {
-		     "expr":"1" 
-                },
-		"right":
+            }*/
+		},
+		"displacement":
 		{
-		     "expr":"1"
+	    	"Dirichlet":
+	    	{
+        		"left":
+                {
+		     		"expr":"{1/(2*pi*pi)*sin(pi*x)*cos(pi*y),1/(2*pi*pi)*cos(pi*x)*sin(pi*y)}:x:y" 
+                },
+        		"top":
+                {
+		     		"expr":"{1/(2*pi*pi)*sin(pi*x)*cos(pi*y),1/(2*pi*pi)*cos(pi*x)*sin(pi*y)}:x:y" 
+                },
+        		"bottom":
+                {
+		     		"expr":"{1/(2*pi*pi)*sin(pi*x)*cos(pi*y),1/(2*pi*pi)*cos(pi*x)*sin(pi*y)}:x:y" 
+                },
+				"right":
+				{
+		     		"expr":"{1/(2*pi*pi)*sin(pi*x)*cos(pi*y),1/(2*pi*pi)*cos(pi*x)*sin(pi*y)}:x:y" 
+				}
+ 	    	}
+    	},
+		"ExactSolution":
+		{
+			"u_exact":
+			{
+				"omega":
+				{
+		     		"expr":"{1/(2*Pi*Pi)*sin(Pi*x)*cos(Pi*y),1/(2*Pi*Pi)*cos(Pi*x)*sin(Pi*y)}:x:y" 
+				}
+			}
 		}
- 	    }
-    	}
-	
      },
     "PostProcess":
     {
