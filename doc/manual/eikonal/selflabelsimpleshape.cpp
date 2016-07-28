@@ -15,7 +15,7 @@ int main( int argc, char** argv )
     Feel::Environment env( argc, argv );
 
     auto mesh = unitHypercube<FEELPP_DIM>();
-    auto Xh = Pch<FEELPP_DIM>(mesh);
+    auto Xh = Pch<FEELPP_ORDER>(mesh);
     auto Xh0 = Pdh<0>(mesh);
 
         // some ellipse parameters:
