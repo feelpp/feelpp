@@ -22,7 +22,7 @@ int main( int argc, char** argv )
     std::vector<double>x0 = {{ 0.7, 0.15, 0,3 }};
     std::vector<double>y0 = {{ 0.6, 0.15, 0.7 }};
     std::vector<double>z0 =  {{0,0,0}};
-    if (FEELPP_ORDER==3)
+    if (FEELPP_DIM==3)
         z0={{ 0.7, 0.5, 0.2 }};
     std::vector<double>aAxis = {{ 0.1, 0.1, 0.1 }};
     std::vector<double>bAxis = {{ 0.3, 0.1, 0.15 }};
