@@ -73,16 +73,32 @@ public :
     BlocksBaseVector( PS&& ps, backend_ptr_t<T> b = backend(),
                       std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
         :
-        super_type( int(hana::size( ps )), 1 ),
+        super_type( ps.numberOfSpaces(), 1 ),
         M_backend( b )
         {
             int n = 0;
             hana::for_each( ps, [&]( auto const& e )
                             {
-                                cout << "creating vector block (" << n  << ")\n";
-                                (*this)(n,0) = e->elementPtr();//b->newVector( e );
-                                ++n;
+
+                                hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(e)>>{},
+                                          [&]( auto&& x )
+                                          {
+                                              for( int i = 0; i < x->numberOfSpaces(); ++i, ++n )
+                                              {
+                                                  cout << "creating dyn vector block (" << n  << ")\n";
+                                                  (*this)(n,0) = (*x)[i]->elementPtr();
+                                              }
+
+                                          },
+                                          [&]( auto&& x )
+                                          {
+                                              cout << "creating vector block (" << n  << ")\n";
+                                              (*this)(n,0) = e->elementPtr();
+                                              ++n;
+                                          } )(e);
+
                             });
+
 
         }
 
@@ -401,16 +417,26 @@ BlocksBaseVector<double>
 blockVector( PS && ps, backend_ptrtype b = backend(),
              std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
-    const int size = hana::size(ps);
+    const int size = ps.numberOfSpaces();
     //BlocksBaseVector<typename decay_type<PS>::value_type> g( size, backend() );
     BlocksBaseVector<double> g( size, b );
 
     int n = 0;
     hana::for_each( ps, [&]( auto const& e )
                     {
-                        cout << "creating vector block (" << n  << ")\n";
-                        g(n,0) = b->newVector( e );
-                        ++n;
+
+                        hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(e)>>{},
+                                  [&] (auto&& x) {
+                                      for( int i = 0; i < x->numberOfSpaces(); ++i, ++n  )
+                                      {
+                                          cout << "creating dyn vector block (" << n  << ")\n";
+                                          g(n,0) = b->newVector( (*x)[i] );
+                                      }
+                                  },
+                                  [&] (auto&& x){
+                                      cout << "creating vector block (" << n  << ")\n";
+                                      g(n++,0) = b->newVector( x );
+                                  })(e);
                     });
     return g;
 }
