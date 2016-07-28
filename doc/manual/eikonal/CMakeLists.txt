@@ -49,3 +49,6 @@ feelpp_add_application(dist2paramsurface SRCS dist2paramsurface.cpp )
 feelpp_add_application(selflabelsimpleshape_d2_o1 SRCS selflabelsimpleshape.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=1)
 feelpp_add_application(selflabelsimpleshape_d2_o2 SRCS selflabelsimpleshape.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=2)
 feelpp_add_application(selflabelsimpleshape_d3_o1 SRCS selflabelsimpleshape.cpp DEFS FEELPP_DIM=3 FEELPP_ORDER=1)
+
+feelpp_add_application(selflabelmultiellipse_d2_o1 SRCS selflabelmultiellipse.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=1)
+feelpp_add_application(selflabelmultiellipse_d3_o1 SRCS selflabelmultiellipse.cpp DEFS FEELPP_DIM=3 FEELPP_ORDER=1)
