@@ -37,6 +37,8 @@ int main(int argc, char *argv[])
     auto mesh = loadMesh( _mesh=new me_type::mesh_type );
     
     ME -> init(mesh);
+    ME -> solve();
+	ME -> exportResults(mesh);
  
     return 0;
 }

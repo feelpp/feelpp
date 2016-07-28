@@ -78,7 +78,7 @@
      },
     "PostProcess":
     {
-        "Fields":["potential","flux","state variable"]
+        "Fields":["potential","flux"]
     }
 }
 
