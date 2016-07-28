@@ -85,25 +85,46 @@ BoundaryConditions::setup()
             std::string k = t+"."+f.first; // condition type
             for( auto const& c : f.second ) // condition
             {
-                try
-                {
-                    auto e= c.second.get<std::string>("expr");
-                    LOG(INFO) << "adding boundary " << c.first << " with expression " << e << " to " << k;
-                    this->operator[](t)[f.first].push_back( std::make_tuple( c.first, e, std::string("") ) );
-                }
-                catch( ... )
+                auto bcdatatype  = c.second.get("type","expression");
+                //std::cout << "bcdatatype = " << bcdatatype << std::endl;
+                if ( bcdatatype == "file" )
                 {
                     try
                     {
-                        auto e1= c.second.get<std::string>("expr1");
-                        auto e2= c.second.get<std::string>("expr2");
-                        LOG(INFO) << "adding boundary " << c.first << " with expressions " << e1 << " and " << e2 << " to " << k;
-                        this->operator[](t)[f.first].push_back( std::make_tuple( c.first, e1, e2 ) );
+                        auto e= c.second.get<std::string>("filename");
+                        auto abscissa= c.second.get<std::string>("abscissa");
+                        auto ordinate= c.second.get<std::string>("ordinate");
+                        LOG(INFO) << "adding boundary " << c.first << " with filename " << e << " to " << k;
+                        this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e, abscissa, ordinate ) );
                     }
                     catch( ... )
                     {
-                        LOG(INFO) << "adding boundary " << c.first << " without expression" << " to " << k;
-                        this->operator[]( t )[f.first].push_back( std::make_tuple( c.first, std::string(""), std::string("") ) );
+                        LOG(INFO) << "adding boundary " << c.first << " without filename" << " to " << k;
+                        throw std::logic_error("invalid boundary conditioner");
+                    }
+                }
+                if ( bcdatatype == "expression" )
+                {
+                    try
+                    {
+                        auto e= c.second.get<std::string>("expr");
+                        LOG(INFO) << "adding boundary " << c.first << " with expression " << e << " to " << k;
+                        this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e, std::string(""), std::string("") ) );
+                    }
+                    catch( ... )
+                    {
+                        try
+                        {
+                            auto e1= c.second.get<std::string>("expr1");
+                            auto e2= c.second.get<std::string>("expr2");
+                            LOG(INFO) << "adding boundary " << c.first << " with expressions " << e1 << " and " << e2 << " to " << k;
+                            this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e1, e2, std::string("") ) );
+                        }
+                        catch( ... )
+                        {
+                            LOG(INFO) << "adding boundary " << c.first << " without expression" << " to " << k;
+                            this->operator[]( t )[f.first].push_back( std::make_tuple( bcdatatype, c.first, std::string(""), std::string(""), std::string("") ) );
+                        }
                     }
                 }
             }

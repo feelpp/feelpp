@@ -28,6 +28,8 @@
    \date 2008-01-03
  */
 #include <boost/timer.hpp>
+#include <boost/smart_ptr/make_shared.hpp>
+
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
@@ -266,7 +268,7 @@ void MatrixPetsc<T>::init ( const size_type m,
     //CHKERRABORT(this->comm(),ierr);
 
     // generates an error for new matrix entry
-    ierr = MatSetOption ( M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
+    ierr = MatSetOption ( M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE );
     CHKERRABORT( this->comm(),ierr );
 #endif // 0
 
@@ -428,14 +430,14 @@ void MatrixPetsc<T>::init ( const size_type /*m*/,
 #endif
 
 
-#if 0
+#if 1
     // additional insertions will not be allowed if they generate
     // a new nonzero
     //ierr = MatSetOption (M_mat, MAT_NO_NEW_NONZERO_LOCATIONS);
     //CHKERRABORT(this->comm(),ierr);
 
     // generates an error for new matrix entry
-    ierr = MatSetOption ( M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
+    ierr = MatSetOption ( M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE );
     CHKERRABORT( this->comm(),ierr );
 #endif
 
@@ -1262,14 +1264,22 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
         //                             name.c_str(),
         //                             &petsc_viewer );
         CHKERRABORT( this->comm(),ierr );
-
+#if PETSC_VERSION_LESS_THAN(3,7,0)
         ierr = PetscViewerSetFormat ( petsc_viewer,
                                       PETSC_VIEWER_BINARY_MATLAB );
+#else
+        ierr = PetscViewerPushFormat ( petsc_viewer,
+                                      PETSC_VIEWER_BINARY_MATLAB );
+#endif
         //PETSC_VIEWER_ASCII_PYTHON );
         CHKERRABORT( this->comm(),ierr );
 
         ierr = MatView ( M_mat, petsc_viewer );
         CHKERRABORT( this->comm(),ierr );
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+        ierr = PetscViewerPopFormat ( petsc_viewer );
+        CHKERRABORT( this->comm(),ierr );
+#endif
     }
 
     /**
@@ -1661,9 +1671,9 @@ MatrixPetsc<T>::operator () ( const size_type i,
 
 template<typename T>
 void
-MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, 
-                          Vector<value_type> const& values, 
-                          Vector<value_type>& rhs, 
+MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
+                          Vector<value_type> const& values,
+                          Vector<value_type>& rhs,
                           Context const& on_context,
                           value_type value_on_diagonal )
 {
@@ -1698,7 +1708,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
             LOG(INFO) << "MatrixPETSc:: zeroRows seq getdiag";
             MatGetDiagonal( M_mat, diag.vec() );
         }
-    
+
         if ( on_context.test( ContextOn::SYMMETRIC ) )
         {
             LOG(INFO) << "MatrixPETSc:: zeroRows seq symmetric";
@@ -1711,7 +1721,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
             {
                 LOG(INFO) << "MatrixPETSc:: zeroRows seq setdiag";
                 MatDiagonalSet( M_mat, diag.vec(), INSERT_VALUES );
-            
+
                 for ( size_type i = 0; i < rows.size(); ++i )
                 {
                     // warning: a row index may belong to another
@@ -2224,16 +2234,16 @@ inline
 void MatrixPetsc<T>::getMatInfo(std::vector<double> &vec)
 {
     MatGetInfo(this->M_mat,MAT_GLOBAL_SUM,&M_info);
-    vec.push_back(M_info.block_size);       
-    vec.push_back(M_info.nz_allocated);     
-    vec.push_back(M_info.nz_used);          
-    vec.push_back(M_info.nz_unneeded);      
-    vec.push_back(M_info.memory);           
-    vec.push_back(M_info.assemblies);       
-    vec.push_back(M_info.mallocs);          
-    vec.push_back(M_info.fill_ratio_given); 
+    vec.push_back(M_info.block_size);
+    vec.push_back(M_info.nz_allocated);
+    vec.push_back(M_info.nz_used);
+    vec.push_back(M_info.nz_unneeded);
+    vec.push_back(M_info.memory);
+    vec.push_back(M_info.assemblies);
+    vec.push_back(M_info.mallocs);
+    vec.push_back(M_info.fill_ratio_given);
     vec.push_back(M_info.fill_ratio_needed);
-    vec.push_back(M_info.factor_mallocs);   
+    vec.push_back(M_info.factor_mallocs);
 }
 template <typename T>
 void MatrixPetsc<T>::threshold(void)
@@ -2450,14 +2460,14 @@ void MatrixPetscMPI<T>::init( const size_type /*m*/,
 
 
 
-#if 0
+#if 1
     // additional insertions will not be allowed if they generate
     // a new nonzero
     //ierr = MatSetOption (M_mat, MAT_NO_NEW_NONZERO_LOCATIONS);
     //CHKERRABORT(this->comm(),ierr);
 
     // generates an error for new matrix entry
-    ierr = MatSetOption ( this->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
+    ierr = MatSetOption ( this->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE );
     CHKERRABORT( this->comm(),ierr );
 #endif
 

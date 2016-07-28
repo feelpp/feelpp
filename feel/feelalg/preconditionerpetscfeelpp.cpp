@@ -65,8 +65,8 @@ static PetscErrorCode PCApply_FEELPP(PC pc,Vec x,Vec y)
     }
     else
     {
-        x_vec.reset( new Feel::VectorPetsc<double>( x ) );
-        y_vec.reset( new Feel::VectorPetsc<double>( y ) );
+        x_vec.reset( new Feel::VectorPetsc<double>( x, preconditioner->matrix()->mapColPtr() ) );
+        y_vec.reset( new Feel::VectorPetsc<double>( y, preconditioner->matrix()->mapColPtr() ) );
     }
     preconditioner->apply( *x_vec,*y_vec );
 
@@ -92,7 +92,11 @@ static PetscErrorCode PCDestroy_FEELPP(PC pc)
 #if PETSC_VERSION_LESS_THAN(3,6,0)
 static PetscErrorCode PCSetFromOptions_FEELPP(PC pc)
 #else
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+static PetscErrorCode PCSetFromOptions_FEELPP(PetscOptionItems*, PC pc)
+#else
 static PetscErrorCode PCSetFromOptions_FEELPP(PetscOptions*, PC pc)
+#endif
 #endif
 {
     PetscFunctionReturn(0);

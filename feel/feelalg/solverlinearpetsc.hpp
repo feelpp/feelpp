@@ -113,6 +113,7 @@ extern "C"
     PetscErrorCode __feel_petsc_preconditioner_setup ( PC );
     PetscErrorCode __feel_petsc_preconditioner_apply( PC, Vec x, Vec y );
     PetscErrorCode __feel_petsc_preconditioner_view( PC, PetscViewer viewer);
+    PetscErrorCode __feel_petsc_monitor(KSP ksp,PetscInt it,PetscReal rnorm,void* ctx);
 
 #endif
 } // end extern "C"

@@ -52,8 +52,6 @@ template<typename Derived> class ArrayBase
     typedef typename NumTraits<Scalar>::Real RealScalar;
 
     typedef DenseBase<Derived> Base;
-    using Base::operator*;
-    using Base::operator/;
     using Base::RowsAtCompileTime;
     using Base::ColsAtCompileTime;
     using Base::SizeAtCompileTime;
@@ -217,7 +215,7 @@ template<typename OtherDerived>
 EIGEN_STRONG_INLINE Derived &
 ArrayBase<Derived>::operator/=(const ArrayBase<OtherDerived>& other)
 {
-  call_assignment(derived(), other.derived(), internal::div_assign_op<Scalar>());
+  call_assignment(derived(), other.derived(), internal::div_assign_op<Scalar,typename OtherDerived::Scalar>());
   return derived();
 }
 
