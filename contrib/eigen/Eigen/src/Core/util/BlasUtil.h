@@ -111,7 +111,7 @@ template<typename RealScalar,bool Conj> struct conj_helper<RealScalar, std::comp
 };
 
 template<typename From,typename To> struct get_factor {
-  EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE To run(const From& x) { return x; }
+  EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE To run(const From& x) { return To(x); }
 };
 
 template<typename Scalar> struct get_factor<Scalar,typename NumTraits<Scalar>::Real> {
@@ -293,16 +293,27 @@ struct blas_traits<CwiseUnaryOp<scalar_conjugate_op<Scalar>, NestedXpr> >
 };
 
 // pop scalar multiple
-template<typename Scalar, typename NestedXpr>
-struct blas_traits<CwiseUnaryOp<scalar_multiple_op<Scalar>, NestedXpr> >
+template<typename Scalar, typename NestedXpr, typename Plain>
+struct blas_traits<CwiseBinaryOp<scalar_product_op<Scalar>, const CwiseNullaryOp<scalar_constant_op<Scalar>,Plain>, NestedXpr> >
  : blas_traits<NestedXpr>
 {
   typedef blas_traits<NestedXpr> Base;
-  typedef CwiseUnaryOp<scalar_multiple_op<Scalar>, NestedXpr> XprType;
+  typedef CwiseBinaryOp<scalar_product_op<Scalar>, const CwiseNullaryOp<scalar_constant_op<Scalar>,Plain>, NestedXpr> XprType;
   typedef typename Base::ExtractType ExtractType;
-  static inline ExtractType extract(const XprType& x) { return Base::extract(x.nestedExpression()); }
+  static inline ExtractType extract(const XprType& x) { return Base::extract(x.rhs()); }
   static inline Scalar extractScalarFactor(const XprType& x)
-  { return x.functor().m_other * Base::extractScalarFactor(x.nestedExpression()); }
+  { return x.lhs().functor().m_other * Base::extractScalarFactor(x.rhs()); }
+};
+template<typename Scalar, typename NestedXpr, typename Plain>
+struct blas_traits<CwiseBinaryOp<scalar_product_op<Scalar>, NestedXpr, const CwiseNullaryOp<scalar_constant_op<Scalar>,Plain> > >
+ : blas_traits<NestedXpr>
+{
+  typedef blas_traits<NestedXpr> Base;
+  typedef CwiseBinaryOp<scalar_product_op<Scalar>, NestedXpr, const CwiseNullaryOp<scalar_constant_op<Scalar>,Plain> > XprType;
+  typedef typename Base::ExtractType ExtractType;
+  static inline ExtractType extract(const XprType& x) { return Base::extract(x.lhs()); }
+  static inline Scalar extractScalarFactor(const XprType& x)
+  { return Base::extractScalarFactor(x.lhs()) * x.rhs().functor().m_other; }
 };
 
 // pop opposite

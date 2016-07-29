@@ -16,6 +16,10 @@
 #include <math_constants.h>
 #endif
 
+#if EIGEN_COMP_ICC>=1600 &&  __cplusplus >= 201103L
+#include <cstdint>
+#endif
+
 namespace Eigen {
 
 namespace internal {
@@ -29,7 +33,7 @@ namespace internal {
 
 // Only recent versions of ICC complain about using ptrdiff_t to hold pointers,
 // and older versions do not provide *intptr_t types.
-#if EIGEN_COMP_ICC>=1600
+#if EIGEN_COMP_ICC>=1600 &&  __cplusplus >= 201103L
 typedef std::intptr_t  IntPtr;
 typedef std::uintptr_t UIntPtr;
 #else
@@ -145,7 +149,7 @@ struct is_convertible
 /** \internal Allows to enable/disable an overload
   * according to a compile time condition.
   */
-template<bool Condition, typename T> struct enable_if;
+template<bool Condition, typename T=void> struct enable_if;
 
 template<typename T> struct enable_if<true,T>
 { typedef T type; };
@@ -354,6 +358,19 @@ struct result_of<Func(ArgType0,ArgType1,ArgType2)> {
 };
 #endif
 
+// Check whether T::ReturnType does exist
+template <typename T>
+struct has_ReturnType
+{
+  typedef char yes[1];
+  typedef char no[2];
+
+  template <typename C> static yes& testFunctor(C const *, typename C::ReturnType const * = 0);
+  static no& testFunctor(...);
+
+  static const bool value = sizeof(testFunctor(static_cast<T*>(0))) == sizeof(yes);
+};
+
 /** \internal In short, it computes int(sqrt(\a Y)) with \a Y an integer.
   * Usage example: \code meta_sqrt<1023>::ret \endcode
   */
@@ -397,33 +414,6 @@ struct meta_least_common_multiple<A,B,K,true>
 template<typename T, typename U> struct scalar_product_traits
 {
   enum { Defined = 0 };
-};
-
-template<typename T> struct scalar_product_traits<T,T>
-{
-  enum {
-    // Cost = NumTraits<T>::MulCost,
-    Defined = 1
-  };
-  typedef T ReturnType;
-};
-
-template<typename T> struct scalar_product_traits<T,std::complex<T> >
-{
-  enum {
-    // Cost = 2*NumTraits<T>::MulCost,
-    Defined = 1
-  };
-  typedef std::complex<T> ReturnType;
-};
-
-template<typename T> struct scalar_product_traits<std::complex<T>, T>
-{
-  enum {
-    // Cost = 2*NumTraits<T>::MulCost,
-    Defined = 1
-  };
-  typedef std::complex<T> ReturnType;
 };
 
 // FIXME quick workaround around current limitation of result_of
