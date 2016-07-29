@@ -50,6 +50,9 @@
 #include <feel/feeldiscr/projector.hpp>
 #include <feel/feeldiscr/elementdiv.hpp>
 
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pdh.hpp>
+
 #include <boost/assert.hpp>
 #include <boost/regex.hpp>
 
@@ -105,7 +108,7 @@ namespace Feel
         //! vector type associated with backend (shared_ptr<> type)
         typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
-        typedef Simplex<Dim,OrderGeo> convex_type;
+        typedef Simplex<Dim,OrderGeo,Dim> convex_type;
         //! mesh type
         typedef Mesh<convex_type> mesh_type;
         //! mesh shared_ptr<> type
@@ -124,16 +127,19 @@ namespace Feel
         typedef typename space_type::element_type element_type;
 
         //! Scalar P0 space
-        typedef bases<Lagrange<0,Scalar, Discontinuous > > p0_basis_type;
-        typedef FunctionSpace<mesh_type, p0_basis_type> p0_space_type;
+        // typedef bases<Lagrange<0,Scalar, Discontinuous > > p0_basis_type;
+        // typedef FunctionSpace<mesh_type, p0_basis_type> p0_space_type;
+        typedef Pdh_type<mesh_type, 0> p0_space_type;
         typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
         typedef typename p0_space_type::element_type p0_element_type;
 
-        //! Scalar P1 space
-        typedef bases<Lagrange<1, Scalar> > p1_basis_type;
-        typedef FunctionSpace<mesh_type, p1_basis_type> p1_space_type;
+        // //! Scalar P1 space
+        // typedef bases<Lagrange<1, Scalar> > p1_basis_type;
+        // typedef FunctionSpace<mesh_type, p1_basis_type> p1_space_type;
+        typedef Pch_type<mesh_type, 1> p1_space_type;
         typedef boost::shared_ptr<p1_space_type> p1_space_ptrtype;
         typedef typename p1_space_type::element_type p1_element_type;
+
 
         //! Vectorial P1 space
         typedef bases<Lagrange<1, Vectorial> > p1vec_basis_type;
@@ -324,11 +330,12 @@ namespace Feel
 
         p1_space_ptrtype P1h = p1_space_type::New( mesh );
 
-        std::ofstream newPosFile( (boost::format( "%1%.%2%" ) % nameVar %posFormat ).str() );
+        std::string posFileName = (boost::format( "%1%_p_%2%.%3%" ) % nameVar %Environment::rank() %posFormat ).str();
+        std::ofstream newPosFile( posFileName );
 
         newPosFile << "View \" background mesh \" { \n";
-        auto eltIt = mesh->beginElement();
-        auto eltEnd = mesh->endElement();
+        auto eltIt = mesh->beginElementWithProcessId();
+        auto eltEnd = mesh->endElementWithProcessId();
         for ( ; eltIt != eltEnd; eltIt++)
             {
                 std::vector<point_type> eltPoints( eltIt->nPoints() );
@@ -371,7 +378,7 @@ namespace Feel
         newPosFile << "};";
         newPosFile.close();
 
-        return (boost::format( "%1%.%2%" ) % nameVar %posFormat ).str();
+        return posFileName;
     }
 
     template<int Dim,
@@ -390,11 +397,12 @@ namespace Feel
 
         p1_space_ptrtype P1h = p1_space_type::New( mesh );
 
-        std::ofstream newPosFile( (boost::format( "%1%.%2%" ) % nameVar %posFormat ).str() );
+        std::string posFileName = (boost::format( "%1%_p_%2%.%3%" ) % nameVar %Environment::rank() %posFormat ).str();
+        std::ofstream newPosFile( posFileName );
 
         newPosFile << "View \" background mesh \" { \n";
-        auto eltIt = mesh->beginElement();
-        auto eltEnd = mesh->endElement();
+        auto eltIt = mesh->beginElementWithProcessId();
+        auto eltEnd = mesh->endElementWithProcessId();
         for ( ; eltIt != eltEnd; eltIt++)
             {
                 std::vector<point_type> eltPoints( eltIt->nPoints() );
@@ -465,7 +473,7 @@ namespace Feel
         newPosFile << "};";
         newPosFile.close();
 
-        return (boost::format( "%1%.%2%" ) % nameVar %posFormat ).str();
+        return posFileName;
     }
 
     template<int Dim,
@@ -648,6 +656,16 @@ namespace Feel
         std::string mshFormat = "msh";
         std::string newMeshName =  (boost::format( "%1%%2%.%3%" ) % prefix % name % mshFormat ).str();
 
+        // get the pos files generated on all the subdomains
+        std::vector< std::vector<std::string> > all_posfiles;
+        mpi::gather(Environment::worldComm().globalComm(),
+                    posfiles,
+                    all_posfiles, Environment::worldComm().masterRank() );
+
+        posfiles.clear();
+        for (auto const& posfileOtherProc : all_posfiles )
+            posfiles.insert( posfiles.end(), posfileOtherProc.begin(), posfileOtherProc.end() );
+
         int nbPosfiles = posfiles.size();
 
         if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  &&  Environment::worldComm().globalRank() == Environment::worldComm().masterRank() ) )
@@ -793,7 +811,11 @@ namespace Feel
                         if( Dim == 3)
                             __str << "-algo mmg3d" << " ";
                     }
-                __str << "-" << Dim;
+                __str << "-" << Dim << " "
+                      << "-part " << Environment::numberOfProcessors();
+
+                Feel::cout << Feel::tc::yellow << "executing gmsh command:\n "
+                           << __str.str() << Feel::tc::reset << "\n";
 
                 ::system(__str.str().c_str());
 #endif
