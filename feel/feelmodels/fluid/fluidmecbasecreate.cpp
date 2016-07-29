@@ -904,6 +904,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     if ( this->definePressureCst() )
         this->updateDefinePressureCst();
 
+    // lagrange multiplier for pressure bc
+    if ( !this->markerPressureBC().empty() )
+    {
+        M_meshLagrangeMultiplierPressureBC = createSubmesh(this->mesh(),markedfaces(this->mesh(),this->markerPressureBC()) );
+        M_spaceLagrangeMultiplierPressureBC = space_trace_velocity_component_type::New( _mesh=M_meshLagrangeMultiplierPressureBC, _worldscomm=this->localNonCompositeWorldsComm() );
+        M_fieldLagrangeMultiplierPressureBC1.reset( new element_trace_velocity_component_type( M_spaceLagrangeMultiplierPressureBC ) );
+        if ( nDim == 3 )
+            M_fieldLagrangeMultiplierPressureBC2.reset( new element_trace_velocity_component_type( M_spaceLagrangeMultiplierPressureBC ) );
+    }
+
     // update marker in mesh (mainly used with CIP stab)
     if ( (this->doCIPStabConvection() || this->doCIPStabDivergence() || this->doCIPStabPressure() ) && !this->applyCIPStabOnlyOnBoundaryFaces() )
         this->updateMarkedZonesInMesh();
@@ -971,6 +981,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     {
         M_startBlockIndexFieldsInMatrix["dirichletlm"] = currentStartIndex++;
     }
+    if ( !this->markerPressureBC().empty() )
+    {
+        M_startBlockIndexFieldsInMatrix["pressurelm1"] = currentStartIndex++;
+        if ( nDim == 3 )
+            M_startBlockIndexFieldsInMatrix["pressurelm2"] = currentStartIndex++;
+    }
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
         M_startBlockIndexFieldsInMatrix["windkessel"] = currentStartIndex++;
@@ -999,6 +1015,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     {
         M_blockVectorSolution(cptBlock) = this->backend()->newVector( this->XhDirichletLM() );
         ++cptBlock;
+    }
+    if ( !this->markerPressureBC().empty() )
+    {
+        M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC1;
+        if ( nDim == 3 )
+            M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC2;
     }
     // windkessel outel with implicit scheme
     if ( this->hasFluidOutletWindkesselImplicit() )

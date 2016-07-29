@@ -133,6 +133,11 @@ public:
     // function space for Diriclet condition using lagrange multiplier
     typedef FunctionSpace<trace_mesh_type, bases<basis_fluid_u_type> > space_dirichletlm_velocity_type;
     typedef boost::shared_ptr<space_dirichletlm_velocity_type> space_dirichletlm_velocity_ptrtype;
+    // function space for lagrange multiplier used in pressure bc
+    typedef typename space_dirichletlm_velocity_type::component_functionspace_type space_trace_velocity_component_type;
+    typedef boost::shared_ptr<space_trace_velocity_component_type> space_trace_velocity_component_ptrtype;
+    typedef typename space_trace_velocity_component_type::element_type element_trace_velocity_component_type;
+    typedef boost::shared_ptr<element_trace_velocity_component_type> element_trace_velocity_component_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -833,6 +838,10 @@ protected:
     // trace mesh and space
     trace_mesh_ptrtype M_meshDirichletLM;
     space_dirichletlm_velocity_ptrtype M_XhDirichletLM;
+    // lagrange multiplier for impose pressure bc
+    trace_mesh_ptrtype M_meshLagrangeMultiplierPressureBC;
+    space_trace_velocity_component_ptrtype M_spaceLagrangeMultiplierPressureBC;
+    element_trace_velocity_component_ptrtype M_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC2;
     // time discrtisation fluid
     bdf_ptrtype M_bdf_fluid;
     //----------------------------------------------------
