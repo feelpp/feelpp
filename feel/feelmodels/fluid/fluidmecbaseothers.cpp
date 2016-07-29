@@ -833,6 +833,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
         ++cptBlock;
     if (this->hasMarkerDirichletBClm())
         ++cptBlock;
+    if ( !this->markerPressureBC().empty() )
+    {
+        ++cptBlock;
+        if ( nDim == 3 )
+            ++cptBlock;
+    }
     if (this->hasFluidOutletWindkesselImplicit() )
     {
         for (int k=0;k<this->nFluidOutlet();++k)
