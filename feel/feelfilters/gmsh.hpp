@@ -51,6 +51,7 @@
 
 #if defined( FEELPP_HAS_GMSH_H )
 class GModel;
+class Msg;
 #endif
 
 // there is a macro called sign in Gmsh that conflicts with
@@ -382,6 +383,17 @@ public:
         {
             this->setCharacteristicLength( _h );
             return *this;
+        }
+
+    /**
+     * set Gmsh verbosity
+     * \param val the verbosity level
+     */
+    void setVerbosity( int val )
+        {
+            // Feel::cout << "Get GMSH Verbosity : " << Msg::GetVerbosity() << std::endl;
+            // Feel::cout << "Set GMSH Verbosity to " << val << std::endl;
+            Msg::SetVerbosity( val );
         }
 
     /**

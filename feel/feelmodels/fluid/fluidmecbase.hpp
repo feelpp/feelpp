@@ -267,7 +267,7 @@ public:
     //typedef boost::shared_ptr<gmsh_export_type> gmsh_export_ptrtype;
     //___________________________________________________________________________________//
     // export ho
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
     //fais comme ca car bug dans opeartorlagrangeP1 pour les champs vectorielles
     typedef FunctionSpace<mesh_type,bases<Lagrange<nOrderVelocity,Scalar,Continuous,PointSetFekete> > > space_create_ho_type;
     // mesh
@@ -932,7 +932,7 @@ protected:
     export_ptrtype M_exporter;
     export_trace_ptrtype M_exporterFluidOutlet;
     // exporter fluid ho
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
     export_ho_ptrtype M_exporter_ho;
     space_vectorial_visu_ho_ptrtype M_XhVectorialVisuHO;
     space_scalar_visu_ho_ptrtype M_XhScalarVisuHO;

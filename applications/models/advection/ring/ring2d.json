@@ -1,0 +1,31 @@
+{
+    "Name": "Ring2d",
+    "ShortName": "Ring2d",
+    "Model": "Advection",
+
+    "BoundaryConditions":
+    {
+        "advection":
+        {
+            "Dirichlet":
+            {
+                "Bottom":
+                {
+                    "expr":"0"
+                },
+                "Left":
+                {
+                    "expr":"0"
+                },
+                "InnerCircle":
+                {
+                    "expr":"0"
+                },
+                "OuterCircle":
+                {
+                    "expr":"0"
+                }
+            }
+        }
+    }
+}

@@ -85,7 +85,7 @@ int main( int argc, char** argv )
     }
 
     for( auto marker: mesh->markerNames() )
-    {   
+    {
        auto name = marker.first;
        auto data = marker.second;
        if ( data[1] == mesh->dimension() )

@@ -157,17 +157,14 @@ template<typename SparseMatrixType> void sparse_basic(const SparseMatrixType& re
     initSparse<Scalar>(density, refM3, m3);
     initSparse<Scalar>(density, refM4, m4);
 
+    if(internal::random<bool>())
+      m1.makeCompressed();
+
     VERIFY_IS_APPROX(m1*s1, refM1*s1);
     VERIFY_IS_APPROX(m1+m2, refM1+refM2);
     VERIFY_IS_APPROX(m1+m2+m3, refM1+refM2+refM3);
     VERIFY_IS_APPROX(m3.cwiseProduct(m1+m2), refM3.cwiseProduct(refM1+refM2));
     VERIFY_IS_APPROX(m1*s1-m2, refM1*s1-refM2);
-
-    VERIFY_IS_APPROX(m1*=s1, refM1*=s1);
-    VERIFY_IS_APPROX(m1/=s1, refM1/=s1);
-
-    VERIFY_IS_APPROX(m1+=m2, refM1+=refM2);
-    VERIFY_IS_APPROX(m1-=m2, refM1-=refM2);
 
     if(SparseMatrixType::IsRowMajor)
       VERIFY_IS_APPROX(m1.innerVector(0).dot(refM2.row(0)), refM1.row(0).dot(refM2.row(0)));
@@ -196,6 +193,14 @@ template<typename SparseMatrixType> void sparse_basic(const SparseMatrixType& re
     VERIFY_IS_APPROX(m3 + refM4, refM3 + refM4);
     VERIFY_IS_APPROX(refM4 - m3, refM4 - refM3);
     VERIFY_IS_APPROX(m3 - refM4, refM3 - refM4);
+
+    VERIFY_IS_APPROX(m1.sum(), refM1.sum());
+
+    VERIFY_IS_APPROX(m1*=s1, refM1*=s1);
+    VERIFY_IS_APPROX(m1/=s1, refM1/=s1);
+
+    VERIFY_IS_APPROX(m1+=m2, refM1+=refM2);
+    VERIFY_IS_APPROX(m1-=m2, refM1-=refM2);
 
     // test aliasing
     VERIFY_IS_APPROX((m1 = -m1), (refM1 = -refM1));
@@ -232,11 +237,11 @@ template<typename SparseMatrixType> void sparse_basic(const SparseMatrixType& re
       for (Index i=0; i<m2.rows(); ++i)
       {
         float x = internal::random<float>(0,1);
-        if (x<0.1)
+        if (x<0.1f)
         {
           // do nothing
         }
-        else if (x<0.5)
+        else if (x<0.5f)
         {
           countFalseNonZero++;
           m2.insert(i,j) = Scalar(0);
@@ -372,6 +377,12 @@ template<typename SparseMatrixType> void sparse_basic(const SparseMatrixType& re
     SparseMatrixType m2(rows, rows);
     initSparse<Scalar>(density, refMat2, m2);
     VERIFY_IS_APPROX(m2.eval(), refMat2.sparseView().eval());
+
+    // sparse view on expressions:
+    VERIFY_IS_APPROX((s1*m2).eval(), (s1*refMat2).sparseView().eval());
+    VERIFY_IS_APPROX((m2+m2).eval(), (refMat2+refMat2).sparseView().eval());
+    VERIFY_IS_APPROX((m2*m2).eval(), (refMat2.lazyProduct(refMat2)).sparseView().eval());
+    VERIFY_IS_APPROX((m2*m2).eval(), (refMat2*refMat2).sparseView().eval());
   }
 
   // test diagonal
@@ -546,7 +557,7 @@ void test_sparse_basic()
   CALL_SUBTEST_4((big_sparse_triplet<SparseMatrix<double, ColMajor, long int> >(10000, 10000, 0.125)));
 
   // Regression test for bug 1105
-#ifdef EIGEN_TEST_PART_6
+#ifdef EIGEN_TEST_PART_7
   {
     int n = Eigen::internal::random<int>(200,600);
     SparseMatrix<std::complex<double>,0, long> mat(n, n);
