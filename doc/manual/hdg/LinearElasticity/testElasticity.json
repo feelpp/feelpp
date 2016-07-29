@@ -19,16 +19,17 @@
             {
                 "omega":
                 {
-                   "expr":"{-3*sin(pi*x)*cos(pi*y),-3*sin(pi*y)*cos(pi*x)}:x:y"
+                   	//"expr":"{-3*sin(pi*x)*cos(pi*y),-3*sin(pi*y)*cos(pi*x)}:x:y"
+					"expr":"{8,0,0}"
                 }
             }/*,
             "Neumann":
             {
-                "bottom":
+                "Rint":
                 {
                      "expr":"0.0"
                 },
-                "top":
+                "Rext":
                 {
                      "expr":"0.0"
                 }
@@ -38,22 +39,22 @@
 		{
 	    	"Dirichlet":
 	    	{
-        		"left":
-                {
-		     		"expr":"{1/(2*pi*pi)*sin(pi*x)*cos(pi*y),1/(2*pi*pi)*cos(pi*x)*sin(pi*y)}:x:y" 
-                },
         		"top":
                 {
-		     		"expr":"{1/(2*pi*pi)*sin(pi*x)*cos(pi*y),1/(2*pi*pi)*cos(pi*x)*sin(pi*y)}:x:y" 
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
                 },
         		"bottom":
                 {
-		     		"expr":"{1/(2*pi*pi)*sin(pi*x)*cos(pi*y),1/(2*pi*pi)*cos(pi*x)*sin(pi*y)}:x:y" 
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
                 },
-				"right":
-				{
-		     		"expr":"{1/(2*pi*pi)*sin(pi*x)*cos(pi*y),1/(2*pi*pi)*cos(pi*x)*sin(pi*y)}:x:y" 
-				}
+        		"out":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                },
+        		"in":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                }
  	    	}
     	},
 		"ExactSolution":
@@ -62,7 +63,7 @@
 			{
 				"omega":
 				{
-		     		"expr":"{1/(2*Pi*Pi)*sin(Pi*x)*cos(Pi*y),1/(2*Pi*Pi)*cos(Pi*x)*sin(Pi*y)}:x:y" 
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
 				}
 			}
 		}

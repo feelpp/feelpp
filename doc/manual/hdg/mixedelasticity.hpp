@@ -296,45 +296,45 @@ MixedElasticity<Dim, Order, G_Order>::initModel()
         
 	if ( itType != mapField.end() )
         {
-            Feel::cout << "Dirichlet: ";
+            cout << "Dirichlet: ";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    Feel::cout << " " << marker;
+                    cout << " " << marker;
                 else
-                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            Feel::cout << std::endl;
+            cout << std::endl;
         }
 	 
         itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
         {
-            Feel::cout << "Neumann:";
+            cout << "Neumann:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    Feel::cout << " " << marker;
+                    cout << " " << marker;
                 else
-                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            Feel::cout << std::endl;
+            cout << std::endl;
         }
         itType = mapField.find( "Robin" );
         if ( itType != mapField.end() )
         {
-            Feel::cout << "Robin:";
+            cout << "Robin:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    Feel::cout << " " << marker;
+                    cout << " " << marker;
                 else
-                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            Feel::cout << std::endl;
+            cout << std::endl;
         }
     }
 
@@ -347,16 +347,16 @@ MixedElasticity<Dim, Order, G_Order>::initModel()
         
 	if ( itType != mapField.end() )
         {
-            Feel::cout << "Dirichlet: ";
+            cout << "Dirichlet: ";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
                 if ( M_mesh->hasFaceMarker(marker) )
-                    Feel::cout << " " << marker;
+                    cout << " " << marker;
                 else
-                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
             }
-            Feel::cout << std::endl;
+            cout << std::endl;
 	}
     }
 
@@ -377,7 +377,7 @@ MixedElasticity<Dim, Order, G_Order>::initSpaces()
     M_up = M_Vh->element( "u" ); // Strain
     M_pp = M_Wh->element( "p" ); // Displacement
 
-    Feel::cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
+    cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
          << "Wh<" << Order << "> : " << M_Wh->nDof() << std::endl
          << "Mh<" << Order << "> : " << M_Mh->nDof() << std::endl;
 }
@@ -425,10 +425,10 @@ MixedElasticity<Dim, Order, G_Order>::solve()
     
     auto ps = product(M_Vh,M_Wh,M_Mh);
     tic();
-    auto bbf = blockform2(ps, M_A_cst);
-    auto blf = blockform1(ps, M_F);
     auto U = ps.element();
-    bbf.solve(_rhs=blf, _solution=U, _name="mixedelasticity");
+	auto M_U = M_backend->newBlockVector(_block=U,_copy_values= false);
+	M_backend->solve(_matrix=M_A_cst, _rhs = M_F , _solution=M_U) ;
+	U.localize(M_U);	
     M_up = U[0_c];
     M_pp = U[1_c];
    
@@ -468,43 +468,34 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
 
     for( auto const& pairMat : M_modelProperties->materials() )
     {
-	auto material = pairMat.second;
-	auto lambda = expr(material.getScalar("lambda"));
-	auto mu = expr(material.getScalar("mu"));
-	auto c1     = cst(0.5)/mu; 
-    	auto c2     = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu)); 
-	bbf( 0_c, 0_c ) =  integrate(_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
+		auto material = pairMat.second;
+		auto lambda = expr(material.getScalar("lambda"));
+		auto mu = expr(material.getScalar("mu"));
+		auto c1 = cst(0.5)/mu; 
+    	auto c2 = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu)); 
+		bbf( 0_c, 0_c ) =  integrate(_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
     	bbf( 0_c, 0_c ) += integrate(_range=elements(M_mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
     }
 
-    cout << "a11 works fine" << std::endl;
 
     bbf( 0_c, 1_c ) += integrate(_range=elements(M_mesh),_expr=(trans(idt(u))*div(v)));
 
-    cout << "a12 works fine" << std::endl;
-
     bbf( 0_c, 2_c) += integrate(_range=internalfaces(M_mesh),
-		    _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
-			    trans(idt(uhat))*rightface(id(v)*N())) );
+							    _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
+			    						 trans(idt(uhat))*rightface(id(v)*N())) );
     bbf( 0_c, 2_c) += integrate(_range=boundaryfaces(M_mesh),
-		    _expr=-trans(idt(uhat))*(id(v)*N()));
+		    					_expr=-trans(idt(uhat))*(id(v)*N()));
 
-    cout << "a13 works fine" << std::endl;
-
-    bbf( 1_c, 0_c) += integrate(_range=elements(M_mesh),_expr=(trans(id(w))*divt(sigma)));
-
-    cout << "a21 works fine" << std::endl;
+    bbf( 1_c, 0_c) += integrate(_range=elements(M_mesh),
+								_expr=(trans(id(w))*divt(sigma)));
 
     // begin dp: here we need to put the projection of u on the faces
-
-    bbf( 1_c, 1_c) += integrate(_range=internalfaces(M_mesh),
-		    _expr=-tau_constant *
+    bbf( 1_c, 1_c) += integrate(_range=internalfaces(M_mesh),_expr=-tau_constant *
 		    ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
 		      rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
+
     bbf( 1_c, 1_c) += integrate(_range=boundaryfaces(M_mesh),
 		    _expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
-
-    cout << "a22 works fine" << std::endl;
 
     bbf( 1_c, 2_c) += integrate(_range=internalfaces(M_mesh),
 		    _expr=tau_constant *
@@ -514,41 +505,50 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
     bbf( 1_c, 2_c) += integrate(_range=boundaryfaces(M_mesh),
 		    _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
 
-    cout << "a23 works fine" << std::endl;
 
     bbf( 2_c, 0_c) += integrate(_range=internalfaces(M_mesh),
 		    _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
 				    rightfacet(idt(sigma)*N())) ) );
 
-    cout << "a31 works fine" << std::endl;
 
     // BC
+    bbf( 2_c, 1_c) += integrate(_range=internalfaces(M_mesh),
+			    _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tau_order)*idt(u) )+
+				    rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
 
-    auto itField = M_modelProperties->boundaryConditions().find( "strain");
+    bbf( 2_c, 2_c) += integrate(_range=internalfaces(M_mesh),
+    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
+				    rightface( pow(idv(H),M_tau_order) )));
+
+    auto itField = M_modelProperties->boundaryConditions().find( "displacement");
     if ( itField != M_modelProperties->boundaryConditions().end() )
     {
 	    auto mapField = (*itField).second;
 	    auto itType = mapField.find( "Dirichlet" );
-
 	    if ( itType != mapField.end() )
 	    {
-		    Feel::cout << "Dirichlet: ";
 		    for ( auto const& exAtMarker : (*itType).second )
 		    {
 			    std::string marker = exAtMarker.marker();
+		    	// cout << "Dirichlet on " << marker << std::endl;
 			    bbf( 2_c, 2_c) += integrate(_range=markedfaces(M_mesh,marker),
-					    _expr=trans(idt(uhat)) * id(m) );
+					    					_expr=trans(idt(uhat)) * id(m) );
 		    }
 	    }
-
-	    itType = mapField.find( "Neumann" );
+	
+    }
+    
+	itField = M_modelProperties->boundaryConditions().find( "strain");
+    if ( itField != M_modelProperties->boundaryConditions().end() )
+    {	
+	    auto mapField = (*itField).second;
+	    auto itType = mapField.find( "Neumann" );
 	    if ( itType != mapField.end() )
 	    {
-		    Feel::cout << "Neumann:";
 		    for ( auto const& exAtMarker : (*itType).second )
 		    {
 			    std::string marker = exAtMarker.marker();
-
+		    	// cout << "Neumann on " << marker << std::endl;
 			    bbf( 2_c, 0_c) += integrate(_range=markedfaces(M_mesh,marker ),
 					    _expr=( trans(id(m))*(idt(sigma)*N()) ));
 
@@ -557,26 +557,12 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
 
 			    bbf( 2_c, 2_c) += integrate(_range=markedfaces(M_mesh,marker), 
 					    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
-
 		    }
 	    }
     }
-    bbf( 2_c, 1_c) += integrate(_range=internalfaces(M_mesh),
-			    _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tau_order)*idt(u) )+
-				    rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
 
-
-    bbf( 2_c, 2_c) += integrate(_range=internalfaces(M_mesh),
-    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
-				    rightface( pow(idv(H),M_tau_order) )));
-
-
-    
-    cout << "BC works fine" << std::endl;
-
-
-}
-
+} // end assemble STD
+  
 
 template<int Dim, int Order, int G_Order>
 template< typename PS>
@@ -596,26 +582,27 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
         auto mapField = (*itField).second;
         auto itType = mapField.find("SourceTerm");
         
-	if ( itType != mapField.end() )
+		if ( itType != mapField.end() )
         {
             for ( auto const& exAtMarker : (*itType).second )
             {
                 auto g = expr<Dim,G_Order> (exAtMarker.expression());
-		blf( 1_c ) += integrate(_range=elements(M_mesh),
-                      	      _expr=trans(g)*id(w));
+					blf( 1_c ) += integrate(_range=elements(M_mesh),
+                    			  	      _expr=trans(g)*id(w));
             }
         }
-	itType = mapField.find("Neumann");
-	if ( itType != mapField.end() )
-	{
+		itType = mapField.find("Neumann");
+		if ( itType != mapField.end() )
+		{
             for ( auto const& exAtMarker : (*itType).second )
             {
-		auto marker = exAtMarker.marker();
+				auto marker = exAtMarker.marker();
                 auto g = expr<2,2> (exAtMarker.expression());
-		blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
-				    _expr=trans(id(m))*(g*N()));
+				// cout << "Neumann condition on " << marker << ": " << g << std::endl;
+				blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+									    _expr=trans(id(m))*(g*N()));
             }
-	}
+		}
     } 
 
     itField = M_modelProperties->boundaryConditions().find("displacement");
@@ -629,15 +616,14 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
             {
 				auto marker = exAtMarker.marker();
                 auto g = expr<Dim,G_Order>(exAtMarker.expression());
+				// cout << "Dirichlet condition on " << marker << ": " << g << std::endl;
 				blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
                 		      _expr=trans(id(m))*g);
             }
         }
     }
 
-    cout << "rhs works fine" << std::endl;
-}
-
+} // end assembleF
 
 
 template <int Dim, int Order, int G_Order>
@@ -696,8 +682,8 @@ MixedElasticity<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype me
 								auto l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
 								if (l2norm_uex < 1)
 									l2norm_uex = 1.0;	
-								Feel::cout << "----- Computed Errors -----" << std::endl;
-								Feel::cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
+								cout << "----- Computed Errors -----" << std::endl;
+								cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
 								// Export the errors
 								M_exporter -> step( time )->add(prefixvm(M_prefix, "u_error_L2"), l2err_u/l2norm_uex );
 							    //------ Sigma 	------//
@@ -714,8 +700,8 @@ MixedElasticity<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype me
 									auto l2norm_sigmaex = normL2( _range=elements(M_mesh), _expr=sigma_exact );
 									if (l2norm_sigmaex < 1)
 										l2norm_sigmaex = 1.0;		
-									Feel::cout << "||sigma-sigma_ex||_L2=\t" << l2err_sigma/l2norm_sigmaex << std::endl;
-									Feel::cout << "---------------------------" << std::endl;
+									cout << "||sigma-sigma_ex||_L2=\t" << l2err_sigma/l2norm_sigmaex << std::endl;
+									cout << "---------------------------" << std::endl;
 									// Export the errors
 									M_exporter -> step( time )->add(prefixvm(M_prefix, "sigma_error_L2"), l2err_sigma/l2norm_sigmaex );
 								} 
