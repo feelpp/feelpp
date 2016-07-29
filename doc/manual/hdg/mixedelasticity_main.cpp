@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
                            );
 
 
-    typedef FeelModels::MixedElasticity<2,1> me_type;
+    typedef FeelModels::MixedElasticity<FEELPP_DIM,FEELPP_ORDER> me_type;
 
     auto ME = me_type::New("mixedelasticity");
     auto mesh = loadMesh( _mesh=new me_type::mesh_type );
