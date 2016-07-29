@@ -299,16 +299,6 @@ void computeProductBlockingSizes(Index& k, Index& m, Index& n, Index num_threads
   if (!useSpecificBlockingSizes(k, m, n)) {
     evaluateProductBlockingSizesHeuristic<LhsScalar, RhsScalar, KcFactor, Index>(k, m, n, num_threads);
   }
-
-  typedef gebp_traits<LhsScalar,RhsScalar> Traits;
-  enum {
-    kr = 8,
-    mr = Traits::mr,
-    nr = Traits::nr
-  };
-  if (k > kr) k -= k % kr;
-  if (m > mr) m -= m % mr;
-  if (n > nr) n -= n % nr;
 }
 
 template<typename LhsScalar, typename RhsScalar, typename Index>
@@ -363,7 +353,7 @@ class gebp_traits
 public:
   typedef _LhsScalar LhsScalar;
   typedef _RhsScalar RhsScalar;
-  typedef typename scalar_product_traits<LhsScalar, RhsScalar>::ReturnType ResScalar;
+  typedef typename ScalarBinaryOpTraits<LhsScalar, RhsScalar>::ReturnType ResScalar;
 
   enum {
     ConjLhs = _ConjLhs,
@@ -478,7 +468,7 @@ class gebp_traits<std::complex<RealScalar>, RealScalar, _ConjLhs, false>
 public:
   typedef std::complex<RealScalar> LhsScalar;
   typedef RealScalar RhsScalar;
-  typedef typename scalar_product_traits<LhsScalar, RhsScalar>::ReturnType ResScalar;
+  typedef typename ScalarBinaryOpTraits<LhsScalar, RhsScalar>::ReturnType ResScalar;
 
   enum {
     ConjLhs = _ConjLhs,
@@ -1536,12 +1526,12 @@ void gebp_kernel<LhsScalar,RhsScalar,Index,DataMapper,mr,nr,ConjugateLhs,Conjuga
           const RhsScalar* blB = &blockB[j2*strideB+offsetB*nr];
 
           // The following piece of code wont work for 512 bit registers
-          // Moreover it assumes that there is a half packet of the same size
+          // Moreover, if LhsProgress==8 it assumes that there is a half packet of the same size
           // as nr (which is currently 4) for the return type.
           typedef typename unpacket_traits<SResPacket>::half SResPacketHalf;
           if ((SwappedTraits::LhsProgress % 4) == 0 &&
               (SwappedTraits::LhsProgress <= 8) &&
-              unpacket_traits<SResPacketHalf>::size==4)
+              (SwappedTraits::LhsProgress!=8 || unpacket_traits<SResPacketHalf>::size==nr))
           {
             SAccPacket C0, C1, C2, C3;
             straits.initAcc(C0);
