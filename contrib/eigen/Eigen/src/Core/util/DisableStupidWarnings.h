@@ -41,6 +41,14 @@
     #pragma clang diagnostic push
   #endif
   #pragma clang diagnostic ignored "-Wconstant-logical-operand"
+
+#elif defined __GNUC__ && __GNUC__>=6
+
+  #ifndef EIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS
+    #pragma GCC diagnostic push
+  #endif
+  #pragma GCC diagnostic ignored "-Wignored-attributes"
+
 #endif
 
 #if defined __NVCC__
@@ -52,7 +60,9 @@
   #pragma diag_suppress 2651
   #pragma diag_suppress 2653
   #pragma diag_suppress 2668
+  #pragma diag_suppress 2669
   #pragma diag_suppress 2670
+  #pragma diag_suppress 2671
 #endif
 
 #endif // not EIGEN_WARNINGS_DISABLED

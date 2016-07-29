@@ -21,6 +21,7 @@ template<typename Derived, int AccessLevel = internal::accessors_level<Derived>:
 template<typename NullaryOp, typename PlainObjectType> class TensorCwiseNullaryOp;
 template<typename UnaryOp, typename XprType> class TensorCwiseUnaryOp;
 template<typename BinaryOp, typename LeftXprType, typename RightXprType> class TensorCwiseBinaryOp;
+template<typename TernaryOp, typename Arg1XprType, typename Arg2XprType, typename Arg3XprType> class TensorCwiseTernaryOp;
 template<typename IfXprType, typename ThenXprType, typename ElseXprType> class TensorSelectOp;
 template<typename Op, typename Dims, typename XprType> class TensorReductionOp;
 template<typename XprType> class TensorIndexTupleOp;
@@ -42,9 +43,11 @@ template<typename ReverseDimensions, typename XprType> class TensorReverseOp;
 template<typename PaddingDimensions, typename XprType> class TensorPaddingOp;
 template<typename Shuffle, typename XprType> class TensorShufflingOp;
 template<typename Strides, typename XprType> class TensorStridingOp;
+template<typename StartIndices, typename StopIndices, typename Strides, typename XprType> class TensorStridingSlicingOp;
 template<typename Strides, typename XprType> class TensorInflationOp;
 template<typename Generator, typename XprType> class TensorGeneratorOp;
 template<typename LeftXprType, typename RightXprType> class TensorAssignOp;
+template<typename Op, typename XprType> class TensorScanOp;
 
 template<typename CustomUnaryFunc, typename XprType> class TensorCustomUnaryOp;
 template<typename CustomBinaryFunc, typename LhsXprType, typename RhsXprType> class TensorCustomBinaryOp;

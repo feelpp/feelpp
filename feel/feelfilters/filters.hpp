@@ -24,6 +24,7 @@
 #ifndef FEELPP_FEELFILTERS_FILTERS_HPP
 #define FEELPP_FEELFILTERS_FILTERS_HPP 1
 
+#if FEELPP_HAS_GMSH
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>
@@ -33,6 +34,7 @@
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feelfilters/img2msh.hpp>
 #include <feel/feelfilters/convert2msh.hpp>
+#endif
 #include <feel/feelfilters/unitsegment.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelfilters/unitcube.hpp>

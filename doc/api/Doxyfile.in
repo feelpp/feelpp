@@ -686,6 +686,7 @@ INPUT                  = \
  "@FEELPP_HOME_DIR@/doc/api" \
  "@FEELPP_HOME_DIR@/ChangeLog.md" \
  "@FEELPP_HOME_DIR@/doc/biblio/" \
+ "@FEELPP_HOME_DIR@/applications/" \
  "@FEELPP_HOME_DIR@/feel/"
 INPUT += MainPage.md
 # This tag can be used to specify the character encoding of the source files

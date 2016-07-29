@@ -127,7 +127,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     //--------------------------------------------------------------//
     // exporters options
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
     M_isHOVisu =nOrderGeo > 1;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
         M_isHOVisu = boption(_name="hovisu",_prefix=this->prefix());
@@ -546,7 +546,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
     }
     else
     {
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
         //M_exporter_ho = export_ho_type::New( this->application()->vm(), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Export_HO"))/*.c_str()*/, M_Xh->worldComm() );
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -1314,8 +1314,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
         else
         {
-#if defined(FEELPP_HAS_VTK)
-            if ( M_exporter_ho->doExport() ) M_exporter_ho->restart(this->timeInitial());
+#if 1 // defined(FEELPP_HAS_VTK)
+            if ( M_exporter_ho && M_exporter_ho->doExport() ) M_exporter_ho->restart(this->timeInitial());
 #endif
         }
     }

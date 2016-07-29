@@ -25,6 +25,7 @@
 #include <iomanip>
 #include <map>
 #include <string>
+#include <cmath>
 
 
 bool
@@ -32,16 +33,17 @@ display_flowrates_header( std::ostream& os, std::map<std::string, double> const&
 {
     os << "| Time | ";
     for( auto & f : flowrates )
-        os << std::setw(11) << std::right << f.first  << " | " << std::setw(11) << std::right << " Error | " ;
+        os << "| Reynolds | " << std::setw(11) << std::right << f.first  << " | " << std::setw(11) << std::right << " Error | " ;
     os << "|\n";
     return true;
 }
+
 bool
 display_flowrates( std::ostream& os, double t, std::map<std::string, double> const& flowrates, double Q )
 {
-    os << "| " << t << " | "<< std::setw(11) << std::scientific << std::setprecision( 2 )<< 1056*Q*0.012/(0.0035*3.14*0.006*0.006)<< " | ";
+    os << "| " << t << " | ";
     for( auto & f : flowrates )
-        os<< std::setw(11) << std::scientific << std::setprecision( 2 ) << f.second<< " | " << std::setw(11) << std::scientific << std::setprecision( 2 )<<((f.second-Q)/Q)*100 << "  | " ;
+        os << std::setw(11) << std::scientific << std::setprecision( 4 )<<std::abs(f.second)*0.012*1056/(0.0035*3.14*0.006*0.006)<< " | " << std::setw(11) << std::scientific << std::setprecision( 4 ) << std::abs(f.second)<< " | " << std::setw(11) << std::scientific << std::setprecision( 4 )<<((std::abs(f.second)-Q)/Q)*100 << "  | " ;
     os << "|\n";
     return true;
 }
