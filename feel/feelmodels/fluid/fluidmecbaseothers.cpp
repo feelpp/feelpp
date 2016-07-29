@@ -122,7 +122,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << this->densityViscosityModel()->getInfo()->str();
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
-           << this->getInfoNeumannBC();
+           << this->getInfoNeumannBC()
+           << this->getInfoPressureBC();
     for ( std::string typeOutlet : std::vector<std::string>({"free","windkessel"}) )
     {
         if ( this->hasFluidOutlet(typeOutlet) )
@@ -1780,6 +1781,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
         ++nBlock;
     if (this->hasMarkerDirichletBClm())
         ++nBlock;
+    if ( !this->markerPressureBC().empty() )
+    {
+        ++nBlock;
+        if ( nDim == 3 )
+            ++nBlock;
+    }
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
     if ( M_useThermodynModel && M_useGravityForce )
@@ -1832,6 +1839,24 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                              _pattern_block=patCouplingLM.transpose(),
                                              _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
+    }
+    if ( !this->markerPressureBC().empty() )
+    {
+        BlocksStencilPattern patCouplingLM(1,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
+        patCouplingLM(0,0) = size_type(Pattern::COUPLED);
+        myblockGraph(indexBlock,0) = stencil(_test=M_spaceLagrangeMultiplierPressureBC,_trial=this->functionSpace(),
+                                             _pattern_block=patCouplingLM,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(0,indexBlock) = stencil(_test=this->functionSpace(),_trial=M_spaceLagrangeMultiplierPressureBC,
+                                             _pattern_block=patCouplingLM.transpose(),
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        ++indexBlock;
+        if ( nDim == 3 )
+        {
+            myblockGraph(indexBlock,0) = myblockGraph(indexBlock-1,0);
+            myblockGraph(0,indexBlock) = myblockGraph(0,indexBlock-1);
+            ++indexBlock;
+        }
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
     {

@@ -189,11 +189,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
             this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
     }
 
-    M_bcPressure = this->modelProperties().boundaryConditions().getScalarFields( "pressure", "weak" );
+    M_bcPressure = this->modelProperties().boundaryConditions().getScalarFields( "pressure", "Dirichlet" );
     for( auto const& d : M_bcPressure )
     {
         this->addMarkerPressureBC(marker(d));
-        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "pressure", "weak", marker(d), "alemesh_bc" );
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "pressure", "Dirichlet", marker(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
         this->addMarkerALEMeshBC(bcTypeMeshALE,marker(d));
     }
@@ -1045,40 +1045,34 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCPressureLinearPDE( vector_ptrtype& F ) const
 {
-#if 0 //TODO
-    auto const bcDef = FLUIDMECHANICS_BC(this->shared_from_this());
-    if ( bcDef.hasPressure() )
+    if ( M_bcPressure.empty() ) return;
+    auto myLinearForm = form1( _test=this->functionSpace(), _vector=F,
+                               _rowstart=this->rowStartInVector() );
+    auto const& v = this->fieldVelocity();
+    for( auto const& d : M_bcPressure )
     {
-        auto myLinearForm = form1( _test=this->functionSpace(), _vector=F,
-                                   _rowstart=this->rowStartInVector() );
-        auto const& v = this->fieldVelocity();
-        ForEachBC( bcDef,cl::pressure,
-                   myLinearForm +=
-                   /**/ integrate( _range=markedfaces(this->mesh(),PhysicalName),
-                                   _expr= trans(-Expression*N())*id(v),
-                                   _geomap=this->geomap() ) );
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)),
+                       _expr= -expression(d)*trans(N())*id(v),
+                       _geomap=this->geomap() );
     }
-#endif // TODO
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCPressureResidual( vector_ptrtype& R ) const
 {
-#if 0 //TODO
-    auto const bcDef = FLUIDMECHANICS_BC(this->shared_from_this());
-    if ( bcDef.hasPressure() )
+    if ( M_bcPressure.empty() ) return;
+    auto myLinearForm = form1( _test=this->functionSpace(), _vector=R,
+                               _rowstart=this->rowStartInVector() );
+    auto const& v = this->fieldVelocity();
+    for( auto const& d : M_bcPressure )
     {
-        auto myLinearForm = form1( _test=this->functionSpace(), _vector=R,
-                                   _rowstart=this->rowStartInVector() );
-        auto const& v = this->fieldVelocity();
-        ForEachBC( bcDef,cl::pressure,
-                   myLinearForm +=
-                   /**/ integrate( _range=markedfaces(this->mesh(),PhysicalName),
-                                   _expr= -trans(-Expression*N())*id(v),
-                                   _geomap=this->geomap() ) );
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)),
+                       _expr= expression(d)*trans(N())*id(v),
+                       _geomap=this->geomap() );
     }
-#endif // TODO
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
