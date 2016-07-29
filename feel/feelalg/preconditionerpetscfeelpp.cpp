@@ -139,7 +139,10 @@ PETSC_EXTERN PetscErrorCode PCCreate_FEELPP(PC pc)
   pc->ops->setup           = PCSetUp_FEELPP;
   pc->ops->reset           = PCReset_FEELPP;
   pc->ops->destroy         = PCDestroy_FEELPP;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
+#else
   pc->ops->setfromoptions  = PCSetFromOptions_FEELPP;
+#endif
   pc->ops->view            = PCView_FEELPP;
   pc->ops->applyrichardson = 0;
   PetscFunctionReturn(0);
