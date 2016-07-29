@@ -529,6 +529,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     M_bcNeumannScalar.setParameterValues( paramValues );
     M_bcNeumannVectorial.setParameterValues( paramValues );
     M_bcNeumannTensor2.setParameterValues( paramValues );
+    M_bcPressure.setParameterValues( paramValues );
     M_volumicForcesProperties.setParameterValues( paramValues );
     this->updateFluidInletVelocity();
 
