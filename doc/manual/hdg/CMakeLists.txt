@@ -46,6 +46,7 @@ foreach(D 3)
     feelpp_add_application( mixed-poisson-model_${D}DP${P} SRCS mixedpoisson_main.cpp mixedpoisson.hpp LINK_LIBRARIES feelpp_modelcore DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P})
   endforeach()
 endforeach()
+
 foreach(D 3)
   foreach(P  RANGE 1 1 1) #3 
     #configure_file(mixedpoisson_main.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/mp${D}DP${P}_main.cpp )
@@ -61,8 +62,11 @@ endforeach()
 #endforeach()
 
 
-feelpp_add_application( mixed-elasticity-model_2DP1 SRCS mixedelasticity_main.cpp mixedelasticity.hpp LINK_LIBRARIES feelpp_modelcore )
-#feelpp_add_application( hdg-linear-elasticity_3DP1 SRCS hdg_linear_elasticity_main.cpp hdg_linear_elasticity.hpp LINK_LIBRARIES feelpp_modelcore )
+foreach(D 3)
+  foreach(P  RANGE 1 1 1) #3 
+	feelpp_add_application( mixed-elasticity-model_${D}DP${P} SRCS mixedelasticity_main.cpp mixedelasticity.hpp LINK_LIBRARIES feelpp_modelcore DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P})
+  endforeach()
+endforeach()
 
 
 feelpp_add_testcase(quarter-turn)
