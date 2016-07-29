@@ -446,6 +446,14 @@ std::string
 MarkerManagementPressureBC::getInfoPressureBC() const
 {
     std::ostringstream _ostr;
+    _ostr << "\n       -- Pressure Dirichlet : ";
+    int cptMark = 0;
+    for ( auto const& markNeuman : M_containerMarkers )
+    {
+        if ( cptMark > 0) _ostr << " , ";
+        _ostr << markNeuman;
+        ++cptMark;
+    }
     return _ostr.str();
 }
 
