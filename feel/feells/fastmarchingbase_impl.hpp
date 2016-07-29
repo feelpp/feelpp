@@ -99,7 +99,8 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::run(
     };
 
     const int nbTotalIterFM = M_functionspace->dof()->nDof() - M_nbTotalDone - M_nbDofTag1;
-    for (int i=0; i<nbTotalIterFM; ++i)
+    //for (int i=0; i<nbTotalIterFM; ++i)
+    while( M_heap.size() != 0 )
     {
         /* The heap is sorted with the smallest phi value at the top.
          * Thus, the new accepted element is always the top of the heap 
@@ -372,7 +373,7 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::reduceClosePoints()
 }
 
 FASTMARCHINGBASE_CLASS_TEMPLATE_DECLARATIONS
-void 
+void
 FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::initMarch( 
         element_type const& phi, 
         bool useMarker2AsMarkerDone )
@@ -441,6 +442,7 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::initMarch(
         this->updateHeap( *dit );
 
     //doneIds.clear(); // not needed any more, save memory...
+    //return doneIds;
 }
 
 FASTMARCHINGBASE_CLASS_TEMPLATE_DECLARATIONS

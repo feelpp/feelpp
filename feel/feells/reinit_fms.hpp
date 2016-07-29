@@ -84,7 +84,7 @@ public:
     element_type operator() ( element_type const& phi, bool useMarker2AsDoneMarker=false )
     {
         this->run( phi, useMarker2AsDoneMarker );
-        return *(this->getDistanceField());
+        return *(this->getDistance());
     }
 
     // same as operator()

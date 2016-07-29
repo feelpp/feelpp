@@ -53,26 +53,31 @@ public:
     void run( element_type const& phi, bool useMarker2AsMarkerDone =false );
 
     //--------------------------------------------------------------------//
-    element_ptrtype getDistanceField() const { return M_distance; }
+    element_ptrtype getDistance() const { return M_distance; }
 
 protected:
+    /* The map indexes are the global indexes on the PROC and the set contains 
+     * the global indexes on the CLUSTER of its neigbors */
+    typedef std::map<size_type, std::set<size_type> > neighbors_type;
+    typedef Feel::details::FmsHeap<value_type> heap_type;
+    typedef typename heap_type::heap_entry_type heap_entry_type;
+    typedef Feel::details::FmsPoint<value_type, Dim> point_type;
+    //--------------------------------------------------------------------//
+
     static value_type closerOne( value_type a, value_type b ) { return (a*a < b*b)? a: b; }
 
+    functionspace_ptrtype const& functionSpace() const { return M_functionspace; }
+
     void setDofStatus( size_type idOnProc, status_type s ) { (*M_status)[idOnProc] = s; }
-    status_type getDofStatus( size_type idOnProc ) const { return (*M_status)[idOnProc]; }
+    status_type getDofStatus( size_type idOnProc ) const { return static_cast<status_type>( (*M_status)[idOnProc] ); }
 
     void setDofDistance( size_type idOnProc, value_type v ) { (*M_distance)[idOnProc] = v; }
     value_type getDofDistance( size_type idOnProc ) { return (*M_distance)[idOnProc]; } 
 
-private:
-    //--------------------------------------------------------------------//
-    typedef Feel::details::FmsHeap<value_type> heap_type;
-    typedef typename heap_type::heap_entry_type heap_entry_type;
-    typedef Feel::details::FmsPoint<value_type, Dim> point_type;
+    neighbors_type const& neighbors() const { return M_neighbors; }
 
-    /* The map indexes are the global indexes on the PROC and the set contains 
-     * the global indexes on the CLUSTER of its neigbors */
-    typedef std::map<size_type, std::set<size_type> > neighbors_type;
+    heap_type & heap() { return M_heap; }
+
     //--------------------------------------------------------------------//
     size_type clusterToProcessor( size_type dof ) const;
     size_type processorToCluster( size_type dof ) const;
@@ -82,12 +87,6 @@ private:
     void reduceDonePoints( std::set<size_type>& doneIds );
     void reduceClosePoints();
 
-    //--------------------------------------------------------------------//
-    virtual void initMarch( element_type const& phi, bool useMarker2AsMarkerDone );
-
-    virtual void processDof( size_type idOnProc, value_type val ) =0;
-
-    void updateHeap( size_type idDone );
     //--------------------------------------------------------------------//
 
     value_type fmsDistN( std::vector<size_type> const& ids ) const;
@@ -99,13 +98,20 @@ private:
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
+    virtual void initMarch( element_type const& phi, bool useMarker2AsMarkerDone );
+
+    virtual void processDof( size_type idOnProc, value_type val ) =0;
+
+    virtual void updateHeap( size_type idDone );
+
+protected:
+    //--------------------------------------------------------------------//
     functionspace_ptrtype const& M_functionspace;
     element_ptrtype M_status;
     heap_type M_heap;
     vector_ptrtype M_checkStatus;
     vector_ptrtype M_valueAtClose;
     neighbors_type M_neighbors;
-
     element_ptrtype M_distance;
 
     std::map< size_type, size_type> M_ghostClusterToProc;

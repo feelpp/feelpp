@@ -46,7 +46,6 @@ feelpp_add_application(dist2curvehoperiodic SRCS dist2curvehoperiodic.cpp )
 feelpp_add_application(dist2paramcurve SRCS dist2paramcurve.cpp )
 feelpp_add_application(dist2paramsurface SRCS dist2paramsurface.cpp )
 feelpp_add_application(selflabelsimpleshape SRCS selflabelsimpleshape.cpp)
-feelpp_add_application(distlabelsimpleshape SRCS distlabelsimpleshape.cpp)
 
 feelpp_add_application(selflabelsimpleshape_d2_o1 SRCS selflabelsimpleshape.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=1)
 feelpp_add_application(selflabelsimpleshape_d2_o2 SRCS selflabelsimpleshape.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=2)
@@ -55,3 +54,5 @@ feelpp_add_application(distlabelsimpleshape_d2_o1 SRCS distlabelsimpleshape.cpp 
 
 feelpp_add_application(selflabelmultiellipse_d2_o1 SRCS selflabelmultiellipse.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=1)
 feelpp_add_application(selflabelmultiellipse_d3_o1 SRCS selflabelmultiellipse.cpp DEFS FEELPP_DIM=3 FEELPP_ORDER=1)
+feelpp_add_application(distlabelmultiellipse_d2_o1 SRCS distlabelmultiellipse.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=1)
+feelpp_add_application(distlabelmultiellipse_d3_o1 SRCS distlabelmultiellipse.cpp DEFS FEELPP_DIM=3 FEELPP_ORDER=1)
