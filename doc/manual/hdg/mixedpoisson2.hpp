@@ -422,13 +422,19 @@ MixedPoisson<Dim, Order, G_Order>::initSpaces()
             return false; });
     auto face_mesh = createSubmesh( M_mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
 
-    M_Vh = Pdhv<Order>( M_mesh, true );
+    M_Vh = Pdhv<Order>( M_mesh, true);
     M_Wh = Pdh<Order>( M_mesh, true );
     M_Mh = Pdh<Order>( face_mesh, true );
-    M_Ch = Pch<0>( M_mesh );
-    M_M0h = Pdh<0>( face_mesh, true );
+    M_Ch = Pch<0>( M_mesh, true );
+    M_M0h = Pdh<0>( face_mesh );
 
-    auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( M_integralCondition, M_mesh);
+    Feel::cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
+         << "Wh<" << Order << "> : " << M_Wh->nDof() << std::endl
+         << "Mh<" << Order << "> : " << M_Mh->nDof() << std::endl;
+    if ( M_integralCondition )
+        Feel::cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
+
+    auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( M_integralCondition, M_Ch);
     M_ps = boost::make_shared<product2_space_type>(product2(ibcSpaces,M_Vh,M_Wh,M_Mh));
 
     M_up = M_Vh->element( "u" );
@@ -438,11 +444,6 @@ MixedPoisson<Dim, Order, G_Order>::initSpaces()
     M_A = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
 
-    Feel::cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
-         << "Wh<" << Order << "> : " << M_Wh->nDof() << std::endl
-         << "Mh<" << Order << "> : " << M_Mh->nDof() << std::endl;
-    if ( M_integralCondition )
-        Feel::cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
 }
 
 template<int Dim, int Order, int G_Order>

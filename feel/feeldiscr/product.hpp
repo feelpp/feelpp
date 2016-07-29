@@ -58,6 +58,13 @@ public:
         {
 
         }
+    ProductSpace( int n, underlying_functionspace_ptrtype X )
+        :
+        super( 1, X ),
+        M_nspaces(n)
+        {
+
+        }
 
     int numberOfSpaces() const { return M_nspaces; }
 
