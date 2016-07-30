@@ -29,57 +29,29 @@
 
 namespace Feel {
 
-namespace detail {
-
-template<typename C>
-auto rank ( C const& c, mpl::bool_<true> ) -> decltype( c->worldComm().localRank() )
-{
-    return c->worldComm().localRank();
-}
-
-template<typename C>
-auto rank ( C const& c, mpl::bool_<false> ) -> decltype( c.worldComm().localRank() )
-{
-    return c.worldComm().localRank();
-}
-
-template<typename C>
-auto globalRank ( C const& c, mpl::bool_<true> ) -> decltype( c->worldComm().globalRank() )
-{
-    return c->worldComm().globalRank();
-}
-
-template<typename C>
-auto globalRank ( C const& c, mpl::bool_<false> ) -> decltype( c.worldComm().globalRank() )
-{
-    return c.worldComm().globalRank();
-}
-
-} // detail
-
 /**
  * @return the local MPI rank of the data structure @p c 
  */
 template<typename C>
-auto rank ( C const& c ) -> decltype( detail::rank( c, is_ptr_or_shared_ptr<C>() ) )
+decltype(auto) rank ( C&& c )
 {
-    return detail::rank( c, is_ptr_or_shared_ptr<C>() );
+    return remove_ptr(c).worldComm().localRank();
 }
 
 template<typename C>
 FEELPP_DEPRECATED 
-auto meshrank ( C const& c ) -> decltype( detail::rank( c, is_ptr_or_shared_ptr<C>() ) ) 
+decltype(auto) meshrank ( C && c ) 
 {
-    return detail::rank( c, is_ptr_or_shared_ptr<C>() );
+    return remove_ptr(std::forward<C>(c)).worldComm().localRank();
 }
 
 /**
  * @return the global MPI rank of the data structure @p c 
  */
 template<typename C>
-auto globalRank ( C const& c ) -> decltype( detail::globalRank( c, is_ptr_or_shared_ptr<C>() ) )
+decltype(auto) globalRank ( C && c ) 
 {
-    return detail::globalRank( c, is_ptr_or_shared_ptr<C>() );
+    return remove_ptr(std::forward<C>(c)).worldComm().globalRank();
 }
 
 } // Feel

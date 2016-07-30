@@ -1373,7 +1373,7 @@ public:
     struct GetMesh
     {
         typedef typename mpl::if_<mpl::or_<boost::is_base_of<MeshBase, MeshListType >,
-                                           is_shared_ptr<MeshListType> >,
+                                           is_shared_ptr_t<MeshListType> >,
                                   mpl::identity<mpl::identity<MeshListType> >,
                                   mpl::identity<mpl::at_c<MeshListType,N> > >::type::type::type type;
     };
@@ -4251,7 +4251,7 @@ public:
     typename GetMesh<mesh_ptrtype,i>::type
     mesh() const
     {
-        return mesh<i>( is_shared_ptr<mesh_ptrtype>() );
+        return mesh<i>( is_shared_ptr_t<mesh_ptrtype>() );
     }
     template<int i>
     typename GetMesh<mesh_ptrtype,i>::type

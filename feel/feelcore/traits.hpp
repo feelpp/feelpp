@@ -40,6 +40,7 @@
 #include <boost/mpl/sizeof.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <boost/hana/traits.hpp>
 
 #include <feel/feelcore/typetraits.hpp>
 #include <feel/feelcore/ublastraits.hpp>
@@ -74,17 +75,26 @@ struct strongest_numeric_type<std::complex<T1>,std::complex<T2> >
 
 
 template <class T>
-struct is_shared_ptr
+struct is_shared_ptr_t
         : mpl::false_
 {
 };
 
 template <class T>
-struct is_shared_ptr<boost::shared_ptr<T> >
+struct is_shared_ptr_t<boost::shared_ptr<T> >
         : mpl::true_
 {
 };
+template <class T>
+struct is_shared_ptr_t<std::shared_ptr<T> >
+    : mpl::true_
+{
+};
 
+template <class T>
+using is_shared_ptr_type = is_shared_ptr_t<T>;
+
+#if 0
 template <class T>
 struct remove_shared_ptr
 {
@@ -96,26 +106,80 @@ struct remove_shared_ptr<boost::shared_ptr<T> >
 {
     typedef T type;
 };
+#endif
 
 template<class T>
-constexpr bool is_shared_ptr_v = is_shared_ptr<T>::value;
+constexpr bool is_shared_ptr_v = is_shared_ptr_t<T>::value;
 
 template<typename T>
-struct is_ptr_or_shared_ptr : mpl::or_<is_shared_ptr<T>, boost::is_pointer<T> >::type {};
+struct is_ptr_or_shared_ptr_t : mpl::or_<is_shared_ptr_t<T>, boost::is_pointer<T> >::type {};
+
+template<class T>
+constexpr bool is_ptr_or_shared_ptr_v = is_ptr_or_shared_ptr_t<T>::value;
 
 template<typename T>
-using remove_shared_ptr_type = typename mpl::if_<is_shared_ptr<T>, mpl::identity<typename T::element_type>, mpl::identity<T>>::type::type;
+using remove_shared_ptr_type = typename mpl::if_<is_shared_ptr_t<std::remove_pointer_t<T>>, mpl::identity<typename std::remove_pointer_t<T>::element_type>, mpl::identity<T>>::type::type;
 
 template<typename T>
 using decay_type = typename std::decay<remove_shared_ptr_type<typename std::decay<T>::type>>::type;
 
+/**
+ * @return true if \p e is a shared ptr, false otherwise
+ */
 template<typename T>
-decltype(auto) remove_shared_ptr_f( T&& e )
+inline constexpr bool 
+is_shared_ptr( T&& e )
+{
+    return is_shared_ptr_v<T>;
+}
+
+template<typename T>
+inline constexpr bool 
+is_ptr( T&& e )
+{
+    return is_ptr_or_shared_ptr_v<T>;
+}
+
+/**
+ * @return the pointee object is e is a shared pointer, e otherwise
+ */
+template<typename T>
+inline constexpr decltype(auto) 
+remove_shared_ptr( T&& e )
 {
     return hana::if_( hana::bool_<is_shared_ptr_v<T>>{},
                      []( auto&& x ) { return *x; },
                      []( auto&& x ) { return x; } )( std::forward<T>(e) );
 
 }
+
+template<typename T>
+inline constexpr decltype(auto) 
+remove_ptr( T&& e )
+{
+    return hana::if_( hana::bool_<is_ptr_or_shared_ptr_v<std::remove_reference_t<T>>>{},
+                      []( auto&& x ) { return *std::forward<decltype(x)>(x); },
+                      []( auto&& x ) { return std::forward<decltype(x)>(x); } )( std::forward<T>(e) );
+
+}
+
+template<typename T>
+inline constexpr T const& //decltype(auto) 
+remove_ptr( T const& e )
+{
+    return hana::if_( hana::bool_<is_ptr_or_shared_ptr_v<T>>{},
+                      []( decay_type<T> const& x ) { return *x; },
+                      []( decay_type<T> const& x ) { return x; } )( e );
+
+}
+
+template<typename T>
+inline constexpr T const& //decltype(auto) 
+remove_ptr( T const* e )
+{
+    return *e;
+
+}
+
 } // namespace Feel
 #endif

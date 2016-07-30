@@ -369,7 +369,7 @@ template<typename Args>
 struct project
 {
     typedef typename clean_type<Args,tag::space>::type the_space_type;
-    typedef typename mpl::if_<is_shared_ptr<the_space_type>,
+    typedef typename mpl::if_<is_shared_ptr_type<the_space_type>,
                               mpl::identity<space_ptr<the_space_type> >,
                               mpl::identity<space_value<the_space_type> > >::type::type space_type;
     typedef typename space_type::type _space_type;

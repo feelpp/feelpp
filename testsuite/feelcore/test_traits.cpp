@@ -129,3 +129,12 @@ BOOST_AUTO_TEST_CASE( test_constants )
 #endif
 
 }
+
+struct A { A():i(0){} int i; };
+BOOST_AUTO_TEST_CASE( test_remove_ptr )
+{
+    using namespace Feel;
+    auto a = boost::make_shared<A>();
+    remove_ptr( a ).i = 10;
+    
+}
