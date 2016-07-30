@@ -365,7 +365,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
                     _expr=-idv(inletVel)*N() );
         }
 
-        if ( !this->markerPressureBC().empty() )
+        if ( this->hasMarkerPressureBC() )
         {
             size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
             form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,

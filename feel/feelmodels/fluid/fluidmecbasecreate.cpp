@@ -905,7 +905,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
         this->updateDefinePressureCst();
 
     // lagrange multiplier for pressure bc
-    if ( !this->markerPressureBC().empty() )
+    if ( this->hasMarkerPressureBC() )
     {
         M_meshLagrangeMultiplierPressureBC = createSubmesh(this->mesh(),markedfaces(this->mesh(),this->markerPressureBC()) );
         M_spaceLagrangeMultiplierPressureBC = space_trace_velocity_component_type::New( _mesh=M_meshLagrangeMultiplierPressureBC, _worldscomm=this->localNonCompositeWorldsComm() );
@@ -981,7 +981,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     {
         M_startBlockIndexFieldsInMatrix["dirichletlm"] = currentStartIndex++;
     }
-    if ( !this->markerPressureBC().empty() )
+    if ( this->hasMarkerPressureBC() )
     {
         M_startBlockIndexFieldsInMatrix["pressurelm1"] = currentStartIndex++;
         if ( nDim == 3 )
@@ -1016,7 +1016,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
         M_blockVectorSolution(cptBlock) = this->backend()->newVector( this->XhDirichletLM() );
         ++cptBlock;
     }
-    if ( !this->markerPressureBC().empty() )
+    if ( this->hasMarkerPressureBC() )
     {
         M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC1;
         if ( nDim == 3 )
