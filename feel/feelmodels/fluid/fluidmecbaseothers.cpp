@@ -833,7 +833,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
         ++cptBlock;
     if (this->hasMarkerDirichletBClm())
         ++cptBlock;
-    if ( !this->markerPressureBC().empty() )
+    if ( this->hasMarkerPressureBC() )
     {
         ++cptBlock;
         if ( nDim == 3 )
@@ -1787,7 +1787,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
         ++nBlock;
     if (this->hasMarkerDirichletBClm())
         ++nBlock;
-    if ( !this->markerPressureBC().empty() )
+    if ( this->hasMarkerPressureBC() )
     {
         ++nBlock;
         if ( nDim == 3 )
@@ -1846,7 +1846,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                              _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
     }
-    if ( !this->markerPressureBC().empty() )
+    if ( this->hasMarkerPressureBC() )
     {
         BlocksStencilPattern patCouplingLM(1,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
         patCouplingLM(0,0) = size_type(Pattern::COUPLED);

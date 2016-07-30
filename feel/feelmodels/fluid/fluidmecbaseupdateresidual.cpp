@@ -511,7 +511,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
     }
     //------------------------------------------------------------------------------------//
 
-    if ( !this->markerPressureBC().empty() )
+    if ( this->hasMarkerPressureBC() )
     {
 
         if ( !BuildCstPart && !UseJacobianLinearTerms )
@@ -781,7 +781,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             markerDirichletEliminationOthers.push_back( marker );
         }
 
-        if ( !this->markerPressureBC().empty() )
+        if ( this->hasMarkerPressureBC() )
         {
             size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
             auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( XVec, rowStartInVector+startBlockIndexPressureLM1 );
