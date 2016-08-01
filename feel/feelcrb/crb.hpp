@@ -10731,7 +10731,7 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     }
 
 
-#if 0
+#if !defined(FEELPP_DISABLE_EIM_COMPOSITE)
     ar & BOOST_SERIALIZATION_NVP( M_hasRbSpaceContextEim );
     if ( M_hasRbSpaceContextEim )
     {
@@ -10910,7 +10910,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 
     }// version > 0 => EIM error estimation
 
-#if 0
+#if !defined(FEELPP_DISABLE_EIM_COMPOSITE)
     ar & BOOST_SERIALIZATION_NVP( M_hasRbSpaceContextEim );
     if ( M_hasRbSpaceContextEim )
     {
