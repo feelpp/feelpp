@@ -192,10 +192,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     M_bcPressure = this->modelProperties().boundaryConditions().getScalarFields( "pressure", "Dirichlet" );
     for( auto const& d : M_bcPressure )
     {
-        this->addMarkerPressureBC(marker(d));
+        std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "pressure", "Dirichlet", marker(d) );
+        this->setMarkerPressureBC(marker(d),markerList);
+
         std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "pressure", "Dirichlet", marker(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
-        this->addMarkerALEMeshBC(bcTypeMeshALE,marker(d));
+        for (std::string const& currentMarker : markerList )
+            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
     }
     for( std::string const& bcMarker : this->modelProperties().boundaryConditions().markers("fluid", "slip") )
     {
@@ -529,6 +532,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     M_bcNeumannScalar.setParameterValues( paramValues );
     M_bcNeumannVectorial.setParameterValues( paramValues );
     M_bcNeumannTensor2.setParameterValues( paramValues );
+    M_bcPressure.setParameterValues( paramValues );
     M_volumicForcesProperties.setParameterValues( paramValues );
     this->updateFluidInletVelocity();
 
@@ -1052,7 +1056,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCPressureLinearPDE( vector_ptrtype& F
     for( auto const& d : M_bcPressure )
     {
         myLinearForm +=
-            integrate( _range=markedfaces(this->mesh(),marker(d)),
+            integrate( _range=markedfaces(this->mesh(),this->markerPressureBC(marker(d)) ),
                        _expr= -expression(d)*trans(N())*id(v),
                        _geomap=this->geomap() );
     }
@@ -1069,7 +1073,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCPressureResidual( vector_ptrtype& R 
     for( auto const& d : M_bcPressure )
     {
         myLinearForm +=
-            integrate( _range=markedfaces(this->mesh(),marker(d)),
+            integrate( _range=markedfaces(this->mesh(),this->markerPressureBC(marker(d)) ),
                        _expr= expression(d)*trans(N())*id(v),
                        _geomap=this->geomap() );
     }
