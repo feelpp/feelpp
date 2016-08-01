@@ -1701,7 +1701,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
             iteration++;
 
         }while( increment_norm > increment_fixedpoint_tol && iteration < max_fixedpoint_iterations );
-        
+
 
         M_bdf_primal->shiftRight( u );
         if ( ! M_model->isSteady() )
@@ -6618,7 +6618,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
     }
 
     if( this->worldComm().isMasterRank() )
-        std::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc 
+        std::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc
                  <<" delta_pr : "<<delta_pr<<" -- delta_du : "<<delta_du
                  <<" -- output error : "<<maxerr<<std::endl;
     //lb( N, mu, uN, uNdu , uNold ,uNduold );
@@ -10731,13 +10731,14 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     }
 
 
-
+#if 0
     ar & BOOST_SERIALIZATION_NVP( M_hasRbSpaceContextEim );
     if ( M_hasRbSpaceContextEim )
     {
         auto rbSpaceContextEim = M_model->model()->rbSpaceContextEim();
         ar & BOOST_SERIALIZATION_NVP( rbSpaceContextEim );
     }
+#endif
 
 #if 0
         for(int i=0; i<M_N; i++)
@@ -10909,7 +10910,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 
     }// version > 0 => EIM error estimation
 
-
+#if 0
     ar & BOOST_SERIALIZATION_NVP( M_hasRbSpaceContextEim );
     if ( M_hasRbSpaceContextEim )
     {
@@ -10917,6 +10918,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
         ar & BOOST_SERIALIZATION_NVP( rbSpaceContextEim );
         M_model->model()->setRbSpaceContextEim( rbSpaceContextEim );
     }
+#endif
 
 
 #if 0
