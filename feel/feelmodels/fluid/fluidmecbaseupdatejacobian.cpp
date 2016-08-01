@@ -380,7 +380,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 
     //--------------------------------------------------------------------------------------------------//
 
-    if ( !this->markerPressureBC().empty() )
+    if ( this->hasMarkerPressureBC() )
     {
         CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm1") != this->startBlockIndexFieldsInMatrix().end() )
             << " start dof index for pressurelm1 is not present\n";
@@ -587,7 +587,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
                     _expr= vf::zero<nDim,1>() );
 
 
-        if ( !this->markerPressureBC().empty() )
+        if ( this->hasMarkerPressureBC() )
         {
             size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
             form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,

@@ -150,7 +150,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
 
     //--------------------------------------------------------------------------------------------------//
 
-    if ( !this->markerPressureBC().empty() )
+    if ( this->hasMarkerPressureBC() )
     {
         CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm1") != this->startBlockIndexFieldsInMatrix().end() )
             << " start dof index for pressurelm1 is not present\n";
