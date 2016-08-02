@@ -233,8 +233,11 @@ public:
     virtual void initModel();
     virtual void initSpaces();
     virtual void initExporter( mesh_ptrtype meshVisu = nullptr );
-    void assembleSTD();
-    void assembleF();
+    virtual void assemble();
+	void assembleSTD();
+    void assembleFstd();
+	virtual void assembleF();
+
     void solve();
 
     template<typename ExprT>
@@ -323,11 +326,9 @@ MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh, int extraRow, int ex
     toc("exporter");
 
     tic();
-    this->assembleSTD();
-    for( int i = 0; i < M_integralCondition; i++ )
-        this->assembleIBC(i);
+    this->assemble();
     M_A_cst->close();
-    toc("assembleCST");
+    toc("assemble");
 }
 
 template<int Dim, int Order, int G_Order>
@@ -472,28 +473,50 @@ void
 MixedPoisson<Dim, Order, G_Order>::solve()
 {
     tic();
-    // copy constant parts of the matrix
+    
+	// copy constant parts of the matrix
     MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
     M_modelProperties->parameters().updateParameterValues();
 
     this->updateConductivityTerm();
     this->assembleF();
-    for( int i = 0; i < M_integralCondition; i++ )
-        this->assembleIBCRHS(i);
-
 
     auto U = M_ps->element();
     M_U = M_backend->newBlockVector(_block=U, _copy_values=false);
     M_A->close();
     M_F->close();
     M_backend->solve(_matrix=M_A, _rhs=M_F, _solution=M_U);
-    U.localize(M_U);
+	toc("solve");
+    
+	// Extract information from the solution
+	U.localize(M_U);
     M_up = U(0_c);
     M_pp = U(1_c);
     for( int i = 0; i < M_integralCondition; i++ )
         M_mup.push_back(U(3_c,i));
-    toc("solve");
+
 }
+
+template<int Dim, int Order, int G_Order>
+void
+MixedPoisson<Dim, Order, G_Order>::assemble()
+{
+	this->assembleSTD();
+    for( int i = 0; i < M_integralCondition; i++ )
+        this->assembleIBC(i);
+}
+
+
+template<int Dim, int Order, int G_Order>
+void
+MixedPoisson<Dim, Order, G_Order>::assembleF()
+{
+	
+    this->assembleFstd();
+    for( int i = 0; i < M_integralCondition; i++ )
+        this->assembleIBCRHS(i);
+}
+
 
 template<int Dim, int Order, int G_Order>
 void
@@ -758,7 +781,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleIBCRHS( int i )
 
 template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order, G_Order>::assembleF()
+MixedPoisson<Dim, Order, G_Order>::assembleFstd()
 {
     M_F->zero();
     auto blf = blockform1( *M_ps, M_F );
