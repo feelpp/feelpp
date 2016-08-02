@@ -2963,6 +2963,8 @@ public:
 
         // save B
         __ar & BOOST_SERIALIZATION_NVP( M_B );
+        if ( Archive::is_loading::value )
+            std::cout << "load EIM db done with name " << this->name() << " and M_B " << M_B.rows() << "," << M_B.cols() << " : " << M_B << "\n";
         DVLOG(2) << "B saved/loaded\n";
     }
 
