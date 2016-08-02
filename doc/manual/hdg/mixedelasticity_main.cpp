@@ -36,10 +36,40 @@ int main(int argc, char *argv[])
     auto ME = me_type::New("mixedelasticity");
     auto mesh = loadMesh( _mesh=new me_type::mesh_type );
     
-    ME -> init(mesh);
-    ME -> solve();
-	ME -> exportResults(mesh);
+    decltype( IPtr( _domainSpace=Pdh<FEELPP_ORDER>(mesh), _imageSpace=Pdh<1>(mesh) ) ) Idh ;
+    decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<1>(mesh) ) ) Idhv;
+    
+	ME -> init(mesh);
  
+
+    if ( ME -> isStationary() )
+    {
+        ME->solve();
+        ME->exportResults( mesh );
+    }
+    else
+    {
+    	for ( ; !ME->timeStepBase()->isFinished() ; ME->updateTimeStep() )
+        {
+        	Feel::cout << "============================================================\n";
+        	Feel::cout << "time simulation: " << ME->time() << "s \n";
+        	Feel::cout << "============================================================\n";
+        	ME->solve();
+        	ME->exportResults( mesh ); //, Idh, Idhv );
+        }
+     }
+    
+	// if ( soption( "mixedpoisson.gmsh.submesh" ).empty() )
+    //    MP -> init(mesh);
+    // else
+    // {
+    //     auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("mixedpoisson.gmsh.submesh")), Environment::worldComm() );
+    //     Idh = IPtr( _domainSpace=Pdh<FEELPP_ORDER>(cmesh), _imageSpace=Pdh<1>(mesh) );
+    //     Idhv = IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(cmesh), _imageSpace=Pdhv<1>(mesh) );
+    //     MP -> init( cmesh, 0, 0, mesh );
+    // }
+    
+
     return 0;
 }
 

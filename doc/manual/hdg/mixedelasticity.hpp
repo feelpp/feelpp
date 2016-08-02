@@ -15,7 +15,7 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmesh/complement.hpp>
 #include <feel/feelalg/topetsc.hpp>
-// #include <feel/feelts/bdf.hpp>
+#include <feel/feelts/newmark.hpp>
 #include <boost/algorithm/string.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
@@ -122,6 +122,9 @@ public:
     typedef Exporter<mesh_type,G_Order> exporter_type;
     typedef boost::shared_ptr <exporter_type> exporter_ptrtype;
     
+    // typedef Newmark<space_mixedelasticity_type>  newmark_type;
+    typedef Newmark <Wh_t> newmark_type;
+    typedef boost::shared_ptr<newmark_type> newmark_ptrtype;
     
 //private:
 protected:
@@ -144,6 +147,8 @@ protected:
     double M_tau_constant;
     int M_tau_order;
     
+    // time discretization
+    newmark_ptrtype M_nm_mixedelasticity;
 
 public:
     
@@ -196,16 +201,16 @@ public:
     void assembleF(PS&& ps);
     void solve();
 
-    /* 
-    template<typename PS, typename ExprT>
-    void updateConductivityTerm( PS&& ps, Expr<ExprT> expr, std::string marker = "");
-    template<typename PS>
-    void updateConductivityTerm( PS&& ps, bool isNL = false);
-    template<typename PS, typename ExprT>
-    void updatePotentialRHS( PS&& ps, Expr<ExprT> expr, std::string marker = "");
-    template<typename PS, typename ExprT>
-    void updateFluxRHS( PS&& ps, Expr<ExprT> expr, std::string marker = "");
-    */
+    // time step scheme
+    virtual void createTimeDiscretization() ;
+    newmark_ptrtype timeStepNM() { return M_nm_mixedelasticity; }
+    newmark_ptrtype const& timeStepNM() const { return M_nm_mixedelasticity; }
+    boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepNM(); }
+    boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepNM(); }
+    virtual void updateTimeStepNM();
+    virtual void initTimeStep();
+    void updateTimeStep() { this->updateTimeStepNM(); }
+
 };
 
 template<int Dim, int Order, int G_Order>
@@ -245,6 +250,90 @@ MixedElasticity<Dim, Order, G_Order>::MixedElasticity( std::string const& prefix
 
 
 template<int Dim, int Order, int G_Order>
+void MixedElasticity<Dim, Order, G_Order>::initTimeStep()
+{
+        // start or restart time step scheme
+    if (!this->doRestart())
+    {
+        // start time step
+        M_nm_mixedelasticity -> start( M_pp );
+        // up current time
+        this->updateTime( M_nm_mixedelasticity -> time() );
+    }
+    else
+    {
+        // start time step
+        M_nm_mixedelasticity->restart();
+        // load a previous solution as current solution
+        M_pp = M_nm_mixedelasticity->previousUnknown();
+        // up initial time
+        this->setTimeInitial( M_nm_mixedelasticity->timeInitial() );
+        // restart exporter
+        //this->restartPostProcess();
+        // up current time
+        this->updateTime( M_nm_mixedelasticity->time() );
+
+        this->log("MixedElasticity","initTimeStep", "restart nm/exporter done" );
+    }
+
+}
+template<int Dim, int Order, int G_Order>
+void MixedElasticity<Dim, Order, G_Order>::updateTimeStepNM()
+{
+    this->log("MixedElasticity","updateTimeStepNM", "start" );
+    this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
+    this->timerTool("TimeStepping").start();
+
+    // int previousTimeOrder = this->timeStepNM()->timeOrder();
+
+    M_nm_mixedelasticity->next( M_pp );
+	this->timeStepNM()->updateFromDisp( M_pp );
+
+    // int currentTimeOrder = this->timeStepNM()->timeOrder();
+
+    this->updateTime( M_nm_mixedelasticity->time() );
+
+
+    this->timerTool("TimeStepping").stop("updateNm");
+    if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
+    this->log("MixedElasticity","updateTimeStepNM", "finish" );
+}
+
+template<int Dim, int Order, int G_Order>
+void
+MixedElasticity<Dim,Order,G_Order>::createTimeDiscretization()
+{
+    this->log("MixedElasticity","createTimeDiscretization", "start" );
+    this->timerTool("Constructor").start();
+
+
+    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
+    std::string suffixName = "";
+    auto dt = this->timeStep();
+
+    if ( myFileFormat == "binary" )
+         suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+	
+	M_nm_mixedelasticity = newmark( _vm=Environment::vm(), _space=M_Wh,
+                                      _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"newmark"+suffixName)),
+                                      _prefix="",
+                                      _initial_time=this->timeInitial(),
+									  _final_time=this->timeFinal(),
+									  _time_step=this->timeStep(),
+                                      _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
+                                      _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+    M_nm_mixedelasticity->setfileFormat( myFileFormat );
+    M_nm_mixedelasticity->setPathSave( (fs::path(this->rootRepository()) /
+                                          fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
+
+
+
+
+    double tElapsed = this->timerTool("Constructor").stop("createTimeDiscr");
+    this->log("MixedElasticity","createTimeDiscretization", (boost::format("finish in %1% s") %tElapsed).str() );
+}
+
+template<int Dim, int Order, int G_Order>
 typename MixedElasticity<Dim,Order, G_Order>::self_ptrtype
 MixedElasticity<Dim,Order,G_Order>::New( std::string const& prefix,
                                          WorldComm const& worldComm, std::string const& subPrefix,
@@ -272,6 +361,14 @@ MixedElasticity<Dim, Order, G_Order>::init( mesh_ptrtype mesh )
     this->initSpaces();
     toc("spaces");
 
+	if (!isStationary())
+	{
+		tic();
+		this->createTimeDiscretization();	
+        this->initTimeStep();
+		toc("time_discretization");
+	}
+
     tic();
     this->initExporter( );
     toc("exporter");
@@ -285,6 +382,7 @@ template<int Dim, int Order, int G_Order>
 void
 MixedElasticity<Dim, Order, G_Order>::initModel()
 {
+
 
     // initialize marker lists for each boundary condition type
     // Strain
@@ -410,12 +508,12 @@ MixedElasticity<Dim, Order, G_Order>::assemble()
     this->assembleSTD( ps );
     M_A_cst->close();
     toc("assemble A");
-    
+    /*
     tic();
     this->assembleF( ps );
     M_F->close();
     toc("assemble F");
-    
+    */
 }
 
 template<int Dim, int Order, int G_Order>
@@ -424,7 +522,14 @@ MixedElasticity<Dim, Order, G_Order>::solve()
 {
     
     auto ps = product(M_Vh,M_Wh,M_Mh);
+
     tic();
+	// M_F->clear();
+    this->assembleF( ps );
+    M_F->close();
+    toc("assemble F");
+    
+	tic();
     auto U = ps.element();
 	auto M_U = M_backend->newBlockVector(_block=U,_copy_values= false);
 	M_backend->solve(_matrix=M_A_cst, _rhs = M_F , _solution=M_U) ;
@@ -440,8 +545,6 @@ template<typename PS>
 void
 MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
 {
-
-
     auto tau_constant = cst(M_tau_constant); 
     auto face_mesh = M_Mh->mesh();//createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 ); 
     M0h_ptr_t M0h = Pdh<0>( face_mesh,true ); 
@@ -488,6 +591,20 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
 
     bbf( 1_c, 0_c) += integrate(_range=elements(M_mesh),
 								_expr=(trans(id(w))*divt(sigma)));
+
+    // ( d^2u/dt^2, w)_Omega  [only if it is not stationary]
+    if ( !this->isStationary() ) {
+		auto dt = this->timeStep();
+    	for( auto const& pairMat : M_modelProperties->materials() )
+    	{
+			auto material = pairMat.second;
+			auto rho = expr(material.getScalar("rho"));
+			// bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
+        	//                              _expr = this->timeStepNM()->polySecondDerivCoefficient()*rho*inner(idt(u),id(w)) );
+			bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
+            	                         _expr = rho*inner(idt(u),id(w))/(dt*dt) );
+		}
+    }
 
     // begin dp: here we need to put the projection of u on the faces
     bbf( 1_c, 1_c) += integrate(_range=internalfaces(M_mesh),_expr=-tau_constant *
@@ -576,6 +693,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
     auto m     = M_Mh->element( "m" ); 
     
     // Building the RHS
+
     auto itField = M_modelProperties->boundaryConditions().find("strain");
     if (itField != M_modelProperties->boundaryConditions().end() )
     {
@@ -587,7 +705,9 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
             for ( auto const& exAtMarker : (*itType).second )
             {
                 auto g = expr<Dim,G_Order> (exAtMarker.expression());
-					blf( 1_c ) += integrate(_range=elements(M_mesh),
+                if ( !this->isStationary() )
+                    g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
+				blf( 1_c ) += integrate(_range=elements(M_mesh),
                     			  	      _expr=trans(g)*id(w));
             }
         }
@@ -598,6 +718,8 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
             {
 				auto marker = exAtMarker.marker();
                 auto g = expr<2,2> (exAtMarker.expression());
+                if ( !this->isStationary() )
+                    g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
 				// cout << "Neumann condition on " << marker << ": " << g << std::endl;
 				blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
 									    _expr=trans(id(m))*(g*N()));
@@ -616,11 +738,29 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
             {
 				auto marker = exAtMarker.marker();
                 auto g = expr<Dim,G_Order>(exAtMarker.expression());
+                if ( !this->isStationary() )
+                    g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
 				// cout << "Dirichlet condition on " << marker << ": " << g << std::endl;
 				blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
                 		      _expr=trans(id(m))*g);
             }
         }
+    }
+
+    // (u_old,w)_Omega
+    if ( !this->isStationary() )
+    {
+    	for( auto const& pairMat : M_modelProperties->materials() )
+    	{
+			auto material = pairMat.second;
+			auto rho = expr(material.getScalar("rho"));
+			auto u = this->timeStepNM()->previousUnknown(0);
+			auto u1 = this->timeStepNM()->previousUnknown(1);
+			auto dt = this-> timeStep();
+        	// blf(1_c) += integrate( _range=elements(M_mesh),
+        	//                         _expr= rho*inner(idv(this->timeStepNM()->polyDeriv()),id(w)) );
+        	blf(1_c) += integrate( _range=elements(M_mesh), _expr= rho*inner( 2*idv(u)-idv(u1) ,id(w))/(dt*dt) );
+		}
     }
 
 } // end assembleF
@@ -661,7 +801,7 @@ MixedElasticity<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype me
             else if ( field == "displacement" )
         	{
             	LOG(INFO) << "exporting displacement at time " << time;
-                M_exporter->add(prefixvm(M_prefix, "displacement"), M_pp );    	
+                M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"), M_pp );    	
 		
 				auto itField = M_modelProperties->boundaryConditions().find("ExactSolution");
  				if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -675,9 +815,9 @@ MixedElasticity<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype me
     		    			if (exAtMarker.isExpression() )
  			    			{		
 								auto u_exact = expr<Dim,1> (exAtMarker.expression());
-								//if ( !this->isStationary() )
-								//    u_exact.setParameterValues( { {"t", time } } );
-								M_exporter->add(prefixvm(M_prefix, "u_exact"), project( _space=M_Wh, _range=elements(M_mesh), _expr=u_exact) );		
+								if ( !this->isStationary() )
+								    u_exact.setParameterValues( { {"t", time } } );
+								M_exporter->step(time)->add(prefixvm(M_prefix, "u_exact"), project( _space=M_Wh, _range=elements(M_mesh), _expr=u_exact) );		
 								auto l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(M_pp) );
 								auto l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
 								if (l2norm_uex < 1)

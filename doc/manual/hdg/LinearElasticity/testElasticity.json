@@ -7,6 +7,7 @@
         "omega":
         {
             "name":"copper",
+			"rho":"1",
             "lambda":"1",
 	    	"mu":"1"
         }
@@ -19,7 +20,6 @@
             {
                 "omega":
                 {
-                   	//"expr":"{-3*sin(pi*x)*cos(pi*y),-3*sin(pi*y)*cos(pi*x)}:x:y"
 					"expr":"{8,0,0}"
                 }
             }/*,
