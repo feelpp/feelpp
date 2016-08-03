@@ -1479,11 +1479,7 @@ public:
     typedef typename super::model_functionspace_type model_functionspace_type;
     typedef boost::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
     typedef typename super::model_solution_context_type model_solution_context_type;
-#if !defined(FEELPP_DISABLE_EIM_COMPOSITE)
     static const bool use_subspace_element = (SubSpaceId != -1 && model_functionspace_type::is_composite);
-#else
-    static const bool use_subspace_element = false;
-#endif
 
     struct fake_element_composite_type
     {
@@ -1493,7 +1489,6 @@ public:
             typedef typename functionspace_type::element_type type;
         };
     };
-#if !defined(FEELPP_DISABLE_EIM_COMPOSITE)
     typedef typename mpl::if_< mpl::bool_<model_functionspace_type::is_composite>,
                                typename model_functionspace_type::element_type,
                                fake_element_composite_type >::type model_element_composite_type;
@@ -1501,10 +1496,6 @@ public:
                                //mpl::identity<typename model_functionspace_type::element_type::template sub_element<SubSpaceId>::type>,
                                mpl::identity<typename model_element_composite_type::template sub_element<SubSpaceId>::type>,
                                mpl::identity<typename model_functionspace_type::element_type> >::type::type model_element_expr_type;
-#else
-    typedef fake_element_composite_type model_element_composite_type;
-    typedef typename model_functionspace_type::element_type model_element_expr_type;
-#endif
 
     typedef typename model_element_expr_type::functionspace_type  model_element_expr_functionspace_type;
     typedef typename model_element_expr_functionspace_type::Context model_element_expr_context_type;
@@ -3021,13 +3012,9 @@ struct compute_eim_return
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::expr>::type>::type expr_type;
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::element>::type>::type element_type;
-#if !defined(FEELPP_DISABLE_EIM_COMPOSITE)
     static const int subspaceid = mpl::if_< mpl::bool_< model_type::functionspace_type::is_composite>,
                                             mpl::int_<element_type::functionspace_type::basis_type::TAG>,// must be improve! loop on subspaces and detect the same
                                             mpl::int_<-1> >::type::value;
-#else
-    static const int subspaceid = -1;
-#endif
 
     typedef EIMFunction<model_type, space_type, expr_type, subspaceid> type;
     typedef boost::shared_ptr<type> ptrtype;
