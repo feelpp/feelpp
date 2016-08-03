@@ -16,6 +16,8 @@ int main( int argc, char** argv )
 {
     Feel::Environment env( argc, argv );
 
+    const double epsilon = 1e-6;
+
     auto mesh = unitHypercube<FEELPP_DIM>();
     auto Xh = Pch<FEELPP_ORDER>(mesh);
     auto Xh0 = Pdh<0>(mesh);
@@ -30,6 +32,7 @@ int main( int argc, char** argv )
     std::vector<bool> hasinitlabel = {{ true, true, true }};
 
     const int nbcircle = x0.size();
+    //const int nbcircle = 2;
 
     std::vector<int> label (nbcircle);
     std::iota(label.begin(), label.end(), 1);
@@ -80,7 +83,8 @@ int main( int argc, char** argv )
         *L1_check += vf::project(
                 _space=Xh,
                 _range=elements(mesh),
-                _expr=label[i]*( idv(phi) >=0 && (sqrt(Xi*Xi+Yi*Yi+Zi*Zi)-Ri) <= idv(phi) )
+                _expr=label[i]*( idv(phi) >=0 && 
+                    abs((sqrt(Xi*Xi+Yi*Yi+Zi*Zi)-Ri) - idv(phi)) < epsilon )
                 );
 
         auto distToAllExceptI = Xh->elementPtr();
@@ -110,8 +114,10 @@ int main( int argc, char** argv )
                 *L2_check += vf::project(
                         _space=Xh,
                         _range=elements(mesh),
-                        _expr=label[j] * ( abs(sqrt(Xi*Xi+Yi*Yi+Zi*Zi)-Ri) <= abs(idv(phi)) && abs(sqrt(Xj*Xj+Yj*Yj+Zj*Zj)-Rj) <= abs(idv(distToAllExceptI)) )
-                        //_expr=label[j] * ( (Xi*Xi+Yi*Yi+Zi*Zi) <= (idv(phi)+Ri)*(idv(phi)+Ri) && abs(sqrt(Xj*Xj+Yj*Yj+Zj*Zj)-Rj) <= abs(idv(distToAllExceptI)) )
+                        _expr=label[j] * ( 
+                            abs(abs(sqrt(Xi*Xi+Yi*Yi+Zi*Zi)-Ri) - abs(idv(phi))) < epsilon &&
+                            abs(abs(sqrt(Xj*Xj+Yj*Yj+Zj*Zj)-Rj) - abs(idv(distToAllExceptI))) < epsilon
+                            )
                         );
             }
         }
