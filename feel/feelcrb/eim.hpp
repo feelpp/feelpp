@@ -651,7 +651,10 @@ EIM<ModelType>::offline()
 
     if( M_restart )
     {
-        Feel::cout<<" ******************offline EIM for expression "<<M_model->name()<<" start "<<std::endl;
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" ******************offline EIM for expression "<<M_model->name()<<" start "<<std::endl;
+        }
 
         DVLOG(2) << "[offline] starting offline stage ...\n";
         M_M = 1;
