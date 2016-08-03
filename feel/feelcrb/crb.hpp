@@ -400,16 +400,14 @@ public:
         {
             if( M_elements_database.loadDB() )
             {
-                if( Environment::worldComm().isMasterRank() )
-                    std::cout<<"database for basis functions " << M_elements_database.lookForDB() << " available and loaded"<<std::endl;
+                Feel::cout<<"database for basis functions " << M_elements_database.lookForDB() << " available and loaded"<<std::endl;
                 LOG(INFO) << "database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
                 auto basis_functions = M_elements_database.wn();
                 M_model->rBFunctionSpace()->setBasis( basis_functions );
             }
             else
             {
-               if( Environment::worldComm().isMasterRank() )
-                   std::cout<<"Warning ! No database for basis functions loaded. Start from the begining"<<std::endl;
+                Feel::cout<<"Warning ! No database for basis functions loaded. Start from the begining"<<std::endl;
                 LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
                 M_N = 0; //Re-init M_N
             }
@@ -2211,15 +2209,11 @@ CRB<TruthModelType>::offline()
         M_WNmu->setSuperSampling( M_Xi );
 
 
-        if( this->worldComm().isMasterRank() )
-            std::cout<<"[CRB offline] M_error_type = "<<M_error_type<<std::endl;
-
-        if( this->worldComm().isMasterRank() )
-            std::cout << " -- sampling init done in " << ti.elapsed() << "s\n";
+        Feel::cout<<"[CRB offline] M_error_type = "<<M_error_type<<"\n"
+                  <<" -- sampling init done in " << ti.elapsed() << "s\n";
         ti.restart();
 
-        if( this->worldComm().isMasterRank() )
-            std::cout << " -- residual data init done in " << ti.elapsed() << std::endl;
+        Feel::cout << " -- residual data init done in " << ti.elapsed() << std::endl;
         ti.restart();
 
         // empty sets
@@ -2248,12 +2242,9 @@ CRB<TruthModelType>::offline()
         M_current_mu = mu;
 
         int size = mu.size();
-        if( this->worldComm().isMasterRank() )
-        {
-            std::cout << "  -- start with mu = [ ";
-            for ( int i=0; i<size-1; i++ ) std::cout<<mu( i )<<" ";
-            std::cout<<mu( size-1 )<<" ]"<<std::endl;
-        }
+        Feel::cout << "  -- start with mu = [ ";
+        for ( int i=0; i<size-1; i++ ) Feel::cout<<mu( i )<<" ";
+        Feel::cout<<mu( size-1 )<<" ]"<<std::endl;
         //std::cout << " -- WN size :  " << M_WNmu->size() << "\n";
 
         // dimension of reduced basis space
@@ -2295,17 +2286,16 @@ CRB<TruthModelType>::offline()
                 M_model->rBFunctionSpace()->deleteLastDualBasisElements( number_of_elem_to_remove );
 
             M_N = Nrestart;
-            if( this->worldComm().isMasterRank() )
-                std::cout<<"Restart the RB construction at N = "<<Nrestart<<std::endl;
+            Feel::cout<<"Restart the RB construction at N = "<<Nrestart<<std::endl;
             LOG( INFO ) << "Restart the RB construction at N = "<<Nrestart;
         }
         else
         {
             mu = M_current_mu;
-            if( this->worldComm().isMasterRank() && M_N < ioption(_name="crb.dimension-max") - 1 )
+            if( M_N < ioption(_name="crb.dimension-max") - 1 )
             {
-                std::cout<<"We are going to enrich the reduced basis"<<std::endl;
-                std::cout<<"There are "<<M_N<<" elements in the database"<<std::endl;
+                Feel::cout<<"We are going to enrich the reduced basis"<<"\n"
+                          <<"There are "<<M_N<<" elements in the database"<<std::endl;
             }
             LOG(INFO) <<"we are going to enrich the reduced basis"<<std::endl;
             LOG(INFO) <<"there are "<<M_N<<" elements in the database"<<std::endl;
@@ -2355,12 +2345,11 @@ CRB<TruthModelType>::offline()
         }
         mu = M_WNmu->at( M_N ); // first element
 
-        if( this->worldComm().isMasterRank() )
-            std::cout<<"[CRB::offline] read WNmu ( sampling size : "<<M_iter_max<<" )"<<std::endl;
+        Feel::cout<<"[CRB::offline] read WNmu ( sampling size : "<<M_iter_max<<" )"<<std::endl;
     }
 
     LOG(INFO) << "[CRB::offline] strategy "<< M_error_type <<"\n";
-    if( this->worldComm().isMasterRank() ) std::cout << "[CRB::offline] strategy "<< M_error_type <<std::endl;
+    Feel::cout << "[CRB::offline] strategy "<< M_error_type <<std::endl;
 
     if( M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
     {
@@ -2484,12 +2473,9 @@ CRB<TruthModelType>::offline()
         M_WNmu_complement = M_WNmu->complement();
         double time=timer2.elapsed();
 
-        if( this->worldComm().isMasterRank() )
-        {
-            std::cout<<" -- primal problem solved in "<<tpr<<" s"<<std::endl;
-            std::cout<<" -- dual problem solved in "<<tdu<<" s"<<std::endl;
-            std::cout<<" -- complement of M_WNmu built in "<<time<<" s"<<std::endl;
-        }
+        Feel::cout<<" -- primal problem solved in "     << tpr  <<" s\n"
+                  <<" -- dual problem solved in "       << tdu  <<" s\n"
+                  <<" -- complement of M_WNmu built in "<< time <<" s"<<std::endl;
 
         bool norm_zero = false;
 
@@ -2589,13 +2575,10 @@ CRB<TruthModelType>::offline()
 
                     if ( M_mode_number>=nb_mode_max-1 )
                     {
-                        if( this->worldComm().isMasterRank() )
-                        {
-                            std::cout<<"Error : we access to "<<M_mode_number<<"^th mode"<<std::endl;
-                            std::cout<<"parameter choosen : [ ";
-                            for ( int i=0; i<size-1; i++ ) std::cout<<mu[i]<<" , ";
-                            std::cout<<mu[ size-1 ]<<" ] "<<std::endl;
-                        }
+                        Feel::cout<<"Error : we access to "<<M_mode_number<<"^th mode\n"
+                                  <<"parameter choosen : [ ";
+                        for ( int i=0; i<size-1; i++ ) Feel::cout<<mu[i]<<" , ";
+                        Feel::cout<<mu[ size-1 ]<<" ] "<<std::endl;
                         throw std::logic_error( "[CRB::offline] ERROR during the construction of the reduced basis, one parameter has been choosen too many times" );
                     }
                 }
@@ -2706,20 +2689,17 @@ CRB<TruthModelType>::offline()
 
         }//end of transient case
 
-        if( this->worldComm().isMasterRank() )
+        if ( M_model->isSteady() )
         {
-            if ( M_model->isSteady() )
-            {
-                std::cout<<"-- time to add the primal basis : "<<tpr<<" s"<<std::endl;
-                std::cout<<"-- time to add the dual basis : "<<tdu<<" s"<<std::endl;
-                std::cout<<"-- time to add primal and dual basis : "<<time<<" s"<<std::endl;
-            }
-            else
-            {
-                std::cout<<"-- time to perform primal POD : "<<tpr<<" s"<<std::endl;
-                std::cout<<"-- time to perform dual POD : "<<tdu<<" s"<<std::endl;
-                std::cout<<"-- time to add primal and dual basis : "<<time<<" s"<<std::endl;
-            }
+            Feel::cout<<"-- time to add the primal basis : "     << tpr  <<" s\n"
+                      <<"-- time to add the dual basis : "       << tdu  <<" s\n"
+                      <<"-- time to add primal and dual basis : "<< time <<" s"<<std::endl;
+        }
+        else
+        {
+            Feel::cout<<"-- time to perform primal POD : "       << tpr  <<" s\n"
+                      <<"-- time to perform dual POD : "         << tdu  <<" s\n"
+                      <<"-- time to add primal and dual basis : "<< time <<" s"<<std::endl;
         }
 
         //in the case of transient problem, we can add severals modes for a same mu
@@ -2791,11 +2771,8 @@ CRB<TruthModelType>::offline()
             }
         }//orthonormalization
 
-        if( this->worldComm().isMasterRank() )
-        {
-            std::cout<<"-- primal orthonormalization : "<<tpr<<" s"<<std::endl;
-            std::cout<<"-- dual orthonormalization : "<<tdu<<" s"<<std::endl;
-        }
+        Feel::cout<<"-- primal orthonormalization : "<< tpr <<" s\n"
+                  <<"-- dual orthonormalization : "  << tdu <<" s"<<std::endl;
 
         timer3.restart();
 
@@ -3150,10 +3127,7 @@ CRB<TruthModelType>::offline()
         }
 
         time=timer3.elapsed();
-        if( this->worldComm().isMasterRank() )
-        {
-            std::cout<<" -- projection on reduced basis space : "<<time<<" s"<<std::endl;
-        }
+        Feel::cout<<" -- projection on reduced basis space : "<<time<<" s"<<std::endl;
 
         if( boption(_name="crb.use-accurate-apee") )
         {
@@ -3179,13 +3153,11 @@ CRB<TruthModelType>::offline()
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
-            if( this->worldComm().isMasterRank() )
-                std::cout << "  -- offlineResidual update starts\n";
+            Feel::cout << "  -- offlineResidual update starts\n";
             timer2.restart();
             offlineResidual( M_N, number_of_added_elements );
             LOG(INFO)<<"[CRB::offline] end of call offlineResidual and M_N = "<< M_N <<"\n";
-            if( this->worldComm().isMasterRank() )
-                std::cout << "  -- offlineResidual updated in " << timer2.elapsed() << "s\n";
+            Feel::cout << "  -- offlineResidual updated in " << timer2.elapsed() << "s\n";
             bool model_has_eim_error = M_model->hasEimError();
             if( model_has_eim_error )
                 offlineResidualEim( M_N, number_of_added_elements );
@@ -3271,17 +3243,13 @@ CRB<TruthModelType>::offline()
         tpr=timer2.elapsed();
 
         time=timer.elapsed();
-        if( this->worldComm().isMasterRank() )
-        {
-            std::cout<<"saving in the database : "<<tpr<<" s"<<std::endl;
-            std::cout << "total time: " << time <<" s"<< std::endl;
-            std::cout << "============================================================\n";
-        }
+        Feel::cout<<"saving in the database : "<<tpr<<" s\n"
+                  << "total time: " << time <<" s\n"
+                  << "============================================================\n";
         LOG(INFO) <<"========================================"<<"\n";
     }
 
-    if( this->worldComm().isMasterRank() )
-        std::cout<<"number of elements in the reduced basis : "<<M_N<<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
+    Feel::cout<<"number of elements in the reduced basis : "<<M_N<<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
 
     if( M_maxerror <= M_tolerance || M_N >= user_max  )
     {
@@ -4855,7 +4823,7 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
             increment = (uNdu[time_index]-next_uNdu).norm();
 
-            if( M_fixedpointVerbose  && this->worldComm().isMasterRank() )
+            if( M_fixedpointVerbose )
                 VLOG(2)<<"[CRB::fixedPointDual] fixedpoint iteration " << fi << " increment error: " << increment;
 
         }while ( increment > M_fixedpointIncrementTol && fi<M_fixedpointMaxIterations );
@@ -6320,16 +6288,14 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
         if( increment > 1e-10 && inc_relative > 0 && inc_relative < doption(_name="ser.radapt-rb-rtol") )
             this->setAdaptationSER( true );
 
-        if( Environment::worldComm().isMasterRank() )
-            std::cout << "[RB] SER adaptation : " << this->getAdaptationSER()  << std::endl;
+        Feel::cout << "[RB] SER adaptation : " << this->getAdaptationSER()  << std::endl;
         if( !getAdaptationSER() )
             M_SER_maxerr = maxerr;
     }
 
-    if( this->worldComm().isMasterRank() )
-        std::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc 
-                 <<" delta_pr : "<<delta_pr<<" -- delta_du : "<<delta_du
-                 <<" -- output error : "<<maxerr<<std::endl;
+    Feel::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc 
+             <<" delta_pr : "<<delta_pr<<" -- delta_du : "<<delta_du
+             <<" -- output error : "<<maxerr<<std::endl;
     //lb( N, mu, uN, uNdu , uNold ,uNduold );
 
     if( proc == master_proc )
@@ -8426,9 +8392,8 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
     int __QOutput = M_model->Ql( M_output_index );
     int __N = Ncur;
 
-    if( Environment::isMasterRank() )
-        std::cout << "     o N=" << Ncur << " QLhs=" << __QLhs
-                  << " QRhs=" << __QRhs << " Qoutput=" << __QOutput << "\n";
+    Feel::cout << "     o N=" << Ncur << " QLhs=" << __QLhs
+              << " QRhs=" << __QRhs << " Qoutput=" << __QOutput << "\n";
 
     vector_ptrtype __X( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype __Fdu( M_backend->newVector( M_model->functionSpace() ) );
@@ -8440,8 +8405,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
     boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
 
-    if( Environment::isMasterRank() )
-        std::cout << "     o initialize offlineResidual in " << ti.elapsed() << "s\n";
+    Feel::cout << "     o initialize offlineResidual in " << ti.elapsed() << "s\n";
 
     bool optimize = boption(_name="crb.optimize-offline-residual") ;
 
@@ -8483,8 +8447,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
                 }
             }
         }
-        if( Environment::isMasterRank() )
-            std::cout << "     o M_C0_pr updated\n";
+        Feel::cout << "     o M_C0_pr updated\n";
     }
 
     // update M_precomputeResidualPrA
@@ -8564,8 +8527,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
         }
     }
 
-    if( Environment::isMasterRank() )
-        std::cout << "     o Gamma_pr and Lambda_pr updated in " << ti.elapsed() << "s\n";
+    Feel::cout << "     o Gamma_pr and Lambda_pr updated in " << ti.elapsed() << "s\n";
 
     //
     // Dual
@@ -8614,8 +8576,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
                     }
                 }
             }
-            if( Environment::isMasterRank() )
-                std::cout << "     o M_C0_du updated\n";
+            Feel::cout << "     o M_C0_du updated\n";
         }
 
         // update M_precomputeResidualDuA
@@ -8701,8 +8662,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
             }
         }
 
-        if( Environment::isMasterRank() )
-            std::cout << "     o Gamma_du and Lambda_du updated in " << ti.elapsed() << "s\n";
+        Feel::cout << "     o Gamma_du and Lambda_du updated in " << ti.elapsed() << "s\n";
 
 
     }//end of if (M_solve_dual_problem)
@@ -8720,8 +8680,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
     int __QOutput = M_model->Ql( M_output_index );
     int __N = Ncur;
 
-    if( Environment::worldComm().isMasterRank() )
-        std::cout << "     o offline residual eim "<<std::endl;
+    Feel::cout << "     o offline residual eim "<<std::endl;
 
     vector_ptrtype __X( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype __Y( M_backend->newVector( M_model->functionSpace() ) );
@@ -8786,8 +8745,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             }
         }//end of loop __q1
 
-        if( Environment::worldComm().isMasterRank() )
-            std::cout << "     o M_C0_pr_eim updated in " << ti.elapsed() << "s\n";
+        Feel::cout << "     o M_C0_pr_eim updated in " << ti.elapsed() << "s\n";
 
     }// Ncur==M_Nm
 
@@ -8838,8 +8796,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
         }//end of __q1
     }//elem
 
-    if( Environment::worldComm().isMasterRank() )
-        std::cout << "     o Lambda_pr_eim updated in " << ti.elapsed() << "s\n";
+    Feel::cout << "     o Lambda_pr_eim updated in " << ti.elapsed() << "s\n";
 
     ti.restart();
 
@@ -10551,14 +10508,12 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
         {
             if( M_use_newton )
             {
-                if( Environment::worldComm().isMasterRank() )
-                    std::cout<<"[CRB::loadDB] WARNING in the database used the option use-newton=true and it's not the case in your options so make sure that crb.rebuild-database=true !" <<std::endl;
+                Feel::cout<<"[CRB::loadDB] WARNING in the database used the option use-newton=true and it's not the case in your options so make sure that crb.rebuild-database=true !" <<std::endl;
                 LOG( INFO )<<"[CRB::loadDB] WARNING in the database used the option use-newton=true and it's not the case in your options so make sure that crb.rebuild-database=true !" ;
             }
             else
             {
-                if( Environment::worldComm().isMasterRank() )
-                    std::cout<< "[CRB::loadDB] WARNING in the database used the option use-newton=false and it's not the case in your options so make sure that crb.rebuild-database=true !"<<std::endl;
+                Feel::cout<< "[CRB::loadDB] WARNING in the database used the option use-newton=false and it's not the case in your options so make sure that crb.rebuild-database=true !"<<std::endl;
                 LOG( INFO )<< "[CRB::loadDB] WARNING in the database used the option use-newton=false and it's not the case in your options so make sure that crb.rebuild-database=true !";
             }
         }
@@ -10574,8 +10529,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     bool current_option=boption(_name="crb.is-model-executed-in-steady-mode");
     if( M_model_executed_in_steady_mode != current_option )
     {
-        if( M_model_executed_in_steady_mode && Environment::worldComm().isMasterRank() )
-            std::cout<<"[CRB::loadDB] WARNING in the database used, the model was executed in steady mode but now you want to execute it in transient mode. make sure that --crb.rebuild-database=true"<<std::endl;
+        Feel::cout<<"[CRB::loadDB] WARNING in the database used, the model was executed in steady mode but now you want to execute it in transient mode. make sure that --crb.rebuild-database=true"<<std::endl;
         LOG( INFO ) <<"[CRB::loadDB] WARNING in the database used, the model was executed in steady mode but now you want to execute it in transient mode. make sure that --crb.rebuild-database=true";
     }
 

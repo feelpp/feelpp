@@ -234,13 +234,11 @@ public:
 
                 if( enrich_database )
                 {
-                    if( Environment::worldComm().isMasterRank() )
-                        std::cout<<model->name()<<" enrich the existing database..."<<std::endl;
+                    Feel::cout<<model->name()<<" enrich the existing database..."<<std::endl;
                 }
                 else if( cobuild )
                 {
-                    if( Environment::worldComm().isMasterRank() )
-                        std::cout<<model->name()<<" continue co-building process..."<<std::endl;
+                    Feel::cout<<model->name()<<" continue co-building process..."<<std::endl;
                 }
                 if( M_restart )
                 {
@@ -607,23 +605,19 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         Feel::cout << "[computeBestFit] updated M_greedy_rbmaxerr = " << M_greedy_rbmaxerr << std::endl;
     }
 
-    if( Environment::worldComm().isMasterRank() )
+    Feel::cout << "-- Mean time to solve(mu) : " << time_solve/trainset->size() << std::endl;
+    Feel::cout << "-- Mean time to compute resmax : " << time_exp/trainset->size() << std::endl;
+    if( doption(_name="ser.eim-greedy-rtol")!=0 )
     {
-        std::cout << "-- Mean time to solve(mu) : " << time_solve/trainset->size() << std::endl;
-        std::cout << "-- Mean time to compute resmax : " << time_exp/trainset->size() << std::endl;
-        if( doption(_name="ser.eim-greedy-rtol")!=0 )
-        {
-            std::cout << "-- Number of parameters selected to compute resmax : " << index << "/" << subtrainset->size() << "\n";
-            std::cout << "-- Number of parameters which satistify the criterion : " << index_criterion << "/" << subtrainset->size() << "\n";
-        }
+        Feel::cout << "-- Number of parameters selected to compute resmax : " << index << "/" << subtrainset->size() << "\n";
+        Feel::cout << "-- Number of parameters which satistify the criterion : " << index_criterion << "/" << subtrainset->size() << "\n";
     }
 
     //LOG_ASSERT( index == subtrainset->size() ) << "Invalid index " << index << " should be equal to trainset size = " << subtrainset->size() << "\n";
     LOG_ASSERT( index <= subtrainset->size() ) << "Invalid index " << index << " should be inferior to trainset size = " << subtrainset->size() << "\n";
     auto err = maxerr.array().abs().maxCoeff( &index );
 
-    if( Environment::worldComm().isMasterRank() )
-        std::cout << "err=" << err << " reached at index " << index << " and mu=" << subtrainset->at(index) << "\n";
+    Feel::cout << "err=" << err << " reached at index " << index << " and mu=" << subtrainset->at(index) << "\n";
     if( ! error_criterion[index] )
         M_criterion = false;
 
@@ -693,10 +687,7 @@ EIM<ModelType>::offline()
 
         solution = M_model->solve( mu );
         time=timer2.elapsed();
-        if( Environment::worldComm().isMasterRank() )
-        {
-            std::cout<<" -- model solution computed in "<<time<<"s"<<std::endl;
-        }
+        Feel::cout<<" -- model solution computed in "<<time<<"s"<<std::endl;
         DVLOG( 2 ) << "solution computed";
 
         if( !expression_expansion )
@@ -710,8 +701,7 @@ EIM<ModelType>::offline()
             max_solution++;
         }
 
-        if( Environment::worldComm().isMasterRank() )
-            std::cout << "compute finite element solution at mu_1 done";
+        Feel::cout << "compute finite element solution at mu_1 done";
         VLOG(2) << "compute finite element solution at mu_1 done";
 
         DVLOG(2) << "compute T^" << 0 << "...\n";
@@ -722,10 +712,7 @@ EIM<ModelType>::offline()
         // store space coordinate where max absolute value occurs
         t = zmax.template get<1>();
         time=timer2.elapsed();
-        if( Environment::worldComm().isMasterRank() )
-        {
-            std::cout<<" -- maximum of expression computed in "<<time<<"s"<<std::endl;
-        }
+        Feel::cout<<" -- maximum of expression computed in "<<time<<"s"<<std::endl;
 
         M_model->addInterpolationPoint( t );
         DVLOG( 2 )<<"add the interpolation point : \n"<<t;
@@ -741,10 +728,7 @@ EIM<ModelType>::offline()
         timer2.restart();
         auto q = M_model->Residual(0,zero);
         time=timer2.elapsed();
-        if( Environment::worldComm().isMasterRank() )
-        {
-            std::cout<<" -- expression evaluated in mu in "<<time<<"s"<<std::endl;
-        }
+        Feel::cout<<" -- expression evaluated in mu in "<<time<<"s"<<std::endl;
         M_max_q++;
         DVLOG( 2 ) << "max-q : "<<M_max_q;
         M_model->addBasis( q );
@@ -757,11 +741,8 @@ EIM<ModelType>::offline()
         M_model->fillInterpolationMatrixFirstTime( );
         time=timer2.elapsed();
         time_=timer3.elapsed();
-        if( Environment::worldComm().isMasterRank() )
-        {
-            std::cout<<" -- interpolation matrix filled in "<<time<<"s"<<std::endl;
-            std::cout<<" -- time for this basis : "<<time_<<"s"<<std::endl;
-        }
+        Feel::cout<<" -- interpolation matrix filled in "<<time<<"s"<<std::endl;
+        Feel::cout<<" -- time for this basis : "<<time_<<"s"<<std::endl;
 
         M_greedy_rbmaxerr = 0;
     }//if M_restart
@@ -781,8 +762,7 @@ EIM<ModelType>::offline()
             // Cobuild : If the first group (FEM solve) of EIM basis has already been built, go to loadDB (crb)
             if( M_model->mMax()-1 >= cobuild_freq && !M_model->RBbuilt() )
             {
-                if( Environment::worldComm().isMasterRank() )
-                    std::cout << "First group of EIM has already been built, start to load rb..." << std::endl;
+                Feel::cout << "First group of EIM has already been built, start to load rb..." << std::endl;
                 return;
             }
         }
@@ -816,11 +796,8 @@ EIM<ModelType>::offline()
     if( Mmax == user_max  )
         Mmax++;
 
-    if( Environment::worldComm().isMasterRank() )
-    {
-        std::cout << "M_M = " << M_M << ", Mmax = " << Mmax << std::endl;
-        std::cout << "RB correction = " << this->getRbCorrection() << std::endl;
-    }
+    Feel::cout << "M_M = " << M_M << ", Mmax = " << Mmax << std::endl;
+    Feel::cout << "RB correction = " << this->getRbCorrection() << std::endl;
 
     // Print maxerror (greedy) to file
     std::string eim_greedy_file_name = "cvg-eim-"+M_model->name()+"-Greedy-max-error.dat";
@@ -847,10 +824,7 @@ EIM<ModelType>::offline()
 
         timer3.restart();
         //LOG(INFO) << "M=" << M_M << "...\n";
-        if( Environment::worldComm().isMasterRank() )
-        {
-                std::cout<<" ================================ "<<std::endl;
-        }
+        Feel::cout<<" ================================ "<<std::endl;
 
         DVLOG(2) << "compute best fit error...\n";
         timer2.restart();
@@ -863,9 +837,9 @@ EIM<ModelType>::offline()
 
         time=timer2.elapsed();
         double error=bestfit.template get<0>();
+        Feel::cout<<" -- best fit computed in "<<time<<"s -- absolute associated error : "<<error<<std::endl;
         if( Environment::worldComm().isMasterRank() )
         {
-            std::cout<<" -- best fit computed in "<<time<<"s -- absolute associated error : "<<error<<std::endl;
             greedy_maxerr << M_M << "\t" << error <<"\n";
         }
 
@@ -886,10 +860,10 @@ EIM<ModelType>::offline()
                 // Need adapt group size (r-adaptation) ?
                 double increment = math::abs( error - M_greedy_maxerr );
                 double inc_relative = increment/math::abs( M_greedy_maxerr );
+                Feel::cout << " -- Absolute error (Greedy) relative increment = " << inc_relative
+                              << ", rtol = " << doption(_name="ser.radapt-eim-rtol") << std::endl;
                 if( Environment::worldComm().isMasterRank() && doption(_name="ser.radapt-eim-rtol")!=0 )
                 {
-                    std::cout << " -- Absolute error (Greedy) relative increment = " << inc_relative
-                              << ", rtol = " << doption(_name="ser.radapt-eim-rtol") << std::endl;
                     greedy_maxerr_inc << M_M << "\t" << inc_relative <<"\n";
                 }
 
@@ -902,8 +876,7 @@ EIM<ModelType>::offline()
                 this->setRbCorrection( false ); //Re-init to false
                 if( increment > 1e-10 && inc_relative > 0 && inc_relative < doption(_name="ser.corrected-rb-rtol") )
                 {
-                    if( Environment::worldComm().isMasterRank() )
-                        std::cout << " -- Relative increment < tol : RB approx used for next EIM will be corrected " << std::endl;
+                    Feel::cout << " -- Relative increment < tol : RB approx used for next EIM will be corrected " << std::endl;
                     this->setRbCorrection( true );
                 }
             }
@@ -916,18 +889,12 @@ EIM<ModelType>::offline()
             solution = M_model->solve( mu ); //No use of SER : use FE model since we don't have affine decomposition yet
 
         time=timer2.elapsed();
-        if( Environment::worldComm().isMasterRank() )
-        {
-            std::cout<<" -- model solution computed in "<<time<<"s"<<std::endl;
-        }
+        Feel::cout<<" -- model solution computed in "<<time<<"s"<<std::endl;
 
         timer2.restart();
         auto gmax = M_model->computeMaximumOfExpression( mu , solution  );
         time=timer2.elapsed();
-        if( Environment::worldComm().isMasterRank() )
-        {
-            std::cout<<" -- maximum of expression computed in "<<time<<"s"<<std::endl;
-        }
+        Feel::cout<<" -- maximum of expression computed in "<<time<<"s"<<std::endl;
 
         //if we want to impose the use of dimension-max functions, we don't want to stop here
         //if ( (bestfit.template get<0>()/gmax.template get<0>()) < doption(_name="eim.error-max") &&  ! boption(_name="eim.use-dimension-max-functions") )
@@ -950,10 +917,7 @@ EIM<ModelType>::offline()
             //M_model->addExpressionEvaluation( M_model->operator()( mu ) ); //projection de l'expression
             M_model->addExpressionEvaluation( M_model->operator()( solution, mu ) ); //projection de l'expression
             time=timer2.elapsed();
-            if( Environment::worldComm().isMasterRank() )
-            {
-                std::cout<<" -- expression evaluated in mu in "<<time<<"s"<<std::endl;
-            }
+            Feel::cout<<" -- expression evaluated in mu in "<<time<<"s"<<std::endl;
             max_g++;
         }
         else
@@ -981,10 +945,7 @@ EIM<ModelType>::offline()
         timer2.restart();
         auto resmax = M_model->computeMaximumOfResidual( mu, solution , z );
         time=timer2.elapsed();
-        if( Environment::worldComm().isMasterRank() )
-        {
-            std::cout<<" -- Maximum of residual computed in "<<time<<"s"<<std::endl;
-        }
+        Feel::cout<<" -- Maximum of residual computed in "<<time<<"s"<<std::endl;
 
         t = resmax.template get<1>();
 
@@ -1016,12 +977,9 @@ EIM<ModelType>::offline()
         M_model->fillInterpolationMatrix( );
         time=timer2.elapsed();
         time_=timer3.elapsed();
-        if( Environment::worldComm().isMasterRank() )
-        {
-            std::cout<<" -- interpolation matrix filled in "<<time<<"s"<<std::endl;
-            std::cout<<" -- time for this basis : "<<time_<<"s"<<std::endl;
-            std::cout<<" M_M : "<<M_M<<std::endl;
-        }
+        Feel::cout<<" -- interpolation matrix filled in "<<time<<"s"<<std::endl;
+        Feel::cout<<" -- time for this basis : "<<time_<<"s"<<std::endl;
+        Feel::cout<<" M_M : "<<M_M<<std::endl;
 
         VLOG(2) << "================================================================================\n";
 
@@ -1034,8 +992,7 @@ EIM<ModelType>::offline()
     }
 
     time=timer.elapsed();
-    if( Environment::worldComm().isMasterRank() )
-        std::cout<<"Total time for offline step of EIM "<<M_model->name()<<" : "<<time<<"s\n"<<std::endl;
+    Feel::cout<<"Total time for offline step of EIM "<<M_model->name()<<" : "<<time<<"s\n"<<std::endl;
     DVLOG(2) << "[offline] M_max = " << M_M << "...\n";
 
     this->M_offline_done = true;
