@@ -4648,6 +4648,16 @@ public:
         return fusion::at_c<i>( M_functionspaces );
     }
 
+    /**
+     * get the \p i -th \c FunctionSpace out the list
+     */
+    template<int i>
+    typename mpl::at_c<functionspace_vector_type,i>::type const&
+    functionSpace() const
+    {
+        return fusion::at_c<i>( M_functionspaces );
+    }
+
 
     /**
      * \return true if component Space was built
