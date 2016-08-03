@@ -56,3 +56,5 @@ feelpp_add_application(selflabelmultiellipse_d2_o1 SRCS selflabelmultiellipse.cp
 feelpp_add_application(selflabelmultiellipse_d3_o1 SRCS selflabelmultiellipse.cpp DEFS FEELPP_DIM=3 FEELPP_ORDER=1)
 feelpp_add_application(distlabelmultiellipse_d2_o1 SRCS distlabelmultiellipse.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=1)
 feelpp_add_application(distlabelmultiellipse_d3_o1 SRCS distlabelmultiellipse.cpp DEFS FEELPP_DIM=3 FEELPP_ORDER=1)
+feelpp_add_application(dist2multiellipse_d2_o1 SRCS dist2multiellipse.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=1 )
+feelpp_add_application(distlabelmulticircle_d2_o1 SRCS distlabelmulticircle.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=1 )
