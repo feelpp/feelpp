@@ -458,12 +458,72 @@ public :
 
     bool isClosed() const { return M_isClosed; }
 
+    /**
+     * termination function for fill
+     */
+    template<typename Arg1>
+    void  fill( int& n, int& c, const Arg1& arg1 ) {}
+
+    /**
+     * fill row and col
+     */
+    template<typename Arg1, typename Arg2, typename ...Args>
+    void
+    fill( int& n, int& c, const Arg1& arg1, const Arg2& arg2, const Args&... args )
+        {
+            this->operator()( n,c ) = stencil( _test=arg1,_trial=arg2, _diag_is_nonzero=false, _close=false)->graph();
+            if ( c > n )
+                this->operator()( c,n ) = stencil( _test=arg2,_trial=arg1, _diag_is_nonzero=false, _close=false)->graph();
+            DCHECK( this->operator()( n,c ) != nullptr ) << "Invalid stencil " << n << "," << c;
+            DCHECK( this->operator()( c,n ) != nullptr ) << "Invalid stencil " << c << "," << n;
+            cout << "stencil for (" << n << "," << c << ") and (" << c << "," << n << ")\n";
+            // go to next submatrix
+            fill( n, ++c, arg1, args... );
+        }
+
+
+    /**
+     * termination function for rowcol recusion
+     */
+    void rowcol( int r  ) {}
+
+    /**
+     * recurse through first row and column of submatrix of size (n,n)
+     */
+    template<typename Arg1, typename ...Args>
+    void
+    rowcol( int n, const Arg1& arg1, const Args&... args )
+        {
+            int c = n;
+            // fill row and column (n,n) with csr graph
+            fill( n, c, arg1, arg1, args... );
+            // do submatrix (n+1,n+1)
+            rowcol( ++n, args...);
+        }
+
 private :
     bool M_isClosed;
 
 
 };
 
+/**
+ * Build blocks of CSR graphs with function spaces \p
+ * (args1,args2,argn). Variadic template is used to handle an arbitrary number of
+ * function spaces.
+ * The blocks are organized then matrix wise with the stencil associated of pairs of function spaces in \p (arg1,...,argn)
+ *
+ */
+template<typename Arg1, typename ...Args>
+BlocksBaseGraphCSR
+csrGraphBlocks( const Arg1& arg1, const Args&... args )
+{
+    const int size = sizeof...(Args)+1;
+    BlocksBaseGraphCSR g( size, size );
+    int n = 0;
+    g.rowcol( n, arg1, args...);
+    return g;
+}
 
 
 } // Feel

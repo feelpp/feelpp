@@ -3467,6 +3467,32 @@ BOOST_PARAMETER_FUNCTION(
 } // opInterpolation
 
 
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename compute_opInterpolation_return<Args>::ptrtype ), // 1. return type
+    IPtr,                        // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required
+      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+    ) // required
+    ( optional
+      ( range,          *, elements( imageSpace->mesh() )  )
+      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
+      ( type,           *, InterpolationNonConforming() )
+      ( ddmethod,  (bool),  false )
+    ) // optional
+)
+{
+#if BOOST_VERSION < 105900
+    Feel::detail::ignore_unused_variable_warning( args );
+#endif
+
+    return opInterpPtr( domainSpace,imageSpace,range,backend,type,ddmethod );
+
+} // opInterpolation
+
+
 BOOST_PARAMETER_FUNCTION(
     ( typename compute_opInterpolation_return<Args,InterpolationGradient<nonconforming_t>>::type ), // 1. return type
     Grad,                        // 2. name of the function template

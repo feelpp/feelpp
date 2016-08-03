@@ -40,6 +40,17 @@ ITERATOR end( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR> &range )
 {
     return range.template get<2>();
 }
+template<size_t S, class ITERATOR>
+ITERATOR begin( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR> const& range )
+{
+    return range.template get<1>();
+}
+
+template<size_t S, class ITERATOR>
+ITERATOR end( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR> const& range )
+{
+    return range.template get<2>();
+}
 template<size_t S, class ITERATOR, class CONTAINER>
 ITERATOR begin( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> &range )
 {
@@ -48,6 +59,18 @@ ITERATOR begin( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> &range 
 
 template<size_t S, class ITERATOR, class CONTAINER>
 ITERATOR end( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> &range )
+{
+    return range.template get<2>();
+}
+
+template<size_t S, class ITERATOR, class CONTAINER>
+ITERATOR begin( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> const& range )
+{
+    return range.template get<1>();
+}
+
+template<size_t S, class ITERATOR, class CONTAINER>
+ITERATOR end( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> const& range )
 {
     return range.template get<2>();
 }

@@ -29,7 +29,9 @@
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelpde/operatorpcd.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
+#if FEELPP_HAS_PETSC
 #include <feel/feelalg/backendpetsc.hpp>
+#endif
 #include <feel/feeldiscr/pdh.hpp>
 
 namespace Feel

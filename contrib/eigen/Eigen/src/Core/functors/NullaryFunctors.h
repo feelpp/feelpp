@@ -26,7 +26,8 @@ struct scalar_constant_op {
 };
 template<typename Scalar>
 struct functor_traits<scalar_constant_op<Scalar> >
-{ enum { Cost = 1, PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = true }; };
+{ enum { Cost = 0 /* as the constant value should be loaded in register only once for the whole expression */,
+         PacketAccess = packet_traits<Scalar>::Vectorizable, IsRepeatable = true }; };
 
 template<typename Scalar> struct scalar_identity_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_identity_op)
@@ -99,7 +100,7 @@ template <typename Scalar, typename Packet>
 struct linspaced_op_impl<Scalar,Packet,/*RandomAccess*/true,/*IsInteger*/true>
 {
   linspaced_op_impl(const Scalar& low, const Scalar& high, Index num_steps) :
-    m_low(low), m_length(high-low), m_divisor(num_steps==1?1:num_steps-1), m_interPacket(plset<Packet>(0))
+    m_low(low), m_length(high-low), m_divisor(convert_index<Scalar>(num_steps==1?1:num_steps-1)), m_interPacket(plset<Packet>(0))
   {}
 
   template<typename Index>
@@ -116,7 +117,7 @@ struct linspaced_op_impl<Scalar,Packet,/*RandomAccess*/true,/*IsInteger*/true>
 
   const Scalar m_low;
   const Scalar m_length;
-  const Index  m_divisor;
+  const Scalar  m_divisor;
   const Packet m_interPacket;
 };
 

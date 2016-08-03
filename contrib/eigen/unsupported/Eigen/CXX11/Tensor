@@ -11,10 +11,13 @@
 //#ifndef EIGEN_CXX11_TENSOR_MODULE
 //#define EIGEN_CXX11_TENSOR_MODULE
 
-#include "Core"
+#include "../../../Eigen/Core"
 
 #include <Eigen/src/Core/util/DisableStupidWarnings.h>
 
+#include "../SpecialFunctions"
+#include "src/util/CXX11Meta.h"
+#include "src/util/MaxSizeVector.h"
 
 /** \defgroup CXX11_Tensor_Module Tensor Module
   *
@@ -26,6 +29,7 @@
   * \endcode
   */
 
+#include <cmath>
 #include <cstddef>
 #include <cstring>
 
@@ -51,11 +55,7 @@ typedef unsigned __int64 uint64_t;
 #endif
 
 #ifdef EIGEN_USE_THREADS
-#include <atomic>
-#include <condition_variable>
-#include <deque>
-#include <mutex>
-#include <thread>
+#include "ThreadPool"
 #endif
 
 #ifdef EIGEN_USE_GPU
@@ -66,10 +66,11 @@ typedef unsigned __int64 uint64_t;
 #endif
 #endif
 
-
 #include "src/Tensor/TensorMacros.h"
 #include "src/Tensor/TensorForwardDeclarations.h"
 #include "src/Tensor/TensorMeta.h"
+#include "src/Tensor/TensorFunctors.h"
+#include "src/Tensor/TensorCostModel.h"
 #include "src/Tensor/TensorDeviceDefault.h"
 #include "src/Tensor/TensorDeviceThreadPool.h"
 #include "src/Tensor/TensorDeviceCuda.h"
@@ -78,9 +79,9 @@ typedef unsigned __int64 uint64_t;
 #include "src/Tensor/TensorDimensions.h"
 #include "src/Tensor/TensorInitializer.h"
 #include "src/Tensor/TensorTraits.h"
-#include "src/Tensor/TensorFunctors.h"
 #include "src/Tensor/TensorUInt128.h"
 #include "src/Tensor/TensorIntDiv.h"
+#include "src/Tensor/TensorGlobalFunctions.h"
 
 #include "src/Tensor/TensorBase.h"
 
@@ -115,6 +116,7 @@ typedef unsigned __int64 uint64_t;
 #include "src/Tensor/TensorForcedEval.h"
 #include "src/Tensor/TensorGenerator.h"
 #include "src/Tensor/TensorAssign.h"
+#include "src/Tensor/TensorScan.h"
 
 #include "src/Tensor/TensorExecutor.h"
 #include "src/Tensor/TensorDevice.h"

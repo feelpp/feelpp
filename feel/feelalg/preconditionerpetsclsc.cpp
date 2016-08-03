@@ -197,7 +197,11 @@ static PetscErrorCode PCDestroy_LSC2(PC pc)
 #if PETSC_VERSION_LESS_THAN(3,6,0)
 static PetscErrorCode PCSetFromOptions_LSC2(PC pc)
 #else
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+static PetscErrorCode PCSetFromOptions_LSC2(PetscOptionItems*, PC pc)
+#else
 static PetscErrorCode PCSetFromOptions_LSC2(PetscOptions*, PC pc)
+#endif
 #endif
 {
 #if 0
@@ -354,7 +358,10 @@ PETSC_EXTERN PetscErrorCode PCCreate_LSC2(PC pc)
   pc->ops->setup           = PCSetUp_LSC2;
   pc->ops->reset           = PCReset_LSC2;
   pc->ops->destroy         = PCDestroy_LSC2;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
+#else
   pc->ops->setfromoptions  = PCSetFromOptions_LSC2;
+#endif
   pc->ops->view            = PCView_LSC2;
   pc->ops->applyrichardson = 0;
   PetscFunctionReturn(0);

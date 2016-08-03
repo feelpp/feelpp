@@ -106,7 +106,7 @@ public :
 
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "  . [time int " << lapg <<" =" << ti.elapsed() << "s] b=" <<  b );
-        BOOST_CHECK_SMALL( (a-b).norm(), 1e-10 );
+        BOOST_CHECK_CLOSE( a(0,0), b(0,0), 1e-10 );
     }
 };
 
@@ -146,7 +146,13 @@ public :
 
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "  . [time int " << lapg <<" =" << ti.elapsed() << "s] b=" <<  b );
-        BOOST_CHECK_SMALL( (a-b).norm(), 1e-10 );
+        
+        BOOST_CHECK_CLOSE( a(0,0), b(0,0), 1e-10 );
+        if ( Dim >= 2 )
+            BOOST_CHECK_CLOSE( a(1,0), b(1,0), 1e-10 );
+        if ( Dim >= 3 )
+            BOOST_CHECK_CLOSE( a(2,0), b(2,0), 1e-10 );
+            
     }
 };
 
@@ -159,59 +165,70 @@ BOOST_AUTO_TEST_CASE( test_21 )
 {
     Test<2> test;
     test.run();
+    BOOST_TEST_MESSAGE( "test_21" << tc::green << " OK" << tc::reset);
+                         
 }
 
 BOOST_AUTO_TEST_CASE( test_21_h_q1 )
 {
     Test<2,1,Hypercube> test;
     test.run();
+    BOOST_TEST_MESSAGE( "test_21_h_q1" << tc::green << " OK" << tc::reset);
 }
 
 BOOST_AUTO_TEST_CASE( test_21_g2 )
 {
     Test<2,2> test;
     test.run();
+    BOOST_TEST_MESSAGE( "test_21_g2" << tc::green << " OK" << tc::reset);
 }
 
-BOOST_AUTO_TEST_CASE( test_22 )
+BOOST_AUTO_TEST_CASE( testv_21 )
 {
     TestV<2> test;
     test.run();
+    BOOST_TEST_MESSAGE( "testv_21" << tc::green << " OK" << tc::reset);
 }
 
-BOOST_AUTO_TEST_CASE( test_22_g2 )
+BOOST_AUTO_TEST_CASE( testv_22_g2 )
 {
     TestV<2,2> test;
     test.run();
+    BOOST_TEST_MESSAGE( "testv_21_g2" << tc::green << " OK" << tc::reset);
 }
 
 BOOST_AUTO_TEST_CASE( test_22_g2_q2 )
 {
     TestV<2,2,Hypercube> test;
     test.run();
+    BOOST_TEST_MESSAGE( "test_22_g2_q2" << tc::green << " OK" << tc::reset);
 }
 
 BOOST_AUTO_TEST_CASE( test_31 )
 {
     Test<3> test;
     test.run();
+    BOOST_TEST_MESSAGE( "test_31" << tc::green << " OK" << tc::reset);
 }
 
 BOOST_AUTO_TEST_CASE( test_31_q1 )
 {
     Test<3,1,Hypercube> test;
     test.run();
+    BOOST_TEST_MESSAGE( "test_31_q1" << tc::green << " OK" << tc::reset);
 }
 
 BOOST_AUTO_TEST_CASE( test_33 )
 {
     TestV<3> test;
     test.run();
+    BOOST_TEST_MESSAGE( "testv_31" << tc::green << " OK" << tc::reset);
 }
 BOOST_AUTO_TEST_CASE( test_33_q1 )
 {
     TestV<3,1,Hypercube> test;
     test.run();
+    BOOST_TEST_MESSAGE( "testv_31_q1" << tc::green << " OK" << tc::reset);
 }
 #else
 BOOST_AUTO_TEST_CASE( test_21_g2 )
