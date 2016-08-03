@@ -285,7 +285,8 @@ CRBSaddlePoint<TruthModelType>::offline()
     double delta_du = 0;
     size_type index;
 
-    Feel::cout << "Offline CRBSaddlePoint starts, this may take a while until Database is computed.." << std::endl;
+    if ( Environment::isMasterRank() )
+        std::cout << "Offline CRBSaddlePoint starts, this may take a while until Database is computed.." << std::endl;
     LOG(INFO) << "[CRBSaddlePoint::offline] Starting offline for output " << this->M_output_index << std::endl;
     LOG(INFO) << "[CRBSaddlePoint::offline] initialize underlying finite element model\n";
 

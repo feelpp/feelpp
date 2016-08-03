@@ -480,7 +480,10 @@ public:
             if( ! load_elements_db  )
             {
                 M_mode = CRBModelMode::CRB_ONLINE;
-                Feel::cout<<"[OpusApp Information] You have choosen to reload an existing RB database without loading elments database. If the RB was built on an other computer make sure that database have been moved on in the right repositories.\n";
+                if( Environment::worldComm().isMasterRank() )
+                {
+                    std::cout<<"[OpusApp Information] You have choosen to reload an existing RB database without loading elments database. If the RB was built on an other computer make sure that database have been moved on in the right repositories.\n";
+                }
             }
 
             tic();

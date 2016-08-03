@@ -468,14 +468,14 @@ public :
 
     virtual std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA()
     {
-        if( M_Aqm.size() == 0  )
+        if( M_Aqm.size() == 0 && Environment::worldComm().isMasterRank() )
         {
-            Feel::cout<<"************************************************************************\n"
-                      <<"** It seems that you are using operators free and you don't have      **\n"
-                      <<"** implemented computeLinearDecompositionA() to have a linear         **\n"
-                      <<"** decomposition of the bilinear form.                                **\n"
-                      <<"** It will be used to compute norm of the error during CRB convergence**\n"
-                      <<"************************************************************************"<<std::endl;
+            std::cout<<"************************************************************************"<<std::endl;
+            std::cout<<"** It seems that you are using operators free and you don't have      **"<<std::endl;
+            std::cout<<"** implemented computeLinearDecompositionA() to have a linear         **"<<std::endl;
+            std::cout<<"** decomposition of the bilinear form.                                **"<<std::endl;
+            std::cout<<"** It will be used to compute norm of the error during CRB convergence**"<<std::endl;
+            std::cout<<"************************************************************************"<<std::endl;
         }
         if( M_linearAqm.size() == 0 )
         {
@@ -538,12 +538,12 @@ public :
 
     virtual affine_decomposition_type computePicardAffineDecomposition()
     {
-        if( boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
-            Feel::cout<<"***************************************************\n"
-                      <<"** Use of SER error estimation with newton needs **\n"
-                      <<"** computePicardAffineDecomposition(...)         **\n"
-                      <<"***************************************************"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs     **"<<std::endl;
+            std::cout<<"** computePicardAffineDecomposition(...) **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
         }
         return computeAffineDecomposition();
     }
@@ -661,10 +661,13 @@ public :
     }
     betaq_type computeBetaQ( parameter_type const& mu , mpl::bool_<false>, double time , bool only_terms_time_dependent=false)
     {
-        Feel::cout<<"*******************************************************************\n"
-                  <<"** Error ! You want to access to computeBetaQ ( mu , time) but   **\n"
-                  <<"** your model is not time-dependent !                            **\n"
-                  <<"*******************************************************************"<<std::endl;
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"*******************************************************************"<<std::endl;
+            std::cout<<"** Error ! You want to access to computeBetaQ ( mu , time) but   **"<<std::endl;
+            std::cout<<"** your model is not time-dependent !                            **"<<std::endl;
+            std::cout<<"*******************************************************************"<<std::endl;
+        }
         bool go=false;
         CHECK( go );
         return boost::make_tuple( M_betaAq, M_betaFq );
@@ -677,10 +680,13 @@ public :
     }
     betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>  )
     {
-        Feel::cout<<"*******************************************************************\n"
-                  <<"** Error ! You want to access to computeBetaQm( mu ) wherease    **\n"
-                  <<"** your model is time-dependent !                                **\n"
-                  <<"*******************************************************************"<<std::endl;
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"*******************************************************************"<<std::endl;
+            std::cout<<"** Error ! You want to access to computeBetaQm( mu ) wherease    **"<<std::endl;
+            std::cout<<"** your model is time-dependent !                                **"<<std::endl;
+            std::cout<<"*******************************************************************"<<std::endl;
+        }
         bool go=false;
         CHECK( go );
         return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm );
@@ -692,12 +698,12 @@ public :
 
     virtual betaqm_type computePicardBetaQm( parameter_type const& mu )
     {
-        if( boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
-            Feel::cout<<"****************************************************************\n"
-                      <<"** Use of SER error estimation with newton needs              **\n"
-                      <<"** computePicardBetaQm(...) function                          **\n"
-                      <<"****************************************************************"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
         }
         return computeBetaQm( mu );
     }
@@ -709,10 +715,13 @@ public :
 
     betaq_type computeBetaQ( parameter_type const& mu , mpl::bool_<true>  )
     {
-        Feel::cout<<"*******************************************************************\n"
-                  <<"** Error ! You want to access to computeBetaQ ( mu ) wherease    **\n"
-                  <<"** your model is time-dependent !                                **\n"
-                  <<"*******************************************************************"<<std::endl;
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"*******************************************************************"<<std::endl;
+            std::cout<<"** Error ! You want to access to computeBetaQ ( mu ) wherease    **"<<std::endl;
+            std::cout<<"** your model is time-dependent !                                **"<<std::endl;
+            std::cout<<"*******************************************************************"<<std::endl;
+        }
         bool go=false;
         CHECK( go );
         return boost::make_tuple( M_betaMq, M_betaAq, M_betaFq );
@@ -777,12 +786,12 @@ public :
 
     virtual betaqm_type computePicardBetaQm( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false)
     {
-        if( boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
-            Feel::cout<<"***************************************************\n"
-                      <<"** Use of SER error estimation with newton needs **\n"
-                      <<"** computePicardBetaQm(...) function             **\n"
-                      <<"***************************************************"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
         }
         return computeBetaQm( mu, time , only_terms_time_dependent );
     }
@@ -845,11 +854,13 @@ public :
     {
         if( is_time_dependent )
         {
-            Feel::cout<<"*******************************************************************\n"
-                      <<"** Error ! You have implemented a transient problem but you      **\n"
-                      <<"** forgot to implement bdfModel() function that returns your bdf **\n"
-                      <<"*******************************************************************"<<std::endl;
-            
+            if( Environment::worldComm().isMasterRank() )
+            {
+                std::cout<<"*******************************************************************"<<std::endl;
+                std::cout<<"** Error ! You have implemented a transient problem but you      **"<<std::endl;
+                std::cout<<"** forgot to implement bdfModel() function that returns your bdf **"<<std::endl;
+                std::cout<<"*******************************************************************"<<std::endl;
+            }
             bool go=false;
             CHECK( go );
         }
@@ -868,42 +879,48 @@ public :
     //so the user doesn't have to specify this function
     virtual betaqm_type computeBetaQm( element_type const& u, parameter_type const& mu ,  double time , bool only_time_dependent_terms=false )
     {
-        Feel::cout<<"*******************************************************************\n"
-                  <<"** You are using the function computeBetaQm( u , mu , time ) but **\n"
-                  <<"** your model has only implemented computeBetaQm( mu , time )    **\n"
-                  <<"*******************************************************************"<<std::endl;
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"*******************************************************************"<<std::endl;
+            std::cout<<"** You are using the function computeBetaQm( u , mu , time ) but **"<<std::endl;
+            std::cout<<"** your model has only implemented computeBetaQm( mu , time )    **"<<std::endl;
+            std::cout<<"*******************************************************************"<<std::endl;
+        }
         betaqm_type dummy_beta_coeff;
         return dummy_beta_coeff;
     }
     virtual betaqm_type computeBetaQm( element_type const& u , parameter_type const& mu )
     {
-        Feel::cout<<"****************************************************************\n"
-                  <<"** You are using the function computeBetaQm( u , mu ) but     **\n"
-                  <<"** your model has only implemented computeBetaQm( mu )        **\n"
-                  <<"****************************************************************"<<std::endl;
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** You are using the function computeBetaQm( u , mu ) but     **"<<std::endl;
+            std::cout<<"** your model has only implemented computeBetaQm( mu )        **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
         betaqm_type dummy_beta_coeff;
         return dummy_beta_coeff;
     }
 
     virtual betaqm_type computePicardBetaQm( element_type const& u , parameter_type const& mu )
     {
-        if( boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
-            Feel::cout<<"***************************************************\n"
-                      <<"** Use of SER error estimation with newton needs **\n"
-                      <<"** computePicardBetaQm(...) function             **\n"
-                      <<"***************************************************"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
         }
         return this->computeBetaQm( u, mu );
     }
     virtual betaqm_type computePicardBetaQm( element_type const& u, parameter_type const& mu ,  double time , bool only_time_dependent_terms=false )
     {
-        if( boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
         {
-            Feel::cout<<"***************************************************\n"
-                      <<"** Use of SER error estimation with newton needs **\n"
-                      <<"** computePicardBetaQm(...) function             **\n"
-                      <<"***************************************************"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
         }
         return computeBetaQm( u, mu, time, only_time_dependent_terms );
     }
@@ -921,10 +938,13 @@ public :
     }
     virtual parameter_type refParameter()
     {
-        Feel::cout<<"**************************************************************************************************\n"
-                  <<"** You want to specify reference parameters because referenceParametersGivenByUser returns true **\n"
-                  <<"** your must impelement the function refParameter() !                                           **\n"
-                  <<"**************************************************************************************************"<<std::endl;
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"**************************************************************************************************"<<std::endl;
+            std::cout<<"** You want to specify reference parameters because referenceParametersGivenByUser returns true **"<<std::endl;
+            std::cout<<"** your must impelement the function refParameter() !                                           **"<<std::endl;
+            std::cout<<"**************************************************************************************************"<<std::endl;
+        }
         bool go=false;
         CHECK( go );
         parameter_type muref;
@@ -1060,13 +1080,14 @@ public :
     {
         int N = Environment::worldComm().globalSize();
 
-        Feel::cout<<"[ModelCrbBase] generate target file : "<<target<<" from "<<mshfile<<std::endl;
+        if( Environment::worldComm().isMasterRank() )
+            std::cout<<"[ModelCrbBase] generate target file : "<<target<<" from "<<mshfile<<std::endl;
 
-        Gmsh gmsh( dimension,
-                    order,
-                    Environment::worldComm() );
-        gmsh.setNumberOfPartitions( N );
-        gmsh.rebuildPartitionMsh( mshfile /*mesh with 1 partition*/, target /*mesh with N partitions*/ );
+            Gmsh gmsh( dimension,
+                       order,
+                       Environment::worldComm() );
+           gmsh.setNumberOfPartitions( N );
+           gmsh.rebuildPartitionMsh( mshfile /*mesh with 1 partition*/, target /*mesh with N partitions*/ );
     }
 
 
@@ -1432,10 +1453,13 @@ public :
      */
     virtual void run( const double * X, unsigned long N, double * Y, unsigned long P )
     {
-         Feel::cout<<"**************************************************\n"
-                   <<"** You are using the function run whereas       **\n"
-                   <<"** your model has not implemented this function **\n"
-                   <<"**************************************************"<<std::endl;
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"**************************************************"<<std::endl;
+            std::cout<<"** You are using the function run whereas       **"<<std::endl;
+            std::cout<<"** your model has not implemented this function **"<<std::endl;
+            std::cout<<"**************************************************"<<std::endl;
+        }
     }
 
 public:

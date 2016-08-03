@@ -331,7 +331,8 @@ CRBTrilinear<TruthModelType>::offline()
     bool orthonormalize_primal = boption(_name="crb.orthonormalize-primal") ;
 
     boost::timer ti;
-    Feel::cout << "Offline CRBTrilinear starts, this may take a while until Database is computed..."<<std::endl;
+    if( this->worldComm().isMasterRank() )
+        std::cout << "Offline CRBTrilinear starts, this may take a while until Database is computed..."<<std::endl;
     LOG(INFO) << "[CRBTrilinear::offline] Starting offline for output " << this->M_output_index << "\n";
     LOG(INFO) << "[CRBTrilinear::offline] initialize underlying finite element model\n";
     //M_model->initModel();
@@ -487,8 +488,9 @@ CRBTrilinear<TruthModelType>::offline()
         else
         {
             int sampling_size = this->M_WNmu->readFromFile(file_name);
-            Feel::cout<<"[CRB::offline] Read WNmu ( sampling size : "
-                     << sampling_size <<" )"<<std::endl;
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Read WNmu ( sampling size : "
+                         << sampling_size <<" )"<<std::endl;
             LOG( INFO )<<"[CRB::offline] Read WNmu ( sampling size : "
                        << sampling_size <<" )";
         }
@@ -498,7 +500,8 @@ CRBTrilinear<TruthModelType>::offline()
         if ( N_log_equi>0 )
         {
             this->M_WNmu->logEquidistribute( N_log_equi , true );
-            Feel::cout<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
                          <<N_log_equi<<" )"<<std::endl;
             LOG( INFO )<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
                        <<N_log_equi<<" )";
@@ -506,7 +509,8 @@ CRBTrilinear<TruthModelType>::offline()
         else if ( N_equi>0 )
         {
             this->M_WNmu->equidistribute( N_equi , true );
-            Feel::cout<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
                          <<N_equi<<" )"<<std::endl;
             LOG( INFO )<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
                        <<N_equi<<" )";
@@ -514,7 +518,8 @@ CRBTrilinear<TruthModelType>::offline()
         else if ( N_random>0 )
         {
             this->M_WNmu->randomize( N_random , true );
-            Feel::cout<<"[CRB::offline] Randomize WNmu ( sampling size : "
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Randomize WNmu ( sampling size : "
                          <<N_random<<" )"<<std::endl;
             LOG( INFO )<<"[CRB::offline] Randomize WNmu ( sampling size : "
                        <<N_random<<" )";
