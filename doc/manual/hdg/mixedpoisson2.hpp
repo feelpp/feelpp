@@ -1177,7 +1177,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                         }
                     }
                 }
-            } else
+            } else if ( field != "state variable" )
             {
                 // Import data
                 LOG(INFO) << "importing " << field << " at time " << time;
