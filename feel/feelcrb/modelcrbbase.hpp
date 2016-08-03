@@ -453,6 +453,23 @@ public :
         return M_is_initialized;
     }
 
+    std::map<std::string,boost::any>
+    rbSpaceContextEim() const
+    {
+        std::map<std::string,boost::any> res;
+        for ( int k=0;k<M_funs.size();++k )
+        {
+            boost::any const& ctxRbAny = M_funs[k]->rbSpaceContext();
+            res[M_funs[k]->name()] = M_funs[k]->rbSpaceContext();
+        }
+        for ( int k=0;k<M_funs_d.size();++k )
+        {
+            res[M_funs_d[k]->name()] = M_funs_d[k]->rbSpaceContext();
+        }
+        return res;
+    }
+
+#if 0
     std::map<std::string,rbfunctionspace_context_ptrtype>
     rbSpaceContextEim() const
     {
@@ -475,7 +492,28 @@ public :
         }
         return res;
     }
-
+#endif
+    void
+    setRbSpaceContextEim( std::map<std::string,boost::any> const& rbCtx )
+    {
+        for ( int k=0;k<M_funs.size();++k )
+        {
+            std::string const& eimName = M_funs[k]->name();
+            auto itFindRbCtx = rbCtx.find( eimName );
+            if ( itFindRbCtx == rbCtx.end() )
+                continue;
+            M_funs[k]->setRbSpaceContext( itFindRbCtx->second );
+        }
+        for ( int k=0;k<M_funs_d.size();++k )
+        {
+            std::string const& eimName = M_funs_d[k]->name();
+            auto itFindRbCtx = rbCtx.find( eimName );
+            if ( itFindRbCtx == rbCtx.end() )
+                continue;
+            M_funs_d[k]->setRbSpaceContext( itFindRbCtx->second );
+        }
+    }
+#if 0
     void
     setRbSpaceContextEim( std::map<std::string,rbfunctionspace_context_ptrtype> const& rbCtx )
     {
@@ -500,7 +538,7 @@ public :
             M_funs_d[k]->setRbSpaceContext( rbCtx2 );
         }
     }
-
+#endif
     void updateRbSpaceContextEim()
     {
         for ( int k=0;k<M_funs.size();++k )
