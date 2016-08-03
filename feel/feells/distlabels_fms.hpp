@@ -1,7 +1,7 @@
 #ifndef _DISTLABELS_FMS_HPP
 #define _DISTLABELS_FMS_HPP 1
 
-#define FM_EXPORT 1
+//#define FM_EXPORT 1
 
 #include <feel/feells/fastmarchingbase.hpp>
 #include <feel/feells/selflabel.hpp>
@@ -37,7 +37,7 @@ public:
     void setSelfLabel( element_ptrtype const& label ) { M_selfLabel = label; }
     //--------------------------------------------------------------------//
     element_ptrtype getNearestNeighbourLabel() const { return M_NNLabel; }
-    element_ptrtype getNearestNeighbourDistance() const { return this->getDistance(); }
+    element_ptrtype getNearestNeighbourDistance() const { return M_NNDistance; }
     element_ptrtype getNextNearestNeighbourLabel() const { return M_nextNNLabel; }
     element_ptrtype getNextNearestNeighbourDistance() const { return M_nextNNDistance; }
 
@@ -49,8 +49,15 @@ private:
     element_ptrtype getDistance() const { return super_type::getDistance(); }
 
     //--------------------------------------------------------------------//
+    value_type fmsFrontDistN( std::vector<size_type> const& ids ) const;
+
+    value_type fmsFrontDistRec( std::vector<size_type> & ids,
+                           size_type idClose,
+                           value_type phiOld ) const;
+    //--------------------------------------------------------------------//
     element_ptrtype M_selfLabel;
     element_ptrtype M_label;
+    element_ptrtype M_labelDist;
     element_ptrtype M_NNLabel;
     element_ptrtype M_NNDistance;
     element_ptrtype M_nextNNLabel;
@@ -76,6 +83,7 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::LabelDistanceFMS(
 :
     super_type( space, periodicity ),
     M_label( space->elementPtr() ),
+    M_labelDist( space->elementPtr() ),
     M_NNLabel( space->elementPtr() ),
     M_NNDistance( space->elementPtr() ),
     M_nextNNLabel( space->elementPtr() ),
@@ -103,8 +111,6 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::initMarch(
         element_type const& phi,
         bool useMarker2AsMarkerDone )
 {
-    //auto doneIds = super_type::initMarch( phi, useMarker2AsMarkerDone );
-
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
 
     *(this->M_distance) = vf::project(
@@ -118,6 +124,7 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::initMarch(
             idv(phi) );
 
     M_label->setConstant( invalid_uint16_type_value );
+    M_labelDist->setConstant( 1e8 );
     M_NNLabel->setConstant( invalid_uint16_type_value );
     M_nextNNLabel->setConstant( invalid_uint16_type_value );
 
@@ -178,14 +185,17 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::initMarch(
 
     // initialize close distances in heap and mark close points in (*M_status) array
     for ( auto dit = doneIds.begin(); dit != doneIds.end(); ++dit )
-        this->updateHeap( *dit );
+       this->updateHeap( *dit );
 
 #if defined( FM_EXPORT )
     M_count_iteration++;
+    M_ex->step(M_count_iteration)->add("distance", *(this->M_distance));
     M_ex->step(M_count_iteration)->add("label", *M_label);
     M_ex->step(M_count_iteration)->add("status", *(this->M_status));
     M_ex->step(M_count_iteration)->add("NNlabel", *M_NNLabel);
     M_ex->step(M_count_iteration)->add("NNdistance", *M_NNDistance);
+    M_ex->step(M_count_iteration)->add("nextNNlabel", *M_nextNNLabel);
+    M_ex->step(M_count_iteration)->add("nextNNdistance", *M_nextNNDistance);
     M_ex->save();
 #endif
 }
@@ -198,6 +208,7 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::processDof( size_type idOnProc, value_type
     {
         (*M_NNDistance)[idOnProc] = val;
         (*M_NNLabel)[idOnProc] = (*M_label)[idOnProc];
+        (*M_labelDist)[idOnProc] = 1e8;
     }
     else
     {
@@ -220,11 +231,15 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::updateHeap( size_type idDone )
     for ( auto n0it = nbrs.begin(); n0it != nbrs.end(); ++n0it )
     {
         if( (*M_label)[idDone] != (*M_NNLabel)[*n0it] 
-                && (*M_label)[idDone] != (*M_nextNNLabel)[*n0it] )
+                && (*M_label)[idDone] != (*M_nextNNLabel)[*n0it]
+                && (*M_label)[idDone] != (*M_selfLabel)[*n0it]
+          )
         {
             if (this->getDofStatus(*n0it) == super_type::FAR )
                this->setDofStatus(*n0it, super_type::CLOSE);
-            if (this->getDofStatus(*n0it) == super_type::CLOSE )
+            //if (this->getDofStatus(*n0it) == super_type::CLOSE )
+            if( (*M_NNLabel)[*n0it] == invalid_uint16_type_value 
+             || (*M_nextNNLabel)[*n0it] == invalid_uint16_type_value )
             {
                 /* to give a reference, compute phi with only one DONE neighbours
                    it is sure that *n0it is a DONE neighbours */
@@ -238,26 +253,32 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::updateHeap( size_type idDone )
 
                 this->heap().change( std::make_pair( phiNew, *n0it ) );
 
-                // update M_label
-                (*M_label)[*n0it] = (*M_NNLabel)[idDone];
+                // update M_label if phiNew < phiCurrent
+                if( std::abs(phiNew) < std::abs((*M_labelDist)[*n0it]) )
+                {
+                    (*M_label)[*n0it] = (*M_label)[idDone];
+                    (*M_labelDist)[*n0it] = phiNew;
+                }
+
             } // if CLOSE
         }
     } // loop over neighbor 0
 
 #if defined( FM_EXPORT )
     M_count_iteration++;
+    M_ex->step(M_count_iteration)->add("distance", *(this->M_distance));
     M_ex->step(M_count_iteration)->add("label", *M_label);
     M_ex->step(M_count_iteration)->add("status", *(this->M_status));
     M_ex->step(M_count_iteration)->add("NNlabel", *M_NNLabel);
     M_ex->step(M_count_iteration)->add("NNdistance", *M_NNDistance);
+    M_ex->step(M_count_iteration)->add("nextNNlabel", *M_nextNNLabel);
+    M_ex->step(M_count_iteration)->add("nextNNdistance", *M_nextNNDistance);
     M_ex->save();
 #endif
 }
 
 #undef LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE
 #undef LABELDISTANCEFMS_CLASS_TEMPLATE_DECLARATIONS
-
-//template<typename FunctionSpaceType, typename PeriodicityType = NoPerio
 
 } // namespace Feel
 
