@@ -1,0 +1,74 @@
+{
+    "Name": "HDG-Mixed-Poisson",
+    "ShortName":"MP",
+    "Model":"hdg",
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+	    	// "R_ext":"0.095",
+	    	"k":"1"
+	    	// "H":"0.03" 
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "SourceTerm":
+            {
+				"Lamina":	// "omega":
+                {
+                   "expr":"0.0" // "4*( (x^2+y^2)*sin(x^2+y^2)-cos(x^2+y^2) ):x:y"
+                }
+            },
+            "Dirichlet":
+	    	{
+	    		"Hole":	// "in":
+        		{
+                	"expr":"2.0"  // "2+sin(x^2+y^2):x:y" 
+               	}
+	    	},
+            "Neumann":
+            {
+                "In":  //"bottom":
+                {
+                     "expr":"0.0"
+                },
+                "Out": //"top":
+                {
+                     "expr":"0.0"
+                }
+            }
+		},
+		"flux":
+		{
+	    	"Integral":
+	    	{
+        		"Lateral": //"out":
+                {
+					"expr":"0.0" // "-4*pi*0.03*(x^2+y^2)*cos(x^2+y^2):x:y"
+                }
+ 	    	}
+    	},
+		"Exact solution":
+		{
+	    	"p_exact":
+	    	{
+				"Lamina": // "omega":
+				{
+		     		"expr":"2.0" // "2+sin(x^2+y^2):x:y" 
+				}
+	    	}
+		}
+     },
+    "PostProcess":
+    {
+        "Fields":["potential","flux"]
+    }
+}
+
+
+
+
