@@ -372,12 +372,14 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 tensor( tensor const& t )                               \
                     :                                                   \
                     M_expr( t.M_expr ),                                 \
-                    M_geot( new gmc_type( *t.M_geot ) ),                \
+                    M_geot( t.M_geot/*new gmc_type( *t.M_geot )*/ ),    \
                     M_fec( VF_OP_SWITCH( VF_OP_TYPE_IS_VALUE( T ), , t.M_fec/*new basis_context_type( *t.M_fec )*/ ) ), \
                     M_np( M_geot->nPoints() ),                          \
-                    M_pc( new pc_type( M_expr.e().functionSpace()->fe(), M_geot->xRefs() )), \
+                    /*M_pc( new pc_type( M_expr.e().functionSpace()->fe(), M_geot->xRefs() )),*/ \
+                    M_pc( t.M_pc ), \
                     /*M_pcf(),*/                                        \
-                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), (new ctx_type( M_expr.e().functionSpace()->fe(), M_geot, (pc_ptrtype const&)M_pc ) ) ) ), \
+                    /*M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), (new ctx_type( M_expr.e().functionSpace()->fe(), M_geot, (pc_ptrtype const&)M_pc ) ) ) ),*/ \
+                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), t.M_ctx ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), M_expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*M_geot) ) ), \
                     M_mzero( shape::M, shape::N ),                      \
                     M_zero( ret_type::Zero() ),                         \
@@ -458,11 +460,11 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_zero( ret_type::Zero() ),                         \
                     M_returnEigenMatrix( ret_type::Zero() ),            \
                     M_did_init( false ),                                \
-                    M_hasRelationMesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ), \
+                    M_hasRelationMesh( ( expr.e().functionSpace() && expr.e().functionSpace()->mesh() )? fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) : false ), \
                     M_same_mesh( M_hasRelationMesh && isSameGeo )         \
                         {                                               \
                             M_mzero.setZero();                          \
-                            if(!M_same_mesh)                            \
+                            if(!M_same_mesh && expr.e().functionSpace() && expr.e().functionSpace()->mesh() ) \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
                             /*update( geom ); */                        \
                             BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_CONSTRUCTOR, ()); \
@@ -732,7 +734,10 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                      \
                 pc_ptrtype createPcIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<true>) \
                 {                                                       \
-                    return pc_ptrtype (new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ); \
+                    if ( expr.e().functionSpace() && expr.e().functionSpace()->fe() ) \
+                        return pc_ptrtype (new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ); \
+                    else                                                \
+                        return pc_ptrtype();                            \
                 }                                                       \
                 pc_ptrtype createPcIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<false>) \
                 {                                                       \
@@ -740,7 +745,10 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
                 ctx_ptrtype createCtxIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<true>) \
                 {                                                       \
-                    return ctx_ptrtype( new ctx_type( expr.e().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_ptrtype const&)M_pc ) ); \
+                    if ( expr.e().functionSpace()  && expr.e().functionSpace()->fe() ) \
+                        return ctx_ptrtype( new ctx_type( expr.e().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_ptrtype const&)M_pc ) ); \
+                    else                                                \
+                        return ctx_ptrtype();                           \
                 }                                                       \
                 ctx_ptrtype createCtxIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<false>) \
                 {                                                       \
