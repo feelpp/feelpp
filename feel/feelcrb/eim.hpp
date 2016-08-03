@@ -1525,10 +1525,20 @@ public:
         typedef typename TheModelType::rbfunctionspace_type type;
     };
     typedef typename RbSpaceFromModel<model_type,mpl::bool_<model_is_modelcrbbase> >::type rbfunctionspace_type;
-
     typedef boost::shared_ptr<rbfunctionspace_type> rbfunctionspace_ptrtype;
-    typedef typename rbfunctionspace_type::ctxrbset_type rbfunctionspace_context_type;
-    typedef typename rbfunctionspace_type::ctxrbset_ptrtype rbfunctionspace_context_ptrtype;
+
+    template <typename TheRbSpaceType,int TheSubSpaceId>
+    struct RbSpaceCtxFromRbSpace
+    {
+        typedef typename TheRbSpaceType::template sub_rbfunctionspace<TheSubSpaceId>::type::ctxrbset_type type;
+    };
+    template <typename TheRbSpaceType>
+    struct RbSpaceCtxFromRbSpace<TheRbSpaceType,-1>
+    {
+        typedef typename TheRbSpaceType::ctxrbset_type type;
+    };
+    typedef typename RbSpaceCtxFromRbSpace<rbfunctionspace_type,SubSpaceId>::type rbfunctionspace_context_type;
+    typedef boost::shared_ptr<rbfunctionspace_context_type> rbfunctionspace_context_ptrtype;
 
     typedef ExprType expr_type;
     typedef boost::shared_ptr<expr_type> expr_ptrtype;
@@ -1572,12 +1582,18 @@ public:
         M_z_vector(),
         M_solution_vector(),
         M_t(),
-        M_ctxFeBasisEim( new context_type( this->functionSpace() ) ),
+                       //M_ctxFeBasisEim( new context_type( this->functionSpace() ) ),
         M_B(),
         M_offline_error(),
-        M_eim(),
-        M_internalModelFeFunc( this->functionSpace()->elementPtr() )
+        M_eim()
+                       //M_internalModelFeFunc( this->functionSpace()->elementPtr() )
         {
+           if ( this->functionSpace() )
+           {
+               M_ctxFeBasisEim.reset( new context_type( this->functionSpace() ) );
+               M_internalModelFeFunc = this->functionSpace()->elementPtr();
+           }
+
             this->initExprFeContex( mpl::bool_<use_subspace_element>() );
 
             this->addDBSubDirectory( "EIMFunction_"+model->modelName() );
@@ -1588,7 +1604,8 @@ public:
             }
             this->worldComm().barrier();
 
-            M_eim.reset( new eim_type( this, sampling , 1e-8, loadDB() ) );
+            if ( this->functionSpace() )
+                M_eim.reset( new eim_type( this, sampling , 1e-8, loadDB() ) );
 
             if ( !loadDB() )
             {
@@ -1602,11 +1619,13 @@ public:
 
     void initExprFeContex( mpl::false_ /**/ )
         {
-            M_ctxFeModelSolution.reset( new model_element_expr_context_type( M_model->functionSpace() ) );
+            if ( M_model->functionSpace() )
+                M_ctxFeModelSolution.reset( new model_element_expr_context_type( M_model->functionSpace() ) );
         }
     void initExprFeContex( mpl::true_ /**/ )
         {
-            M_ctxFeModelSolution.reset( new model_element_expr_context_type( M_model->functionSpace()->template functionSpace<SubSpaceId>() ) );
+            if ( M_model->functionSpace() )
+                M_ctxFeModelSolution.reset( new model_element_expr_context_type( M_model->functionSpace()->template functionSpace<SubSpaceId>() ) );
         }
 
     auto expr( parameter_type const& mu ) const
@@ -1726,10 +1745,11 @@ public:
     vector_type
     beta( parameter_type const& mu, size_type __M )
     {
+        DCHECK( M_ctxFeModelSolution ) << "no fe context";
+
         vector_type __beta( __M );
         __beta = this->operator()( *M_ctxFeModelSolution, mu , __M );
         DCHECK( __beta.size() == __M ) << "Invalid size beta: " << __beta.size() << " M=" << __M  << " beta = " << __beta << "\n";
-
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
 
         return __beta;
@@ -1787,7 +1807,7 @@ public:
             std::cout << "[EIMFunction::updateRbSpaceContext] cast fails with rbfunctionspace_ptrtype\n";
             return;
         }
-        std::cout << "[EIMFunction::updateRbSpaceContext] cast ok\n";
+        //std::cout << "[EIMFunction::updateRbSpaceContext] cast ok\n";
         rbfunctionspace_ptrtype rbspace = boost::any_cast<rbfunctionspace_ptrtype>( rbspacebase );
 
         M_ctxRbModelSolution.reset( new rbfunctionspace_context_type( rbspace ) );
@@ -1810,7 +1830,7 @@ public:
             std::cout << "[EIMFunction::setRbSpaceContext] cast fails with rbfunctionspace_context_ptrtype\n";
             return;
         }
-        std::cout << "[EIMFunction::setRbSpaceContext] cast ok\n";
+        //std::cout << "[EIMFunction::setRbSpaceContext] cast ok\n";
         M_ctxRbModelSolution = boost::any_cast<rbfunctionspace_context_ptrtype>( rbCtxBase );
     }
 
@@ -1927,6 +1947,7 @@ public:
             auto urbelt = ctx.rbFunctionSpace()->element();
             urbelt.container() = urb;
             auto eimexpr = this->expr( mu,urbelt );
+
             return evaluateFromContext( _context=ctx, _expr=eimexpr , _max_points_used=M,
                                         _mpi_communications=false, _projection=false );
         }
@@ -2869,9 +2890,16 @@ public:
 
         __ar & BOOST_SERIALIZATION_NVP( M_offline_error );
 
+        __ar & BOOST_SERIALIZATION_NVP( M_mu_sampling );
+
+        // save B
+        __ar & BOOST_SERIALIZATION_NVP( M_B );
+
+        DVLOG(2) << "B saved/loaded\n";
+
         if ( Archive::is_loading::value )
         {
-            if( M_q_vector.size() == 0 )
+            if( M_q_vector.size() == 0 && this->functionSpace() )
             {
                 for(int i = 0; i < M_max_q; i++ )
                 {
@@ -2886,7 +2914,7 @@ public:
             // save q
             DVLOG(2) << "q saved/loaded ( "<<M_max_g<<" elements ) ";
 
-            if( M_g_vector.size() == 0 )
+            if( M_g_vector.size() == 0 && this->functionSpace() )
             {
                 for(int i = 0; i < M_max_g; i++ )
                 {
@@ -2898,7 +2926,7 @@ public:
                 }
             }
 
-            if( M_z_vector.size() == 0 )
+            if( M_z_vector.size() == 0 && this->functionSpace() )
             {
                 for(int i = 0; i < M_max_z; i++ )
                 {
@@ -2909,9 +2937,10 @@ public:
                     __ar & BOOST_SERIALIZATION_NVP( M_z_vector[i] );
                 }
             }
+
             DVLOG(2) << "z saved/loaded ( "<<M_max_z<<" elements ) ";
 
-            if( M_solution_vector.size() == 0 )
+            if( M_solution_vector.size() == 0 && this->modelFunctionSpace() )
             {
                 for(int i = 0; i < M_max_solution; i++ )
                 {
@@ -2924,7 +2953,7 @@ public:
             DVLOG(2) << "vector of solutions saved/loaded ( "<<M_max_solution<<" elements ) \n";
 
             //add interpolation points to the context
-            if( M_ctxFeBasisEim->nPoints()==0 )
+            if( M_ctxFeBasisEim && M_ctxFeBasisEim->nPoints()==0 && M_ctxFeModelSolution )
             {
                 typename Feel::node<value_type>::type no(nDim);
                 for(int i=0 ; i<M_t.size(); i++)
@@ -2958,14 +2987,7 @@ public:
             }
         }
 
-        __ar & BOOST_SERIALIZATION_NVP( M_mu_sampling );
         DVLOG(2) << "vector of mu saved/loaded ( "<<M_M_max<<" elements ) ";
-
-        // save B
-        __ar & BOOST_SERIALIZATION_NVP( M_B );
-        if ( Archive::is_loading::value )
-            std::cout << "load EIM db done with name " << this->name() << " and M_B " << M_B.rows() << "," << M_B.cols() << " : " << M_B << "\n";
-        DVLOG(2) << "B saved/loaded\n";
     }
 
 private:
