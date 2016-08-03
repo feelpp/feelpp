@@ -231,6 +231,14 @@ struct line_permutations: public boost::detail::identifier<uint16_type, line_per
         this->assign( this->value()+1 );
         return *this;
     }
+
+private :
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & boost::serialization::base_object<boost::detail::identifier<uint16_type, line_permutations> >(*this);
+    }
 };
 
 enum line_permutations_dummy {};
@@ -265,6 +273,14 @@ struct triangular_faces_type: public boost::detail::identifier<uint16_type, tria
         this->assign( this->value()+1 );
         return *this;
     }
+
+private :
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & boost::serialization::base_object<boost::detail::identifier<uint16_type, triangular_faces_type> >(*this);
+    }
 };
 
 struct quadrangular_faces: public boost::detail::identifier<uint16_type, quadrangular_faces>
@@ -297,6 +313,14 @@ struct quadrangular_faces: public boost::detail::identifier<uint16_type, quadran
     {
         this->assign( this->value()+1 );
         return *this;
+    }
+
+private :
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & boost::serialization::base_object<boost::detail::identifier<uint16_type, quadrangular_faces> >(*this);
     }
 };
 /// \endcond
