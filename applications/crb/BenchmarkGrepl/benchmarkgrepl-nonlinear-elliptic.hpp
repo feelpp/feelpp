@@ -177,11 +177,15 @@ public:
 
     BenchmarkGreplNonlinearElliptic()
         :
-        super_type( "BenchMarkGreplNonlinearElliptic" + std::to_string(Order) )
+        super_type( "BenchMarkGreplNonlinearElliptic" + std::to_string(Order) ),
+        M_use_newton( boption(_name="crb.use-newton") ),
+        M_useSerErrorEstimation( boption(_name="ser.error-estimation") )
         {}
 
     //! initialization of the model
     void initModel();
+    void initOnlineEim();
+
     //@}
 
     virtual beta_vector_type computeBetaInitialGuess( parameter_type const& mu )
@@ -305,7 +309,7 @@ public:
             this->M_betaRqm[1][0][0] = 1;
         }
         //else
-        if( !M_use_newton || boption(_name="ser.error-estimation") )
+        if( !M_use_newton || M_useSerErrorEstimation )
         {
             this->M_betaAqm[0][0]=1;
             this->M_betaFqm[0][0].resize(M);
@@ -374,17 +378,41 @@ private:
     std::vector<vector_ptrtype> M_monoF;
 
     bool M_use_newton;
+    bool M_useSerErrorEstimation;
 
     std::vector< std::vector< element_ptrtype > > M_InitialGuess;
 
 };
 
+
+template<int Order>
+void BenchmarkGreplNonlinearElliptic<Order>::initOnlineEim()
+{
+    this->M_betaAqm.resize( 1 );
+    this->M_betaAqm[0].resize( 1 );
+    this->M_betaFqm.resize(2);
+    this->M_betaFqm[0].resize( 2 );
+    //this->M_betaFqm[0][0].resize( M );
+    this->M_betaFqm[0][1].resize( 1 );
+    this->M_betaFqm[1].resize( 1 );
+    this->M_betaFqm[1][0].resize( 1 );
+
+    boost::shared_ptr<space_type_eimg> Xh_eimg;
+    if ( !pT )
+        pT.reset( new element_type );
+
+    auto eim_g = eim( _model=boost::dynamic_pointer_cast< BenchmarkGreplNonlinearElliptic<Order> >( this->shared_from_this() ),
+                      _element=*pT,
+                      _space=Xh_eimg,
+                      _parameter=M_mu,
+                      _expr=( cst_ref(M_mu(0))/cst_ref(M_mu(1)) )*( exp( cst_ref(M_mu(1))*_e1 ) - 1 ),
+                      //_sampling=Pset,
+                      _name="eim_g" );
+    this->addEim( eim_g );
+}
 template<int Order>
 void BenchmarkGreplNonlinearElliptic<Order>::initModel()
 {
-
-    M_use_newton = boption(_name="crb.use-newton");
-
     std::string mshfile_name = option("mshfile").as<std::string>();
 
     /*
@@ -519,7 +547,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
         this->M_Rqm[1][0][0]= backend()->newVector( this->Xh );
     }
 
-    if( !M_use_newton || boption(_name="ser.error-estimation") )
+    if( !M_use_newton || M_useSerErrorEstimation )
     {
         this->M_betaAqm.resize( 1 );
         this->M_betaAqm[0].resize( 1 );
@@ -739,7 +767,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::assemble()
         assembleResidualWithAffineDecomposition( this->M_Rqm );
     }
 
-    if( !M_use_newton || boption(_name="ser.error-estimation") )
+    if( !M_use_newton || M_useSerErrorEstimation )
     {
         auto v = Xh->element();
         auto eim_g = this->scalarContinuousEim()[0];
