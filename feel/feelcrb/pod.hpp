@@ -358,7 +358,10 @@ void POD<TruthModelType>::fillPodMatrix( const wn_type& elements_set)
             M_pod_matrix( i,i ) = M_model->scalarProductForPod( bdfi->unknown( 0 ), bdfi->unknown( 0 ) );
         }
         double time=timer.elapsed();
-        Feel::cout<<"POD matrix filled in  "<<time<<" s"<<std::endl;
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"POD matrix filled in  "<<time<<" s"<<std::endl;
+        }
     }//fill pod matrix with solutions
     else
     {
