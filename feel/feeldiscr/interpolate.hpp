@@ -155,12 +155,16 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
         typedef boost::multi_array<typename f_fectx_type::id_type,1> array_type;
         array_type fvalues( f.idExtents( *fectx ) );
 
+
+
+        typename f_fectx_type::id_type m_id( basis_type::nComponents1, basis_type::nComponents2);
         for ( ; it != en; ++ it )
         {
             domain_geoelement_type const& curElt = boost::unwrap_ref(*it);
             __c->update( curElt );
             fectx->update( __c, pc );
-            std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), f_fectx_type::id_type::Zero() );
+
+            std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), m_id.constant(0.));
             f.id( *fectx, fvalues );
 
             //std::cout << "interpfunc :  " << interpfunc << "\n";
@@ -241,7 +245,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
         std::vector<boost::tuple<size_type,uint16_type > > itab;
 
         size_type first_dof = space->dof()->firstDof();
-
+        typename f_fectx_type::id_type m_id( SpaceType::nComponents1, SpaceType::nComponents2 );
         for ( ; it != en; ++ it )
         {
             domain_geoelement_type const& curElt = boost::unwrap_ref(*it);
@@ -276,7 +280,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                     //typename FunctionType::id_type interpfunc( f.id( *__c, pc ) );
                     //typename FunctionType::id_type interpfunc;
 
-                    std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), f_fectx_type::id_type::Zero() );
+                    std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), m_id.constant(0.) );
                     f.id( *fectx, fvalues );
                     //std::cout << "interpfunc :  " << interpfunc << "\n";
 

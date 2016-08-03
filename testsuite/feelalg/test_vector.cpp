@@ -102,12 +102,14 @@ BOOST_AUTO_TEST_CASE( test_vector_ublas_operations )
 
     auto backendPetsc = backend(_kind="petsc");
     auto v_petsc1 = backendPetsc->newVector( Vh1 );
+    auto v_petsc2 = backendPetsc->newVector( Vh2 );
     auto v_petsc3 = backendPetsc->newVector( Vh3 );
 
 
     size_type nDofVh1 = Vh1->nDof();
     size_type nLocalDofWithGhostVh1 = Vh1->nLocalDofWithGhost();
     size_type nDofVh2 = Vh2->nDof();
+    size_type nLocalDofWithGhostVh2 = Vh2->nLocalDofWithGhost();
     size_type nDofVh2a = v2a.functionSpace()->nDof();
     size_type nLocalDofWithGhostVh2a = v2a.functionSpace()->nLocalDofWithGhost();
     size_type nDofVh2b = v2b.functionSpace()->nDof();
@@ -172,6 +174,22 @@ BOOST_AUTO_TEST_CASE( test_vector_ublas_operations )
     v2a = *v_petsc3;
     BOOST_CHECK( v2a.sum() == 4*nDofVh2a );
     BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(v2a), 4*nLocalDofWithGhostVh2a, tolCheck );
+    // operator= (from petsc vector to element type not init)
+    decltype(Vh1)::element_type::element_type u1NotInit;
+    u1NotInit = *v_petsc1;
+    BOOST_CHECK( u1NotInit.sum() == 2*nDofVh1 );
+    BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(v1), 2*nLocalDofWithGhostVh1, tolCheck );
+    decltype(Vh2)::element_type::element_type u2NotInit;
+    v_petsc2->setConstant( 4 );
+    u2NotInit = *v_petsc2;
+    BOOST_CHECK( u2NotInit.sum() == 4*nDofVh2 );
+    BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(u2NotInit), 4*nLocalDofWithGhostVh2, tolCheck );
+    decltype(Vh3)::element_type::element_type u3NotInit;
+    v2a.setConstant( 5 );
+    u3NotInit = v2a;
+    BOOST_CHECK( u3NotInit.sum() == 5*nDofVh3 );
+    BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(u3NotInit), 5*nLocalDofWithGhostVh2a, tolCheck );
+
     // add vector
     v1.setConstant( 2 );
     v2a.setConstant( 5 );
