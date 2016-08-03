@@ -201,6 +201,14 @@ struct no_permutation: public boost::detail::identifier<uint16_type, no_permutat
         this->assign( this->value()+1 );
         return *this;
     }
+private :
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & boost::serialization::base_object<boost::detail::identifier<uint16_type, no_permutation> >(*this);
+    }
+
 };
 
 
