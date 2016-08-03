@@ -464,7 +464,7 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::updateHeap(
                it is sure that *n0it is a DONE neighbours */
             // one neighbor
             ids.push_back(*n0it);
-            value_type phiNew = fmsDistN( ids );
+            value_type phiNew = fmsDistN( ids, *M_distance );
             ids.pop_back();
 
             /*compute all the phi possible with all the neighbors around and returns the smallest one*/
@@ -478,12 +478,14 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::updateHeap(
 FASTMARCHINGBASE_CLASS_TEMPLATE_DECLARATIONS
 typename FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::value_type
 FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::fmsDistN( 
-        std::vector<size_type> const & ids ) const
+        std::vector<size_type> const & ids,
+        element_type const & __v
+        ) const
 {
     /*VD :
      * return value of phi calculated from the KNOWN points having id contained in ids
      * first entry if ids is the index of the point to calculate
-     * values of phi at ids are stored in M_distance (calculated previously)
+     * values of phi at ids are stored in __v (calculated previously)
      */
 
     uint32_type nPts = ids.size()-1; // number of KNOWN points
@@ -508,9 +510,9 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::fmsDistN(
         basis[i] *= wNorm[i];
         if ( i<nPts-1 )
         {
-            n[i] = (*M_distance)[ids[i+1]]-(*M_distance)[ids[0]];
+            n[i] = __v[ids[i+1]]-__v[ids[0]];
             for ( uint32_type k=0; k<i; ++k )
-                n[i] -= ( (*M_distance)[ids[k+1]] - (*M_distance)[ids[0]] ) * q[i][k] * wNorm[k];
+                n[i] -= ( __v[ids[k+1]] - __v[ids[0]] ) * q[i][k] * wNorm[k];
             n[i] *= wNorm[i];
             n_rest -= n[i]*n[i];
         }
@@ -521,7 +523,7 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::fmsDistN(
             else if ( n_rest < 0.0 )
                 n_rest = 0.0;
             n[i] = std::sqrt( n_rest );
-            if ( (*M_distance)[ids[0]] < 0.0 )
+            if ( __v[ids[0]] < 0.0 )
                 n[i] *= -1.0;
         }
         grad += n[i]*basis[i];
@@ -548,7 +550,7 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::fmsDistN(
     }
     inside &= lambdaTot <= 1.0; // simplex assumed!
 
-    return inside ? (*M_distance)[ids[0]] + dot( grad, dx ) : 0.0;
+    return inside ? __v[ids[0]] + dot( grad, dx ) : 0.0;
 } // fmsDistN
 
 FASTMARCHINGBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -595,7 +597,7 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::fmsDistRec(
         ids.push_back(*nit);
 
         ids.push_back(idClose);
-        value_type phiCand = fmsDistN( ids );
+        value_type phiCand = fmsDistN( ids, *M_distance );
         ids.pop_back();
         if ( phiCand != 0.0 )
             phiNew = closerOne( phiCand, phiNew );

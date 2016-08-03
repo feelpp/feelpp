@@ -21,6 +21,7 @@ public:
     typedef typename super_type::element_type element_type;
     typedef typename super_type::element_ptrtype element_ptrtype;
     typedef typename super_type::value_type value_type;
+    static const uint16_type Dim = super_type::Dim;
 
     typedef typename super_type::periodicity_type periodicity_type;
 
@@ -49,11 +50,14 @@ private:
     element_ptrtype getDistance() const { return super_type::getDistance(); }
 
     //--------------------------------------------------------------------//
-    value_type fmsFrontDistN( std::vector<size_type> const& ids ) const;
-
-    value_type fmsFrontDistRec( std::vector<size_type> & ids,
-                           size_type idClose,
-                           value_type phiOld ) const;
+    value_type fmsNNDistRec( 
+            std::vector<size_type> & ids,
+            size_type idClose,
+            value_type phiOld ) const;
+    value_type fmsNextNNDistRec( 
+            std::vector<size_type> & ids,
+            size_type idClose,
+            value_type phiOld ) const;
     //--------------------------------------------------------------------//
     element_ptrtype M_selfLabel;
     element_ptrtype M_label;
@@ -238,20 +242,17 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::updateHeap( size_type idDone )
             if (this->getDofStatus(*n0it) == super_type::FAR )
                this->setDofStatus(*n0it, super_type::CLOSE);
             //if (this->getDofStatus(*n0it) == super_type::CLOSE )
-            if( (*M_NNLabel)[*n0it] == invalid_uint16_type_value 
-             || (*M_nextNNLabel)[*n0it] == invalid_uint16_type_value )
+
+            bool hasNNLabel = ( (*M_NNLabel)[*n0it] != invalid_uint16_type_value );
+            bool hasNextNNLabel = ( (*M_nextNNLabel)[*n0it] != invalid_uint16_type_value );
+            if( !hasNNLabel || !hasNextNNLabel )
             {
                 /* to give a reference, compute phi with only one DONE neighbours
                    it is sure that *n0it is a DONE neighbours */
                 // one neighbor
                 ids.push_back(*n0it);
-                value_type phiNew = this->fmsDistN( ids );
+                value_type phiNew = this->fmsDistN( ids, *(this->M_distance) );
                 ids.pop_back();
-
-                /*compute all the phi possible with all the neighbors around and returns the smallest one*/
-                phiNew = this->fmsDistRec( ids, *n0it, phiNew );
-
-                this->heap().change( std::make_pair( phiNew, *n0it ) );
 
                 // update M_label if phiNew < phiCurrent
                 if( std::abs(phiNew) < std::abs((*M_labelDist)[*n0it]) )
@@ -259,6 +260,15 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::updateHeap( size_type idDone )
                     (*M_label)[*n0it] = (*M_label)[idDone];
                     (*M_labelDist)[*n0it] = phiNew;
                 }
+                /*compute all the phi possible with all the neighbors around 
+                 * and returns the smallest one*/
+                if( !hasNNLabel )
+                    phiNew = this->fmsNNDistRec( ids, *n0it, phiNew );
+                else if( !hasNextNNLabel )
+                    phiNew = this->fmsNextNNDistRec( ids, *n0it, phiNew );
+
+                this->heap().change( std::make_pair( phiNew, *n0it ) );
+
 
             } // if CLOSE
         }
@@ -275,6 +285,108 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::updateHeap( size_type idDone )
     M_ex->step(M_count_iteration)->add("nextNNdistance", *M_nextNNDistance);
     M_ex->save();
 #endif
+}
+
+LABELDISTANCEFMS_CLASS_TEMPLATE_DECLARATIONS
+typename LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::value_type
+LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::fmsNNDistRec( 
+        std::vector<size_type> & ids,
+        size_type idClose,
+        value_type phiOld ) const
+{
+    /*search for all neighbors with L1 done
+      recalculate phi with all the neighbors using NNDistance
+      returns the smallest phi  */
+
+    // only allows for getting at maximum 2 nodes in 2d and 3 nodes in 3d
+    if ( ids.size() >= Dim )
+        return phiOld;
+
+    value_type phiNew(phiOld);
+
+    std::set<size_type> const & nbrs = this->M_neighbors.find(idClose)->second;
+    for (auto nit = nbrs.begin(); nit != nbrs.end(); ++nit )
+    {
+        // if the next neighbors is not a neighbor with L1 done
+        if( (*M_NNLabel)[*nit] == invalid_uint16_type_value )
+            continue;
+
+        // if this node has already been accepted, stop
+        bool unique = true;
+        for ( auto idsit=ids.begin(); idsit != ids.end(); ++idsit )
+            unique &= ( *idsit != *nit );
+        if ( !unique ) // points must be unique
+            continue;
+
+        if ( this->M_neighbors.find(ids[0])->second.find(*nit) ==
+                this->M_neighbors.find(ids[0])->second.end() )
+            continue;
+
+        // one neighbor more
+        ids.push_back(*nit);
+
+        ids.push_back(idClose);
+        value_type phiCand = this->fmsDistN( ids, *M_NNDistance );
+        ids.pop_back();
+        if ( phiCand != 0.0 )
+            phiNew = super_type::closerOne( phiCand, phiNew );
+
+        phiNew = fmsNNDistRec( ids, idClose, phiNew );
+
+        ids.pop_back();
+    }
+    return phiNew;
+}
+
+LABELDISTANCEFMS_CLASS_TEMPLATE_DECLARATIONS
+typename LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::value_type
+LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::fmsNextNNDistRec( 
+        std::vector<size_type> & ids,
+        size_type idClose,
+        value_type phiOld ) const
+{
+    /*search for all neighbors with L2 done
+      recalculate phi with all the neighbors using nextNNDistance
+      returns the smallest phi  */
+
+    // only allows for getting at maximum 2 nodes in 2d and 3 nodes in 3d
+    if ( ids.size() >= Dim )
+        return phiOld;
+
+    value_type phiNew(phiOld);
+
+    std::set<size_type> const & nbrs = this->M_neighbors.find(idClose)->second;
+    for (auto nit = nbrs.begin(); nit != nbrs.end(); ++nit )
+    {
+        // if the next neighbors is not a neighbor with L2 done
+        if( (*M_nextNNLabel)[*nit] == invalid_uint16_type_value )
+            continue;
+
+        // if this node has already been accepted, stop
+        bool unique = true;
+        for ( auto idsit=ids.begin(); idsit != ids.end(); ++idsit )
+            unique &= ( *idsit != *nit );
+        if ( !unique ) // points must be unique
+            continue;
+
+        if ( this->M_neighbors.find(ids[0])->second.find(*nit) ==
+                this->M_neighbors.find(ids[0])->second.end() )
+            continue;
+
+        // one neighbor more
+        ids.push_back(*nit);
+
+        ids.push_back(idClose);
+        value_type phiCand = this->fmsDistN( ids, *M_nextNNDistance );
+        ids.pop_back();
+        if ( phiCand != 0.0 )
+            phiNew = super_type::closerOne( phiCand, phiNew );
+
+        phiNew = fmsNextNNDistRec( ids, idClose, phiNew );
+
+        ids.pop_back();
+    }
+    return phiNew;
 }
 
 #undef LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE

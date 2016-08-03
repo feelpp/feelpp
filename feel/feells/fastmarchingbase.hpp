@@ -89,7 +89,7 @@ protected:
 
     //--------------------------------------------------------------------//
 
-    value_type fmsDistN( std::vector<size_type> const& ids ) const;
+    value_type fmsDistN( std::vector<size_type> const& ids, element_type const & __v ) const;
 
     value_type fmsDistRec( std::vector<size_type> & ids,
                            size_type idClose,
