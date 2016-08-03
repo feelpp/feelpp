@@ -1451,7 +1451,7 @@ protected :
 
 
 
-template<typename ModelType, typename SpaceType, typename ExprType, int SubSpaceId = -1>
+template<typename ModelType, typename SpaceType, typename ExprType, int SubSpaceId = -1, int SubSpaceId2 = -1>
 class EIMFunction
     : public EIMFunctionBase<SpaceType, typename ModelType::functionspace_type, typename ModelType::parameterspace_type>
 {
@@ -1493,9 +1493,11 @@ public:
                                typename model_functionspace_type::element_type,
                                fake_element_composite_type >::type model_element_composite_type;
     typedef typename mpl::if_< mpl::bool_<use_subspace_element>,
-                               //mpl::identity<typename model_functionspace_type::element_type::template sub_element<SubSpaceId>::type>,
                                mpl::identity<typename model_element_composite_type::template sub_element<SubSpaceId>::type>,
                                mpl::identity<typename model_functionspace_type::element_type> >::type::type model_element_expr_type;
+    typedef typename mpl::if_< mpl::bool_<use_subspace_element>,
+                               mpl::identity<typename model_element_composite_type::template sub_element<SubSpaceId2>::type>,
+                               mpl::identity<typename model_functionspace_type::element_type> >::type::type model_element2_expr_type;
 
     typedef typename model_element_expr_type::functionspace_type  model_element_expr_functionspace_type;
     typedef typename model_element_expr_functionspace_type::Context model_element_expr_context_type;
@@ -1564,6 +1566,7 @@ public:
     EIMFunction( model_ptrtype model,
                  functionspace_ptrtype space,
                  model_element_expr_type &u,
+                 model_element2_expr_type &u2,
                  parameter_type& mu,
                  expr_type& expr,
                  sampling_ptrtype sampling,
@@ -1573,6 +1576,7 @@ public:
         M_model( model ),
         M_expr( expr ),
         M_u( &u ),
+        M_u2( &u2 ),
         M_mu( mu ),
         M_crb_built( false ),
         M_crbmodel_built( false ),
@@ -1634,7 +1638,7 @@ public:
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        return M_expr( idv(*M_u) );
+        return M_expr( idv(*M_u), idv(*M_u2) );
     }
 
     auto expr( parameter_type const& mu, model_solution_type const& u ) const
@@ -1652,9 +1656,12 @@ public:
     }
     auto expr( model_solution_type const& u, mpl::true_ /**/ ) const
     {
-        auto uexpr = u.template element<SubSpaceId>();
+        auto const& uexpr = u.template element<SubSpaceId>();
         *M_u = uexpr;
-        return M_expr( idv(uexpr) );
+        auto const& uexpr2 = u.template element<SubSpaceId2>();
+        if ( SubSpaceId != SubSpaceId2 )
+            *M_u2 = uexpr2;
+        return M_expr( idv(uexpr), idv(uexpr2) );
     }
 
     auto expr( parameter_type const& mu, typename rbfunctionspace_type::element_type const& urb ) const
@@ -2995,6 +3002,7 @@ private:
     expr_type M_expr;
     // model_solution_type& M_u;
     model_element_expr_type * M_u;
+    model_element2_expr_type * M_u2;
     parameter_type& M_mu;
     crbmodel_ptrtype M_crbmodel;
     crb_ptrtype M_crb;
@@ -3036,11 +3044,15 @@ struct compute_eim_return
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::expr>::type>::type expr_type;
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::element>::type>::type element_type;
+    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::element2,element_type>::type>::type element2_type;
     static const int subspaceid = mpl::if_< mpl::bool_< model_type::functionspace_type::is_composite>,
                                             mpl::int_<element_type::functionspace_type::basis_type::TAG>,// must be improve! loop on subspaces and detect the same
                                             mpl::int_<-1> >::type::value;
+    static const int subspaceid2 = mpl::if_< mpl::bool_< model_type::functionspace_type::is_composite>,
+                                            mpl::int_<element2_type::functionspace_type::basis_type::TAG>,// must be improve! loop on subspaces and detect the same
+                                            mpl::int_<-1> >::type::value;
 
-    typedef EIMFunction<model_type, space_type, expr_type, subspaceid> type;
+    typedef EIMFunction<model_type, space_type, expr_type, subspaceid, subspaceid2 > type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 }
@@ -3058,6 +3070,7 @@ BOOST_PARAMETER_FUNCTION(
       ( space, *)
         ) // required
     ( optional
+      ( in_out(element2),        *, element )
       //( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ), model->functionSpace() )
       //( space, *, model->functionSpace() )
       ( sampling, *, model->parameterSpace()->sampling() )
@@ -3070,7 +3083,7 @@ BOOST_PARAMETER_FUNCTION(
 #endif
     typedef typename Feel::detail::compute_eim_return<Args>::type eim_type;
     typedef typename Feel::detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
-    return boost::make_shared<eim_type>( model, space, element, parameter, expr, sampling, name );
+    return boost::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name );
 } // eim
 
 
