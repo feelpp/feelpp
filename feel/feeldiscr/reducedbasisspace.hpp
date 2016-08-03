@@ -56,6 +56,32 @@ typedef parameter::parameters<
     , parameter::optional<parameter::deduced<tag::periodicity_type>, boost::is_base_and_derived<Feel::detail::periodicity_base,_> >
     > reducedbasisspace_signature;
 
+
+namespace detail
+{
+template<typename RbSpaceType>
+struct InitializeRbSubSpace
+{
+    InitializeRbSubSpace( RbSpaceType const& rbSpaceType )
+        :
+        M_rbSpaceType( rbSpaceType )
+    {}
+
+    template <typename T>
+    void operator()( T & x ) const
+    {
+        typedef typename T::first_type key_type;
+        typedef typename T::second_type::element_type rbsubspace_type;
+        auto rbSubSpace = boost::shared_ptr<rbsubspace_type>( new rbsubspace_type( M_rbSpaceType.worldComm() ) );
+        rbSubSpace->setModel( M_rbSpaceType.model(), false );
+        rbSubSpace->setFunctionSpace( M_rbSpaceType.template subFeFunctionSpace<key_type::value>() );
+        x = std::make_pair(key_type(), rbSubSpace);
+    }
+private :
+    RbSpaceType const& M_rbSpaceType;
+};
+}
+
 /**
  * \class ReducedBasisSpace
  * \brief Reduced Basis Space class
@@ -165,6 +191,26 @@ public :
     typedef typename super::basis_type basis_type;
 #endif
 
+    template<int i>
+    struct sub_rbfunctionspace
+    {
+        typedef ReducedBasisSpace<model_type, typename fespace_type::template sub_functionspace<i>::type > type;
+        typedef boost::shared_ptr<type> ptrtype;
+    };
+
+    template<typename keyType>
+    struct ChangeRbSpace
+    {
+        typedef std::pair< keyType, typename sub_rbfunctionspace<keyType::value>::ptrtype > the_type;
+        typedef typename mpl::if_<mpl::bool_<fespace_type::is_composite>,
+                                  mpl::identity<the_type>,
+                                  mpl::identity<boost::none_t> >::type::type type;
+    };
+    typedef mpl::range_c<int,0, fespace_type::nSpaces> rangeRbSpaceType;
+    typedef typename mpl::transform< rangeRbSpaceType, ChangeRbSpace<mpl::_1>,
+                                    mpl::back_inserter<fusion::vector<> > >::type rbfunctionspace_vector_type;
+
+
 #if 0
     ReducedBasisSpace( model_ptrtype const& model )
         :
@@ -187,20 +233,30 @@ public :
             {
                 this->setFunctionSpace( model->functionSpace() );
             }
-            //this->init();
+            else
+                this->init( mpl::bool_<fespace_type::is_composite>() );
         }
-    void setFunctionSpace( functionspace_ptrtype const& feSpace )
+    template< typename TheSpaceType>
+    void setFunctionSpace( TheSpaceType const& feSpace )
+        {
+            this->setFunctionSpace( feSpace, mpl::bool_< boost::is_same<TheSpaceType,functionspace_ptrtype>::value> () );
+        }
+    template< typename TheSpaceType>
+    void setFunctionSpace( TheSpaceType/*functionspace_ptrtype*/ const& feSpace, mpl::false_ )
+        {}
+    void setFunctionSpace( functionspace_ptrtype const& feSpace, mpl::true_ )
         {
             if ( feSpace )
             {
                 super::shallowCopy( feSpace );
                 M_mesh = feSpace->mesh();
+                this->init( mpl::bool_<fespace_type::is_composite>() );
             }
         }
-    void setModel( model_ptrtype const& model )
+    void setModel( model_ptrtype const& model, bool useFeModelSpace = true )
         {
             M_model = model;
-            if ( model && model->functionSpace() )
+            if ( useFeModelSpace && model && model->functionSpace() )
             {
                 this->setFunctionSpace( model->functionSpace() );
             }
@@ -225,9 +281,14 @@ public :
         M_mesh( rb->M_mesh )
         {}
 
-    void init()
+    void init( mpl::false_ )
         {
             //M_rbbasis = rbbasis_ptrtype( new rb_basis_type() );
+        }
+    void init( mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::InitializeRbSubSpace<this_type>( *this ) );
         }
 
     void setup( boost::property_tree::ptree const& ptree, std::string const& dbDir )
@@ -405,7 +466,7 @@ public :
         }
 
 
-    model_ptrtype model()
+    model_ptrtype const& model() const
         {
             return M_model;
         }
@@ -421,6 +482,13 @@ public :
             //return this->shared_from_this();
         }
 
+    template<int i>
+    typename sub_rbfunctionspace<i>::type::fespace_ptrtype const&
+    subFeFunctionSpace() const
+    {
+        return super::template functionSpace<i>();
+    }
+
     /**
      * save mesh on disk
      */
@@ -432,8 +500,6 @@ public :
             toc("ReducedBasisSpace::saveMesh",FLAGS_v>0);
 #endif
         }
-
-
 
     class ContextRB
         :
@@ -481,6 +547,10 @@ public :
             }
 
         reducedbasisspace_ptrtype rbSpace() const { return M_rbspace; }
+
+        void setRbSpace( reducedbasisspace_ptrtype const& rbspace ) { M_rbspace = rbspace; }
+
+        void setMeshForRbContext( mesh_ptrtype const& meshForRbContext )  { M_meshForRbContext = meshForRbContext; }
 
         void update()
             {
@@ -647,7 +717,7 @@ public :
     private :
 
         friend class boost::serialization::access;
-
+#if 0
         template<class Archive>
         void serialize(Archive & ar, const unsigned int version)
             {
@@ -657,11 +727,69 @@ public :
                 if ( Archive::is_loading::value )
                     std::cout << "M_phi="<<M_phi<<"\n";
             }
+#else
+        template<class Archive>
+        void save( Archive & ar, const unsigned int version ) const
+            {
+                ar & BOOST_SERIALIZATION_NVP( M_index );
+                ar & BOOST_SERIALIZATION_NVP( M_phi );
+                ar & BOOST_SERIALIZATION_NVP( M_grad );
+                typename super::geometric_mapping_context_ptrtype/*auto*/ gmContext = this->gmContext();
+                auto const& meshEltCtx = gmContext->element();
+                ar & BOOST_SERIALIZATION_NVP( meshEltCtx );
+                //ar & BOOST_SERIALIZATION_NVP( *gmContext );
+                ar & boost::serialization::make_nvp( "gmContext", *gmContext );
 
+            }
+
+        template<class Archive>
+        void load( Archive & ar, const unsigned int version )
+            {
+                std::cout <<" load crbctx archive\n";
+                ar & BOOST_SERIALIZATION_NVP( M_index );
+                ar & BOOST_SERIALIZATION_NVP( M_phi );
+                ar & BOOST_SERIALIZATION_NVP( M_grad );
+                std::cout << "M_phi="<<M_phi<<"\n";
+                geoelement_type meshEltCtx;
+                ar & BOOST_SERIALIZATION_NVP( meshEltCtx );
+                if ( M_rbspace )
+                {
+                    std::cout << "has rbspace\n";
+                    if ( M_rbspace->mesh() )
+                    {
+                        std::cout << "has mesh in rbspace\n";
+                        CHECK ( M_meshForRbContext->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) ) << "fails because mesh doesnt have the element reloaded for gmc";
+                        auto const& meshEltCtxRegister = M_rbspace->mesh()->element( meshEltCtx.id(), meshEltCtx.processId() );
+                        typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_rbspace->mesh()->gm(),meshEltCtxRegister ) );
+                        ar & boost::serialization::make_nvp( "gmContext", *gmContext );
+                        this->setGmContext( gmContext );
+                    }
+                    else if ( M_meshForRbContext )
+                    {
+                        //CHECK( false ) << "TODO meshForRbContext";
+                        if ( !M_meshForRbContext->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) )
+                        {
+                            meshEltCtx.setMeshAndGm( M_meshForRbContext.get(), M_meshForRbContext->gm(), M_meshForRbContext->gm1() );
+                            M_meshForRbContext->addElement( meshEltCtx, false );
+                        }
+                        auto const& meshEltCtxRegister = M_meshForRbContext->element( meshEltCtx.id(), meshEltCtx.processId() );
+                        typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_meshForRbContext->gm(),meshEltCtxRegister ) );
+                        ar & boost::serialization::make_nvp( "gmContext", *gmContext );
+                        this->setGmContext( gmContext );
+                    }
+                    else
+                        CHECK( false ) << "fails because no mesh defined";
+                }
+                //typename super::geometric_mapping_context_ptrtype gmc( new typename super::geometric_mapping_context_type( M_rbspace->mesh()->gm(),meshEltCtx ) );
+
+            }
+        BOOST_SERIALIZATION_SPLIT_MEMBER()
+#endif
 
     private :
         int M_index;
         reducedbasisspace_ptrtype M_rbspace;
+        mesh_ptrtype M_meshForRbContext; // only init when reload serialisation and no mesh defined in rbspace
         eigen_matrix_type M_phi;
         std::vector<std::vector< eigen_vector_type> > M_grad;
 
@@ -812,18 +940,66 @@ public :
 
     private :
         friend class boost::serialization::access;
-
+#if 0
         template<class Archive>
         void serialize(Archive & ar, const unsigned int version)
         {
             ar & boost::serialization::base_object<super>(*this);
             ar & BOOST_SERIALIZATION_NVP( M_nPoints );
         }
+#else
+        template<class Archive>
+        void save( Archive & ar, const unsigned int version ) const
+            {
+                ar & BOOST_SERIALIZATION_NVP( M_nPoints );
+                std::vector<int> rbCtxKeys;
+                for ( auto const& rbCtxPair : *this )
+                    rbCtxKeys.push_back( rbCtxPair.first );
+                ar & BOOST_SERIALIZATION_NVP( rbCtxKeys );
+                for ( int rbCtxKey : rbCtxKeys )
+                {
+                    std::string rbctxNameInSerialization = (boost::format("rbSpaceContext_%1%")%rbCtxKey).str();
+                    ar & boost::serialization::make_nvp( rbctxNameInSerialization.c_str(), *(this->find( rbCtxKey )->second) );
+                }
+
+            }
+
+        template<class Archive>
+        void load( Archive & ar, const unsigned int version )
+            {
+                std::cout << "reload rbctxset\n";
+                if ( M_rbspace )
+                {
+                    std::cout << "reload rbctxset with rbspace\n";
+                    if ( !M_rbspace->mesh() )
+                        M_meshForRbContext.reset( new mesh_type( M_rbspace->worldComm() ) );
+                }
+
+                ar & BOOST_SERIALIZATION_NVP( M_nPoints );
+                std::vector<int> rbCtxKeys;
+                ar & BOOST_SERIALIZATION_NVP( rbCtxKeys );
+                for ( int rbCtxKey : rbCtxKeys )
+                {
+                    std::string rbctxNameInSerialization = (boost::format("rbSpaceContext_%1%")%rbCtxKey).str();
+                    boost::shared_ptr<ContextRB> rbCtxReload( new ContextRB );
+                    if ( M_rbspace )
+                    {
+                        rbCtxReload->setRbSpace( M_rbspace );
+                        if ( !M_rbspace->mesh() )
+                            rbCtxReload->setMeshForRbContext( M_meshForRbContext );
+                    }
+                    ar & boost::serialization::make_nvp( rbctxNameInSerialization.c_str(), *rbCtxReload );
+                    this->operator[]( rbCtxKey ) = rbCtxReload;
+                }
+            }
+        BOOST_SERIALIZATION_SPLIT_MEMBER()
+#endif
 
     private :
         fe_context_type M_ctx_fespace;
         rbspace_ptrtype M_rbspace;
         int M_nPoints;
+        mesh_ptrtype M_meshForRbContext; // only init when reload serialisation and no mesh defined in rbspace
     };
     typedef ContextRBSet ctxrbset_type;
     typedef boost::shared_ptr<ctxrbset_type> ctxrbset_ptrtype;
@@ -1392,7 +1568,26 @@ public :
             return Feel::expansion( M_primal_rb_basis, unknown , number_of_coeff );
         }
 
+
+    rbfunctionspace_vector_type const&
+    rbfunctionspaces() const
+    {
+        return M_rbfunctionspaces;
+    }
+
+    /**
+     * get the \p i -th \c FunctionSpace out the list
+     */
+    template<int i>
+    typename mpl::at_c<rbfunctionspace_vector_type,i>::type::second_type const&
+    rbFunctionSpace() const
+    {
+        return fusion::at_c<i>( M_rbfunctionspaces ).second;
+    }
+
+
 private :
+    rbfunctionspace_vector_type M_rbfunctionspaces;
     rb_basis_type M_primal_rb_basis;
     rb_basis_type M_dual_rb_basis;
     mesh_ptrtype M_mesh;
