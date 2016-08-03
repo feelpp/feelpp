@@ -263,21 +263,21 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
                 M_expr( expr.expression(), geom ),                     \
                 M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
-                        update( geom );                                 \
+                        /*update( geom );*/                             \
                     }                                                   \
             tensor( this_type const& expr,Geo_t const& geom, Basis_i_t const& /*fev*/ ) \
                 :                                                       \
                 M_expr( expr.expression(), geom ),                     \
                 M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
-                        update( geom );                                 \
+                        /*update( geom );*/                             \
                     }                                                   \
             tensor( this_type const& expr, Geo_t const& geom )             \
                 :                                                       \
                 M_expr( expr.expression(), geom ),                     \
                 M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
-                        update( geom );                                 \
+                        /*update( geom );*/                             \
                     }                                                   \
             template<typename IM>                                       \
                 void init( IM const& im )                               \
