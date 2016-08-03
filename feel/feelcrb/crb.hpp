@@ -10628,6 +10628,87 @@ CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
     conv2.close();
 }
 
+#if 1
+namespace detail
+{
+template<class Archive>
+struct SaveRbSpaceCtxComposite
+{
+    SaveRbSpaceCtxComposite( Archive & ar, std::string const& rbctxNameInDb, boost::any const& ctxRbAny )
+        :
+        M_ar( ar ),
+        M_rbctxNameInDb( rbctxNameInDb ),
+        M_ctxRbAny( ctxRbAny )
+    {}
+    template <typename T>
+    void operator()( T & x ) const
+    {
+        typedef typename T::first_type key_type;
+        typedef typename T::second_type::element_type rbsubspace_type;
+        typedef typename rbsubspace_type::ctxrbset_ptrtype ctxrbset_ptrtype;
+        if ( !boost::any_cast<ctxrbset_ptrtype>( &M_ctxRbAny ) )
+            return;
+
+        auto ctxRb = boost::any_cast<ctxrbset_ptrtype>( M_ctxRbAny );
+        M_ar & boost::serialization::make_nvp( M_rbctxNameInDb.c_str(), *ctxRb);
+    }
+    Archive & M_ar;
+    std::string const& M_rbctxNameInDb;
+    boost::any const& M_ctxRbAny;
+};
+
+template<typename TheRbSpaceType,class Archive>
+void
+saveRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, boost::any const& ctxRbAny, mpl::false_ )
+{
+    typedef typename TheRbSpaceType::element_type::ctxrbset_ptrtype ctxrbset_ptrtype;
+    CHECK( boost::any_cast<ctxrbset_ptrtype>( &ctxRbAny ) ) << "invalid rbctx cast in non composite";
+    auto ctxRb = boost::any_cast<ctxrbset_ptrtype>( ctxRbAny );
+    ar & boost::serialization::make_nvp( rbctxNameInDb.c_str(), *ctxRb );
+}
+template<typename TheRbSpaceType,class Archive>
+void
+saveRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, boost::any const& ctxRbAny, mpl::true_ )
+{
+    boost::fusion::for_each( rbSpace->rbfunctionspaces(), SaveRbSpaceCtxComposite<Archive>( ar, rbctxNameInDb, ctxRbAny )  );
+}
+template<typename TheRbSpaceType,class Archive>
+void
+saveRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, boost::any const& ctxRbAny )
+{
+    saveRbSpaceCtx( rbSpace,ar,rbctxNameInDb,ctxRbAny, mpl::bool_<TheRbSpaceType::element_type::is_composite>() );
+}
+
+
+template<typename TheRbSpaceType,class Archive>
+void
+loadRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, boost::any & ctxRbAny, mpl::false_ )
+{
+    typedef typename TheRbSpaceType::element_type::ctxrbset_ptrtype ctxrbset_ptrtype;
+    typedef typename TheRbSpaceType::element_type::ctxrbset_type ctxrbset_type;
+    ctxRbAny = ctxrbset_ptrtype( new ctxrbset_type( rbSpace ) );
+    auto ctxRb = boost::any_cast<ctxrbset_ptrtype>( ctxRbAny );
+    ar & boost::serialization::make_nvp( rbctxNameInDb.c_str(), *ctxRb );
+    ctxRb->setRbFunctionSpace( rbSpace );
+}
+template<typename TheRbSpaceType,class Archive>
+void
+loadRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, boost::any & ctxRbAny, mpl::true_ )
+{
+    //TODO
+    CHECK( false ) << "TODO";
+}
+
+template<typename TheRbSpaceType,class Archive>
+void
+loadRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, boost::any & ctxRbAny )
+{
+    loadRbSpaceCtx( rbSpace,ar,rbctxNameInDb,ctxRbAny, mpl::bool_<TheRbSpaceType::element_type::is_composite>() );
+}
+
+}
+#endif
+
 
 template<typename TruthModelType>
 template<class Archive>
@@ -10730,14 +10811,21 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 
     }
 
-
-    //#if !defined(FEELPP_DISABLE_EIM_COMPOSITE)
-#if 0
+#if 1
     ar & BOOST_SERIALIZATION_NVP( M_hasRbSpaceContextEim );
     if ( M_hasRbSpaceContextEim )
     {
         auto rbSpaceContextEim = M_model->model()->rbSpaceContextEim();
-        ar & BOOST_SERIALIZATION_NVP( rbSpaceContextEim );
+        std::vector<std::string> rbSpaceContextEimNames;
+        for ( auto const& rbSpaceContextPair : rbSpaceContextEim )
+            rbSpaceContextEimNames.push_back( rbSpaceContextPair.first );
+        ar & BOOST_SERIALIZATION_NVP( rbSpaceContextEimNames );
+
+        for ( std::string const& eimName : rbSpaceContextEimNames )
+        {
+            std::string rbctxNameInDb = (boost::format("rbSpaceContextEim_%1%")%eimName).str();
+            Feel::detail::saveRbSpaceCtx( M_model->rBFunctionSpace(), ar, rbctxNameInDb, rbSpaceContextEim.find( eimName )->second );
+        }
     }
 #endif
 
@@ -10911,17 +10999,31 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 
     }// version > 0 => EIM error estimation
 
-    //#if !defined(FEELPP_DISABLE_EIM_COMPOSITE)
-#if 0
+
+#if 1
     ar & BOOST_SERIALIZATION_NVP( M_hasRbSpaceContextEim );
     if ( M_hasRbSpaceContextEim )
     {
-        std::map<std::string,typename model_type::model_type::rbfunctionspace_context_ptrtype> rbSpaceContextEim;
-        ar & BOOST_SERIALIZATION_NVP( rbSpaceContextEim );
-        M_model->model()->setRbSpaceContextEim( rbSpaceContextEim );
+        // reload rbcontext only if rBFunctionSpace is init
+        if ( M_model && M_model->rBFunctionSpace() )
+        {
+            //std::cout << "CRB reload rbContext with a rBFunctionSpace\n";
+            std::vector<std::string> rbSpaceContextEimNames;
+            ar & BOOST_SERIALIZATION_NVP( rbSpaceContextEimNames );
+
+            std::map<std::string,boost::any> rbSpaceContextEim;
+            for ( std::string const& eimName : rbSpaceContextEimNames )
+            {
+                std::string rbctxNameInDb = (boost::format("rbSpaceContextEim_%1%")%eimName).str();
+                Feel::detail::loadRbSpaceCtx( M_model->rBFunctionSpace(), ar, rbctxNameInDb, rbSpaceContextEim[eimName] );
+            }
+            M_model->model()->setRbSpaceContextEim( rbSpaceContextEim );
+
+        }
+        else
+            M_hasRbSpaceContextEim = false;
     }
 #endif
-
 
 #if 0
     std::cout << "[loadDB] output index : " << M_output_index << "\n"
