@@ -15,6 +15,7 @@
 #include <feel/feelvf/inv.hpp>
 #include <feel/feelvf/one.hpp>
 #include <feel/feelvf/geometricdata.hpp>
+#include <feel/feelvf/mean.hpp>
 //#include <fsi/fsicore/variousfunctions.hpp>
 
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
@@ -123,7 +124,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << this->densityViscosityModel()->getInfo()->str();
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
-           << this->getInfoNeumannBC();
+           << this->getInfoNeumannBC()
+           << this->getInfoPressureBC();
     for ( std::string typeOutlet : std::vector<std::string>({"free","windkessel"}) )
     {
         if ( this->hasFluidOutlet(typeOutlet) )
@@ -840,6 +842,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
         ++cptBlock;
     if (this->hasMarkerDirichletBClm())
         ++cptBlock;
+    if ( this->hasMarkerPressureBC() )
+    {
+        ++cptBlock;
+        if ( nDim == 3 )
+            ++cptBlock;
+    }
     if (this->hasFluidOutletWindkesselImplicit() )
     {
         for (int k=0;k<this->nFluidOutlet();++k)
@@ -875,6 +883,36 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
 
 //---------------------------------------------------------------------------------------------------------//
 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
+{}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
+{
+    if ( this->definePressureCstMethod() == "algebraic" )
+    {
+        auto upSol = this->functionSpace()->element( sol, this->rowStartInVector() );
+        auto pSol = upSol.template element<1>();
+        CHECK( M_definePressureCstAlgebraicOperatorMeanPressure ) << "mean pressure operator does not init";
+        double meanPressureCurrent = inner_product( *M_definePressureCstAlgebraicOperatorMeanPressure, pSol );
+        pSol.add( -meanPressureCurrent );
+    }
+}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
+{}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
+{}
+
+//---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -886,6 +924,24 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matr
         this->updateInHousePreconditionerPCD( mat,vecSol );
     }
 }
+
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
+{
+    if ( this->definePressureCstMethod() == "lagrange-multiplier" && !M_XhMeanPressureLM )
+        M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+    else if ( this->definePressureCstMethod() == "algebraic" )
+    {
+        auto p = this->functionSpacePressure()->element();
+        M_definePressureCstAlgebraicOperatorMeanPressure = form1_mean(_test=this->functionSpacePressure(),
+                                                                      _range=elements(this->mesh()),
+                                                                      _expr=id(p) ).vectorPtr();
+        M_definePressureCstAlgebraicOperatorMeanPressure->close();
+    }
+}
+
 
 //---------------------------------------------------------------------------------------------------------//
 
@@ -1740,6 +1796,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
         ++nBlock;
     if (this->hasMarkerDirichletBClm())
         ++nBlock;
+    if ( this->hasMarkerPressureBC() )
+    {
+        ++nBlock;
+        if ( nDim == 3 )
+            ++nBlock;
+    }
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
     if ( M_useThermodynModel && M_useGravityForce )
@@ -1792,6 +1854,24 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                              _pattern_block=patCouplingLM.transpose(),
                                              _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
+    }
+    if ( this->hasMarkerPressureBC() )
+    {
+        BlocksStencilPattern patCouplingLM(1,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
+        patCouplingLM(0,0) = size_type(Pattern::COUPLED);
+        myblockGraph(indexBlock,0) = stencil(_test=M_spaceLagrangeMultiplierPressureBC,_trial=this->functionSpace(),
+                                             _pattern_block=patCouplingLM,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(0,indexBlock) = stencil(_test=this->functionSpace(),_trial=M_spaceLagrangeMultiplierPressureBC,
+                                             _pattern_block=patCouplingLM.transpose(),
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        ++indexBlock;
+        if ( nDim == 3 )
+        {
+            myblockGraph(indexBlock,0) = myblockGraph(indexBlock-1,0);
+            myblockGraph(0,indexBlock) = myblockGraph(0,indexBlock-1);
+            ++indexBlock;
+        }
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
     {

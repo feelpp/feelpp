@@ -230,6 +230,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_definePressureCst = boption(_name="define-pressure-cst",_prefix=this->prefix());
     M_definePressureCstMethod = soption(_name="define-pressure-cst.method",_prefix=this->prefix());
+    CHECK( M_definePressureCstMethod == "lagrange-multiplier" || M_definePressureCstMethod == "penalisation" ||
+           M_definePressureCstMethod == "algebraic" ) << "lagrange-multiplier or penalisation or algebraic";
     M_definePressureCstPenalisationBeta = doption(_name="define-pressure-cst.penalisation-beta",_prefix=this->prefix());
 
     //--------------------------------------------------------------//
@@ -888,7 +890,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateFluidInletVelocity()
 }
 
 
-
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
@@ -904,10 +905,19 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     if ( !M_hasBuildFromMesh )
         this->build();
 
+    // update definePressureCst respect to the method choosen
+    if ( this->definePressureCst() )
+        this->updateDefinePressureCst();
 
-    // build definePressureCst space if not done yet
-    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" && !M_XhMeanPressureLM )
-        M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+    // lagrange multiplier for pressure bc
+    if ( this->hasMarkerPressureBC() )
+    {
+        M_meshLagrangeMultiplierPressureBC = createSubmesh(this->mesh(),markedfaces(this->mesh(),this->markerPressureBC()) );
+        M_spaceLagrangeMultiplierPressureBC = space_trace_velocity_component_type::New( _mesh=M_meshLagrangeMultiplierPressureBC, _worldscomm=this->localNonCompositeWorldsComm() );
+        M_fieldLagrangeMultiplierPressureBC1.reset( new element_trace_velocity_component_type( M_spaceLagrangeMultiplierPressureBC ) );
+        if ( nDim == 3 )
+            M_fieldLagrangeMultiplierPressureBC2.reset( new element_trace_velocity_component_type( M_spaceLagrangeMultiplierPressureBC ) );
+    }
 
     // update marker in mesh (mainly used with CIP stab)
     if ( (this->doCIPStabConvection() || this->doCIPStabDivergence() || this->doCIPStabPressure() ) && !this->applyCIPStabOnlyOnBoundaryFaces() )
@@ -976,6 +986,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     {
         M_startBlockIndexFieldsInMatrix["dirichletlm"] = currentStartIndex++;
     }
+    if ( this->hasMarkerPressureBC() )
+    {
+        M_startBlockIndexFieldsInMatrix["pressurelm1"] = currentStartIndex++;
+        if ( nDim == 3 )
+            M_startBlockIndexFieldsInMatrix["pressurelm2"] = currentStartIndex++;
+    }
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
         M_startBlockIndexFieldsInMatrix["windkessel"] = currentStartIndex++;
@@ -1004,6 +1020,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     {
         M_blockVectorSolution(cptBlock) = this->backend()->newVector( this->XhDirichletLM() );
         ++cptBlock;
+    }
+    if ( this->hasMarkerPressureBC() )
+    {
+        M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC1;
+        if ( nDim == 3 )
+            M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC2;
     }
     // windkessel outel with implicit scheme
     if ( this->hasFluidOutletWindkesselImplicit() )

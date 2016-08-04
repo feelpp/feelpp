@@ -6,13 +6,14 @@ C=2;
 R1=C-R/2;
 R2=C+R/2;
 shape = 1; // square=1 circle=2
-alpha1=0;
-alpha2=Pi/3;
+alphadiff=Pi/6;
+alpha1=Pi/2;
+alpha2=alpha1+alphadiff;
 If ( shape == 1 )
-  Point(1) = {C,C-R/2,C-R/2,h};
-  Point(2) = {C,C+R/2,C-R/2,h};
-  Point(3) = {C,C+R/2,C+R/2,h};
-  Point(4) = {C,C-R/2,C+R/2,h};
+  Point(1) = {0,C-R/2,-R/2,h};
+  Point(2) = {0,C+R/2,-R/2,h};
+  Point(3) = {0,C+R/2,+R/2,h};
+  Point(4) = {0,C-R/2,+R/2,h};
   Line(1) = {1,2};
   Line(2) = {2,3};
   Line(3) = {3,4};

@@ -2309,6 +2309,17 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
             }
         }
     } // elements loop
+
+    // update extended doftable for P0 continuous
+    if ( isP0Continuous<fe_type>::result && this->buildDofTableMPIExtended() )
+    {
+        for (auto const& ghostEltWrap : elements(M,EntityProcessType::GHOST_ONLY ) )
+        {
+            auto const& ghostElt = boost::unwrap_ref( ghostEltWrap );
+            dfe.add( ghostElt, next_free_dof, this->worldComm().localRank() );
+        }
+    }
+
     if (Environment::isMasterRank() && FLAGS_v > 0)
         std::cout << "   . buildDofMap dof generation done in " << ltim.elapsed() << "s\n";
     ltim.restart();
