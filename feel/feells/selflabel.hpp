@@ -3,19 +3,20 @@
 
 #include <boost/serialization/set.hpp>
 
-namespace Feel
-{
+namespace Feel {
 
-template< typename space_type, typename space_P0_type >
+template< typename SpaceType, typename SpaceP0Type >
 class SelfLabel
 {
 
 public :
 
-    typedef SelfLabel< space_type, space_P0_type > self_type;
+    typedef SelfLabel<SpaceType, SpaceP0Type > self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
+    typedef SpaceType space_type;
     typedef boost::shared_ptr< space_type > space_ptrtype;
+    typedef SpaceP0Type space_P0_type;
     typedef boost::shared_ptr<space_P0_type> space_P0_ptrtype;
 
     typedef typename space_type::element_ptrtype element_ptrtype;
@@ -26,44 +27,36 @@ public :
     const int markerfluid = 0;
     const int eltIsInPhiNeg = 1;
 
-    SelfLabel( space_ptrtype space, space_P0_ptrtype space_P0 )
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
+    SelfLabel( space_ptrtype const& space, space_P0_ptrtype const& space_P0 )
         :
-        Xh( space ),
-        Xh0(space_P0)
-        {
-        }
+            M_Xh( space ),
+            M_Xh0( space_P0 ),
+            M_label( space->elementPtr() ),
+            M_labelP0( space_P0->elementPtr() )
+    {}
 
-    static self_ptrtype New( space_ptrtype space, space_P0_ptrtype space_P0 )
-        {
-            self_ptrtype sl( new self_type(space, space_P0) );
-            return sl;
-        }
+    static self_ptrtype New( space_ptrtype const& space, space_P0_ptrtype const& space_P0 )
+    {
+        self_ptrtype sl( new self_type(space, space_P0) );
+        return sl;
+    }
 
-    void setLabel( element_ptrtype l )
-        { this->label = l; }
+    //--------------------------------------------------------------------//
+    void setLabel( element_ptrtype const& l ) { *M_label = *l; }
+    element_ptrtype const& getLabel() const { return M_label; }
 
-    void updateLabel( element_ptrtype newphi );
+    elementP0_ptrtype const& getP0Label() const { return M_labelP0; }
 
-    element_ptrtype getLabel()
-        { return label; }
+    void updateLabel( element_ptrtype const& newphi );
 
-    elementP0_ptrtype getP0Label()
-        { return labelP0; }
-
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
 private :
-
-    space_ptrtype Xh;
-    space_P0_ptrtype Xh0;
-    space_P0_ptrtype XhP0Submesh;
-
-    mesh_ptrtype submesh;
-
-    element_ptrtype label;
-    elementP0_ptrtype labelP0;
-
-    element_ptrtype phi;
-
-    void genereatesubmesh();
+    void generateSubmesh();
     void propagateLabel( int labelValue, elementP0_ptrtype labelOnSubMesh );
 
     void pushLabelOnMesh( elementP0_ptrtype labelOnSubMesh );
@@ -71,27 +64,38 @@ private :
     elementP0_ptrtype makeMarkerElementsWithLabelOnSubmesh();
 
     void clean()
-        {
-            phi.reset();
-            XhP0Submesh.reset();
-            submesh.reset();
-        }
+    {
+        M_phi.reset();
+        M_XhP0Submesh.reset();
+        M_submesh.reset();
+    }
 
-}; // SelfLabel
+    //--------------------------------------------------------------------//
+    space_ptrtype M_Xh;
+    space_P0_ptrtype M_Xh0;
+    space_P0_ptrtype M_XhP0Submesh;
+
+    mesh_ptrtype M_submesh;
+
+    element_ptrtype M_label;
+    elementP0_ptrtype M_labelP0;
+
+    element_ptrtype M_phi;
+};
 
 
-template< typename space_type, typename space_P0_type >
+template<typename SpaceType, typename SpaceP0Type>
 void
-SelfLabel<space_type, space_P0_type>::genereatesubmesh()
+SelfLabel<SpaceType, SpaceP0Type>::generateSubmesh()
 {
     // return sub-mesh associated to elements having at least one dof not in fluid
-    auto mark = Xh0->elementPtr();
+    auto mark = M_Xh0->elementPtr();
 
-    for( auto const &elt : elements( Xh->mesh() ) )
+    for( auto const &elt : elements( M_Xh->mesh() ) )
     {
         for( int j=0; j<space_type::fe_type::nDof; ++j)
         {
-            if ( phi->localToGlobal(elt.id(), j, 0)<0 )
+            if ( M_phi->localToGlobal(elt.id(), j, 0)<0 )
             {
                 mark->assign(elt.id(), 0, 0, eltIsInPhiNeg);
                 break;
@@ -99,32 +103,36 @@ SelfLabel<space_type, space_P0_type>::genereatesubmesh()
         }
     }
 
-    Xh->mesh()->updateMarker2( *mark );
+    M_Xh->mesh()->updateMarker2( *mark );
 
-    submesh = createSubmesh( Xh->mesh(), marked2elements(Xh->mesh(), eltIsInPhiNeg) );
+    M_submesh = createSubmesh( M_Xh->mesh(), marked2elements(M_Xh->mesh(), eltIsInPhiNeg) );
 } // getsubmesh
 
 
-template< typename space_type, typename space_P0_type >
-typename SelfLabel<space_type, space_P0_type>::elementP0_ptrtype
-SelfLabel<space_type, space_P0_type>::makeMarkerElementsWithLabelOnSubmesh()
+template<typename SpaceType, typename SpaceP0Type>
+typename SelfLabel<SpaceType, SpaceP0Type>::elementP0_ptrtype
+SelfLabel<SpaceType, SpaceP0Type>::makeMarkerElementsWithLabelOnSubmesh()
 {
-    // return marker on the submesh, where elements having at least one dof with a label by this label
+    // return marker on the M_submesh, where elements having at least one dof with a label by this label
 
-    auto mark = XhP0Submesh->elementPtr();
-    *mark = vf::project( _space=XhP0Submesh, _range=elements(submesh), _expr=cst( markerfluid ) );
+    auto mark = M_XhP0Submesh->elementPtr();
+    *mark = vf::project( 
+            _space=M_XhP0Submesh, 
+            _range=elements(M_submesh), 
+            _expr=cst( markerfluid ) 
+            );
 
-    for (auto const& elt_submesh : elements(submesh) )
+    for (auto const& elt_submesh : elements(M_submesh) )
     {
-        const size_type idOnMesh = submesh->subMeshToMesh( elt_submesh.id() );
+        const size_type idOnMesh = M_submesh->subMeshToMesh( elt_submesh.id() );
 
         for (int j=0; j<space_type::fe_type::nDof; ++j)
         {
 
-            if ( std::abs( label->localToGlobal( idOnMesh, j, 0 ) - markerfluid ) > 1e-6 )
+            if ( std::abs( M_label->localToGlobal( idOnMesh, j, 0 ) - markerfluid ) > 1e-6 )
             {
                 // label is not fluid
-                mark->assign( elt_submesh.id(), 0, 0, label->localToGlobal( idOnMesh, j, 0 ) );
+                mark->assign( elt_submesh.id(), 0, 0, M_label->localToGlobal( idOnMesh, j, 0 ) );
                 break;
             }
         }
@@ -134,17 +142,17 @@ SelfLabel<space_type, space_P0_type>::makeMarkerElementsWithLabelOnSubmesh()
 }
 
 
-template< typename space_type, typename space_P0_type >
+template<typename SpaceType, typename SpaceP0Type>
 void
-SelfLabel<space_type, space_P0_type>::updateLabel(element_ptrtype newphi)
+SelfLabel<SpaceType, SpaceP0Type>::updateLabel(element_ptrtype const& newphi)
 {
-    this->phi = newphi;
+    M_phi = newphi;
 
-    this->genereatesubmesh();
-    XhP0Submesh = space_P0_type::New(submesh);
+    this->generateSubmesh();
+    M_XhP0Submesh = space_P0_type::New(M_submesh);
 
     auto labelOnSubMesh = this->makeMarkerElementsWithLabelOnSubmesh();
-    submesh->updateMarker2( *labelOnSubMesh );
+    M_submesh->updateMarker2( *labelOnSubMesh );
 
     const int nbLabels = boost::math::iround(labelOnSubMesh->max());
 
@@ -163,23 +171,23 @@ SelfLabel<space_type, space_P0_type>::updateLabel(element_ptrtype newphi)
 
 
 
-template< typename space_type, typename space_P0_type >
+template<typename SpaceType, typename SpaceP0Type>
 void
-SelfLabel<space_type, space_P0_type>::propagateLabel( int labelValue, elementP0_ptrtype labelOnSubMesh )
+SelfLabel<SpaceType, SpaceP0Type>::propagateLabel( int labelValue, elementP0_ptrtype labelOnSubMesh )
 {
     std::unordered_set< size_type > eltsToVisit;
     // communicate to neighbors which ghost has to be visited
-    int neighborSubdomains = submesh->neighborSubdomains().size();
+    int neighborSubdomains = M_submesh->neighborSubdomains().size();
     int nbRequest = 2*neighborSubdomains;
     mpi::request * reqs = new mpi::request[nbRequest];
     int cptRequest=0;
 
-    for ( auto const& elt : marked2elements(submesh, labelValue) )
+    for ( auto const& elt : marked2elements(M_submesh, labelValue) )
     {
         eltsToVisit.insert( elt.id() );
     }
 
-    // auto exp = exporter(_mesh=submesh, _name="propagation");
+    // auto exp = exporter(_mesh=M_submesh, _name="propagation");
     // int iter=0;
 
     bool eltsToVisitAreEmptyOnAllProc = false;
@@ -193,7 +201,7 @@ SelfLabel<space_type, space_P0_type>::propagateLabel( int labelValue, elementP0_
         while( ! eltsToVisit.empty() )
         {
             auto elt_id = eltsToVisit.begin();
-            auto const & elt = submesh->element( *elt_id );
+            auto const & elt = M_submesh->element( *elt_id );
 
             // exp->step(iter++)->add("labelOnSubMesh", *labelOnSubMesh);
             // exp->save();
@@ -210,9 +218,9 @@ SelfLabel<space_type, space_P0_type>::propagateLabel( int labelValue, elementP0_
                 const rank_type pid = elt_neigh.second;
 
                 // element is a ghost, need to tell it's owner to visit it
-                if (pid != submesh->worldComm().localRank() )
+                if (pid != M_submesh->worldComm().localRank() )
                 {
-                    size_type idOnOwner = submesh->element( elt_neigh_id, pid ).idInOthersPartitions(pid) ;
+                    size_type idOnOwner = M_submesh->element( elt_neigh_id, pid ).idInOthersPartitions(pid) ;
                     dataToSend[pid].insert( idOnOwner );
                 }
                 else
@@ -229,10 +237,10 @@ SelfLabel<space_type, space_P0_type>::propagateLabel( int labelValue, elementP0_
 
         // communicate to neighbors which ghost has to be visited
         cptRequest=0;
-        for ( rank_type neighborRank : submesh->neighborSubdomains() )
+        for ( rank_type neighborRank : M_submesh->neighborSubdomains() )
         {
-            reqs[cptRequest++] = submesh->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank] );
-            reqs[cptRequest++] = submesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank] );
+            reqs[cptRequest++] = M_submesh->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank] );
+            reqs[cptRequest++] = M_submesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank] );
         }
 
         mpi::wait_all(reqs, reqs + nbRequest);
@@ -249,9 +257,9 @@ SelfLabel<space_type, space_P0_type>::propagateLabel( int labelValue, elementP0_
 
         bool eltstovisit_isempty = eltsToVisit.empty();
         // loop until all the proc have a null value of neighbors to add
-        eltsToVisitAreEmptyOnAllProc = mpi::all_reduce(submesh->worldComm(),
-                                                       eltstovisit_isempty,
-                                                       std::logical_and<bool>() );
+        eltsToVisitAreEmptyOnAllProc = mpi::all_reduce(M_submesh->worldComm(),
+                eltstovisit_isempty,
+                std::logical_and<bool>() );
     }
 
     delete [] reqs;
@@ -260,40 +268,43 @@ SelfLabel<space_type, space_P0_type>::propagateLabel( int labelValue, elementP0_
 
 
 
-template< typename space_type, typename space_P0_type >
+template<typename SpaceType, typename SpaceP0Type>
 void
-SelfLabel<space_type, space_P0_type>::pushLabelOnMesh( elementP0_ptrtype labelOnSubMesh )
+SelfLabel<SpaceType, SpaceP0Type>::pushLabelOnMesh( elementP0_ptrtype labelOnSubMesh )
 {
-    // take a marker P0 of labels on a submesh
+    // take a marker P0 of labels on a M_submesh
     // create a Pn (levelset order) label field (L0)
     // all the dof phi<0 on a elt labeled i have value i
     // all dof phi>0 have value markerfluid
 
-    labelP0 = Xh0->elementPtr();
-    labelP0->setConstant( markerfluid );
+    M_labelP0 = M_Xh0->elementPtr();
+    M_labelP0->setConstant( markerfluid );
 
-    for (auto const& elt_submesh : elements(submesh) )
+    for (auto const& elt_submesh : elements(M_submesh) )
     {
-        const size_type idOnMesh = submesh->subMeshToMesh( elt_submesh.id() );
+        const size_type idOnMesh = M_submesh->subMeshToMesh( elt_submesh.id() );
 
         const int labelElt = boost::math::iround( labelOnSubMesh->localToGlobal( elt_submesh.id(), 0, 0 ) );
 
-        labelP0->assign( idOnMesh, 0, 0, labelElt );
+        M_labelP0->assign( idOnMesh, 0, 0, labelElt );
 
         for (int j=0; j<space_type::fe_type::nDof; ++j)
         {
-            label->assign( idOnMesh, j, 0,
-                           phi->localToGlobal(idOnMesh, j, 0) < 0 ? labelElt : markerfluid );
+            M_label->assign( idOnMesh, j, 0,
+                    M_phi->localToGlobal(idOnMesh, j, 0) < 0 ? labelElt : markerfluid );
         }
     }
 } // pushLabelOnMesh
 
 
-template< typename space_type, typename space_P0_type >
-boost::shared_ptr< SelfLabel<space_type, space_P0_type> >
-selfLabel( boost::shared_ptr<space_type> space, boost::shared_ptr<space_P0_type> spaceP0 )
+template<typename SpaceType, typename SpaceP0Type>
+boost::shared_ptr< SelfLabel<SpaceType, SpaceP0Type> > 
+selfLabel( 
+        boost::shared_ptr<SpaceType> const& space, 
+        boost::shared_ptr<SpaceP0Type> const& spaceP0 
+        )
 {
-    auto sl = SelfLabel<space_type, space_P0_type>::New(space, spaceP0);
+    auto sl = SelfLabel<SpaceType, SpaceP0Type>::New(space, spaceP0);
     return sl;
 }
 

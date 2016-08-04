@@ -37,10 +37,10 @@ public:
     //--------------------------------------------------------------------//
     void setSelfLabel( element_ptrtype const& label ) { M_selfLabel = label; }
     //--------------------------------------------------------------------//
-    element_ptrtype getNearestNeighbourLabel() const { return M_NNLabel; }
-    element_ptrtype getNearestNeighbourDistance() const { return M_NNDistance; }
-    element_ptrtype getNextNearestNeighbourLabel() const { return M_nextNNLabel; }
-    element_ptrtype getNextNearestNeighbourDistance() const { return M_nextNNDistance; }
+    element_ptrtype const& getNearestNeighbourLabel() const { return M_NNLabel; }
+    element_ptrtype const& getNearestNeighbourDistance() const { return M_NNDistance; }
+    element_ptrtype const& getNextNearestNeighbourLabel() const { return M_nextNNLabel; }
+    element_ptrtype const& getNextNearestNeighbourDistance() const { return M_nextNNDistance; }
 
 private:
     void initMarch( element_type const& phi, bool useMarker2AsMarkerDone );
