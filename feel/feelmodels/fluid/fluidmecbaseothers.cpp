@@ -98,6 +98,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
         doExport_str=(doExport_str.empty())?"pid":doExport_str+" - pid";
     if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::ALEMesh ) )
         doExport_str=(doExport_str.empty())?"alemesh":doExport_str+" - alemesh";
+    for ( std::string const& userFieldName : M_postProcessUserFieldExported )
+        doExport_str=(doExport_str.empty())?userFieldName:doExport_str+" - "+userFieldName;
 
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
@@ -491,6 +493,23 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
                                        M_thermodynModel->fieldTemperature() );
         hasFieldToExport = true;
+    }
+    for ( std::string const& userFieldName : M_postProcessUserFieldExported )
+    {
+        if ( this->hasFieldUserScalar( userFieldName ) )
+        {
+            M_exporter->step( time )->add( prefixvm(this->prefix(),userFieldName),
+                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),userFieldName)),
+                                           this->fieldUserScalar( userFieldName ) );
+            hasFieldToExport = true;
+        }
+        else if ( this->hasFieldUserVectorial( userFieldName ) )
+        {
+            M_exporter->step( time )->add( prefixvm(this->prefix(),userFieldName),
+                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),userFieldName)),
+                                           this->fieldUserVectorial( userFieldName ) );
+            hasFieldToExport = true;
+        }
     }
 
     //----------------------//
@@ -1041,6 +1060,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
     int currentTimeOrder = this->timeStepBDF()->timeOrder();
 
     this->updateTime( M_bdf_fluid->time() );
+
+    // update user functions which depend of time only
+    this->updateUserFunctions(true);
 
     // maybe rebuild cst jacobian or linear
     if ( M_algebraicFactory &&
