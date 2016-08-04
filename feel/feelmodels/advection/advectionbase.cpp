@@ -600,7 +600,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         
         bilinearForm += integrate(
                 _range=elements(mesh),
-                _expr=(gradt(phi)*idv(advection_velocity))*id(psi),
+                _expr=inner((gradt(phi)*idv(advection_velocity)), id(psi)),
                 _geomap=this->geomap()
                 );
 
@@ -634,7 +634,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         
         bilinearForm += integrate(
                 _range=elements(mesh),
-                _expr=-idv(R)*idt(phi)*id(psi),
+                _expr=-idv(R)*inner(idt(phi), id(psi)),
                 _geomap=this->geomap()
                 );
 
@@ -651,7 +651,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         {
             bilinearForm += integrate( 
                     _range=elements(mesh),
-                    _expr=M_bdf->polyDerivCoefficient(0)*idt(phi)*id(psi),
+                    _expr=M_bdf->polyDerivCoefficient(0)*inner(idt(phi),id(psi)),
                     _geomap=this->geomap() 
                     );
         }
@@ -659,7 +659,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         {
             linearForm += integrate(
                     _range=elements(mesh),
-                    _expr=idv(M_bdf->polyDeriv())*id(psi),
+                    _expr=inner(idv(M_bdf->polyDeriv()),id(psi)),
                     _geomap=this->geomap() 
                     );
         }
@@ -682,7 +682,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
 
         linearForm += integrate( 
                 _range=elements(mesh),
-                _expr= idv(*M_fieldSource)*id(psi),
+                _expr= inner(idv(*M_fieldSource),id(psi)),
                 _geomap=this->geomap() 
                 );
 
@@ -765,12 +765,12 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 bilinearForm += integrate(
                         _range=elements(mesh),
-                        _expr=coeff * L_op * L_opt,
+                        _expr=coeff * inner(L_op, L_opt),
                         _geomap=this->geomap() );
 
                 linearForm += integrate(
                         _range=elements(mesh),
-                        _expr=coeff*L_op*f,
+                        _expr=coeff * inner(L_op, f),
                         _geomap=this->geomap() );
 
                 break ;
@@ -791,11 +791,13 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 bilinearForm += integrate(
                         _range=elements(M_mesh),
-                        _expr=coeff * L_op * L_opt );
+                        _expr=coeff * inner(L_op, L_opt) 
+                        );
 
                 linearForm += integrate(
                         _range=elements(M_mesh),
-                        _expr=coeff*L_op*f );
+                        _expr=coeff * inner(L_op, f) 
+                        );
 
                 break;
             } //SUPG
@@ -820,11 +822,13 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 bilinearForm += integrate(
                         _range=elements(M_mesh),
-                        _expr=coeff * L_op * L_opt );
+                        _expr=coeff * inner(L_op, L_opt)
+                        );
 
                 linearForm += integrate(
                         _range=elements(M_mesh),
-                        _expr=coeff*L_op*f );
+                        _expr=coeff * inner(L_op, f)
+                        );
 
                 break;
             } //SGS
@@ -835,7 +839,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 bilinearForm_PatternExtended += integrate(
                         _range=internalfaces(M_mesh),
-                        _expr=coeff * jumpt(gradt(phi)) * jump(grad(phi)) );
+                        _expr=coeff * inner(jumpt(gradt(phi)), jump(grad(phi)))
+                        );
 
                 break;
             } //CIP
