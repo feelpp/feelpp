@@ -180,18 +180,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
                     );
 
             //dynamic_cast<ReinitializerFM<space_levelset_type>&>( *M_reinitializer ).setUseMarker2AsMarkerDone( M_useMarkerDiracAsMarkerDoneFM );
-
-            if( M_strategyBeforeFM == ILP )
-            {
-                M_backend_smooth = backend(_name=prefixvm(this->prefix(), "smoother-fm"));
-                M_smootherFM = projector(
-                        this->functionSpace(),/*domainSpace*/
-                        this->functionSpace(),/*imageSpace*/
-                        M_backend_smooth,
-                        DIFF,
-                        doption(_name="fm-smooth-coeff", _prefix=this->prefix())
-                        );
-            }
         }
         break;
         case LevelSetReinitMethod::HJ :
@@ -247,15 +235,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::gradPhi()
 
     return M_levelsetGradPhi;
 
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::setStrategyBeforeFm( int strat )
-{
-    if (M_reinitializerIsUpdatedForUse)
-        LOG(INFO)<<" !!!  WARNING !!! : setStrategyBeforeFm set after the fast marching has been actually initialized ! \n";
-    M_strategyBeforeFM = (strategy_before_FM_type) strat;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -503,6 +482,22 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherVectorial()
                 30);
     return M_smootherVectorial; 
 }
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_levelset_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::smootherFM()
+{
+    if( !M_smootherFM )
+        M_smootherFM = projector(
+                this->functionSpace(),/*domainSpace*/
+                this->functionSpace(),/*imageSpace*/
+                backend(_name=prefixvm(this->prefix(), "smoother-fm")),
+                DIFF,
+                doption(_name="fm-smooth-coeff", _prefix=this->prefix())
+                );
+    return M_smootherFM;
+}
+
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
@@ -573,6 +568,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
     super_type::solve();
     this->updateInterfaceQuantities();
 
+    if( this->useSelfLabel() )
+        this->updateSelfLabel();
+
     // Reset hasReinitialized
     M_hasReinitialized = false;
 
@@ -616,6 +614,57 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
 
 //----------------------------------------------------------------------------//
 // Reinitialization
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::setStrategyBeforeFm( int strat )
+{
+    if (M_reinitializerIsUpdatedForUse)
+        LOG(INFO)<<" !!!  WARNING !!! : setStrategyBeforeFm set after the fast marching has been actually initialized ! \n";
+    M_strategyBeforeFM = (strategy_before_FM_type) strat;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::applyStrategyBeforeFM( element_levelset_ptrtype e )
+{
+    switch (M_strategyBeforeFM)
+    {
+        case ILP :
+        {
+            // save the smoothed gradient magnitude of phi
+            auto modgradphi = this->smootherFM()->project( 
+                    vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) 
+                    );
+            
+            *phi = vf::project(
+                    this->functionSpace(), 
+                    elements(this->mesh()), 
+                    idv(phi)/idv(modgradphi) 
+                    );
+        }
+        break;
+
+        case HJ_EQ :
+        {
+            CHECK(false) << "TODO\n";
+            //*phi = *explicitHJ(max_iter, dtau, tol);
+        }
+        break;
+
+        case NONE :
+        {}
+        break;
+
+        default:
+        {
+            CHECK(false) << "no strategy chosen to initialize first elements before fast marching\n"
+                         << "please, consider setting the option fm-init-first-elts-strategy\n";
+        }
+        break;
+    } // switch M_strategyBeforeFM
+}
+
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
@@ -635,34 +684,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
             this->mesh()->updateMarker2( *this->markerDirac() );
         }
 
-        switch (M_strategyBeforeFM)
-        {
-            case ILP :
-            {
-                // save the smoothed gradient magnitude of phi
-                auto modgradphi = M_smootherFM->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
-                
-                *phi = vf::project(this->functionSpace(), elements(this->mesh()), idv(phi)/idv(modgradphi) );
-            }
-            break;
-
-            case HJ_EQ :
-            {
-                CHECK(false) << "TODO\n";
-                //*phi = *explicitHJ(max_iter, dtau, tol);
-            }
-            break;
-            case NONE :
-            {}
-            break;
-
-            default:
-            {
-                CHECK(false)<<"no strategy chosen to initialize first elements before fast marching\n"
-                            <<"please, consider setting the option fm-init-first-elts-strategy\n";
-            }
-            break;
-        } // switch M_strategyBeforeFM
+        this->applyStrategyBeforeFM( phi );
 
         // Fast Marching Method
         //boost::dynamic_pointer_cast<ReinitializerFM<space_levelset_type>>( M_reinitializer )->setUseMarker2AsMarkerDone( M_useMarker2AsMarkerDoneFmm );
@@ -683,6 +705,70 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
     double timeElapsed = this->timerTool("Reinit").stop();
     this->log("LevelSet","reinitialize","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+//----------------------------------------------------------------------------//
+// Multi-labels
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::setUseSelfLabel(bool b, element_levelset_ptrtype const& label)
+{
+    M_useSelfLabel = b;
+    if( M_useSelfLabel )
+    {
+        if( !M_selfLabel )
+            M_selfLabel = selflabel_type::New( 
+                    this->functionSpace(), 
+                    this->functionSpaceMarkers() 
+                    );
+        CHECK( label ) << "NULL label ptr provided\n";
+        M_selfLabel->setLabel( label );
+    }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::setUseMultiLabels(bool b, element_levelset_ptrtype const& label)
+{
+    M_useMultiLabels = b;
+    if( !M_distLabel )
+        M_distLabel = distlabelFMS_type::New( this->functionSpace(), M_periodicity );
+    if( M_useMultiLabels )
+    {
+        this->setUseSelfLabel( M_useMultiLabels, label );
+    }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateSelfLabel()
+{
+    this->log("LevelSet", "updateSelfLabel", "start");
+    this->timerTool("Solve").start();
+
+    M_selfLabel->updateLabel( this->phi() );
+    M_doUpdateMultiLabels = true;
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("LevelSet","updateSelfLabel","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::getDistanceBetweenLabels()
+{
+    CHECK(this->useMultiLabels()) << "You must enable multi-labels to get the distance between labels.\n"
+
+    if( M_doUpdateMultiLabels )
+    {
+        auto distLabelPhi = this->functionSpace()->elementPtr();
+        *distLabelPhi = *this->phi();
+        this->applyStrategyBeforeFM( distLabelPhi );
+        M_distLabel->setSelfLabel( M_selfLabel->getLabel() );
+        M_distLabel->run( distLabelPhi );
+        M_doUpdateMultiLabels = false;
+    }
+    return M_distLabel->getNextNearestNeighbourDistance();
 }
 
 //----------------------------------------------------------------------------//
@@ -956,7 +1042,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
             M_markerCrossedElements->assign(it_elt->id(), 0, 0, 0);
     }
 }
-
 
 } // FeelModels
 } // Feel

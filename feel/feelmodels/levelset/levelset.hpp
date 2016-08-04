@@ -141,6 +141,13 @@ public:
     enum strategy_before_FM_type {NONE=0, ILP=1, HJ_EQ=2, IL_HJ_EQ=3};
 
     //--------------------------------------------------------------------//
+    // Multi-labels
+    typedef SelfLabel<space_levelset_type, space_markers_type> selflabel_type;
+    typedef boost::shared_ptr<selflabel_type> selflabel_ptrtype;
+    typedef LabelDistanceFMS<space_levelset_type, Periodicity<periodicity_type>> distlabelFMS_type;
+    typedef boost::shared_ptr<distlabelFMS_type> distlabelFMS_ptrtype;
+
+    //--------------------------------------------------------------------//
     // Backend
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
@@ -262,6 +269,7 @@ public:
     projector_levelset_vectorial_ptrtype const& projectorL2Vectorial() const { return M_projectorL2Vec; }
     projector_levelset_ptrtype const& smoother();
     projector_levelset_vectorial_ptrtype const& smootherVectorial();
+    projector_levelset_ptrtype const& smootherFM();
 
     //--------------------------------------------------------------------//
     // Markers
@@ -290,11 +298,26 @@ public:
 
     void setStrategyBeforeFm( int strat = 1 );
     strategy_before_FM_type strategyBeforeFm() { return M_strategyBeforeFM; }
+    void applyStrategyBeforeFM( element_levelset_ptrtype e );
+
     void setUseMarkerDiracAsMarkerDoneFM( bool val = true ) { M_useMarkerDiracAsMarkerDoneFM  = val; }
 
     reinitializer_ptrtype const& reinitializer() const { return M_reinitializer; }
 
     bool hasReinitialized() const { return M_hasReinitialized; }
+
+    //--------------------------------------------------------------------//
+    // Multi-labels
+    bool useSelfLabel() const { return M_useSelfLabel; }
+    void setUseSelfLabel( bool b, 
+            element_levelset_ptrtype const& label = element_levelset_ptrtype() );
+    bool useMultiLabels() const { return M_useMultiLabels; }
+    void setUseMultiLabels( bool b,
+            element_levelset_ptrtype const& label = element_levelset_ptrtype() );
+
+    void updateSelfLabel();
+
+    element_levelset_ptrtype const& getDistanceBetweenLabels();
 
     //--------------------------------------------------------------------//
     // Initial value
@@ -435,8 +458,16 @@ private:
     bool M_hasReinitialized;
 
     //--------------------------------------------------------------------//
+    // Multi-labels
+    bool M_useSelfLabel;
+    bool M_useMultiLabels;
+    bool M_doUpdateMultiLabels;
+
+    selflabel_ptrtype M_selfLabel;
+    distlabelFMS_ptrtype M_distLabel;
+
+    //--------------------------------------------------------------------//
     // Backends
-    backend_ptrtype M_backend_smooth;
 
     //--------------------------------------------------------------------//
     // Advection
