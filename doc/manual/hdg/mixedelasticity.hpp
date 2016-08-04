@@ -35,7 +35,7 @@ makeMixedElasticityOptions( std::string prefix = "mixedelasticy" )
 {
     po::options_description mpOptions( "Mixed Elasticity HDG options");
     mpOptions.add_options()
-        ( prefixvm( prefix, "gmsh.submesh").c_str(), po::value<std::string>()->default_value( "" ), "submesh extraction" )
+        ( "gmsh.submesh", po::value<std::string>()->default_value( "" ), "submesh extraction" )
         ( prefixvm( prefix, "hface").c_str(), po::value<int>()->default_value( 0 ), "hface" )
         ( "lambda", po::value<std::string>()->default_value( "1" ), "lambda" )
         ( "mu", po::value<std::string>()->default_value( "1" ), "mu" )
@@ -110,7 +110,8 @@ public:
     using M0h_element_t = typename M0h_t::element_type;
     using M0h_element_ptr_t = typename M0h_t::element_ptrtype;
     
-
+	using op_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Wh_t, Pdhv_type<mesh_type,Order>>>;
+    using opv_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Vh_t, Pdhms_type<mesh_type,Order>>>;
  
     //! Model properties type
     using model_prop_type = ModelProperties;
@@ -179,16 +180,16 @@ public:
     backend_ptrtype get_backend() { return M_backend; }
     
     // Exporter
-    virtual void exportResults( mesh_ptrtype mesh = nullptr )
+    virtual void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  )
     {
-    	this->exportResults (this->currentTime(), mesh );
+    	this->exportResults (this->currentTime(), mesh , Idh, Idhv);
         M_exporter -> save();
     }
-    void exportResults ( double Time, mesh_ptrtype mesh = nullptr  ) ;
+    void exportResults ( double Time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  ) ;
     exporter_ptrtype M_exporter;
     exporter_ptrtype exporterME() { return M_exporter; }
 
-    void init( mesh_ptrtype mesh = nullptr);
+    void init( mesh_ptrtype mesh = nullptr, mesh_ptrtype meshVisu = nullptr);
 
     virtual void initModel();
     virtual void initSpaces();
@@ -223,9 +224,7 @@ MixedElasticity<Dim, Order, G_Order>::MixedElasticity( std::string const& prefix
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedElasticity","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
 
-
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"MixedElasticity.info") );
-
 
     M_prefix = prefix;
     M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption( prefixvm(M_prefix, "model_json") ) ) );
@@ -344,7 +343,7 @@ MixedElasticity<Dim,Order,G_Order>::New( std::string const& prefix,
 
 template<int Dim, int Order, int G_Order>
 void
-MixedElasticity<Dim, Order, G_Order>::init( mesh_ptrtype mesh )
+MixedElasticity<Dim, Order, G_Order>::init( mesh_ptrtype mesh, mesh_ptrtype meshVisu )
 {
     tic();
     if ( !mesh )
@@ -485,10 +484,10 @@ void
 MixedElasticity<Dim, Order, G_Order>::initExporter( mesh_ptrtype meshVisu ) 
 {
      std::string geoExportType="static"; //change_coords_only, change, static
-     M_exporter = exporter ( _mesh=M_mesh,
+     M_exporter = exporter ( _mesh=meshVisu?meshVisu:this->mesh(),
                              _name="Export",
                              _geo=geoExportType,
-         		    _path=this->exporterPath() ); 
+         		    		 _path=this->exporterPath() ); 
 }
 
 template<int Dim, int Order, int G_Order>
@@ -768,40 +767,40 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
 
 template <int Dim, int Order, int G_Order>
 void
-MixedElasticity<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh  )
+MixedElasticity<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh , op_interp_ptrtype Idh , opv_interp_ptrtype Idhv )
 {
     this->log("MixedElasticity","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-/*
+
     if ( M_exporter->exporterGeometry() != EXPORTER_GEOMETRY_STATIC && mesh  )
     {
-	LOG(INFO) << "exporting on visualisation mesh at time " << time;
-       M_exporter->step( time )->setMesh( mesh );
-     }
-     else if ( M_exporter->exporterGeometry() != EXPORTER_GEOMETRY_STATIC )
+		LOG(INFO) << "exporting on visualisation mesh at time " << time;
+       	M_exporter->step( time )->setMesh( mesh );
+    }
+	else if ( M_exporter->exporterGeometry() != EXPORTER_GEOMETRY_STATIC )
     {
          LOG(INFO) << "exporting on computational mesh at time " << time;
          M_exporter->step( time )->setMesh( M_mesh );
     }
-*/    
+    
      // Export computed solutions
      auto postProcess = M_modelProperties->postProcess();
      auto itField = postProcess.find( "Fields");
      
-	if ( itField != postProcess.end() )
+	 if ( itField != postProcess.end() )
      {
          for ( auto const& field : (*itField).second )
          {
             if ( field == "strain" )
             {
                 LOG(INFO) << "exporting strain at time " << time;
-		 		M_exporter->add(prefixvm(M_prefix, "strain"), M_up );
+		 		M_exporter->step(time)->add(prefixvm(M_prefix, "strain"), Idhv?(*Idhv)( M_up):M_up );
             }
             else if ( field == "displacement" )
         	{
             	LOG(INFO) << "exporting displacement at time " << time;
-                M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"), M_pp );    	
+                M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"),Idh?(*Idh)( M_pp):M_pp ) ;    	
 		
 				auto itField = M_modelProperties->boundaryConditions().find("ExactSolution");
  				if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -817,7 +816,10 @@ MixedElasticity<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype me
 								auto u_exact = expr<Dim,1> (exAtMarker.expression());
 								if ( !this->isStationary() )
 								    u_exact.setParameterValues( { {"t", time } } );
-								M_exporter->step(time)->add(prefixvm(M_prefix, "u_exact"), project( _space=M_Wh, _range=elements(M_mesh), _expr=u_exact) );		
+
+								auto export_uEX = project( _space=M_Wh, _range=elements( M_mesh ), _expr=u_exact);
+								M_exporter->step(time)->add(prefixvm(M_prefix, "u_exact"), Idh?(*Idh)( export_uEX): export_uEX );		
+
 								auto l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(M_pp) );
 								auto l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
 								if (l2norm_uex < 1)
@@ -835,7 +837,10 @@ MixedElasticity<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype me
 									auto lambda = expr(material.getScalar("lambda"));
 									auto mu = expr(material.getScalar("mu"));
 									auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
-									M_exporter->add(prefixvm(M_prefix, "sigma_exact"), project( _space=M_Vh, _range=elements(M_mesh), _expr=sigma_exact) );		
+
+									auto export_sigmaEX = project( _space=M_Vh, _range=elements(M_mesh), _expr=sigma_exact); 
+									M_exporter->add(prefixvm(M_prefix, "sigma_exact"), Idhv?(*Idhv)( export_sigmaEX): export_sigmaEX );
+
 									auto l2err_sigma = normL2( _range=elements(M_mesh), _expr=sigma_exact - idv(M_up) );
 									auto l2norm_sigmaex = normL2( _range=elements(M_mesh), _expr=sigma_exact );
 									if (l2norm_sigmaex < 1)

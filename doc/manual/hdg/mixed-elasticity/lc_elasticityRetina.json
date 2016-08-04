@@ -1,0 +1,79 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Model":"hdg",
+    "Materials":
+    {
+        "Retina": 
+        {
+            "name":"copper",
+			"rho":"1",
+            "lambda":"1",
+	    	"mu":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "strain":
+        {
+            "SourceTerm":
+            {
+                "Retina": 
+                {
+					"expr":"{8,0,0}"
+                }
+            }/*,
+            "Neumann":
+            {
+                "Hole": //"Rint":
+                {
+                     "expr":"0.0"
+                },
+                "Lateral": //"Rext":
+                {
+                     "expr":"0.0"
+                }
+            }*/
+		},
+		"displacement":
+		{
+	    	"Dirichlet":
+	    	{
+        		"BC_otherRetina":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                },
+        		"Lamina_Retina":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                },
+        		"Retina_Sclera":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                },
+        		"Choroid_Retina":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                }
+ 	    	}
+    	},
+		"ExactSolution":
+		{
+			"u_exact":
+			{
+				"Retina":
+				{
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+				}
+			}
+		}
+     },
+    "PostProcess":
+    {
+        "Fields":["strain","displacement"]
+    }
+}
+
+
+
+

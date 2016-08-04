@@ -1,0 +1,79 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Model":"hdg",
+    "Materials":
+    {
+        "Lamina": 
+        {
+            "name":"copper",
+			"rho":"1",
+            "lambda":"1",
+	    	"mu":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "strain":
+        {
+            "SourceTerm":
+            {
+                "Lamina": 
+                {
+					"expr":"{8,0,0}"
+                }
+            }/*,
+            "Neumann":
+            {
+                "Hole": //"Rint":
+                {
+                     "expr":"0.0"
+                },
+                "Lateral": //"Rext":
+                {
+                     "expr":"0.0"
+                }
+            }*/
+		},
+		"displacement":
+		{
+	    	"Dirichlet":
+	    	{
+        		"Hole":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                },
+        		"Lateral":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                },
+        		"Out":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                },
+        		"In":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                }
+ 	    	}
+    	},
+		"ExactSolution":
+		{
+			"u_exact":
+			{
+				"Lamina":
+				{
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+				}
+			}
+		}
+     },
+    "PostProcess":
+    {
+        "Fields":["strain","displacement"]
+    }
+}
+
+
+
+
