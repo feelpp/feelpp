@@ -88,6 +88,8 @@ public :
     typedef typename space_advection_type::value_type value_type;
     typedef typename space_advection_type::periodicity_type periodicity_advection_type;
 
+    static constexpr bool is_vectorial = space_advection_type::basis_type::is_vectorial;
+
     //--------------------------------------------------------------------//
     // Space advection velocity
     //typedef typename basis_advection_type::vectorial_basis_type basis_vectorial_type;

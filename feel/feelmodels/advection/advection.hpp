@@ -50,13 +50,19 @@ public:
     typedef Advection<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
+    typedef typename super_type::space_advection_type space_advection_type;
     typedef typename super_type::space_advection_ptrtype space_advection_ptrtype;
+    typedef typename super_type::element_advection_type element_advection_type;
     typedef typename super_type::element_advection_ptrtype element_advection_ptrtype;
+
+    static const uint16_type nDim = super_type::nDim;
+    static constexpr bool is_vectorial = super_type::is_vectorial;
+
     //--------------------------------------------------------------------//
-    typedef typename map_scalar_field<2> map_scalar_field_type;
-    typedef typename map_vector_field<super_type::nDim, 1, 2> map_vector_field_type;
+    typedef map_scalar_field<2> map_scalar_field_type;
+    typedef map_vector_field<super_type::nDim, 1, 2> map_vector_field_type;
     typedef typename mpl::if_< 
-        mpl::bool_<BasisAdvectionType::is_vectorial>,
+        mpl::bool_<is_vectorial>,
             map_vector_field_type,
             map_scalar_field_type
         >::type bc_map_field_type;
