@@ -369,7 +369,7 @@ MixedElasticity<Dim, Order, G_Order>::init( mesh_ptrtype mesh, mesh_ptrtype mesh
 	}
 
     tic();
-    this->initExporter( );
+    this->initExporter(meshVisu);
     toc("exporter");
 
     tic();
@@ -646,7 +646,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
 		    for ( auto const& exAtMarker : (*itType).second )
 		    {
 			    std::string marker = exAtMarker.marker();
-		    	// cout << "Dirichlet on " << marker << std::endl;
+		    	cout << "Dirichlet on " << marker << std::endl;
 			    bbf( 2_c, 2_c) += integrate(_range=markedfaces(M_mesh,marker),
 					    					_expr=trans(idt(uhat)) * id(m) );
 		    }
@@ -664,7 +664,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
 		    for ( auto const& exAtMarker : (*itType).second )
 		    {
 			    std::string marker = exAtMarker.marker();
-		    	// cout << "Neumann on " << marker << std::endl;
+		    	cout << "Neumann on " << marker << std::endl;
 			    bbf( 2_c, 0_c) += integrate(_range=markedfaces(M_mesh,marker ),
 					    _expr=( trans(id(m))*(idt(sigma)*N()) ));
 
@@ -719,7 +719,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
                 auto g = expr<2,2> (exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
-				// cout << "Neumann condition on " << marker << ": " << g << std::endl;
+				cout << "Neumann condition on " << marker << ": " << g << std::endl;
 				blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
 									    _expr=trans(id(m))*(g*N()));
             }

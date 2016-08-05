@@ -8,8 +8,8 @@
         {
             "name":"copper",
 			"rho":"1",
-            "lambda":"1",
-	    	"mu":"1"
+            "lambda":"5.88",		// [kg/cm/s^2 		// [5.88 MPa]
+	    	"mu":"0.12"				// [kg/cm/s^2 		// [0.12 Mpa]
         }
     },
     "BoundaryConditions":
@@ -20,53 +20,35 @@
             {
                 "Lamina": 
                 {
-					"expr":"{8,0,0}"
+					"expr":"{0,0,0}"
                 }
-            }/*,
+            },
             "Neumann":
             {
-                "Hole": //"Rint":
+                "Hole":   // -IOP
                 {
-                     "expr":"0.0"
+                     "expr":"{-46.66,0,0, 0,-46.66,0, 0,0,-46.66}" // -33.33		// -46.66			[kg/cm/s^2]
                 },
-                "Lateral": //"Rext":
+                "Lateral": 	// -RLTp 
                 {
-                     "expr":"0.0"
+                     "expr":"{-10,0,0, 0,-10,0, 0,0,-10}"  // between -9.33 and -13.33		[kg/cm/s^2]
                 }
-            }*/
+            }
 		},
 		"displacement":
 		{
 	    	"Dirichlet":
 	    	{
-        		"Hole":
+        		"In":
                 {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-                },
-        		"Lateral":
-                {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+		     		"expr":"{0,0,0}" 		// [cm]
                 },
         		"Out":
                 {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-                },
-        		"In":
-                {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+		     		"expr":"{0,0,0}" 		// [cm]
                 }
  	    	}
-    	},
-		"ExactSolution":
-		{
-			"u_exact":
-			{
-				"Lamina":
-				{
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-				}
-			}
-		}
+    	}
      },
     "PostProcess":
     {
