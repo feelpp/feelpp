@@ -21,7 +21,10 @@ meshAdaptFromLSOptions()
     opts.add_options()
         ( "h-min-list", Feel::po::value< std::vector<double> >(), "min mesh sizes" )
         ( "h-max-list", Feel::po::value< std::vector<double> >(), "max mesh sizes" )
-        ( "phi-power", Feel::po::value< double >()->default_value(2.), "power of phi for mesh adaptation" );
+        ( "d-min-list", Feel::po::value< std::vector<double> >(), "h=hmin if d<dmin" )
+        ( "d-max-list", Feel::po::value< std::vector<double> >(), "h=hmax if d>dmax" )
+        // ( "phi-power", Feel::po::value< double >()->default_value(2.), "power of phi for mesh adaptation" )
+        ;
         return opts;
 }
 
@@ -43,7 +46,10 @@ int main( int argc, char** argv )
 
   const std::vector<double> hmin_list = Environment::vm()["h-min-list"].as< std::vector<double> >();
   const std::vector<double> hmax_list = Environment::vm()["h-max-list"].as< std::vector<double> >();
-  CHECK(hmax_list.size()==hmin_list.size())<<"hmin and hmax should have the same size\n";
+  const std::vector<double> dmin_list = Environment::vm()["d-min-list"].as< std::vector<double> >();
+  const std::vector<double> dmax_list = Environment::vm()["d-max-list"].as< std::vector<double> >();
+  CHECK(  (hmax_list.size()==hmin_list.size()) && (hmax_list.size()==dmin_list.size()) && (hmax_list.size()==dmax_list.size()) )
+      <<"hmin, hmax, dmin, dmax should have the same size\n";
 
   const int maxit = hmax_list.size();
   LOG(INFO)<<"number of iteration of mesh adaptation to do = "<< maxit <<std::endl;
@@ -60,9 +66,13 @@ int main( int argc, char** argv )
   {
       const double hmin = hmin_list[i];
       const double hmax = hmax_list[i];
+      const double dmin = dmin_list[i];
+      const double dmax = dmax_list[i];
 
-      Feel::cout<< Feel::tc::red << "start making mesh adaptation with:"
-                << "hmin="<< hmin << " and hmax="<< hmax << tc::reset << std::endl;
+      Feel::cout<< Feel::tc::red << "start making mesh adaptation with:\n"
+                << "hmin="<< hmin << " and hmax="<< hmax << "\n"
+                << "dmin="<< dmin << " and dmax="<< dmax
+                << tc::reset << std::endl;
 
       tic();
       auto Xh1  = mesh_adapt_type::p1_space_type::New( mesh );
@@ -85,13 +95,20 @@ int main( int argc, char** argv )
 
       // ---------- make metric -------------
       tic();
-      const double phiMax = epitro->max();
-      const double phi_power = doption("phi-power");
-      const double phiMaxPowered = std::pow(phiMax, phi_power);
+      // const double phiMax = epitro->max();
+      // const double phi_power = doption("phi-power");
+      // const double phiMaxPowered = std::pow(phiMax, phi_power);
 
-      auto linphi = (hmax-hmin)/phiMaxPowered * vf::pow(vf::abs(idv(epitro)), phi_power) + hmin;
+      // auto linphi = (hmax-hmin)/phiMaxPowered * vf::pow(vf::abs(idv(epitro)), phi_power) + hmin;
+
+      const double alpha = (hmin-hmax)/(dmin-dmax);
+      const double beta = hmin-alpha*dmin;
+      auto phi = abs(idv(epitro));
+
       auto metric = vf::project(_space=Xh1, _range=elements(mesh),
-                                _expr = max(hmin, linphi) );
+                                _expr = ( phi <= dmin ) * hmin
+                                + ( phi >= dmax ) * hmax
+                                + ( phi > dmin )*( phi < dmax )*(alpha*phi+beta) );
       toc("projected metric");
 
       // ---------- perform mesh adapatation ----------
