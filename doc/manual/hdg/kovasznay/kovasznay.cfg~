@@ -1,0 +1,5 @@
+[functions]
+f="{1,1,1}:x:y:z"
+
+[parameters]
+tau=1
