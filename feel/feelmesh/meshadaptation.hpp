@@ -149,6 +149,8 @@ namespace Feel
 
         typedef typename mesh_type::point_type point_type;
 
+        typedef std::list< std::pair< std::vector<p1_element_type>, std::string> > metric_list_type;
+
         //! Constructor
         MeshAdaptation()
         {
@@ -214,6 +216,21 @@ namespace Feel
         std::string adaptMeshHess2(element_type& U, const mesh_ptrtype& mesh, double hMin, double hMax,
                                    std::string name, std::string geofile, double tol, bool aniso,
                                    mpl::bool_<false>);
+
+        static metric_list_type makeMetricList( std::vector< p1_element_type >& metrics, std::string metric_name )
+            {
+                metric_list_type ml;
+                ml.push_back( std::make_pair( metrics, metric_name ) );
+                return ml;
+            }
+
+        static metric_list_type makeMetricList( p1_element_type metric, std::string metric_name )
+            {
+                metric_list_type ml;
+                ml.push_back( std::make_pair(std::vector< p1_element_type >( {metric} ), metric_name ) );
+                return ml;
+            }
+
 
         //! Mesh adaptation interface
         // _initMesh = initial mesh
