@@ -100,7 +100,10 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::run(
 
     const int nbTotalIterFM = M_functionspace->dof()->nDof() - M_nbTotalDone - M_nbDofTag1;
     //for (int i=0; i<nbTotalIterFM; ++i)
-    while( M_heap.size() != 0 )
+
+    bool allHeapAreEmpty = false;
+    //while( M_heap.size() != 0 )
+    while( !allHeapAreEmpty )
     {
         /* The heap is sorted with the smallest phi value at the top.
          * Thus, the new accepted element is always the top of the heap 
@@ -134,8 +137,13 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::run(
 
             this->updateHeap( newIdOnProc );
         }
+
+        const bool heapIsEmpty = M_heap.size() == 0;
+        allHeapAreEmpty = mpi::all_reduce(M_functionspace->mesh()->worldComm(),
+                                          heapIsEmpty,
+                                          std::logical_and<bool>() );
     }
-    
+
     M_heap.clear();
 }
 
