@@ -68,6 +68,7 @@ HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int imp
     {
         case 0:
         {
+#if FEELPP_DIM == 2
             auto phi = this->levelset()->phi();
             auto n_l2 = this->levelset()->N();
             auto k_l2 = this->levelset()->K();
@@ -82,6 +83,9 @@ HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int imp
                     //idv(Fc_global) * idv(this->levelset()->D()) 
                     _expr=trans(gradv(phi))
                     );
+#else
+            CHECK(false) << "TODO ! Helfrich force is not implemented in 3D yet.\n";
+#endif
         }
         break;
         default:
