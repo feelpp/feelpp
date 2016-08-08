@@ -8,6 +8,13 @@ namespace Feel {
 namespace FeelModels {
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+std::map<std::string, typename LEVELSET_CLASS_TEMPLATE_TYPE::ShapeType>
+LEVELSET_CLASS_TEMPLATE_TYPE::ShapeTypeMap = {
+    {"sphere", ShapeType::SPHERE},
+    {"ellipse", ShapeType::ELLIPSE}
+};
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet( 
         std::string const& prefix,
         WorldComm const& worldComm,
@@ -105,17 +112,35 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     this->log("LevelSet", "init", "start");
 
     // Set initial value
+    this->initLevelsetValue();
+    // Init advection
+    super_type::init( true, this->shared_from_this() );
+
+    M_timeOrder = this->timeStepBDF()->timeOrder(); 
+
+    this->log("LevelSet", "init", "finish");
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
+{
+    this->log("LevelSet", "initLevelsetValue", "start");
+
+    auto phi_init = this->functionSpace()->element();
+    phi_init.setConstant( std::numeric_limits<value_type>::max() );
+
     this->modelProperties().parameters().updateParameterValues();
     if( !this->M_icDirichlet.empty() )
     {
         M_icDirichlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
 
-        auto phi_init = this->functionSpace()->element();
         for( auto const& iv : M_icDirichlet )
         {
             if( marker(iv).empty() )
             {
-                phi_init.on(
+                phi_init = vf::project(
+                        _space=this->functionSpace(),
                         _range=elements(this->mesh()),
                         _expr=expression(iv),
                         _geomap=this->geomap()
@@ -123,21 +148,62 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
             }
             else
             {
-                phi_init.on(
+                phi_init = vf::project(
+                        _space=this->functionSpace(),
                         _range=markedelements(this->mesh(), marker(iv)),
                         _expr=expression(iv),
                         _geomap=this->geomap()
                         );
             }
         }
-        this->setInitialValue( phi_init );
     }
-    // Init advection
-    super_type::init( true, this->shared_from_this() );
 
-    M_timeOrder = this->timeStepBDF()->timeOrder(); 
+    if( !this->M_icShapes.empty() )
+    {
+        for( auto const& shape: M_icShapes )
+        {
+            this->addShape( shape, phi_init );
+        }         
+    }
 
-    this->log("LevelSet", "init", "finish");
+    this->setInitialValue( phi_init );
+
+    this->log("LevelSet", "initLevelsetValue", "finish");
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::addShape( 
+        std::pair<ShapeType, parameter_map> const& shape, 
+        element_levelset_type & phi 
+        )
+{
+    ShapeType shapeType = shape.first;
+    parameter_map const& shapeParams = shape.second;
+
+    switch(shapeType)
+    {
+        case ShapeType::SPHERE:
+        {
+            auto X = Px() - shapeParams.dget("xc");
+            auto Y = Py() - shapeParams.dget("yc");
+            auto Z = Pz() - shapeParams.dget("zc"); 
+            auto R = shapeParams.dget("radius");
+            phi = vf::project(
+                    _space=this->functionSpace(),
+                    _range=elements(this->mesh()),
+                    _expr=min( sqrt(X*X+Y*Y+Z*Z)-R, idv(phi) ),
+                    _geomap=this->geomap()
+                    );
+        }
+        break;
+
+        case ShapeType::ELLIPSE:
+        {
+            // TODO
+        }
+        break;
+    }
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -280,7 +346,68 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
 {
-    this->M_icDirichlet = this->modelProperties().initialConditions().getScalarFields( std::string(this->prefix()), "Dirichlet" );
+    auto const& initialConditions = this->modelProperties().initialConditions();
+
+    this->M_icDirichlet = initialConditions.getScalarFields( std::string(this->prefix()), "Dirichlet" );
+    
+    // Shapes
+    for( std::string const& icShape: initialConditions.markers( this->prefix(), "shapes") )
+    {
+        parameter_map shapeParameterMap;
+
+        auto shapeTypeRead = initialConditions.sparam( this->prefix(), "shapes", icShape, "shape" );
+        auto shapeTypeIt = ShapeTypeMap.find(shapeTypeRead.second);
+        if( shapeTypeIt != ShapeTypeMap.end() )
+        {
+            switch(shapeTypeIt->second)
+            {
+                case ShapeType::SPHERE:
+                {
+                    auto xcRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "xc" );
+                    CHECK(xcRead.first) << icShape << " xc not provided\n";
+                    auto ycRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "yc" );
+                    CHECK(ycRead.first) << icShape << " yc not provided\n";
+                    auto zcRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "zc" );
+                    CHECK(zcRead.first || nDim < 3) << icShape << " zc not provided\n";
+                    auto radiusRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "radius" );
+                    CHECK(radiusRead.first) << icShape << " radius not provided\n";
+
+                    shapeParameterMap["id"] = icShape;
+                    shapeParameterMap["xc"] = xcRead.second;
+                    shapeParameterMap["yc"] = ycRead.second;
+                    shapeParameterMap["zc"] = zcRead.second;
+                    shapeParameterMap["radius"] = radiusRead.second;
+                }
+                break;
+
+                case ShapeType::ELLIPSE:
+                {
+                    auto xcRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "xc" );
+                    CHECK(xcRead.first) << icShape << " xc not provided\n";
+                    auto ycRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "yc" );
+                    CHECK(ycRead.first) << icShape << " yc not provided\n";
+                    auto zcRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "zc" );
+                    CHECK(zcRead.first || nDim < 3) << icShape << " zc not provided\n";
+                    auto radiusRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "radius" );
+                    CHECK(radiusRead.first) << icShape << " radius not provided\n";
+
+                    shapeParameterMap["id"] = icShape;
+                    shapeParameterMap["xc"] = xcRead.second;
+                    shapeParameterMap["yc"] = ycRead.second;
+                    shapeParameterMap["zc"] = zcRead.second;
+                    shapeParameterMap["radius"] = radiusRead.second;
+                    // TODO
+                }
+                break;
+            }
+
+            M_icShapes.push_back( std::make_pair(shapeTypeIt->second, shapeParameterMap) );
+        }
+        else
+        {
+            CHECK(false) << "invalid shape type in " << icShape << std::endl;
+        }
+    } 
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
