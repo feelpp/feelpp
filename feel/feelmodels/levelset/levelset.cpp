@@ -127,6 +127,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
 {
     this->log("LevelSet", "initLevelsetValue", "start");
 
+    bool hasInitialValue = false;
+
     auto phi_init = this->functionSpace()->element();
     phi_init.setConstant( std::numeric_limits<value_type>::max() );
 
@@ -156,6 +158,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
                         );
             }
         }
+
+        hasInitialValue = true;
     }
 
     if( !this->M_icShapes.empty() )
@@ -164,9 +168,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
         {
             this->addShape( shape, phi_init );
         }         
+
+        hasInitialValue = true;
     }
 
-    this->setInitialValue( phi_init );
+    if( hasInitialValue )
+    {
+        this->setInitialValue( phi_init );
+    }
 
     this->log("LevelSet", "initLevelsetValue", "finish");
 }
