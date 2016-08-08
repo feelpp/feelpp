@@ -44,6 +44,8 @@
 
 #include <boost/parameter/preprocessor.hpp>
 
+#include <feel/feelmodels/levelset/parameter_map.hpp>
+
 #if defined (MESH_ADAPTATION_LS)
  #include <levelsetmesh/meshadaptation.hpp>
 // #warning MESH_ADAPTATION_LS is defined in levelset. Need to be defined identically in the application
@@ -141,6 +143,13 @@ public:
     enum strategy_before_FM_type {NONE=0, ILP=1, HJ_EQ=2, IL_HJ_EQ=3};
 
     //--------------------------------------------------------------------//
+    // Initial value
+    enum class ShapeType {
+        SPHERE, ELLIPSE
+    };
+    static std::map<std::string, ShapeType> ShapeTypeMap;
+
+    //--------------------------------------------------------------------//
     // Backend
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
@@ -206,6 +215,7 @@ public:
     //--------------------------------------------------------------------//
     // Initialization
     void init();
+    void initLevelsetValue();
 
     virtual void loadParametersFromOptionsVm();
     virtual void loadConfigICFile();
@@ -366,6 +376,11 @@ private:
     void initFastMarching(mesh_ptrtype const& mesh);
 
     //--------------------------------------------------------------------//
+    void addShape( 
+            std::pair<ShapeType, parameter_map> const& shape, 
+            element_levelset_type & phi );
+
+    //--------------------------------------------------------------------//
     element_levelset_ptrtype const& phio() const { return this->timeStepBDF()->unknowns()[1]; }
 
 protected:
@@ -385,6 +400,7 @@ protected:
     //--------------------------------------------------------------------//
     // Levelset initial value
     map_scalar_field<2> M_icDirichlet;
+    std::vector<std::pair<ShapeType, parameter_map>> M_icShapes;
 
 private:
     //--------------------------------------------------------------------//
