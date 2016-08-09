@@ -426,39 +426,6 @@ Environment::Environment( int argc, char** argv,
     initPetsc( &argc, &envargv );
 #endif
 
-    google::AllowCommandLineReparsing();
-    google::ParseCommandLineFlags( &argc, &argv, false );
-    //std::cout << "FLAGS_vmodule: " << FLAGS_vmodule << "\n";
-#if 0
-    std::cout << "argc=" << argc << "\n";
-
-    for ( int i = 0; i < argc; ++i )
-    {
-        std::cout << "argv[" << i << "]=" << argv[i] << "\n";
-    }
-
-#endif
-
-    // Initialize Google's logging library.
-    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
-    {
-        if ( FLAGS_no_log )
-        {
-            if ( S_worldcomm->rank() == 0 && FLAGS_no_log == 1 )
-                FLAGS_no_log = 0;
-
-            google::InitGoogleLogging( argv[0] );
-        }
-
-        else if ( argc > 0 )
-            google::InitGoogleLogging( argv[0] );
-
-        else
-            google::InitGoogleLogging( "feel++" );
-    }
-
-    google::InstallFailureSignalHandler();
-
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
 
@@ -495,6 +462,39 @@ Environment::Environment( int argc, char** argv,
     }
 
     FLAGS_log_dir=S_scratchdir.string();
+
+    google::AllowCommandLineReparsing();
+    google::ParseCommandLineFlags( &argc, &argv, false );
+    //std::cout << "FLAGS_vmodule: " << FLAGS_vmodule << "\n";
+#if 0
+    std::cout << "argc=" << argc << "\n";
+
+    for ( int i = 0; i < argc; ++i )
+    {
+        std::cout << "argv[" << i << "]=" << argv[i] << "\n";
+    }
+
+#endif
+
+    // Initialize Google's logging library.
+    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+    {
+        if ( FLAGS_no_log )
+        {
+            if ( S_worldcomm->rank() == 0 && FLAGS_no_log == 1 )
+                FLAGS_no_log = 0;
+
+            google::InitGoogleLogging( argv[0] );
+        }
+
+        else if ( argc > 0 )
+            google::InitGoogleLogging( argv[0] );
+
+        else
+            google::InitGoogleLogging( "feel++" );
+    }
+
+    google::InstallFailureSignalHandler();
 
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
