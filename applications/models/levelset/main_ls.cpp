@@ -32,6 +32,12 @@ runLevelsetApplication()
     LS->printAndSaveInfo();
     //LS->exportResults();
 
+    auto myExporter = exporter( 
+            _mesh=LS->mesh(),
+            _name="DistExport",
+            _path=LS->exporterPath()
+            );
+
     if ( LS->isStationary() )
     {
         LS->solve();
@@ -51,6 +57,7 @@ runLevelsetApplication()
             Feel::cout << "Levelset BDF order: " << LS->timeStepBDF()->timeOrder() << std::endl;
 
             LS->solve();
+            auto distToBoundary = LS->distToBoundary();
             if( reinit_every > 0 && iter%reinit_every == 0 )
             {
                 Feel::cout << "Reinitializing... ";
@@ -59,6 +66,8 @@ runLevelsetApplication()
             }
 
             LS->exportResults();
+            myExporter->step(iter)->add("distToBoundary", *distToBoundary );
+            myExporter->save();
         }
     }
 }
