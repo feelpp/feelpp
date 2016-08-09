@@ -36,9 +36,10 @@
 
 #include <feel/feelmodels/advection/advection.hpp>
 
-#include <feel/feelmodels/levelset/reinitializer.hpp>
-#include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
+#include <feel/feelmodels/levelset/reinitializer.hpp>
+#include <feel/feelmodels/levelset/reinitializer_fm.hpp>
+#include <feel/feelfilters/straightenmesh.hpp>
 
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 
@@ -139,6 +140,8 @@ public:
     // Reinitialization
     typedef Reinitializer<space_levelset_type> reinitializer_type;
     typedef boost::shared_ptr<reinitializer_type> reinitializer_ptrtype;
+    typedef ReinitializerFM<space_levelset_type> reinitializerFM_type;
+    typedef boost::shared_ptr<reinitializerFM_type> reinitializerFM_ptrtype;
 
     enum strategy_before_FM_type {NONE=0, ILP=1, HJ_EQ=2, IL_HJ_EQ=3};
 
@@ -273,12 +276,20 @@ public:
     projector_levelset_ptrtype const& smoother();
     projector_levelset_vectorial_ptrtype const& smootherVectorial();
 
+    void updateInterfaceQuantities();
+
     //--------------------------------------------------------------------//
     // Markers
     element_markers_ptrtype const& markerInterface();
     element_markers_ptrtype const& markerDirac();
     element_markers_ptrtype const& markerHeaviside(bool invert = false, bool cut_at_half = false);
     element_markers_ptrtype const& markerCrossedElements();
+
+    //--------------------------------------------------------------------//
+    // Utility distances
+    element_levelset_ptrtype distToBoundary();
+    element_levelset_ptrtype distToMarkedFaces( boost::any const& marker );
+    element_levelset_ptrtype distToMarkedFaces( std::initializer_list<boost::any> marker );
 
     //--------------------------------------------------------------------//
     // Advection
@@ -292,8 +303,6 @@ public:
 
     void updateTimeStep();
 
-    void updateInterfaceQuantities();
-
     //--------------------------------------------------------------------//
     // Reinitialization
     void reinitialize();
@@ -303,6 +312,7 @@ public:
     void setUseMarkerDiracAsMarkerDoneFM( bool val = true ) { M_useMarkerDiracAsMarkerDoneFM  = val; }
 
     reinitializer_ptrtype const& reinitializer() const { return M_reinitializer; }
+    reinitializerFM_ptrtype const& reinitializerFM();
 
     bool hasReinitialized() const { return M_hasReinitialized; }
 
@@ -443,6 +453,7 @@ private:
     //--------------------------------------------------------------------//
     // Reinitialization
     reinitializer_ptrtype M_reinitializer;
+    reinitializerFM_ptrtype M_reinitializerFM;
     bool M_reinitializerIsUpdatedForUse;
 
     boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smootherFM;
