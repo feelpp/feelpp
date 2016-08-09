@@ -224,7 +224,7 @@ namespace Feel
                 return ml;
             }
 
-        static metric_list_type makeMetricList( p1_element_type metric, std::string metric_name )
+        static metric_list_type makeMetricList( p1_element_type& metric, std::string metric_name )
             {
                 metric_list_type ml;
                 ml.push_back( std::make_pair(std::vector< p1_element_type >( {metric} ), metric_name ) );
@@ -675,12 +675,12 @@ namespace Feel
 
         const std::string globalPosFileName( (boost::format("%1%.pos") %metricBaseName).str() );
 
-        ofstream globalPosFile( globalPosFileName );
+        std::ofstream globalPosFile( globalPosFileName );
         globalPosFile << "View \" background mesh \" { \n";
 
         for (auto const& f : posFiles )
         {
-            ifstream inputPosFile( f );
+            std::ifstream inputPosFile( f );
             std::string line;
             // first line passed
             std::getline( inputPosFile, line );
