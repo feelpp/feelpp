@@ -92,16 +92,8 @@ int main( int argc, char** argv )
                                 _expr = max(hmin, linphi) );
       toc("projected metric");
 
-      // ---------- perform mesh adapatation ----------
-      typedef typename mesh_adapt_type::p1_space_type::element_type newspace_elt_type;
-      typedef std::vector<newspace_elt_type> vec_elts_type;
-
-      std::list<std::pair<vec_elts_type, std::string> > metric_list;
-      vec_elts_type v_metric = {metric};
-      std::ostringstream metric_name;
-      metric_name << "metric_n_" << i;
-      std::pair<vec_elts_type, std::string> metric_pair = std::make_pair(v_metric, metric_name.str());
-      metric_list.push_back(metric_pair);
+      // ------------ perform mesh adaptation --------
+      auto metric_list = mesh_adaptation.makeMetricList(metric, "metric" );
 
       exp->setMesh(mesh);
       exp->step(i)->add("metric", metric);

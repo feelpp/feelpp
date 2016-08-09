@@ -974,6 +974,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
 
     //-------------------------------------------------//
     this->initFluidOutlet();
+    // init function defined in json
+    this->initUserFunctions();
+    // init post-processinig (exporter, measure at point, ...)
     this->initPostProcess();
     //-------------------------------------------------//
     // define start dof index ( lm , windkessel )
@@ -1309,6 +1312,80 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initFluidOutlet()
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initUserFunctions()
+{
+    if ( this->modelProperties().functions().empty() )
+        return;
+
+    for ( auto const& modelfunc : this->modelProperties().functions() )
+    {
+        auto const& funcData = modelfunc.second;
+        std::string funcName = funcData.name();
+
+        if ( funcData.isScalar() )
+        {
+            if ( this->hasFieldUserScalar( funcName ) )
+                continue;
+            M_fieldsUserScalar[funcName] = this->functionSpaceVelocity()->compSpace()->elementPtr();
+        }
+        else if ( funcData.isVectorial2() )
+        {
+            if ( nDim != 2 ) continue;
+            if ( this->hasFieldUserVectorial( funcName ) )
+                continue;
+            M_fieldsUserVectorial[funcName] = this->functionSpaceVelocity()->elementPtr();
+        }
+        else if ( funcData.isVectorial3() )
+        {
+            if ( nDim != 3 ) continue;
+            if ( this->hasFieldUserVectorial( funcName ) )
+                continue;
+            M_fieldsUserVectorial[funcName] = this->functionSpaceVelocity()->elementPtr();
+        }
+    }
+
+    this->updateUserFunctions();
+}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSymbol )
+{
+    if ( this->modelProperties().functions().empty() )
+        return;
+
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().functions().setParameterValues( paramValues );
+    for ( auto const& modelfunc : this->modelProperties().functions() )
+    {
+        auto const& funcData = modelfunc.second;
+        if ( onlyExprWithTimeSymbol && !funcData.hasSymbol("t") )
+            continue;
+
+        std::string funcName = funcData.name();
+        if ( funcData.isScalar() )
+        {
+            CHECK( this->hasFieldUserScalar( funcName ) ) << "user function " << funcName << "not registered";
+            M_fieldsUserScalar[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionScalar() );
+        }
+        else if ( funcData.isVectorial2() )
+        {
+            if ( nDim != 2 ) continue;
+            CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
+            M_fieldsUserVectorial[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionVectorial2() );
+        }
+        else if ( funcData.isVectorial3() )
+        {
+            if ( nDim != 3 ) continue;
+            CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
+            M_fieldsUserVectorial[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionVectorial3() );
+        }
+    }
+}
+
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     // update post-process expression
@@ -1324,6 +1401,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
         M_postProcessFieldExported.erase( FluidMechanicsPostProcessFieldExported::Displacement );
         M_postProcessFieldExported.erase( FluidMechanicsPostProcessFieldExported::ALEMesh );
     }
+
     // restart exporters if restart is activated
     if (this->doRestart() && this->restartPath().empty() )
     {
@@ -1344,6 +1422,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 #if 1 // defined(FEELPP_HAS_VTK)
             if ( M_exporter_ho && M_exporter_ho->doExport() ) M_exporter_ho->restart(this->timeInitial());
 #endif
+        }
+    }
+
+    // add user functions
+    if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
+    {
+        for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
+        {
+            if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
+                M_postProcessUserFieldExported.insert( o );
         }
     }
 
