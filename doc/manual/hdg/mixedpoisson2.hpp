@@ -230,7 +230,7 @@ public:
     exporter_ptrtype M_exporter;
     exporter_ptrtype exporterMP() { return M_exporter; }
 
-    void init( mesh_ptrtype mesh = nullptr, int extraRow = 0, int extraCol = 0, mesh_ptrtype meshVisu = nullptr);
+    void init( mesh_ptrtype mesh = nullptr, mesh_ptrtype meshVisu = nullptr);
 
     virtual void initModel();
     virtual void initSpaces();
@@ -299,7 +299,7 @@ MixedPoisson<Dim,Order,G_Order>::New( std::string const& prefix,
 
 template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh, int extraRow, int extraCol, mesh_ptrtype meshVisu )
+MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh, mesh_ptrtype meshVisu )
 {
     tic();
     if ( !mesh )

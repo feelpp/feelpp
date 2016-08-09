@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 		auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("mixedpoisson.gmsh.submesh")), Environment::worldComm() );
         Idh = IPtr( _domainSpace=Pdh<FEELPP_ORDER>(cmesh), _imageSpace=Pdh<1>(mesh) );
         Idhv = IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(cmesh), _imageSpace=Pdhv<1>(mesh) );
-        MP -> init( cmesh, 0, 0, mesh );
+        MP -> init( cmesh, mesh );
     }
 
     if ( MP -> isStationary() )

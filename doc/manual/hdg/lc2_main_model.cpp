@@ -61,13 +61,13 @@ int main(int argc, char *argv[])
     decltype( IPtr( _domainSpace=Pdh<FEELPP_ORDER>(mesh), _imageSpace=Pdh<1>(mesh) ) ) Idh ;
     decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<1>(mesh) ) ) Idhv;
     if ( soption( "mixedpoisson.gmsh.submesh" ).empty() )
-        LC.init(mesh, 1, 1);
+        LC.init(mesh );
     else
     {
         auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("mixedpoisson.gmsh.submesh")), Environment::worldComm() );
         Idh = IPtr( _domainSpace=Pdh<FEELPP_ORDER>(cmesh), _imageSpace=Pdh<1>(mesh) );
         Idhv = IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(cmesh), _imageSpace=Pdhv<1>(mesh) );
-        LC.init( cmesh, 1, 1, mesh );
+        LC.init( cmesh, mesh );
     }
     
     if ( LC.isStationary() )
