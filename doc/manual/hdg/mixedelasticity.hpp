@@ -577,7 +577,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
 		auto mu = expr(material.getScalar("mu"));
 		auto c1 = cst(0.5)/mu; 
     	auto c2 = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu)); 
-		bbf( 0_c, 0_c ) =  integrate(_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
+		bbf( 0_c, 0_c ) +=  integrate(_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
     	bbf( 0_c, 0_c ) += integrate(_range=elements(M_mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
     }
 

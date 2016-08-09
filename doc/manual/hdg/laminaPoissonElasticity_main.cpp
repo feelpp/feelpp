@@ -48,11 +48,8 @@ int main(int argc, char *argv[])
     decltype( IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(mesh), _imageSpace=Pdhms<1>(mesh) ) ) Idhv_el;
 	*/
 
-	Feel::cout << __LINE__ << std::endl;
-
 	MPE.run();
 
-	Feel::cout << __LINE__ << std::endl;
 	/*
 	// solve the elasticity stationary
 	Feel::cout << "STARTING SOLVE THE ELASTICITY PART . . ." << std::endl;

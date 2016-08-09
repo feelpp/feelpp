@@ -199,8 +199,8 @@ public:
     M0h_ptr_t traceSpaceOrder0() const { return M_M0h; }
     Ch_ptr_t constantSpace() const {return M_Ch;}
 
-    Vh_element_ptr_t fluxField() const { return M_up; }
-    Wh_element_ptr_t potentialField() const { return M_pp; }
+    Vh_element_t fluxField() const { return M_up; }
+    Wh_element_t potentialField() const { return M_pp; }
     model_prop_type modelProperties() { return *M_modelProperties; }
     model_prop_type modelProperties() const { return *M_modelProperties; }
     std::vector<std::string> integralMarkersList() const { return M_integralMarkersList; }
