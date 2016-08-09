@@ -1,7 +1,6 @@
 #include <feel/feelmodels/levelset/levelset.hpp>
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
-#include <feel/feelmodels/levelset/reinitializer_fm.hpp>
 #include <feel/feelmodels/levelset/reinitializer_hj.hpp>
 
 namespace Feel {
@@ -250,9 +249,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
     { 
         case LevelSetReinitMethod::FM :
         {
-            M_reinitializer.reset( 
-                    new ReinitializerFM<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-fm") ) 
-                    );
+            //M_reinitializer.reset( 
+                    //new ReinitializerFM<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-fm") ) 
+                    //);
+            M_reinitializer = this->reinitializerFM();
 
             //dynamic_cast<ReinitializerFM<space_levelset_type>&>( *M_reinitializer ).setUseMarker2AsMarkerDone( M_useMarkerDiracAsMarkerDoneFM );
 
@@ -696,6 +696,137 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerCrossedElements()
 }
 
 //----------------------------------------------------------------------------//
+// Utility distances
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype
+LEVELSET_CLASS_TEMPLATE_TYPE::distToBoundary()
+{
+    element_levelset_ptrtype distToBoundary( new element_levelset_type(this->functionSpace(), "DistToBoundary") );
+
+    // Retrieve the elements touching the boundary
+    auto boundaryelts = boundaryelements( this->mesh() );
+
+    // Mark the elements in myrange
+    auto mymark = vf::project(
+            _space=this->functionSpaceMarkers(),
+            _range=boundaryelts,
+            _expr=cst(1)
+            );
+
+    // Update mesh marker2
+    this->mesh()->updateMarker2( mymark );
+
+    // Init phi0 with h on marked2 elements
+    auto phi0 = vf::project(
+            _space=this->functionSpace(),
+            _range=boundaryelts,
+            _expr=h()
+            );
+    phi0.on( _range=boundaryfaces(this->mesh()), _expr=cst(0.) );
+
+    // Run FM using marker2 as marker DONE
+    this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
+    *distToBoundary = this->reinitializerFM()->run( phi0 );
+
+    return distToBoundary;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype
+LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
+{
+    element_levelset_ptrtype distToMarkedFaces( new element_levelset_type(this->functionSpace(), "DistToMarkedFaces") );
+
+    typedef boost::reference_wrapper<typename MeshTraits<mesh_type>::element_type const> element_ref_type;
+    typedef std::vector<element_ref_type> cont_range_type;
+    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+
+    // Retrieve the elements touching the marked faces
+    auto mfaces = markedfaces( this->mesh(), marker );
+    for( auto const& face: mfaces )
+    {
+        if( face.isConnectedTo0() )
+            myelts->push_back(boost::cref(face.element0()));
+        if( face.isConnectedTo1() )
+            myelts->push_back(boost::cref(face.element1()));
+    }
+
+    auto myrange = boost::make_tuple(
+            mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
+            );
+
+    // Mark the elements in myrange
+    auto mymark = this->functionSpaceMarkers()->element();
+    mymark.on( _range=myrange, _expr=cst(1) );
+
+    // Update mesh marker2
+    this->mesh()->updateMarker2( mymark );
+
+    // Init phi0 with h on marked2 elements
+    auto phi0 = vf::project(
+            _space=this->functionSpace(),
+            _range=myrange,
+            _expr=h()
+            );
+    phi0.on( _range=mfaces, _expr=cst(0.) );
+
+    // Run FM using marker2 as marker DONE
+    this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
+    *distToMarkedFaces = this->reinitializerFM()->run( phi0 );
+
+    return distToMarkedFaces;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype
+LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::any> marker )
+{
+    element_levelset_ptrtype distToMarkedFaces( new element_levelset_type(this->functionSpace(), "DistToMarkedFaces") );
+
+    typedef boost::reference_wrapper<typename MeshTraits<mesh_type>::element_type const> element_ref_type;
+    typedef std::vector<element_ref_type> cont_range_type;
+    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+
+    // Retrieve the elements touching the marked faces
+    auto mfaces_list = markedfaces( this->mesh(), marker );
+    for( auto const& mfaces: mfaces_list )
+    {
+        for( auto const& face: mfaces )
+        {
+            if( face.isConnectedTo0() )
+                myelts->push_back(boost::cref(face.element0()));
+            if( face.isConnectedTo1() )
+                myelts->push_back(boost::cref(face.element1()));
+        }
+    }
+
+    auto myrange = boost::make_tuple(
+            mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
+            );
+
+    // Mark the elements in myrange
+    auto mymark = this->functionSpaceMarkers()->element();
+    mymark.on( _range=myrange, _expr=cst(1) );
+
+    // Update mesh marker2
+    this->mesh()->updateMarker2( mymark );
+
+    // Init phi0 with h on marked2 elements
+    auto phi0 = vf::project(
+            _space=this->functionSpace(),
+            _range=myrange,
+            _expr=h()
+            );
+    phi0.on( _range=mfaces_list, _expr=cst(0.) );
+
+    // Run FM using marker2 as marker DONE
+    this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
+    *distToMarkedFaces = this->reinitializerFM()->run( phi0 );
+
+    return distToMarkedFaces;
+}
+
+//----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Advection
@@ -801,7 +932,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
         } // switch M_strategyBeforeFM
 
         // Fast Marching Method
-        //boost::dynamic_pointer_cast<ReinitializerFM<space_levelset_type>>( M_reinitializer )->setUseMarker2AsMarkerDone( M_useMarker2AsMarkerDoneFmm );
+        boost::dynamic_pointer_cast<ReinitializerFM<space_levelset_type>>( M_reinitializer )->setUseMarker2AsMarkerDone( M_useMarkerDiracAsMarkerDoneFM );
 
         LOG(INFO)<< "reinit with FMM done"<<std::endl;
     } // Fast Marching
@@ -819,6 +950,20 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
     double timeElapsed = this->timerTool("Reinit").stop();
     this->log("LevelSet","reinitialize","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerFM_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerFM()
+{
+    if( !M_reinitializerFM )
+    {
+        M_reinitializerFM.reset( 
+                new ReinitializerFM<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-fm") ) 
+                );
+    }
+
+    return M_reinitializerFM;
 }
 
 //----------------------------------------------------------------------------//
