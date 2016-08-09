@@ -31,11 +31,12 @@ namespace FeelModels {
 
 inline
 po::options_description
-makeMixedElasticityOptions( std::string prefix = "mixedelasticy" )
+makeMixedElasticityOptions( std::string prefix = "mixedelasticity" )
 {
     po::options_description mpOptions( "Mixed Elasticity HDG options");
     mpOptions.add_options()
         ( "gmsh.submesh", po::value<std::string>()->default_value( "" ), "submesh extraction" )
+        ( "gmsh.submesh2", po::value<std::string>()->default_value( "" ), "submesh extraction" )
         ( prefixvm( prefix, "hface").c_str(), po::value<int>()->default_value( 0 ), "hface" )
         ( "lambda", po::value<std::string>()->default_value( "1" ), "lambda" )
         ( "mu", po::value<std::string>()->default_value( "1" ), "mu" )
@@ -178,7 +179,8 @@ public:
     
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
-    
+    vector_ptrtype getF() {return M_F; }
+ 
     // Exporter
     virtual void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  )
     {
@@ -716,7 +718,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
             for ( auto const& exAtMarker : (*itType).second )
             {
 				auto marker = exAtMarker.marker();
-                auto g = expr<2,2> (exAtMarker.expression());
+                auto g = expr<Dim,Dim> (exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
 				cout << "Neumann condition on " << marker << ": " << g << std::endl;

@@ -46,8 +46,15 @@ int main(int argc, char *argv[])
 	else
 	{
 		Feel::cout << "Using submesh: " << soption("gmsh.submesh") << std::endl;
-		auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
-    	Idh = IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(cmesh), _imageSpace=Pdhv<1>(mesh) );
+		std::list<std::string> listSubmeshes;
+		listSubmeshes.push_back( soption("gmsh.submesh") );
+		if ( !soption("gmsh.submesh2").empty() )
+		{
+			Feel::cout << "Using submesh 2: " << soption("gmsh.submesh2") << std::endl;
+			listSubmeshes.push_back( soption("gmsh.submesh2") );
+		}
+		auto cmesh = createSubmesh( mesh, markedelements(mesh,listSubmeshes), Environment::worldComm() );
+		Idh = IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(cmesh), _imageSpace=Pdhv<1>(mesh) );
     	Idhv = IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(cmesh), _imageSpace=Pdhms<1>(mesh) );
     	ME -> init( cmesh, mesh );
 	}
