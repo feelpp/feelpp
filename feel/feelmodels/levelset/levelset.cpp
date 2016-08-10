@@ -258,7 +258,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
 
             if( M_strategyBeforeFM == ILP )
             {
-                M_backend_smooth = backend(_name=prefixvm(this->prefix(), "smoother-fm"));
+                M_backend_smooth = backend(
+                        _name=prefixvm(this->prefix(), "smoother-fm"),
+                        _worldcomm=this->worldComm()
+                        );
                 M_smootherFM = projector(
                         this->functionSpace(),/*domainSpace*/
                         this->functionSpace(),/*imageSpace*/
@@ -296,8 +299,8 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 {
-    M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "projector-l2")) );
-    M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "projector-l2-vec")) );
+    M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "projector-l2"), _worldcomm=this->worldComm()) );
+    M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "projector-l2-vec"), _worldcomm=this->worldComm()) );
 
     //if( M_doSmoothCurvature )
     //{
@@ -619,7 +622,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smoother()
     if( !M_smoother )
         M_smoother = projector( 
                 this->functionSpace() , this->functionSpace(), 
-                backend(_name=prefixvm(this->prefix(),"smoother")), 
+                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldComm()), 
                 DIFF, 
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order,
                 30);
@@ -633,7 +636,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherVectorial()
     if( !M_smootherVectorial )
         M_smootherVectorial = projector( 
                 this->functionSpaceVectorial() , this->functionSpaceVectorial(), 
-                backend(_name=prefixvm(this->prefix(),"smoother-vec")), 
+                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldComm()), 
                 DIFF, 
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order,
                 30);
