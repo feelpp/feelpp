@@ -451,7 +451,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 {
     M_bcMarkersInflow.clear();
 
-    for( std::string const& bcMarker: this->modelProperties().boundaryConditions().markers( "levelset", "inflow" ) )
+    for( std::string const& bcMarker: this->modelProperties().boundaryConditions().markers( this->prefix(), "inflow" ) )
     {
         if( std::find(M_bcMarkersInflow.begin(), M_bcMarkersInflow.end(), bcMarker) == M_bcMarkersInflow.end() )
         {
