@@ -30,7 +30,7 @@ runLevelsetApplication()
 
     LS->init();
     LS->printAndSaveInfo();
-    //LS->exportResults();
+    LS->exportResults(0);
 
     auto myExporter = exporter( 
             _mesh=LS->mesh(),
