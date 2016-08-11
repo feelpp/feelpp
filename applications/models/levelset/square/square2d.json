@@ -39,5 +39,18 @@
                 }
             }
         }
+    },
+    "BoundaryConditions":
+    {
+        "levelset":
+        {
+            "inflow":
+            {
+                "Left":
+                {
+                    "expr":"0"
+                }
+            }
+        }
     }
 }
