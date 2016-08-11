@@ -32,11 +32,18 @@ runLevelsetApplication()
     LS->printAndSaveInfo();
     LS->exportResults(0);
 
-    auto myExporter = exporter( 
-            _mesh=LS->mesh(),
-            _name="DistExport",
-            _path=LS->exporterPath()
-            );
+    bool exportDistToBoundary = boption( _name="export-dist-to-boundary" );
+
+    boost::shared_ptr<Exporter<typename model_type::mesh_type>> myExporter;
+
+    if( exportDistToBoundary )
+    {
+        myExporter = exporter( 
+                _mesh=LS->mesh(),
+                _name="DistExport",
+                _path=LS->exporterPath()
+                );
+    }
 
     if ( LS->isStationary() )
     {
@@ -57,7 +64,6 @@ runLevelsetApplication()
             Feel::cout << "Levelset BDF order: " << LS->timeStepBDF()->timeOrder() << std::endl;
 
             LS->solve();
-            auto distToBoundary = LS->distToBoundary();
             if( reinit_every > 0 && iter%reinit_every == 0 )
             {
                 Feel::cout << "Reinitializing... ";
@@ -66,8 +72,12 @@ runLevelsetApplication()
             }
 
             LS->exportResults();
-            myExporter->step(iter)->add("distToBoundary", *distToBoundary );
-            myExporter->save();
+            if( exportDistToBoundary )
+            {
+                auto distToBoundary = LS->distToBoundary();
+                myExporter->step(iter)->add("distToBoundary", *distToBoundary );
+                myExporter->save();
+            }
         }
     }
 }
@@ -83,6 +93,7 @@ int main( int argc, char** argv )
     levelsetoptions.add_options()
         ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P2, P1" )
         ("levelset.reinit-every", Feel::po::value<int>()->default_value( -1 ), "reinitialize levelset every n iterations" )
+        ("export-dist-to-boundary", Feel::po::value<bool>()->default_value( false ), "compute and export the distance to the boundary" )
         ;
 
     Environment env( 
