@@ -1141,15 +1141,12 @@ endif()
 
 if ( FEELPP_ENABLE_VTK )
 
-    OPTION( FEELPP_ENABLE_VTK_INSITU "Enable In-Situ Visualization using VTK/Paraview" OFF )
+    # First try to find ParaView
+    FIND_PACKAGE(ParaView QUIET
+        COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
+        PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR})
 
-    # If we enable in-situ visualization
-    # We need to look for the Paraview package for the corresponding headers
-    # As Paraview integrates vtk headers we don't need them
-    if ( FEELPP_ENABLE_VTK_INSITU )
-        FIND_PACKAGE(ParaView REQUIRED 
-            COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
-            PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR})
+    if(ParaView_FOUND)
         message(STATUS "[ParaView] Use file: ${PARAVIEW_USE_FILE}")
         INCLUDE(${PARAVIEW_USE_FILE})
 
@@ -1173,8 +1170,10 @@ if ( FEELPP_ENABLE_VTK )
         SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ParaView/VTK" )
 
         message(STATUS "Found ParaView ${PARAVIEW_VERSION_FULL}/VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")
+    # If ParaView was not found we try to find VTK
     else()
-        FIND_PACKAGE(VTK)
+        message(STATUS "ParaView could not be found. Looking for VTK...")
+        FIND_PACKAGE(VTK QUIET)
         if( VTK_FOUND )
             include(${VTK_USE_FILE})
 
@@ -1191,7 +1190,7 @@ if ( FEELPP_ENABLE_VTK )
                     set(VTK_HAS_PARALLEL 1)
                     message(WARNING "External initialization of MPI Communicator is not available in VTK 5. VTK parallel export will be disabled.")
                 else()
-                    message(WARNING "MPI support for VTK 5 is not activated. VTK parallel export will be disabled.")
+                    message(WARNING "MPI support for VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}.${VTK_BUILD_VERSION} is not activated. VTK parallel export will be disabled.")
                 endif()
                 unset(__test_vtk_parallel)
                 # From version 6 modules ared used
@@ -1201,7 +1200,7 @@ if ( FEELPP_ENABLE_VTK )
                 if( NOT (${__test_vtk_parallel} EQUAL -1) )
                     set(VTK_HAS_PARALLEL 1)
                 else()
-                    message(WARNING "MPI support for VTK 6 is not activated. VTK parallel export will be disabled.")
+                    message(WARNING "MPI support for VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}.${VTK_BUILD_VERSION} is not activated. VTK parallel export will be disabled.")
                 endif()
                 unset(__test_vtk_parallel)
             endif() 
@@ -1246,6 +1245,9 @@ if ( FEELPP_ENABLE_VTK )
             SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
             SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} VTK" )
 
+        # If VTK was not found
+        else()
+            message(STATUS "Neither ParaView nor VTK were found. VTK exporter and In-situ processing not enabled") 
         endif()
     endif()
 endif( FEELPP_ENABLE_VTK )
