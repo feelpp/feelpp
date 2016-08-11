@@ -222,6 +222,7 @@ public:
 
     virtual void loadParametersFromOptionsVm();
     virtual void loadConfigICFile();
+    virtual void loadConfigBCFile();
 
     void createFunctionSpaces();
     void createInterfaceQuantities();
@@ -295,7 +296,7 @@ public:
     // Advection
     bool hasSourceTerm() const { return false; }
     void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const {}
-    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const {}
+    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
 
     template<typename ExprT>
     void advect(vf::Expr<ExprT> const& velocity);
@@ -412,6 +413,10 @@ protected:
     map_scalar_field<2> M_icDirichlet;
     std::vector<std::pair<ShapeType, parameter_map>> M_icShapes;
 
+    //--------------------------------------------------------------------//
+    // Boundary conditions
+    std::list<std::string> M_bcMarkersInflow;
+
 private:
     //--------------------------------------------------------------------//
     // Mesh 
@@ -479,12 +484,9 @@ private:
     bool M_useRegularPhi;
     bool M_useHeavisideDiracNodalProj;
 
-    //int impose_inflow;
     double k_correction;
     //--------------------------------------------------------------------//
     // Reinitialization
-    //bool M_enableReinit;
-    //int M_reinitEvery;
     LevelSetReinitMethod M_reinitMethod;
     strategy_before_FM_type M_strategyBeforeFM;
     bool M_useMarkerDiracAsMarkerDoneFM;

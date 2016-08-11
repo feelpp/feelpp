@@ -38,6 +38,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     this->loadParametersFromOptionsVm();
     // Load initial value
     this->loadConfigICFile();
+    // Load boundary conditions
+    this->loadConfigBCFile();
     // Get periodicity from options (if needed)
     //this->loadPeriodicityFromOptionsVm();
 
@@ -444,6 +446,21 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
+{
+    M_bcMarkersInflow.clear();
+
+    for( std::string const& bcMarker: this->modelProperties().boundaryConditions().markers( "levelset", "inflow" ) )
+    {
+        if( std::find(M_bcMarkersInflow.begin(), M_bcMarkersInflow.end(), bcMarker) == M_bcMarkersInflow.end() )
+        {
+            M_bcMarkersInflow.push_back( bcMarker );
+        }
+    }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::reinitializer_ptrtype 
 LEVELSET_CLASS_TEMPLATE_TYPE::buildReinitializer( 
         LevelSetReinitMethod method, 
@@ -833,6 +850,37 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Advection
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(
+        sparse_matrix_ptrtype& A, vector_ptrtype& F ) const 
+{
+    if( this->M_bcMarkersInflow.empty() ) return;
+
+    this->log("LevelSet","updateBCStrongDirichletLinearPDE","start" );
+
+    auto mesh = this->mesh();
+    auto Xh = this->functionSpace();
+    auto const& phi = this->fieldSolution();
+    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
+                                              _pattern=size_type(Pattern::COUPLED),
+                                              _rowstart=this->rowStartInMatrix(),
+                                              _colstart=this->colStartInMatrix() );
+
+    for( auto const& bcMarker: this->M_bcMarkersInflow )
+    {
+        bilinearForm_PatternCoupled +=
+            on( _range=markedfaces(mesh, bcMarker),
+                    _element=phi,
+                    _rhs=F,
+                    _expr=(idv(this->timeStepBDF()->polyDeriv())-gradv(phi)*idv(this->fieldAdvectionVelocity()))/(this->timeStepBDF()->polyDerivCoefficient(0))
+              );
+    }
+
+    this->log("LevelSet","updateBCStrongDirichletLinearPDE","finish" );
+
+}
+
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::solve()
