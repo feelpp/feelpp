@@ -38,7 +38,7 @@ export GMSH_DIR=/data/software/install/gmsh-2.10.1
 
 ## PETSc
 ```
- ./configure --with-shared-libraries=1  --with-debugging=0  --COPTFLAGS='-O3' --CXXOPTFLAGS='-O3' --FOPTFLAGS='-O3'  --prefix=/data/software/install/petsc-3.6.1/openmpi-1.10.0/  --with-cc=`which mpicc`  --with-cxx=`which mpic++` --with-fc=`which mpif90` --with-mpiexec=`which mpiexec`  --download-suitesparse=1  --download-ml  --download-metis  --download-parmetis  --download-blacs  --download-scalapack  --download-fblaslapack  --download-mumps  --download-hypre  --download-ptscotch --download-elemental --download-elemental-shared=1 --with-cxx-dialect=C++11
+ ./configure --with-shared-libraries=1  --with-debugging=0  --COPTFLAGS='-O3' --CXXOPTFLAGS='-O3' --FOPTFLAGS='-O3'  --prefix=/data/software/install/petsc-3.6.1/openmpi-1.10.0/  --with-cc=`which mpicc`  --with-cxx=`which mpic++` --with-fc=`which mpif90` --with-mpiexec=`which mpiexec`  --download-suitesparse=1  --download-ml  --download-metis  --download-parmetis  --download-blacs  --download-scalapack  --download-fblaslapack  --download-mumps  --download-hypre  --download-ptscotch --download-elemental --download-elemental-shared=1 --download-fftw=1 --with-cxx-dialect=C++11
  make PETSC_DIR=/data/software/src/petsc-3.6.1 PETSC_ARCH=arch-linux2-c-opt all
  make PETSC_DIR=/data/software/src/petsc-3.6.1 PETSC_ARCH=arch-linux2-c-opt install
  export PETSC_DIR=/data/software/install/petsc-3.6.1/openmpi-1.10.0/
@@ -75,6 +75,7 @@ cmake /data/software/src/VTK/VTK5.10.1 -DCMAKE_INSTALL_PREFIX=/data/software/ins
 make install
 ```
 
+<!--
 ## FFTW
 ```
 wget http://fftw.org/fftw-3.3.4.tar.gz && tar zxvf fftw-3.3.4.tar.gz && cd fftw-3.3.4
@@ -82,7 +83,6 @@ wget http://fftw.org/fftw-3.3.4.tar.gz && tar zxvf fftw-3.3.4.tar.gz && cd fftw-
 make install
 ```
 
-<!--
 ## To Export
 Be carreful, there is a conflict :
 ```
