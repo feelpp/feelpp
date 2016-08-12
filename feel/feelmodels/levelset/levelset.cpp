@@ -22,7 +22,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
 :
     super_type( prefix, worldComm, subPrefix, rootRepository ),
     M_doUpdateGradPhi(true),
-    M_mass(0.),
     //M_periodicity(periodicityLS),
     M_doUpdateMarkers(true),
     M_reinitializerIsUpdatedForUse(false),
@@ -40,6 +39,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     this->loadConfigICFile();
     // Load boundary conditions
     this->loadConfigBCFile();
+    // Load post-process
+    this->loadConfigPostProcess();
     // Get periodicity from options (if needed)
     //this->loadPeriodicityFromOptionsVm();
 
@@ -116,6 +117,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     this->initLevelsetValue();
     // Init advection
     super_type::init( true, this->shared_from_this() );
+    // Init post-process
+    this->initPostProcess();
 
     M_timeOrder = this->timeStepBDF()->timeOrder(); 
 
@@ -214,6 +217,35 @@ LEVELSET_CLASS_TEMPLATE_TYPE::addShape(
         }
         break;
     }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
+{
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    bool hasMeasureToExport = false;
+
+    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Volume ) )
+    {
+        this->postProcessMeasuresIO().setMeasure( "volume", this->volume() );
+        hasMeasureToExport = true;
+    }
+
+    if ( hasMeasureToExport )
+    {
+        this->postProcessMeasuresIO().setParameter( "time", this->timeInitial() );
+        // start or restart measure file
+        if (!this->doRestart())
+            this->postProcessMeasuresIO().start();
+        else if ( !this->isStationary() )
+            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+    }
+
+    super_type::initPostProcess();
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -461,6 +493,33 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
+{
+    auto& modelPostProcess = this->modelProperties().postProcess();
+
+    auto physicalQuantities = modelPostProcess.pTree().get_child_optional("PhysicalQuantities");
+    if( physicalQuantities )
+    {
+        for( auto& i: *physicalQuantities )
+        {
+            auto i_str = i.second.template get_value<std::string>();
+            modelPostProcess["PhysicalQuantities"].push_back( i_str  );
+            LOG(INFO) << "add to postprocess physical quantity " << i_str;
+        }
+    }
+
+    if ( modelPostProcess.find("PhysicalQuantities") != modelPostProcess.end() )
+    {
+        for ( auto const& o : modelPostProcess.find("PhysicalQuantities")->second )
+        {
+            if( o == "volume" || o == "all" )
+                this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Volume );
+        }
+    }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::reinitializer_ptrtype 
 LEVELSET_CLASS_TEMPLATE_TYPE::buildReinitializer( 
         LevelSetReinitMethod method, 
@@ -583,20 +642,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
     }
 
     this->log("LevelSet", "updateHeaviside", "finish");
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::updateMass()
-{
-    this->log("LevelSet", "updateMass", "start");
-
-    M_mass = integrate(
-            _range=elements(this->mesh()),
-            _expr=(1-idv(this->heaviside())) ).evaluate()(0,0);
-            //_expr=vf::chi( idv(this->phi())<0.0) ).evaluate()(0,0); // gives very noisy results
-
-    this->log("LevelSet", "updateMass", "finish");
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -926,7 +971,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
 {
     updateDirac();
     updateHeaviside();
-    updateMass();
     updateNormal();
     updateCurvature();
     M_doUpdateMarkers = true;
@@ -1102,7 +1146,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::levelsetInfos( bool show )
 // Export results
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
+LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 {
     this->log("LevelSet","exportResults", "start");
     this->timerTool("PostProcessing").start();
@@ -1125,12 +1169,51 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Curvature")),
                                    *this->curvature() );
 
-    super_type::exportResults( time );
-    //if( M_doExportAdvection )
-        //M_advection->exportResults( time );
+    super_type::exportResultsImpl( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
     this->log("LevelSet","exportResults", "finish");
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
+{
+    bool hasMeasureToExport = false;
+
+    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Volume ) )
+    {
+        this->postProcessMeasuresIO().setMeasure( "volume", this->volume() );
+        hasMeasureToExport = true;
+    }
+
+    if( hasMeasureToExport )
+    {
+        this->postProcessMeasuresIO().setParameter( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+    }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+bool
+LEVELSET_CLASS_TEMPLATE_TYPE::hasPostProcessMeasureExported( 
+        LevelSetMeasuresExported const& measure) const
+{
+    return M_postProcessMeasuresExported.find(measure) != M_postProcessMeasuresExported.end();
+}
+
+//----------------------------------------------------------------------------//
+// Physical quantities
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+double
+LEVELSET_CLASS_TEMPLATE_TYPE::volume() const
+{
+    double volume = integrate(
+            _range=elements(this->mesh()),
+            _expr=(1-idv(this->heaviside())) ).evaluate()(0,0);
+            //_expr=vf::chi( idv(this->phi())<0.0) ).evaluate()(0,0); // gives very noisy results
+
+    return volume;
 }
 
 //----------------------------------------------------------------------------//

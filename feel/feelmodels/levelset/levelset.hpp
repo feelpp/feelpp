@@ -75,6 +75,11 @@ enum LevelSetTimeDiscretization {BDF2, /*CN,*/ EU, CN_CONSERVATIVE};
  */
 enum class LevelSetReinitMethod {FM, HJ};
 
+enum class LevelSetMeasuresExported
+{
+    Volume
+};
+
 template<typename ConvexType, int Order=1, typename PeriodicityType = NoPeriodicity>
 class LevelSet 
     : public AdvectionBase< ConvexType, Lagrange<Order, Scalar>, PeriodicityType >
@@ -219,10 +224,12 @@ public:
     // Initialization
     void init();
     void initLevelsetValue();
+    void initPostProcess();
 
     virtual void loadParametersFromOptionsVm();
     virtual void loadConfigICFile();
     virtual void loadConfigBCFile();
+    virtual void loadConfigPostProcess();
 
     void createFunctionSpaces();
     void createInterfaceQuantities();
@@ -264,8 +271,6 @@ public:
     element_levelset_vectorial_ptrtype const& N() const { return this->normal(); }
     element_levelset_ptrtype const& curvature() const { return M_levelsetCurvature; }
     element_levelset_ptrtype const& K() const { return this->curvature(); }
-
-    double mass() const { return M_mass; }
 
     double thicknessInterface() const { return M_thicknessInterface; }
     void setThicknessInterface( double value ) { M_thicknessInterface = value; }
@@ -356,8 +361,11 @@ public:
 
     //--------------------------------------------------------------------//
     // Export results
-    using super_type::exportResults;
-    void exportResults( double time );
+    bool hasPostProcessMeasureExported( LevelSetMeasuresExported const& measure) const;
+
+    //--------------------------------------------------------------------//
+    // Physical quantities
+    double volume() const;
 
     //--------------------------------------------------------------------//
     // Utility functions
@@ -372,7 +380,6 @@ protected:
     void updateGradPhi();
     void updateDirac();
     void updateHeaviside();
-    void updateMass();
 
     void updateNormal();
     void updateCurvature();
@@ -393,6 +400,11 @@ private:
 
     //--------------------------------------------------------------------//
     element_levelset_ptrtype const& phio() const { return this->timeStepBDF()->unknowns()[1]; }
+    //--------------------------------------------------------------------//
+    // Export
+    void exportResultsImpl( double time );
+    void exportMeasuresImpl( double time );
+
 
 protected:
     //--------------------------------------------------------------------//
@@ -406,8 +418,6 @@ protected:
 
     element_levelset_ptrtype M_heaviside;
     element_levelset_ptrtype M_dirac;
-    double M_mass;
-
     //--------------------------------------------------------------------//
     // Levelset initial value
     map_scalar_field<2> M_icDirichlet;
@@ -476,8 +486,7 @@ private:
 
     //--------------------------------------------------------------------//
     // Export
-    //exporter_ptrtype M_exporter;
-    //bool M_doExportAdvection;
+    std::set<LevelSetMeasuresExported> M_postProcessMeasuresExported;
     //--------------------------------------------------------------------//
     // Parameters
     double M_thicknessInterface;

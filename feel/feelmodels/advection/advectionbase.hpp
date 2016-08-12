@@ -278,10 +278,13 @@ public :
     //--------------------------------------------------------------------//
     // Export results
     void initPostProcess();
-    void exportMeasures( double time );
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
+    void exportMeasures( double time );
 
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
 protected:
     virtual void loadParametersFromOptionsVm();
 
@@ -291,6 +294,10 @@ protected:
     void createTimeDiscretization();
     void createExporters();
     void createOthers();
+
+    virtual void exportResultsImpl( double time );
+    virtual void exportMeasuresImpl( double time );
+
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
