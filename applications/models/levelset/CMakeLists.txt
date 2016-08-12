@@ -16,6 +16,7 @@ feelpp_add_application( application_levelset_2d SRCS main_ls.cpp
 #)
 
 feelpp_add_testcase(square PREFIX feelpp_levelset)
+feelpp_add_testcase(tube PREFIX feelpp_levelset)
 
 #feelpp_add_application( application_fm_2d SRCS main_fm.cpp LINK_LIBRARIES feelpp_model_fluidmechanics )
 
