@@ -896,11 +896,26 @@ ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
+    this->exportMeasuresImpl( time );
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
+{
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
+{
+    this->exportResultsImpl( time );
+    this->exportMeasures( time );
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 {
     if ( !M_exporter->doExport() ) return;
 
@@ -923,8 +938,6 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
                                        *M_fieldSource );
     }
     M_exporter->save();
-
-    this->exportMeasures( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
