@@ -8,10 +8,10 @@
         {
             "name":"copper",
 			"rho":"1",
-            "lambda":"5.88",		// [kg/cm/s^2 		// [5.88 MPa]
-	    	"mu":"0.12"				// [kg/cm/s^2 		// [0.12 Mpa]
+            "lambda":"58.8",			// [N/cm^2]		// [5.88 MPa]
+	    	"mu":"1.2"				// [N/cm^2]		// [0.12 Mpa]
         }
-    },
+	},
     "BoundaryConditions":
     {
         "strain":
@@ -49,7 +49,7 @@
                 }
  	    	}
     	}
-     },
+	},
     "PostProcess":
     {
         "Fields":["strain","displacement"]

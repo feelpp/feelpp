@@ -377,6 +377,8 @@ MixedElasticity<Dim, Order, G_Order>::init( mesh_ptrtype mesh, mesh_ptrtype mesh
     tic();
     this->assemble();
     toc("assemble");
+
+
 }
 
 template<int Dim, int Order, int G_Order>
@@ -719,8 +721,8 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
             {
 				auto marker = exAtMarker.marker();
                 auto g = expr<Dim,Dim> (exAtMarker.expression());
-                if ( !this->isStationary() )
-                    g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
+				if ( !this->isStationary() )
+                    g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
 				cout << "Neumann condition on " << marker << ": " << g << std::endl;
 				blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
 									    _expr=trans(id(m))*(g*N()));
@@ -741,7 +743,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
                 auto g = expr<Dim,G_Order>(exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
-				// cout << "Dirichlet condition on " << marker << ": " << g << std::endl;
+				cout << "Dirichlet condition on " << marker << ": " << g << std::endl;
 				blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
                 		      _expr=trans(id(m))*g);
             }
