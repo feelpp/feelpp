@@ -29,7 +29,7 @@ export LD_LIBRARY_PATH=$BOOSTROOT/lib:$LD_LIBRARY_PATH
 ## Gmsh
 
 ```
-cmake -DCMAKE_INSTALL_PREFIX=/data/software/install/gmsh-2.10.1 -DENABLE_MPI=OFF -DENABLE_BUILD_LIB=ON -DENABLE_BUILD_SHARED=ON -DCMAKE_BUILD_TYPE=release -DENABLE_PETSC=OFF ..
+cmake -DCMAKE_INSTALL_PREFIX=/data/software/install/gmsh-2.10.1 -DCMAKE_BUILD_TYPE=Release -DENABLE_MPI=OFF -DENABLE_BUILD_LIB=ON -DENABLE_BUILD_SHARED=ON -DCMAKE_BUILD_TYPE=release -DENABLE_PETSC=OFF ..
 make -j$64 lib
 make -j64 shared
 make -j64 install
@@ -63,7 +63,7 @@ make install
 ## ParaView 
 * Build for using DISPLAY export over SSH (see https://github.com/feelpp/feelpp/blob/develop/ports/linux/ParaView.sh for more information)
 ```
-cmake /data/software/src/ParaView/ParaView-v5.0.1-source -DBUILD_TESTING=OFF -DVTK_RENDERING_BACKEND=OpenGL -DPARAVIEW_ENABLE_CATALYST=ON -DPARAVIEW_ENABLE_PYTHON=ON -DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DPARAVIEW_USE_MPI=ON -DCMAKE_INSTALL_PREFIX=/data/software/install/ParaView/5.0.1/gcc-4.9.0/openmpi-1.10
+cmake /data/software/src/ParaView/ParaView-v5.0.1-source -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DVTK_RENDERING_BACKEND=OpenGL -DPARAVIEW_ENABLE_CATALYST=ON -DPARAVIEW_ENABLE_PYTHON=ON -DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DPARAVIEW_USE_MPI=ON -DCMAKE_INSTALL_PREFIX=/data/software/install/ParaView/5.0.1/gcc-4.9.0/openmpi-1.10
 make -j $3
  ```
  
