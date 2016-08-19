@@ -32,8 +32,8 @@ ll2 = newll; Line Loop(ll2) = {l5:l8};
 Plane Surface(1) = {ll1, -ll2};
 Plane Surface(2) = {ll2};
 
-Translate {0, 0, 0.1} { Duplicata{ Surface{2}; } }
-Translate {0, 0, z1-z0} { Duplicata{ Surface{1}; } }
+Translate {0, 0, -0.1} { Duplicata{ Surface{2}; } }
+Translate {0, 0, -(z1-z0)} { Duplicata{ Surface{1}; } }
 
 l9 = newl; Line(l9) = {19, 1};
 l10 = newl; Line(l10) = {28, 4};

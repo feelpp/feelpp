@@ -387,7 +387,11 @@ endif(FEELPP_ENABLE_MKL)
 # - do not install hdf5-helpers, otherwise it will pick the serial version by default
 # - install only the libhdf5-openmpi-dev package
 
-cmake_dependent_option(FEELPP_ENABLE_HDF5 "Enable HDF5 Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_HDF5 "Enable HDF5 Support" OFF )
+else()
+    option( FEELPP_ENABLE_HDF5 "Enable HDF5 Support" ON )
+endif()
 
 if ( FEELPP_ENABLE_HDF5 )
   find_package(HDF5)
@@ -566,7 +570,11 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   
 endif()
 
-cmake_dependent_option(FEELPP_ENABLE_FFTW "Enable fftw Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_FFTW "Enable fftw Support" OFF )
+else()
+    option( FEELPP_ENABLE_FFTW "Enable fftw Support" ON )
+endif()
 if(FEELPP_ENABLE_FFTW)
   find_package(FFTW)
   if( FFTW_FOUND )
@@ -581,7 +589,11 @@ endif()
 # submodules
 #
 include(feelpp.module.hpddm)
-cmake_dependent_option(FEELPP_ENABLE_NLOPT "Enable NlOpt Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_NLOPT "Enable NlOpt Support" OFF )
+else()
+    option( FEELPP_ENABLE_NLOPT "Enable NlOpt Support" ON )
+endif()
 include(feelpp.module.nlopt)
 include(feelpp.module.cereal)
 include(feelpp.module.paralution)
@@ -655,7 +667,11 @@ message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
 # Ann
 #
 
-cmake_dependent_option(FEELPP_ENABLE_ANN "Enable ANN Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_ANN "Enable ANN Support" OFF )
+else()
+    option( FEELPP_ENABLE_ANN "Enable ANN Support" ON )
+endif()
 
 if(FEELPP_ENABLE_ANN)
 FIND_PACKAGE(ANN)
@@ -742,7 +758,11 @@ endif()
 
 
 # xml
-cmake_dependent_option(FEELPP_ENABLE_LIBXML2 "Enable libxml2 Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_LIBXML2 "Enable libxml2 Support" OFF )
+else()
+    option( FEELPP_ENABLE_LIBXML2 "Enable libxml2 Support" ON )
+endif()
 if(FEELPP_ENABLE_LIBXML2)
   find_package(LibXml2 2.6.27)
   if ( LIBXML2_FOUND )
@@ -756,7 +776,11 @@ endif()
 
 # Python libs
 
-cmake_dependent_option(FEELPP_ENABLE_PYTHON "Enable Python Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_PYTHON "Enable Python Support" OFF )
+else()
+    option( FEELPP_ENABLE_PYTHON "Enable Python Support" ON )
+endif()
 
 if(FEELPP_ENABLE_PYTHON)
   FIND_PACKAGE(PythonLibs)
@@ -783,13 +807,21 @@ if(FEELPP_ENABLE_PYTHON)
   endif()
 endif()
 
-cmake_dependent_option(FEELPP_ENABLE_METIS "Enable Metis Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_METIS "Enable Metis Support" OFF )
+else()
+    option( FEELPP_ENABLE_METIS "Enable Metis Support" ON )
+endif()
 
 if(FEELPP_ENABLE_METIS)
   include(feelpp.module.metis)
 endif()
 
-cmake_dependent_option(FEELPP_ENABLE_PARMETIS "Enable Parmetis Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_PARMETIS "Enable Parmetis Support" OFF )
+else()
+    option( FEELPP_ENABLE_PARMETIS "Enable Parmetis Support" ON )
+endif()
 
 if(FEELPP_ENABLE_PARMETIS)
   FIND_LIBRARY(PARMETIS_LIBRARY
@@ -806,7 +838,11 @@ if(FEELPP_ENABLE_PARMETIS)
   ENDIF()
 endif()
 
-cmake_dependent_option(FEELPP_ENABLE_SCOTCH "Enable Scotch Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_SCOTCH "Enable Scotch Support" OFF )
+else()
+    option( FEELPP_ENABLE_SCOTCH "Enable Scotch Support" ON )
+endif()
 
 if(FEELPP_ENABLE_SCOTCH)
   FIND_PACKAGE(Scotch)
@@ -816,7 +852,11 @@ if(FEELPP_ENABLE_SCOTCH)
   ENDIF()
 endif()
 
-cmake_dependent_option(FEELPP_ENABLE_ML "Enable ML Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_ML "Enable ML Support" OFF )
+else()
+    option( FEELPP_ENABLE_ML "Enable ML Support" ON )
+endif()
 
 if(FEELPP_ENABLE_ML)
   find_package(ML)
@@ -846,7 +886,11 @@ if ( GFORTRAN_LIBRARY )
   set( FEELPP_LIBRARIES ${GFORTRAN_LIBRARY} ${FEELPP_LIBRARIES})
 endif()
 
-cmake_dependent_option(FEELPP_ENABLE_MUMPS "Enable MUMPS Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_MUMPS "Enable MUMPS Support" OFF )
+else()
+    option( FEELPP_ENABLE_MUMPS "Enable MUMPS Support" ON )
+endif()
 
 if( FEELPP_ENABLE_MUMPS)
   FIND_PACKAGE(MUMPS)
@@ -856,7 +900,11 @@ if( FEELPP_ENABLE_MUMPS)
   endif()
 endif()
 
-cmake_dependent_option(FEELPP_ENABLE_SUITESPARSE "Enable SuiteSparse Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_SUITESPARSE "Enable SuiteSparse Support" OFF )
+else()
+    option( FEELPP_ENABLE_SUITESPARSE "Enable SuiteSparse Support" ON )
+endif()
 
 if(FEELPP_ENABLE_SUITESPARSE)
   FIND_LIBRARY(SUITESPARSECONFIG_LIBRARY
@@ -873,7 +921,11 @@ if(FEELPP_ENABLE_SUITESPARSE)
   message(STATUS "[feelpp] SuiteSparseConfig: ${SUITESPARSECONFIG_LIBRARY}" )
 endif()
 
-cmake_dependent_option(FEELPP_ENABLE_AMD "Enable AMD Library Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_AMD "Enable AMD Library Support" OFF )
+else()
+    option( FEELPP_ENABLE_AMD "Enable AMD Library Support" ON )
+endif()
 
 if(FEELPP_ENABLE_AMD)
   FIND_LIBRARY(AMD_LIBRARY
@@ -891,7 +943,11 @@ if(FEELPP_ENABLE_AMD)
   message(STATUS "[feelpp] Amd: ${AMD_LIBRARY}" )
 endif()
 
-cmake_dependent_option(FEELPP_ENABLE_COLAMD "Enable COLAMD Library Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_COLAMD "Enable COLAMD Library Support" OFF )
+else()
+    option( FEELPP_ENABLE_COLAMD "Enable COLAMD Library Support" ON )
+endif()
 
 if(FEELPP_ENABLE_COLAMD)
   FIND_LIBRARY(COLAMD_LIBRARY
@@ -908,7 +964,11 @@ if(FEELPP_ENABLE_COLAMD)
   message(STATUS "[feelpp] ColAmd: ${COLAMD_LIBRARY}" )
 endif()
 
-cmake_dependent_option(FEELPP_ENABLE_CHOLMOD "Enable CHOLMOD Library Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_CHOLMOD "Enable CHOLMOD Library Support" OFF )
+else()
+    option( FEELPP_ENABLE_CHOLMOD "Enable CHOLMOD Library Support" ON )
+endif()
 
 if(FEELPP_ENABLE_CHOLMOD)
   FIND_LIBRARY(CHOLMOD_LIBRARY
@@ -922,7 +982,11 @@ if(FEELPP_ENABLE_CHOLMOD)
   message(STATUS "[feelpp] Cholmod: ${CHOLMOD_LIBRARY}" )
 endif()
 
-cmake_dependent_option(FEELPP_ENABLE_UMFPACK "Enable UMFPACK Library Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_UMFPACK "Enable UMFPACK Library Support" OFF )
+else()
+    option( FEELPP_ENABLE_UMFPACK "Enable UMFPACK Library Support" ON )
+endif()
 
 if(FEELPP_ENABLE_UMFPACK)
   FIND_LIBRARY(UMFPACK_LIBRARY
@@ -957,7 +1021,11 @@ endif()
 # Petsc
 #
 
-cmake_dependent_option(FEELPP_ENABLE_PETSC "Enable PETSc Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_PETSC "Enable PETSc Support" OFF )
+else()
+    option( FEELPP_ENABLE_PETSC "Enable PETSc Support" ON )
+endif()
 
 if(FEELPP_ENABLE_PETSC)
   FIND_PACKAGE( PETSc REQUIRED)
@@ -990,7 +1058,11 @@ endif()
 #
 # parpack
 #
-cmake_dependent_option(FEELPP_ENABLE_PARPACK "Enable ParPack Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_PARPACK "Enable ParPack Support" OFF )
+else()
+    option( FEELPP_ENABLE_PARPACK "Enable ParPack Support" ON )
+endif()
 if(FEELPP_ENABLE_PARPACK)
   FIND_LIBRARY(PARPACK_LIBRARY NAMES parpack)
   if (PARPACK_LIBRARY)
@@ -1005,7 +1077,11 @@ endif()
 # SLEPc
 #
 
-cmake_dependent_option(FEELPP_ENABLE_SLEPC "Enable SLEPc Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_SLEPC "Enable SLEPc Support" OFF )
+else()
+    option( FEELPP_ENABLE_SLEPC "Enable SLEPc Support" ON )
+endif()
 
 if (FEELPP_ENABLE_SLEPC)
   FIND_PACKAGE( SLEPc )
@@ -1035,7 +1111,11 @@ endif (FEELPP_ENABLE_TRILINOS)
 # OpenTURNS
 #
 
-cmake_dependent_option(FEELPP_ENABLE_OPENTURNS "Enable OpenTurns Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_OPENTURNS "Enable OpenTurns Support" OFF )
+else()
+    option( FEELPP_ENABLE_OPENTURNS "Enable OpenTurns Support" ON )
+endif()
 
 IF ( FEELPP_ENABLE_OPENTURNS )
   FIND_PACKAGE( OpenTURNS )
@@ -1053,19 +1133,20 @@ endif()
 # VTK
 #
 
-cmake_dependent_option(FEELPP_ENABLE_VTK "Enable VTK Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_VTK "Enable VTK Support" OFF )
+else()
+    option( FEELPP_ENABLE_VTK "Enable VTK Support" ON )
+endif()
 
 if ( FEELPP_ENABLE_VTK )
 
-    OPTION( FEELPP_ENABLE_VTK_INSITU "Enable In-Situ Visualization using VTK/Paraview" OFF )
+    # First try to find ParaView
+    FIND_PACKAGE(ParaView QUIET
+        COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
+        PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR})
 
-    # If we enable in-situ visualization
-    # We need to look for the Paraview package for the corresponding headers
-    # As Paraview integrates vtk headers we don't need them
-    if ( FEELPP_ENABLE_VTK_INSITU )
-        FIND_PACKAGE(ParaView REQUIRED 
-            COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
-            PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR})
+    if(ParaView_FOUND)
         message(STATUS "[ParaView] Use file: ${PARAVIEW_USE_FILE}")
         INCLUDE(${PARAVIEW_USE_FILE})
 
@@ -1089,8 +1170,10 @@ if ( FEELPP_ENABLE_VTK )
         SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ParaView/VTK" )
 
         message(STATUS "Found ParaView ${PARAVIEW_VERSION_FULL}/VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")
+    # If ParaView was not found we try to find VTK
     else()
-        FIND_PACKAGE(VTK)
+        message(STATUS "ParaView could not be found. Looking for VTK...")
+        FIND_PACKAGE(VTK QUIET)
         if( VTK_FOUND )
             include(${VTK_USE_FILE})
 
@@ -1107,7 +1190,7 @@ if ( FEELPP_ENABLE_VTK )
                     set(VTK_HAS_PARALLEL 1)
                     message(WARNING "External initialization of MPI Communicator is not available in VTK 5. VTK parallel export will be disabled.")
                 else()
-                    message(WARNING "MPI support for VTK 5 is not activated. VTK parallel export will be disabled.")
+                    message(WARNING "MPI support for VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}.${VTK_BUILD_VERSION} is not activated. VTK parallel export will be disabled.")
                 endif()
                 unset(__test_vtk_parallel)
                 # From version 6 modules ared used
@@ -1117,7 +1200,7 @@ if ( FEELPP_ENABLE_VTK )
                 if( NOT (${__test_vtk_parallel} EQUAL -1) )
                     set(VTK_HAS_PARALLEL 1)
                 else()
-                    message(WARNING "MPI support for VTK 6 is not activated. VTK parallel export will be disabled.")
+                    message(WARNING "MPI support for VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}.${VTK_BUILD_VERSION} is not activated. VTK parallel export will be disabled.")
                 endif()
                 unset(__test_vtk_parallel)
             endif() 
@@ -1159,9 +1242,12 @@ if ( FEELPP_ENABLE_VTK )
             #   endif()  
             # endif()
             
-            SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${FEELPP_LIBRARIES})
+            SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
             SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} VTK" )
 
+        # If VTK was not found
+        else()
+            message(STATUS "Neither ParaView nor VTK were found. VTK exporter and In-situ processing not enabled") 
         endif()
     endif()
 endif( FEELPP_ENABLE_VTK )
@@ -1207,7 +1293,11 @@ endif( FEELPP_ENABLE_OCTAVE)
 # Gmsh
 #
 
-cmake_dependent_option(FEELPP_ENABLE_GMSH "Enable Gmsh Support" OFF "FEELPP_MINIMAL_BUILD" ON)
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_GMSH "Enable Gmsh Support" OFF )
+else()
+    option( FEELPP_ENABLE_GMSH "Enable Gmsh Support" ON )
+endif()
 
 if( FEELPP_ENABLE_GMSH )
   if(FEELPP_USE_GMSH_PACKAGE)
