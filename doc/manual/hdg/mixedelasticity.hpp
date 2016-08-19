@@ -576,6 +576,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
     {
 		auto material = pairMat.second;
 		auto lambda = expr(material.getScalar("lambda"));
+		Feel::cout << "Lambda: " << lambda << std::endl;
 		auto mu = expr(material.getScalar("mu"));
 		auto c1 = cst(0.5)/mu; 
     	auto c2 = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu)); 
@@ -679,6 +680,23 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
 					    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
 		    }
 	    }
+	    itType = mapField.find( "Neumann_scalar" );
+	    if ( itType != mapField.end() )
+	    {
+		    for ( auto const& exAtMarker : (*itType).second )
+		    {
+			    std::string marker = exAtMarker.marker();
+		    	cout << "Neumann on " << marker << std::endl;
+			    bbf( 2_c, 0_c) += integrate(_range=markedfaces(M_mesh,marker ),
+					    _expr=( trans(id(m))*(idt(sigma)*N()) ));
+
+			    bbf( 2_c, 1_c) += integrate(_range=markedfaces(M_mesh,marker),
+					    _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
+
+			    bbf( 2_c, 2_c) += integrate(_range=markedfaces(M_mesh,marker), 
+					    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+		    }
+	    }
     }
 
 } // end assemble STD
@@ -726,6 +744,21 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
 				cout << "Neumann condition on " << marker << ": " << g << std::endl;
 				blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
 									    _expr=trans(id(m))*(g*N()));
+            }
+		}	
+		itType = mapField.find("Neumann_scalar");
+		if ( itType != mapField.end() )
+		{
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+				auto marker = exAtMarker.marker();
+				auto g = expr(exAtMarker.expression());
+				if ( !this->isStationary() )
+                    g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
+                // auto g = expr<Dim,Dim> ( scalar*eye<Dim,Dim>() );
+				cout << "Neumann scalar condition on " << marker << ": " << g << std::endl;
+				blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+									    _expr=trans(id(m))*(eye<Dim,Dim>()*g*N()));
             }
 		}
     } 
