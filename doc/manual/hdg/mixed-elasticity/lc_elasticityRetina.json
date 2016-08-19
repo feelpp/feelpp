@@ -7,10 +7,17 @@
         "Retina": 
         {
             "name":"copper",
-			"rho":"1",
-            "lambda":"1",
-	    	"mu":"1"
-        }
+			"rho":"0.0011",
+            "lambda":"3.280",
+	    	"mu":"0.067"
+        }/*,
+        "Lamina": 
+        {
+            "name":"copper",
+			"rho":"0",
+            "lambda":"0.588",
+	    	"mu":"0.012"
+        }*/
     },
     "BoundaryConditions":
     {
@@ -20,45 +27,54 @@
             {
                 "Retina": 
                 {
-					"expr":"{8,0,0}"
+					"expr":"{0,0,0}"
                 }
             },
+			"Neumann_scalar":
+			{	
+                "BC_spherical_Retina": 			// IOP
+                {
+                    "expr":"-0.2066 + 0.0366 * sin (pi*t):t" 	
+                }
+			},
             "Neumann":
             {
-                "Lamina_Retina": 
+            	"Lamina_Retina":
                 {
-                     "expr":"{6*x+1,2*y,0, 2*y,2*x+1,0, 0,0,2*x+3}:x:y"
-                }
+                	"expr":"{-0.1,0,0, 0,-0.1,0, 0,0,-0.1}:x:y"
+                },
+                "BC_planar_Retina":
+                {
+                    "expr":"{-0.2,0,0, 0,-0.2,0, 0,0,-0.2}"
+                },
+                "BC_cylindrical_Retina":
+                {
+                    "expr":"{-0.1,0,0, 0,-0.1,0, 0,0,-0.1}"
+                }/*,
+                "Choroid_Retina":
+                {
+                    "expr":"{0,0,0, 0,0,0, 0,0,0}"
+                },
+                "Retina_Sclera":
+                {
+                    "expr":"{0,0,0, 0,0,0, 0,0,0}"
+                }*/
             }
 		},
 		"displacement":
 		{
 	    	"Dirichlet":
 	    	{
-        		"BC_otherRetina":
-                {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-                },
-        		"Retina_Sclera":
-                {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-                },
-        		"Choroid_Retina":
-                {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-                }
+				"Choroid_Retina":
+				{	
+		     		"expr":"{0,0,0}:x:y:z" 
+				},	
+				"Retina_Sclera":
+				{	
+		     		"expr":"{0,0,0}:x:y:z" 
+				}	
  	    	}
-    	},
-		"ExactSolution":
-		{
-			"u_exact":
-			{
-				"Retina":
-				{
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-				}
-			}
-		}
+    	}
      },
     "PostProcess":
     {
