@@ -1,7 +1,25 @@
-set(Eigen_HEADERS AdolcForward BVH IterativeSolvers MatrixFunctions MoreVectorization AutoDiff AlignedVector3 Polynomials
-                  FFT NonLinearOptimization SparseExtra IterativeSolvers
-                  NumericalDiff Skyline MPRealSupport OpenGLSupport KroneckerProduct Splines LevenbergMarquardt
-   )
+set(Eigen_HEADERS 
+  AdolcForward
+  AlignedVector3
+  ArpackSupport
+  AutoDiff
+  BVH
+  FFT
+  IterativeSolvers 
+  KroneckerProduct
+  LevenbergMarquardt
+  MatrixFunctions 
+  MoreVectorization
+  MPRealSupport
+  NonLinearOptimization
+  NumericalDiff
+  OpenGLSupport
+  Polynomials
+  Skyline 
+  SparseExtra
+  SpecialFunctions
+  Splines
+  )
 
 install(FILES
   ${Eigen_HEADERS}
@@ -9,3 +27,4 @@ install(FILES
   )
 
 add_subdirectory(src)
+add_subdirectory(CXX11)

@@ -1238,7 +1238,23 @@ public:
     }
 
 
+    /**
+     * \return true if element have an edge connected
+     */
+    bool hasEdge( uint16_type i ) const
+    {
+        if ( i >= numLocalEdges )
+            return false;
+        return M_edges[i] != nullptr;
+    }
 
+    /**
+     * \return true if element have a face connected
+     */
+    bool hasFace( uint16_type i ) const
+    {
+        return this->hasEdge( i );
+    }
 
     /**
      * \sa face()
@@ -1282,8 +1298,6 @@ public:
     edge_type const* facePtr( uint16_type i ) const
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
-        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
-
         return M_edges[i];
     }
 
@@ -1593,6 +1607,28 @@ public:
         return invalid_uint16_type_value;
     }
 
+
+    /**
+     * \return true if GeoElement3D is connected to an edge
+     */
+    bool hasEdge( uint16_type i ) const
+    {
+        if ( i >= numLocalEdges )
+            return false;
+        return M_edges[i] != nullptr;
+    }
+
+    /**
+     * \return true if GeoElement3D is connected to a face
+     */
+    bool hasFace( uint16_type i ) const
+    {
+        if ( i >= numLocalFaces )
+            return false;
+        return M_faces[i] != nullptr;
+    }
+
+
     edge_type const& edge( uint16_type i ) const
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
@@ -1746,5 +1782,18 @@ const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::numLocalEdges;
 template <uint16_type Dim, typename GEOSHAPE, typename T>
 const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::nDim;
 
+template<typename EltType>
+bool
+hasFaceWithMarker( EltType const& e, boost::any const& flag )
+{
+    flag_type theflag = e.mesh()->markerId( flag );
+    for( auto const& f : e.faces() )
+    {
+        if ( f.marker().value() == theflag )
+            return true;
+    }
+    return false;
+}
+    
 } // Feel
 #endif

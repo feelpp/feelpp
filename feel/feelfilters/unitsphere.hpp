@@ -31,7 +31,9 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
+#ifdef FEELPP_HAS_GMSH
 #include <feel/feelfilters/creategmshmesh.hpp>
+#endif
 #include <feel/feelfilters/domain.hpp>
 
 
@@ -44,6 +46,7 @@ inline
 boost::shared_ptr<Mesh<Simplex<3,Ngeo> > >
 unitSphere( double h = doption(_name="gmsh.hsize") )
 {
+#ifdef FEELPP_HAS_GMSH
     return createGMSHMesh(_mesh=new Mesh<Simplex<3,Ngeo> >,
                           _desc=domain( _name="sphere",
                                         _shape="ellipsoid",
@@ -52,6 +55,10 @@ unitSphere( double h = doption(_name="gmsh.hsize") )
                                         _ymin=-1,
                                         _zmin=-1,
                                         _h= h ) );
+#else
+    LOG(WARNING) << "unitSphere: Feel++ was not built with Gmsh. This function will return a empty mesh.";
+    return boost::make_shared<Mesh<Simplex<3, Ngeo> > >();
+#endif
 }
 
 }

@@ -101,6 +101,7 @@ public:
     //@{
 
     static const uint16_type nDim = Shape::nRealDim;
+    static const uint16_type nRealDim = Shape::nRealDim;
 
     typedef typename VisitableBase<>::return_type return_type;
 
@@ -152,7 +153,7 @@ public:
     Mesh2D( WorldComm const& worldComm = Environment::worldComm() )
         :
         super_visitable(),
-        super( worldComm ),
+        super( 2, nRealDim, worldComm ),
         super_elements( worldComm ),
         super_points( worldComm ),
         super_faces( worldComm )
@@ -160,56 +161,36 @@ public:
             DVLOG(2) << "[Mesh2D] constructor...\n";
         }
 
-/**
- * copy constructor
- */
-    Mesh2D( Mesh2D const & m )
-        :
-        super_visitable(),
-        super( m ),
-        super_elements( m ),
-        super_points( m ),
-        super_faces( m )
-        {}
+    Mesh2D( Mesh2D const& m ) = default;
+    Mesh2D( Mesh2D && m ) = default;
 
-/**
- * destructor
- */
+    /**
+     * destructor
+     */
     ~Mesh2D()
         {
             VLOG(1) << "Mesh2D destructor";
             this->clear();
         }
 
-//@}
+    //@}
 
-/** @name Operator overloads
- */
-//@{
+    /** @name Operator overloads
+     */
+    //@{
 
-    Mesh2D& operator=( Mesh2D const& m )
-        {
-            if ( this != &m )
-            {
-                super::operator=( m );
-                super_elements::operator=( m );
-                super_points::operator=( m );
-                super_faces::operator=( m );
-            }
+    Mesh2D& operator=( Mesh2D const& m ) = default;
+    Mesh2D& operator=( Mesh2D && m ) = default;
 
-            return *this;
-        }
+    //@}
 
+    /** @name Accessors
+     */
+    //@{
 
-//@}
-
-/** @name Accessors
- */
-//@{
-
-/**
- * \return \p true if all containers are empty, \p false otherwise
- */
+    /**
+     * \return \p true if all containers are empty, \p false otherwise
+     */
     bool isEmpty() const
         {
             return ( super_elements::isEmpty() &&
@@ -218,9 +199,9 @@ public:
         }
 
 
-/**
- * \return the number of elements
- */
+    /**
+     * \return the number of elements
+     */
     size_type numElements() const
         {
             return this->elements().size();
@@ -356,6 +337,8 @@ protected:
             {
                 for ( uint16_type j = 0; j < element_type::numEdges; j++ )
                 {
+                    if ( !elt->hasFace( j ) )
+                        continue;
                     if ( elt->face( j ).isConnectedTo1() &&
                          elt->face( j ).ad_second() == elt->id() )
                     {

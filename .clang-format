@@ -1,0 +1,17 @@
+BasedOnStyle: LLVM
+
+BreakBeforeBraces: Allman
+IndentWidth: 4
+UseTab: Never
+AlignAfterOpenBracket: Align
+# Force pointers to the type for C++.
+DerivePointerAlignment: false
+PointerAlignment: Left
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: true
+NamespaceIndentation: None
+ColumnLimit: 0
+ReflowComments: true
+AlignTrailingComments: true
+SpacesInParentheses: true
+

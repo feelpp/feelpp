@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set(OS_VERSION debian-wheezy)
+set(OS_VERSION debian-sid)
 set(ARCH x86_64)
 set(GCC_MAKE_ARGS "-j1")
 set(GCC_PARALLEL "1")
@@ -47,6 +47,7 @@ set(ENABLE_NEON OFF)
 set(ENABLE_OPENTURNS ON)
 set(ENABLE_PCH_FOR_APPLICATIONS OFF)
 set(ENABLE_VERBOSE_CMAKE OFF)
+set(STDLIB_CPP "c++")
 
 #Directories
 set(FEELPP_BENCHMARK_FLAG OFF) #

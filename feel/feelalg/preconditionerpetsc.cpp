@@ -31,6 +31,8 @@
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 
+#include <feel/feelalg/solverlinearpetsc.hpp>
+
 
 extern "C" {
 
@@ -48,6 +50,26 @@ extern "C" {
 #include <feel/feelalg/preconditionerpetsclsc.cpp>
 #include <feel/feelalg/preconditionerpetscfeelpp.cpp>
 
+
+PetscErrorCode __feel_petsc_prec_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm,void* ctx)
+{
+#if 0
+    // need to store the tree of prec/subsolver else object was already deleted when go here
+    Feel::ConfigureKSP *solver  = static_cast<Feel::ConfigureKSP*>( ctx );
+    if ( !solver ) return 0;
+    if ( solver->worldComm().isMasterRank() )
+        std::cout << "   " << it << " " << solver->prefix() << " KSP Residual norm " << std::scientific << rnorm << "\n";
+#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+    // a temporary solution (not quite good because because create/distroy viewer)
+    MPI_Comm comm = PETSC_COMM_WORLD;
+    PetscObjectGetComm((PetscObject)ksp,&comm);
+    PetscViewerAndFormat *vf;
+    PetscViewerAndFormatCreate( (comm == PETSC_COMM_SELF)? PETSC_VIEWER_STDOUT_SELF : PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_DEFAULT,&vf);
+    int ierr = KSPMonitorDefault( ksp,it,rnorm, vf );
+    PetscViewerAndFormatDestroy( &vf );
+#endif
+    return 0;
+}
 
 //------------------------------------------------------------------------------//
 typedef struct {
@@ -1062,6 +1084,11 @@ void PreconditionerPetsc<T>::init ()
             check( PCSetType( M_pc,( char* ) PCFIELDSPLIT ) );
             pmatrix->updatePCFieldSplit( M_pc );
         }
+        else if (this->M_preconditioner_type==FEELPP_BLOCKMS_PRECOND)
+        {
+            check( PCSetType( M_pc, "blockms" ) );
+            this->init();
+        }
         M_indexSplitHasChanged = true;
 
         this->M_mat_has_changed = false;
@@ -1645,7 +1672,7 @@ updateOptionsDescPrecBase( po::options_description & _options, std::string const
 #endif
         ( prefixvm( prefix,pcctx+"pc-use-config-default-petsc" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
-          "configure pc with defult petsc options" )
+          "configure pc with default petsc options" )
         ( prefixvm( prefix,pcctx+"pc-factor-shift-type" ).c_str(),
           (useDefaultValue)?Feel::po::value<std::string>()->default_value( "none" ):Feel::po::value<std::string>(),
           "adds a particular type of quantity to the diagonal of the matrix during numerical factorization, thus the matrix has nonzero pivots : none, nonzero, positive_definite, inblocks" )
@@ -1895,20 +1922,20 @@ void
 updateOptionsDescAMS( po::options_description & _options, std::string const& prefix, bool useDefaultValue=true )
 {
     _options.add_options()
-        /// Documentation here : http://computation.llnl.gov/project/linear_solvers/download/hypre-2.10.0b_ref_manual.pdf
-        ( prefixvm( prefix,"pc-hypre-ams-print-level").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),    "Debugging output level for AMS" )
-        ( prefixvm( prefix,"pc-hypre-ams-max-iter").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),    "Maximum number of AMS multigrid iterations within PCApply" )
-        ( prefixvm( prefix,"pc-hypre-ams-cycle-type").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 13 ):Feel::po::value<int>(),     "Cycle type for AMS multigrid" )
-        ( prefixvm( prefix,"pc-hypre-ams-tol").c_str(),useDefaultValue?Feel::po::value<double>()->default_value( 0. ):Feel::po::value<double>(),         "Error tolerance for AMS multigrid" )
-        ( prefixvm( prefix,"pc-hypre-ams-relax-type").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 2 ):Feel::po::value<int>(),     "Relaxation type for AMS smoother" )
-        ( prefixvm( prefix,"pc-hypre-ams-relax-times").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),    "Number of relaxation steps for AMS smoother" )
+        /// Documentation here : http://computation.llnl.gov/project/linear_solvers/download/hypre-2.10.0b_ref_manual.pdf p46-53
+        ( prefixvm( prefix,"pc-hypre-ams-print-level").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),       "Debugging output level for AMS" )
+        ( prefixvm( prefix,"pc-hypre-ams-max-iter").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),          "Maximum number of AMS multigrid iterations within PCApply" )
+        ( prefixvm( prefix,"pc-hypre-ams-cycle-type").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 13 ):Feel::po::value<int>(),       "Cycle type for AMS multigrid" )
+        ( prefixvm( prefix,"pc-hypre-ams-tol").c_str(),useDefaultValue?Feel::po::value<double>()->default_value( 0. ):Feel::po::value<double>(),        "Error tolerance for AMS multigrid" )
+        ( prefixvm( prefix,"pc-hypre-ams-relax-type").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 2 ):Feel::po::value<int>(),        "Relaxation type for AMS smoother" )
+        ( prefixvm( prefix,"pc-hypre-ams-relax-times").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),       "Number of relaxation steps for AMS smoother" )
         ( prefixvm( prefix,"pc-hypre-ams-relax-weight").c_str(),useDefaultValue?Feel::po::value<double>()->default_value( 1 ):Feel::po::value<double>(),"Relaxation weight for AMS smoother" )
         ( prefixvm( prefix,"pc-hypre-ams-omega").c_str(),useDefaultValue?Feel::po::value<double>()->default_value( 1 ):Feel::po::value<double>(),       "SSOR coefficient for AMS smoother" )
 #if 0 // Not interfaced yet
         ( prefixvm( prefix,"pc-hypre-ams-amg-alpha-theta").c_str(),Feel::po::value<double>()->default_value( 20 ),"Threshold for strong coupling of vector Poisson AMG solver" )
-        ( prefixvm( prefix,"pc-hypre-ams-amg-alpha-options").c_str(),Feel::po::value<XXX>()->default_value( 20 ), "AMG options for vector Poisson" )
+        ( prefixvm( prefix,"pc-hypre-ams-amg-alpha-options").c_str(),Feel::po::value<XXX>()->default_value( 20 ), "AMG options for vector Poisson" ) // array of 5 floats
         ( prefixvm( prefix,"pc-hypre-ams-amg-beta-theta").c_str(),Feel::po::value<int>()->default_value( 20 ),    "Threshold for strong coupling of scalar Poisson AMG solver" )
-        ( prefixvm( prefix,"pc-hypre-ams-amg-beta-options").c_str(),Feel::po::value<XXX>()->default_value( 20 ),  "AMG options for scalar Poisson solver" )
+        ( prefixvm( prefix,"pc-hypre-ams-amg-beta-options").c_str(),Feel::po::value<XXX>()->default_value( 20 ),  "AMG options for scalar Poisson solver" ) // array of 5 floats
 #endif
         ;
 }
@@ -2216,7 +2243,14 @@ ConfigureKSP::run( KSP& ksp ) const
     this->check( KSPSetTolerances( ksp,M_rtol,PETSC_DEFAULT,PETSC_DEFAULT,M_maxit ) );
     // monitor
     if ( M_showMonitor )
+    {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
+        this->check( KSPMonitorSet( ksp,__feel_petsc_prec_ksp_monitor,(void*) this,PETSC_NULL ) );
+#else
         this->check( KSPMonitorSet( ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL ) );
+#endif
+    }
+
     // constant null space
     if ( M_constantNullSpace )
     {
@@ -2449,6 +2483,12 @@ ConfigurePCHYPRE_AMS::ConfigurePCHYPRE_AMS( PC& pc, PreconditionerPetsc<double> 
     M_relax_times(option(_name="pc-hypre-ams-relax-times",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
     M_relax_weight(option(_name="pc-hypre-ams-relax-weight",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
     M_omega(option(_name="pc-hypre-ams-omega",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() )
+    #if 0
+    M_amg_alpha_theta(_name="pc-hypre-ams-amg-alpha-theta",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>())
+    M_amg_alpha_options(_name="pc-hypre-ams-amg-alpha-options",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double[5]>())
+    M_amg_alpha_theta(_name="pc-hypre-ams-amg-beta-theta",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>())
+    M_amg_alpha_options(_name="pc-hypre-ams-amg-beta-options",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double[5]>())
+    #endif
 {
     VLOG(2) << "ConfigurePC : HYPRE_AMS\n"
             << "  |-> prefix       : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
@@ -2460,6 +2500,12 @@ ConfigurePCHYPRE_AMS::ConfigurePCHYPRE_AMS( PC& pc, PreconditionerPetsc<double> 
             << "  |-> relax_times  : " << M_relax_times << "\n"
             << "  |-> relax_weight : " << M_relax_weight << "\n"
             << "  |-> omega        : " << M_omega;
+    #if 0
+    << "  |-> amg-alpha-theta        : " << M_amg_alpha_theta << "\n";
+    << "  |-> amg-alpha-options      : " << M_amg_alpha_options << "\n";
+    << "  |-> amg-beta-theta         : " << M_amg_beta_theta << "\n";
+    << "  |-> amg-beta-options       : " << M_amg_beta_options << "\n";
+    #endif
     google::FlushLogFiles(google::INFO);
     run( pc );
 }
@@ -2473,6 +2519,20 @@ ConfigurePCHYPRE_AMS::run( PC& pc )
     this->check( PetscImpl::PCHYPRE_AMSSetTol(pc, M_tol));
     this->check( PetscImpl::PCHYPRE_AMSSetSmoothingOptions(pc, M_relax_type, M_relax_times, M_relax_weight, M_omega));
 
+#if 0
+    this->check( PetscImpl::PCHYPRE_AMSSetAlphaAMGOptions(pc, M_amg_alpha_options[0],       /* AMG coarsen type */
+                                                              M_amg_alpha_options[1],       /* AMG agg_levels */
+                                                              M_amg_alpha_options[2],       /* AMG relax_type */
+                                                              M_amg_alpha_theta,
+                                                              M_amg_alpha_options[3],       /* AMG interp_type */
+                                                              M_amg_alpha_options[4]);
+    this->check( PetscImpl::PCHYPRE_AMSSetBetaAMGOptions(pc, M_amg_beta_options[0],       /* AMG coarsen type */
+                                                             M_amg_beta_options[1],       /* AMG agg_levels */
+                                                             M_amg_beta_options[2],       /* AMG relax_type */
+                                                             M_amg_beta_theta,
+                                                             M_amg_beta_options[3],       /* AMG interp_type */
+                                                             M_amg_beta_options[4]);
+#endif
 
     if (!pc->setupcalled)
     {
@@ -2856,18 +2916,33 @@ ConfigurePCGAMG::run( PC& pc )
         this->check( PCGetOptionsPrefix(pc,&petscPrefix ) );
         if ( petscPrefix != NULL )
         {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
+            this->check( PetscOptionsSetValue( NULL, (boost::format("-%1%pc_gamg_sym_graph")%std::string(petscPrefix)).str().c_str(),
+                                               boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
+            this->check( PetscOptionsSetValue( NULL, (boost::format("-%1%pc_gamg_verbose")%std::string(petscPrefix)).str().c_str(),
+                                               boost::lexical_cast<std::string>(M_gamgVerbose).c_str()) );
+            this->check( PetscOptionsSetValue( NULL, (boost::format("-%1%pc_gamg_agg_nsmooths")%std::string(petscPrefix)).str().c_str(),
+                                               boost::lexical_cast<std::string>(M_nSmooths).c_str()) );
+#else
             this->check( PetscOptionsSetValue( (boost::format("-%1%pc_gamg_sym_graph")%std::string(petscPrefix)).str().c_str(),
                                                boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
             this->check( PetscOptionsSetValue( (boost::format("-%1%pc_gamg_verbose")%std::string(petscPrefix)).str().c_str(),
                                                boost::lexical_cast<std::string>(M_gamgVerbose).c_str()) );
             this->check( PetscOptionsSetValue( (boost::format("-%1%pc_gamg_agg_nsmooths")%std::string(petscPrefix)).str().c_str(),
                                                boost::lexical_cast<std::string>(M_nSmooths).c_str()) );
+#endif
         }
         else
         {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
+            this->check( PetscOptionsSetValue(NULL, "-pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
+            this->check( PetscOptionsSetValue(NULL, "-pc_gamg_verbose", boost::lexical_cast<std::string>(M_gamgVerbose).c_str()) );
+            this->check( PetscOptionsSetValue(NULL, "-pc_gamg_agg_nsmooths", boost::lexical_cast<std::string>(M_nSmooths).c_str()) );
+#else
             this->check( PetscOptionsSetValue("-pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
             this->check( PetscOptionsSetValue("-pc_gamg_verbose", boost::lexical_cast<std::string>(M_gamgVerbose).c_str()) );
             this->check( PetscOptionsSetValue("-pc_gamg_agg_nsmooths", boost::lexical_cast<std::string>(M_nSmooths).c_str()) );
+#endif
         }
 
         // PCSetFromOptions is called here because PCGAMGSetType destroy all unless the type_name

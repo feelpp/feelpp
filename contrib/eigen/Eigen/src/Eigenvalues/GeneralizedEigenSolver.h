@@ -72,7 +72,7 @@ template<typename _MatrixType> class GeneralizedEigenSolver
     /** \brief Scalar type for matrices of type #MatrixType. */
     typedef typename MatrixType::Scalar Scalar;
     typedef typename NumTraits<Scalar>::Real RealScalar;
-    typedef typename MatrixType::Index Index;
+    typedef Eigen::Index Index; ///< \deprecated since Eigen 3.3
 
     /** \brief Complex scalar type for #MatrixType. 
       *
@@ -122,7 +122,7 @@ template<typename _MatrixType> class GeneralizedEigenSolver
       * according to the specified problem \a size.
       * \sa GeneralizedEigenSolver()
       */
-    GeneralizedEigenSolver(Index size)
+    explicit GeneralizedEigenSolver(Index size)
       : m_eivec(size, size),
         m_alphas(size),
         m_betas(size),
@@ -263,6 +263,13 @@ template<typename _MatrixType> class GeneralizedEigenSolver
     }
 
   protected:
+    
+    static void check_template_parameters()
+    {
+      EIGEN_STATIC_ASSERT_NON_INTEGER(Scalar);
+      EIGEN_STATIC_ASSERT(!NumTraits<Scalar>::IsComplex, NUMERIC_TYPE_MUST_BE_REAL);
+    }
+    
     MatrixType m_eivec;
     ComplexVectorType m_alphas;
     VectorType m_betas;
@@ -290,6 +297,8 @@ template<typename MatrixType>
 GeneralizedEigenSolver<MatrixType>&
 GeneralizedEigenSolver<MatrixType>::compute(const MatrixType& A, const MatrixType& B, bool computeEigenvectors)
 {
+  check_template_parameters();
+  
   using std::sqrt;
   using std::abs;
   eigen_assert(A.cols() == A.rows() && B.cols() == A.rows() && B.cols() == B.rows());
@@ -301,6 +310,7 @@ GeneralizedEigenSolver<MatrixType>::compute(const MatrixType& A, const MatrixTyp
   if (m_realQZ.info() == Success)
   {
     m_matS = m_realQZ.matrixS();
+    const MatrixType &matT = m_realQZ.matrixT();
     if (computeEigenvectors)
       m_eivec = m_realQZ.matrixZ().transpose();
   
@@ -313,18 +323,29 @@ GeneralizedEigenSolver<MatrixType>::compute(const MatrixType& A, const MatrixTyp
       if (i == A.cols() - 1 || m_matS.coeff(i+1, i) == Scalar(0))
       {
         m_alphas.coeffRef(i) = m_matS.coeff(i, i);
-        m_betas.coeffRef(i)  = m_realQZ.matrixT().coeff(i,i);
+        m_betas.coeffRef(i)  = matT.coeff(i,i);
         ++i;
       }
       else
       {
-        Scalar p = Scalar(0.5) * (m_matS.coeff(i, i) - m_matS.coeff(i+1, i+1));
-        Scalar z = sqrt(abs(p * p + m_matS.coeff(i+1, i) * m_matS.coeff(i, i+1)));
-        m_alphas.coeffRef(i)   = ComplexScalar(m_matS.coeff(i+1, i+1) + p, z);
-        m_alphas.coeffRef(i+1) = ComplexScalar(m_matS.coeff(i+1, i+1) + p, -z);
+        // We need to extract the generalized eigenvalues of the pair of a general 2x2 block S and a positive diagonal 2x2 block T
+        // Then taking beta=T_00*T_11, we can avoid any division, and alpha is the eigenvalues of A = (U^-1 * S * U) * diag(T_11,T_00):
 
-        m_betas.coeffRef(i)   = m_realQZ.matrixT().coeff(i,i);
-        m_betas.coeffRef(i+1) = m_realQZ.matrixT().coeff(i,i);
+        // T =  [a 0]
+        //      [0 b]
+        RealScalar a = matT.diagonal().coeff(i),
+                   b = matT.diagonal().coeff(i+1);
+        // ^^ NOTE: using diagonal()(i) instead of coeff(i,i) workarounds a MSVC bug.
+        Matrix<RealScalar,2,2> S2 = m_matS.template block<2,2>(i,i) * Matrix<Scalar,2,1>(b,a).asDiagonal();
+
+        Scalar p = Scalar(0.5) * (S2.coeff(0,0) - S2.coeff(1,1));
+        Scalar z = sqrt(abs(p * p + S2.coeff(1,0) * S2.coeff(0,1)));
+        m_alphas.coeffRef(i)   = ComplexScalar(S2.coeff(1,1) + p,  z);
+        m_alphas.coeffRef(i+1) = ComplexScalar(S2.coeff(1,1) + p, -z);
+
+        m_betas.coeffRef(i)   =
+        m_betas.coeffRef(i+1) = a*b;
+        
         i += 2;
       }
     }

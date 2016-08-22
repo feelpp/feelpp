@@ -66,6 +66,7 @@ if ( NOT PETSC_DIR )
       message(STATUS "checking version ${version} for file ${flavor}/include/petsc.h...")
       find_path (PETSC_DIR include/petsc.h
         PATHS
+        /usr/local/opt/petsc/real
         /usr/lib/petscdir/${version}/${flavor}
         /usr/local/Cellar/petsc/${version}/${flavor}
         NO_DEFAULT_PATH
@@ -313,10 +314,6 @@ find_package_handle_standard_args (PETSc
   PETSC_INCLUDES PETSC_LIBRARIES )
 
 if ( PETSC_FOUND )
-  add_definitions( -DFEELPP_HAS_PETSC -DFEELPP_HAS_PETSC_H )
-  set(FEELPP_HAS_PETSC 1)
-  set(FEELPP_HAS_PETSC_H 1)
-
   # add PETSC includes (in case of non conventionnal install of petsc TPS)
   include_directories(${PETSC_INCLUDES})
 endif( PETSC_FOUND )

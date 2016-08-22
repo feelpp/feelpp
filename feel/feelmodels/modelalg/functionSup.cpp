@@ -109,6 +109,10 @@ namespace Feel
 
         std::vector<bool> dofdone( u.functionSpace()->dof()->nLocalDofWithGhost(), false );
 
+        auto const& dmVec = UnVec->map();
+        int basisIndexDmInVec = dmVec.databaseIndexFromContainerId( rowstart );
+        int subBasisIndexDm = (u.start()>0)? 1 : 0;
+        basisIndexDmInVec+=subBasisIndexDm;//TODO!!!!!!!!!
         //face_const_iterator __face_it, __face_en;
 
         for( auto lit = __r.begin(), len = __r.end(); lit != len; ++lit )
@@ -129,10 +133,16 @@ namespace Feel
                         {
                             size_type index = boost::get<0>(u.functionSpace()->dof()->faceLocalToGlobal( __face_it->id(), l, c1 ));
                             if ( dofdone[index] ) continue;
-                            size_type thedof =  u.start() + ComponentShiftFactor*index;
                             double __value=LExpr.evalq( c1, c2, l );
+#if 0
+                            size_type thedof =  u.start() + ComponentShiftFactor*index;
                             //u( thedof ) =  __value;
                             UnVec->set(rowstart+thedof,__value);
+#else
+                            size_type thedof = /*(is_comp_space?Elem1::nComponents:1)*/ComponentShiftFactor*index;
+                            thedof = dmVec.dofIdToContainerId( basisIndexDmInVec ,thedof );
+                            UnVec->set(thedof,__value);
+#endif
                             dofdone[index] = true;
                         }
                     }

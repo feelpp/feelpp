@@ -17,6 +17,7 @@ void test_mpreal_support()
   std::cerr << "dummy_precision = " << NumTraits<mpreal>::dummy_precision() << "\n";
   std::cerr << "highest =         " << NumTraits<mpreal>::highest() << "\n";
   std::cerr << "lowest =          " << NumTraits<mpreal>::lowest() << "\n";
+  std::cerr << "digits10 =        " << NumTraits<mpreal>::digits10() << "\n";
 
   for(int i = 0; i < g_repeat; i++) {
     int s = Eigen::internal::random<int>(1,100);
@@ -32,12 +33,11 @@ void test_mpreal_support()
     VERIFY_IS_APPROX(A.array().abs2().sqrt(), A.array().abs());
     VERIFY_IS_APPROX(A.array().sin(),         sin(A.array()));
     VERIFY_IS_APPROX(A.array().cos(),         cos(A.array()));
-    
 
     // Cholesky
     X = S.selfadjointView<Lower>().llt().solve(B);
     VERIFY_IS_APPROX((S.selfadjointView<Lower>()*X).eval(),B);
-
+    
     // partial LU
     X = A.lu().solve(B);
     VERIFY_IS_APPROX((A*X).eval(),B);
