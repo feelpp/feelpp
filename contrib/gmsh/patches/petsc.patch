@@ -1,0 +1,68 @@
+Index: gmsh-tetgen-2.12.0/CMakeLists.txt
+===================================================================
+--- gmsh-tetgen-2.12.0.orig/CMakeLists.txt
++++ gmsh-tetgen-2.12.0/CMakeLists.txt
+@@ -994,13 +994,26 @@ if(HAVE_SOLVER)
+         endif(PETSC_PACKAGES_INCLUDES)
+       endif(PETSC_PACKAGES_INCLUDES)
+       # find libraries (<= 3.0)
+-      set(PETSC_LIBS_REQUIRED petscksp petscdm petscmat petscvec petsc)
++      set(PETSC_LIBS_REQUIRED petscksp petscdm petscmat petscvec petscsnes petscsys)
++#      foreach(_l ${PETSC_LIBS_REQUIRED})
++#        FIND_LIBRARY(TMP_${_l} ${_l}
++#          ${ENV_PETSC_DIR}/${ENV_PETSC_ARCH}/lib
++#        )
++#        if (TMP_${_l})
++#           message(STATUS "${_l} found : ${TMP_${_l}}" )
++#          list(APPEND PETSC_LIBS "${TMP_${_l}}")
++#        else ()
++#          message(STATUS "${_l} not found : ${ENV_PETSC_DIR}/${ENV_PETSC_ARCH}/lib" )
++#        endif()
++#      endforeach()
+       find_all_libraries(PETSC_LIBS PETSC_LIBS_REQUIRED
+                          ${ENV_PETSC_DIR}/${ENV_PETSC_ARCH}/lib "")
++      message(STATUS "Using PETSC_LIBS : ${PETSC_LIBS}")
+       # petsc 3.1 creates only one library (libpetsc)
+       if(NOT PETSC_LIBS)
+         find_library(PETSC_LIBS petsc PATHS ${ENV_PETSC_DIR}/${ENV_PETSC_ARCH}/lib
+                      NO_DEFAULT_PATH)
++        message(STATUS "Using PETSC_LIBS : ${PETSC_LIBS}")
+       endif(NOT PETSC_LIBS)
+       if(PETSC_LIBS)
+         set_config_option(HAVE_PETSC "PETSc")
+@@ -1018,15 +1031,22 @@ if(HAVE_SOLVER)
+          else(SLEPC_DIR)
+           set(ENV_SLEPC_DIR $ENV{SLEPC_DIR})
+         endif(SLEPC_DIR)
+-        find_library(SLEPC_LIB slepc PATHS ${ENV_SLEPC_DIR}/${ENV_PETSC_ARCH}/lib
+-                     NO_DEFAULT_PATH)
+-        if(SLEPC_LIB)
++        set(SLEPC_LIBS_REQUIRED slepcsys slepcmfn slepceps slepcsvd slepcpep slepcnep)
++        find_all_libraries(SLEPC_LIBS SLEPC_LIBS_REQUIRED
++                       ${ENV_SLEPC_DIR}/${ENV_PETSC_ARCH}/lib "")
++        message(STATUS "Using SLEPC_LIBS : ${SLEPC_LIBS}")
++        if(NOT SLEPC_LIBS)
++          find_library(SLEPC_LIBS slepc PATHS ${ENV_SLEPC_DIR}/${ENV_PETSC_ARCH}/lib
++                   NO_DEFAULT_PATH)
++          message(STATUS "Using SLEPC_LIB : ${SLEPC_LIBS}")
++        endif(NOT SLEPC_LIBS)
++        if(SLEPC_LIBS)
+           find_path(SLEPC_INC "slepc.h" PATHS ${ENV_SLEPC_DIR} PATH_SUFFIXES include
+                     ${ENV_PETSC_ARCH}/include include/slepc NO_DEFAULT_PATH)
+           if(SLEPC_INC)
+             message(STATUS "Using SLEPc dir: ${ENV_SLEPC_DIR}")
+             set_config_option(HAVE_SLEPC "SLEPc")
+-            list(APPEND EXTERNAL_LIBRARIES ${SLEPC_LIB})
++            list(APPEND EXTERNAL_LIBRARIES ${SLEPC_LIBS})
+             list(APPEND EXTERNAL_INCLUDES ${SLEPC_INC})
+             find_path(SLEPC_INC2 "slepcconf.h" PATHS ${ENV_SLEPC_DIR}
+                       PATH_SUFFIXES ${ENV_PETSC_ARCH}/include NO_DEFAULT_PATH)
+@@ -1034,7 +1054,7 @@ if(HAVE_SOLVER)
+               list(APPEND EXTERNAL_INCLUDES ${SLEPC_INC2})
+             endif(SLEPC_INC2)
+           endif(SLEPC_INC)
+-        endif(SLEPC_LIB)
++        endif(SLEPC_LIBS)
+       endif(ENABLE_SLEPC)
+       list(APPEND EXTERNAL_LIBRARIES ${PETSC_LIBS})
+       # find additional libraries to link with

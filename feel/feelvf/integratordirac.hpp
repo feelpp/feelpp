@@ -324,7 +324,7 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem
                         if ( globaldof >= v.firstLocalIndex() &&
                                 globaldof < v.lastLocalIndex() )
                         {
-                            v.setGlobalValue( globaldof, 1 );
+                            v.set( globaldof, 1 );
 
                             element_type::id_type interpfunc( v.id( *__c, pc ) );
                             //std::cout << "interpfunc :  " << interpfunc << "\n";
@@ -332,7 +332,7 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem
                             rhs->add( globaldof, atomcharges[dof] * interpfunc( comp, 0, 0 ) );
                             // DVLOG(2) << "rhs( " << globaldof << ")=" << (*rhs)( globaldof )
                             //           << " (just added " << atomcharges[dof] * interpfunc( comp, 0, 0 ) << " )" << "\n";
-                            v.setGlobalValue( globaldof, 0 );
+                            v.set( globaldof, 0 );
 
                         }
                     }

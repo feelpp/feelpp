@@ -148,7 +148,7 @@ public:
 //BOOST_FIXTURE_TEST_SUITE( im1d_double_suite, F )
 
 //#if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() )
 BOOST_AUTO_TEST_SUITE( immultiscale_suite )
 BOOST_AUTO_TEST_CASE( im1d_test1 )
 {

@@ -15,7 +15,7 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_type const& U,
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_external_storage_type/*element_fluid_type*/ const& U,
                                                              vector_ptrtype& R,
                                                              bool BuildCstPart,
                                                              bool UseJacobianLinearTerms ) const
@@ -88,14 +88,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_type 
                            _geomap=this->geomap() );
 #endif
 
-            if ( !this->markerPressureBC().empty() )
-            {
-                linearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(mesh,this->markerPressureBC()),
-                               //_expr= -inner( ViscousStressTensorExpr*N(),id(v) ),
-                               _expr= -inner( 2*mu_newtonian*defv*N(),id(v) ),
-                               _geomap=this->geomap() );
-            }
         }
     }
     else
@@ -116,14 +108,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_type 
                 integrate( _range=elements(mesh),
                            _expr= inner( StressTensorExpr,grad(v) ),
                            _geomap=this->geomap() );
-            //pressure condition
-            if ( !this->markerPressureBC().empty() )
-            {
-                linearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(mesh,this->markerPressureBC()),
-                               _expr= -inner( StressTensorExpr*N(),id(v) ),
-                               _geomap=this->geomap() );
-            }
         }
     } // non newtonian
     //--------------------------------------------------------------------------------------------------//

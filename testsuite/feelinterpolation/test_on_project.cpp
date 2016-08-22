@@ -117,7 +117,7 @@ private:
 };
 
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( on_project )
 
 BOOST_AUTO_TEST_CASE( test_3d )

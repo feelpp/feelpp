@@ -25,6 +25,22 @@ template<typename MatrixType> void real_qz(const MatrixType& m)
   MatrixType A = MatrixType::Random(dim,dim),
              B = MatrixType::Random(dim,dim);
 
+
+  // Regression test for bug 985: Randomly set rows or columns to zero
+  Index k=internal::random<Index>(0, dim-1);
+  switch(internal::random<int>(0,10)) {
+  case 0:
+    A.row(k).setZero(); break;
+  case 1:
+    A.col(k).setZero(); break;
+  case 2:
+    B.row(k).setZero(); break;
+  case 3:
+    B.col(k).setZero(); break;
+  default:
+    break;
+  }
+
   RealQZ<MatrixType> qz(A,B);
   
   VERIFY_IS_EQUAL(qz.info(), Success);
@@ -33,11 +49,20 @@ template<typename MatrixType> void real_qz(const MatrixType& m)
   for (Index i=0; i<A.cols(); i++)
     for (Index j=0; j<i; j++) {
       if (abs(qz.matrixT()(i,j))!=Scalar(0.0))
+      {
+        std::cerr << "Error: T(" << i << "," << j << ") = " << qz.matrixT()(i,j) << std::endl;
         all_zeros = false;
+      }
       if (j<i-1 && abs(qz.matrixS()(i,j))!=Scalar(0.0))
+      {
+        std::cerr << "Error: S(" << i << "," << j << ") = " << qz.matrixS()(i,j) << std::endl;
         all_zeros = false;
+      }
       if (j==i-1 && j>0 && abs(qz.matrixS()(i,j))!=Scalar(0.0) && abs(qz.matrixS()(i-1,j-1))!=Scalar(0.0))
+      {
+        std::cerr << "Error: S(" << i << "," << j << ") = " << qz.matrixS()(i,j)  << " && S(" << i-1 << "," << j-1 << ") = " << qz.matrixS()(i-1,j-1) << std::endl;
         all_zeros = false;
+      }
     }
   VERIFY_IS_EQUAL(all_zeros, true);
   VERIFY_IS_APPROX(qz.matrixQ()*qz.matrixS()*qz.matrixZ(), A);

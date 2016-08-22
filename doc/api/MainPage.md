@@ -26,13 +26,7 @@ could be express in various ways such as :
  
 ##Organisation of this manual
 
-This manual is organized as follows:   
-- [QuickStart](http://www.feelpp.org/docs/master/GettingStarted.html)where we provide various standard PDE solvers to start
-  with   
--  [A Step by Step Tutorial](http://www.feelpp.org/docs/master/Tutorial.html) where we dive step by step into Feel++   
--  [Programming Environment](http://www.feelpp.org/docs/master/ProgEnv.html) which includes instructions for installation from sources or
-  from Debian/Ubuntu and MacOSX   
--  [Quick Reference](http://www.feelpp.org/docs/master/QuickRef.html) which describes the various components of Feel++ applications   
+The user documentation has moved to [GitBook](http://book.feelpp.org).
 
 ##Credits
 

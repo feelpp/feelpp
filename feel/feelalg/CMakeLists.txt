@@ -22,7 +22,7 @@
 #
 #
 if( PETSC_FOUND )
-  set( FEELPP_PETSC_SRCS vectorpetsc.cpp matrixpetsc.cpp solverlinearpetsc.cpp solvernonlinearpetsc.cpp functionspetsc.cpp preconditionerpetsc.cpp)
+  set( FEELPP_PETSC_SRCS vectorpetsc.cpp matrixpetsc.cpp solverlinearpetsc.cpp solvernonlinearpetsc.cpp functionspetsc.cpp preconditionerpetsc.cpp topetsc.cpp backendpetsc.cpp)
 
   if ( FEELPP_HAS_SLEPC )
     set( FEELPP_SLEPC_SRCS solvereigenslepc.cpp )
@@ -37,7 +37,7 @@ set( SRC
   dummy.cpp enums.cpp datamap.cpp
   vector.cpp vectorublas.cpp
   preconditioner.cpp
-  backend.cpp  matrixshellsparse.cpp backendpetsc.cpp
+  backend.cpp  matrixshellsparse.cpp
   graphcsr.cpp  solvereigen.cpp
   matrixeigendense.cpp backendeigen.cpp vectoreigen.cpp matrixeigensparse.cpp
   solvernonlinear.cpp matrixblock.cpp vectorblock.cpp nullspace.cpp

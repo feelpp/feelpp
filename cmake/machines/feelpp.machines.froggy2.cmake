@@ -25,3 +25,14 @@ set(FEELPP_ENABLE_MANUAL OFF)
 set(Boost_NO_BOOST_CMAKE TRUE)
 set(Boost_NO_SYSTEM_PATHS TRUE)
 
+set(FEELPP_ENABLE_SCHED_OAR TRUE)
+
+# see https://oar.readthedocs.org/en/2.5/user/usecases.html#using-mpi-with-oarsh
+# option shall depend on MPI_FLAVOR (here defined only OpenMPI
+set(MPIEXEC_PREFLAGS -mca plm_rsh_agent \"oarsh\" CACHE STRING "These flags will be directly before the executable that is being run by MPIEXEC.")
+message(STATUS "on froggy2 : MPIEXEC_PREFLAGS ${MPIEXEC_PREFLAGS} ")
+
+# Work around to get glog to compile
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_PERMIT_BACKWARD_HASH " )
+endif()

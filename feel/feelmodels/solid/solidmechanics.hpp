@@ -49,6 +49,7 @@ public:
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     using element_displacement_type = typename super_type::element_displacement_type;
+    using element_displacement_external_storage_type = typename super_type::element_displacement_external_storage_type;
 
     SolidMechanics( std::string const& prefix,
                     bool buildMesh = true,
@@ -79,12 +80,12 @@ public:
 
     void updateBCDirichletStrongResidual( vector_ptrtype& R ) const;
     void updateBCNeumannResidual( vector_ptrtype& R ) const;
-    void updateBCFollowerPressureResidual(element_displacement_type const& u, vector_ptrtype& R ) const;
-    void updateBCRobinResidual( element_displacement_type const& u, vector_ptrtype& R ) const;
+    void updateBCFollowerPressureResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R ) const;
+    void updateBCRobinResidual( element_displacement_external_storage_type const& u, vector_ptrtype& R ) const;
     void updateSourceTermResidual( vector_ptrtype& R ) const;
 
     void updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J, vector_ptrtype& RBis ) const;
-    void updateBCFollowerPressureJacobian(element_displacement_type const& u, sparse_matrix_ptrtype& J) const;
+    void updateBCFollowerPressureJacobian(element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const;
     void updateBCRobinJacobian( sparse_matrix_ptrtype& J) const;
 
     void updateSourceTermLinearPDE( vector_ptrtype& F ) const;

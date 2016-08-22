@@ -82,7 +82,7 @@ REGISTER_FUNCTION(conjugate_function, eval_func(conjugate_eval).
                                       conjugate_func(conjugate_conjugate).
                                       real_part_func(conjugate_real_part).
                                       imag_part_func(conjugate_imag_part).
-                                      set_name("conjugate","conjugate"));
+                                      set_name("conjugate","conjugate"))
 
 //////////
 // real part
@@ -127,7 +127,7 @@ REGISTER_FUNCTION(real_part_function, eval_func(real_part_eval).
                                       conjugate_func(real_part_conjugate).
                                       real_part_func(real_part_real_part).
                                       imag_part_func(real_part_imag_part).
-                                      set_name("real_part","real_part"));
+                                      set_name("real_part","real_part"))
 
 //////////
 // imag part
@@ -172,7 +172,7 @@ REGISTER_FUNCTION(imag_part_function, eval_func(imag_part_eval).
                                       conjugate_func(imag_part_conjugate).
                                       real_part_func(imag_part_real_part).
                                       imag_part_func(imag_part_imag_part).
-                                      set_name("imag_part","imag_part"));
+                                      set_name("imag_part","imag_part"))
 
 //////////
 // absolute value
@@ -241,7 +241,7 @@ REGISTER_FUNCTION(abs, eval_func(abs_eval).
                        conjugate_func(abs_conjugate).
                        real_part_func(abs_real_part).
                        imag_part_func(abs_imag_part).
-                       power_func(abs_power));
+                       power_func(abs_power))
 
 //////////
 // Step function
@@ -320,7 +320,7 @@ REGISTER_FUNCTION(step, eval_func(step_eval).
                         series_func(step_series).
                         conjugate_func(step_conjugate).
                         real_part_func(step_real_part).
-                        imag_part_func(step_imag_part));
+                        imag_part_func(step_imag_part))
 
 //////////
 // Complex sign
@@ -412,7 +412,7 @@ REGISTER_FUNCTION(csgn, eval_func(csgn_eval).
                         conjugate_func(csgn_conjugate).
                         real_part_func(csgn_real_part).
                         imag_part_func(csgn_imag_part).
-                        power_func(csgn_power));
+                        power_func(csgn_power))
 
 
 //////////
@@ -509,7 +509,7 @@ REGISTER_FUNCTION(eta, eval_func(eta_eval).
                        set_symmetry(sy_symm(0, 1)).
                        conjugate_func(eta_conjugate).
                        real_part_func(eta_real_part).
-                       imag_part_func(eta_imag_part));
+                       imag_part_func(eta_imag_part))
 
 
 //////////
@@ -662,7 +662,7 @@ REGISTER_FUNCTION(Li2, eval_func(Li2_eval).
                        derivative_func(Li2_deriv).
                        series_func(Li2_series).
                        conjugate_func(Li2_conjugate).
-                       latex_name("\\mathrm{Li}_2"));
+                       latex_name("\\mathrm{Li}_2"))
 
 //////////
 // trilogarithm
@@ -676,7 +676,7 @@ static ex Li3_eval(const ex & x)
 }
 
 REGISTER_FUNCTION(Li3, eval_func(Li3_eval).
-                       latex_name("\\mathrm{Li}_3"));
+                       latex_name("\\mathrm{Li}_3"))
 
 //////////
 // Derivatives of Riemann's Zeta-function  zetaderiv(0,x)==zeta(x)
@@ -707,7 +707,7 @@ static ex zetaderiv_deriv(const ex & n, const ex & x, unsigned deriv_param)
 
 REGISTER_FUNCTION(zetaderiv, eval_func(zetaderiv_eval).
 	                       	 derivative_func(zetaderiv_deriv).
-  	                         latex_name("\\zeta^\\prime"));
+  	                         latex_name("\\zeta^\\prime"))
 
 //////////
 // factorial
@@ -758,7 +758,7 @@ REGISTER_FUNCTION(factorial, eval_func(factorial_eval).
                              print_func<print_latex>(factorial_print_dflt_latex).
                              conjugate_func(factorial_conjugate).
                              real_part_func(factorial_real_part).
-                             imag_part_func(factorial_imag_part));
+                             imag_part_func(factorial_imag_part))
 
 //////////
 // binomial
@@ -820,7 +820,7 @@ REGISTER_FUNCTION(binomial, eval_func(binomial_eval).
                             evalf_func(binomial_evalf).
                             conjugate_func(binomial_conjugate).
                             real_part_func(binomial_real_part).
-                            imag_part_func(binomial_imag_part));
+                            imag_part_func(binomial_imag_part))
 
 //////////
 // Order term function (for truncated power series)
@@ -877,7 +877,7 @@ REGISTER_FUNCTION(Order, eval_func(Order_eval).
                          latex_name("\\mathcal{O}").
                          conjugate_func(Order_conjugate).
                          real_part_func(Order_real_part).
-                         imag_part_func(Order_imag_part));
+                         imag_part_func(Order_imag_part))
 
 //////////
 // Solve linear system

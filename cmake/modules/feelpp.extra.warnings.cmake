@@ -97,6 +97,6 @@ if(FEELPP_EXTRA_WARNINGS)
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
-   set(FEELPP_FLAGS "${FEELPP_FLAGS} -fmacro-backtrace-limit=0" )
+#   set(FEELPP_FLAGS "${FEELPP_FLAGS} -fmacro-backtrace-limit=0" )
    set(FEELPP_FLAGS "${FEELPP_FLAGS} -ftemplate-backtrace-limit=0" )
 endif()

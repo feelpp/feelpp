@@ -405,7 +405,7 @@ private :
     // -------- private methods ---------
 
     inline size_type clusterToProcessor( size_type dof )
-        {return M_spaceP1->dof()->mapGlobalClusterToGlobalProcess( dof - firstDof ); }
+        {return dof - firstDof; }
 
     inline size_type processorToCluster( size_type dof )
         {return M_spaceP1->dof()->mapGlobalProcessToGlobalCluster( dof ); }

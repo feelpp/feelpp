@@ -42,7 +42,7 @@ feelpp_add_test( on_inside GEO test_on_inside.geo)
 
 feelpp_add_test( operatorlinearfree )
 feelpp_add_test( project NO_MPI_TEST)
-feelpp_add_test( projector CLI "--pc-type=gasm" ) # avoid destructor issue with LU-mumps in //
+feelpp_add_test( projector CLI "--pc-type=gasm --gmsh.hsize=0.2" ) # avoid destructor issue with LU-mumps in //
 feelpp_add_test( spaces )
 feelpp_add_test( stencil )
 feelpp_add_test( submesh )

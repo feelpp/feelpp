@@ -121,7 +121,7 @@ private:
     typedef std::map<size_type, std::set<size_type> > neighbors_type;
 
     inline size_type clusterToProcessor( size_type dof )
-    { return M_functionspace->dof()->mapGlobalClusterToGlobalProcess( dof - firstDof ); }
+    { return dof - firstDof; }
 
     inline size_type processorToCluster( size_type dof )
     { return M_functionspace->dof()->mapGlobalProcessToGlobalCluster( dof ); }

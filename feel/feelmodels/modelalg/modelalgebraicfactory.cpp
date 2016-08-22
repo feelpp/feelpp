@@ -525,11 +525,16 @@ namespace FeelModels
         this->application()->timerTool("Solve").elapsed("algebraic-residual");
         this->application()->timerTool("Solve").restart();
         //---------------------------------------------------------------------//
-
+        
+        pre_solve_type pre_solve = std::bind(&appli_type::preSolveNewton, M_appli, std::placeholders::_1, std::placeholders::_2);
+        post_solve_type post_solve = std::bind(&appli_type::postSolveNewton, M_appli, std::placeholders::_1, std::placeholders::_2);
+        
         auto const solveStat = M_backend->nlSolve( _jacobian=M_J,
                                                    _solution=U,
                                                    _residual=M_R,
-                                                   _prec=M_PrecondManage );
+                                                   _prec=M_PrecondManage,
+                                                   _pre=pre_solve,
+                                                   _post=post_solve);
         if ( false )
             Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","NonLinearSolverNewton",
                            "solver stat :\n" +
@@ -713,11 +718,16 @@ namespace FeelModels
             // update in-house preconditioners
             this->application()->updateInHousePreconditioner( M_J, U );
 
+            // set pre/post solve functions
+            pre_solve_type pre_solve = std::bind(&appli_type::preSolvePicard, M_appli, std::placeholders::_1, std::placeholders::_2);
+            post_solve_type post_solve = std::bind(&appli_type::postSolvePicard, M_appli, std::placeholders::_1, std::placeholders::_2);
             // solve linear system
             auto const solveStat = M_backend->solve( _matrix=M_J,
                                                      _solution=U,
                                                      _rhs=M_R,
-                                                     _prec=M_PrecondManage );
+                                                     _prec=M_PrecondManage,
+                                                     _pre=pre_solve,
+                                                     _post=post_solve );
 
             if ( this->application()->errorIfSolverNotConverged() )
                 CHECK( solveStat.isConverged() ) << "the linear solver has not converged in "

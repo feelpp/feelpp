@@ -40,7 +40,6 @@ MatrixEigenDense<T>::MatrixEigenDense()
     :
     super(),
     M_is_initialized( false ),
-    M_is_closed( false ),
     M_mat()
 {}
 template <typename T>
@@ -48,8 +47,15 @@ MatrixEigenDense<T>::MatrixEigenDense( size_type r, size_type c, WorldComm const
     :
     super(worldComm),
     M_is_initialized( false ),
-    M_is_closed( false ),
     M_mat( r, c )
+{}
+
+template <typename T>
+MatrixEigenDense<T>::MatrixEigenDense( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
+    :
+    super( dmRow,dmCol ),
+    M_is_initialized( false ),
+    M_mat( dmRow->nDof(), dmCol->nDof() )
 {}
 
 template <typename T>
@@ -57,7 +63,6 @@ MatrixEigenDense<T>::MatrixEigenDense( MatrixEigenDense const & m )
     :
     super( m ),
     M_is_initialized( m.M_is_initialized ),
-    M_is_closed( m.M_is_closed ),
     M_mat( m.M_mat )
 
 {}
@@ -134,7 +139,7 @@ template<typename T>
 void
 MatrixEigenDense<T>::close() const
 {
-    M_is_closed = true;
+    this->setIsClosed( true );
 }
 
 template<typename T>
@@ -198,9 +203,9 @@ MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _m
 
 template<typename T>
 void
-MatrixEigenDense<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m,
-                                     std::vector<size_type> start_i,
-                                     std::vector<size_type> start_j )
+MatrixEigenDense<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m,
+                                     std::vector<size_type> const& start_i,
+                                     std::vector<size_type> const& start_j )
 {
     LOG(ERROR) << "invalid call to updateBlockMat(), not yet implemented\n";
 
@@ -311,7 +316,7 @@ MatrixEigenDense<T>::eigenValues ( std::vector<std::complex<double>> &Eingvs )
 
 template <typename T>
 void
-MatrixEigenDense<T>::matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res )
+MatrixEigenDense<T>::matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res ) const
 {
     //FEELPP_ASSERT ( this->isInitialized() ).error( "eigendense matrix not initialized" );
 

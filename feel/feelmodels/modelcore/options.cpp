@@ -158,10 +158,8 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"marked-zones.expressions").c_str(), po::value<std::vector<std::string> >()->multitoken(), "marked-zone.expressions" )
         (prefixvm(prefix,"marked-zones.internal-faces").c_str(), po::value<bool>()->default_value(false), "marked-zone.internal-faces" )
         (prefixvm(prefix,"define-pressure-cst").c_str(), Feel::po::value<bool>()->default_value( false ), "maybe need to define the pressure constant if only dirichlet bc")
-        (prefixvm(prefix,"define-pressure-cst.method").c_str(), Feel::po::value<std::string>()->default_value( "lagrange-multiplier"), " lagrange-multiplier or penalisation")
+        (prefixvm(prefix,"define-pressure-cst.method").c_str(), Feel::po::value<std::string>()->default_value( "lagrange-multiplier"), " lagrange-multiplier or penalisation or algebraic")
         (prefixvm(prefix,"define-pressure-cst.penalisation-beta").c_str(), Feel::po::value< double >()->default_value( -10e-10 ), "parameter beta in cstpressure penalisation ")
-        //(prefixvm(prefix,"stabilisation-cstpressure").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
-        //(prefixvm(prefix,"stabilisation-cstpressure-beta").c_str(), Feel::po::value< double >()->default_value( -10e-10 ), "parameter beta in cstpressure stab ")
         (prefixvm(prefix,"stabilisation-convection-energy").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
         (prefixvm(prefix,"dirichletbc.type").c_str(), Feel::po::value<std::string>()->default_value( "elimination" ), "elimination, nitsche, lm")
 
@@ -322,6 +320,31 @@ thermoDynamics_options(std::string const& prefix)
 }
 
 Feel::po::options_description
+advection_options(std::string const& prefix)
+{
+    Feel::po::options_description advectionOptions("Advection options");
+    advectionOptions.add_options()
+        (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >(), "advection model : Advection, Advection-Diffusion, Advection-Diffusion-Reaction")
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "advection solver")
+        //(prefixvm(prefix,"thermal-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "thermal-conductivity [ W/(m*K) ]")
+        (prefixvm(prefix,"D").c_str(), Feel::po::value<double>()->default_value( 0 ), "diffusion coefficient [ m^2.s^-1 ]")
+        (prefixvm(prefix,"R").c_str(), Feel::po::value<double>()->default_value( 0 ), "reaction coefficient [ s^-1 ]")
+        //(prefixvm(prefix,"heat-capacity").c_str(), Feel::po::value<double>()->default_value( 1 ), "heat-capacity [ J/(kg*K) ]")
+        //(prefixvm(prefix,"thermal-expansion").c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "thermal-conductivity [ 1/K) ]")
+        //(prefixvm(prefix,"use_velocity-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use-velocity-convection")
+        //(prefixvm(prefix,"velocity-convection_is_incompressible").c_str(), Feel::po::value<bool>()->default_value( false ), "velocity-convection-is-incompressible")
+        (prefixvm(prefix,"advection-velocity").c_str(), Feel::po::value<std::string>(), "math expression")
+        (prefixvm(prefix,"advec-stab-method").c_str(), Feel::po::value<std::string>()->default_value( "GALS" ), "stabilization method")
+        (prefixvm(prefix,"advec-stab-coeff").c_str(), Feel::po::value<double>()->default_value( 1 ), "stabilization coefficient")
+        //(prefixvm(prefix,"initial-solution.temperature").c_str(), Feel::po::value<std::string>(), "math expression")
+        (prefixvm(prefix,"export-all").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_all")
+        (prefixvm(prefix,"export-advection-velocity").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_advection_velocity")
+        (prefixvm(prefix,"export-source").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_source_field")
+        ;
+    return advectionOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
+}
+
+Feel::po::options_description
 alemesh_options(std::string const& prefix)
 {
     po::options_description desc_options("alemesh options");
@@ -370,6 +393,9 @@ feelmodels_options(std::string type)
             .add(fluidMechanics_options("fluid"))
             .add(solidMechanics_options("solid"))
             .add(fluidStructInteraction_options("fsi"));
+    else if (type == "advection")
+        FSIoptions.add(advection_options("advection"));
+
     else
         CHECK( false ) << "invalid type : " << type << " -> must be fluid,solid,thermo-dynamics,fsi";
 

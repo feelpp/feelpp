@@ -40,12 +40,11 @@ namespace Eigen {
 /** \internal Specialization for the data types supported by MKL */
 
 #define EIGEN_MKL_SCHUR_COMPLEX(EIGTYPE, MKLTYPE, MKLPREFIX, MKLPREFIX_U, EIGCOLROW, MKLCOLROW) \
-template<> inline \
+template<> template<typename InputType> inline \
 ComplexSchur<Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW> >& \
-ComplexSchur<Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW> >::compute(const Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW>& matrix, bool computeU) \
+ComplexSchur<Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW> >::compute(const EigenBase<InputType>& matrix, bool computeU) \
 { \
   typedef Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW> MatrixType; \
-  typedef MatrixType::Scalar Scalar; \
   typedef MatrixType::RealScalar RealScalar; \
   typedef std::complex<RealScalar> ComplexScalar; \
 \
@@ -54,22 +53,22 @@ ComplexSchur<Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW> >::compute(const Matri
   m_matUisUptodate = false; \
   if(matrix.cols() == 1) \
   { \
-    m_matT = matrix.cast<ComplexScalar>(); \
+    m_matT = matrix.derived().template cast<ComplexScalar>(); \
     if(computeU)  m_matU = ComplexMatrixType::Identity(1,1); \
       m_info = Success; \
       m_isInitialized = true; \
       m_matUisUptodate = computeU; \
       return *this; \
   } \
-  lapack_int n = matrix.cols(), sdim, info; \
-  lapack_int lda = matrix.outerStride(); \
+  lapack_int n = internal::convert_index<lapack_int>(matrix.cols()), sdim, info; \
   lapack_int matrix_order = MKLCOLROW; \
   char jobvs, sort='N'; \
   LAPACK_##MKLPREFIX_U##_SELECT1 select = 0; \
   jobvs = (computeU) ? 'V' : 'N'; \
   m_matU.resize(n, n); \
-  lapack_int ldvs  = m_matU.outerStride(); \
+  lapack_int ldvs  = internal::convert_index<lapack_int>(m_matU.outerStride()); \
   m_matT = matrix; \
+  lapack_int lda = internal::convert_index<lapack_int>(m_matT.outerStride()); \
   Matrix<EIGTYPE, Dynamic, Dynamic> w; \
   w.resize(n, 1);\
   info = LAPACKE_##MKLPREFIX##gees( matrix_order, jobvs, sort, select, n, (MKLTYPE*)m_matT.data(), lda, &sdim, (MKLTYPE*)w.data(), (MKLTYPE*)m_matU.data(), ldvs ); \

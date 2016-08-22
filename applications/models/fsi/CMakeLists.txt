@@ -29,6 +29,10 @@ feelpp_add_application( application_fsi_3d_g2 SRCS main_fsi.cpp
   )
 
 
-install(TARGETS feelpp_application_fsi_2d feelpp_application_fsi_3d 
+install(TARGETS feelpp_application_fsi_2d feelpp_application_fsi_3d feelpp_application_fsi_3d_g2
         RUNTIME DESTINATION bin/ 
         COMPONENT ModelApplications )
+
+feelpp_add_testcase( TurekHron PREFIX feelmodels_fsi )
+feelpp_add_testcase( wavepressure2d PREFIX feelmodels_fsi )      
+feelpp_add_testcase( wavepressure3d PREFIX feelmodels_fsi )      

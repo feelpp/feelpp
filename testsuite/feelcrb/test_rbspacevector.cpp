@@ -277,7 +277,7 @@ private :
  * main code
  */
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( rbspace )
 
 BOOST_AUTO_TEST_CASE( test_1 )

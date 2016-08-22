@@ -25,5 +25,10 @@
 
 if ( FEELPP_HAS_NLOPT )
   feelpp_add_application( qs_nlopt SRCS qs_nlopt.cpp INCLUDE_IN_ALL  )
+  feelpp_add_application( laplacian_nlopt SRCS laplacian_nlopt.cpp
+                                          CFG laplacian_nlopt.cfg
+                                          GEO circle_incs.geo
+                                          INCLUDE_IN_ALL )
+
   install(TARGETS feelpp_qs_nlopt DESTINATION bin/ COMPONENT Bin )
 endif()
