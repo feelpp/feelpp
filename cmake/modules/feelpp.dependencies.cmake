@@ -1140,19 +1140,49 @@ else()
 endif()
 
 if ( FEELPP_ENABLE_VTK )
-
+    # MESSAGE("Finding VTK:")
+    # MESSAGE("PARAVIEW_DIR=$ENV{PARAVIEW_DIR}")
+    # MESSAGE("MACHINE_PARAVIEW_DIR=${MACHINE_PARAVIEW_DIR}")
+    # # if(EXISTS $ENV{PARAVIEW_DIR})
+    # #  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{PARAVIEW_DIR}/Modules/")
+    # # endif()
+    # MESSAGE("CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
+    
     # First try to find ParaView
-    FIND_PACKAGE(ParaView QUIET
-        COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
-        PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR})
+    # FIND_PACKAGE(ParaView QUIET
+    #    COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
+    #    PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR})
+    FIND_PACKAGE(ParaView NO_MODULE
+        PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} NO_DEFAULT_PATH )
 
     if(ParaView_FOUND)
         message(STATUS "[ParaView] Use file: ${PARAVIEW_USE_FILE}")
         INCLUDE(${PARAVIEW_USE_FILE})
 
-        # Enable VTK exporter and insitu in config
-        set(FEELPP_VTK_INSITU_ENABLED 1)
+        # trying to load a minimal vtk
+        FIND_PACKAGE(ParaView COMPONENTS vtkParallelMPI NO_MODULE
+          PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} NO_DEFAULT_PATH )
+        IF (TARGET vtkParallelMPI)
+          message(STATUS "[ParaView] Loading vtkParallelMPI module")
+        ENDIF ()
+        FIND_PACKAGE(ParaView COMPONENTS vtkPVCatalyst NO_MODULE
+          PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} NO_DEFAULT_PATH )
+        IF (TARGET vtkPVCatalyst)
+          message(STATUS "[ParaView] Loading vtkPVCatalyst module")
+        ENDIF ()
+        FIND_PACKAGE(ParaView COMPONENTS vtkPVPythonCatalyst NO_MODULE
+          PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} NO_DEFAULT_PATH )
+        IF (TARGET vtkPVPythonCatalyst)
+          message(STATUS "[ParaView] Loading vtkPVPythonCatalyst module")
+        ENDIF ()
+        INCLUDE(${PARAVIEW_USE_FILE})
 
+        # Enable VTK exporter and insitu in config
+        IF (TARGET vtkPVCatalyst AND TARGET vtkPVPythonCatalyst)
+          set(FEELPP_VTK_INSITU_ENABLED 1)
+          message(STATUS "Enable FEELPP_VTK_INSITU_ENABLED")
+        ENDIF()
+        
         # Mark VTK and ParaView as available
         set(FEELPP_HAS_VTK 1)
         set(FEELPP_HAS_PARAVIEW 1)
@@ -1160,9 +1190,16 @@ if ( FEELPP_ENABLE_VTK )
         # use an external communicator
         set(VTK_HAS_PARALLEL 0)
         if( VTK_MAJOR_VERSION EQUAL 6 OR VTK_MAJOR_VERSION GREATER 6 )
-            set(VTK_HAS_PARALLEL 1)
+          set(VTK_HAS_PARALLEL 1)
+          # MESSAGE("VTK_HAS_PARALLEL=${VTK_HAS_PARALLEL}")
         endif()
 
+        # MESSAGE("ParaView_INCLUDE_DIRS=${ParaView_INCLUDE_DIRS}")
+        # MESSAGE("ParaView_LIBRARIES=${ParaView_LIBRARIES}")
+        # MESSAGE("VTK_INCLUDE_DIRS=${VTK_INCLUDE_DIRS}")
+        # MESSAGE("VTK_LIBRARIES=${VTK_LIBRARIES}")
+        
+        INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
         INCLUDE_DIRECTORIES(${ParaView_INCLUDE_DIRS})
         INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
         SET(FEELPP_LIBRARIES ${ParaView_LIBRARIES} ${FEELPP_LIBRARIES})
