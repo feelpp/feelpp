@@ -404,6 +404,8 @@ private:
     // Export
     void exportResultsImpl( double time );
     void exportMeasuresImpl( double time );
+    // Save
+    void saveCurrent() const;
 
 
 protected:
@@ -473,8 +475,10 @@ private:
 
     boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smootherFM;
 
-    int M_iterSinceReinit;
     bool M_hasReinitialized;
+    int M_iterSinceReinit;
+    // Vector that stores the iterSinceReinit of each time-step
+    std::vector<int> M_vecIterSinceReinit;
 
     //--------------------------------------------------------------------//
     // Backends

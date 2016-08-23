@@ -25,8 +25,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     //M_periodicity(periodicityLS),
     M_doUpdateMarkers(true),
     M_reinitializerIsUpdatedForUse(false),
-    M_iterSinceReinit(0),
-    M_hasReinitialized(false)
+    M_hasReinitialized(false),
+    M_iterSinceReinit(0)
 {
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
     //-----------------------------------------------------------------------------//
@@ -117,10 +117,38 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     this->initLevelsetValue();
     // Init advection
     super_type::init( true, this->shared_from_this() );
+    M_timeOrder = this->timeStepBDF()->timeOrder(); 
+
+    // Init iterSinceReinit
+    if( this->doRestart() )
+    {
+        // Reload saved iterSinceReinit data
+        auto iterSinceReinitPath = fs::path(this->rootRepository()) / fs::path( prefixvm(this->prefix(), "itersincereinit") );
+        if( fs::exists( iterSinceReinitPath ) )
+        {
+            fs::ifstream ifs( iterSinceReinitPath );
+            boost::archive::text_iarchive ia( ifs );
+            ia >> BOOST_SERIALIZATION_NVP( M_vecIterSinceReinit );
+            M_iterSinceReinit = M_vecIterSinceReinit.back();
+        }
+        else
+        {
+            // If iterSinceReinit not found, we assume that last step reinitialized by default
+            M_iterSinceReinit = 0;
+        }
+    }
+    else
+    {
+            M_vecIterSinceReinit.push_back( M_iterSinceReinit );
+    }
+    // Adjust BDF order with iterSinceReinit
+    if( M_iterSinceReinit < M_timeOrder )
+    {
+        this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+    }
+
     // Init post-process
     this->initPostProcess();
-
-    M_timeOrder = this->timeStepBDF()->timeOrder(); 
 
     this->log("LevelSet", "init", "finish");
 }
@@ -949,19 +977,23 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
     double current_time = this->timeStepBDF()->time();
 
-    super_type::updateTimeStep();
-
     if( M_hasReinitialized )
         M_iterSinceReinit = 0;
     else
         ++M_iterSinceReinit;
 
+    M_vecIterSinceReinit.push_back( M_iterSinceReinit );
+
+    this->saveCurrent();
+
+    super_type::updateTimeStep();
+
     if( M_iterSinceReinit < M_timeOrder )
     {
-        this->timeStepBDF()->setOrder( M_iterSinceReinit + 1 );
-        this->timeStepBDF()->setTimeInitial( current_time ); 
-        this->timeStepBDF()->restart();
-        this->timeStepBDF()->setTimeInitial( this->timeInitial() );
+        this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+        //this->timeStepBDF()->setTimeInitial( current_time ); 
+        //this->timeStepBDF()->restart();
+        //this->timeStepBDF()->setTimeInitial( this->timeInitial() );
     }
 }
 
@@ -1214,6 +1246,24 @@ LEVELSET_CLASS_TEMPLATE_TYPE::volume() const
             //_expr=vf::chi( idv(this->phi())<0.0) ).evaluate()(0,0); // gives very noisy results
 
     return volume;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::saveCurrent() const
+{
+    bool doSave = (this->timeStepBDF()->iteration() % this->timeStepBDF()->saveFreq() == 0);
+
+    if (!doSave) return;
+
+    if( this->worldComm().isMasterRank() )
+    {
+        fs::ofstream ofs( fs::path(this->rootRepository()) / fs::path( prefixvm(this->prefix(), "itersincereinit") ) );
+
+        boost::archive::text_oarchive oa( ofs );
+        oa << BOOST_SERIALIZATION_NVP( M_vecIterSinceReinit );
+    }
+    this->worldComm().barrier();
 }
 
 //----------------------------------------------------------------------------//
