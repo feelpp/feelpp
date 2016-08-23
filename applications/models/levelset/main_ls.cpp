@@ -30,7 +30,8 @@ runLevelsetApplication()
 
     LS->init();
     LS->printAndSaveInfo();
-    LS->exportResults(0);
+    if( !LS->doRestart() )
+        LS->exportResults(0);
 
     bool exportDistToBoundary = boption( _name="export-dist-to-boundary" );
 
@@ -54,7 +55,7 @@ runLevelsetApplication()
     {
         int reinit_every = ioption( _name="levelset.reinit-every" );
 
-        for ( int iter = 0; !LS->timeStepBase()->isFinished(); LS->updateTimeStep(), ++iter )
+        for ( int iter = 1; !LS->timeStepBase()->isFinished(); LS->updateTimeStep(), ++iter )
         {
             Feel::cout << "============================================================\n";
             Feel::cout << "time simulation: " << LS->time() << "s \n";
