@@ -141,8 +141,9 @@ public :
 
             solution.localize(U);
             auto sc = this->matrixPtr()->sc();
-            this->matrixPtr()->printMatlab("A.m");
-            rhs.vectorPtr()->printMatlab("F.m");
+            //this->matrixPtr()->printMatlab("A.m");
+            //rhs.vectorPtr()->printMatlab("F.m");
+            sc->solve ( rhs.vectorPtr()->sc(), solution(0_c), solution(2_c) );
             sc->localSolve ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c) );
 
             return r;
