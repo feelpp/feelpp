@@ -1,0 +1,106 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Model":"hdg",
+    "Materials":
+    {
+       "Lamina": 
+        {
+            "name":"copper",
+			"rho":"1",
+            "lambda":"1",			// [N/cm^2]		// [5.88 MPa]
+	    	"mu":"1"				// [N/cm^2]		// [0.12 Mpa]
+        },
+      	"Retina": 
+        {
+            "name":"copper",
+			"rho":"1",
+            "lambda":"1",			// [N/cm^2]		// [5.88 MPa]
+	    	"mu":"1"				// [N/cm^2]		// [0.12 Mpa]
+        }
+	},
+    "BoundaryConditions":
+    {
+        "strain":
+        {
+            "SourceTerm":
+            {
+                "Lamina": 
+                {
+					"expr":"{0,0,0}"
+                },
+				"Retina":
+				{
+					"expr":"{0,0,0}"
+				}
+            },
+            "Neumann":
+            {
+                "Hole":   // -IOP
+                {
+					"expr":"{5+6,1,1, 1,5+2,0, 1, 0,5+2}:x:y"
+                },
+                "Lamina_Retina": 	// -RLTp 
+                {
+					"expr":"{5+6,1,1, 1,5+2,0, 1, 0,5+2}:x:y"
+                },
+				"BC_spherical_Retina":
+				{
+					"expr":"{5+6,1,1, 1,5+2,0, 1, 0,5+2}:x:y"
+				}
+            }
+		},
+		"displacement":
+		{
+	    	"Dirichlet":
+	    	{
+        		"In":
+                {
+					"expr":"{3*x+y,y,x+z}:x:y:z"
+                },
+        		"Out":
+                {
+					"expr":"{3*x+y,y,x+z}:x:y:z"
+                },
+				"BC_planar_Retina":
+				{
+					"expr":"{3*x+y,y,x+z}:x:y:z"
+				},
+				"BC_cylindrical_Retina":
+				{
+					"expr":"{3*x+y,y,x+z}:x:y:z"
+				},
+				"Retina_Sclera":
+				{
+					"expr":"{3*x+y,y,x+z}:x:y:z"
+				},
+				"Choroid_Retina":
+				{
+					"expr":"{3*x+y,y,x+z}:x:y:z"
+				}
+ 	    	}
+    	},
+		"ExactSolution":
+		{
+			"u_exact":
+			{
+				"Lamina":
+				{
+					"expr":"{3*x+y,y,x+z}:x:y:z"	
+				},
+				"Retina":
+				{
+					"expr":"{3*x+y,y,x+z}:x:y:z"
+				}
+			}
+		}
+	},
+    "PostProcess":
+    {
+        "Fields":["strain","displacement"]
+    }
+}
+
+
+
+
