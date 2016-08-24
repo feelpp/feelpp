@@ -45,7 +45,8 @@ private:
     //--------------------------------------------------------------------//
     element_levelset_ptrtype M_levelsetModGradPhi;
     element_levelset_ptrtype M_interfaceRectangularFunction;
-    double M_thicknessRectangularFunction;
+
+    double M_inextensibilityForceCoefficient;
 };
 
 template<typename LevelSetType>
@@ -61,6 +62,7 @@ template<typename LevelSetType>
 void
 InextensibilityForceModel<LevelSetType>::loadParametersFromOptionsVm()
 {
+    M_inextensibilityForceCoefficient = doption( _name="inextensibility-force-coeff", _prefix=this->prefix() );
 }
 
 template<typename LevelSetType>
@@ -70,7 +72,7 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceRectangularFunction()
     if( !M_interfaceRectangularFunction )
         M_interfaceRectangularFunction.reset( new element_levelset_type(this->levelset()->functionSpace(), "InterfaceRectangularFunction") );
 
-    auto phi = this->levelset()->phi();
+    auto phi = idv(this->levelset()->phi());
     double epsilon = this->levelset()->thicknessInterface();
     double epsilon_rect = 2.*epsilon;
     double epsilon_delta = (epsilon_rect - epsilon)/2.;
@@ -117,7 +119,25 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
                 _expr = sqrt( trans(idv(gradPhi))*idv(gradPhi) )
                 );
     }
-    //TODO
+
+    auto Ep = this->levelset()->projectorL2()->project(
+            _expr=max( idv(M_levelsetModGradPhi), 0. )
+            );
+    auto EpN = this->levelset()->projectorL2Vectorial()->project(
+            _expr=idv(Ep)*idv(this->levelset()->N())
+            );
+    auto GradEp = this->levelset()->smootherVectorial()->project(
+            _expr=trans(gradv(Ep))
+            );
+    auto DivEpNtN = this->levelset()->smootherVectorial()->project(
+            _expr=divv(EpN)*idv(this->levelset()->N())
+            );
+
+    *F += vf::project(
+            _space=this->levelset()->functionSpaceVectorial(),
+            _range=elements(this->levelset()->mesh()),
+            _expr=M_inextensibilityForceCoefficient*(idv(GradEp)-idv(DivEpNtN))*idv(this->levelset()->D())
+            );
 }
 
 } // namespace FeelModels
