@@ -44,8 +44,10 @@ public:
     using value_type = T;
 
     StaticCondensation() = default;
+    template<typename E1, typename E3>
+    void solve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1& e1, E3 & e3 );
     template<typename E1, typename E2, typename E3>
-    void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1& e1, E2& e2, E3 const& e3 );
+    void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1& e1, E2& e2, E3 & e3 );
 
     void addLocalMatrix( int* rows, int nrows,
                          int* cols, int ncols,
@@ -108,9 +110,9 @@ private:
 };
 
 template<typename T>
-template<typename E1, typename E2, typename E3>
+template<typename E1, typename E3>
 void
-StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1& e1, E2& e2, E3 const& e3 )
+StaticCondensation<T>::solve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1 &e1, E3 & e3 )
 {
     using Feel::cout;
 
@@ -137,6 +139,8 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
     LOG(INFO) << "F0K.size=" << F0K.size();
     auto const& F1K = rhs->M_local_vectors[1];
     LOG(INFO) << "F1K.size=" << F1K.size();
+    auto const& F2K = rhs->M_local_vectors[2];
+    LOG(INFO) << "F2K.size=" << F2K.size();
 
     auto it = A00K.begin();
     auto en = A00K.end();
@@ -152,7 +156,8 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
     local_matrix_t CK( N3, N );
     local_matrix_t DK( N3, N3 );
     local_vector_t FK( N );
-    local_vector_t F3K( N3 );
+    local_vector_t DKF( N3 );
+    local_vector_t F2( N3 );
     for( ; it != en ; ++it )
     {
         auto key = it->first;
@@ -169,10 +174,191 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         LOG(INFO) << "A01K.t=" << A01K.at(key).transpose();
         AK.bottomRightCorner(N1, N1 ) = A11K.at(key);
         LOG(INFO) << "A11K=" << A11K.at(key);
+
+        A22 = local_matrix_t::Zero(N3,N3);
+        A20 = local_matrix_t::Zero(N3,N0);
+        A21 = local_matrix_t::Zero(N3,N1);
+        CK = local_matrix_t::Zero(N3,N);
+        F2 = local_vector_t::Zero(N3);
+
+        LOG(INFO) << "AK=" << AK;
+        // dK contains the set of faces ids in the submesh associated to the boundary of K
+        auto dK = e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
+        LOG(INFO) << "element K faceids: " << e1.mesh()->element(key.first).facesId();
+        LOG(INFO) << "dK=" << dK;
+        int n = 0;
+        local_matrix_t B0K(N0,N3);
+        local_matrix_t B1K(N1,N3);
+        std::for_each( dK.begin(), dK.end(), [&]( auto dKi )
+                       {
+                           auto key2 = std::make_pair(key.first, dKi );
+                           auto key3 = std::make_pair(dKi,key.first);
+                           LOG(INFO) << "dKi=" << key2;
+                           if ( A02K.find(key2) == A02K.end() )
+                           {
+                               LOG(INFO) << "A02K not ok";
+                               return;
+                           }
+
+                           if ( A12K.find(key2) == A12K.end() )
+                           {
+                               LOG(INFO) << "A12K not ok";
+                               return;
+                           }
+                           BK.block(0, n*N2, N0, N2 ) = A02K.at(key2);
+                           if ( A20K.count(key3) )
+                               CK.block(n*N2, 0, N2, N0 ) = A20K.at(key3);
+
+                           if ( F2K.count(dKi) )
+                           {
+                               F2.segment(n*N2,N2)=F2K.at(dKi);
+
+                           }
+                           B0K.block(0, n*N2, N0, N2 ) = A02K.at(key2);
+
+                           A02K.at(key2);
+                           BK.block(N0,n*N2, N1, N2 ) = A12K.at(key2);
+                           if ( A21K.count(key3) )
+                               CK.block(n*N2, N0, N2, N1 ) = A21K.at(key3);
+                           B1K.block(0,n*N2, N1, N2 ) = A12K.at(key2);
+
+                           A22.block(n*N2, n*N2, N2, N2 ) = A22K.at(std::make_pair(dKi,dKi));
+
+                           ++n;
+                       } );
+        LOG(INFO) << "BK=" << BK;
+        FK.head(N0) = F0K.size()?F0K.at(K):local_vector_t::Zero( N0 );
+        FK.tail(N1) = F1K.at(K);
+        LOG(INFO) << "FK=" << FK;
+        if ( VLOG_IS_ON(2) )
+        {
+            cout<< "BK=" << BK << std::endl;
+            cout<< "B0K=" << B0K << std::endl;
+            cout<< "B1K=" << B1K << std::endl;
+            cout<< "CK=" << CK << std::endl;
+            cout<< "FK=" << FK << std::endl;
+            cout<< "F2=" << F2 << std::endl;
+        }
+
+
+
+
 #if 0
-        A22K = A22K.at(key);
-        LOG(INFO) << "A22K=" << A22K.at(key);
+        auto Aldlt = AK.ldlt();
+        //LOG(INFO) << "Aldlt=" << Aldlt;
+#else
+        auto Aldlt = AK.lu();
 #endif
+        auto AinvB = Aldlt.solve( BK );
+        LOG(INFO) << "AinvB=" << AinvB;
+        auto AinvF = Aldlt.solve( FK );
+        LOG(INFO) << "AinvF=" << AinvF;
+
+        // loop over each face on boundary of K
+        auto pdK = e3.element( dK );
+        if ( VLOG_IS_ON(2))
+        {
+            cout << "pdK[before solve]=" << pdK << std::endl;
+        }
+        // now calculate  pdK
+        // local assemble DK and DKF
+        DK=-CK*AinvB+A22 ;
+        DKF=-CK*AinvF+F2;
+
+        // global assemble contribution to element K
+
+        auto dofs = e3.dofs(dK);
+#if 0
+        M_mat->addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
+        M_vec->addVector( dofs.data(), dofs.size(), DFK.data(), invalid_size_type_value, invalid_size_type_value );
+#else
+
+        pdK=DK.lu().solve(DKF);
+        if ( VLOG_IS_ON(2))
+        {
+            cout << "pdK[solve]=" << pdK << std::endl;
+        }
+        n = 0;
+        for( auto dKi: dK)
+        {
+            e3.assignE( dKi, pdK.segment(n*N2,N2) );
+            ++n;
+        }
+#endif
+
+        LOG(INFO) << "======= done";
+
+    }
+#if 0
+    M_mat->close();
+    M_vec->close();
+#endif
+
+}
+
+template<typename T>
+template<typename E1, typename E2, typename E3>
+void
+StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1& e1, E2& e2, E3 & e3 )
+{
+    using Feel::cout;
+
+    auto const& A00K = M_local_matrices[std::make_pair(0,0)];
+    LOG(INFO) << "A00K.size=" << A00K.size();
+    auto const& A10K = M_local_matrices[std::make_pair(1,0)];
+    LOG(INFO) << "A10K.size=" << A10K.size();
+    auto const& A01K = M_local_matrices[std::make_pair(0,1)];
+    LOG(INFO) << "A01K.size=" << A01K.size();
+    auto const& A11K = M_local_matrices[std::make_pair(1,1)];
+    LOG(INFO) << "A11K.size=" << A11K.size();
+    auto const& A02K = M_local_matrices[std::make_pair(0,2)];
+    LOG(INFO) << "A02K.size=" << A02K.size();
+    auto const& A12K = M_local_matrices[std::make_pair(1,2)];
+    LOG(INFO) << "A12K.size=" << A12K.size();
+    auto const& A20K = M_local_matrices[std::make_pair(2,0)];
+    LOG(INFO) << "A20K.size=" << A20K.size();
+    auto const& A21K = M_local_matrices[std::make_pair(2,1)];
+    LOG(INFO) << "A21K.size=" << A21K.size();
+    auto const& A22K = M_local_matrices[std::make_pair(2,2)];
+    LOG(INFO) << "A22K.size=" << A22K.size();
+
+    auto const& F0K = rhs->M_local_vectors[0];
+    LOG(INFO) << "F0K.size=" << F0K.size();
+    auto const& F1K = rhs->M_local_vectors[1];
+    LOG(INFO) << "F1K.size=" << F1K.size();
+    auto const& F2K = rhs->M_local_vectors[2];
+    LOG(INFO) << "F2K.size=" << F2K.size();
+
+    auto it = A00K.begin();
+    auto en = A00K.end();
+
+    int N = M_local_rows[std::make_pair(0,0)].begin()->second.size() + M_local_rows[std::make_pair(1,0)].begin()->second.size();
+    int N0 = M_local_rows[std::make_pair(0,0)].begin()->second.size();
+    int N1 = M_local_rows[std::make_pair(1,0)].begin()->second.size();
+    int N2 = M_local_cols[std::make_pair(0,2)].begin()->second.size();
+    int N3 = N2*e1.mesh()->numLocalTopologicalFaces();
+    cout << "N=" << N << " N0=" << N0 << " N1=" << N1 << " N2=" << N2 << std::endl;
+    local_matrix_t AK( N, N ),A00(N0,N0),A01(N0,N1),A10(N1,N0), A11(N1,N1);
+    local_matrix_t BK( N, N3 );
+    local_vector_t FK( N );
+    local_vector_t F2( N3 );
+    for( ; it != en ; ++it )
+    {
+        auto key = it->first;
+        size_type K = key.first;
+        LOG(INFO) << "======= Key=" << key ;
+        AK.topLeftCorner(N0, N0 ) = A00K.at(key);
+        A00=A00K.at(key);
+        LOG(INFO) << "A00K=" << A00K.at(key);
+        AK.bottomLeftCorner(N1, N0 ) = A10K.at(key);
+        LOG(INFO) << "A10K=" << A10K.at(key);
+        AK.topRightCorner(N0, N1 ) = A01K.at(key);
+        A01=A01K.at(key);
+        LOG(INFO) << "A01K=" << A01K.at(key);
+        LOG(INFO) << "A01K.t=" << A01K.at(key).transpose();
+        AK.bottomRightCorner(N1, N1 ) = A11K.at(key);
+        LOG(INFO) << "A11K=" << A11K.at(key);
+
         LOG(INFO) << "AK=" << AK;
         // dK contains the set of faces ids in the submesh associated to the boundary of K
         auto dK = e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
@@ -197,15 +383,7 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
                                return;
                            }
                            BK.block(0, n*N2, N0, N2 ) = A02K.at(key2);
-                           CK.block(n*N2, 0, N0, N2 ) = A20K.at(key2);
-                           //F3K.segment(n*N2)=F1K.at(K);
-                           B0K.block(0, n*N2, N0, N2 ) = A02K.at(key2);
-
-                           A02K.at(key2);
                            BK.block(N0,n*N2, N1, N2 ) = A12K.at(key2);
-                           CK.block(n*N2, N0, N1, N2 ) = A21K.at(key2);
-                           B1K.block(0,n*N2, N1, N2 ) = A12K.at(key2);
-
                            ++n;
                        } );
         LOG(INFO) << "BK=" << BK;
@@ -215,9 +393,6 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         if ( VLOG_IS_ON(2) )
         {
             cout<< "BK=" << BK << std::endl;
-            cout<< "B0K=" << B0K << std::endl;
-            cout<< "B1K=" << B1K << std::endl;
-            cout<< "CK=" << CK << std::endl;
             cout<< "FK=" << FK << std::endl;
         }
 
@@ -241,8 +416,10 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         auto pK = e2.element( { K } );
         if ( VLOG_IS_ON(2) )
         {
+            cout << "pdK=" << pdK << std::endl;
             cout << "uK=" << uK << std::endl;
             cout << "pK=" << pK << std::endl;
+
         }
         LOG(INFO) << "pdK=" << pdK;
         CHECK(pdK.size() == N2*e1.mesh()->numLocalTopologicalFaces() ) << "Invalid sizes " << pdK.size() << "," << N2*e1.mesh()->numLocalTopologicalFaces() << "," << N2 << "," << e1.mesh()->numLocalTopologicalFaces() ;
@@ -259,25 +436,10 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         LOG(INFO) << "upK=" << upK;
         e1.assignE( K, upK.head( N0 ) );
         e2.assignE( K, upK.tail( N1 ) );
-#if 0
-        // now calculate  pdK
-        // local assemble DK and DKF
-        DK=CK*AinvB+A22K;
-        DKF=CK*AinvF;
-        // global assemble contribution to element K
-
-        auto dofs = e3.dof(dK);
-        M_mat->addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
-        M_vec->addVector( dofs.data(), dofs.size(), DFK.data(), invalid_size_type_value, invalid_size_type_value );
-#endif
 
         LOG(INFO) << "======= done";
 
     }
-#if 0
-    M_mat->close();
-    M_vec->close();
-#endif
 
 }
 
