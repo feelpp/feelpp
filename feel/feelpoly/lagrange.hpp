@@ -485,11 +485,11 @@ public:
     /** @name  Methods
      */
     //@{
-    typedef Eigen::MatrixXd local_interpolant_type;
+    typedef Eigen::VectorXd local_interpolant_type;
     local_interpolant_type
     localInterpolant( int n = 1 ) const
         {
-            return local_interpolant_type::Zero( n*nComponents*nLocalDof, 1 );
+            return local_interpolant_type::Zero( n*nComponents*nLocalDof );
         }
 
     template<typename ExprType>
