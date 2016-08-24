@@ -1297,13 +1297,13 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                 M_exporter->step( time )->add(prefixvm(M_prefix, "flux"), Idhv?(*Idhv)( *M_up):*M_up );
                 if (M_integralCondition)
                 {
-		    double meas = 0.0;
+		            double meas = 0.0;
                     double j_integral = 0;
                     for( auto marker : this->M_integralMarkersList)
                     {
                         LOG(INFO) << "exporting integral flux at time " << time << " on marker " << marker;
                         j_integral += integrate(_range=markedfaces(M_mesh,marker),_expr=trans(idv(M_up))*N()).evaluate()(0,0);
-			meas += integrate(_range=markedfaces(M_mesh,marker),_expr=cst(1.0)).evaluate()(0,0);
+			            meas += integrate(_range=markedfaces(M_mesh,marker),_expr=cst(1.0)).evaluate()(0,0);
                     }
                     M_exporter->step( time )->add(prefixvm(M_prefix, "integralFlux"), j_integral);
 		    M_exporter->step( time )->add(prefixvm(M_prefix, "integralVelocity"), j_integral/meas);
@@ -1374,7 +1374,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
 
 		}
 			
-            } else
+            } else if ( field != "state variable" )
             {
        		// Import data
 		LOG(INFO) << "importing " << field << " at time " << time;

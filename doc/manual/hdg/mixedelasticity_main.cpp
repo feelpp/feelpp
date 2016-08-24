@@ -36,10 +36,47 @@ int main(int argc, char *argv[])
     auto ME = me_type::New("mixedelasticity");
     auto mesh = loadMesh( _mesh=new me_type::mesh_type );
     
-    ME -> init(mesh);
-    ME -> solve();
-	ME -> exportResults(mesh);
+    decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<1>(mesh) ) ) Idh ;
+    decltype( IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(mesh), _imageSpace=Pdhms<1>(mesh) ) ) Idhv;
+    
+	if ( soption("gmsh.submesh").empty() )
+	{
+		ME -> init(mesh);
+	} 
+	else
+	{
+		Feel::cout << "Using submesh: " << soption("gmsh.submesh") << std::endl;
+		std::list<std::string> listSubmeshes;
+		listSubmeshes.push_back( soption("gmsh.submesh") );
+		if ( !soption("gmsh.submesh2").empty() )
+		{
+			Feel::cout << "Using submesh 2: " << soption("gmsh.submesh2") << std::endl;
+			listSubmeshes.push_back( soption("gmsh.submesh2") );
+		}
+		auto cmesh = createSubmesh( mesh, markedelements(mesh,listSubmeshes), Environment::worldComm() );
+		Idh = IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(cmesh), _imageSpace=Pdhv<1>(mesh) );
+    	Idhv = IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(cmesh), _imageSpace=Pdhms<1>(mesh) );
+    	ME -> init( cmesh, mesh );
+	}
  
+    if ( ME -> isStationary() )
+    {
+        ME->solve();
+        ME->exportResults( mesh );
+    }
+    else
+    {
+    	for ( ; !ME->timeStepBase()->isFinished() ; ME->updateTimeStep() )
+        {
+        	Feel::cout << "============================================================\n";
+        	Feel::cout << "time simulation: " << ME->time() << "s \n";
+        	Feel::cout << "============================================================\n";
+        	ME->solve();
+        	ME->exportResults( mesh , Idh, Idhv );
+        }
+     }
+     
+
     return 0;
 }
 
