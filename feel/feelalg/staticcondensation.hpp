@@ -172,10 +172,6 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         A22K = A22K.at(key);
         LOG(INFO) << "A22K=" << A22K.at(key);
         LOG(INFO) << "AK=" << AK;
-        local_matrix_t Z=(AK-AK.transpose());
-        cout << "Z=" << Z << std::endl;
-        cout << "AK=" << AK << std::endl;
-        cout << "AK.T="  << AK.transpose() << std::endl;
         // dK contains the set of faces ids in the submesh associated to the boundary of K
         auto dK = e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
         LOG(INFO) << "element K faceids: " << e1.mesh()->element(key.first).facesId();
@@ -202,24 +198,29 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
                            CK.block(n*N2, 0, N0, N2 ) = A20K.at(key2);
                            //F3K.segment(n*N2)=F1K.at(K);
                            B0K.block(0, n*N2, N0, N2 ) = A02K.at(key2);
-                           cout << "BK.block(0, " << n*N2 << "," << N0 <<  N2 << " ) = " << BK.block(0, n*N2, N0, N2 ) << std::endl;
+
                            A02K.at(key2);
                            BK.block(N0,n*N2, N1, N2 ) = A12K.at(key2);
                            CK.block(n*N2, N0, N1, N2 ) = A21K.at(key2);
                            B1K.block(0,n*N2, N1, N2 ) = A12K.at(key2);
-                           cout << "BK.block(" << N0 << ", " << n*N2 << "," << N1 <<  N2 << " ) = " << BK.block(N0, n*N2, N1, N2 ) << std::endl;
+
                            ++n;
                        } );
         LOG(INFO) << "BK=" << BK;
-        cout<< "BK=" << BK << std::endl;
-        cout<< "B0K=" << B0K << std::endl;
-        cout<< "B1K=" << B1K << std::endl;
-        cout<< "CK=" << CK << std::endl;
         FK.head(N0) = F0K.size()?F0K.at(K):local_vector_t::Zero( N0 );
         FK.tail(N1) = F1K.at(K);
-
         LOG(INFO) << "FK=" << FK;
-        cout<< "FK=" << FK << std::endl;
+        if ( VLOG_IS_ON(2) )
+        {
+            cout<< "BK=" << BK << std::endl;
+            cout<< "B0K=" << B0K << std::endl;
+            cout<< "B1K=" << B1K << std::endl;
+            cout<< "CK=" << CK << std::endl;
+            cout<< "FK=" << FK << std::endl;
+        }
+
+
+
 
 #if 0
         auto Aldlt = AK.ldlt();
@@ -235,38 +236,46 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         // loop over each face on boundary of K
         auto pdK = e3.element( dK );
         auto uK = e1.element( { K } );
-        cout << "uK=" << uK << std::endl;
         auto pK = e2.element( { K } );
-        cout << "pK=" << pK << std::endl;
+        if ( VLOG_IS_ON(2) )
+        {
+            cout << "uK=" << uK << std::endl;
+            cout << "pK=" << pK << std::endl;
+        }
         LOG(INFO) << "pdK=" << pdK;
         CHECK(pdK.size() == N2*e1.mesh()->numLocalTopologicalFaces() ) << "Invalid sizes " << pdK.size() << "," << N2*e1.mesh()->numLocalTopologicalFaces() << "," << N2 << "," << e1.mesh()->numLocalTopologicalFaces() ;
-        cout << "A00*uK=" << A00*uK << std::endl;
-        cout << "A01*pK=" << A01*pK << std::endl;
-        cout << "B0K*pdK=" << B0K*pdK << std::endl;
-        cout << "A10*uK=" << A10*uK << std::endl;
-        cout << "A11*pK=" << A11*pK << std::endl;
-        cout << "B1K*pdK=" << B1K*pdK << std::endl;
+        if ( VLOG_IS_ON(2) )
+        {
+            cout << "A00*uK=" << A00*uK << std::endl;
+            cout << "A01*pK=" << A01*pK << std::endl;
+            cout << "B0K*pdK=" << B0K*pdK << std::endl;
+            cout << "A10*uK=" << A10*uK << std::endl;
+            cout << "A11*pK=" << A11*pK << std::endl;
+            cout << "B1K*pdK=" << B1K*pdK << std::endl;
+        }
         Eigen::VectorXd upK = -AinvB*pdK + AinvF;
         LOG(INFO) << "upK=" << upK;
         e1.assignE( K, upK.head( N0 ) );
         e2.assignE( K, upK.tail( N1 ) );
-
+#if 0
         // now calculate  pdK
         // local assemble DK and DKF
-        DK=CK*Ainv+A22K;
+        DK=CK*AinvB+A22K;
         DKF=CK*AinvF;
         // global assemble contribution to element K
-#if 0
+
         auto dofs = e3.dof(dK);
         M_mat->addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
-         M_vec->addVector( dofs.data(), dofs.size(), DFK.data(), invalid_size_type_value, invalid_size_type_value );
+        M_vec->addVector( dofs.data(), dofs.size(), DFK.data(), invalid_size_type_value, invalid_size_type_value );
 #endif
 
         LOG(INFO) << "======= done";
 
     }
+#if 0
     M_mat->close();
     M_vec->close();
+#endif
 
 }
 
