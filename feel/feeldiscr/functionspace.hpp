@@ -2337,6 +2337,51 @@ public:
             size_type index = M_functionspace->dof()->localToGlobal( ie, il, c ).index();
             super::operator[]( index ) += __v;
         }
+        local_interpolant_type element( std::vector<size_type> const& e ) const
+            {
+                local_interpolant_type l( M_functionspace->basis()->localInterpolant(e.size()) ) ;
+                int s = l.size()/e.size();
+                int n = 0;
+                std::for_each( e.begin(), e.end(), [&]( auto const& id ){
+
+                        for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
+                        {
+                            size_type index = ldof.second.index();
+                            l( n*s+ldof.first.localDof() ) = super::operator[]( index );
+                        }
+                        ++n;
+                    });
+                return l;
+
+            }
+        template<typename Tloc>
+        void assignE( size_type e, Tloc loc )
+            {
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
+                for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                {
+                    size_type index = ldof.second.index();
+                    super::operator[]( index ) = s(ldof.first.localDof())*loc( ldof.first.localDof() );
+                }
+            }
+        void assign( size_type e, local_interpolant_type const& Ihloc )
+            {
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
+                for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                {
+                    size_type index = ldof.second.index();
+                    super::operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
+                }
+            }
+        void plus_assign( size_type e, local_interpolant_type const& Ihloc )
+            {
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
+                for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                {
+                    size_type index = ldof.second.index();
+                    super::operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
+                }
+            }
 
         void assign( geoelement_type const& e, local_interpolant_type const& Ihloc )
         {
