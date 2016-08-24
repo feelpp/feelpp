@@ -170,7 +170,7 @@ public:
     size_type idElement1() const { return boost::get<1>( M_element1 ); }
     uint16_type idInElement1() const { return boost::get<2>( M_element1 ); }
     rank_type pidElement1() const { return boost::get<3>( M_element1 ); }
-    
+
     size_type ad_first() const
     {
         return boost::get<1>( M_element0 );
@@ -516,7 +516,7 @@ public:
     typedef GeoElement0D<Dim,SubFace,T> self_type;
 #if 0
     using element_type = typename mpl::if_<mpl::bool_<SubFace::nDim==0>,
-                                           mpl::identity<self_type>, 
+                                           mpl::identity<self_type>,
                                            mpl::identity<typename SubFace::template Element<self_type>::type> >::type::type ;
 #else
     using element_type = self_type;
@@ -572,7 +572,7 @@ public:
 
     GeoElement0D & operator = ( GeoElement0D const& g ) = default;
     GeoElement0D & operator = ( GeoElement0D && g ) = default;
-    
+
     template<typename SF>
     GeoElement0D & operator = ( GeoElement0D<Dim,SF,T> const & g )
     {
@@ -1007,7 +1007,13 @@ public:
     {
         return std::make_pair( M_vertices.begin(), M_vertices.end() );
     }
-
+    std::vector<size_type> facesId() const
+        {
+            std::vector<size_type> fid;
+            std::for_each( M_vertices.begin(), M_vertices.end(),
+                           [&fid]( auto const& f ) { fid.push_back(f->id()); } );
+            return fid;
+        }
     /**
      * \sa edgePermutation(), permutation()
      */
@@ -1378,6 +1384,13 @@ public:
         return std::make_pair( M_edges.begin(), M_edges.end() );
     }
 
+    std::vector<size_type> facesId() const
+        {
+            std::vector<size_type> fid;
+            std::for_each( M_edges.begin(), M_edges.end(),
+                           [&fid]( auto const& f ) { fid.push_back(f->id()); } );
+            return fid;
+        }
     void disconnectSubEntities()
     {
         for(unsigned int i = 0; i<numLocalEdges;++i)
@@ -1747,6 +1760,13 @@ public:
     {
         return std::make_pair( M_faces.begin(), M_faces.end() );
     }
+    std::vector<size_type> facesId() const
+        {
+            std::vector<size_type> fid;
+            std::for_each( M_faces.begin(), M_faces.end(),
+                           [&fid]( auto const& f ) { fid.push_back(f->id()); } );
+            return fid;
+        }
 private:
 
     friend class boost::serialization::access;
@@ -1794,6 +1814,6 @@ hasFaceWithMarker( EltType const& e, boost::any const& flag )
     }
     return false;
 }
-    
+
 } // Feel
 #endif
