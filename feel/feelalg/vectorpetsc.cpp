@@ -173,7 +173,7 @@ VectorPetsc<T>::add ( const size_type i, const value_type& value )
 
 template <typename T>
 void
-VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
+VectorPetsc<T>::addVector ( int* i, int n, value_type* v, size_type K, size_type K2 )
 {
     //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
 
@@ -183,7 +183,7 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
     int ierr=0;
     ierr = VecSetValues ( M_vec, n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
-
+    this->addLocalVector( i, n, v, K );
 }
 template <typename T>
 typename VectorPetsc<T>::value_type
@@ -1281,7 +1281,7 @@ VectorPetscMPI<T>::add ( const size_type i, const value_type& value )
 
 template <typename T>
 void
-VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v )
+VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v, size_type K, size_type K2 )
 {
     DCHECK( this->isInitialized() ) << "vector not initialized";
     DCHECK(n<=this->size()) << "invalid local index array size: " << n << " > " << this->size();
@@ -1292,6 +1292,8 @@ VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v )
     int ierr=0;
     ierr=VecSetValuesLocal( this->vec(), n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
+
+    this->addLocalVector( i, n, v, K, K2 );
 }
 
 //----------------------------------------------------------------------------------------------------//

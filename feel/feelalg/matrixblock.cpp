@@ -34,7 +34,7 @@
 namespace Feel
 {
 namespace detail {
-    
+
     template<typename T>
     typename Backend<T>::ptrtype backend( T t  ) {}
 
@@ -43,8 +43,8 @@ namespace detail {
 
     template<>
     Backend<std::complex<double>>::ptrtype backend( std::complex<double> t  ) { return Feel::cbackend(); }
-    
-        
+
+
 
 }
 
@@ -159,7 +159,7 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & bloc
 
 
 template <typename T>
-MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & blockgraph, 
+MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & blockgraph,
                                      backend_ptrtype backend,
                                      bool diag_is_nonzero )
     :
@@ -335,9 +335,10 @@ template <typename T>
 void
 MatrixBlockBase<T>::addMatrix ( int* rows, int nrows,
                                 int* cols, int ncols,
-                                value_type* data )
+                                value_type* data,
+                                size_type K, size_type K2  )
 {
-    M_mat->addMatrix( rows,nrows,cols,ncols,data );
+    M_mat->addMatrix( rows,nrows,cols,ncols,data, K, K2 );
 }
 
 template <typename T>

@@ -67,6 +67,7 @@
 #include <feel/feelalg/enums.hpp>
 #include <feel/feelalg/graphcsr.hpp>
 #include <feel/feelalg/vector.hpp>
+#include <feel/feelalg/staticcondensation.hpp>
 
 namespace Feel
 {
@@ -88,7 +89,7 @@ template <typename T> inline std::ostream& operator << ( std::ostream& os, const
  * @author Christophe Prud'homme, 2005
  */
 template <typename T>
-class MatrixSparse
+class MatrixSparse : public boost::enable_shared_from_this<MatrixSparse<T> >
 {
 public:
 
@@ -101,9 +102,15 @@ public:
 
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
+    using sparse_matrix_ptrtype = boost::shared_ptr<MatrixSparse<T>>;
 
     typedef typename datamap_type::indexsplit_type indexsplit_type;
     typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
+
+    using sc_type = StaticCondensation<value_type>;
+    using sc_ptrtype = boost::shared_ptr<sc_type>;
+
+    enum Mode { STANDARD=0, STATIC_CONDENSATION = 1 };
 
     /**
      * Constructor; initializes the matrix to be empty, without any
@@ -347,7 +354,7 @@ public:
             checkProperties();
             return M_mprop.test( INDEFINITE );
         }
-    
+
     bool haveConsistentProperties() const
     {
         bool p1 = M_mprop.test( SINGULAR ) && M_mprop.test( POSITIVE_DEFINITE );
@@ -375,9 +382,9 @@ public:
         {
             std::ostringstream ostr;
             ostr << "Invalid matrix properties:\n"
-                 << "                   SPD: " << isSPD() << "\n"                
+                 << "                   SPD: " << isSPD() << "\n"
                  << "             SYMMETRIC: " << this->isSymmetric() << "\n"
-                 << "STRUCTURALLY_SYMMETRIC: " << isStructurallySymmetric() << "\n"                
+                 << "STRUCTURALLY_SYMMETRIC: " << isStructurallySymmetric() << "\n"
                  << "             HERMITIAN: " << isHermitian() << "\n"
                  << "         NON_HERMITIAN: " << isNonHermitian() << "\n"
                  << "              SINGULAR: " << isSingular() << "\n"
@@ -484,7 +491,15 @@ public:
      */
     virtual void addMatrix ( int* rows, int nrows,
                              int* cols, int ncols,
-                             value_type* data ) = 0;
+                             value_type* data, size_type K, size_type K2 ) = 0;
+
+    virtual void addLocalMatrix ( int* rows, int nrows,
+                                  int* cols, int ncols,
+                                  value_type* data, size_type K, size_type K2 )
+    {
+        M_sc->addLocalMatrix( rows, nrows, cols, ncols, data, K, K2 );
+    }
+
 
     /**
      * Same, but assumes the row and column maps are the same.
@@ -821,9 +836,9 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    virtual void zeroRows( std::vector<int> const& rows, 
-                           Vector<value_type> const& values, 
-                           Vector<value_type>& rhs, 
+    virtual void zeroRows( std::vector<int> const& rows,
+                           Vector<value_type> const& values,
+                           Vector<value_type>& rhs,
                            Context const& on_context,
                            value_type value_on_diagonal ) = 0;
 
@@ -885,18 +900,24 @@ public:
      * Get informations (filling, nnz, ...)
      * Implemented in MatrixPetsc
      */
-    virtual void getMatInfo( std::vector<double> &) 
+    virtual void getMatInfo( std::vector<double> &)
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
-    virtual void threshold( void ) 
+    virtual void threshold( void )
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
-
-
+    sc_ptrtype sc() { return M_sc; }
+    sc_ptrtype const& sc() const { return M_sc; }
+    sparse_matrix_ptrtype block( int row, int col )
+        {
+            //sc->setMatrix( this->shared_from_this() );
+            M_sc->block( row, col );
+            return this->shared_from_this();
+        }
 protected:
     /**
      * Protected implementation of the create_submatrix and reinit_submatrix
@@ -940,7 +961,7 @@ protected:
     //! col data distribution in matrix
     datamap_ptrtype M_mapCol;
 
-
+    sc_ptrtype M_sc;
 };
 
 typedef MatrixSparse<double> d_sparse_matrix_type;
@@ -956,7 +977,8 @@ MatrixSparse<T>::MatrixSparse( WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
     M_is_initialized( false ),
     M_is_closed( false ),
-    M_mprop( NON_HERMITIAN )
+    M_mprop( NON_HERMITIAN ),
+    M_sc( new sc_type )
 {}
 
 template <typename T>
@@ -967,7 +989,8 @@ MatrixSparse<T>::MatrixSparse ( datamap_ptrtype const& dmRow, datamap_ptrtype co
     M_is_closed( false ),
     M_mprop( NON_HERMITIAN ),
     M_mapRow( dmRow ),
-    M_mapCol( dmCol )
+    M_mapCol( dmCol ),
+    M_sc( new sc_type )
 {}
 
 template <typename T>

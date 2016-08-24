@@ -113,7 +113,9 @@ template<typename T>
 void
 MatrixEigenSparse<T>::addMatrix ( int* rows, int nrows,
                                  int* cols, int ncols,
-                                 value_type* data )
+                                  value_type* data,
+                                  size_type K,
+                                  size_type K2)
 {
 
     for( int i=0; i < nrows; ++i )
@@ -376,7 +378,7 @@ inline
 void MatrixEigenSparse<T>::getMatInfo(std::vector<double> &vec)
 {
     /* block size        */ vec.push_back(-1);
-    /* nz allocated      */ vec.push_back(M_mat->nonZeros()); 
+    /* nz allocated      */ vec.push_back(M_mat->nonZeros());
     /* nz uzed           */ vec.push_back(M_mat->nonZeros());
     /* nz unneeded       */ vec.push_back(-1);
     /* memory            */ vec.push_back(-1);
@@ -386,7 +388,7 @@ void MatrixEigenSparse<T>::getMatInfo(std::vector<double> &vec)
     /* fill ratio needed */ vec.push_back(-1);
     /* factor mallocs    */ vec.push_back(-1);
 }
-#endif 
+#endif
 //
 // Explicit instantiations
 //
