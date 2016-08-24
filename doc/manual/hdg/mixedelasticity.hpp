@@ -537,8 +537,8 @@ MixedElasticity<Dim, Order, G_Order>::solve()
 	auto M_U = M_backend->newBlockVector(_block=U,_copy_values= false);
 	M_backend->solve(_matrix=M_A_cst, _rhs = M_F , _solution=M_U) ;
 	U.localize(M_U);	
-    M_up = U[0_c];
-    M_pp = U[1_c];
+    M_up = U(0_c);
+    M_pp = U(1_c);
    
     toc("solve");
 }
