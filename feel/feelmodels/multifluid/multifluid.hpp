@@ -97,6 +97,7 @@ public:
     // Models
     fluid_ptrtype const& fluidModel() const { return M_fluid; }
     levelset_ptrtype const& levelsetModel(uint16_type n) const { return M_levelsets.at(n); }
+    uint16_type nLevelsets() const { return M_levelsets.size(); }
     //--------------------------------------------------------------------//
     bool hasSurfaceTension() const { return M_enableSurfaceTension; }
     bool hasInterfaceForces() const;

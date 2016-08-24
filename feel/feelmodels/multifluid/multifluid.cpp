@@ -267,7 +267,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("MultiFluid","exportResults", "start");
 
     M_fluid->exportResults(time);
-    M_globalLevelset->exportResults(time);
+
+    if( this->nLevelsets() > 1 )
+        M_globalLevelset->exportResults(time);
+
     for( uint16_type i = 0; i < M_levelsets.size(); ++i)
     {
         M_levelsets[i]->exportResults(time);
