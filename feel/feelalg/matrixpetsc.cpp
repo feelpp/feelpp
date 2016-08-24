@@ -864,7 +864,9 @@ template <typename T>
 void
 MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
                             int* cols, int ncols,
-                            value_type* data )
+                            value_type* data,
+                            size_type K,
+                            size_type K2 )
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
 
@@ -876,6 +878,7 @@ MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
                          ncols, ( int* ) cols,
                          ( PetscScalar* ) data,
                          ADD_VALUES );
+    this->addLocalMatrix( rows, nrows, cols, ncols, data, K, K2 );
     CHKERRABORT( this->comm(),ierr );
 }
 
@@ -2647,7 +2650,9 @@ template <typename T>
 void
 MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
                               int* cols, int ncols,
-                              value_type* data )
+                              value_type* data,
+                              size_type K,
+                              size_type K2)
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
     /*for (int k=0;k<nrows;++k)
@@ -2666,6 +2671,7 @@ MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
                               ( PetscScalar* ) data,
                               ADD_VALUES );
 
+    this->addLocalMatrix( rows, nrows, cols, ncols, data, K, K2 );
     CHKERRABORT( this->comm(),ierr );
 }
 

@@ -28,6 +28,7 @@
 #include <feel/feelcore/traits.hpp>
 
 #include <feel/feelalg/datamap.hpp>
+#include <feel/feelalg/staticcondensation.hpp>
 
 namespace Feel
 {
@@ -47,7 +48,7 @@ template <typename T> class MatrixShell;
  * @author Christophe Prud'homme 2005
  */
 template <typename T>
-class Vector
+class Vector : public boost::enable_shared_from_this<Vector<T> >
 {
 public:
 
@@ -60,6 +61,10 @@ public:
 
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
+    using vector_ptrtype = boost::shared_ptr<Vector<T>>;
+
+    using sc_type = StaticCondensation<value_type>;
+    using sc_ptrtype = boost::shared_ptr<sc_type>;
     /**
      *  Dummy-Constructor. Dimension=0
      */
@@ -409,7 +414,11 @@ public:
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
      */
-    virtual void addVector ( int* i, int n, value_type* v ) = 0;
+    virtual void addVector ( int* i, int n, value_type* v, size_type K, size_type K2 ) = 0;
+    virtual void addLocalVector ( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_size_type_value)
+        {
+            M_sc->addLocalVector( i, n, v, K, K2 );
+        }
 
     /**
      * \f$U(0-DIM)+=s\f$.
@@ -616,6 +625,13 @@ public:
             return res;
         }
 
+    sc_ptrtype sc() { return M_sc; }
+    sc_ptrtype const& sc() const { return M_sc; }
+    vector_ptrtype block( int row )
+        {
+            M_sc->block( row );
+            return this->shared_from_this();
+        }
 protected:
 
     /**
@@ -634,6 +650,8 @@ protected:
      * data distribution map of the vector over the processors
      */
     datamap_ptrtype M_map;
+
+    sc_ptrtype M_sc;
 };
 
 typedef Vector<double> vector_type;

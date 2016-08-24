@@ -39,7 +39,9 @@ set( SRC
   preconditioner.cpp
   backend.cpp  matrixshellsparse.cpp
   graphcsr.cpp  solvereigen.cpp
+  matrixsparse.cpp
   matrixeigendense.cpp backendeigen.cpp vectoreigen.cpp matrixeigensparse.cpp
+  staticcondensation.cpp
   solvernonlinear.cpp matrixblock.cpp vectorblock.cpp nullspace.cpp
   ${FEELPP_PETSC_SRCS}
   ${FEELPP_SLEPC_SRCS}
