@@ -22,5 +22,22 @@
                 }
             }
         }
+    },
+    "BoundaryConditions":
+    {
+        "levelset":
+        {
+            "inflow":
+            {
+                "Left":
+                {
+                    "expr":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "PhysicalQuantities": ["volume", "perimeter"]
     }
 }
