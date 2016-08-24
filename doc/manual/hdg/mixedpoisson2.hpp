@@ -199,14 +199,16 @@ public:
     M0h_ptr_t traceSpaceOrder0() const { return M_M0h; }
     Ch_ptr_t constantSpace() const {return M_Ch;}
 
-    Vh_element_ptr_t fluxField() const { return M_up; }
-    Wh_element_ptr_t potentialField() const { return M_pp; }
+    Vh_element_t fluxField() const { return M_up; }
+    Wh_element_t potentialField() const { return M_pp; }
     model_prop_type modelProperties() { return *M_modelProperties; }
     model_prop_type modelProperties() const { return *M_modelProperties; }
     std::vector<std::string> integralMarkersList() const { return M_integralMarkersList; }
     int integralCondition() const { return M_integralCondition; }
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
+	product2_space_ptrtype getPS() const { return M_ps; }
+	vector_ptrtype getF() { return M_F; }
 
     // time step scheme
     virtual void createTimeDiscretization() ;
@@ -228,14 +230,16 @@ public:
     exporter_ptrtype M_exporter;
     exporter_ptrtype exporterMP() { return M_exporter; }
 
-    void init( mesh_ptrtype mesh = nullptr, int extraRow = 0, int extraCol = 0, mesh_ptrtype meshVisu = nullptr);
+    void init( mesh_ptrtype mesh = nullptr, mesh_ptrtype meshVisu = nullptr);
 
     virtual void initModel();
     virtual void initSpaces();
     virtual void initExporter( mesh_ptrtype meshVisu = nullptr );
     virtual void assemble();
-    void assembleSTD();
-    void assembleF();
+	void assembleSTD();
+    void assembleFstd();
+	virtual void assembleF();
+
     void solve();
 
     template<typename ExprT>
@@ -246,6 +250,7 @@ public:
     template<typename ExprT>
     void updateFluxRHS( Expr<ExprT> expr, std::string marker = "");
     void assembleIBC(int i);
+    void assembleIBCRHS(int i);
 };
 
 template<int Dim, int Order, int G_Order>
@@ -294,7 +299,7 @@ MixedPoisson<Dim,Order,G_Order>::New( std::string const& prefix,
 
 template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh, int extraRow, int extraCol, mesh_ptrtype meshVisu )
+MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh, mesh_ptrtype meshVisu )
 {
     tic();
     if ( !mesh )
@@ -311,12 +316,20 @@ MixedPoisson<Dim, Order, G_Order>::init( mesh_ptrtype mesh, int extraRow, int ex
     this->initSpaces();
     toc("spaces");
 
+    if(!this->isStationary()){
+        tic();
+        this->createTimeDiscretization();
+        this->initTimeStep();
+        toc("timeDiscretization",true);
+    }
+
     tic();
     this->initExporter( meshVisu );
     toc("exporter");
 
     tic();
     this->assemble();
+    M_A_cst->close();
     toc("assemble");
 }
 
@@ -462,35 +475,50 @@ void
 MixedPoisson<Dim, Order, G_Order>::solve()
 {
     tic();
+    
+	// copy constant parts of the matrix
+    MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
+    M_modelProperties->parameters().updateParameterValues();
+
+    this->updateConductivityTerm();
+    this->assembleF();
+
     auto U = M_ps->element();
     M_U = M_backend->newBlockVector(_block=U, _copy_values=false);
     M_A->close();
     M_F->close();
     M_backend->solve(_matrix=M_A, _rhs=M_F, _solution=M_U);
-    U.localize(M_U);
+	toc("solve");
+    
+	// Extract information from the solution
+	U.localize(M_U);
     M_up = U(0_c);
     M_pp = U(1_c);
     for( int i = 0; i < M_integralCondition; i++ )
         M_mup.push_back(U(3_c,i));
-    toc("solve");
+
 }
 
 template<int Dim, int Order, int G_Order>
 void
 MixedPoisson<Dim, Order, G_Order>::assemble()
 {
-    tic();
-    this->assembleSTD();
-    toc("assembleSTD");
-    this->updateConductivityTerm();
-    this->assembleF();
-
-    tic();
+	this->assembleSTD();
     for( int i = 0; i < M_integralCondition; i++ )
         this->assembleIBC(i);
-    toc("assembleIBC");
-
 }
+
+
+template<int Dim, int Order, int G_Order>
+void
+MixedPoisson<Dim, Order, G_Order>::assembleF()
+{
+	
+    this->assembleFstd();
+    for( int i = 0; i < M_integralCondition; i++ )
+        this->assembleIBCRHS(i);
+}
+
 
 template<int Dim, int Order, int G_Order>
 void
@@ -646,16 +674,13 @@ MixedPoisson<Dim, Order, G_Order>::assembleSTD()
             }
         }
     }
-    M_A_cst->close();
-    MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
 }
 
 template<int Dim, int Order, int G_Order>
 void
 MixedPoisson<Dim, Order, G_Order>::assembleIBC( int i )
 {
-    auto bbf = blockform2( *M_ps, M_A );
-    auto blf = blockform1( *M_ps, M_F );
+    auto bbf = blockform2( *M_ps, M_A_cst );
     auto u = M_Vh->element( "u" );
     auto p = M_Wh->element( "p" );
     auto w = M_Wh->element( "w" );
@@ -674,6 +699,40 @@ MixedPoisson<Dim, Order, G_Order>::assembleIBC( int i )
         H.on( _range=elements(M_M0h->mesh()), _expr=h() );
     // stabilisation parameter
     auto tau_constant = cst(doption(prefixvm(M_prefix, "tau_constant")));
+    auto marker = M_integralMarkersList[i];
+
+    // <lambda, v.n>_Gamma_I
+    bbf( 0_c, 3_c, 0, i ) += integrate( _range=markedfaces(M_mesh,marker),
+                                        _expr=trans(id(u))*N()*idt(uI) );
+
+
+    // <lambda, tau w>_Gamma_I
+    bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(M_mesh,marker),
+                                        _expr=-tau_constant * ( pow(idv(H),M_tau_order)*id(w) ) * idt(uI) );
+
+    // <j.n, m>_Gamma_I
+    bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), _expr=trans(idt(u))*N()*id(nu) );
+
+    // <tau p, m>_Gamma_I
+    bbf( 3_c, 1_c, i, 1 ) += integrate( _range=markedfaces(M_mesh,marker),
+                                        _expr=tau_constant * ( pow(idv(H),M_tau_order)*idt(p) ) * id(nu) );
+
+    // -<lambda2, m>_Gamma_I
+    bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(M_mesh,marker),
+                                        _expr=-tau_constant * (pow(idv(H),M_tau_order)*id(nu)) *idt(uI) );
+
+}
+
+template<int Dim, int Order, int G_Order>
+void
+MixedPoisson<Dim, Order, G_Order>::assembleIBCRHS( int i )
+{
+    auto blf = blockform1( *M_ps, M_F );
+    auto u = M_Vh->element( "u" );
+    auto p = M_Wh->element( "p" );
+    auto w = M_Wh->element( "w" );
+    auto nu = M_Ch->element( "nu" );
+    auto uI = M_Ch->element( "uI" );
 
     auto itField = M_modelProperties->boundaryConditions().find( "flux");
     if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -687,27 +746,6 @@ MixedPoisson<Dim, Order, G_Order>::assembleIBC( int i )
                 std::string marker = exAtMarker.marker();
                 if ( marker == M_integralMarkersList[i] )
                 {
-                    // <lambda, v.n>_Gamma_I
-                    bbf( 0_c, 3_c, 0, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                                        _expr=trans(id(u))*N()*idt(uI) );
-
-
-                    // <lambda, tau w>_Gamma_I
-                    bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                                        _expr=-tau_constant * ( pow(idv(H),M_tau_order)*id(w) ) * idt(uI) );
-
-                    // <j.n, m>_Gamma_I
-                    bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), _expr=trans(idt(u))*N()*id(nu) );
-
-                    // <tau p, m>_Gamma_I
-                    bbf( 3_c, 1_c, i, 1 ) += integrate( _range=markedfaces(M_mesh,marker),
-                                                        _expr=tau_constant * ( pow(idv(H),M_tau_order)*idt(p) ) * id(nu) );
-
-                    // -<lambda2, m>_Gamma_I
-                    bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                                        _expr=-tau_constant * (pow(idv(H),M_tau_order)*id(nu)) *idt(uI) );
-
-
                     double meas = integrate( _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
                     if ( exAtMarker.isExpression() )
                     {
@@ -745,7 +783,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleIBC( int i )
 
 template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order, G_Order>::assembleF()
+MixedPoisson<Dim, Order, G_Order>::assembleFstd()
 {
     M_F->zero();
     auto blf = blockform1( *M_ps, M_F );
@@ -755,6 +793,11 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
     auto v = M_Vh->element();
 
     // Building the RHS
+
+    // (p_old,w)_Omega
+    if ( !this->isStationary() )
+        blf(1_c) += integrate( _range=elements(M_mesh),
+                               _expr= idv(this->timeStepBDF()->polyDeriv()) * id(w));
 
     auto itField = M_modelProperties->boundaryConditions().find( "potential");
     if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -772,11 +815,6 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                 // (f, w)_Omega
                 blf(1_c) += integrate( _range=markedelements(M_mesh,marker),
                                        _expr=g*id(w));
-                // (p_old,w)_Omega
-                if ( !this->isStationary() ){
-                blf(1_c) += integrate( _range=markedelements(M_mesh,marker),
-                                       _expr= idv(this->timeStepBDF()->polyDeriv()) * id(w));
-                }
             }
         }
 
@@ -1141,7 +1179,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                         }
                     }
                 }
-            } else
+            } else if ( field != "state variable" )
             {
                 // Import data
                 LOG(INFO) << "importing " << field << " at time " << time;
