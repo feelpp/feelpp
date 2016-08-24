@@ -2354,6 +2354,19 @@ public:
                 return l;
 
             }
+        std::vector<size_type> dofs( std::vector<size_type> const& e ) const
+            {
+                std::vector<size_type> d;
+                std::for_each( e.begin(), e.end(), [&]( auto const& id ){
+
+                        for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
+                        {
+                            d.push_back( ldof.second.index() );
+                        }
+                    });
+                return d;
+
+            }
         template<typename Tloc>
         void assignE( size_type e, Tloc loc )
             {
