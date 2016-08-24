@@ -262,6 +262,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
         this->postProcessMeasuresIO().setMeasure( "volume", this->volume() );
         hasMeasureToExport = true;
     }
+    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Perimeter ) )
+    {
+        this->postProcessMeasuresIO().setMeasure( "perimeter", this->perimeter() );
+        hasMeasureToExport = true;
+    }
 
     if ( hasMeasureToExport )
     {
@@ -543,6 +548,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
         {
             if( o == "volume" || o == "all" )
                 this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Volume );
+            if( o == "perimeter" || o == "all" )
+                this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Perimeter );
         }
     }
 }
@@ -1218,6 +1225,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
         this->postProcessMeasuresIO().setMeasure( "volume", this->volume() );
         hasMeasureToExport = true;
     }
+    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Perimeter ) )
+    {
+        this->postProcessMeasuresIO().setMeasure( "perimeter", this->perimeter() );
+        hasMeasureToExport = true;
+    }
 
     if( hasMeasureToExport )
     {
@@ -1242,12 +1254,26 @@ LEVELSET_CLASS_TEMPLATE_TYPE::volume() const
 {
     double volume = integrate(
             _range=elements(this->mesh()),
-            _expr=(1-idv(this->heaviside())) ).evaluate()(0,0);
+            _expr=(1-idv(this->heaviside())) 
+            ).evaluate()(0,0);
             //_expr=vf::chi( idv(this->phi())<0.0) ).evaluate()(0,0); // gives very noisy results
 
     return volume;
 }
 
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+double
+LEVELSET_CLASS_TEMPLATE_TYPE::perimeter() const
+{
+    double perimeter = integrate(
+            _range=elements(this->mesh()),
+            _expr=idv(this->dirac())
+            ).evaluate()(0,0);
+
+    return perimeter;
+}
+
+//----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::saveCurrent() const
