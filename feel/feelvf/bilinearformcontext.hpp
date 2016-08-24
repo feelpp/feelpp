@@ -766,8 +766,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             }
 
             M_form.addMatrix( M_c_local_rows.data(), M_c_local_rows.size(),
-                               M_c_local_cols.data(), M_c_local_cols.size(),
-                               M_c_rep.data() );
+                              M_c_local_cols.data(), M_c_local_cols.size(),
+                              M_c_rep.data(), elt_0 );
         }
     }
 
@@ -817,7 +817,7 @@ assemble( std::pair<size_type,size_type> const& elt )
 
         M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
                           M_local_cols.data(), M_local_cols.size(),
-                          M_rep.data() );
+                          M_rep.data(), elt_0, trial_eid );
     }
     else if ( UseMortarType == 1 )
     {
@@ -916,11 +916,11 @@ assemble( std::pair<size_type,size_type> const& elt_0,
         M_rep = M_rep_2.topLeftCorner(test_dof_type::nDofPerElement, trial_dof_type::nDofPerElement);
         M_form.addMatrix( M_local_rows_2.data(), test_dof_type::nDofPerElement,
                           M_local_cols_2.data(), trial_dof_type::nDofPerElement,
-                          M_rep.data() );
+                          M_rep.data(), test_elt_0, trial_elt_0 );//(nDimTest>nDimTrial)?test_elt_0:trial_elt_0 );
         M_rep = M_rep_2.bottomRightCorner(test_dof_type::nDofPerElement, trial_dof_type::nDofPerElement);
         M_form.addMatrix( M_local_rows_2.data()+test_dof_type::nDofPerElement,  test_dof_type::nDofPerElement,
                           M_local_cols_2.data()+trial_dof_type::nDofPerElement, trial_dof_type::nDofPerElement,
-                          M_rep.data() );
+                          M_rep.data(), test_elt_1, trial_elt_1 ); //(nDimTest>nDimTrial)?test_elt_1:trial_elt_1  );
     }
 }
 

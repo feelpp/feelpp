@@ -51,6 +51,9 @@ public:
     using mesh_type = typename underlying_functionspace_type::mesh_type;
     using mesh_ptrtype = typename underlying_functionspace_type::mesh_ptrtype;
 
+    /**
+     * construct a product of n identical spaces from mesh \p m
+     */
     ProductSpace( int n, mesh_ptrtype m  )
         :
         super( 1, underlying_functionspace_type::New( m ) ),
@@ -58,6 +61,33 @@ public:
         {
 
         }
+
+    /**
+     * construct a product of n spaces from a vector of  n different meshes
+     */
+    ProductSpace( std::vector<mesh_ptrtype> const& m )
+        :
+        super( m.size() ),
+        M_nspaces(m.size())
+        {
+            std::transform( this->begin(), this->end(), m.begin(),
+                            [] ( auto const& e ) { return underlying_functionspace_type::New(e); } );
+        }
+
+    /**
+     * construct a product of n spaces from a vector of n different spaces of
+     * the same type
+     */
+    ProductSpace( std::vector<underlying_functionspace_ptrtype> const& m )
+        :
+        super( m.begin(), m.end() ),
+        M_nspaces(m.size())
+    {
+    }
+
+    /**
+     * construct a product of n identical spaces
+     */
     ProductSpace( int n, underlying_functionspace_ptrtype X )
         :
         super( 1, X ),
@@ -66,6 +96,9 @@ public:
 
         }
 
+    /**
+     * @return the number of function spaces in the product
+     */
     int numberOfSpaces() const { return M_nspaces; }
 
     //! \return the total number of degrees of freedom
@@ -127,6 +160,7 @@ public:
     size_type M_nspaces;
 };
 
+
 template<typename... SpaceList>
 class ProductSpaces : public  hana::tuple<SpaceList...>, ProductSpacesBase
 {
@@ -171,6 +205,27 @@ public:
             {
                 return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*((*this)(n1,0)));
             }
+        template<typename N>
+        decltype(auto)
+            operator[]( N const& n1 )
+            {
+                return dynamic_cast<decltype(M_fspace[n1]->element())&>(*((*this)(n1,0)));
+            }
+
+        template<typename N>
+        decltype(auto)
+            operator()( N const& n1 ) const
+            {
+                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*(super::operator()(int(n1),0)));
+            }
+
+        template<typename N>
+        decltype(auto)
+        operator()( N const& n1 )
+            {
+                return dynamic_cast<decltype(M_fspace[n1]->element())&>(*(super::operator()(int(n1),0)));
+            }
+
         functionspace_type functionSpace() { return M_fspace; }
         //void zero() { super::zero(); }
         functionspace_type M_fspace;
