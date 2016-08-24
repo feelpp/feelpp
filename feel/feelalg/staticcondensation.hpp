@@ -169,8 +169,10 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         LOG(INFO) << "A01K.t=" << A01K.at(key).transpose();
         AK.bottomRightCorner(N1, N1 ) = A11K.at(key);
         LOG(INFO) << "A11K=" << A11K.at(key);
+#if 0
         A22K = A22K.at(key);
         LOG(INFO) << "A22K=" << A22K.at(key);
+#endif
         LOG(INFO) << "AK=" << AK;
         // dK contains the set of faces ids in the submesh associated to the boundary of K
         auto dK = e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
