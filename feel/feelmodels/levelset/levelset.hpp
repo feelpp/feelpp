@@ -77,7 +77,7 @@ enum class LevelSetReinitMethod {FM, HJ};
 
 enum class LevelSetMeasuresExported
 {
-    Volume
+    Volume, Perimeter
 };
 
 template<typename ConvexType, int Order=1, typename PeriodicityType = NoPeriodicity>
@@ -366,6 +366,7 @@ public:
     //--------------------------------------------------------------------//
     // Physical quantities
     double volume() const;
+    double perimeter() const;
 
     //--------------------------------------------------------------------//
     // Utility functions
