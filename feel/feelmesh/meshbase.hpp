@@ -430,6 +430,20 @@ public:
             return invalid_size_type_value;
         }
 
+    //! \return ids in sub mesh given the ids in the parent mesh
+    std::vector<size_type> meshToSubMesh( std::vector<size_type> const& p ) const
+        {
+            CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+            std::vector<size_type> sid;//(std::distance(p.first,p.second) );
+            std::for_each( p.begin(), p.end(), [&]( auto const& id ){
+                    //if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
+                        sid.push_back( M_smd->bm.right.find( id )->second );
+                    // the submesh element id has not been found, return invalid value
+                    //return invalid_size_type_value;
+                });
+            return sid;
+        }
+
     //! \return id in parent mesh given the id in the sub mesh
     size_type subMeshToMesh( boost::shared_ptr<MeshBase> m, size_type id ) const
         {
@@ -530,7 +544,7 @@ public:
             return true;
 
         }
-    
+
 
     /**
      * @return the id associated to the \p marker
@@ -652,7 +666,7 @@ private:
             ar & M_markername;
         }
 protected:
-    
+
     /**
      * marker name dictionnary ( std::string -> <int,int> )
      * get<0>() provides the id
@@ -671,7 +685,7 @@ private:
      * real dimension
      */
     uint16_type M_realdim;
-    
+
     /**
      * encodes components that should be updated
      */
