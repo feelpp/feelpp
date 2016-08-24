@@ -76,23 +76,27 @@ public :
                                                                  [&] (auto _) {
                                                                      cout << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
                                                                      return form2(_test=(*_(test_space))[s1],_trial=(*_(trial_space))[s2],
-                                                                                  _matrix=M_matrix, _rowstart=int(n1)+s1, _colstart=int(n2)+s2 );
+                                                                                  _name="bilinearform.a"s+"("+std::to_string(int(n1)+s1)+","s+std::to_string(int(n2)+s2)+")"s,
+                                                                                  _matrix=M_matrix->block(int(n1)+s1,int(n2)+s2), _rowstart=int(n1)+s1, _colstart=int(n2)+s2 );
                                                                  },
                                                                  [&] (auto _){
                                                                      cout << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
                                                                      return form2(_test=(*_(test_space))[s1],_trial=_(trial_space),
-                                                                                  _matrix=M_matrix, _rowstart=int(n1)+s1, _colstart=int(n2) );
+                                                                                  _name="bilinearform.a"s+"("+std::to_string(int(n1)+s1)+","s+std::to_string(int(n2))+")"s,
+                                                                                  _matrix=M_matrix->block(int(n1)+s1,int(n2)), _rowstart=int(n1)+s1, _colstart=int(n2) );
                                                                  }); },
                                  [&]( auto _ ) { return hana::eval_if( std::is_base_of<ProductSpaceBase,decay_type<decltype(trial_space)>>{},
                                                                  [&] (auto _) {
                                                                      cout << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
                                                                      return form2(_test=_(test_space),_trial=(*_(trial_space))[s2],
-                                                                                  _matrix=M_matrix, _rowstart=int(n1), _colstart=int(n2)+s2 );
+                                                                                  _name="bilinearform.a"s+"("+std::to_string(int(n1))+","s+std::to_string(int(n2)+s2)+")"s,
+                                                                                  _matrix=M_matrix->block(int(n1),int(n2)+s2), _rowstart=int(n1), _colstart=int(n2)+s2 );
                                                                  },
                                                                  [&] (auto _){
                                                                      cout << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
                                                                      return form2(_test=_(test_space),_trial=_(trial_space),
-                                                                                  _matrix=M_matrix, _rowstart=int(n1), _colstart=int(n2) );
+                                                                                  _name="bilinearform.a"s+"("+std::to_string(int(n1))+","s+std::to_string(int(n2))+")"s,
+                                                                                  _matrix=M_matrix->block(int(n1),int(n2)), _rowstart=int(n1), _colstart=int(n2) );
                                                                  }); });
 
 
@@ -134,7 +138,13 @@ public :
                                                                    _pre=pre,
                                                                    _post=post
                                                                    );
+
             solution.localize(U);
+            auto sc = this->matrixPtr()->sc();
+            this->matrixPtr()->printMatlab("A.m");
+            rhs.vectorPtr()->printMatlab("F.m");
+            sc->localSolve ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c) );
+
             return r;
         }
     product_space_t M_ps;
@@ -198,18 +208,18 @@ public :
             return hana::eval_if(std::is_base_of<ProductSpaceBase,decay_type<decltype(space)>>{},
                                  [&] (auto _) {
                                      cout << "filling out dyn vector block (" << int(n1) + s  << ")\n";
-                                     return form1(_test=(*_(space))[s],_vector=M_vector, _rowstart=int(n1)+s );
+                                     return form1(_test=(*_(space))[s],_vector=M_vector->block(int(n1)+s), _rowstart=int(n1)+s );
                                  },
                                  [&] (auto _){
                                      cout << "filling out vector block (" << n1  << ")\n";
-                                     return form1(_test=_(space),_vector=M_vector, _rowstart=int(n1) );
+                                     return form1(_test=_(space),_vector=M_vector->block(int(n1)), _rowstart=int(n1) );
                                  });
         }
 
     decltype(auto) operator()( int n1 )
         {
             cout << "filling out vector block (" << n1 << ")\n";
-            return form1(_test=M_ps[n1],_vector=M_vector, _rowstart=int(n1) );
+            return form1(_test=M_ps[n1],_vector=M_vector->block(int(n1)), _rowstart=int(n1) );
         }
     void close()
         {
