@@ -2354,9 +2354,9 @@ public:
                 return l;
 
             }
-        std::vector<size_type> dofs( std::vector<size_type> const& e ) const
+        std::vector<int> dofs( std::vector<size_type> const& e ) const
             {
-                std::vector<size_type> d;
+                std::vector<int> d;
                 std::for_each( e.begin(), e.end(), [&]( auto const& id ){
 
                         for( auto const& ldof : M_functionspace->dof()->localDof( id ) )

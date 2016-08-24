@@ -56,7 +56,7 @@ makeOptions()
         ( "tau_order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         // end{dp}
         ;
-    return testhdivoptions.add( Feel::feel_options() );
+    return testhdivoptions.add( Feel::feel_options() ).add( backend_options("sc") );
 }
 
 inline

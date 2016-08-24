@@ -143,7 +143,12 @@ public :
             auto sc = this->matrixPtr()->sc();
             //this->matrixPtr()->printMatlab("A.m");
             //rhs.vectorPtr()->printMatlab("F.m");
-            sc->solve ( rhs.vectorPtr()->sc(), solution(0_c), solution(2_c) );
+            auto& e3 = solution(2_c);
+            auto S = backend(_name="sc")->newMatrix( _test=e3.functionSpace(), _trial=e3.functionSpace(), _pattern=size_type(Pattern::EXTENDED)  );
+            auto V = backend(_name="sc")->newVector( _test=e3.functionSpace() );
+
+            sc->condense ( rhs.vectorPtr()->sc(), solution(0_c), solution(2_c), S, V );
+            backend(_name="sc")->solve( _matrix=S, _rhs=V, _solution=e3);
             sc->localSolve ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c) );
 
             return r;
