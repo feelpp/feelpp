@@ -44,8 +44,8 @@ public:
     using value_type = T;
 
     StaticCondensation() = default;
-    template<typename E1, typename E3>
-    void solve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1& e1, E3 & e3 );
+    template<typename E1, typename E3, typename M_ptrtype, typename V_ptrtype>
+    void condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1& e1, E3 & e3, M_ptrtype& S, V_ptrtype& V );
     template<typename E1, typename E2, typename E3>
     void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1& e1, E2& e2, E3 & e3 );
 
@@ -106,13 +106,12 @@ private:
     std::unordered_map<block_index_t,std::unordered_map<block_element_t,local_index_t,boost::hash<block_element_t>>,boost::hash<block_index_t>> M_local_cols;
     block_index_t M_block_rowcol;
     int M_block_row;
-
 };
 
 template<typename T>
-template<typename E1, typename E3>
+template<typename E1, typename E3, typename M_ptrtype, typename V_ptrtype>
 void
-StaticCondensation<T>::solve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1 &e1, E3 & e3 )
+StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1 &e1, E3 & e3, M_ptrtype& S, V_ptrtype& V )
 {
     using Feel::cout;
 
@@ -268,9 +267,13 @@ StaticCondensation<T>::solve( boost::shared_ptr<StaticCondensation<T>> const& rh
         // global assemble contribution to element K
 
         auto dofs = e3.dofs(dK);
-#if 0
-        M_mat->addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
-        M_vec->addVector( dofs.data(), dofs.size(), DFK.data(), invalid_size_type_value, invalid_size_type_value );
+        if ( VLOG_IS_ON(2))
+        {
+            LOG(INFO) << "dofs=" << dofs << std::endl;
+        }
+#if 1
+        S->addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
+        V->addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
 #else
 
         pdK=DK.lu().solve(DKF);
@@ -289,11 +292,6 @@ StaticCondensation<T>::solve( boost::shared_ptr<StaticCondensation<T>> const& rh
         LOG(INFO) << "======= done";
 
     }
-#if 0
-    M_mat->close();
-    M_vec->close();
-#endif
-
 }
 
 template<typename T>
