@@ -22,6 +22,8 @@ public:
     typedef typename space_type::element_type element_type;
     typedef typename space_type::element_ptrtype element_ptrtype;
 
+    static const uint16_type Dim = levelset_type::nDim;
+
     //--------------------------------------------------------------------//
     // Construction
     HelfrichForceModel() = default;
@@ -68,24 +70,48 @@ HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int imp
     {
         case 0:
         {
-#if FEELPP_DIM == 2
+//#if FEELPP_DIM == 2
+            //auto phi = this->levelset()->phi();
+            //auto n_l2 = this->levelset()->N();
+            //auto k_l2 = this->levelset()->K();
+            //auto t_int = vf::vec(trans(idv(n_l2)) * vf::oneY(),  - trans(idv(n_l2)) * vf::oneX() );
+            //auto modgradphi = this->levelset()->smoother()->project( sqrt( gradv( phi ) * trans(gradv(phi)) ) );
+            //auto AA = this->levelset()->projectorL2Vectorial()->project( - idv(k_l2) * idv(k_l2) / 2. * idv(n_l2) );
+            //auto BB = this->levelset()->smootherVectorial()->project( trans( trans(t_int) * ( ( gradv(modgradphi) * idv(k_l2) ) * t_int) / max(idv(modgradphi), 0.01) ) );
+            //auto Fc_global = this->levelset()->smootherVectorial()->project( this->bendingModulus() * ( divv( AA ) + divv( BB ) ) * trans(gradv( phi )) );
+            //*F += vf::project(
+                    //_space=this->levelset()->functionSpaceVectorial(), 
+                    //_range=elements(this->levelset()->mesh()), 
+                    ////idv(Fc_global) * idv(this->levelset()->D()) 
+                    //_expr=trans(gradv(phi))
+                    //);
+//#else
             auto phi = this->levelset()->phi();
-            auto n_l2 = this->levelset()->N();
-            auto k_l2 = this->levelset()->K();
-            auto t_int = vf::vec(trans(idv(n_l2)) * vf::oneY(),  - trans(idv(n_l2)) * vf::oneX() );
-            auto modgradphi = this->levelset()->smoother()->project( sqrt( gradv( phi ) * trans(gradv(phi)) ) );
-            auto AA = this->levelset()->projectorL2Vectorial()->project( - idv(k_l2) * idv(k_l2) / 2. * idv(n_l2) );
-            auto BB = this->levelset()->smootherVectorial()->project( trans( trans(t_int) * ( ( gradv(modgradphi) * idv(k_l2) ) * t_int) / max(idv(modgradphi), 0.01) ) );
-            auto Fc_global = this->levelset()->smootherVectorial()->project( this->bendingModulus() * ( divv( AA ) + divv( BB ) ) * trans(gradv( phi )) );
-            *F += vf::project(
-                    _space=this->levelset()->functionSpaceVectorial(), 
-                    _range=elements(this->levelset()->mesh()), 
-                    //idv(Fc_global) * idv(this->levelset()->D()) 
-                    _expr=trans(gradv(phi))
+            auto N = this->levelset()->N();
+            auto K = this->levelset()->K();
+            auto Id = vf::Id<Dim, Dim>();
+            auto NxN = idv(N)*trans(idv(N));
+            auto modGradPhiK = this->levelset()->smoother()->project( 
+                    sqrt( gradv(phi) * trans(gradv(phi)) ) * idv(K)
                     );
-#else
-            CHECK(false) << "TODO ! Helfrich force is not implemented in 3D yet.\n";
-#endif
+
+            auto Fb_par = this->levelset()->projectorL2Vectorial()->project(
+                    - idv(K)*idv(K)/2. * idv(N)
+                    );
+            auto Fb_ortho = this->levelset()->smootherVectorial()->project(
+                    (Id-NxN)*trans(gradv(modGradPhiK)) / sqrt( gradv(phi) * trans(gradv(phi)) )
+                    );
+            auto Fb_global = this->levelset()->smootherVectorial()->project(
+                    this->bendingModulus() * (divv(Fb_par) + divv(Fb_ortho)) * idv(N)
+                    );
+
+            *F += vf::project(
+                    _space=this->levelset()->functionSpaceVectorial(),
+                    _range=elements(this->levelset()->mesh()),
+                    _expr=idv(Fb_global) * idv(this->levelset()->D())
+                    );
+
+//#endif
         }
         break;
         default:
