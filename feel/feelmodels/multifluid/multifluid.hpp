@@ -141,7 +141,7 @@ private:
     // Parameters
     densityviscosity_model_ptrtype M_fluidDensityViscosityModel;
     std::vector<densityviscosity_model_ptrtype> M_levelsetDensityViscosityModels;
-    std::vector<interfaceforces_model_ptrtype> M_levelsetInterfaceForcesModels;
+    std::vector<std::vector<interfaceforces_model_ptrtype>> M_levelsetInterfaceForcesModels;
     //--------------------------------------------------------------------//
     // Forces
     bool M_enableSurfaceTension;
