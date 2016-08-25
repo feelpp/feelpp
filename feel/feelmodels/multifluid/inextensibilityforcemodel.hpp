@@ -121,7 +121,7 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
     }
 
     auto Ep = this->levelset()->projectorL2()->project(
-            _expr=max( idv(M_levelsetModGradPhi), 0. )
+            _expr=max( idv(M_levelsetModGradPhi)-cst(1.), 0. )
             );
     auto EpN = this->levelset()->projectorL2Vectorial()->project(
             _expr=idv(Ep)*idv(this->levelset()->N())
