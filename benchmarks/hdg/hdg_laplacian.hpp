@@ -56,7 +56,7 @@ makeOptions()
         ( "tau_order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         // end{dp}
         ;
-    return testhdivoptions.add( Feel::feel_options() ).add( backend_options("sc") );
+    return testhdivoptions.add( Feel::feel_options() ).add( backend_options("sc"));
 }
 
 inline
@@ -345,21 +345,21 @@ Hdg<Dim, OrderP>::convergence()
         cout << "a21 works fine" << std::endl;
 
         a(1_c,1_c) += integrate(_range=internalfaces(mesh),
-                                _expr=tau_constant *
+                                _expr=-tau_constant *
                                 ( leftfacet( pow(h(),M_tau_order)*idt(p))*leftface(id(w)) +
                                   rightfacet( pow(h(),M_tau_order)*idt(p))*rightface(id(w) )));
         a(1_c,1_c) += integrate(_range=boundaryfaces(mesh),
-                                _expr=(tau_constant * pow(h(),M_tau_order)*id(w)*idt(p)));
+                                _expr=-(tau_constant * pow(h(),M_tau_order)*id(w)*idt(p)));
 
         cout << "a22 works fine" << std::endl;
 
         a(1_c,2_c) += integrate(_range=internalfaces(mesh),
-                                _expr=-tau_constant * idt(phat) *
+                                _expr=tau_constant * idt(phat) *
                                 ( leftface( pow(h(),M_tau_order)*id(w) )+
                                   rightface( pow(h(),M_tau_order)*id(w) )));
 
         a(1_c,2_c) += integrate(_range=boundaryfaces(mesh),
-                                _expr=-tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
+                                _expr=tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
 
         cout << "a23 works fine" << std::endl;
 
@@ -384,7 +384,7 @@ Hdg<Dim, OrderP>::convergence()
         cout << "a32 works fine" << std::endl;
 
         a(2_c,2_c) += integrate(_range=internalfaces(mesh),
-                                _expr=-tau_constant * idt(phat) * id(l) * ( leftface( pow(h(),M_tau_order) )+
+                                _expr=-0.5*tau_constant * idt(phat) * id(l) * ( leftface( pow(h(),M_tau_order) )+
                                                                             rightface( pow(h(),M_tau_order) )));
         a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                                 _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );

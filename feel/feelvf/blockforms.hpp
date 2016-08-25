@@ -131,6 +131,7 @@ public :
                                          ) )
         {
             auto U = backend()->newBlockVector(_block=solution, _copy_values=false);
+            tic();
             auto r = backend( _name=name, _kind=kind, _rebuild=rebuild,
                               _worldcomm=Environment::worldComm() )->solve( _matrix=this->matrixPtr(),
                                                                    _rhs=rhs.vectorPtr(),
@@ -138,18 +139,38 @@ public :
                                                                    _pre=pre,
                                                                    _post=post
                                                                    );
+            toc("monolithic",FLAGS_v>0);
 
             solution.localize(U);
             auto sc = this->matrixPtr()->sc();
-            //this->matrixPtr()->printMatlab("A.m");
-            //rhs.vectorPtr()->printMatlab("F.m");
+#if 0
+            this->matrixPtr()->printMatlab("A.m");
+            rhs.vectorPtr()->printMatlab("F.m");
+#endif
             auto& e3 = solution(2_c);
-            auto S = backend(_name="sc")->newMatrix( _test=e3.functionSpace(), _trial=e3.functionSpace(), _pattern=size_type(Pattern::EXTENDED)  );
+            auto& e2 = solution(1_c);
+            auto& e1 = solution(0_c);
+            auto S = backend(_name="sc",_rebuild=true)->newMatrix( _test=e3.functionSpace(), _trial=e3.functionSpace(), _pattern=size_type(Pattern::EXTENDED)  );
             auto V = backend(_name="sc")->newVector( _test=e3.functionSpace() );
 
-            sc->condense ( rhs.vectorPtr()->sc(), solution(0_c), solution(2_c), S, V );
+            //e3.printMatlab("phat.m");
+            sc->condense ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c), S, V );
+            tic();
             backend(_name="sc")->solve( _matrix=S, _rhs=V, _solution=e3);
+            toc("sc.solve", FLAGS_v>0);
+            S->close();V->close();
+#if 0
+            S->printMatlab("S.m");
+            V->printMatlab("g.m");
+            e3.printMatlab("phat1.m");
+            e1.printMatlab("u.m");
+            e2.printMatlab("p.m");
+#endif
             sc->localSolve ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c) );
+#if 0
+            e1.printMatlab("u1.m");
+            e2.printMatlab("p1.m");
+#endif
 
             return r;
         }
