@@ -27,10 +27,12 @@
 #include <feel/feelts/bdf.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/thch.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/operations.hpp>
@@ -38,6 +40,7 @@
 #include <feel/feelvf/norm2.hpp>
 #include <feel/feelvf/on.hpp>
 #include <feel/feelvf/matvec.hpp>
+
 
 /** use Feel namespace */
 using namespace Feel;
@@ -83,7 +86,7 @@ public :
                                     _desc=domain( _name=( boost::format( "%1%-%2%-%3%-%4%" ) % soption(_name="gmsh.domain.shape") % Dim % O  % C<Dim,O,Dim>::type() ).str() ,
                                                   _dim=Dim, _order=O, _convex=C<Dim,O,Dim>::type()  ) );
 
-        auto Xh = Pch<2>( mesh );
+        auto Xh = Pch<3>( mesh );
         auto u = Xh->element();
         auto v = Xh->element();
 
@@ -96,17 +99,11 @@ public :
             BOOST_TEST_MESSAGE( "Check integral with mesh dim " << Dim << " order " << O << " convex " << (C<Dim,O,Dim>::type()) );
 
         ti.restart();
-        auto a = integrate( _range= elements( mesh ), _expr=laplacianv(u) ).evaluate();
-
+        auto c = normL2( _range=elements(mesh), _expr=laplacianv(u)-lapg );
         if ( Environment::rank() == 0 )
-            BOOST_TEST_MESSAGE( "  . [time int laplacian(u)=" << ti.elapsed() << "s] a=" << a );
+            BOOST_TEST_MESSAGE( "  . [time normL2 laplacianv(u)-" << lapg <<" =" << ti.elapsed() << "s] c=" <<  c );
 
-        ti.restart();
-        auto b = integrate( _range= elements( mesh ), _expr= lapg ).evaluate();
-
-        if ( Environment::rank() == 0 )
-            BOOST_TEST_MESSAGE( "  . [time int " << lapg <<" =" << ti.elapsed() << "s] b=" <<  b );
-        BOOST_CHECK_CLOSE( a(0,0), b(0,0), 1e-10 );
+        BOOST_CHECK_SMALL( c, 1e-9 );
     }
 };
 
@@ -136,23 +133,12 @@ public :
             BOOST_TEST_MESSAGE( "Check integral mesh dim " << Dim << " order " << O << " convex " << (C<Dim,O,Dim>::type())  );
 
         ti.restart();
-        auto a = integrate( _range= elements( mesh ), _expr=laplacianv(u) ).evaluate();
+        auto c = normL2( _range=elements(mesh), _expr=laplacianv(u)-lapg );
 
         if ( Environment::rank() == 0 )
-            BOOST_TEST_MESSAGE( "  . [time int laplacian(" << g << ")=" << ti.elapsed() << "s] a=" << a );
+            BOOST_TEST_MESSAGE( "  . [time normL2 laplacianv(u)-" << lapg <<" =" << ti.elapsed() << "s] c=" <<  c );
 
-        ti.restart();
-        auto b = integrate( _range= elements( mesh ), _expr= lapg ).evaluate();
-
-        if ( Environment::rank() == 0 )
-            BOOST_TEST_MESSAGE( "  . [time int " << lapg <<" =" << ti.elapsed() << "s] b=" <<  b );
-        
-        BOOST_CHECK_CLOSE( a(0,0), b(0,0), 1e-10 );
-        if ( Dim >= 2 )
-            BOOST_CHECK_CLOSE( a(1,0), b(1,0), 1e-10 );
-        if ( Dim >= 3 )
-            BOOST_CHECK_CLOSE( a(2,0), b(2,0), 1e-10 );
-            
+        BOOST_CHECK_SMALL( c, 1e-9 );
     }
 };
 
@@ -161,75 +147,94 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( inner_suite )
 
 #if 1
-BOOST_AUTO_TEST_CASE( test_21 )
+BOOST_AUTO_TEST_CASE( test_21_s )
 {
-    Test<2> test;
+    Test<2,1> test;
     test.run();
     BOOST_TEST_MESSAGE( "test_21" << tc::green << " OK" << tc::reset);
-                         
 }
 
-BOOST_AUTO_TEST_CASE( test_21_h_q1 )
-{
-    Test<2,1,Hypercube> test;
-    test.run();
-    BOOST_TEST_MESSAGE( "test_21_h_q1" << tc::green << " OK" << tc::reset);
-}
-
-BOOST_AUTO_TEST_CASE( test_21_g2 )
+BOOST_AUTO_TEST_CASE( test_22_s )
 {
     Test<2,2> test;
     test.run();
-    BOOST_TEST_MESSAGE( "test_21_g2" << tc::green << " OK" << tc::reset);
+    BOOST_TEST_MESSAGE( "test_22_s" << tc::green << " OK" << tc::reset);
 }
 
-BOOST_AUTO_TEST_CASE( testv_21 )
+BOOST_AUTO_TEST_CASE( test_31_s )
 {
-    TestV<2> test;
+    Test<3,1> test;
     test.run();
-    BOOST_TEST_MESSAGE( "testv_21" << tc::green << " OK" << tc::reset);
+    BOOST_TEST_MESSAGE( "test_31_s" << tc::green << " OK" << tc::reset);
 }
 
-BOOST_AUTO_TEST_CASE( testv_22_g2 )
+BOOST_AUTO_TEST_CASE( test_21_h )
 {
-    TestV<2,2> test;
+    Test<2,1,Hypercube> test;
     test.run();
-    BOOST_TEST_MESSAGE( "testv_21_g2" << tc::green << " OK" << tc::reset);
+    BOOST_TEST_MESSAGE( "test_21_h" << tc::green << " OK" << tc::reset);
 }
 
-BOOST_AUTO_TEST_CASE( test_22_g2_q2 )
+BOOST_AUTO_TEST_CASE( test_22_h )
 {
-    TestV<2,2,Hypercube> test;
+    Test<2,2,Hypercube> test;
     test.run();
-    BOOST_TEST_MESSAGE( "test_22_g2_q2" << tc::green << " OK" << tc::reset);
+    BOOST_TEST_MESSAGE( "test_22_h" << tc::green << " OK" << tc::reset);
 }
 
-BOOST_AUTO_TEST_CASE( test_31 )
-{
-    Test<3> test;
-    test.run();
-    BOOST_TEST_MESSAGE( "test_31" << tc::green << " OK" << tc::reset);
-}
-
-BOOST_AUTO_TEST_CASE( test_31_q1 )
+BOOST_AUTO_TEST_CASE( test_31_h )
 {
     Test<3,1,Hypercube> test;
     test.run();
-    BOOST_TEST_MESSAGE( "test_31_q1" << tc::green << " OK" << tc::reset);
+    BOOST_TEST_MESSAGE( "test_31_h" << tc::green << " OK" << tc::reset);
 }
 
-BOOST_AUTO_TEST_CASE( test_33 )
+
+// Vectorial
+
+BOOST_AUTO_TEST_CASE( testv_21_s )
 {
-    TestV<3> test;
-    test.run();
-    BOOST_TEST_MESSAGE( "testv_31" << tc::green << " OK" << tc::reset);
+    TestV<2,1> testv;
+    testv.run();
+    BOOST_TEST_MESSAGE( "testv_21" << tc::green << " OK" << tc::reset);
 }
-BOOST_AUTO_TEST_CASE( test_33_q1 )
+
+BOOST_AUTO_TEST_CASE( testv_22_s )
 {
-    TestV<3,1,Hypercube> test;
-    test.run();
-    BOOST_TEST_MESSAGE( "testv_31_q1" << tc::green << " OK" << tc::reset);
+    TestV<2,2> testv;
+    testv.run();
+    BOOST_TEST_MESSAGE( "testv_22_s" << tc::green << " OK" << tc::reset);
 }
+
+BOOST_AUTO_TEST_CASE( testv_31_s )
+{
+    TestV<3,1> testv;
+    testv.run();
+    BOOST_TEST_MESSAGE( "testv_31_s" << tc::green << " OK" << tc::reset);
+}
+
+BOOST_AUTO_TEST_CASE( testv_21_h )
+{
+    TestV<2,1,Hypercube> testv;
+    testv.run();
+    BOOST_TEST_MESSAGE( "testv_21_h" << tc::green << " OK" << tc::reset);
+}
+
+BOOST_AUTO_TEST_CASE( testv_22_h )
+{
+    TestV<2,2,Hypercube> testv;
+    testv.run();
+    BOOST_TEST_MESSAGE( "testv_22_h" << tc::green << " OK" << tc::reset);
+}
+
+BOOST_AUTO_TEST_CASE( testv_31_h )
+{
+    TestV<3,1,Hypercube> testv;
+    testv.run();
+    BOOST_TEST_MESSAGE( "testv_31_h" << tc::green << " OK" << tc::reset);
+}
+
+
 #else
 BOOST_AUTO_TEST_CASE( test_21_g2 )
 {
