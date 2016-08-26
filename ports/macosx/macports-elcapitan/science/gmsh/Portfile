@@ -15,7 +15,7 @@ PortGroup           mpi 1.0
 # svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
 name                gmsh
-version             2.10.1
+version             2.13.2
 categories          science
 platforms           darwin
 maintainers         feelpp.org:christophe.prudhomme
@@ -32,8 +32,8 @@ master_sites        http://www.geuz.org/gmsh/src/
 distname            gmsh-${version}-source
 extract.suffix      .tgz
 
-checksums           rmd160  9db47af3566267531086e65d83bd4cc91c10b03b \
-                    sha256  a47f15541db038c9cb00f004d13c5648a46c3d8ebd6e0bf3b56f9274e13f505d
+checksums           rmd160  34f1d1c80ffce9a7fe7b808abc4a97150b446f5d \
+                    sha256  d68e1569f7ccf61cfd70d6845defe8dd73676745beafcf1de60ba9874ad15f26
 
 #worksrcdir          trunk
 conflicts           gmsh-devel

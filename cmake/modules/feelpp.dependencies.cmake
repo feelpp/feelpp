@@ -1140,19 +1140,48 @@ else()
 endif()
 
 if ( FEELPP_ENABLE_VTK )
-
+    # MESSAGE("Finding VTK:")
+    # MESSAGE("PARAVIEW_DIR=$ENV{PARAVIEW_DIR}")
+    # MESSAGE("MACHINE_PARAVIEW_DIR=${MACHINE_PARAVIEW_DIR}")
+    # # if(EXISTS $ENV{PARAVIEW_DIR})
+    # #  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{PARAVIEW_DIR}/Modules/")
+    # # endif()
+    # MESSAGE("CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
+    
     # First try to find ParaView
-    FIND_PACKAGE(ParaView QUIET
-        COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
-        PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR})
+    # FIND_PACKAGE(ParaView QUIET
+    #    COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
+    #    PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR})
+    FIND_PACKAGE(ParaView NO_MODULE
+        PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} )
 
     if(ParaView_FOUND)
         message(STATUS "[ParaView] Use file: ${PARAVIEW_USE_FILE}")
         INCLUDE(${PARAVIEW_USE_FILE})
 
-        # Enable VTK exporter and insitu in config
-        set(FEELPP_VTK_INSITU_ENABLED 1)
+        # trying to load a minimal vtk
+        IF (TARGET vtkParallelMPI)
+        FIND_PACKAGE(ParaView QUIET COMPONENTS vtkParallelMPI NO_MODULE
+         PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} )
+          message(STATUS "[ParaView] Loading vtkParallelMPI module")
+        ENDIF ()
+        IF (TARGET vtkPVCatalyst)
+        FIND_PACKAGE(ParaView COMPONENTS vtkPVCatalyst NO_MODULE
+          PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} )
+          message(STATUS "[ParaView] Loading vtkPVCatalyst module")
+        ENDIF ()
+        IF (TARGET vtkPVPythonCatalyst)
+        FIND_PACKAGE(ParaView COMPONENTS vtkPVPythonCatalyst NO_MODULE
+          PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} )
+          message(STATUS "[ParaView] Loading vtkPVPythonCatalyst module")
+        ENDIF ()
 
+        # Enable VTK exporter and insitu in config
+        IF (TARGET vtkPVCatalyst AND TARGET vtkPVPythonCatalyst)
+          set(FEELPP_VTK_INSITU_ENABLED 1)
+          message(STATUS "In-situ visualisation enabled (vtkPVCatalyst, vtkPVPythonCatalyst).")
+        ENDIF()
+        
         # Mark VTK and ParaView as available
         set(FEELPP_HAS_VTK 1)
         set(FEELPP_HAS_PARAVIEW 1)
@@ -1160,9 +1189,16 @@ if ( FEELPP_ENABLE_VTK )
         # use an external communicator
         set(VTK_HAS_PARALLEL 0)
         if( VTK_MAJOR_VERSION EQUAL 6 OR VTK_MAJOR_VERSION GREATER 6 )
-            set(VTK_HAS_PARALLEL 1)
+          set(VTK_HAS_PARALLEL 1)
+          # MESSAGE("VTK_HAS_PARALLEL=${VTK_HAS_PARALLEL}")
         endif()
 
+        # MESSAGE("ParaView_INCLUDE_DIRS=${ParaView_INCLUDE_DIRS}")
+        # MESSAGE("ParaView_LIBRARIES=${ParaView_LIBRARIES}")
+        # MESSAGE("VTK_INCLUDE_DIRS=${VTK_INCLUDE_DIRS}")
+        # MESSAGE("VTK_LIBRARIES=${VTK_LIBRARIES}")
+        
+        INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
         INCLUDE_DIRECTORIES(${ParaView_INCLUDE_DIRS})
         INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
         SET(FEELPP_LIBRARIES ${ParaView_LIBRARIES} ${FEELPP_LIBRARIES})
@@ -1170,9 +1206,11 @@ if ( FEELPP_ENABLE_VTK )
         SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ParaView/VTK" )
 
         message(STATUS "Found ParaView ${PARAVIEW_VERSION_FULL}/VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")
+    endif()
+
     # If ParaView was not found we try to find VTK
-    else()
-        message(STATUS "ParaView could not be found. Looking for VTK...")
+    if(NOT ParaView_FOUND)
+        message(STATUS "ParaView could not be found or is not compatible with Feel++. Looking for VTK...")
         FIND_PACKAGE(VTK QUIET)
         if( VTK_FOUND )
             include(${VTK_USE_FILE})
@@ -1180,7 +1218,7 @@ if ( FEELPP_ENABLE_VTK )
             set(FEELPP_HAS_VTK 1)
             MESSAGE(STATUS "[feelpp] Found VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")# ${VTK_LIBRARIES}")
 
-            # Check for MPI suppot in VTK
+            # Check for MPI support in VTK
             set(VTK_HAS_PARALLEL 0)
             # Prior to VTK version 6, VTK_KITS was used
             if( VTK_MAJOR_VERSION LESS 6 )
@@ -1244,11 +1282,12 @@ if ( FEELPP_ENABLE_VTK )
             
             SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
             SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} VTK" )
-
-        # If VTK was not found
-        else()
-            message(STATUS "Neither ParaView nor VTK were found. VTK exporter and In-situ processing not enabled") 
         endif()
+   endif()
+
+    # If VTK was not found
+    if(NOT ParaView_FOUND AND NOT VTK_FOUND)
+        message(STATUS "Neither ParaView nor VTK were found. VTK exporter and In-situ processing not enabled") 
     endif()
 endif( FEELPP_ENABLE_VTK )
 
