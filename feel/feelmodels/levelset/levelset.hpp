@@ -79,6 +79,10 @@ enum class LevelSetMeasuresExported
 {
     Volume, Perimeter
 };
+enum class LevelSetFieldsExported
+{
+    GradPhi, ModGradPhi
+};
 
 template<typename ConvexType, int Order=1, typename PeriodicityType = NoPeriodicity>
 class LevelSet 
@@ -262,6 +266,7 @@ public:
     element_levelset_ptrtype const& phi() const { return this->fieldSolutionPtr(); }
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
     element_levelset_vectorial_ptrtype const& gradPhi();
+    element_levelset_ptrtype const& modGradPhi();
     element_levelset_ptrtype const& heaviside() const { return M_heaviside; }
     element_levelset_ptrtype const& H() const { return this->heaviside(); }
     element_levelset_ptrtype const& dirac() const { return M_dirac; }
@@ -362,6 +367,7 @@ public:
     //--------------------------------------------------------------------//
     // Export results
     bool hasPostProcessMeasureExported( LevelSetMeasuresExported const& measure) const;
+    bool hasPostProcessFieldExported( LevelSetFieldsExported const& field) const;
 
     //--------------------------------------------------------------------//
     // Physical quantities
@@ -379,6 +385,7 @@ protected:
     //--------------------------------------------------------------------//
     // Levelset data update functions
     void updateGradPhi();
+    void updateModGradPhi();
     void updateDirac();
     void updateHeaviside();
 
@@ -418,6 +425,8 @@ protected:
 
     element_levelset_vectorial_ptrtype M_levelsetGradPhi;
     bool M_doUpdateGradPhi;
+    element_levelset_ptrtype M_levelsetModGradPhi;
+    bool M_doUpdateModGradPhi;
 
     element_levelset_ptrtype M_heaviside;
     element_levelset_ptrtype M_dirac;
@@ -492,6 +501,7 @@ private:
     //--------------------------------------------------------------------//
     // Export
     std::set<LevelSetMeasuresExported> M_postProcessMeasuresExported;
+    std::set<LevelSetFieldsExported> M_postProcessFieldsExported;
     //--------------------------------------------------------------------//
     // Parameters
     double M_thicknessInterface;

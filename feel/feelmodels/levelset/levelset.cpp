@@ -255,6 +255,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
+    // Measures
     bool hasMeasureToExport = false;
 
     if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Volume ) )
@@ -277,6 +278,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
         else if ( !this->isStationary() )
             this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
     }
+
+    //// User-defined fields
+    //if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
+    //{
+        //for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
+        //{
+            //if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
+                //M_postProcessUserFieldExported.insert( o );
+        //}
+    //}
 
     super_type::initPostProcess();
 }
@@ -391,6 +402,20 @@ LEVELSET_CLASS_TEMPLATE_TYPE::gradPhi()
        this->updateGradPhi(); 
 
     return M_levelsetGradPhi;
+
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::modGradPhi()
+{
+    if( !M_levelsetModGradPhi )
+        M_levelsetModGradPhi.reset( new element_levelset_type(this->functionSpace(), "ModGradPhi") );
+
+    //if( M_doUpdateModGradPhi ) // TODO: ensure correctness of M_doUpdateGradPhi
+       this->updateModGradPhi(); 
+
+    return M_levelsetModGradPhi;
 
 }
 
@@ -552,6 +577,25 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
                 this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Perimeter );
         }
     }
+
+    // Load Fields from JSON
+    if ( modelPostProcess.find("Fields") != modelPostProcess.end() )
+    {
+        for( auto const& o : modelPostProcess.find("Fields")->second )
+        {
+            if( o == "gradphi" || o == "all" )
+                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::GradPhi );
+            if( o == "modgradphi" || o == "all" )
+                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+        }
+    }
+    // Overwrite with options from CFG
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_gradphi").c_str()) )
+        if ( boption(_name="do_export_gradphi",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::GradPhi );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_modgradphi").c_str()) )
+        if ( boption(_name="do_export_modgradphi",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -589,9 +633,19 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
 {
     auto phi = this->phi();
-    *M_levelsetGradPhi = M_projectorL2Vec->project( _expr=trans(gradv(phi)) );
+    *M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
 
     M_doUpdateGradPhi = false;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateModGradPhi()
+{
+    auto gradPhi = this->gradPhi();
+    *M_levelsetModGradPhi = this->projectorL2()->project( _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) );
+
+    M_doUpdateModGradPhi = false;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -721,7 +775,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smoother()
                 this->functionSpace() , this->functionSpace(), 
                 backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldComm()), 
                 DIFF, 
-                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order,
+                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother"))/Order,
                 30);
     return M_smoother; 
 }
@@ -735,7 +789,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherVectorial()
                 this->functionSpaceVectorial() , this->functionSpaceVectorial(), 
                 backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldComm()), 
                 DIFF, 
-                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order,
+                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother-vec"))/Order,
                 30);
     return M_smootherVectorial; 
 }
@@ -1013,6 +1067,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
     updateNormal();
     updateCurvature();
     M_doUpdateMarkers = true;
+    M_doUpdateGradPhi = true;
+    M_doUpdateModGradPhi = true;
 }
 
 //----------------------------------------------------------------------------//
@@ -1208,6 +1264,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Curvature")),
                                    *this->curvature() );
 
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::GradPhi ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"GradPhi"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"GradPhi")),
+                                       *this->gradPhi() );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::ModGradPhi ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"ModGradPhi"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ModGradPhi")),
+                                       *this->modGradPhi() );
+    }
+
     super_type::exportResultsImpl( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
@@ -1244,6 +1313,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::hasPostProcessMeasureExported(
         LevelSetMeasuresExported const& measure) const
 {
     return M_postProcessMeasuresExported.find(measure) != M_postProcessMeasuresExported.end();
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+bool
+LEVELSET_CLASS_TEMPLATE_TYPE::hasPostProcessFieldExported( 
+        LevelSetFieldsExported const& field) const
+{
+    return M_postProcessFieldsExported.find(field) != M_postProcessFieldsExported.end();
 }
 
 //----------------------------------------------------------------------------//
