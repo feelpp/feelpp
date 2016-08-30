@@ -265,16 +265,16 @@ public:
     element_levelset_ptrtype & phi() { return this->fieldSolutionPtr(); }
     element_levelset_ptrtype const& phi() const { return this->fieldSolutionPtr(); }
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
-    element_levelset_vectorial_ptrtype const& gradPhi();
-    element_levelset_ptrtype const& modGradPhi();
-    element_levelset_ptrtype const& heaviside() const { return M_heaviside; }
+    element_levelset_vectorial_ptrtype const& gradPhi() const;
+    element_levelset_ptrtype const& modGradPhi() const;
+    element_levelset_ptrtype const& heaviside() const;
     element_levelset_ptrtype const& H() const { return this->heaviside(); }
-    element_levelset_ptrtype const& dirac() const { return M_dirac; }
+    element_levelset_ptrtype const& dirac() const;
     element_levelset_ptrtype const& D() const { return this->dirac(); }
 
-    element_levelset_vectorial_ptrtype const& normal() const { return M_levelsetNormal; }
+    element_levelset_vectorial_ptrtype const& normal() const;
     element_levelset_vectorial_ptrtype const& N() const { return this->normal(); }
-    element_levelset_ptrtype const& curvature() const { return M_levelsetCurvature; }
+    element_levelset_ptrtype const& curvature() const;
     element_levelset_ptrtype const& K() const { return this->curvature(); }
 
     double thicknessInterface() const { return M_thicknessInterface; }
@@ -418,18 +418,14 @@ private:
 
 protected:
     //--------------------------------------------------------------------//
-    // Levelset data
-    //element_levelset_ptrtype M_phi;
-    //element_levelset_ptrtype M_phio;
-    //element_levelset_ptrtype M_phinl;
+    // Interface quantities update flags
+    mutable bool M_doUpdateDirac;
+    mutable bool M_doUpdateHeaviside;
+    mutable bool M_doUpdateNormal;
+    mutable bool M_doUpdateCurvature;
+    mutable bool M_doUpdateGradPhi;
+    mutable bool M_doUpdateModGradPhi;
 
-    element_levelset_vectorial_ptrtype M_levelsetGradPhi;
-    bool M_doUpdateGradPhi;
-    element_levelset_ptrtype M_levelsetModGradPhi;
-    bool M_doUpdateModGradPhi;
-
-    element_levelset_ptrtype M_heaviside;
-    element_levelset_ptrtype M_dirac;
     //--------------------------------------------------------------------//
     // Levelset initial value
     map_scalar_field<2> M_icDirichlet;
@@ -472,9 +468,15 @@ private:
     projector_levelset_ptrtype M_smoother;
     projector_levelset_vectorial_ptrtype M_smootherVectorial;
     //--------------------------------------------------------------------//
+    // Levelset data
+    mutable element_levelset_vectorial_ptrtype M_levelsetGradPhi;
+    mutable element_levelset_ptrtype M_levelsetModGradPhi;
+    mutable element_levelset_ptrtype M_heaviside;
+    mutable element_levelset_ptrtype M_dirac;
+    //--------------------------------------------------------------------//
     // Normal, curvature
-    element_levelset_vectorial_ptrtype M_levelsetNormal;
-    element_levelset_ptrtype M_levelsetCurvature;
+    mutable element_levelset_vectorial_ptrtype M_levelsetNormal;
+    mutable element_levelset_ptrtype M_levelsetCurvature;
     bool M_doSmoothCurvature;
 
     //--------------------------------------------------------------------//

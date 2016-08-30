@@ -21,9 +21,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
         std::string const& rootRepository ) 
 :
     super_type( prefix, worldComm, subPrefix, rootRepository ),
+    M_doUpdateDirac(true),
+    M_doUpdateHeaviside(true),
+    M_doUpdateNormal(true),
+    M_doUpdateCurvature(true),
     M_doUpdateGradPhi(true),
-    //M_periodicity(periodicityLS),
+    M_doUpdateModGradPhi(true),
     M_doUpdateMarkers(true),
+    //M_periodicity(periodicityLS),
     M_reinitializerIsUpdatedForUse(false),
     M_hasReinitialized(false),
     M_iterSinceReinit(0)
@@ -393,30 +398,80 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_vectorial_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::gradPhi()
+LEVELSET_CLASS_TEMPLATE_TYPE::gradPhi() const
 {
     if( !M_levelsetGradPhi )
         M_levelsetGradPhi.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "GradPhi") );
 
-    //if( M_doUpdateGradPhi ) // TODO: ensure correctness of M_doUpdateGradPhi
-       this->updateGradPhi(); 
+    if( M_doUpdateGradPhi )
+       const_cast<self_type*>(this)->updateGradPhi(); 
 
     return M_levelsetGradPhi;
-
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::modGradPhi()
+LEVELSET_CLASS_TEMPLATE_TYPE::modGradPhi() const
 {
     if( !M_levelsetModGradPhi )
         M_levelsetModGradPhi.reset( new element_levelset_type(this->functionSpace(), "ModGradPhi") );
 
-    //if( M_doUpdateModGradPhi ) // TODO: ensure correctness of M_doUpdateGradPhi
-       this->updateModGradPhi(); 
+    if( M_doUpdateModGradPhi )
+       const_cast<self_type*>(this)->updateModGradPhi();
 
     return M_levelsetModGradPhi;
+}
 
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::heaviside() const
+{
+    if( !M_heaviside )
+        M_heaviside.reset( new element_levelset_type(this->functionSpace(), "Heaviside") );
+
+    if( M_doUpdateHeaviside )
+       const_cast<self_type*>(this)->updateHeaviside();
+
+    return M_heaviside;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::dirac() const
+{
+    if( !M_dirac )
+        M_dirac.reset( new element_levelset_type(this->functionSpace(), "Dirac") );
+
+    if( M_doUpdateDirac )
+       const_cast<self_type*>(this)->updateDirac();
+
+    return M_dirac;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_vectorial_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::normal() const
+{
+    if( !M_levelsetNormal )
+        M_levelsetNormal.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "Normal") );
+
+    if( M_doUpdateNormal )
+       const_cast<self_type*>(this)->updateNormal(); 
+
+    return M_levelsetNormal;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::curvature() const
+{
+    if( !M_levelsetCurvature )
+        M_levelsetCurvature.reset( new element_levelset_type(this->functionSpace(), "Curvature") );
+
+    if( M_doUpdateCurvature )
+       const_cast<self_type*>(this)->updateCurvature();
+
+    return M_levelsetCurvature;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -688,6 +743,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
             *M_dirac = M_projectorL2->project(D_expr);
     }
 
+    M_doUpdateDirac = false;
+
     this->log("LevelSet", "updateDirac", "finish");
 }
 
@@ -730,6 +787,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
             *M_heaviside = M_projectorL2->project(H_expr);
     }
 
+    M_doUpdateHeaviside = false;
+
     this->log("LevelSet", "updateHeaviside", "finish");
 }
 
@@ -742,6 +801,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateNormal()
     auto phi = this->phi();
     *M_levelsetNormal = M_projectorL2Vec->project( _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) );
 
+    M_doUpdateNormal = false;
+
     this->log("LevelSet", "updateNormal", "finish");
 }
 
@@ -753,12 +814,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
 
     if( M_doSmoothCurvature )
     {
-        *M_levelsetCurvature = this->smoother()->project( _expr=divv(M_levelsetNormal) );
+        *M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
     }
     else
     {
-        *M_levelsetCurvature = this->projectorL2()->project( _expr=divv(M_levelsetNormal) );
+        *M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
     }
+
+    M_doUpdateCurvature = false;
 
     this->log("LevelSet", "updateCurvature", "finish");
 }
@@ -1062,10 +1125,14 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
 {
-    updateDirac();
-    updateHeaviside();
-    updateNormal();
-    updateCurvature();
+    //updateDirac();
+    //updateHeaviside();
+    //updateNormal();
+    //updateCurvature();
+    M_doUpdateDirac = true;
+    M_doUpdateHeaviside = true;
+    M_doUpdateNormal = true;
+    M_doUpdateCurvature = true;
     M_doUpdateMarkers = true;
     M_doUpdateGradPhi = true;
     M_doUpdateModGradPhi = true;
@@ -1425,14 +1492,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerDirac()
     auto en_elt = mesh->endElementWithProcessId(mesh->worldComm().localRank());
     if (it_elt == en_elt) return;
 
-    double dirac_cut = M_dirac->max() / 10.;
+    double dirac_cut = this->dirac()->max() / 10.;
 
     for (; it_elt!=en_elt; it_elt++)
     {
         bool mark_elt = false;
         for (int j=0; j<ndofv; j++)
         {
-            if ( std::abs( M_dirac->localToGlobal(it_elt->id(), j, 0) ) > dirac_cut )
+            if ( std::abs( this->dirac()->localToGlobal(it_elt->id(), j, 0) ) > dirac_cut )
             {
                 mark_elt = true;
                 break; //don't need to do the others dof
@@ -1473,7 +1540,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerHeaviside(bool invert, bool cut_at_hal
         bool mark_elt = false;
         for (int j=0; j<ndofv; j++)
         {
-            if ( std::abs( M_heaviside->localToGlobal(it_elt->id(), j, 0) ) > cut )
+            if ( std::abs( this->heaviside()->localToGlobal(it_elt->id(), j, 0) ) > cut )
             {
                 mark_elt = true;
                 break;
