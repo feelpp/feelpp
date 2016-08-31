@@ -1,6 +1,8 @@
 #ifndef _HELFRICHFORCEMODEL_HPP
 #define _HELFRICHFORCEMODEL_HPP 1
 
+#define DEBUG_HELFRICHFORCEMODEL
+
 #include <feel/feelmodels/multifluid/interfaceforcesmodel.hpp>
 
 namespace Feel {
@@ -15,6 +17,8 @@ class HelfrichForceModel
 public:
     typedef typename super_type::levelset_type levelset_type;
     typedef typename super_type::levelset_ptrtype levelset_ptrtype;
+
+    typedef typename super_type::mesh_type mesh_type;
 
     typedef typename levelset_type::space_levelset_vectorial_type space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
@@ -45,6 +49,10 @@ private:
     double M_helfrichBendingModulus;
     int M_forceImpl;
 
+#ifdef DEBUG_HELFRICHFORCEMODEL
+    typedef boost::shared_ptr<Exporter<mesh_type, 1>> exporter_ptrtype;
+    exporter_ptrtype M_exporter;
+#endif
 };
 
 template<typename LevelSetType>
@@ -53,6 +61,14 @@ HelfrichForceModel<LevelSetType>::loadParametersFromOptionsVm()
 {
     M_helfrichBendingModulus = doption( _name="helfrich-bending-modulus", _prefix=this->prefix() ); 
     M_forceImpl = ioption( _name="helfrich-force-impl", _prefix=this->prefix() );
+
+#ifdef DEBUG_HELFRICHFORCEMODEL
+    M_exporter = Feel::exporter(
+            _mesh=this->levelset()->mesh(),
+            _name="HelfrichForce",
+            _path=this->levelset()->exporterPath()
+            );
+#endif
 }
 
 template<typename LevelSetType>
@@ -70,48 +86,68 @@ HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int imp
     {
         case 0:
         {
-//#if FEELPP_DIM == 2
-            //auto phi = this->levelset()->phi();
-            //auto n_l2 = this->levelset()->N();
-            //auto k_l2 = this->levelset()->K();
-            //auto t_int = vf::vec(trans(idv(n_l2)) * vf::oneY(),  - trans(idv(n_l2)) * vf::oneX() );
-            //auto modgradphi = this->levelset()->smoother()->project( sqrt( gradv( phi ) * trans(gradv(phi)) ) );
-            //auto AA = this->levelset()->projectorL2Vectorial()->project( - idv(k_l2) * idv(k_l2) / 2. * idv(n_l2) );
-            //auto BB = this->levelset()->smootherVectorial()->project( trans( trans(t_int) * ( ( gradv(modgradphi) * idv(k_l2) ) * t_int) / max(idv(modgradphi), 0.01) ) );
-            //auto Fc_global = this->levelset()->smootherVectorial()->project( this->bendingModulus() * ( divv( AA ) + divv( BB ) ) * trans(gradv( phi )) );
-            //*F += vf::project(
-                    //_space=this->levelset()->functionSpaceVectorial(), 
-                    //_range=elements(this->levelset()->mesh()), 
-                    ////idv(Fc_global) * idv(this->levelset()->D()) 
-                    //_expr=trans(gradv(phi))
-                    //);
-//#else
             auto phi = this->levelset()->phi();
             auto N = this->levelset()->N();
             auto K = this->levelset()->K();
             auto Id = vf::Id<Dim, Dim>();
             auto NxN = idv(N)*trans(idv(N));
+
+            auto gradPhi = this->levelset()->smootherVectorial()->project(
+                    trans(gradv(phi))
+                    );
+
             auto modGradPhiK = this->levelset()->smoother()->project( 
-                    sqrt( gradv(phi) * trans(gradv(phi)) ) * idv(K)
+                    sqrt( trans(idv(gradPhi)) * idv(gradPhi) ) * idv(K)
                     );
 
             auto Fb_par = this->levelset()->projectorL2Vectorial()->project(
                     - idv(K)*idv(K)/2. * idv(N)
                     );
+            //auto Fb_ortho = this->levelset()->smootherVectorial()->project(
+                    //(Id-NxN)*trans(gradv(modGradPhiK)) / sqrt( trans(idv(gradPhi)) * idv(gradPhi) )
+                    //);
             auto Fb_ortho = this->levelset()->smootherVectorial()->project(
-                    (Id-NxN)*trans(gradv(modGradPhiK)) / sqrt( gradv(phi) * trans(gradv(phi)) )
+                    (trans(gradv(modGradPhiK)) - (gradv(modGradPhiK)*idv(N))*idv(N)) / sqrt( trans(idv(gradPhi)) * idv(gradPhi) )
                     );
-            auto Fb_global = this->levelset()->smootherVectorial()->project(
+            //auto Fb_global = this->levelset()->smootherVectorial()->project(
+                    //this->bendingModulus() * (divv(Fb_par) + divv(Fb_ortho)) * idv(N)
+                    //);
+            auto Fb_global = this->levelset()->projectorL2Vectorial()->project(
                     this->bendingModulus() * (divv(Fb_par) + divv(Fb_ortho)) * idv(N)
                     );
 
-            *F += vf::project(
+            auto Fb = vf::project(
                     _space=this->levelset()->functionSpaceVectorial(),
                     _range=elements(this->levelset()->mesh()),
                     _expr=idv(Fb_global) * idv(this->levelset()->D())
                     );
 
-//#endif
+            *F += Fb;
+
+#ifdef DEBUG_HELFRICHFORCEMODEL
+            M_exporter->step(this->levelset()->time())->add(
+                    "dirac", "dirac", this->levelset()->D() );
+            auto Fb_par_D = this->levelset()->projectorL2Vectorial()->project(
+                    divv(Fb_par) * idv(N) * idv(this->levelset()->D())
+                    );
+            M_exporter->step(this->levelset()->time())->add(
+                    "helfrich-parallel", "helfrich-parallel", Fb_par_D );
+            auto Fb_ortho_D = this->levelset()->projectorL2Vectorial()->project(
+                    divv(Fb_ortho) * idv(N) * idv(this->levelset()->D())
+                    );
+            M_exporter->step(this->levelset()->time())->add(
+                    "helfrich-ortho", "helfrich-ortho", Fb_ortho_D );
+            M_exporter->step(this->levelset()->time())->add(
+                    "helfrich-force", "helfrich-force", Fb );
+            auto curvD = vf::project(
+                    _space=this->levelset()->functionSpace(),
+                    _range=elements(this->levelset()->mesh()),
+                    _expr=idv(K)*idv(this->levelset()->D())
+                    );
+            M_exporter->step(this->levelset()->time())->add(
+                    "curvature_dirac", "curvature_dirac", curvD );
+            M_exporter->save();
+#endif
         }
         break;
         default:

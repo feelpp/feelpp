@@ -51,7 +51,6 @@ private:
     std::string M_prefix;
 
     levelset_ptrtype M_levelset;
-
 };
 
 template<typename LevelSetType>
