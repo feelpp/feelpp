@@ -21,12 +21,12 @@ runLevelsetApplication()
     double ls_x0 = 0.5, ls_y0 = 0.5, ls_z0 = 0.5;
     double ls_radius = 0.25;
 
-    auto phi_init = sqrt( 
-            (vf::Px()-ls_x0)*(vf::Px()-ls_x0) 
-            + (vf::Py()-ls_y0) * (vf::Py()-ls_y0) 
-            //+ (vf::Pz()-ls_z0) * (vf::Pz()-ls_z0) 
-            ) - ls_radius;
-    LS->setInitialValue( phi_init );
+    //auto phi_init = sqrt( 
+            //(vf::Px()-ls_x0)*(vf::Px()-ls_x0) 
+            //+ (vf::Py()-ls_y0) * (vf::Py()-ls_y0) 
+            ////+ (vf::Pz()-ls_z0) * (vf::Pz()-ls_z0) 
+            //) - ls_radius;
+    //LS->setInitialValue( phi_init );
 
     LS->init();
     LS->printAndSaveInfo();
