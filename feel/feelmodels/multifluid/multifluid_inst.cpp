@@ -2,6 +2,7 @@
 #include "multifluidconfig.h"
 
 #include <feel/feelmodels/multifluid/multifluid.cpp>
+
 #include <feel/feelmodels/multifluid/helfrichforcemodel.hpp>
 #include <feel/feelmodels/multifluid/inextensibilityforcemodel.hpp>
 

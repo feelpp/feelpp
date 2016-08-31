@@ -383,6 +383,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
     {
         this->timerTool("Solve").start();
         for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+        {
             for( uint16_type n = 0; n < M_levelsetInterfaceForcesModels[i].size(); ++n )
             {
                 if( M_levelsetInterfaceForcesModels[i][n] )
@@ -390,6 +391,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
                     M_levelsetInterfaceForcesModels[i][n]->updateInterfaceForces( M_interfaceForces, false );
                 }
             }
+        }
+
         double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
         this->log("MultiFluid", "updateInterfaceForces", "update interface (model) forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
     }
