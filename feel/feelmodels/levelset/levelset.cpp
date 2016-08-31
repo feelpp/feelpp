@@ -201,10 +201,25 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
 
     if( !this->M_icShapes.empty() )
     {
+        // If phi_init already has a value, ensure that it is a proper distance function
+        if( hasInitialValue )
+        {
+            // ILP on phi_init
+            auto gradPhiInit = this->projectorL2Vectorial()->derivate( idv(phi_init) );
+            auto modGradPhiInit = M_smootherFM->project( sqrt( trans(idv(gradPhiInit))*idv(gradPhiInit) ) );
+            phi_init = vf::project( 
+                _space=this->functionSpace(),
+                _range=elements(this->mesh()),
+                _expr=idv(phi_init) / idv(modGradPhiInit)
+                );
+            // Reinitialize phi_init
+            phi_init = this->reinitializerFM()->run( phi_init );
+        }
+        // Add shapes
         for( auto const& shape: M_icShapes )
         {
             this->addShape( shape, phi_init );
-        }         
+        }
 
         hasInitialValue = true;
     }
@@ -238,7 +253,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::addShape(
             phi = vf::project(
                     _space=this->functionSpace(),
                     _range=elements(this->mesh()),
-                    _expr=min( sqrt(X*X+Y*Y+Z*Z)-R, idv(phi) ),
+                    _expr=vf::min( idv(phi), sqrt(X*X+Y*Y+Z*Z)-R ),
                     _geomap=this->geomap()
                     );
         }
@@ -688,7 +703,13 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
 {
     auto phi = this->phi();
-    *M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
+    //*M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
+    *M_levelsetGradPhi = this->projectorL2Vectorial()->derivate( idv(phi) );
+    //*M_levelsetGradPhi = vf::project( 
+            //_space=this->functionSpaceVectorial(),
+            //_range=elements(this->mesh()),
+            //_expr=trans(gradv(phi)) 
+            //);
 
     M_doUpdateGradPhi = false;
 }
@@ -698,7 +719,12 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateModGradPhi()
 {
     auto gradPhi = this->gradPhi();
-    *M_levelsetModGradPhi = this->projectorL2()->project( _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) );
+    *M_levelsetModGradPhi = vf::project( 
+            _space=this->functionSpace(),
+            _range=elements(this->mesh()),
+            _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) 
+            );
+    //*M_levelsetModGradPhi = this->projectorL2()->project( _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) );
 
     M_doUpdateModGradPhi = false;
 }
@@ -1164,7 +1190,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
             case ILP :
             {
                 // save the smoothed gradient magnitude of phi
-                auto modgradphi = M_smootherFM->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
+                //auto modgradphi = M_smootherFM->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
+                auto gradPhi = this->gradPhi();
+                auto modgradphi = M_smootherFM->project( sqrt( trans(idv(gradPhi))*idv(gradPhi) ) );
                 
                 *phi = vf::project(this->functionSpace(), elements(this->mesh()), idv(phi)/idv(modgradphi) );
             }
