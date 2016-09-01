@@ -48,11 +48,15 @@ struct f_evaluate
     {
         M_z[0]=0;
         M_z[1]=0;
+        //M_z[1]=0;
+        //M_z[2]=0;
+        
     }
     double operator()( uint16_type c1, uint16_type c2, boost::numeric::ublas::vector<double> const& x, boost::numeric::ublas::vector<double> const& ) const
     {
-        M_z[2]=x[2];
+        M_z[2]=x[2];//M_z[0]=x[0];
         return M_u1(M_z)(0,0,0)*((c1==0)*x[0]/M_R+(c1==1)*x[1]/M_R)+M_u2(M_z)(0,0,0)*((c1==2)*(1-(x[0]*x[0]+x[1]*x[1])/(M_R*M_R)));
+        //return M_u1(M_z)(0,0,0)*((c1==1)*x[1]/M_R+(c1==2)*x[2]/M_R)+M_u2(M_z)(0,0,0)*((c1==0)*(1-(x[1]*x[1]+x[2]*x[2])/(M_R*M_R)));
     }
     element1_type& M_u1;
     element2_type& M_u2;
@@ -144,7 +148,7 @@ int main(int argc, char**argv )
     mesh_ptrtype mesh1d;
     space_ptrtype Xh1 ;*/
     //////////////////////////////
-    typedef FunctionSpace<Mesh<Simplex<1,1,3>>, bases<Lagrange<2, Scalar>, Lagrange<2, Scalar>, Lagrange<1, Scalar> > > space_type;
+    typedef FunctionSpace<Mesh<Simplex<1,1,3>>, bases<Lagrange<2, Scalar,Continuous,PointSetEquiSpaced,0>, Lagrange<2, Scalar,Continuous,PointSetEquiSpaced,1>, Lagrange<1, Scalar> > > space_type;
     
     auto Xh1 = space_type::New( mesh1d );
     std::cout<<"creating Xh1: DONE \n";
@@ -173,6 +177,9 @@ int main(int argc, char**argv )
     auto u1 = U.element<0>();
     auto u2 = U.element<1>();
     auto p = U.element<2>();
+    
+    u1.on(_range=elements(mesh1d), _expr=cst(0.));
+    u2.on(_range=elements(mesh1d), _expr=cst(1.));
     
     auto v1 = V.element<0>();
     auto v2 = V.element<1>();
@@ -207,47 +214,74 @@ int main(int argc, char**argv )
     std::cout<<"creating the linear form l: DONE \n";
     auto a = form2( _trial=Xh1, _test=Xh1);
     std::cout<<"creating the bilinear form a: DONE \n";
-
-    a += integrate( _range=elements( mesh1d ), _expr=4*Pi*mu*inner(idt(u1),id(v1))  + 2*Pi*mu*R*R*inner(idt(u2)*id(v2)) );
+#if 0
+    a += integrate( _range=elements( mesh1d ), _expr=4*Pi*mu*inner(idt(u1),id(v1))  + 2*Pi*mu*inner(idt(u2)*id(v2)) );
+    auto b=a;
     a += integrate( _range=elements( mesh1d ), _expr=-Pi*R*mu*inner(idt(u2),dz(v1)) -Pi*R*mu*inner(id(v2),dzt(u1)) );
+    auto c=a;
     a += integrate( _range=elements( mesh1d ), _expr=0.5*Pi*mu*R*R*inner(dzt(u1),dz(v1)) + (2/3)*Pi*mu*R*R*inner(dzt(u2),dz(v2)));
+    auto d=a;
     a +=integrate( _range=elements( mesh1d ), _expr=-2*Pi*R*idt(p)*id(v1) - (Pi*R*R/2)*idt(p)*dz(v2) );
-    a +=integrate( _range=elements( mesh1d ), _expr=-2*Pi*R*id(q)*idt(u1) - (Pi*R*R/2)*id(q)*dzt(u2) );
+    auto e=a;
+    a +=integrate( _range=elements( mesh1d ), _expr=2*Pi*R*id(q)*idt(u1) + (Pi*R*R/2)*id(q)*dzt(u2) );
+    auto g=a;
     std::cout<<"Assembling the bilinear terms: DONE \n";
-    
+#else
+    a += integrate( _range=elements( mesh1d ), _expr=4*Pi*mu*inner(idt(u1),id(v1))  + 2*Pi*mu*inner(idt(u2)*id(v2)) );
+    auto b=a;
+    a += integrate( _range=elements( mesh1d ), _expr=-Pi*R*mu*inner(idt(u2),dx(v1)) -Pi*R*mu*inner(id(v2),dxt(u1)) );
+    auto c=a;
+    a += integrate( _range=elements( mesh1d ), _expr=0.5*Pi*mu*R*R*inner(dxt(u1),dx(v1)) + (2/3)*Pi*mu*R*R*inner(dxt(u2),dx(v2)));
+    auto d=a;
+    a +=integrate( _range=elements( mesh1d ), _expr=-2*Pi*R*idt(p)*id(v1) - (Pi*R*R/2)*idt(p)*dx(v2) );
+    auto e=a;
+    a +=integrate( _range=elements( mesh1d ), _expr=2*Pi*R*id(q)*idt(u1) + (Pi*R*R/2)*id(q)*dxt(u2) );
+    auto g=a;
+    std::cout<<"Assembling the bilinear terms: DONE \n";
+#endif
     
     tic();
-    a+=on(_range=boundaryfaces(mesh1d), _rhs=l, _element=u1,
-                   _expr=cst(0.) ) ;
-    a+=on(_range=boundaryfaces(mesh1d), _rhs=l, _element=u2,
-          _expr=cst(1.) ) ;
+    
+#if 0    //Dirichlet-Neumann BC
+    a+=on(_range=markedfaces(mesh1d,"inlet"), _rhs=l, _element=u1, _expr=cst(0.) ) ;
+    a+=on(_range=markedfaces(mesh1d,"inlet"), _rhs=l, _element=u2, _expr=cst(1.) ) ;
     std::cout<<"setting boundary condition: DONE \n";
+#else    //Dirichlet-Dirichlet BC
+    a+=on(_range=boundaryfaces(mesh1d), _rhs=l, _element=u1, _expr=cst(0.) ) ;
+    a+=on(_range=boundaryfaces(mesh1d), _rhs=l, _element=u2, _expr=cst(1.) ) ;
+#endif
+    
     
     toc("Setting boundary conditions...");
     
-    auto b = backend(_prefix="stokes",_name="stokes");
+    auto bck = backend(_prefix="stokes",_name="stokes");
     
     auto precPetscStokes = preconditioner( _prefix="stokes",
-                                    _matrix=a.matrixPtr(),_pc=b->pcEnumType(),
-                                    _pcfactormatsolverpackage=b->matSolverPackageEnumType(),
-                                    _backend=b->shared_from_this(),
-                                    _worldcomm=b->comm() );
+                                    _matrix=a.matrixPtr(),_pc=bck->pcEnumType(),
+                                    _pcfactormatsolverpackage=bck->matSolverPackageEnumType(),
+                                    _backend=bck->shared_from_this(),
+                                    _worldcomm=bck->comm() );
     
     tic();
-    b->solve(_matrix=a.matrixPtr(),_solution=U,_rhs=l.vectorPtr(),_prec=precPetscStokes );
+    bck->solve(_matrix=a.matrixPtr(),_solution=U,_rhs=l.vectorPtr(),_prec=precPetscStokes );
     
     toc(" - Solving Stokes...");
     
     u1.printMatlab("u1.m");
     u2.printMatlab("u2.m");
+    b.matrixPtr()->printMatlab("b.m");
+    c.matrixPtr()->printMatlab("c.m");
+    d.matrixPtr()->printMatlab("d.m");
+    e.matrixPtr()->printMatlab("e.m");
+    g.matrixPtr()->printMatlab("g.m");
     
-#if 0
+#if 1
     u3.on(_range=elements(mesh3d), _expr=idf(f_evaluate<decltype(u1),decltype(u2)>( u1, u2,R)));
     e3->step(0)->add( "u3", u3 );
     u1.on(_range=elements(mesh1d), _expr=cst(0.));
     u2.on(_range=elements(mesh1d), _expr=cst(1.));
     v3.on(_range=elements(mesh3d), _expr=idf(f_evaluate<decltype(u1),decltype(u2)>( u1, u2,R)));
-    e3->step(0)->add( "v3", v3 );
+    e3->step(0)->add( "u3_exact", v3 );
 
         //e3->step(0)->add( "p", p );
     e3->save();

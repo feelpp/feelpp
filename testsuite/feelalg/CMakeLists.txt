@@ -22,3 +22,4 @@ if ( FEELPP_HAVE_SLEPC )
   feelpp_add_test( eigenmode CLI "--gmsh.hsize 0.2 -eps_target 20 -st_pc_factor_mat_solver_package mumps" )
 endif()
 
+feelpp_add_test( ptap )
