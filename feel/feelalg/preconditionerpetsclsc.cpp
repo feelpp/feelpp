@@ -358,7 +358,10 @@ PETSC_EXTERN PetscErrorCode PCCreate_LSC2(PC pc)
   pc->ops->setup           = PCSetUp_LSC2;
   pc->ops->reset           = PCReset_LSC2;
   pc->ops->destroy         = PCDestroy_LSC2;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
+#else
   pc->ops->setfromoptions  = PCSetFromOptions_LSC2;
+#endif
   pc->ops->view            = PCView_LSC2;
   pc->ops->applyrichardson = 0;
   PetscFunctionReturn(0);

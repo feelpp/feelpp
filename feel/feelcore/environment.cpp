@@ -425,9 +425,9 @@ Environment::Environment( int argc, char** argv,
 #if defined ( FEELPP_HAS_PETSC_H )
     initPetsc( &argc, &envargv );
 #endif
+
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
-
 
     if ( S_vm.count( "nochdir" ) == 0 )
     {
@@ -495,6 +495,7 @@ Environment::Environment( int argc, char** argv,
     }
 
     google::InstallFailureSignalHandler();
+
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
     //int n = 2;
