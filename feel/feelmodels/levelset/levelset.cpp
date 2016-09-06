@@ -358,6 +358,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
         M_modGradPhiAdvection->setModelName( "Advection" );
         M_modGradPhiAdvection->build( this->functionSpace() );
         M_modGradPhiAdvection->timeStepBDF()->setOrder( this->timeStepBDF()->bdfOrder() );
+
+        M_modGradPhiAdvection->getExporter()->setDoExport( boption( _name="do_export_modgradphi-advection", _prefix=this->prefix() ) );
     }
 }
 
@@ -1441,6 +1443,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     }
 
     super_type::exportResultsImpl( time );
+
+    if( M_useGradientAugmented )
+    {
+        M_modGradPhiAdvection->exportResults( time );
+    }
 
     this->timerTool("PostProcessing").stop("exportResults");
     this->log("LevelSet","exportResults", "finish");
