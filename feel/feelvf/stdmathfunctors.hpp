@@ -300,10 +300,10 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             {                                                           \
                 M_expr.update( geom, face );                           \
             }                                                           \
-            template<typename CTX>                                      \
-                void updateContext( CTX const& ctx )                    \
+            template<typename ... CTX>                                  \
+                void updateContext( CTX const& ... ctx )                \
             {                                                           \
-                M_expr.updateContext( ctx );                           \
+                M_expr.updateContext( ctx... );                         \
             }                                                           \
                                                                         \
                 value_type                                              \
@@ -506,11 +506,11 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
                 M_expr1.update( geom, face );                           \
                 M_expr2.update( geom, face );                           \
             }                                                           \
-            template<typename CTX>                                      \
-                void updateContext( CTX const& ctx )                    \
+            template<typename ... CTX>                                  \
+                void updateContext( CTX const& ... ctx )                \
             {                                                           \
-                M_expr1.updateContext( ctx );                           \
-                M_expr2.updateContext( ctx );                           \
+                M_expr1.updateContext( ctx... );                        \
+                M_expr2.updateContext( ctx... );                        \
             }                                                           \
                                                                         \
                 value_type                                              \

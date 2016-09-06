@@ -492,11 +492,11 @@
                 if ( is_zero::update_and_eval_right )                   \
                     M_right.update( geom, face );                           \
             }                                                           \
-            template<typename CTX>                                      \
-                void updateContext( CTX const& ctx )                    \
+            template<typename ... CTX>                                  \
+                void updateContext( CTX const& ... ctx )                \
             {                                                           \
-                M_left.updateContext( ctx );                           \
-                M_right.updateContext( ctx );                          \
+                M_left.updateContext( ctx... );                        \
+                M_right.updateContext( ctx... );                        \
             }                                                           \
                                                                         \
                                                                         \

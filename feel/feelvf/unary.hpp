@@ -149,10 +149,10 @@ public:
         {
             M_t_expr.update( geom, face );
         }
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            M_t_expr.updateContext( ctx );
+            M_t_expr.updateContext( ctx... );
         }
 
         value_type
@@ -344,10 +344,10 @@ public:
             M_t_expr.update( geom, face );
         }
 
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            M_t_expr.updateContext( ctx );
+            M_t_expr.updateContext( ctx... );
         }
 
         value_type

@@ -542,11 +542,12 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TEST( T ),   \
                                              M_fec = fusion::at_key<basis_context_key_type>( fev ).get() ) ; \
                 }                                                       \
-                template <typename CTX>                                 \
-                    void updateContext( CTX const& ctx )                \
+                template <typename ... CTX>                                 \
+                    void updateContext( CTX const& ... ctx )                \
                 {                                                       \
                     std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), M_mzero.constant(0.) ); \
-                    M_expr.e().VF_OPERATOR_SYMBOL( O )( *ctx, M_loc ); \
+                    /*M_expr.e().VF_OPERATOR_SYMBOL( O )( *ctx, M_loc );*/ \
+                    M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_expr.e().selectContext( ctx...), M_loc ); \
                 }                                                       \
                 void update( Geo_t const& geom )                        \
                 {                                                       \
