@@ -96,7 +96,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype __mesh )
     this->log("FluidMechanics","loadMesh", "start");
     //-----------------------------------------------------------------------------//
     // create or reload mesh
-    if (this->doRestart()) this->createMesh();
+    if (this->doRestart() && !__mesh) this->createMesh();
     else M_mesh = __mesh;
     //-----------------------------------------------------------------------------//
     // functionSpaces and elements
