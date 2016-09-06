@@ -1221,7 +1221,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::setStrategyBeforeFm( int strat )
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::applyStrategyBeforeFM( element_levelset_ptrtype e )
+LEVELSET_CLASS_TEMPLATE_TYPE::applyStrategyBeforeFM( element_levelset_ptrtype phi )
 {
     switch (M_strategyBeforeFM)
     {
