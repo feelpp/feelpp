@@ -168,6 +168,12 @@ public:
 
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
+
+    //--------------------------------------------------------------------//
+    // ModGradPhi advection
+    typedef Advection<ConvexType, Lagrange<Order, Scalar>, PeriodicityType> modgradphi_advection_type;
+    typedef boost::shared_ptr<modgradphi_advection_type> modgradphi_advection_ptrtype;
+
     //--------------------------------------------------------------------//
     // Exporter
     typedef Exporter<mesh_type, nOrderGeo> exporter_type;
@@ -499,6 +505,11 @@ private:
     //--------------------------------------------------------------------//
     // Advection
     int M_timeOrder;
+
+    //--------------------------------------------------------------------//
+    // ModGradPhi advection
+    bool M_useGradientAugmented;
+    modgradphi_advection_ptrtype M_modGradPhiAdvection;
 
     //--------------------------------------------------------------------//
     // Export
