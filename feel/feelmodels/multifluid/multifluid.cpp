@@ -62,6 +62,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
     M_fluid->loadMesh( M_mesh );
     M_globalLevelset->build( this->mesh() );
+    if( nLevelSets < 2 )
+        M_globalLevelset->getExporter()->setDoExport( false );
 
     // "Deep" copy
     M_fluidDensityViscosityModel.reset( new densityviscosity_model_type( M_fluid->prefix() ) );
