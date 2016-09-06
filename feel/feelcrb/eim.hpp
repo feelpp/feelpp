@@ -1391,8 +1391,12 @@ public:
     virtual void addInterpolationPoint( node_type const& t ) = 0;
 
     virtual void updateRbSpaceContext( boost::any const& rbspacebase ) = 0;
+    virtual bool hasRbSpaceContext() const = 0;
+    virtual bool hasRbSpaceContext2() const = 0;
     virtual boost::any rbSpaceContext() const = 0;
+    virtual boost::any rbSpaceContext2() const = 0;
     virtual void setRbSpaceContext( boost::any const& rbCtxBase ) = 0;
+    virtual void setRbSpaceContext2( boost::any const& rbCtxBase ) = 0;
 
     virtual void setMax(int m, int max_q, int max_g, int max_z, int max_solution) = 0;
     virtual int maxQ() const = 0;
@@ -1541,6 +1545,8 @@ public:
     };
     typedef typename RbSpaceCtxFromRbSpace<rbfunctionspace_type,SubSpaceId>::type rbfunctionspace_context_type;
     typedef boost::shared_ptr<rbfunctionspace_context_type> rbfunctionspace_context_ptrtype;
+    typedef typename RbSpaceCtxFromRbSpace<rbfunctionspace_type,SubSpaceId2>::type rbfunctionspace_context2_type;
+    typedef boost::shared_ptr<rbfunctionspace_context2_type> rbfunctionspace_context2_ptrtype;
 
     typedef ExprType expr_type;
     typedef boost::shared_ptr<expr_type> expr_ptrtype;
@@ -1638,7 +1644,7 @@ public:
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        return M_expr( idv(*M_u), idv(*M_u2) );
+        return M_expr( idv(*M_u), gradv(*M_u2) );
     }
 
     auto expr( parameter_type const& mu, model_solution_type const& u ) const
@@ -1661,26 +1667,30 @@ public:
         auto const& uexpr2 = u.template element<SubSpaceId2>();
         if ( SubSpaceId != SubSpaceId2 )
             *M_u2 = uexpr2;
-        return M_expr( idv(uexpr), idv(uexpr2) );
+        //return M_expr( idv(uexpr), idv(uexpr2) );
+        return M_expr( idv(uexpr), gradv(uexpr2) );
     }
 
-    auto expr( parameter_type const& mu, typename rbfunctionspace_type::element_type const& urb ) const
+    auto expr( parameter_type const& mu, typename rbfunctionspace_context_type::rbspace_type::element_type const& urb ) const
     {
         M_mu = mu;
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        return this->expr( urb, mpl::bool_<use_subspace_element>() );
+        // return M_expr( idv(urb) );
+        return M_expr( idv(urb), gradv(urb) );
     }
-    auto expr( typename rbfunctionspace_type::element_type const& urb, mpl::false_ /**/ ) const
+    auto expr( parameter_type const& mu, typename rbfunctionspace_context_type::rbspace_type::element_type const& urb,
+               typename rbfunctionspace_context2_type::rbspace_type::element_type const& urb2 ) const
     {
-        return M_expr( idv(urb) );
+        M_mu = mu;
+#if !defined(NDEBUG)
+        M_mu.check();
+#endif
+        //return M_expr( idv(urb) );
+        return M_expr( idv(urb), gradv(urb2) );
     }
-    auto expr( typename rbfunctionspace_type::element_type const& urb, mpl::true_ /**/ ) const
-    {
-        CHECK( false ) << "TODO rbspace composite";
-        return M_expr;
-    }
+
     void saveDB()
     {
         fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
@@ -1777,6 +1787,9 @@ public:
     vector_type
     beta( parameter_type const& mu, vectorN_type const& urb, size_type __M )
     {
+        if ( !M_ctxRbModelSolution )
+            return this->beta(mu,__M );
+
         CHECK( M_ctxRbModelSolution ) << "no rbspace context";
         vector_type __beta( __M );
         __beta = this->operator()( urb, *M_ctxRbModelSolution, mu , __M );
@@ -1798,13 +1811,30 @@ public:
         M_ctxFeModelSolution->add( no );
         std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { DVLOG(2) << "t=" << t << "\n"; } );
     }
+
+    bool hasRbSpaceContext() const
+    {
+        return M_ctxRbModelSolution.use_count() > 0;
+    }
+    bool hasRbSpaceContext2() const
+    {
+        return M_ctxRbModelSolution2.use_count() > 0;
+    }
     boost::any rbSpaceContext() const
     {
         return M_ctxRbModelSolution;
     }
+    boost::any rbSpaceContext2() const
+    {
+        return M_ctxRbModelSolution2;
+    }
 
     void updateRbSpaceContext( boost::any const& rbspacebase )
     {
+        // no update if model is not a modelcrbbase
+        if ( !model_is_modelcrbbase )
+            return;
+
         this->updateRbSpaceContext( rbspacebase, mpl::bool_<use_subspace_element>() );
     }
     void updateRbSpaceContext( boost::any const& rbspacebase, mpl::false_ )
@@ -1827,9 +1857,37 @@ public:
         M_ctxRbModelSolution->update();
     }
     void updateRbSpaceContext( boost::any const& rbspacebase, mpl::true_ )
+    {
+        if ( !boost::any_cast<rbfunctionspace_ptrtype>( &rbspacebase ) )
         {
-            CHECK( false ) << "TODO rbspace composite";
+            std::cout << "[EIMFunction::updateRbSpaceContext (composite)] cast fails with rbfunctionspace_ptrtype\n";
+            return;
         }
+
+        rbfunctionspace_ptrtype rbspace = boost::any_cast<rbfunctionspace_ptrtype>( rbspacebase );
+
+        M_ctxRbModelSolution.reset( new rbfunctionspace_context_type( rbspace->template rbFunctionSpace<SubSpaceId>() ) );
+        typename Feel::node<value_type>::type no(nDim);
+        for (auto const& pt : M_t )
+        {
+            for(int i =0;i < nDim; ++i ) no(i) = pt(i);
+            M_ctxRbModelSolution->add( no );
+        }
+        M_ctxRbModelSolution->update();
+
+        if ( SubSpaceId != SubSpaceId2 )
+        {
+            M_ctxRbModelSolution2.reset( new rbfunctionspace_context2_type( rbspace->template rbFunctionSpace<SubSpaceId2>() ) );
+            typename Feel::node<value_type>::type no(nDim);
+            for (auto const& pt : M_t )
+            {
+                for(int i =0;i < nDim; ++i ) no(i) = pt(i);
+                M_ctxRbModelSolution2->add( no );
+            }
+            M_ctxRbModelSolution2->update();
+        }
+
+    }
     void setRbSpaceContext( boost::any const& rbCtxBase )
     {
         if ( !boost::any_cast<rbfunctionspace_context_ptrtype>( &rbCtxBase ) )
@@ -1840,7 +1898,23 @@ public:
         //std::cout << "[EIMFunction::setRbSpaceContext] cast ok\n";
         M_ctxRbModelSolution = boost::any_cast<rbfunctionspace_context_ptrtype>( rbCtxBase );
     }
-
+    void setRbSpaceContext2( boost::any const& rbCtxBase )
+    {
+        if ( !boost::any_cast<rbfunctionspace_context2_ptrtype>( &rbCtxBase ) )
+        {
+            std::cout << "[EIMFunction::setRbSpaceContext2] cast fails with rbfunctionspace_context_ptrtype\n";
+            return;
+        }
+        //std::cout << "[EIMFunction::setRbSpaceContext2] cast ok\n";
+        M_ctxRbModelSolution2 = boost::any_cast<rbfunctionspace_context2_ptrtype>( rbCtxBase );
+#if 0
+        // special trick for thermoelectric appli
+        auto it = M_ctxRbModelSolution2->begin();
+        auto en = M_ctxRbModelSolution2->end();
+        for ( ; it!=en; ++it )
+            (*M_ctxRbModelSolution)[it->first]->M_grad = it->second->M_grad;
+#endif
+    }
 
     node_type interpolationPoint( int position ) const
     {
@@ -1945,24 +2019,25 @@ public:
             return evaluateFromContext( _context=ctx, _expr=eimexpr , _max_points_used=M,
                                         _mpi_communications=doMpiComm, _projection=applyProjection );
         }
-    vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, parameter_type const& mu , int M)
-        {
-            return this->operator()( urb,ctx,mu,M,mpl::bool_<use_subspace_element>() );
-        }
-    vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, parameter_type const& mu , int M, mpl::false_ )
+
+    vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, parameter_type const& mu , int M )
         {
             auto urbelt = ctx.rbFunctionSpace()->element();
             urbelt.container() = urb;
+
+            if ( SubSpaceId != SubSpaceId2 && M_ctxRbModelSolution2  )
+            {
+                auto urbelt2 = M_ctxRbModelSolution2->rbFunctionSpace()->element();
+                urbelt2.container() = urb;
+                auto eimexpr2 = this->expr( mu,urbelt,urbelt2 );
+                return evaluateFromContext( _context=ctx, _expr=eimexpr2 , _max_points_used=M,
+                                            _mpi_communications=false, _projection=false );
+            }
+
             auto eimexpr = this->expr( mu,urbelt );
 
             return evaluateFromContext( _context=ctx, _expr=eimexpr , _max_points_used=M,
                                         _mpi_communications=false, _projection=false );
-        }
-    vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, parameter_type const& mu , int M, mpl::true_ )
-        {
-            CHECK( false ) << "TODO rbspace composite";
-            vector_type res;
-            return res;
         }
 
     vector_type computeExpansionCoefficients( parameter_type const& mu, model_solution_type const& solution,  int M)
@@ -3023,6 +3098,7 @@ private:
     boost::shared_ptr<context_type> M_ctxFeBasisEim;
     boost::shared_ptr<model_element_expr_context_type> M_ctxFeModelSolution;
     rbfunctionspace_context_ptrtype M_ctxRbModelSolution;
+    rbfunctionspace_context2_ptrtype M_ctxRbModelSolution2;
     matrix_type M_B;
     std::vector<double> M_offline_error;
     eim_ptrtype M_eim;
