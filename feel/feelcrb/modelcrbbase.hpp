@@ -453,18 +453,24 @@ public :
         return M_is_initialized;
     }
 
-    std::map<std::string,boost::any>
+    std::map<std::string,std::vector<boost::any> >
     rbSpaceContextEim() const
     {
-        std::map<std::string,boost::any> res;
+        std::map<std::string,std::vector<boost::any> > res;
         for ( int k=0;k<M_funs.size();++k )
         {
-            boost::any const& ctxRbAny = M_funs[k]->rbSpaceContext();
-            res[M_funs[k]->name()] = M_funs[k]->rbSpaceContext();
+            //boost::any const& ctxRbAny = M_funs[k]->rbSpaceContext();
+            if ( M_funs[k]->hasRbSpaceContext() )
+                res[M_funs[k]->name()].push_back( M_funs[k]->rbSpaceContext() );
+            if ( M_funs[k]->hasRbSpaceContext2() )
+                res[M_funs[k]->name()].push_back( M_funs[k]->rbSpaceContext2() );
         }
         for ( int k=0;k<M_funs_d.size();++k )
         {
-            res[M_funs_d[k]->name()] = M_funs_d[k]->rbSpaceContext();
+            if ( M_funs_d[k]->hasRbSpaceContext() )
+                res[M_funs_d[k]->name()].push_back( M_funs_d[k]->rbSpaceContext() );
+            if ( M_funs_d[k]->hasRbSpaceContext2() )
+                res[M_funs_d[k]->name()].push_back( M_funs_d[k]->rbSpaceContext2() );
         }
         return res;
     }
@@ -494,7 +500,7 @@ public :
     }
 #endif
     void
-    setRbSpaceContextEim( std::map<std::string,boost::any> const& rbCtx )
+    setRbSpaceContextEim( std::map<std::string,std::vector<boost::any> > const& rbCtx )
     {
         for ( int k=0;k<M_funs.size();++k )
         {
@@ -502,7 +508,11 @@ public :
             auto itFindRbCtx = rbCtx.find( eimName );
             if ( itFindRbCtx == rbCtx.end() )
                 continue;
-            M_funs[k]->setRbSpaceContext( itFindRbCtx->second );
+            auto const& rbCtxVec = itFindRbCtx->second;
+            if ( rbCtxVec.size() > 0 )
+                M_funs[k]->setRbSpaceContext( rbCtxVec[0] );
+            if ( rbCtxVec.size() > 1 )
+                M_funs[k]->setRbSpaceContext2( rbCtxVec[1] );
         }
         for ( int k=0;k<M_funs_d.size();++k )
         {
@@ -510,7 +520,11 @@ public :
             auto itFindRbCtx = rbCtx.find( eimName );
             if ( itFindRbCtx == rbCtx.end() )
                 continue;
-            M_funs_d[k]->setRbSpaceContext( itFindRbCtx->second );
+            auto const& rbCtxVec = itFindRbCtx->second;
+            if ( rbCtxVec.size() > 0 )
+                M_funs_d[k]->setRbSpaceContext( rbCtxVec[0] );
+            if ( rbCtxVec.size() > 1 )
+                M_funs_d[k]->setRbSpaceContext2( rbCtxVec[1] );
         }
     }
 #if 0
