@@ -198,6 +198,7 @@ public :
     element_advection_type const& fieldSolution() const { return *M_fieldSolution; }
 
     element_advection_velocity_type const& fieldAdvectionVelocity() const { return *M_fieldAdvectionVelocity; }
+    element_advection_velocity_ptrtype const& fieldAdvectionVelocityPtr() const { return M_fieldAdvectionVelocity; }
 
     //--------------------------------------------------------------------//
     // Algebraic data
