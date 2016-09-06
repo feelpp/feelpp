@@ -111,12 +111,12 @@ HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int imp
             auto Fb_ortho = this->levelset()->smootherVectorial()->project(
                     (trans(gradv(modGradPhiK)) - (gradv(modGradPhiK)*idv(N))*idv(N)) / idv(modGradPhi)
                     );
-            //auto Fb_global = this->levelset()->smootherVectorial()->project(
-                    //this->bendingModulus() * (divv(Fb_par) + divv(Fb_ortho)) * idv(N)
-                    //);
-            auto Fb_global = this->levelset()->projectorL2Vectorial()->project(
+            auto Fb_global = this->levelset()->smootherVectorial()->project(
                     this->bendingModulus() * (divv(Fb_par) + divv(Fb_ortho)) * idv(N)
                     );
+            //auto Fb_global = this->levelset()->projectorL2Vectorial()->project(
+                    //this->bendingModulus() * (divv(Fb_par) + divv(Fb_ortho)) * idv(N)
+                    //);
 
             auto Fb = vf::project(
                     _space=this->levelset()->functionSpaceVectorial(),
