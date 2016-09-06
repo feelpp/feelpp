@@ -2816,7 +2816,7 @@ CRB<TruthModelType>::offline()
                         norm=0;
                     old=norm;
                 }
-
+                M_model->rBFunctionSpace()->updatePrimalBasisForUse();
                 tpr=timer2.elapsed();
             }
             if ( M_orthonormalize_dual && M_solve_dual_problem )
@@ -2833,6 +2833,7 @@ CRB<TruthModelType>::offline()
                         norm=0;
                     old=norm;
                 }
+                M_model->rBFunctionSpace()->updateDualBasisForUse();
                 tdu=timer2.elapsed();
             }
         }//orthonormalization
@@ -10638,7 +10639,8 @@ struct SaveRbSpaceCtxComposite
         :
         M_ar( ar ),
         M_rbctxNameInDb( rbctxNameInDb ),
-        M_ctxRbAny( ctxRbAny )
+        M_ctxRbAny( ctxRbAny ),
+        M_currentSubSpaceIndex( 0 )
     {}
     template <typename T>
     void operator()( T & x ) const
@@ -10647,61 +10649,123 @@ struct SaveRbSpaceCtxComposite
         typedef typename T::second_type::element_type rbsubspace_type;
         typedef typename rbsubspace_type::ctxrbset_ptrtype ctxrbset_ptrtype;
         if ( !boost::any_cast<ctxrbset_ptrtype>( &M_ctxRbAny ) )
+        {
+            ++M_currentSubSpaceIndex;
             return;
+        }
 
         auto ctxRb = boost::any_cast<ctxrbset_ptrtype>( M_ctxRbAny );
+
+        M_ar & boost::serialization::make_nvp( (M_rbctxNameInDb+"_spaceId").c_str(), M_currentSubSpaceIndex );
         M_ar & boost::serialization::make_nvp( M_rbctxNameInDb.c_str(), *ctxRb);
+        ++M_currentSubSpaceIndex;
     }
     Archive & M_ar;
     std::string const& M_rbctxNameInDb;
     boost::any const& M_ctxRbAny;
+    mutable int M_currentSubSpaceIndex;
 };
 
 template<typename TheRbSpaceType,class Archive>
 void
-saveRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, boost::any const& ctxRbAny, mpl::false_ )
+saveRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, std::vector<boost::any> const& ctxRbAnyVec, mpl::false_ )
 {
     typedef typename TheRbSpaceType::element_type::ctxrbset_ptrtype ctxrbset_ptrtype;
-    CHECK( boost::any_cast<ctxrbset_ptrtype>( &ctxRbAny ) ) << "invalid rbctx cast in non composite";
-    auto ctxRb = boost::any_cast<ctxrbset_ptrtype>( ctxRbAny );
-    ar & boost::serialization::make_nvp( rbctxNameInDb.c_str(), *ctxRb );
+    CHECK( ctxRbAnyVec.size() <= 1 ) << "only one context in non composite";
+    for ( boost::any const& ctxRbAny : ctxRbAnyVec )
+    {
+        CHECK( boost::any_cast<ctxrbset_ptrtype>( &ctxRbAny ) ) << "invalid rbctx cast in non composite";
+        auto ctxRb = boost::any_cast<ctxrbset_ptrtype>( ctxRbAny );
+        ar & boost::serialization::make_nvp( rbctxNameInDb.c_str(), *ctxRb );
+    }
 }
 template<typename TheRbSpaceType,class Archive>
 void
-saveRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, boost::any const& ctxRbAny, mpl::true_ )
+saveRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, std::vector<boost::any> const& ctxRbAnyVec, mpl::true_ )
 {
-    boost::fusion::for_each( rbSpace->rbfunctionspaces(), SaveRbSpaceCtxComposite<Archive>( ar, rbctxNameInDb, ctxRbAny )  );
+    int numberOfCtx = ctxRbAnyVec.size();
+    ar & boost::serialization::make_nvp( (rbctxNameInDb+"_number_of_context").c_str(), numberOfCtx );
+    for ( int k=0;k<numberOfCtx;++k )
+    {
+        std::string rbctxNameInDb2 = (boost::format("%1%_%2%")%rbctxNameInDb %k).str();
+        boost::fusion::for_each( rbSpace->rbfunctionspaces(), SaveRbSpaceCtxComposite<Archive>( ar, rbctxNameInDb2, ctxRbAnyVec[k] ) );
+    }
 }
 template<typename TheRbSpaceType,class Archive>
 void
-saveRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, boost::any const& ctxRbAny )
+saveRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, std::vector<boost::any> const& ctxRbAnyVec )
 {
-    saveRbSpaceCtx( rbSpace,ar,rbctxNameInDb,ctxRbAny, mpl::bool_<TheRbSpaceType::element_type::is_composite>() );
+    saveRbSpaceCtx( rbSpace,ar,rbctxNameInDb,ctxRbAnyVec, mpl::bool_<TheRbSpaceType::element_type::is_composite>() );
 }
 
 
+template<class Archive>
+struct LoadRbSpaceCtxComposite
+{
+    LoadRbSpaceCtxComposite( Archive & ar, std::string const& rbctxNameInDb, int subspaceId, boost::any & ctxRbAny )
+        :
+        M_ar( ar ),
+        M_rbctxNameInDb( rbctxNameInDb ),
+        M_ctxRbAny( ctxRbAny ),
+        M_subspaceId( subspaceId ),
+        M_currentSubSpaceIndex( 0 )
+    {}
+    template <typename T>
+    void operator()( T & x ) const
+    {
+        typedef typename T::first_type key_type;
+        typedef typename T::second_type::element_type rbsubspace_type;
+        typedef typename rbsubspace_type::ctxrbset_ptrtype ctxrbset_ptrtype;
+        typedef typename rbsubspace_type::ctxrbset_type ctxrbset_type;
+        if ( M_currentSubSpaceIndex != M_subspaceId )
+        {
+            ++M_currentSubSpaceIndex;
+            return;
+        }
+        //std::cout << "load rbcomposite "<<M_rbctxNameInDb << " with index " << M_subspaceId << "\n";
+        M_ctxRbAny = ctxrbset_ptrtype( new ctxrbset_type( x.second ) );
+        auto ctxRb = boost::any_cast<ctxrbset_ptrtype>( M_ctxRbAny );
+        M_ar & boost::serialization::make_nvp( M_rbctxNameInDb.c_str(), *ctxRb);
+        ++M_currentSubSpaceIndex;
+    }
+    Archive & M_ar;
+    std::string const& M_rbctxNameInDb;
+    boost::any & M_ctxRbAny;
+    int M_subspaceId;
+    mutable int M_currentSubSpaceIndex;
+};
+
 template<typename TheRbSpaceType,class Archive>
 void
-loadRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, boost::any & ctxRbAny, mpl::false_ )
+loadRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, std::vector<boost::any> & ctxRbAny, mpl::false_ )
 {
     typedef typename TheRbSpaceType::element_type::ctxrbset_ptrtype ctxrbset_ptrtype;
     typedef typename TheRbSpaceType::element_type::ctxrbset_type ctxrbset_type;
-    ctxRbAny = ctxrbset_ptrtype( new ctxrbset_type( rbSpace ) );
-    auto ctxRb = boost::any_cast<ctxrbset_ptrtype>( ctxRbAny );
+    ctxRbAny.resize( 1 );
+    ctxRbAny[0] = ctxrbset_ptrtype( new ctxrbset_type( rbSpace ) );
+    auto ctxRb = boost::any_cast<ctxrbset_ptrtype>( ctxRbAny[0] );
     ar & boost::serialization::make_nvp( rbctxNameInDb.c_str(), *ctxRb );
     ctxRb->setRbFunctionSpace( rbSpace );
 }
 template<typename TheRbSpaceType,class Archive>
 void
-loadRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, boost::any & ctxRbAny, mpl::true_ )
+loadRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, std::vector<boost::any> & ctxRbAny, mpl::true_ )
 {
-    //TODO
-    CHECK( false ) << "TODO";
+    int numberOfCtx = 0;
+    ar & boost::serialization::make_nvp( (rbctxNameInDb+"_number_of_context").c_str(), numberOfCtx );
+    ctxRbAny.resize( numberOfCtx );
+    for ( int k=0;k<numberOfCtx;++k )
+    {
+        std::string rbctxNameInDb2 = (boost::format("%1%_%2%")%rbctxNameInDb %k).str();
+        int subspaceId = -1;
+        ar & boost::serialization::make_nvp( (rbctxNameInDb2+"_spaceId").c_str(), subspaceId );
+        boost::fusion::for_each( rbSpace->rbfunctionspaces(), LoadRbSpaceCtxComposite<Archive>( ar, rbctxNameInDb2, subspaceId, ctxRbAny[k] ) );
+    }
 }
 
 template<typename TheRbSpaceType,class Archive>
 void
-loadRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, boost::any & ctxRbAny )
+loadRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& rbctxNameInDb, std::vector<boost::any> & ctxRbAny )
 {
     loadRbSpaceCtx( rbSpace,ar,rbctxNameInDb,ctxRbAny, mpl::bool_<TheRbSpaceType::element_type::is_composite>() );
 }
@@ -11011,7 +11075,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
             std::vector<std::string> rbSpaceContextEimNames;
             ar & BOOST_SERIALIZATION_NVP( rbSpaceContextEimNames );
 
-            std::map<std::string,boost::any> rbSpaceContextEim;
+            std::map<std::string,std::vector<boost::any> > rbSpaceContextEim;
             for ( std::string const& eimName : rbSpaceContextEimNames )
             {
                 std::string rbctxNameInDb = (boost::format("rbSpaceContextEim_%1%")%eimName).str();
