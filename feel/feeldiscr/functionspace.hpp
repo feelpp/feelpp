@@ -2579,6 +2579,20 @@ public:
             return this->extremeValue( P0h, "min" );
         }
 
+        template <typename ... CTX>
+        auto //basis_context_ptrtype
+        selectContext( CTX const& ... ctx ) const
+            {
+                typedef boost::fusion::vector<CTX...> my_vector_ctx_type;
+                typedef typename boost::fusion::result_of::distance<typename boost::fusion::result_of::begin<my_vector_ctx_type>::type,
+                                                                    typename boost::fusion::result_of::find<my_vector_ctx_type,basis_context_ptrtype>::type>::type pos_ctx_type;
+                static const int myNumberOfCtx = boost::mpl::size<my_vector_ctx_type>::type::value;
+                // CHECK( pos_ctx_type::value < myNumberOfCtx ) << "no compatible context : "<< pos_ctx_type::value << " and " << myNumberOfCtx;
+                static const int ctxPosition = (pos_ctx_type::value >= myNumberOfCtx)?0 : pos_ctx_type::value;
+                my_vector_ctx_type ctxvec( ctx... );
+                return boost::fusion::at_c<ctxPosition>( ctxvec );
+            }
+
         //! Interpolation at a set of points
         //@{
         /**
