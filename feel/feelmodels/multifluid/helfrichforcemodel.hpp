@@ -130,12 +130,12 @@ HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int imp
             M_exporter->step(this->levelset()->time())->add(
                     "dirac", "dirac", this->levelset()->D() );
             auto Fb_par_D = this->levelset()->projectorL2Vectorial()->project(
-                    divv(Fb_par) * idv(N) * idv(this->levelset()->D())
+                    this->bendingModulus() * divv(Fb_par) * idv(N) * idv(this->levelset()->D())
                     );
             M_exporter->step(this->levelset()->time())->add(
                     "helfrich-parallel", "helfrich-parallel", Fb_par_D );
             auto Fb_ortho_D = this->levelset()->projectorL2Vectorial()->project(
-                    divv(Fb_ortho) * idv(N) * idv(this->levelset()->D())
+                    this->bendingModulus() * divv(Fb_ortho) * idv(N) * idv(this->levelset()->D())
                     );
             M_exporter->step(this->levelset()->time())->add(
                     "helfrich-ortho", "helfrich-ortho", Fb_ortho_D );
