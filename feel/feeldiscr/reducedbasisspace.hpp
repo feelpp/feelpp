@@ -80,6 +80,112 @@ struct InitializeRbSubSpace
 private :
     RbSpaceType const& M_rbSpaceType;
 };
+
+/**
+ * add basis in subRbSpace
+ * Type=0 : primal basis
+ * Type=1 : dual basis
+ */
+template<typename RbSpaceType,int Type>
+struct AddBasisElementRbSubSpace
+{
+    AddBasisElementRbSubSpace( RbSpaceType const& rbSpaceType, typename RbSpaceType::space_element_type const & e )
+        :
+        M_rbSpaceType( rbSpaceType ),
+        M_e( e )
+        {}
+
+    template <typename T>
+    void operator()( T & x ) const
+        {
+            this->operator()( x,mpl::int_<Type>() );
+        }
+    template <typename T>
+    void operator()( T & x, mpl::int_<0> ) const
+        {
+            typedef typename T::first_type key_type;
+            // create new element
+            auto basiselt = M_rbSpaceType.template subFeFunctionSpace<key_type::value>()->element();
+            // copy view in element
+            basiselt = M_e.template element<key_type::value>();
+            // add basis in subspace
+            x.second->addPrimalBasisElement( basiselt );
+        }
+    template <typename T>
+    void operator()( T & x, mpl::int_<1> ) const
+        {
+            typedef typename T::first_type key_type;
+            // create new element
+            auto basiselt = M_rbSpaceType.template subFeFunctionSpace<key_type::value>()->element();
+            // copy view in element
+            basiselt = M_e.template element<key_type::value>();
+            // add basis in subspace
+            x.second->addDualBasisElement( basiselt );
+        }
+private :
+    RbSpaceType const& M_rbSpaceType;
+    typename RbSpaceType::space_element_type const & M_e;
+};
+
+/**
+ * delete n-last basis in subRbSpace
+ * Type=0 : primal basis
+ * Type=1 : dual basis
+ */
+template<typename RbSpaceType,int Type>
+struct DeleteLastBasisElementsRbSubSpace
+{
+    DeleteLastBasisElementsRbSubSpace( RbSpaceType const& rbSpaceType, int number )
+        :
+        M_rbSpaceType( rbSpaceType ),
+        M_number( number )
+        {}
+
+    template <typename T>
+    void operator()( T & x ) const
+        {
+            this->operator()( x,mpl::int_<Type>() );
+        }
+    template <typename T>
+    void operator()( T & x, mpl::int_<0> ) const
+        {
+            x.second->deleteLastPrimalBasisElements( M_number );
+        }
+    template <typename T>
+    void operator()( T & x, mpl::int_<1> ) const
+        {
+            x.second->deleteLastDualBasisElements( M_number );
+        }
+private :
+    RbSpaceType const& M_rbSpaceType;
+    int M_number;
+};
+
+/**
+ * delete all basis in subRbSpace
+ * Type=0 : primal basis
+ * Type=1 : dual basis
+ */
+template<int Type>
+struct ClearBasisElementsRbSubSpace
+{
+    template <typename T>
+    void operator()( T & x ) const
+        {
+            this->operator()( x,mpl::int_<Type>() );
+        }
+    template <typename T>
+    void operator()( T & x, mpl::int_<0> ) const
+        {
+            x.second->primalRB().clear();
+        }
+    template <typename T>
+    void operator()( T & x, mpl::int_<1> ) const
+        {
+            x.second->dualRB().clear();
+        }
+};
+
 }
 
 /**
@@ -327,11 +433,12 @@ public :
     void addPrimalBasisElement( space_element_type const & e )
         {
             M_primal_rb_basis.push_back( e );
+            this->addPrimalBasisElementInSubSpace( e, mpl::bool_<fespace_type::is_composite>() );
         }
 
     void addPrimalBasisElement( space_element_ptrtype const & e )
         {
-            M_primal_rb_basis.push_back( *e );
+            this->addPrimalBasisElement( *e );
         }
 
     space_element_type& primalBasisElement( int index )
@@ -343,11 +450,12 @@ public :
     void addDualBasisElement( space_element_type const & e )
         {
             M_dual_rb_basis.push_back( e );
+            this->addDualBasisElementInSubSpace( e, mpl::bool_<fespace_type::is_composite>() );
         }
 
     void addDualBasisElement( space_element_ptrtype const & e )
         {
-            M_dual_rb_basis.push_back( *e );
+            this->addDualBasisElement( *e );
         }
 
     space_element_type& dualBasisElement( int index )
@@ -365,6 +473,7 @@ public :
             {
                 M_primal_rb_basis.pop_back();
             }
+            this->deleteLastPrimalBasisElementsInSubSpace( number, mpl::bool_<fespace_type::is_composite>() );
         }
 
     void deleteLastDualBasisElements( int number )
@@ -375,6 +484,7 @@ public :
             {
                 M_dual_rb_basis.pop_back();
             }
+            this->deleteLastDualBasisElementsInSubSpace( number, mpl::bool_<fespace_type::is_composite>() );
         }
 
     /*
@@ -413,10 +523,27 @@ public :
     void setPrimalBasis( rb_basis_type const& rb)
         {
             M_primal_rb_basis = rb;
+            this->setPrimalBasisInSubSpace( M_primal_rb_basis, mpl::bool_<fespace_type::is_composite>() );
         }
     void setDualBasis( rb_basis_type const& rb)
         {
             M_dual_rb_basis = rb;
+            this->setDualBasisInSubSpace( M_dual_rb_basis, mpl::bool_<fespace_type::is_composite>() );
+        }
+
+    /**
+     * update primal basis in subrbspace (do nothing if not composite)
+     */
+    void updatePrimalBasisForUse()
+        {
+            this->setPrimalBasisInSubSpace( M_primal_rb_basis, mpl::bool_<fespace_type::is_composite>() );
+        }
+    /**
+     * update dual basis in subrbspace (do nothing if not composite)
+     */
+    void updateDualBasisForUse()
+        {
+            this->setDualBasisInSubSpace( M_dual_rb_basis, mpl::bool_<fespace_type::is_composite>() );
         }
 
     //basis of RB space are elements of FEM function space
@@ -620,19 +747,20 @@ public :
          */
         eigen_vector_type grad( eigen_vector_type const& coeffs , int node_index=-1 ) const
             {
+#if 0
                 int npts = super::nPoints();
                 DCHECK(npts > node_index)<<"node_index "<<node_index<<" must be lower that npts "<<npts;
                 if( node_index >=0 )
                     npts=1; //we study only the node at node_index
-
+#endif
                 eigen_vector_type result ;
                 for(int d=0; d<nDim; d++)
                 {
                     for(int c=0; c<nComponents; c++)
                     {
-                        eigen_vector_type result_comp_dim( npts );
+                        //eigen_vector_type result_comp_dim( npts );
                         auto prod = coeffs.transpose()*M_grad[c][d];
-                        result_comp_dim=prod.transpose();
+                        eigen_vector_type result_comp_dim=prod.transpose();
                         //concatenate
                         int new_size = result.size() + result_comp_dim.size();
                         eigen_vector_type tmp( result );
@@ -758,7 +886,7 @@ public :
                     if ( M_rbspace->mesh() )
                     {
                         std::cout << "has mesh in rbspace\n";
-                        CHECK ( M_meshForRbContext->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) ) << "fails because mesh doesnt have the element reloaded for gmc";
+                        CHECK ( M_rbspace->mesh()->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) ) << "fails because mesh doesnt have the element reloaded for gmc";
                         auto const& meshEltCtxRegister = M_rbspace->mesh()->element( meshEltCtx.id(), meshEltCtx.processId() );
                         typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_rbspace->mesh()->gm(),meshEltCtxRegister ) );
                         ar & boost::serialization::make_nvp( "gmContext", *gmContext );
@@ -1007,7 +1135,7 @@ public :
     /**
      * \return function space context
      */
-    ContextRBSet context() { return ContextRBSet( boost::dynamic_pointer_cast< ReducedBasisSpace<ModelType> >( this->shared_from_this() ) ); }
+    ContextRBSet context() { return ContextRBSet( boost::dynamic_pointer_cast< ReducedBasisSpace<ModelType,FeSpaceType> >( this->shared_from_this() ) ); }
 
     ctxrb_ptrtype
     contextBasis( std::pair<int,boost::shared_ptr<ContextRB>> const& p, ContextRBSet const& c )
@@ -1461,6 +1589,11 @@ public :
          * we need to have these functions
          */
         void
+        gradInterpolate( matrix_node_type __ptsReal, grad_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+        {
+            CHECK( false ) << "The function gradInterpolate is not yet implemented \n";
+        }
+        void
         dxInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
         {
             bool go = false;
@@ -1544,14 +1677,14 @@ public :
     //Access to an element of the reduced basis space
     element_type element( std::string const& name="u" )
         {
-            element_type u(boost::dynamic_pointer_cast<ReducedBasisSpace<ModelType>>(this->shared_from_this() ), name );
+            element_type u(boost::dynamic_pointer_cast<ReducedBasisSpace<ModelType,FeSpaceType>>(this->shared_from_this() ), name );
             u.setZero();
             return u;
         }
 
     element_ptrtype elementPtr( std::string const& name="u" )
         {
-            element_ptrtype u( new element_type( boost::dynamic_pointer_cast<ReducedBasisSpace<ModelType>>(this->shared_from_this() ) , name ) );
+            element_ptrtype u( new element_type( boost::dynamic_pointer_cast<ReducedBasisSpace<ModelType,FeSpaceType>>(this->shared_from_this() ) , name ) );
             u->setZero();
             return u;
         }
@@ -1585,6 +1718,48 @@ public :
         return fusion::at_c<i>( M_rbfunctionspaces ).second;
     }
 
+private :
+    void addPrimalBasisElementInSubSpace( space_element_type const & e, mpl::false_ ) {}
+    void addPrimalBasisElementInSubSpace( space_element_type const & e, mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::AddBasisElementRbSubSpace<this_type,0>( *this, e ) );
+        }
+    void deleteLastPrimalBasisElementsInSubSpace( int number, mpl::false_ ) {}
+    void deleteLastPrimalBasisElementsInSubSpace( int number, mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::DeleteLastBasisElementsRbSubSpace<this_type,0>( *this, number ) );
+        }
+    void setPrimalBasisInSubSpace( rb_basis_type const& rb, mpl::false_ ) {}
+    void setPrimalBasisInSubSpace( rb_basis_type const& rb, mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::ClearBasisElementsRbSubSpace<0>() );
+            for (auto const& thebasis : rb )
+                this->addPrimalBasisElementInSubSpace( thebasis, mpl::true_() );
+        }
+
+    void addDualBasisElementInSubSpace( space_element_type const & e, mpl::false_ ) {}
+    void addDualBasisElementInSubSpace( space_element_type const & e, mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::AddBasisElementRbSubSpace<this_type,1>( *this, e ) );
+        }
+    void deleteLastDualBasisElementsInSubSpace( int number, mpl::false_ ) {}
+    void deleteLastDualBasisElementsInSubSpace( int number, mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::DeleteLastBasisElementsRbSubSpace<this_type,1>( *this, number ) );
+        }
+    void setDualBasisInSubSpace( rb_basis_type const& rb, mpl::false_ ) {}
+    void setDualBasisInSubSpace( rb_basis_type const& rb, mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::ClearBasisElementsRbSubSpace<1>() );
+            for (auto const& thebasis : rb )
+                this->addDualBasisElementInSubSpace( thebasis, mpl::true_() );
+        }
 
 private :
     rbfunctionspace_vector_type M_rbfunctionspaces;
@@ -1620,7 +1795,13 @@ template<typename Context_t>
 void
 ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v ) const
 {
+#if 1
     return grad_( context, v, boost::is_same<Context_t,ContextRB>() );
+#else
+    // special trick for thermoelectric appli (composite case with 2 differents contexts in expr)
+    grad_( context, v, mpl::bool_< boost::is_same<Context_t,ContextRB>::value ||
+                  boost::is_same<Context_t, typename ReducedBasisSpace<ModelType>::template sub_rbfunctionspace<1>::type::ctxrb_type >::value >() );
+#endif
 }
 
 template<typename ModelType,typename FeSpaceType>
@@ -1656,10 +1837,14 @@ template<typename Context_t>
 void
 ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v , mpl::bool_<true> ) const
 {
+#if 0
     ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
+#else
+    auto const& rb_context = context;
+#endif
     //LOG( INFO ) << " grad_ with a RB context";
 
-    int index = rb_context.pointIndex();
+    //int index = rb_context.pointIndex();
     //evaluate the gradient at a specific point (called by evaluateFromContext)
     auto evaluation = rb_context.grad( *this );
     for(int d=0;d<nDim;d++)
