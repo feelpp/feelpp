@@ -118,11 +118,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
 {
     this->log("LevelSet", "init", "start");
 
-    // Set initial value
+    // Set levelset initial value
     this->initLevelsetValue();
-    // Init advection
+    // Init levelset advection
     super_type::init( true, this->shared_from_this() );
     M_timeOrder = this->timeStepBDF()->timeOrder(); 
+    // Init modGradPhi advection
+    if( M_useGradientAugmented )
+    {
+        M_modGradPhiAdvection->init();
+    }
 
     // Init iterSinceReinit
     if( this->doRestart() )
@@ -227,6 +232,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     if( hasInitialValue )
     {
         this->setInitialValue( phi_init );
+    }
+
+    if( M_useGradientAugmented )
+    {
+        // Initialize modGradPhi
+        M_modGradPhiAdvection->fieldSolutionPtr()->setConstant(1.);
     }
 
     this->log("LevelSet", "initLevelsetValue", "finish");
@@ -400,6 +411,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
     M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "projector-l2"), _worldcomm=this->worldComm()) );
     M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "projector-l2-vec"), _worldcomm=this->worldComm()) );
 
+    if( M_useGradientAugmented )
+    {
+        M_modGradPhiAdvection = modgradphi_advection_type::New(
+                prefixvm(this->prefix(), "modgradphi-advection"),
+                this->worldComm()
+                );
+        M_modGradPhiAdvection->setModelName( "Advection" );
+        M_modGradPhiAdvection->build( this->functionSpace() );
+    }
+
     //if( M_doSmoothCurvature )
     //{
         //M_smoother = projector( 
@@ -428,13 +449,20 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::modGradPhi() const
 {
-    if( !M_levelsetModGradPhi )
-        M_levelsetModGradPhi.reset( new element_levelset_type(this->functionSpace(), "ModGradPhi") );
+    if( M_useGradientAugmented )
+    {
+        return M_modGradPhiAdvection->fieldSolutionPtr();
+    }
+    else
+    {
+        if( !M_levelsetModGradPhi )
+            M_levelsetModGradPhi.reset( new element_levelset_type(this->functionSpace(), "ModGradPhi") );
 
-    if( M_doUpdateModGradPhi )
-       const_cast<self_type*>(this)->updateModGradPhi();
+        if( M_doUpdateModGradPhi )
+            const_cast<self_type*>(this)->updateModGradPhi();
 
-    return M_levelsetModGradPhi;
+        return M_levelsetModGradPhi;
+    }
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -533,6 +561,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
         M_doSmoothCurvature = true;
     else
         M_doSmoothCurvature = boption( _name="smooth-curvature", _prefix=this->prefix() );
+
+    M_useGradientAugmented = boption( _name="use-gradient-augmented", _prefix=this->prefix() );
 
     //M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
 }
@@ -1111,7 +1141,23 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
     this->log("LevelSet", "solve", "start");
     this->timerTool("Solve").start();
 
+    // Solve phi
     super_type::solve();
+
+    if( M_useGradientAugmented )
+    {
+        // Solve modGradPhi
+        auto modGradPhi = M_modGradPhiAdvection->fieldSolutionPtr();
+        auto u = this->fieldAdvectionVelocityPtr();
+        auto NxN = idv(this->N()) * trans(idv(this->N()));
+        auto Du = sym( gradv(u) );
+        M_modGradPhiAdvection->updateAdvectionVelocity( idv(u) );
+        M_modGradPhiAdvection->updateSourceAdded(
+                - idv(modGradPhi) * inner( NxN, Du)
+                );
+        M_modGradPhiAdvection->solve();
+    }
+    // Update interface-related quantities
     this->updateInterfaceQuantities();
 
     // Reset hasReinitialized
@@ -1230,6 +1276,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
     } // Hamilton-Jacobi
 
     *phi = M_reinitializer->run( *phi );
+
+    if( M_useGradientAugmented )
+    {
+        auto sol = M_modGradPhiAdvection->fieldSolutionPtr();
+        sol->setConstant(1.);
+    }
 
     M_hasReinitialized = true;
 

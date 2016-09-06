@@ -400,12 +400,15 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"smoother.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for curvature smoothing")
         (prefixvm(prefix,"smoother-vec.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for curvature smoothing")
 
+        (prefixvm(prefix,"use-gradient-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Advect modGradPhi independently")
+
         (prefixvm(prefix,"do_export_gradphi").c_str(), Feel::po::value<bool>(), "doExportGradPhi")
         (prefixvm(prefix,"do_export_modgradphi").c_str(), Feel::po::value<bool>(), "doExportModGradPhi")
         ;
 
     levelsetOptions
         .add( advection_options( prefix ) )
+        .add( advection_options( prefixvm(prefix, "modgradphi-advection") ) )
         .add( backend_options( prefixvm(prefix, "projector-l2") ) )
         .add( backend_options( prefixvm(prefix, "projector-l2-vec") ) )
         .add( backend_options( prefixvm(prefix, "smoother") ) )
