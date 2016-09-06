@@ -18,12 +18,6 @@ ADVECTION_CLASS_TEMPLATE_TYPE::Advection(
 
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Advection.info") );
     //-----------------------------------------------------------------------------//
-    // Set model from options
-    std::string advection_model = this->modelProperties().model();
-    if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
-        advection_model = soption(_name="model",_prefix=this->prefix());
-    this->setModelName( advection_model );
-    //-----------------------------------------------------------------------------//
     // load info from .bc file
     this->loadConfigBCFile();
     // get periodicity from options (if needed)
@@ -50,6 +44,14 @@ ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTION_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
+    //-----------------------------------------------------------------------------//
+    // Set model from options
+    std::string advection_model = this->modelProperties().model();
+    if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
+        advection_model = soption(_name="model",_prefix=this->prefix());
+    if( !advection_model.empty() )
+        this->setModelName( advection_model );
+    // Init super_type
     super_type::init( buildModelAlgebraicFactory, this->shared_from_this() );
 }
 
