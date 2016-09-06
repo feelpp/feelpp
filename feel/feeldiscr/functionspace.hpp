@@ -4329,7 +4329,6 @@ public:
     */
     reference_element_ptrtype const& fe() const
     {
-        DCHECK( M_ref_fe ) << "Invalid reference element\n";
         return M_ref_fe;
     }
 
