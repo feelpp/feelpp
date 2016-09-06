@@ -1,7 +1,6 @@
 #include <feel/feelmodels/levelset/levelset.hpp>
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
-#include <feel/feelmodels/levelset/reinitializer_fm.hpp>
 #include <feel/feelmodels/levelset/reinitializer_hj.hpp>
 
 namespace Feel {
@@ -22,13 +21,17 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
         std::string const& rootRepository ) 
 :
     super_type( prefix, worldComm, subPrefix, rootRepository ),
+    M_doUpdateDirac(true),
+    M_doUpdateHeaviside(true),
+    M_doUpdateNormal(true),
+    M_doUpdateCurvature(true),
     M_doUpdateGradPhi(true),
-    M_mass(0.),
-    //M_periodicity(periodicityLS),
+    M_doUpdateModGradPhi(true),
     M_doUpdateMarkers(true),
+    //M_periodicity(periodicityLS),
     M_reinitializerIsUpdatedForUse(false),
-    M_iterSinceReinit(0),
-    M_hasReinitialized(false)
+    M_hasReinitialized(false),
+    M_iterSinceReinit(0)
 {
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
     //-----------------------------------------------------------------------------//
@@ -39,6 +42,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     this->loadParametersFromOptionsVm();
     // Load initial value
     this->loadConfigICFile();
+    // Load boundary conditions
+    this->loadConfigBCFile();
+    // Load post-process
+    this->loadConfigPostProcess();
     // Get periodicity from options (if needed)
     //this->loadPeriodicityFromOptionsVm();
 
@@ -111,12 +118,47 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
 {
     this->log("LevelSet", "init", "start");
 
-    // Set initial value
+    // Set levelset initial value
     this->initLevelsetValue();
-    // Init advection
+    // Init levelset advection
     super_type::init( true, this->shared_from_this() );
-
     M_timeOrder = this->timeStepBDF()->timeOrder(); 
+    // Init modGradPhi advection
+    if( M_useGradientAugmented )
+    {
+        M_modGradPhiAdvection->init();
+    }
+
+    // Init iterSinceReinit
+    if( this->doRestart() )
+    {
+        // Reload saved iterSinceReinit data
+        auto iterSinceReinitPath = fs::path(this->rootRepository()) / fs::path( prefixvm(this->prefix(), "itersincereinit") );
+        if( fs::exists( iterSinceReinitPath ) )
+        {
+            fs::ifstream ifs( iterSinceReinitPath );
+            boost::archive::text_iarchive ia( ifs );
+            ia >> BOOST_SERIALIZATION_NVP( M_vecIterSinceReinit );
+            M_iterSinceReinit = M_vecIterSinceReinit.back();
+        }
+        else
+        {
+            // If iterSinceReinit not found, we assume that last step reinitialized by default
+            M_iterSinceReinit = 0;
+        }
+    }
+    else
+    {
+            M_vecIterSinceReinit.push_back( M_iterSinceReinit );
+    }
+    // Adjust BDF order with iterSinceReinit
+    if( M_iterSinceReinit < M_timeOrder )
+    {
+        this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+    }
+
+    // Init post-process
+    this->initPostProcess();
 
     this->log("LevelSet", "init", "finish");
 }
@@ -126,6 +168,8 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
 {
     this->log("LevelSet", "initLevelsetValue", "start");
+
+    bool hasInitialValue = false;
 
     auto phi_init = this->functionSpace()->element();
     phi_init.setConstant( std::numeric_limits<value_type>::max() );
@@ -156,17 +200,45 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
                         );
             }
         }
+
+        hasInitialValue = true;
     }
 
     if( !this->M_icShapes.empty() )
     {
+        // If phi_init already has a value, ensure that it is a proper distance function
+        if( hasInitialValue )
+        {
+            // ILP on phi_init
+            auto gradPhiInit = this->projectorL2Vectorial()->derivate( idv(phi_init) );
+            auto modGradPhiInit = M_smootherFM->project( sqrt( trans(idv(gradPhiInit))*idv(gradPhiInit) ) );
+            phi_init = vf::project( 
+                _space=this->functionSpace(),
+                _range=elements(this->mesh()),
+                _expr=idv(phi_init) / idv(modGradPhiInit)
+                );
+            // Reinitialize phi_init
+            phi_init = this->reinitializerFM()->run( phi_init );
+        }
+        // Add shapes
         for( auto const& shape: M_icShapes )
         {
             this->addShape( shape, phi_init );
-        }         
+        }
+
+        hasInitialValue = true;
     }
 
-    this->setInitialValue( phi_init );
+    if( hasInitialValue )
+    {
+        this->setInitialValue( phi_init );
+    }
+
+    if( M_useGradientAugmented )
+    {
+        // Initialize modGradPhi
+        M_modGradPhiAdvection->fieldSolutionPtr()->setConstant(1.);
+    }
 
     this->log("LevelSet", "initLevelsetValue", "finish");
 }
@@ -192,7 +264,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::addShape(
             phi = vf::project(
                     _space=this->functionSpace(),
                     _range=elements(this->mesh()),
-                    _expr=min( sqrt(X*X+Y*Y+Z*Z)-R, idv(phi) ),
+                    _expr=vf::min( idv(phi), sqrt(X*X+Y*Y+Z*Z)-R ),
                     _geomap=this->geomap()
                     );
         }
@@ -204,6 +276,51 @@ LEVELSET_CLASS_TEMPLATE_TYPE::addShape(
         }
         break;
     }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
+{
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    // Measures
+    bool hasMeasureToExport = false;
+
+    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Volume ) )
+    {
+        this->postProcessMeasuresIO().setMeasure( "volume", this->volume() );
+        hasMeasureToExport = true;
+    }
+    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Perimeter ) )
+    {
+        this->postProcessMeasuresIO().setMeasure( "perimeter", this->perimeter() );
+        hasMeasureToExport = true;
+    }
+
+    if ( hasMeasureToExport )
+    {
+        this->postProcessMeasuresIO().setParameter( "time", this->timeInitial() );
+        // start or restart measure file
+        if (!this->doRestart())
+            this->postProcessMeasuresIO().start();
+        else if ( !this->isStationary() )
+            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+    }
+
+    //// User-defined fields
+    //if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
+    //{
+        //for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
+        //{
+            //if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
+                //M_postProcessUserFieldExported.insert( o );
+        //}
+    //}
+
+    super_type::initPostProcess();
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -231,6 +348,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     M_dirac.reset( new element_levelset_type(this->functionSpace(), "Dirac") );
     M_levelsetNormal.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "Normal") );
     M_levelsetCurvature.reset( new element_levelset_type(this->functionSpace(), "Curvature") );
+
+    if( M_useGradientAugmented )
+    {
+        M_modGradPhiAdvection = modgradphi_advection_type::New(
+                prefixvm(this->prefix(), "modgradphi-advection"),
+                this->worldComm()
+                );
+        M_modGradPhiAdvection->setModelName( "Advection" );
+        M_modGradPhiAdvection->build( this->functionSpace() );
+        M_modGradPhiAdvection->timeStepBDF()->setOrder( this->timeStepBDF()->bdfOrder() );
+
+        M_modGradPhiAdvection->getExporter()->setDoExport( boption( _name="do_export_modgradphi-advection", _prefix=this->prefix() ) );
+    }
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -241,18 +371,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
     { 
         case LevelSetReinitMethod::FM :
         {
-            M_reinitializer.reset( 
-                    new ReinitializerFM<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-fm") ) 
-                    );
-
-            //dynamic_cast<ReinitializerFM<space_levelset_type>&>( *M_reinitializer ).setUseMarker2AsMarkerDone( M_useMarkerDiracAsMarkerDoneFM );
+            if( !M_reinitializer )
+                M_reinitializer = this->reinitializerFM();
         }
         break;
         case LevelSetReinitMethod::HJ :
         {
-            M_reinitializer.reset(
-                    new ReinitializerHJ<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-hj") )
-                    );
+            if( !M_reinitializer )
+                M_reinitializer = this->reinitializerHJ();
             
             double thickness_heaviside;
             if( Environment::vm().count( prefixvm(prefixvm(this->prefix(), "reinit-hj"), "thickness-heaviside") ) )
@@ -263,7 +389,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
             {
                 thickness_heaviside =  M_thicknessInterface;
             }
-            dynamic_cast<ReinitializerHJ<space_levelset_type>&>(*M_reinitializer).setThicknessHeaviside( M_thicknessInterface );
+            boost::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( M_thicknessInterface );
         }
         break;
     }
@@ -275,8 +401,8 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 {
-    M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "projector-l2")) );
-    M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "projector-l2-vec")) );
+    M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "projector-l2"), _worldcomm=this->worldComm()) );
+    M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "projector-l2-vec"), _worldcomm=this->worldComm()) );
 
     //if( M_doSmoothCurvature )
     //{
@@ -291,16 +417,87 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_vectorial_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::gradPhi()
+LEVELSET_CLASS_TEMPLATE_TYPE::gradPhi() const
 {
     if( !M_levelsetGradPhi )
         M_levelsetGradPhi.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "GradPhi") );
 
-    //if( M_doUpdateGradPhi ) // TODO: ensure correctness of M_doUpdateGradPhi
-       this->updateGradPhi(); 
+    if( M_doUpdateGradPhi )
+       const_cast<self_type*>(this)->updateGradPhi(); 
 
     return M_levelsetGradPhi;
+}
 
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::modGradPhi() const
+{
+    if( M_useGradientAugmented )
+    {
+        return M_modGradPhiAdvection->fieldSolutionPtr();
+    }
+    else
+    {
+        if( !M_levelsetModGradPhi )
+            M_levelsetModGradPhi.reset( new element_levelset_type(this->functionSpace(), "ModGradPhi") );
+
+        if( M_doUpdateModGradPhi )
+            const_cast<self_type*>(this)->updateModGradPhi();
+
+        return M_levelsetModGradPhi;
+    }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::heaviside() const
+{
+    if( !M_heaviside )
+        M_heaviside.reset( new element_levelset_type(this->functionSpace(), "Heaviside") );
+
+    if( M_doUpdateHeaviside )
+       const_cast<self_type*>(this)->updateHeaviside();
+
+    return M_heaviside;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::dirac() const
+{
+    if( !M_dirac )
+        M_dirac.reset( new element_levelset_type(this->functionSpace(), "Dirac") );
+
+    if( M_doUpdateDirac )
+       const_cast<self_type*>(this)->updateDirac();
+
+    return M_dirac;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_vectorial_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::normal() const
+{
+    if( !M_levelsetNormal )
+        M_levelsetNormal.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "Normal") );
+
+    if( M_doUpdateNormal )
+       const_cast<self_type*>(this)->updateNormal(); 
+
+    return M_levelsetNormal;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::curvature() const
+{
+    if( !M_levelsetCurvature )
+        M_levelsetCurvature.reset( new element_levelset_type(this->functionSpace(), "Curvature") );
+
+    if( M_doUpdateCurvature )
+       const_cast<self_type*>(this)->updateCurvature();
+
+    return M_levelsetCurvature;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -338,6 +535,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
         M_doSmoothCurvature = true;
     else
         M_doSmoothCurvature = boption( _name="smooth-curvature", _prefix=this->prefix() );
+
+    M_useGradientAugmented = boption( _name="use-gradient-augmented", _prefix=this->prefix() );
 
     //M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
 }
@@ -411,6 +610,69 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
+{
+    M_bcMarkersInflow.clear();
+
+    for( std::string const& bcMarker: this->modelProperties().boundaryConditions().markers( this->prefix(), "inflow" ) )
+    {
+        if( std::find(M_bcMarkersInflow.begin(), M_bcMarkersInflow.end(), bcMarker) == M_bcMarkersInflow.end() )
+        {
+            M_bcMarkersInflow.push_back( bcMarker );
+        }
+    }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
+{
+    auto& modelPostProcess = this->modelProperties().postProcess();
+
+    auto physicalQuantities = modelPostProcess.pTree().get_child_optional("PhysicalQuantities");
+    if( physicalQuantities )
+    {
+        for( auto& i: *physicalQuantities )
+        {
+            auto i_str = i.second.template get_value<std::string>();
+            modelPostProcess["PhysicalQuantities"].push_back( i_str  );
+            LOG(INFO) << "add to postprocess physical quantity " << i_str;
+        }
+    }
+
+    if ( modelPostProcess.find("PhysicalQuantities") != modelPostProcess.end() )
+    {
+        for ( auto const& o : modelPostProcess.find("PhysicalQuantities")->second )
+        {
+            if( o == "volume" || o == "all" )
+                this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Volume );
+            if( o == "perimeter" || o == "all" )
+                this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Perimeter );
+        }
+    }
+
+    // Load Fields from JSON
+    if ( modelPostProcess.find("Fields") != modelPostProcess.end() )
+    {
+        for( auto const& o : modelPostProcess.find("Fields")->second )
+        {
+            if( o == "gradphi" || o == "all" )
+                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::GradPhi );
+            if( o == "modgradphi" || o == "all" )
+                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+        }
+    }
+    // Overwrite with options from CFG
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_gradphi").c_str()) )
+        if ( boption(_name="do_export_gradphi",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::GradPhi );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_modgradphi").c_str()) )
+        if ( boption(_name="do_export_modgradphi",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::reinitializer_ptrtype 
 LEVELSET_CLASS_TEMPLATE_TYPE::buildReinitializer( 
         LevelSetReinitMethod method, 
@@ -445,9 +707,30 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
 {
     auto phi = this->phi();
-    *M_levelsetGradPhi = M_projectorL2Vec->project( _expr=trans(gradv(phi)) );
+    //*M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
+    *M_levelsetGradPhi = this->projectorL2Vectorial()->derivate( idv(phi) );
+    //*M_levelsetGradPhi = vf::project( 
+            //_space=this->functionSpaceVectorial(),
+            //_range=elements(this->mesh()),
+            //_expr=trans(gradv(phi)) 
+            //);
 
     M_doUpdateGradPhi = false;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateModGradPhi()
+{
+    auto gradPhi = this->gradPhi();
+    *M_levelsetModGradPhi = vf::project( 
+            _space=this->functionSpace(),
+            _range=elements(this->mesh()),
+            _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) 
+            );
+    //*M_levelsetModGradPhi = this->projectorL2()->project( _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) );
+
+    M_doUpdateModGradPhi = false;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -489,6 +772,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
         else
             *M_dirac = M_projectorL2->project(D_expr);
     }
+
+    M_doUpdateDirac = false;
 
     this->log("LevelSet", "updateDirac", "finish");
 }
@@ -532,21 +817,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
             *M_heaviside = M_projectorL2->project(H_expr);
     }
 
+    M_doUpdateHeaviside = false;
+
     this->log("LevelSet", "updateHeaviside", "finish");
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::updateMass()
-{
-    this->log("LevelSet", "updateMass", "start");
-
-    M_mass = integrate(
-            _range=elements(this->mesh()),
-            _expr=(1-idv(this->heaviside())) ).evaluate()(0,0);
-            //_expr=vf::chi( idv(this->phi())<0.0) ).evaluate()(0,0); // gives very noisy results
-
-    this->log("LevelSet", "updateMass", "finish");
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -557,6 +830,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateNormal()
 
     auto phi = this->phi();
     *M_levelsetNormal = M_projectorL2Vec->project( _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) );
+
+    M_doUpdateNormal = false;
 
     this->log("LevelSet", "updateNormal", "finish");
 }
@@ -569,12 +844,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
 
     if( M_doSmoothCurvature )
     {
-        *M_levelsetCurvature = this->smoother()->project( _expr=divv(M_levelsetNormal) );
+        *M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
     }
     else
     {
-        *M_levelsetCurvature = this->projectorL2()->project( _expr=divv(M_levelsetNormal) );
+        *M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
     }
+
+    M_doUpdateCurvature = false;
 
     this->log("LevelSet", "updateCurvature", "finish");
 }
@@ -589,9 +866,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smoother()
     if( !M_smoother )
         M_smoother = projector( 
                 this->functionSpace() , this->functionSpace(), 
-                backend(_name=prefixvm(this->prefix(),"smoother")), 
+                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldComm()), 
                 DIFF, 
-                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order,
+                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother"))/Order,
                 30);
     return M_smoother; 
 }
@@ -603,9 +880,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherVectorial()
     if( !M_smootherVectorial )
         M_smootherVectorial = projector( 
                 this->functionSpaceVectorial() , this->functionSpaceVectorial(), 
-                backend(_name=prefixvm(this->prefix(),"smoother-vec")), 
+                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldComm()), 
                 DIFF, 
-                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order,
+                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother-vec"))/Order,
                 30);
     return M_smootherVectorial; 
 }
@@ -682,9 +959,171 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerCrossedElements()
 }
 
 //----------------------------------------------------------------------------//
+// Utility distances
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype
+LEVELSET_CLASS_TEMPLATE_TYPE::distToBoundary()
+{
+    element_levelset_ptrtype distToBoundary( new element_levelset_type(this->functionSpace(), "DistToBoundary") );
+
+    // Retrieve the elements touching the boundary
+    auto boundaryelts = boundaryelements( this->mesh() );
+
+    // Mark the elements in myrange
+    auto mymark = vf::project(
+            _space=this->functionSpaceMarkers(),
+            _range=boundaryelts,
+            _expr=cst(1)
+            );
+
+    // Update mesh marker2
+    this->mesh()->updateMarker2( mymark );
+
+    // Init phi0 with h on marked2 elements
+    auto phi0 = vf::project(
+            _space=this->functionSpace(),
+            _range=boundaryelts,
+            _expr=h()
+            );
+    phi0.on( _range=boundaryfaces(this->mesh()), _expr=cst(0.) );
+
+    // Run FM using marker2 as marker DONE
+    this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
+    *distToBoundary = this->reinitializerFM()->run( phi0 );
+
+    return distToBoundary;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype
+LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
+{
+    element_levelset_ptrtype distToMarkedFaces( new element_levelset_type(this->functionSpace(), "DistToMarkedFaces") );
+
+    typedef boost::reference_wrapper<typename MeshTraits<mesh_type>::element_type const> element_ref_type;
+    typedef std::vector<element_ref_type> cont_range_type;
+    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+
+    // Retrieve the elements touching the marked faces
+    auto mfaces = markedfaces( this->mesh(), marker );
+    for( auto const& face: mfaces )
+    {
+        if( face.isConnectedTo0() )
+            myelts->push_back(boost::cref(face.element0()));
+        if( face.isConnectedTo1() )
+            myelts->push_back(boost::cref(face.element1()));
+    }
+
+    auto myrange = boost::make_tuple(
+            mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
+            );
+
+    // Mark the elements in myrange
+    auto mymark = this->functionSpaceMarkers()->element();
+    mymark.on( _range=myrange, _expr=cst(1) );
+
+    // Update mesh marker2
+    this->mesh()->updateMarker2( mymark );
+
+    // Init phi0 with h on marked2 elements
+    auto phi0 = vf::project(
+            _space=this->functionSpace(),
+            _range=myrange,
+            _expr=h()
+            );
+    phi0.on( _range=mfaces, _expr=cst(0.) );
+
+    // Run FM using marker2 as marker DONE
+    this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
+    *distToMarkedFaces = this->reinitializerFM()->run( phi0 );
+
+    return distToMarkedFaces;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype
+LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::any> marker )
+{
+    element_levelset_ptrtype distToMarkedFaces( new element_levelset_type(this->functionSpace(), "DistToMarkedFaces") );
+
+    typedef boost::reference_wrapper<typename MeshTraits<mesh_type>::element_type const> element_ref_type;
+    typedef std::vector<element_ref_type> cont_range_type;
+    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+
+    // Retrieve the elements touching the marked faces
+    auto mfaces_list = markedfaces( this->mesh(), marker );
+    for( auto const& mfaces: mfaces_list )
+    {
+        for( auto const& face: mfaces )
+        {
+            if( face.isConnectedTo0() )
+                myelts->push_back(boost::cref(face.element0()));
+            if( face.isConnectedTo1() )
+                myelts->push_back(boost::cref(face.element1()));
+        }
+    }
+
+    auto myrange = boost::make_tuple(
+            mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
+            );
+
+    // Mark the elements in myrange
+    auto mymark = this->functionSpaceMarkers()->element();
+    mymark.on( _range=myrange, _expr=cst(1) );
+
+    // Update mesh marker2
+    this->mesh()->updateMarker2( mymark );
+
+    // Init phi0 with h on marked2 elements
+    auto phi0 = vf::project(
+            _space=this->functionSpace(),
+            _range=myrange,
+            _expr=h()
+            );
+    phi0.on( _range=mfaces_list, _expr=cst(0.) );
+
+    // Run FM using marker2 as marker DONE
+    this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
+    *distToMarkedFaces = this->reinitializerFM()->run( phi0 );
+
+    return distToMarkedFaces;
+}
+
+//----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Advection
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(
+        sparse_matrix_ptrtype& A, vector_ptrtype& F ) const 
+{
+    if( this->M_bcMarkersInflow.empty() ) return;
+
+    this->log("LevelSet","updateBCStrongDirichletLinearPDE","start" );
+
+    auto mesh = this->mesh();
+    auto Xh = this->functionSpace();
+    auto const& phi = this->fieldSolution();
+    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
+                                              _pattern=size_type(Pattern::COUPLED),
+                                              _rowstart=this->rowStartInMatrix(),
+                                              _colstart=this->colStartInMatrix() );
+
+    for( auto const& bcMarker: this->M_bcMarkersInflow )
+    {
+        bilinearForm_PatternCoupled +=
+            on( _range=markedfaces(mesh, bcMarker),
+                    _element=phi,
+                    _rhs=F,
+                    _expr=(idv(this->timeStepBDF()->polyDeriv())-gradv(phi)*idv(this->fieldAdvectionVelocity()))/(this->timeStepBDF()->polyDerivCoefficient(0))
+              );
+    }
+
+    this->log("LevelSet","updateBCStrongDirichletLinearPDE","finish" );
+
+}
+
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::solve()
@@ -692,7 +1131,23 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
     this->log("LevelSet", "solve", "start");
     this->timerTool("Solve").start();
 
+    // Solve phi
     super_type::solve();
+
+    if( M_useGradientAugmented )
+    {
+        // Solve modGradPhi
+        auto modGradPhi = M_modGradPhiAdvection->fieldSolutionPtr();
+        auto u = this->fieldAdvectionVelocityPtr();
+        auto NxN = idv(this->N()) * trans(idv(this->N()));
+        auto Du = sym( gradv(u) );
+        M_modGradPhiAdvection->updateAdvectionVelocity( idv(u) );
+        M_modGradPhiAdvection->updateSourceAdded(
+                - idv(modGradPhi) * inner( NxN, Du)
+                );
+        M_modGradPhiAdvection->solve();
+    }
+    // Update interface-related quantities
     this->updateInterfaceQuantities();
 
     if( this->useSelfLabel() )
@@ -711,19 +1166,27 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
     double current_time = this->timeStepBDF()->time();
 
-    super_type::updateTimeStep();
-
     if( M_hasReinitialized )
         M_iterSinceReinit = 0;
     else
         ++M_iterSinceReinit;
 
+    M_vecIterSinceReinit.push_back( M_iterSinceReinit );
+
+    this->saveCurrent();
+
+    super_type::updateTimeStep();
+    if( M_useGradientAugmented )
+        M_modGradPhiAdvection->updateTimeStep();
+
     if( M_iterSinceReinit < M_timeOrder )
     {
-        this->timeStepBDF()->setOrder( M_iterSinceReinit + 1 );
-        this->timeStepBDF()->setTimeInitial( current_time ); 
-        this->timeStepBDF()->restart();
-        this->timeStepBDF()->setTimeInitial( this->timeInitial() );
+        this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+        if( M_useGradientAugmented )
+            M_modGradPhiAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+        //this->timeStepBDF()->setTimeInitial( current_time ); 
+        //this->timeStepBDF()->restart();
+        //this->timeStepBDF()->setTimeInitial( this->timeInitial() );
     }
 }
 
@@ -731,12 +1194,17 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
 {
-    updateDirac();
-    updateHeaviside();
-    updateMass();
-    updateNormal();
-    updateCurvature();
+    //updateDirac();
+    //updateHeaviside();
+    //updateNormal();
+    //updateCurvature();
+    M_doUpdateDirac = true;
+    M_doUpdateHeaviside = true;
+    M_doUpdateNormal = true;
+    M_doUpdateCurvature = true;
     M_doUpdateMarkers = true;
+    M_doUpdateGradPhi = true;
+    M_doUpdateModGradPhi = true;
 }
 
 //----------------------------------------------------------------------------//
@@ -814,7 +1282,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
         this->applyStrategyBeforeFM( phi );
 
         // Fast Marching Method
-        //boost::dynamic_pointer_cast<ReinitializerFM<space_levelset_type>>( M_reinitializer )->setUseMarker2AsMarkerDone( M_useMarker2AsMarkerDoneFmm );
+        boost::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
+                M_useMarkerDiracAsMarkerDoneFM 
+                );
 
         LOG(INFO)<< "reinit with FMM done"<<std::endl;
     } // Fast Marching
@@ -828,10 +1298,44 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
     *phi = M_reinitializer->run( *phi );
 
+    if( M_useGradientAugmented )
+    {
+        auto sol = M_modGradPhiAdvection->fieldSolutionPtr();
+        sol->setConstant(1.);
+    }
+
     M_hasReinitialized = true;
 
     double timeElapsed = this->timerTool("Reinit").stop();
     this->log("LevelSet","reinitialize","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerFM_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerFM( bool buildOnTheFly )
+{
+    if( !M_reinitializerFM && buildOnTheFly )
+    {
+        M_reinitializerFM.reset( 
+                new ReinitializerFM<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-fm") ) 
+                );
+    }
+
+    return M_reinitializerFM;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerHJ_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerHJ( bool buildOnTheFly )
+{
+    if( !M_reinitializerHJ && buildOnTheFly )
+    {
+        M_reinitializerHJ.reset( 
+                new ReinitializerHJ<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-hj") ) 
+                );
+    }
+
+    return M_reinitializerHJ;
 }
 
 //----------------------------------------------------------------------------//
@@ -983,7 +1487,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::levelsetInfos( bool show )
 // Export results
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
+LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 {
     this->log("LevelSet","exportResults", "start");
     this->timerTool("PostProcessing").start();
@@ -1006,12 +1510,114 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Curvature")),
                                    *this->curvature() );
 
-    super_type::exportResults( time );
-    //if( M_doExportAdvection )
-        //M_advection->exportResults( time );
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::GradPhi ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"GradPhi"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"GradPhi")),
+                                       *this->gradPhi() );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::ModGradPhi ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"ModGradPhi"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ModGradPhi")),
+                                       *this->modGradPhi() );
+    }
+
+    super_type::exportResultsImpl( time );
+
+    if( M_useGradientAugmented )
+    {
+        M_modGradPhiAdvection->exportResults( time );
+    }
 
     this->timerTool("PostProcessing").stop("exportResults");
     this->log("LevelSet","exportResults", "finish");
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
+{
+    bool hasMeasureToExport = false;
+
+    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Volume ) )
+    {
+        this->postProcessMeasuresIO().setMeasure( "volume", this->volume() );
+        hasMeasureToExport = true;
+    }
+    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Perimeter ) )
+    {
+        this->postProcessMeasuresIO().setMeasure( "perimeter", this->perimeter() );
+        hasMeasureToExport = true;
+    }
+
+    if( hasMeasureToExport )
+    {
+        this->postProcessMeasuresIO().setParameter( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+    }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+bool
+LEVELSET_CLASS_TEMPLATE_TYPE::hasPostProcessMeasureExported( 
+        LevelSetMeasuresExported const& measure) const
+{
+    return M_postProcessMeasuresExported.find(measure) != M_postProcessMeasuresExported.end();
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+bool
+LEVELSET_CLASS_TEMPLATE_TYPE::hasPostProcessFieldExported( 
+        LevelSetFieldsExported const& field) const
+{
+    return M_postProcessFieldsExported.find(field) != M_postProcessFieldsExported.end();
+}
+
+//----------------------------------------------------------------------------//
+// Physical quantities
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+double
+LEVELSET_CLASS_TEMPLATE_TYPE::volume() const
+{
+    double volume = integrate(
+            _range=elements(this->mesh()),
+            _expr=(1-idv(this->heaviside())) 
+            ).evaluate()(0,0);
+            //_expr=vf::chi( idv(this->phi())<0.0) ).evaluate()(0,0); // gives very noisy results
+
+    return volume;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+double
+LEVELSET_CLASS_TEMPLATE_TYPE::perimeter() const
+{
+    double perimeter = integrate(
+            _range=elements(this->mesh()),
+            _expr=idv(this->dirac())
+            ).evaluate()(0,0);
+
+    return perimeter;
+}
+
+//----------------------------------------------------------------------------//
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::saveCurrent() const
+{
+    bool doSave = (this->timeStepBDF()->iteration() % this->timeStepBDF()->saveFreq() == 0);
+
+    if (!doSave) return;
+
+    if( this->worldComm().isMasterRank() )
+    {
+        fs::ofstream ofs( fs::path(this->rootRepository()) / fs::path( prefixvm(this->prefix(), "itersincereinit") ) );
+
+        boost::archive::text_oarchive oa( ofs );
+        oa << BOOST_SERIALIZATION_NVP( M_vecIterSinceReinit );
+    }
+    this->worldComm().barrier();
 }
 
 //----------------------------------------------------------------------------//
@@ -1070,14 +1676,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerDirac()
     auto en_elt = mesh->endElementWithProcessId(mesh->worldComm().localRank());
     if (it_elt == en_elt) return;
 
-    double dirac_cut = M_dirac->max() / 10.;
+    double dirac_cut = this->dirac()->max() / 10.;
 
     for (; it_elt!=en_elt; it_elt++)
     {
         bool mark_elt = false;
         for (int j=0; j<ndofv; j++)
         {
-            if ( std::abs( M_dirac->localToGlobal(it_elt->id(), j, 0) ) > dirac_cut )
+            if ( std::abs( this->dirac()->localToGlobal(it_elt->id(), j, 0) ) > dirac_cut )
             {
                 mark_elt = true;
                 break; //don't need to do the others dof
@@ -1118,7 +1724,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerHeaviside(bool invert, bool cut_at_hal
         bool mark_elt = false;
         for (int j=0; j<ndofv; j++)
         {
-            if ( std::abs( M_heaviside->localToGlobal(it_elt->id(), j, 0) ) > cut )
+            if ( std::abs( this->heaviside()->localToGlobal(it_elt->id(), j, 0) ) > cut )
             {
                 mark_elt = true;
                 break;

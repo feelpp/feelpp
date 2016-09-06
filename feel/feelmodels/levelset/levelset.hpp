@@ -36,9 +36,11 @@
 
 #include <feel/feelmodels/advection/advection.hpp>
 
-#include <feel/feelmodels/levelset/reinitializer.hpp>
-#include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
+#include <feel/feelmodels/levelset/reinitializer.hpp>
+#include <feel/feelmodels/levelset/reinitializer_fm.hpp>
+#include <feel/feelmodels/levelset/reinitializer_hj.hpp>
+#include <feel/feelfilters/straightenmesh.hpp>
 
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 
@@ -73,6 +75,15 @@ enum LevelSetTimeDiscretization {BDF2, /*CN,*/ EU, CN_CONSERVATIVE};
  * HJ -> Hamilton-Jacobi
  */
 enum class LevelSetReinitMethod {FM, HJ};
+
+enum class LevelSetMeasuresExported
+{
+    Volume, Perimeter
+};
+enum class LevelSetFieldsExported
+{
+    GradPhi, ModGradPhi
+};
 
 template<typename ConvexType, int Order=1, typename PeriodicityType = NoPeriodicity>
 class LevelSet 
@@ -139,6 +150,10 @@ public:
     // Reinitialization
     typedef Reinitializer<space_levelset_type> reinitializer_type;
     typedef boost::shared_ptr<reinitializer_type> reinitializer_ptrtype;
+    typedef ReinitializerFM<space_levelset_type> reinitializerFM_type;
+    typedef boost::shared_ptr<reinitializerFM_type> reinitializerFM_ptrtype;
+    typedef ReinitializerHJ<space_levelset_type> reinitializerHJ_type;
+    typedef boost::shared_ptr<reinitializerHJ_type> reinitializerHJ_ptrtype;
 
     enum strategy_before_FM_type {NONE=0, ILP=1, HJ_EQ=2, IL_HJ_EQ=3};
 
@@ -163,6 +178,12 @@ public:
 
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
+
+    //--------------------------------------------------------------------//
+    // ModGradPhi advection
+    typedef Advection<ConvexType, Lagrange<Order, Scalar>, PeriodicityType> modgradphi_advection_type;
+    typedef boost::shared_ptr<modgradphi_advection_type> modgradphi_advection_ptrtype;
+
     //--------------------------------------------------------------------//
     // Exporter
     typedef Exporter<mesh_type, nOrderGeo> exporter_type;
@@ -200,7 +221,7 @@ public:
             ( optional
               ( space_vectorial, (space_levelset_vectorial_ptrtype), space_levelset_vectorial_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
               ( space_markers, (space_markers_ptrtype), space_markers_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
-              ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ),  buildReinitializer(this->M_reinitMethod, space, this->prefix()) )
+              ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ), reinitializer_ptrtype() )
               ( projectorL2, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"projector-l2"))) )
               ( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"projector-l2-vec"))) )
               ( smoother, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"smoother")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
@@ -209,23 +230,35 @@ public:
             )
     {
         super_type::build( space );
+        // createFunctionSpaces
         M_spaceLevelSetVec = space_vectorial;
         M_spaceMarkers = space_markers;
+        // createInterfaceQuantities
+        this->createInterfaceQuantities();
+        // createReinitialization
+        if( reinitializer )
+        {
+            M_reinitializer = reinitializer;
+        }
+        this->createReinitialization();
+        // createOthers
         M_projectorL2 = projectorL2;
         M_projectorL2Vec = projectorL2_vectorial;
         M_smoother = smoother;
         M_smootherVectorial = smoother_vectorial;
 
-        this->createInterfaceQuantities();
     }
 
     //--------------------------------------------------------------------//
     // Initialization
     void init();
     void initLevelsetValue();
+    void initPostProcess();
 
     virtual void loadParametersFromOptionsVm();
     virtual void loadConfigICFile();
+    virtual void loadConfigBCFile();
+    virtual void loadConfigPostProcess();
 
     void createFunctionSpaces();
     void createInterfaceQuantities();
@@ -257,18 +290,17 @@ public:
     element_levelset_ptrtype & phi() { return this->fieldSolutionPtr(); }
     element_levelset_ptrtype const& phi() const { return this->fieldSolutionPtr(); }
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
-    element_levelset_vectorial_ptrtype const& gradPhi();
-    element_levelset_ptrtype const& heaviside() const { return M_heaviside; }
+    element_levelset_vectorial_ptrtype const& gradPhi() const;
+    element_levelset_ptrtype const& modGradPhi() const;
+    element_levelset_ptrtype const& heaviside() const;
     element_levelset_ptrtype const& H() const { return this->heaviside(); }
-    element_levelset_ptrtype const& dirac() const { return M_dirac; }
+    element_levelset_ptrtype const& dirac() const;
     element_levelset_ptrtype const& D() const { return this->dirac(); }
 
-    element_levelset_vectorial_ptrtype const& normal() const { return M_levelsetNormal; }
+    element_levelset_vectorial_ptrtype const& normal() const;
     element_levelset_vectorial_ptrtype const& N() const { return this->normal(); }
-    element_levelset_ptrtype const& curvature() const { return M_levelsetCurvature; }
+    element_levelset_ptrtype const& curvature() const;
     element_levelset_ptrtype const& K() const { return this->curvature(); }
-
-    double mass() const { return M_mass; }
 
     double thicknessInterface() const { return M_thicknessInterface; }
     void setThicknessInterface( double value ) { M_thicknessInterface = value; }
@@ -281,6 +313,8 @@ public:
     projector_levelset_vectorial_ptrtype const& smootherVectorial();
     projector_levelset_ptrtype const& smootherFM();
 
+    void updateInterfaceQuantities();
+
     //--------------------------------------------------------------------//
     // Markers
     element_markers_ptrtype const& markerInterface();
@@ -289,18 +323,22 @@ public:
     element_markers_ptrtype const& markerCrossedElements();
 
     //--------------------------------------------------------------------//
+    // Utility distances
+    element_levelset_ptrtype distToBoundary();
+    element_levelset_ptrtype distToMarkedFaces( boost::any const& marker );
+    element_levelset_ptrtype distToMarkedFaces( std::initializer_list<boost::any> marker );
+
+    //--------------------------------------------------------------------//
     // Advection
     bool hasSourceTerm() const { return false; }
     void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const {}
-    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const {}
+    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
 
     template<typename ExprT>
     void advect(vf::Expr<ExprT> const& velocity);
     void solve();
 
     void updateTimeStep();
-
-    void updateInterfaceQuantities();
 
     //--------------------------------------------------------------------//
     // Reinitialization
@@ -313,6 +351,8 @@ public:
     void setUseMarkerDiracAsMarkerDoneFM( bool val = true ) { M_useMarkerDiracAsMarkerDoneFM  = val; }
 
     reinitializer_ptrtype const& reinitializer() const { return M_reinitializer; }
+    reinitializerFM_ptrtype const& reinitializerFM( bool buildOnTheFly = true );
+    reinitializerHJ_ptrtype const& reinitializerHJ( bool buildOnTheFly = true );
 
     bool hasReinitialized() const { return M_hasReinitialized; }
 
@@ -368,8 +408,13 @@ public:
 
     //--------------------------------------------------------------------//
     // Export results
-    using super_type::exportResults;
-    void exportResults( double time );
+    bool hasPostProcessMeasureExported( LevelSetMeasuresExported const& measure) const;
+    bool hasPostProcessFieldExported( LevelSetFieldsExported const& field) const;
+
+    //--------------------------------------------------------------------//
+    // Physical quantities
+    double volume() const;
+    double perimeter() const;
 
     //--------------------------------------------------------------------//
     // Utility functions
@@ -382,9 +427,9 @@ protected:
     //--------------------------------------------------------------------//
     // Levelset data update functions
     void updateGradPhi();
+    void updateModGradPhi();
     void updateDirac();
     void updateHeaviside();
-    void updateMass();
 
     void updateNormal();
     void updateCurvature();
@@ -405,25 +450,32 @@ private:
 
     //--------------------------------------------------------------------//
     element_levelset_ptrtype const& phio() const { return this->timeStepBDF()->unknowns()[1]; }
+    //--------------------------------------------------------------------//
+    // Export
+    void exportResultsImpl( double time );
+    void exportMeasuresImpl( double time );
+    // Save
+    void saveCurrent() const;
+
 
 protected:
     //--------------------------------------------------------------------//
-    // Levelset data
-    //element_levelset_ptrtype M_phi;
-    //element_levelset_ptrtype M_phio;
-    //element_levelset_ptrtype M_phinl;
-
-    element_levelset_vectorial_ptrtype M_levelsetGradPhi;
-    bool M_doUpdateGradPhi;
-
-    element_levelset_ptrtype M_heaviside;
-    element_levelset_ptrtype M_dirac;
-    double M_mass;
+    // Interface quantities update flags
+    mutable bool M_doUpdateDirac;
+    mutable bool M_doUpdateHeaviside;
+    mutable bool M_doUpdateNormal;
+    mutable bool M_doUpdateCurvature;
+    mutable bool M_doUpdateGradPhi;
+    mutable bool M_doUpdateModGradPhi;
 
     //--------------------------------------------------------------------//
     // Levelset initial value
     map_scalar_field<2> M_icDirichlet;
     std::vector<std::pair<ShapeType, parameter_map>> M_icShapes;
+
+    //--------------------------------------------------------------------//
+    // Boundary conditions
+    std::list<std::string> M_bcMarkersInflow;
 
 private:
     //--------------------------------------------------------------------//
@@ -458,20 +510,30 @@ private:
     projector_levelset_ptrtype M_smoother;
     projector_levelset_vectorial_ptrtype M_smootherVectorial;
     //--------------------------------------------------------------------//
+    // Levelset data
+    mutable element_levelset_vectorial_ptrtype M_levelsetGradPhi;
+    mutable element_levelset_ptrtype M_levelsetModGradPhi;
+    mutable element_levelset_ptrtype M_heaviside;
+    mutable element_levelset_ptrtype M_dirac;
+    //--------------------------------------------------------------------//
     // Normal, curvature
-    element_levelset_vectorial_ptrtype M_levelsetNormal;
-    element_levelset_ptrtype M_levelsetCurvature;
+    mutable element_levelset_vectorial_ptrtype M_levelsetNormal;
+    mutable element_levelset_ptrtype M_levelsetCurvature;
     bool M_doSmoothCurvature;
 
     //--------------------------------------------------------------------//
     // Reinitialization
     reinitializer_ptrtype M_reinitializer;
+    reinitializerFM_ptrtype M_reinitializerFM;
+    reinitializerHJ_ptrtype M_reinitializerHJ;
     bool M_reinitializerIsUpdatedForUse;
 
     boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smootherFM;
 
-    int M_iterSinceReinit;
     bool M_hasReinitialized;
+    int M_iterSinceReinit;
+    // Vector that stores the iterSinceReinit of each time-step
+    std::vector<int> M_vecIterSinceReinit;
 
     //--------------------------------------------------------------------//
     // Multi-labels
@@ -490,21 +552,23 @@ private:
     int M_timeOrder;
 
     //--------------------------------------------------------------------//
+    // ModGradPhi advection
+    bool M_useGradientAugmented;
+    modgradphi_advection_ptrtype M_modGradPhiAdvection;
+
+    //--------------------------------------------------------------------//
     // Export
-    //exporter_ptrtype M_exporter;
-    //bool M_doExportAdvection;
+    std::set<LevelSetMeasuresExported> M_postProcessMeasuresExported;
+    std::set<LevelSetFieldsExported> M_postProcessFieldsExported;
     //--------------------------------------------------------------------//
     // Parameters
     double M_thicknessInterface;
     bool M_useRegularPhi;
     bool M_useHeavisideDiracNodalProj;
 
-    //int impose_inflow;
     double k_correction;
     //--------------------------------------------------------------------//
     // Reinitialization
-    //bool M_enableReinit;
-    //int M_reinitEvery;
     LevelSetReinitMethod M_reinitMethod;
     strategy_before_FM_type M_strategyBeforeFM;
     bool M_useMarkerDiracAsMarkerDoneFM;

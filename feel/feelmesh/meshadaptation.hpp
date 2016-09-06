@@ -149,6 +149,8 @@ namespace Feel
 
         typedef typename mesh_type::point_type point_type;
 
+        typedef std::list< std::pair< std::vector<p1_element_type>, std::string> > metric_list_type;
+
         //! Constructor
         MeshAdaptation()
         {
@@ -190,6 +192,9 @@ namespace Feel
         //! Adapt geofile for mesh adaptation
         std::string createAdaptedGeo(std::string geofile, std::string name, std::vector<std::string> posfiles, bool aniso);
 
+        //! Paste several pos files together (for parallel adaptation only)
+        std::string pastePosFilesTogether( std::vector< std::string >const & posFiles );
+
         //! Build adapted mesh
         std::string buildAdaptedMesh(std::string geofile, std::string name, std::vector<std::string> posfiles , bool aniso);
 
@@ -211,6 +216,21 @@ namespace Feel
         std::string adaptMeshHess2(element_type& U, const mesh_ptrtype& mesh, double hMin, double hMax,
                                    std::string name, std::string geofile, double tol, bool aniso,
                                    mpl::bool_<false>);
+
+        static metric_list_type makeMetricList( std::vector< p1_element_type >& metrics, std::string metric_name )
+            {
+                metric_list_type ml;
+                ml.push_back( std::make_pair( metrics, metric_name ) );
+                return ml;
+            }
+
+        static metric_list_type makeMetricList( p1_element_type metric, std::string metric_name )
+            {
+                metric_list_type ml;
+                ml.push_back( std::make_pair(std::vector< p1_element_type >( {metric} ), metric_name ) );
+                return ml;
+            }
+
 
         //! Mesh adaptation interface
         // _initMesh = initial mesh
@@ -644,6 +664,48 @@ namespace Feel
     std::string
     MeshAdaptation<Dim,
                    Order,
+                   OrderGeo>::pastePosFilesTogether( std::vector< std::string >const & posFiles )
+    {
+        Feel::cout<<"Pasting thogether pos files: "<< posFiles <<std::endl;
+        // extract the base filename from first posFile
+        boost::regex regExtractBaseName( "(.+)_p_.+\\.pos" );
+        boost::match_results< decltype( posFiles[0].begin() ) > what;
+        CHECK( boost::regex_search(posFiles[0].begin(), posFiles[0].end(), what, regExtractBaseName))<<"regex of pos file name didn't match\n";
+        const std::string metricBaseName(what[1].first, what[1].second);
+
+        const std::string globalPosFileName( (boost::format("%1%.pos") %metricBaseName).str() );
+
+        ofstream globalPosFile( globalPosFileName );
+        globalPosFile << "View \" background mesh \" { \n";
+
+        for (auto const& f : posFiles )
+        {
+            ifstream inputPosFile( f );
+            std::string line;
+            // first line passed
+            std::getline( inputPosFile, line );
+            std::getline( inputPosFile, line );
+
+            // the end of a pos file is "};"
+            while( line.front() != '}' )
+            {
+                globalPosFile<<line<<"\n";
+                std::getline( inputPosFile, line );
+            }
+        }
+
+        globalPosFile<< "};";
+
+        return globalPosFileName;
+    }
+
+
+    template<int Dim,
+             int Order,
+             int OrderGeo>
+    std::string
+    MeshAdaptation<Dim,
+                   Order,
                    OrderGeo>::buildAdaptedMesh(std::string geofile, std::string name, std::vector<std::string> posfiles,
                                           bool aniso)
     {
@@ -656,17 +718,42 @@ namespace Feel
         std::string mshFormat = "msh";
         std::string newMeshName =  (boost::format( "%1%%2%.%3%" ) % prefix % name % mshFormat ).str();
 
-        // get the pos files generated on all the subdomains
-        std::vector< std::vector<std::string> > all_posfiles;
-        mpi::gather(Environment::worldComm().globalComm(),
-                    posfiles,
-                    all_posfiles, Environment::worldComm().masterRank() );
-
-        posfiles.clear();
-        for (auto const& posfileOtherProc : all_posfiles )
-            posfiles.insert( posfiles.end(), posfileOtherProc.begin(), posfileOtherProc.end() );
-
+        // number of different metric (pos file by proc)
         int nbPosfiles = posfiles.size();
+
+        if (Environment::isParallel())
+        {
+            /*
+             gmsh can read .pos only partially filled but will search for all the points of the mesh in all the .pos.
+             This takes a long time, and it is better to paste together all the .pos for one metric and give a single .pos by metric to gmsh.
+             */
+
+            // get the pos files generated on all the subdomains
+            std::vector< std::vector<std::string> > all_posfiles;
+            mpi::gather(Environment::worldComm().globalComm(),
+                        posfiles,
+                        all_posfiles, Environment::worldComm().masterRank() );
+
+            if (Environment::worldComm().globalRank() == Environment::worldComm().masterRank())
+            {
+                std::vector< std::vector< std::string > > allPosFilesByMetric;
+                allPosFilesByMetric.resize( nbPosfiles );
+
+                for (auto const& posFilesOnProc : all_posfiles)
+                {
+                    for (int i=0; i<nbPosfiles; ++i)
+                    {
+                        allPosFilesByMetric[i].push_back( posFilesOnProc[i] );
+                    }
+                }
+                posfiles.clear();
+
+                for (int i=0; i<nbPosfiles; ++i)
+                {
+                    posfiles.push_back( this->pastePosFilesTogether( allPosFilesByMetric[i] ) );
+                }
+            }
+        }
 
         if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  &&  Environment::worldComm().globalRank() == Environment::worldComm().masterRank() ) )
             {

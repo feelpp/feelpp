@@ -198,6 +198,7 @@ public :
     element_advection_type const& fieldSolution() const { return *M_fieldSolution; }
 
     element_advection_velocity_type const& fieldAdvectionVelocity() const { return *M_fieldAdvectionVelocity; }
+    element_advection_velocity_ptrtype const& fieldAdvectionVelocityPtr() const { return M_fieldAdvectionVelocity; }
 
     //--------------------------------------------------------------------//
     // Algebraic data
@@ -278,10 +279,15 @@ public :
     //--------------------------------------------------------------------//
     // Export results
     void initPostProcess();
-    void exportMeasures( double time );
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
+    void exportMeasures( double time );
 
+    exporter_ptrtype getExporter() { return M_exporter; }
+
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
 protected:
     virtual void loadParametersFromOptionsVm();
 
@@ -291,6 +297,10 @@ protected:
     void createTimeDiscretization();
     void createExporters();
     void createOthers();
+
+    virtual void exportResultsImpl( double time );
+    virtual void exportMeasuresImpl( double time );
+
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//

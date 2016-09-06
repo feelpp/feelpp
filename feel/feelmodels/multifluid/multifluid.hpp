@@ -97,6 +97,9 @@ public:
     // Models
     fluid_ptrtype const& fluidModel() const { return M_fluid; }
     levelset_ptrtype const& levelsetModel(uint16_type n) const { return M_levelsets.at(n); }
+    uint16_type nLevelsets() const { return M_levelsets.size(); }
+
+    levelset_ptrtype const& globalLevelset() const { return M_globalLevelset; }
     //--------------------------------------------------------------------//
     bool hasSurfaceTension() const { return M_enableSurfaceTension; }
     bool hasInterfaceForces() const;
@@ -138,7 +141,7 @@ private:
     // Parameters
     densityviscosity_model_ptrtype M_fluidDensityViscosityModel;
     std::vector<densityviscosity_model_ptrtype> M_levelsetDensityViscosityModels;
-    std::vector<interfaceforces_model_ptrtype> M_levelsetInterfaceForcesModels;
+    std::vector<std::vector<interfaceforces_model_ptrtype>> M_levelsetInterfaceForcesModels;
     //--------------------------------------------------------------------//
     // Forces
     bool M_enableSurfaceTension;

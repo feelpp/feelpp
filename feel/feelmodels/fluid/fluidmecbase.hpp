@@ -122,6 +122,12 @@ public:
     typedef typename element_fluid_type::template sub_element<0>::type element_fluid_velocity_type;
     typedef boost::shared_ptr<element_fluid_velocity_type> element_fluid_velocity_ptrtype;
     typedef typename space_fluid_velocity_type::component_functionspace_type component_space_fluid_velocity_type;
+
+    typedef typename space_fluid_velocity_type::element_type element_velocity_noview_type;
+    typedef boost::shared_ptr<element_velocity_noview_type> element_velocity_noview_ptrtype;
+    typedef typename component_space_fluid_velocity_type::element_type element_velocity_component_noview_type;
+    typedef boost::shared_ptr<element_velocity_component_noview_type> element_velocity_component_noview_ptrtype;
+
     // subspace pressure
     typedef typename space_fluid_type::template sub_functionspace<1>::type space_fluid_pressure_type;
     typedef typename space_fluid_type::template sub_functionspace<1>::ptrtype space_fluid_pressure_ptrtype;
@@ -413,6 +419,18 @@ public:
 
     bool useExtendedDofTable() const;
 
+    // fields defined in json
+    std::map<std::string,element_velocity_component_noview_ptrtype> const& fieldsUserScalar() const { return M_fieldsUserScalar; }
+    std::map<std::string,element_velocity_noview_ptrtype> const& fieldsUserVectorial() const { return M_fieldsUserVectorial; }
+    bool hasFieldUserScalar( std::string const& key ) const { return M_fieldsUserScalar.find( key ) != M_fieldsUserScalar.end(); }
+    bool hasFieldUserVectorial( std::string const& key ) const { return M_fieldsUserVectorial.find( key ) != M_fieldsUserVectorial.end(); }
+    element_velocity_component_noview_ptrtype const& fieldUserScalarPtr( std::string const& key ) const {
+        CHECK( this->hasFieldUserScalar( key ) ) << "field name " << key << " not registered"; return M_fieldsUserScalar.find( key )->second; }
+    element_velocity_noview_ptrtype const& fieldUserVectorialPtr( std::string const& key ) const {
+        CHECK( this->hasFieldUserVectorial( key ) ) << "field name " << key << " not registered"; return M_fieldsUserVectorial.find( key )->second; }
+    element_velocity_component_noview_type const& fieldUserScalar( std::string const& key ) const { return *this->fieldUserScalarPtr( key ); }
+    element_velocity_noview_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
+
     //___________________________________________________________________________________//
     // algebraic data
     backend_ptrtype backend() { return M_backend; }
@@ -440,8 +458,9 @@ public:
     void initTimeStep();
     void updateTimeStep() { this->updateTimeStepBDF(); }
 
-
-    //___________________________________________________________________________________//
+    // init/update user functions defined in json
+    void initUserFunctions();
+    void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
     // export post process results
     void initPostProcess();
     //void restartPostProcess();
@@ -852,6 +871,9 @@ protected:
     // vorticity space
     space_vorticity_ptrtype M_XhVorticity;
     element_vorticity_ptrtype M_fieldVorticity;
+    // fields defined in json
+    std::map<std::string,element_velocity_component_noview_ptrtype> M_fieldsUserScalar;
+    std::map<std::string,element_velocity_noview_ptrtype> M_fieldsUserVectorial;
     //----------------------------------------------------
     // mesh ale tool and space
     bool M_isMoveDomain;
@@ -935,6 +957,8 @@ protected:
     //----------------------------------------------------
     // post-process field exported
     std::set<FluidMechanicsPostProcessFieldExported> M_postProcessFieldExported;
+    std::set<std::string> M_postProcessUserFieldExported;
+
     // exporter option
     bool M_isHOVisu;
     // exporter fluid

@@ -397,11 +397,19 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"reinit-initial-value").c_str(), Feel::po::value<bool>()->default_value( false ), "reinitialize levelset after setting initial value")
 
         (prefixvm(prefix,"smooth-curvature").c_str(), Feel::po::value<bool>()->default_value( false ), "smooth curvature (use if the levelset has order < 2)")
-        (prefixvm(prefix,"smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.01), "smoothing coefficient for curvature smoothing")
+        (prefixvm(prefix,"smoother.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for curvature smoothing")
+        (prefixvm(prefix,"smoother-vec.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for curvature smoothing")
+
+        (prefixvm(prefix,"use-gradient-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Advect modGradPhi independently")
+
+        (prefixvm(prefix,"do_export_gradphi").c_str(), Feel::po::value<bool>(), "doExportGradPhi")
+        (prefixvm(prefix,"do_export_modgradphi").c_str(), Feel::po::value<bool>(), "doExportModGradPhi")
+        (prefixvm(prefix,"do_export_modgradphi-advection").c_str(), Feel::po::value<bool>()->default_value(false), "doExportModGradPhi-Advection")
         ;
 
     levelsetOptions
         .add( advection_options( prefix ) )
+        .add( advection_options( prefixvm(prefix, "modgradphi-advection") ) )
         .add( backend_options( prefixvm(prefix, "projector-l2") ) )
         .add( backend_options( prefixvm(prefix, "projector-l2-vec") ) )
         .add( backend_options( prefixvm(prefix, "smoother") ) )
@@ -421,6 +429,8 @@ interfaceforces_options(std::string const& prefix)
     interfaceForcesOptions.add_options()
         (prefixvm(prefix,"helfrich-bending-modulus").c_str(), Feel::po::value<double>()->default_value(0.), "Helfrich bending modulus k_B" )
         (prefixvm(prefix,"helfrich-force-impl").c_str(), Feel::po::value<int>()->default_value(0), "Implementation of Helfrich force" )
+
+        (prefixvm(prefix,"inextensibility-force-coeff").c_str(), Feel::po::value<double>()->default_value(1), "Inextensibility force coefficient (Lambda)" )
         ;
 
     return interfaceForcesOptions;
@@ -451,7 +461,7 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
             // Reinitialization
             (prefixvm(levelset_prefix,"reinit-every").c_str(), Feel::po::value<int>()->default_value( 10 ), "reinitialize levelset every n iterations" )
             // Interface forces model
-            (prefixvm(levelset_prefix,"interface-forces-model").c_str(), Feel::po::value<std::string>(), "model for interface forces (helfrich, ...)" )
+            (prefixvm(levelset_prefix,"interface-forces-model").c_str(), Feel::po::value<std::vector<std::string>>()->multitoken(), "models for interface forces (helfrich, ...)" )
             ;
     }
 

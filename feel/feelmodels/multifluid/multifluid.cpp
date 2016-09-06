@@ -62,6 +62,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
     M_fluid->loadMesh( M_mesh );
     M_globalLevelset->build( this->mesh() );
+    if( nLevelSets < 2 )
+        M_globalLevelset->getExporter()->setDoExport( false );
 
     // "Deep" copy
     M_fluidDensityViscosityModel.reset( new densityviscosity_model_type( M_fluid->prefix() ) );
@@ -96,12 +98,22 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
         if( Environment::vm().count( prefixvm(levelset_prefix, "interface-forces-model").c_str() ) )
         {
-            M_levelsetInterfaceForcesModels[i].reset( 
-                    interfaceforces_factory_type::instance().createObject( 
-                        soption( _name="interface-forces-model", _prefix=levelset_prefix ) 
-                        )
-                    );
-            M_levelsetInterfaceForcesModels[i]->build( levelset_prefix, M_levelsets[i] );
+            std::vector<std::string> interfaceForcesModels = Environment::vm()[prefixvm(levelset_prefix, "interface-forces-model").c_str()].template as<std::vector<std::string>>();
+            // Remove (unwanted) duplicates
+            std::sort( interfaceForcesModels.begin(), interfaceForcesModels.end() );
+            interfaceForcesModels.erase( std::unique(interfaceForcesModels.begin(), interfaceForcesModels.end()), interfaceForcesModels.end() );
+
+            M_levelsetInterfaceForcesModels[i].resize( interfaceForcesModels.size() );
+
+            for( uint16_type n = 0; n < M_levelsetInterfaceForcesModels[i].size(); ++n )
+            {
+                M_levelsetInterfaceForcesModels[i][n].reset( 
+                        interfaceforces_factory_type::instance().createObject( 
+                            interfaceForcesModels[n]
+                            )
+                        );
+                M_levelsetInterfaceForcesModels[i][n]->build( levelset_prefix, M_levelsets[i] );
+            }
 
             M_hasInterfaceForcesModel = true;
         }
@@ -267,7 +279,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("MultiFluid","exportResults", "start");
 
     M_fluid->exportResults(time);
-    M_globalLevelset->exportResults(time);
+
+    if( this->nLevelsets() > 1 )
+        M_globalLevelset->exportResults(time);
+
     for( uint16_type i = 0; i < M_levelsets.size(); ++i)
     {
         M_levelsets[i]->exportResults(time);
@@ -369,13 +384,17 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
     if( M_hasInterfaceForcesModel )
     {
         this->timerTool("Solve").start();
-        for( uint16_type n = 0; n < M_levelsets.size(); ++n )
+        for( uint16_type i = 0; i < M_levelsets.size(); ++i )
         {
-            if( M_levelsetInterfaceForcesModels[n] )
+            for( uint16_type n = 0; n < M_levelsetInterfaceForcesModels[i].size(); ++n )
             {
-                M_levelsetInterfaceForcesModels[n]->updateInterfaceForces( M_interfaceForces, false );
+                if( M_levelsetInterfaceForcesModels[i][n] )
+                {
+                    M_levelsetInterfaceForcesModels[i][n]->updateInterfaceForces( M_interfaceForces, false );
+                }
             }
         }
+
         double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
         this->log("MultiFluid", "updateInterfaceForces", "update interface (model) forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
     }

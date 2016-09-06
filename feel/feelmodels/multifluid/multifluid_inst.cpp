@@ -2,7 +2,9 @@
 #include "multifluidconfig.h"
 
 #include <feel/feelmodels/multifluid/multifluid.cpp>
+
 #include <feel/feelmodels/multifluid/helfrichforcemodel.hpp>
+#include <feel/feelmodels/multifluid/inextensibilityforcemodel.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -15,6 +17,11 @@ const bool helfrich_interfaceforcesmodel =
     MULTIFLUID_CLASS_INSTANTIATION::interfaceforces_factory_type::instance().registerProduct( 
             "helfrich", 
             &detail::createInterfaceForcesModel<HelfrichForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_type> );
+
+const bool inextensibility_interfaceforcesmodel = 
+    MULTIFLUID_CLASS_INSTANTIATION::interfaceforces_factory_type::instance().registerProduct( 
+            "inextensibility-force", 
+            &detail::createInterfaceForcesModel<InextensibilityForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_type> );
 
 }
 }
