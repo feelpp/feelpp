@@ -1792,7 +1792,10 @@ public:
 
         CHECK( M_ctxRbModelSolution ) << "no rbspace context";
         vector_type __beta( __M );
-        __beta = this->operator()( urb, *M_ctxRbModelSolution, mu , __M );
+        if ( SubSpaceId != SubSpaceId2 && M_ctxRbModelSolution2 )
+            __beta = this->operator()( urb, *M_ctxRbModelSolution, *M_ctxRbModelSolution2, mu , __M );
+        else
+            __beta = this->operator()( urb, *M_ctxRbModelSolution, mu , __M );
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
         return __beta;
     }
@@ -2024,19 +2027,19 @@ public:
         {
             auto urbelt = ctx.rbFunctionSpace()->element();
             urbelt.container() = urb;
-
-            if ( SubSpaceId != SubSpaceId2 && M_ctxRbModelSolution2  )
-            {
-                auto urbelt2 = M_ctxRbModelSolution2->rbFunctionSpace()->element();
-                urbelt2.container() = urb;
-                auto eimexpr2 = this->expr( mu,urbelt,urbelt2 );
-                return evaluateFromContext( _context=ctx, _expr=eimexpr2 , _max_points_used=M,
-                                            _mpi_communications=false, _projection=false );
-            }
-
             auto eimexpr = this->expr( mu,urbelt );
-
             return evaluateFromContext( _context=ctx, _expr=eimexpr , _max_points_used=M,
+                                        _mpi_communications=false, _projection=false );
+        }
+
+    vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, rbfunctionspace_context2_type const& ctx2, parameter_type const& mu , int M )
+        {
+            auto urbelt = ctx.rbFunctionSpace()->element();
+            urbelt.container() = urb;
+            auto urbelt2 = ctx2.rbFunctionSpace()->element();
+            urbelt2.container() = urb;
+            auto eimexpr2 = this->expr( mu,urbelt,urbelt2 );
+            return evaluateFromContext( _context=ctx, _context2=ctx2, _expr=eimexpr2 , _max_points_used=M,
                                         _mpi_communications=false, _projection=false );
         }
 
