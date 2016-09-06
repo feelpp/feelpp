@@ -427,6 +427,8 @@ CRBElementsDB<ModelType>::load( Archive & ar, const unsigned int version )
         ar & BOOST_SERIALIZATION_NVP( temp );
         M_WNdu[i] = temp;
     }
+    M_rbSpace->updatePrimalBasisForUse();
+    M_rbSpace->updateDualBasisForUse();
     LOG( INFO ) << "Elements DB loaded";
 }
 
@@ -522,6 +524,8 @@ CRBElementsDB<ModelType>::loadHDF5DB()
         temp.loadHDF5(hdf5File.str(), tableName.str());
         M_WNdu[i] = temp;
     }
+    M_rbSpace->updatePrimalBasisForUse();
+    M_rbSpace->updateDualBasisForUse();
     LOG( INFO ) << "Elements DB loaded";
 
 }
