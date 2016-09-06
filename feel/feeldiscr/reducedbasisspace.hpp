@@ -687,7 +687,7 @@ public :
                 //
                 // id
                 //
-                M_phi = M_rbspace->evaluateBasis( this->shared_from_this() );
+                M_phi = M_rbspace->evaluateBasis( boost::dynamic_pointer_cast<super>( this->shared_from_this() ) );
 
                 //
                 // grad
@@ -695,7 +695,7 @@ public :
                 for( int i=0; i<N; i++)
                 {
                     //matrix containing grad at all points
-                    auto evaluation = M_rbspace->evaluateGradBasis( i , this->shared_from_this() );
+                    auto evaluation = M_rbspace->evaluateGradBasis( i , boost::dynamic_pointer_cast<super>( this->shared_from_this() ) );
                     for(int c=0; c<nComponents; c++)
                     {
                         for(int d=0; d<nDim; d++)
@@ -1147,11 +1147,13 @@ public :
      * evaluate all basis functions at (only one) node given by ctx
      * returns matrix of size nComponents x N if N is RB size
      */
-    eigen_matrix_type evaluateBasis( boost::shared_ptr<ContextRB> const& ctx )
+    template <typename ContextBasisFem>
+    eigen_matrix_type evaluateBasis( boost::shared_ptr<ContextBasisFem> const& ctx )
         {
             eigen_matrix_type m( nComponents, M_primal_rb_basis.size() );
-            std::map<int,ctxrb_ptrtype> mc{{0,ctx}};
-            ContextRBSet s( mc );
+
+            auto s = this->functionSpace()->context();
+            s.addCtx( ctx, this->functionSpace()->worldComm().localRank() );
 
             //index of the column to be filled
             int c = 0;
@@ -1167,10 +1169,12 @@ public :
             return m;
         }
 
-    eigen_matrix_type evaluateGradBasis( int i , boost::shared_ptr<ContextRB> const& ctxs )
+    template <typename ContextBasisFem>
+    eigen_matrix_type evaluateGradBasis( int i , boost::shared_ptr<ContextBasisFem> const& ctxs )
         {
-            std::map<int,ctxrb_ptrtype> mc{{0,ctxs}};
-            ContextRBSet ctx( mc );
+            auto ctx = this->functionSpace()->context();
+            ctx.addCtx( ctxs, this->functionSpace()->worldComm().localRank() );
+
             int npts = ctx.nPoints();
             eigen_matrix_type evaluation;
             evaluation.resize( nDim , npts*nComponents );
@@ -1465,6 +1469,25 @@ public :
         bool areGlobalValuesUpdated() const
             {
                 return true;
+            }
+
+
+        template <typename ... CTX>
+        auto //ctxrb_ptrtype
+        selectContext( CTX const& ... ctx ) const
+            {
+                typedef boost::fusion::vector<CTX...> my_vector_ctx_type;
+                typedef typename boost::fusion::result_of::distance<typename boost::fusion::result_of::begin<my_vector_ctx_type>::type,
+                                                                    typename boost::fusion::result_of::find<my_vector_ctx_type,ctxrb_ptrtype>::type>::type pos_ctx_type;
+                typedef typename boost::fusion::result_of::distance<typename boost::fusion::result_of::begin<my_vector_ctx_type>::type,
+                                                                    typename boost::fusion::result_of::find<my_vector_ctx_type,
+                                                                                                            boost::shared_ptr<typename ctxrb_type::super> >::type>::type pos_fectx_type;
+
+                static const int myNumberOfCtx = boost::mpl::size<my_vector_ctx_type>::type::value;
+                CHECK( pos_ctx_type::value < myNumberOfCtx || pos_fectx_type::value < myNumberOfCtx ) << "no compatible context";
+                static const int ctxPosition = (pos_ctx_type::value < myNumberOfCtx)? pos_ctx_type::value : ( (pos_fectx_type::value < myNumberOfCtx)? pos_fectx_type::value : 0 );
+                my_vector_ctx_type ctxvec( ctx... );
+                return boost::fusion::at_c<ctxPosition>( ctxvec );
             }
 
 
