@@ -127,9 +127,9 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
     // Update ModGradPhi
     //auto gradPhi = this->levelset()->gradPhi();
     auto phi = this->levelset()->phi();
-    auto gradPhi = this->levelset()->smootherVectorial()->project(
-            trans(gradv(phi))
-            );
+    //auto gradPhi = this->levelset()->smootherVectorial()->project(
+            //trans(gradv(phi))
+            //);
     auto N = this->levelset()->N();
     auto K = this->levelset()->K();
     auto Id = vf::Id<Dim, Dim>();
@@ -138,15 +138,20 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
     if( this->levelset()->hasReinitialized() )
     {
         this->updateInterfaceRectangularFunction();
-        *M_levelsetModGradPhi = this->levelset()->projectorL2()->project(
-                _expr = sqrt( trans(idv(gradPhi))*idv(gradPhi) ) * (1.-idv(M_interfaceRectangularFunction))
+        //*M_levelsetModGradPhi = this->levelset()->projectorL2()->project(
+        *M_levelsetModGradPhi = this->levelset()->smoother()->project(
+                //_expr = sqrt( trans(idv(gradPhi))*idv(gradPhi) ) * (1.-idv(M_interfaceRectangularFunction))
+                        //+ idv(M_levelsetModGradPhi)*idv(M_interfaceRectangularFunction)
+                _expr = idv(this->levelset()->modGradPhi()) * (1.-idv(M_interfaceRectangularFunction))
                         + idv(M_levelsetModGradPhi)*idv(M_interfaceRectangularFunction)
                 );
     }
     else
     {
-        *M_levelsetModGradPhi = this->levelset()->projectorL2()->project(
-                _expr = sqrt( trans(idv(gradPhi))*idv(gradPhi) )
+        //*M_levelsetModGradPhi = this->levelset()->projectorL2()->project(
+        *M_levelsetModGradPhi = this->levelset()->smoother()->project(
+                //_expr = sqrt( trans(idv(gradPhi))*idv(gradPhi) )
+                _expr = idv(this->levelset()->modGradPhi())
                 );
     }
 
