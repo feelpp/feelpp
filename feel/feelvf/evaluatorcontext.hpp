@@ -47,7 +47,7 @@ namespace details
  *
  * @author Christophe Prud'homme
  */
-template<typename CTX, typename ExprT>
+template<typename CTX, typename ExprT, typename CTX2=CTX>
 class EvaluatorContext
 {
 public:
@@ -68,6 +68,7 @@ public:
     static const bool imIsPoly = true;
 
     typedef CTX context_type;
+    typedef CTX2 context2_type;
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> element_type;
 
     //@}
@@ -77,6 +78,7 @@ public:
     //@{
 
     EvaluatorContext( context_type const& ctx,
+                      context2_type const& ctx2,
                       expression_type const& __expr,
                       int max_points_used,
                       GeomapStrategyType geomap_strategy,
@@ -86,6 +88,7 @@ public:
         :
         M_worldComm( worldComm ),
         M_ctx( ctx ),
+        M_ctx2( ctx2 ),
         M_expr( __expr ),
         M_max_points_used( max_points_used ),
         M_geomap_strategy( geomap_strategy ),
@@ -100,6 +103,7 @@ public:
         :
         M_worldComm( __vfi.M_worldComm ),
         M_ctx( __vfi.M_ctx ),
+        M_ctx2( __vfi.M_ctx2 ),
         M_expr( __vfi.M_expr ),
         M_max_points_used( __vfi.M_max_points_used ),
         M_geomap_strategy( __vfi.M_geomap_strategy ),
@@ -169,6 +173,7 @@ private:
     WorldComm const& M_worldComm;
 
     context_type M_ctx;
+    context2_type M_ctx2;
     expression_type const&  M_expr;
     int M_max_points_used;
     GeomapStrategyType M_geomap_strategy;
@@ -176,9 +181,9 @@ private:
     bool M_projection;
 };
 
-template<typename CTX, typename ExprT>
-typename EvaluatorContext<CTX, ExprT>::element_type
-EvaluatorContext<CTX, ExprT>::operator()() const
+template<typename CTX, typename ExprT, typename CTX2>
+typename EvaluatorContext<CTX, ExprT, CTX2>::element_type
+EvaluatorContext<CTX, ExprT, CTX2>::operator()() const
 {
 
     if( M_projection )
@@ -235,6 +240,7 @@ EvaluatorContext<CTX, ExprT>::operator()() const
         t_expr_type tensor_expr( M_expr, mapgmc );
 
         auto Xh = M_ctx.ptrFunctionSpace();
+        auto Xh2 = M_ctx2.ptrFunctionSpace();
         //loop on local points
         for ( int p = 0; it!=en ; ++it, ++p )
         {
@@ -248,7 +254,13 @@ EvaluatorContext<CTX, ExprT>::operator()() const
 
             if( global_p < global_max_size )
             {
-                tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ) );
+                if ( !M_ctx2.empty() && M_ctx2.find( global_p ) != M_ctx2.end() )
+                {
+                    auto const& ctx2 = *M_ctx2.find( global_p );
+                    tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ), Xh2->contextBasis( ctx2, M_ctx2 ) );
+                }
+                else
+                    tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ) );
 
                 //LOG( INFO ) << "Xh->contextBasis returns a context of type \n"<< typeid( decltype( Xh->contextBasis( ctx, M_ctx ) )  ).name();
 
@@ -285,9 +297,9 @@ EvaluatorContext<CTX, ExprT>::operator()() const
     return __globalv;
 }
 
-template<typename CTX, typename ExprT>
-typename EvaluatorContext<CTX, ExprT>::element_type
-EvaluatorContext<CTX, ExprT>::evaluateProjection(  ) const
+template<typename CTX, typename ExprT, typename CTX2>
+typename EvaluatorContext<CTX, ExprT, CTX2>::element_type
+EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection(  ) const
 {
     typedef typename CTX::mapped_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
@@ -299,9 +311,9 @@ EvaluatorContext<CTX, ExprT>::evaluateProjection(  ) const
     static const bool shapeN = (shape::N==1);
     return evaluateProjection( mpl::bool_<shapeN>() );
 }
-template<typename CTX, typename ExprT>
-typename EvaluatorContext<CTX, ExprT>::element_type
-EvaluatorContext<CTX, ExprT>::evaluateProjection( mpl::bool_<true> ) const
+template<typename CTX, typename ExprT, typename CTX2>
+typename EvaluatorContext<CTX, ExprT, CTX2>::element_type
+EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection( mpl::bool_<true> ) const
 {
     auto Xh = M_ctx.ptrFunctionSpace();
     auto const& worldComm = Xh->worldComm();
@@ -382,9 +394,9 @@ EvaluatorContext<CTX, ExprT>::evaluateProjection( mpl::bool_<true> ) const
     return __globalv;
 
 }
-template<typename CTX, typename ExprT>
-typename EvaluatorContext<CTX, ExprT>::element_type
-EvaluatorContext<CTX, ExprT>::evaluateProjection( mpl::bool_<false> ) const
+template<typename CTX, typename ExprT, typename CTX2>
+typename EvaluatorContext<CTX, ExprT, CTX2>::element_type
+EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection( mpl::bool_<false> ) const
 {
     //here, the expression is a gradient
     //so wa can't project it on the function space
@@ -405,16 +417,18 @@ struct evaluate_context
 {
     typedef typename clean_type<Args,tag::expr>::type _expr_type;
     typedef typename clean_type<Args,tag::context>::type _context_type;
-    typedef details::EvaluatorContext<_context_type, Expr<_expr_type> > eval_t;
+    typedef typename clean2_type<Args, tag::context2,_context_type>::type _context2_type;
+    typedef details::EvaluatorContext<_context_type, Expr<_expr_type>, _context2_type > eval_t;
     typedef typename eval_t::element_type element_type;
 };
 }
 /// \endcond
 
 
-template<typename Ctx, typename ExprT>
-typename details::EvaluatorContext<Ctx, Expr<ExprT> >::element_type
+template<typename Ctx, typename ExprT, typename Ctx2>
+typename details::EvaluatorContext<Ctx, Expr<ExprT>, Ctx2 >::element_type
 evaluatecontext_impl( Ctx const& ctx,
+                      Ctx2 const& ctx2,
                       Expr<ExprT> const& __expr,
                       int max_points_used = -1,
                       GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO,
@@ -422,8 +436,8 @@ evaluatecontext_impl( Ctx const& ctx,
                       bool projection = false,
                       WorldComm const& worldComm = Environment::worldComm() )
 {
-    typedef details::EvaluatorContext<Ctx, Expr<ExprT> > proj_t;
-    proj_t p( ctx, __expr, max_points_used, geomap , mpi_communications , projection, worldComm );
+    typedef details::EvaluatorContext<Ctx, Expr<ExprT>, Ctx2 > proj_t;
+    proj_t p( ctx, ctx2, __expr, max_points_used, geomap , mpi_communications , projection, worldComm );
     return p();
 }
 
@@ -451,6 +465,7 @@ BOOST_PARAMETER_FUNCTION(
     ) // 4. one required parameter, and
 
     ( optional
+      ( context2, *, context.functionSpace()->context() )
       ( max_points_used, (int), -1 )
       ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
       ( mpi_communications, (bool), true )
@@ -460,7 +475,7 @@ BOOST_PARAMETER_FUNCTION(
 )
 {
     //LOG(INFO) << "evaluate expression..." << std::endl;
-    return evaluatecontext_impl( context, expr, max_points_used, geomap , mpi_communications, projection, worldcomm );
+    return evaluatecontext_impl( context, context2, expr, max_points_used, geomap , mpi_communications, projection, worldcomm );
     //LOG(INFO) << "evaluate expression done." << std::endl;
 }
 
