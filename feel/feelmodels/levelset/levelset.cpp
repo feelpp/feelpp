@@ -348,6 +348,17 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     M_dirac.reset( new element_levelset_type(this->functionSpace(), "Dirac") );
     M_levelsetNormal.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "Normal") );
     M_levelsetCurvature.reset( new element_levelset_type(this->functionSpace(), "Curvature") );
+
+    if( M_useGradientAugmented )
+    {
+        M_modGradPhiAdvection = modgradphi_advection_type::New(
+                prefixvm(this->prefix(), "modgradphi-advection"),
+                this->worldComm()
+                );
+        M_modGradPhiAdvection->setModelName( "Advection" );
+        M_modGradPhiAdvection->build( this->functionSpace() );
+        M_modGradPhiAdvection->timeStepBDF()->setOrder( this->timeStepBDF()->bdfOrder() );
+    }
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -358,12 +369,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
     { 
         case LevelSetReinitMethod::FM :
         {
-            //M_reinitializer.reset( 
-                    //new ReinitializerFM<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-fm") ) 
-                    //);
-            M_reinitializer = this->reinitializerFM();
-
-            //dynamic_cast<ReinitializerFM<space_levelset_type>&>( *M_reinitializer ).setUseMarker2AsMarkerDone( M_useMarkerDiracAsMarkerDoneFM );
+            if( !M_reinitializer )
+                M_reinitializer = this->reinitializerFM();
 
             if( M_strategyBeforeFM == ILP )
             {
@@ -383,9 +390,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
         break;
         case LevelSetReinitMethod::HJ :
         {
-            M_reinitializer.reset(
-                    new ReinitializerHJ<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-hj") )
-                    );
+            if( !M_reinitializer )
+                M_reinitializer = this->reinitializerHJ();
             
             double thickness_heaviside;
             if( Environment::vm().count( prefixvm(prefixvm(this->prefix(), "reinit-hj"), "thickness-heaviside") ) )
@@ -396,7 +402,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
             {
                 thickness_heaviside =  M_thicknessInterface;
             }
-            dynamic_cast<ReinitializerHJ<space_levelset_type>&>(*M_reinitializer).setThicknessHeaviside( M_thicknessInterface );
+            boost::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( M_thicknessInterface );
         }
         break;
     }
@@ -410,16 +416,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 {
     M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "projector-l2"), _worldcomm=this->worldComm()) );
     M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "projector-l2-vec"), _worldcomm=this->worldComm()) );
-
-    if( M_useGradientAugmented )
-    {
-        M_modGradPhiAdvection = modgradphi_advection_type::New(
-                prefixvm(this->prefix(), "modgradphi-advection"),
-                this->worldComm()
-                );
-        M_modGradPhiAdvection->setModelName( "Advection" );
-        M_modGradPhiAdvection->build( this->functionSpace() );
-    }
 
     //if( M_doSmoothCurvature )
     //{
@@ -1183,10 +1179,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->saveCurrent();
 
     super_type::updateTimeStep();
+    if( M_useGradientAugmented )
+        M_modGradPhiAdvection->updateTimeStep();
 
     if( M_iterSinceReinit < M_timeOrder )
     {
         this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+        if( M_useGradientAugmented )
+            M_modGradPhiAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
         //this->timeStepBDF()->setTimeInitial( current_time ); 
         //this->timeStepBDF()->restart();
         //this->timeStepBDF()->setTimeInitial( this->timeInitial() );
@@ -1263,7 +1263,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
         } // switch M_strategyBeforeFM
 
         // Fast Marching Method
-        boost::dynamic_pointer_cast<ReinitializerFM<space_levelset_type>>( M_reinitializer )->setUseMarker2AsMarkerDone( M_useMarkerDiracAsMarkerDoneFM );
+        boost::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
+                M_useMarkerDiracAsMarkerDoneFM 
+                );
 
         LOG(INFO)<< "reinit with FMM done"<<std::endl;
     } // Fast Marching
@@ -1291,9 +1293,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerFM_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerFM()
+LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerFM( bool buildOnTheFly )
 {
-    if( !M_reinitializerFM )
+    if( !M_reinitializerFM && buildOnTheFly )
     {
         M_reinitializerFM.reset( 
                 new ReinitializerFM<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-fm") ) 
@@ -1301,6 +1303,20 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerFM()
     }
 
     return M_reinitializerFM;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerHJ_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerHJ( bool buildOnTheFly )
+{
+    if( !M_reinitializerHJ && buildOnTheFly )
+    {
+        M_reinitializerHJ.reset( 
+                new ReinitializerHJ<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-hj") ) 
+                );
+    }
+
+    return M_reinitializerHJ;
 }
 
 //----------------------------------------------------------------------------//

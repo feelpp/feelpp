@@ -39,6 +39,7 @@
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 #include <feel/feelmodels/levelset/reinitializer.hpp>
 #include <feel/feelmodels/levelset/reinitializer_fm.hpp>
+#include <feel/feelmodels/levelset/reinitializer_hj.hpp>
 #include <feel/feelfilters/straightenmesh.hpp>
 
 #include <feel/feelmodels/modelcore/modelbase.hpp>
@@ -151,6 +152,8 @@ public:
     typedef boost::shared_ptr<reinitializer_type> reinitializer_ptrtype;
     typedef ReinitializerFM<space_levelset_type> reinitializerFM_type;
     typedef boost::shared_ptr<reinitializerFM_type> reinitializerFM_ptrtype;
+    typedef ReinitializerHJ<space_levelset_type> reinitializerHJ_type;
+    typedef boost::shared_ptr<reinitializerHJ_type> reinitializerHJ_ptrtype;
 
     enum strategy_before_FM_type {NONE=0, ILP=1, HJ_EQ=2, IL_HJ_EQ=3};
 
@@ -211,7 +214,7 @@ public:
             ( optional
               ( space_vectorial, (space_levelset_vectorial_ptrtype), space_levelset_vectorial_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
               ( space_markers, (space_markers_ptrtype), space_markers_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
-              ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ),  buildReinitializer(this->M_reinitMethod, space, this->prefix()) )
+              ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ), reinitializer_ptrtype() )
               ( projectorL2, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"projector-l2"))) )
               ( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"projector-l2-vec"))) )
               ( smoother, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"smoother")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
@@ -220,14 +223,23 @@ public:
             )
     {
         super_type::build( space );
+        // createFunctionSpaces
         M_spaceLevelSetVec = space_vectorial;
         M_spaceMarkers = space_markers;
+        // createInterfaceQuantities
+        this->createInterfaceQuantities();
+        // createReinitialization
+        if( reinitializer )
+        {
+            M_reinitializer = reinitializer;
+        }
+        this->createReinitialization();
+        // createOthers
         M_projectorL2 = projectorL2;
         M_projectorL2Vec = projectorL2_vectorial;
         M_smoother = smoother;
         M_smootherVectorial = smoother_vectorial;
 
-        this->createInterfaceQuantities();
     }
 
     //--------------------------------------------------------------------//
@@ -329,7 +341,8 @@ public:
     void setUseMarkerDiracAsMarkerDoneFM( bool val = true ) { M_useMarkerDiracAsMarkerDoneFM  = val; }
 
     reinitializer_ptrtype const& reinitializer() const { return M_reinitializer; }
-    reinitializerFM_ptrtype const& reinitializerFM();
+    reinitializerFM_ptrtype const& reinitializerFM( bool buildOnTheFly = true );
+    reinitializerHJ_ptrtype const& reinitializerHJ( bool buildOnTheFly = true );
 
     bool hasReinitialized() const { return M_hasReinitialized; }
 
@@ -489,6 +502,7 @@ private:
     // Reinitialization
     reinitializer_ptrtype M_reinitializer;
     reinitializerFM_ptrtype M_reinitializerFM;
+    reinitializerHJ_ptrtype M_reinitializerHJ;
     bool M_reinitializerIsUpdatedForUse;
 
     boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smootherFM;
