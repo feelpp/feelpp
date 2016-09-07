@@ -1905,18 +1905,11 @@ public:
     {
         if ( !boost::any_cast<rbfunctionspace_context2_ptrtype>( &rbCtxBase ) )
         {
-            std::cout << "[EIMFunction::setRbSpaceContext2] cast fails with rbfunctionspace_context_ptrtype\n";
+            std::cout << "[EIMFunction::setRbSpaceContext2] cast fails with rbfunctionspace_context2_ptrtype\n";
             return;
         }
         //std::cout << "[EIMFunction::setRbSpaceContext2] cast ok\n";
         M_ctxRbModelSolution2 = boost::any_cast<rbfunctionspace_context2_ptrtype>( rbCtxBase );
-#if 0
-        // special trick for thermoelectric appli
-        auto it = M_ctxRbModelSolution2->begin();
-        auto en = M_ctxRbModelSolution2->end();
-        for ( ; it!=en; ++it )
-            (*M_ctxRbModelSolution)[it->first]->M_grad = it->second->M_grad;
-#endif
     }
 
     node_type interpolationPoint( int position ) const
