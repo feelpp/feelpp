@@ -444,9 +444,14 @@ private:
     void initFastMarching(mesh_ptrtype const& mesh);
 
     //--------------------------------------------------------------------//
-    void addShape( 
+    void addShape(
             std::pair<ShapeType, parameter_map> const& shape, 
-            element_levelset_type & phi );
+            element_levelset_type & phi
+            );
+    void addLabel(
+            std::pair<ShapeType, parameter_map> const& shape,
+            element_levelset_type & labels
+            );
 
     //--------------------------------------------------------------------//
     element_levelset_ptrtype const& phio() const { return this->timeStepBDF()->unknowns()[1]; }

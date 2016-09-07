@@ -174,6 +174,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     auto phi_init = this->functionSpace()->element();
     phi_init.setConstant( std::numeric_limits<value_type>::max() );
 
+    element_levelset_ptrtype labels;
+    bool useLabels = boption( _name="use-multi-labels", _prefix=this->prefix() );
+    if( useLabels )
+        labels = this->functionSpace()->elementPtr(); 
+
     this->modelProperties().parameters().updateParameterValues();
     if( !this->M_icDirichlet.empty() )
     {
@@ -224,6 +229,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
         for( auto const& shape: M_icShapes )
         {
             this->addShape( shape, phi_init );
+            if( useLabels )
+                this->addLabel( shape, labels );
         }
 
         hasInitialValue = true;
@@ -232,6 +239,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     if( hasInitialValue )
     {
         this->setInitialValue( phi_init );
+        if( useLabels )
+            this->setUseMultiLabels( useLabels, labels );
     }
 
     if( M_useGradientAugmented )
@@ -247,7 +256,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::addShape( 
         std::pair<ShapeType, parameter_map> const& shape, 
-        element_levelset_type & phi 
+        element_levelset_type & phi
         )
 {
     ShapeType shapeType = shape.first;
@@ -278,6 +287,43 @@ LEVELSET_CLASS_TEMPLATE_TYPE::addShape(
     }
 }
 
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::addLabel( 
+        std::pair<ShapeType, parameter_map> const& shape, 
+        element_levelset_type & labels
+        )
+{
+    ShapeType shapeType = shape.first;
+    parameter_map const& shapeParams = shape.second;
+
+    switch(shapeType)
+    {
+        case ShapeType::SPHERE:
+        {
+            auto X = Px() - shapeParams.dget("xc");
+            auto Y = Py() - shapeParams.dget("yc");
+            auto Z = Pz() - shapeParams.dget("zc"); 
+            auto R = shapeParams.dget("radius");
+            auto Label = shapeParams.iget("label");
+            labels = vf::project(
+                    _space=this->functionSpace(),
+                    _range=elements(this->mesh()),
+                    _expr=idv(labels) + (X*X+Y*Y+Z*Z < R*R/2.) * Label,
+                    _geomap=this->geomap()
+                    );
+        }
+        break;
+
+        case ShapeType::ELLIPSE:
+        {
+            // TODO
+        }
+        break;
+    }
+}
+
+//----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
@@ -548,6 +594,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
     auto const& initialConditions = this->modelProperties().initialConditions();
 
     this->M_icDirichlet = initialConditions.getScalarFields( std::string(this->prefix()), "Dirichlet" );
+
+    int currentLabel = 1;
     
     // Shapes
     for( std::string const& icShape: initialConditions.markers( this->prefix(), "shapes") )
@@ -570,12 +618,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
                     CHECK(zcRead.first || nDim < 3) << icShape << " zc not provided\n";
                     auto radiusRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "radius" );
                     CHECK(radiusRead.first) << icShape << " radius not provided\n";
+                    auto labelRead = initialConditions.iparam( this->prefix(), "shapes", icShape, "label" );
+                    int label = (labelRead.fist)? labelRead.second: currentLabel;
 
                     shapeParameterMap["id"] = icShape;
                     shapeParameterMap["xc"] = xcRead.second;
                     shapeParameterMap["yc"] = ycRead.second;
                     shapeParameterMap["zc"] = zcRead.second;
                     shapeParameterMap["radius"] = radiusRead.second;
+                    shapeParameterMap["label"] = label;
                 }
                 break;
 
@@ -589,12 +640,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
                     CHECK(zcRead.first || nDim < 3) << icShape << " zc not provided\n";
                     auto radiusRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "radius" );
                     CHECK(radiusRead.first) << icShape << " radius not provided\n";
+                    auto labelRead = initialConditions.iparam( this->prefix(), "shapes", icShape, "label" );
+                    int label = (labelRead.fist)? labelRead.second: currentLabel;
 
                     shapeParameterMap["id"] = icShape;
                     shapeParameterMap["xc"] = xcRead.second;
                     shapeParameterMap["yc"] = ycRead.second;
                     shapeParameterMap["zc"] = zcRead.second;
                     shapeParameterMap["radius"] = radiusRead.second;
+                    shapeParameterMap["label"] = label;
                     // TODO
                 }
                 break;
@@ -606,6 +660,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
         {
             CHECK(false) << "invalid shape type in " << icShape << std::endl;
         }
+
+        ++currentLabel;
     } 
 }
 
