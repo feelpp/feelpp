@@ -845,17 +845,7 @@ public :
     private :
 
         friend class boost::serialization::access;
-#if 0
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int version)
-            {
-                ar & BOOST_SERIALIZATION_NVP( M_index );
-                ar & BOOST_SERIALIZATION_NVP( M_phi );
-                ar & BOOST_SERIALIZATION_NVP( M_grad );
-                if ( Archive::is_loading::value )
-                    std::cout << "M_phi="<<M_phi<<"\n";
-            }
-#else
+
         template<class Archive>
         void save( Archive & ar, const unsigned int version ) const
             {
@@ -873,19 +863,19 @@ public :
         template<class Archive>
         void load( Archive & ar, const unsigned int version )
             {
-                std::cout <<" load crbctx archive\n";
+                // std::cout <<" load crbctx archive\n";
                 ar & BOOST_SERIALIZATION_NVP( M_index );
                 ar & BOOST_SERIALIZATION_NVP( M_phi );
                 ar & BOOST_SERIALIZATION_NVP( M_grad );
-                std::cout << "M_phi="<<M_phi<<"\n";
+                // std::cout << "M_phi="<<M_phi<<"\n";
                 geoelement_type meshEltCtx;
                 ar & BOOST_SERIALIZATION_NVP( meshEltCtx );
                 if ( M_rbspace )
                 {
-                    std::cout << "has rbspace\n";
+                    // std::cout << "has rbspace\n";
                     if ( M_rbspace->mesh() )
                     {
-                        std::cout << "has mesh in rbspace\n";
+                        // std::cout << "has mesh in rbspace\n";
                         CHECK ( M_rbspace->mesh()->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) ) << "fails because mesh doesnt have the element reloaded for gmc";
                         auto const& meshEltCtxRegister = M_rbspace->mesh()->element( meshEltCtx.id(), meshEltCtx.processId() );
                         typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_rbspace->mesh()->gm(),meshEltCtxRegister ) );
@@ -894,7 +884,6 @@ public :
                     }
                     else if ( M_meshForRbContext )
                     {
-                        //CHECK( false ) << "TODO meshForRbContext";
                         if ( !M_meshForRbContext->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) )
                         {
                             meshEltCtx.setMeshAndGm( M_meshForRbContext.get(), M_meshForRbContext->gm(), M_meshForRbContext->gm1() );
@@ -912,7 +901,6 @@ public :
 
             }
         BOOST_SERIALIZATION_SPLIT_MEMBER()
-#endif
 
     private :
         int M_index;
@@ -1068,14 +1056,7 @@ public :
 
     private :
         friend class boost::serialization::access;
-#if 0
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int version)
-        {
-            ar & boost::serialization::base_object<super>(*this);
-            ar & BOOST_SERIALIZATION_NVP( M_nPoints );
-        }
-#else
+
         template<class Archive>
         void save( Archive & ar, const unsigned int version ) const
             {
@@ -1095,10 +1076,10 @@ public :
         template<class Archive>
         void load( Archive & ar, const unsigned int version )
             {
-                std::cout << "reload rbctxset\n";
+                // std::cout << "reload rbctxset\n";
                 if ( M_rbspace )
                 {
-                    std::cout << "reload rbctxset with rbspace\n";
+                    // std::cout << "reload rbctxset with rbspace\n";
                     if ( !M_rbspace->mesh() )
                         M_meshForRbContext.reset( new mesh_type( M_rbspace->worldComm() ) );
                 }
@@ -1121,7 +1102,6 @@ public :
                 }
             }
         BOOST_SERIALIZATION_SPLIT_MEMBER()
-#endif
 
     private :
         fe_context_type M_ctx_fespace;
@@ -1818,13 +1798,7 @@ template<typename Context_t>
 void
 ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v ) const
 {
-#if 1
     return grad_( context, v, boost::is_same<Context_t,ContextRB>() );
-#else
-    // special trick for thermoelectric appli (composite case with 2 differents contexts in expr)
-    grad_( context, v, mpl::bool_< boost::is_same<Context_t,ContextRB>::value ||
-                  boost::is_same<Context_t, typename ReducedBasisSpace<ModelType>::template sub_rbfunctionspace<1>::type::ctxrb_type >::value >() );
-#endif
 }
 
 template<typename ModelType,typename FeSpaceType>
@@ -1860,16 +1834,11 @@ template<typename Context_t>
 void
 ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v , mpl::bool_<true> ) const
 {
-#if 0
-    ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
-#else
-    auto const& rb_context = context;
-#endif
     //LOG( INFO ) << " grad_ with a RB context";
 
     //int index = rb_context.pointIndex();
     //evaluate the gradient at a specific point (called by evaluateFromContext)
-    auto evaluation = rb_context.grad( *this );
+    auto evaluation = context.grad( *this );
     for(int d=0;d<nDim;d++)
     {
         for(int c=0; c<nComponents; c++)
@@ -1885,10 +1854,9 @@ template<typename Context_t>
 void
 ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
 {
-    ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
     //LOG( INFO ) << " d_ with a RB context";
 
-    auto evaluation = rb_context.d(N, *this );
+    auto evaluation = context.d(N, *this );
 
     for(int c=0; c<nComponents; c++)
     {
