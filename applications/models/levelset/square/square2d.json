@@ -14,13 +14,13 @@
     {
         "levelset":
         {
-            "Dirichlet":
-            {
-                "":
-                {
-                    "expr":"sqrt( (x-x0)*(x-x0) + (y-y0)*(y-y0) ) - r0 :x:x0:y:y0:r0"
-                }
-            },
+            //"Dirichlet":
+            //{
+                //"":
+                //{
+                    //"expr":"sqrt( (x-x0)*(x-x0) + (y-y0)*(y-y0) ) - r0 :x:x0:y:y0:r0"
+                //}
+            //},
             "shapes":
             {
                 "drop1":
@@ -28,14 +28,16 @@
                     "shape": "sphere",
                     "xc": "0.4",
                     "yc": "0.45",
-                    "radius": "0.16"
+                    "radius": "0.16",
+                    "label": "1"
                 },
                 "drop2":
                 {
                     "shape": "sphere",
                     "xc": "0.25",
                     "yc": "0.8",
-                    "radius": "0.05"
+                    "radius": "0.05",
+                    "label": "2"
                 }
             }
         }
