@@ -40,6 +40,10 @@
 #include <feel/feelmodels/levelset/reinitializer.hpp>
 #include <feel/feelmodels/levelset/reinitializer_fm.hpp>
 #include <feel/feelmodels/levelset/reinitializer_hj.hpp>
+#include <feel/feelmodels/levelset/distlabels_fm.hpp>
+
+#include <feel/feells/selflabel.hpp>
+
 #include <feel/feelfilters/straightenmesh.hpp>
 
 #include <feel/feelmodels/modelcore/modelbase.hpp>
@@ -161,7 +165,7 @@ public:
     // Multi-labels
     typedef SelfLabel<space_levelset_type, space_markers_type> selflabel_type;
     typedef boost::shared_ptr<selflabel_type> selflabel_ptrtype;
-    typedef LabelDistanceFMS<space_levelset_type, Periodicity<periodicity_type>> distlabelFMS_type;
+    typedef DistLabelsFM<space_levelset_type> distlabelFMS_type;
     typedef boost::shared_ptr<distlabelFMS_type> distlabelFMS_ptrtype;
 
     //--------------------------------------------------------------------//
@@ -367,7 +371,7 @@ public:
 
     void updateSelfLabel();
 
-    element_levelset_ptrtype const& getDistanceBetweenLabels();
+    element_levelset_ptrtype distanceBetweenLabels();
 
     //--------------------------------------------------------------------//
     // Initial value

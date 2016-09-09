@@ -223,14 +223,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
                 _expr=idv(phi_init) / idv(modGradPhiInit)
                 );
             // Reinitialize phi_init
-            phi_init = this->reinitializerFM()->run( phi_init );
+            this->reinitializerFM()->run( phi_init );
+            phi_init = this->reinitializerFM()->distance();
         }
         // Add shapes
         for( auto const& shape: M_icShapes )
         {
             this->addShape( shape, phi_init );
             if( useLabels )
-                this->addLabel( shape, labels );
+                this->addLabel( shape, *labels );
         }
 
         hasInitialValue = true;
@@ -240,7 +241,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     {
         this->setInitialValue( phi_init );
         if( useLabels )
+        {
             this->setUseMultiLabels( useLabels, labels );
+            this->updateSelfLabel();
+        }
     }
 
     if( M_useGradientAugmented )
@@ -619,7 +623,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
                     auto radiusRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "radius" );
                     CHECK(radiusRead.first) << icShape << " radius not provided\n";
                     auto labelRead = initialConditions.iparam( this->prefix(), "shapes", icShape, "label" );
-                    int label = (labelRead.fist)? labelRead.second: currentLabel;
+                    int label = (labelRead.first)? labelRead.second: currentLabel;
 
                     shapeParameterMap["id"] = icShape;
                     shapeParameterMap["xc"] = xcRead.second;
@@ -641,7 +645,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
                     auto radiusRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "radius" );
                     CHECK(radiusRead.first) << icShape << " radius not provided\n";
                     auto labelRead = initialConditions.iparam( this->prefix(), "shapes", icShape, "label" );
-                    int label = (labelRead.fist)? labelRead.second: currentLabel;
+                    int label = (labelRead.first)? labelRead.second: currentLabel;
 
                     shapeParameterMap["id"] = icShape;
                     shapeParameterMap["xc"] = xcRead.second;
@@ -1045,7 +1049,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToBoundary()
 
     // Run FM using marker2 as marker DONE
     this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
-    *distToBoundary = this->reinitializerFM()->run( phi0 );
+    this->reinitializerFM()->run( phi0 );
+    *distToBoundary = this->reinitializerFM()->distance();
 
     return distToBoundary;
 }
@@ -1091,7 +1096,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
 
     // Run FM using marker2 as marker DONE
     this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
-    *distToMarkedFaces = this->reinitializerFM()->run( phi0 );
+    this->reinitializerFM()->run( phi0 );
+    *distToMarkedFaces = this->reinitializerFM()->distance();
 
     return distToMarkedFaces;
 }
@@ -1140,7 +1146,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
 
     // Run FM using marker2 as marker DONE
     this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
-    *distToMarkedFaces = this->reinitializerFM()->run( phi0 );
+    this->reinitializerFM()->run( phi0 );
+    *distToMarkedFaces = this->reinitializerFM()->distance();
 
     return distToMarkedFaces;
 }
@@ -1352,7 +1359,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
         //LOG(INFO)<<"reinit done in "<<ch.elapsed()<<" s\n";
     } // Hamilton-Jacobi
 
-    *phi = M_reinitializer->run( *phi );
+    M_reinitializer->run( *phi );
+    *phi = M_reinitializer->distance();
 
     if( M_useGradientAugmented )
     {
@@ -1419,7 +1427,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::setUseMultiLabels(bool b, element_levelset_ptrtype
 {
     M_useMultiLabels = b;
     if( !M_distLabel )
-        M_distLabel = distlabelFMS_type::New( this->functionSpace(), M_periodicity );
+    {
+        M_distLabel.reset( 
+                new distlabelFMS_type( this->functionSpace(), prefixvm(this->prefix(), "distlabel-fm") ) 
+                );
+    }
     if( M_useMultiLabels )
     {
         this->setUseSelfLabel( M_useMultiLabels, label );
@@ -1441,21 +1453,24 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateSelfLabel()
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::getDistanceBetweenLabels()
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype
+LEVELSET_CLASS_TEMPLATE_TYPE::distanceBetweenLabels()
 {
-    CHECK(this->useMultiLabels()) << "You must enable multi-labels to get the distance between labels.\n"
+    CHECK(this->useMultiLabels()) << "You must enable multi-labels to get the distance between labels.\n";
+
+    element_levelset_ptrtype distLabelPhi( new element_levelset_type(this->functionSpace(), "DistBetweenLabels") );
 
     if( M_doUpdateMultiLabels )
     {
-        auto distLabelPhi = this->functionSpace()->elementPtr();
         *distLabelPhi = *this->phi();
         this->applyStrategyBeforeFM( distLabelPhi );
         M_distLabel->setSelfLabel( M_selfLabel->getLabel() );
-        M_distLabel->run( distLabelPhi );
+        M_distLabel->run( *distLabelPhi );
         M_doUpdateMultiLabels = false;
     }
-    return M_distLabel->getNextNearestNeighbourDistance();
+
+    *distLabelPhi = M_distLabel->nextNearestNeighbourDistance();
+    return distLabelPhi;
 }
 
 //----------------------------------------------------------------------------//
@@ -1577,6 +1592,28 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
         this->M_exporter->step( time )->add( prefixvm(this->prefix(),"ModGradPhi"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ModGradPhi")),
                                        *this->modGradPhi() );
+    }
+
+    if( this->useSelfLabel() )
+    {
+        this->M_exporter->step( time )->add( 
+                prefixvm(this->prefix(), "Label0"),
+                prefixvm(this->prefix(), prefixvm(this->subPrefix(), "Label0")),
+                *M_selfLabel->getLabel()
+                );
+    }
+    if( this->useMultiLabels() )
+    {
+        this->M_exporter->step( time )->add( 
+                prefixvm(this->prefix(), "distBetweenLabels"),
+                prefixvm(this->prefix(), prefixvm(this->subPrefix(), "distBetweenLabels")),
+                *this->distanceBetweenLabels()
+                );
+        //this->M_exporter->step( time )->add( 
+                //prefixvm(this->prefix(), "Label0"),
+                //prefixvm(this->prefix(), prefixvm(this->subPrefix(), "Label0")),
+                //*M_selfLabel->getLabel()
+                //);
     }
 
     super_type::exportResultsImpl( time );
