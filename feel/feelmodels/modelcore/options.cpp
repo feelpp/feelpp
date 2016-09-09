@@ -401,6 +401,7 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"smoother-vec.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for curvature smoothing")
 
         (prefixvm(prefix,"use-gradient-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Advect modGradPhi independently")
+        (prefixvm(prefix,"use-multi-labels").c_str(), Feel::po::value<bool>()->default_value(false), "Enable multi-labels support")
 
         (prefixvm(prefix,"do_export_gradphi").c_str(), Feel::po::value<bool>(), "doExportGradPhi")
         (prefixvm(prefix,"do_export_modgradphi").c_str(), Feel::po::value<bool>(), "doExportModGradPhi")
