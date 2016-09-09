@@ -81,9 +81,13 @@ public:
     mesh_ptrtype const& mesh() const { return M_space->mesh(); }
     //--------------------------------------------------------------------//
     // Run reinitialization
-    virtual element_type run( element_type const& phi ) =0;
+    virtual void run( element_type const& phi ) =0;
 
-    element_type operator() ( element_type const& phi ) { return this->run(phi); }
+    void operator() ( element_type const& phi ) { this->run(phi); }
+
+    //--------------------------------------------------------------------//
+    // Accessors
+    virtual element_type distance() const =0;
 
 protected:
     //ReinitializerType M_reinitializerType;
