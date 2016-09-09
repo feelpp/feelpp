@@ -48,7 +48,7 @@ namespace Feel
  * @tparam periodicity_type = NoPeriodicity periodicity of the distance function
  */
 template<typename FunctionSpaceType, typename periodicity_type = NoPeriodicity>
-class ReinitializerFMS : FastMarchingBase<FunctionSpaceType, periodicity_type>
+class ReinitializerFMS : public FastMarchingBase<FunctionSpaceType, periodicity_type>
 {
 public:
     typedef FastMarchingBase<FunctionSpaceType, periodicity_type> super_type;

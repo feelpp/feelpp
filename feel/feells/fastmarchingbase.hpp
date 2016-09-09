@@ -17,7 +17,6 @@ template<typename FunctionSpaceType, typename PeriodicityType = NoPeriodicity>
 class FastMarchingBase
 {
 public:
-    static_assert( FunctionSpaceType::fe_type::nOrder == 1, "FunctionSpaceType needs to be a finite element space of order 1");
     static_assert( ! FunctionSpaceType::is_periodic , "Space for fast marching must be non periodic, but periodicity can be given as second template argument");
 
     //--------------------------------------------------------------------//
@@ -51,6 +50,10 @@ public:
     //--------------------------------------------------------------------//
     // Run march
     void run( element_type const& phi, bool useMarker2AsMarkerDone =false );
+    void run( element_ptrtype const& phi, bool useMarker2AsMarkerDone =false )
+    {
+        this->run( *phi, useMarker2AsMarkerDone );
+    }
 
     //--------------------------------------------------------------------//
     element_ptrtype getDistance() const { return M_distance; }

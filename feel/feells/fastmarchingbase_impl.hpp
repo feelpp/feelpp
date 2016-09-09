@@ -67,6 +67,8 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::run(
         element_type const& phi, 
         bool useMarker2AsMarkerDone )
 {
+    FEELPP_ASSERT( FunctionSpaceType::fe_type::nOrder == 1 )("FunctionSpaceType needs to be a finite element space of order 1");
+
     this->initMarch( phi, useMarker2AsMarkerDone );
 
     // if there is no interface, do nothing
