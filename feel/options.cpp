@@ -393,6 +393,7 @@ po::options_description stabilization_options( std::string const& prefix )
 
         ( prefixvm( prefix, "stab.export" ).c_str(), po::value<bool>()->default_value( true ), "export fields" )
 
+        ( prefixvm( prefix, "stab.parameter" ).c_str(), po::value<int>()->default_value( 1 ), "different way to evaluate the stabilization parameter" )
         ;
 
     return _options.add( backend_options( prefixvm(prefix,"stab") ) );
