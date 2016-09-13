@@ -37,6 +37,8 @@
 
 namespace Feel
 {
+struct GeometricSpaceBase;
+
 namespace vf
 {
 namespace details
@@ -185,11 +187,9 @@ template<typename CTX, typename ExprT, typename CTX2>
 typename EvaluatorContext<CTX, ExprT, CTX2>::element_type
 EvaluatorContext<CTX, ExprT, CTX2>::operator()() const
 {
-
     if( M_projection )
         return evaluateProjection();
 
-    auto Xh = M_ctx.ptrFunctionSpace();
     auto const& worldComm = M_worldComm;//Xh->worldComm();
     //rank of the current processor
     int proc_number = worldComm.globalRank();
@@ -309,7 +309,10 @@ EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection(  ) const
     typedef typename t_expr_type::value_type value_type;
     typedef typename t_expr_type::shape shape;
     static const bool shapeN = (shape::N==1);
-    return evaluateProjection( mpl::bool_<shapeN>() );
+
+    typedef typename boost::remove_reference<typename boost::remove_const< decltype(*M_ctx.ptrFunctionSpace()) >::type >::type ctxspace_type;
+    static const bool ctxspace_is_geometricspace = boost::is_base_of<GeometricSpaceBase,ctxspace_type>::type::value;
+    return evaluateProjection( mpl::bool_<shapeN && !ctxspace_is_geometricspace>() );
 }
 template<typename CTX, typename ExprT, typename CTX2>
 typename EvaluatorContext<CTX, ExprT, CTX2>::element_type
