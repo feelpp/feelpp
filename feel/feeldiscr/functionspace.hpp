@@ -2580,7 +2580,7 @@ public:
         }
 
         template <typename ... CTX>
-        auto //basis_context_ptrtype
+        decltype(auto) //basis_context_ptrtype
         selectContext( CTX const& ... ctx ) const
             {
                 typedef boost::fusion::vector<CTX...> my_vector_ctx_type;
