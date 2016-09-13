@@ -75,6 +75,8 @@ makeBenchmarkGreplNonlinearEllipticAbout( std::string const& str = "benchmarkGre
     return about;
 }
 
+namespace BenchmarkGreplNonlinearElliptic_Definition
+{
 
 class ParameterDefinition
 {
@@ -121,6 +123,8 @@ public :
 
 };
 
+} // namespace BenchmarkGreplNonlinearElliptic_Definition
+
 /**
  * \class BenchmarkGreplNonlinearElliptic
  * \brief brief description
@@ -140,11 +144,19 @@ public :
  */
 template<int Order>
 class BenchmarkGreplNonlinearElliptic :
-    public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order> ,NonLinear, EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Order> > >
+        public ModelCrbBase< BenchmarkGreplNonlinearElliptic_Definition::ParameterDefinition,
+                             BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order>,
+                             NonLinear,
+                             BenchmarkGreplNonlinearElliptic_Definition::EimDefinition<BenchmarkGreplNonlinearElliptic_Definition::ParameterDefinition,
+                                                                                       BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order> > >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order>, NonLinear, EimDefinition<ParameterDefinition,FunctionSpaceDefinition<Order> > > super_type;
+    typedef ModelCrbBase<BenchmarkGreplNonlinearElliptic_Definition::ParameterDefinition,
+                         BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order>,
+                         NonLinear,
+                         BenchmarkGreplNonlinearElliptic_Definition::EimDefinition<BenchmarkGreplNonlinearElliptic_Definition::ParameterDefinition,
+                                                                                   BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order> > > super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -156,9 +168,9 @@ public:
     typedef typename super_type::mesh_type mesh_type;
     typedef typename super_type::mesh_ptrtype mesh_ptrtype;
 
-    typedef typename FunctionSpaceDefinition<Order>::space_type space_type;
+    typedef typename BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order>::space_type space_type;
     typedef typename boost::shared_ptr<space_type> space_ptrtype;
-    typedef typename FunctionSpaceDefinition<Order>::space_type_eimg space_type_eimg;
+    typedef typename BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order>::space_type_eimg space_type_eimg;
     typedef typename boost::shared_ptr<space_type_eimg> space_ptrtype_eimg;
 
     typedef typename super_type::beta_vector_type beta_vector_type;
@@ -184,7 +196,7 @@ public:
 
     //! initialization of the model
     void initModel();
-    void initOnlineEim();
+    void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir );
 
     //@}
 
@@ -386,7 +398,7 @@ private:
 
 
 template<int Order>
-void BenchmarkGreplNonlinearElliptic<Order>::initOnlineEim()
+void BenchmarkGreplNonlinearElliptic<Order>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
 {
     this->M_betaAqm.resize( 1 );
     this->M_betaAqm[0].resize( 1 );
@@ -401,13 +413,24 @@ void BenchmarkGreplNonlinearElliptic<Order>::initOnlineEim()
     if ( !pT )
         pT.reset( new element_type );
 
+    auto const& ptreeEim = ptree.get_child( "eim" );
+    auto const& ptreeEimg = ptreeEim.get_child( "eim_g" );
+    std::string dbnameEimg = ptreeEimg.template get<std::string>( "database-filename" );
+    if ( !dbDir.empty() )
+    {
+        fs::path trydbfilename = fs::path(dbDir)/fs::path( "EIMFunction_"+this->modelName() )/fs::path(dbnameEimg).filename();
+        if ( fs::exists( trydbfilename ) )
+            dbnameEimg = trydbfilename.string();
+    }
+
     auto eim_g = eim( _model=boost::dynamic_pointer_cast< BenchmarkGreplNonlinearElliptic<Order> >( this->shared_from_this() ),
                       _element=*pT,
                       _space=Xh_eimg,
                       _parameter=M_mu,
                       _expr=( cst_ref(M_mu(0))/cst_ref(M_mu(1)) )*( exp( cst_ref(M_mu(1))*_e1 ) - 1 ),
                       //_sampling=Pset,
-                      _name="eim_g" );
+                      _name="eim_g",
+                      _filename=dbnameEimg );
     this->addEim( eim_g );
 }
 template<int Order>
