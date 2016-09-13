@@ -1394,8 +1394,10 @@ private:
         {
             DVLOG(2) << "Serializing Geoelement2D id: " << this->id() << "...\n";
             ar & boost::serialization::base_object<super>( *this );
+#if 0
             ar & boost::serialization::base_object<super2>( *this );
             ar & M_edges;
+#endif
         }
 
 
