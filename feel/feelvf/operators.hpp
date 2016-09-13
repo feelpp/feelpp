@@ -47,9 +47,10 @@
 # include <boost/preprocessor/facilities/identity.hpp>
 # include <boost/preprocessor/stringize.hpp>
 
-
 namespace Feel
 {
+struct ContextGeometricBase;
+
 namespace vf
 {
 
@@ -542,13 +543,31 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TEST( T ),   \
                                              M_fec = fusion::at_key<basis_context_key_type>( fev ).get() ) ; \
                 }                                                       \
-                template <typename ... CTX>                                 \
-                    void updateContext( CTX const& ... ctx )                \
+                template <typename ... CTX>                             \
+                    void updateContext( CTX const& ... ctx )            \
                 {                                                       \
+                    typedef typename boost::remove_reference<typename boost::remove_const< decltype(*M_expr.e().selectContext( ctx...) ) >::type >::type ctxspace_type; \
+                    static const bool ctxspace_is_geometricspace = boost::is_base_of<ContextGeometricBase/*GeometricSpaceBase*/,ctxspace_type>::type::value; \
+                                                                        \
                     std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), M_mzero.constant(0.) ); \
                     /*M_expr.e().VF_OPERATOR_SYMBOL( O )( *ctx, M_loc );*/ \
-                    M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_expr.e().selectContext( ctx...), M_loc ); \
+                    /*M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_expr.e().selectContext( ctx...), M_loc );*/ \
+                    this->updateContext( M_expr.e().selectContext( ctx...), mpl::bool_<ctxspace_is_geometricspace>() ); \
                 }                                                       \
+                template <typename CTX>                                 \
+                    void updateContext( CTX const& ctx, mpl::true_ /**/ ) \
+                {                                                       \
+                    Geo_t geom( fusion::make_pair<vf::detail::gmc<0> >( ctx->gmContext() ) ); \
+                    M_pc->update( fusion::at_key<key_type>( geom )->xRefs() ); \
+                    M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&) M_pc ); \
+                    M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
+                }                                                       \
+                template <typename CTX>                                 \
+                    void updateContext( CTX const& ctx, mpl::false_ /**/ ) \
+                {                                                       \
+                    CHECK( ctx ) << "no ctx";CHECK( ctx->gmContext() ) << "no gmctx";M_expr.e().VF_OPERATOR_SYMBOL( O )( *ctx, M_loc ); \
+                }                                                       \
+                                                                        \
                 void update( Geo_t const& geom )                        \
                 {                                                       \
                     /*BOOST_STATIC_ASSERT( dim_ok );*/                  \
