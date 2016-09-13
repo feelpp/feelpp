@@ -155,14 +155,14 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
             // Actual rank ID 
             pt.setProcessId( partId-1);
             // NO GHOST POINTS I SAID
-            pt.setProcessIdInPartition( partId-1 );
+            pt.setProcessIdInPartition( partId );
             pt.setNeighborPartitionIds( ghosts );
             this->addPoint( pt );
         }
     }
 #endif
     int start = (partId == 0) ?  0  : cx[partId]+1; 
-    int stop = (partId == wc.size()-1) ?  M_ny : cx[partId+1]; 
+    int stop = (partId == (procSize-1)) ?  M_ny : cx[partId+1]; 
     for( int j = start ; j < stop; ++j )
     {
         std::cout << "j = " << j << std::endl;
@@ -193,7 +193,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
     }
 #if 1
     // Last column
-   if(partId < wc.size()-1)
+   if(partId < (procSize-1))
    {
        int j = cx[partId+1];
        //std::cout << "j = " << j << std::endl;
@@ -231,9 +231,11 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
         ghosts.clear();
         if (j == cx[partId] && j != 0)
             ghosts.push_back(partId-1);
-        else if (j == cx[partId+1]-1 && j != M_ny-1)
+        else if (j == cx[partId+1]-1 && j != M_ny-2)
+        {
+            std::cout << " I'm proc " << partId << " and I have " << partId+1 << "as neigh at " << j << std::endl;
             ghosts.push_back(partId+1);
-    
+        }
         for( int i = 0; i < M_nx-1; ++i )
         {
             element_type e;   
@@ -285,9 +287,10 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
     int j_inf =cx[partId]; 
     int j_sup =cx[partId+1]; 
     bool is_first = (partId == 0); /* proc 0 ? */
-    bool is_last = (partId == procSize-1);
+    bool is_last = (partId == (procSize-1));
     if(! is_last ) // look at the right
     {
+        std::cout << "I'm proc " << partId << " and go in !is_last\n";
         /*
          * Indicate I am a ghost to neighborhood partition
          */
