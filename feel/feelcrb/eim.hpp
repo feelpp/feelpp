@@ -57,6 +57,7 @@
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
+#include <feel/feeldiscr/geometricspace.hpp>
 
 #include <Eigen/Core>
 
@@ -1261,6 +1262,11 @@ public:
 
     enum ResidualNormType { Linfty = 0, L2 = 1, LinftyVec = 2 };
 
+    typedef GeometricSpace<mesh_type> geometricspace_type;
+    typedef boost::shared_ptr<geometricspace_type> geometricspace_ptrtype;
+    typedef typename geometricspace_type::Context geometricspace_context_type;
+    typedef boost::shared_ptr<geometricspace_context_type> geometricspace_context_ptrtype;
+
     EIMFunctionBase( parameterspace_ptrtype const& pspace,
                      sampling_ptrtype const& sampling,
                      std::string const& modelname,
@@ -1465,7 +1471,8 @@ public:
     //typedef ModelType* model_ptrtype;
     typedef boost::shared_ptr<model_type> model_ptrtype;
 
-    static const bool model_use_solve = !boost::is_base_of<EimFunctionNoSolveBase,model_type>::type::value;
+    static const bool model_use_nosolve = boost::is_base_of<EimFunctionNoSolveBase,model_type>::type::value;
+    static const bool model_use_solve = !model_use_nosolve;
     //static const bool model_use_solve = boost::is_base_of<ModelCrbBaseBase,model_type>::type::value;
     static const bool model_is_modelcrbbase = boost::is_base_of<ModelCrbBaseBase,model_type>::type::value;
 
@@ -1516,6 +1523,10 @@ public:
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
     typedef typename parameterspace_type::sampling_type sampling_type;
 
+    typedef typename super::geometricspace_type geometricspace_type;
+    typedef typename super::geometricspace_ptrtype geometricspace_ptrtype;
+    typedef typename super::geometricspace_context_type geometricspace_context_type;
+    typedef typename super::geometricspace_context_ptrtype geometricspace_context_ptrtype;
 
     // reduced basis space
     //typedef ReducedBasisSpace<model_type> rbfunctionspace_type;
@@ -1576,7 +1587,8 @@ public:
                  parameter_type& mu,
                  expr_type& expr,
                  sampling_ptrtype sampling,
-                 std::string const& name )
+                 std::string const& name,
+                 std::string const& dbfilename )
         :
         super( space, model->parameterSpace(), sampling, model->modelName(), name ),
         M_model( model ),
@@ -1600,19 +1612,35 @@ public:
         {
            if ( this->functionSpace() )
            {
+               if ( model_use_nosolve && this->functionSpace()->mesh() )
+               {
+                   geometricspace_ptrtype geospace( new geometricspace_type( this->functionSpace()->mesh() ) );
+                   M_ctxGeoEim.reset( new geometricspace_context_type( geospace ) );
+               }
                M_ctxFeBasisEim.reset( new context_type( this->functionSpace() ) );
                M_internalModelFeFunc = this->functionSpace()->elementPtr();
            }
 
             this->initExprFeContex( mpl::bool_<use_subspace_element>() );
 
-            this->addDBSubDirectory( "EIMFunction_"+model->modelName() );
-            if ( this->worldComm().isMasterRank() )
+            if ( dbfilename.empty() )
             {
-                if ( !fs::exists( this->dbLocalPath() ) )
-                    fs::create_directories( this->dbLocalPath() );
+                this->addDBSubDirectory( "EIMFunction_"+model->modelName() );
+                if ( this->worldComm().isMasterRank() )
+                {
+                    if ( !fs::exists( this->dbLocalPath() ) )
+                        fs::create_directories( this->dbLocalPath() );
+                }
+                this->worldComm().barrier();
             }
-            this->worldComm().barrier();
+            else
+            {
+                auto dbfilenamePath = fs::absolute( fs::path( dbfilename ) );
+                if ( !dbfilenamePath.is_absolute() )
+                    dbfilenamePath = fs::absolute( dbfilenamePath );
+                this->setDBFilename( dbfilenamePath.filename().string() );
+                this->setDBDirectory( dbfilenamePath.parent_path().string() );
+            }
 
             if ( this->functionSpace() )
                 M_eim.reset( new eim_type( this, sampling , 1e-8, loadDB() ) );
@@ -1744,6 +1772,8 @@ public:
     void initializeDataStructures()
     {
         M_mu_sampling->clear();
+        if ( M_ctxGeoEim )
+            M_ctxGeoEim->removeCtx();
         M_ctxFeBasisEim->removeCtx();
         M_ctxFeModelSolution->removeCtx();
         M_t.clear();
@@ -1762,10 +1792,15 @@ public:
     vector_type
     beta( parameter_type const& mu, size_type __M )
     {
-        DCHECK( M_ctxFeModelSolution ) << "no fe context";
 
         vector_type __beta( __M );
-        __beta = this->operator()( *M_ctxFeModelSolution, mu , __M );
+        if ( model_use_nosolve && M_ctxGeoEim )
+            __beta = this->operator()( *M_ctxGeoEim, mu , __M );
+        else
+        {
+            DCHECK( M_ctxFeModelSolution ) << "no fe context";
+            __beta = this->operator()( *M_ctxFeModelSolution, mu , __M );
+        }
         DCHECK( __beta.size() == __M ) << "Invalid size beta: " << __beta.size() << " M=" << __M  << " beta = " << __beta << "\n";
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
 
@@ -1775,6 +1810,7 @@ public:
     vector_type
     beta( parameter_type const& mu, model_solution_type const& T, size_type __M )
     {
+        DCHECK( M_ctxFeModelSolution ) << "no fe context";
         // beta=B_M\g(Od(indx),mut(i))'
         vector_type __beta( __M );
         __beta = this->operator()( T, *M_ctxFeModelSolution, mu , __M );
@@ -1790,7 +1826,7 @@ public:
         if ( !M_ctxRbModelSolution )
             return this->beta(mu,__M );
 
-        CHECK( M_ctxRbModelSolution ) << "no rbspace context";
+        DCHECK( M_ctxRbModelSolution ) << "no rbspace context";
         vector_type __beta( __M );
         if ( SubSpaceId != SubSpaceId2 && M_ctxRbModelSolution2 )
             __beta = this->operator()( urb, *M_ctxRbModelSolution, *M_ctxRbModelSolution2, mu , __M );
@@ -1810,6 +1846,8 @@ public:
         typename Feel::node<value_type>::type no(nDim);
         for(int i =0;i < nDim; ++i ) no(i) = M_t.back()(i);
         // add in precompute object the last magic point
+        if ( M_ctxGeoEim )
+            M_ctxGeoEim->add( no );
         M_ctxFeBasisEim->add( no );
         M_ctxFeModelSolution->add( no );
         std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { DVLOG(2) << "t=" << t << "\n"; } );
@@ -1981,6 +2019,15 @@ public:
         {
             auto eimexpr = this->expr( mu, T );
             return vf::project( _space=this->functionSpace(), _expr=eimexpr );
+        }
+
+    vector_type operator()( geometricspace_context_type const& ctx, parameter_type const& mu , int M )
+        {
+            auto eimexpr = this->expr( mu );
+            bool applyProjection = false;//true;
+            bool doMpiComm = true;//false;
+            return evaluateFromContext( _context=ctx, _expr=eimexpr, _max_points_used=M,
+                                        _mpi_communications=doMpiComm, _projection=applyProjection );
         }
 
     vector_type operator()( model_element_expr_context_type const& ctx, parameter_type const& mu , int M)
@@ -2972,9 +3019,33 @@ public:
 
         // save B
         __ar & BOOST_SERIALIZATION_NVP( M_B );
-
         DVLOG(2) << "B saved/loaded\n";
 
+#if 1
+        // load/save geometricspace context
+        if ( Archive::is_loading::value )
+        {
+            bool hasCtxGeoEim = false;
+            __ar & BOOST_SERIALIZATION_NVP( hasCtxGeoEim );
+            // std::cout << "EIM load geoctx " << hasCtxGeoEim <<"\n";
+            if ( hasCtxGeoEim )
+            {
+                geometricspace_ptrtype geospace( new geometricspace_type( this->worldComm() ) );
+                if ( this->functionSpace() && this->functionSpace()->mesh() )
+                    geospace->setMesh( this->functionSpace()->mesh() );
+                M_ctxGeoEim.reset( new geometricspace_context_type( geospace ) );
+                __ar & BOOST_SERIALIZATION_NVP( *M_ctxGeoEim );
+            }
+        }
+        else
+        {
+            bool hasCtxGeoEim = ( M_ctxGeoEim )? true : false;
+            // std::cout << "EIM save geoctx " << hasCtxGeoEim <<"\n";
+            __ar & BOOST_SERIALIZATION_NVP( hasCtxGeoEim );
+            if ( hasCtxGeoEim )
+                __ar & BOOST_SERIALIZATION_NVP( *M_ctxGeoEim );
+        }
+#endif
         if ( Archive::is_loading::value )
         {
             if( M_q_vector.size() == 0 && this->functionSpace() )
@@ -3091,6 +3162,7 @@ private:
     int M_max_z;
     int M_max_solution;
     std::vector<node_type> M_t;
+    geometricspace_context_ptrtype M_ctxGeoEim;
     boost::shared_ptr<context_type> M_ctxFeBasisEim;
     boost::shared_ptr<model_element_expr_context_type> M_ctxFeModelSolution;
     rbfunctionspace_context_ptrtype M_ctxRbModelSolution;
@@ -3147,6 +3219,7 @@ BOOST_PARAMETER_FUNCTION(
       //( space, *, model->functionSpace() )
       ( sampling, *, model->parameterSpace()->sampling() )
       ( verbose, (int), 0 )
+      ( filename, *( boost::is_convertible<mpl::_,std::string> ), "" )
         ) // optionnal
 )
 {
@@ -3155,7 +3228,7 @@ BOOST_PARAMETER_FUNCTION(
 #endif
     typedef typename Feel::detail::compute_eim_return<Args>::type eim_type;
     typedef typename Feel::detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
-    return boost::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name );
+    return boost::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename );
 } // eim
 
 
@@ -3165,6 +3238,7 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
     typedef typename ModelType::functionspace_type functionspace_type;
     typedef typename ModelType::functionspace_ptrtype functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
+    typedef typename functionspace_type::element_ptrtype element_ptrtype;
     typedef typename ModelType::parameterspace_type parameterspace_type;
     typedef typename ModelType::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
@@ -3185,20 +3259,26 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
                                                      fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
                                                      >::type >::type >::type index_vector_type;
 
-    EimFunctionNoSolve( model_ptrtype model )
+    EimFunctionNoSolve( model_ptrtype const& model )
         :
-        M_model( model ),
-        M_elt( M_model->functionSpace()->element() )
+        M_model( model )
         {
-            M_elt.setConstant( boost::lexical_cast<value_type>("inf") );
+            if ( M_model->functionSpace() )
+            {
+                M_elt = M_model->functionSpace()->elementPtr();
+                M_elt->setConstant( boost::lexical_cast<value_type>("inf") );
+            }
         }
 
-    element_type solve( parameter_type const& mu )
+    element_type const& solve( parameter_type const& mu ) const
     {
         DVLOG(2) << "no solve required\n";
-        static const bool is_composite = functionspace_type::is_composite;
-        return solve( mu , mpl::bool_< is_composite >() );
+        // static const bool is_composite = functionspace_type::is_composite;
+        // return solve( mu , mpl::bool_< is_composite >() );
+        CHECK( M_elt ) << " element not init";
+        return *M_elt;
     }
+#if 0
     element_type solve( parameter_type const& mu , mpl::bool_<false> )
     {
         //value_type x = boost::lexical_cast<value_type>("inf");
@@ -3217,6 +3297,7 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
         return M_elt;
 #endif
     }
+#endif
 
     std::string /*const&*/ modelName() const { return M_model->modelName(); }
     functionspace_ptrtype functionSpace() { return M_model->functionSpace(); }
@@ -3249,7 +3330,7 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
     }; //struct ProjectInfOnSubspace
 #endif
     model_ptrtype M_model;
-    element_type M_elt;
+    element_ptrtype M_elt;
 };
 
 template<typename ModelType>
