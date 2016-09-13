@@ -604,7 +604,22 @@ public :
         }
         ptree.add_child( "additional-model-files", ptreeModelFiles );
 
-        this->updateSpecificityModelPropertyTree( ptree );
+        boost::property_tree::ptree ptreeEim;
+        for ( auto const& eimObject : this->scalarContinuousEim() )
+        {
+            boost::property_tree::ptree ptreeEimObject;
+            ptreeEimObject.add("database-filename", (fs::path(eimObject->dbDirectory())/fs::path(eimObject->dbFilename())).string() );
+            ptreeEim.add_child( eimObject->name(), ptreeEimObject );
+        }
+        for ( auto const& eimObject : this->scalarDiscontinuousEim() )
+        {
+            boost::property_tree::ptree ptreeEimObject;
+            ptreeEimObject.add("database-filename", (fs::path(eimObject->dbDirectory())/fs::path(eimObject->dbFilename())).string() );
+            ptreeEim.add_child( eimObject->name(), ptreeEimObject );
+        }
+        ptree.add_child( "eim", ptreeEim );
+
+        this->updateSpecificityModel( ptree );
     }
     /**
      * \brief load CrbModel from json
@@ -653,13 +668,13 @@ public :
                 this->addModelFile( key, filenameAdded );
             }
 
-        this->setupSpecificityModel( ptree );
+        this->setupSpecificityModel( ptree, dbDir );
 
         this->setInitialized( true );
     }
 
-    virtual void setupSpecificityModel( boost::property_tree::ptree const& ptree ) const {}
-    virtual void updateSpecificityModelPropertyTree( boost::property_tree::ptree & ptree ) const {}
+    virtual void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) {}
+    virtual void updateSpecificityModel( boost::property_tree::ptree & ptree ) const {}
 
     virtual void initModel() = 0;
 
