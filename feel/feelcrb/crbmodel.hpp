@@ -1019,21 +1019,37 @@ public:
 
         boost::property_tree::ptree ptree_mMaxA;
         for (int k=0;k<M_mMaxA.size();++k )
-            ptree_mMaxA.add( "",M_mMaxA[k] );
+        {
+            boost::property_tree::ptree ptree_mMaxA_value;
+            ptree_mMaxA_value.put( "",M_mMaxA[k] );
+            ptree_mMaxA.push_back( std::make_pair("", ptree_mMaxA_value) );
+        }
         boost::property_tree::ptree ptree_mMaxM;
         for (int k=0;k<M_mMaxM.size();++k )
-            ptree_mMaxM.add( "",M_mMaxM[k] );
+        {
+            boost::property_tree::ptree ptree_mMaxM_value;
+            ptree_mMaxM_value.put( "",M_mMaxM[k] );
+            ptree_mMaxM.push_back( std::make_pair("", ptree_mMaxM_value) );
+        }
         boost::property_tree::ptree ptree_mMaxF;
         for (int k=0;k<M_mMaxF.size();++k )
         {
             boost::property_tree::ptree ptree_mMaxFsub;
             for (int k2=0;k2<M_mMaxF[k].size();++k2 )
-                ptree_mMaxFsub.add( "",M_mMaxF[k][k2] );
-            ptree_mMaxF.add_child( "",ptree_mMaxFsub );
+            {
+                boost::property_tree::ptree ptree_mMaxFsub_value;
+                ptree_mMaxFsub_value.put( "",M_mMaxF[k][k2] );
+                ptree_mMaxFsub.push_back( std::make_pair("", ptree_mMaxFsub_value) );
+            }
+            ptree_mMaxF.push_back( std::make_pair("", ptree_mMaxFsub) );
         }
         boost::property_tree::ptree ptree_mMaxLinearDecompositionA;
         for (int k=0;k<M_mMaxLinearDecompositionA.size();++k )
-            ptree_mMaxLinearDecompositionA.add( "",M_mMaxLinearDecompositionA[k] );
+        {
+            boost::property_tree::ptree ptree_mMaxLinearDecompositionA_value;
+            ptree_mMaxLinearDecompositionA_value.put( "",M_mMaxLinearDecompositionA[k] );
+            ptree_mMaxLinearDecompositionA.push_back( std::make_pair("", ptree_mMaxLinearDecompositionA_value) );
+        }
 
         boost::property_tree::ptree ptreeAffineDecomposition;
         ptreeAffineDecomposition.add_child( "mMaxA", ptree_mMaxA );
@@ -1043,8 +1059,6 @@ public:
 
         boost::property_tree::ptree ptreeCrbModel;
         ptree.add_child( "affine-decomposition", ptreeAffineDecomposition );
-        //ptreeCrbModel.add_child( "affine-decomposition", ptreeAffineDecomposition );
-        //ptree.add_child( "crbmodel", ptreeCrbModel );
     }
 
     /**

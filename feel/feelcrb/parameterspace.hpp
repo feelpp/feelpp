@@ -1444,27 +1444,30 @@ public:
 
             std::map<std::string,int> mapParameterNamesToId;
             M_parameterNames.clear();
-            for (auto const& item : ptreeParameterSpace.get_child("names"))
+            if ( M_nDim > 0 )
             {
-                std::string const& name = item.second.template get_value<std::string>();
-                mapParameterNamesToId[name] = M_parameterNames.size();
-                M_parameterNames.push_back( name );
-            }
+                for (auto const& item : ptreeParameterSpace.get_child("names"))
+                {
+                    std::string const& name = item.second.template get_value<std::string>();
+                    mapParameterNamesToId[name] = M_parameterNames.size();
+                    M_parameterNames.push_back( name );
+                }
 
-            element_type mumin( this->shared_from_this() );
-            element_type mumax( this->shared_from_this() );
-            for ( auto const& ptreeParametersPair : ptreeParameterSpace.get_child("parameters") )
-            {
-                std::string const& paramName = ptreeParametersPair.first;
-                auto itFindParameterNames = mapParameterNamesToId.find( paramName );
-                CHECK( itFindParameterNames != mapParameterNamesToId.end() ) << "parameter "<< paramName << " is not registered";
-                int paramId = itFindParameterNames->second;
-                auto const& ptreeParameters = ptreeParametersPair.second;
-                mumin( paramId ) = ptreeParameters.template get<double>("min");
-                mumax( paramId ) = ptreeParameters.template get<double>("max");
+                element_type mumin( this->shared_from_this() );
+                element_type mumax( this->shared_from_this() );
+                for ( auto const& ptreeParametersPair : ptreeParameterSpace.get_child("parameters") )
+                {
+                    std::string const& paramName = ptreeParametersPair.first;
+                    auto itFindParameterNames = mapParameterNamesToId.find( paramName );
+                    CHECK( itFindParameterNames != mapParameterNamesToId.end() ) << "parameter "<< paramName << " is not registered";
+                    int paramId = itFindParameterNames->second;
+                    auto const& ptreeParameters = ptreeParametersPair.second;
+                    mumin( paramId ) = ptreeParameters.template get<double>("min");
+                    mumax( paramId ) = ptreeParameters.template get<double>("max");
+                }
+                this->setMin( mumin );
+                this->setMax( mumax );
             }
-            this->setMin( mumin );
-            this->setMax( mumax );
         }
 
         /**
@@ -1490,20 +1493,28 @@ public:
             int nDim = this->dimension();
             ptreeParameterSpace.add( "dimension",nDim);
 
-            boost::property_tree::ptree ptreeParameterName;
-            for ( int d=0;d<nDim;++d )
-                ptreeParameterName.add( "",this->parameterName(d) );
-            ptreeParameterSpace.add_child( "names", ptreeParameterName );
-
-            boost::property_tree::ptree ptreeParametersDesc;
-            for ( int d=0;d<nDim;++d )
+            if ( nDim > 0 )
             {
-                boost::property_tree::ptree ptreeParameterDesc;
-                ptreeParameterDesc.add( "min", this->min()(d) );
-                ptreeParameterDesc.add( "max", this->max()(d) );
-                ptreeParametersDesc.add_child( this->parameterName(d), ptreeParameterDesc );
+                boost::property_tree::ptree ptreeParameterName;
+                for ( int d=0;d<nDim;++d )
+                {
+                    boost::property_tree::ptree ptreeParameterName2;
+                    ptreeParameterName2.put( "", this->parameterName(d) );
+                    ptreeParameterName.push_back( std::make_pair("", ptreeParameterName2) );
+                }
+                ptreeParameterSpace.add_child( "names", ptreeParameterName );
+
+                boost::property_tree::ptree ptreeParametersDesc;
+                for ( int d=0;d<nDim;++d )
+                {
+                    boost::property_tree::ptree ptreeParameterDesc;
+                    ptreeParameterDesc.add( "min", this->min()(d) );
+                    ptreeParameterDesc.add( "max", this->max()(d) );
+                    ptreeParametersDesc.add_child( this->parameterName(d), ptreeParameterDesc );
+                }
+                ptreeParameterSpace.add_child( "parameters", ptreeParametersDesc );
             }
-            ptreeParameterSpace.add_child( "parameters", ptreeParametersDesc );
+
         }
 
     /**
