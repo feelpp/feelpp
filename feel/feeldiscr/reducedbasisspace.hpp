@@ -327,7 +327,10 @@ public :
             this->init();
         }
 #else
-    ReducedBasisSpace( WorldComm const& worldcomm = Environment::worldComm() ) {}
+    ReducedBasisSpace( WorldComm const& worldcomm = Environment::worldComm() )
+        {
+            this->init( mpl::bool_<fespace_type::is_composite>() );
+        }
 
     ReducedBasisSpace( model_ptrtype const& model, WorldComm const& worldcomm = Environment::worldComm() )
         :
@@ -1453,7 +1456,7 @@ public :
 
 
         template <typename ... CTX>
-        auto //ctxrb_ptrtype
+        decltype(auto) //ctxrb_ptrtype
         selectContext( CTX const& ... ctx ) const
             {
                 typedef boost::fusion::vector<CTX...> my_vector_ctx_type;
