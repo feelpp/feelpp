@@ -38,7 +38,8 @@ int main(int argc, char *argv[])
     
     decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<1>(mesh) ) ) Idh ;
     decltype( IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(mesh), _imageSpace=Pdhms<1>(mesh) ) ) Idhv;
-    
+    ME -> init (mesh);
+	/*
 	if ( soption("gmsh.submesh").empty() )
 	{
 		ME -> init(mesh);
@@ -58,8 +59,9 @@ int main(int argc, char *argv[])
     	Idhv = IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(cmesh), _imageSpace=Pdhms<1>(mesh) );
     	ME -> init( cmesh, mesh );
 	}
- 
-    if ( ME -> isStationary() )
+	*/ 
+    
+	if ( ME -> isStationary() )
     {
         ME->solve();
         ME->exportResults( mesh );
@@ -75,7 +77,7 @@ int main(int argc, char *argv[])
         	ME->exportResults( mesh , Idh, Idhv );
         }
      }
-     
+
 
     return 0;
 }
