@@ -45,6 +45,7 @@ makeMixedElasticityOptions( std::string prefix = "mixedelasticity" )
         ( prefixvm( prefix,"tau_order").c_str(), po::value<int>()->default_value( -1 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ;
     mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
+	mpOptions.add ( feel_options() ).add( backend_options("sc") );
     return mpOptions;
 }
 
@@ -190,19 +191,21 @@ public:
     void exportResults ( double Time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  ) ;
     exporter_ptrtype M_exporter;
     exporter_ptrtype exporterME() { return M_exporter; }
-
+	
     void init( mesh_ptrtype mesh = nullptr, mesh_ptrtype meshVisu = nullptr);
 
     virtual void initModel();
     virtual void initSpaces();
     virtual void initExporter( mesh_ptrtype meshVisu = nullptr );
-    virtual void assemble();
+    
+	virtual void assemble();
     
     template<typename PS>
     void assembleSTD(PS&& ps);
     template<typename PS>
     void assembleF(PS&& ps);
     void solve();
+	
 
     // time step scheme
     virtual void createTimeDiscretization() ;
@@ -213,7 +216,7 @@ public:
     virtual void updateTimeStepNM();
     virtual void initTimeStep();
     void updateTimeStep() { this->updateTimeStepNM(); }
-
+	
 };
 
 template<int Dim, int Order, int G_Order>
@@ -374,10 +377,11 @@ MixedElasticity<Dim, Order, G_Order>::init( mesh_ptrtype mesh, mesh_ptrtype mesh
     this->initExporter(meshVisu);
     toc("exporter");
 
+	
     tic();
     this->assemble();
     toc("assemble");
-
+	
 
 }
 
@@ -463,6 +467,7 @@ MixedElasticity<Dim, Order, G_Order>::initModel()
 
 }
 
+
 template<int Dim, int Order, int G_Order>
 void
 MixedElasticity<Dim, Order, G_Order>::initSpaces()
@@ -494,6 +499,7 @@ MixedElasticity<Dim, Order, G_Order>::initExporter( mesh_ptrtype meshVisu )
          		    		 _path=this->exporterPath() ); 
 }
 
+
 template<int Dim, int Order, int G_Order>
 void
 MixedElasticity<Dim, Order, G_Order>::assemble()
@@ -511,13 +517,14 @@ MixedElasticity<Dim, Order, G_Order>::assemble()
     this->assembleSTD( ps );
     M_A_cst->close();
     toc("assemble A");
-    /*
-    tic();
-    this->assembleF( ps );
-    M_F->close();
-    toc("assemble F");
-    */
+    
+    //tic();
+    //this->assembleF( ps );
+    //M_F->close();
+    //toc("assemble F");
+    
 }
+
 
 template<int Dim, int Order, int G_Order>
 void
@@ -527,21 +534,27 @@ MixedElasticity<Dim, Order, G_Order>::solve()
     auto ps = product(M_Vh,M_Wh,M_Mh);
 
     tic();
-	// M_F->clear();
+	M_F->clear();
     this->assembleF( ps );
     M_F->close();
     toc("assemble F");
     
 	tic();
     auto U = ps.element();
+	auto bbf = blockform2( ps, M_A_cst );
+	auto blf = blockform1( ps, M_F );
+	bbf.solve( _solution=U, _rhs=blf );
+	/*
 	auto M_U = M_backend->newBlockVector(_block=U,_copy_values= false);
 	M_backend->solve(_matrix=M_A_cst, _rhs = M_F , _solution=M_U) ;
 	U.localize(M_U);	
+	*/
     M_up = U(0_c);
     M_pp = U(1_c);
    
     toc("solve");
 }
+
 
 template<int Dim, int Order, int G_Order>
 template<typename PS>
@@ -638,7 +651,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
 				    rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
 
     bbf( 2_c, 2_c) += integrate(_range=internalfaces(M_mesh),
-    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
+    _expr=cst(0.5)*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
 				    rightface( pow(idv(H),M_tau_order) )));
 
     auto itField = M_modelProperties->boundaryConditions().find( "displacement");
@@ -802,6 +815,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
 } // end assembleF
 
 
+
 template <int Dim, int Order, int G_Order>
 void
 MixedElasticity<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh , op_interp_ptrtype Idh , opv_interp_ptrtype Idhv )
@@ -904,6 +918,7 @@ MixedElasticity<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype me
      }
      this->log("MixedElasticity","exportResults", "finish");
 }
+
 
 } // Namespace FeelModels
 
