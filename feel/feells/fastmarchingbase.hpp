@@ -64,6 +64,7 @@ protected:
     typedef std::map<size_type, std::set<size_type> > neighbors_type;
     typedef Feel::details::FmsHeap<value_type> heap_type;
     typedef typename heap_type::heap_entry_type heap_entry_type;
+    typedef typename heap_type::heap_entry_data_type heap_entry_data_type;
     typedef Feel::details::FmsPoint<value_type, Dim> point_type;
     //--------------------------------------------------------------------//
 
@@ -103,7 +104,7 @@ protected:
     //--------------------------------------------------------------------//
     virtual void initMarch( element_type const& phi, bool useMarker2AsMarkerDone );
 
-    virtual void processDof( size_type idOnProc, value_type val ) =0;
+    virtual void processDof( size_type idOnProc, value_type val, std::vector<value_type> const& opt_data ) =0;
 
     virtual void updateHeap( size_type idDone );
 
