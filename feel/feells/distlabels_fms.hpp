@@ -44,7 +44,7 @@ public:
 
 private:
     void initMarch( element_type const& phi, bool useMarker2AsMarkerDone );
-    void processDof( size_type idOnProc, value_type val );
+    void processDof( size_type idOnProc, value_type val, std::vector<value_type> const& opt_data );
     void updateHeap( size_type idDone );
 
     element_ptrtype getDistance() const { return super_type::getDistance(); }
@@ -66,6 +66,8 @@ private:
     element_ptrtype M_NNDistance;
     element_ptrtype M_nextNNLabel;
     element_ptrtype M_nextNNDistance;
+
+    std::map<rank_type, std::vector<boost::tuple<size_type, value_type, value_type>>> M_dataToSend, M_dataToRecv;
 
 #if defined( FM_EXPORT )
     boost::shared_ptr<Exporter<typename super_type::mesh_type>> M_ex;
@@ -128,6 +130,10 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::initMarch(
             idv(phi) );
 
     M_label->setConstant( invalid_uint16_type_value );
+    //*M_label = vf::project(
+            //this->functionSpace(), 
+            //elements(this->functionSpace()->mesh()), 
+            //vf::cst(invalid_uint16_type_value ) );
     M_labelDist->setConstant( 1e8 );
     M_NNLabel->setConstant( invalid_uint16_type_value );
     M_nextNNLabel->setConstant( invalid_uint16_type_value );
@@ -186,6 +192,11 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::initMarch(
 
     // communicate the DONE list between all the proc
     this->reduceDonePoints( doneIds );
+    if (Environment::worldComm().size() > 1)
+    {
+        sync( *M_NNLabel, "min" );
+        sync( *M_label, "min" );
+    }
 
     // initialize close distances in heap and mark close points in (*M_status) array
     for ( auto dit = doneIds.begin(); dit != doneIds.end(); ++dit )
@@ -193,8 +204,10 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::initMarch(
 
 #if defined( FM_EXPORT )
     M_count_iteration++;
+    M_ex->step(M_count_iteration)->addRegions( "pid", "pid" );
     M_ex->step(M_count_iteration)->add("distance", *(this->M_distance));
     M_ex->step(M_count_iteration)->add("label", *M_label);
+    M_ex->step(M_count_iteration)->add("labelDist", *M_labelDist);
     M_ex->step(M_count_iteration)->add("status", *(this->M_status));
     M_ex->step(M_count_iteration)->add("NNlabel", *M_NNLabel);
     M_ex->step(M_count_iteration)->add("NNdistance", *M_NNDistance);
@@ -206,22 +219,31 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::initMarch(
 
 LABELDISTANCEFMS_CLASS_TEMPLATE_DECLARATIONS
 void
-LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::processDof( size_type idOnProc, value_type val )
+LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::processDof( size_type idOnProc, value_type val, std::vector<value_type> const& opt_data )
 {
+#if defined( FM_EXPORT )
+    std::cout << "Processing dof " << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( idOnProc )
+        << " with value " << val << " and label " << opt_data[0]
+        << " on proc " << this->functionSpace()->worldComm().localRank() << "\n";
+#endif
+
     if( (*M_NNLabel)[idOnProc] == invalid_uint16_type_value )
     {
         (*M_NNDistance)[idOnProc] = val;
-        (*M_NNLabel)[idOnProc] = (*M_label)[idOnProc];
+        //(*M_NNLabel)[idOnProc] = (*M_label)[idOnProc];
+        (*M_NNLabel)[idOnProc] = opt_data[0];
         (*M_labelDist)[idOnProc] = 1e8;
     }
     else
     {
         (*M_nextNNDistance)[idOnProc] = val;
-        (*M_nextNNLabel)[idOnProc] = (*M_label)[idOnProc];
+        //(*M_nextNNLabel)[idOnProc] = (*M_label)[idOnProc];
+        (*M_nextNNLabel)[idOnProc] = opt_data[0];
         this->setDofStatus( idOnProc, super_type::DONE );
     }
 
     this->setDofDistance(idOnProc, val);
+    (*M_label)[idOnProc] = opt_data[0];
 }
 
 LABELDISTANCEFMS_CLASS_TEMPLATE_DECLARATIONS
@@ -236,12 +258,11 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::updateHeap( size_type idDone )
     {
         if( (*M_label)[idDone] != (*M_NNLabel)[*n0it] 
                 && (*M_label)[idDone] != (*M_nextNNLabel)[*n0it]
-                && (*M_label)[idDone] != (*M_selfLabel)[*n0it]
-          )
+                && (*M_label)[idDone] != (*M_selfLabel)[*n0it] )
         {
-            if (this->getDofStatus(*n0it) == super_type::FAR )
-               this->setDofStatus(*n0it, super_type::CLOSE);
             //if (this->getDofStatus(*n0it) == super_type::CLOSE )
+            if (this->getDofStatus(*n0it) == super_type::FAR )
+                this->setDofStatus(*n0it, super_type::CLOSE);
 
             bool hasNNLabel = ( (*M_NNLabel)[*n0it] != invalid_uint16_type_value );
             bool hasNextNNLabel = ( (*M_nextNNLabel)[*n0it] != invalid_uint16_type_value );
@@ -254,12 +275,14 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::updateHeap( size_type idDone )
                 value_type phiNew = this->fmsDistN( ids, *(this->M_distance) );
                 ids.pop_back();
 
-                // update M_label if phiNew < phiCurrent
+                bool updateLabel = false;
                 if( std::abs(phiNew) < std::abs((*M_labelDist)[*n0it]) )
                 {
-                    (*M_label)[*n0it] = (*M_label)[idDone];
                     (*M_labelDist)[*n0it] = phiNew;
+                    (*M_label)[*n0it] = (*M_label)[idDone];
+                    updateLabel = true;
                 }
+
                 /*compute all the phi possible with all the neighbors around 
                  * and returns the smallest one*/
                 if( !hasNNLabel )
@@ -267,17 +290,30 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::updateHeap( size_type idDone )
                 else if( !hasNextNNLabel )
                     phiNew = this->fmsNextNNDistRec( ids, *n0it, phiNew );
 
+                value_type label = (*M_label)[idDone];
+
+#if defined( FM_EXPORT )
+                std::cout << "\tUpdating dof " << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( *n0it )
+                    << " with value " << phiNew << " and label " << label
+                    << " on proc " << this->functionSpace()->worldComm().localRank() << "\n";
+#endif
+
+                //this->heap().change( std::make_pair( phiNew, *n0it ), std::vector<value_type>(1, label) );
                 this->heap().change( std::make_pair( phiNew, *n0it ) );
-
-
+                if(updateLabel)
+                {
+                    this->heap().dataAtIndex( *n0it ) = std::vector<value_type>(1, label);
+                }
             } // if CLOSE
         }
     } // loop over neighbor 0
 
 #if defined( FM_EXPORT )
     M_count_iteration++;
+    M_ex->step(M_count_iteration)->addRegions( "pid", "pid" );
     M_ex->step(M_count_iteration)->add("distance", *(this->M_distance));
     M_ex->step(M_count_iteration)->add("label", *M_label);
+    M_ex->step(M_count_iteration)->add("labelDist", *M_labelDist);
     M_ex->step(M_count_iteration)->add("status", *(this->M_status));
     M_ex->step(M_count_iteration)->add("NNlabel", *M_NNLabel);
     M_ex->step(M_count_iteration)->add("NNdistance", *M_NNDistance);
