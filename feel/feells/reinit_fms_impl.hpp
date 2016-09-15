@@ -59,7 +59,7 @@ REINITIALIZERFMS_CLASS_TEMPLATE_TYPE::ReinitializerFMS(
 
 REINITIALIZERFMS_CLASS_TEMPLATE_DECLARATIONS
 void 
-REINITIALIZERFMS_CLASS_TEMPLATE_TYPE::processDof( size_type idOnProc, value_type val )
+REINITIALIZERFMS_CLASS_TEMPLATE_TYPE::processDof( size_type idOnProc, value_type val, std::vector<value_type> const& opt_data  )
 {
     this->setDofDistance( idOnProc, val );
     this->setDofStatus( idOnProc, super_type::DONE );

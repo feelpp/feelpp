@@ -96,7 +96,7 @@ public:
 
 
 private:
-    void processDof( size_type idOnProc, value_type val );
+    void processDof( size_type idOnProc, value_type val, std::vector<value_type> const& opt_data );
 };
 
 
