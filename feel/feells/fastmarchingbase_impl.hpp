@@ -94,10 +94,10 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::run(
     //checkHeap( "after reduce close points" );
 
     auto minNewEntry = [](
-            std::pair<heap_entry_type, size_type> a,
-            std::pair<heap_entry_type, size_type> b )
+            std::pair<heap_entry_data_type, size_type> a,
+            std::pair<heap_entry_data_type, size_type> b )
     { // return the entry having the minimum abs(phi) value
-        return std::abs(a.first.first) < std::abs(b.first.first) ? a : b; 
+        return std::abs(a.first.value()) < std::abs(b.first.value()) ? a : b; 
     };
 
     const int nbTotalIterFM = M_functionspace->dof()->nDof() - M_nbTotalDone - M_nbDofTag1;
@@ -112,8 +112,9 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::run(
          */
 
         // contains entry type and global index on Cluster
-        std::pair<heap_entry_type, size_type> newAccepted = 
-        { M_heap.front(), processorToCluster(M_heap.front().second) };
+        auto heap_front = M_heap.front();
+        std::pair<heap_entry_data_type, size_type> newAccepted = 
+        { heap_front, processorToCluster(heap_front.index()) };
 
         // the real new accepted value is the min of all the phi computed in the heaps
         newAccepted = mpi::all_reduce(Environment::worldComm().globalComm(),
@@ -135,7 +136,7 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::run(
         {
             M_heap.removeFromHeap( newIdOnProc );
 
-            this->processDof( newIdOnProc, newAccepted.first.first );
+            this->processDof( newIdOnProc, newAccepted.first.value(), newAccepted.first.data() );
 
             this->updateHeap( newIdOnProc );
         }
@@ -326,56 +327,58 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::reduceClosePoints()
 
     //need to communicate the list of all the CLOSE elements and their values to all processors
     M_checkStatus->zero();
-    M_valueAtClose->zero();
+    //M_valueAtClose->zero();
 
     for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
         if ( (*M_status)(k) == CLOSE )
         {
             M_checkStatus->add(k, 1);
-            M_valueAtClose->add(k, M_heap.valueAtIndex( k ) );
+            //M_valueAtClose->add(k, M_heap.valueAtIndex( k ) );
         }
 
     M_checkStatus->close();
-    M_valueAtClose->close();
+    //M_valueAtClose->close();
 
     // store global id of every CLOSE value and its phi associated value
-    std::map< size_type, value_type > phiValueAtGlobalId;
+    std::map< size_type, std::pair<value_type, std::vector<value_type>> > phiValueAtGlobalId;
 
     for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
     {
         // if a dof has been marked as CLOSE on an other processor, mark it as CLOSE and take its value
-        if ( ((*M_checkStatus)(k) == 1) && ((*M_status)(k) != CLOSE) )
-        {
-            (*M_status)(k) = CLOSE;
-            heap_entry_type newEntry = { (*M_valueAtClose)(k), k };
-            M_heap.push( newEntry );
-        }
+        //if ( ((*M_checkStatus)(k) == 1) && ((*M_status)(k) != CLOSE) )
+        //{
+            //(*M_status)(k) = CLOSE;
+            //std::vector<value_type> datak = (this->hasOptionalData())? (*M_dataAtClose)(k): std::vector<value_type>();
+            //heap_entry_data_type newEntry = { (*M_valueAtClose)(k), k, datak };
+            //M_heap.push( newEntry );
+        //}
 
         // if a point is marked as CLOSE from at least two different processors, store its value of phi in order to be compared with the others
-        else if ( ( (*M_checkStatus)(k) > 1 ) && ((*M_status)(k) == CLOSE) )
-            phiValueAtGlobalId[ processorToCluster( k ) ] = M_heap.valueAtIndex( k );
+        //else if ( ( (*M_checkStatus)(k) > 1 ) && ((*M_status)(k) == CLOSE) )
+        if ( ( (*M_checkStatus)(k) > 0 ) && ((*M_status)(k) == CLOSE) )
+        {
+            phiValueAtGlobalId[ processorToCluster( k ) ] = { M_heap.valueAtIndex(k), M_heap.dataAtIndex(k) };
+        }
     }
 
 
-    std::vector< std::map< size_type, value_type > > all_phiValueAtGlobalId;
+    std::vector< std::map< size_type, std::pair<value_type, std::vector<value_type>> > > all_phiValueAtGlobalId;
 
     mpi::all_gather( Environment::worldComm().globalComm(),
             phiValueAtGlobalId,
             all_phiValueAtGlobalId );
 
     for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
-        if ( (*M_checkStatus)(k) > 1 )
+        //if ( (*M_checkStatus)(k) > 1 )
+        if ( (*M_checkStatus)(k) > 0 )
         {
             const size_type idOnCluster = processorToCluster( k );
 
             for ( auto const & phiAtGlobId : all_phiValueAtGlobalId )
                 if ( phiAtGlobId.count( idOnCluster ) )
                 {
-                    heap_entry_type newEntry = { phiAtGlobId.at(idOnCluster) , k};
-                    if ( M_heap.checkExistingEntry( k ) )
-                        M_heap.change( newEntry ); //change only if phiAtGlobId[idOnCluster] < phi already stored
-                    else
-                        M_heap.push( newEntry );
+                    heap_entry_type newEntry = { phiAtGlobId.at(idOnCluster).first , k };
+                    M_heap.change( newEntry, phiAtGlobId.at(idOnCluster).second  ); //change only if phiAtGlobId[idOnCluster] < phi already stored
                 }
 
             (*M_status)(k) = CLOSE;
