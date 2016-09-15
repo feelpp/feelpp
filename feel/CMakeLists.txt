@@ -32,7 +32,7 @@ macro(feel_append_src DIRNAME FILES)
   set(FEELPP_DIRS ${FEELPP_DIRS};${DIRNAME} PARENT_SCOPE)
 endmacro(feel_append_src)
 
-SET(DIRS core math alg mesh partition poly opt crb discr models ts filters material vf pde ls python)
+SET(DIRS core math alg mesh partition poly opt crb discr models ts filters material vf pde ls python fit)
 foreach(dir ${DIRS})
     if( ${dir} MATCHES "models")
       if(FEELPP_HAS_GMSH)
