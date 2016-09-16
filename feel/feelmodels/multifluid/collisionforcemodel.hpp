@@ -1,6 +1,8 @@
 #ifndef _COLLISIONFORCEMODEL_HPP
 #define _COLLISIONFORCEMODEL_HPP 1
 
+#define DEBUG_COLLISIONFORCEMODEL
+
 #include <feel/feelmodels/multifluid/interfaceforcesmodel.hpp>
 
 namespace Feel {
@@ -103,6 +105,8 @@ CollisionForceModel<LevelSetType>::addCollisionForce( element_ptrtype & F, int i
 #ifdef DEBUG_COLLISIONFORCEMODEL
             M_exporter->step(this->levelset()->time())->add(
                     "dirac", "dirac", this->levelset()->D() );
+            M_exporter->step(this->levelset()->time())->add(
+                    "phi2", "phi2", phi2 );
             M_exporter->step(this->levelset()->time())->add(
                     "collision-force", "collision-force", Fc );
             M_exporter->save();
