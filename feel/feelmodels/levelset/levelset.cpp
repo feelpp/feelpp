@@ -31,7 +31,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     //M_periodicity(periodicityLS),
     M_reinitializerIsUpdatedForUse(false),
     M_hasReinitialized(false),
-    M_iterSinceReinit(0)
+    M_iterSinceReinit(0),
+    M_doUpdateMultiLabels(true)
 {
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
     //-----------------------------------------------------------------------------//
@@ -1292,7 +1293,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::applyStrategyBeforeFM( element_levelset_ptrtype ph
         {
             // save the smoothed gradient magnitude of phi
             auto modgradphi = this->smootherFM()->project( 
-                    vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) 
+                    //vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) 
+                    vf::sqrt(inner( gradv(phi), gradv(phi) ))
                     );
             
             *phi = vf::project(
