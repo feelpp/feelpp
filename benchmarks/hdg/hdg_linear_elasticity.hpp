@@ -414,7 +414,7 @@ Hdg<Dim, OrderP>::convergence()
                     rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
 
     a( 2_c, 2_c) += integrate(_range=internalfaces(mesh),
-	    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
+	    _expr=cst(0.5)*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
                     rightface( pow(idv(H),M_tau_order) )));
     
    	a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,{"Dirichlet"}),
