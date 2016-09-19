@@ -1464,11 +1464,17 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distanceBetweenLabels()
 
     if( M_doUpdateMultiLabels )
     {
+        this->log("LevelSet","distanceBetweenLabels", "start");
+        this->timerTool("Utilities").start();
+
         *distLabelPhi = *this->phi();
         this->applyStrategyBeforeFM( distLabelPhi );
         M_distLabel->setSelfLabel( M_selfLabel->getLabel() );
         M_distLabel->run( *distLabelPhi );
         M_doUpdateMultiLabels = false;
+
+        double timeElapsed = this->timerTool("Utilities").stop();
+        this->log("LevelSet","distanceBetweenLabels","finish in "+(boost::format("%1% s") %timeElapsed).str() );
     }
 
     *distLabelPhi = M_distLabel->nextNearestNeighbourDistance();
