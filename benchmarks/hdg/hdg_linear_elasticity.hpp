@@ -4,6 +4,7 @@
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
              Daniele Prada <daniele.prada85@gmail.com>
+			 Lorenzo Sala <sala@unistra.fr>
        Date: 2016-02-10
 
   Copyright (C) 2016 Feel++ Consortium
@@ -25,6 +26,8 @@
 #include <feel/feel.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 #include <feel/feelalg/vectorblock.hpp>
+#include <feel/feeldiscr/product.hpp>
+#include <feel/feelvf/blockforms.hpp>
 
 namespace Feel {
 
@@ -36,7 +39,7 @@ makeOptions()
     po::options_description testhdivoptions( "test h_div options" );
     testhdivoptions.add_options()
         ( "convtest", po::value<bool>()->default_value( 1 ), "1: convergence test, 0:otherwise" )
-        ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
+        ( "hsize", po::value<double>()->default_value( 0.8 ), "mesh size" )
         ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
         ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
         ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
@@ -52,9 +55,9 @@ makeOptions()
         ( "nb_refine", po::value<int>()->default_value( 4 ), "nb_refine" )
         ( "use_hypercube", po::value<bool>()->default_value( true ), "use hypercube or a given geometry" )
         ( "tau_constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
-        ( "tau_order", po::value<int>()->default_value( -1 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
+        ( "tau_order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ;
-    return testhdivoptions.add( Feel::feel_options() );
+    return testhdivoptions.add( Feel::feel_options() ).add( backend_options("sc"));
 }
 
 inline
@@ -69,6 +72,8 @@ makeAbout()
                      "Copyright (c) 2016 Feel++ Consortium" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Daniele Prada", "developer", "daniele.prada85@gmail.com", "" );
+    about.addAuthor( "Lorenzo Sala", "developer", "sala@unistra.fr", "" );
+
     return about;
 
 }
@@ -109,7 +114,15 @@ public:
     using M0h_t =  Pdh_type<face_mesh_type,0>;
     using M0h_ptr_t =  Pdh_ptrtype<face_mesh_type,0>;
 
-    //! the exporter factory type
+    using product_space_type = ProductSpaces<Vh_ptr_t,Wh_ptr_t,Mh_ptr_t>;
+    using product_space_ptrtype = boost::shared_ptr<product_space_type>;
+
+    using blockform2_type = BlockBilinearForm<ProductSpaces< Vh_ptr_t, Wh_ptr_t, Mh_ptr_t > &>;
+    using blockform2_ptrtype = boost::shared_ptr<blockform2_type>;
+    using blockform1_type = BlockLinearForm<ProductSpaces< Vh_ptr_t, Wh_ptr_t, Mh_ptr_t > &>;
+    using blockform1_ptrtype = boost::shared_ptr<blockform1_type>;
+ 
+   //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
     typedef boost::shared_ptr<export_type> export_ptrtype;
@@ -141,8 +154,7 @@ public:
      */
     void convergence();
 
-    template<typename MatrixType, typename VectorType, typename VhType, typename WhType, typename MhType,
-             typename ExprU, typename ExprSigma, typename ExprDivSigma>
+    template<typename MatrixType, typename VectorType, typename VhType, typename WhType, typename MhType,typename ExprU, typename ExprSigma, typename ExprDivSigma>
     void
     assemble_A_and_F( MatrixType A,
                       VectorType F,
@@ -197,7 +209,7 @@ Hdg<Dim, OrderP>::convergence()
     cvg.open("data.csv");
     cvg << "hsize" << "\t" << "nDofsigma" << "\t" << "l2err_sigma"  << "\t" << "nDofu"  << "\t" << "l2err_u" << "\n";
 
-    double current_hsize = meshSize;
+ double current_hsize = meshSize;
     for(int i=0; i<ioption("nb_refine"); i++)
     {
         mesh_ptrtype mesh;
@@ -233,7 +245,7 @@ Hdg<Dim, OrderP>::convergence()
             else
                 mesh = loadMesh( new mesh_type);
         }
-        else
+		else
         {
             //std::cout << "loadGMSHmesh" << std::endl;
             LOG(INFO) << "[Hdg] Mesh has been loaded (refine level = " << i << ") \n";
@@ -266,10 +278,11 @@ Hdg<Dim, OrderP>::convergence()
         cout << "Vh<" << OrderP   << "> : " << Vh->nDof() << std::endl
              << "Wh<" << OrderP+1 << "> : " << Wh->nDof() << std::endl
              << "Mh<" << OrderP   << "> : " << Mh->nDof() << std::endl;
-
-        auto sigmap = Vh->elementPtr( "sigma" );
+		/*
+      	auto sigmap = Vh->elementPtr( "sigma" );
         auto up     = Wh->elementPtr( "u" );
         auto uhatp  = Mh->elementPtr( "uhat" );
+		*/
 
         auto sigma = Vh->element( "sigma" );
         auto v     = Vh->element( "v" );
@@ -283,7 +296,20 @@ Hdg<Dim, OrderP>::convergence()
         auto nDofu     = u.functionSpace()->nDof();
         auto nDofuhat  = uhat.functionSpace()->nDof();
 
-        tic();
+
+    	auto lambda = expr(soption("lambda"));
+    	auto mu     = expr(soption("mu"));
+    	auto c1     = cst(0.5)/mu;
+   	 	auto c2     = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu));
+
+
+
+		tic();
+        auto ps = product( Vh, Wh, Mh );
+		auto a = blockform2( ps );
+		auto rhs = blockform1( ps );
+
+	/*	
         // build the big matrix associated to bilinear form over Vh x Wh x Mh
 #if 0
         auto A = backend()->newBlockMatrix(_block=csrGraphBlocks(Vh,Wh,Mh));
@@ -306,41 +332,147 @@ Hdg<Dim, OrderP>::convergence()
         hdg_vec(1,0) = backend()->newVector( Wh );
         hdg_vec(2,0) = backend()->newVector( Mh );
         auto F = backend()->newBlockVector(_block=hdg_vec, _copy_values=false);
-
+		
         auto hdg_sol = vectorBlocks(sigmap,up,uhatp);
         auto U = backend()->newBlockVector(_block=hdg_sol, _copy_values=false);
-
-        assemble_A_and_F( A, F, Vh, Wh, Mh, u_exact, sigma_exact, f );
-        toc("matrices",true);
-
-        tic();
-        backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=U );
-
-        hdg_sol.localize(U);
-        toc("solve",true);
-
-        cout << "[Hdg] solve done" << std::endl;
-
-        // ****** Compute error ******
+		
+    	assemble_A_and_F( A, F, Vh, Wh, Mh, u_exact, sigma_exact, f );
+	*/	
 
 
-        tic();
 
+    // Building the RHS	
+    M0h_ptr_t M0h = Pdh<0>( face_mesh,true );
+    auto H     = M0h->element( "H" );
+    if ( ioption("hface" ) == 0 )
+        H.on( _range=elements(face_mesh), _expr=cst(mesh->hMax()) );
+    else if ( ioption("hface" ) == 1 )
+        H.on( _range=elements(face_mesh), _expr=cst(mesh->hMin()) );
+    else if ( ioption("hface" ) == 2 )
+        H.on( _range=elements(face_mesh), _expr=cst(mesh->hAverage()) );
+    else
+        H.on( _range=elements(face_mesh), _expr=h() );
+	
+	rhs(1_c) += integrate(_range=elements(mesh),
+                      _expr=trans(f)*id(w));
+
+    cout << "rhs2 works fine" << std::endl;
+
+    // in convergence test Neumann condition is given from the displacement and
+    // constitutive law
+    if ( boption( "convtest" ) )
+        rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
+                          _expr=trans(id(m))*(sigma_exact*N()));
+    else
+    {
+        auto load = expr<2,2>( soption("load") );
+        rhs(2_c) += integrate(_range=markedfaces(mesh,"Tip"),
+                          _expr=trans(id(m))*(load*N()));
+    }
+	
+    rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                      _expr=trans(id(m))*u_exact);
+
+
+    cout << "rhs3 works fine" << std::endl;
+
+	// Building the matrix
+    a( 0_c, 0_c ) +=  integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
+    a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
+
+	a( 0_c, 1_c ) += integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(v)));
+ 
+    a( 0_c, 2_c) += integrate(_range=internalfaces(mesh),
+                                _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
+                                         trans(idt(uhat))*rightface(id(v)*N())) );
+    a( 0_c, 2_c) += integrate(_range=boundaryfaces(mesh),
+                                _expr=-trans(idt(uhat))*(id(v)*N()));
+ 
+    a( 1_c, 0_c) += integrate(_range=elements(mesh),
+                                _expr=(trans(id(w))*divt(sigma)));
+	// begin dp: here we need to put the projection of u on the faces
+    a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=-tau_constant *
+    	         ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
+        	       rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
+ 
+    a( 1_c, 1_c) += integrate(_range=boundaryfaces(mesh),
+    			_expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
+ 
+    a( 1_c, 2_c) += integrate(_range=internalfaces(mesh), _expr=tau_constant *
+             ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
+               rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )));
+ 
+    a( 1_c, 2_c) += integrate(_range=boundaryfaces(mesh),
+             _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
+ 
+ 
+    a( 2_c, 0_c) += integrate(_range=internalfaces(mesh),
+             _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
+                     rightfacet(idt(sigma)*N())) ) );
+	a( 2_c, 1_c) += integrate(_range=internalfaces(mesh),
+                _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tau_order)*idt(u) )+
+                    rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
+
+    a( 2_c, 2_c) += integrate(_range=internalfaces(mesh),
+	    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
+                    rightface( pow(idv(H),M_tau_order) )));
+    
+   	a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,{"Dirichlet"}),
+                                _expr=trans(idt(uhat)) * id(m) );
+    
+    
+	a( 2_c, 0_c) += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
+                        		_expr=( trans(id(m))*(idt(sigma)*N()) ));
+
+    a( 2_c, 1_c) += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
+ 		                        _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
+
+    a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
+                        _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+
+
+
+
+
+		 
+	toc("matrices",true);
+
+	// a.close();
+	// rhs.close();
+
+    tic();
+    // backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=U );
+    // hdg_sol.localize(U);	
+	auto U = ps.element();
+	a.solve( _solution=U, _rhs=rhs);
+    toc("solve",true);
+	cout << "[Hdg] solve done" << std::endl;
+		
+	auto sigmap = U(0_c);
+	auto up = U(1_c);
+ 	auto uhatp = U(2_c);
+
+	Feel::cout << "sigma: \t" << sigmap << std::endl;
+	Feel::cout << "u: \t" << up << std::endl;
+	Feel::cout << "uhat: \t" << uhatp << std::endl;
+			
+    // ****** Compute error ******
+    tic();
         bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
         BOOST_ASSERT(has_dirichlet);
 
         /*
-         How does Feel++ handle BC on single components? Say, Dirichlet on u_x and
-         Neumann on dot(sigma*n, e_y)?
-         */
+        How does Feel++ handle BC on single components? Say, Dirichlet on u_x and
+        Neumann on dot(sigma*n, e_y)?
+        */
 
-        auto l2err_sigma = normL2( _range=elements(mesh), _expr=sigma_exact - idv(*sigmap) );
-        auto l2err_u     = normL2( _range=elements(mesh), _expr=u_exact - idv(*up) );
+    auto l2err_sigma = normL2( _range=elements(mesh), _expr=sigma_exact - idv(sigmap) );
+    auto l2err_u     = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
 
-        toc("error");
+    toc("error");
 
-        cout << "[" << i << "]||sigma_exact - sigma||_L2 = " << l2err_sigma << std::endl;
-        cout << "[" << i << "]||u_exact - u||_L2 = " << l2err_u << std::endl;
+    cout << "[" << i << "]||sigma_exact - sigma||_L2 = " << l2err_sigma << std::endl;
+    cout << "[" << i << "]||u_exact - u||_L2 = " << l2err_u << std::endl;
         cvg << current_hsize
             << "\t" << Vh->nDof() << "\t" << l2err_sigma
             << "\t" << Wh->nDof() << "\t" << l2err_u << std::endl;
@@ -358,8 +490,8 @@ Hdg<Dim, OrderP>::convergence()
         export_ptrtype exporter_cvg( export_type::New( exportName ) );
 
         exporter_cvg->step( i )->setMesh( mesh );
-        exporter_cvg->step( i )->add( sigmaName, *sigmap );
-        exporter_cvg->step( i )->add( uName, *up );
+        exporter_cvg->step( i )->add( sigmaName, sigmap );
+        exporter_cvg->step( i )->add( uName, up );
         exporter_cvg->step( i )->add( sigma_exName, v );
         exporter_cvg->step( i )->add( u_exName, w );
         exporter_cvg->save();
@@ -373,8 +505,7 @@ Hdg<Dim, OrderP>::convergence()
 }
 
 template<int Dim, int OrderP>
-template<typename MatrixType, typename VectorType, typename VhType, typename WhType, typename MhType,
-         typename ExprU, typename ExprSigma, typename ExprDivSigma>
+template<typename MatrixType, typename VectorType, typename VhType, typename WhType, typename MhType,typename ExprU, typename ExprSigma, typename ExprDivSigma>
 void
 Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                                     VectorType F,
@@ -385,13 +516,14 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                                     ExprSigma sigma_exact,
                                     ExprDivSigma div_sigma_exact )
 {
+
     auto lambda = expr(soption("lambda"));
     auto mu     = expr(soption("mu"));
     auto c1     = cst(0.5)/mu;
     auto c2     = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu));
     auto tau_constant = cst(M_tau_constant);
     auto mesh = Vh->mesh();
-    auto face_mesh = Mh->mesh();//createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto face_mesh = Mh->mesh();	//createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
     M0h_ptr_t M0h = Pdh<0>( face_mesh,true );
 
     auto sigma = Vh->element( "sigma" );
@@ -400,6 +532,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     auto w     = Wh->element( "w" );
     auto uhat  = Mh->element( "uhat" );
     auto m     = Mh->element( "m" );
+	
     auto H     = M0h->element( "H" );
     if ( ioption("hface" ) == 0 )
         H.on( _range=elements(face_mesh), _expr=cst(mesh->hMax()) );
@@ -409,47 +542,49 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
         H.on( _range=elements(face_mesh), _expr=cst(mesh->hAverage()) );
     else
         H.on( _range=elements(face_mesh), _expr=h() );
-
+	
 
     // Building the RHS
-    auto rhs2 = form1( _test=Wh, _vector=F,
-                       _rowstart=1 );
 
-    rhs2 += integrate(_range=elements(mesh),
-                      _expr=trans(div_sigma_exact)*id(w));
+     // Building the RHS
+	auto rhs2 = form1( _test=Wh, _vector=F,
+                      _rowstart=1 );
 
-    cout << "rhs2 works fine" << std::endl;
+   	rhs2 += integrate(_range=elements(mesh),
+                     _expr=trans(div_sigma_exact)*id(w));
 
-    auto rhs3 = form1( _test=Mh, _vector=F,
-                       _rowstart=2);
+   cout << "rhs2 works fine" << std::endl;
 
-    // in convergence test Neumann condition is given from the displacement and
-    // constitutive law
-    if ( boption( "convtest" ) )
-        rhs3 += integrate(_range=markedfaces(mesh,"Neumann"),
-                          _expr=trans(id(m))*(sigma_exact*N()));
-    else
-    {
-        auto load = expr<2,2>( soption("load") );
-        rhs3 += integrate(_range=markedfaces(mesh,"Tip"),
-                          _expr=trans(id(m))*(load*N()));
-    }
-    rhs3 += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                      _expr=trans(id(m))*u_exact);
+   auto rhs3 = form1( _test=Mh, _vector=F,
+                      _rowstart=2);
 
-    cout << "rhs3 works fine" << std::endl;
+   // in convergence test Neumann condition is given from the displacement and
+   // constitutive law
+   if ( boption( "convtest" ) )
+       rhs3 += integrate(_range=markedfaces(mesh,"Neumann"),
+                         _expr=trans(id(m))*(sigma_exact*N()));
+   else
+   {
+       auto load = expr<2,2>( soption("load") );
+       rhs3 += integrate(_range=markedfaces(mesh,"Tip"),
+                         _expr=trans(id(m))*(load*N()));
+   }
+   rhs3 += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                     _expr=trans(id(m))*u_exact);
 
-    auto a11 = form2( _trial=Vh, _test=Vh,_matrix=A );
-    auto a11_b1 = form2( _trial=Vh, _test=Vh );
-    auto a11_b2 = form2( _trial=Vh, _test=Vh );
+   cout << "rhs3 works fine" << std::endl;
 
-    a11 += integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
-    a11 += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
+   auto a11 = form2( _trial=Vh, _test=Vh,_matrix=A );
+   auto a11_b1 = form2( _trial=Vh, _test=Vh );
+   auto a11_b2 = form2( _trial=Vh, _test=Vh );
 
-    a11_b1 = integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
-    a11_b2 = integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
+   a11 += integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
+   a11 += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
 
-    cout << "a11 works fine" << std::endl;
+   a11_b1 = integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
+   a11_b2 = integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
+
+   cout << "a11 works fine" << std::endl;
 
     auto a12 = form2( _trial=Wh, _test=Vh,_matrix=A,
                       _rowstart=0, _colstart=1 );
@@ -485,6 +620,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                        rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
     a22 += integrate(_range=boundaryfaces(mesh),
                      _expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
+
 
     auto a23 = form2( _trial=Mh, _test=Wh,_matrix=A,
                       _rowstart=1, _colstart=2);
@@ -526,6 +662,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                      _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
     a33 += integrate(_range=markedfaces(mesh,{"Dirichlet"}),
                      _expr=trans(idt(uhat)) * id(m) );
+
 
 }
 
