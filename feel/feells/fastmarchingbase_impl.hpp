@@ -3,10 +3,10 @@
 #include <feel/feelvf/operators.hpp>
 
 #define FASTMARCHINGBASE_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename FunctionSpaceType, typename PeriodicityType > \
+    template< typename FunctionSpaceType, typename PeriodicityType, typename HeapDataType > \
     /**/ 
 #define FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE \
-    FastMarchingBase<FunctionSpaceType, PeriodicityType> \
+    FastMarchingBase<FunctionSpaceType, PeriodicityType, HeapDataType> \
     /**/ 
 
 namespace Feel {
@@ -340,7 +340,7 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::reduceClosePoints()
     //M_valueAtClose->close();
 
     // store global id of every CLOSE value and its phi associated value
-    std::map< size_type, std::pair<value_type, std::vector<value_type>> > phiValueAtGlobalId;
+    std::map< size_type, value_data_type > phiValueAtGlobalId;
 
     for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
     {
@@ -357,12 +357,13 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::reduceClosePoints()
         //else if ( ( (*M_checkStatus)(k) > 1 ) && ((*M_status)(k) == CLOSE) )
         if ( ( (*M_checkStatus)(k) > 0 ) && ((*M_status)(k) == CLOSE) )
         {
-            phiValueAtGlobalId[ processorToCluster( k ) ] = { M_heap.valueAtIndex(k), M_heap.dataAtIndex(k) };
+            phiValueAtGlobalId[ processorToCluster( k ) ] = value_data_type(
+                    M_heap.valueAtIndex(k), M_heap.dataAtIndex(k) );
         }
     }
 
 
-    std::vector< std::map< size_type, std::pair<value_type, std::vector<value_type>> > > all_phiValueAtGlobalId;
+    std::vector< std::map< size_type, value_data_type > > all_phiValueAtGlobalId;
 
     mpi::all_gather( Environment::worldComm().globalComm(),
             phiValueAtGlobalId,
@@ -377,8 +378,8 @@ FASTMARCHINGBASE_CLASS_TEMPLATE_TYPE::reduceClosePoints()
             for ( auto const & phiAtGlobId : all_phiValueAtGlobalId )
                 if ( phiAtGlobId.count( idOnCluster ) )
                 {
-                    heap_entry_type newEntry = { phiAtGlobId.at(idOnCluster).first , k };
-                    M_heap.change( newEntry, phiAtGlobId.at(idOnCluster).second  ); //change only if phiAtGlobId[idOnCluster] < phi already stored
+                    heap_entry_type newEntry = { phiAtGlobId.at(idOnCluster).value() , k };
+                    M_heap.change( newEntry, phiAtGlobId.at(idOnCluster).data()  ); //change only if phiAtGlobId[idOnCluster] < phi already stored
                 }
 
             (*M_status)(k) = CLOSE;

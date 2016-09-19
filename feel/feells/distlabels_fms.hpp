@@ -9,10 +9,10 @@
 namespace Feel {
 
 template<typename FunctionSpaceType, typename PeriodicityType =NoPeriodicity>
-class LabelDistanceFMS : public FastMarchingBase<FunctionSpaceType, PeriodicityType>
+class LabelDistanceFMS : public FastMarchingBase<FunctionSpaceType, PeriodicityType, double>
 {
 public:
-    typedef FastMarchingBase<FunctionSpaceType, PeriodicityType> super_type;
+    typedef FastMarchingBase<FunctionSpaceType, PeriodicityType, double> super_type;
     typedef LabelDistanceFMS<FunctionSpaceType, PeriodicityType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
@@ -44,7 +44,7 @@ public:
 
 private:
     void initMarch( element_type const& phi, bool useMarker2AsMarkerDone );
-    void processDof( size_type idOnProc, value_type val, std::vector<value_type> const& opt_data );
+    void processDof( size_type idOnProc, value_type val, value_type const& opt_data );
     void updateHeap( size_type idDone );
 
     element_ptrtype getDistance() const { return super_type::getDistance(); }
@@ -219,11 +219,11 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::initMarch(
 
 LABELDISTANCEFMS_CLASS_TEMPLATE_DECLARATIONS
 void
-LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::processDof( size_type idOnProc, value_type val, std::vector<value_type> const& opt_data )
+LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::processDof( size_type idOnProc, value_type val, value_type const& opt_data )
 {
 #if defined( FM_EXPORT )
     std::cout << "Processing dof " << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( idOnProc )
-        << " with value " << val << " and label " << opt_data[0]
+        << " with value " << val << " and label " << opt_data
         << " on proc " << this->functionSpace()->worldComm().localRank() << "\n";
 #endif
 
@@ -231,19 +231,19 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::processDof( size_type idOnProc, value_type
     {
         (*M_NNDistance)[idOnProc] = val;
         //(*M_NNLabel)[idOnProc] = (*M_label)[idOnProc];
-        (*M_NNLabel)[idOnProc] = opt_data[0];
+        (*M_NNLabel)[idOnProc] = opt_data;
         (*M_labelDist)[idOnProc] = 1e8;
     }
     else
     {
         (*M_nextNNDistance)[idOnProc] = val;
         //(*M_nextNNLabel)[idOnProc] = (*M_label)[idOnProc];
-        (*M_nextNNLabel)[idOnProc] = opt_data[0];
+        (*M_nextNNLabel)[idOnProc] = opt_data;
         this->setDofStatus( idOnProc, super_type::DONE );
     }
 
     this->setDofDistance(idOnProc, val);
-    (*M_label)[idOnProc] = opt_data[0];
+    (*M_label)[idOnProc] = opt_data;
 }
 
 LABELDISTANCEFMS_CLASS_TEMPLATE_DECLARATIONS
@@ -302,7 +302,7 @@ LABELDISTANCEFMS_CLASS_TEMPLATE_TYPE::updateHeap( size_type idDone )
                 this->heap().change( std::make_pair( phiNew, *n0it ) );
                 if(updateLabel)
                 {
-                    this->heap().dataAtIndex( *n0it ) = std::vector<value_type>(1, label);
+                    this->heap().dataAtIndex( *n0it ) = label;
                 }
             } // if CLOSE
         }

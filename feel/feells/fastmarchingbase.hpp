@@ -13,7 +13,7 @@
 
 namespace Feel {
 
-template<typename FunctionSpaceType, typename PeriodicityType = NoPeriodicity>
+template<typename FunctionSpaceType, typename PeriodicityType = NoPeriodicity, typename HeapDataType = Feel::details::none_type>
 class FastMarchingBase
 {
 public:
@@ -21,7 +21,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Typedefs
-    typedef FastMarchingBase<FunctionSpaceType, PeriodicityType> self_type;
+    typedef FastMarchingBase<FunctionSpaceType, PeriodicityType, HeapDataType> self_type;
 
     enum status_type {FAR=0, CLOSE=1, DONE=2};
 
@@ -40,6 +40,8 @@ public:
 
     typedef PeriodicityType periodicity_type;
     typedef typename periodicity_type::node_type node_type;
+
+    typedef HeapDataType heap_data_type;
     //--------------------------------------------------------------------//
     // Constructor
     FastMarchingBase( functionspace_ptrtype const& space,
@@ -59,10 +61,60 @@ public:
     element_ptrtype getDistance() const { return M_distance; }
 
 protected:
+    //--------------------------------------------------------------------//
+    template<typename T, typename DataT>
+    struct ValueDataType : std::pair<T, DataT>
+    {
+        typedef T value_type;
+        typedef DataT data_type;
+
+        typedef typename std::pair<T, DataT> super_type;
+        
+        using typename super_type::pair;
+        ValueDataType(): super_type() {}
+        ValueDataType(T const& v, DataT const& d ): super_type(v,d) {}
+
+        value_type & value() { return this->first; }
+        value_type const& value() const { return this->first; }
+        data_type data() const { return this->second; }
+
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version)
+        {
+            ar & this->first;
+            ar & this->second;
+        }
+    };
+    template<typename T>
+    struct ValueDataType<T, Feel::details::none_type>
+    {
+        typedef T value_type;
+        typedef Feel::details::none_type data_type;
+
+        ValueDataType() {}
+        ValueDataType(T const& v, data_type d = data_type() ): M_value(v) {}
+
+        operator T() { return M_value; }
+
+        value_type & value() { return M_value; }
+        value_type const& value() const { return M_value; }
+        data_type data() const { return data_type(); }
+
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version)
+        {
+            ar & M_value;
+        }
+
+        value_type M_value;
+    };
+
+    typedef ValueDataType<value_type, heap_data_type> value_data_type;
+    //--------------------------------------------------------------------//
     /* The map indexes are the global indexes on the PROC and the set contains 
      * the global indexes on the CLUSTER of its neigbors */
     typedef std::map<size_type, std::set<size_type> > neighbors_type;
-    typedef Feel::details::FmsHeap<value_type> heap_type;
+    typedef Feel::details::FmsHeap<value_type, heap_data_type> heap_type;
     typedef typename heap_type::heap_entry_type heap_entry_type;
     typedef typename heap_type::heap_entry_data_type heap_entry_data_type;
     typedef Feel::details::FmsPoint<value_type, Dim> point_type;
@@ -104,7 +156,7 @@ protected:
     //--------------------------------------------------------------------//
     virtual void initMarch( element_type const& phi, bool useMarker2AsMarkerDone );
 
-    virtual void processDof( size_type idOnProc, value_type val, std::vector<value_type> const& opt_data ) =0;
+    virtual void processDof( size_type idOnProc, value_type val, heap_data_type const& opt_data ) =0;
 
     virtual void updateHeap( size_type idDone );
 

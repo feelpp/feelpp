@@ -64,6 +64,8 @@ public:
     typedef boost::shared_ptr<element_type> element_ptrtype;
     typedef typename functionspace_type::value_type value_type;
 
+    typedef typename super_type::heap_data_type heap_data_type;
+
     typedef typename functionspace_type::mesh_type mesh_type;
     typedef typename mesh_type::element_type geoelement_type;
     static const uint16_type Dim = geoelement_type::nDim;
@@ -96,7 +98,7 @@ public:
 
 
 private:
-    void processDof( size_type idOnProc, value_type val, std::vector<value_type> const& opt_data );
+    void processDof( size_type idOnProc, value_type val, heap_data_type const& opt_data );
 };
 
 
