@@ -187,8 +187,10 @@ SelfLabel<SpaceType, SpaceP0Type>::propagateLabel( int labelValue, elementP0_ptr
         eltsToVisit.insert( elt.id() );
     }
 
-    // auto exp = exporter(_mesh=M_submesh, _name="propagation");
-    // int iter=0;
+     //auto exp = exporter(_mesh=M_submesh, _name="propagation");
+     //int iter=0;
+     //exp->step(iter++)->add("labelOnSubMesh", *labelOnSubMesh);
+     //exp->save();
 
     bool eltsToVisitAreEmptyOnAllProc = false;
 
@@ -203,8 +205,8 @@ SelfLabel<SpaceType, SpaceP0Type>::propagateLabel( int labelValue, elementP0_ptr
             auto elt_id = eltsToVisit.begin();
             auto const & elt = M_submesh->element( *elt_id );
 
-            // exp->step(iter++)->add("labelOnSubMesh", *labelOnSubMesh);
-            // exp->save();
+             //exp->step(iter++)->add("labelOnSubMesh", *labelOnSubMesh);
+             //exp->save();
 
             for (uint16_type face_id = 0; face_id<elt.nTopologicalFaces(); ++face_id)
             {
@@ -262,6 +264,9 @@ SelfLabel<SpaceType, SpaceP0Type>::propagateLabel( int labelValue, elementP0_ptr
                 std::logical_and<bool>() );
     }
 
+     //exp->step(iter++)->add("labelOnSubMesh", *labelOnSubMesh);
+     //exp->save();
+
     delete [] reqs;
 
 }// propagateLabel
@@ -277,8 +282,8 @@ SelfLabel<SpaceType, SpaceP0Type>::pushLabelOnMesh( elementP0_ptrtype labelOnSub
     // all the dof phi<0 on a elt labeled i have value i
     // all dof phi>0 have value markerfluid
 
-    M_labelP0 = M_Xh0->elementPtr();
     M_labelP0->setConstant( markerfluid );
+    M_label->setConstant( markerfluid );
 
     for (auto const& elt_submesh : elements(M_submesh) )
     {
