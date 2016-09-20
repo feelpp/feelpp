@@ -24,6 +24,65 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <feel/feelfit/interpolator.hpp>
 
+std::unique_ptr<Interpolator> Interpolator::New( InterpolationType type, std::vector<pair_type> data)
+{
+    switch(type)
+    {
+    case P0:
+    {
+        return std::make_unique<InterpolatorP0>(data, static_cast<InterpolationType_P0>(Feel::ioption("fit.P0")));
+        break;
+    }
+    case P1:
+    {
+        return std::make_unique<InterpolatorP1>(data,
+                                                static_cast<ExtrapolationType_P1>(Feel::ioption("fit.P1_right")), 
+                                                static_cast<ExtrapolationType_P1>(Feel::ioption("fit.P1_left"))
+                                                );
+        break;
+    }
+    case Spline:
+    {
+        return std::make_unique<InterpolatorSpline>(data, 
+                                                    static_cast<ExtrapolationType_spline>(Feel::ioption("fit.Spline_right")),
+                                                    static_cast<ExtrapolationType_spline>(Feel::ioption("fit.Spline_left"))
+                                                    );
+        break;
+    }
+    case Akima:
+    {
+        return std::make_unique<InterpolatorAkima>(data);
+        break;
+    }
+    }
+}
+
+std::unique_ptr<Interpolator> Interpolator::New( InterpolationType type, std::string dataFile)
+{
+    std::vector<std::pair<double, double>> data;
+    std::ifstream infile(Feel::Environment::expand(dataFile));
+    std::string line;
+    double a, b;
+    if (infile.is_open()) 
+    {
+        while (getline(infile,line)) 
+        {
+            if(line[0] != '#')
+            {
+                std::istringstream iss(line);
+                iss >> a >> b;
+                data.push_back({a,b});
+            }
+        }
+        infile.close();
+    }
+    else
+    {
+        Feel::cout << "Error opening file" << Feel::Environment::expand(dataFile) << "\n";
+    }
+    return Interpolator::New( type, data );
+}
+
 Interpolator::value_type InterpolatorP0::diff(double _x) { return 0.; }
 Interpolator::value_type InterpolatorP0::operator()(double _x)
 {
