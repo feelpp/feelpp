@@ -1267,6 +1267,7 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
                                      &petsc_viewer );
 #endif
         CHKERRABORT( this->comm(),ierr );
+
 #if 0
 #if PETSC_VERSION_LESS_THAN(3,7,0)
         ierr = PetscViewerSetFormat ( petsc_viewer,
@@ -1275,6 +1276,10 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
         ierr = PetscViewerPushFormat ( petsc_viewer,
                                       PETSC_VIEWER_BINARY_MATLAB );
 #endif
+#else
+        ierr = PetscViewerPushFormat ( petsc_viewer,
+                                       PETSC_VIEWER_ASCII_MATLAB );
+#endif       
         //PETSC_VIEWER_ASCII_PYTHON );
 #else
         ierr = PetscViewerPushFormat ( petsc_viewer,
