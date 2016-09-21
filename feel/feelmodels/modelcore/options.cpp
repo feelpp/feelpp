@@ -435,6 +435,9 @@ interfaceforces_options(std::string const& prefix)
 
         (prefixvm(prefix,"collision-force-coeff").c_str(), Feel::po::value<double>()->default_value(1), "Collision force coefficient " )
         (prefixvm(prefix,"collision-force-impl").c_str(), Feel::po::value<int>()->default_value(0), "Implementation of collision force" )
+
+        (prefixvm(prefix,"wallcontact-force-coeff").c_str(), Feel::po::value<double>()->default_value(1), "Wall contact force coefficient " )
+        (prefixvm(prefix,"wallcontact-force-impl").c_str(), Feel::po::value<int>()->default_value(0), "Implementation of wall contact force" )
         ;
 
     return interfaceForcesOptions;
