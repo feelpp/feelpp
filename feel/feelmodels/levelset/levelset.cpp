@@ -1335,21 +1335,33 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
     if( !M_reinitializerIsUpdatedForUse )
         this->createReinitialization();
 
+    bool reinitializeWithDistLabel = false;
+
     auto phi = this->phi();
 
     if ( M_reinitMethod == LevelSetReinitMethod::FM )
     {
-        if ( M_useMarkerDiracAsMarkerDoneFM )
+        /* If available, use the fast-marching done by distLabel */
+        if( this->useMultiLabels() && !M_useMarkerDiracAsMarkerDoneFM )
         {
-            this->mesh()->updateMarker2( *this->markerDirac() );
+            if( M_doUpdateMultiLabels )
+                this->updateMultiLabels();
+            reinitializeWithDistLabel = true;
         }
+        else
+        {
+            if ( M_useMarkerDiracAsMarkerDoneFM )
+            {
+                this->mesh()->updateMarker2( *this->markerDirac() );
+            }
 
-        this->applyStrategyBeforeFM( phi );
+            this->applyStrategyBeforeFM( phi );
 
-        // Fast Marching Method
-        boost::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
-                M_useMarkerDiracAsMarkerDoneFM 
-                );
+            // Fast Marching Method
+            boost::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
+                    M_useMarkerDiracAsMarkerDoneFM 
+                    );
+        }
 
         LOG(INFO)<< "reinit with FMM done"<<std::endl;
     } // Fast Marching
@@ -1361,8 +1373,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
         //LOG(INFO)<<"reinit done in "<<ch.elapsed()<<" s\n";
     } // Hamilton-Jacobi
 
-    M_reinitializer->run( *phi );
-    *phi = M_reinitializer->distance();
+    if( reinitializeWithDistLabel )
+    {
+        *phi = M_distLabel->distance();
+    }
+    else
+    {
+        M_reinitializer->run( *phi );
+        *phi = M_reinitializer->distance();
+    }
 
     if( M_useGradientAugmented )
     {
@@ -1434,6 +1453,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::setUseMultiLabels(bool b, element_levelset_ptrtype
                 new distlabelFMS_type( this->functionSpace(), prefixvm(this->prefix(), "distlabel-fm") ) 
                 );
     }
+    if( !M_distBetweenLabels )
+    {
+        M_distBetweenLabels.reset(
+                new element_levelset_type(this->functionSpace(), "DistBetweenLabels") 
+                );
+    }
     if( M_useMultiLabels )
     {
         this->setUseSelfLabel( M_useMultiLabels, label );
@@ -1455,30 +1480,33 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateSelfLabel()
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateMultiLabels()
+{
+    this->log("LevelSet", "updateMultiLabels", "start");
+    this->timerTool("Solve").start();
+
+    *M_distBetweenLabels = *this->phi();
+    this->applyStrategyBeforeFM( M_distBetweenLabels );
+    M_distLabel->setSelfLabel( M_selfLabel->getLabel() );
+    M_distLabel->run( *M_distBetweenLabels );
+    *M_distBetweenLabels = M_distLabel->nextNearestNeighbourDistance();
+    M_doUpdateMultiLabels = false;
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("LevelSet","updateSelfLabel","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype
 LEVELSET_CLASS_TEMPLATE_TYPE::distanceBetweenLabels()
 {
     CHECK(this->useMultiLabels()) << "You must enable multi-labels to get the distance between labels.\n";
 
-    element_levelset_ptrtype distLabelPhi( new element_levelset_type(this->functionSpace(), "DistBetweenLabels") );
-
     if( M_doUpdateMultiLabels )
-    {
-        this->log("LevelSet","distanceBetweenLabels", "start");
-        this->timerTool("Utilities").start();
+        this->updateMultiLabels();
 
-        *distLabelPhi = *this->phi();
-        this->applyStrategyBeforeFM( distLabelPhi );
-        M_distLabel->setSelfLabel( M_selfLabel->getLabel() );
-        M_distLabel->run( *distLabelPhi );
-        M_doUpdateMultiLabels = false;
-
-        double timeElapsed = this->timerTool("Utilities").stop();
-        this->log("LevelSet","distanceBetweenLabels","finish in "+(boost::format("%1% s") %timeElapsed).str() );
-    }
-
-    *distLabelPhi = M_distLabel->nextNearestNeighbourDistance();
-    return distLabelPhi;
+    return M_distBetweenLabels;
 }
 
 //----------------------------------------------------------------------------//

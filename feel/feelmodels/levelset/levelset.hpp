@@ -370,6 +370,7 @@ public:
             element_levelset_ptrtype const& label = element_levelset_ptrtype() );
 
     void updateSelfLabel();
+    void updateMultiLabels();
 
     element_levelset_ptrtype distanceBetweenLabels();
 
@@ -552,6 +553,8 @@ private:
 
     selflabel_ptrtype M_selfLabel;
     distlabelFMS_ptrtype M_distLabel;
+
+    element_levelset_ptrtype M_distBetweenLabels;
 
     //--------------------------------------------------------------------//
     // Backends
