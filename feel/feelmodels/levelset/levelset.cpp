@@ -49,6 +49,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     this->loadConfigPostProcess();
     // Get periodicity from options (if needed)
     //this->loadPeriodicityFromOptionsVm();
+    //-----------------------------------------------------------------------------//
 
     /*// --------------- mesh adaptation -----------------
 #if defined (MESH_ADAPTATION)
@@ -119,11 +120,62 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
 {
     this->log("LevelSet", "init", "start");
 
-    // Set levelset initial value
-    this->initLevelsetValue();
+    // Set levelset initial value and labels if required
+    if (!this->doRestart())
+    {
+        this->initLevelsetValue();
+    }
+
     // Init levelset advection
     super_type::init( true, this->shared_from_this() );
     M_timeOrder = this->timeStepBDF()->timeOrder(); 
+
+    // Set self-label save name
+    std::string suffixName = "";
+    if ( this->timeStepBDF()->fileFormat() == "binary" )
+        suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+    M_selfLabelSavePrefix = prefixvm(this->prefix(),prefixvm(this->subPrefix(),"selflabel"+suffixName));
+    // When restarting, load self-labels if required
+    if( this->doRestart() )
+    {
+        bool useLabels = boption( _name="use-multi-labels", _prefix=this->prefix() );
+        if( useLabels )
+        {
+            fs::path dirPath = ( this->timeStepBDF()->restartPath().empty() )? this->timeStepBDF()->path() : this->timeStepBDF()->restartPath()/this->timeStepBDF()->path();
+            int iteration = this->timeStepBDF()->iteration();
+
+            auto labels = this->functionSpace()->elementPtr(); 
+
+            if ( this->timeStepBDF()->fileFormat() == "hdf5")
+            {
+#ifdef FEELPP_HAS_HDF5
+                labels->loadHDF5( ( dirPath / (boost::format("%1%-%2%.h5")%M_selfLabelSavePrefix %(iteration)).str() ).string() );
+#else
+                CHECK( false ) << "hdf5 not detected";
+#endif
+            }
+            else if ( this->timeStepBDF()->fileFormat() == "binary")
+            {
+                // create and open a character archive for output
+                std::ostringstream ostr;
+                if( this->timeStepBDF()->rankProcInNameOfFiles() )
+                    ostr << M_selfLabelSavePrefix << "-" << iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+                else
+                    ostr << M_selfLabelSavePrefix << "-" << iteration;
+                DVLOG(2) << "[Levelset::init()] load file: " << ostr.str() << "\n";
+
+                fs::ifstream ifs;
+                ifs.open( dirPath/ostr.str() );
+
+                // load data from archive
+                boost::archive::binary_iarchive ia( ifs );
+                ia >> *labels;
+            }
+
+            this->setUseMultiLabels( useLabels, labels );
+        }
+    }
+
     // Init modGradPhi advection
     if( M_useGradientAugmented )
     {
@@ -1739,6 +1791,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::saveCurrent() const
 
     if (!doSave) return;
 
+    // Save iterSinceReinit
     if( this->worldComm().isMasterRank() )
     {
         fs::ofstream ofs( fs::path(this->rootRepository()) / fs::path( prefixvm(this->prefix(), "itersincereinit") ) );
@@ -1747,6 +1800,36 @@ LEVELSET_CLASS_TEMPLATE_TYPE::saveCurrent() const
         oa << BOOST_SERIALIZATION_NVP( M_vecIterSinceReinit );
     }
     this->worldComm().barrier();
+
+    // Save selfLabel
+    if( this->useSelfLabel() )
+    {
+        fs::path dirPath = ( this->timeStepBDF()->restartPath().empty() )? this->timeStepBDF()->path() : this->timeStepBDF()->restartPath()/this->timeStepBDF()->path();
+        int iteration = this->timeStepBDF()->iteration();
+
+        if ( this->timeStepBDF()->fileFormat() == "hdf5")
+        {
+#ifdef FEELPP_HAS_HDF5
+                M_selfLabel->getLabel()->saveHDF5( ( dirPath / (boost::format("%1%-%2%.h5")%M_selfLabelSavePrefix %(iteration)).str() ).string() );
+#else
+            CHECK( false ) << "hdf5 not detected";
+#endif
+        }
+        else if ( this->timeStepBDF()->fileFormat() == "binary")
+        {
+            // create and open a character archive for output
+            std::ostringstream ostr;
+            if( this->timeStepBDF()->rankProcInNameOfFiles() )
+                ostr << M_selfLabelSavePrefix << "-" << iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+            else
+                ostr << M_selfLabelSavePrefix << "-" << iteration;
+
+            // save data to archive
+            fs::ofstream ofs( dirPath/ostr.str() );
+            boost::archive::binary_oarchive oa( ofs );
+            oa << *(M_selfLabel->getLabel());
+        }
+    }
 }
 
 //----------------------------------------------------------------------------//

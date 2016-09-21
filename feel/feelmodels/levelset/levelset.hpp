@@ -551,6 +551,8 @@ private:
     bool M_useMultiLabels;
     bool M_doUpdateMultiLabels;
 
+    std::string M_selfLabelSavePrefix;
+
     selflabel_ptrtype M_selfLabel;
     distlabelFMS_ptrtype M_distLabel;
 
