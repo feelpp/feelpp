@@ -142,7 +142,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
         if( useLabels )
         {
             fs::path dirPath = ( this->timeStepBDF()->restartPath().empty() )? this->timeStepBDF()->path() : this->timeStepBDF()->restartPath()/this->timeStepBDF()->path();
-            int iteration = this->timeStepBDF()->iteration();
+            int iteration = this->timeStepBDF()->iteration() - 1;
 
             auto labels = this->functionSpace()->elementPtr(); 
 
@@ -1546,7 +1546,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMultiLabels()
     M_doUpdateMultiLabels = false;
 
     double timeElapsed = this->timerTool("Solve").stop();
-    this->log("LevelSet","updateSelfLabel","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("LevelSet","updateMultiLabels","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
