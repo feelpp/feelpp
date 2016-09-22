@@ -1075,37 +1075,40 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerCrossedElements()
 // Utility distances
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype
-LEVELSET_CLASS_TEMPLATE_TYPE::distToBoundary()
+LEVELSET_CLASS_TEMPLATE_TYPE::distToBoundary( bool forceUpdate )
 {
-    element_levelset_ptrtype distToBoundary( new element_levelset_type(this->functionSpace(), "DistToBoundary") );
+    if( !M_distToBoundary || forceUpdate )
+    {
+        M_distToBoundary.reset( new element_levelset_type(this->functionSpace(), "DistToBoundary") );
 
-    // Retrieve the elements touching the boundary
-    auto boundaryelts = boundaryelements( this->mesh() );
+        // Retrieve the elements touching the boundary
+        auto boundaryelts = boundaryelements( this->mesh() );
 
-    // Mark the elements in myrange
-    auto mymark = vf::project(
-            _space=this->functionSpaceMarkers(),
-            _range=boundaryelts,
-            _expr=cst(1)
-            );
+        // Mark the elements in myrange
+        auto mymark = vf::project(
+                _space=this->functionSpaceMarkers(),
+                _range=boundaryelts,
+                _expr=cst(1)
+                );
 
-    // Update mesh marker2
-    this->mesh()->updateMarker2( mymark );
+        // Update mesh marker2
+        this->mesh()->updateMarker2( mymark );
 
-    // Init phi0 with h on marked2 elements
-    auto phi0 = vf::project(
-            _space=this->functionSpace(),
-            _range=boundaryelts,
-            _expr=h()
-            );
-    phi0.on( _range=boundaryfaces(this->mesh()), _expr=cst(0.) );
+        // Init phi0 with h on marked2 elements
+        auto phi0 = vf::project(
+                _space=this->functionSpace(),
+                _range=boundaryelts,
+                _expr=h()
+                );
+        phi0.on( _range=boundaryfaces(this->mesh()), _expr=cst(0.) );
 
-    // Run FM using marker2 as marker DONE
-    this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
-    this->reinitializerFM()->run( phi0 );
-    *distToBoundary = this->reinitializerFM()->distance();
+        // Run FM using marker2 as marker DONE
+        this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
+        this->reinitializerFM()->run( phi0 );
+        *M_distToBoundary = this->reinitializerFM()->distance();
+    }
 
-    return distToBoundary;
+    return M_distToBoundary;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS

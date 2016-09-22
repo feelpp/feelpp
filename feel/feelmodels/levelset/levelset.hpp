@@ -328,7 +328,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Utility distances
-    element_levelset_ptrtype distToBoundary();
+    element_levelset_ptrtype distToBoundary( bool forceUpdate = false );
     element_levelset_ptrtype distToMarkedFaces( boost::any const& marker );
     element_levelset_ptrtype distToMarkedFaces( std::initializer_list<boost::any> marker );
 
@@ -544,6 +544,10 @@ private:
     int M_iterSinceReinit;
     // Vector that stores the iterSinceReinit of each time-step
     std::vector<int> M_vecIterSinceReinit;
+
+    //--------------------------------------------------------------------//
+    // Utility distances
+    element_levelset_ptrtype M_distToBoundary;
 
     //--------------------------------------------------------------------//
     // Multi-labels
