@@ -130,6 +130,7 @@ public :
                                        ( post, (post_solve_type), post_solve_type() )
                                          ) )
         {
+#if 0
             auto U = backend()->newBlockVector(_block=solution, _copy_values=false);
             tic();
             auto r = backend( _name=name, _kind=kind, _rebuild=rebuild,
@@ -142,6 +143,7 @@ public :
             toc("monolithic",FLAGS_v>0);
 
             solution.localize(U);
+#endif
             auto sc = this->matrixPtr()->sc();
 #if 0
             this->matrixPtr()->printMatlab("A.m");
@@ -150,15 +152,23 @@ public :
             auto& e3 = solution(2_c);
             auto& e2 = solution(1_c);
             auto& e1 = solution(0_c);
+
+#if 0
             auto S = backend(_name="sc",_rebuild=true)->newMatrix( _test=e3.functionSpace(), _trial=e3.functionSpace(), _pattern=size_type(Pattern::EXTENDED)  );
             auto V = backend(_name="sc")->newVector( _test=e3.functionSpace() );
+#else
+            auto S = form2( _test=e3.functionSpace(), _trial=e3.functionSpace() );
+            auto V = form1( _test=e3.functionSpace() );
+
+#endif
 
             //e3.printMatlab("phat.m");
             sc->condense ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c), S, V );
+            //S->close();V->close();
             tic();
-            backend(_name="sc")->solve( _matrix=S, _rhs=V, _solution=e3);
+            auto r = backend(_name="sc")->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
             toc("sc.solve", FLAGS_v>0);
-            S->close();V->close();
+
 #if 0
             S->printMatlab("S.m");
             V->printMatlab("g.m");
