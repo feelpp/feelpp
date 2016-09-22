@@ -47,9 +47,10 @@ void StaticCondensation<T>::addLocalMatrix ( int* rows, int nrows,
         //cout << "SC adding matrix entry [" << this->M_block_rowcol << "][" << key << "]=" << this->M_local_matrices[this->M_block_rowcol][key] << std::endl;
     }
     //LOG(INFO) << "[" << this->M_block_rowcol << "][" << key << "]=" << this->M_local_matrices[this->M_block_rowcol][key];
-
+#if 0
     this->M_local_rows[this->M_block_rowcol][key] = raw_index_map_t( rows, nrows );
     this->M_local_cols[this->M_block_rowcol][key] = raw_index_map_t( cols, ncols );
+#endif
 
 }
 
@@ -70,9 +71,11 @@ void StaticCondensation<T>::addLocalVector ( int* rows, int nrows,
         this->M_local_vectors[this->M_block_row][K]+=raw_vector_map_t( data, nrows );
         //cout << "SC vec add F entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
     }
+#if 0
     //LOG(INFO) << "F add entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K];
     // cout << "F add entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
     this->M_local_vrows[this->M_block_row][K] = raw_index_map_t( rows, nrows );
+#endif
 }
 
 template class StaticCondensation<double>;

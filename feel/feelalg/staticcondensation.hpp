@@ -81,6 +81,7 @@ public:
     using raw_matrix_map_t = Eigen::Map<local_matrix_t>;
     using raw_index_map_t = Eigen::Map<local_index_t>;
 
+#if 0
     local_vector_t& localVector( size_type K ) { return M_local_vectors[this->M_block_row][K]; }
     local_vector_t const& localVector( size_type K ) const { return M_local_vectors.at(this->M_block_row).at(K); }
 
@@ -94,7 +95,7 @@ public:
     local_index_t const& localRow( block_element_t const& K ) const { return M_local_rows.at(this->M_block_rowcol).at(K); }
     local_index_t& localCol( block_element_t const& K ) { return M_local_cols[this->M_block_rowcol][K]; }
     local_index_t const& localCol( block_element_t const& K ) const { return M_local_cols.at(this->M_block_rowcol).at(K); }
-
+#endif
 private:
     /**
      * unassembled view of the matrix
@@ -144,12 +145,12 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
     auto it = A00K.begin();
     auto en = A00K.end();
 
-    int N = M_local_rows[std::make_pair(0,0)].begin()->second.size() + M_local_rows[std::make_pair(1,0)].begin()->second.size();
-    int N0 = M_local_rows[std::make_pair(0,0)].begin()->second.size();
-    int N1 = M_local_rows[std::make_pair(1,0)].begin()->second.size();
-    int N2 = M_local_cols[std::make_pair(0,2)].begin()->second.size();
+    int N0 = e1.dof()->nLocalDof();
+    int N1 = e2.dof()->nLocalDof();
+    int N = N0+N1;
+    int N2 = e3.dof()->nLocalDof();
     int N3 = N2*e1.mesh()->numLocalTopologicalFaces();
-    cout << "N=" << N << " N0=" << N0 << " N1=" << N1 << " N2=" << N2 << " N3=" << N3 << " ntf=" << e1.mesh()->numLocalTopologicalFaces()<< std::endl;
+    cout << "[staticcondensation] N=" << N << " N0=" << N0 << " N1=" << N1 << " N2=" << N2 << " N3=" << N3 << " ntf=" << e1.mesh()->numLocalTopologicalFaces()<< std::endl;
     local_matrix_t AK( N, N ),A00(N0,N0),A01(N0,N1),A10(N1,N0), A11(N1,N1), A20(N3,N0), A21(N3,N1), A22(N3,N3);
     local_matrix_t BK( N, N3 );
     local_matrix_t CK( N3, N );
@@ -192,35 +193,27 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
                        {
                            auto key2 = std::make_pair(key.first, dKi );
                            auto key3 = std::make_pair(dKi,key.first);
-                           ////LOG(INFO) << "key2=" << key2;
-                           ////LOG(INFO) << "key3=" << key3;
-                           if ( A02K.find(key2) == A02K.end() )
-                           {
-                               ////LOG(INFO) << "A02K not ok";
-                               return;
-                           }
+                           if ( A02K.count(key2) )
+                               BK.block(0, n*N2, N0, N2 ) = A02K.at(key2);
 
-                           if ( A12K.find(key2) == A12K.end() )
-                           {
-                               ////LOG(INFO) << "A12K not ok";
-                               return;
-                           }
-                           BK.block(0, n*N2, N0, N2 ) = A02K.at(key2);
                            if ( A20K.count(key3) )
                                CK.block(n*N2, 0, N2, N0 ) = A20K.at(key3);
+
+                           if ( A12K.count(key2) )
+                               BK.block(N0,n*N2, N1, N2 ) = A12K.at(key2);
+
+
+                           if ( A21K.count(key3) )
+                               CK.block(n*N2, N0, N2, N1 ) = A21K.at(key3);
+
+
+                           auto key4 = std::make_pair(dKi, dKi);
+                           A22.block(n*N2, n*N2, N2, N2 ) = A22K.at(key4);
 
                            if ( F2K.count(dKi) )
                            {
                                F2.segment(n*N2,N2)=F2K.at(dKi);
-
                            }
-                           B0K.block(0, n*N2, N0, N2 ) = A02K.at(key2);
-                           BK.block(N0,n*N2, N1, N2 ) = A12K.at(key2);
-                           if ( A21K.count(key3) )
-                               CK.block(n*N2, N0, N2, N1 ) = A21K.at(key3);
-                           B1K.block(0,n*N2, N1, N2 ) = A12K.at(key2);
-
-                           A22.block(n*N2, n*N2, N2, N2 ) = A22K.at(std::make_pair(dKi,dKi));
 
                            ++n;
                        } );
@@ -295,8 +288,8 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
             //LOG(INFO) << "dofs=" << dofs << std::endl;
         }
 #if 1
-        S->addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
-        V->addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
+        S.addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
+        V.addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
 #else
 
         pdK=DK.lu().solve(DKF);
@@ -353,12 +346,12 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
     auto it = A00K.begin();
     auto en = A00K.end();
 
-    int N = M_local_rows[std::make_pair(0,0)].begin()->second.size() + M_local_rows[std::make_pair(1,0)].begin()->second.size();
-    int N0 = M_local_rows[std::make_pair(0,0)].begin()->second.size();
-    int N1 = M_local_rows[std::make_pair(1,0)].begin()->second.size();
-    int N2 = M_local_cols[std::make_pair(0,2)].begin()->second.size();
+    int N0 = e1.dof()->nLocalDof();
+    int N1 = e2.dof()->nLocalDof();
+    int N = N0+N1;
+    int N2 = e3.dof()->nLocalDof();
     int N3 = N2*e1.mesh()->numLocalTopologicalFaces();
-    cout << "N=" << N << " N0=" << N0 << " N1=" << N1 << " N2=" << N2 << std::endl;
+    cout << "[staticcondensation::localSolve] N=" << N << " N0=" << N0 << " N1=" << N1 << " N2=" << N2 << std::endl;
     local_matrix_t AK( N, N ),A00(N0,N0),A01(N0,N1),A10(N1,N0), A11(N1,N1);
     local_matrix_t BK( N, N3 );
     local_vector_t FK( N );
@@ -391,20 +384,10 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         std::for_each( dK.begin(), dK.end(), [&]( auto dKi )
                        {
                            auto key2 = std::make_pair(key.first, dKi );
-                           //LOG(INFO) << "dKi=" << key2;
-                           if ( A02K.find(key2) == A02K.end() )
-                           {
-                               //LOG(INFO) << "A02K not ok";
-                               return;
-                           }
-
-                           if ( A12K.find(key2) == A12K.end() )
-                           {
-                               //LOG(INFO) << "A12K not ok";
-                               return;
-                           }
-                           BK.block(0, n*N2, N0, N2 ) = A02K.at(key2);
-                           BK.block(N0,n*N2, N1, N2 ) = A12K.at(key2);
+                           if ( A02K.count(key2) )
+                               BK.block(0, n*N2, N0, N2 ) = A02K.at(key2);
+                           if ( A12K.count(key2) )
+                               BK.block(N0,n*N2, N1, N2 ) = A12K.at(key2);
                            ++n;
                        } );
         //LOG(INFO) << "BK=" << BK;
