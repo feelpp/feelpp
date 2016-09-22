@@ -283,7 +283,7 @@ public:
         decltype(auto)
             operator[]( N const& n1 )
             {
-                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*((*this)(n1,0)));
+                return dynamic_cast<decltype(M_fspace[n1]->element()) &>(*((*this)(n1,0)));
             }
         template<typename N>
         decltype(auto)
