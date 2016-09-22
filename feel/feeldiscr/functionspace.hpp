@@ -2545,6 +2545,14 @@ public:
             return M_functionspace->mesh();
         }
 
+        //!
+        //! \return the dof table
+        //!
+        dof_ptrtype dof() const
+            {
+                return M_functionspace->dof();
+            }
+
         /**
          * \return the element-wise square root
          */
