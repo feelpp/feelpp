@@ -444,6 +444,10 @@ protected:
     void updateMarkerCrossedElements();
     void updateMarkerInterface();
 
+    //--------------------------------------------------------------------//
+    // Reinitialization
+    void reinitializeImpl( element_levelset_ptrtype e );
+
 private:
     void initWithMesh(mesh_ptrtype mesh);
     void initFastMarching(mesh_ptrtype const& mesh);

@@ -138,8 +138,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     // When restarting, load self-labels if required
     if( this->doRestart() )
     {
-        bool useLabels = boption( _name="use-multi-labels", _prefix=this->prefix() );
-        if( useLabels )
+        if( M_useMultiLabels )
         {
             fs::path dirPath = ( this->timeStepBDF()->restartPath().empty() )? this->timeStepBDF()->path() : this->timeStepBDF()->restartPath()/this->timeStepBDF()->path();
             int iteration = this->timeStepBDF()->iteration() - 1;
@@ -172,7 +171,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
                 ia >> *labels;
             }
 
-            this->setUseMultiLabels( useLabels, labels );
+            this->setUseMultiLabels( M_useMultiLabels, labels );
         }
     }
 
@@ -228,8 +227,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     phi_init.setConstant( std::numeric_limits<value_type>::max() );
 
     element_levelset_ptrtype labels;
-    bool useLabels = boption( _name="use-multi-labels", _prefix=this->prefix() );
-    if( useLabels )
+    if( M_useMultiLabels )
         labels = this->functionSpace()->elementPtr(); 
 
     this->modelProperties().parameters().updateParameterValues();
@@ -283,7 +281,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
         for( auto const& shape: M_icShapes )
         {
             this->addShape( shape, phi_init );
-            if( useLabels )
+            if( M_useMultiLabels )
                 this->addLabel( shape, *labels );
         }
 
@@ -293,9 +291,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     if( hasInitialValue )
     {
         this->setInitialValue( phi_init );
-        if( useLabels )
+        if( M_useMultiLabels )
         {
-            this->setUseMultiLabels( useLabels, labels );
+            this->setUseMultiLabels( M_useMultiLabels, labels );
             this->updateSelfLabel();
         }
     }
@@ -640,6 +638,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
         M_doSmoothCurvature = boption( _name="smooth-curvature", _prefix=this->prefix() );
 
     M_useGradientAugmented = boption( _name="use-gradient-augmented", _prefix=this->prefix() );
+    M_useMultiLabels = boption( _name="use-multi-labels", _prefix=this->prefix() );
 
     //M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
 }
@@ -1383,59 +1382,26 @@ LEVELSET_CLASS_TEMPLATE_TYPE::applyStrategyBeforeFM( element_levelset_ptrtype ph
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
-{ 
+{
     this->log("LevelSet", "reinitialize", "start");
     this->timerTool("Reinit").start();
 
-    if( !M_reinitializerIsUpdatedForUse )
-        this->createReinitialization();
-
-    bool reinitializeWithDistLabel = false;
-
     auto phi = this->phi();
 
-    if ( M_reinitMethod == LevelSetReinitMethod::FM )
+    bool reinitializeWithDistLabel = false;
+    /* If available, use the fast-marching done by distLabel */
+    if ( M_reinitMethod == LevelSetReinitMethod::FM 
+            && this->useMultiLabels() 
+            && !M_useMarkerDiracAsMarkerDoneFM )
     {
-        /* If available, use the fast-marching done by distLabel */
-        if( this->useMultiLabels() && !M_useMarkerDiracAsMarkerDoneFM )
-        {
-            if( M_doUpdateMultiLabels )
-                this->updateMultiLabels();
-            reinitializeWithDistLabel = true;
-        }
-        else
-        {
-            if ( M_useMarkerDiracAsMarkerDoneFM )
-            {
-                this->mesh()->updateMarker2( *this->markerDirac() );
-            }
+        if( M_doUpdateMultiLabels )
+            this->updateMultiLabels();
 
-            this->applyStrategyBeforeFM( phi );
-
-            // Fast Marching Method
-            boost::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
-                    M_useMarkerDiracAsMarkerDoneFM 
-                    );
-        }
-
-        LOG(INFO)<< "reinit with FMM done"<<std::endl;
-    } // Fast Marching
-
-    else if ( M_reinitMethod == LevelSetReinitMethod::HJ )
-    {
-        //ch.restart();
-        //*phi = *explicitHJ(max_iter, dtau, tol);
-        //LOG(INFO)<<"reinit done in "<<ch.elapsed()<<" s\n";
-    } // Hamilton-Jacobi
-
-    if( reinitializeWithDistLabel )
-    {
         *phi = M_distLabel->distance();
     }
     else
     {
-        M_reinitializer->run( *phi );
-        *phi = M_reinitializer->distance();
+        this->reinitializeImpl(phi);
     }
 
     if( M_useGradientAugmented )
@@ -1448,6 +1414,41 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
     double timeElapsed = this->timerTool("Reinit").stop();
     this->log("LevelSet","reinitialize","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::reinitializeImpl( element_levelset_ptrtype e )
+{ 
+    if( !M_reinitializerIsUpdatedForUse )
+        this->createReinitialization();
+
+    if ( M_reinitMethod == LevelSetReinitMethod::FM )
+    {
+        if ( M_useMarkerDiracAsMarkerDoneFM )
+        {
+            this->mesh()->updateMarker2( *this->markerDirac() );
+        }
+
+        this->applyStrategyBeforeFM( e );
+
+        // Fast Marching Method
+        boost::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
+                M_useMarkerDiracAsMarkerDoneFM 
+                );
+
+        LOG(INFO)<< "reinit with FMM done"<<std::endl;
+    } // Fast Marching
+
+    else if ( M_reinitMethod == LevelSetReinitMethod::HJ )
+    {
+        //ch.restart();
+        //*e = *explicitHJ(max_iter, dtau, tol);
+        //LOG(INFO)<<"reinit done in "<<ch.elapsed()<<" s\n";
+    } // Hamilton-Jacobi
+
+    M_reinitializer->run( *e );
+    *e = M_reinitializer->distance();
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
