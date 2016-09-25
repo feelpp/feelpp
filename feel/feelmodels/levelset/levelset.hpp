@@ -549,6 +549,8 @@ private:
     // Vector that stores the iterSinceReinit of each time-step
     std::vector<int> M_vecIterSinceReinit;
 
+    bool M_restartWithEulerAfterReinit;
+
     //--------------------------------------------------------------------//
     // Utility distances
     element_levelset_ptrtype M_distToBoundary;

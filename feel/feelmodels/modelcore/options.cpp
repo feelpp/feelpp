@@ -393,6 +393,7 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"thickness-interface").c_str(), Feel::po::value<double>(), "thickness of the interface (support for Dirac and Heaviside functions)")
         (prefixvm(prefix,"reinit-method").c_str(), Feel::po::value<std::string>()->default_value( "fm" ), "levelset reinitialization method (fm: fast-marching, hj: hamilton-jacobi)")
         (prefixvm(prefix,"fm-init-first-elts-strategy").c_str(), Feel::po::value<int>()->default_value(1), "strategy to initialize the first elements before the fast marching:\n0 = do nothing\n1 = interface local projection by nodal (phi) and smooth (|grad phi|) projections, smoothing coeff given by option fm-smooth-coeff \n2 = Hamilton Jacoby equation (with parameters given in options)")
+        (prefixvm(prefix,"restart-with-euler-after-reinit").c_str(), Feel::po::value<bool>()->default_value( false ), "restart with Euler (BDF 1) after a reinitialization")
 
         (prefixvm(prefix,"reinit-initial-value").c_str(), Feel::po::value<bool>()->default_value( false ), "reinitialize levelset after setting initial value")
 

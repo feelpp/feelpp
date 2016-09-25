@@ -203,10 +203,18 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     {
             M_vecIterSinceReinit.push_back( M_iterSinceReinit );
     }
-    // Adjust BDF order with iterSinceReinit
-    if( M_iterSinceReinit < M_timeOrder )
+
+    if( M_restartWithEulerAfterReinit )
     {
-        this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+        // Adjust BDF order with iterSinceReinit
+        if( M_iterSinceReinit < M_timeOrder )
+        {
+            this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+        }
+    }
+    else
+    {
+        //TODO
     }
 
     // Init post-process
@@ -629,6 +637,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_useMarkerDiracAsMarkerDoneFM = boption( _name="use-marker2-as-done", _prefix=prefixvm(this->prefix(), "reinit-fm") );
 
     M_strategyBeforeFM = (strategy_before_FM_type) ioption(prefixvm(this->prefix(),"fm-init-first-elts-strategy"));
+
+    M_restartWithEulerAfterReinit = boption( _name="restart-with-euler-after-reinit", _prefix=this->prefix() );
 
     M_reinitInitialValue = boption( _name="reinit-initial-value", _prefix=this->prefix() );
 
@@ -1297,14 +1307,26 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
     if( M_useGradientAugmented )
         M_modGradPhiAdvection->updateTimeStep();
 
-    if( M_iterSinceReinit < M_timeOrder )
+    if( M_restartWithEulerAfterReinit )
     {
-        this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
-        if( M_useGradientAugmented )
-            M_modGradPhiAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
-        //this->timeStepBDF()->setTimeInitial( current_time ); 
-        //this->timeStepBDF()->restart();
-        //this->timeStepBDF()->setTimeInitial( this->timeInitial() );
+        if( M_iterSinceReinit < M_timeOrder )
+        {
+            this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+            if( M_useGradientAugmented )
+                M_modGradPhiAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+            //this->timeStepBDF()->setTimeInitial( current_time ); 
+            //this->timeStepBDF()->restart();
+            //this->timeStepBDF()->setTimeInitial( this->timeInitial() );
+        }
+    }
+    /* else we reinitialize previous steps and keep the same order */
+    else if( M_hasReinitialized )
+    {
+        for( int p = 1; p < std::min( this->timeStepBDF()->timeOrder(), this->timeStepBDF()->iteration()+1 ); ++p )
+        {
+            Feel::cout << "Reinitialize unknown " << p << "\n";
+            this->reinitializeImpl( this->timeStepBDF()->unknownPtr(p) );
+        }
     }
 }
 

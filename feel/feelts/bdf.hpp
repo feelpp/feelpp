@@ -312,6 +312,7 @@ public:
 
     //! Return a vector with the last n state vectors
     element_type& unknown( int i );
+    unknown_type unknownPtr( int i );
 
     element_type const& prior() const { return *M_unknowns[0]; }
 
@@ -688,6 +689,14 @@ Bdf<SpaceType>::unknown( int i )
 {
     DVLOG(2) << "[Bdf::unknown] id: " << i << " l2norm = " << M_unknowns[i]->l2Norm() << "\n";
     return *M_unknowns[i];
+}
+
+template <typename SpaceType>
+typename Bdf<SpaceType>::unknown_type
+Bdf<SpaceType>::unknownPtr( int i )
+{
+    DVLOG(2) << "[Bdf::unknownPtr] id: " << i << " l2norm = " << M_unknowns[i]->l2Norm() << "\n";
+    return M_unknowns[i];
 }
 
 
