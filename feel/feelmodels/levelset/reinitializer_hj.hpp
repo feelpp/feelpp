@@ -276,7 +276,14 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::ADVECTIONHJ_CLASS_TEMPLATE_TYPE::AdvectionH
         std::string const& prefix )
     : super_type( prefix )
 {
+    this->setRestart( false );
+    this->setStationary( false );
+    this->setTimeInitial( doption(_name="bdf.time-initial", _prefix=this->prefix()) ); 
+    this->setTimeFinal( doption(_name="bdf.time-final", _prefix=this->prefix()) );
+    this->setTimeStep( doption(_name="bdf.time-step", _prefix=this->prefix()) );
+
     super_type::build( space );
+    this->timeStepBase()->setSaveInFile( false );
 }
 
 REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS

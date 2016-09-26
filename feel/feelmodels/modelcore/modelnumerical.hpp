@@ -145,6 +145,9 @@ class ModelNumerical : public ModelAlgebraic
         ModelMeasuresEvaluatorContext const& postProcessMeasuresEvaluatorContext() const { return M_postProcessMeasuresEvaluatorContext; }
         ModelMeasuresEvaluatorContext & postProcessMeasuresEvaluatorContext() { return M_postProcessMeasuresEvaluatorContext; }
 
+    protected:
+        void setTimeFinal(double v)  { M_timeFinal=v; }
+        void setTimeStep(double v)  { M_timeStep=v; }
 
     private :
 
