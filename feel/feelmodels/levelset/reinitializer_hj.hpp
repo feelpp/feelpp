@@ -203,7 +203,8 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
         auto phi_reinit = M_advectionHJ->fieldSolutionPtr();
         auto phi_reinito = M_advectionHJ->timeStepBDF()->unknowns()[1];
 
-        auto phi_sign = idv(phi_reinit) / vf::max( vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit))), 0.92 );
+        //auto phi_sign = idv(phi_reinit) / vf::max( vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit))), 0.92 );
+        auto phi_sign = idv(phi_reinit) / vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit)));
 
         auto H_reinit = vf::project(
                 space, 
@@ -221,7 +222,8 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
         // Update advection source
         M_advectionHJ->updateSourceAdded( Sign );
         // Update advection velocity
-        auto beta = Sign * trans(gradv(phi_reinit)) / vf::max( vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit))), 0.92 );
+        //auto beta = Sign * trans(gradv(phi_reinit)) / vf::max( vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit))), 0.92 );
+        auto beta = Sign * trans(gradv(phi_reinit)) / vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit)));
         M_advectionHJ->updateAdvectionVelocity( beta );
 
         // Solve
