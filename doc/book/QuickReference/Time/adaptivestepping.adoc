@@ -1,0 +1,175 @@
+= Time adaptation strategy for incompressible Navier Stokes equations and convection-diffusion equations
+:toc:
+:toc-placement: macro
+:toclevels: 2
+
+toc::[]
+
+The following strategy, proposed in <<kay>>, can be adapted to any first order in time PDE. We focus here on the Convection-Diffusion equation and the Navier-Stokes equations to illustrate the scheme.
+
+The strategy is 2nd order : it is based on the Crank-Nicolson (CN) implicit scheme coupled with the Adam-Bashforth order 2 (AB2) explicit scheme to adapt time steps. The particularity is that the scheme works with the discrete rate of change of the field of interest rather than the field itself in order to get a more accurate/stable and adaptive scheme, see <<kay>>.
+
+==  Notations
+
+Denote $$\Omega \subset \mathbb{R}^d, d=1,2,3$$ the computation domain and $$\partial \Omega$$ its boundary. $$\partial \Omega = \partial \Omega_D \cup \partial \Omega_N $$ which correspond to the Dirichlet and Neumann boundaries
+
+We wish to solve equations on the time interval $$[0,T]$$ divided into $$N$$ intervals, we denote $$\{t_n\}_{n=1,\ldots,N}$$ the interval discretisation points and $$\{k_n\}_{n=2,\ldots,N}$$ the time steps. We have $$k_{n+1}=t_{n+1}-t_{n}$$.
+
+ - $$\mathbf{n}$$: the unit outward normal to $$\partial \Omega$$
+ 
+ - $$(\cdot,\cdot)$$ : the $$L^2$$ scalar product in $$\Omega$$
+ 
+ - $$(\cdot,\cdot)_{\partial \Omega}$$ : the $$L^2$$ scalar product on $$\partial \Omega$$
+
+ 
+== Convection-Diffusion equation
+
+
+
+== Navier-Stokes equations
+
+Denote
+ 
+ - $$\mu$$ : dynamic viscosity [SI $$Pa.s = kg/(s.m)$$]
+ 
+ - $$\rho$$ : density [SI $$kg/m^3$$]
+ 
+ - $$\mathbf{f}$$ the volumic force density
+ 
+ - $$\mathbf{u}$$ the velocity
+ 
+ - $$p$$ the pressure
+ 
+ - $$D(\mathbf{u})=\frac{1}{2}\left(\nabla \mathbf{u}+\nabla \mathbf{u}^T\right)$$ the deformation tensor.
+ 
+ - $$\sigma(\mathbf{u},p)=-p I + 2\mu D(\mathbf{u})$$ the newtonian stress tensor
+
+
+We consider the Navier-Stokes equations, namely find $$(\mathbf{u},p)$$ such that 
+
+$$
+\begin{split}
+\rho \left( \frac{\partial \mathbf{u}}{\partial t} + \mathbf{u} \cdot \nabla \mathbf{u} \right) - \mu \nabla^2 \mathbf{u} + \nabla p = \mathbf{f}\ \text{ and } \nabla \cdot \mathbf{u} = 0
+\end{split}
+$$
+
+completed with Dirichlet and Neumann boundary conditions
+
+$$
+\sigma(\mathbf{u},p)\cdot \mathbf{n} = \mathbf{g}_N \text{ on } \partial \Omega_N, \quad \mathbf{u} = \mathbf{g}_D \text{ on } \partial \Omega_D
+$$
+
+We denote $$(\mathbf{u}^n,p^n, \mathbf{d}^n)$$ the velocity, pressure and discrete acceleration at time $$n$$. We start by writing the NS equations using the CN scheme. We first extrapolate the convection velocity using a 2nd order formula
+
+$$
+\mathbf{w}^{n+1} = \left(1+\frac{k_{n+1}}{k_n}\right)\mathbf{u}^n-\frac{k_{n+1}}{k_n} \mathbf{u}^{n-1}
+$$
+
+then we find $$(\mathbf{u}^{n+1},p^{n+1})$$ such that for all $$(\mathbf{v},q)$$ :
+
+$$
+\begin{split}
+(2 \rho \mathbf{u}^{n+1}/k_{n+1},v) + ( \mu \nabla \mathbf{u}^{n+1}, \nabla v)  + ( \rho  \mathbf{w}^{n+1} \cdot \nabla \mathbf{u}^{n+1} , v)  \\
+- ( p^{n+1}, \nabla \cdot v )  - (  \nabla \cdot \mathbf{u}^{n+1}, q ) + \\ ( \sigma(\mathbf{u}^{n+1}, p^{n+1}) \cdot \mathbf{n},v)_{\partial \Omega} = (2\rho \mathbf{u}^{n}/k_{n+1},v) + (\frac{\partial \mathbf{u}^n}{\partial t}, v) +( \mathbf{f}, v)
+\end{split}
+$$
+
+where :
+
+$$
+\frac{\partial \mathbf{u}^n}{\partial t}:=\mu \Delta \mathbf{u}^n - \mathbf{u}^n\cdot \nabla \mathbf{u}^n - \nabla p^n
+$$
+which reads :
+
+$$
+\begin{split}
+(2 \rho \mathbf{u}^{n+1}/k_{n+1},v) + ( \mu \nabla \mathbf{u}^{n+1}, \nabla v)+
+ ( \rho  \mathbf{w}^{n+1} \cdot \nabla \mathbf{u}^{n+1} , v) - ( p^{n+1}, \nabla \cdot v )  -  \\
+ (  \nabla \cdot \mathbf{u}^{n+1}, q )  = (2\rho \mathbf{u}^{n}/k_{n+1},v) + (\frac{\partial \mathbf{u}^n}{\partial t}, v) +( f, v) + (\mathbf{g}^{n+1},v).
+ \end{split}
+$$
+
+We rewrite the previous problem with the discrete acceleration
+
+$$
+\begin{array}{rl}
+\mathbf{d}^n &=\frac{\mathbf{u}^{n+1}-\mathbf{u}^n}{k_{n+1}},\\
+\mathbf{u}^{n+1} &= \mathbf{u}^n+k_{n+1} \mathbf{d}^n.
+\end{array}
+$$
+It reads :
+
+$$
+\begin{split}
+(\rho k_{n+1} \mathbf{d}^{n}/k_{n+1},v) + ( \mu \nabla k_{n+1} \mathbf{d}^{n}, \nabla v)  +  ( \rho k_{n+1}  \mathbf{w}^{n+1} \cdot \nabla \mathbf{d}^{n} , v) - \\
+ ( p^{n+1}, \nabla \cdot v )  - (  k_{n+1} \nabla \cdot \mathbf{d}^{n}, q ) =\\
+ - ( \mu \nabla u^{n}, \nabla v)  - ( \rho   \mathbf{w}^{n+1} \cdot \nabla u^{n} , v) + 
+  (\frac{\partial \mathbf{u}^n}{\partial t}, v) +( f, v) + (g^{n+1},v)_{\partial \Omega} + (\nabla \cdot \mathbf{u}^n, q).
+\end{split}
+$$
+
+
+Once $$\mathbf{d}^n$$ is computed, we update $$\mathbf{u}^{n+1}$$ and $$\frac{\partial \mathbf{u}^{n+1}}{\partial t}$$ as follows :
+
+$$
+\begin{array}{rl}
+\mathbf{u}^{n+1} &= \mathbf{u}^n+k_{n+1} \mathbf{d}^n\\
+\frac{\partial \mathbf{u}^{n+1}}{\partial t} &= 2\mathbf{d}^n - \frac{\partial \mathbf{u}^{n}}{\partial t}.
+\end{array}
+$$
+
+Then using the second order Adams-Baschforth scheme :
+
+$$
+\mathbf{u}^{n+1}_{AB2} = \mathbf{u}^n + \frac{k_{n+1}}{2} \left[ (1+k_{n+1}/k_n)\frac{\partial \mathbf{u}^{n}}{\partial t} + \frac{k_{n+1}}{k_n}\frac{\partial \mathbf{u}^{n-1}}{\partial t}\right].
+$$
+
+We compute the error between $$\mathbf{u}^{n+1}$$ and $$\mathbf{u}^{n+1}_{AB2}$$ :
+
+$$
+e^{n+1} = \frac{||\mathbf{u}^{n+1}-\mathbf{u}^{n+1}_{AB2}||}{3 (1+k_{n+1}/k_n)},
+$$
+
+that is used to adjust the time step :
+
+$$
+k_{n+2}=k_{n+1} \left( \frac{\varepsilon}{e^{n+1}} \right)^{1/3}.
+$$
+
+
+Features:
+
+ - easily adapted to convection-diffusion equations, solid mechanics (introduce velocity as an auxiliary field),
+ 
+ - simple decision per time step to select or not $$k_{n+2}$$, simply reject $$k_{n+2}$$ if $$e^{n+1} > \alpha \varepsilon$$ with $$\alpha < 1$$ (in the code $$\alpha=0.7$$ and re-run current step $$n+1$$ with small time-step :
+ 
+$$
+ k_{n+1}=k_{n+1}\left( \frac{\varepsilon}{e^{n+1}} \right)^{1/3}
+$$
+
+Issues:
+
+ 1. starting this algorithm and initial time step, see <<kay>>,
+ 
+ 2. the ringing effect which prohibits large time steps (or cancellation due to change of sign of the acceleration): averaging every $$n^*$$ iterations.
+ 
+In order to fix the ringing effect, select a frequency $$n^*$$ at which velocity and acceleration are averaged as follows:
+save at $$t^*=t_n$$, $$\mathbf{u}^*=\mathbf{u}^n$$, $$k^*=\frac{k_n}{2}$$, and do at $$t=t_n$$
+
+$$
+t_n = t_n+k^*,\quad k_n=k^*,\quad \mathbf{u}^n=\frac{1}{2}\left(\mathbf{u}^*+\mathbf{u}^{n-1}\right),\quad \frac{\partial \mathbf{u}^n}{\partial t}=\frac{1}{2}\left(\frac{\partial \mathbf{u}^n}{\partial t}+\frac{\partial \mathbf{u}^{n-1}}{\partial t}\right)
+$$
+
+and at 
+$$t=t_{n+1}$$
+
+$$
+t_{n+1} = t^*+\frac{k_{n+1}}{2},\quad k_{n+1}=k^*+\frac{k_{n+1}}{2},\quad \mathbf{u}^{n+1}=\mathbf{u}^*+\frac{1}{2}k_{n+1} \mathbf{d}^n,\quad \frac{\partial \mathbf{u}^{n+1}}{\partial t}=\mathbf{d}^n
+$$
+
+
+> **Warning** Denote $$h$$ the trace of the velocity on Dirichlet boundaries depending on space and time, i.e. $$\mathbf{u}(x,t) = h(x,t) \quad \forall x \in \partial \Omega_D \mbox{ and } t > 0$$, then note that in general $$h(x,\frac{t^n+t^{n-1}}{2}) \neq \frac{1}{2}(h(x, t^n) + h(x,t^{n-1}))$$ which means that we need to update the Dirichlet boundary conditions for $$\mathbf{u}^n$$ and $$\mathbf{u}^{n+1}$$ after averaging using say `on()`.
+
+[bibliography]
+.Bibliography
+ - [[[kay]]] Adaptive time-stepping for incompressible flow part ii: Navier-stokes equations, DA Kay, PM Gresho, DF Griffiths, DJ Silvester - SIAM Journal on Scientific Computing, 2010 

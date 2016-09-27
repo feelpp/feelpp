@@ -1,0 +1,7 @@
+= Fluid Structure Interaction Models
+
+The Fluid Structure models are formed from the combination of a link:../Solid/README.adoc[Solid model] and a link:../Fluid/README.adoc[Fluid model].
+
+== Models
+
+{% include "FSIModel.adoc" %}

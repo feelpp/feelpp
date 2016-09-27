@@ -141,6 +141,9 @@
 /* Define to 1 if you have harts. */
 #cmakedefine FEELPP_HAS_HARTS
 
+/* Define to 1 if you have ipopt. */
+#cmakedefine FEELPP_HAS_IPOPT
+
 /* Define to 1 if you have nlopt. */
 #cmakedefine FEELPP_HAS_NLOPT
 

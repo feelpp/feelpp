@@ -1,14 +1,18 @@
 
 #define BOOST_TEST_MODULE test_submesh1d
+#include <feel/feel.hpp>
 #include <testsuite/testsuite.hpp>
 #include <feel/feelvf/vf.hpp>
-
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/product.hpp>
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( test_submesh1d )
 
-BOOST_AUTO_TEST_CASE( test_submesh11d1 )
+BOOST_AUTO_TEST_CASE( test_submesh1d1 )
 {
     using namespace Feel;
     

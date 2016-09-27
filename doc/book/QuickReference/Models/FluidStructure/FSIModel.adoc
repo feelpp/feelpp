@@ -1,0 +1,59 @@
+== Fluid structure coupling conditions
+
+In order to have a correct fluid-structure model, we need to add to the solid model and the fluid model equations some coupling conditions :
+
+
+$$
+  \frac{\partial \boldsymbol{\eta_{s}} }{\partial t} - \boldsymbol{u}_f \circ \mathcal{A}_{f}^t
+  = \boldsymbol{0} , \quad \text{ on } \Gamma_{fsi}^* \times \left[t_i,t_f \right] \quad \boldsymbol{(1)}
+$$
+
+$$
+  \boldsymbol{F}_{s} \boldsymbol{\Sigma}_{s} \boldsymbol{n}^*_s + J_{\mathcal{A}_{f}^t} \hat{\boldsymbol{\sigma}}_f \boldsymbol{F}_{\mathcal{A}_{f}^t}^{-T} \boldsymbol{n}^*_f
+  = \boldsymbol{0} , \quad \text{ on } \Gamma_{fsi}^* \times \left[t_i,t_f \right] \quad \boldsymbol{(2)}
+$$
+
+$$
+  \boldsymbol{\varphi}_s^t  - \mathcal{A}_{f}^t = \boldsymbol{0} , \quad \text{ on } \Gamma_{fsi}^* \times \left[t_i,t_f \right] \quad \boldsymbol{(3)}
+$$
+
+
+$$\boldsymbol{(1)}, \boldsymbol{(2)}, \boldsymbol{(3)}$$ are the fluid-struture coupling conditions, respectively velocities continuity, constraint continuity and geometric continuity. 
+
+=== Fluid structure coupling conditions with 1D reduced model
+
+For the link:FSIModel.adoc#_fluid_structure_coupling_conditions[coupling conditions], between the 2D fluid and 1D structure, we need to modify the original ones $$ \boldsymbol{(1)},\boldsymbol{(2)}, \boldsymbol{(3)} $$ by
+
+$$
+\dot{\eta}_s \boldsymbol{e}_r - \boldsymbol{u}_f = \boldsymbol{0} \quad \boldsymbol{(1.2)}
+$$
+
+$$
+f_s  + \left(J_{\mathcal{A}_f^t} \boldsymbol{F}_{\mathcal{A}_f^t}^{-T} \hat{\boldsymbol{\sigma}}_f \boldsymbol{n}^*_f\right) \cdot \boldsymbol{e}_r
+=  0 \quad \boldsymbol{(2.2)} 
+$$
+
+$$
+\boldsymbol{\varphi}_s^t  - \mathcal{A}_f^t = \boldsymbol{0} \quad \boldsymbol{(3.2)} 
+$$
+
+=== Variables, symbols and units
+|===
+| Notation | Quantity | Unit 
+|$$\boldsymbol{u}_f$$|fluid velocity|$$m/s$$
+|$$\boldsymbol{\sigma}_f$$|fluid stress tensor|$$N/m^2$$
+|$$\boldsymbol{\eta}_s$$|displacement| $$m$$
+|$$\boldsymbol{F}_s$$|deformation gradient|dimensionless
+|$$\boldsymbol{\Sigma}_s$$| second Piola-Kirchhoff tensor | $$N/m^2$$
+|$$\mathcal{A}_f^t$$|Arbitrary Lagrangian Eulerian ( ALE ) map|dimensionless
+|===
+
+and 
+
+$$
+\boldsymbol{F}_{\mathcal{A}_f^t} = \boldsymbol{\mathrm{x}}^* + \nabla \mathcal{A}_f^t
+$$ 
+
+$$
+J_{\mathcal{A}_f^t} = det(\boldsymbol{F}_{\mathcal{A}_f^t})
+$$
