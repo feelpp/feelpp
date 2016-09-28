@@ -475,7 +475,7 @@ void
 MixedPoisson<Dim, Order, G_Order>::solve()
 {
     tic();
-    
+
 	// copy constant parts of the matrix
     MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
     M_modelProperties->parameters().updateParameterValues();
@@ -483,15 +483,24 @@ MixedPoisson<Dim, Order, G_Order>::solve()
     this->updateConductivityTerm();
     this->assembleF();
 
+
     auto U = M_ps->element();
+    //auto& e = U(0_c);
+#if 0
     M_U = M_backend->newBlockVector(_block=U, _copy_values=false);
     M_A->close();
     M_F->close();
     M_backend->solve(_matrix=M_A, _rhs=M_F, _solution=M_U);
-	toc("solve");
-    
-	// Extract information from the solution
+    // Extract information from the solution
 	U.localize(M_U);
+
+#else
+    auto bbf = blockform2( *M_ps, M_A_cst );
+    auto blf = blockform1( *M_ps, M_F );
+    bbf.solve( _solution=U, _rhs=blf );
+#endif
+	toc("MixedPoisson::solve");
+
     M_up = U(0_c);
     M_pp = U(1_c);
     for( int i = 0; i < M_integralCondition; i++ )
@@ -513,7 +522,7 @@ template<int Dim, int Order, int G_Order>
 void
 MixedPoisson<Dim, Order, G_Order>::assembleF()
 {
-	
+
     this->assembleFstd();
     for( int i = 0; i < M_integralCondition; i++ )
         this->assembleIBCRHS(i);
