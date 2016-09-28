@@ -44,8 +44,10 @@ makeMixedPoissonOptions( std::string prefix = "mixedpoisson" )
     ( prefixvm( prefix, "p_exact").c_str(), po::value<std::string>()->default_value( "1.0" ), "p exact" )
         ( prefixvm( prefix, "conductivityNL_json").c_str(), po::value<std::string>()->default_value( "condNL" ), "key for non linear conductivity in json (depends on potential p)" )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
+        ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")
         ;
     mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
+    mpOptions.add ( backend_options( "sc" ) );
     return mpOptions;
 }
 
@@ -485,24 +487,22 @@ MixedPoisson<Dim, Order, G_Order>::solve()
 
 
     auto U = M_ps->element();
-    //auto& e = U(0_c);
-#if 0
-    M_U = M_backend->newBlockVector(_block=U, _copy_values=false);
-    M_A->close();
-    M_F->close();
-    M_backend->solve(_matrix=M_A, _rhs=M_F, _solution=M_U);
-    // Extract information from the solution
-	U.localize(M_U);
 
-#else
-    auto bbf = blockform2( *M_ps, M_A_cst );
-    auto blf = blockform1( *M_ps, M_F );
-    bbf.solve( _solution=U, _rhs=blf );
-#endif
-	toc("MixedPoisson::solve");
+    auto bbf = blockform2(*M_ps, M_A);
+    auto blf = blockform1(*M_ps, M_F);
+    tic();
+    bbf.solve(_solution=U, _rhs=blf);
+    toc("MixedPoisson : static condensation");
+
+    toc("solve");
+
+	// Extract information from the solution
+    if ( !boption(prefixvm(M_prefix, "use-sc")) )
+        U.localize(M_U);
 
     M_up = U(0_c);
     M_pp = U(1_c);
+
     for( int i = 0; i < M_integralCondition; i++ )
         M_mup.push_back(U(3_c,i));
 
@@ -557,6 +557,8 @@ MixedPoisson<Dim, Order, G_Order>::assembleSTD()
     // stabilisation parameter
     auto tau_constant = cst(doption(prefixvm(M_prefix, "tau_constant")));
 
+    auto sc_param = boption(prefixvm(M_prefix, "use-sc")) ? 0.5 : 1.0;
+
     auto gammaMinusIntegral = complement(boundaryfaces(M_mesh),[this]( auto const& e ) {
             for( auto marker : this->M_integralMarkersList)
             {
@@ -575,7 +577,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleSTD()
     bbf( 0_c, 2_c ) += integrate(_range=gammaMinusIntegral,
                                  _expr=idt(phat)*trans(id(v))*N());
 
-
+#if 0
     // -(j, grad(w))
     bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh),_expr=(-grad(w)*idt(u)));
 
@@ -586,7 +588,10 @@ MixedPoisson<Dim, Order, G_Order>::assembleSTD()
                                  _expr=(rightface(id(w))*rightfacet(trans(idt(u))*N())) );
     bbf( 1_c, 0_c ) += integrate(_range=boundaryfaces(M_mesh),
                                  _expr=(id(w)*trans(idt(u))*N()));
-
+#else
+    // (-div(j),w)
+    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=-(id(w)*divt(u)));
+#endif
 
     // <tau p, w>_Gamma
     bbf( 1_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
@@ -608,7 +613,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleSTD()
                                  ( leftface( pow(idv(H),M_tau_order)*id(w) )+
                                    rightface( pow(idv(H),M_tau_order)*id(w) )));
     bbf( 1_c, 2_c ) += integrate(_range=gammaMinusIntegral,
-                                 _expr=-tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
+                                 _expr=tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
 
 
     // <j.n,mu>_Omega/Gamma
@@ -617,7 +622,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleSTD()
                                                 rightfacet(trans(idt(u))*N())) ) );
 
 
-    // <tau p, mu>_Gamma_N
+    // <tau p, mu>_Omega/Gamma
     bbf( 2_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
                                  _expr=tau_constant * id(l) * ( leftfacet( pow(idv(H),M_tau_order)*idt(p) )+
                                                                 rightfacet( pow(idv(H),M_tau_order)*idt(p) )));
@@ -625,7 +630,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleSTD()
 
     // <-tau phat, mu>_Omega/Gamma
     bbf( 2_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=-tau_constant * idt(phat) * id(l) * ( leftface( pow(idv(H),M_tau_order) )+
+                                 _expr=-sc_param*tau_constant * idt(phat) * id(l) * ( leftface( pow(idv(H),M_tau_order) )+
                                                                              rightface( pow(idv(H),M_tau_order) )));
 
     // BC
