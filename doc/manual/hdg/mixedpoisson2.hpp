@@ -477,9 +477,15 @@ void
 MixedPoisson<Dim, Order, G_Order>::solve()
 {
     tic();
-    
+
 	// copy constant parts of the matrix
-    MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
+    // MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
+    auto bbf_cst = blockform2(*M_ps, M_A_cst);
+    auto bbf = blockform2(*M_ps, M_A);
+    bbf.zero();
+    bbf += bbf_cst;
+    auto blf = blockform1(*M_ps, M_F);
+
     M_modelProperties->parameters().updateParameterValues();
 
     this->updateConductivityTerm();
@@ -492,12 +498,10 @@ MixedPoisson<Dim, Order, G_Order>::solve()
     M_A->close();
     M_F->close();
     tic();
-    M_backend->solve(_matrix=M_A, _rhs=M_F, _solution=M_U);
+    //M_backend->solve(_matrix=M_A, _rhs=M_F, _solution=M_U);
     toc("MixedPoisson : regular solve");
     //#else
 
-    auto bbf = blockform2(*M_ps, M_A);
-    auto blf = blockform1(*M_ps, M_F);
     tic();
     bbf.solve(_solution=U, _rhs=blf);
     toc("MixedPoisson : static condensatoin");
