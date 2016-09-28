@@ -121,7 +121,7 @@ public:
     using blockform2_ptrtype = boost::shared_ptr<blockform2_type>;
     using blockform1_type = BlockLinearForm<ProductSpaces< Vh_ptr_t, Wh_ptr_t, Mh_ptr_t > &>;
     using blockform1_ptrtype = boost::shared_ptr<blockform1_type>;
- 
+
    //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
@@ -309,7 +309,7 @@ Hdg<Dim, OrderP>::convergence()
 		auto a = blockform2( ps );
 		auto rhs = blockform1( ps );
 
-	/*	
+	/*
         // build the big matrix associated to bilinear form over Vh x Wh x Mh
 #if 0
         auto A = backend()->newBlockMatrix(_block=csrGraphBlocks(Vh,Wh,Mh));
@@ -332,16 +332,16 @@ Hdg<Dim, OrderP>::convergence()
         hdg_vec(1,0) = backend()->newVector( Wh );
         hdg_vec(2,0) = backend()->newVector( Mh );
         auto F = backend()->newBlockVector(_block=hdg_vec, _copy_values=false);
-		
+
         auto hdg_sol = vectorBlocks(sigmap,up,uhatp);
         auto U = backend()->newBlockVector(_block=hdg_sol, _copy_values=false);
-		
+
     	assemble_A_and_F( A, F, Vh, Wh, Mh, u_exact, sigma_exact, f );
-	*/	
+	*/
 
 
 
-    // Building the RHS	
+    // Building the RHS
     M0h_ptr_t M0h = Pdh<0>( face_mesh,true );
     auto H     = M0h->element( "H" );
     if ( ioption("hface" ) == 0 )
@@ -352,7 +352,7 @@ Hdg<Dim, OrderP>::convergence()
         H.on( _range=elements(face_mesh), _expr=cst(mesh->hAverage()) );
     else
         H.on( _range=elements(face_mesh), _expr=h() );
-	
+
 	rhs(1_c) += integrate(_range=elements(mesh),
                       _expr=trans(f)*id(w));
 
@@ -369,7 +369,7 @@ Hdg<Dim, OrderP>::convergence()
         rhs(2_c) += integrate(_range=markedfaces(mesh,"Tip"),
                           _expr=trans(id(m))*(load*N()));
     }
-	
+
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                       _expr=trans(id(m))*u_exact);
 
@@ -381,31 +381,31 @@ Hdg<Dim, OrderP>::convergence()
     a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
 
 	a( 0_c, 1_c ) += integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(v)));
- 
+
     a( 0_c, 2_c) += integrate(_range=internalfaces(mesh),
                                 _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
                                          trans(idt(uhat))*rightface(id(v)*N())) );
     a( 0_c, 2_c) += integrate(_range=boundaryfaces(mesh),
                                 _expr=-trans(idt(uhat))*(id(v)*N()));
- 
+
     a( 1_c, 0_c) += integrate(_range=elements(mesh),
                                 _expr=(trans(id(w))*divt(sigma)));
 	// begin dp: here we need to put the projection of u on the faces
     a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=-tau_constant *
     	         ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
         	       rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
- 
+
     a( 1_c, 1_c) += integrate(_range=boundaryfaces(mesh),
     			_expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
- 
+
     a( 1_c, 2_c) += integrate(_range=internalfaces(mesh), _expr=tau_constant *
              ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
                rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )));
- 
+
     a( 1_c, 2_c) += integrate(_range=boundaryfaces(mesh),
              _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
- 
- 
+
+
     a( 2_c, 0_c) += integrate(_range=internalfaces(mesh),
              _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
                      rightfacet(idt(sigma)*N())) ) );
@@ -416,11 +416,11 @@ Hdg<Dim, OrderP>::convergence()
     a( 2_c, 2_c) += integrate(_range=internalfaces(mesh),
 	    _expr=cst(0.5)*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
                     rightface( pow(idv(H),M_tau_order) )));
-    
+
    	a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,{"Dirichlet"}),
                                 _expr=trans(idt(uhat)) * id(m) );
-    
-    
+
+
 	a( 2_c, 0_c) += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
                         		_expr=( trans(id(m))*(idt(sigma)*N()) ));
 
@@ -434,7 +434,7 @@ Hdg<Dim, OrderP>::convergence()
 
 
 
-		 
+
 	toc("matrices",true);
 
 	// a.close();
@@ -442,12 +442,12 @@ Hdg<Dim, OrderP>::convergence()
 
     tic();
     // backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=U );
-    // hdg_sol.localize(U);	
+    // hdg_sol.localize(U);
 	auto U = ps.element();
-	a.solve( _solution=U, _rhs=rhs);
+	a.solve( _solution=U, _rhs=rhs, _rebuild=true);
     toc("solve",true);
 	cout << "[Hdg] solve done" << std::endl;
-		
+
 	auto sigmap = U(0_c);
 	auto up = U(1_c);
  	auto uhatp = U(2_c);
@@ -455,7 +455,7 @@ Hdg<Dim, OrderP>::convergence()
 	Feel::cout << "sigma: \t" << sigmap << std::endl;
 	Feel::cout << "u: \t" << up << std::endl;
 	Feel::cout << "uhat: \t" << uhatp << std::endl;
-			
+
     // ****** Compute error ******
     tic();
         bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
@@ -532,7 +532,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     auto w     = Wh->element( "w" );
     auto uhat  = Mh->element( "uhat" );
     auto m     = Mh->element( "m" );
-	
+
     auto H     = M0h->element( "H" );
     if ( ioption("hface" ) == 0 )
         H.on( _range=elements(face_mesh), _expr=cst(mesh->hMax()) );
@@ -542,7 +542,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
         H.on( _range=elements(face_mesh), _expr=cst(mesh->hAverage()) );
     else
         H.on( _range=elements(face_mesh), _expr=h() );
-	
+
 
     // Building the RHS
 
