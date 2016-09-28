@@ -137,7 +137,7 @@ public:
         Element& operator=( Element const& ) = default;
         Element& operator=( Element && ) = default;
 
-        Element( functionspace_type X ): super(X),  M_fspace(X) {}
+        Element( functionspace_type& X ): super(X),  M_fspace(X) {}
 
         underlying_element_type&
         operator[]( int n1 )
@@ -149,9 +149,10 @@ public:
             {
                 return dynamic_cast<underlying_element_type const&>(*((*this)(n1,0)));
             }
-        functionspace_type functionSpace() { return M_fspace; }
+        functionspace_type& functionSpace() { return M_fspace; }
+        functionspace_type const& functionSpace() const { return M_fspace; }
         //void zero() { super::zero(); }
-        functionspace_type M_fspace;
+        functionspace_type& M_fspace;
     };
     using element_type = Element;
     using element_ptrtype = boost::shared_ptr<element_type>;
@@ -197,7 +198,7 @@ public:
         Element& operator=( Element const& ) = default;
         Element& operator=( Element && ) = default;
 
-        Element( functionspace_type X ): super(X),  M_fspace(X) {}
+        Element( functionspace_type& X ): super(X),  M_fspace(X) {}
 
         template<typename N>
         decltype(auto)
@@ -226,9 +227,10 @@ public:
                 return dynamic_cast<decltype(M_fspace[n1]->element())&>(*(super::operator()(int(n1),0)));
             }
 
-        functionspace_type functionSpace() { return M_fspace; }
+        functionspace_type& functionSpace() { return M_fspace; }
+        functionspace_type const& functionSpace() const { return M_fspace; }
         //void zero() { super::zero(); }
-        functionspace_type M_fspace;
+        functionspace_type& M_fspace;
     };
 
     Element element() { Element u( *this ); return u; }
@@ -285,17 +287,19 @@ public:
             {
                 return dynamic_cast<decltype(M_fspace[n1]->element()) &>(*((*this)(n1,0)));
             }
+#if 0
         template<typename N>
-        decltype(auto)
+        //decltype(auto)
+        auto const &
             operator()( N const& n1, int i = 0 ) const
             {
                 return hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(M_fspace[n1])>>{},
-                                 [&] (auto&& x) {
-                                     return dynamic_cast<decltype((*M_fspace[n1])[i]->element()) const&>(x);
+                                 [&] (auto&& x, auto& s) {
+                                     return dynamic_cast<decltype((*s)[i]->element()) const&>(x);
                                  },
-                                 [&] (auto&& x){
-                                     return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(x);
-                                 })(*(super::operator()(int(n1)+i,0)));
+                                 [&] (auto&& x, auto& s){
+                                     return dynamic_cast<decltype(s->element()) const&>(x);
+                                 })(*(super::operator()(int(n1)+i,0)), M_fspace[n1] );
 
             }
 
@@ -303,18 +307,70 @@ public:
         decltype(auto)
             operator()( N const& n1, int i = 0 )
             {
+#if 1
                 return hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(M_fspace[n1])>>{},
-                                 [&] (auto&& x, auto & s) {
-                                     return dynamic_cast<decltype((*s)[i]->element())&>(std::forward<decltype(x)>(x));
+                                 [&] (auto& x, auto & s) {
+                                     //return dynamic_cast<decltype((*s)[i]->element())&>(std::forward<decltype(x)>(x));
+                                     return dynamic_cast<decltype((*s)[i]->element())&>(x);
                                  },
-                                 [&] (auto&& x, auto &s){
-                                     return dynamic_cast<decltype(s->element()) &>(std::forward<decltype(x)>(x));
+                                 [&] (auto& x, auto &s){
+                                     //return dynamic_cast<decltype(s->element()) &>(std::forward<decltype(x)>(x));
+                                     return dynamic_cast<decltype(s->element())&>(x);
                                  })(*(super::operator()(int(n1)+i,0)), M_fspace[n1] );
+#else
+                return hana::eval_if(std::is_base_of<ProductSpaceBase,decay_type<decltype(M_fspace[n1])>>{},
+                                 [&] (auto _) {
+                                     return dynamic_cast<decay_type<decltype(_((*M_fspace[n1])[i]->element()))>&>(*(super::operator()(int(n1)+i,0)));
+                                 },
+                                 [&] (auto _){
+                                     return dynamic_cast<decay_type<decltype(_(M_fspace[n1]->element()))>&>(*(super::operator()(int(n1)+i,0)));
+                                 });
+#endif
 
             }
-        functionspace_type functionSpace() { return M_fspace; }
+#endif
+
+        //!
+        //! \return the i-th element of the n-th dynamic function space product of the product space
+        //!
+        template<typename N>
+        decltype(auto)
+            operator()( N const& n1, int i )
+            {
+                return dynamic_cast<decltype((*M_fspace[n1])[i]->element())&>(*super::operator()(int(n1)+i,0));
+            }
+        //!
+        //! \return the n-th element
+        //!
+        template<typename N>
+        decltype(auto)
+            operator()( N const& n1 )
+            {
+                return dynamic_cast<decltype(M_fspace[n1]->element())&>(*super::operator()(int(n1),0));
+            }
+        //!
+        //! \return the i-th element of the n-th dynamic function space product of the product space
+        //!
+        template<typename N>
+        decltype(auto)
+            operator()( N const& n1, int i ) const
+            {
+                return dynamic_cast<decltype((*M_fspace[n1])[i]->element()) const&>(*super::operator()(int(n1)+i,0));
+            }
+        //!
+        //! \return the n-th element
+        //!
+        template<typename N>
+        decltype(auto)
+            operator()( N const& n1 ) const
+            {
+                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*super::operator()(int(n1),0));
+            }
+
+        functionspace_type& functionSpace() { return M_fspace; }
+        functionspace_type const& functionSpace() const { return M_fspace; }
         //void zero() { super::zero(); }
-        functionspace_type M_fspace;
+        functionspace_type& M_fspace;
     };
 
     Element element() { Element u( *this ); return u; }
