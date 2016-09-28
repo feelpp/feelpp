@@ -302,37 +302,7 @@ public:
                                  })(*(super::operator()(int(n1)+i,0)), M_fspace[n1] );
 
             }
-
-        template<typename N>
-        decltype(auto)
-            operator()( N const& n1, int i = 0 )
-            {
-#if 1
-                return hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(M_fspace[n1])>>{},
-                                 [&] (auto& x, auto & s) {
-                                     //return dynamic_cast<decltype((*s)[i]->element())&>(std::forward<decltype(x)>(x));
-                                     return dynamic_cast<decltype((*s)[i]->element())&>(x);
-                                 },
-                                 [&] (auto& x, auto &s){
-                                     //return dynamic_cast<decltype(s->element()) &>(std::forward<decltype(x)>(x));
-                                     return dynamic_cast<decltype(s->element())&>(x);
-                                 })(*(super::operator()(int(n1)+i,0)), M_fspace[n1] );
-#else
-                return hana::eval_if(std::is_base_of<ProductSpaceBase,decay_type<decltype(M_fspace[n1])>>{},
-                                 [&] (auto _) {
-                                     return dynamic_cast<decay_type<decltype(_((*M_fspace[n1])[i]->element()))>&>(*(super::operator()(int(n1)+i,0)));
-                                 },
-                                 [&] (auto _){
-                                     return dynamic_cast<decay_type<decltype(_(M_fspace[n1]->element()))>&>(*(super::operator()(int(n1)+i,0)));
-                                 });
 #endif
-
-            }
-#endif
-
-        //!
-        //! \return the i-th element of the n-th dynamic function space product of the product space
-        //!
         template<typename N>
         decltype(auto)
             operator()( N const& n1, int i )
