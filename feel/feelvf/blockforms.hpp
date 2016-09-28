@@ -50,6 +50,15 @@ public :
         M_ps(ps),
         M_matrix(m)
         {}
+    BlockBilinearForm& operator+=( BlockBilinearForm& a )
+        {
+            if ( this == &a )
+                return *this;
+
+            M_matrix->addMatrix( 1.0, a.M_matrix );
+
+            return *this;
+        }
 #if 0
     template<typename N1,typename N2>
     decltype(auto) operator()( N1 n1, N2 n2 )
@@ -111,6 +120,10 @@ public :
     void close()
         {
             M_matrix->close();
+        }
+    void zero()
+        {
+            M_matrix->zero();
         }
     sparse_matrix_ptrtype matrixPtr() const { return M_matrix; }
     sparse_matrix_ptrtype matrixPtr() { return M_matrix; }
