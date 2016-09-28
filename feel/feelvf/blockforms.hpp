@@ -128,18 +128,18 @@ public :
                                        ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
                                        ( pre, (pre_solve_type), pre_solve_type() )
                                        ( post, (post_solve_type), post_solve_type() )
-                                         ) )
+                                       ) )
         {
-#if 0
+#if 1
             auto U = backend()->newBlockVector(_block=solution, _copy_values=false);
             tic();
-            auto r = backend( _name=name, _kind=kind, _rebuild=rebuild,
-                              _worldcomm=Environment::worldComm() )->solve( _matrix=this->matrixPtr(),
-                                                                   _rhs=rhs.vectorPtr(),
-                                                                   _solution=U,
-                                                                   _pre=pre,
-                                                                   _post=post
-                                                                   );
+            auto r1 = backend( _name=name, _kind=kind, _rebuild=rebuild,
+                               _worldcomm=Environment::worldComm() )->solve( _matrix=this->matrixPtr(),
+                                                                             _rhs=rhs.vectorPtr(),
+                                                                             _solution=U,
+                                                                             _pre=pre,
+                                                                             _post=post
+                                                                             );
             toc("monolithic",FLAGS_v>0);
 
             solution.localize(U);
@@ -166,12 +166,12 @@ public :
             sc->condense ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c), S, V );
             //S->close();V->close();
             tic();
-            auto r = backend(_name="sc")->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
+            auto r = backend(_name="sc",_rebuild=rebuild)->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
             toc("sc.solve", FLAGS_v>0);
 
 #if 0
-            S->printMatlab("S.m");
-            V->printMatlab("g.m");
+            S.matrixPtr()->printMatlab("S.m");
+            V.vectorPtr()->printMatlab("g.m");
             e3.printMatlab("phat1.m");
             e1.printMatlab("u.m");
             e2.printMatlab("p.m");
