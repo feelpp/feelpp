@@ -85,7 +85,7 @@ public :
                                           {
                                               for( int i = 0; i < x->numberOfSpaces(); ++i, ++n )
                                               {
-                                                  cout << "creating dyn vector block (" << n  << ")\n";
+                                                  cout << "creating dyn vector block (" << n << "," << i  << ")\n";
                                                   (*this)(n,0) = (*x)[i]->elementPtr();
                                               }
 
@@ -93,7 +93,7 @@ public :
                                           [&]( auto&& x )
                                           {
                                               cout << "creating vector block (" << n  << ")\n";
-                                              (*this)(n,0) = e->elementPtr();
+                                              (*this)(n,0) = x->elementPtr();
                                               ++n;
                                           } )(e);
 
