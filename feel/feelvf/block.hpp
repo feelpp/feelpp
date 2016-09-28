@@ -252,7 +252,7 @@ struct BlocksBase
         return M_vec[c1*M_nCol+c2];
     }
 
-    block_type
+    block_type const&
     operator()( index_type c1,index_type c2=0 ) const
     {
         return M_vec[c1*M_nCol+c2];
