@@ -670,6 +670,8 @@ public :
 
         this->setupSpecificityModel( ptree, dbDir );
 
+        XN->setModel( this->shared_from_this() );
+
         this->setInitialized( true );
     }
 
