@@ -11208,9 +11208,9 @@ CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type 
     if ( (loadingContext == 1 || M_loadElementsDb ) && M_model )
     {
         auto const& ptreeReducedBasisSpace = ptree.get_child( "reduced-basis-space" );
-        M_model->rBFunctionSpace()->setModel( M_model->model() );
-        //M_model->rBFunctionSpace()->setup( ptreeReducedBasisSpace );
-        M_elements_database.setModel( M_model );
+        // M_model->rBFunctionSpace()->setModel( M_model->model() );
+        // //M_model->rBFunctionSpace()->setup( ptreeReducedBasisSpace );
+        // M_elements_database.setModel( M_model );
         M_elements_database.setup( ptreeReducedBasisSpace, dbDir );
         M_loadElementsDb = true;
     }
