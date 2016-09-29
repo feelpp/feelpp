@@ -143,7 +143,7 @@ public :
                                        ( post, (post_solve_type), post_solve_type() )
                                        ) )
         {
-#if 1
+#if 0
             auto U = backend()->newBlockVector(_block=solution, _copy_values=false);
             tic();
             auto r1 = backend( _name=name, _kind=kind, _rebuild=rebuild,
@@ -166,7 +166,7 @@ public :
             auto& e2 = solution(1_c);
             auto& e1 = solution(0_c);
 
-#if 0
+#if 1
             auto S = backend(_name="sc",_rebuild=true)->newMatrix( _test=e3.functionSpace(), _trial=e3.functionSpace(), _pattern=size_type(Pattern::EXTENDED)  );
             auto V = backend(_name="sc")->newVector( _test=e3.functionSpace() );
 #else
@@ -177,9 +177,13 @@ public :
 
             //e3.printMatlab("phat.m");
             sc->condense ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c), S, V );
-            //S->close();V->close();
+            //S.close();V.close();
+            cout << " . Condensation done" << std::endl;
             tic();
-            auto r = backend(_name="sc",_rebuild=rebuild)->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
+            cout << " . starting Solve" << std::endl;
+            //auto r = backend(_name="sc",_rebuild=rebuild)->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
+            auto r = backend(_name="sc",_rebuild=rebuild)->solve( _matrix=S, _rhs=V, _solution=e3);
+            cout << " . Solve done" << std::endl;
             toc("sc.solve", FLAGS_v>0);
 
 #if 0
@@ -189,7 +193,9 @@ public :
             e1.printMatlab("u.m");
             e2.printMatlab("p.m");
 #endif
+            cout << " . starting local Solve" << std::endl;
             sc->localSolve ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c) );
+            cout << " . local Solve done" << std::endl;
 #if 0
             e1.printMatlab("u1.m");
             e2.printMatlab("p1.m");
