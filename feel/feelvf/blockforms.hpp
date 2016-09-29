@@ -143,7 +143,11 @@ public :
                                        ( post, (post_solve_type), post_solve_type() )
                                        ) )
         {
-#if 0
+            auto& e3 = solution(2_c);
+            auto& e2 = solution(1_c);
+            auto& e1 = solution(0_c);
+
+#if 1
             auto U = backend()->newBlockVector(_block=solution, _copy_values=false);
             tic();
             auto r1 = backend( _name=name, _kind=kind, _rebuild=rebuild,
@@ -156,15 +160,15 @@ public :
             toc("monolithic",FLAGS_v>0);
 
             solution.localize(U);
+            Feel::cout << "[monolithic] sigma: \t" << e1 << std::endl;
+            Feel::cout << "[monolithic] u: \t" << e2 << std::endl;
+            Feel::cout << "[monolithic] uhat: \t" << e3 << std::endl;
 #endif
             auto sc = this->matrixPtr()->sc();
 #if 0
             this->matrixPtr()->printMatlab("A.m");
             rhs.vectorPtr()->printMatlab("F.m");
 #endif
-            auto& e3 = solution(2_c);
-            auto& e2 = solution(1_c);
-            auto& e1 = solution(0_c);
 
 #if 1
             auto S = backend(_name="sc",_rebuild=true)->newMatrix( _test=e3.functionSpace(), _trial=e3.functionSpace(), _pattern=size_type(Pattern::EXTENDED)  );

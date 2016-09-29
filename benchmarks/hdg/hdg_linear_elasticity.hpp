@@ -38,6 +38,7 @@ makeOptions()
 {
     po::options_description testhdivoptions( "test h_div options" );
     testhdivoptions.add_options()
+        ( "a22", po::value<double>()->default_value( 0.5 ), "0.5 for SC, 1 for standard" )
         ( "convtest", po::value<bool>()->default_value( 1 ), "1: convergence test, 0:otherwise" )
         ( "hsize", po::value<double>()->default_value( 0.8 ), "mesh size" )
         ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
@@ -184,6 +185,7 @@ Hdg<Dim, OrderP>::convergence()
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
 
+    double a22_param = doption("a22");
     auto lambda = expr(soption("lambda"));
     auto mu     = expr(soption("mu"));
 
@@ -414,7 +416,7 @@ Hdg<Dim, OrderP>::convergence()
                     rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
 
     a( 2_c, 2_c) += integrate(_range=internalfaces(mesh),
-	    _expr=cst(0.5)*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
+	    _expr=a22_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
                     rightface( pow(idv(H),M_tau_order) )));
 
    	a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,{"Dirichlet"}),
