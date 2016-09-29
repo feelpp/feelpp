@@ -239,7 +239,7 @@ public:
             this->init();
     }
 
-    CRBModel( model_ptrtype & model , CRBModelMode mode = CRBModelMode::PFEM, bool doInit = true )
+    CRBModel( model_ptrtype const& model , CRBModelMode mode = CRBModelMode::PFEM, bool doInit = true )
         :
         M_Aqm(),
         M_InitialGuessV(),
