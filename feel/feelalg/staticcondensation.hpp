@@ -145,7 +145,8 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
     auto it = A00K.begin();
     auto en = A00K.end();
 
-    int N0 = e1.dof()->nLocalDof();
+    int N00 = e1.dof()->nLocalDof();
+    int N0 = e1.dof()->nRealLocalDof();
     int N1 = e2.dof()->nLocalDof();
     int N = N0+N1;
     int N2 = e3.dof()->nLocalDof();
@@ -162,18 +163,21 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
     {
         auto key = it->first;
         size_type K = key.first;
-        ////LOG(INFO) << "======= Key=" << key ;
-        AK.topLeftCorner(N0, N0 ) = A00K.at(key);
-        A00=A00K.at(key);
-        ////LOG(INFO) << "A00K=" << A00K.at(key);
-        AK.bottomLeftCorner(N1, N0 ) = A10K.at(key);
-        ////LOG(INFO) << "A10K=" << A10K.at(key);
-        AK.topRightCorner(N0, N1 ) = A01K.at(key);
-        A01=A01K.at(key);
-        ////LOG(INFO) << "A01K=" << A01K.at(key);
-        ////LOG(INFO) << "A01K.t=" << A01K.at(key).transpose();
+        DVLOG(2) << "======= Key=" << key ;
+        AK.topLeftCorner(N0, N0 ) = A00K.at(key).block(0, 0, N0, N0 );
+        //A00=A00K.at(key);
+        DVLOG(2) << "A00K=" << A00K.at(key);
+        DVLOG(2) << "A00K.1=" << A00K.at(key).block(0, 0, N0, N0 );
+        AK.bottomLeftCorner(N1, N0 ) = A10K.at(key).block(0, 0, N1, N0 );
+        DVLOG(2) << "A10K=" << A10K.at(key);
+        DVLOG(2) << "A10K.1=" << A10K.at(key).block(0, 0, N1, N0 );
+        AK.topRightCorner(N0, N1 ) = A01K.at(key).block(0, 0, N0, N1 );
+        DVLOG(2) << "A01K=" << A01K.at(key);
+        DVLOG(2) << "A01K.1=" << A01K.at(key).block(0, 0, N0, N1 );
+        DVLOG(2) << "A01K.t=" << A01K.at(key).transpose();
+        DVLOG(2) << "A01K.t.1=" << A01K.at(key).block(0, 0, N0, N1 ).transpose();
         AK.bottomRightCorner(N1, N1 ) = A11K.at(key);
-        ////LOG(INFO) << "A11K=" << A11K.at(key);
+        DVLOG(2) << "A11K=" << A11K.at(key);
 
         A22 = local_matrix_t::Zero(N3,N3);
         A20 = local_matrix_t::Zero(N3,N0);
@@ -181,11 +185,12 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         CK = local_matrix_t::Zero(N3,N);
         F2 = local_vector_t::Zero(N3);
 
-        ////LOG(INFO) << "AK=" << AK;
+        //std::cout << "AK=\n" << AK << std::endl;
+        //std::cout << "AK-AK^T=\n" << (AK-AK.transpose()) << std::endl;
         // dK contains the set of faces ids in the submesh associated to the boundary of K
         auto dK = e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
-        ////LOG(INFO) << "element K faceids: " << e1.mesh()->element(key.first).facesId();
-        ////LOG(INFO) << "dK=" << dK;
+        DVLOG(2) << "element K faceids: " << e1.mesh()->element(key.first).facesId();
+        DVLOG(2) << "dK=" << dK;
         int n = 0;
         local_matrix_t B0K(N0,N3);
         local_matrix_t B1K(N1,N3);
@@ -193,11 +198,20 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
                        {
                            auto key2 = std::make_pair(key.first, dKi );
                            auto key3 = std::make_pair(dKi,key.first);
+                           auto key4 = std::make_pair(dKi, dKi);
+
+                           DVLOG(2) << "A02.count(" << key2 << ")"  << A02K.count(key2);
+                           DVLOG(2) << "A20.count(" << key3 << ")"  << A20K.count(key3);
+                           DVLOG(2) << "A12.count(" << key2 << ")"  << A12K.count(key2);
+                           DVLOG(2) << "A21.count(" << key3 << ")"  << A21K.count(key3);
+                           DVLOG(2) << "A22.count(" << key4 << ")"  << A22K.count(key4);
+                           DVLOG(2) << "F2.count(" << dKi << ")"  << F2K.count(dKi);
+
                            if ( A02K.count(key2) )
-                               BK.block(0, n*N2, N0, N2 ) = A02K.at(key2);
+                               BK.block(0, n*N2, N0, N2 ) = A02K.at(key2).block(0, 0, N0, N2 );
 
                            if ( A20K.count(key3) )
-                               CK.block(n*N2, 0, N2, N0 ) = A20K.at(key3);
+                               CK.block(n*N2, 0, N2, N0 ) = A20K.at(key3).block(0, 0, N2, N0 );
 
                            if ( A12K.count(key2) )
                                BK.block(N0,n*N2, N1, N2 ) = A12K.at(key2);
@@ -206,9 +220,8 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
                            if ( A21K.count(key3) )
                                CK.block(n*N2, N0, N2, N1 ) = A21K.at(key3);
 
-
-                           auto key4 = std::make_pair(dKi, dKi);
-                           A22.block(n*N2, n*N2, N2, N2 ) = A22K.at(key4);
+                           if ( A22K.count(key4) )
+                               A22.block(n*N2, n*N2, N2, N2 ) = A22K.at(key4);
 
                            if ( F2K.count(dKi) )
                            {
@@ -217,10 +230,13 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
 
                            ++n;
                        } );
-        ////LOG(INFO) << "BK=" << BK;
-        FK.head(N0) = F0K.size()?F0K.at(K):local_vector_t::Zero( N0 );
+        DVLOG(2)  << "BK=" << BK << std::endl;
+        if ( F0K.size() )
+            FK.head(N0) = F0K.at(K).head(N0);
+        else
+            FK.head(N0) = local_vector_t::Zero( N0 );
         FK.tail(N1) = F1K.at(K);
-        ////LOG(INFO) << "FK=" << FK;
+        DVLOG(2)  << "FK=" << FK << std::endl;
         if ( VLOG_IS_ON(2) )
         {
             cout<< "A22=" << A22 << std::endl;
@@ -244,9 +260,9 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         auto Aldlt = AK.lu();
 #endif
         auto AinvB = Aldlt.solve( BK );
-        //LOG(INFO) << "AinvB=" << AinvB;
+        DVLOG(2)  << "AinvB=" << AinvB << std::endl;
         auto AinvF = Aldlt.solve( FK );
-        //LOG(INFO) << "AinvF=" << AinvF;
+        DVLOG(2) << "AinvF=" << AinvF << std::endl;
 
         // loop over each face on boundary of K
         auto pdK = e3.element( dK );
@@ -274,7 +290,8 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         // local assemble DK and DKF
         DK=-CK*AinvB+A22 ;
         DKF=-CK*AinvF+F2;
-
+        //std::cout << "DK=" << DK << std::endl;
+        //std::cout << "DKF=" << DKF << std::endl;
         // global assemble contribution to element K
 
         auto dofs = e3.dofs(dK);
@@ -288,8 +305,8 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
             //LOG(INFO) << "dofs=" << dofs << std::endl;
         }
 #if 1
-        S.addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
-        V.addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
+        S->addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
+        V->addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
 #else
 
         pdK=DK.lu().solve(DKF);
@@ -346,7 +363,8 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
     auto it = A00K.begin();
     auto en = A00K.end();
 
-    int N0 = e1.dof()->nLocalDof();
+    int N00 = e1.dof()->nLocalDof();
+    int N0 = e1.dof()->nRealLocalDof();
     int N1 = e2.dof()->nLocalDof();
     int N = N0+N1;
     int N2 = e3.dof()->nLocalDof();
@@ -361,13 +379,13 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         auto key = it->first;
         size_type K = key.first;
         //LOG(INFO) << "======= Key=" << key ;
-        AK.topLeftCorner(N0, N0 ) = A00K.at(key);
-        A00=A00K.at(key);
+        AK.topLeftCorner(N0, N0 ) = A00K.at(key).block(0, 0, N0, N0 );
+        //A00=A00K.at(key);
         //LOG(INFO) << "A00K=" << A00K.at(key);
-        AK.bottomLeftCorner(N1, N0 ) = A10K.at(key);
+        AK.bottomLeftCorner(N1, N0 ) = A10K.at(key).block(0, 0, N1, N0 );
         //LOG(INFO) << "A10K=" << A10K.at(key);
-        AK.topRightCorner(N0, N1 ) = A01K.at(key);
-        A01=A01K.at(key);
+        AK.topRightCorner(N0, N1 ) = A01K.at(key).block(0, 0, N0, N1 );
+        //A01=A01K.at(key);
         //LOG(INFO) << "A01K=" << A01K.at(key);
         //LOG(INFO) << "A01K.t=" << A01K.at(key).transpose();
         AK.bottomRightCorner(N1, N1 ) = A11K.at(key);
@@ -385,13 +403,16 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
                        {
                            auto key2 = std::make_pair(key.first, dKi );
                            if ( A02K.count(key2) )
-                               BK.block(0, n*N2, N0, N2 ) = A02K.at(key2);
+                               BK.block(0, n*N2, N0, N2 ) = A02K.at(key2).block(0, 0, N0, N2 );
                            if ( A12K.count(key2) )
                                BK.block(N0,n*N2, N1, N2 ) = A12K.at(key2);
                            ++n;
                        } );
         //LOG(INFO) << "BK=" << BK;
-        FK.head(N0) = F0K.size()?F0K.at(K):local_vector_t::Zero( N0 );
+        if ( F0K.size() )
+            FK.head(N0) = F0K.at(K).head(N0);
+        else
+            FK.head(N0) = local_vector_t::Zero( N0 );
         FK.tail(N1) = F1K.at(K);
         //LOG(INFO) << "FK=" << FK;
         if ( VLOG_IS_ON(2) )

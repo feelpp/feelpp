@@ -513,14 +513,45 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
         else
         {
-            for ( uint16_type c = 0; c < trial_dof_type::nComponents; ++c )
-                for ( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
-                    for ( uint16_type i = 0; i < test_dof_type::fe_type::nLocalDof; ++i )
-                    {
-                        uint16_type testLocalDofIndex = i+c*test_dof_type::fe_type::nLocalDof;
-                        uint16_type trialLocalDofIndex = j+c*trial_dof_type::fe_type::nLocalDof;
-                        M_rep( testLocalDofIndex, trialLocalDofIndex ) = M_integrator( *M_eval_expr00, testLocalDofIndex, trialLocalDofIndex, 0, 0 );
-                    }
+            if ( trial_dof_type::is_tensor2symm )
+            {
+                for ( uint16_type c1 = 0; c1 < trial_dof_type::nComponents1; ++c1 )
+                {
+                    for ( uint16_type c2 = 0; c2 < c1; ++c2 )
+                        for ( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
+                            for ( uint16_type i = 0; i < test_dof_type::fe_type::nLocalDof; ++i )
+                        {
+                            uint16_type cc1 = (c2+trial_dof_type::nComponents2*c1);
+                            uint16_type testLocalDofIndex = i+cc1*test_dof_type::fe_type::nLocalDof;
+                            uint16_type trialLocalDofIndex = j+cc1*trial_dof_type::fe_type::nLocalDof;
+                            M_rep( testLocalDofIndex, trialLocalDofIndex ) = M_integrator( *M_eval_expr00, testLocalDofIndex, trialLocalDofIndex, 0, 0 );
+
+                            uint16_type cc2 = (c1+trial_dof_type::nComponents2*c2);
+                            uint16_type testLocalDofIndex2 = i+cc2*test_dof_type::fe_type::nLocalDof;
+                            uint16_type trialLocalDofIndex2 = j+cc2*trial_dof_type::fe_type::nLocalDof;
+                            M_rep( testLocalDofIndex2, trialLocalDofIndex2 ) = M_rep( testLocalDofIndex, trialLocalDofIndex );
+                        }
+                    uint16_type c = (c1+trial_dof_type::nComponents2*c1);
+                    for ( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
+                        for ( uint16_type i = 0; i < test_dof_type::fe_type::nLocalDof; ++i )
+                        {
+                            uint16_type testLocalDofIndex = i+c*test_dof_type::fe_type::nLocalDof;
+                            uint16_type trialLocalDofIndex = j+c*trial_dof_type::fe_type::nLocalDof;
+                            M_rep( testLocalDofIndex, trialLocalDofIndex ) = M_integrator( *M_eval_expr00, testLocalDofIndex, trialLocalDofIndex, 0, 0 );
+                        }
+                }
+            }
+            else
+            {
+                for ( uint16_type c = 0; c < trial_dof_type::nComponents; ++c )
+                    for ( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
+                        for ( uint16_type i = 0; i < test_dof_type::fe_type::nLocalDof; ++i )
+                        {
+                            uint16_type testLocalDofIndex = i+c*test_dof_type::fe_type::nLocalDof;
+                            uint16_type trialLocalDofIndex = j+c*trial_dof_type::fe_type::nLocalDof;
+                            M_rep( testLocalDofIndex, trialLocalDofIndex ) = M_integrator( *M_eval_expr00, testLocalDofIndex, trialLocalDofIndex, 0, 0 );
+                        }
+            }
         }
     }
 

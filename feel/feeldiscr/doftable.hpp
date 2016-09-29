@@ -375,6 +375,19 @@ public:
             M_dof_points.clear();
         }
     fe_type const& fe() const { return *M_fe; }
+
+    constexpr size_type nRealLocalDof( bool per_component = false ) const
+        {
+            return  (is_product&&!per_component)?(nRealComponents*(fe_type::nDofPerVolume * element_type::numVolumes +
+                                                                   fe_type::nDofPerFace * element_type::numGeometricFaces +
+                                                                   fe_type::nDofPerEdge * element_type::numEdges +
+                                                                   fe_type::nDofPerVertex * element_type::numVertices)):
+                (fe_type::nDofPerVolume * element_type::numVolumes +
+                 fe_type::nDofPerFace * element_type::numGeometricFaces +
+                 fe_type::nDofPerEdge * element_type::numEdges +
+                 fe_type::nDofPerVertex * element_type::numVertices);
+        }
+
     constexpr size_type nLocalDof( bool per_component = false ) const
         {
             return  (is_product&&!per_component)?(nComponents*(fe_type::nDofPerVolume * element_type::numVolumes +
