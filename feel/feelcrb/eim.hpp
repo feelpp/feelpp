@@ -1470,6 +1470,7 @@ public:
     typedef ModelType model_type;
     //typedef ModelType* model_ptrtype;
     typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef boost::weak_ptr<model_type> model_weakptrtype;
 
     static const bool model_use_nosolve = boost::is_base_of<EimFunctionNoSolveBase,model_type>::type::value;
     static const bool model_use_solve = !model_use_nosolve;
@@ -1657,14 +1658,16 @@ public:
 
     void initExprFeContex( mpl::false_ /**/ )
         {
-            if ( M_model->functionSpace() )
-                M_ctxFeModelSolution.reset( new model_element_expr_context_type( M_model->functionSpace() ) );
+            if ( this->model()->functionSpace() )
+                M_ctxFeModelSolution.reset( new model_element_expr_context_type( this->model()->functionSpace() ) );
         }
     void initExprFeContex( mpl::true_ /**/ )
         {
-            if ( M_model->functionSpace() )
-                M_ctxFeModelSolution.reset( new model_element_expr_context_type( M_model->functionSpace()->template functionSpace<SubSpaceId>() ) );
+            if ( this->model()->functionSpace() )
+                M_ctxFeModelSolution.reset( new model_element_expr_context_type( this->model()->functionSpace()->template functionSpace<SubSpaceId>() ) );
         }
+
+    model_ptrtype model() const { return M_model.lock(); }
 
     auto expr( parameter_type const& mu ) const
     {
@@ -1837,8 +1840,8 @@ public:
     }
 
 
-    model_functionspace_ptrtype modelFunctionSpace() const { return M_model->functionSpace();}
-    model_functionspace_ptrtype modelFunctionSpace() { return M_model->functionSpace();}
+    model_functionspace_ptrtype modelFunctionSpace() const { return this->model()->functionSpace();}
+    model_functionspace_ptrtype modelFunctionSpace() { return this->model()->functionSpace();}
 
     void addInterpolationPoint( node_type const& t )
     {
@@ -1996,7 +1999,7 @@ public:
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        return M_model->solve( mu );
+        return this->model()->solve( mu );
     }
 
     element_type operator()( parameter_type const&  mu )
@@ -2010,7 +2013,7 @@ public:
                     sol = this->computePfem( mu ); //PFEM
             }
             else
-                sol = M_model->solve( mu ); //FEM
+                sol = this->model()->solve( mu ); //FEM
             auto eimexpr = this->expr( mu, sol );
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=eimexpr );
@@ -2041,7 +2044,7 @@ public:
                     sol = this->computePfem( mu ); //PFEM
             }
             else
-                sol = M_model->solve( mu ); //FEM
+                sol = this->model()->solve( mu ); //FEM
 
             auto eimexpr = this->expr( mu, sol );
 
@@ -2463,11 +2466,11 @@ public:
         if( this->rbBuilt() )
             return computeRbExpansion( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
-            return M_model->solve( mu );
+            return this->model()->solve( mu );
     }
     model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<false>)
     {
-        return M_model->functionSpace()->element();
+        return this->model()->functionSpace()->element();
     }
     model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<true>)
     {
@@ -2482,11 +2485,11 @@ public:
         if( this->rbBuilt() )
             return computeRbExpansion( mu, uN, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
-            return M_model->solve( mu );
+            return this->model()->solve( mu );
     }
     model_solution_type computeRbExpansion( parameter_type const& mu, std::vector<vectorN_type> uN, boost::mpl::bool_<false>)
     {
-        return M_model->functionSpace()->element();
+        return this->model()->functionSpace()->element();
     }
     model_solution_type computeRbExpansion( parameter_type const& mu, std::vector<vectorN_type> uN, boost::mpl::bool_<true>)
     {
@@ -2510,11 +2513,11 @@ public:
         if( this->modelBuilt() )
             return computePfem( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
-            return M_model->solve( mu );
+            return this->model()->solve( mu );
     }
     model_solution_type computePfem( parameter_type const& mu, boost::mpl::bool_<false> )
     {
-        return M_model->functionSpace()->element();
+        return this->model()->functionSpace()->element();
     }
     model_solution_type computePfem( parameter_type const& mu, boost::mpl::bool_<true> )
     {
@@ -2546,7 +2549,7 @@ public:
 
     sampling_ptrtype createSubTrainset( sampling_ptrtype const& trainset, int method )
     {
-        sampling_ptrtype subtrainset( new sampling_type( M_model->parameterSpace() ) );
+        sampling_ptrtype subtrainset( new sampling_type( this->model()->parameterSpace() ) );
         std::vector<parameter_type> subvector;
 
         // Compute min/max of residual (Riesz) norm
@@ -2678,7 +2681,7 @@ public:
     {
         //auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
         if( !this->modelBuilt() )
-            M_crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
+            M_crbmodel = crbmodel_ptrtype( new crbmodel_type( this->model()/*M_model*/ , CRBModelMode::CRB ) );
         //make sure that the CRB DB is already build
         if( !this->rbBuilt() )
             M_crb = crb_ptrtype( new crb_type( appname,
@@ -2698,7 +2701,7 @@ public:
         Eigen::Matrix<double, Eigen::Dynamic, 1> time;
         time_crb.resize( n_eval );
 
-        typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( M_model->parameterSpace() ) );
+        typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( this->model()->parameterSpace() ) );
         Sampling->logEquidistribute( n_eval  );
 
         //dimension
@@ -2725,8 +2728,8 @@ public:
             mu_number++;
         }
 
-        M_model->computeStatistics( super::onlineTime() , super::name() );
-        M_model->computeStatistics( time_crb , super::name()+" - global crb timing" );
+        this->model()->computeStatistics( super::onlineTime() , super::name() );
+        this->model()->computeStatistics( time_crb , super::name()+" - global crb timing" );
 
     }
 
@@ -3140,7 +3143,8 @@ public:
     }
 
 private:
-    model_ptrtype M_model;
+    // model_ptrtype M_model;
+    model_weakptrtype M_model;
     expr_type M_expr;
     // model_solution_type& M_u;
     model_element_expr_type * M_u;
