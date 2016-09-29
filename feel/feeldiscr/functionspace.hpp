@@ -2368,12 +2368,22 @@ public:
 
             }
         template<typename Tloc>
-        void assignE( size_type e, Tloc loc )
+        void assignE( size_type e, Tloc&& loc )
             {
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
                 for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
                 {
                     size_type index = ldof.second.index();
+#if 1
+                    if ( is_tensor2symm )
+                    {
+                        if ( ldof.first.localDof() >= this->dof()->nRealLocalDof() ) continue;
+                        super::operator[]( index ) = s(ldof.first.localDof())*loc( ldof.first.localDof() );
+                    }
+                    else
+#endif
+                        //cout << " . global dof =" << index << " local dof " << ldof.first.localDof() << std::endl;
+                        //cout << " . value=" << loc( ldof.first.localDof() ) << std::endl;
                     super::operator[]( index ) = s(ldof.first.localDof())*loc( ldof.first.localDof() );
                 }
             }
