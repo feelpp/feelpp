@@ -33,9 +33,10 @@ class MeshStructured: public Mesh<Hypercube<2>>
 {
 
   public:
-    using super = Mesh<Hypercube<2>>;
+    using super = Mesh<Hypercube<2,1,2>>;
     using point_type = super::point_type;
     using element_type = super::element_type;
+    using face_type = super::face_type;
     using node_type = super::node_type;
     MeshStructured() = default;
     MeshStructured( MeshStructured const& ) = default;
@@ -150,10 +151,11 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
             coords[1]=M_pixelsize*i;
             point_type pt( ptid, 
                            coords, 
-                           i == 0 || i == M_nx-1 || j%((M_ny-1)) == 0  ); // Is on boundary ?
+                           i == 0 || i == M_nx-1 || j%((M_ny-1)/procSize) == 0  ); // Is on boundary ?
                            //i == 0 || i == M_nx-1 || j == 0 || j == M_ny-1 ); // Is on boundary ?
+            pt.setMarker(1);
             // Actual rank ID 
-            pt.setProcessId( partId-1);
+            pt.setProcessId( -1 );
             // NO GHOST POINTS I SAID
             pt.setProcessIdInPartition( partId );
             pt.setNeighborPartitionIds( ghosts );
@@ -181,8 +183,9 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
             coords[1]=M_pixelsize*i;
             point_type pt( ptid, 
                            coords,
-                           i == 0 || i == M_nx-1 || j%((M_ny-1)) == 0  ); // Is on boundary ?
+                           i == 0 || i == M_nx-1 || j%((M_ny-1)/procSize) == 0  ); // Is on boundary ?
                            //i == 0 || i == M_nx-1 || j == 0 || j == M_ny-1 ); // Is on boundary ?
+            pt.setMarker(1);
             //// Actual rank ID 
             pt.setProcessId( partId );
             //// NO GHOST POINTS I SAID
@@ -208,8 +211,9 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
             coords[1]=M_pixelsize*i;
             point_type pt( ptid, 
                            coords,
-                           i == 0 || i == M_nx-1 || j%((M_ny-1)) == 0  ); // Is on boundary ?
+                           i == 0 || i == M_nx-1 || j%((M_ny-1)/procSize) == 0  ); // Is on boundary ?
                            //i == 0 || i == M_nx-1 || j == 0 || j == M_ny-1 ); // Is on boundary ?
+            pt.setMarker(1);
             // Actual rank ID 
             pt.setProcessId( partId );
             // NO GHOST POINTS I SAID
@@ -217,9 +221,209 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
             pt.setNeighborPartitionIds( ghosts );
             this->addPoint( pt );
         }
-    }
+   }
 #endif
-    toc("MeshStructured Nodes", FLAGS_v>0);
+   toc("MeshStructured Nodes", FLAGS_v>0);
+   tic();
+
+   /*
+    * Generates edges 
+    */
+#if 0 
+    int feid = 0;
+    int nelemG=(M_ny-1)*(M_nx-1);
+    int nelemL=(cx[partId+1]-cx[partId])*(M_nx-1);
+    if ( partId > 0 )
+    {
+        for( int i = 0; i < M_nx-2; ++i )
+        {
+            face_type f;
+            int eid =nelemL+(M_nx-1)*(2*partId-1)+i+1;
+            //f.setId(feid);
+            f.setId(eid);
+            f.setProcessIdInPartition( partId );
+            f.setProcessId( partId );
+
+            int ptid[2] = { (M_ny)*i+cx[partId],   // 0
+                            (M_ny)*(i+1)+cx[partId] // 1
+                          };
+
+            for( int k = 0; k < 2; ++k )
+            {
+                f.setPoint( k, this->point( ptid[k]  ) );
+            }
+
+            //f.setOnBoundary( i==0 || i==(M_nx-1) || j%((M_ny-1)/procSize)==0 );
+            face_iterator fit;
+            bool inserted;
+            boost::tie( fit, inserted )=this->addFace( f);
+            __idGmshToFeel.insert( std::make_pair(feid,f.id()));
+            feid++;
+            //mapGhostElt.insert( std::make_pair( eid,boost::make_tuple( f.id(), partId-1 )));
+            }
+    
+    }
+    if ( partId < procSize-1 )
+    {
+        for( int i = 0; i < M_nx-2; ++i )
+        {
+            face_type f;
+            int eid=nelemL+(M_nx-1)*(2*partId)+i+1;
+            //f.setId(feid);
+            f.setId(eid);
+            f.setProcessIdInPartition( partId );
+            f.setProcessId( partId );
+
+            int ptid[2] = { (M_ny)*i+cx[partId+1],   // 0
+                            (M_ny)*(i+1)+cx[partId+1] // 1
+                          };
+
+            for( int k = 0; k < 2; ++k )
+            {
+                f.setPoint( k, this->point( ptid[k]  ) );
+            }
+
+            //f.setOnBoundary( i==0 || i==(M_nx-1) || j%((M_ny-1)/procSize)==0 );
+            face_iterator fit;
+            bool inserted;
+            boost::tie( fit, inserted )=this->addFace( f);
+
+            __idGmshToFeel.insert( std::make_pair(feid,f.id()));
+            feid++;
+            //mapGhostElt.insert( std::make_pair( eid,boost::make_tuple( f.id(), partId+1 )));
+            }
+        }
+#endif
+int eid=0;
+//int eid =(cx[partId+1]-cx[partId])*(M_nx-1);
+//int eid =(M_ny-1)*(M_nx-1);
+//int nelemG =(M_ny-1)*(M_nx-1);
+/*
+//#if 0
+    tic();
+    int nelemG=(M_ny-1)*(M_nx-1);
+    int eid=nelemG+1; 
+    for( int j = cx[partId]; j < cx[partId+1]; j++ ) 
+    {
+        for( int i = 0; i < M_nx-1; i++ )
+        {
+            face_type f;
+            f.setId(eid);
+            f.setProcessIdInPartition( partId );
+            f.setProcessId( partId );
+
+             int ptid[2] = { (M_ny)*i+j,   // 0
+                            (M_ny)*i+j+1, // 1
+                           };
+
+            for( int k = 0; k < 2; ++k )
+            {
+                f.setPoint( k, this->point( ptid[k]  ) );
+            }
+
+            f.setOnBoundary( i==0 || i==(M_nx-1) || j%((M_ny-1))==0 );
+            this->addFace( f ); 
+            eid++;
+            
+            face_type f2;
+            f2.setId(eid);
+            f2.setProcessIdInPartition( partId );
+            f2.setProcessId( partId );
+            int ptid2[2] = { (M_ny)*i+j,   // 0
+                            (M_ny)*(i+1)+j, // 1
+                           };
+
+            for( int k = 0; k < 2; ++k )
+            {
+                f2.setPoint( k, this->point( ptid2[k]  ) );
+            }
+
+            f2.setOnBoundary( i==0 || i==(M_nx-1) || j%((M_ny-1))==0 );
+            this->addFace( f2 );
+            eid++;
+        }
+        face_type f;
+        f.setId(eid);
+        f.setProcessIdInPartition( partId );
+        f.setProcessId( partId );
+
+        int ptid[2] = { (M_ny)*(M_nx-1)+j,   // 0
+                        (M_ny)*(M_nx-1)+j+1, // 1
+                      };
+
+        for( int k = 0; k < 2; ++k )
+        {
+            f.setPoint( k, this->point( ptid[k]  ) );
+        }
+
+        f.setOnBoundary( true );
+        this->addFace( f );
+        eid++;
+    }
+
+*/
+    // Edges
+    int final = partId;
+    //if( partId < (procSize-1) )
+    //    final = partId+1;    
+    if ( partId < (procSize-1))
+    {    
+    for( int i = 0; i < M_nx-1; ++i )
+    {
+           face_type f;
+           //int eid=nelemG+(M_nx-1)*(2*partId)+i+1;
+           f.setId(eid);
+           f.setProcessIdInPartition( partId );
+           f.setProcessId( final );
+           int ptid[2] = { (M_ny)*i+cx[partId+1],   // 0
+                            (M_ny)*(i+1)+cx[partId+1], // 1
+                         };
+
+           for( int k = 0; k < 2; ++k )
+           {
+               f.setPoint( k, this->point( ptid[k]  ) );
+           }
+           f.setMarker(1);
+           f.setOnBoundary( true );
+           this->addFace( f );
+           __idGmshToFeel.insert( std::make_pair(eid,f.id())); 
+           eid ++;
+
+     }      
+     }
+
+     if ( partId > 0)
+    {    
+    for( int i = 0; i < M_nx-1; ++i )
+    {
+           face_type f;
+           //int eid =nelemG+(M_nx-1)*(2*partId-1)+i+1;
+           f.setId(eid);
+           f.setProcessIdInPartition( partId );
+           f.setProcessId( final-1 );
+           int ptid[2] = { (M_ny)*i+cx[partId],   // 0
+                            (M_ny)*(i+1)+cx[partId], // 1
+                         };
+
+           for( int k = 0; k < 2; ++k )
+           {
+               f.setPoint( k, this->point( ptid[k]  ) );
+           }
+           f.setMarker(1);
+           f.setOnBoundary( true );
+           this->addFace( f );
+           __idGmshToFeel.insert( std::make_pair(eid,f.id()));
+           std::cout << eid << ":" << f.id() << std::endl;
+           //mapGhostElt.insert( std::make_pair( eid,boost::make_tuple( nelemG+(M_nx-1)*(2*partId)+i+1, partId-1 )));
+           eid ++;
+
+     }      
+     }
+
+
+
+    toc("MeshStructured Edges", FLAGS_v>0);
+//#endif    
     tic();
     int eltid = 0;
     /*
@@ -244,6 +448,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
             e.setId( eid ); // eid == gmsh id
             e.setProcessIdInPartition( partId );
             e.setProcessId( partId );
+            e.setMarker(1);
             //int l_j = j-cx[procId];
             //int l_i = i;
             //int l_eid = (cx[procId+1]-cx[procId])*l_i+l_j;
@@ -265,11 +470,11 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
             for( int k = 0; k < 4; ++k )
             {
                 //this->points().modify( this->pointIterator( ptid[k] ), Feel::detail::UpdateProcessId(e.processId()) );
-                e.setPoint( ordering.fromGmshId(k), this->point( ptid[k]  ) );
+                e.setPoint( k, this->point( ptid[k]  ) );
             }
                 //e.setPoint( k, this->point( ptid[k]  ) );
             //e.setOnBoundary( i==0 || j==0 || i==(M_nx-2) || j==(M_ny-2) );
-            e.setOnBoundary( i==0 || i==(M_nx-2) || j%((M_ny-2))==0 );
+            e.setOnBoundary( i==0 || i==(M_nx-2) || j%((M_ny-2)/procSize)==0 );
                 // true -> id = global elt id
                 // false -> id = local elt id 
             this->addElement( e, true ); // e.id() is modified to Feel++ Id
@@ -305,7 +510,8 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
                        i == 0 || i == M_nx-1  ); // Is on boundary ?
 
             pt.setProcessIdInPartition( partId );
-            pt.setProcessId( partId+1 );  
+            pt.setProcessId( -1 );
+            pt.setMarker(1);
             //pt.setNeighborPartitionIds( ghosts );
 
             this->addPoint( pt );
@@ -319,6 +525,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
             e.setId( eidF );
             e.setProcessIdInPartition( partId );
             e.setProcessId( partId+1 );
+            e.setMarker(1);
             //e.setIdInOtherPartitions(partId+1,i+M_nx-1);
             //e.setNeighborPartitionIds( ghosts );
 
@@ -380,7 +587,8 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
             point_type pt( ptId, coords,
                     i == 0 || i == M_nx-1  ); // Is on boundary ?
             pt.setProcessIdInPartition( partId );
-            pt.setProcessId( partId-1 );  
+            pt.setProcessId( -1 );  
+            pt.setMarker(1);
             //pt.setNeighborPartitionIds( ghosts );
 
             this->addPoint( pt );
@@ -395,6 +603,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
             e.setId( eidF );
             e.setProcessIdInPartition( partId );
             e.setProcessId( partId-1 );
+            e.setMarker(1);
             //e.setIdInOtherPartitions(partId-1,(cx[partId]-cx[partId-1])*(M_nx-1)+i);
             //e.setNeighborPartitionIds( ghosts );
             
@@ -447,6 +656,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
     for (std::map<int,boost::tuple<int,rank_type>>::iterator it=mapGhostElt.begin(); it!=mapGhostElt.end(); ++it)
         std::cout << "test : " << it->first << " ( " << it->second.get<0>()<< "," << it->second.get<1>() << " )" << std::endl;
     this->worldComm().barrier();
+    this->addMarkerName("omega",1,2);
     updateGhostCellInfoByUsingNonBlockingComm(this,__idGmshToFeel,mapGhostElt,nbMsgToRecv);
     toc("Ghost Management", FLAGS_v>0);
     toc("MeshStructured Elements", FLAGS_v>0);
@@ -726,8 +936,6 @@ MeshStructured::updateGhostCellInfoByUsingBlockingComm( MeshStructured* mesh, st
 
 
 }
-
-
 
 #endif
 
