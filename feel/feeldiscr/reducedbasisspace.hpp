@@ -209,6 +209,7 @@ public :
 
     typedef ModelType model_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef boost::weak_ptr<model_type> model_weakptrtype;
 
     typedef typename /*ModelType*/super::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
@@ -358,6 +359,7 @@ public :
             if ( feSpace )
             {
                 super::shallowCopy( feSpace );
+                M_feSpace = feSpace;
                 M_mesh = feSpace->mesh();
                 this->init( mpl::bool_<fespace_type::is_composite>() );
             }
@@ -596,9 +598,11 @@ public :
         }
 
 
-    model_ptrtype const& model() const
+    // model_weakptrtype const& model() const
+    model_ptrtype /*const&*/ model() const
         {
-            return M_model;
+            // return M_model;
+            return M_model.lock();
         }
 
     /*
@@ -608,6 +612,8 @@ public :
         {
             //return M_model->functionSpace();
             //return super::shared_from_this();
+            if ( M_feSpace )
+                return M_feSpace;
             return boost::const_pointer_cast<super>( super::shared_from_this() );
             //return this->shared_from_this();
         }
@@ -1768,11 +1774,12 @@ private :
         }
 
 private :
+    fespace_ptrtype M_feSpace;
     rbfunctionspace_vector_type M_rbfunctionspaces;
     rb_basis_type M_primal_rb_basis;
     rb_basis_type M_dual_rb_basis;
     mesh_ptrtype M_mesh;
-    model_ptrtype M_model;
+    model_weakptrtype M_model;
 
 };//ReducedBasisSpace
 
