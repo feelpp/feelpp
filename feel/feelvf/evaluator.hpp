@@ -947,6 +947,51 @@ BOOST_PARAMETER_FUNCTION(
     return minmaxData<nRealDim> (boost::make_tuple( it_min->min(), it_max->max(), coords ));
 }
 
+/// \cond DETAIL
+namespace detail{
+template <typename Args>
+struct maxPerCellData
+{
+    typedef typename clean_type<Args,tag::expr>::type _expr_type;
+    typedef typename _expr_type::value_type value_type;
+
+    typedef Eigen::Tensor<value_type,3> element_type;
+}; // maxpercelldata
+
+} //detail
+
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename vf::detail::maxPerCellData<Args>::element_type ), // return type
+    maxPerCell,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    ( required
+      ( range, *  )
+      ( pset, * )
+      ( expr, * )
+      ) // 4. one required parameter, and
+
+    ( optional
+      ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
+      )
+)
+{
+    typedef typename detail::clean_type<Args,tag::expr>::type _expr_type;
+    typedef typename _expr_type::value_type value_type;
+
+    auto e = evaluate_impl( range, pset, expr, geomap );
+    std::array<std::ptrdiff_t,1> reduction_axis;
+    reduction_axis[0] = 2;
+
+    Eigen::Tensor<value_type,4> data = e.data();
+
+    Eigen::Tensor<value_type,3> reduced_data = data.maximum( reduction_axis );
+
+    return reduced_data;
+}
+
 } // vf
 } // feel
 

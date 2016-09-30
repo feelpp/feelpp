@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
 
     auto C = cTilde->createSubMatrix(rows, indexesToKeep);
     C->close();
-    auto aHat = backend()->newMatrix(C->mapColPtr(), C->mapColPtr() );
+    auto aHat = backend()->newMatrix();
     tic();
     backend()->PtAP( matA, C, aHat );
     toc("PtAP");
