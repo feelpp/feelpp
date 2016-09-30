@@ -32,6 +32,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_reinitializerIsUpdatedForUse(false),
     M_hasReinitialized(false),
     M_iterSinceReinit(0),
+    M_useSelfLabel(false),
+    M_useMultiLabels(false),
     M_doUpdateMultiLabels(true)
 {
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
