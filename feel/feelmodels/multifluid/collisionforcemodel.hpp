@@ -47,6 +47,7 @@ private:
 
     //--------------------------------------------------------------------//
     double M_collisionCoeff;
+    double M_epsilon;
     int M_forceImpl;
 
 #ifdef DEBUG_COLLISIONFORCEMODEL
@@ -60,6 +61,7 @@ void
 CollisionForceModel<LevelSetType>::loadParametersFromOptionsVm()
 {
     M_collisionCoeff = doption( _name="collision-force-coeff", _prefix=this->prefix() ); 
+    M_epsilon = doption( _name="collision-force-epsilon", _prefix=this->prefix() ); 
     M_forceImpl = ioption( _name="collision-force-impl", _prefix=this->prefix() );
 
 #ifdef DEBUG_COLLISIONFORCEMODEL
@@ -88,7 +90,7 @@ CollisionForceModel<LevelSetType>::addCollisionForce( element_ptrtype & F, int i
         {
             auto phi = this->levelset()->phi();
             auto phi2 = this->levelset()->distanceBetweenLabels(); 
-            double epsilon = this->levelset()->thicknessInterface();
+            //double epsilon = this->levelset()->thicknessInterface();
 
             auto gradPhi2 = this->levelset()->projectorL2Vectorial()->project(
                     _expr=trans(gradv(phi2))
@@ -97,7 +99,7 @@ CollisionForceModel<LevelSetType>::addCollisionForce( element_ptrtype & F, int i
             auto Fc = vf::project(
                     _space=this->levelset()->functionSpaceVectorial(),
                     _range=elements(this->levelset()->mesh()),
-                    _expr=this->collisionCoeff() * exp(-idv(phi2)/epsilon) * idv(gradPhi2) / idv(phi2) * idv(this->levelset()->D())
+                    _expr=this->collisionCoeff() * exp(-idv(phi2)/M_epsilon) * idv(gradPhi2) / idv(phi2) * idv(this->levelset()->D())
                     );
 
             *F += Fc;

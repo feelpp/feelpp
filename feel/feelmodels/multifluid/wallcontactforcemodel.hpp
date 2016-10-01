@@ -47,6 +47,7 @@ private:
 
     //--------------------------------------------------------------------//
     double M_collisionCoeff;
+    double M_epsilon;
     int M_forceImpl;
 
 #ifdef DEBUG_WALLCONTACTFORCEMODEL
@@ -60,6 +61,7 @@ void
 WallContactForceModel<LevelSetType>::loadParametersFromOptionsVm()
 {
     M_collisionCoeff = doption( _name="wallcontact-force-coeff", _prefix=this->prefix() ); 
+    M_epsilon = doption( _name="wallcontact-force-epsilon", _prefix=this->prefix() ); 
     M_forceImpl = ioption( _name="wallcontact-force-impl", _prefix=this->prefix() );
 
 #ifdef DEBUG_WALLCONTACTFORCEMODEL
@@ -88,7 +90,7 @@ WallContactForceModel<LevelSetType>::addCollisionForce( element_ptrtype & F, int
         {
             auto phi = this->levelset()->phi();
             auto phi2 = this->levelset()->distToBoundary(); 
-            double epsilon = this->levelset()->thicknessInterface();
+            //double epsilon = this->levelset()->thicknessInterface();
             double hMin = this->levelset()->mesh()->hMin();
 
             auto gradPhi2 = this->levelset()->projectorL2Vectorial()->project(
@@ -98,7 +100,7 @@ WallContactForceModel<LevelSetType>::addCollisionForce( element_ptrtype & F, int
             auto Fc = vf::project(
                     _space=this->levelset()->functionSpaceVectorial(),
                     _range=elements(this->levelset()->mesh()),
-                    _expr=this->collisionCoeff() * exp(-idv(phi2)/epsilon) * idv(gradPhi2) / (idv(phi2)+hMin) * idv(this->levelset()->D())
+                    _expr=this->collisionCoeff() * exp(-idv(phi2)/M_epsilon) * idv(gradPhi2) / (idv(phi2)+hMin) * idv(this->levelset()->D())
                     );
 
             *F += Fc;
