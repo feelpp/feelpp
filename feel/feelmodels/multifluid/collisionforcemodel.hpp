@@ -68,6 +68,7 @@ CollisionForceModel<LevelSetType>::loadParametersFromOptionsVm()
     M_exporter = Feel::exporter(
             _mesh=this->levelset()->mesh(),
             _name="CollisionForce",
+            _geo="static",
             _path=this->levelset()->exporterPath()
             );
 #endif
