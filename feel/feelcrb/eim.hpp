@@ -1656,6 +1656,11 @@ public:
             }
         }
 
+    /**
+     * storing of shared_ptr model can be necessary (as EimNoSolve)
+     */
+    void attachModel( model_ptrtype const& model ) { M_modelAttached = model; }
+
     void initExprFeContex( mpl::false_ /**/ )
         {
             if ( this->model()->functionSpace() )
@@ -3145,6 +3150,7 @@ public:
 private:
     // model_ptrtype M_model;
     model_weakptrtype M_model;
+    model_ptrtype M_modelAttached;
     expr_type M_expr;
     // model_solution_type& M_u;
     model_element_expr_type * M_u;
@@ -3232,7 +3238,11 @@ BOOST_PARAMETER_FUNCTION(
 #endif
     typedef typename Feel::detail::compute_eim_return<Args>::type eim_type;
     typedef typename Feel::detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
-    return boost::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename );
+    // return boost::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename );
+    auto eimFunc = boost::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename );
+    if ( eim_type::model_use_nosolve )
+        eimFunc->attachModel( model );
+    return eimFunc;
 } // eim
 
 
@@ -3255,6 +3265,7 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
     //typedef boost::shared_ptr<rbfunctionspace_type> rbfunctionspace_ptrtype;
 
     typedef boost::shared_ptr<ModelType> model_ptrtype;
+    typedef boost::weak_ptr<ModelType> model_weakptrtype;
 
     static const int nb_spaces = functionspace_type::nSpaces;
     typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
@@ -3267,13 +3278,12 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
         :
         M_model( model )
         {
-            if ( M_model->functionSpace() )
+            if ( model->functionSpace() )
             {
-                M_elt = M_model->functionSpace()->elementPtr();
+                M_elt = model->functionSpace()->elementPtr();
                 M_elt->setConstant( boost::lexical_cast<value_type>("inf") );
             }
         }
-
     element_type const& solve( parameter_type const& mu ) const
     {
         DVLOG(2) << "no solve required\n";
@@ -3303,9 +3313,9 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
     }
 #endif
 
-    std::string /*const&*/ modelName() const { return M_model->modelName(); }
-    functionspace_ptrtype functionSpace() { return M_model->functionSpace(); }
-    parameterspace_ptrtype parameterSpace() { return M_model->parameterSpace(); }
+    std::string /*const&*/ modelName() const { return M_model.lock()->modelName(); }
+    functionspace_ptrtype functionSpace() { return M_model.lock()->functionSpace(); }
+    parameterspace_ptrtype parameterSpace() { return M_model.lock()->parameterSpace(); }
 #if 0
     struct ProjectInfCompositeCase
     {
@@ -3333,7 +3343,8 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
 
     }; //struct ProjectInfOnSubspace
 #endif
-    model_ptrtype M_model;
+    // model_ptrtype M_model;
+    model_weakptrtype M_model;
     element_ptrtype M_elt;
 };
 
