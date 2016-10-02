@@ -43,37 +43,10 @@
 
 #include <feel/feelcrb/modelcrbbase.hpp>
 
+#include <applications/crb/BenchmarkGrepl/benchmarkgrepl-options.hpp>
 
 namespace Feel
 {
-
-po::options_description
-makeBenchmarkGreplNonlinearEllipticOptions()
-{
-    po::options_description bgoptions( "BenchmarkGreplNonlinearElliptic options" );
-    bgoptions.add_options()
-        ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
-        ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ), "hsize")
-        ( "trainset-eim-size", Feel::po::value<int>()->default_value( 15 ), "EIM trainset is built using a equidistributed grid 15*15 by default")
-        ( "gamma", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary Dirichlet formulation" )
-        ;
-    return bgoptions;
-}
-AboutData
-makeBenchmarkGreplNonlinearEllipticAbout( std::string const& str = "benchmarkGrepl" )
-{
-    Feel::AboutData about( str.c_str(),
-                           str.c_str(),
-                           "0.1",
-                           "Benchmark Grepl",
-                           Feel::AboutData::License_GPL,
-                           "Copyright (C) 2011-2014 Feel++ Consortium" );
-
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
-    about.addAuthor( "Cecile Daversin", "developer", "daversin@math.unistra.fr", "" );
-    return about;
-}
 
 namespace BenchmarkGreplNonlinearElliptic_Definition
 {
