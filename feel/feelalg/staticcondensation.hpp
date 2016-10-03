@@ -32,6 +32,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/feelio.hpp>
 #include <feel/feeldiscr/traits.hpp>
+#include <feel/feeltiming/tic.hpp>
 
 
 namespace Feel {
