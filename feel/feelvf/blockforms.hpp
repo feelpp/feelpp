@@ -180,7 +180,9 @@ public :
 #endif
 
             //e3.printMatlab("phat.m");
+            tic();
             sc->condense ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c), S, V );
+            toc("sc.condense", FLAGS_v>0);
             //S.close();V.close();
             cout << " . Condensation done" << std::endl;
             tic();
@@ -197,9 +199,11 @@ public :
             e1.printMatlab("u.m");
             e2.printMatlab("p.m");
 #endif
+            tic();
             cout << " . starting local Solve" << std::endl;
             sc->localSolve ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c) );
             cout << " . local Solve done" << std::endl;
+            toc("sc.localsolve",FLAGS_v>0);
 #if 0
             e1.printMatlab("u1.m");
             e2.printMatlab("p1.m");
