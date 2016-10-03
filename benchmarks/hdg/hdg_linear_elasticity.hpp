@@ -446,6 +446,7 @@ Hdg<Dim, OrderP>::convergence()
     // backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=U );
     // hdg_sol.localize(U);
 	auto U = ps.element();
+    auto Ue = ps.element();
 	a.solve( _solution=U, _rhs=rhs, _rebuild=true);
     toc("solve",true);
 	cout << "[Hdg] solve done" << std::endl;
@@ -454,7 +455,12 @@ Hdg<Dim, OrderP>::convergence()
 	auto up = U(1_c);
  	auto uhatp = U(2_c);
 
+    Ue(0_c).on( _range=elements(mesh), _expr=sigma_exact );
+    Ue(1_c).on( _range=elements(mesh), _expr=u_exact );
+
+    Feel::cout << "sigma exact: \t" << Ue(0_c) << std::endl;
 	Feel::cout << "sigma: \t" << sigmap << std::endl;
+    Feel::cout << "u exact: \t" << Ue(1_c) << std::endl;
 	Feel::cout << "u: \t" << up << std::endl;
 	Feel::cout << "uhat: \t" << uhatp << std::endl;
 
