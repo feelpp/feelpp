@@ -31,6 +31,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/feelio.hpp>
+#include <feel/feeldiscr/traits.hpp>
 
 
 namespace Feel {
@@ -105,9 +106,213 @@ private:
     std::unordered_map<block_index_t,std::unordered_map<block_element_t,local_matrix_t,boost::hash<block_element_t>>,boost::hash<block_index_t>> M_local_matrices;
     std::unordered_map<block_index_t,std::unordered_map<block_element_t,local_index_t,boost::hash<block_element_t>>,boost::hash<block_index_t>> M_local_rows;
     std::unordered_map<block_index_t,std::unordered_map<block_element_t,local_index_t,boost::hash<block_element_t>>,boost::hash<block_index_t>> M_local_cols;
+
+    std::unordered_map<int,local_matrix_t> M_AinvB;
+    std::unordered_map<int,local_vector_t> M_AinvF;
     block_index_t M_block_rowcol;
     int M_block_row;
 };
+
+
+template<typename A00_t,typename A01_t,typename A10_t, typename M2, typename E1, typename E2>
+void
+extractBlock( A00_t const& a00, A01_t const& a01, A10_t const& a10,
+              M2& ak, E1 const& e1, E2 const& e2, tensor2symm_true )
+{
+    uint16_type N0 = e1.dof()->nRealLocalDof( false );
+    uint16_type N0c = e1.dof()->nLocalDof( true );
+    uint16_type N1 = e2.dof()->nLocalDof();
+    ak.Zero( N0+N1, N0+N1 );
+    //cout << "A00.rows=" << a00.rows() <<  " A00.cols=" << a00.cols() << std::endl;
+    //cout << "AK.rows=" << ak.rows() <<  " AK.cols=" << ak.cols() << std::endl;
+    //cout << "AK.0 = " << std::endl << ak << std::endl;
+    // A00
+    for( int c1e1 = 0; c1e1 < e1.nComponents1; ++c1e1 )
+    {
+        for( int c2e1 = 0; c2e1 < c1e1; ++c2e1 )
+        {
+            const int k1 = Feel::detail::symmetricIndex(c1e1,c2e1,e1.nComponents1);
+            for( int c1e2 = 0; c1e2 < e2.nComponents1; ++c1e2 )
+            {
+                for( int c2e2 = 0; c2e2 < c1e2; ++c2e2 )
+                {
+                    const int k2 = Feel::detail::symmetricIndex(c1e2,c2e2,e2.nComponents1);
+                    ak.block( N0c*k1, N0c*k2, N0c, N0c ) = a00.block( N0c*(c1e1*e1.nComponents1+c2e1),
+                                                                      N0c*(c1e2*e2.nComponents1+c2e2), N0c, N0c );
+                    ak.block( N0c*k1, N0c*k2, N0c, N0c ) += a00.block( N0c*(c2e1*e1.nComponents1+c1e1),
+                                                                       N0c*(c1e2*e2.nComponents1+c2e2), N0c, N0c );
+                    ak.block( N0c*k1, N0c*k2, N0c, N0c ) += a00.block( N0c*(c2e1*e1.nComponents1+c1e1),
+                                                                       N0c*(c2e2*e2.nComponents1+c1e2), N0c, N0c );
+                    ak.block( N0c*k1, N0c*k2, N0c, N0c ) += a00.block( N0c*(c1e1*e1.nComponents1+c2e1),
+                                                                       N0c*(c2e2*e2.nComponents1+c1e2), N0c, N0c );
+
+                }
+                const int k2 = Feel::detail::symmetricIndex(c1e2,c1e2,e2.nComponents1);
+                ak.block( N0c*k1, N0c*k2, N0c, N0c ) = a00.block( N0c*(c1e1*e1.nComponents1+c2e1),
+                                                                  N0c*(c1e2*e2.nComponents1+c1e2), N0c, N0c );
+                ak.block( N0c*k1, N0c*k2, N0c, N0c ) += a00.block( N0c*(c2e1*e1.nComponents1+c1e1),
+                                                                   N0c*(c1e2*e2.nComponents1+c1e2), N0c, N0c );
+            }
+        }
+        const int k1 = Feel::detail::symmetricIndex(c1e1,c1e1,e1.nComponents1);
+        for( int c1e2 = 0; c1e2 < e2.nComponents1; ++c1e2 )
+        {
+                for( int c2e2 = 0; c2e2 < c1e2; ++c2e2 )
+                {
+                    const int k2 = Feel::detail::symmetricIndex(c1e2,c2e2,e2.nComponents1);
+                    ak.block( N0c*k1, N0c*k2, N0c, N0c ) = a00.block( N0c*(c1e1*e1.nComponents1+c1e1),
+                                                                      N0c*(c1e2*e2.nComponents1+c2e2), N0c, N0c );
+                    ak.block( N0c*k1, N0c*k2, N0c, N0c ) += a00.block( N0c*(c1e1*e1.nComponents1+c1e1),
+                                                                       N0c*(c2e2*e2.nComponents1+c1e2), N0c, N0c );
+
+                }
+                const int k2 = Feel::detail::symmetricIndex(c1e2,c1e2,e2.nComponents1);
+                ak.block( N0c*k1, N0c*k2, N0c, N0c ) = a00.block( N0c*(c1e1*e1.nComponents1+c1e1),
+                                                                  N0c*(c1e2*e2.nComponents1+c1e2), N0c, N0c );
+        }
+
+    }
+
+
+    //cout << "AK.1 = " << std::endl << ak << std::endl;
+    // A01
+    for( int c1e1 = 0; c1e1 < e1.nComponents1; ++c1e1 )
+    {
+        for( int c2e1 = 0; c2e1 < c1e1; ++c2e1 )
+        {
+            const int k1 = Feel::detail::symmetricIndex(c1e1,c2e1,e1.nComponents1);
+            ak.block( N0c*k1, N0, N0c, N1 ) = a01.block( N0c*(c1e1*e1.nComponents1+c2e1), 0, N0c, N1 );
+            ak.block( N0c*k1, N0, N0c, N1 ) += a01.block( N0c*(c2e1*e1.nComponents1+c1e1), 0, N0c, N1 );
+
+            ak.block( N0, N0c*k1, N1, N0c ) = a10.block( 0, N0c*(c1e1*e1.nComponents1+c2e1), N1, N0c );
+            ak.block( N0, N0c*k1, N1, N0c ) += a10.block( 0, N0c*(c2e1*e1.nComponents1+c1e1), N1, N0c );
+        }
+        const int k1 = Feel::detail::symmetricIndex(c1e1,c1e1,e1.nComponents1);
+        ak.block( N0c*k1, N0, N0c, N1 ) = a01.block( N0c*(c1e1*e1.nComponents1+c1e1), 0, N0c, N1 );
+        ak.block( N0, N0c*k1, N1, N0c ) = a10.block( 0, N0c*(c1e1*e1.nComponents1+c1e1), N1, N0c );
+    }
+    //cout << "AK.2 = " << std::endl << ak << std::endl;
+}
+
+template<typename A00_t,typename A01_t,typename A10_t, typename M2, typename E1, typename E2>
+void
+extractBlock( A00_t const& a00, A01_t const& a01, A10_t const& a10,
+              M2& ak, E1 const& e1, E2 const& e2, tensor2symm_false )
+{
+    int N0 = e1.dof()->nLocalDof();
+    int N1 = e2.dof()->nLocalDof();
+    ak.topLeftCorner(N0, N0 ) = a00;
+    ak.bottomLeftCorner(N1, N0 ) = a10;
+    ak.topRightCorner(N0, N1 ) = a01;
+}
+
+
+template<typename A00_t,typename A01_t,typename A10_t, typename M2, typename E1, typename E2>
+void
+extractBlock( A00_t const& a00, A01_t const& a01, A10_t const& a10,
+              M2& ak, E1 const& e1, E2 const& e2 )
+{
+    return extractBlock( a00, a01, a10, ak, e1, e2, is_tensor2symm_field<E1>{} );
+}
+
+template<typename A02_t, typename A20_t, typename Key1_t, typename Key2_t, typename BK_t, typename CK_t, typename E1, typename E3>
+void
+extractBlock( A02_t const& A02K, Key1_t const& key2,
+              A20_t const& A20K, Key2_t const& key3,
+              BK_t& BK, CK_t& CK,
+              int n,
+              E1 const& e1, E3 const& e3,
+              std::enable_if_t<is_tensor2symm_field_v<E1>>* = nullptr )
+{
+    uint16_type N0 = e1.dof()->nRealLocalDof( false );
+    uint16_type N0c = e1.dof()->nLocalDof( true );
+    int N2 = e3.dof()->nLocalDof();
+
+    if ( A02K.count(key2) )
+    {
+        for( int c1e1 = 0; c1e1 < e1.nComponents1; ++c1e1 )
+        {
+            for( int c2e1 = 0; c2e1 < c1e1; ++c2e1 )
+            {
+                const int k1 = Feel::detail::symmetricIndex(c1e1,c2e1,e1.nComponents1);
+                BK.block(N0c*k1, n*N2, N0c, N2 ) = A02K.at(key2).block( N0c*(c1e1*e1.nComponents1+c2e1), 0, N0c, N2 );
+                BK.block(N0c*k1, n*N2, N0c, N2 ) += A02K.at(key2).block( N0c*(c2e1*e1.nComponents1+c1e1), 0, N0c, N2 );
+            }
+            const int k1 = Feel::detail::symmetricIndex(c1e1,c1e1,e1.nComponents1);
+            BK.block(N0c*k1, n*N2, N0c, N2 ) = A02K.at(key2).block( N0c*(c1e1*e1.nComponents1+c1e1), 0, N0c, N2 );
+        }
+    }
+
+    if ( A20K.count(key3) )
+    {
+        for( int c1e1 = 0; c1e1 < e1.nComponents1; ++c1e1 )
+        {
+            for( int c2e1 = 0; c2e1 < c1e1; ++c2e1 )
+            {
+                const int k1 = Feel::detail::symmetricIndex(c1e1,c2e1,e1.nComponents1);
+                CK.block(n*N2, N0c*k1, N2, N0c ) = A20K.at(key3).block(0, N0c*(c1e1*e1.nComponents1+c2e1), N2, N0c );
+                CK.block(n*N2, N0c*k1, N2, N0c ) += A20K.at(key3).block(0, N0c*(c2e1*e1.nComponents1+c1e1), N2, N0c );
+            }
+            const int k1 = Feel::detail::symmetricIndex(c1e1,c1e1,e1.nComponents1);
+            CK.block(n*N2, N0c*k1, N2, N0c ) = A20K.at(key3).block(0, N0c*(c1e1*e1.nComponents1+c1e1), N2, N0c );
+        }
+    }
+
+}
+
+
+
+template<typename A02_t, typename A20_t, typename Key1_t, typename Key2_t, typename BK_t, typename CK_t, typename E1, typename E3>
+void
+extractBlock( A02_t const& A02K, Key1_t const& key2,
+              A20_t const& A20K, Key2_t const& key3,
+              BK_t& BK, CK_t& CK, int n,
+              E1 const& e1, E3 const& e3,
+              std::enable_if_t<!is_tensor2symm_field_v<E1>>* = nullptr )
+{
+    int N0 = e1.dof()->nLocalDof();
+    int N2 = e3.dof()->nLocalDof();
+    if ( A02K.count(key2) )
+        BK.block(0, n*N2, N0, N2 ) = A02K.at(key2);
+
+    if ( A20K.count(key3) )
+        CK.block(n*N2, 0, N2, N0 ) = A20K.at(key3);
+
+}
+
+template<typename F0K_t, typename FK_t, typename E1>
+void
+extractBlock( F0K_t const& F0K, size_type K,
+              FK_t& FK, E1 const& e1,
+              std::enable_if_t<is_tensor2symm_field_v<E1>>* = nullptr )
+{
+    int N0 = e1.dof()->nRealLocalDof();
+    int N0c = e1.dof()->nRealLocalDof(true);
+    if ( F0K.count(K) )
+    {
+        for( int c1e1 = 0; c1e1 < e1.nComponents1; ++c1e1 )
+        {
+            for( int c2e1 = 0; c2e1 < c1e1; ++c2e1 )
+            {
+                const int k1 = Feel::detail::symmetricIndex(c1e1,c2e1,e1.nComponents1);
+                FK.segment(N0c*k1, N0c) = F0K.at(K).segment( N0c*(c1e1*e1.nComponents1+c2e1), N0c );
+                FK.segment(N0c*k1, N0c) += F0K.at(K).segment( N0c*(c2e1*e1.nComponents1+c1e1), N0c );
+            }
+            const int k1 = Feel::detail::symmetricIndex(c1e1,c1e1,e1.nComponents1);
+            FK.segment(N0c*k1, N0c) = F0K.at(K).segment( N0c*(c1e1*e1.nComponents1+c1e1), N0c );
+        }
+    }
+}
+template<typename F0K_t, typename FK_t, typename E1>
+void
+extractBlock( F0K_t const& F0K, size_type K,
+              FK_t& FK, E1 const& e1,
+              std::enable_if_t<!is_tensor2symm_field_v<E1>>* = nullptr )
+{
+    int N0 = e1.dof()->nLocalDof();
+    if ( F0K.count(K) )
+        FK.head(N0) = F0K.at(K);
+}
 
 template<typename T>
 template<typename E1, typename E2, typename E3, typename M_ptrtype, typename V_ptrtype>
@@ -164,25 +369,38 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         auto key = it->first;
         size_type K = key.first;
         DVLOG(2) << "======= Key=" << key ;
-        AK.topLeftCorner(N0, N0 ) = A00K.at(key).block(0, 0, N0, N0 );
-        //A00=A00K.at(key);
+
         DVLOG(2) << "A00K=" << A00K.at(key);
-        DVLOG(2) << "A00K.1=" << A00K.at(key).block(0, 0, N0, N0 );
-        AK.bottomLeftCorner(N1, N0 ) = A10K.at(key).block(0, 0, N1, N0 );
-        DVLOG(2) << "A10K=" << A10K.at(key);
-        DVLOG(2) << "A10K.1=" << A10K.at(key).block(0, 0, N1, N0 );
-        AK.topRightCorner(N0, N1 ) = A01K.at(key).block(0, 0, N0, N1 );
         DVLOG(2) << "A01K=" << A01K.at(key);
-        DVLOG(2) << "A01K.1=" << A01K.at(key).block(0, 0, N0, N1 );
+        DVLOG(2) << "A10K=" << A10K.at(key);
+
+
+        extractBlock( A00K.at(key), A01K.at(key), A10K.at(key), AK, e1, e2 );
+        DVLOG(2) << "AK=" << AK;
+#if 0
+        AK.bottomLeftCorner(N1, N0 ) = extractBlock( A10K.at(key), e2, e1 );//A10K.at(key).block(0, 0, N1, N0 );
+        AK.topRightCorner(N0, N1 ) = extractBlock( A01K.at(key), e1, e2 );//A01K.at(key).block(0, 0, N0, N1 );
+#endif
+        AK.bottomRightCorner(N1, N1 ) = A11K.at(key);
+        cout << "AK.3=" << AK << std::endl;
+        //A00=A00K.at(key);
+#if 0
+
+        DVLOG(2) << "A00K.1=" << A00K.at(key).block(0, 0, N0, N0 );
+
+        DVLOG(2) << "A10K.1=" << A10K.at(key).block(0, 0, N1, N0 );
+
+           DVLOG(2) << "A01K.1=" << A01K.at(key).block(0, 0, N0, N1 );
         DVLOG(2) << "A01K.t=" << A01K.at(key).transpose();
         DVLOG(2) << "A01K.t.1=" << A01K.at(key).block(0, 0, N0, N1 ).transpose();
-        AK.bottomRightCorner(N1, N1 ) = A11K.at(key);
-        DVLOG(2) << "A11K=" << A11K.at(key);
 
+        DVLOG(2) << "A11K=" << A11K.at(key);
+#endif
         A22 = local_matrix_t::Zero(N3,N3);
         A20 = local_matrix_t::Zero(N3,N0);
         A21 = local_matrix_t::Zero(N3,N1);
         CK = local_matrix_t::Zero(N3,N);
+        FK = local_vector_t::Zero(N);
         F2 = local_vector_t::Zero(N3);
 
         //std::cout << "AK=\n" << AK << std::endl;
@@ -192,8 +410,6 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         DVLOG(2) << "element K faceids: " << e1.mesh()->element(key.first).facesId();
         DVLOG(2) << "dK=" << dK;
         int n = 0;
-        local_matrix_t B0K(N0,N3);
-        local_matrix_t B1K(N1,N3);
         std::for_each( dK.begin(), dK.end(), [&]( auto dKi )
                        {
                            auto key2 = std::make_pair(key.first, dKi );
@@ -207,15 +423,10 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
                            DVLOG(2) << "A22.count(" << key4 << ")"  << A22K.count(key4);
                            DVLOG(2) << "F2.count(" << dKi << ")"  << F2K.count(dKi);
 
-                           if ( A02K.count(key2) )
-                               BK.block(0, n*N2, N0, N2 ) = A02K.at(key2).block(0, 0, N0, N2 );
-
-                           if ( A20K.count(key3) )
-                               CK.block(n*N2, 0, N2, N0 ) = A20K.at(key3).block(0, 0, N2, N0 );
+                           extractBlock( A02K, key2, A20K, key3, BK, CK, n, e1, e3 );
 
                            if ( A12K.count(key2) )
                                BK.block(N0,n*N2, N1, N2 ) = A12K.at(key2);
-
 
                            if ( A21K.count(key3) )
                                CK.block(n*N2, N0, N2, N1 ) = A21K.at(key3);
@@ -231,10 +442,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
                            ++n;
                        } );
         DVLOG(2)  << "BK=" << BK << std::endl;
-        if ( F0K.size() )
-            FK.head(N0) = F0K.at(K).head(N0);
-        else
-            FK.head(N0) = local_vector_t::Zero( N0 );
+        extractBlock( F0K, K, FK, e1 );
         FK.tail(N1) = F1K.at(K);
         DVLOG(2)  << "FK=" << FK << std::endl;
         if ( VLOG_IS_ON(2) )
@@ -245,9 +453,6 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
             cout<< "CK.T=" << CK.transpose() << std::endl;
             cout<< "FK=" << FK << std::endl;
             cout<< "F2=" << F2 << std::endl;
-            cout<< "B0K=" << B0K << std::endl;
-            cout<< "B1K=" << B1K << std::endl;
-
         }
 
 
@@ -264,66 +469,25 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         auto AinvF = Aldlt.solve( FK );
         DVLOG(2) << "AinvF=" << AinvF << std::endl;
 
-        // loop over each face on boundary of K
         auto pdK = e3.element( dK );
-
-        if ( VLOG_IS_ON(2))
-        {
-            cout << "pdK[before solve]=" << pdK << std::endl;
-
-            auto uK = e1.element( {K} );
-            cout << "uK=" << uK << std::endl;
-            auto pK = e2.element( {K} );
-            cout << "pK=" << pK << std::endl;
-            auto z1 = CK.topLeftCorner(N3,N0)*uK;
-            auto z2 = CK.topRightCorner(N3,N1)*pK;
-            auto z3 = A22*pdK;
-            cout << "z1=" << z1 << std::endl;
-            cout << "z2=" << z2 << std::endl;
-            cout << "z3=" << z3 << std::endl;
-            cout << "z1+z2+z3=" << z1+z2+z3<<  std::endl;
-        }
-
-
-
-        // now calculate  pdK
+        cout << "[condense] pdK=" << pdK << std::endl;
+        Eigen::VectorXd upK = -AinvB*pdK + AinvF;
+        cout << "[condense] upK=" << upK << std::endl;
+        e1.assignE( K, upK.head( N0 ) );
+        e2.assignE( K, upK.tail( N1 ) );
+        cout << "sigma=" << e1 << std::endl;
+        cout << "u=" << e2 << std::endl;
         // local assemble DK and DKF
         DK=-CK*AinvB+A22 ;
         DKF=-CK*AinvF+F2;
-        //std::cout << "DK=" << DK << std::endl;
-        //std::cout << "DKF=" << DKF << std::endl;
-        // global assemble contribution to element K
+
+        M_AinvB.emplace( K, AinvB );
+        M_AinvF.emplace( K, AinvF );
 
         auto dofs = e3.dofs(dK);
-        if ( VLOG_IS_ON(2))
-        {
-            cout << "-CK*AinvB+A22 =" << -CK*AinvB+A22 << std::endl;
-            cout << "-CK*AinvB =" << -CK*AinvB << std::endl;
-            cout << "-CK*AinvF =" << -CK*AinvF << std::endl;
-            cout << "A22 =" << A22 << std::endl;
-            cout << "F2 =" << F2 << std::endl;
-            //LOG(INFO) << "dofs=" << dofs << std::endl;
-        }
-#if 1
+
         S->addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
         V->addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
-#else
-
-        pdK=DK.lu().solve(DKF);
-        if ( VLOG_IS_ON(2))
-        {
-            cout << "pdK[solve]=" << pdK << std::endl;
-        }
-        n = 0;
-        for( auto dKi: dK)
-        {
-            e3.assignE( dKi, pdK.segment(n*N2,N2) );
-            ++n;
-        }
-#endif
-
-        //LOG(INFO) << "======= done";
-
     }
 }
 
@@ -334,136 +498,22 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
 {
     using Feel::cout;
 
-    auto const& A00K = M_local_matrices[std::make_pair(0,0)];
-    //LOG(INFO) << "A00K.size=" << A00K.size();
-    auto const& A10K = M_local_matrices[std::make_pair(1,0)];
-    //LOG(INFO) << "A10K.size=" << A10K.size();
-    auto const& A01K = M_local_matrices[std::make_pair(0,1)];
-    //LOG(INFO) << "A01K.size=" << A01K.size();
-    auto const& A11K = M_local_matrices[std::make_pair(1,1)];
-    //LOG(INFO) << "A11K.size=" << A11K.size();
-    auto const& A02K = M_local_matrices[std::make_pair(0,2)];
-    //LOG(INFO) << "A02K.size=" << A02K.size();
-    auto const& A12K = M_local_matrices[std::make_pair(1,2)];
-    //LOG(INFO) << "A12K.size=" << A12K.size();
-    auto const& A20K = M_local_matrices[std::make_pair(2,0)];
-    //LOG(INFO) << "A20K.size=" << A20K.size();
-    auto const& A21K = M_local_matrices[std::make_pair(2,1)];
-    //LOG(INFO) << "A21K.size=" << A21K.size();
-    auto const& A22K = M_local_matrices[std::make_pair(2,2)];
-    //LOG(INFO) << "A22K.size=" << A22K.size();
-
-    auto const& F0K = rhs->M_local_vectors[0];
-    //LOG(INFO) << "F0K.size=" << F0K.size();
-    auto const& F1K = rhs->M_local_vectors[1];
-    //LOG(INFO) << "F1K.size=" << F1K.size();
-    auto const& F2K = rhs->M_local_vectors[2];
-    //LOG(INFO) << "F2K.size=" << F2K.size();
-
-    auto it = A00K.begin();
-    auto en = A00K.end();
-
-    int N00 = e1.dof()->nLocalDof();
     int N0 = e1.dof()->nRealLocalDof();
     int N1 = e2.dof()->nLocalDof();
-    int N = N0+N1;
-    int N2 = e3.dof()->nLocalDof();
-    int N3 = N2*e1.mesh()->numLocalTopologicalFaces();
-    cout << "[staticcondensation::localSolve] N=" << N << " N0=" << N0 << " N1=" << N1 << " N2=" << N2 << std::endl;
-    local_matrix_t AK( N, N ),A00(N0,N0),A01(N0,N1),A10(N1,N0), A11(N1,N1);
-    local_matrix_t BK( N, N3 );
-    local_vector_t FK( N );
-    local_vector_t F2( N3 );
-    for( ; it != en ; ++it )
+    cout << "[staticcondensation::localSolve]  N0=" << N0 << " N1=" << N1 << std::endl;
+
+    for( auto const& e : M_AinvB )
     {
-        auto key = it->first;
-        size_type K = key.first;
-        //LOG(INFO) << "======= Key=" << key ;
-        AK.topLeftCorner(N0, N0 ) = A00K.at(key).block(0, 0, N0, N0 );
-        //A00=A00K.at(key);
-        //LOG(INFO) << "A00K=" << A00K.at(key);
-        AK.bottomLeftCorner(N1, N0 ) = A10K.at(key).block(0, 0, N1, N0 );
-        //LOG(INFO) << "A10K=" << A10K.at(key);
-        AK.topRightCorner(N0, N1 ) = A01K.at(key).block(0, 0, N0, N1 );
-        //A01=A01K.at(key);
-        //LOG(INFO) << "A01K=" << A01K.at(key);
-        //LOG(INFO) << "A01K.t=" << A01K.at(key).transpose();
-        AK.bottomRightCorner(N1, N1 ) = A11K.at(key);
-        //LOG(INFO) << "A11K=" << A11K.at(key);
+        auto K = e.first;
+        auto const& A = e.second;
+        auto const& F = M_AinvF.at( K );
 
-        //LOG(INFO) << "AK=" << AK;
-        // dK contains the set of faces ids in the submesh associated to the boundary of K
-        auto dK = e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
-        //LOG(INFO) << "element K faceids: " << e1.mesh()->element(key.first).facesId();
-        //LOG(INFO) << "dK=" << dK;
-        int n = 0;
-        local_matrix_t B0K(N0,N3);
-        local_matrix_t B1K(N1,N3);
-        std::for_each( dK.begin(), dK.end(), [&]( auto dKi )
-                       {
-                           auto key2 = std::make_pair(key.first, dKi );
-                           if ( A02K.count(key2) )
-                               BK.block(0, n*N2, N0, N2 ) = A02K.at(key2).block(0, 0, N0, N2 );
-                           if ( A12K.count(key2) )
-                               BK.block(N0,n*N2, N1, N2 ) = A12K.at(key2);
-                           ++n;
-                       } );
-        //LOG(INFO) << "BK=" << BK;
-        if ( F0K.size() )
-            FK.head(N0) = F0K.at(K).head(N0);
-        else
-            FK.head(N0) = local_vector_t::Zero( N0 );
-        FK.tail(N1) = F1K.at(K);
-        //LOG(INFO) << "FK=" << FK;
-        if ( VLOG_IS_ON(2) )
-        {
-            cout<< "BK=" << BK << std::endl;
-            cout<< "FK=" << FK << std::endl;
-        }
-
-
-
-
-#if 0
-        auto Aldlt = AK.ldlt();
-        ////LOG(INFO) << "Aldlt=" << Aldlt;
-#else
-        auto Aldlt = AK.lu();
-#endif
-        auto AinvB = Aldlt.solve( BK );
-        //LOG(INFO) << "AinvB=" << AinvB;
-        auto AinvF = Aldlt.solve( FK );
-        //LOG(INFO) << "AinvF=" << AinvF;
-
-        // loop over each face on boundary of K
+        auto dK = e3.mesh()->meshToSubMesh( e1.mesh()->element(K).facesId());
         auto pdK = e3.element( dK );
-        auto uK = e1.element( { K } );
-        auto pK = e2.element( { K } );
-        if ( VLOG_IS_ON(2) )
-        {
-            cout << "pdK=" << pdK << std::endl;
-            cout << "uK=" << uK << std::endl;
-            cout << "pK=" << pK << std::endl;
-
-        }
-        //LOG(INFO) << "pdK=" << pdK;
-        CHECK(pdK.size() == N2*e1.mesh()->numLocalTopologicalFaces() ) << "Invalid sizes " << pdK.size() << "," << N2*e1.mesh()->numLocalTopologicalFaces() << "," << N2 << "," << e1.mesh()->numLocalTopologicalFaces() ;
-        if ( VLOG_IS_ON(2) )
-        {
-            cout << "A00*uK=" << A00*uK << std::endl;
-            cout << "A01*pK=" << A01*pK << std::endl;
-            cout << "B0K*pdK=" << B0K*pdK << std::endl;
-            cout << "A10*uK=" << A10*uK << std::endl;
-            cout << "A11*pK=" << A11*pK << std::endl;
-            cout << "B1K*pdK=" << B1K*pdK << std::endl;
-        }
-        Eigen::VectorXd upK = -AinvB*pdK + AinvF;
-        //LOG(INFO) << "upK=" << upK;
+        Eigen::VectorXd upK = -A*pdK + F;
+        cout << "upK=" << upK << std::endl;
         e1.assignE( K, upK.head( N0 ) );
         e2.assignE( K, upK.tail( N1 ) );
-
-        //LOG(INFO) << "======= done";
-
     }
 
 }
