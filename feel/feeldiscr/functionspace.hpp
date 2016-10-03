@@ -2368,24 +2368,24 @@ public:
 
             }
         template<typename Tloc>
-        void assignE( size_type e, Tloc&& loc )
+        void assignE( size_type e, Tloc&& loc, bool symm = true )
             {
+                int N0 = M_functionspace->dof()->nRealLocalDof();
+                int N0c = M_functionspace->dof()->nRealLocalDof( true );
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
-                for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
-                {
-                    size_type index = ldof.second.index();
-#if 1
-                    if ( is_tensor2symm )
+                    for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
                     {
-                        if ( ldof.first.localDof() >= this->dof()->nRealLocalDof() ) continue;
-                        super::operator[]( index ) = s(ldof.first.localDof())*loc( ldof.first.localDof() );
+                        size_type index = ldof.second.index();
+                        if ( is_tensor2symm )
+                        {
+                            int i = M_functionspace->dof()->unsymmToSymm(ldof.first.localDof());
+                            super::operator[]( index ) = s(i)*loc(i);
+                        }
+                        else
+                        {
+                            super::operator[]( index ) = s(ldof.first.localDof())*loc( ldof.first.localDof() );
+                        }
                     }
-                    else
-#endif
-                        //cout << " . global dof =" << index << " local dof " << ldof.first.localDof() << std::endl;
-                        //cout << " . value=" << loc( ldof.first.localDof() ) << std::endl;
-                    super::operator[]( index ) = s(ldof.first.localDof())*loc( ldof.first.localDof() );
-                }
             }
         void assign( size_type e, local_interpolant_type const& Ihloc )
             {

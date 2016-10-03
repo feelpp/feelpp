@@ -120,16 +120,6 @@ struct hash<std::tuple<TT...>>
 
 namespace Feel
 {
-namespace detail {
-
-inline uint16_type
-symmetricIndex( uint16_type i, uint16_type j, uint16_type n)
-{
-    return  j + n*i - i*(i+1) /2.;
-};
-
-
-}
 template<class ITERATOR>
 ITERATOR begin( std::pair<ITERATOR,ITERATOR> &range )
 {
@@ -625,6 +615,20 @@ public:
             this->M_last_df_globalcluster[processor]=this->M_last_df[processor];
         }
 
+    //!
+    //! give an unsymmetric dof index i, provide the symmetric one
+    //!
+    void setUnsymmToSymm( uint16_type i, uint16_type j )
+        {
+            M_unsymm2symm[i] = j;
+        }
+    //!
+    //! give an unsymmetric dof index i, provide the symmetric one
+    //!
+    uint16_type unsymmToSymm( uint16_type i ) const
+        {
+            return M_unsymm2symm[i];
+        }
     /**
      * \return the dof index
      */
@@ -1450,6 +1454,7 @@ private:
     dof_map_type map_gdof;
     localdof_type M_ldof;
     Dof M_gdof;
+    std::vector<uint16_type> M_unsymm2symm;
 
     std::map<face_permutation_type, permutation_vector_type> vector_permutation;
 
