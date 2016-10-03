@@ -369,6 +369,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
     local_vector_t FK( N );
     local_vector_t DKF( N3 );
     local_vector_t F2( N3 );
+    local_matrix_t Aldlt( N, N );
     for( ; it != en ; ++it )
     {
         auto key = it->first;
@@ -444,21 +445,14 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
 
 
 
-#if 0
-        auto Aldlt = AK.ldlt();
+#if 1
+        Aldlt = AK.ldlt();
         ////LOG(INFO) << "Aldlt=" << Aldlt;
 #else
-        auto Aldlt = AK.lu();
+        Aldlt = AK.lu();
 #endif
         auto AinvB = Aldlt.solve( BK );
         auto AinvF = Aldlt.solve( FK );
-
-        auto pdK = e3.element( dK );
-
-        Eigen::VectorXd upK = -AinvB*pdK + AinvF;
-
-        e1.assignE( K, upK.head( N0 ) );
-        e2.assignE( K, upK.tail( N1 ) );
 
         // local assemble DK and DKF
         DK=-CK*AinvB+A22 ;
@@ -636,7 +630,7 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
     int N0 = e1.dof()->nRealLocalDof();
     int N1 = e2.dof()->nLocalDof();
     cout << "[staticcondensation::localSolve]  N0=" << N0 << " N1=" << N1 << std::endl;
-
+    Eigen::VectorXd upK( N0 + N1 );
     for( auto const& e : M_AinvB )
     {
         auto K = e.first;
@@ -645,7 +639,7 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
 
         auto dK = e3.mesh()->meshToSubMesh( e1.mesh()->element(K).facesId());
         auto pdK = e3.element( dK );
-        Eigen::VectorXd upK = -A*pdK + F;
+        upK.noalias() = -A*pdK + F;
 
         e1.assignE( K, upK.head( N0 ) );
         e2.assignE( K, upK.tail( N1 ) );
@@ -664,6 +658,7 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
     int N1 = e2.dof()->nLocalDof();
     cout << "[staticcondensation::localSolve]  N0=" << N0 << " N1=" << N1 << std::endl;
 
+    Eigen::VectorXd upK( N0 + N1 );
     for( auto const& e : M_AinvB )
     {
         auto K = e.first;
@@ -673,7 +668,7 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         auto dK = e3.mesh()->meshToSubMesh( e1.mesh()->element(K).facesId());
         auto pdK = get_trace( dK, e3, e4 );
 
-        Eigen::VectorXd upK = -A*pdK + F;
+        upK.noalias() = -A*pdK + F;
         e1.assignE( K, upK.head( N0 ) );
         e2.assignE( K, upK.tail( N1 ) );
     }
