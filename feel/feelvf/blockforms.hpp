@@ -147,7 +147,7 @@ public :
             auto& e2 = solution(1_c);
             auto& e1 = solution(0_c);
 
-#if 1
+#if 0
             auto U = backend()->newBlockVector(_block=solution, _copy_values=false);
             tic();
             auto r1 = backend( _name=name, _kind=kind, _rebuild=rebuild,
@@ -160,9 +160,6 @@ public :
             toc("monolithic",FLAGS_v>0);
 
             solution.localize(U);
-            Feel::cout << "[monolithic] sigma: \t" << e1 << std::endl;
-            Feel::cout << "[monolithic] u: \t" << e2 << std::endl;
-            Feel::cout << "[monolithic] uhat: \t" << e3 << std::endl;
 #endif
             auto sc = this->matrixPtr()->sc();
 #if 0
