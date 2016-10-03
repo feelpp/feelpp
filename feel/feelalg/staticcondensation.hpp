@@ -369,9 +369,10 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
     local_vector_t FK( N );
     local_vector_t DKF( N3 );
     local_vector_t F2( N3 );
-    local_matrix_t Aldlt( N, N );
+    //ocal_matrix_t Aldlt( N, N );
     for( ; it != en ; ++it )
     {
+        tic();
         auto key = it->first;
         size_type K = key.first;
         DVLOG(2) << "======= Key=" << key ;
@@ -446,10 +447,10 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
 
 
 #if 1
-        Aldlt = AK.ldlt();
+        auto Aldlt = AK.ldlt();
         ////LOG(INFO) << "Aldlt=" << Aldlt;
 #else
-        Aldlt = AK.lu();
+        auto Aldlt = AK.lu();
 #endif
         auto AinvB = Aldlt.solve( BK );
         auto AinvF = Aldlt.solve( FK );
@@ -460,11 +461,13 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
 
         M_AinvB.emplace( K, AinvB );
         M_AinvF.emplace( K, AinvF );
-
+        toc("sc.condense.localassembly", FLAGS_v>0);
+        tic();
         auto dofs = e3.dofs(dK);
 
         S->addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
         V->addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
+        toc("sc.condense.globalassembly", FLAGS_v>0);
     }
 }
 
