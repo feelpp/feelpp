@@ -117,16 +117,8 @@ public :
             {
                 element_type meshEltCtx;
                 ar & BOOST_SERIALIZATION_NVP( meshEltCtx );
-                if ( M_Xh && M_Xh->mesh() )
-                {
-                    // std::cout << "geospace ContextGeo with full mesh\n";
-                    CHECK ( M_Xh->mesh()->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) ) << "fails because mesh doesnt have the element reloaded for gmc";
-                    auto const& meshEltCtxRegister = M_Xh->mesh()->element( meshEltCtx.id(), meshEltCtx.processId() );
-                    M_gmc.reset( new gmc_type( M_Xh->mesh()->gm(),meshEltCtxRegister ) );
-                    ar & boost::serialization::make_nvp( "gmContext", *M_gmc );
 
-                }
-                else if ( M_meshGeoContext )
+                if ( M_meshGeoContext )
                 {
                     // std::cout << "geospace ContextGeo with minimal mesh\n";
                     if ( !M_meshGeoContext->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) )
@@ -137,6 +129,15 @@ public :
                     auto const& meshEltCtxRegister = M_meshGeoContext->element( meshEltCtx.id(), meshEltCtx.processId() );
                     M_gmc.reset( new gmc_type( M_meshGeoContext->gm(),meshEltCtxRegister ) );
                     ar & boost::serialization::make_nvp( "gmContext", *M_gmc );
+                }
+                else if ( M_Xh && M_Xh->mesh() )
+                {
+                    // std::cout << "geospace ContextGeo with full mesh\n";
+                    CHECK ( M_Xh->mesh()->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) ) << "fails because mesh doesnt have the element reloaded for gmc";
+                    auto const& meshEltCtxRegister = M_Xh->mesh()->element( meshEltCtx.id(), meshEltCtx.processId() );
+                    M_gmc.reset( new gmc_type( M_Xh->mesh()->gm(),meshEltCtxRegister ) );
+                    ar & boost::serialization::make_nvp( "gmContext", *M_gmc );
+
                 }
             }
         BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -267,10 +268,56 @@ public :
                 }
             }
             CHECK( found_on_a_proc ) << "the point " << t << " was not found ! \n";
+
+            // update geo context for each process + define context mesh
+            int mynumber = M_t.size()-1;
+            this->syncCtx( mynumber );
+
             return ret;
+        }
+
+    private :
+        void syncCtx( int ptId )
+        {
+            rank_type procId = M_t_proc[ptId];
+            rank_type myrank = M_Xh->worldComm().rank();
+
+            if ( !M_meshGeoContext )
+                M_meshGeoContext.reset( new mesh_type( M_Xh->worldComm() ) );
+
+            boost::shared_ptr<ContextGeometric> geoCtxReload;
+            if ( myrank == procId )
+            {
+                // update additional mesh used in rb context
+                CHECK( this->find( ptId ) != this->end() ) << "point id is not saved on this process";
+                geoCtxReload = this->operator[]( ptId );
+                CHECK( geoCtxReload ) << "geoCtxReload not init";
+                geoCtxReload->setMeshGeoContext( M_meshGeoContext );
+                auto const& modelMeshEltCtx = geoCtxReload->gmContext()->element();
+                if ( !M_meshGeoContext->hasElement( modelMeshEltCtx.id(), modelMeshEltCtx.processId() ) )
+                {
+                    element_type meshEltCtx = modelMeshEltCtx;
+                    meshEltCtx.setMeshAndGm( M_meshGeoContext.get(), M_meshGeoContext->gm(), M_meshGeoContext->gm1() );
+                    M_meshGeoContext->addElement( meshEltCtx, false );
+                }
+            }
+            else
+            {
+                // create a new geo context
+                geoCtxReload.reset( new ContextGeometric( M_Xh ) );
+                geoCtxReload->setMeshGeoContext( M_meshGeoContext );
+            }
+            // recv geo context from process which have localized the point
+            mpi::broadcast( M_Xh->worldComm().globalComm(), *geoCtxReload, procId );
+
+            // save geo context with process which doesnt have localized the point
+            if ( myrank != procId )
+                this->operator[]( ptId ) = geoCtxReload;
+
+            //std::cout << "["<<M_Xh->worldComm().rank()<<"] M_meshGeoContext->numElements() : " << M_meshGeoContext->numElements() << "\n";
 
         }
-    private :
+
         friend class boost::serialization::access;
 
         template<class Archive>
@@ -299,15 +346,14 @@ public :
 
                 std::vector<int> geoCtxKeys;
                 ar & BOOST_SERIALIZATION_NVP( geoCtxKeys );
+
+                if ( !M_meshGeoContext )
+                    M_meshGeoContext.reset( new mesh_type( M_Xh->worldComm() ) );
+
                 for ( int geoCtxKey : geoCtxKeys )
                 {
                     boost::shared_ptr<ContextGeometric> geoCtxReload( new ContextGeometric( M_Xh ) );
-                    if ( M_Xh && !M_Xh->mesh() )
-                    {
-                        if ( !M_meshGeoContext )
-                            M_meshGeoContext.reset( new mesh_type( M_Xh->worldComm() ) );
-                        geoCtxReload->setMeshGeoContext( M_meshGeoContext );
-                    }
+                    geoCtxReload->setMeshGeoContext( M_meshGeoContext );
                     std::string geoctxNameInSerialization = (boost::format("geoSpaceContext_%1%")%geoCtxKey).str();
                     // std::cout << "geospace::Context load name : " << geoctxNameInSerialization << "\n";
                     ar & boost::serialization::make_nvp( geoctxNameInSerialization.c_str(), *geoCtxReload );
