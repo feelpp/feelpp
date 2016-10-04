@@ -1459,6 +1459,199 @@ protected :
     ResidualNormType M_normUsedForResidual;
 };
 
+template<typename EimSpaceType,typename ModelType>
+class EIMFunctionFeSpaceDb
+{
+public :
+    typedef EimSpaceType eim_functionspace_type;
+    typedef boost::shared_ptr<eim_functionspace_type> eim_functionspace_ptrtype;
+    typedef typename eim_functionspace_type::element_type eim_element_type;
+
+    typedef ModelType model_type;
+    typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef boost::weak_ptr<model_type> model_weakptrtype;
+
+    typedef typename model_type::functionspace_type model_functionspace_type;
+    typedef boost::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
+    typedef typename model_functionspace_type::element_type model_element_type;
+
+    EIMFunctionFeSpaceDb()
+        :
+        M_max_q( 0 ),
+        M_max_g( 0 ),
+        M_max_z( 0 ),
+        M_max_solution( 0 )
+        {}
+
+    eim_functionspace_ptrtype const& eimFunctionSpace() { return M_eimFunctionSpace; }
+    model_functionspace_ptrtype const& modelFunctionSpace() const { return M_model.lock()->functionSpace(); }
+
+    int maxQ() const { return M_max_q; }
+    int maxG() const { return M_max_g; }
+    int maxZ() const { return M_max_z; }
+    int maxSolution() const { return M_max_solution; }
+
+    std::vector<eim_element_type> const& q() const { return M_q_vector; }
+    eim_element_type const& q( int k ) const { return M_q_vector[k]; }
+    std::vector<eim_element_type> const& g() const { return M_g_vector; }
+    eim_element_type const& g( int k ) const { return M_g_vector[k]; }
+    std::vector<eim_element_type> const& z() const { return M_z_vector; }
+    eim_element_type const& z( int k ) const { return M_z_vector[k]; }
+    std::vector<model_element_type> const& solutions() const { return M_solution_vector; }
+    model_element_type const& solution( int k ) const { return M_solution_vector[k]; }
+
+    void setEimFunctionSpace( eim_functionspace_ptrtype const& space ) { M_eimFunctionSpace = space; }
+    void setModel( model_ptrtype const& model ) { M_model = model; }
+
+    void setMax( int max_q, int max_g, int max_z, int max_solution )
+    {
+        M_max_q = max_q;
+        M_max_g = max_g;
+        M_max_z = max_z;
+        M_max_solution = max_solution;
+    }
+
+    void addBasis( eim_element_type const &q )
+    {
+        M_q_vector.push_back( q );
+    }
+    void addExpressionEvaluation( eim_element_type const &g )
+    {
+        M_g_vector.push_back( g );
+    }
+    void addZ( eim_element_type const &z )
+    {
+        M_z_vector.push_back( z );
+    }
+    void addSolution( model_element_type const &solution )
+    {
+        M_solution_vector.push_back( solution );
+    }
+
+    void clear()
+    {
+        M_q_vector.clear();
+        M_g_vector.clear();
+        M_z_vector.clear();
+        M_solution_vector.clear();
+        this->setMax( 0,0,0,0 );
+    }
+
+    bool load( std::string const& dbName, std::string const& dbDir, WorldComm const& worldComm )
+    {
+        if  ( !this->eimFunctionSpace() )
+        {
+            if ( !M_model.lock() )
+                return false;
+            else if ( !this->modelFunctionSpace() )
+                return false;
+        }
+
+        std::string feDbFilename = ( boost::format( "%1%_p%2%.crbdb" ) %dbName %worldComm.globalRank() ).str();
+        fs::ifstream ifs( fs::path(dbDir) / feDbFilename );
+        if ( ifs )
+        {
+            //boost::archive::text_iarchive ia( ifs );
+            boost::archive::binary_iarchive ia( ifs );
+            //write class instance to archive
+            ia >> *this;
+            return true;
+        }
+        return false;
+    }
+
+    void save( std::string const& dbName, std::string const& dbDir, WorldComm const& worldComm )
+    {
+        std::string feDbFilename = ( boost::format( "%1%_p%2%.crbdb" ) %dbName %worldComm.globalRank() ).str();
+        fs::ofstream ofs( fs::path(dbDir) / feDbFilename );
+        if ( ofs )
+        {
+            boost::archive::binary_oarchive oa( ofs );
+            oa << *this;
+        }
+    }
+
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & __ar, const unsigned int __version )
+    {
+        //max of eim basis function projected on function space
+        __ar & BOOST_SERIALIZATION_NVP( M_max_q );
+        DVLOG(2) << "max-q saved/loaded";
+        __ar & BOOST_SERIALIZATION_NVP( M_max_g );
+        DVLOG(2) << "max-g saved/loaded";
+        __ar & BOOST_SERIALIZATION_NVP( M_max_z );
+        DVLOG(2) << "max-z saved/loaded\n";
+        __ar & BOOST_SERIALIZATION_NVP( M_max_solution );
+        DVLOG(2) << "max-solution saved/loaded\n";
+
+        if ( Archive::is_loading::value )
+        {
+            if( M_q_vector.size() == 0 && this->eimFunctionSpace() )
+            {
+                for(int i = 0; i < M_max_q; i++ )
+                    M_q_vector.push_back( this->eimFunctionSpace()->element() );
+                for( int i = 0; i < M_max_q; ++ i )
+                    __ar & BOOST_SERIALIZATION_NVP( M_q_vector[i] );
+            }
+            DVLOG(2) << "q saved/loaded ( "<<M_max_g<<" elements ) ";
+
+            if( M_g_vector.size() == 0 && this->eimFunctionSpace() )
+            {
+                for(int i = 0; i < M_max_g; i++ )
+                    M_g_vector.push_back( this->eimFunctionSpace()->element() );
+                for( int i = 0; i < M_max_g; ++ i )
+                    __ar & BOOST_SERIALIZATION_NVP( M_g_vector[i] );
+            }
+            DVLOG(2) << "g saved/loaded ( "<<M_max_g<<" elements ) ";
+
+            if( M_z_vector.size() == 0 && this->eimFunctionSpace() )
+            {
+                for(int i = 0; i < M_max_z; i++ )
+                    M_z_vector.push_back( this->eimFunctionSpace()->element() );
+                for( int i = 0; i < M_max_z; ++ i )
+                    __ar & BOOST_SERIALIZATION_NVP( M_z_vector[i] );
+            }
+            DVLOG(2) << "z saved/loaded ( "<<M_max_z<<" elements ) ";
+
+            if( M_solution_vector.size() == 0 && this->modelFunctionSpace() )
+            {
+                for(int i = 0; i < M_max_solution; i++ )
+                    M_solution_vector.push_back( this->modelFunctionSpace()->element() );
+                for( int i = 0; i < M_max_solution; ++ i )
+                    __ar & BOOST_SERIALIZATION_NVP( M_solution_vector[i] );
+            }
+            DVLOG(2) << "vector of solutions saved/loaded ( "<<M_max_solution<<" elements ) ";
+        }
+        else
+        {
+            for( int i = 0; i < M_max_q; ++ i )
+                __ar & BOOST_SERIALIZATION_NVP( M_q_vector[i] );
+            for( int i = 0; i < M_max_g; ++ i )
+                __ar & BOOST_SERIALIZATION_NVP( M_g_vector[i] );
+            for( int i = 0; i < M_max_z; ++ i )
+                __ar & BOOST_SERIALIZATION_NVP( M_z_vector[i] );
+            for( int i = 0; i < M_max_solution; ++ i )
+                __ar & BOOST_SERIALIZATION_NVP( M_solution_vector[i] );
+        }
+    }
+
+private :
+    eim_functionspace_ptrtype M_eimFunctionSpace;
+    model_functionspace_ptrtype M_modelFunctionSpace;
+    model_weakptrtype M_model;
+
+    int M_max_q;
+    int M_max_g;
+    int M_max_z;
+    int M_max_solution;
+
+    std::vector< eim_element_type > M_q_vector ;
+    std::vector< eim_element_type > M_g_vector ;
+    std::vector< eim_element_type > M_z_vector ; // we need to store this to be able to compute expression of eim basis functions and the user can use them in integrals
+    std::vector< model_element_type > M_solution_vector ;
+};
 
 
 template<typename ModelType, typename SpaceType, typename ExprType, int SubSpaceId = -1, int SubSpaceId2 = -1>
@@ -1600,19 +1793,17 @@ public:
         M_crb_built( false ),
         M_crbmodel_built( false ),
         M_mu_sampling( new sampling_type ( model->parameterSpace() , 1 , sampling ) ),
-        M_q_vector(),
-        M_g_vector(),
-        M_z_vector(),
-        M_solution_vector(),
         M_t(),
-                       //M_ctxFeBasisEim( new context_type( this->functionSpace() ) ),
         M_B(),
         M_offline_error(),
         M_eim()
-                       //M_internalModelFeFunc( this->functionSpace()->elementPtr() )
         {
+            if ( model )
+                M_eimFeSpaceDb.setModel( model );
            if ( this->functionSpace() )
            {
+               M_eimFeSpaceDb.setEimFunctionSpace( this->functionSpace() );
+
                if ( model_use_nosolve && this->functionSpace()->mesh() )
                {
                    geometricspace_ptrtype geospace( new geometricspace_type( this->functionSpace()->mesh() ) );
@@ -1624,8 +1815,10 @@ public:
 
             this->initExprFeContex( mpl::bool_<use_subspace_element>() );
 
+            // update ouput path of database
             if ( dbfilename.empty() )
             {
+                this->setDBFilename( ( boost::format( "%1%.crbdb" ) %this->name() ).str() );
                 this->addDBSubDirectory( "EIMFunction_"+model->modelName() );
                 if ( this->worldComm().isMasterRank() )
                 {
@@ -1643,17 +1836,17 @@ public:
                 this->setDBDirectory( dbfilenamePath.parent_path().string() );
             }
 
-            if ( this->functionSpace() )
-                M_eim.reset( new eim_type( this, sampling , 1e-8, loadDB() ) );
-
-            if ( !loadDB() )
-            {
+            // reload maybe a database
+            bool hasLoadedDb = this->loadDB();
+            if ( !hasLoadedDb )
                 LOG(INFO) << "No EIMFunction database ";
-            }
             else
-            {
                 LOG( INFO ) << "EIMFunction loaded";
-            }
+
+            // build eim basis
+            if ( this->functionSpace() )
+                M_eim.reset( new eim_type( this, sampling , 1e-8, hasLoadedDb ) );
+
         }
 
     /**
@@ -1729,16 +1922,20 @@ public:
 
     void saveDB()
     {
-        fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
-
-        if ( ofs )
+        if ( this->worldComm().isMasterRank() )
         {
-            //boost::archive::text_oarchive oa( ofs );
-            boost::archive::binary_oarchive oa( ofs );
-            // write class instance to archive
-            oa << *this;
-            // archive and stream closed when destructors are called
+            fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+            if ( ofs )
+            {
+                //boost::archive::text_oarchive oa( ofs );
+                boost::archive::binary_oarchive oa( ofs );
+                // write class instance to archive
+                oa << *this;
+                // archive and stream closed when destructors are called
+            }
         }
+
+        M_eimFeSpaceDb.save( this->name() + "_fespace", this->dbDirectory(), this->worldComm() );
     }
 
     /**
@@ -1746,13 +1943,12 @@ public:
      */
     bool loadDB()
     {
-        if( M_q_vector.size() > 0 && M_t.size() > 0 )
+        if( M_eimFeSpaceDb.q().size() > 0 && M_t.size() > 0 )
         {
             return true;
         }
 
         fs::path db = this->lookForDB();
-
         if ( db.empty() || !fs::exists( db ) )
         {
             return false;
@@ -1762,7 +1958,6 @@ public:
         //     return false;
 
         fs::ifstream ifs( db );
-
         if ( ifs )
         {
             //boost::archive::text_iarchive ia( ifs );
@@ -1770,10 +1965,31 @@ public:
             //write class instance to archive
             ia >> *this;
             //std::cout << "Loading " << db << " done...\n";
+
+            // add interpolation points to the context
+            if( M_ctxFeBasisEim && M_ctxFeBasisEim->nPoints()==0 && M_ctxFeModelSolution )
+            {
+                typename Feel::node<value_type>::type no(nDim);
+                for(int i=0 ; i<M_t.size(); i++)
+                {
+                    node_type t = M_t[i];
+                    for(int dim =0; dim < nDim; ++dim )
+                        no(dim) = t(dim);
+                    M_ctxFeBasisEim->add( no );
+                    M_ctxFeModelSolution->add( no );
+                }
+            }
+
+            // load eim fe space
+            bool hasLoadedFeSpaceDb = M_eimFeSpaceDb.load( this->name() + "_fespace", this->dbDirectory(), this->worldComm() );
+            if ( this->functionSpace() )
+                CHECK( hasLoadedFeSpaceDb ) << "loading of fespace database fails";
+
             this->setIsLoaded( true );
             // archive and stream closed when destructors are called
             return true;
         }
+
         return false;
     }
 
@@ -1787,10 +2003,7 @@ public:
         M_t.clear();
         M_M_max=0;
         M_B.resize(0,0);
-        M_q_vector.clear();
-        M_g_vector.clear();
-        M_z_vector.clear();
-        M_solution_vector.clear();
+        M_eimFeSpaceDb.clear();
     }
 
     vector_type beta( parameter_type const& mu ) /*const*/ { return this->beta( mu, this->mMax() ); }
@@ -1967,19 +2180,19 @@ public:
 
     void addBasis( element_type const &q )
     {
-        M_q_vector.push_back( q );
+        M_eimFeSpaceDb.addBasis( q );
     }
     void addExpressionEvaluation( element_type const &g )
     {
-        M_g_vector.push_back( g );
+        M_eimFeSpaceDb.addExpressionEvaluation( g );
     }
     void addZ( element_type const &z )
     {
-        M_z_vector.push_back( z );
+        M_eimFeSpaceDb.addZ( z );
     }
     void addSolution( model_solution_type const &solution )
     {
-        M_solution_vector.push_back ( solution );
+        M_eimFeSpaceDb.addSolution( solution );
     }
     void addParameter( parameter_type const &mu )
     {
@@ -2033,7 +2246,7 @@ public:
         {
             auto eimexpr = this->expr( mu );
             bool applyProjection = false;//true;
-            bool doMpiComm = true;//false;
+            bool doMpiComm = false;//true;//false;
             return evaluateFromContext( _context=ctx, _expr=eimexpr, _max_points_used=M,
                                         _mpi_communications=doMpiComm, _projection=applyProjection );
         }
@@ -2297,7 +2510,7 @@ public:
         if( this->M_computeExpansionOfExpression )
         {
             M_mu = M_mu_sampling->at(0);
-            auto eimexpr = this->expr( M_mu, M_solution_vector[0] );
+            auto eimexpr = this->expr( M_mu, M_eimFeSpaceDb.solution(0) );
 
             auto expression_evaluated = evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=eimexpr );
             double eval = expression_evaluated(0);
@@ -2355,8 +2568,8 @@ public:
             vector_type expression_evaluated;
 
             M_mu = M_mu_sampling->at(m);
-            auto eimexpr = this->expr( M_mu, M_solution_vector[m] );
-            auto residual = eimexpr - idv( M_z_vector[m] );
+            auto eimexpr = this->expr( M_mu, M_eimFeSpaceDb.solution(m) );
+            auto residual = eimexpr - idv( M_eimFeSpaceDb.z(m) );
             expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=residual );
             double eval = expression_evaluated( 0 );
             auto expression_q  = residual / eval; // __j^th normalized basis function
@@ -2366,7 +2579,7 @@ public:
         else
         {
             //in that case we have already the eim basis functions
-            return M_q_vector[m];
+            return M_eimFeSpaceDb.q(m);
         }
 
         return 0;
@@ -2377,7 +2590,7 @@ public:
         if( this->M_computeExpansionOfExpression )
         {
             M_mu = M_mu_sampling->at(m);
-            auto eimexpr = this->expr( M_mu, M_solution_vector[m] );
+            auto eimexpr = this->expr( M_mu, M_eimFeSpaceDb.solution(m) );
             auto residual =  eimexpr - idv(z);
 
             int proc_number = this->worldComm().globalRank();
@@ -2410,7 +2623,7 @@ public:
         }
         else
         {
-            auto residual = vf::project(_space=this->functionSpace(), _expr=idv(M_g_vector[m]) - idv( z ) );
+            auto residual = vf::project(_space=this->functionSpace(), _expr=idv(M_eimFeSpaceDb.g(m)) - idv( z ) );
             auto t = M_t[m];
             residual.scale( 1./residual(t)(0,0,0) );
             return residual;
@@ -2426,8 +2639,8 @@ public:
         int size = M_ctxFeBasisEim->nPoints();
         M_B.conservativeResize( size , size );
 
-        DVLOG( 2 ) << "solution.size() : "<<M_solution_vector.size();
-        DVLOG( 2 ) << "q.size() : "<<M_q_vector.size();
+        DVLOG( 2 ) << "solution.size() : "<<M_eimFeSpaceDb.solutions().size();
+        DVLOG( 2 ) << "q.size() : "<< M_eimFeSpaceDb.q().size();
 
         auto eimexpr = this->expr( M_mu );//, *M_u );
 
@@ -2797,11 +3010,11 @@ public:
     element_type interpolant( parameter_type const& mu )
     {
         auto beta = this->beta( mu );
-        return expansion( M_q_vector, this->beta( mu ) , M_M_max);
+        return expansion( M_eimFeSpaceDb.q(), this->beta( mu ) , M_M_max);
     }
     element_type interpolant( parameter_type const& mu , model_solution_type const & solution , int M)
     {
-        return expansion( M_q_vector, this->beta( mu , solution , M) , M );
+        return expansion( M_eimFeSpaceDb.q(), this->beta( mu , solution , M) , M );
     }
 
     //return M_eim->operator()( mu , M_eim->mMax() ); }
@@ -2809,9 +3022,7 @@ public:
     //element_type const& q( int m ) const { return M_eim->q( m ); }
     element_type const& q( int m ) const
     {
-        int size = M_q_vector.size();
-        FEELPP_ASSERT( m >= 0 && m < size )( m )( size ).error( "out of bounds access" );
-        return M_q_vector[m];
+        return M_eimFeSpaceDb.q( m );
     }
 
     void printInterpolationPointsSelection() const
@@ -2921,7 +3132,7 @@ public:
         }
     }
 
-    std::vector<element_type> const& q() const { return M_q_vector; }
+    std::vector<element_type> const& q() const { return M_eimFeSpaceDb.q(); }
 
 
     void studyConvergence( parameter_type const & mu , model_solution_type & solution, std::vector< std::string > all_file_name ) const { return M_eim->studyConvergence( mu , solution , all_file_name ) ; }
@@ -2932,12 +3143,12 @@ public:
     {
         int max=0;
         int user_max = ioption(_name="eim.dimension-max");
-        int built = M_max_q;
+        // int built = M_max_q;
         //if the user wants to enrich the database we return M_M_max or
         //if the eim expansion contains less terms that expected by the user then there is no error.
         //But if there is already enough basis functions then we return M_M_max-1
         //to deal with error estimation
-        if( (user_max+1) > M_max_q )
+        if( (user_max+1) > M_eimFeSpaceDb.maxQ() )
         {
             max = M_M_max;
             //in that case if the eim expansion is finished there is no error associated
@@ -2955,12 +3166,12 @@ public:
     {
         int max=0;
         int user_max = ioption(_name="eim.dimension-max");
-        int built = M_max_q;
+        // int built = M_max_q;
         //if the user wants to enrich the database we return M_M_max or
         //if the eim expansion contains less terms that expected by the user then there is no error.
         //But if there is already enough basis functions then we return M_M_max-1
         //to deal with error estimation
-        if( (user_max+1) > M_max_q )
+        if( (user_max+1) > M_eimFeSpaceDb.maxQ() )
         {
             max = M_M_max;
         }
@@ -2974,27 +3185,24 @@ public:
     void setMax(int m, int max_q, int max_g, int max_z, int max_solution )
     {
         M_M_max = m;
-        M_max_q = max_q;
-        M_max_g = max_g;
-        M_max_z = max_z;
-        M_max_solution = max_solution;
+        M_eimFeSpaceDb.setMax( max_q, max_g, max_z, max_solution );
     }
 
     int maxQ() const
     {
-        return M_max_q;
+        return M_eimFeSpaceDb.maxQ();
     }
     int maxG() const
     {
-        return M_max_g;
+        return M_eimFeSpaceDb.maxG();
     }
     int maxZ() const
     {
-        return M_max_z;
+        return M_eimFeSpaceDb.maxZ();
     }
     int maxSolution() const
     {
-        return M_max_solution;
+        return M_eimFeSpaceDb.maxSolution();
     }
 
     friend class boost::serialization::access;
@@ -3003,19 +3211,6 @@ public:
     {
         __ar & BOOST_SERIALIZATION_NVP( M_M_max );
         DVLOG(2) << "M saved/loaded\n";
-
-        //max of eim basis function projected on function space
-        __ar & BOOST_SERIALIZATION_NVP( M_max_q );
-        DVLOG(2) << "max-q saved/loaded";
-
-        __ar & BOOST_SERIALIZATION_NVP( M_max_g );
-        DVLOG(2) << "max-g saved/loaded";
-
-        __ar & BOOST_SERIALIZATION_NVP( M_max_z );
-        DVLOG(2) << "max-z saved/loaded\n";
-
-        __ar & BOOST_SERIALIZATION_NVP( M_max_solution );
-        DVLOG(2) << "max-solution saved/loaded\n";
 
         // save t
         __ar & BOOST_SERIALIZATION_NVP( M_t );
@@ -3029,7 +3224,6 @@ public:
         __ar & BOOST_SERIALIZATION_NVP( M_B );
         DVLOG(2) << "B saved/loaded\n";
 
-#if 1
         // load/save geometricspace context
         if ( Archive::is_loading::value )
         {
@@ -3053,101 +3247,10 @@ public:
             if ( hasCtxGeoEim )
                 __ar & BOOST_SERIALIZATION_NVP( *M_ctxGeoEim );
         }
-#endif
-        if ( Archive::is_loading::value )
-        {
-            if( M_q_vector.size() == 0 && this->functionSpace() )
-            {
-                for(int i = 0; i < M_max_q; i++ )
-                {
-                    M_q_vector.push_back( this->functionSpace()->element() );
-                }
-                for( int i = 0; i < M_max_q; ++ i )
-                {
-                    __ar & BOOST_SERIALIZATION_NVP( M_q_vector[i] );
-                }
-            }
-
-            // save q
-            DVLOG(2) << "q saved/loaded ( "<<M_max_g<<" elements ) ";
-
-            if( M_g_vector.size() == 0 && this->functionSpace() )
-            {
-                for(int i = 0; i < M_max_g; i++ )
-                {
-                    M_g_vector.push_back( this->functionSpace()->element() );
-                }
-                for( int i = 0; i < M_max_g; ++ i )
-                {
-                    __ar & BOOST_SERIALIZATION_NVP( M_g_vector[i] );
-                }
-            }
-
-            if( M_z_vector.size() == 0 && this->functionSpace() )
-            {
-                for(int i = 0; i < M_max_z; i++ )
-                {
-                    M_z_vector.push_back( this->functionSpace()->element() );
-                }
-                for( int i = 0; i < M_max_z; ++ i )
-                {
-                    __ar & BOOST_SERIALIZATION_NVP( M_z_vector[i] );
-                }
-            }
-
-            DVLOG(2) << "z saved/loaded ( "<<M_max_z<<" elements ) ";
-
-            if( M_solution_vector.size() == 0 && this->modelFunctionSpace() )
-            {
-                for(int i = 0; i < M_max_solution; i++ )
-                {
-                    M_solution_vector.push_back( this->modelFunctionSpace()->element() );
-                }
-                for( int i = 0; i < M_max_solution; ++ i )
-                    __ar & BOOST_SERIALIZATION_NVP( M_solution_vector[i] );
-            }
-            DVLOG(2) << "vector of solutions saved/loaded ( "<<M_max_solution<<" elements ) ";
-            DVLOG(2) << "vector of solutions saved/loaded ( "<<M_max_solution<<" elements ) \n";
-
-            //add interpolation points to the context
-            if( M_ctxFeBasisEim && M_ctxFeBasisEim->nPoints()==0 && M_ctxFeModelSolution )
-            {
-                typename Feel::node<value_type>::type no(nDim);
-                for(int i=0 ; i<M_t.size(); i++)
-                {
-                    node_type t = M_t[i];
-                    for(int dim =0; dim < nDim; ++dim )
-                        no(dim) = t(dim);
-                    M_ctxFeBasisEim->add( no );
-                    M_ctxFeModelSolution->add( no );
-                }
-            }
-        }
-        else
-        {
-            for( int i = 0; i < M_max_q; ++ i )
-            {
-                __ar & BOOST_SERIALIZATION_NVP( M_q_vector[i] );
-            }
-            for( int i = 0; i < M_max_g; ++ i )
-            {
-                __ar & BOOST_SERIALIZATION_NVP( M_g_vector[i] );
-            }
-            for( int i = 0; i < M_max_z; ++ i )
-            {
-                __ar & BOOST_SERIALIZATION_NVP( M_z_vector[i] );
-            }
-
-            for( int i = 0; i < M_max_solution; ++ i )
-            {
-                __ar & BOOST_SERIALIZATION_NVP( M_solution_vector[i] );
-            }
-        }
-
-        DVLOG(2) << "vector of mu saved/loaded ( "<<M_M_max<<" elements ) ";
     }
 
 private:
+    EIMFunctionFeSpaceDb<functionspace_type,model_type> M_eimFeSpaceDb;
     // model_ptrtype M_model;
     model_weakptrtype M_model;
     model_ptrtype M_modelAttached;
@@ -3161,16 +3264,8 @@ private:
     bool M_crb_built;
     bool M_crbmodel_built;
     sampling_ptrtype M_mu_sampling ;
-    std::vector< element_type > M_q_vector ;
-    std::vector< element_type > M_g_vector ;
-    std::vector< element_type > M_z_vector ; // we need to store this to be able to compute expression of eim basis functions and the user can use them in integrals
-    std::vector< model_solution_type > M_solution_vector ;
     std::vector< double > M_evaluation_vector; // we need to store this to be able to compute expression of eim basis functions and the user can use them in integrals
     int M_M_max;
-    int M_max_q;
-    int M_max_g;
-    int M_max_z;
-    int M_max_solution;
     std::vector<node_type> M_t;
     geometricspace_context_ptrtype M_ctxGeoEim;
     boost::shared_ptr<context_type> M_ctxFeBasisEim;
@@ -3314,8 +3409,8 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
 #endif
 
     std::string /*const&*/ modelName() const { return M_model.lock()->modelName(); }
-    functionspace_ptrtype functionSpace() { return M_model.lock()->functionSpace(); }
-    parameterspace_ptrtype parameterSpace() { return M_model.lock()->parameterSpace(); }
+    functionspace_ptrtype const& functionSpace() const { return M_model.lock()->functionSpace(); }
+    parameterspace_ptrtype const& parameterSpace() const { return M_model.lock()->parameterSpace(); }
 #if 0
     struct ProjectInfCompositeCase
     {
