@@ -190,11 +190,11 @@ Hdg<Dim, OrderP>::convergence()
     auto mu     = expr(soption("mu"));
 
     // Exact solutions
-    auto u_exact = expr<Dim,1>(soption("u_exact"));
-    auto gradu_exact = grad(u_exact);
+    auto u_exact = expr<Dim,1,OrderP+2>(soption("u_exact"));
+    auto gradu_exact = grad<Dim,OrderP+2>(u_exact);
     auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
     auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
-    auto f = expr<Dim,1>(soption("f"));
+    auto f = expr<Dim,1,OrderP+2>(soption("f"));
 
     cout << "lambda : " << lambda      << std::endl;
     cout << "mu     : " << mu          << std::endl;
@@ -458,11 +458,13 @@ Hdg<Dim, OrderP>::convergence()
     Ue(0_c).on( _range=elements(mesh), _expr=sigma_exact );
     Ue(1_c).on( _range=elements(mesh), _expr=u_exact );
 
+
     Feel::cout << "sigma exact: \t" << Ue(0_c) << std::endl;
 	Feel::cout << "sigma: \t" << sigmap << std::endl;
     Feel::cout << "u exact: \t" << Ue(1_c) << std::endl;
 	Feel::cout << "u: \t" << up << std::endl;
 	Feel::cout << "uhat: \t" << uhatp << std::endl;
+
 
     // ****** Compute error ******
     tic();
