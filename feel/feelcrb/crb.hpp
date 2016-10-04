@@ -321,6 +321,7 @@ public:
         M_seekMuInComplement( boption(_name="crb.seek-mu-in-complement") ),
         M_showResidual( boption(_name="crb.show-residual") )
     {
+        this->setDBFilename( ( boost::format( "%1%.crbdb" ) %this->name() ).str() );
     }
 
     //! constructor from command line options
@@ -11222,19 +11223,19 @@ void
 CRB<TruthModelType>::saveDB()
 {
 
-    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
-
-    if ( ofs )
-    {
-        //boost::archive::text_oarchive oa( ofs );
-        boost::archive::binary_oarchive oa( ofs );
-        // write class instance to archive
-        oa << *this;
-        // archive and stream closed when destructors are called
-    }
-
     if ( this->worldComm().isMasterRank() )
     {
+        fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+        if ( ofs )
+        {
+            //boost::archive::text_oarchive oa( ofs );
+            boost::archive::binary_oarchive oa( ofs );
+            // write class instance to archive
+            oa << *this;
+            // archive and stream closed when destructors are called
+        }
+
+
         std::string crbjsonFilename = (boost::format("%1%.crb.json")%this->name()).str();
         //std::string filenameJson = (this->dbLocalPath()/fs::path("crb.json")).string();
         std::string filenameJson = (this->dbLocalPath()/fs::path(crbjsonFilename)).string();
