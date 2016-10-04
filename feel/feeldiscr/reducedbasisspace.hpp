@@ -882,16 +882,7 @@ public :
                 if ( M_rbspace )
                 {
                     // std::cout << "has rbspace\n";
-                    if ( M_rbspace->mesh() )
-                    {
-                        // std::cout << "has mesh in rbspace\n";
-                        CHECK ( M_rbspace->mesh()->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) ) << "fails because mesh doesnt have the element reloaded for gmc";
-                        auto const& meshEltCtxRegister = M_rbspace->mesh()->element( meshEltCtx.id(), meshEltCtx.processId() );
-                        typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_rbspace->mesh()->gm(),meshEltCtxRegister ) );
-                        ar & boost::serialization::make_nvp( "gmContext", *gmContext );
-                        this->setGmContext( gmContext );
-                    }
-                    else if ( M_meshForRbContext )
+                    if ( M_meshForRbContext )
                     {
                         if ( !M_meshForRbContext->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) )
                         {
@@ -900,6 +891,15 @@ public :
                         }
                         auto const& meshEltCtxRegister = M_meshForRbContext->element( meshEltCtx.id(), meshEltCtx.processId() );
                         typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_meshForRbContext->gm(),meshEltCtxRegister ) );
+                        ar & boost::serialization::make_nvp( "gmContext", *gmContext );
+                        this->setGmContext( gmContext );
+                    }
+                    else if ( M_rbspace->mesh() )
+                    {
+                        // std::cout << "has mesh in rbspace\n";
+                        CHECK ( M_rbspace->mesh()->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) ) << "fails because mesh doesnt have the element reloaded for gmc";
+                        auto const& meshEltCtxRegister = M_rbspace->mesh()->element( meshEltCtx.id(), meshEltCtx.processId() );
+                        typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_rbspace->mesh()->gm(),meshEltCtxRegister ) );
                         ar & boost::serialization::make_nvp( "gmContext", *gmContext );
                         this->setGmContext( gmContext );
                     }
@@ -1014,6 +1014,9 @@ public :
             {
                 for( auto& c : *this )
                     c.second->update();
+                // update context for each process + define context mesh
+                for ( int k=0;k<this->nPoints();++k )
+                    this->syncCtx( k );
             }
 
         rbspace_ptrtype const& rbFunctionSpace() const
@@ -1061,9 +1064,52 @@ public :
             return M_nPoints;//M_ctx_fespace.nPoints();
         }
 
-        fe_context_type const& feContext() { return M_ctx_fespace; }
+        fe_context_type const& feContext() const { return M_ctx_fespace; }
 
     private :
+
+        void syncCtx( int ptId )
+        {
+            rank_type procId = M_ctx_fespace.processorHavingPoint(ptId);
+            rank_type myrank = M_rbspace->worldComm().rank();
+
+            if ( !M_meshForRbContext )
+                M_meshForRbContext.reset( new mesh_type( M_rbspace->worldComm() ) );
+
+            ctxrb_ptrtype rbCtxReload;
+            if ( myrank == procId )
+            {
+                // update additional mesh used in rb context
+                CHECK( this->find( ptId ) != this->end() ) << "point id is not saved on this process";
+                rbCtxReload = this->operator[]( ptId );
+                CHECK( rbCtxReload ) << "rbCtxReload not init";
+                rbCtxReload->setMeshForRbContext( M_meshForRbContext );
+                auto const& modelMeshEltCtx = rbCtxReload->gmContext()->element();
+                if ( !M_meshForRbContext->hasElement( modelMeshEltCtx.id(), modelMeshEltCtx.processId() ) )
+                {
+                    geoelement_type meshEltCtx = modelMeshEltCtx;;
+                    meshEltCtx.setMeshAndGm( M_meshForRbContext.get(), M_meshForRbContext->gm(), M_meshForRbContext->gm1() );
+                    M_meshForRbContext->addElement( meshEltCtx, false );
+                }
+            }
+            else
+            {
+                // create a new rb context
+                rbCtxReload.reset( new ctxrb_type );
+                rbCtxReload->setRbSpace( M_rbspace );
+                rbCtxReload->setMeshForRbContext( M_meshForRbContext );
+            }
+            // recv rb context from process which have localized the point
+            mpi::broadcast( M_rbspace->worldComm().globalComm(), *rbCtxReload, procId );
+
+            // save rb context with process which doesnt have localized the point
+            if ( myrank != procId )
+                this->operator[]( ptId ) = rbCtxReload;
+
+            // std::cout << "["<<M_rbspace->worldComm().rank()<<"] M_meshForRbContext->numElements() : " << M_meshForRbContext->numElements() << "\n";
+        }
+
+
         friend class boost::serialization::access;
 
         template<class Archive>
@@ -1088,8 +1134,7 @@ public :
                 // std::cout << "reload rbctxset\n";
                 if ( M_rbspace )
                 {
-                    // std::cout << "reload rbctxset with rbspace\n";
-                    if ( !M_rbspace->mesh() )
+                    if ( !M_meshForRbContext )
                         M_meshForRbContext.reset( new mesh_type( M_rbspace->worldComm() ) );
                 }
 
@@ -1103,8 +1148,7 @@ public :
                     if ( M_rbspace )
                     {
                         rbCtxReload->setRbSpace( M_rbspace );
-                        if ( !M_rbspace->mesh() )
-                            rbCtxReload->setMeshForRbContext( M_meshForRbContext );
+                        rbCtxReload->setMeshForRbContext( M_meshForRbContext );
                     }
                     ar & boost::serialization::make_nvp( rbctxNameInSerialization.c_str(), *rbCtxReload );
                     this->operator[]( rbCtxKey ) = rbCtxReload;
