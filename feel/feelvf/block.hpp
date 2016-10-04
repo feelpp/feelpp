@@ -273,6 +273,13 @@ struct BlocksBase
         return M_nCol;
     }
 
+    //!
+    //! \return the number of entries in the block object
+    //!
+    index_type size() const
+    {
+        return M_nCol*M_nRow;
+    }
     void reset()
     {
         M_cptToBuild=0;
