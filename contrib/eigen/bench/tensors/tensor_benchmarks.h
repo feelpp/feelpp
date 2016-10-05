@@ -46,8 +46,13 @@ template <typename Device, typename T> class BenchmarkSuite {
   void typeCasting(int num_iters) {
     eigen_assert(m_ == n_);
     Eigen::array<TensorIndex, 2> sizes;
-    sizes[0] = m_;
-    sizes[1] = k_;
+    if (sizeof(T) >= sizeof(int)) {
+      sizes[0] = m_;
+      sizes[1] = k_;
+    } else {
+      sizes[0] = m_ * sizeof(T) / sizeof(int);
+      sizes[1] = k_ * sizeof(T) / sizeof(int);
+    }
     const TensorMap<Tensor<int, 2, 0, TensorIndex>, Eigen::Aligned> A((int*)a_, sizes);
     TensorMap<Tensor<T, 2, 0, TensorIndex>, Eigen::Aligned> B(b_, sizes);
 
@@ -173,9 +178,14 @@ template <typename Device, typename T> class BenchmarkSuite {
     size_b[1] = m_;
     TensorMap<Tensor<T, 2>, Eigen::Aligned> B(b_, size_b);
 
+#if defined(EIGEN_HAS_INDEX_LIST)
+    Eigen::IndexPairList<Eigen::type2indexpair<0, 0>,
+                         Eigen::type2indexpair<2, 1> > paddings;
+#else
     Eigen::array<Eigen::IndexPair<TensorIndex>, 2> paddings;
     paddings[0] = Eigen::IndexPair<TensorIndex>(0, 0);
     paddings[1] = Eigen::IndexPair<TensorIndex>(2, 1);
+#endif
 
     StartBenchmarkTiming();
     for (int iter = 0; iter < num_iters; ++iter) {
@@ -196,9 +206,15 @@ template <typename Device, typename T> class BenchmarkSuite {
     size_b[1] = k_/2;
     TensorMap<Tensor<T, 2>, Eigen::Aligned> B(b_, size_b);
 
+#ifndef EIGEN_HAS_INDEX_LIST
     Eigen::array<TensorIndex, 2> strides;
     strides[0] = 1;
     strides[1] = 2;
+#else
+    // Take advantage of cxx11 to give the compiler information it can use to
+    // optimize the code.
+    Eigen::IndexList<Eigen::type2index<1>, Eigen::type2index<2> > strides;
+#endif
 
     StartBenchmarkTiming();
     for (int iter = 0; iter < num_iters; ++iter) {
@@ -248,7 +264,7 @@ template <typename Device, typename T> class BenchmarkSuite {
 
     StartBenchmarkTiming();
     for (int iter = 0; iter < num_iters; ++iter) {
-      C.device(device_) = A * A.constant(3.14) + B * B.constant(2.7);
+      C.device(device_) = A * A.constant(static_cast<T>(3.14)) + B * B.constant(static_cast<T>(2.7));
     }
     // Record the number of FLOP executed per second (2 multiplications and
     // 1 addition per value)
@@ -357,7 +373,7 @@ template <typename Device, typename T> class BenchmarkSuite {
     const TensorMap<Tensor<T, 2, 0, TensorIndex>, Eigen::Aligned> B(
         b_, input_size);
     Eigen::array<TensorIndex, 0> output_size;
-    TensorMap<Tensor<float, 0, 0, TensorIndex>, Eigen::Aligned> C(
+    TensorMap<Tensor<T, 0, 0, TensorIndex>, Eigen::Aligned> C(
         c_, output_size);
 
     StartBenchmarkTiming();

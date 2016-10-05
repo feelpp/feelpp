@@ -21,19 +21,15 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file serialization.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2011-04-26
- */
-#ifndef __Serialization_H
-#define __Serialization_H 1
+#ifndef FEELPP_SERIALIZATION_HPP
+#define FEELPP_SERIALIZATION_HPP 1
 
 #include <boost/multi_array.hpp>
 #include <boost/serialization/split_free.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
 #include <Eigen/Core>
+#include <Eigen/CXX11/Tensor>
 
 namespace boost
 {
@@ -369,6 +365,72 @@ void serialize( Archive & ar,
 
 
 //
+// Eigen::Tensor
+//
+template<typename T, class Archive>
+void load( Archive & ar,
+           Eigen::Tensor<T,1> & t,
+           const unsigned int file_version )
+{
+    int n0,n1=1,n2=1;
+    ar >> BOOST_SERIALIZATION_NVP( n0 );
+    t.resize( n0 );
+    ar >> make_array( t.data(), n0 );
+}
+template<typename T, class Archive>
+void load( Archive & ar,
+           Eigen::Tensor<T,2> & t,
+           const unsigned int file_version )
+{
+    int n0,n1=1,n2=1;
+    ar >> BOOST_SERIALIZATION_NVP( n0 );
+    ar >> BOOST_SERIALIZATION_NVP( n1 );
+    t.resize( n0, n1 );
+    ar >> make_array( t.data(), n1*n0 );
+}
+template<typename T, class Archive>
+void load( Archive & ar,
+           Eigen::Tensor<T,3> & t,
+           const unsigned int file_version )
+{
+    int n0,n1=1,n2=1;
+    ar >> BOOST_SERIALIZATION_NVP( n0 );
+    ar >> BOOST_SERIALIZATION_NVP( n1 );
+    ar >> BOOST_SERIALIZATION_NVP( n2 );
+    t.resize( n0, n1, n2 );
+    ar >> make_array( t.data(), n1*n2*n0 );
+}
+template<typename T, int N, typename Archive>
+void save( Archive & ar,
+           const Eigen::Tensor<T,N> & t,
+           const unsigned int file_version )
+{
+    int n0 = t.dimension(0);
+    ar << BOOST_SERIALIZATION_NVP( n0 );
+    if ( N >= 2 )
+    {
+        int n1 = t.dimension(1);
+        ar << BOOST_SERIALIZATION_NVP( n1 );
+    }
+    if ( N >= 3 )
+    {
+        int n2 = t.dimension(2);
+        ar << BOOST_SERIALIZATION_NVP( n2 );
+    }
+
+    ar << boost::serialization::make_array( t.data(),
+                                            t.size() );
+}
+template<typename T, int N,  class Archive>
+void serialize( Archive & ar,
+                Eigen::Tensor<T,N>& t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
+
+
+//
 // boost::tuple<T1,T2>
 //
 
@@ -583,6 +645,7 @@ void serialize( Archive & ar,
 {
     split_free( ar, t, file_version );
 }
+
 
 
 
