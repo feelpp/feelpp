@@ -1805,6 +1805,8 @@ public:
             return M_t[i];
         }
 
+        constexpr bool ctxHaveBeenMpiBroadcasted() const { return false; }
+
     private:
 
         std::vector<node_type> M_t;

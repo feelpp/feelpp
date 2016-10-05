@@ -967,11 +967,12 @@ public :
             :
             super( s ),
             M_ctx_fespace(s.begin()->second->rbSpace()->functionSpace()),
-            M_rbspace(s.begin()->second->rbSpace())
+            M_rbspace(s.begin()->second->rbSpace()),
+            M_ctxHaveBeenMpiBroadcasted( false )
             {
                 for( auto& m : s )
                 {
-                    M_ctx_fespace.addCtx( m.second, Environment::worldComm().globalRank() );
+                    M_ctx_fespace.addCtx( m.second, M_rbspace->worldComm().globalRank() );
                 }
                 M_nPoints = M_ctx_fespace.nPoints();
             }
@@ -981,7 +982,8 @@ public :
             super(),
             M_ctx_fespace( rbspace->functionSpace() ),
             M_rbspace( rbspace ),
-            M_nPoints( M_ctx_fespace.nPoints() )
+            M_nPoints( M_ctx_fespace.nPoints() ),
+            M_ctxHaveBeenMpiBroadcasted( false )
             {
                 update();
             }
@@ -992,14 +994,16 @@ public :
             :
             super(),
             M_ctx_fespace( functionspace ),
-            M_nPoints( M_ctx_fespace.nPoints() )
+            M_nPoints( M_ctx_fespace.nPoints() ),
+            M_ctxHaveBeenMpiBroadcasted( false )
             {
                 update();
             }
 
         ContextRBSet()
             :
-            M_nPoints( 0 )
+            M_nPoints( 0 ),
+            M_ctxHaveBeenMpiBroadcasted( false )
             {}
         ContextRBSet( ContextRBSet const& ctxRbSet ) = default;
         ContextRBSet& operator=( ContextRBSet const& ) = default;
@@ -1013,11 +1017,23 @@ public :
         void update()
             {
                 for( auto& c : *this )
-                    c.second->update();
+                {
+                    rank_type procId = M_ctx_fespace.processorHavingPoint(c.first);
+                    if ( procId == M_rbspace->worldComm().globalRank() )
+                        c.second->update();
+                }
                 // update context for each process + define context mesh
-                for ( int k=0;k<this->nPoints();++k )
-                    this->syncCtx( k );
+                if ( this->nPoints() > 0 )
+                {
+                    for ( int k=0;k<this->nPoints();++k )
+                    {
+                        this->syncCtx( k );
+                    }
+                    M_ctxHaveBeenMpiBroadcasted = true;
+                }
             }
+
+        bool ctxHaveBeenMpiBroadcasted() const { return M_ctxHaveBeenMpiBroadcasted; }
 
         rbspace_ptrtype const& rbFunctionSpace() const
             {
@@ -1161,6 +1177,7 @@ public :
         rbspace_ptrtype M_rbspace;
         int M_nPoints;
         mesh_ptrtype M_meshForRbContext; // only init when reload serialisation and no mesh defined in rbspace
+        bool M_ctxHaveBeenMpiBroadcasted;
     };
     typedef ContextRBSet ctxrbset_type;
     typedef boost::shared_ptr<ctxrbset_type> ctxrbset_ptrtype;
@@ -1458,8 +1475,10 @@ public :
         /*
          * evaluate the element to nodes in contextRBSet
          */
-        eigen_vector_type evaluate(  ctxrbset_type const& context_rb, bool do_communications=true )
+        eigen_vector_type evaluate(  ctxrbset_type const& context_rb, bool do_comm=true )
             {
+                bool do_communications = do_comm && M_rbspace.worldComm().globalSize() > 1 && !context_rb.ctxHaveBeenMpiBroadcasted();
+
                 int npts = context_rb.nPoints();
                 //from now we manipulate local datas
                 //one proc can have zero, one or more context_rb
@@ -1479,7 +1498,7 @@ public :
                 }
 
                 if( do_communications )
-                    mpi::all_reduce( Environment::worldComm() , local_result, global_result, std::plus< eigen_vector_type >() );
+                    mpi::all_reduce( M_rbspace.worldComm() , local_result, global_result, std::plus< eigen_vector_type >() );
                 else
                     global_result = local_result;
 

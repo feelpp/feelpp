@@ -164,7 +164,8 @@ public :
 
         Context( geometricspace_ptrtype const& Xh )
             :
-            M_Xh( Xh )
+            M_Xh( Xh ),
+            M_ctxHaveBeenMpiBroadcasted( false )
             {}
 
         geometricspace_ptrtype functionSpace() const
@@ -180,6 +181,8 @@ public :
         {
             return M_t.size();
         }
+
+        bool ctxHaveBeenMpiBroadcasted() const { return M_ctxHaveBeenMpiBroadcasted; }
 
         void removeCtx()
         {
@@ -367,6 +370,7 @@ public :
         std::vector<node_type> M_t;
         std::vector<int> M_t_proc;//point number i is on proc M_t_proc[i]
         mesh_ptrtype M_meshGeoContext;
+        bool M_ctxHaveBeenMpiBroadcasted;
 
     };
 
