@@ -473,12 +473,13 @@ BOOST_PARAMETER_FUNCTION(
       ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
       ( mpi_communications, (bool), true )
       ( projection, (bool), false )
-      ( worldcomm,  (WorldComm), (mpi_communications)? context.functionSpace()->worldComm() : context.functionSpace()->worldComm().subWorldCommSeq() )
+      ( worldcomm,  (WorldComm), (mpi_communications && !context.ctxHaveBeenMpiBroadcasted() )? context.functionSpace()->worldComm() : context.functionSpace()->worldComm().subWorldCommSeq() )
     )
 )
 {
+    bool doMpiComm = mpi_communications && !context.ctxHaveBeenMpiBroadcasted();
     //LOG(INFO) << "evaluate expression..." << std::endl;
-    return evaluatecontext_impl( context, context2, expr, max_points_used, geomap , mpi_communications, projection, worldcomm );
+    return evaluatecontext_impl( context, context2, expr, max_points_used, geomap , doMpiComm/*mpi_communications*/, projection, worldcomm );
     //LOG(INFO) << "evaluate expression done." << std::endl;
 }
 
