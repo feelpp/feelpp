@@ -153,12 +153,12 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
                            coords, 
                            i == 0 || i == M_nx-1 || j%((M_ny-1)/procSize) == 0  ); // Is on boundary ?
                            //i == 0 || i == M_nx-1 || j == 0 || j == M_ny-1 ); // Is on boundary ?
-            pt.setMarker(1);
+            //pt.setMarker(1);
             // Actual rank ID 
-            pt.setProcessId( -1 );
+            pt.setProcessId( partId  );
             // NO GHOST POINTS I SAID
             pt.setProcessIdInPartition( partId );
-            pt.setNeighborPartitionIds( ghosts );
+            //pt.setNeighborPartitionIds( ghosts );
             this->addPoint( pt );
         }
     }
@@ -185,12 +185,12 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
                            coords,
                            i == 0 || i == M_nx-1 || j%((M_ny-1)/procSize) == 0  ); // Is on boundary ?
                            //i == 0 || i == M_nx-1 || j == 0 || j == M_ny-1 ); // Is on boundary ?
-            pt.setMarker(1);
+            //pt.setMarker(1);
             //// Actual rank ID 
             pt.setProcessId( partId );
             //// NO GHOST POINTS I SAID
             pt.setProcessIdInPartition( partId );
-            pt.setNeighborPartitionIds( ghosts );
+            //pt.setNeighborPartitionIds( ghosts );
             this->addPoint( pt );
         }
     }
@@ -213,12 +213,12 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
                            coords,
                            i == 0 || i == M_nx-1 || j%((M_ny-1)/procSize) == 0  ); // Is on boundary ?
                            //i == 0 || i == M_nx-1 || j == 0 || j == M_ny-1 ); // Is on boundary ?
-            pt.setMarker(1);
+            //pt.setMarker(1);
             // Actual rank ID 
             pt.setProcessId( partId );
             // NO GHOST POINTS I SAID
             pt.setProcessIdInPartition( partId );
-            pt.setNeighborPartitionIds( ghosts );
+            //pt.setNeighborPartitionIds( ghosts );
             this->addPoint( pt );
         }
    }
@@ -361,7 +361,7 @@ int eid=0;
         eid++;
     }
 
-*/
+
     // Edges
     int final = partId;
     //if( partId < (procSize-1) )
@@ -383,7 +383,7 @@ int eid=0;
            {
                f.setPoint( k, this->point( ptid[k]  ) );
            }
-           f.setMarker(1);
+           //f.setMarker(1);
            f.setOnBoundary( true );
            this->addFace( f );
            __idGmshToFeel.insert( std::make_pair(eid,f.id())); 
@@ -409,7 +409,7 @@ int eid=0;
            {
                f.setPoint( k, this->point( ptid[k]  ) );
            }
-           f.setMarker(1);
+           //f.setMarker(1);
            f.setOnBoundary( true );
            this->addFace( f );
            __idGmshToFeel.insert( std::make_pair(eid,f.id()));
@@ -419,7 +419,7 @@ int eid=0;
 
      }      
      }
-
+*/
 
 
     toc("MeshStructured Edges", FLAGS_v>0);
@@ -448,7 +448,7 @@ int eid=0;
             e.setId( eid ); // eid == gmsh id
             e.setProcessIdInPartition( partId );
             e.setProcessId( partId );
-            e.setMarker(1);
+            //e.setMarker(1);
             //int l_j = j-cx[procId];
             //int l_i = i;
             //int l_eid = (cx[procId+1]-cx[procId])*l_i+l_j;
@@ -510,8 +510,8 @@ int eid=0;
                        i == 0 || i == M_nx-1  ); // Is on boundary ?
 
             pt.setProcessIdInPartition( partId );
-            pt.setProcessId( -1 );
-            pt.setMarker(1);
+            pt.setProcessId( invalid_rank_type_value );
+            //pt.setMarker(1);
             //pt.setNeighborPartitionIds( ghosts );
 
             this->addPoint( pt );
@@ -525,7 +525,7 @@ int eid=0;
             e.setId( eidF );
             e.setProcessIdInPartition( partId );
             e.setProcessId( partId+1 );
-            e.setMarker(1);
+            //e.setMarker(1);
             //e.setIdInOtherPartitions(partId+1,i+M_nx-1);
             //e.setNeighborPartitionIds( ghosts );
 
@@ -538,7 +538,7 @@ int eid=0;
             for( int k = 0; k < 4; ++k )
                 e.setPoint( k, this->point( ptid[k]  ) );
                 
-            e.setOnBoundary( i==0 || i==(M_nx-2) );
+            e.setOnBoundary( true );
             nbMsgToRecv[partId+1]+=1; 
             //std::cout << partId << std::endl;
             //__idGmshToFeel.insert( std::make_pair(eid,eid)); 
@@ -554,7 +554,7 @@ int eid=0;
             std::cout << tete.size() << std::endl;
             for (auto it : tete )
                 std::cout << it.first << "\t" << it.second << std::endl;*/
-            this->addElement( e, false );
+            auto el=this->addElement( e, false );
             /*std::cout <<"id \t"    <<  toto.id() << std::endl;
             std::cout <<"pid\t"    <<  toto.processId() << std::endl;
             std::cout <<"pidinp\t" <<  toto.pidInPartition() << std::endl;
@@ -565,11 +565,11 @@ int eid=0;
             for (auto it : titi )
                 std::cout << it.first << "\t" << it.second << std::endl;
             */
-            mapGhostElt.insert( std::make_pair( eid,boost::make_tuple( eidF, partId+1 )));
+            mapGhostElt.insert( std::make_pair( eid,boost::make_tuple( el.id(), partId+1 )));
             /*mapGhostElt.insert( std::make_pair( eid,boost::make_tuple(
             (nx-1)*cx[partId+1]+i*(cx[partId+1]-cx[partId]), 
             partId+1 ) ) );*/
-            __idGmshToFeel.insert( std::make_pair(eid,eidF)); 
+            __idGmshToFeel.insert( std::make_pair(eid,el.id())); 
             //__idGmshToFeel.insert( std::make_pair(eid,(nx-1)*cx[partId+1]+i*(cx[partId+1]-cx[partId]))); 
 
 
@@ -587,8 +587,8 @@ int eid=0;
             point_type pt( ptId, coords,
                     i == 0 || i == M_nx-1  ); // Is on boundary ?
             pt.setProcessIdInPartition( partId );
-            pt.setProcessId( -1 );  
-            pt.setMarker(1);
+            pt.setProcessId( invalid_rank_type_value );  
+            //pt.setMarker(1);
             //pt.setNeighborPartitionIds( ghosts );
 
             this->addPoint( pt );
@@ -603,7 +603,7 @@ int eid=0;
             e.setId( eidF );
             e.setProcessIdInPartition( partId );
             e.setProcessId( partId-1 );
-            e.setMarker(1);
+            //e.setMarker(1);
             //e.setIdInOtherPartitions(partId-1,(cx[partId]-cx[partId-1])*(M_nx-1)+i);
             //e.setNeighborPartitionIds( ghosts );
             
@@ -616,7 +616,7 @@ int eid=0;
 
             for( int k = 0; k < 4; ++k )
                 e.setPoint( k, this->point( ptid[k]  ) );
-            e.setOnBoundary( i==0 || i==(M_nx-2) );
+            e.setOnBoundary( true );
             nbMsgToRecv[partId-1]+=1; 
             // true -> id = global elt id
             // false -> id = local elt id
@@ -631,7 +631,7 @@ int eid=0;
             for (auto it : tete )
                 std::cout << it.first << "\t" << it.second << std::endl;*/
             //this->addElement( e, true );
-            this->addElement( e, false ); // DO NOT modify e.id !!!
+            auto el=this->addElement( e, false ); 
             /*std::cout <<"id \t"    <<  toto.id() << std::endl;
             std::cout <<"pid\t"    <<  toto.processId() << std::endl;
             std::cout <<"pidinp\t" <<  toto.pidInPartition() << std::endl;
@@ -642,12 +642,12 @@ int eid=0;
             for (auto it : titi )
                 std::cout << it.first << "\t" << it.second << std::endl;
             */    
-            mapGhostElt.insert( std::make_pair( eid,boost::make_tuple(eidF,partId-1)));
+            mapGhostElt.insert( std::make_pair( eid,boost::make_tuple(el.id(),partId-1)));
 
             /*mapGhostElt.insert( std::make_pair( eid,boost::make_tuple( 
             (nx-1)*cx[partId-1]+(i+1)*(cx[partId]-cx[partId-1])-1, 
             partId-1 ) ) );*/
-            __idGmshToFeel.insert( std::make_pair(eid,eidF)); 
+            __idGmshToFeel.insert( std::make_pair(eid,el.id())); 
             //__idGmshToFeel.insert( std::make_pair(eid,(nx-1)*cx[partId-1]+(i+1)*(cx[partId]-cx[partId-1])-1)); 
 
         }
@@ -656,7 +656,7 @@ int eid=0;
     for (std::map<int,boost::tuple<int,rank_type>>::iterator it=mapGhostElt.begin(); it!=mapGhostElt.end(); ++it)
         std::cout << "test : " << it->first << " ( " << it->second.get<0>()<< "," << it->second.get<1>() << " )" << std::endl;
     this->worldComm().barrier();
-    this->addMarkerName("omega",1,2);
+    // this->addMarkerName("omega",1,2);
     updateGhostCellInfoByUsingNonBlockingComm(this,__idGmshToFeel,mapGhostElt,nbMsgToRecv);
     toc("Ghost Management", FLAGS_v>0);
     toc("MeshStructured Elements", FLAGS_v>0);
