@@ -452,6 +452,9 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
     Feel::po::options_description multifluidOptions("MultiFluid options");
     multifluidOptions.add_options()
         (prefixvm(prefix,"nfluids").c_str(), Feel::po::value<int>()->default_value( 2 ), "total number of fluids (including surrounding one)")
+
+        (prefixvm(prefix, "use-picard-iterations").c_str(), Feel::po::value<bool>()->default_value( false ), "solve NS-LS coupling with non-linear Picard iterations")
+
         (prefixvm(prefix, "enable-surface-tension").c_str(), Feel::po::value<bool>()->default_value( true ), "enable surface tension between fluids")
         (prefixvm(prefix,"surface-tension-coeff").c_str(), po::value<std::vector<double> >()->multitoken(), "surface tension coefficients" )
         ;
