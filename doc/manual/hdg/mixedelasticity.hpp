@@ -723,10 +723,11 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
         {
             for ( auto const& exAtMarker : (*itType).second )
             {
+                auto matmarker = exAtMarker.marker();
                 auto g = expr<Dim,G_Order> (exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
-				blf( 1_c ) += integrate(_range=elements(M_mesh),
+				blf( 1_c ) += integrate(_range=markedelements(M_mesh, matmarker),
                     			  	      _expr=trans(g)*id(w));
             }
         }
