@@ -138,6 +138,10 @@ private:
     uint16_type M_nFluids;
 
     //--------------------------------------------------------------------//
+    // Solve
+    bool M_usePicardIterations;
+
+    //--------------------------------------------------------------------//
     // Parameters
     densityviscosity_model_ptrtype M_fluidDensityViscosityModel;
     std::vector<densityviscosity_model_ptrtype> M_levelsetDensityViscosityModels;
