@@ -221,11 +221,11 @@ public:
     void updateTimeStep() { this->updateTimeStepBDF(); }
 
     // Exporter
-    virtual void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr )
-        {
+    void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr );
+        /*{
             this->exportResults (this->currentTime(), mesh );
             M_exporter -> save();
-        }
+        }*/
     void exportResults ( double Time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  ) ;
     exporter_ptrtype M_exporter;
     exporter_ptrtype exporterMP() { return M_exporter; }
@@ -252,6 +252,15 @@ public:
     void assembleIBC(int i);
     void assembleIBCRHS(int i);
 };
+
+
+template<int Dim, int Order, int G_Order>
+void 
+MixedPoisson<Dim,Order,G_Order>::exportResults( mesh_ptrtype mesh, op_interp_ptrtype Idh, opv_interp_ptrtype Idhv  )
+{
+    this->exportResults (this->currentTime(), mesh );
+    M_exporter -> save();
+}
 
 template<int Dim, int Order, int G_Order>
 MixedPoisson<Dim, Order, G_Order>::MixedPoisson( std::string const& prefix,
