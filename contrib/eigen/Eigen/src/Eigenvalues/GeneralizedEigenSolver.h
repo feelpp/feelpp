@@ -310,6 +310,7 @@ GeneralizedEigenSolver<MatrixType>::compute(const MatrixType& A, const MatrixTyp
   if (m_realQZ.info() == Success)
   {
     m_matS = m_realQZ.matrixS();
+    const MatrixType &matT = m_realQZ.matrixT();
     if (computeEigenvectors)
       m_eivec = m_realQZ.matrixZ().transpose();
   
@@ -322,18 +323,29 @@ GeneralizedEigenSolver<MatrixType>::compute(const MatrixType& A, const MatrixTyp
       if (i == A.cols() - 1 || m_matS.coeff(i+1, i) == Scalar(0))
       {
         m_alphas.coeffRef(i) = m_matS.coeff(i, i);
-        m_betas.coeffRef(i)  = m_realQZ.matrixT().coeff(i,i);
+        m_betas.coeffRef(i)  = matT.coeff(i,i);
         ++i;
       }
       else
       {
-        Scalar p = Scalar(0.5) * (m_matS.coeff(i, i) - m_matS.coeff(i+1, i+1));
-        Scalar z = sqrt(abs(p * p + m_matS.coeff(i+1, i) * m_matS.coeff(i, i+1)));
-        m_alphas.coeffRef(i)   = ComplexScalar(m_matS.coeff(i+1, i+1) + p, z);
-        m_alphas.coeffRef(i+1) = ComplexScalar(m_matS.coeff(i+1, i+1) + p, -z);
+        // We need to extract the generalized eigenvalues of the pair of a general 2x2 block S and a positive diagonal 2x2 block T
+        // Then taking beta=T_00*T_11, we can avoid any division, and alpha is the eigenvalues of A = (U^-1 * S * U) * diag(T_11,T_00):
 
-        m_betas.coeffRef(i)   = m_realQZ.matrixT().coeff(i,i);
-        m_betas.coeffRef(i+1) = m_realQZ.matrixT().coeff(i,i);
+        // T =  [a 0]
+        //      [0 b]
+        RealScalar a = matT.diagonal().coeff(i),
+                   b = matT.diagonal().coeff(i+1);
+        // ^^ NOTE: using diagonal()(i) instead of coeff(i,i) workarounds a MSVC bug.
+        Matrix<RealScalar,2,2> S2 = m_matS.template block<2,2>(i,i) * Matrix<Scalar,2,1>(b,a).asDiagonal();
+
+        Scalar p = Scalar(0.5) * (S2.coeff(0,0) - S2.coeff(1,1));
+        Scalar z = sqrt(abs(p * p + S2.coeff(1,0) * S2.coeff(0,1)));
+        m_alphas.coeffRef(i)   = ComplexScalar(S2.coeff(1,1) + p,  z);
+        m_alphas.coeffRef(i+1) = ComplexScalar(S2.coeff(1,1) + p, -z);
+
+        m_betas.coeffRef(i)   =
+        m_betas.coeffRef(i+1) = a*b;
+        
         i += 2;
       }
     }

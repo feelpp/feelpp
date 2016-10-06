@@ -159,115 +159,172 @@ struct ModelMaterial
     /**
      *
      */
-    std::string getString( std::string const& key ) { return M_p.get( key, "" ); }
+    std::string getString( std::string const& key ) {
+        try { return M_p.get<std::string>( key ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
 
     /**
      *
      */
-    int getInt( std::string const& key ) { return M_p.get( key, 0 ); }
+    int getInt( std::string const& key ) {
+        try { return M_p.get<int>( key ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
 
     /**
      *
      */
-    double getDouble( std::string const& key ) { return M_p.get( key, 0. ); }
-
+    double getDouble( std::string const& key ) {
+        try { return M_p.get<double>( key ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
     /**
      *
      */
-    Expr<GinacEx<2> > getScalar( std::string const& key ) { return expr( M_p.get( key, "0" ) ); }
+    Expr<GinacEx<2> > getScalar( std::string const& key ) {
+        try { return expr( M_p.get<std::string>( key ) ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
     // Expr<GinacEx<2> > getScalar( std::string const& key, std::pair<std::string,double> const& params ) { return expr( M_p.get( key, "0" ), params ); }
     /**
      *
      */
-    Expr<GinacEx<2> > getScalar( std::string const& key, std::map<std::string,double> const& params ) { return expr( M_p.get( key, "0" ), params ); }
+    Expr<GinacEx<2> > getScalar( std::string const& key, std::map<std::string,double> const& params ) {
+        try { return expr( M_p.get<std::string>( key ), params ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
 
     /**
      *
      */
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
-                                                                std::string const& sym, ExprT e )
-        { return expr( M_p.get( key, "0" ), sym, e ); }
+                                                                std::string const& sym, ExprT e ) {
+        try { return expr( M_p.get<std::string>( key ), sym, e ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
 
     /**
      *
      */
-    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e ) { return expr( M_p.get( key, "0" ), sym, e ); }
+    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
+                                                                std::initializer_list<std::string> const& sym,
+                                                                std::initializer_list<ExprT> e ) {
+        try { return expr( M_p.get<std::string>( key ), sym, e ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
 
     /**
      *
      */
-    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e ) { return expr( M_p.get( key, "0" ), sym, e ); }
+    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
+                                                                std::vector<std::string> const& sym,
+                                                                std::vector<ExprT> e ) {
+        try { return expr( M_p.get<std::string>( key ), sym, e ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
 
     /**
      *
      */
-    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e, std::map<std::string, double> params )
-        {
-            auto ex = expr( M_p.get( key, "0" ), sym, e );
-            ex->setParameterValues( params );
+    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
+                                                                std::initializer_list<std::string> const& sym,
+                                                                std::initializer_list<ExprT> e,
+                                                                std::map<std::string, double> params ) {
+        try {
+            auto ex = expr( M_p.get<std::string>( key ), sym, e );
+            ex.setParameterValues( params );
             return ex;
         }
-    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key )
-        {
-            std::string s = "{0";
-            for ( auto i : range(T-1) )
-                s += ",0";
-            s += "}";
-            return expr<T,1>( M_p.get( key, s ) );
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
         }
-    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::pair<std::string,double> const& params )
-        {
-            std::string s = "{0";
-            for ( auto i : range(T-1) )
-                s += ",0";
-            s += "}";
-            return expr<T,1>( M_p.get( key, s ), params );
+    }
+    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key ) {
+        try { return expr<T,1>( M_p.get<std::string>( key ) ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
         }
-    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::map<std::string,double> const& params )
-        {
-            std::string s = "{0";
-            for ( auto i : range(T-1) )
-                s += ",0";
-            s += "}";
-            return expr<T,1>( M_p.get( key, s ), params );
+    }
+    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key,
+                                                         std::pair<std::string,double> const& params ) {
+        try { return expr<T,1>( M_p.get<std::string>( key ), params ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
         }
+    }
+    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key,
+                                                         std::map<std::string,double> const& params ) {
+        try { return expr<T,1>( M_p.get<std::string>( key ), params ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
     // template<int T, typename ExprT> Expr<GinacMatrixVF<ExprT> > getVector( std::string const& key, std::string const& sym, ExprT e );
     // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e );
     // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e );
-    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key )
-        {
-            std::string s = "{0";
-            for ( auto i : range(T1*T2-1) )
-                s += ",0";
-            s += "}";
-            return expr<T1,T2>( M_p.get( key, s ) );
+    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key ) {
+        try { return expr<T1,T2>( M_p.get<std::string>( key ) ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
         }
-    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key, std::pair<std::string,double> const& params )
-        {
-            std::string s = "{0";
-            for ( auto i : range(T1*T2-1) )
-                s += ",0";
-            s += "}";
-            return expr<T1,T2>( M_p.get( key, s ), params );
+    }
+    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key,
+                                                                       std::pair<std::string,double> const& params ) {
+        try { return expr<T1,T2>( M_p.get<std::string>( key ), params ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
         }
-    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key, std::map<std::string,double> const& params )
-        {
-            std::string s = "{0";
-            for ( auto i : range(T1*T2-1) )
-                s += ",0";
-            s += "}";
-            return expr<T1,T2>( M_p.get( key, s ), params );
+    }
+    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key,
+                                                                       std::map<std::string,double> const& params ) {
+        try { return expr<T1,T2>( M_p.get<std::string>( key ), params ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
         }
+    }
     // template<int T1, int T2, typename ExprT> Expr<GinacExVF<ExprT> > getMatrix( std::string const& key, std::string const& sym, ExprT e );
     // template<int T1, int T2, typename ExprT> Expr<GinacExVF<ExprT> > getMatrix( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e );
     // template<int T1, int T2, typename ExprT> Expr<GinacExVF<ExprT> > getMatrix( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e );
 
 private:
-    std::string M_name;
+
+    std::string M_name; /*!< Material name*/
     pt::ptree M_p;
 
-    double M_rho;
-    double M_mu;
+    double M_rho; /*!< Density */
+    double M_mu;  /*!< Molecular(dynamic) viscosity */
 
     double M_Cp; /*!< Constant-pressure specific heat Cp */
     double M_Cv; /*!< Constant-volume specific heat Cv */

@@ -238,7 +238,7 @@ int main(int argc,char *argv[]) {
   ierr = PetscInitialize(&argc,&argv,0,help);CHKERRQ(ierr);
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
-  ierr = TSDestroy(ts);CHKERRQ(ierr);
+  ierr = TSDestroy(&ts);CHKERRQ(ierr);
   ierr = PetscFinalize();CHKERRQ(ierr);
   return 0;
 }
@@ -314,10 +314,6 @@ find_package_handle_standard_args (PETSc
   PETSC_INCLUDES PETSC_LIBRARIES )
 
 if ( PETSC_FOUND )
-  add_definitions( -DFEELPP_HAS_PETSC -DFEELPP_HAS_PETSC_H )
-  set(FEELPP_HAS_PETSC 1)
-  set(FEELPP_HAS_PETSC_H 1)
-
   # add PETSC includes (in case of non conventionnal install of petsc TPS)
   include_directories(${PETSC_INCLUDES})
 endif( PETSC_FOUND )

@@ -24,6 +24,8 @@
 #ifndef FEELPP_MESHSTRUCTURED_HPP
 #define FEELPP_MESHSTRUCTURED_HPP 1
 
+#include <feel/feeldiscr/mesh.hpp>
+
 namespace Feel {
 
 /**
@@ -49,16 +51,9 @@ class MeshStructured: public Mesh<Hypercube<2>>
     //! 
     MeshStructured( int nx, int ny, double pixelsize, WorldComm const& );
 
-    void updateGhostCellInfoByUsingNonBlockingComm( 
-        MeshStructured* mesh, 
-        std::map<int,int> const& __idGmshToFeel, 
-        std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
-        std::vector<int> const& nbMsgToRecv );
-    
-   void updateGhostCellInfoByUsingBlockingComm( 
-        MeshStructured* mesh, 
-        std::map<int,int> const& __idGmshToFeel, 
-        std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
+    void updateGhostCellInfoByUsingNonBlockingComm(
+        std::map<int,int> const& idStructuredMeshToFeelMesh,
+        std::map<int,boost::tuple<int,rank_type> > const& mapGhostElt,
         std::vector<int> const& nbMsgToRecv );
 
     /*
@@ -74,17 +69,17 @@ class MeshStructured: public Mesh<Hypercube<2>>
 
 
   private:
-    int M_nx; // Global X number of elements
-    int M_ny; // Global Y number of elements
+   size_type M_nx; // Global X number of elements
+   size_type M_ny; // Global Y number of elements
     int M_l_nx; // local X number of elements (ghost excluded!)
     int M_l_ny; // local Y number of elements
     int M_s_x; // local first x index (0 for first element)
     int M_s_y; // local first y index (0 for first element)
 
     double M_pixelsize;
-    std::map<int,boost::tuple<int,rank_type> > mapGhostElt; 
-    std::vector<rank_type> ghosts; 
-    std::map<int,int> __idGmshToFeel;
+    // std::map<int,boost::tuple<int,rank_type> > mapGhostElt; 
+    // std::vector<rank_type> ghosts; 
+    // std::map<int,int> __idGmshToFeel;
 
 
     int localToGlobal(int ii, int jj , int rank)
@@ -100,6 +95,172 @@ class MeshStructured: public Mesh<Hypercube<2>>
 
 };
 
+
+
+
+MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm const& wc = Environment::worldComm() )
+    :
+    super( wc ),
+    M_nx( nx ),
+    M_ny( ny ),
+    M_pixelsize( pixelsize )
+{
+    VLOG(1) << "nx x ny = " << nx << " x " << ny << "\t" << nx*ny << std::endl;
+
+    rank_type nProc = wc.localSize();
+    rank_type partId = wc.localRank();
+
+    // compute parallel distribution with column scheme partitioning
+    size_type nTotalPointsByCol = M_ny + (nProc-1);
+    size_type nPtByColByProc = ( M_ny + (nProc-1))/nProc;
+    if ( nTotalPointsByCol <= nPtByColByProc*(nProc-1) )
+        --nPtByColByProc;
+    std::vector<size_type> nPtByCol(nProc,nPtByColByProc);
+    if ( nPtByColByProc*nProc < nTotalPointsByCol )
+    {
+        size_type nPointToDistribute = nTotalPointsByCol - nPtByColByProc*nProc;
+        for ( size_type k=0;k<nPointToDistribute;++k )
+        {
+            if ( k < nProc )
+                ++nPtByCol[nProc-1-k];
+        }
+    }
+    std::vector<size_type> startColPtId(nProc,0);
+    for (rank_type p=1;p<nProc;++p )
+        startColPtId[p]=startColPtId[p-1]+(nPtByCol[p-1]-1);
+
+#if 0
+    if ( this->worldComm().isMasterRank() )
+    {
+        std::cout<< "startColPtId : ";
+        for (int p=0;p<nProc;++p )
+            std::cout << " " << startColPtId[p] << "(" << nPtByCol[p] << ") ";
+        std::cout<< "\n";
+    }
+#endif
+    std::map<int,boost::tuple<int,rank_type> > mapGhostElt;
+    std::map<int,int> idStructuredMeshToFeelMesh;
+    node_type coords( 2 );
+
+    // active points
+    for( int j = startColPtId[partId] ; j < startColPtId[partId]+nPtByCol[partId]; ++j )
+    {
+        for( int i = 0 ; i < M_nx; ++i )
+        {
+            int ptid = (M_ny)*i+j;
+            coords[0]=M_pixelsize*j;
+            coords[1]=M_pixelsize*i;
+            point_type pt( ptid,coords );
+            pt.setProcessId( partId );
+            pt.setProcessIdInPartition( partId );
+            this->addPoint( pt );
+        }
+    }
+
+    // ghost points (not belong to active partition)
+    std::vector<size_type> ghostPointColDesc;
+    if ( partId > 0 )
+        ghostPointColDesc.push_back( startColPtId[partId]-1 );
+    if ( partId < (nProc-1) )
+        ghostPointColDesc.push_back( startColPtId[partId]+nPtByCol[partId] );
+    for ( int j : ghostPointColDesc )
+    {
+        for( int i = 0 ; i < M_nx; ++i )
+        {
+            int ptid = (M_ny)*i+j;
+            coords[0]=M_pixelsize*j;
+            coords[1]=M_pixelsize*i;
+            point_type pt( ptid,coords );
+            pt.setProcessId( invalid_rank_type_value );
+            pt.setProcessIdInPartition( partId  );
+            this->addPoint( pt );
+        }
+    }
+
+    // active elements
+    size_type startColPtIdForElt = startColPtId[partId];
+    size_type stopColPtIdForElt = startColPtId[partId]+(nPtByCol[partId]-1);
+    for( int j = startColPtIdForElt ; j < stopColPtIdForElt; ++j )
+    {
+        rank_type neighborProcessId = invalid_rank_type_value;
+        if ( partId > 0 )
+            if ( j == startColPtIdForElt )
+                neighborProcessId=partId-1;
+        if ( partId < (nProc-1) )
+            if ( j == (stopColPtIdForElt-1) )
+                neighborProcessId=partId+1;
+
+        for( int i = 0 ; i < M_nx-1; ++i )
+        {
+            size_type eid = (M_ny-1)*i+j; // StructuredMesh Id
+            element_type e;
+            e.setProcessIdInPartition( partId );
+            e.setProcessId( partId );
+            size_type ptid[4] = { (M_ny)*(i+1)+j,   // 0
+                                  (M_ny)*(i+1)+j+1, // 1
+                                  (M_ny)*i+j+1,     // 2
+                                  (M_ny)*i+j     }; // 3
+
+            for( uint16_type k = 0; k < 4; ++k )
+                e.setPoint( k, this->point( ptid[k]  ) );
+            if ( neighborProcessId != invalid_rank_type_value )
+                e.addNeighborPartitionId( neighborProcessId );
+
+            auto const& eltInserted = this->addElement( e, true ); // e.id() is defined by Feel++
+            idStructuredMeshToFeelMesh.insert( std::make_pair(eid,eltInserted.id()));
+        }
+    }
+
+    // ghost elements (touch active partition with a point)
+    std::vector<std::pair<size_type,rank_type> > ghostEltColDesc;
+    if ( partId > 0 )
+        ghostEltColDesc.push_back( std::make_pair( startColPtId[partId]-1, partId-1) );
+    if ( partId < (nProc-1) )
+        ghostEltColDesc.push_back( std::make_pair( startColPtId[partId]+nPtByCol[partId]-1, partId+1) );
+    for ( auto const& ghostEltCol : ghostEltColDesc )
+    {
+        int j = ghostEltCol.first;
+        rank_type partIdGhost = ghostEltCol.second;
+        for( int i = 0 ; i < M_nx-1; ++i )
+        {
+            size_type eid = (M_ny-1)*i+j; // StructuredMesh Id
+            element_type e;
+            e.setProcessIdInPartition( partId );
+            e.setProcessId( partIdGhost );
+
+            size_type ptid[4] = { (M_ny)*(i+1)+j,   // 0
+                                  (M_ny)*(i+1)+j+1, // 1
+                                  (M_ny)*i+j+1,     // 2
+                                  (M_ny)*i+j     }; // 3
+
+            for( uint16_type k = 0; k < 4; ++k )
+            {
+                CHECK( this->hasPoint( ptid[k] ) ) << "mesh doesnt have this point id : " << ptid[k];
+                e.setPoint( k, this->point( ptid[k]  ) );
+            }
+
+            auto const& eltInserted = this->addElement( e, true ); // e.id() is defined by Feel++
+
+            idStructuredMeshToFeelMesh.insert( std::make_pair(eid,eltInserted.id()));
+            mapGhostElt.insert( std::make_pair( eid,boost::make_tuple( idStructuredMeshToFeelMesh[eid], partIdGhost ) ) );
+        }
+    }
+
+    std::vector<int> nbMsgToRecv(nProc,0);
+    // ghost elts on left
+    if ( partId > 0 )
+        nbMsgToRecv[partId-1] = 1;
+    // ghost elts on right
+    if ( partId < (nProc-1) )
+        nbMsgToRecv[partId+1] = 1;
+
+    this->updateGhostCellInfoByUsingNonBlockingComm( idStructuredMeshToFeelMesh,mapGhostElt,nbMsgToRecv );
+
+}
+
+
+
+#if 0
 MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm const& wc )
     :
     super( wc ),
@@ -662,20 +823,16 @@ int eid=0;
     toc("MeshStructured Elements", FLAGS_v>0);
 #endif
 }
+#endif
 
 
 
 //template<typename MeshType>
-    void
-MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( MeshStructured* mesh, 
-        std::map<int,int> const& __idGmshToFeel, 
-        std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
-        std::vector<int> const& nbMsgToRecv )
+void
+MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int,int> const& idStructuredMeshToFeelMesh,
+                                                           std::map<int,boost::tuple<int,rank_type> > const& mapGhostElt,
+                                                           std::vector<int> const& nbMsgToRecv )
 {
-    for(auto toto : nbMsgToRecv)
-        std::cout << this->worldComm().localRank() << " : " << toto << "\n";
-        
-
     DVLOG(1) << "updateGhostCellInfoNonBlockingComm : start on rank "<< this->worldComm().localRank() << "\n";
 
     const int nProc = this->worldComm().localSize();
@@ -685,8 +842,8 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( MeshStructured* mesh,
     //-----------------------------------------------------------//
     // compute size of container to send
     std::map< rank_type, int > nDataInVecToSend;
-    auto it_map = __mapGhostElt.begin();
-    auto const en_map = __mapGhostElt.end();
+    auto it_map = mapGhostElt.begin();
+    auto const en_map = mapGhostElt.end();
     for ( ; it_map!=en_map ; ++it_map )
     {
         const rank_type idProc = it_map->second.template get<1>();
@@ -694,7 +851,6 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( MeshStructured* mesh,
             nDataInVecToSend[idProc]=0;
         nDataInVecToSend[idProc]++;
     }
-    LOG(INFO) << "TOTO\n";
     //-----------------------------------------------------------//
     // init and resize the container to send
     std::map< rank_type, std::vector<int> > dataToSend;
@@ -706,12 +862,11 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( MeshStructured* mesh,
         const int nData = itNDataInVecToSend->second;
         dataToSend[idProc].resize( nData );
     }
-    LOG(INFO) << "TOTO\n";
     //-----------------------------------------------------------//
     // prepare container to send
     std::map< rank_type, std::map<int,int> > memoryMsgToSend;
     std::map< rank_type, int > nDataInVecToSendBis;
-    it_map = __mapGhostElt.begin();
+    it_map = mapGhostElt.begin();
     for ( ; it_map!=en_map ; ++it_map )
     {
         const int idGmsh = it_map->first;
@@ -729,7 +884,6 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( MeshStructured* mesh,
         // std::cout << idProc << std::endl;
 
     }
-    LOG(INFO) << "TOTO\n";
     //-----------------------------------------------------------//
     // counter of request
     int nbRequest=0;
@@ -742,7 +896,6 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( MeshStructured* mesh,
     }
     if ( nbRequest ==0 ) return;
 
-    LOG(INFO) << "TOTO\n";
     mpi::request * reqs = new mpi::request[nbRequest];
     int cptRequest=0;
     //-----------------------------------------------------------//
@@ -754,7 +907,6 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( MeshStructured* mesh,
         reqs[cptRequest] = this->worldComm().localComm().isend( itDataToSend->first , 0, itDataToSend->second );
         ++cptRequest;
     }
-    LOG(INFO) << "TOTO\n";
     //-----------------------------------------------------------//
     // first recv
     std::map<rank_type,std::vector<int> > dataToRecv;
@@ -766,12 +918,9 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( MeshStructured* mesh,
             ++cptRequest;
         }
     }
-    LOG(INFO) << "TOTO\n";
     //-----------------------------------------------------------//
     // wait all requests
-    std::cout << "My, processor " << this->worldComm().localRank() << ", is waiting for " << nbRequest << " to be finished\n";
     mpi::wait_all(reqs, reqs + nbRequest);
-    LOG(INFO) << "TOTO\n";
     //-----------------------------------------------------------//
     // build the container to ReSend
     std::map<rank_type, std::vector<int> > dataToReSend;
@@ -779,19 +928,15 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( MeshStructured* mesh,
     auto const enDataRecv = dataToRecv.end();
     for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
     {
-        LOG(INFO) << "TOTO\n";
         const rank_type idProc = itDataRecv->first;
         const int nDataRecv = itDataRecv->second.size();
-        LOG(INFO) << "Resize to : " << nDataRecv << "\n";
         dataToReSend[idProc].resize( nDataRecv );
         //store the idFeel corresponding
         for ( int k=0; k<nDataRecv; ++k )
         {
-            LOG(INFO) << "k = " << k << "\n";
-            dataToReSend[idProc][k] = __idGmshToFeel.find( itDataRecv->second[k] )->second;
+            dataToReSend[idProc][k] = idStructuredMeshToFeelMesh.find( itDataRecv->second[k] )->second;
         }
     }
-    LOG(INFO) << "TOTO\n";
     //-----------------------------------------------------------//
     // send respond to the request
     cptRequest=0;
@@ -802,7 +947,6 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( MeshStructured* mesh,
         reqs[cptRequest] = this->worldComm().localComm().isend( itDataToReSend->first , 0, itDataToReSend->second );
         ++cptRequest;
     }
-    LOG(INFO) << "TOTO\n";
     //-----------------------------------------------------------//
     // recv the initial request
     std::map<rank_type, std::vector<int> > finalDataToRecv;
@@ -813,7 +957,6 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( MeshStructured* mesh,
         reqs[cptRequest] = this->worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc] );
         ++cptRequest;
     }
-    LOG(INFO) << "TOTO\n";
     //-----------------------------------------------------------//
     // wait all requests
     mpi::wait_all(reqs, reqs + nbRequest);
@@ -823,8 +966,6 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( MeshStructured* mesh,
     // update mesh : id in other partitions for the ghost cells
     auto itFinalDataToRecv = finalDataToRecv.begin();
     auto const enFinalDataToRecv = finalDataToRecv.end();
-    //for(auto toto = mesh->beginElement(); toto != mesh->endElement(); toto++)
-    //    std::cout<< toto->processId()<< " : "   << toto->id() << std::endl;
 
     for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
     {
@@ -834,7 +975,8 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( MeshStructured* mesh,
         for ( int k=0; k<nDataRecv; ++k )
         {
            /* std::cout << "I want element " << memoryMsgToSend[idProc][k] << ": " << idProc << std::endl;*/
-            auto eltToUpdate = mesh->elementIterator( memoryMsgToSend[idProc][k],idProc );
+            auto eltToUpdate = this->elementIterator( memoryMsgToSend[idProc][k],idProc );
+#if 0
             std::cout << "k = " << k << std::endl;
             std::cout << "itFinalDataToRecv->second[k]  " << itFinalDataToRecv->second[k]  << std::endl;
             std::cout << "eltToUpdate->id()             " << eltToUpdate->id()             << std::endl;
@@ -842,97 +984,13 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( MeshStructured* mesh,
             std::cout << "eltToUpdate->pidInPartition() " << eltToUpdate->pidInPartition() << std::endl;
             std::cout << "eltToUpdate->refDim()         " << eltToUpdate->refDim()         << std::endl;
             std::cout << "eltToUpdate->nPoints()        " << eltToUpdate->nPoints()        << std::endl;
-            //auto toto = eltToUpdate->idInOthersPartitions();
-            //std::cout << toto.size() << std::endl;
-            //for (auto it : toto )
-            //    std::cout << it.first << "\t" << it.second << std::endl;
-            mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( idProc, itFinalDataToRecv->second[k] ) );
+#endif
+            this->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( idProc, itFinalDataToRecv->second[k] ) );
         }
     }
     //-----------------------------------------------------------//
     DVLOG(1) << "updateGhostCellInfoNonBlockingComm : finish on rank "<< this->worldComm().localRank() << "\n";
 }
-
-
-    void
-MeshStructured::updateGhostCellInfoByUsingBlockingComm( MeshStructured* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
-        std::vector<int> const& nbMsgToRecv )
-{
-    // counter of msg sent for each process
-    std::vector<int> nbMsgToSend( this->worldComm().localSize(),0 );
-    // map usefull to get final result
-    std::vector< std::map<int,int> > mapMsg( this->worldComm().localSize() );
-
-    // iterate over ghost elt
-    auto it_map = __mapGhostElt.begin();
-    auto const en_map = __mapGhostElt.end();
-    for ( ; it_map!=en_map ; ++it_map )
-    {
-        auto const idGmsh = it_map->first;
-        auto const idProc = it_map->second.template get<1>();
-
-        // send
-        this->worldComm().localComm().send( idProc , nbMsgToSend[idProc], idGmsh );
-        // save tag of request
-        mapMsg[idProc].insert( std::make_pair( nbMsgToSend[idProc],it_map->second.template get<0>() ) );
-        // update nb send
-        nbMsgToSend[idProc]++;
-    }
-
-#if !defined( NDEBUG )
-    // check nbMsgToRecv computation
-    std::vector<int> nbMsgToRecv2;
-    mpi::all_to_all( this->worldComm().localComm(),
-            nbMsgToSend,
-            nbMsgToRecv2 );
-    for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
-    {
-        CHECK( nbMsgToRecv[proc]==nbMsgToRecv2[proc] ) << "paritioning data incorect "
-            << "myrank " << this->worldComm().localRank() << " proc " << proc
-            << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
-            << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";
-    }
-#endif
-
-    // get gmsh id asked and re-send the correspond id Feel
-    for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
-    {
-        for ( int cpt=0 ; cpt<nbMsgToRecv[proc] ; ++cpt )
-        {
-            int idGmsh;
-            //reception idGmsh
-            this->worldComm().localComm().recv( proc, cpt, idGmsh );
-            this->worldComm().localComm().send( proc, cpt, __idGmshToFeel.find( idGmsh )->second );
-        }
-    }
-
-    // get response to initial request and update Feel::Mesh data
-    for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
-    {
-        for ( int cpt=0; cpt<nbMsgToSend[proc]; ++cpt )
-        {
-            int idFeel;
-            // receive idFeel
-            this->worldComm().localComm().recv( proc, cpt, idFeel );
-            // update data
-            auto elttt = mesh->elementIterator( mapMsg[proc][cpt],proc );
-            mesh->elements().modify( elttt, Feel::detail::updateIdInOthersPartitions( proc, idFeel ) );
-#if 0
-            std::cout << "[updateGhostCellInfo]----3---\n"
-                << "END! I am the proc" << this->worldComm().localRank()<<" I receive of the proc " << proc
-                <<" with tag "<< cpt
-                << " for the G " << mesh->element( mapMsg[proc][cpt], proc ).G()
-                << " with idFeel Classic " << mapMsg[proc][cpt]
-                << " with idFeel " << idFeel
-                << " and modif " << mesh->element( mapMsg[proc][cpt] , proc ).idInPartition( proc )
-                << std::endl;
-#endif
-        }
-    }
-
-}
-
-
 
 
 }
