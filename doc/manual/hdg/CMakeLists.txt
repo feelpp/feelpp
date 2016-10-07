@@ -40,40 +40,25 @@ foreach(D 3)
    endforeach()
 endforeach()
 
-# foreach(D 3)
-#    foreach(P RANGE 1 1 1)
-# 	#configure_file(lc_main_model.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/lc${D}DP${P}_main.cpp )
-# 	feelpp_add_application( lamina-cribrosa-model2_${D}DP${P} SRCS lc2_main_model.cpp INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} )
-#    endforeach()
-# endforeach()
-
-#foreach(D 2 3)
-#  foreach(P  RANGE 1 3 1) 
-#    configure_file(et_main_model.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/et${D}DP${P}_main.cpp )
-#    feelpp_add_application( electro-thermal-model_${D}DP${P} SRCS et${D}DP${P}_main.cpp INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore )
-#  endforeach()
-#endforeach()
-
-foreach(D 3)
-  foreach(P  RANGE 1 1 1) #3 
-    #configure_file(mixedpoisson_main.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/mp${D}DP${P}_main.cpp )
-    feelpp_add_application( mixed-poisson-model_${D}DP${P} SRCS mixedpoisson_main.cpp mixedpoisson.hpp LINK_LIBRARIES feelpp_modelcore DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P})
+foreach(D RANGE 1 3 1)
+  foreach(P  RANGE 0 4 1) #3 
+    feelpp_add_application( mixed-poisson2-model_${D}DP${P}
+    SRCS mixedpoisson2_main.cpp mixedpoisson2.hpp
+    LINK_LIBRARIES feelpp_modelcore
+    DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P})
   endforeach()
 endforeach()
 
-foreach(D 3)
-  foreach(P  RANGE 1 1 1) #3 
-    #configure_file(mixedpoisson_main.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/mp${D}DP${P}_main.cpp )
-    feelpp_add_application( mixed-poisson2-model_${D}DP${P} SRCS mixedpoisson2_main.cpp mixedpoisson2.hpp LINK_LIBRARIES feelpp_modelcore DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P})
-  endforeach()
+foreach(D RANGE 1 3 1)
+  foreach(P  RANGE 0 4 1) #3 
+    feelpp_add_application( conv_${D}DP${P}
+                            SRCS conv_main.cpp
+                            DEFS FEELPP_DIM=${D}
+                            FEELPP_ORDER=${P}
+                            INCLUDE_IN_ALL
+                            LINK_LIBRARIES feelpp_modelcore )
+ endforeach()
 endforeach()
-
-#foreach(D 2 3)
-#  foreach(P RANGE 1 3 1) 
-#    configure_file(conv_main.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/conv${D}DP${P}_main.cpp )
-#    feelpp_add_application( conv_${D}DP${P} SRCS conv${D}DP${P}_main.cpp DEFS FEELPP_DIM=${D} INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore )
-#  endforeach()
-#endforeach()
 
 
 foreach(D 3)
