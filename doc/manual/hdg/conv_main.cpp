@@ -6,8 +6,8 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "conv-mixed-poisson_@D@D_P@P@" ,
-                     "conv-mixed-poisson_@D@D_P@P@" ,
+    AboutData about( (boost::format("conv-mixed-poisson_%1%D_P%2%") % FEELPP_DIM % FEELPP_ORDER).str(),
+                     (boost::format("conv-mixed-poisson_%1%D_P%2%") % FEELPP_DIM % FEELPP_ORDER).str(),
                      "0.1",
                      "Convergence Mixed Poisson Model",
                      AboutData::License_GPL,
@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
                            _desc=makeConvOptions(),
                            _desc_lib=makeConvLibOptions().add(feel_options()) );
 
-    typedef ConvergenceTest<@D@,@P@> cv_type;
+    typedef ConvergenceTest<FEELPP_DIM,FEELPP_ORDER> cv_type;
 
     cv_type CV;
     CV.run();

@@ -496,14 +496,19 @@ MixedPoisson<Dim, Order, G_Order>::solve()
     auto U = M_ps->element();
 
     tic();
-    bbf.solve(_solution=U, _rhs=blf);
+    if ( !boption(prefixvm(M_prefix, "use-sc")) )
+    {
+        auto M_U = M_backend->newBlockVector(_block=U, _copy_values=false);
+        backend(_rebuild=true, _name=M_prefix)->solve( _matrix=M_A_cst, _rhs=M_F, _solution=M_U);
+        U.localize(M_U);
+    }
+    else
+    {
+        bbf.solve(_solution=U, _rhs=blf);
+    }
     toc("MixedPoisson : static condensation");
 
     toc("solve");
-
-	// Extract information from the solution
-    if ( !boption(prefixvm(M_prefix, "use-sc")) )
-        U.localize(M_U);
 
     M_up = U(0_c);
     M_pp = U(1_c);
