@@ -66,6 +66,7 @@ class MixedPoisson    :	public ModelNumerical
 public:
     typedef ModelNumerical super_type;
 
+    static const uint16_type expr_order = Order+2;
     //! numerical type is double
     typedef double value_type;
     //! linear algebra backend factory
@@ -143,7 +144,7 @@ public:
 
 //private:
 protected:
-    model_prop_ptrtype M_modelProperties;
+    // model_prop_ptrtype M_modelProperties;
     std::string M_prefix;
 
     mesh_ptrtype M_mesh;
@@ -203,8 +204,8 @@ public:
 
     Vh_element_t fluxField() const { return M_up; }
     Wh_element_t potentialField() const { return M_pp; }
-    model_prop_type modelProperties() { return *M_modelProperties; }
-    model_prop_type modelProperties() const { return *M_modelProperties; }
+    // model_prop_type modelProperties() { return *M_modelProperties; }
+    // model_prop_type modelProperties() const { return *M_modelProperties; }
     std::vector<std::string> integralMarkersList() const { return M_integralMarkersList; }
     int integralCondition() const { return M_integralCondition; }
     int tau_order() const { return M_tau_order; }
@@ -270,7 +271,7 @@ MixedPoisson<Dim, Order, G_Order>::MixedPoisson( std::string const& prefix,
 
 
     M_prefix = prefix;
-    M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption( prefixvm(M_prefix, "model_json") ) ) );
+    // M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption( prefixvm(M_prefix, "model_json") ) ) );
     if ( M_prefix.empty())
         M_backend = backend( _rebuild=true);
     else
@@ -342,8 +343,8 @@ MixedPoisson<Dim, Order, G_Order>::initModel()
 
     // initialize marker lists for each boundary condition type
     M_integralMarkersList.clear();
-    auto itField = M_modelProperties->boundaryConditions().find( "potential");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
+    auto itField = modelProperties().boundaryConditions().find( "potential");
+    if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Dirichlet" );
@@ -391,8 +392,8 @@ MixedPoisson<Dim, Order, G_Order>::initModel()
             Feel::cout << std::endl;
         }
     }
-    itField = M_modelProperties->boundaryConditions().find( "flux");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
+    itField = modelProperties().boundaryConditions().find( "flux");
+    if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Integral" );
@@ -417,7 +418,7 @@ MixedPoisson<Dim, Order, G_Order>::initModel()
     else
         M_integralCondition = M_integralMarkersList.size();
 
-    if ( boost::icontains(M_modelProperties->model(),"picard") )
+    if ( boost::icontains(modelProperties().model(),"picard") )
         M_isPicard = true;
     else
         M_isPicard = false;
@@ -480,13 +481,13 @@ MixedPoisson<Dim, Order, G_Order>::solve()
 
 	// copy constant parts of the matrix
     // MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
-    auto bbf_cst = blockform2(*M_ps, M_A_cst);
-    auto bbf = blockform2(*M_ps, M_A);
-    bbf.zero();
-    bbf += bbf_cst;
+    // auto bbf_cst = blockform2(*M_ps, M_A_cst);
+    auto bbf = blockform2(*M_ps, M_A_cst);
+    // bbf.zero();
+    // bbf += bbf_cst;
     auto blf = blockform1(*M_ps, M_F);
 
-    M_modelProperties->parameters().updateParameterValues();
+    modelProperties().parameters().updateParameterValues();
 
     this->updateConductivityTerm();
     this->assembleF();
@@ -599,11 +600,11 @@ MixedPoisson<Dim, Order, G_Order>::assembleSTD()
 
     // <tau p, w>_Gamma
     bbf( 1_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=tau_constant *
+                                 _expr=-tau_constant *
                                  ( leftfacet( pow(idv(H),M_tau_order)*idt(p))*leftface(id(w)) +
                                    rightfacet( pow(idv(H),M_tau_order)*idt(p))*rightface(id(w) )));
     bbf( 1_c, 1_c ) += integrate(_range=boundaryfaces(M_mesh),
-                                 _expr=(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
+                                 _expr=-(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
 
     // (1/delta_t p, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
@@ -613,7 +614,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleSTD()
 
     // <-tau phat, w>_Gamma\Gamma_I
     bbf( 1_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=-tau_constant * idt(phat) *
+                                 _expr=tau_constant * idt(phat) *
                                  ( leftface( pow(idv(H),M_tau_order)*id(w) )+
                                    rightface( pow(idv(H),M_tau_order)*id(w) )));
     bbf( 1_c, 2_c ) += integrate(_range=gammaMinusIntegral,
@@ -638,8 +639,8 @@ MixedPoisson<Dim, Order, G_Order>::assembleSTD()
                                                                              rightface( pow(idv(H),M_tau_order) )));
 
     // BC
-    auto itField = M_modelProperties->boundaryConditions().find( "potential");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
+    auto itField = modelProperties().boundaryConditions().find( "potential");
+    if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Dirichlet" );
@@ -676,7 +677,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleSTD()
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                auto g = expr(exAtMarker.expression1());
+                auto g = expr<expr_order>(exAtMarker.expression1());
                 // <j.n,mu>_Gamma_R
                 bbf( 2_c, 0_c ) += integrate(_range=markedfaces(M_mesh,marker),
                                              _expr=( id(l)*(trans(idt(u))*N()) ));
@@ -752,8 +753,8 @@ MixedPoisson<Dim, Order, G_Order>::assembleIBCRHS( int i )
     auto nu = M_Ch->element( "nu" );
     auto uI = M_Ch->element( "uI" );
 
-    auto itField = M_modelProperties->boundaryConditions().find( "flux");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
+    auto itField = modelProperties().boundaryConditions().find( "flux");
+    if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Integral" );
@@ -767,11 +768,11 @@ MixedPoisson<Dim, Order, G_Order>::assembleIBCRHS( int i )
                     double meas = integrate( _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
                     if ( exAtMarker.isExpression() )
                     {
-                        auto g = expr(exAtMarker.expression());
+                        auto g = expr<expr_order>(exAtMarker.expression());
                         if ( !this->isStationary() )
                             g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                         // <I_target,m>_Gamma_I
-                        blf(3_c,i) += integrate(_range=markedfaces(M_mesh,marker),
+                        blf(3_c,i) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                                 _expr=g*id(nu)/meas);
                     }
                     else if ( exAtMarker.isFile() )
@@ -790,7 +791,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleIBCRHS( int i )
 
                         LOG(INFO) << "use g=" << g << std::endl;
                         Feel::cout << "g=" << g << std::endl;
-                        blf( 3_c, i) += integrate(_range=markedfaces(M_mesh,marker),
+                        blf( 3_c, i) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                                   _expr=g*id(nu)/meas);
                     }
                 }
@@ -817,8 +818,8 @@ MixedPoisson<Dim, Order, G_Order>::assembleFstd()
         blf(1_c) += integrate( _range=elements(M_mesh),
                                _expr= idv(this->timeStepBDF()->polyDeriv()) * id(w));
 
-    auto itField = M_modelProperties->boundaryConditions().find( "potential");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
+    auto itField = modelProperties().boundaryConditions().find( "potential");
+    if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "SourceTerm" );
@@ -827,12 +828,12 @@ MixedPoisson<Dim, Order, G_Order>::assembleFstd()
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                auto g = expr(exAtMarker.expression());
+                auto g = expr<expr_order>(exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 // (f, w)_Omega
-                blf(1_c) += integrate( _range=markedelements(M_mesh,marker),
-                                       _expr=g*id(w));
+                blf(1_c) += integrate(_quad=_Q<expr_order>(),  _range=markedelements(M_mesh,marker),
+                                       _expr=-g*id(w));
             }
         }
 
@@ -844,11 +845,11 @@ MixedPoisson<Dim, Order, G_Order>::assembleFstd()
                 std::string marker = exAtMarker.marker();
                 if ( exAtMarker.isExpression() )
                 {
-                    auto g = expr(exAtMarker.expression());
+                    auto g = expr<expr_order>(exAtMarker.expression());
                     if ( !this->isStationary() )
                         g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                     // <g_D, mu>_Gamma_D
-                    blf(2_c) += integrate(_range=markedfaces(M_mesh,marker),
+                    blf(2_c) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                       _expr=id(l)*g);
                 }
                 else if ( exAtMarker.isFile() )
@@ -868,7 +869,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleFstd()
                     LOG(INFO) << "use g=" << g << std::endl;
                     Feel::cout << "g=" << g << std::endl;
                     // <g_D, mu>_Gamma_D
-                    blf(2_c) += integrate(_range=markedfaces(M_mesh,marker),
+                    blf(2_c) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                       _expr=id(l)*g);
                 }
 
@@ -881,11 +882,11 @@ MixedPoisson<Dim, Order, G_Order>::assembleFstd()
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                auto g = expr(exAtMarker.expression());
+                auto g = expr<expr_order>(exAtMarker.expression());
                 if ( !this->isStationary() )
                        g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 // <g_N,mu>_Gamma_N
-                blf(2_c) += integrate( _range=markedfaces(M_mesh, marker),
+                blf(2_c) += integrate(_quad=_Q<expr_order>(),  _range=markedfaces(M_mesh, marker),
                                    _expr=id(l)*g);
             }
         }
@@ -895,18 +896,18 @@ MixedPoisson<Dim, Order, G_Order>::assembleFstd()
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                auto g = expr(exAtMarker.expression2());
+                auto g = expr<expr_order>(exAtMarker.expression2());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 // <g_R^2,mu>_Gamma_R
-                blf(2_c) += integrate( _range=markedfaces(M_mesh, marker),
+                blf(2_c) += integrate(_quad=_Q<expr_order>(),  _range=markedfaces(M_mesh, marker),
                                        _expr=id(l)*g);
             }
         }
     }
 
-    itField = M_modelProperties->boundaryConditions().find( "flux");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
+    itField = modelProperties().boundaryConditions().find( "flux");
+    if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "SourceTerm" );
@@ -915,11 +916,11 @@ MixedPoisson<Dim, Order, G_Order>::assembleFstd()
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                auto g = expr<3,1>(exAtMarker.expression());
+                auto g = expr<3,1,expr_order>(exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 // (g, v)_Omega
-                blf(1_c) += integrate( _range=markedelements(M_mesh,marker),
+                blf(1_c) += integrate(_quad=_Q<expr_order>(),  _range=markedelements(M_mesh,marker),
                                        _expr=inner(g,id(v)));
             }
         }
@@ -933,7 +934,7 @@ MixedPoisson<Dim, Order, G_Order>::updateConductivityTerm(Expr<ExprT> expr, std:
 {
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
-    auto bbf = blockform2( *M_ps, M_A);
+    auto bbf = blockform2( *M_ps, M_A_cst);
     if ( marker.empty() )
         bbf(0_c,0_c) += integrate( _range=elements(M_mesh), _expr=inner(idt(u),id(v))/expr);
     else
@@ -948,8 +949,8 @@ MixedPoisson<Dim, Order, G_Order>::updateConductivityTerm( bool isNL)
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
 
-    auto bbf = blockform2( *M_ps, M_A);
-    for( auto const& pairMat : M_modelProperties->materials() )
+    auto bbf = blockform2( *M_ps, M_A_cst);
+    for( auto const& pairMat : modelProperties().materials() )
     {
         auto marker = pairMat.first;
         auto material = pairMat.second;
@@ -1098,7 +1099,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
     }
 
     // Export computed solutions
-    auto postProcess = M_modelProperties->postProcess();
+    auto postProcess = modelProperties().postProcess();
     auto itField = postProcess.find( "Fields");
     if ( itField != postProcess.end() )
     {
@@ -1142,8 +1143,8 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                     Feel::cout << "Integral value of potential(mup) on "
                                << M_integralMarkersList[i] << " : \t " << (M_mup[i])[0] << std::endl;
                 }
-                auto itField = M_modelProperties->boundaryConditions().find("Exact solution");
-                if ( itField != M_modelProperties->boundaryConditions().end() )
+                auto itField = modelProperties().boundaryConditions().find("Exact solution");
+                if ( itField != modelProperties().boundaryConditions().end() )
                 {
                     auto mapField = (*itField).second;
                     auto itType = mapField.find( "p_exact" );
@@ -1157,7 +1158,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                                 if ( !this->isStationary() )
                                     p_exact.setParameterValues( { {"t", time } } );
                                 double K = 1;
-                                for( auto const& pairMat : M_modelProperties->materials() )
+                                for( auto const& pairMat : modelProperties().materials() )
                                 {
                                     auto material = pairMat.second;
                                     K = material.getDouble( "k" );
@@ -1202,8 +1203,8 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                 // Import data
                 LOG(INFO) << "importing " << field << " at time " << time;
                 double extra_export = 0.0;
-                auto itField = M_modelProperties->boundaryConditions().find( "Other quantities");
-                if ( itField != M_modelProperties->boundaryConditions().end() )
+                auto itField = modelProperties().boundaryConditions().find( "Other quantities");
+                if ( itField != modelProperties().boundaryConditions().end() )
                 {
                     auto mapField = (*itField).second;
                     auto itType = mapField.find( field );
@@ -1232,7 +1233,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                 std::string field_k = field;
                 field_k += "_k";
                 double kk = 0.0;
-                for( auto const& pairMat : M_modelProperties->materials() )
+                for( auto const& pairMat : modelProperties().materials() )
                 {
                     auto material = pairMat.second;
                     kk = material.getDouble( field_k );
