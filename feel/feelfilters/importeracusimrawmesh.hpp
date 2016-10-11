@@ -39,6 +39,21 @@
 #include <feel/feelfilters/importer.hpp>
 #include <map>
 
+#if defined( FEELPP_HAS_ACUSIM )
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+#include <unistd.h>
+#include <acusim.h>
+#include <adb.h>
+//#include <h3dpublic_export.h>
+#include<sstream>
+#include<fstream>
+#include <math.h>
+//#include <nrutil.h>
+#include "/calcul/acusolve/avp/Yoann_/FEELpp/feelpp/research/po/lib/nrutil.h"
+#endif
+
 namespace pt = boost::property_tree;
 
 namespace Feel
@@ -96,6 +111,7 @@ class ImporterAcusimRawMesh : public Importer<MeshType>
     void readNodes( mesh_type* mesh ) const;
     void readElements( mesh_type* mesh ) const;
     void readFaces( mesh_type* mesh ) const;
+	void readMeshAcusolveAPI( mesh_type* mesh ) const;
 
   private:
     std::string M_filenameNodes;
@@ -178,75 +194,73 @@ ImporterAcusimRawMesh<MeshType>::ImporterAcusimRawMesh( std::string const& filen
 template <typename MeshType>
 void ImporterAcusimRawMesh<MeshType>::visit( mesh_type* mesh )
 {
-    CHECK( fs::exists( this->filenameNodes() ) ) << "filenameNodes not exist : " << this->filenameNodes();
+	if ( this->fileType() == ASCII )
+	{
+        CHECK( fs::exists( this->filenameNodes() ) ) << "filenameNodes not exist : " << this->filenameNodes();
 
-    if ( mesh->worldComm().isMasterRank() )
-        std::cout << ".reading nodes file" << std::endl;
-    tic();
-    this->readNodes( mesh );
-    toc( "ImporterAcusimRawMesh read nodes" );
-    if ( mesh->worldComm().isMasterRank() )
-    {
-        std::cout << ".reading nodes file done" << std::endl;
-        std::cout << ".reading elements file..." << std::endl;
+        if ( mesh->worldComm().isMasterRank() )
+            std::cout << ".reading nodes file" << std::endl;
+        tic();
+        this->readNodes( mesh );
+        toc( "ImporterAcusimRawMesh read nodes" );
+        if ( mesh->worldComm().isMasterRank() )
+        {
+            std::cout << ".reading nodes file done" << std::endl;
+            std::cout << ".reading elements file..." << std::endl;
+        }
+        tic();
+        this->readElements( mesh );
+        toc( "ImporterAcusimRawMesh read elements" );
+        if ( mesh->worldComm().isMasterRank() )
+        {
+            std::cout << ".reading elements file done" << std::endl;
+            std::cout << ".reading faces files..." << std::endl;
+        }
+        tic();
+        this->readFaces( mesh );
+        toc( "ImporterAcusimRawMesh read faces" );
+        if ( mesh->worldComm().isMasterRank() )
+        {
+            std::cout << ".reading faces files done" << std::endl;
+        }
     }
-    tic();
-    this->readElements( mesh );
-    toc( "ImporterAcusimRawMesh read elements" );
-    if ( mesh->worldComm().isMasterRank() )
-    {
-        std::cout << ".reading elements file done" << std::endl;
-        std::cout << ".reading faces files..." << std::endl;
-    }
-    tic();
-    this->readFaces( mesh );
-    toc( "ImporterAcusimRawMesh read faces" );
-    if ( mesh->worldComm().isMasterRank() )
-    {
-        std::cout << ".reading faces files done" << std::endl;
-    }
+	else
+	{
+		this->readMeshAcusolveAPI( mesh );
+	}
+
 }
 template <typename MeshType>
 void ImporterAcusimRawMesh<MeshType>::readNodes( mesh_type* mesh ) const
 {
-    if ( this->fileType() == ASCII )
+    std::ifstream __is( this->filenameNodes().c_str() );
+
+    if ( !__is.is_open() )
     {
-        std::ifstream __is( this->filenameNodes().c_str() );
-
-        if ( !__is.is_open() )
-        {
-            std::ostringstream ostr;
-            LOG( ERROR ) << "Invalid file name " << this->filenameNodes() << " (file not found)";
-            ostr << "Invalid file name " << this->filenameNodes() << " (file not found)\n";
-            throw std::invalid_argument( ostr.str() );
-        }
-
-        node_type coords( 3 /*mesh_type::nRealDim*/ );
-        int ptid = 0;
-        rank_type partId = mesh->worldComm().localRank();
-
-        while ( !__is.eof() )
-        {
-            __is >> ptid;
-            if ( __is.eof() )
-                break;
-            __is >> coords[0] >> coords[1] >> coords[2];
-
-            point_type pt( ptid, coords, false );
-            pt.setProcessIdInPartition( partId );
-            pt.setProcessId( partId );
-            mesh->addPoint( pt );
-        }
-
-        __is.close();
+        std::ostringstream ostr;
+        LOG( ERROR ) << "Invalid file name " << this->filenameNodes() << " (file not found)";
+        ostr << "Invalid file name " << this->filenameNodes() << " (file not found)\n";
+        throw std::invalid_argument( ostr.str() );
     }
-    else
+
+    node_type coords( 3 /*mesh_type::nRealDim*/ );
+    int ptid = 0;
+    rank_type partId = mesh->worldComm().localRank();
+
+    while ( !__is.eof() )
     {
-#if defined( FEELPP_HAS_ACUSIM )
-// Binaire + hypermesh altair interface
-///H3Read...
-#endif
+        __is >> ptid;
+        if ( __is.eof() )
+            break;
+        __is >> coords[0] >> coords[1] >> coords[2];
+
+        point_type pt( ptid, coords, false );
+        pt.setProcessIdInPartition( partId );
+        pt.setProcessId( partId );
+        mesh->addPoint( pt );
     }
+
+    __is.close();
 }
 template <typename MeshType>
 void ImporterAcusimRawMesh<MeshType>::readElements( mesh_type* mesh ) const
@@ -372,6 +386,155 @@ void ImporterAcusimRawMesh<MeshType>::readFaces( mesh_type* mesh ) const
         ++markerId;
     }
 }
+
+
+template <typename MeshType>
+void ImporterAcusimRawMesh<MeshType>::readMeshAcusolveAPI( mesh_type* mesh ) const
+{
+#if defined( FEELPP_HAS_ACUSIM )
+	AdbHd	adbHd;
+	adbHd	= adbNew( "Marche_GDR", "ACUSIM.DIR", "/calcul/BIG_CALCUL/ACUSOLVE/Yoann/feelpp_test/test_install_PO/marche_GDR/", 0 );
+	CHECK( adbHd != NULL ) << "Error opening the data base " << adbGetError();
+
+    // init database loading
+	bool success = adbOpenRun (adbHd,1);
+
+    //-------------------------------------------------------------//
+    // load mesh points
+    //-------------------------------------------------------------//
+	int nNodes =0;
+	success = adbGetInt0  ( adbHd, "nNodes",&nNodes);
+
+	CHECK( success ) << "fail to get nNodes\n";
+	double crd[nNodes*3];
+	std::cout << "PO : load nNodes " << nNodes << "\n";
+    success = adbGetReals0 ( adbHd,"crd", crd, 3 ,nNodes);
+
+	int usrIds[nNodes];
+	//usrIds = (int*) malloc(nNodes*sizeof(int));
+    success = adbGetInts0( adbHd,"usrIds", usrIds, nNodes , 1);
+
+	// add points in mesh
+	node_type coords( 3 );
+    int ptid = 0;
+    rank_type partId = mesh->worldComm().localRank();
+	for( int i=0;i<nNodes;i++)
+      {
+		  coords[0]=crd[3*i];
+		  coords[1]=crd[3*i+1];
+		  coords[2]=crd[3*i+2];
+		  // feel mesh point
+		 point_type pt( /*ptid*/usrIds[i], coords, false );
+         pt.setProcessIdInPartition( partId );
+         pt.setProcessId( partId );
+         mesh->addPoint( pt );
+	  }
+
+    //-------------------------------------------------------------//
+    // load mesh elements
+    //-------------------------------------------------------------//
+    int eltid = 0;
+    element_type e;
+    e.setProcessIdInPartition( partId );
+    e.setProcessId( partId );
+    int markerId = 1;
+
+    // get number of group of element
+    int nElms = 0;
+    success = adbGetInt0(adbHd,"nElms",&nElms);
+
+    int nElmElems = 0 , nElmElemNodes = 0;
+    for (int j=0;j<nElms;++j)
+    {
+        char elmName;
+        success = adbGetStr1(adbHd,"elmName", &elmName,j);
+        std::cout << "  Load element group "<< j << " with name : " << elmName << "\n";
+        success = adbGetInt1(adbHd,"nElmElems",&nElmElems,j);
+        std::cout << "  number of element : " << nElmElems << "\n";
+        success = adbGetInt1(adbHd,"nElmElemNodes",&nElmElemNodes,j);
+        std::cout << "  number of point in element : " << nElmElemNodes << "\n";
+        CHECK( nElmElemNodes == element_type::numPoints ) << "number of point in element wrong " << nElmElemNodes <<" vs " << element_type::numPoints;
+
+        // add marker
+        std::string marker( &elmName );
+        mesh->addMarkerName( marker, markerId, mesh_type::nDim );
+        e.setMarker( markerId );
+        e.setMarker2( markerId );
+
+        // load element connectivity
+        int elmCnn[nElmElems*nElmElemNodes];
+        success = adbGetInts1(adbHd,"&elmCnn",elmCnn,j,nElmElemNodes,nElmElems);
+
+        // add elements in mesh
+        for( int i=0;i<nElmElems;++i )
+        {
+            for ( uint16_type p = 0; p < element_type::numPoints; ++p )
+            {
+                int ptid = elmCnn[element_type::numPoints*i+p];
+                e.setPoint( p, mesh->point( ptid ) );
+            }
+            mesh->addElement( e, true );
+        }
+        ++markerId;
+    }
+
+
+
+    //-------------------------------------------------------------//
+    // load mesh faces
+    //-------------------------------------------------------------//
+    face_type f;
+    f.setProcessIdInPartition( partId );
+    f.setProcessId( partId );
+
+    //int eltidConnected = 0, faceid = 0, faceidTemp = 0, ptids = 0;
+    int faceid = 0;
+
+    // get number of group of element
+	int nOsfs = 0;
+	success = adbGetInt0(adbHd,"nOsfs",&nOsfs);
+
+    int nOsfSrfs = 0, nOsfSrfNodes = 0;
+	for( int j=0;j<nOsfs;++j )
+	{
+        char osfName;
+        success = adbGetStr1(adbHd,"osfName",&osfName,j);
+        std::cout << "  Load face group "<< j << " with name : " << osfName << "\n";
+        success = adbGetInt1(adbHd,"nOsfSrfs",&nOsfSrfs,j);
+        std::cout << "  number of face : " << nOsfSrfs << "\n";
+        success = adbGetInt1(adbHd,"nOsfSrfNodes",&nOsfSrfNodes,j);
+        std::cout << "  number of point in face : " << nOsfSrfNodes << "\n";
+        CHECK( nOsfSrfNodes == face_type::numPoints ) << "number of point in element wrong " << nOsfSrfNodes <<" vs " << face_type::numPoints;
+
+        // add marker
+        //std::string marker = osfName;
+        std::string marker( &osfName );
+        mesh->addMarkerName( marker, markerId, mesh_type::nDim - 1 );
+        f.setMarker( markerId );
+        f.setMarker2( markerId );
+
+        // load face connectivity
+        int osfSrfCnn[nOsfSrfNodes*nOsfSrfs];
+        success = adbGetInts1(adbHd,"osfSrfCnn",osfSrfCnn,j,nOsfSrfNodes,nOsfSrfs);
+
+        // add faces in mesh
+        for( int i=0;i<nOsfSrfs;++i)
+        {
+            f.setId( faceid++ );
+            for ( uint16_type p = 0; p < face_type::numPoints; ++p )
+            {
+                int ptid = osfSrfCnn[face_type::numPoints*i+p];
+                f.setPoint( p, mesh->point( ptid ) );
+            }
+            mesh->addFace( f );
+        }
+        ++markerId;
+
+
+	}
+#endif
+}
+
 
 } // namespace Feel
 
