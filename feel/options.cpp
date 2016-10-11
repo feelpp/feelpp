@@ -194,6 +194,7 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.filename" ).c_str(), Feel::po::value<std::string>()->default_value( "untitled.geo" ), "Gmsh filename" )
         ( prefixvm( prefix,"gmsh.depends" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "list of files separated by , or ; that are dependencies of a loaded Gmsh geometry" )
         ( prefixvm( prefix,"gmsh.hsize" ).c_str(), Feel::po::value<double>()->default_value( 0.1 ), "default characteristic mesh size" )
+        ( prefixvm( prefix,"gmsh.scale" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "scale the mesh after loading" )
         ( prefixvm( prefix,"gmsh.hsize2" ).c_str(), Feel::po::value<double>()->default_value( 0.1 ), "characteristic mesh size" )
         ( prefixvm( prefix,"gmsh.geo-variables-list" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "modify a list of geo variables (ex : alpha=1:beta=2)" )
         ( prefixvm( prefix,"gmsh.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save msh file to disk once generated" )
@@ -212,6 +213,7 @@ gmsh_options( std::string const& prefix )
 #else
         ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO)" )
 #endif
+        ( prefixvm( prefix,"gmsh.verbosity" ).c_str(), Feel::po::value<int>()->default_value( 5 ), "Gmsh verbosity level (0:silent except fatal errors, 1:+errors, 2:+warnings, 3:+direct, 4:+info except status bar, 5:normal, 99:debug)" )
         ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" )
 
         ( prefixvm( prefix,"gmsh.in-memory" ).c_str(), Feel::po::value<bool>()->default_value( false ), "false to save on disk, true to read geometry directly from memory" )
@@ -402,6 +404,7 @@ po::options_description stabilization_options( std::string const& prefix )
 
         ( prefixvm( prefix, "stab.export" ).c_str(), po::value<bool>()->default_value( true ), "export fields" )
 
+        ( prefixvm( prefix, "stab.parameter" ).c_str(), po::value<int>()->default_value( 1 ), "different way to evaluate the stabilization parameter" )
         ;
 
     return _options.add( backend_options( prefixvm(prefix,"stab") ) );
@@ -454,6 +457,7 @@ crbSEROptions( std::string const& prefix )
         ( "ser.print-rb-iterations_info", Feel::po::value<bool>()->default_value( false ), "Write online rb iterations (Picard) needed for Greedy")
         ( "ser.radapt-eim-rtol", Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for EIM r-adaptation - default(0.0) = no adaptation")
         ( "ser.radapt-rb-rtol", Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for RB r-adaptation - default(0.0) = no adaptation")
+        ( "ser.eim-greedy-rtol", Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for the error indicator constraint in eim Greedy algorithm : choose mu from those which satisfies this criterion - default(0.0) = no error indicator constraint")
         ( "ser.corrected-rb-rtol", Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for RB correction (from error estimation) to be used - default(0.0) = no correction")
         ;
     return seroptions;
@@ -702,9 +706,10 @@ ams_options( std::string const& prefix )
     po::options_description _options( "AMS options (" + prefix + ")" );
     _options.add_options()
         ( prefixvm( prefix, "useEdge" ).c_str(), Feel::po::value<bool>()->default_value(true), "true: SetConstantEdgeVector, false: SetCoordinates" )
-        ( prefixvm( prefix, "threshold" ).c_str(), Feel::po::value<bool>()->default_value(false), "remove near null values in Grad" )
+        //( prefixvm( prefix, "threshold" ).c_str(), Feel::po::value<bool>()->default_value(false), "remove near null values in Grad" )
         ( prefixvm( prefix, "setAlphaBeta" ).c_str(), Feel::po::value<bool>()->default_value(false), "Use locally constructed A_alpha and A_beta" )
-        ( prefixvm( prefix, "singular" ).c_str(), Feel::po::value<bool>()->default_value(false), "Force the relaxation parameter to be zero" )
+        //( prefixvm( prefix, "singular" ).c_str(), Feel::po::value<bool>()->default_value(false), "Force the relaxation parameter to be zero" )
+        ( prefixvm( prefix, "relax" ).c_str(), Feel::po::value<double>()->default_value(1.), "Relaxation parameter" )
         ;
     return _options
         .add( backend_options( prefix.c_str() ))  // for AMS
@@ -719,6 +724,8 @@ po::options_description
 blockms_options( std::string const& prefix )
 {
     po::options_description _options( "BLOCKMS options (" + prefix + ")" );
+    _options.add_options()
+        ( prefixvm( prefix, "penaldir" ).c_str(), Feel::po::value<double>()->default_value(10.), "Penalisation parameter for weak bc" );
     return _options
         .add(     ams_options( prefixvm(prefix, "11").c_str() ))  // the (1,1) block
         .add( backend_options( prefixvm(prefix, "22").c_str() )); // the (2,2) block
@@ -813,6 +820,23 @@ msi_options( std::string const& prefix )
     return _options;
 }
 
+// fit options
+po::options_description
+fit_options( std::string const& prefix )
+{
+    po::options_description _options( "Fit " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"fit.datafile" ).c_str(), Feel::po::value<std::string>()->default_value( "$cfgdir/data.txt" ), "X - f(X) data file measures" )
+        ( prefixvm( prefix,"fit.kind" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Kind of interpolator : P0 (=0), P1 (=1), Spline (=2), Akima (=3)" )
+        ( prefixvm( prefix,"fit.P0" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "left = 0, right = 1, center = 2" )
+        ( prefixvm( prefix,"fit.P1_right" ).c_str(), Feel::po::value<int>()->default_value( 0  ), "zero = 0, constant = 1, extrapol = 2" )
+        ( prefixvm( prefix,"fit.P1_left" ).c_str(), Feel::po::value<int>()->default_value( 1  ), "zero = 0, constant = 1, extrapol = 2" )
+        ( prefixvm( prefix,"fit.Spline_right" ).c_str(), Feel::po::value<int>()->default_value( 0  ), "natural = 0, clamped = 1" )
+        ( prefixvm( prefix,"fit.Spline_left" ).c_str(), Feel::po::value<int>()->default_value( 0  ), "natural = 0, clamped = 1" )
+
+               ;
+    return _options;
+}
 
 po::options_description
 feel_options( std::string const& prefix  )
@@ -895,6 +919,7 @@ feel_options( std::string const& prefix  )
         .add( aitken_options( prefix ) )
 
         .add (msi_options(prefix))
+        .add (fit_options(prefix))
         ;
 
     return opt;

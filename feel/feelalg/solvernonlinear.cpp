@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-04-17
 
-  Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2012 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -51,7 +51,11 @@ SolverNonLinear<T>::SolverNonLinear ( std::string const& prefix, WorldComm const
     M_preconditioner_type( LU_PRECOND ),
     M_preconditioner(),
     M_nullSpace(), M_nearNullSpace(),
+#if FEELPP_HAS_PETSC
     M_matSolverPackage_type( MATSOLVER_PETSC ),
+#else
+    M_matSolverPackage_type( MATSOLVER_NONE ),
+#endif
     M_relativeResidualTol( 0 ),
     M_absoluteResidualTol( 0 ),
     M_absoluteSolutionTol( 0 ),

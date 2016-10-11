@@ -420,13 +420,13 @@ public:
                                                  _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
                                                  _worldcomm=M_backend_primal->comm(),
                                                  _prefix=M_backend_primal->prefix() ,
-                                                 _rebuild=false/*true*/);
+                                                 _rebuild=M_model->useSER());
         M_preconditioner_dual = preconditioner(_pc=(PreconditionerType) M_backend_dual->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                                _backend= M_backend_dual,
                                                _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_dual->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
                                                _worldcomm=M_backend_dual->comm(),
                                                _prefix=M_backend_dual->prefix() ,
-                                               _rebuild=false/*true*/);
+                                               _rebuild=M_model->useSER());
     }
 
 
@@ -2021,7 +2021,6 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::vector_ptrtype
 CRB<TruthModelType>::computeRieszResidual( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const
 {
-
     auto all_beta = M_model->computePicardBetaQm( this->expansion( uN[0] , M_N , M_model->rBFunctionSpace()->primalRB()  ), mu );
     auto beta_A = all_beta.template get<1>();
     auto beta_F = all_beta.template get<2>();
@@ -2032,7 +2031,7 @@ CRB<TruthModelType>::computeRieszResidual( parameter_type const& mu, std::vector
     int Qa = beta_A.size();
     for ( size_type q = 0; q < Qa; ++q )
     {
-        int mMaxA = beta_A[q].size();
+        int mMaxA = M_hAqm[q].size();
         for(size_type m = 0; m < mMaxA; ++m )
         {
             for(size_type n=0; n<M_N; ++n)
@@ -2046,7 +2045,7 @@ CRB<TruthModelType>::computeRieszResidual( parameter_type const& mu, std::vector
     int Ql = beta_F[0].size();
     for ( size_type q = 0; q < Ql; ++q )
     {
-        int mMaxF = beta_F[0][q].size();
+        int mMaxF = M_hFqm[q].size();
         for ( size_type m = 0; m < mMaxF; ++m )
         {
             YR->add( beta_F[0][q][m] , M_hFqm[q][m] );
@@ -2065,7 +2064,7 @@ CRB<TruthModelType>::computeRieszResidualNorm( parameter_type const& mu ) const
     std::vector<vectorN_type> uNdu;
     std::vector<vectorN_type> uNold;
     std::vector<vectorN_type> uNduold;
-    auto o = lb( M_N, mu, uN, uNdu, uNold, uNduold  );
+    auto o = lb( this->dimension(), mu, uN, uNdu, uNold, uNduold  );
     return this->computeRieszResidualNorm( mu, uN );
 }
 

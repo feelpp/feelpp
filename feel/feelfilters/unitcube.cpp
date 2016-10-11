@@ -28,18 +28,25 @@
  */
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
+#ifdef FEELPP_HAS_GMSH
 #include <feel/feelfilters/creategmshmesh.hpp>
+#endif
 #include <feel/feelfilters/domain.hpp>
 
 namespace Feel {
 boost::shared_ptr<Mesh<Simplex<3> > >
 unitCube( double h )
 {
+#ifdef FEELPP_HAS_GMSH
     return createGMSHMesh(_mesh=new Mesh<Simplex<3> >,
                           _desc=domain( _name="cube",
                                         _shape="hypercube",
                                         _dim=3,
                                         _h= h ) );
+#else
+    LOG(WARNING) << "unitCube: Feel++ was not built with Gmsh. This function will return a empty mesh.";
+    return boost::make_shared<Mesh<Simplex<3> > >();
+#endif
 }
 
 }

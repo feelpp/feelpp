@@ -138,24 +138,20 @@ Mesh<Shape, T, Tag>::updateForUse()
 
         if ( this->worldComm().localSize()>1 )
         {
-            if ( this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL ) )
-            {
-                // warning : this function change the isOnBoundary for ghost faces
-                // so need call before updateOnBoundary()
-                if ( false )
-                    this->updateEntitiesCoDimensionGhostCellByUsingBlockingComm();
-                else
-                    this->updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
-
-                auto ipfRange = this->interProcessFaces();
-                for ( auto itf = ipfRange.first, enf = ipfRange.second ; itf!=enf ; ++itf )
-                    this->addFaceNeighborSubdomain( itf->partition2() );
-            }
-
             auto iv = this->beginGhostElement();
             auto const en = this->endGhostElement();
             for ( ; iv != en; ++iv )
                 this->addNeighborSubdomain( iv->processId() );
+
+            // update mesh entities with parallel data
+            if ( false )
+                this->updateEntitiesCoDimensionGhostCellByUsingBlockingComm();
+            else
+                this->updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
+
+            auto ipfRange = this->interProcessFaces();
+            for ( auto itf = ipfRange.first, enf = ipfRange.second ; itf!=enf ; ++itf )
+                this->addFaceNeighborSubdomain( itf->partition2() );
         }
 
         if ( ( this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL ) ) &&
@@ -2520,6 +2516,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
         nDataInVecToSendBis[idProc]++;
     }
     //------------------------------------------------------------------------------------------------//
+#if 0
     // compute nbMsgToRecv
     std::set<rank_type> procToRecv;
     auto itEltActif = this->beginElementWithProcessId( this->worldComm().localRank() );
@@ -2566,6 +2563,19 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
         reqs[cptRequest] = this->worldComm().localComm().irecv( idProc , 0, dataToRecv[idProc] );
         ++cptRequest;
     }
+#else
+    std::map<rank_type,std::vector<size_type> > dataToRecv;
+    int neighborSubdomains = this->neighborSubdomains().size();
+    int nbRequest = 2*neighborSubdomains;
+    mpi::request * reqs = new mpi::request[nbRequest];
+    int cptRequest=0;
+    // first send/recv
+    for ( rank_type neighborRank : this->neighborSubdomains() )
+    {
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank] );
+        reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank] );
+    }
+#endif
     //------------------------------------------------------------------------------------------------//
     // wait all requests
     mpi::wait_all(reqs, reqs + nbRequest);
@@ -2581,11 +2591,14 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
         dataToReSend[idProc].resize( nDataRecv );
         for ( int k=0; k<nDataRecv; ++k )
         {
+            if ( !this->hasElement(itDataRecv->second[k]) )
+                continue;
+
             auto const& theelt = this->element( itDataRecv->second[k] );
             //---------------------------//
             // get faces id and bary
             resultghost_face_type idFacesWithBary(this->numLocalFaces(),boost::make_tuple(invalid_size_type_value, false, std::vector<double>(nRealDim,0.) ));
-            for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+            for ( uint16_type j = 0; j < theelt.nTopologicalFaces()/*this->numLocalFaces()*/; j++ )
             {
                 if( !theelt.facePtr( j ) )
                     continue;
@@ -2637,6 +2650,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
         } // for ( int k=0; k<nDataRecv; ++k )
     }
     //------------------------------------------------------------------------------------------------//
+#if 0
     // send respond to the request
     cptRequest=0;
     auto itDataToReSend = dataToReSend.begin();
@@ -2657,6 +2671,16 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
         reqs[cptRequest] = this->worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc] );
         ++cptRequest;
     }
+#else
+    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_edge_type,resultghost_face_type>  > > finalDataToRecv;
+    cptRequest=0;
+    // second send/recv
+    for ( rank_type neighborRank : this->neighborSubdomains() )
+    {
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, dataToReSend[neighborRank] );
+        reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, finalDataToRecv[neighborRank] );
+    }
+#endif
     //------------------------------------------------------------------------------------------------//
     // wait all requests
     mpi::wait_all(reqs, reqs + nbRequest);
@@ -2678,6 +2702,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
             auto const& theelt = this->element( memoryMsgToSend[idProc][k], idProc );
 
             //update faces data
+            if ( !idFacesWithBaryRecv.empty() )
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
             {
                 auto const& idFaceRecv = idFacesWithBaryRecv[j].template get<0>();
@@ -2738,9 +2763,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
             } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
 
             // edges
+            if ( !idEdgesWithBaryRecv.empty() )
             Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step2( *this, theelt, idEdgesWithBaryRecv, mpl::bool_<element_type::nDim == 3>() );
 
             // vertices
+            if ( !idPointsWithNodeRecv.empty() )
             for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
             {
                 auto const& idPointRecv = idPointsWithNodeRecv[j].template get<0>();

@@ -15,6 +15,7 @@
 #include <feel/feelvf/inv.hpp>
 #include <feel/feelvf/one.hpp>
 #include <feel/feelvf/geometricdata.hpp>
+#include <feel/feelvf/mean.hpp>
 //#include <fsi/fsicore/variousfunctions.hpp>
 
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
@@ -66,8 +67,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
             hovisuMode = "ON (with OperatorLagrangeP1 on "+hovisuSpaceUsed+")";
         else if ( hovisuSpaceUsed == "p1" )
             hovisuMode = "ON (with createP1mesh)";
-#if defined(FEELPP_HAS_VTK)
-        myexporterType=M_exporter_ho->type();
+#if 1//defined(FEELPP_HAS_VTK)
+        myexporterType = M_exporter_ho->type();
         myexporterFreq = M_exporter_ho->freq();
 #endif
     }
@@ -97,6 +98,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
         doExport_str=(doExport_str.empty())?"pid":doExport_str+" - pid";
     if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::ALEMesh ) )
         doExport_str=(doExport_str.empty())?"alemesh":doExport_str+" - alemesh";
+    for ( std::string const& userFieldName : M_postProcessUserFieldExported )
+        doExport_str=(doExport_str.empty())?userFieldName:doExport_str+" - "+userFieldName;
 
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
@@ -121,7 +124,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << this->densityViscosityModel()->getInfo()->str();
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
-           << this->getInfoNeumannBC();
+           << this->getInfoNeumannBC()
+           << this->getInfoPressureBC();
     for ( std::string typeOutlet : std::vector<std::string>({"free","windkessel"}) )
     {
         if ( this->hasFluidOutlet(typeOutlet) )
@@ -311,9 +315,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setDoExport(bool b)
     }
     else
     {
-#if defined(FEELPP_HAS_VTK)
-        CHECK( M_exporter )  << "hoexport not init\n";
-        M_exporter_ho->setDoExport(b);
+#if 1 //defined(FEELPP_HAS_VTK)
+        //CHECK( M_exporter_ho )  << "hoexport not init\n";
+        if ( M_exporter_ho )
+            M_exporter_ho->setDoExport(b);
 #endif
     }
 }
@@ -489,6 +494,23 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                        M_thermodynModel->fieldTemperature() );
         hasFieldToExport = true;
     }
+    for ( std::string const& userFieldName : M_postProcessUserFieldExported )
+    {
+        if ( this->hasFieldUserScalar( userFieldName ) )
+        {
+            M_exporter->step( time )->add( prefixvm(this->prefix(),userFieldName),
+                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),userFieldName)),
+                                           this->fieldUserScalar( userFieldName ) );
+            hasFieldToExport = true;
+        }
+        else if ( this->hasFieldUserVectorial( userFieldName ) )
+        {
+            M_exporter->step( time )->add( prefixvm(this->prefix(),userFieldName),
+                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),userFieldName)),
+                                           this->fieldUserVectorial( userFieldName ) );
+            hasFieldToExport = true;
+        }
+    }
 
     //----------------------//
     if ( hasFieldToExport )
@@ -508,7 +530,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 {
-#if defined(FEELPP_HAS_VTK)
+#if 1//defined(FEELPP_HAS_VTK)
     if ( !M_exporter_ho->doExport() ) return;
 
     // because write geofile at each step ( TODO fix !!! )
@@ -830,6 +852,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
         ++cptBlock;
     if (this->hasMarkerDirichletBClm())
         ++cptBlock;
+    if ( this->hasMarkerPressureBC() )
+    {
+        ++cptBlock;
+        if ( nDim == 3 )
+            ++cptBlock;
+    }
     if (this->hasFluidOutletWindkesselImplicit() )
     {
         for (int k=0;k<this->nFluidOutlet();++k)
@@ -865,6 +893,36 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
 
 //---------------------------------------------------------------------------------------------------------//
 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
+{}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
+{
+    if ( this->definePressureCstMethod() == "algebraic" )
+    {
+        auto upSol = this->functionSpace()->element( sol, this->rowStartInVector() );
+        auto pSol = upSol.template element<1>();
+        CHECK( M_definePressureCstAlgebraicOperatorMeanPressure ) << "mean pressure operator does not init";
+        double meanPressureCurrent = inner_product( *M_definePressureCstAlgebraicOperatorMeanPressure, pSol );
+        pSol.add( -meanPressureCurrent );
+    }
+}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
+{}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
+{}
+
+//---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -876,6 +934,24 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matr
         this->updateInHousePreconditionerPCD( mat,vecSol );
     }
 }
+
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
+{
+    if ( this->definePressureCstMethod() == "lagrange-multiplier" && !M_XhMeanPressureLM )
+        M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+    else if ( this->definePressureCstMethod() == "algebraic" )
+    {
+        auto p = this->functionSpacePressure()->element();
+        M_definePressureCstAlgebraicOperatorMeanPressure = form1_mean(_test=this->functionSpacePressure(),
+                                                                      _range=elements(this->mesh()),
+                                                                      _expr=id(p) ).vectorPtr();
+        M_definePressureCstAlgebraicOperatorMeanPressure->close();
+    }
+}
+
 
 //---------------------------------------------------------------------------------------------------------//
 
@@ -984,6 +1060,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
     int currentTimeOrder = this->timeStepBDF()->timeOrder();
 
     this->updateTime( M_bdf_fluid->time() );
+
+    // update user functions which depend of time only
+    this->updateUserFunctions(true);
 
     // maybe rebuild cst jacobian or linear
     if ( M_algebraicFactory &&
@@ -1386,7 +1465,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
 
     //-------------------------------------------------------------------//
     //ho visu
-#if defined(FEELPP_HAS_VTK)
+#if 0 //defined(FEELPP_HAS_VTK)
     if (M_isHOVisu && false) // useless now ( this export mesh stay fix!)
     {
         auto drm = M_meshALE->dofRelationShipMap();
@@ -1730,6 +1809,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
         ++nBlock;
     if (this->hasMarkerDirichletBClm())
         ++nBlock;
+    if ( this->hasMarkerPressureBC() )
+    {
+        ++nBlock;
+        if ( nDim == 3 )
+            ++nBlock;
+    }
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
     if ( M_useThermodynModel && M_useGravityForce )
@@ -1782,6 +1867,24 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                              _pattern_block=patCouplingLM.transpose(),
                                              _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
+    }
+    if ( this->hasMarkerPressureBC() )
+    {
+        BlocksStencilPattern patCouplingLM(1,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
+        patCouplingLM(0,0) = size_type(Pattern::COUPLED);
+        myblockGraph(indexBlock,0) = stencil(_test=M_spaceLagrangeMultiplierPressureBC,_trial=this->functionSpace(),
+                                             _pattern_block=patCouplingLM,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(0,indexBlock) = stencil(_test=this->functionSpace(),_trial=M_spaceLagrangeMultiplierPressureBC,
+                                             _pattern_block=patCouplingLM.transpose(),
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        ++indexBlock;
+        if ( nDim == 3 )
+        {
+            myblockGraph(indexBlock,0) = myblockGraph(indexBlock-1,0);
+            myblockGraph(0,indexBlock) = myblockGraph(0,indexBlock-1);
+            ++indexBlock;
+        }
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
     {

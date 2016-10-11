@@ -122,6 +122,12 @@ public:
     typedef typename element_fluid_type::template sub_element<0>::type element_fluid_velocity_type;
     typedef boost::shared_ptr<element_fluid_velocity_type> element_fluid_velocity_ptrtype;
     typedef typename space_fluid_velocity_type::component_functionspace_type component_space_fluid_velocity_type;
+
+    typedef typename space_fluid_velocity_type::element_type element_velocity_noview_type;
+    typedef boost::shared_ptr<element_velocity_noview_type> element_velocity_noview_ptrtype;
+    typedef typename component_space_fluid_velocity_type::element_type element_velocity_component_noview_type;
+    typedef boost::shared_ptr<element_velocity_component_noview_type> element_velocity_component_noview_ptrtype;
+
     // subspace pressure
     typedef typename space_fluid_type::template sub_functionspace<1>::type space_fluid_pressure_type;
     typedef typename space_fluid_type::template sub_functionspace<1>::ptrtype space_fluid_pressure_ptrtype;
@@ -133,6 +139,11 @@ public:
     // function space for Diriclet condition using lagrange multiplier
     typedef FunctionSpace<trace_mesh_type, bases<basis_fluid_u_type> > space_dirichletlm_velocity_type;
     typedef boost::shared_ptr<space_dirichletlm_velocity_type> space_dirichletlm_velocity_ptrtype;
+    // function space for lagrange multiplier used in pressure bc
+    typedef typename space_dirichletlm_velocity_type::component_functionspace_type space_trace_velocity_component_type;
+    typedef boost::shared_ptr<space_trace_velocity_component_type> space_trace_velocity_component_ptrtype;
+    typedef typename space_trace_velocity_component_type::element_type element_trace_velocity_component_type;
+    typedef boost::shared_ptr<element_trace_velocity_component_type> element_trace_velocity_component_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -267,7 +278,7 @@ public:
     //typedef boost::shared_ptr<gmsh_export_type> gmsh_export_ptrtype;
     //___________________________________________________________________________________//
     // export ho
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
     //fais comme ca car bug dans opeartorlagrangeP1 pour les champs vectorielles
     typedef FunctionSpace<mesh_type,bases<Lagrange<nOrderVelocity,Scalar,Continuous,PointSetFekete> > > space_create_ho_type;
     // mesh
@@ -408,6 +419,18 @@ public:
 
     bool useExtendedDofTable() const;
 
+    // fields defined in json
+    std::map<std::string,element_velocity_component_noview_ptrtype> const& fieldsUserScalar() const { return M_fieldsUserScalar; }
+    std::map<std::string,element_velocity_noview_ptrtype> const& fieldsUserVectorial() const { return M_fieldsUserVectorial; }
+    bool hasFieldUserScalar( std::string const& key ) const { return M_fieldsUserScalar.find( key ) != M_fieldsUserScalar.end(); }
+    bool hasFieldUserVectorial( std::string const& key ) const { return M_fieldsUserVectorial.find( key ) != M_fieldsUserVectorial.end(); }
+    element_velocity_component_noview_ptrtype const& fieldUserScalarPtr( std::string const& key ) const {
+        CHECK( this->hasFieldUserScalar( key ) ) << "field name " << key << " not registered"; return M_fieldsUserScalar.find( key )->second; }
+    element_velocity_noview_ptrtype const& fieldUserVectorialPtr( std::string const& key ) const {
+        CHECK( this->hasFieldUserVectorial( key ) ) << "field name " << key << " not registered"; return M_fieldsUserVectorial.find( key )->second; }
+    element_velocity_component_noview_type const& fieldUserScalar( std::string const& key ) const { return *this->fieldUserScalarPtr( key ); }
+    element_velocity_noview_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
+
     //___________________________________________________________________________________//
     // algebraic data
     backend_ptrtype backend() { return M_backend; }
@@ -435,8 +458,9 @@ public:
     void initTimeStep();
     void updateTimeStep() { this->updateTimeStepBDF(); }
 
-
-    //___________________________________________________________________________________//
+    // init/update user functions defined in json
+    void initUserFunctions();
+    void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
     // export post process results
     void initPostProcess();
     //void restartPostProcess();
@@ -548,6 +572,8 @@ public :
     std::string definePressureCstMethod() const { return M_definePressureCstMethod; }
     void setDefinePressureCstMethod(std::string s) { M_definePressureCstMethod = s; }
     double definePressureCstPenalisationBeta() const { return M_definePressureCstPenalisationBeta; }
+
+    void updateDefinePressureCst();
 
     //___________________________________________________________________________________//
     // physical parameters rho,mu,nu,...
@@ -758,6 +784,12 @@ public :
     //___________________________________________________________________________________//
 
     virtual void solve();
+    //___________________________________________________________________________________//
+    void preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    //___________________________________________________________________________________//
 
     void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
     virtual void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const = 0;
@@ -825,6 +857,10 @@ protected:
     // trace mesh and space
     trace_mesh_ptrtype M_meshDirichletLM;
     space_dirichletlm_velocity_ptrtype M_XhDirichletLM;
+    // lagrange multiplier for impose pressure bc
+    trace_mesh_ptrtype M_meshLagrangeMultiplierPressureBC;
+    space_trace_velocity_component_ptrtype M_spaceLagrangeMultiplierPressureBC;
+    element_trace_velocity_component_ptrtype M_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC2;
     // time discrtisation fluid
     bdf_ptrtype M_bdf_fluid;
     //----------------------------------------------------
@@ -835,6 +871,9 @@ protected:
     // vorticity space
     space_vorticity_ptrtype M_XhVorticity;
     element_vorticity_ptrtype M_fieldVorticity;
+    // fields defined in json
+    std::map<std::string,element_velocity_component_noview_ptrtype> M_fieldsUserScalar;
+    std::map<std::string,element_velocity_noview_ptrtype> M_fieldsUserVectorial;
     //----------------------------------------------------
     // mesh ale tool and space
     bool M_isMoveDomain;
@@ -889,6 +928,7 @@ protected:
     bool M_definePressureCst;
     std::string M_definePressureCstMethod;
     double M_definePressureCstPenalisationBeta;
+    vector_ptrtype M_definePressureCstAlgebraicOperatorMeanPressure;
     //----------------------------------------------------
     // fluid inlet bc
     std::vector< std::tuple<std::string,std::string, scalar_field_expression<2> > > M_fluidInletDesc; // (marker,type,vmax expr)
@@ -917,13 +957,15 @@ protected:
     //----------------------------------------------------
     // post-process field exported
     std::set<FluidMechanicsPostProcessFieldExported> M_postProcessFieldExported;
+    std::set<std::string> M_postProcessUserFieldExported;
+
     // exporter option
     bool M_isHOVisu;
     // exporter fluid
     export_ptrtype M_exporter;
     export_trace_ptrtype M_exporterFluidOutlet;
     // exporter fluid ho
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
     export_ho_ptrtype M_exporter_ho;
     space_vectorial_visu_ho_ptrtype M_XhVectorialVisuHO;
     space_scalar_visu_ho_ptrtype M_XhScalarVisuHO;

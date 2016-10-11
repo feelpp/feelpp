@@ -33,7 +33,9 @@
 
 #include <boost/make_shared.hpp>
 #include <boost/program_options/variables_map.hpp>
+#if FEELPP_HAS_PETSC
 #include <feel/feelcore/feelpetsc.hpp>
+#endif
 #undef MatType
 #include <feel/feelcore/application.hpp>
 #include <feel/feelalg/vectorublas.hpp>

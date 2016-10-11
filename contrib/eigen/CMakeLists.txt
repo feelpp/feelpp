@@ -73,7 +73,7 @@ set(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO "")
 
 if(NOT STANDARD_MATH_LIBRARY_FOUND)
 
-  message(STATUS
+  message(FATAL_ERROR
     "Can't link to the standard math library. Please report to the Eigen developers, telling them about your platform.")
 
 else()
@@ -120,7 +120,7 @@ endmacro(ei_add_cxx_compiler_flag)
 if(NOT MSVC)
   # We assume that other compilers are partly compatible with GNUCC
 
-  # clang outputs some warnings for unknwon flags that are not caught by check_cxx_compiler_flag
+  # clang outputs some warnings for unknown flags that are not caught by check_cxx_compiler_flag
   # adding -Werror turns such warnings into errors
   check_cxx_compiler_flag("-Werror" COMPILER_SUPPORT_WERROR)
   if(COMPILER_SUPPORT_WERROR)
@@ -141,8 +141,11 @@ if(NOT MSVC)
   ei_add_cxx_compiler_flag("-Wwrite-strings")
   ei_add_cxx_compiler_flag("-Wformat-security")
   ei_add_cxx_compiler_flag("-Wshorten-64-to-32")
+  ei_add_cxx_compiler_flag("-Wlogical-op")
   ei_add_cxx_compiler_flag("-Wenum-conversion")
   ei_add_cxx_compiler_flag("-Wc++11-extensions")
+  ei_add_cxx_compiler_flag("-Wdouble-promotion")
+#  ei_add_cxx_compiler_flag("-Wconversion")
   
   # -Wshadow is insanely too strict with gcc, hopefully it will become usable with gcc 6
   # if(NOT CMAKE_COMPILER_IS_GNUCXX OR (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "5.0.0"))
@@ -158,7 +161,7 @@ if(NOT MSVC)
   ei_add_cxx_compiler_flag("-fno-common")
   ei_add_cxx_compiler_flag("-fstrict-aliasing")
   ei_add_cxx_compiler_flag("-wd981")                    # disable ICC's "operands are evaluated in unspecified order" remark
-  ei_add_cxx_compiler_flag("-wd2304")                   # disbale ICC's "warning #2304: non-explicit constructor with single argument may cause implicit type conversion" produced by -Wnon-virtual-dtor
+  ei_add_cxx_compiler_flag("-wd2304")                   # disable ICC's "warning #2304: non-explicit constructor with single argument may cause implicit type conversion" produced by -Wnon-virtual-dtor
   
   
   # The -ansi flag must be added last, otherwise it is also used as a linker flag by check_cxx_compiler_flag making it fails
@@ -221,6 +224,12 @@ if(NOT MSVC)
     message(STATUS "Enabling FMA in tests/examples")
   endif()
 
+  option(EIGEN_TEST_F16C "Enable/Disable F16C in tests/examples" OFF)
+  if(EIGEN_TEST_F16C)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mf16c")
+    message(STATUS "Enabling F16C in tests/examples")
+  endif()
+
   option(EIGEN_TEST_ALTIVEC "Enable/Disable AltiVec in tests/examples" OFF)
   if(EIGEN_TEST_ALTIVEC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -maltivec -mabi=altivec")
@@ -250,7 +259,11 @@ if(NOT MSVC)
     message(STATUS "Enabling NEON in tests/examples")
   endif()
 
-
+  option(EIGEN_TEST_ZVECTOR "Enable/Disable S390X(zEC13) ZVECTOR in tests/examples" OFF)
+  if(EIGEN_TEST_ZVECTOR)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=z13 -mzvector")
+    message(STATUS "Enabling S390X(zEC13) ZVECTOR in tests/examples")
+  endif()
 
   check_cxx_compiler_flag("-fopenmp" COMPILER_SUPPORT_OPENMP)
   if(COMPILER_SUPPORT_OPENMP)
@@ -389,7 +402,7 @@ endif(EIGEN_BUILD_PKGCONFIG)
 
 add_subdirectory(Eigen)
 
-# add_subdirectory(doc EXCLUDE_FROM_ALL)
+add_subdirectory(doc EXCLUDE_FROM_ALL)
 
 # include(EigenConfigureTesting)
 
@@ -412,6 +425,7 @@ add_subdirectory(Eigen)
 # endif()
 
 add_subdirectory(unsupported)
+
 
 # add_subdirectory(demos EXCLUDE_FROM_ALL)
 
@@ -489,5 +503,5 @@ install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseEigen3.cmake
         )
 
 # Add uninstall target
-add_custom_target ( eigen-uninstall
+add_custom_target ( uninstall-eigen
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/EigenUninstall.cmake)

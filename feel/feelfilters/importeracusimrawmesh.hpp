@@ -128,14 +128,18 @@ ImporterAcusimRawMesh<MeshType>::ImporterAcusimRawMesh( std::string const& filen
     {
         if ( s.first == "element_set" )
         {
-            auto const& attributes = s.second.get_child( "<xmlattr>", Feel::detail::empty_ptree() );
-            auto name = attributes.get_optional<std::string>( "name" );
-            typedef std::vector<std::string> split_vector_type;
-            split_vector_type split_name; // #2: Search for tokens
-            boost::split( split_name, *name, boost::is_any_of( "\t " ), boost::token_compress_on );
-            std::string marker = split_name[0];
-            auto e_filename = attributes.get_optional<std::string>( "file" );
-            e_topology = attributes.get<std::string>( "topology", "" );
+            auto const& attributes = s.second.get_child("<xmlattr>", Feel::detail::empty_ptree() );
+            auto name = attributes.get_optional<std::string>("name");
+            if ( !name )
+                LOG(ERROR) << "AcusimRawMesh surface_set has no name";
+            std::string marker = *name;
+            boost::erase_all(marker, "tet4");
+            boost::erase_all(marker, "tria3");
+            boost::trim(marker);
+            boost::replace_all(marker, " ", "_");
+
+            auto e_filename = attributes.get_optional<std::string>("file");
+            e_topology = attributes.get<std::string>("topology", "");
             if ( !e_filename )
                 LOG( ERROR ) << "AcusimRawMesh element_set not available";
             auto p = std::make_pair( marker, ( pp / fs::path( *e_filename ) ).string() );
@@ -145,17 +149,22 @@ ImporterAcusimRawMesh<MeshType>::ImporterAcusimRawMesh( std::string const& filen
         }
         else if ( s.first == "surface_set" )
         {
-            auto const& attributes = s.second.get_child( "<xmlattr>", Feel::detail::empty_ptree() );
-            auto name = attributes.get_optional<std::string>( "name" );
+            auto const& attributes = s.second.get_child("<xmlattr>", Feel::detail::empty_ptree() );
+            auto name = attributes.get_optional<std::string>("name");
+            if ( !name )
+                LOG(ERROR) << "AcusimRawMesh surface_set has no name";
+            std::string marker = *name;
 
-            typedef std::vector<std::string> split_vector_type;
+            auto parent = attributes.get_optional<std::string>("parent");
+            if ( parent )
+                boost::erase_all(marker, *parent);
+            boost::erase_all(marker, "tet4");
+            boost::erase_all(marker, "tria3");
+            boost::trim(marker);
+            boost::replace_all(marker, " ", "_");
 
-            split_vector_type split_name; // #2: Search for tokens
-            boost::split( split_name, *name, boost::is_any_of( "\t " ), boost::token_compress_on );
-
-            std::string marker = split_name[2];
-            auto e_filename = attributes.get_optional<std::string>( "file" );
-            e_topology = attributes.get<std::string>( "topology", "" );
+            auto e_filename = attributes.get_optional<std::string>("file");
+            e_topology = attributes.get<std::string>("topology", "");
             if ( !e_filename )
                 LOG( ERROR ) << "AcusimRawMesh surface_set not available";
             auto p = std::make_pair( marker, ( pp / fs::path( *e_filename ) ).string() );
