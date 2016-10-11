@@ -25,7 +25,8 @@ OPTION( FEELPP_ENABLE_ACUSIM "Enable ACUSIM (libraries to read acusim files )" O
 
 if ( FEELPP_ENABLE_ACUSIM )
 
-    FIND_PATH(ACUSIM_DIR <header_from_altair>.hpp
+    FIND_PATH(ACUSIM_DIR acusim.h
+      PATHS /apps/users/hw-13.0.213/altair/acusolve/linux64
       # directories to look for altair headers
       # --> a remplir <chemoin vers altair development files> 
       PATH_SUFFIXES
@@ -40,8 +41,18 @@ if ( FEELPP_ENABLE_ACUSIM )
       include_directories(${ACUSIM_INCLUDE_DIR})
       
       set(ACUSIM_LIBRARY_DIR "${ACUSIM_DIR}/lib")
-      set(ACUSIM_LIBRARIES acusolve acusim)
-      
+      FIND_LIBRARY(ACUSIM_ADB_LIBRARY NAMES adb PATHS ${ACUSIM_LIBRARY_DIR} NO_DEFAULT_PATH)
+      FIND_LIBRARY(ACUSIM_CCI_LIBRARY NAMES cci PATHS ${ACUSIM_LIBRARY_DIR} NO_DEFAULT_PATH)
+      FIND_LIBRARY(ACUSIM_ECO_LIBRARY NAMES eco PATHS ${ACUSIM_LIBRARY_DIR} NO_DEFAULT_PATH)
+      FIND_LIBRARY(ACUSIM_FRM_LIBRARY NAMES frm PATHS ${ACUSIM_LIBRARY_DIR} NO_DEFAULT_PATH)
+
+      set( ACUSIM_OTHERS_LIBRARY
+      ${ACUSIM_DIR}/bin/libh3dreader.so
+      ${ACUSIM_DIR}/bin/libh3dwriter.so
+      ${ACUSIM_DIR}/bin/libintlc.so
+      )
+      set(ACUSIM_LIBRARIES ${ACUSIM_ADB_LIBRARY} ${ACUSIM_CCI_LIBRARY}  ${ACUSIM_ECO_LIBRARY} ${ACUSIM_FRM_LIBRARY}  ${ACUSIM_OTHERS_LIBRARY} )
+
       SET(FEELPP_LIBRARIES ${ACUSIM_LIBRARIES} ${FEELPP_LIBRARIES} )
       SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ACUSIM" )
       SET(FEELPP_HAS_ACUSIM 1)
