@@ -155,6 +155,10 @@ struct TensorEvaluator<const TensorLayoutSwapOp<ArgType>, Device>
     return m_impl.template packet<LoadMode>(index);
   }
 
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorOpCost costPerCoeff(bool vectorized) const {
+    return m_impl.costPerCoeff(vectorized);
+  }
+
   EIGEN_DEVICE_FUNC Scalar* data() const { return m_impl.data(); }
 
   const TensorEvaluator<ArgType, Device>& impl() const { return m_impl; }
@@ -177,7 +181,7 @@ template<typename ArgType, typename Device>
     IsAligned = TensorEvaluator<ArgType, Device>::IsAligned,
     PacketAccess = TensorEvaluator<ArgType, Device>::PacketAccess,
     Layout = (static_cast<int>(TensorEvaluator<ArgType, Device>::Layout) == static_cast<int>(ColMajor)) ? RowMajor : ColMajor,
-    CoordAccess = false,  // to be implemented
+    CoordAccess = false  // to be implemented
   };
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorEvaluator(const XprType& op, const Device& device)

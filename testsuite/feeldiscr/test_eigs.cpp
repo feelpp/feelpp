@@ -82,7 +82,7 @@ testSlepc()
 #if 0
     auto backend = backend_type::build( BACKEND_PETSC );
 #else
-    auto backend = backend_type::build( );
+    auto backend = backend_type::build( "petsc" );
 #endif
 
     auto u = Xh->element();

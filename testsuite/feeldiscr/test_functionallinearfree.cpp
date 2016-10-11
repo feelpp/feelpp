@@ -168,7 +168,6 @@ testFunctionalLinearComposite()
     BOOST_CHECK_CLOSE( result,result_compositefree, epsilon );
     BOOST_CHECK_CLOSE( result_free,result_compositefree, epsilon );
 
-
     //test access functions
     auto vector_composite1 = backend->newVector( Xh );
     auto vector_composite2 = backend->newVector( Xh );
@@ -246,5 +245,3 @@ BOOST_AUTO_TEST_CASE( test_2 )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-

@@ -122,6 +122,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( fileset )
 // parameter for description of geometries
     BOOST_PARAMETER_NAME( h )
+    BOOST_PARAMETER_NAME( scale )
     BOOST_PARAMETER_NAME( dim )
     BOOST_PARAMETER_NAME( order )
     BOOST_PARAMETER_NAME( geo_parameters )

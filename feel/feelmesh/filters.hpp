@@ -103,6 +103,7 @@ using ext_faces_t = boost::tuple<mpl::size_t<MESH_FACES>,
                                  boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > >
                                  >;
 
+
 template<typename IteratorType>
 using filter_enum_t = typename boost::tuples::element<0,IteratorType>::type;
 template<typename IteratorType>
