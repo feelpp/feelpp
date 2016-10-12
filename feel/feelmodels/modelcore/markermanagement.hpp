@@ -164,12 +164,15 @@ public :
     MarkerManagementPressureBC();
     MarkerManagementPressureBC( MarkerManagementPressureBC const& op ) = default;
     void clearMarkerPressureBC();
-    void setMarkerPressureBC( std::list<std::string> const& markers );
-    void addMarkerPressureBC( std::string markerName);
+    void setMarkerPressureBC( std::string const& markerNameId, std::list<std::string> const& markers );
+    void addMarkerPressureBC( std::string const& markerName );
     std::list<std::string> const& markerPressureBC() const;
+    std::list<std::string> const& markerPressureBC( std::string const& markerNameId ) const;
+    bool hasMarkerPressureBC() const;
     std::string getInfoPressureBC() const;
 private :
-    std::list<std::string> M_containerMarkers;
+    std::map<std::string,std::list<std::string> > M_containerMarkers;
+    std::list<std::string> M_listMarkers;
     std::list<std::string> M_listMarkerEmpty;
 };
 
@@ -198,7 +201,7 @@ public :
     MarkerManagementFluidStructureInterfaceBC( MarkerManagementFluidStructureInterfaceBC const& op ) = default;
     void clearMarkerFluidStructureInterfaceBC();
     void setMarkerFluidStructureInterfaceBC( std::list<std::string> const& markers );
-    void addMarkerFluidStructureInterfaceBC( std::string markerName);
+    void addMarkerFluidStructureInterfaceBC( std::string markerName );
     std::list<std::string> const& markerFluidStructureInterfaceBC() const;
     std::string getInfoFluidStructureInterfaceBC() const;
 private :

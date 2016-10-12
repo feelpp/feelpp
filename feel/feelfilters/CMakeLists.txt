@@ -43,7 +43,7 @@ SET(SRC
   straightenmesh_inst_1d.cpp straightenmesh_inst_1d_p2.cpp straightenmesh_inst_2d.cpp straightenmesh_inst_2d_ho.cpp straightenmesh_inst_3d.cpp straightenmesh_inst_3d_ho.cpp
   )
 
-if(FEELPP_HAS_PARAVIEW AND FEELPP_ENABLE_VTK_INSITU)
+if(FEELPP_HAS_PARAVIEW)
     SET(SRC ${SRC} vtkBaseInsituPipeline.cpp)
 endif()
 

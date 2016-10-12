@@ -55,8 +55,11 @@ makeBenchmarkGreplNonLinearParabolicOptions()
         ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ), "hsize")
         ( "trainset-eim-size", Feel::po::value<int>()->default_value( 15 ), "EIM trainset is built using a equidistributed grid 15*15 by default")
         ( "gamma", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary Dirichlet formulation" )
+        ( "peclet", Feel::po::value<double>()->default_value( 3.65 ), "Peclet Number" )
+        ( "control_input", Feel::po::value<double>()->default_value( 1.23 ), "U (aka control input)" )
+        ( "check_eim", Feel::po::value<bool>()->default_value( false ), "export eim" )
         ;
-    return bgoptions.add( bdf_options( "heat" ) );
+    return bgoptions.add( bdf_options( "mybdf" ) );
 }
 AboutData
 makeBenchmarkGreplNonLinearParabolicAbout( std::string const& str = "benchmarkGrepl" )
@@ -237,9 +240,12 @@ public:
         */
       this->M_betaFqm.resize(1);
       this->M_betaFqm[0].resize(1);
-      this->M_betaFqm[0][0].resize(M_funs[0]->mMax());
+      this->M_betaFqm[0][0].resize(M_funs[0]->mMax()+1);
+      auto _beta = M_funs[0]->beta(mu);
       for(int i = 0; i < M_funs[0]->mMax(); i++)
-        this->M_betaFqm[0][0][i] = M_funs[0]->beta(mu)(0,0);
+        this->M_betaFqm[0][0][i] = _beta(i);
+        
+      this->M_betaFqm[0][0][M_funs[0]->mMax()] = 1.;
         
       return boost::make_tuple( this->M_betaMqm, this->M_betaAqm, this->M_betaFqm );
     }
@@ -315,7 +321,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::initModel()
         std::cout << "Number of local dof " << Xh->nLocalDof() << std::endl;
     }
     
-    M_bdf = bdf(_space=Xh, _name="heat", _prefix="heat");
+    M_bdf = bdf(_space=Xh, _name="mybdf", _prefix="mybdf");
 
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
@@ -366,6 +372,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::initModel()
      * We have to instanciate the eim_no_solve model
      */
     LOG(INFO) << "Starting EIM\n";
+    tic();
     auto eim_g = eim( _model=eim_no_solve(super_type::shared_from_this()),
                       _element=*pT,
                       _space=Xh_eimg,
@@ -376,9 +383,12 @@ void BenchmarkGreplNonLinearParabolic<Order>::initModel()
                       *exp( -(Pz()*Pz())/(cst_ref(M_mu(2))*cst_ref(M_mu(2)))),
                       _sampling=Pset,
                       _name="eim_g" );
-    LOG(INFO) << "EIM Finished\n";
-
-#if 0
+    toc("EIM",FLAGS_v>0);
+    /*
+     * To evaluate the eim expansion
+     */
+    if(boption("check_eim"))
+    {
     int cpt = 0;
     auto exporter_eim = exporter(_mesh=mesh,_name="eim");
     BOOST_FOREACH( auto mu, *Pset )
@@ -395,7 +405,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::initModel()
       exporter_eim->save();
       cpt++;
     }
-#endif
+    }
     M_funs.push_back( eim_g );
 
     /*
@@ -426,7 +436,7 @@ BenchmarkGreplNonLinearParabolic<Order>::computeLinearDecompositionA()
     // Evolution
     form2(_test=Xh, _trial=Xh, _matrix=this->M_linearAqm[0][0]) = 
       integrate(_range=elements(mesh), 
-        _expr=inner(inner(vec(cst(-0.1),cst(0),cst(0)),trans(gradt(u))),id(u)))
+        _expr=inner(inner(vec(cst(-doption("peclet")),cst(0),cst(0)),trans(gradt(u))),id(u)))
       +
         integrate( _range=markedfaces( mesh, "Dirichlet" ), 
                    _expr=doption("gamma")*idt( u )*id( u )/hFace() // Penalisation 
@@ -456,11 +466,10 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
     this->M_Mqm[0].resize( 1 );
     this->M_Mqm[0][0] = backend()->newMatrix(Xh, Xh);
     form2(_test=Xh, _trial=Xh, _matrix=this->M_Mqm[0][0])
-      = integrate(_range=elements(mesh), _expr=inner(idv(u),id(u)));
+      = integrate(_range=elements(mesh), _expr=inner(id(u),idt(u)));
     toc("MassMatrix", FLAGS_v>0);
     
     tic();
-    ///TODO Mettre le nombre de Peclet
     this->M_Aqm.resize( 2 );
     this->M_Aqm[0].resize( 1 );
     this->M_Aqm[1].resize( 1 );
@@ -472,7 +481,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
     // Evolution
     form2(_test=Xh, _trial=Xh, _matrix=this->M_Aqm[0][0]) = 
       integrate(_range=elements(mesh), 
-        _expr=inner(inner(vec(cst(-0.1),cst(0),cst(0)),trans(gradt(u))),id(u)))
+        _expr=inner(inner(vec(cst(-doption("peclet")),cst(0),cst(0)),trans(gradt(u))),id(u)))
       +
         integrate( _range=markedfaces( mesh, "Dirichlet" ), 
                    _expr=doption("gamma")*idt( u )*id( u )/hFace() // Penalisation 
@@ -491,22 +500,22 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
 
     // Rhs (eim)
     // g = sum_{i=1}^{mMax} w_m(mu) g(x)
+    // w_m -> computeBeta
     tic();
-    this->M_Fqm.resize( 2 );
+    this->M_Fqm.resize( 1 );
     this->M_Fqm[0].resize( 1 );
-    this->M_Fqm[1].resize( 1 );
     this->M_Fqm[0][0].resize(M_funs[0]->mMax()+1);
     for(int i=0; i < M_funs[0]->mMax(); i++)
     {
       this->M_Fqm[0][0][i] = backend()->newVector( Xh );
-      form1(_test=Xh, _vector=this->M_Fqm[0][0][i]) = integrate(_range=elements(mesh),
-          _expr=inner(idv(M_funs[0]->q(i)),id(u)));
+      form1(_test=Xh, _vector = this->M_Fqm[0][0][i] ) = integrate(_range=elements(mesh),_expr=doption("control_input")*inner(idv(M_funs[0]->q(i)),id(u))); //control_input = u
     }
     toc("Rhs", FLAGS_v>0);
     tic();
     this->M_Fqm[0][0][M_funs[0]->mMax()] = backend()->newVector( Xh );
+    // This can be removed - I left it to let us impose non homogeneous boundary conditions.
     form1(_test=Xh, _vector=this->M_Fqm[0][0][M_funs[0]->mMax()]) = integrate(_range=markedfaces(mesh,"Dirichlet"),
-                   _expr=doption("gamma")*cst(26)*id( u )/hFace() // Penalisation 
+                   _expr=doption("gamma")*cst(0.)*id( u )/hFace() // Penalisation 
         );
     toc("Rhs(bc)", FLAGS_v>0);
 

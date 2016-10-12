@@ -425,9 +425,9 @@ Environment::Environment( int argc, char** argv,
 #if defined ( FEELPP_HAS_PETSC_H )
     initPetsc( &argc, &envargv );
 #endif
+
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
-
 
     if ( S_vm.count( "nochdir" ) == 0 )
     {
@@ -495,6 +495,7 @@ Environment::Environment( int argc, char** argv,
     }
 
     google::InstallFailureSignalHandler();
+
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
     //int n = 2;
@@ -1245,7 +1246,7 @@ Environment::doOptions( int argc, char** argv,
                 for ( std::string cfgfile : configFiles )
                 {
                     if ( !fs::exists( cfgfile ) ) continue;
-                    LOG( INFO ) << "Reading " << cfgfile << "...";
+                    // LOG( INFO ) << "Reading " << cfgfile << "...";
                     S_configFileNames.insert( fs::absolute( cfgfile ).string() );
                     S_cfgdir = fs::absolute( cfgfile ).parent_path();
                     std::ifstream ifs( cfgfile.c_str() );
@@ -1255,7 +1256,7 @@ Environment::doOptions( int argc, char** argv,
 
             if ( S_vm.count( "config-file" ) && fs::exists(  S_vm["config-file"].as<std::string>() ) )
             {
-                LOG( INFO ) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
+                // LOG( INFO ) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
                 S_configFileNames.insert( fs::absolute( S_vm["config-file"].as<std::string>() ).string() );
                 S_cfgdir = fs::absolute( S_vm["config-file"].as<std::string>() ).parent_path();
                 std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
