@@ -1279,6 +1279,10 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
         ierr = PetscViewerPushFormat ( petsc_viewer,
                                       PETSC_VIEWER_BINARY_MATLAB );
 #endif
+#else
+        ierr = PetscViewerPushFormat ( petsc_viewer,
+                                       PETSC_VIEWER_ASCII_MATLAB );
+#endif
         //PETSC_VIEWER_ASCII_PYTHON );
 #else
         ierr = PetscViewerPushFormat ( petsc_viewer,

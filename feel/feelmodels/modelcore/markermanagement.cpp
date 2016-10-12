@@ -419,33 +419,74 @@ MarkerManagementSlipBC::getInfoSlipBC() const
 MarkerManagementPressureBC::MarkerManagementPressureBC()
     :
     M_containerMarkers(),
+    M_listMarkers(),
     M_listMarkerEmpty()
 {}
 void
 MarkerManagementPressureBC::clearMarkerPressureBC()
 {
     M_containerMarkers.clear();
+    M_listMarkers.clear();
 }
 void
-MarkerManagementPressureBC::setMarkerPressureBC( std::list<std::string> const& markers )
+MarkerManagementPressureBC::setMarkerPressureBC( std::string const& markerNameId, std::list<std::string> const& markers )
 {
-    M_containerMarkers = markers;
+    if ( markerNameId.empty() ) return;
+    M_containerMarkers[markerNameId] = markers;
+    for ( std::string const& markerName : markers )
+    {
+        if ( std::find( M_listMarkers.begin(),M_listMarkers.end(),markerName) == M_listMarkers.end() )
+            M_listMarkers.push_back( markerName );
+    }
 }
 void
-MarkerManagementPressureBC::addMarkerPressureBC( std::string markerName )
+MarkerManagementPressureBC::addMarkerPressureBC( std::string const& markerName )
 {
-    if ( std::find( M_containerMarkers.begin(),M_containerMarkers.end(),markerName) == M_containerMarkers.end() )
-        M_containerMarkers.push_back(markerName);
+    if ( markerName.empty() ) return;
+    M_containerMarkers[markerName].push_back(markerName);
+    if ( std::find( M_listMarkers.begin(),M_listMarkers.end(),markerName) == M_listMarkers.end() )
+        M_listMarkers.push_back( markerName );
 }
 std::list<std::string> const&
 MarkerManagementPressureBC::markerPressureBC() const
 {
-    return M_containerMarkers;
+    return M_listMarkers;
+}
+std::list<std::string> const&
+MarkerManagementPressureBC::markerPressureBC( std::string const& markerNameId ) const
+{
+    auto itFind = M_containerMarkers.find( markerNameId );
+    if ( itFind != M_containerMarkers.end() )
+        return itFind->second;
+    else
+        return M_listMarkerEmpty;
+}
+bool
+MarkerManagementPressureBC::hasMarkerPressureBC() const
+{
+    return !M_containerMarkers.empty();
 }
 std::string
 MarkerManagementPressureBC::getInfoPressureBC() const
 {
     std::ostringstream _ostr;
+    if ( M_containerMarkers.empty() )
+            return _ostr.str();
+
+    for ( auto const& markerBase : M_containerMarkers )
+    {
+        _ostr << "\n       -- Pressure Dirichlet : " << markerBase.first;
+        if ( markerBase.second.size() == 1 && markerBase.second.front() == markerBase.first ) continue;
+        _ostr << " -> (";
+        int cptMark = 0;
+        for ( auto itMark = markerBase.second.begin(), enMark = markerBase.second.end() ; itMark!=enMark ; ++itMark,++cptMark )
+        {
+            if ( cptMark > 0) _ostr << " , ";
+            _ostr << *itMark;
+        }
+        _ostr << ")";
+    }
+
     return _ostr.str();
 }
 

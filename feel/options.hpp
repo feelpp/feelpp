@@ -132,5 +132,9 @@ po::options_description ams_options( std::string const& prefix = "" );
 
 po::options_description stabilization_options( std::string const& prefix="" );
 
+/**
+ * command line for data interpolator
+ */
+po::options_description fit_options( std::string const& prefix="" );
 }
 #endif // FEELPP_OPTIONS_HPP
