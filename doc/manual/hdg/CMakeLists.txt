@@ -50,14 +50,17 @@ foreach(D RANGE 1 3 1)
 endforeach()
 
 foreach(D RANGE 1 3 1)
-  foreach(P  RANGE 0 4 1) #3 
-    feelpp_add_application( conv_${D}DP${P}
-                            SRCS conv_main.cpp
-                            DEFS FEELPP_DIM=${D}
-                            FEELPP_ORDER=${P}
-                            INCLUDE_IN_ALL
-                            LINK_LIBRARIES feelpp_modelcore )
- endforeach()
+  foreach(P RANGE 0 4 1) #3
+    foreach(N RANGE 1 2 1)
+      foreach(E RANGE 2 4 1)
+        feelpp_add_application( conv_${D}DP${P}G${N}E${E}
+                                SRCS conv_main.cpp
+                                DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_EXP_ORDER=${E}
+                                INCLUDE_IN_ALL
+                                LINK_LIBRARIES feelpp_modelcore )
+      endforeach()
+    endforeach() 
+  endforeach()
 endforeach()
 
 
