@@ -48,10 +48,11 @@ makeOptions()
         ( "mu", po::value<std::string>()->default_value( "1" ), "mu" )
         ( "v_testfun", po::value<std::string>()->default_value( "{1,0,0,1}:x:y" ), "value for the test function" )
         ( "w_testfun", po::value<std::string>()->default_value( "{1,0,0,1}:x:y" ), "value for the test function" )
-        ( "u_exact", po::value<std::string>()->default_value( "{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y" ), "u exact" )
-        ( "f", po::value<std::string>()->default_value( "{-3.0*sin(pi*x)*cos(pi*y),-3.0*sin(pi*y)*cos(pi*x)}:x:y"  ), "divergence of the stress tensor")
-        ( "load", po::value<std::string>()->default_value( "{0,0,0,0}:x:y"  ), "load")
-        // ( "u_exacts", po::value<std::vector<std::string> >(), "u exact to test" )
+        // ( "u_exact", po::value<std::string>()->default_value( "{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y" ), "u exact" )
+        ( "u_exact", po::value<std::string>()->default_value( "{ cos(Pi*x)*cos(Pi*y)*cos(Pi*z), cos(Pi*y)*sin(Pi*x)*sin(Pi*z), cos(Pi*x)*cos(Pi*z)*sin(Pi*y)  }:x:y:z" ), "u exact" )	
+		// ( "f", po::value<std::string>()->default_value( "{-3.0*sin(pi*x)*cos(pi*y),-3.0*sin(pi*y)*cos(pi*x)}:x:y"  ), "divergence of the stress tensor")
+ 		( "f", po::value<std::string>()->default_value( "{ 2*pi^2*sin(pi*x)*sin(pi*y)*sin(pi*z) - 2*pi^2*cos(pi*x)*sin(pi*y)*sin(pi*z) - 5*pi^2*cos(pi*x)*cos(pi*y)*cos(pi*z), 2*pi^2*cos(pi*z)*sin(pi*x)*sin(pi*y) - 5*pi^2*cos(pi*y)*sin(pi*x)*sin(pi*z) - 2*pi^2*cos(pi*x)*cos(pi*y)*sin(pi*z), 2*pi^2*cos(pi*y)*sin(pi*x)*sin(pi*z) - 5*pi^2*cos(pi*x)*cos(pi*z)*sin(pi*y) - 2*pi^2*cos(pi*z)*sin(pi*x)*sin(pi*y)  }:x:y:z"  ), "divergence of the stress tensor")
+		( "load", po::value<std::string>()->default_value( "{0,0,0,0}:x:y"  ), "load")
         ( "hface", po::value<int>()->default_value( 0 ), "hface" )
         ( "nb_refine", po::value<int>()->default_value( 4 ), "nb_refine" )
         ( "use_hypercube", po::value<bool>()->default_value( true ), "use hypercube or a given geometry" )
@@ -79,7 +80,8 @@ makeAbout()
 
 }
 
-template<int Dim, int OrderP>
+
+template<int Dim, int OrderP, int OrderG=1>
 class Hdg
     :
 public Application
@@ -95,16 +97,19 @@ public:
     //! linear algebra backend factory shared_ptr<> type
     typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
 
+	
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order G_order
-    typedef Simplex<Dim,1> convex_type;
+    typedef Simplex<Dim,OrderG> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     // The Lagrange multiplier lives in R^n-1
-    typedef Simplex<Dim-1,1,Dim> face_convex_type;
+    typedef Simplex<Dim-1,OrderG,Dim> face_convex_type;
     typedef Mesh<face_convex_type> face_mesh_type;
     typedef boost::shared_ptr<face_mesh_type> face_mesh_ptrtype;
+
+	static const uint16_type expr_order = OrderP+4;
 
     using Vh_t =  Pdhms_type<mesh_type,OrderP>;
     using Vh_ptr_t =  Pdhms_ptrtype<mesh_type,OrderP>;
@@ -178,9 +183,9 @@ private:
     int    M_tau_order;
 }; //Hdg
 
-template<int Dim, int OrderP>
+template<int Dim, int OrderP, int OrderG>
 void
-Hdg<Dim, OrderP>::convergence()
+Hdg<Dim, OrderP, OrderG>::convergence()
 {
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
@@ -190,11 +195,12 @@ Hdg<Dim, OrderP>::convergence()
     auto mu     = expr(soption("mu"));
 
     // Exact solutions
-    auto u_exact = expr<Dim,1>(soption("u_exact"));
+    auto u_exact = expr<Dim,1, expr_order>(soption("u_exact"));
     auto gradu_exact = grad(u_exact);
     auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
     auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
-    auto f = expr<Dim,1>(soption("f"));
+    auto f = expr<Dim,1, expr_order>(soption("f"));
+
 
     cout << "lambda : " << lambda      << std::endl;
     cout << "mu     : " << mu          << std::endl;
@@ -355,82 +361,86 @@ Hdg<Dim, OrderP>::convergence()
     else
         H.on( _range=elements(face_mesh), _expr=h() );
 
+	/*
 	rhs(1_c) += integrate(_range=elements(mesh),
-                      _expr=trans(f)*id(w));
-
+                      _expr=div(sigma_exact)*id(w), _quad=_Q<expr_order>());
+	*/ 
+	rhs(1_c) += integrate(_range=elements(mesh),
+                      _expr=trans(f)*id(w), _quad=_Q<expr_order>());
+	
     cout << "rhs2 works fine" << std::endl;
 
     // in convergence test Neumann condition is given from the displacement and
     // constitutive law
     if ( boption( "convtest" ) )
         rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                          _expr=trans(id(m))*(sigma_exact*N()));
+                          _expr=trans(id(m))*(sigma_exact*N()), _quad=_Q<expr_order>());
     else
     {
         auto load = expr<2,2>( soption("load") );
         rhs(2_c) += integrate(_range=markedfaces(mesh,"Tip"),
-                          _expr=trans(id(m))*(load*N()));
+                          _expr=trans(id(m))*(load*N()), _quad=_Q<expr_order>());
     }
 
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                      _expr=trans(id(m))*u_exact);
+                      _expr=trans(id(m))*u_exact, _quad=_Q<expr_order>());
 
 
     cout << "rhs3 works fine" << std::endl;
 
 	// Building the matrix
-    a( 0_c, 0_c ) +=  integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
-    a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
+    a( 0_c, 0_c ) +=  integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))), _quad=_Q<expr_order>() );
+    a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))), _quad=_Q<expr_order>() );
 
-	a( 0_c, 1_c ) += integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(v)));
+	a( 0_c, 1_c ) += integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(v)), _quad=_Q<expr_order>());
 
     a( 0_c, 2_c) += integrate(_range=internalfaces(mesh),
                                 _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
-                                         trans(idt(uhat))*rightface(id(v)*N())) );
+                                         trans(idt(uhat))*rightface(id(v)*N())), _quad=_Q<expr_order>() );
     a( 0_c, 2_c) += integrate(_range=boundaryfaces(mesh),
-                                _expr=-trans(idt(uhat))*(id(v)*N()));
+                                _expr=-trans(idt(uhat))*(id(v)*N()), _quad=_Q<expr_order>());
 
     a( 1_c, 0_c) += integrate(_range=elements(mesh),
-                                _expr=(trans(id(w))*divt(sigma)));
+                                _expr=(trans(id(w))*divt(sigma)), _quad=_Q<expr_order>());
 	// begin dp: here we need to put the projection of u on the faces
     a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=-tau_constant *
     	         ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
-        	       rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
+        	       rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )), _quad=_Q<expr_order>());
 
     a( 1_c, 1_c) += integrate(_range=boundaryfaces(mesh),
-    			_expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
+    			_expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)), _quad=_Q<expr_order>());
 
     a( 1_c, 2_c) += integrate(_range=internalfaces(mesh), _expr=tau_constant *
              ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
-               rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )));
+               rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )), _quad=_Q<expr_order>());
 
     a( 1_c, 2_c) += integrate(_range=boundaryfaces(mesh),
-             _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
+             _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w), _quad=_Q<expr_order>() );
 
 
     a( 2_c, 0_c) += integrate(_range=internalfaces(mesh),
              _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
-                     rightfacet(idt(sigma)*N())) ) );
+                     rightfacet(idt(sigma)*N())) ), _quad=_Q<expr_order>() );
 	a( 2_c, 1_c) += integrate(_range=internalfaces(mesh),
                 _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tau_order)*idt(u) )+
-                    rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
+                    rightfacet( pow(idv(H),M_tau_order)*idt(u) )), _quad=_Q<expr_order>());
 
     a( 2_c, 2_c) += integrate(_range=internalfaces(mesh),
 	    _expr=a22_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
-                    rightface( pow(idv(H),M_tau_order) )));
+                    rightface( pow(idv(H),M_tau_order) )), _quad=_Q<expr_order>());
 
    	a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,{"Dirichlet"}),
-                                _expr=trans(idt(uhat)) * id(m) );
+                                _expr=trans(idt(uhat)) * id(m), _quad=_Q<expr_order>() );
 
 
 	a( 2_c, 0_c) += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
-                        		_expr=( trans(id(m))*(idt(sigma)*N()) ));
+                        		_expr=( trans(id(m))*(idt(sigma)*N()) ), _quad=_Q<expr_order>());
 
     a( 2_c, 1_c) += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
- 		                        _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
+ 		                        _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ), _quad=_Q<expr_order>() );
 
     a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
-                        _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+                        _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ), _quad=_Q<expr_order>() );
 
 
 
@@ -455,14 +465,16 @@ Hdg<Dim, OrderP>::convergence()
 	auto up = U(1_c);
  	auto uhatp = U(2_c);
 
-    Ue(0_c).on( _range=elements(mesh), _expr=sigma_exact );
-    Ue(1_c).on( _range=elements(mesh), _expr=u_exact );
+    Ue(0_c).on( _range=elements(mesh), _expr=sigma_exact , _quad=_Q<expr_order>());
+    Ue(1_c).on( _range=elements(mesh), _expr=u_exact , _quad=_Q<expr_order>());
 
+	/*
     Feel::cout << "sigma exact: \t" << Ue(0_c) << std::endl;
 	Feel::cout << "sigma: \t" << sigmap << std::endl;
     Feel::cout << "u exact: \t" << Ue(1_c) << std::endl;
 	Feel::cout << "u: \t" << up << std::endl;
 	Feel::cout << "uhat: \t" << uhatp << std::endl;
+	*/
 
     // ****** Compute error ******
     tic();
@@ -474,8 +486,8 @@ Hdg<Dim, OrderP>::convergence()
         Neumann on dot(sigma*n, e_y)?
         */
 
-    auto l2err_sigma = normL2( _range=elements(mesh), _expr=sigma_exact - idv(sigmap) );
-    auto l2err_u     = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
+    auto l2err_sigma = normL2( _range=elements(mesh), _expr=sigma_exact - idv(sigmap), _quad=_Q<expr_order>() );
+    auto l2err_u     = normL2( _range=elements(mesh), _expr=u_exact - idv(up), _quad=_Q<expr_order>() );
 
     toc("error");
 
@@ -493,8 +505,8 @@ Hdg<Dim, OrderP>::convergence()
         std::string uName = ( boost::format( "displacement-refine-%1%" ) % i ).str();
         std::string u_exName = ( boost::format( "displacement-ex-refine-%1%" ) % i ).str();
 
-        v.on( _range=elements(mesh), _expr=sigma_exact );
-        w.on( _range=elements(mesh), _expr=u_exact );
+        v.on( _range=elements(mesh), _expr=sigma_exact , _quad=_Q<expr_order>());
+        w.on( _range=elements(mesh), _expr=u_exact , _quad=_Q<expr_order>());
         export_ptrtype exporter_cvg( export_type::New( exportName ) );
 
         exporter_cvg->step( i )->setMesh( mesh );
@@ -512,10 +524,10 @@ Hdg<Dim, OrderP>::convergence()
     cvg.close();
 }
 
-template<int Dim, int OrderP>
+template<int Dim, int OrderP, int OrderG>
 template<typename MatrixType, typename VectorType, typename VhType, typename WhType, typename MhType,typename ExprU, typename ExprSigma, typename ExprDivSigma>
 void
-Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
+Hdg<Dim, OrderP, OrderG>::assemble_A_and_F( MatrixType A,
                                     VectorType F,
                                     VhType Vh,
                                     WhType Wh,
@@ -664,12 +676,12 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     a33 += integrate(_range=internalfaces(mesh),
                      _expr=tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
-                                                                 rightface( pow(idv(H),M_tau_order) )));
+                                                                 rightface( pow(idv(H),M_tau_order) )), _quad=_Q<expr_order>());
 
     a33 += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
-                     _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+                     _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ), _quad=_Q<expr_order>() );
     a33 += integrate(_range=markedfaces(mesh,{"Dirichlet"}),
-                     _expr=trans(idt(uhat)) * id(m) );
+                     _expr=trans(idt(uhat)) * id(m), _quad=_Q<expr_order>() );
 
 
 }

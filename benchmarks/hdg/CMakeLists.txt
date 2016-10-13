@@ -57,8 +57,9 @@ foreach( dim 2 3)
 endforeach() # dim
 
 # Linear elasticity
+#foreach( geom 1 2 )
 foreach( dim 2 3)
-  foreach( orderP 1 2 3 4)
+  foreach( orderP 0 1 2 3 4)
     set(modulename "hdg_linear_elasticity")
     set(BENCH "${modulename}_${dim}D_P${orderP}" )
     set(targetname bench_${BENCH})
@@ -78,3 +79,4 @@ foreach( dim 2 3)
     feelpp_add_application(${targetname} SRCS ${BENCH}.cpp DEFS FEELPP_${dim}D )
   endforeach() # order
 endforeach() # dim
+# endforeach() # geom
