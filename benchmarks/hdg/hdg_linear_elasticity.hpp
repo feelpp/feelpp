@@ -286,7 +286,8 @@ Hdg<Dim, OrderP, OrderG>::convergence()
         cout << "Vh<" << OrderP   << "> : " << Vh->nDof() << std::endl
              << "Wh<" << OrderP+1 << "> : " << Wh->nDof() << std::endl
              << "Mh<" << OrderP   << "> : " << Mh->nDof() << std::endl;
-		/*
+
+		/*		
       	auto sigmap = Vh->elementPtr( "sigma" );
         auto up     = Wh->elementPtr( "u" );
         auto uhatp  = Mh->elementPtr( "uhat" );
@@ -461,20 +462,22 @@ Hdg<Dim, OrderP, OrderG>::convergence()
     toc("solve",true);
 	cout << "[Hdg] solve done" << std::endl;
 
+	
 	auto sigmap = U(0_c);
 	auto up = U(1_c);
  	auto uhatp = U(2_c);
+		
 
     Ue(0_c).on( _range=elements(mesh), _expr=sigma_exact , _quad=_Q<expr_order>());
     Ue(1_c).on( _range=elements(mesh), _expr=u_exact , _quad=_Q<expr_order>());
 
-	/*
+	
     Feel::cout << "sigma exact: \t" << Ue(0_c) << std::endl;
-	Feel::cout << "sigma: \t" << sigmap << std::endl;
+	Feel::cout << "sigma: \t" << U(0_c) << std::endl;
     Feel::cout << "u exact: \t" << Ue(1_c) << std::endl;
-	Feel::cout << "u: \t" << up << std::endl;
-	Feel::cout << "uhat: \t" << uhatp << std::endl;
-	*/
+	Feel::cout << "u: \t" << U(1_c) << std::endl;
+	Feel::cout << "uhat: \t" << U(2_c) << std::endl;
+	
 
     // ****** Compute error ******
     tic();
