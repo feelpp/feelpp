@@ -16,6 +16,7 @@ feelpp_add_application( application_multifluid_3d SRCS main_mf.cpp
 feelpp_add_testcase(square PREFIX feelpp_multifluid)
 feelpp_add_testcase(drop PREFIX feelpp_multifluid)
 feelpp_add_testcase(vesicle_rest PREFIX feelpp_multifluid)
+feelpp_add_testcase(vesicle_shear PREFIX feelpp_multifluid)
 
 #feelpp_add_application( application_fm_2d SRCS main_fm.cpp LINK_LIBRARIES feelpp_model_fluidmechanics )
 
