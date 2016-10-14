@@ -196,6 +196,7 @@ Hdg<Dim, OrderP>::convergence()
     auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
     auto f = expr<Dim,1,OrderP+2>(soption("f"));
 
+
     cout << "lambda : " << lambda      << std::endl;
     cout << "mu     : " << mu          << std::endl;
     cout << "u      : " << u_exact     << std::endl;
@@ -211,7 +212,7 @@ Hdg<Dim, OrderP>::convergence()
     cvg.open("data.csv");
     cvg << "hsize" << "\t" << "nDofsigma" << "\t" << "l2err_sigma"  << "\t" << "nDofu"  << "\t" << "l2err_u" << "\n";
 
- double current_hsize = meshSize;
+    double current_hsize = meshSize;
     for(int i=0; i<ioption("nb_refine"); i++)
     {
         mesh_ptrtype mesh;
@@ -281,10 +282,10 @@ Hdg<Dim, OrderP>::convergence()
              << "Wh<" << OrderP+1 << "> : " << Wh->nDof() << std::endl
              << "Mh<" << OrderP   << "> : " << Mh->nDof() << std::endl;
 		/*
-      	auto sigmap = Vh->elementPtr( "sigma" );
-        auto up     = Wh->elementPtr( "u" );
-        auto uhatp  = Mh->elementPtr( "uhat" );
-		*/
+         auto sigmap = Vh->elementPtr( "sigma" );
+         auto up     = Wh->elementPtr( "u" );
+         auto uhatp  = Mh->elementPtr( "uhat" );
+         */
 
         auto sigma = Vh->element( "sigma" );
         auto v     = Vh->element( "v" );
@@ -311,178 +312,178 @@ Hdg<Dim, OrderP>::convergence()
 		auto a = blockform2( ps );
 		auto rhs = blockform1( ps );
 
-	/*
-        // build the big matrix associated to bilinear form over Vh x Wh x Mh
+        /*
+         // build the big matrix associated to bilinear form over Vh x Wh x Mh
+         #if 0
+         auto A = backend()->newBlockMatrix(_block=csrGraphBlocks(Vh,Wh,Mh));
+         #else
+         BlocksBaseGraphCSR hdg_graph(3,3);
+         hdg_graph(0,0) = stencil( _test=Vh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
+         hdg_graph(1,0) = stencil( _test=Wh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
+         hdg_graph(2,0) = stencil( _test=Mh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
+         hdg_graph(0,1) = stencil( _test=Vh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
+         hdg_graph(1,1) = stencil( _test=Wh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
+         hdg_graph(2,1) = stencil( _test=Mh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
+         hdg_graph(0,2) = stencil( _test=Vh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
+         hdg_graph(1,2) = stencil( _test=Wh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
+         hdg_graph(2,2) = stencil( _test=Mh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
+
+         auto A = backend()->newBlockMatrix(_block=hdg_graph);
+         #endif
+         BlocksBaseVector<double> hdg_vec(3);
+         hdg_vec(0,0) = backend()->newVector( Vh );
+         hdg_vec(1,0) = backend()->newVector( Wh );
+         hdg_vec(2,0) = backend()->newVector( Mh );
+         auto F = backend()->newBlockVector(_block=hdg_vec, _copy_values=false);
+
+         auto hdg_sol = vectorBlocks(sigmap,up,uhatp);
+         auto U = backend()->newBlockVector(_block=hdg_sol, _copy_values=false);
+
+         assemble_A_and_F( A, F, Vh, Wh, Mh, u_exact, sigma_exact, f );
+         */
+
+
+
+        // Building the RHS
+        M0h_ptr_t M0h = Pdh<0>( face_mesh,true );
+        auto H     = M0h->element( "H" );
+        if ( ioption("hface" ) == 0 )
+            H.on( _range=elements(face_mesh), _expr=cst(mesh->hMax()) );
+        else if ( ioption("hface" ) == 1 )
+            H.on( _range=elements(face_mesh), _expr=cst(mesh->hMin()) );
+        else if ( ioption("hface" ) == 2 )
+            H.on( _range=elements(face_mesh), _expr=cst(mesh->hAverage()) );
+        else
+            H.on( _range=elements(face_mesh), _expr=h() );
+
+        rhs(1_c) += integrate(_range=elements(mesh),
+                              _expr=trans(f)*id(w));
+
+        cout << "rhs2 works fine" << std::endl;
+
+        // in convergence test Neumann condition is given from the displacement and
+        // constitutive law
+        if ( boption( "convtest" ) )
+            rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
+                                  _expr=trans(id(m))*(sigma_exact*N()));
+        else
+        {
+            auto load = expr<2,2>( soption("load") );
+            rhs(2_c) += integrate(_range=markedfaces(mesh,"Tip"),
+                                  _expr=trans(id(m))*(load*N()));
+        }
+
+        rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                              _expr=trans(id(m))*u_exact);
+
+
+        cout << "rhs3 works fine" << std::endl;
+
+        // Building the matrix
+        a( 0_c, 0_c ) +=  integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
+        a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
+
+        a( 0_c, 1_c ) += integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(v)));
+
+        a( 0_c, 2_c) += integrate(_range=internalfaces(mesh),
+                                  _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
+                                           trans(idt(uhat))*rightface(id(v)*N())) );
+        a( 0_c, 2_c) += integrate(_range=boundaryfaces(mesh),
+                                  _expr=-trans(idt(uhat))*(id(v)*N()));
+
+        a( 1_c, 0_c) += integrate(_range=elements(mesh),
+                                  _expr=(trans(id(w))*divt(sigma)));
+        // begin dp: here we need to put the projection of u on the faces
+        a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=-tau_constant *
+                                  ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
+                                    rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
+
+        a( 1_c, 1_c) += integrate(_range=boundaryfaces(mesh),
+                                  _expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
+
+        a( 1_c, 2_c) += integrate(_range=internalfaces(mesh), _expr=tau_constant *
+                                  ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
+                                    rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )));
+
+        a( 1_c, 2_c) += integrate(_range=boundaryfaces(mesh),
+                                  _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
+
+
+        a( 2_c, 0_c) += integrate(_range=internalfaces(mesh),
+                                  _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
+                                                        rightfacet(idt(sigma)*N())) ) );
+        a( 2_c, 1_c) += integrate(_range=internalfaces(mesh),
+                                  _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tau_order)*idt(u) )+
+                                                                        rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
+
+        a( 2_c, 2_c) += integrate(_range=internalfaces(mesh),
+                                  _expr=a22_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
+                                                                                              rightface( pow(idv(H),M_tau_order) )));
+
+        a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,{"Dirichlet"}),
+                                  _expr=trans(idt(uhat)) * id(m) );
+
+
+        a( 2_c, 0_c) += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
+                                  _expr=( trans(id(m))*(idt(sigma)*N()) ));
+
+        a( 2_c, 1_c) += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
+                                  _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
+
+        a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
+                                  _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+
+
+
+
+
+
+        toc("matrices",true);
+
+        // a.close();
+        // rhs.close();
+
+        tic();
+        // backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=U );
+        // hdg_sol.localize(U);
+        auto U = ps.element();
+        auto Ue = ps.element();
+        a.solve( _solution=U, _rhs=rhs, _rebuild=true);
+        toc("solve",true);
+        cout << "[Hdg] solve done" << std::endl;
+
+        auto sigmap = U(0_c);
+        auto up = U(1_c);
+        auto uhatp = U(2_c);
+
+        Ue(0_c).on( _range=elements(mesh), _expr=sigma_exact );
+        Ue(1_c).on( _range=elements(mesh), _expr=u_exact );
+
 #if 0
-        auto A = backend()->newBlockMatrix(_block=csrGraphBlocks(Vh,Wh,Mh));
-#else
-        BlocksBaseGraphCSR hdg_graph(3,3);
-        hdg_graph(0,0) = stencil( _test=Vh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(1,0) = stencil( _test=Wh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(2,0) = stencil( _test=Mh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(0,1) = stencil( _test=Vh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(1,1) = stencil( _test=Wh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(2,1) = stencil( _test=Mh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(0,2) = stencil( _test=Vh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(1,2) = stencil( _test=Wh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(2,2) = stencil( _test=Mh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
-
-        auto A = backend()->newBlockMatrix(_block=hdg_graph);
+        Feel::cout << "sigma exact: \t" << Ue(0_c) << std::endl;
+        Feel::cout << "sigma: \t" << sigmap << std::endl;
+        Feel::cout << "u exact: \t" << Ue(1_c) << std::endl;
+        Feel::cout << "u: \t" << up << std::endl;
+        Feel::cout << "uhat: \t" << uhatp << std::endl;
 #endif
-        BlocksBaseVector<double> hdg_vec(3);
-        hdg_vec(0,0) = backend()->newVector( Vh );
-        hdg_vec(1,0) = backend()->newVector( Wh );
-        hdg_vec(2,0) = backend()->newVector( Mh );
-        auto F = backend()->newBlockVector(_block=hdg_vec, _copy_values=false);
 
-        auto hdg_sol = vectorBlocks(sigmap,up,uhatp);
-        auto U = backend()->newBlockVector(_block=hdg_sol, _copy_values=false);
-
-    	assemble_A_and_F( A, F, Vh, Wh, Mh, u_exact, sigma_exact, f );
-	*/
-
-
-
-    // Building the RHS
-    M0h_ptr_t M0h = Pdh<0>( face_mesh,true );
-    auto H     = M0h->element( "H" );
-    if ( ioption("hface" ) == 0 )
-        H.on( _range=elements(face_mesh), _expr=cst(mesh->hMax()) );
-    else if ( ioption("hface" ) == 1 )
-        H.on( _range=elements(face_mesh), _expr=cst(mesh->hMin()) );
-    else if ( ioption("hface" ) == 2 )
-        H.on( _range=elements(face_mesh), _expr=cst(mesh->hAverage()) );
-    else
-        H.on( _range=elements(face_mesh), _expr=h() );
-
-	rhs(1_c) += integrate(_range=elements(mesh),
-                      _expr=trans(f)*id(w));
-
-    cout << "rhs2 works fine" << std::endl;
-
-    // in convergence test Neumann condition is given from the displacement and
-    // constitutive law
-    if ( boption( "convtest" ) )
-        rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                          _expr=trans(id(m))*(sigma_exact*N()));
-    else
-    {
-        auto load = expr<2,2>( soption("load") );
-        rhs(2_c) += integrate(_range=markedfaces(mesh,"Tip"),
-                          _expr=trans(id(m))*(load*N()));
-    }
-
-    rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                      _expr=trans(id(m))*u_exact);
-
-
-    cout << "rhs3 works fine" << std::endl;
-
-	// Building the matrix
-    a( 0_c, 0_c ) +=  integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
-    a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
-
-	a( 0_c, 1_c ) += integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(v)));
-
-    a( 0_c, 2_c) += integrate(_range=internalfaces(mesh),
-                                _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
-                                         trans(idt(uhat))*rightface(id(v)*N())) );
-    a( 0_c, 2_c) += integrate(_range=boundaryfaces(mesh),
-                                _expr=-trans(idt(uhat))*(id(v)*N()));
-
-    a( 1_c, 0_c) += integrate(_range=elements(mesh),
-                                _expr=(trans(id(w))*divt(sigma)));
-	// begin dp: here we need to put the projection of u on the faces
-    a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=-tau_constant *
-    	         ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
-        	       rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
-
-    a( 1_c, 1_c) += integrate(_range=boundaryfaces(mesh),
-    			_expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
-
-    a( 1_c, 2_c) += integrate(_range=internalfaces(mesh), _expr=tau_constant *
-             ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
-               rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )));
-
-    a( 1_c, 2_c) += integrate(_range=boundaryfaces(mesh),
-             _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
-
-
-    a( 2_c, 0_c) += integrate(_range=internalfaces(mesh),
-             _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
-                     rightfacet(idt(sigma)*N())) ) );
-	a( 2_c, 1_c) += integrate(_range=internalfaces(mesh),
-                _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tau_order)*idt(u) )+
-                    rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
-
-    a( 2_c, 2_c) += integrate(_range=internalfaces(mesh),
-	    _expr=a22_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
-                    rightface( pow(idv(H),M_tau_order) )));
-
-   	a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,{"Dirichlet"}),
-                                _expr=trans(idt(uhat)) * id(m) );
-
-
-	a( 2_c, 0_c) += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
-                        		_expr=( trans(id(m))*(idt(sigma)*N()) ));
-
-    a( 2_c, 1_c) += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
- 		                        _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
-
-    a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
-                        _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
-
-
-
-
-
-
-	toc("matrices",true);
-
-	// a.close();
-	// rhs.close();
-
-    tic();
-    // backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=U );
-    // hdg_sol.localize(U);
-	auto U = ps.element();
-    auto Ue = ps.element();
-	a.solve( _solution=U, _rhs=rhs, _rebuild=true);
-    toc("solve",true);
-	cout << "[Hdg] solve done" << std::endl;
-
-	auto sigmap = U(0_c);
-	auto up = U(1_c);
- 	auto uhatp = U(2_c);
-
-    Ue(0_c).on( _range=elements(mesh), _expr=sigma_exact );
-    Ue(1_c).on( _range=elements(mesh), _expr=u_exact );
-
-
-    Feel::cout << "sigma exact: \t" << Ue(0_c) << std::endl;
-	Feel::cout << "sigma: \t" << sigmap << std::endl;
-    Feel::cout << "u exact: \t" << Ue(1_c) << std::endl;
-	Feel::cout << "u: \t" << up << std::endl;
-	Feel::cout << "uhat: \t" << uhatp << std::endl;
-
-
-    // ****** Compute error ******
-    tic();
+        // ****** Compute error ******
+        tic();
         bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
         BOOST_ASSERT(has_dirichlet);
 
         /*
-        How does Feel++ handle BC on single components? Say, Dirichlet on u_x and
-        Neumann on dot(sigma*n, e_y)?
-        */
+         How does Feel++ handle BC on single components? Say, Dirichlet on u_x and
+         Neumann on dot(sigma*n, e_y)?
+         */
 
-    auto l2err_sigma = normL2( _range=elements(mesh), _expr=sigma_exact - idv(sigmap) );
-    auto l2err_u     = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
+        auto l2err_sigma = normL2( _range=elements(mesh), _expr=sigma_exact - idv(sigmap) );
+        auto l2err_u     = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
 
-    toc("error");
+        toc("error");
 
-    cout << "[" << i << "]||sigma_exact - sigma||_L2 = " << l2err_sigma << std::endl;
-    cout << "[" << i << "]||u_exact - u||_L2 = " << l2err_u << std::endl;
+        cout << "[" << i << "]||sigma_exact - sigma||_L2 = " << l2err_sigma << std::endl;
+        cout << "[" << i << "]||u_exact - u||_L2 = " << l2err_u << std::endl;
         cvg << current_hsize
             << "\t" << Vh->nDof() << "\t" << l2err_sigma
             << "\t" << Wh->nDof() << "\t" << l2err_u << std::endl;
