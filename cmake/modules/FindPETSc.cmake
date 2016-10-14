@@ -41,7 +41,7 @@ function (petsc_get_version)
   endif ()
 endfunction ()
 
-find_program (MAKE_EXECUTABLE NAMES make gmake)
+find_program (MAKE_EXECUTABLE NAMES gmake make)
 
 foreach( debian_arches linux kfreebsd )
   IF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
@@ -69,6 +69,7 @@ if ( NOT PETSC_DIR )
         /usr/local/opt/petsc/real
         /usr/lib/petscdir/${version}/${flavor}
         /usr/local/Cellar/petsc/${version}/${flavor}
+        /usr/local/
         NO_DEFAULT_PATH
         DOC "PETSc Directory")
     endforeach()
@@ -83,6 +84,7 @@ find_path (PETSC_DIR include/petsc.h
   /usr/lib/petscdir/3.4.4 /usr/lib/petscdir/3.4.3 /usr/lib/petscdir/3.4.2
   /usr/lib/petscdir/3.3 /usr/lib/petscdir/3.2 /usr/lib/petscdir/3.1 /usr/lib/petscdir/3.0.0 /usr/lib/petscdir/2.3.3 /usr/lib/petscdir/2.3.2 # Debian
   /opt/local/lib/petsc # macports
+  /usr/local/lib/petsc # freebsd
   $ENV{HOME}/petsc
   $ENV{PETSC_HOME}
   $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}
