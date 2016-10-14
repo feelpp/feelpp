@@ -24,6 +24,17 @@ out[] = Extrude{0,0,zmax-zmin}{ Surface{1}; };
 
 Surface Loop(301) = {201, 202, 203, 204, 205, 206};
 
+Field[1] = Box;
+Field[1].VIn = h/5;
+Field[1].VOut = h;
+Field[1].XMin = -0.7;
+Field[1].XMax = 0.7;
+Field[1].YMin = -2.3;
+Field[1].YMax = 2.3;
+Field[1].ZMin = -2.3;
+Field[1].ZMax = 2.3;
+Background Field = 1;
+
 Physical Surface("Left") = {13};
 Physical Surface("Bottom") = {1};
 Physical Surface("Right") = {21};
