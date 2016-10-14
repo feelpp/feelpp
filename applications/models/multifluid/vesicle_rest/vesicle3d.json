@@ -28,6 +28,7 @@
     },
     "PostProcess":
     {
+        "Fields": ["modgradphi"],
         "PhysicalQuantities": ["volume", "perimeter"]
     }
 }
