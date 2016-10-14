@@ -1239,8 +1239,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
             {
                 // save the smoothed gradient magnitude of phi
                 //auto modgradphi = M_smootherFM->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
-                auto gradPhi = this->gradPhi();
-                auto modgradphi = M_smootherFM->project( sqrt( trans(idv(gradPhi))*idv(gradPhi) ) );
+                //auto gradPhi = idv(this->gradPhi());
+                auto gradPhi = trans(gradv(phi));
+                auto modgradphi = M_smootherFM->project( sqrt( trans(gradPhi)*gradPhi ) );
                 
                 *phi = vf::project(this->functionSpace(), elements(this->mesh()), idv(phi)/idv(modgradphi) );
             }
