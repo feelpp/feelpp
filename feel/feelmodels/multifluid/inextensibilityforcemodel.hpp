@@ -55,6 +55,7 @@ private:
     element_levelset_ptrtype M_interfaceRectangularFunction;
 
     double M_inextensibilityForceCoefficient;
+    double M_inextensibilityForceEpsilon;
 
 #ifdef DEBUG_INEXTENSIBILITYFORCEMODEL
     typedef boost::shared_ptr<Exporter<mesh_type, 1>> exporter_ptrtype;
@@ -77,6 +78,11 @@ InextensibilityForceModel<LevelSetType>::loadParametersFromOptionsVm()
 {
     M_inextensibilityForceCoefficient = doption( _name="inextensibility-force-coeff", _prefix=this->prefix() );
 
+    if( Environment::vm().count( prefixvm(this->prefix(),"inextensibility-force-epsilon").c_str() ) )
+        M_inextensibilityForceEpsilon = doption( _name="inextensibility-force-epsilon", _prefix=this->prefix() );
+    else
+        M_inextensibilityForceEpsilon = this->levelset()->thicknessInterface();
+    
 #ifdef DEBUG_INEXTENSIBILITYFORCEMODEL
     M_exporter = Feel::exporter(
             _mesh=this->levelset()->mesh(),
@@ -94,7 +100,7 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceRectangularFunction()
         M_interfaceRectangularFunction.reset( new element_levelset_type(this->levelset()->functionSpace(), "InterfaceRectangularFunction") );
 
     auto phi = idv(this->levelset()->phi());
-    double epsilon = this->levelset()->thicknessInterface();
+    double epsilon = M_inextensibilityForceEpsilon;
     double epsilon_rect = 2.*epsilon;
     double epsilon_delta = (epsilon_rect - epsilon)/2.;
     double epsilon_zero = epsilon + epsilon_delta;
