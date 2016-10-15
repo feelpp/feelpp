@@ -3,7 +3,7 @@
  *  Implementation of GiNaC's constant types and some special constants. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ GINAC_IMPLEMENT_REGISTERED_CLASS_OPT(constant, basic,
 
 // public
 
-constant::constant() : ef(0), serial(next_serial++), domain(domain::complex)
+constant::constant() : ef(nullptr), serial(next_serial++), domain(domain::complex)
 {
 	setflag(status_flags::evaluated | status_flags::expanded);
 }
@@ -67,7 +67,7 @@ constant::constant(const std::string & initname, evalffunctype efun, const std::
 }
 
 constant::constant(const std::string & initname, const numeric & initnumber, const std::string & texname, unsigned dm)
-  : name(initname), ef(0), number(initnumber), serial(next_serial++), domain(dm)
+  : name(initname), ef(nullptr), number(initnumber), serial(next_serial++), domain(dm)
 {
 	if (texname.empty())
 		TeX_name = "\\mathrm{" + name + "}";
@@ -148,9 +148,9 @@ bool constant::info(unsigned inf) const
 		return inherited::info(inf);
 }
 
-ex constant::evalf(int level) const
+ex constant::evalf() const
 {
-	if (ef!=0) {
+	if (ef!=nullptr) {
 		return ef();
 	} else {
 		return number.evalf();
@@ -216,7 +216,7 @@ bool constant::is_equal_same_type(const basic & other) const
 unsigned constant::calchash() const
 {
 	const void* typeid_this = (const void*)typeid(*this).name();
-	hashvalue = golden_ratio_hash((p_int)typeid_this ^ serial);
+	hashvalue = golden_ratio_hash((uintptr_t)typeid_this ^ serial);
 
 	setflag(status_flags::hash_calculated);
 

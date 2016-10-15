@@ -1,15 +1,15 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.1)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 project(GiNaC)
-file(STRINGS ${CMAKE_SOURCE_DIR}/contrib/ginac/ginac/version.h _ginac_vinfo REGEX "^#define[\t ]+GINACLIB_.*_VERSION.*")
+file(STRINGS ${CMAKE_SOURCE_DIR}/ginac/version.h _ginac_vinfo REGEX "^#define[\t ]+GINACLIB_.*_VERSION.*")
 string(REGEX REPLACE "^.*GINACLIB_MAJOR_VERSION[ \t]+([0-9]+).*" "\\1" GINAC_MAJOR_VERSION "${_ginac_vinfo}")
 string(REGEX REPLACE "^.*GINACLIB_MINOR_VERSION[ \t]+([0-9]+).*" "\\1" GINAC_MINOR_VERSION "${_ginac_vinfo}")
 string(REGEX REPLACE "^.*GINACLIB_MICRO_VERSION[ \t]+([0-9]+).*" "\\1" GINAC_MICRO_VERSION "${_ginac_vinfo}")
 set(GINAC_VERSION "${GINAC_MAJOR_VERSION}.${GINAC_MINOR_VERSION}.${GINAC_MICRO_VERSION}")
 
 # Library versioning info
-file(STRINGS ${CMAKE_SOURCE_DIR}/contrib/ginac/ginac/version.h _ginac_vinfo REGEX "^#define[\t ]+GINAC_LT_.*")
+file(STRINGS ${CMAKE_SOURCE_DIR}/ginac/version.h _ginac_vinfo REGEX "^#define[\t ]+GINAC_LT_.*")
 string(REGEX REPLACE "^.*GINAC_LT_CURRENT[ \t]+([0-9]+).*" "\\1" ginac_lt_current "${_ginac_vinfo}")
 string(REGEX REPLACE "^.*GINAC_LT_AGE[ \t]+([0-9]+).*" "\\1" ginac_lt_age "${_ginac_vinfo}")
 string(REGEX REPLACE "^.*GINAC_LT_REVISION[ \t]+([0-9]+).*" "\\1" ginac_lt_revision "${_ginac_vinfo}")
@@ -17,48 +17,21 @@ string(REGEX REPLACE "^.*GINAC_LT_REVISION[ \t]+([0-9]+).*" "\\1" ginac_lt_revis
 math(EXPR ginaclib_soversion "${ginac_lt_current} - ${ginac_lt_age}")
 set(ginaclib_version ${ginaclib_soversion}.${ginac_lt_age}.${ginac_lt_revision})
 
-# # for supermuc this option should be OFF
-# option(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER "Enable use of standard include headers in ginac-excompiler" ON)
-IF(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER)
-  #add -DUSE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER to CFLAGS
-  message( STATUS "[contrib ginac] Enable use of standard headers")
-  set(_USE_STANDARD_C_HEADERS_ "-DUSE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER")
-ENDIF()
-
 # make check
 enable_testing()
-add_custom_target(check-ginac COMMAND ${CMAKE_CTEST_COMMAND})
+add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
 # make info
-#add_custom_target(info ALL)
-#add_custom_target(html)
-#add_custom_target(pdf)
+add_custom_target(info ALL)
+add_custom_target(html)
+add_custom_target(pdf)
 
-find_package(CLN 1.3.2)
-#if ( CLN_FOUND )
+set (CMAKE_CXX_STANDARD 11)
+
+find_package(CLN 1.2.2 REQUIRED)
 include_directories(${CLN_INCLUDE_DIR})
-#endif()
 
 include(CheckIncludeFile)
-check_include_file("stdint.h" HAVE_STDINT_H)
 check_include_file("unistd.h" HAVE_UNISTD_H)
-
-# Check Python version
-# If python is version 3, we need to patch the scripts/yaptu.py file
-# (exec is a statement in Python 2 and a function in Python 3)
-FIND_PACKAGE(PythonInterp)
-
-if(PYTHONINTERP_FOUND)
-    if(PYTHON_VERSION_MAJOR MATCHES "3")
-        message(STATUS "Python 3 detected: patching files")
-        get_filename_component(PYTHONINTERP_PATH ${PYTHON_EXECUTABLE} PATH)
-        execute_process(COMMAND ${PYTHONINTERP_PATH}/2to3 -w --no-diffs ${CMAKE_SOURCE_DIR}/contrib/ginac/)
-        message(WARNING "Ginac files have been patched for Python 3 compatibility")
-    elseif(PYTHON_VERSION_MAJOR MATCHES "2")
-        message(STATUS "Python 2 detected: No need to patch")
-    else()
-        message(FATAL_ERROR "Unknown Python version: ${PYTHON_VERSION_STRING}")
-    endif()
-endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/ginac)
 
@@ -137,8 +110,8 @@ if (NOT CMAKE_SKIP_RPATH)
 	endif()
 endif()
 
-configure_file(${CMAKE_SOURCE_DIR}/contrib/ginac/ginac.pc.cmake ${CMAKE_BINARY_DIR}/ginac.pc @ONLY)
-#install(FILES ${CMAKE_BINARY_DIR}/ginac.pc DESTINATION "${LIB_INSTALL_DIR}/pkgconfig")
+configure_file(${CMAKE_SOURCE_DIR}/ginac.pc.cmake ${CMAKE_BINARY_DIR}/ginac.pc @ONLY)
+install(FILES ${CMAKE_BINARY_DIR}/ginac.pc DESTINATION "${LIB_INSTALL_DIR}/pkgconfig")
 
 # rpath for libginac.so itself, ginsh, and friends
 set(_ginac_rpath ${_ginac_rpath_reloc})
@@ -187,20 +160,28 @@ if (READLINE_FOUND)
 	set(HAVE_READLINE_HISTORY_H 1)
 endif()
 
+find_package(LibDL)
+if (LIBDL_FOUND)
+	set(HAVE_LIBDL 1)
+endif()
+
 find_program(MAKEINFO makeinfo)
 find_program(FIG2DEV fig2dev)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 add_definitions(-DHAVE_CONFIG_H)
 
+if (NOT LIBEXECDIR)
+	set (LIBEXECDIR "${CMAKE_INSTALL_PREFIX}/libexec")
+endif()
+
 add_subdirectory(ginac)
 add_subdirectory(tools)
-# feel++ edit
-#add_subdirectory(check)
+add_subdirectory(check)
 if (BISON_FOUND AND FLEX_FOUND)
 	add_subdirectory(ginsh)
 endif()
-# feel++ edit
-#if (MAKEINFO)
-#	add_subdirectory(doc)
-#endif()
+if (MAKEINFO)
+	add_subdirectory(doc)
+endif()
+

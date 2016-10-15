@@ -3,7 +3,7 @@
  *  Interface to GiNaC's wildcard objects. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -41,14 +41,14 @@ public:
 
 	// functions overriding virtual functions from base classes
 public:
-	bool match(const ex & pattern, exmap& repl_lst) const;
+	bool match(const ex & pattern, exmap& repl_lst) const override;
 
 	/** Save (a.k.a. serialize) object into archive. */
-	void archive(archive_node& n) const;
+	void archive(archive_node& n) const override;
 	/** Read (a.k.a. deserialize) object from archive. */
-	void read_archive(const archive_node& n, lst& syms);
+	void read_archive(const archive_node& n, lst& syms) override;
 protected:
-	unsigned calchash() const;
+	unsigned calchash() const override;
 
 	// non-virtual functions in this class
 public:

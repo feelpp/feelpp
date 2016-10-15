@@ -3,7 +3,7 @@
  *  Interface to GiNaC's light-weight expression handles. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,11 +29,12 @@
 #include <functional>
 #include <iosfwd>
 #include <iterator>
+#include <memory>
 #include <stack>
 
 namespace GiNaC {
 #ifdef _MSC_VER
-  // MSVC produces a different symbol for _ex0 when it is declared inside
+  // MSVC produces a different symbol for _ex0 when it is declared inside   
   // ex::is_zero() than when it is declared at top level as follows
   extern const ex _ex0;
 #endif
@@ -74,10 +75,10 @@ class ex {
 	template<class T> friend inline const T &ex_to(const ex &);
 	template<class T> friend inline bool is_a(const ex &);
 	template<class T> friend inline bool is_exactly_a(const ex &);
-
+	
 	// default constructor, copy constructor and assignment operator
 public:
-	ex() throw();
+	ex() noexcept;
 
 	// other constructors
 public:
@@ -93,12 +94,12 @@ public:
 	 *  in the expression must be specified in a lst in the second argument.
 	 *  Undefined symbols and other parser errors will throw an exception. */
 	ex(const std::string &s, const ex &l);
-
+	
 public:
 	// non-virtual functions in this class
 public:
 	/** Efficiently swap the contents of two expressions. */
-	void swap(ex & other) throw()
+	void swap(ex & other) noexcept
 	{
 		GINAC_ASSERT(bp->flags & status_flags::dynallocated);
 		GINAC_ASSERT(other.bp->flags & status_flags::dynallocated);
@@ -106,16 +107,16 @@ public:
 	}
 
 	// iterators
-	const_iterator begin() const throw();
-	const_iterator end() const throw();
+	const_iterator begin() const noexcept;
+	const_iterator end() const noexcept;
 	const_preorder_iterator preorder_begin() const;
-	const_preorder_iterator preorder_end() const throw();
+	const_preorder_iterator preorder_end() const noexcept;
 	const_postorder_iterator postorder_begin() const;
-	const_postorder_iterator postorder_end() const throw();
+	const_postorder_iterator postorder_end() const noexcept;
 
 	// evaluation
-	ex eval(int level = 0) const { return bp->eval(level); }
-	ex evalf(int level = 0) const { return bp->evalf(level); }
+	ex eval() const { return bp->eval(); }
+	ex evalf() const { return bp->evalf(); }
 	ex evalm() const { return bp->evalm(); }
 	ex eval_ncmul(const exvector & v) const { return bp->eval_ncmul(v); }
 	ex eval_integ() const { return bp->eval_integ(); }
@@ -182,11 +183,9 @@ public:
 	ex series(const ex & r, int order, unsigned options = 0) const;
 
 	// rational functions
-	ex normal(int level = 0) const;
+	ex normal() const;
 	ex to_rational(exmap & repl) const;
-	ex to_rational(lst & repl_lst) const;
 	ex to_polynomial(exmap & repl) const;
-	ex to_polynomial(lst & repl_lst) const;
 	ex numer() const;
 	ex denom() const;
 	ex numer_denom() const;
@@ -209,17 +208,14 @@ public:
 	// comparison
 	int compare(const ex & other) const;
 	bool is_equal(const ex & other) const;
-	bool is_zero() const {
+	bool is_zero() const { 
 #ifndef _MSC_VER
 	  extern const ex _ex0;
 #endif
-	  return is_equal(_ex0);
+	  return is_equal(_ex0); 
 	}
 	bool is_zero_matrix() const;
-
-    // patch feel++ (done by Vincent C.) : add is_a_matrix method
-    bool is_a_matrix() const;
-
+	
 	// symmetry
 	ex symmetrize() const;
 	ex symmetrize(const lst & l) const;
@@ -259,7 +255,7 @@ private:
 extern const basic *_num0_bp;
 
 inline
-ex::ex() throw() : bp(*const_cast<basic *>(_num0_bp))
+ex::ex() noexcept : bp(*const_cast<basic *>(_num0_bp))
 {
 	GINAC_ASSERT(bp->flags & status_flags::dynallocated);
 }
@@ -361,10 +357,10 @@ class const_iterator : public std::iterator<std::random_access_iterator_tag, ex,
 	friend class const_postorder_iterator;
 
 public:
-	const_iterator() throw() {}
+	const_iterator() noexcept {}
 
 private:
-	const_iterator(const ex &e_, size_t i_) throw() : e(e_), i(i_) {}
+	const_iterator(const ex &e_, size_t i_) noexcept : e(e_), i(i_) {}
 
 public:
 	// This should return an ex&, but that would be a reference to a
@@ -376,9 +372,9 @@ public:
 
 	// This should return an ex*, but that would be a pointer to a
 	// temporary value
-	boost::shared_ptr<ex> operator->() const
+	std::unique_ptr<ex> operator->() const
 	{
-		return boost::shared_ptr<ex>(new ex(operator*()));
+		return std::unique_ptr<ex>(new ex(operator*()));
 	}
 
 	ex operator[](difference_type n) const
@@ -386,90 +382,90 @@ public:
 		return e.op(i + n);
 	}
 
-	const_iterator &operator++() throw()
+	const_iterator &operator++() noexcept
 	{
 		++i;
 		return *this;
 	}
 
-	const_iterator operator++(int) throw()
+	const_iterator operator++(int) noexcept
 	{
 		const_iterator tmp = *this;
 		++i;
 		return tmp;
 	}
 
-	const_iterator &operator+=(difference_type n) throw()
+	const_iterator &operator+=(difference_type n) noexcept
 	{
 		i += n;
 		return *this;
 	}
 
-	const_iterator operator+(difference_type n) const throw()
+	const_iterator operator+(difference_type n) const noexcept
 	{
 		return const_iterator(e, i + n);
 	}
 
-	inline friend const_iterator operator+(difference_type n, const const_iterator &it) throw()
+	inline friend const_iterator operator+(difference_type n, const const_iterator &it) noexcept
 	{
 		return const_iterator(it.e, it.i + n);
 	}
 
-	const_iterator &operator--() throw()
+	const_iterator &operator--() noexcept
 	{
 		--i;
 		return *this;
 	}
 
-	const_iterator operator--(int) throw()
+	const_iterator operator--(int) noexcept
 	{
 		const_iterator tmp = *this;
 		--i;
 		return tmp;
 	}
 
-	const_iterator &operator-=(difference_type n) throw()
+	const_iterator &operator-=(difference_type n) noexcept
 	{
 		i -= n;
 		return *this;
 	}
 
-	const_iterator operator-(difference_type n) const throw()
+	const_iterator operator-(difference_type n) const noexcept
 	{
 		return const_iterator(e, i - n);
 	}
 
-	inline friend difference_type operator-(const const_iterator &lhs, const const_iterator &rhs) throw()
+	inline friend difference_type operator-(const const_iterator &lhs, const const_iterator &rhs) noexcept
 	{
 		return lhs.i - rhs.i;
 	}
 
-	bool operator==(const const_iterator &other) const throw()
+	bool operator==(const const_iterator &other) const noexcept
 	{
 		return are_ex_trivially_equal(e, other.e) && i == other.i;
 	}
 
-	bool operator!=(const const_iterator &other) const throw()
+	bool operator!=(const const_iterator &other) const noexcept
 	{
 		return !(*this == other);
 	}
 
-	bool operator<(const const_iterator &other) const throw()
+	bool operator<(const const_iterator &other) const noexcept
 	{
 		return i < other.i;
 	}
 
-	bool operator>(const const_iterator &other) const throw()
+	bool operator>(const const_iterator &other) const noexcept
 	{
 		return other < *this;
 	}
 
-	bool operator<=(const const_iterator &other) const throw()
+	bool operator<=(const const_iterator &other) const noexcept
 	{
 		return !(other < *this);
 	}
 
-	bool operator>=(const const_iterator &other) const throw()
+	bool operator>=(const const_iterator &other) const noexcept
 	{
 		return !(*this < other);
 	}
@@ -484,12 +480,12 @@ namespace internal {
 struct _iter_rep {
 	_iter_rep(const ex &e_, size_t i_, size_t i_end_) : e(e_), i(i_), i_end(i_end_) {}
 
-	bool operator==(const _iter_rep &other) const throw()
+	bool operator==(const _iter_rep &other) const noexcept
 	{
 		return are_ex_trivially_equal(e, other.e) && i == other.i;
 	}
 
-	bool operator!=(const _iter_rep &other) const throw()
+	bool operator!=(const _iter_rep &other) const noexcept
 	{
 		return !(*this == other);
 	}
@@ -503,7 +499,7 @@ struct _iter_rep {
 
 class const_preorder_iterator : public std::iterator<std::forward_iterator_tag, ex, ptrdiff_t, const ex *, const ex &> {
 public:
-	const_preorder_iterator() throw() {}
+	const_preorder_iterator() noexcept {}
 
 	const_preorder_iterator(const ex &e, size_t n)
 	{
@@ -534,18 +530,18 @@ public:
 		return tmp;
 	}
 
-	bool operator==(const const_preorder_iterator &other) const throw()
+	bool operator==(const const_preorder_iterator &other) const noexcept
 	{
 		return s == other.s;
 	}
 
-	bool operator!=(const const_preorder_iterator &other) const throw()
+	bool operator!=(const const_preorder_iterator &other) const noexcept
 	{
 		return !(*this == other);
 	}
 
 private:
-	std::stack<internal::_iter_rep, std::vector<internal::_iter_rep> > s;
+	std::stack<internal::_iter_rep, std::vector<internal::_iter_rep>> s;
 
 	void increment()
 	{
@@ -567,7 +563,7 @@ private:
 
 class const_postorder_iterator : public std::iterator<std::forward_iterator_tag, ex, ptrdiff_t, const ex *, const ex &> {
 public:
-	const_postorder_iterator() throw() {}
+	const_postorder_iterator() noexcept {}
 
 	const_postorder_iterator(const ex &e, size_t n)
 	{
@@ -599,18 +595,18 @@ public:
 		return tmp;
 	}
 
-	bool operator==(const const_postorder_iterator &other) const throw()
+	bool operator==(const const_postorder_iterator &other) const noexcept
 	{
 		return s == other.s;
 	}
 
-	bool operator!=(const const_postorder_iterator &other) const throw()
+	bool operator!=(const const_postorder_iterator &other) const noexcept
 	{
 		return !(*this == other);
 	}
 
 private:
-	std::stack<internal::_iter_rep, std::vector<internal::_iter_rep> > s;
+	std::stack<internal::_iter_rep, std::vector<internal::_iter_rep>> s;
 
 	void descend()
 	{
@@ -632,12 +628,12 @@ private:
 	}
 };
 
-inline const_iterator ex::begin() const throw()
+inline const_iterator ex::begin() const noexcept
 {
 	return const_iterator(*this, 0);
 }
 
-inline const_iterator ex::end() const throw()
+inline const_iterator ex::end() const noexcept
 {
 	return const_iterator(*this, nops());
 }
@@ -647,7 +643,7 @@ inline const_preorder_iterator ex::preorder_begin() const
 	return const_preorder_iterator(*this, nops());
 }
 
-inline const_preorder_iterator ex::preorder_end() const throw()
+inline const_preorder_iterator ex::preorder_end() const noexcept
 {
 	return const_preorder_iterator();
 }
@@ -657,7 +653,7 @@ inline const_postorder_iterator ex::postorder_begin() const
 	return const_postorder_iterator(*this, nops());
 }
 
-inline const_postorder_iterator ex::postorder_end() const throw()
+inline const_postorder_iterator ex::postorder_end() const noexcept
 {
 	return const_postorder_iterator();
 }
@@ -675,19 +671,19 @@ inline bool are_ex_trivially_equal(const ex &e1, const ex &e2)
 }
 
 /* Function objects for STL sort() etc. */
-struct ex_is_less : public std::binary_function<ex, ex, bool> {
+struct ex_is_less {
 	bool operator() (const ex &lh, const ex &rh) const { return lh.compare(rh) < 0; }
 };
 
-struct ex_is_equal : public std::binary_function<ex, ex, bool> {
+struct ex_is_equal {
 	bool operator() (const ex &lh, const ex &rh) const { return lh.is_equal(rh); }
 };
 
-struct op0_is_equal : public std::binary_function<ex, ex, bool> {
+struct op0_is_equal {
 	bool operator() (const ex &lh, const ex &rh) const { return lh.op(0).is_equal(rh.op(0)); }
 };
 
-struct ex_swap : public std::binary_function<ex, ex, void> {
+struct ex_swap {
 	void operator() (ex &lh, ex &rh) const { lh.swap(rh); }
 };
 
@@ -739,11 +735,8 @@ inline ex denom(const ex & thisex)
 inline ex numer_denom(const ex & thisex)
 { return thisex.numer_denom(); }
 
-inline ex normal(const ex & thisex, int level=0)
-{ return thisex.normal(level); }
-
-inline ex to_rational(const ex & thisex, lst & repl_lst)
-{ return thisex.to_rational(repl_lst); }
+inline ex normal(const ex & thisex)
+{ return thisex.normal(); }
 
 inline ex to_rational(const ex & thisex, exmap & repl)
 { return thisex.to_rational(repl); }
@@ -751,17 +744,14 @@ inline ex to_rational(const ex & thisex, exmap & repl)
 inline ex to_polynomial(const ex & thisex, exmap & repl)
 { return thisex.to_polynomial(repl); }
 
-inline ex to_polynomial(const ex & thisex, lst & repl_lst)
-{ return thisex.to_polynomial(repl_lst); }
-
 inline ex collect(const ex & thisex, const ex & s, bool distributed = false)
 { return thisex.collect(s, distributed); }
 
-inline ex eval(const ex & thisex, int level = 0)
-{ return thisex.eval(level); }
+inline ex eval(const ex & thisex)
+{ return thisex.eval(); }
 
-inline ex evalf(const ex & thisex, int level = 0)
-{ return thisex.evalf(level); }
+inline ex evalf(const ex & thisex)
+{ return thisex.evalf(); }
 
 inline ex evalm(const ex & thisex)
 { return thisex.evalm(); }
@@ -838,7 +828,7 @@ protected:
 	ex (*ptr)(const ex &);
 public:
 	explicit pointer_to_map_function(ex x(const ex &)) : ptr(x) {}
-	ex operator()(const ex & e) { return ptr(e); }
+	ex operator()(const ex & e) override { return ptr(e); }
 };
 
 template<class T1>
@@ -848,7 +838,7 @@ protected:
 	T1 arg1;
 public:
 	explicit pointer_to_map_function_1arg(ex x(const ex &, T1), T1 a1) : ptr(x), arg1(a1) {}
-	ex operator()(const ex & e) { return ptr(e, arg1); }
+	ex operator()(const ex & e) override { return ptr(e, arg1); }
 };
 
 template<class T1, class T2>
@@ -859,7 +849,7 @@ protected:
 	T2 arg2;
 public:
 	explicit pointer_to_map_function_2args(ex x(const ex &, T1, T2), T1 a1, T2 a2) : ptr(x), arg1(a1), arg2(a2) {}
-	ex operator()(const ex & e) { return ptr(e, arg1, arg2); }
+	ex operator()(const ex & e) override { return ptr(e, arg1, arg2); }
 };
 
 template<class T1, class T2, class T3>
@@ -871,7 +861,7 @@ protected:
 	T3 arg3;
 public:
 	explicit pointer_to_map_function_3args(ex x(const ex &, T1, T2, T3), T1 a1, T2 a2, T3 a3) : ptr(x), arg1(a1), arg2(a2), arg3(a3) {}
-	ex operator()(const ex & e) { return ptr(e, arg1, arg2, arg3); }
+	ex operator()(const ex & e) override { return ptr(e, arg1, arg2, arg3); }
 };
 
 template<class C>
@@ -881,7 +871,7 @@ protected:
 	C &c;
 public:
 	explicit pointer_to_member_to_map_function(ex (C::*member)(const ex &), C &obj) : ptr(member), c(obj) {}
-	ex operator()(const ex & e) { return (c.*ptr)(e); }
+	ex operator()(const ex & e) override { return (c.*ptr)(e); }
 };
 
 template<class C, class T1>
@@ -892,7 +882,7 @@ protected:
 	T1 arg1;
 public:
 	explicit pointer_to_member_to_map_function_1arg(ex (C::*member)(const ex &, T1), C &obj, T1 a1) : ptr(member), c(obj), arg1(a1) {}
-	ex operator()(const ex & e) { return (c.*ptr)(e, arg1); }
+	ex operator()(const ex & e) override { return (c.*ptr)(e, arg1); }
 };
 
 template<class C, class T1, class T2>
@@ -904,7 +894,7 @@ protected:
 	T2 arg2;
 public:
 	explicit pointer_to_member_to_map_function_2args(ex (C::*member)(const ex&, T1, T2), C &obj, T1 a1, T2 a2) : ptr(member), c(obj), arg1(a1), arg2(a2) {}
-	ex operator()(const ex & e) { return (c.*ptr)(e, arg1, arg2); }
+	ex operator()(const ex & e) override { return (c.*ptr)(e, arg1, arg2); }
 };
 
 template<class C, class T1, class T2, class T3>
@@ -917,7 +907,7 @@ protected:
 	T3 arg3;
 public:
 	explicit pointer_to_member_to_map_function_3args(ex (C::*member)(const ex &, T1, T2, T3), C &obj, T1 a1, T2 a2, T3 a3) : ptr(member), c(obj), arg1(a1), arg2(a2), arg3(a3) {}
-	ex operator()(const ex & e) { return (c.*ptr)(e, arg1, arg2, arg3); }
+	ex operator()(const ex & e) override { return (c.*ptr)(e, arg1, arg2, arg3); }
 };
 
 inline ex ex::map(ex f(const ex &)) const
@@ -961,7 +951,7 @@ inline const T &ex_to(const ex &e)
 
 } // namespace GiNaC
 
-#if !__INTEL_COMPILER >= 1400
+
 // Specializations of Standard Library algorithms
 namespace std {
 
@@ -972,20 +962,6 @@ inline void swap(GiNaC::ex &a, GiNaC::ex &b)
 	a.swap(b);
 }
 
-/** Specialization of std::iter_swap() for vector<ex> iterators. */
-template <>
-inline void iter_swap(vector<GiNaC::ex>::iterator i1, vector<GiNaC::ex>::iterator i2)
-{
-	i1->swap(*i2);
-}
-
-/** Specialization of std::iter_swap() for list<ex> iterators. */
-template <>
-inline void iter_swap(list<GiNaC::ex>::iterator i1, list<GiNaC::ex>::iterator i2)
-{
-	i1->swap(*i2);
-}
-
 } // namespace std
-#endif
+
 #endif // ndef GINAC_EX_H

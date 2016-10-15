@@ -3,7 +3,7 @@
  *  Implementation of GiNaC's overloaded operators. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,18 +30,17 @@
 #include "print.h"
 #include "utils.h"
 
-#include <iomanip>
 #include <iostream>
 
 namespace GiNaC {
 
-/** Used internally by operator+() to add two ex objects together. */
+/** Used internally by operator+() to add two ex objects. */
 static inline const ex exadd(const ex & lh, const ex & rh)
 {
-	return (new add(lh,rh))->setflag(status_flags::dynallocated);
+	return dynallocate<add>(lh, rh);
 }
 
-/** Used internally by operator*() to multiply two ex objects together. */
+/** Used internally by operator*() to multiply two ex objects. */
 static inline const ex exmul(const ex & lh, const ex & rh)
 {
 	// Check if we are constructing a mul object or a ncmul object.  Due to
@@ -49,16 +48,16 @@ static inline const ex exmul(const ex & lh, const ex & rh)
 	// only one of the elements.
 	if (rh.return_type()==return_types::commutative ||
 	    lh.return_type()==return_types::commutative) {
-		return (new mul(lh,rh))->setflag(status_flags::dynallocated);
+		return dynallocate<mul>(lh, rh);
 	} else {
-		return (new ncmul(lh,rh))->setflag(status_flags::dynallocated);
+		return dynallocate<ncmul>(lh, rh);
 	}
 }
 
 /** Used internally by operator-() and friends to change the sign of an argument. */
 static inline const ex exminus(const ex & lh)
 {
-	return (new mul(lh,_ex_1))->setflag(status_flags::dynallocated);
+	return dynallocate<mul>(lh, _ex_1);
 }
 
 // binary arithmetic operators ex with ex
@@ -248,32 +247,32 @@ const numeric operator--(numeric & lh, int)
 
 const relational operator==(const ex & lh, const ex & rh)
 {
-	return relational(lh,rh,relational::equal);
+	return dynallocate<relational>(lh, rh, relational::equal);
 }
 
 const relational operator!=(const ex & lh, const ex & rh)
 {
-	return relational(lh,rh,relational::not_equal);
+	return dynallocate<relational>(lh, rh, relational::not_equal);
 }
 
 const relational operator<(const ex & lh, const ex & rh)
 {
-	return relational(lh,rh,relational::less);
+	return dynallocate<relational>(lh, rh, relational::less);
 }
 
 const relational operator<=(const ex & lh, const ex & rh)
 {
-	return relational(lh,rh,relational::less_or_equal);
+	return dynallocate<relational>(lh, rh, relational::less_or_equal);
 }
 
 const relational operator>(const ex & lh, const ex & rh)
 {
-	return relational(lh,rh,relational::greater);
+	return dynallocate<relational>(lh, rh, relational::greater);
 }
 
 const relational operator>=(const ex & lh, const ex & rh)
 {
-	return relational(lh,rh,relational::greater_or_equal);
+	return dynallocate<relational>(lh, rh, relational::greater_or_equal);
 }
 
 // input/output stream operators and manipulators
@@ -290,8 +289,8 @@ static void my_ios_callback(std::ios_base::event ev, std::ios_base & s, int i)
 	print_context *p = static_cast<print_context *>(s.pword(i));
 	if (ev == std::ios_base::erase_event) {
 		delete p;
-		s.pword(i) = 0;
-	} else if (ev == std::ios_base::copyfmt_event && p != 0)
+		s.pword(i) = nullptr;
+	} else if (ev == std::ios_base::copyfmt_event && p != nullptr)
 		s.pword(i) = p->duplicate();
 }
 
@@ -334,7 +333,7 @@ static inline unsigned get_print_options(std::ios_base & s)
 static void set_print_options(std::ostream & s, unsigned options)
 {
 	print_context *p = get_print_context(s);
-	if (p == 0)
+	if (p == nullptr)
 		set_print_context(s, print_dflt(s, options));
 	else
 		p->options = options;
@@ -343,7 +342,7 @@ static void set_print_options(std::ostream & s, unsigned options)
 std::ostream & operator<<(std::ostream & os, const ex & e)
 {
 	print_context *p = get_print_context(os);
-	if (p == 0)
+	if (p == nullptr)
 		e.print(print_dflt(os));
 	else
 		e.print(*p);
@@ -353,8 +352,8 @@ std::ostream & operator<<(std::ostream & os, const ex & e)
 std::ostream & operator<<(std::ostream & os, const exvector & e)
 {
 	print_context *p = get_print_context(os);
-	exvector::const_iterator i = e.begin();
-	exvector::const_iterator vend = e.end();
+	auto i = e.begin();
+	auto vend = e.end();
 
 	if (i==vend) {
 		os << "[]";
@@ -363,7 +362,7 @@ std::ostream & operator<<(std::ostream & os, const exvector & e)
 
 	os << "[";
 	while (true) {
-		if (p == 0)
+		if (p == nullptr)
 			i -> print(print_dflt(os));
 		else
 			i -> print(*p);
@@ -380,8 +379,8 @@ std::ostream & operator<<(std::ostream & os, const exvector & e)
 std::ostream & operator<<(std::ostream & os, const exset & e)
 {
 	print_context *p = get_print_context(os);
-	exset::const_iterator i = e.begin();
-	exset::const_iterator send = e.end();
+	auto i = e.begin();
+	auto send = e.end();
 
 	if (i==send) {
 		os << "<>";
@@ -390,7 +389,7 @@ std::ostream & operator<<(std::ostream & os, const exset & e)
 
 	os << "<";
 	while (true) {
-		if (p == 0)
+		if (p == nullptr)
 			i->print(print_dflt(os));
 		else
 			i->print(*p);
@@ -407,8 +406,8 @@ std::ostream & operator<<(std::ostream & os, const exset & e)
 std::ostream & operator<<(std::ostream & os, const exmap & e)
 {
 	print_context *p = get_print_context(os);
-	exmap::const_iterator i = e.begin();
-	exmap::const_iterator mend = e.end();
+	auto i = e.begin();
+	auto mend = e.end();
 
 	if (i==mend) {
 		os << "{}";
@@ -417,12 +416,12 @@ std::ostream & operator<<(std::ostream & os, const exmap & e)
 
 	os << "{";
 	while (true) {
-		if (p == 0)
+		if (p == nullptr)
 			i->first.print(print_dflt(os));
 		else
 			i->first.print(*p);
 		os << "==";
-		if (p == 0)
+		if (p == nullptr)
 			i->second.print(print_dflt(os));
 		else
 			i->second.print(*p);

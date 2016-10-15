@@ -25,6 +25,9 @@ int main()
 
 	// Our function pointer that points to the compiled ex
 	FUNCP_1P fp;
+
+	// Optionally, compile with custom compiler flags:
+	// setenv("CXXFLAGS", "-O3 -fomit-frame-pointer -ffast-math", 1);
 	compile_ex(expr, x, fp);
 
 	// Do some (not necessarily meaningful ;-)) numerical stuff ...

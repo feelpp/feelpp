@@ -3,7 +3,7 @@
  *  Interface to GiNaC's indexed expressions. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -138,33 +138,33 @@ public:
 
 	// internal constructors
 	indexed(const symmetry & symm, const exprseq & es);
-	indexed(const symmetry & symm, const exvector & v, bool discardable = false);
-	indexed(const symmetry & symm, boost::shared_ptr<exvector> vp);
+	indexed(const symmetry & symm, const exvector & v);
+	indexed(const symmetry & symm, exvector && v);
 
 	// functions overriding virtual functions from base classes
 public:
-	unsigned precedence() const {return 55;}
-	bool info(unsigned inf) const;
-	ex eval(int level = 0) const;
-	ex real_part() const;
-	ex imag_part() const;
-	exvector get_free_indices() const;
+	unsigned precedence() const override {return 55;}
+	bool info(unsigned inf) const override;
+	ex eval() const override;
+	ex real_part() const override;
+	ex imag_part() const override;
+	exvector get_free_indices() const override;
 
 	/** Save (a.k.a. serialize) indexed object into archive. */
-	void archive(archive_node& n) const;
+	void archive(archive_node& n) const override;
 	/** Read (a.k.a. deserialize) indexed object from archive. */
-	void read_archive(const archive_node& n, lst& syms);
+	void read_archive(const archive_node& n, lst& syms) override;
 protected:
-	ex derivative(const symbol & s) const;
-	ex thiscontainer(const exvector & v) const;
-	ex thiscontainer(boost::shared_ptr<exvector> vp) const;
-	unsigned return_type() const;
-	return_type_t return_type_tinfo() const { return op(0).return_type_tinfo(); }
-	ex expand(unsigned options = 0) const;
+	ex derivative(const symbol & s) const override;
+	ex thiscontainer(const exvector & v) const override;
+	ex thiscontainer(exvector && v) const override;
+	unsigned return_type() const override;
+	return_type_t return_type_tinfo() const override { return op(0).return_type_tinfo(); }
+	ex expand(unsigned options = 0) const override;
 
 	// new virtual functions which can be overridden by derived classes
 	// none
-
+	
 	// non-virtual functions in this class
 public:
 	/** Check whether all index values have a certain property.
@@ -255,10 +255,10 @@ protected:
 exvector get_all_dummy_indices(const ex & e);
 
 /** More reliable version of the form. The former assumes that e is an
-  * expanded epxression. */
+  * expanded expression. */
 exvector get_all_dummy_indices_safely(const ex & e);
 
-/** Returns b with all dummy indices, which are listed in va, renamed
+/** Returns b with all dummy indices, which are listed in va, renamed 
  *  if modify_va is set to TRUE all dummy indices of b will be appended to va */
 ex rename_dummy_indices_uniquely(exvector & va, const ex & b, bool modify_va = false);
 
@@ -268,18 +268,18 @@ ex rename_dummy_indices_uniquely(const ex & a, const ex & b);
 /** Same as above, where va and vb contain the indices of a and b and are sorted */
 ex rename_dummy_indices_uniquely(const exvector & va, const exvector & vb, const ex & b);
 
-/** Similar to above, where va and vb are the same and the return value is a list of two lists
+/** Similar to above, where va and vb are the same and the return value is a list of two lists 
  *  for substitution in b */
 lst rename_dummy_indices_uniquely(const exvector & va, const exvector & vb);
 
 /** This function returns the given expression with expanded sums
- *  for all dummy index summations, where the dimensionality of
+ *  for all dummy index summations, where the dimensionality of 
  *  the dummy index is a nonnegative integer.
- *  Optionally all indices with a variance will be substituted by
+ *  Optionally all indices with a variance will be substituted by 
  *  indices with the corresponding numeric values without variance.
  *
  *  @param e the given expression
- *  @param subs_idx indicates if variance of dummy indixes should be neglected
+ *  @param subs_idx indicates if variance of dummy indices should be neglected
  */
 ex expand_dummy_sum(const ex & e, bool subs_idx = false);
 

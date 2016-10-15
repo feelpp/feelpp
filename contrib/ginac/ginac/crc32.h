@@ -1,8 +1,10 @@
+/** @file crc32.h
+ *
+ * CRC32 hash function. Shamelessly stolen from GNU coreutils (cksum.c). */
+
 #ifndef GINAC_CRC32_H
 #define GINAC_CRC32_H
-/**
- * CRC32 hash function. Shamelessly stolen from GNU coreutils (cksum.c)
- */
+
 namespace GiNaC
 {
 static unsigned const crctab[256] =
