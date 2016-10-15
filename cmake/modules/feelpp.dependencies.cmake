@@ -1333,6 +1333,29 @@ endif( FEELPP_ENABLE_OCTAVE)
 #
 
 if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_GSL "Enable GSL Support" OFF )
+else()
+    option( FEELPP_ENABLE_GSL "Enable GSL Support" ON )
+endif()
+
+if( FEELPP_ENABLE_GSL )
+  FIND_PACKAGE(GSL)
+  if ( GSL_FOUND )
+    ADD_DEFINITIONS( -DFEELPP_HAS_GSL=1 )
+    SET(FEELPP_LIBRARIES ${GSL_LIBRARIES} ${FEELPP_LIBRARIES})
+    INCLUDE_DIRECTORIES(${GSL_INCLUDE_DIRS})
+    SET(FEELPP_HAS_GSL 1)
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GSL(${GSL_VERSION})" )
+    message(STATUS "[feelpp] gsl ${GSL_VERSION} enabled" )
+  endif()
+
+endif(FEELPP_ENABLE_GSL)
+
+#
+# Gmsh
+#
+
+if(FEELPP_MINIMAL_BUILD)
     option( FEELPP_ENABLE_GMSH "Enable Gmsh Support" OFF )
 else()
     option( FEELPP_ENABLE_GMSH "Enable Gmsh Support" ON )
