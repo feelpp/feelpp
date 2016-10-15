@@ -24,7 +24,7 @@ int main(int argc, char **argv)
     int i = 0;
     int size = 5;
     double gsl_x[size], gsl_y[size];
-    for (int i = 0; i < 5 ++i )
+    for (int i = 0; i < 5; ++i )
     {
         infile >> a >> b;
         gsl_x[i] = a;
