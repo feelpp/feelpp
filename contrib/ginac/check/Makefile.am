@@ -29,10 +29,13 @@ EXAMS = exam_paranoia \
 	exam_hashmap  \
 	exam_misc \
 	exam_mod_gcd \
+	check_mul_info \
 	bugme_chinrem_gcd \
+	factor_univariate_bug \
 	pgcd_relatively_prime_bug \
 	pgcd_infinite_loop \
-	exam_cra
+	exam_cra \
+	exam_real_imag
 
 TIMES = time_dennyfliegner \
 	time_gammaseries \
@@ -75,6 +78,9 @@ check_matrices_LDADD = ../ginac/libginac.la
 
 check_lsolve_SOURCES = check_lsolve.cpp genex.cpp
 check_lsolve_LDADD = ../ginac/libginac.la
+
+check_mul_info_SOURCES = check_mul_info.cpp
+check_mul_info_LDADD = ../ginac/libginac.la
 
 exam_paranoia_SOURCES = exam_paranoia.cpp
 exam_paranoia_LDADD = ../ginac/libginac.la
@@ -151,6 +157,9 @@ exam_mod_gcd_LDADD = ../ginac/libginac.la
 
 exam_cra_SOURCES = exam_cra.cpp
 exam_cra_LDADD = ../ginac/libginac.la
+
+exam_real_imag_SOURCES = exam_real_imag.cpp
+exam_real_imag_LDADD = ../ginac/libginac.la
 
 time_dennyfliegner_SOURCES = time_dennyfliegner.cpp \
 			     randomize_serials.cpp timer.cpp timer.h
@@ -257,6 +266,9 @@ time_parser_LDADD = ../ginac/libginac.la
 bugme_chinrem_gcd_SOURCES = bugme_chinrem_gcd.cpp
 bugme_chinrem_gcd_LDADD = ../ginac/libginac.la
 
+factor_univariate_bug_SOURCES = factor_univariate_bug.cpp
+factor_univariate_bug_LDADD = ../ginac/libginac.la
+
 pgcd_relatively_prime_bug_SOURCES = pgcd_relatively_prime_bug.cpp
 pgcd_relatively_prime_bug_LDADD = ../ginac/libginac.la
 
@@ -266,3 +278,4 @@ pgcd_infinite_loop_LDADD =  ../ginac/libginac.la
 AM_CPPFLAGS = -I$(srcdir)/../ginac -I../ginac -DIN_GINAC
 
 CLEANFILES = exam.gar
+EXTRA_DIST = CMakeLists.txt

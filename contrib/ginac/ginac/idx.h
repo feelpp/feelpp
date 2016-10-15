@@ -3,7 +3,7 @@
  *  Interface to GiNaC's indices. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -47,18 +47,18 @@ public:
 
 	// functions overriding virtual functions from base classes
 public:
-	bool info(unsigned inf) const;
-	size_t nops() const;
-	ex op(size_t i) const;
-	ex map(map_function & f) const;
-	ex evalf(int level = 0) const;
-	ex subs(const exmap & m, unsigned options = 0) const;
-	void archive(archive_node& n) const;
-	void read_archive(const archive_node& n, lst& syms);
+	bool info(unsigned inf) const override;
+	size_t nops() const override;
+	ex op(size_t i) const override;
+	ex map(map_function & f) const override;
+	ex evalf() const override;
+	ex subs(const exmap & m, unsigned options = 0) const override;
+	void archive(archive_node& n) const override;
+	void read_archive(const archive_node& n, lst& syms) override;
 protected:
-	ex derivative(const symbol & s) const;
-	bool match_same_type(const basic & other) const;
-	unsigned calchash() const;
+	ex derivative(const symbol & s) const override;
+	bool match_same_type(const basic & other) const override;
+	unsigned calchash() const override;
 
 	// new virtual functions in this class
 public:
@@ -125,11 +125,11 @@ public:
 
 	// functions overriding virtual functions from base classes
 public:
-	bool is_dummy_pair_same_type(const basic & other) const;
-	void archive(archive_node& n) const;
-	void read_archive(const archive_node& n, lst& syms);
+	bool is_dummy_pair_same_type(const basic & other) const override;
+	void archive(archive_node& n) const override;
+	void read_archive(const archive_node& n, lst& syms) override;
 protected:
-	bool match_same_type(const basic & other) const;
+	bool match_same_type(const basic & other) const override;
 
 	// non-virtual functions in this class
 public:
@@ -175,13 +175,13 @@ public:
 
 	// functions overriding virtual functions from base classes
 public:
-	bool is_dummy_pair_same_type(const basic & other) const;
+	bool is_dummy_pair_same_type(const basic & other) const override;
 	// complex conjugation
-	ex conjugate() const { return toggle_dot(); }
-	void archive(archive_node& n) const;
-	void read_archive(const archive_node& n, lst& syms);
+	ex conjugate() const override { return toggle_dot(); }
+	void archive(archive_node& n) const override;
+	void read_archive(const archive_node& n, lst& syms) override;
 protected:
-	bool match_same_type(const basic & other) const;
+	bool match_same_type(const basic & other) const override;
 
 	// non-virtual functions in this class
 public:

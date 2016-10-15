@@ -4,7 +4,7 @@
  *  in GiNaC functions */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -81,8 +81,8 @@ void remember_table_list::add_entry(function const & f, ex const & result)
 		}
 		case remember_strategies::delete_lru: {
 			// delete least recently used entry
-			iterator it = begin();
-			iterator lowest_access_it = it;
+			auto it = begin();
+			auto lowest_access_it = it;
 			unsigned long lowest_access = (*it).get_last_access();
 			++it;
 			while (it!=end()) {
@@ -97,8 +97,8 @@ void remember_table_list::add_entry(function const & f, ex const & result)
 		}
 		case remember_strategies::delete_lfu: {
 			// delete least frequently used entry
-			iterator it = begin();
-			iterator lowest_hits_it = it;
+			auto it = begin();
+			auto lowest_hits_it = it;
 			unsigned lowest_hits = (*it).get_successful_hits();
 			++it;
 			while (it!=end()) {
@@ -113,7 +113,7 @@ void remember_table_list::add_entry(function const & f, ex const & result)
 		}
 		default:
 			throw(std::logic_error("remember_table_list::add_entry(): invalid remember_strategy"));
-        }
+	}
 		GINAC_ASSERT(size()==max_assoc_size-1);
 	}
 	push_back(remember_table_entry(f,result));
@@ -121,7 +121,7 @@ void remember_table_list::add_entry(function const & f, ex const & result)
 
 bool remember_table_list::lookup_entry(function const & f, ex & result) const
 {
-	const_iterator i = begin(), iend = end();
+	auto i = begin(), iend = end();
 	while (i != iend) {
 		if (i->is_equal(f)) {
 			result = i->get_result();

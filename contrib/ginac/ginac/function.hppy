@@ -6,7 +6,7 @@
  *  This file was generated automatically from function.hppy.
  *  Please do not modify it directly, edit function.hppy instead!
  *
- *  GiNaC Copyright (C) 1999-2010 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,8 +28,6 @@
 
 #include "exprseq.h"
 
-// CINT needs <algorithm> to work properly with <vector>
-#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -57,10 +55,13 @@ typedef ex (* evalf_funcp)();
 typedef ex (* conjugate_funcp)();
 typedef ex (* real_part_funcp)();
 typedef ex (* imag_part_funcp)();
+typedef ex (* expand_funcp)();
 typedef ex (* derivative_funcp)();
+typedef ex (* expl_derivative_funcp)();
 typedef ex (* power_funcp)();
 typedef ex (* series_funcp)();
 typedef void (* print_funcp)();
+typedef bool (* info_funcp)();
 
 // the following lines have been generated for max. @maxargs@ parameters
 +++ for N, args in [ ( N, seq('const ex &', N) ) for N in range(1, maxargs + 1) ]:
@@ -69,10 +70,13 @@ typedef ex (* evalf_funcp_@N@)( @args@ );
 typedef ex (* conjugate_funcp_@N@)( @args@ );
 typedef ex (* real_part_funcp_@N@)( @args@ );
 typedef ex (* imag_part_funcp_@N@)( @args@ );
+typedef ex (* expand_funcp_@N@)( @args@, unsigned );
 typedef ex (* derivative_funcp_@N@)( @args@, unsigned );
+typedef ex (* expl_derivative_funcp_@N@)( @args@, const symbol & );
 typedef ex (* power_funcp_@N@)( @args@, const ex & );
 typedef ex (* series_funcp_@N@)( @args@, const relational &, int, unsigned );
 typedef void (* print_funcp_@N@)( @args@, const print_context & );
+typedef bool (* info_funcp_@N@)( @args@, unsigned );
 ---
 // end of generated lines
 
@@ -81,10 +85,13 @@ typedef void (* print_funcp_@N@)( @args@, const print_context & );
 +++ for fp in "eval evalf conjugate real_part imag_part".split():
 typedef ex (* @fp@_funcp_exvector)(const exvector &);
 ---
+typedef ex (* expand_funcp_exvector)(const exvector &, unsigned);
 typedef ex (* derivative_funcp_exvector)(const exvector &, unsigned);
+typedef ex (* expl_derivative_funcp_exvector)(const exvector &, const symbol &);
 typedef ex (* power_funcp_exvector)(const exvector &, const ex &);
 typedef ex (* series_funcp_exvector)(const exvector &, const relational &, int, unsigned);
 typedef void (* print_funcp_exvector)(const exvector &, const print_context &);
+typedef bool (* info_funcp_exvector)(const exvector &, unsigned);
 
 
 class function_options
@@ -125,7 +132,7 @@ public:
 		return *this;
 	}
 
-	function_options & set_return_type(unsigned rt, const return_type_t* rtt = 0);
+	function_options & set_return_type(unsigned rt, const return_type_t* rtt = nullptr);
 	function_options & do_not_evalf_params();
 	function_options & remember(unsigned size, unsigned assoc_size=0,
 	                            unsigned strategy=remember_strategies::delete_never);
@@ -136,8 +143,8 @@ public:
 	unsigned get_nparams() const { return nparams; }
 
 protected:
-	bool has_derivative() const { return derivative_f != NULL; }
-	bool has_power() const { return power_f != NULL; }
+	bool has_derivative() const { return derivative_f != nullptr; }
+	bool has_power() const { return power_f != nullptr; }
 	void test_and_set_nparams(unsigned n);
 	void set_print_func(unsigned id, print_funcp f);
 
@@ -151,10 +158,13 @@ protected:
 	conjugate_funcp conjugate_f;
 	real_part_funcp real_part_f;
 	imag_part_funcp imag_part_f;
+	expand_funcp expand_f;
 	derivative_funcp derivative_f;
+	expl_derivative_funcp expl_derivative_f;
 	power_funcp power_f;
 	series_funcp series_f;
 	std::vector<print_funcp> print_dispatch_table;
+	info_funcp info_f;
 
 	bool evalf_params_first;
 
@@ -172,10 +182,13 @@ protected:
 	bool conjugate_use_exvector_args;
 	bool real_part_use_exvector_args;
 	bool imag_part_use_exvector_args;
+	bool expand_use_exvector_args;
 	bool derivative_use_exvector_args;
+	bool expl_derivative_use_exvector_args;
 	bool power_use_exvector_args;
 	bool series_use_exvector_args;
 	bool print_use_exvector_args;
+	bool info_use_exvector_args;
 
 	unsigned functions_with_same_name;
 
@@ -207,39 +220,41 @@ public:
 ---
 	// end of generated lines
 	function(unsigned ser, const exprseq & es);
-	function(unsigned ser, const exvector & v, bool discardable = false);
-	function(unsigned ser, boost::shared_ptr<exvector> vp);
-
+	function(unsigned ser, const exvector & v);
+	function(unsigned ser, exvector && v);
+	
 	// functions overriding virtual functions from base classes
 public:
-	void print(const print_context & c, unsigned level = 0) const;
-	unsigned precedence() const {return 70;}
-	ex expand(unsigned options=0) const;
-	ex eval(int level=0) const;
-	ex evalf(int level=0) const;
-	ex eval_ncmul(const exvector & v) const;
-	unsigned calchash() const;
-	ex series(const relational & r, int order, unsigned options = 0) const;
-	ex thiscontainer(const exvector & v) const;
-	ex thiscontainer(boost::shared_ptr<exvector> vp) const;
-	ex conjugate() const;
-	ex real_part() const;
-	ex imag_part() const;
-	void archive(archive_node& n) const;
-	void read_archive(const archive_node& n, lst& syms);
+	void print(const print_context & c, unsigned level = 0) const override;
+	unsigned precedence() const override {return 70;}
+	ex expand(unsigned options=0) const override;
+	ex eval() const override;
+	ex evalf() const override;
+	ex eval_ncmul(const exvector & v) const override;
+	unsigned calchash() const override;
+	ex series(const relational & r, int order, unsigned options = 0) const override;
+	ex thiscontainer(const exvector & v) const override;
+	ex thiscontainer(exvector && v) const override;
+	ex conjugate() const override;
+	ex real_part() const override;
+	ex imag_part() const override;
+	void archive(archive_node& n) const override;
+	void read_archive(const archive_node& n, lst& syms) override;
+	bool info(unsigned inf) const override;
 protected:
-	ex derivative(const symbol & s) const;
-	bool is_equal_same_type(const basic & other) const;
-	bool match_same_type(const basic & other) const;
-	unsigned return_type() const;
-	return_type_t return_type_tinfo() const;
-
+	ex derivative(const symbol & s) const override;
+	bool is_equal_same_type(const basic & other) const override;
+	bool match_same_type(const basic & other) const override;
+	unsigned return_type() const override;
+	return_type_t return_type_tinfo() const override;
+	
 	// new virtual functions which can be overridden by derived classes
 	// none
-
+	
 	// non-virtual functions in this class
 protected:
 	ex pderivative(unsigned diff_param) const; // partial differentiation
+	ex expl_derivative(const symbol & s) const; // partial differentiation
 	static std::vector<function_options> & registered_functions();
 	bool lookup_remember_table(ex & result) const;
 	void store_remember_table(ex const & result) const;

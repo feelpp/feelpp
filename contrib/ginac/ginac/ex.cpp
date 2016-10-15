@@ -3,7 +3,7 @@
  *  Implementation of GiNaC's light-weight expression handles. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -123,7 +123,7 @@ ex ex::subs(const lst & ls, const lst & lr, unsigned options) const
 
 	// Convert the lists to a map
 	exmap m;
-	for (lst::const_iterator its = ls.begin(), itr = lr.begin(); its != ls.end(); ++its, ++itr) {
+	for (auto its = ls.begin(), itr = lr.begin(); its != ls.end(); ++its, ++itr) {
 		m.insert(std::make_pair(*its, *itr));
 
 		// Search for products and powers in the expressions to be substituted
@@ -140,7 +140,7 @@ ex ex::subs(const lst & ls, const lst & lr, unsigned options) const
 /** Substitute objects in an expression (syntactic substitution) and return
  *  the result as a new expression.  There are two valid types of
  *  replacement arguments: 1) a relational like object==ex and 2) a list of
- *  relationals lst(object1==ex1,object2==ex2,...). */
+ *  relationals lst{object1==ex1,object2==ex2,...}. */
 ex ex::subs(const ex & e, unsigned options) const
 {
 	if (e.info(info_flags::relation_equal)) {
@@ -162,8 +162,7 @@ ex ex::subs(const ex & e, unsigned options) const
 		// Argument is a list: convert it to a map
 		exmap m;
 		GINAC_ASSERT(is_a<lst>(e));
-		for (lst::const_iterator it = ex_to<lst>(e).begin(); it != ex_to<lst>(e).end(); ++it) {
-			ex r = *it;
+		for (auto & r : ex_to<lst>(e)) {
 			if (!r.info(info_flags::relation_equal))
 				throw(std::invalid_argument("basic::subs(ex): argument must be a list of equations"));
 			const ex & s = r.op(0);
@@ -203,7 +202,7 @@ void ex::traverse_postorder(visitor & v) const
 	accept(v);
 }
 
-/** Return modifyable operand/member at position i. */
+/** Return modifiable operand/member at position i. */
 ex & ex::let_op(size_t i)
 {
 	makewriteable();
@@ -243,8 +242,8 @@ bool ex::is_polynomial(const ex & vars) const
 {
 	if (is_a<lst>(vars)) {
 		const lst & varlst = ex_to<lst>(vars);
-		for (lst::const_iterator i=varlst.begin(); i!=varlst.end(); ++i)
-			if (!bp->is_polynomial(*i))
+		for (auto & it : varlst)
+			if (!bp->is_polynomial(it))
 				return false;
 		return true;
 	}
@@ -261,12 +260,6 @@ bool ex::is_zero_matrix() const
 		ex e = evalm();
 		return is_a<matrix>(e) && ex_to<matrix>(e).is_zero_matrix();
 	}
-}
-
-// patch feel++ (done by Vincent C.) : add is_a_matrix method
-bool ex::is_a_matrix() const
-{
-    return is_a<matrix>(*this);
 }
 
 // private
@@ -313,7 +306,7 @@ ptr<basic> ex::construct_from_basic(const basic & other)
 		// apply eval() once more. The recursion stops when eval() calls
 		// hold() or returns an object that already has its "evaluated"
 		// flag set, such as a symbol or a numeric.
-		const ex & tmpex = other.eval(1);
+		const ex & tmpex = other.eval();
 
 		// Eventually, the eval() recursion goes through the "else" branch
 		// below, which assures that the object pointed to by tmpex.bp is
@@ -408,10 +401,7 @@ basic & ex::construct_from_int(int i)
 	case 12:
 		return *const_cast<numeric *>(_num12_p);
 	default:
-		basic *bp = new numeric(i);
-		bp->setflag(status_flags::dynallocated);
-		GINAC_ASSERT(bp->get_refcount() == 0);
-		return *bp;
+		return dynallocate<numeric>(i);
 	}
 }
 	
@@ -445,10 +435,7 @@ basic & ex::construct_from_uint(unsigned int i)
 	case 12:
 		return *const_cast<numeric *>(_num12_p);
 	default:
-		basic *bp = new numeric(i);
-		bp->setflag(status_flags::dynallocated);
-		GINAC_ASSERT(bp->get_refcount() == 0);
-		return *bp;
+		return dynallocate<numeric>(i);
 	}
 }
 	
@@ -506,10 +493,7 @@ basic & ex::construct_from_long(long i)
 	case 12:
 		return *const_cast<numeric *>(_num12_p);
 	default:
-		basic *bp = new numeric(i);
-		bp->setflag(status_flags::dynallocated);
-		GINAC_ASSERT(bp->get_refcount() == 0);
-		return *bp;
+		return dynallocate<numeric>(i);
 	}
 }
 	
@@ -543,19 +527,13 @@ basic & ex::construct_from_ulong(unsigned long i)
 	case 12:
 		return *const_cast<numeric *>(_num12_p);
 	default:
-		basic *bp = new numeric(i);
-		bp->setflag(status_flags::dynallocated);
-		GINAC_ASSERT(bp->get_refcount() == 0);
-		return *bp;
+		return dynallocate<numeric>(i);
 	}
 }
 	
 basic & ex::construct_from_double(double d)
 {
-	basic *bp = new numeric(d);
-	bp->setflag(status_flags::dynallocated);
-	GINAC_ASSERT(bp->get_refcount() == 0);
-	return *bp;
+	return dynallocate<numeric>(d);
 }
 
 //////////

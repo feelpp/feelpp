@@ -3,7 +3,7 @@
  *  Interface to GiNaC's symbolic  integral. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,28 +40,28 @@ public:
 	
 	// functions overriding virtual functions from base classes
 public:
-	unsigned precedence() const {return 45;}
-	ex eval(int level=0) const;
-	ex evalf(int level=0) const;
-	int degree(const ex & s) const;
-	int ldegree(const ex & s) const;
-	ex eval_ncmul(const exvector & v) const;
-	size_t nops() const;
-	ex op(size_t i) const;
-	ex & let_op(size_t i);
-	ex expand(unsigned options = 0) const;
-	exvector get_free_indices() const;
-	unsigned return_type() const;
-	return_type_t return_type_tinfo() const;
-	ex conjugate() const;
-	ex eval_integ() const;
+	unsigned precedence() const override {return 45;}
+	ex eval() const override;
+	ex evalf() const override;
+	int degree(const ex & s) const override;
+	int ldegree(const ex & s) const override;
+	ex eval_ncmul(const exvector & v) const override;
+	size_t nops() const override;
+	ex op(size_t i) const override;
+	ex & let_op(size_t i) override;
+	ex expand(unsigned options = 0) const override;
+	exvector get_free_indices() const override;
+	unsigned return_type() const override;
+	return_type_t return_type_tinfo() const override;
+	ex conjugate() const override;
+	ex eval_integ() const override;
 	/** Save (a.k.a. serialize) object into archive. */
-	void archive(archive_node& n) const;
+	void archive(archive_node& n) const override;
 	/** Read (a.k.a. deserialize) object from archive. */
-	void read_archive(const archive_node& n, lst& syms);
+	void read_archive(const archive_node& n, lst& syms) override;
 protected:
-	ex derivative(const symbol & s) const;
-	ex series(const relational & r, int order, unsigned options = 0) const;
+	ex derivative(const symbol & s) const override;
+	ex series(const relational & r, int order, unsigned options = 0) const override;
 
 	// new virtual functions which can be overridden by derived classes
 	// none
