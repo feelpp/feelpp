@@ -103,7 +103,7 @@ public:
 	matrix(std::initializer_list<std::initializer_list<ex>> l);
 
 	matrix_init<ex, exvector::iterator> operator=(const ex & x) attribute_deprecated;
-protected:
+    //protected:
 	matrix(unsigned r, unsigned c, const exvector & m2);
 	matrix(unsigned r, unsigned c, exvector && m2);
 	// functions overriding virtual functions from base classes

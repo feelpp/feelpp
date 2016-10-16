@@ -262,6 +262,12 @@ bool ex::is_zero_matrix() const
 	}
 }
 
+// patch feel++ (done by Vincent C.) : add is_a_matrix method
+bool ex::is_a_matrix() const
+{
+    return is_a<matrix>(*this);
+}
+
 // private
 
 /** Make this ex writable (if more than one ex handle the same basic) by 
