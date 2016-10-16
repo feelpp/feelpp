@@ -163,9 +163,6 @@ template<typename _MatrixType> class ColPivHouseholderQR
       *
       * \returns a solution.
       *
-      * \note The case where b is a matrix is not yet implemented. Also, this
-      *       code is space inefficient.
-      *
       * \note_about_checking_solutions
       *
       * \note_about_arbitrary_choice_of_solution
@@ -616,12 +613,12 @@ void ColPivHouseholderQR<_MatrixType>::_solve_impl(const RhsType &rhs, DstType &
 
 namespace internal {
 
-template<typename DstXprType, typename MatrixType, typename Scalar>
-struct Assignment<DstXprType, Inverse<ColPivHouseholderQR<MatrixType> >, internal::assign_op<Scalar,Scalar>, Dense2Dense>
+template<typename DstXprType, typename MatrixType>
+struct Assignment<DstXprType, Inverse<ColPivHouseholderQR<MatrixType> >, internal::assign_op<typename DstXprType::Scalar,typename ColPivHouseholderQR<MatrixType>::Scalar>, Dense2Dense>
 {
   typedef ColPivHouseholderQR<MatrixType> QrType;
   typedef Inverse<QrType> SrcXprType;
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar,Scalar> &)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar,typename QrType::Scalar> &)
   {
     dst = src.nestedExpression().solve(MatrixType::Identity(src.rows(), src.cols()));
   }
@@ -640,7 +637,6 @@ typename ColPivHouseholderQR<MatrixType>::HouseholderSequenceType ColPivHousehol
   return HouseholderSequenceType(m_qr, m_hCoeffs.conjugate());
 }
 
-#ifndef __CUDACC__
 /** \return the column-pivoting Householder QR decomposition of \c *this.
   *
   * \sa class ColPivHouseholderQR
@@ -651,7 +647,6 @@ MatrixBase<Derived>::colPivHouseholderQr() const
 {
   return ColPivHouseholderQR<PlainObject>(eval());
 }
-#endif // __CUDACC__
 
 } // end namespace Eigen
 
