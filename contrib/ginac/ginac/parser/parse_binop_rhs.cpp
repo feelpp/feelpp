@@ -29,7 +29,7 @@
 #include "parser.h"
 #include "lexer.h"
 #include "debug.h"
-
+#include "relational.h"
 #include <sstream>
 #include <stdexcept>
 
@@ -148,6 +148,11 @@ static ex make_binop_expr(const int binop, const exvector& args)
 			return dynallocate<mul>(args);
 		case '/':
 			return make_divide_expr(args);
+        case '<':
+            return (new relational(args[0],args[1],relational::less))->setflag(status_flags::dynallocated);
+        case '>':
+            return (new relational(args[0],args[1],relational::greater))->setflag(status_flags::dynallocated);
+            
 		case '^':
 			if (args.size() != 2)
 				throw std::invalid_argument(
@@ -169,6 +174,8 @@ static inline bool is_binop(const int c)
 		case '-':
 		case '*':
 		case '/':
+        case '<':
+        case '>':
 		case '^':
 			return true;
 		default:
@@ -180,6 +187,9 @@ static inline bool is_binop(const int c)
 static int get_tok_prec(const int c)
 {
 	switch (c) {
+        case '<':
+        case '>':
+            return 10;
 		case '+':
 		case '-':
 			return 20;
