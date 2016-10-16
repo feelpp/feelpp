@@ -3,7 +3,7 @@
  *  Euclidean GCD and supporting functions. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ static ex umodpoly2ex(const umodpoly& a, const ex& var, const long p)
 		const ex term = numeric(c)*power(var, i);
 		ev.push_back(term);
 	}
-	ex ret = (new add(ev))->setflag(status_flags::dynallocated);
+	ex ret = dynallocate<add>(ev);
 	return ret;
 }
 	

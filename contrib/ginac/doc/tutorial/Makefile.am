@@ -38,4 +38,4 @@ endif
 ## CONFIG_TEX
 endif
 
-EXTRA_DIST = $(FIG)
+EXTRA_DIST = $(FIG) CMakeLists.txt version.texi.cmake
