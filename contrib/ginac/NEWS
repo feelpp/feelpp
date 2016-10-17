@@ -1,5 +1,102 @@
 This file records noteworthy changes.
 
+1.7.1 (2 October 2016)
+* Fix crash in basic::subs(), visible in classes which don't override it.
+* Fix convergence failure in Li_projection.
+* Fix cliffor_bar() and clifford_star().
+* Improve performance of clifford_to_lst().
+* Fix compilation issues, reduce compiler warnings.
+
+1.7.0 (30 April 2016)
+* Make use of C++11 features:
+  - Use new language features 'auto', 'nullptr', 'constexpr', range-based for
+    loops, the contextual keyword 'override', static 'noexcept' operator, etc.
+  - Add initializer list ctors for container<>, lst and nested initializer
+    lists ctor for class matrix.
+  - Add many rvalue reference overloads for ctors from std containers. (Note
+    that whether they really speed up things depends on whether evaluation
+    leaves the container unchanged or not.)
+  - Rvalue reference overloads for ctors from std containers made it possible
+    to remove the manual 'discardable' hack and std::auto_ptr<T> for good.
+  - New dynallocate<T>(args...) helper functions obsolete manual allocation
+    on the heap and setting the dynallocated status flag.
+  - Got rid of C++98ish algorithm features (bind2nd, etc.) and replaced them
+    with lambdas.
+* Make add::eval(), mul::eval() more careful so they return an evaluated,
+  canonical expression without compromise.
+* Remove 'level' argument of all .eval() methods. This has become possible by
+  ensuring that add::eval() and mul::eval() evaluate their own structure
+  without compromise (this was not guaranteed before). If all ex are evaluated,
+  any object which is an aggregate of such ex will only ever have to
+  evaluate itself, obsoleting the need for recursing.
+* Remove 'level' arguments of all .evalf() and .normal() methods. They were
+  modeled after the .eval() methods.
+* Make relational::rhs() and lhs() nonvirtual.
+* Add support for power::info(info_flags::real).
+* Add fderivative::derivatives() method.
+* Remove broken info_flags::algebraic.
+* Remove unmaintained support for Cint.
+* Remove unfinished andcode for hash table-based expairseq.
+* Remove deprecated ex::to_rational(lst) and ex::to_polynomial(lst).
+* ginac-excompiler installs in $LIBEXECDIR now, not in $BINDIR.
+* Many minor performance enhancements.
+
+1.6.7 (29 February 2016)
+* Fix elusive bug in sqrfree(), normal(), numer(), and denom().
+
+1.6.6 (20 December 2015)
+* Fix elusive bug in add::eval().
+* Several minor performance enhancements.
+
+1.6.5 (27 July 2015)
+* Fix pow(+(...),2).expand() where the sum contained roots of expressions.
+* Speed-up pow(+(...),n).expand() where n > 3.
+* Fix a crash in PolyLogs of rational numbers.
+
+1.6.4 (8 May 2015)
+* Fix pow(+(...),2).expand() where the sum contained roots of rationals.
+* Various improvements for info(info_flags::nonnegative).
+* Make power::expand() (x*p)^c -> x^c * p^c, if p>0.
+* Fix normal() where nested functions occur multiple times.
+* Add optional explicit derivatives to functions and use it in abs(),
+  imag_part(), real_part().
+* Evaluate abs(z)^(2n) -> z^n * conjugate(z)^n.
+
+1.6.3 (27 November 2014)
+* New expand_options::expand_transcendental. GiNaC will apply additional
+  rules when expanding expressions if this option is specified, i.e.
+  log(a*b) -> log(a) + log(b)
+  exp(a + b) -> exp(a)*exp(b)
+* Functions can define a custom expand() and info() now.
+* Automatically rewrite (x^{-1})^c -> x^{-c} for positive c.
+* Transform abs(x)^n -> x^n if x is real and n is even.
+* Improved power::info(): power with a real base and even exponent
+  reports that it's non-negative.
+* Fixed spurious match failure due to expairseq::match() bug:
+  > match(sin(y)*exp(b)+sin(x)*exp(a), sin($0)*exp(a)+exp(b)*sin($1))
+  FAIL
+* Fixed power::is_polynomial() and mul::is_polynomial() computation.
+* factor_univariate correctly handles polynomials over rationals (no
+  segfaults any more).
+* Fixed an infinite loop in factor_multivariate due to incorrect handling
+  of polynomials having a leading coefficient being a sum with a non-trivial
+  integer content.
+* Fixed numeric evaluation of generalized multiple polylogarithms for real
+  and negative argument.
+* Avoid calling log(1-x) in numeric evaluation of classical polylogarithm.
+* Fixed numeric evaluation of multiple polylogarithms (correctly set
+  the signs of the imaginary parts in the intermediate expression).
+* Fixed numeric evaluation of Nielsen polylogs for arguments close to
+  the 6th root of unity or its conjugate.
+* Avoid infinite recursion in series expansion of logarithm.
+* numeric::info(info_flags::nonnegative) correctly handles complex numbers
+  with non-zero imaginary part.
+* Fixed several build issues:
+  - libreadline and dlopen() misdetection.
+  - multiple definition of symbol on MinGW.
+  - auto* tools and texinfo being unhappy in various ways.
+* GiNaC can be built with CMake now.
+
 1.6.2 (6 November 2011)
 * Fixed the parser to read GiNaC::lst again.
 * Fixed a compile warning (relevant to openSUSE build).

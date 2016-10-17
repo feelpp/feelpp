@@ -3,7 +3,7 @@
  *  GiNaC's class registrar (for class basic and all classes derived from it). */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ namespace GiNaC {
 class ex;
 class archive_node;
 
-template <template <class T, class = std::allocator<T> > class> class container;
+template <template <class T, class = std::allocator<T>> class> class container;
 typedef container<std::list> lst;
 
 /** To distinguish between different kinds of non-commutative objects */
@@ -45,7 +45,7 @@ struct return_type_t
 	/// to distinguish between non-commutative objects of different type.
 	std::type_info const* tinfo; 
 	/// to distinguish between non-commutative objects of the same type.
-	/// Think of gamma matrices with different represenation labels.
+	/// Think of gamma matrices with different representation labels.
 	unsigned rl;
 
 	/// Strict weak ordering (so one can put return_type_t's into
@@ -125,43 +125,54 @@ private:
 
 typedef class_info<registered_class_options> registered_class_info;
 
-
-/** Primary macro for inclusion in the declaration of each registered class. */
-#define GINAC_DECLARE_REGISTERED_CLASS_NO_CTORS(classname, supername) \
-public: \
-	typedef supername inherited; \
+/** Common part of GINAC_DECLARE_REGISTERED_CLASS_NO_CTORS and GINAC_DECLARE_REGISTERED_CLASS. */
+#define GINAC_DECLARE_REGISTERED_CLASS_COMMON(classname)	\
 private: \
 	static GiNaC::registered_class_info reg_info; \
 public: \
 	static GiNaC::registered_class_info &get_class_info_static() { return reg_info; } \
-	virtual const GiNaC::registered_class_info &get_class_info() const { return classname::get_class_info_static(); } \
-	virtual GiNaC::registered_class_info &get_class_info() { return classname::get_class_info_static(); } \
-	virtual const char *class_name() const { return classname::get_class_info_static().options.get_name(); } \
 	class visitor { \
 	public: \
 		virtual void visit(const classname &) = 0; \
 		virtual ~visitor() {}; \
 	};
 
+/** Primary macro for inclusion in the declaration of each registered class. */
+#define GINAC_DECLARE_REGISTERED_CLASS_NO_CTORS(classname, supername) \
+	GINAC_DECLARE_REGISTERED_CLASS_COMMON(classname) \
+	typedef supername inherited; \
+	virtual const GiNaC::registered_class_info &get_class_info() const { return classname::get_class_info_static(); } \
+	virtual GiNaC::registered_class_info &get_class_info() { return classname::get_class_info_static(); } \
+	virtual const char *class_name() const { return classname::get_class_info_static().options.get_name(); } \
+private:
+
 /** Macro for inclusion in the declaration of each registered class.
  *  It declares some functions that are common to all classes derived
  *  from 'basic' as well as all required stuff for the GiNaC class
  *  registry (mainly needed for archiving). */
 #define GINAC_DECLARE_REGISTERED_CLASS(classname, supername) \
-	GINAC_DECLARE_REGISTERED_CLASS_NO_CTORS(classname, supername) \
-public: \
+	GINAC_DECLARE_REGISTERED_CLASS_COMMON(classname) \
+	template<class B, typename... Args> friend B & dynallocate(Args &&... args); \
+	typedef supername inherited; \
 	classname(); \
-	virtual classname * duplicate() const { return new classname(*this); } \
+	classname * duplicate() const override { \
+		classname * bp = new classname(*this); \
+		bp->setflag(status_flags::dynallocated); \
+		return bp; \
+	} \
 	\
-	virtual void accept(GiNaC::visitor & v) const \
+	void accept(GiNaC::visitor & v) const override \
 	{ \
 		if (visitor *p = dynamic_cast<visitor *>(&v)) \
 			p->visit(*this); \
 		else \
 			inherited::accept(v); \
 	} \
+	const GiNaC::registered_class_info &get_class_info() const override { return classname::get_class_info_static(); } \
+	GiNaC::registered_class_info &get_class_info() override { return classname::get_class_info_static(); } \
+	const char *class_name() const override { return classname::get_class_info_static().options.get_name(); } \
 protected: \
-	virtual int compare_same_type(const GiNaC::basic & other) const; \
+	int compare_same_type(const GiNaC::basic & other) const override; \
 private:
 
 

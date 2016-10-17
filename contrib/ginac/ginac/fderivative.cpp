@@ -3,7 +3,7 @@
  *  Implementation of abstract derivatives of functions. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@ fderivative::fderivative(unsigned ser, const paramset & params, const exvector &
 {
 }
 
-fderivative::fderivative(unsigned ser, const paramset & params, boost::shared_ptr<exvector> vp) : function(ser, vp), parameter_set(params)
+fderivative::fderivative(unsigned ser, const paramset & params, exvector && v) : function(ser, std::move(v)), parameter_set(params)
 {
 }
 
@@ -81,7 +81,7 @@ GINAC_BIND_UNARCHIVER(fderivative);
 void fderivative::archive(archive_node &n) const
 {
 	inherited::archive(n);
-	paramset::const_iterator i = parameter_set.begin(), end = parameter_set.end();
+	auto i = parameter_set.begin(), end = parameter_set.end();
 	while (i != end) {
 		n.add_unsigned("param", *i);
 		++i;
@@ -102,7 +102,7 @@ void fderivative::print(const print_context & c, unsigned level) const
 void fderivative::do_print(const print_context & c, unsigned level) const
 {
 	c.s << "D[";
-	paramset::const_iterator i = parameter_set.begin(), end = parameter_set.end();
+	auto i = parameter_set.begin(), end = parameter_set.end();
 	--end;
 	while (i != end) {
 		c.s << *i++ << ",";
@@ -114,7 +114,7 @@ void fderivative::do_print(const print_context & c, unsigned level) const
 void fderivative::do_print_csrc(const print_csrc & c, unsigned level) const
 {
 	c.s << "D_";
-	paramset::const_iterator i = parameter_set.begin(), end = parameter_set.end();
+	auto i = parameter_set.begin(), end = parameter_set.end();
 	--end;
 	while (i != end)
 		c.s << *i++ << "_";
@@ -129,23 +129,18 @@ void fderivative::do_print_tree(const print_tree & c, unsigned level) const
 	    << std::hex << ", hash=0x" << hashvalue << ", flags=0x" << flags << std::dec
 	    << ", nops=" << nops()
 	    << ", params=";
-	paramset::const_iterator i = parameter_set.begin(), end = parameter_set.end();
+	auto i = parameter_set.begin(), end = parameter_set.end();
 	--end;
 	while (i != end)
 		c.s << *i++ << ",";
 	c.s << *i << std::endl;
-	for (size_t i=0; i<seq.size(); ++i)
-		seq[i].print(c, level + c.delta_indent);
+	for (auto & i : seq)
+		i.print(c, level + c.delta_indent);
 	c.s << std::string(level + c.delta_indent, ' ') << "=====" << std::endl;
 }
 
-ex fderivative::eval(int level) const
+ex fderivative::eval() const
 {
-	if (level > 1) {
-		// first evaluate children, then we will end up here again
-		return fderivative(serial, parameter_set, evalchildren(level));
-	}
-
 	// No parameters specified? Then return the function itself
 	if (parameter_set.empty())
 		return function(serial, seq);
@@ -155,13 +150,6 @@ ex fderivative::eval(int level) const
 		return pderivative(*(parameter_set.begin()));
 
 	return this->hold();
-}
-
-/** Numeric evaluation falls back to evaluation of arguments.
- *  @see basic::evalf */
-ex fderivative::evalf(int level) const
-{
-	return basic::evalf(level);
 }
 
 /** The series expansion of derivatives falls back to Taylor expansion.
@@ -176,9 +164,9 @@ ex fderivative::thiscontainer(const exvector & v) const
 	return fderivative(serial, parameter_set, v);
 }
 
-ex fderivative::thiscontainer(boost::shared_ptr<exvector> vp) const
+ex fderivative::thiscontainer(exvector && v) const
 {
-	return fderivative(serial, parameter_set, vp);
+	return fderivative(serial, parameter_set, std::move(v));
 }
 
 /** Implementation of ex::diff() for derivatives. It applies the chain rule.
@@ -226,5 +214,21 @@ bool fderivative::match_same_type(const basic & other) const
 
 	return parameter_set == o.parameter_set && inherited::match_same_type(other);
 }
+
+/** Expose this object's derivative structure.
+ *
+ *  Parameter numbers occurring more than once stand for repeated
+ *  differentiation with respect to that parameter. If a symbolic function
+ *  f(x,y) is differentiated with respect to x, this method will return {0}.
+ *  If f(x,y) is differentiated twice with respect to y, it will return {1,1}.
+ *  (This corresponds to the way this object is printed.)
+ *
+ *  @return  multiset of function's parameter numbers that are abstractly
+ *  differentiated. */
+const paramset& fderivative::derivatives() const
+{
+	return parameter_set;
+}
+
 
 } // namespace GiNaC
