@@ -3,7 +3,7 @@
  *  Definition of helper classes for expression output. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@
 
 #include <iosfwd>
 #include <memory>
-#include <boost/shared_ptr.hpp>
 #include <string>
 
 namespace GiNaC {
@@ -60,22 +59,31 @@ public:
 };
 
 
+/** Common part of GINAC_DECLARE_PRINT_CONTEXT_BASE and GINAC_DECLARE_PRINT_CONTEXT_DERIVED. */
+#define GINAC_DECLARE_PRINT_CONTEXT_COMMON(classname)	\
+public: \
+	friend class function_options; \
+	friend class registered_class_options; \
+	static const GiNaC::print_context_class_info &get_class_info_static(); \
+	classname();
+
+#define GINAC_DECLARE_PRINT_CONTEXT_BASE(classname) \
+	GINAC_DECLARE_PRINT_CONTEXT_COMMON(classname) \
+	virtual const GiNaC::print_context_class_info &get_class_info() const { return classname::get_class_info_static(); } \
+	virtual const char *class_name() const { return classname::get_class_info_static().options.get_name(); } \
+	virtual classname * duplicate() const { return new classname(*this); } \
+private:
+
 /** Macro for inclusion in the declaration of a print_context class.
  *  It declares some functions that are common to all classes derived
  *  from 'print_context' as well as all required stuff for the GiNaC
  *  registry. */
 #define GINAC_DECLARE_PRINT_CONTEXT(classname, supername) \
-public: \
+	GINAC_DECLARE_PRINT_CONTEXT_COMMON(classname) \
 	typedef supername inherited; \
-	friend class function_options; \
-	friend class registered_class_options; \
-public: \
-	static const GiNaC::print_context_class_info &get_class_info_static(); \
-	virtual const GiNaC::print_context_class_info &get_class_info() const { return classname::get_class_info_static(); } \
-	virtual const char *class_name() const { return classname::get_class_info_static().options.get_name(); } \
-	\
-	classname(); \
-	virtual classname * duplicate() const { return new classname(*this); } \
+	const GiNaC::print_context_class_info &get_class_info() const override { return classname::get_class_info_static(); } \
+	const char *class_name() const override { return classname::get_class_info_static().options.get_name(); } \
+	classname * duplicate() const override { return new classname(*this); } \
 private:
 
 /** Macro for inclusion in the implementation of each print_context class. */
@@ -93,7 +101,7 @@ extern unsigned next_print_context_id;
 /** Base class for print_contexts. */
 class print_context
 {
-	GINAC_DECLARE_PRINT_CONTEXT(print_context, void)
+	GINAC_DECLARE_PRINT_CONTEXT_BASE(print_context)
 public:
 	print_context(std::ostream &, unsigned options = 0);
 	virtual ~print_context() {}
@@ -180,7 +188,7 @@ public:
 /** Check if obj is a T, including base classes. */
 template <class T>
 inline bool is_a(const print_context & obj)
-{ return dynamic_cast<const T *>(&obj) != 0; }
+{ return dynamic_cast<const T *>(&obj) != nullptr; }
 
 
 class basic;
@@ -200,9 +208,9 @@ public:
 	typedef void (*F)(const T &, const C &, unsigned);
 
 	print_ptrfun_handler(F f_) : f(f_) {}
-	print_ptrfun_handler *duplicate() const { return new print_ptrfun_handler(*this); }
+	print_ptrfun_handler *duplicate() const override { return new print_ptrfun_handler(*this); }
 
-	void operator()(const basic & obj, const print_context & c, unsigned level) const
+	void operator()(const basic & obj, const print_context & c, unsigned level) const override
 	{
 		// Call the supplied function
 		f(dynamic_cast<const T &>(obj), dynamic_cast<const C &>(c), level);
@@ -219,17 +227,12 @@ public:
 	typedef void (T::*F)(const C & c, unsigned level) const;
 
 	print_memfun_handler(F f_) : f(f_) {}
-	print_memfun_handler *duplicate() const { return new print_memfun_handler(*this); }
+	print_memfun_handler *duplicate() const override { return new print_memfun_handler(*this); }
 
-	void operator()(const basic & obj, const print_context & c, unsigned level) const
+	void operator()(const basic & obj, const print_context & c, unsigned level) const override
 	{
 		// Call the supplied member function
-#if 0
 		return (dynamic_cast<const T &>(obj).*f)(dynamic_cast<const C &>(c), level);
-#else
-        // patch feel++ (done by Vincent C.) : change dynamic_cast -> static_cast
-        return (static_cast<const T &>(obj).*f)(dynamic_cast<const C &>(c), level);
-#endif
 	}
 
 private:
@@ -244,9 +247,9 @@ private:
  *  implements the actual function call. */
 class print_functor {
 public:
-	print_functor() : impl() {}
+	print_functor() : impl(nullptr) {}
 	print_functor(const print_functor & other) : impl(other.impl.get() ? other.impl->duplicate() : 0) {}
-	print_functor(boost::shared_ptr<print_functor_impl> impl_) : impl(impl_) {}
+	print_functor(std::unique_ptr<print_functor_impl> impl_) : impl(std::move(impl_)) {}
 
 	template <class T, class C>
 	print_functor(void f(const T &, const C &, unsigned)) : impl(new print_ptrfun_handler<T, C>(f)) {}
@@ -258,7 +261,7 @@ public:
 	{
 		if (this != &other) {
 			print_functor_impl *p = other.impl.get();
-			impl.reset(p ? other.impl->duplicate() : 0);
+			impl.reset(p ? other.impl->duplicate() : nullptr);
 		}
 		return *this;
 	}
@@ -271,7 +274,7 @@ public:
 	bool is_valid() const { return impl.get(); }
 
 private:
-	boost::shared_ptr<print_functor_impl> impl;
+	std::unique_ptr<print_functor_impl> impl;
 };
 
 
