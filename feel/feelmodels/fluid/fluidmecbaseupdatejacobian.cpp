@@ -380,6 +380,74 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 
     //--------------------------------------------------------------------------------------------------//
 
+    if ( this->hasMarkerPressureBC() )
+    {
+        CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm1") != this->startBlockIndexFieldsInMatrix().end() )
+            << " start dof index for pressurelm1 is not present\n";
+
+        size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+        if (BuildCstPart)
+        {
+            if ( nDim==2 )
+            {
+                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix,
+                       _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(id(u),N()))(0,0)*idt(M_fieldLagrangeMultiplierPressureBC1),
+                               _geomap=this->geomap() );
+
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=J,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
+                       _colstart=colStartInMatrix ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(idt(u),N()))(0,0)*id(M_fieldLagrangeMultiplierPressureBC1),
+                               _geomap=this->geomap() );
+            }
+            else if ( nDim==3 )
+            {
+                auto alpha = 1./sqrt(1-Nz()*Nz());
+                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix,
+                       _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(id(u),N()))(0,2)*idt(M_fieldLagrangeMultiplierPressureBC1)*alpha,
+                               _geomap=this->geomap() );
+
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=J,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
+                       _colstart=colStartInMatrix ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(idt(u),N()))(0,2)*id(M_fieldLagrangeMultiplierPressureBC1)*alpha,
+                               _geomap=this->geomap() );
+
+                CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm2") != this->startBlockIndexFieldsInMatrix().end() )
+                    << " start dof index for pressurelm2 is not present\n";
+                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+
+                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix,
+                       _colstart=colStartInMatrix+startBlockIndexPressureLM2 ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr= -trans(cross(id(u),N()))(0,0)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Ny()
+                               +trans(cross(id(u),N()))(0,1)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
+                               _geomap=this->geomap() );
+
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=J,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix+startBlockIndexPressureLM2,
+                       _colstart=colStartInMatrix ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr= -trans(cross(idt(u),N()))(0,0)*alpha*id(M_fieldLagrangeMultiplierPressureBC2)*Ny()
+                               +trans(cross(idt(u),N()))(0,1)*alpha*id(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
+                               _geomap=this->geomap() );
+            }
+        }
+
+    }
+
+
+    //--------------------------------------------------------------------------------------------------//
+
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if ( this->isMoveDomain() && ( this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "robin-neumann-genuine" ||
                                    this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
@@ -517,6 +585,27 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
                 on( _range=markedfaces(mesh, markerDirichletEliminationOthers ),
                     _element=u,_rhs=RBis,
                     _expr= vf::zero<nDim,1>() );
+
+
+        if ( this->hasMarkerPressureBC() )
+        {
+            size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+            form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,
+                   _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
+                   _colstart=rowStartInMatrix+startBlockIndexPressureLM1 ) +=
+                on( _range=boundaryfaces(M_meshLagrangeMultiplierPressureBC), _rhs=RBis,
+                    _element=*M_fieldLagrangeMultiplierPressureBC1, _expr=cst(0.));
+            if ( nDim == 3 )
+            {
+                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,
+                       _rowstart=rowStartInMatrix+startBlockIndexPressureLM2,
+                       _colstart=rowStartInMatrix+startBlockIndexPressureLM2 ) +=
+                    on( _range=boundaryfaces(M_meshLagrangeMultiplierPressureBC), _rhs=RBis,
+                        _element=*M_fieldLagrangeMultiplierPressureBC2, _expr=cst(0.));
+            }
+        }
+
 
         if ( M_useThermodynModel && M_useGravityForce )
         {

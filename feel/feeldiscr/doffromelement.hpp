@@ -563,7 +563,7 @@ DofFromElement<DofTableType,FEType>::add( element_type const& __elt,
         {
             for ( int c1 = 0; c1 < nComponents1; ++c1)
             {
-                for ( int c2 = 0; c2 < c1; ++c2 )
+                for ( int c2 = c1+1; c2 < nComponents1; ++c2 )
                 {
                     const int k = Feel::detail::symmetricIndex(c1,c2,nComponents1);
                     M_doftable->setUnsymmToSymm( fe_type::nLocalDof*(nComponents1*c1+c2) + l, nldof*k+l );
@@ -574,7 +574,6 @@ DofFromElement<DofTableType,FEType>::add( element_type const& __elt,
             }
         }
     }
-    LOG(INFO) << "[DofFromElement] unsymm2symm=" << M_doftable->M_unsymm2symm;
 
     /*
      * Only in the continuous , we need to have the ordering [vertex,edge,face,volume]

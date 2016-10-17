@@ -3,7 +3,7 @@
  *  Implementation of GiNaC's symbolic objects. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 #include "symbol.h"
 #include "lst.h"
 #include "archive.h"
-#include "tostring.h"
 #include "utils.h"
 #include "hash_seed.h"
 #include "inifcns.h"
@@ -106,9 +105,9 @@ void symbol::read_archive(const archive_node &n, lst &sym_lst)
 	n.find_string("name", tmp_name);
 
 	// If symbol is in sym_lst, return the existing symbol
-	for (lst::const_iterator it = sym_lst.begin(); it != sym_lst.end(); ++it) {
-		if (is_a<symbol>(*it) && (ex_to<symbol>(*it).name == tmp_name)) {
-			*this = ex_to<symbol>(*it);
+	for (auto & s : sym_lst) {
+		if (is_a<symbol>(s) && (ex_to<symbol>(s).name == tmp_name)) {
+			*this = ex_to<symbol>(s);
 			// XXX: This method is responsible for reading realsymbol
 			// and possymbol objects too. But
 			// basic::operator=(const basic& other)
@@ -153,9 +152,7 @@ static const std::string& get_default_TeX_name(const std::string& name);
 std::string symbol::get_name() const
 {
 	if (name.empty()) {
-		std::ostringstream s;
-		s << "symbol" << serial;
-		name = s.str();
+		name = "symbol" + std::to_string(serial);
 	}
 	return name;
 }

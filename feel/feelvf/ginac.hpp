@@ -29,7 +29,17 @@
 #ifndef FEELPP_GINAC_HPP
 #define FEELPP_GINAC_HPP 1
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundefined-var-template"
+#endif
+
 #include <ginac/ginac.h>
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+
 #include <boost/fusion/container/vector.hpp>
 
 #include <boost/parameter/preprocessor.hpp>
@@ -362,7 +372,7 @@ expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::initializ
 
     typename std::initializer_list<GiNaC::symbol>::iterator it1 = s.begin();
     typename std::initializer_list<ExprT>::iterator it2 = e.begin();
-    for(it1; it1!=s.end(); it1++)
+    for(; it1!=s.end(); it1++)
         {
             VFmap.push_back( std::make_pair(*it1,*it2) );
             it2++;
@@ -380,7 +390,7 @@ expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::vector<Gi
 
     typename std::vector<GiNaC::symbol>::const_iterator it1 = s.begin();
     typename std::vector<ExprT>::const_iterator it2 = e.begin();
-    for(it1; it1!=s.end(); it1++)
+    for( ; it1!=s.end(); it1++)
         {
             VFmap.push_back( std::make_pair(*it1, *it2) );
             it2++;
@@ -398,7 +408,7 @@ expr( std::string const& myexpr, std::vector<GiNaC::symbol> const & syms , std::
 
     typename std::vector<GiNaC::symbol>::const_iterator it1 = s.begin();
     typename std::vector<ExprT>::const_iterator it2 = e.begin();
-    for(it1; it1!=s.end(); it1++)
+    for( ; it1!=s.end(); it1++)
         {
             VFmap.push_back( std::make_pair(*it1, *it2) );
             it2++;
@@ -444,7 +454,7 @@ expr( std::string const& s, std::initializer_list<std::string> const& se, std::i
 
     typename std::initializer_list<std::string>::iterator it1 = se.begin();
     typename std::initializer_list<ExprT>::iterator it2 = e.begin();
-    for(it1; it1!=se.end(); it1++)
+    for( ; it1!=se.end(); it1++)
         {
             auto it = std::find_if( g.second.begin(), g.second.end(),
                                     [&it1]( GiNaC::symbol const& s ) { return s.get_name() == *it1; } );
@@ -466,7 +476,7 @@ expr( std::string const& s, std::vector<std::string> const& se, std::vector<Expr
 
     typename std::vector<std::string>::const_iterator it1 = se.begin();
     typename std::vector<ExprT>::const_iterator it2 = e.begin();
-    for(it1; it1!=se.end(); it1++)
+    for( ; it1!=se.end(); it1++)
         {
             auto it = std::find_if( g.second.begin(), g.second.end(),
                                     [&it1]( GiNaC::symbol const& s ) { return s.get_name() == *it1; } );

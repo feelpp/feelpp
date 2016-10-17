@@ -26,7 +26,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Laplacian
 foreach( dim 2 3)
-  foreach( orderP 1 2 3 4)
+  foreach( orderP 0 1 2 3 4)
     set(modulename "hdg_laplacian")
     set(BENCH "${modulename}_${dim}D_P${orderP}" )
     set(targetname bench_${BENCH})

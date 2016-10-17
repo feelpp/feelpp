@@ -3,7 +3,7 @@
  *  Implementation of GiNaC's ABC. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -240,7 +240,7 @@ ex basic::op(size_t i) const
 	throw(std::range_error(std::string("basic::op(): ") + class_name() + std::string(" has no operands")));
 }
 
-/** Return modifyable operand/member at position i. */
+/** Return modifiable operand/member at position i. */
 ex & basic::let_op(size_t i)
 {
 	ensure_if_modifiable();
@@ -297,19 +297,18 @@ ex basic::map(map_function & f) const
 	if (num == 0)
 		return *this;
 
-	basic *copy = NULL;
+	basic *copy = nullptr;
 	for (size_t i=0; i<num; i++) {
 		const ex & o = op(i);
 		const ex & n = f(o);
 		if (!are_ex_trivially_equal(o, n)) {
-			if (copy == NULL)
+			if (copy == nullptr)
 				copy = duplicate();
 			copy->let_op(i) = n;
 		}
 	}
 
 	if (copy) {
-		copy->setflag(status_flags::dynallocated);
 		copy->clearflag(status_flags::hash_calculated | status_flags::expanded);
 		return *copy;
 	} else
@@ -366,15 +365,15 @@ ex basic::collect(const ex & s, bool distributed) const
 
 			exmap cmap;
 			cmap[_ex1] = _ex0;
-			for (const_iterator xi=x.begin(); xi!=x.end(); ++xi) {
+			for (const auto & xi : x) {
 				ex key = _ex1;
-				ex pre_coeff = *xi;
-				for (lst::const_iterator li=l.begin(); li!=l.end(); ++li) {
-					int cexp = pre_coeff.degree(*li);
-					pre_coeff = pre_coeff.coeff(*li, cexp);
-					key *= pow(*li, cexp);
+				ex pre_coeff = xi;
+				for (auto & li : l) {
+					int cexp = pre_coeff.degree(li);
+					pre_coeff = pre_coeff.coeff(li, cexp);
+					key *= pow(li, cexp);
 				}
-				exmap::iterator ci = cmap.find(key);
+				auto ci = cmap.find(key);
 				if (ci != cmap.end())
 					ci->second += pre_coeff;
 				else
@@ -382,9 +381,9 @@ ex basic::collect(const ex & s, bool distributed) const
 			}
 
 			exvector resv;
-			for (exmap::const_iterator mi=cmap.begin(); mi != cmap.end(); ++mi)
-				resv.push_back((mi->first)*(mi->second));
-			return (new add(resv))->setflag(status_flags::dynallocated);
+			for (auto & mi : cmap)
+				resv.push_back((mi.first)*(mi.second));
+			return dynallocate<add>(resv);
 
 		} else {
 
@@ -411,7 +410,7 @@ ex basic::collect(const ex & s, bool distributed) const
 }
 
 /** Perform automatic non-interruptive term rewriting rules. */
-ex basic::eval(int level) const
+ex basic::eval() const
 {
 	// There is nothing to do for basic objects:
 	return hold();
@@ -419,31 +418,23 @@ ex basic::eval(int level) const
 
 /** Function object to be applied by basic::evalf(). */
 struct evalf_map_function : public map_function {
-	int level;
-	evalf_map_function(int l) : level(l) {}
-	ex operator()(const ex & e) { return evalf(e, level); }
+	ex operator()(const ex & e) override { return evalf(e); }
 };
 
 /** Evaluate object numerically. */
-ex basic::evalf(int level) const
+ex basic::evalf() const
 {
 	if (nops() == 0)
 		return *this;
 	else {
-		if (level == 1)
-			return *this;
-		else if (level == -max_recursion_level)
-			throw(std::runtime_error("max recursion level reached"));
-		else {
-			evalf_map_function map_evalf(level - 1);
-			return map(map_evalf);
-		}
+		evalf_map_function map_evalf;
+		return map(map_evalf);
 	}
 }
 
 /** Function object to be applied by basic::evalm(). */
 struct evalm_map_function : public map_function {
-	ex operator()(const ex & e) { return evalm(e); }
+	ex operator()(const ex & e) override { return evalm(e); }
 } map_evalm;
 
 /** Evaluate sums, products and integer powers of matrices. */
@@ -457,7 +448,7 @@ ex basic::evalm() const
 
 /** Function object to be applied by basic::eval_integ(). */
 struct eval_integ_map_function : public map_function {
-	ex operator()(const ex & e) { return eval_integ(e); }
+	ex operator()(const ex & e) override { return eval_integ(e); }
 } map_eval_integ;
 
 /** Evaluate integrals, if result is known. */
@@ -548,9 +539,9 @@ bool basic::match(const ex & pattern, exmap& repl_lst) const
 		// Wildcard matches anything, but check whether we already have found
 		// a match for that wildcard first (if so, the earlier match must be
 		// the same expression)
-		for (exmap::const_iterator it = repl_lst.begin(); it != repl_lst.end(); ++it) {
-			if (it->first.is_equal(pattern))
-				return is_equal(ex_to<basic>(it->second));
+		for (auto & it : repl_lst) {
+			if (it.first.is_equal(pattern))
+				return is_equal(ex_to<basic>(it.second));
 		}
 		repl_lst[pattern] = *this;
 		return true;
@@ -593,19 +584,17 @@ bool basic::match(const ex & pattern, exmap& repl_lst) const
 /** Helper function for subs(). Does not recurse into subexpressions. */
 ex basic::subs_one_level(const exmap & m, unsigned options) const
 {
-	exmap::const_iterator it;
-
 	if (options & subs_options::no_pattern) {
-		ex thisex = *this;
-		it = m.find(thisex);
+		ex thisex = *this;  // NB: *this may be deleted here.
+		auto it = m.find(thisex);
 		if (it != m.end())
 			return it->second;
 		return thisex;
 	} else {
-		for (it = m.begin(); it != m.end(); ++it) {
+		for (auto & it : m) {
 			exmap repl_lst;
-			if (match(ex_to<basic>(it->first), repl_lst))
-				return it->second.subs(repl_lst, options | subs_options::no_pattern);
+			if (match(ex_to<basic>(it.first), repl_lst))
+				return it.second.subs(repl_lst, options | subs_options::no_pattern);
 			// avoid infinite recursion when re-substituting the wildcards
 		}
 	}
@@ -628,7 +617,6 @@ ex basic::subs(const exmap & m, unsigned options) const
 
 				// Something changed, clone the object
 				basic *copy = duplicate();
-				copy->setflag(status_flags::dynallocated);
 				copy->clearflag(status_flags::hash_calculated | status_flags::expanded);
 
 				// Substitute the changed operand
@@ -706,7 +694,7 @@ ex basic::eval_ncmul(const exvector & v) const
 struct derivative_map_function : public map_function {
 	const symbol &s;
 	derivative_map_function(const symbol &sym) : s(sym) {}
-	ex operator()(const ex & e) { return diff(e, s); }
+	ex operator()(const ex & e) override { return diff(e, s); }
 };
 
 /** Default implementation of ex::diff(). It maps the operation on the
@@ -800,7 +788,7 @@ unsigned basic::calchash() const
 struct expand_map_function : public map_function {
 	unsigned options;
 	expand_map_function(unsigned o) : options(o) {}
-	ex operator()(const ex & e) { return e.expand(options); }
+	ex operator()(const ex & e) override { return e.expand(options); }
 };
 
 /** Expand expression, i.e. multiply it out and return the result as a new
@@ -913,9 +901,6 @@ void basic::ensure_if_modifiable() const
 //////////
 // global variables
 //////////
-
-int max_recursion_level = 1024;
-
 
 #ifdef GINAC_COMPARE_STATISTICS
 compare_statistics_t::~compare_statistics_t()

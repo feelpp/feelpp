@@ -70,6 +70,8 @@ namespace FeelModels
 
         typedef boost::function<void ( sparse_matrix_ptrtype& A,vector_ptrtype& F )> linearAssembly_function_type;
 
+        typedef typename backend_type::pre_solve_type pre_solve_type;
+        typedef typename backend_type::post_solve_type post_solve_type;
 
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
