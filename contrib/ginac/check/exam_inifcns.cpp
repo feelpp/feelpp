@@ -4,7 +4,7 @@
  *  functions. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -219,17 +219,199 @@ static unsigned inifcns_consist_zeta()
 	return result;
 }
 
+static unsigned inifcns_consist_abs()
+{
+	unsigned result = 0;
+	realsymbol a("a"), b("b"), x("x"), y("y");
+	possymbol p("p");
+	symbol z("z");
+
+	if (!abs(exp(x+I*y)).eval().is_equal(exp(x)))
+		++result;
+
+	if (!abs(pow(p,a+I*b)).eval().is_equal(pow(p,a)))
+		++result;
+
+	if (!abs(sqrt(p)).eval().is_equal(sqrt(p)))
+		++result;
+
+	if (!abs(-sqrt(p)).eval().is_equal(sqrt(p)))
+		++result;
+
+	// also checks that abs(p)=p
+	if (!abs(pow(p,a+I*b)).eval().is_equal(pow(p,a)))
+		++result;
+
+	if (!abs(pow(x+I*y,a)).eval().is_equal(pow(abs(x+I*y),a)))
+		++result;
+
+	// it is not necessary a simplification if the following is really evaluated
+	if (!abs(pow(x+I*y,a+I*b)).eval().is_equal(abs(pow(x+I*y,a+I*b))))
+		++result;
+
+	// check expansion of abs
+	if (!abs(-7*z*a*p).expand(expand_options::expand_transcendental).is_equal(7*abs(z)*abs(a)*p))
+		++result;
+
+	if (!abs(z.conjugate()).eval().is_equal(abs(z)))
+		++result;
+
+	if (!abs(step(z)).eval().is_equal(step(z)))
+		++result;
+
+	if (!abs(p).info(info_flags::positive) || !abs(a).info(info_flags::real))
+		++result;
+
+	if (abs(a).info(info_flags::positive) || !abs(a).info(info_flags::real))
+		++result;
+
+	if (abs(z).info(info_flags::positive) || !abs(z).info(info_flags::real))
+		++result;
+
+	return result;
+}
+
+static unsigned inifcns_consist_exp()
+{
+	unsigned result = 0;
+	symbol a("a"), b("b");
+
+	if (!exp(a+b).expand(expand_options::expand_transcendental).is_equal(exp(a)*exp(b)))
+		++result;
+
+	// shall not be expanded since the arg is not add
+	if (!exp(pow(a+b,2)).expand(expand_options::expand_transcendental).is_equal(exp(pow(a+b,2))))
+		++result;
+
+	// expand now
+	if (!exp(pow(a+b,2)).expand(expand_options::expand_function_args | expand_options::expand_transcendental)
+		.is_equal(exp(a*a)*exp(b*b)*exp(2*a*b)))
+		++result;
+
+	return result;
+}
+
+static unsigned inifcns_consist_log()
+{
+	using GiNaC::log;
+	unsigned result = 0;
+	symbol z("a"), w("b");
+	realsymbol a("a"), b("b");
+	possymbol p("p"), q("q");
+
+	// do not expand
+	if (!log(z*w).expand(expand_options::expand_transcendental).is_equal(log(z*w)))
+		++result;
+
+	// do not expand
+	if (!log(a*b).expand(expand_options::expand_transcendental).is_equal(log(a*b)))
+		++result;
+
+	// shall expand
+	if (!log(p*q).expand(expand_options::expand_transcendental).is_equal(log(p) + log(q)))
+		++result;
+
+	// a bit more complicated
+	ex e1 = log(-7*p*pow(q,3)*a*pow(b,2)*z*w).expand(expand_options::expand_transcendental);
+	ex e2 = log(7)+log(p)+log(pow(q,3))+log(-z*a*w*pow(b,2));
+	if (!e1.is_equal(e2))
+		++result;
+
+	// shall not do for non-real powers
+	if (ex(log(pow(p,z))).is_equal(z*log(p)))
+		++result;
+
+	// shall not do for non-positive basis
+	if (ex(log(pow(a,b))).is_equal(b*log(a)))
+		++result;
+
+	// infinite recursion log_series
+	ex e(log(-p));
+	ex ser = ex_to<pseries>(e.series(z, 1))
+		.convert_to_poly(/* no_order = */ true);
+	if (!ser.is_equal(e)) {
+		clog << "series(" << e << ", " << z << "): wrong result" << endl;
+		++result;
+	}
+
+	return result;
+}
+
 static unsigned inifcns_consist_various()
 {
 	unsigned result = 0;
 	symbol n;
-	ex e;
 	
 	if ( binomial(n, 0) != 1 ) {
 		clog << "ERROR: binomial(n,0) != 1" << endl;		
 		++result;
 	}
 	
+	return result;
+}
+
+/* Several tests for derivatives */
+static unsigned inifcns_consist_derivatives()
+{
+	unsigned result = 0;
+	symbol z, w;
+	realsymbol x;
+	ex e, e1;
+
+	e=pow(x,z).conjugate().diff(x);
+	e1=pow(x,z).conjugate()*z.conjugate()/x;
+	if (! (e-e1).normal().is_zero() ) {
+		clog << "ERROR: pow(x,z).conjugate().diff(x) " << e << " != " << e1 << endl;
+		++result;
+	}
+
+	e=pow(w,z).conjugate().diff(w);
+	e1=pow(w,z).conjugate()*z.conjugate()/w;
+	if ( (e-e1).normal().is_zero() ) {
+		clog << "ERROR: pow(w,z).conjugate().diff(w) " << e << " = " << e1 << endl;
+		++result;
+	}
+
+	e=atanh(x).imag_part().diff(x);
+	if (! e.is_zero() ) {
+		clog << "ERROR: atanh(x).imag_part().diff(x) " << e << " != 0" << endl;
+		++result;
+	}
+
+	e=atanh(w).imag_part().diff(w);
+	if ( e.is_zero() ) {
+		clog << "ERROR: atanh(w).imag_part().diff(w) " << e << " = 0" << endl;
+		++result;
+	}
+
+	e=atanh(x).real_part().diff(x);
+	e1=pow(1-x*x,-1);
+	if (! (e-e1).normal().is_zero() ) {
+		clog << "ERROR: atanh(x).real_part().diff(x) " << e << " != " << e1 << endl;
+		++result;
+	}
+
+	e=atanh(w).real_part().diff(w);
+	e1=pow(1-w*w,-1);
+	if ( (e-e1).normal().is_zero() ) {
+		clog << "ERROR: atanh(w).real_part().diff(w) " << e << " = " << e1 << endl;
+		++result;
+	}
+
+	e=abs(log(z)).diff(z);
+	e1=(conjugate(log(z))/z+log(z)/conjugate(z))/abs(log(z))/2;
+	if (! (e-e1).normal().is_zero() ) {
+		clog << "ERROR: abs(log(z)).diff(z) " << e << " != " << e1 << endl;
+		++result;
+	}
+
+	e=Order(pow(x,4)).diff(x);
+	e1=Order(pow(x,3));
+	if (! (e-e1).normal().is_zero() ) {
+		clog << "ERROR: Order(pow(x,4)).diff(x) " << e << " != " << e1 << endl;
+		++result;
+	}
+
 	return result;
 }
 
@@ -243,7 +425,11 @@ unsigned exam_inifcns()
 	result += inifcns_consist_gamma();  cout << '.' << flush;
 	result += inifcns_consist_psi();  cout << '.' << flush;
 	result += inifcns_consist_zeta();  cout << '.' << flush;
+	result += inifcns_consist_abs();  cout << '.' << flush;
+	result += inifcns_consist_exp();  cout << '.' << flush;
+	result += inifcns_consist_log();  cout << '.' << flush;
 	result += inifcns_consist_various();  cout << '.' << flush;
+	result += inifcns_consist_derivatives();  cout << '.' << flush;
 	
 	return result;
 }

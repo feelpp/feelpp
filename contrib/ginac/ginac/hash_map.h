@@ -3,7 +3,7 @@
  *  Replacement for map<> using hash tables. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -192,7 +192,7 @@ public:
 	typedef typename Table::size_type size_type;
 	typedef typename Table::difference_type difference_type;
 
-	class value_compare : public std::binary_function<value_type, value_type, bool>, private key_compare {
+	class value_compare : private key_compare {
 		friend class exhashmap;
 	public:
 		bool operator()(const value_type &lhs, const value_type &rhs) const

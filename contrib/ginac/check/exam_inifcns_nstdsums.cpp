@@ -4,7 +4,7 @@
  *  functions. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -55,15 +55,15 @@ using namespace std;
  *          Write[st,Chop[N[PolyLog[i,j,-x[[k]]+I*y[[l]]],25]]],{i,3},{j,3}], {k,4}], {l,3}]
  *    Close[st]
  *
- *    
+ *
  * and postprocessed by the following shell script
  *
  *
  *    #/bin/sh
  *    IFS=$'\n'
  *    cat exam_inifcns_nstdsums_data.raw | sed -e 's/\*\^/E/g' > exam_inifcns_nstdsums_data.raw2
- *    echo 'const char *data[] = {' > exam_inifcns_nstdsums_data.raw3
- *    for i in `cat exam_inifcns_nstdsums_data.raw2`; do echo \"$i\",; done >> exam_inifcns_nstdsums_data.raw3
+ *    echo 'constexpr string polylogdata[] = {' > exam_inifcns_nstdsums.h
+ *    for i in `cat exam_inifcns_nstdsums_data.raw2`; do echo \"$i\",; done >> exam_inifcns_nstdsums.h
  *    echo '"-999"};' >> exam_inifcns_nstdsums.h
  *
  *
@@ -86,13 +86,13 @@ static unsigned inifcns_test_S()
 	
 	int i = 0;
 	while (true) {
-		ex n(data[i++],symbol());
+		ex n(polylogdata[i++],symbol());
 		if (n == ENDMARK) {
 			break;
 		}
-		ex p(data[i++],symbol());
-		ex x(data[i++],symbol());
-		ex res(data[i++],symbol());
+		ex p(polylogdata[i++],symbol());
+		ex x(polylogdata[i++],symbol());
+		ex res(polylogdata[i++],symbol());
 		ex res2 = S(n, p, x).evalf();
 		if (abs(res-res2) > prec) {
 			clog << "S(" << n << "," << p << "," << x << ") seems to be wrong:" << endl;
@@ -134,19 +134,19 @@ static unsigned inifcns_test_HLi()
 
 	lst res;
 	
-	res.append(H(lst(2,1),numeric(1)/2).hold() - (zeta(3)/8 - pow(log(2),3)/6));
-	res.append(H(lst(2,1,3),numeric(1)/3).hold() - Li(lst(2,1,3),lst(numeric(1)/3,1,1)).hold());
-	res.append(H(lst(2,1,3),numeric(98)/100).hold() - Li(lst(2,1,3),lst(numeric(98)/100,1,1)).hold());
-	res.append(H(lst(2,1,3),numeric(245)/100).hold() - Li(lst(2,1,3),lst(numeric(245)/100,1,1)).hold());
-	res.append(H(lst(4,1,1,1),numeric(1)/3).hold() - S(3,4,numeric(1)/3).hold());
-	res.append(H(lst(4,1,1,1),numeric(98)/100).hold() - S(3,4,numeric(98)/100).hold());
-	res.append(H(lst(4,1,1,1),numeric(245)/100).hold() - S(3,4,numeric(245)/100).hold());
-	res.append(H(lst(2,2,3),almostone).hold() - zeta(lst(2,2,3)));
-	res.append(H(lst(-3,-1,2,1),almostone).hold() - zeta(lst(3,1,2,1),lst(-1,1,-1,1)));
-	res.append(H(lst(-2,1,3),numeric(1)/3).hold() - -Li(lst(2,1,3),lst(-numeric(1)/3,-1,1)).hold());
-	res.append(H(lst(-2,1,3),numeric(98)/100).hold() - -Li(lst(2,1,3),lst(-numeric(98)/100,-1,1)).hold());
-	res.append(H(lst(-2,1,3),numeric(245)/100).hold() - -Li(lst(2,1,3),lst(-numeric(245)/100,-1,1)).hold());
-	res.append(H(lst(-3,1,-2,0,0),numeric(3)/10).hold() - convert_H_to_Li(lst(-3,1,-2,0,0),numeric(3)/10).eval());
+	res.append(H(lst{2,1},numeric(1)/2).hold() - (zeta(3)/8 - pow(log(2),3)/6));
+	res.append(H(lst{2,1,3},numeric(1)/3).hold() - Li(lst{2,1,3},lst{numeric(1)/3,1,1}).hold());
+	res.append(H(lst{2,1,3},numeric(98)/100).hold() - Li(lst{2,1,3},lst{numeric(98)/100,1,1}).hold());
+	res.append(H(lst{2,1,3},numeric(245)/100).hold() - Li(lst{2,1,3},lst{numeric(245)/100,1,1}).hold());
+	res.append(H(lst{4,1,1,1},numeric(1)/3).hold() - S(3,4,numeric(1)/3).hold());
+	res.append(H(lst{4,1,1,1},numeric(98)/100).hold() - S(3,4,numeric(98)/100).hold());
+	res.append(H(lst{4,1,1,1},numeric(245)/100).hold() - S(3,4,numeric(245)/100).hold());
+	res.append(H(lst{2,2,3},almostone).hold() - zeta(lst{2,2,3}));
+	res.append(H(lst{-3,-1,2,1},almostone).hold() - zeta(lst{3,1,2,1},lst{-1,1,-1,1}));
+	res.append(H(lst{-2,1,3},numeric(1)/3).hold() - -Li(lst{2,1,3},lst{-numeric(1)/3,-1,1}).hold());
+	res.append(H(lst{-2,1,3},numeric(98)/100).hold() - -Li(lst{2,1,3},lst{-numeric(98)/100,-1,1}).hold());
+	res.append(H(lst{-2,1,3},numeric(245)/100).hold() - -Li(lst{2,1,3},lst{-numeric(245)/100,-1,1}).hold());
+	res.append(H(lst{-3,1,-2,0,0},numeric(3)/10).hold() - convert_H_to_Li(lst{-3,1,-2,0,0},numeric(3)/10));
 	
 	for (lst::const_iterator it = res.begin(); it != res.end(); it++) {
 		ex diff = abs((*it).evalf());
@@ -160,8 +160,8 @@ static unsigned inifcns_test_HLi()
 	Digits = digitsbuf;
 
 	// conjugate test
-	numeric cdif = ex_to<numeric>(H(lst(2,2,1),5.0-5.0*I) - H(lst(2,2,1),5.0+5.0*I));
-	numeric cadd = ex_to<numeric>(H(lst(2,2,1),5.0-5.0*I) + H(lst(2,2,1),5.0+5.0*I));
+	numeric cdif = ex_to<numeric>(H(lst{2,2,1},5.0-5.0*I) - H(lst{2,2,1},5.0+5.0*I));
+	numeric cadd = ex_to<numeric>(H(lst{2,2,1},5.0-5.0*I) + H(lst{2,2,1},5.0+5.0*I));
 	if ((cdif.real() > prec) || (cadd.imag() > prec)) {
 		clog << "complex conjugation test of H({2,2,1},5.0-5.0*I) seems to be wrong: " << cdif << " " << cadd << endl;
 		result++;
@@ -186,16 +186,16 @@ static unsigned inifcns_test_zeta()
 
 	lst res;
 	
-	res.append(zeta(lst(2,1)) - zeta(3));
-	res.append(zeta(lst(2,1,1,1,1)) - zeta(6));
-	res.append(zeta(lst(6,3)) - (zeta(9)*83/2 - zeta(2)*zeta(7)*21 - zeta(2)*zeta(2)*zeta(5)*12/5));
-	res.append(zeta(lst(4,2,3)) - (-zeta(9)*59 + zeta(2)*zeta(7)*28 + pow(zeta(2),2)*zeta(5)*4 -
+	res.append(zeta(lst{2,1}) - zeta(3));
+	res.append(zeta(lst{2,1,1,1,1}) - zeta(6));
+	res.append(zeta(lst{6,3}) - (zeta(9)*83/2 - zeta(2)*zeta(7)*21 - zeta(2)*zeta(2)*zeta(5)*12/5));
+	res.append(zeta(lst{4,2,3}) - (-zeta(9)*59 + zeta(2)*zeta(7)*28 + pow(zeta(2),2)*zeta(5)*4 -
 	                               pow(zeta(3),3)/3 + pow(zeta(2),3)*zeta(3)*8/21));
-	res.append(zeta(lst(3,1,3,1,3,1,3,1)) - (2*pow(Pi,16)/factorial(18)));
-	res.append(zeta(lst(2),lst(-1)) - -zeta(2)/2);
-	res.append(zeta(lst(1,2),lst(-1,1)) - (-zeta(3)/4 - zeta(lst(1),lst(-1))*zeta(2)/2));
-	res.append(zeta(lst(2,1,1),lst(-1,-1,1)) - (-pow(zeta(2),2)*23/40 - pow(zeta(lst(1),lst(-1)),2)*zeta(2)*3/4
-	                                            - zeta(lst(3,1),lst(-1,1))*3/2 - zeta(lst(1),lst(-1))*zeta(3)*21/8));
+	res.append(zeta(lst{3,1,3,1,3,1,3,1}) - (2*pow(Pi,16)/factorial(18)));
+	res.append(zeta(lst{2},lst{-1}) - -zeta(2)/2);
+	res.append(zeta(lst{1,2},lst{-1,1}) - (-zeta(3)/4 - zeta(lst{1},lst{-1})*zeta(2)/2));
+	res.append(zeta(lst{2,1,1},lst{-1,-1,1}) - (-pow(zeta(2),2)*23/40 - pow(zeta(lst{1},lst{-1}),2)*zeta(2)*3/4
+	                                            - zeta(lst{3,1},lst{-1,1})*3/2 - zeta(lst{1},lst{-1})*zeta(3)*21/8));
 	
 	for (lst::const_iterator it = res.begin(); it != res.end(); it++) {
 		Digits = 17;
@@ -241,42 +241,42 @@ static unsigned inifcns_test_LiG()
 
 	lst res;
 	
-	res.append(Li(lst(4), lst(6)).hold() - Li(4, 6.0));
-	res.append(G(lst(0,0,5.0,0,2.0,0,0,0,3.0),0.5).hold()
-	           + Li(lst(3,2,4), lst(numeric(1,10), numeric(5,2), numeric(2,3))));
-	res.append(Li(lst(2,1,1), lst(almostone, almostone, almostone)) - zeta(lst(2,1,1)));
+	res.append(Li(lst{4}, lst{6}).hold() - Li(4, 6.0));
+	res.append(G(lst{0,0,5.0,0,2.0,0,0,0,3.0},0.5).hold()
+	           + Li(lst{3,2,4}, lst{numeric(1,10), numeric(5,2), numeric(2,3)}));
+	res.append(Li(lst{2,1,1}, lst{almostone, almostone, almostone}) - zeta(lst{2,1,1}));
 
 	// check Li_{1,1} against known expression
 	symbol x("x"), y("y");
 	ex eps = 1e-30*I;
-	ex s1 = Li(lst(1,1),lst(x,y));
+	ex s1 = Li(lst{1,1},lst{x,y});
 	ex s2 = log(1-1/x/y-eps)*log((1-1/x-eps)/(1/x/y-1/x)) + Li(2,(1-1/x/y-eps)/(1/x-1/x/y))
 			- log(-1/x/y-eps)*log((-1/x-eps)/(1/x/y-1/x)) - Li(2,(-1/x/y-eps)/(1/x-1/x/y))
 			- log(-1/x/y-eps)*log(1-1/x-eps) + log(-1/x/y-eps)*log(-1/x-eps);
-	res.append(s1.subs(lst(x==numeric(1)/2, y==3)) - s2.subs(lst(x==numeric(1)/2, y==3)));
-	res.append(s1.subs(lst(x==numeric(3)/2, y==numeric(1)/2)) - s2.subs(lst(x==numeric(3)/2, y==numeric(1)/2)));
-	res.append(s1.subs(lst(x==2, y==numeric(4)/5)) - s2.subs(lst(x==2, y==numeric(4)/5)));
+	res.append(s1.subs(lst{x==numeric(1)/2, y==3}) - s2.subs(lst{x==numeric(1)/2, y==3}));
+	res.append(s1.subs(lst{x==numeric(3)/2, y==numeric(1)/2}) - s2.subs(lst{x==numeric(3)/2, y==numeric(1)/2}));
+	res.append(s1.subs(lst{x==2, y==numeric(4)/5}) - s2.subs(lst{x==2, y==numeric(4)/5}));
 
 	// shuffle and quasi-shuffle identities
-	res.append(G(lst(0,0.2),1).hold() * G(lst(0.5),1).hold() - G(lst(0.5,0,0.2),1).hold()
-			- G(lst(0,0.5,0.2),1).hold() - G(lst(0,0.2,0.5),1).hold());
-	res.append(G(lst(0,0.5),1).hold() * G(lst(0.6),1).hold() - G(lst(0,0.5,0.5*0.6),1).hold()
-			- G(lst(0.6,0,0.5*0.6),1).hold() + G(lst(0,0,0.5*0.6),1).hold());
-	res.append(Li(lst(2),lst(numeric(1,5))).hold() * Li(lst(3),lst(7)).hold() - Li(lst(2,3),lst(numeric(1,5),7)).hold()
-			- Li(lst(3,2),lst(7,numeric(1,5))).hold() - Li(lst(5),lst(numeric(7,5))).hold());
+	res.append(G(lst{0,0.2},1).hold() * G(lst{0.5},1).hold() - G(lst{0.5,0,0.2},1).hold()
+	         - G(lst{0,0.5,0.2},1).hold() - G(lst{0,0.2,0.5},1).hold());
+	res.append(G(lst{0,0.5},1).hold() * G(lst{0.6},1).hold() - G(lst{0,0.5,0.5*0.6},1).hold()
+	         - G(lst{0.6,0,0.5*0.6},1).hold() + G(lst{0,0,0.5*0.6},1).hold());
+	res.append(Li(lst{2},lst{numeric(1,5)}).hold() * Li(lst{3},lst{7}).hold() - Li(lst{2,3},lst{numeric(1,5),7}).hold()
+	         - Li(lst{3,2},lst{7,numeric(1,5)}).hold() - Li(lst{5},lst{numeric(7,5)}).hold());
 	symbol a1, a2, a3, a4;
-	res.append((G(lst(a1,a2),1) * G(lst(a3,a4),1) - G(lst(a1,a2,a3,a4),1)
-			- G(lst(a1,a3,a2,a4),1) - G(lst(a3,a1,a2,a4),1)
-			- G(lst(a1,a3,a4,a2),1) - G(lst(a3,a1,a4,a2),1) - G(lst(a3,a4,a1,a2),1))
-				.subs(lst(a1==numeric(1)/10, a2==numeric(3)/10, a3==numeric(7)/10, a4==5)));
-	res.append(G(lst(-0.009),1).hold() * G(lst(-8,1.4999),1).hold() - G(lst(-0.009,-8,1.4999),1).hold()
-			- G(lst(-8,-0.009,1.4999),1).hold() - G(lst(-8,1.4999,-0.009),1).hold());
-	res.append(G(lst(sqrt(numeric(1)/2)+I*sqrt(numeric(1)/2)),1).hold() * G(lst(1.51,-0.999),1).hold()
-			- G(lst(sqrt(numeric(1)/2)+I*sqrt(numeric(1)/2),1.51,-0.999),1).hold()
-			- G(lst(1.51,sqrt(numeric(1)/2)+I*sqrt(numeric(1)/2),-0.999),1).hold()
-			- G(lst(1.51,-0.999,sqrt(numeric(1)/2)+I*sqrt(numeric(1)/2)),1).hold());
+	res.append((G(lst{a1,a2},1) * G(lst{a3,a4},1) - G(lst{a1,a2,a3,a4},1)
+	          - G(lst{a1,a3,a2,a4},1) - G(lst{a3,a1,a2,a4},1)
+	          - G(lst{a1,a3,a4,a2},1) - G(lst{a3,a1,a4,a2},1) - G(lst{a3,a4,a1,a2},1))
+	           .subs(lst{a1==numeric(1)/10, a2==numeric(3)/10, a3==numeric(7)/10, a4==5}));
+	res.append(G(lst{-0.009},1).hold() * G(lst{-8,1.4999},1).hold() - G(lst{-0.009,-8,1.4999},1).hold()
+	         - G(lst{-8,-0.009,1.4999},1).hold() - G(lst{-8,1.4999,-0.009},1).hold());
+	res.append(G(lst{sqrt(numeric(1)/2)+I*sqrt(numeric(1)/2)},1).hold() * G(lst{1.51,-0.999},1).hold()
+	         - G(lst{sqrt(numeric(1)/2)+I*sqrt(numeric(1)/2),1.51,-0.999},1).hold()
+	         - G(lst{1.51,sqrt(numeric(1)/2)+I*sqrt(numeric(1)/2),-0.999},1).hold()
+	         - G(lst{1.51,-0.999,sqrt(numeric(1)/2)+I*sqrt(numeric(1)/2)},1).hold());
 	// checks for hoelder convolution which is used if one argument has a distance to one smaller than 0.01 
-	res.append(G(lst(0, 1.2, 1, 1.01), 1).hold() - G(lst(0, 1.2, 1, numeric("1.009999999999999999")), 1).hold());
+	res.append(G(lst{0, 1.2, 1, 1.01}, 1).hold() - G(lst{0, 1.2, 1, numeric("1.009999999999999999")}, 1).hold());
 
 	for (lst::const_iterator it = res.begin(); it != res.end(); it++) {
 		ex diff = abs((*it).evalf());
@@ -286,6 +286,8 @@ static unsigned inifcns_test_LiG()
 		}
 		cout << "." << flush;
 	}
+
+	Digits = digitsbuf;
 
 	return result;
 }
@@ -300,12 +302,13 @@ static unsigned inifcns_test_LiG()
 
 static unsigned inifcns_test_legacy()
 {
+	int digitsbuf = Digits;
 	Digits = 17;
 	ex prec = 5 * pow(10, -(ex)Digits);
 
 	unsigned result = 0;
 
-	ex r1 = zeta(lst(1,1,1,1,1,1),lst(-1,-1,-1,1,1,1));
+	ex r1 = zeta(lst{1,1,1,1,1,1}, lst{-1,-1,-1,1,1,1});
 	if ((r1.evalf() - numeric("-0.0012588769028204890704")) > prec) {
 		clog << "zeta({1,1,1,1,1,1},{-1,-1,-1,1,1,1}) seems to be wrong." << endl;
 		result++;
@@ -313,15 +316,15 @@ static unsigned inifcns_test_legacy()
 
 	ex x1 = exp(2*Pi*I/13).evalf();
 	ex x2 = exp(24*Pi*I/13).evalf();
-  	ex r2 = Li(lst(2),lst(x1)).hold().evalf();
-	ex r3 = Li(lst(2),lst(x2)).hold().evalf();
+	ex r2 = Li(lst{2},lst{x1}).hold().evalf();
+	ex r3 = Li(lst{2},lst{x2}).hold().evalf();
 	if ( abs(r2-conjugate(r3)) > prec ) {
 		clog << "Legacy test 2 seems to be wrong." << endl;
 		result++;
 	}
 
-  	ex x3 = exp(5*Pi*I/3).evalf();
-	ex r4 = Li(lst(3),lst(x3)).hold().evalf();
+	ex x3 = exp(5*Pi*I/3).evalf();
+	ex r4 = Li(lst{3},lst{x3}).hold().evalf();
 	if ( abs(r4 - numeric("0.40068563438653142847-0.95698384815740185713*I")) > prec ) {
 		clog << "Legacy test 3 seems to be wrong." << endl;
 		result++;
@@ -336,35 +339,64 @@ static unsigned inifcns_test_legacy()
 	ex x4 = exp(4*Pi*I/3).evalf();
 	ex x5 = exp(5*Pi*I/3).evalf();
 
-	ex r5 = Li(lst(1,1,1,1),lst(x2,x4,x3,x0)).hold().evalf();
-	ex r6 = Li(lst(1,1,1,1),lst(x4,x2,x3,x0)).hold().evalf();
+	ex r5 = Li(lst{1,1,1,1},lst{x2,x4,x3,x0}).hold().evalf();
+	ex r6 = Li(lst{1,1,1,1},lst{x4,x2,x3,x0}).hold().evalf();
 	if ( abs(r5-conjugate(r6)) > prec ) {
 		clog << "Legacy test 4 seems to be wrong." << endl;
 		result++;
 	}
 
-	ex r7 = Li(lst(1,2,1),lst(x3,x2,x4)).hold().evalf()
-		+Li(lst(1,1,2),lst(x3,x2,x4)).hold().evalf()
-		+Li(lst(1,1,1,1),lst(x3,x0,x2,x4)).hold().evalf()
-		+Li(lst(1,1,1,1),lst(x3,x2,x0,x4)).hold().evalf()
-		+Li(lst(1,1,1,1),lst(x3,x2,x4,x0)).hold().evalf()
-		+Li(lst(1,2,1),lst(x2,x1,x0)).hold().evalf()
-		+Li(lst(1,1,2),lst(x2,x3,x4)).hold().evalf()
-		+Li(lst(1,1,1,1),lst(x2,x4,x3,x0)).hold().evalf()
-		+Li(lst(1,1,1,1),lst(x2,x3,x4,x0)).hold().evalf()
-		+Li(lst(1,1,1,1),lst(x2,x3,x0,x4)).hold().evalf()
-		+Li(lst(2,2),lst(x5,x4)).hold().evalf()
-		+Li(lst(2,1,1),lst(x5,x0,x4)).hold().evalf()
-		+Li(lst(2,1,1),lst(x5,x4,x0)).hold().evalf()
-		-Li(lst(1,1),lst(x3,x0)).hold().evalf()*Li(lst(1,1),lst(x2,x4)).hold().evalf();
+	ex r7 = Li(lst{1,2,1},lst{x3,x2,x4}).hold().evalf()
+		+Li(lst{1,1,2},lst{x3,x2,x4}).hold().evalf()
+		+Li(lst{1,1,1,1},lst{x3,x0,x2,x4}).hold().evalf()
+		+Li(lst{1,1,1,1},lst{x3,x2,x0,x4}).hold().evalf()
+		+Li(lst{1,1,1,1},lst{x3,x2,x4,x0}).hold().evalf()
+		+Li(lst{1,2,1},lst{x2,x1,x0}).hold().evalf()
+		+Li(lst{1,1,2},lst{x2,x3,x4}).hold().evalf()
+		+Li(lst{1,1,1,1},lst{x2,x4,x3,x0}).hold().evalf()
+		+Li(lst{1,1,1,1},lst{x2,x3,x4,x0}).hold().evalf()
+		+Li(lst{1,1,1,1},lst{x2,x3,x0,x4}).hold().evalf()
+		+Li(lst{2,2},lst{x5,x4}).hold().evalf()
+		+Li(lst{2,1,1},lst{x5,x0,x4}).hold().evalf()
+		+Li(lst{2,1,1},lst{x5,x4,x0}).hold().evalf()
+		-Li(lst{1,1},lst{x3,x0}).hold().evalf()*Li(lst{1,1},lst{x2,x4}).hold().evalf();
 	if ( abs(r7) > prec ) {
 		clog << "Legacy test 5 seems to be wrong." << endl;
 		result++;
 	}
 
+	Digits = digitsbuf;
+
 	return result;
 }
 
+static unsigned check_G_y_one_bug()
+{
+	exvector exprs;
+	exprs.push_back(G(lst{-1,-1, 1,-1, 0}, 1));
+	exprs.push_back(G(lst{-1, 0, 1,-1, 0}, 1));
+	exprs.push_back(G(lst{-1, 1,-1,-1, 0}, 1));
+	exprs.push_back(G(lst{-1, 1,-1, 0, 0}, 1));
+	exprs.push_back(G(lst{-1, 1,-1, 1, 0}, 1));
+	exprs.push_back(G(lst{-1, 1, 0,-1, 0}, 1));
+	exprs.push_back(G(lst{-1, 1, 1,-1, 0}, 1));
+	exprs.push_back(G(lst{ 0,-1, 1,-1, 0}, 1));
+	exprs.push_back(G(lst{ 0, 1, 1,-1, 0}, 1));
+	unsigned err = 0;
+	for (exvector::const_iterator ep = exprs.begin(); ep != exprs.end(); ++ep) {
+		try {
+			ex val = ep->evalf();
+			if (!is_a<numeric>(val)) {
+				clog << "evalf(" << *ep << ") is not a number: " << val << endl;
+				++err;
+			}
+		} catch (std::exception& oops) {
+			clog << "evalf(" << *ep << "): got an exception" << oops.what() << endl;
+			++err;
+		}
+	}
+	return err;
+}
 
 unsigned exam_inifcns_nstdsums(void)
 {
@@ -377,6 +409,7 @@ unsigned exam_inifcns_nstdsums(void)
 	result += inifcns_test_HLi();
 	result += inifcns_test_LiG();
 	result += inifcns_test_legacy();
+	result += check_G_y_one_bug();
 	
 	return result;
 }

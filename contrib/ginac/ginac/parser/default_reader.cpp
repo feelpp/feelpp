@@ -4,7 +4,7 @@
  **/
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,13 +26,8 @@
 #include "lst.h"
 #include "operators.h"
 #include "inifcns.h"
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
-#ifdef HAVE_STDINT_H
-#include <stdint.h> // for uintptr_t
-#endif
+#include <cstdint> // for uintptr_t
 
 namespace GiNaC
 {
@@ -96,13 +91,9 @@ const prototype_table& get_default_reader()
 		reader[make_pair("pow", 2)] = pow_reader;
 		reader[make_pair("power", 2)] = power_reader;
 		reader[make_pair("lst", 0)] = lst_reader;
-		std::vector<function_options>::const_iterator it =
-			registered_functions_hack::get_registered_functions().begin();
-		std::vector<function_options>::const_iterator end =
-			registered_functions_hack::get_registered_functions().end();
 		unsigned serial = 0;
-		for (; it != end; ++it) {
-			prototype proto = make_pair(it->get_name(), it->get_nparams());
+		for (auto & it : registered_functions_hack::get_registered_functions()) {
+			prototype proto = make_pair(it.get_name(), it.get_nparams());
 			reader[proto] = encode_serial_as_reader_func(serial);
 			++serial;
 		}
@@ -152,8 +143,7 @@ const prototype_table& get_builtin_reader()
 			Order,
 			NFUNCTIONS
 		};
-		std::vector<function_options>::const_iterator it =
-			registered_functions_hack::get_registered_functions().begin();
+		auto it = registered_functions_hack::get_registered_functions().begin();
 		unsigned serial = 0;
 		for ( ; serial<NFUNCTIONS; ++it, ++serial ) {
 			prototype proto = make_pair(it->get_name(), it->get_nparams());

@@ -4,7 +4,7 @@
  *  of any interest to the user of the library. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,14 +25,9 @@
 #define GINAC_UTILS_H
 
 #include "assertion.h"
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <functional>
-#ifdef HAVE_STDINT_H
-#include <stdint.h> // for uintptr_t
-#endif
+#include <cstdint> // for uintptr_t
 #include <string>
 
 namespace GiNaC {
@@ -49,7 +44,7 @@ class dunno {};
 unsigned log2(unsigned n);
 
 /** Rotate bits of unsigned value by one bit to the left.
-  * This can be necesary if the user wants to define its own hashes. */
+  * This can be necessary if the user wants to define its own hashes. */
 inline unsigned rotate_left(unsigned n)
 {
 	return (n & 0x80000000U) ? (n << 1 | 0x00000001U) : (n << 1);
@@ -69,37 +64,10 @@ inline int compare_pointers(const T * a, const T * b)
 	return 0;
 }
 
-#ifdef HAVE_STDINT_H
-typedef uintptr_t p_int;
-#else
-typedef unsigned long p_int;
-#endif
-
 /** Truncated multiplication with golden ratio, for computing hash values. */
-inline unsigned golden_ratio_hash(p_int n)
+inline unsigned golden_ratio_hash(uintptr_t n)
 {
-	// This function works much better when fast arithmetic with at
-	// least 64 significant bits is available.
-	if (sizeof(long) >= 8) {
-	// So 'long' has 64 bits.  Excellent!  We prefer it because it might be
-	// more efficient than 'long long'.
-	unsigned long l = n * 0x4f1bbcddUL;
-	return (unsigned)l;
-	}
-#ifdef HAVE_LONG_LONG
-	else if (sizeof(long long) >= 8) {
-	// This requires 'long long' (or an equivalent 64 bit type)---which is,
-	// unfortunately, not ANSI-C++-compliant.
-	// (Yet C99 demands it, which is reason for hope.)
-	unsigned long long l = n * 0x4f1bbcddULL;
-	return (unsigned)l;
-	}
-#endif
-	// Without a type with 64 significant bits do the multiplication manually
-	// by splitting n up into the lower and upper two bytes.
-	const unsigned n0 = (n & 0x0000ffffU);
-	const unsigned n1 = (n & 0xffff0000U) >> 16;
-	return (n0 * 0x0000bcddU) + ((n1 * 0x0000bcddU + n0 * 0x00004f1bU) << 16);
+	return n * UINT64_C(0x4f1bbcdd);
 }
 
 /* Compute the sign of a permutation of a container, with and without an
@@ -108,6 +76,7 @@ inline unsigned golden_ratio_hash(p_int n)
 template <class It>
 int permutation_sign(It first, It last)
 {
+	using std::swap;
 	if (first == last)
 		return 0;
 	--last;
@@ -122,7 +91,7 @@ int permutation_sign(It first, It last)
 		bool swapped = false;
 		while (i != first) {
 			if (*i < *other) {
-				std::iter_swap(other, i);
+				swap(*other, *i);
 				flag = other;
 				swapped = true;
 				sign = -sign;
@@ -143,7 +112,7 @@ int permutation_sign(It first, It last)
 		swapped = false;
 		while (i != last) {
 			if (*other < *i) {
-				std::iter_swap(i, other);
+				swap(*i, *other);
 				flag = other;
 				swapped = true;
 				sign = -sign;
