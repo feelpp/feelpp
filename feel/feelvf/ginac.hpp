@@ -29,7 +29,17 @@
 #ifndef FEELPP_GINAC_HPP
 #define FEELPP_GINAC_HPP 1
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundefined-var-template"
+#endif
+
 #include <ginac/ginac.h>
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+
 #include <boost/fusion/container/vector.hpp>
 
 #include <boost/parameter/preprocessor.hpp>
