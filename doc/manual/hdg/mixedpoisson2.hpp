@@ -986,7 +986,9 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleIBC( int i, std::string
     if ( !markerOpt.empty())
     {
         marker = markerOpt;
-        g = expr<expr_order>(std::to_string(intjn));
+        std::ostringstream f;
+        f << std::setprecision(14) << intjn;
+        g = expr<expr_order>(f.str());
     }
     else
     {
@@ -1014,7 +1016,9 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleIBC( int i, std::string
             LOG(INFO) << "use g=" << d << std::endl;
             Feel::cout << "g=" << d << std::endl;
 
-            g = expr<expr_order>(std::to_string(d));
+            std::ostringstream f;
+            f << std::setprecision(14) << d;
+            g = expr<expr_order>(f.str());
         }
     }
 
