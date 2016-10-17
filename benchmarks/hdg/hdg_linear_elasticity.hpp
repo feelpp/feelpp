@@ -195,11 +195,11 @@ Hdg<Dim, OrderP, OrderG>::convergence()
     auto mu     = expr(soption("mu"));
 
     // Exact solutions
-    auto u_exact = expr<Dim,1,OrderP+2>(soption("u_exact"));
-    auto gradu_exact = grad<Dim,OrderP+2>(u_exact);
+    auto u_exact = expr<Dim,1,expr_order>(soption("u_exact"));
+    auto gradu_exact = grad<Dim,expr_order>(u_exact);
     auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
     auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
-    auto f = expr<Dim,1,OrderP+2>(soption("f"));
+    auto f = expr<Dim,1,expr_order>(soption("f"));
 
 
     cout << "lambda : " << lambda      << std::endl;
