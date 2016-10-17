@@ -3,7 +3,7 @@
  *  Helper templates to provide per-class information for class hierarchies. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,13 +40,13 @@ namespace GiNaC {
 template <class OPT>
 class class_info {
 public:
-	class_info(const OPT & o) : options(o), next(first), parent(NULL)
+	class_info(const OPT & o) : options(o), next(first), parent(nullptr)
 	{
 		first = this;
 		parents_identified = false;
 	}
 
-	/** Get pointer to class_info of parent class (or NULL). */
+	/** Get pointer to class_info of parent class (or nullptr). */
 	class_info *get_parent() const
 	{
 		identify_parents();
@@ -155,7 +155,7 @@ void class_info<OPT>::dump_hierarchy(bool verbose)
 		tree.push_back(tree_node(p));
 
 	// Identify children for all nodes and find the root
-	tree_node *root = NULL;
+	tree_node *root = nullptr;
 	for (typename std::vector<tree_node>::iterator i = tree.begin(); i != tree.end(); ++i) {
 		class_info *p = i->info->get_parent();
 		if (p) {
@@ -190,7 +190,7 @@ void class_info<OPT>::identify_parents()
 	}
 }
 
-template <class OPT> class_info<OPT> *class_info<OPT>::first = NULL;
+template <class OPT> class_info<OPT> *class_info<OPT>::first = nullptr;
 template <class OPT> bool class_info<OPT>::parents_identified = false;
 
 } // namespace GiNaC

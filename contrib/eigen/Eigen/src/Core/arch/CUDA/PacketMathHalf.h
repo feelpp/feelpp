@@ -34,21 +34,22 @@ template<> struct packet_traits<Eigen::half> : default_packet_traits
     HasSqrt   = 1,
     HasRsqrt  = 1,
     HasExp    = 1,
-    HasLog = 1
+    HasLog    = 1,
+    HasLog1p  = 1
   };
 };
 
 template<> struct unpacket_traits<half2> { typedef Eigen::half type; enum {size=2, alignment=Aligned16}; typedef half2 half; };
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pset1<half2>(const Eigen::half& from) {
+template<> __device__ EIGEN_STRONG_INLINE half2 pset1<half2>(const Eigen::half& from) {
   return __half2half2(from);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pload<half2>(const Eigen::half* from) {
+template<> __device__ EIGEN_STRONG_INLINE half2 pload<half2>(const Eigen::half* from) {
   return *reinterpret_cast<const half2*>(from);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 ploadu<half2>(const Eigen::half* from) {
+template<> __device__ EIGEN_STRONG_INLINE half2 ploadu<half2>(const Eigen::half* from) {
   return __halves2half2(from[0], from[1]);
 }
 
@@ -56,17 +57,17 @@ template<> EIGEN_STRONG_INLINE half2 ploaddup<half2>(const Eigen::half*  from) {
   return __halves2half2(from[0], from[0]);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void pstore<Eigen::half>(Eigen::half* to, const half2& from) {
+template<> __device__ EIGEN_STRONG_INLINE void pstore<Eigen::half>(Eigen::half* to, const half2& from) {
   *reinterpret_cast<half2*>(to) = from;
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void pstoreu<Eigen::half>(Eigen::half* to, const half2& from) {
+template<> __device__ EIGEN_STRONG_INLINE void pstoreu<Eigen::half>(Eigen::half* to, const half2& from) {
   to[0] = __low2half(from);
   to[1] = __high2half(from);
 }
 
 template<>
- EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE half2 ploadt_ro<half2, Aligned>(const Eigen::half* from) {
+ __device__ EIGEN_ALWAYS_INLINE half2 ploadt_ro<half2, Aligned>(const Eigen::half* from) {
 #if __CUDA_ARCH__ >= 350
    return __ldg((const half2*)from);
 #else
@@ -75,7 +76,7 @@ template<>
 }
 
 template<>
-EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE half2 ploadt_ro<half2, Unaligned>(const Eigen::half* from) {
+__device__ EIGEN_ALWAYS_INLINE half2 ploadt_ro<half2, Unaligned>(const Eigen::half* from) {
 #if __CUDA_ARCH__ >= 350
    return __halves2half2(__ldg(from+0), __ldg(from+1));
 #else
@@ -83,27 +84,27 @@ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE half2 ploadt_ro<half2, Unaligned>(const Ei
 #endif
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pgather<Eigen::half, half2>(const Eigen::half* from, Index stride) {
+template<> __device__ EIGEN_STRONG_INLINE half2 pgather<Eigen::half, half2>(const Eigen::half* from, Index stride) {
   return __halves2half2(from[0*stride], from[1*stride]);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void pscatter<Eigen::half, half2>(Eigen::half* to, const half2& from, Index stride) {
+template<> __device__ EIGEN_STRONG_INLINE void pscatter<Eigen::half, half2>(Eigen::half* to, const half2& from, Index stride) {
   to[stride*0] = __low2half(from);
   to[stride*1] = __high2half(from);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::half pfirst<half2>(const half2& a) {
+template<> __device__ EIGEN_STRONG_INLINE Eigen::half pfirst<half2>(const half2& a) {
   return __low2half(a);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pabs<half2>(const half2& a) {
+template<> __device__ EIGEN_STRONG_INLINE half2 pabs<half2>(const half2& a) {
   half2 result;
   result.x = a.x & 0x7FFF7FFF;
   return result;
 }
 
 
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void
+__device__ EIGEN_STRONG_INLINE void
 ptranspose(PacketBlock<half2,2>& kernel) {
   __half a1 = __low2half(kernel.packet[0]);
   __half a2 = __high2half(kernel.packet[0]);
@@ -113,7 +114,7 @@ ptranspose(PacketBlock<half2,2>& kernel) {
   kernel.packet[1] = __halves2half2(a2, b2);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 plset<half2>(const Eigen::half& a) {
+template<> __device__ EIGEN_STRONG_INLINE half2 plset<half2>(const Eigen::half& a) {
 #if __CUDA_ARCH__ >= 530
   return __halves2half2(a, __hadd(a, __float2half(1.0f)));
 #else
@@ -122,7 +123,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 plset<half2>(const Eigen:
 #endif
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 padd<half2>(const half2& a, const half2& b) {
+template<> __device__ EIGEN_STRONG_INLINE half2 padd<half2>(const half2& a, const half2& b) {
 #if __CUDA_ARCH__ >= 530
   return __hadd2(a, b);
 #else
@@ -136,7 +137,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 padd<half2>(const half2& 
 #endif
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 psub<half2>(const half2& a, const half2& b) {
+template<> __device__ EIGEN_STRONG_INLINE half2 psub<half2>(const half2& a, const half2& b) {
 #if __CUDA_ARCH__ >= 530
   return __hsub2(a, b);
 #else
@@ -150,7 +151,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 psub<half2>(const half2& 
 #endif
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pnegate(const half2& a) {
+template<> __device__ EIGEN_STRONG_INLINE half2 pnegate(const half2& a) {
 #if __CUDA_ARCH__ >= 530
   return __hneg2(a);
 #else
@@ -160,9 +161,9 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pnegate(const half2& a) {
 #endif
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pconj(const half2& a) { return a; }
+template<> __device__ EIGEN_STRONG_INLINE half2 pconj(const half2& a) { return a; }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pmul<half2>(const half2& a, const half2& b) {
+template<> __device__ EIGEN_STRONG_INLINE half2 pmul<half2>(const half2& a, const half2& b) {
 #if __CUDA_ARCH__ >= 530
   return __hmul2(a, b);
 #else
@@ -176,7 +177,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pmul<half2>(const half2& 
 #endif
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pmadd<half2>(const half2& a, const half2& b, const half2& c) {
+template<> __device__ EIGEN_STRONG_INLINE half2 pmadd<half2>(const half2& a, const half2& b, const half2& c) {
 #if __CUDA_ARCH__ >= 530
    return __hfma2(a, b, c);
 #else
@@ -192,7 +193,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pmadd<half2>(const half2&
 #endif
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pdiv<half2>(const half2& a, const half2& b) {
+template<> __device__ EIGEN_STRONG_INLINE half2 pdiv<half2>(const half2& a, const half2& b) {
   float a1 = __low2float(a);
   float a2 = __high2float(a);
   float b1 = __low2float(b);
@@ -202,7 +203,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pdiv<half2>(const half2& 
   return __floats2half2_rn(r1, r2);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pmin<half2>(const half2& a, const half2& b) {
+template<> __device__ EIGEN_STRONG_INLINE half2 pmin<half2>(const half2& a, const half2& b) {
   float a1 = __low2float(a);
   float a2 = __high2float(a);
   float b1 = __low2float(b);
@@ -212,7 +213,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pmin<half2>(const half2& 
   return __halves2half2(r1, r2);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pmax<half2>(const half2& a, const half2& b) {
+template<> __device__ EIGEN_STRONG_INLINE half2 pmax<half2>(const half2& a, const half2& b) {
   float a1 = __low2float(a);
   float a2 = __high2float(a);
   float b1 = __low2float(b);
@@ -222,7 +223,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pmax<half2>(const half2& 
   return __halves2half2(r1, r2);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::half predux<half2>(const half2& a) {
+template<> __device__ EIGEN_STRONG_INLINE Eigen::half predux<half2>(const half2& a) {
 #if __CUDA_ARCH__ >= 530
   return __hadd(__low2half(a), __high2half(a));
 #else
@@ -232,7 +233,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::half predux<half2>(const
 #endif
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::half predux_max<half2>(const half2& a) {
+template<> __device__ EIGEN_STRONG_INLINE Eigen::half predux_max<half2>(const half2& a) {
 #if __CUDA_ARCH__ >= 530
   __half first = __low2half(a);
   __half second = __high2half(a);
@@ -244,7 +245,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::half predux_max<half2>(c
 #endif
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::half predux_min<half2>(const half2& a) {
+template<> __device__ EIGEN_STRONG_INLINE Eigen::half predux_min<half2>(const half2& a) {
 #if __CUDA_ARCH__ >= 530
   __half first = __low2half(a);
   __half second = __high2half(a);
@@ -256,7 +257,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::half predux_min<half2>(c
 #endif
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::half predux_mul<half2>(const half2& a) {
+template<> __device__ EIGEN_STRONG_INLINE Eigen::half predux_mul<half2>(const half2& a) {
 #if __CUDA_ARCH__ >= 530
   return __hmul(__low2half(a), __high2half(a));
 #else
@@ -266,31 +267,39 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Eigen::half predux_mul<half2>(c
 #endif
 }
 
+template<> __device__ EIGEN_STRONG_INLINE half2 plog1p<half2>(const half2& a) {
+  float a1 = __low2float(a);
+  float a2 = __high2float(a);
+  float r1 = log1pf(a1);
+  float r2 = log1pf(a2);
+  return __floats2half2_rn(r1, r2);
+}
+
 #if defined __CUDACC_VER__ && __CUDACC_VER__ >= 80000 && defined __CUDA_ARCH__ && __CUDA_ARCH__ >= 530
 
-template<>  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+template<>  __device__ EIGEN_STRONG_INLINE
 half2 plog<half2>(const half2& a) {
   return h2log(a);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+template<> __device__ EIGEN_STRONG_INLINE
 half2 pexp<half2>(const half2& a) {
   return h2exp(a);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+template<> __device__ EIGEN_STRONG_INLINE
 half2 psqrt<half2>(const half2& a) {
   return h2sqrt(a);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+template<> __device__ EIGEN_STRONG_INLINE
 half2 prsqrt<half2>(const half2& a) {
   return h2rsqrt(a);
 }
 
 #else
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 plog<half2>(const half2& a) {
+template<> __device__ EIGEN_STRONG_INLINE half2 plog<half2>(const half2& a) {
   float a1 = __low2float(a);
   float a2 = __high2float(a);
   float r1 = logf(a1);
@@ -298,7 +307,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 plog<half2>(const half2& 
   return __floats2half2_rn(r1, r2);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pexp<half2>(const half2& a) {
+template<> __device__ EIGEN_STRONG_INLINE half2 pexp<half2>(const half2& a) {
   float a1 = __low2float(a);
   float a2 = __high2float(a);
   float r1 = expf(a1);
@@ -306,7 +315,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 pexp<half2>(const half2& 
   return __floats2half2_rn(r1, r2);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 psqrt<half2>(const half2& a) {
+template<> __device__ EIGEN_STRONG_INLINE half2 psqrt<half2>(const half2& a) {
   float a1 = __low2float(a);
   float a2 = __high2float(a);
   float r1 = sqrtf(a1);
@@ -314,7 +323,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 psqrt<half2>(const half2&
   return __floats2half2_rn(r1, r2);
 }
 
-template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE half2 prsqrt<half2>(const half2& a) {
+template<> __device__ EIGEN_STRONG_INLINE half2 prsqrt<half2>(const half2& a) {
   float a1 = __low2float(a);
   float a2 = __high2float(a);
   float r1 = rsqrtf(a1);
@@ -483,6 +492,30 @@ template<> EIGEN_STRONG_INLINE void pscatter<Eigen::half, Packet8h>(Eigen::half*
   to[stride*7].x = aux[7].x;
 }
 
+template<> EIGEN_STRONG_INLINE Eigen::half predux<Packet8h>(const Packet8h& a) {
+  Packet8f af = half2float(a);
+  float reduced = predux<Packet8f>(af);
+  return Eigen::half(reduced);
+}
+
+template<> EIGEN_STRONG_INLINE Eigen::half predux_max<Packet8h>(const Packet8h& a) {
+  Packet8f af = half2float(a);
+  float reduced = predux_max<Packet8f>(af);
+  return Eigen::half(reduced);
+}
+
+template<> EIGEN_STRONG_INLINE Eigen::half predux_min<Packet8h>(const Packet8h& a) {
+  Packet8f af = half2float(a);
+  float reduced = predux_min<Packet8f>(af);
+  return Eigen::half(reduced);
+}
+
+template<> EIGEN_STRONG_INLINE Eigen::half predux_mul<Packet8h>(const Packet8h& a) {
+  Packet8f af = half2float(a);
+  float reduced = predux_mul<Packet8f>(af);
+  return Eigen::half(reduced);
+}
+
 EIGEN_STRONG_INLINE void
 ptranspose(PacketBlock<Packet8h,8>& kernel) {
   __m128i a = kernel.packet[0].x;
@@ -607,7 +640,7 @@ template<> EIGEN_STRONG_INLINE Packet4h pset1<Packet4h>(const Eigen::half& from)
 }
 
 template<> EIGEN_STRONG_INLINE Eigen::half pfirst<Packet4h>(const Packet4h& from) {
-  return raw_uint16_to_half(static_cast<unsigned short>(_mm_cvtsi64_si32(from.x)));
+  return half_impl::raw_uint16_to_half(static_cast<unsigned short>(_mm_cvtsi64_si32(from.x)));
 }
 
 template<> EIGEN_STRONG_INLINE Packet4h pconj(const Packet4h& a) { return a; }
@@ -618,17 +651,17 @@ template<> EIGEN_STRONG_INLINE Packet4h padd<Packet4h>(const Packet4h& a, const 
 
   Eigen::half h[4];
 
-  Eigen::half ha = raw_uint16_to_half(static_cast<unsigned short>(a64));
-  Eigen::half hb = raw_uint16_to_half(static_cast<unsigned short>(b64));
+  Eigen::half ha = half_impl::raw_uint16_to_half(static_cast<unsigned short>(a64));
+  Eigen::half hb = half_impl::raw_uint16_to_half(static_cast<unsigned short>(b64));
   h[0] = ha + hb;
-  ha = raw_uint16_to_half(static_cast<unsigned short>(a64 >> 16));
-  hb = raw_uint16_to_half(static_cast<unsigned short>(b64 >> 16));
+  ha = half_impl::raw_uint16_to_half(static_cast<unsigned short>(a64 >> 16));
+  hb = half_impl::raw_uint16_to_half(static_cast<unsigned short>(b64 >> 16));
   h[1] = ha + hb;
-  ha = raw_uint16_to_half(static_cast<unsigned short>(a64 >> 32));
-  hb = raw_uint16_to_half(static_cast<unsigned short>(b64 >> 32));
+  ha = half_impl::raw_uint16_to_half(static_cast<unsigned short>(a64 >> 32));
+  hb = half_impl::raw_uint16_to_half(static_cast<unsigned short>(b64 >> 32));
   h[2] = ha + hb;
-  ha = raw_uint16_to_half(static_cast<unsigned short>(a64 >> 48));
-  hb = raw_uint16_to_half(static_cast<unsigned short>(b64 >> 48));
+  ha = half_impl::raw_uint16_to_half(static_cast<unsigned short>(a64 >> 48));
+  hb = half_impl::raw_uint16_to_half(static_cast<unsigned short>(b64 >> 48));
   h[3] = ha + hb;
   Packet4h result;
   result.x = _mm_set_pi16(h[3].x, h[2].x, h[1].x, h[0].x);
@@ -641,17 +674,17 @@ template<> EIGEN_STRONG_INLINE Packet4h pmul<Packet4h>(const Packet4h& a, const 
 
   Eigen::half h[4];
 
-  Eigen::half ha = raw_uint16_to_half(static_cast<unsigned short>(a64));
-  Eigen::half hb = raw_uint16_to_half(static_cast<unsigned short>(b64));
+  Eigen::half ha = half_impl::raw_uint16_to_half(static_cast<unsigned short>(a64));
+  Eigen::half hb = half_impl::raw_uint16_to_half(static_cast<unsigned short>(b64));
   h[0] = ha * hb;
-  ha = raw_uint16_to_half(static_cast<unsigned short>(a64 >> 16));
-  hb = raw_uint16_to_half(static_cast<unsigned short>(b64 >> 16));
+  ha = half_impl::raw_uint16_to_half(static_cast<unsigned short>(a64 >> 16));
+  hb = half_impl::raw_uint16_to_half(static_cast<unsigned short>(b64 >> 16));
   h[1] = ha * hb;
-  ha = raw_uint16_to_half(static_cast<unsigned short>(a64 >> 32));
-  hb = raw_uint16_to_half(static_cast<unsigned short>(b64 >> 32));
+  ha = half_impl::raw_uint16_to_half(static_cast<unsigned short>(a64 >> 32));
+  hb = half_impl::raw_uint16_to_half(static_cast<unsigned short>(b64 >> 32));
   h[2] = ha * hb;
-  ha = raw_uint16_to_half(static_cast<unsigned short>(a64 >> 48));
-  hb = raw_uint16_to_half(static_cast<unsigned short>(b64 >> 48));
+  ha = half_impl::raw_uint16_to_half(static_cast<unsigned short>(a64 >> 48));
+  hb = half_impl::raw_uint16_to_half(static_cast<unsigned short>(b64 >> 48));
   h[3] = ha * hb;
   Packet4h result;
   result.x = _mm_set_pi16(h[3].x, h[2].x, h[1].x, h[0].x);

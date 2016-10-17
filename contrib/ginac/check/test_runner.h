@@ -3,7 +3,7 @@
  *  Utility functions for benchmarking. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ static int run_expensive_timings_p()
 	static const std::string env_name("GINAC_RUN_EXPENSIVE_TIMINGS");
 	if (cc++ == 0) {
 		char* envvar = std::getenv(env_name.c_str());
-		if (envvar != NULL) {
+		if (envvar != nullptr) {
 			value = std::atoi(envvar);
 			if (value < 0 || value > 2)
 				value = 0;

@@ -465,11 +465,11 @@ if(Boost_FOUND)
       add_definitions(-DBOOST_PP_VARIADICS=0)
       message(STATUS "[feelpp] added -DBOOST_PP_VARIADICS=0" )
     ENDIF()
-    IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "59")
-      add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE=1)
-      message(STATUS "[feelpp] added -DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE=1" )
-    endif()
   ENDIF()
+  IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "59")
+    add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE=1)
+    message(STATUS "[feelpp] added -DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE=1" )
+  endif()
 else()
   message(STATUS "[feelpp] Please check your boost version - Should be at least ${BOOST_MIN_VERSION}")
 endif()
@@ -1333,6 +1333,29 @@ if ( FEELPP_ENABLE_OCTAVE )
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Octave" )
   endif( OCTAVE_FOUND )
 endif( FEELPP_ENABLE_OCTAVE)
+
+#
+# Gmsh
+#
+
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_GSL "Enable GSL Support" OFF )
+else()
+    option( FEELPP_ENABLE_GSL "Enable GSL Support" ON )
+endif()
+
+if( FEELPP_ENABLE_GSL )
+  FIND_PACKAGE(GSL)
+  if ( GSL_FOUND )
+    ADD_DEFINITIONS( -DFEELPP_HAS_GSL=1 )
+    SET(FEELPP_LIBRARIES ${GSL_LIBRARIES} ${FEELPP_LIBRARIES})
+    INCLUDE_DIRECTORIES(${GSL_INCLUDE_DIRS})
+    SET(FEELPP_HAS_GSL 1)
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GSL(${GSL_VERSION})" )
+    message(STATUS "[feelpp] gsl ${GSL_VERSION} enabled" )
+  endif()
+
+endif(FEELPP_ENABLE_GSL)
 
 #
 # Gmsh
