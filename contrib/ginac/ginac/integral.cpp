@@ -3,7 +3,7 @@
  *  Implementation of GiNaC's symbolic  integral. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -48,8 +48,7 @@ GINAC_IMPLEMENT_REGISTERED_CLASS_OPT(integral, basic,
 //////////
 
 integral::integral()
-		: 
-		x((new symbol())->setflag(status_flags::dynallocated))
+		: x(dynallocate<symbol>())
 {}
 
 //////////
@@ -141,62 +140,38 @@ int integral::compare_same_type(const basic & other) const
 	return f.compare(o.f);
 }
 
-ex integral::eval(int level) const
+ex integral::eval() const
 {
-	if ((level==1) && (flags & status_flags::evaluated))
+	if (flags & status_flags::evaluated)
 		return *this;
-	if (level == -max_recursion_level)
-		throw(std::runtime_error("max recursion level reached"));
 
-	ex eintvar = (level==1) ? x : x.eval(level-1);
-	ex ea      = (level==1) ? a : a.eval(level-1);
-	ex eb      = (level==1) ? b : b.eval(level-1);
-	ex ef      = (level==1) ? f : f.eval(level-1);
+	if (!f.has(x) && !haswild(f))
+		return b*f-a*f;
 
-	if (!ef.has(eintvar) && !haswild(ef))
-		return eb*ef-ea*ef;
-
-	if (ea==eb)
+	if (a==b)
 		return _ex0;
 
-	if (are_ex_trivially_equal(eintvar,x) && are_ex_trivially_equal(ea,a)
-			&& are_ex_trivially_equal(eb,b) && are_ex_trivially_equal(ef,f))
-		return this->hold();
-	return (new integral(eintvar, ea, eb, ef))
-		->setflag(status_flags::dynallocated | status_flags::evaluated);
+	return this->hold();
 }
 
-ex integral::evalf(int level) const
+ex integral::evalf() const
 {
-	ex ea;
-	ex eb;
-	ex ef;
-
-	if (level==1) {
-		ea = a;
-		eb = b;
-		ef = f;
-	} else if (level == -max_recursion_level) {
-		throw(runtime_error("max recursion level reached"));
-	} else {
-		ea = a.evalf(level-1);
-		eb = b.evalf(level-1);
-		ef = f.evalf(level-1);
-	}
+	ex ea = a.evalf();
+	ex eb = b.evalf();
+	ex ef = f.evalf();
 
 	// 12.34 is just an arbitrary number used to check whether a number
-	// results after subsituting a number for the integration variable.
-	if (is_exactly_a<numeric>(ea) && is_exactly_a<numeric>(eb) 
-			&& is_exactly_a<numeric>(ef.subs(x==12.34).evalf())) {
+	// results after substituting a number for the integration variable.
+	if (is_exactly_a<numeric>(ea) && is_exactly_a<numeric>(eb) &&
+	    is_exactly_a<numeric>(ef.subs(x==12.34).evalf())) {
 			return adaptivesimpson(x, ea, eb, ef);
 	}
 
-	if (are_ex_trivially_equal(a, ea) && are_ex_trivially_equal(b, eb)
-				&& are_ex_trivially_equal(f, ef))
+	if (are_ex_trivially_equal(a, ea) && are_ex_trivially_equal(b, eb) &&
+	    are_ex_trivially_equal(f, ef))
 			return *this;
 		else
-			return (new integral(x, ea, eb, ef))
-				->setflag(status_flags::dynallocated);
+			return dynallocate<integral>(x, ea, eb, ef);
 }
 
 int integral::max_integration_level = 15;
@@ -254,7 +229,7 @@ ex adaptivesimpson(const ex & x, const ex & a_in, const ex & b_in, const ex & f,
 	static lookup_map lookup;
 	static symbol ivar("ivar");
 	ex lookupex = integral(ivar,a,b,f.subs(x==ivar));
-	lookup_map::iterator emi = lookup.find(error_and_integral(error, lookupex));
+	auto emi = lookup.find(error_and_integral(error, lookupex));
 	if (emi!=lookup.end())
 		return emi->second;
 
@@ -407,15 +382,14 @@ ex integral::expand(unsigned options) const
 			return (prefactor*integral(x, newa, newb, rest)).expand(options);
 	}
 
-	if (are_ex_trivially_equal(a, newa) && are_ex_trivially_equal(b, newb)
-			&& are_ex_trivially_equal(f, newf)) {
+	if (are_ex_trivially_equal(a, newa) && are_ex_trivially_equal(b, newb) &&
+	    are_ex_trivially_equal(f, newf)) {
 		if (options==0)
 			this->setflag(status_flags::expanded);
 		return *this;
 	}
 
-	const basic & newint = (new integral(x, newa, newb, newf))
-		->setflag(status_flags::dynallocated);
+	const integral & newint = dynallocate<integral>(x, newa, newb, newf);
 	if (options == 0)
 		newint.setflag(status_flags::expanded);
 	return newint;
@@ -444,12 +418,11 @@ ex integral::conjugate() const
 	ex conjb = b.conjugate();
 	ex conjf = f.conjugate().subs(x.conjugate()==x);
 
-	if (are_ex_trivially_equal(a, conja) && are_ex_trivially_equal(b, conjb)
-			&& are_ex_trivially_equal(f, conjf))
+	if (are_ex_trivially_equal(a, conja) && are_ex_trivially_equal(b, conjb) &&
+	    are_ex_trivially_equal(f, conjf))
 		return *this;
 
-	return (new integral(x, conja, conjb, conjf))
-		->setflag(status_flags::dynallocated);
+	return dynallocate<integral>(x, conja, conjb, conjf);
 }
 
 ex integral::eval_integ() const

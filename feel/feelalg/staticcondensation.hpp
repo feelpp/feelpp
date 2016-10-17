@@ -128,21 +128,17 @@ extractBlock( A00_t const& a00, A01_t const& a01, A10_t const& a10,
     uint16_type N0 = e1.dof()->nRealLocalDof( false );
     uint16_type N0c = e1.dof()->nLocalDof( true );
     uint16_type N1 = e2.dof()->nLocalDof();
-    ak.Zero( N0+N1, N0+N1 );
-    //cout << "A00.rows=" << a00.rows() <<  " A00.cols=" << a00.cols() << std::endl;
-    //cout << "AK.rows=" << ak.rows() <<  " AK.cols=" << ak.cols() << std::endl;
-    //cout << "AK.0 = " << std::endl << ak << std::endl;
     // A00
     for( int c1e1 = 0; c1e1 < e1.nComponents1; ++c1e1 )
     {
-        for( int c2e1 = 0; c2e1 < c1e1; ++c2e1 )
+        for( int c2e1 = c1e1+1; c2e1 < e1.nComponents1; ++c2e1 )
         {
             const int k1 = Feel::detail::symmetricIndex(c1e1,c2e1,e1.nComponents1);
-            for( int c1e2 = 0; c1e2 < e2.nComponents1; ++c1e2 )
+            for( int c1e2 = 0; c1e2 < e1.nComponents1; ++c1e2 )
             {
-                for( int c2e2 = 0; c2e2 < c1e2; ++c2e2 )
+                for( int c2e2 = c1e2+1; c2e2 < e1.nComponents1; ++c2e2 )
                 {
-                    const int k2 = Feel::detail::symmetricIndex(c1e2,c2e2,e2.nComponents1);
+                    const int k2 = Feel::detail::symmetricIndex(c1e2,c2e2,e1.nComponents1);
                     ak.block( N0c*k1, N0c*k2, N0c, N0c ) = a00.block( N0c*(c1e1*e1.nComponents1+c2e1),
                                                                       N0c*(c1e2*e2.nComponents1+c2e2), N0c, N0c );
                     ak.block( N0c*k1, N0c*k2, N0c, N0c ) += a00.block( N0c*(c2e1*e1.nComponents1+c1e1),
@@ -163,7 +159,7 @@ extractBlock( A00_t const& a00, A01_t const& a01, A10_t const& a10,
         const int k1 = Feel::detail::symmetricIndex(c1e1,c1e1,e1.nComponents1);
         for( int c1e2 = 0; c1e2 < e2.nComponents1; ++c1e2 )
         {
-                for( int c2e2 = 0; c2e2 < c1e2; ++c2e2 )
+                for( int c2e2 = c1e2+1; c2e2 < e2.nComponents1; ++c2e2 )
                 {
                     const int k2 = Feel::detail::symmetricIndex(c1e2,c2e2,e2.nComponents1);
                     ak.block( N0c*k1, N0c*k2, N0c, N0c ) = a00.block( N0c*(c1e1*e1.nComponents1+c1e1),
@@ -173,18 +169,15 @@ extractBlock( A00_t const& a00, A01_t const& a01, A10_t const& a10,
 
                 }
                 const int k2 = Feel::detail::symmetricIndex(c1e2,c1e2,e2.nComponents1);
-                ak.block( N0c*k1, N0c*k2, N0c, N0c ) = a00.block( N0c*(c1e1*e1.nComponents1+c1e1),
-                                                                  N0c*(c1e2*e2.nComponents1+c1e2), N0c, N0c );
+                ak.block( N0c*k1, N0c*k2, N0c, N0c ) += a00.block( N0c*(c1e1*e1.nComponents1+c1e1),
+                                                                   N0c*(c1e2*e2.nComponents1+c1e2), N0c, N0c );
         }
 
     }
-
-
-    //cout << "AK.1 = " << std::endl << ak << std::endl;
     // A01
     for( int c1e1 = 0; c1e1 < e1.nComponents1; ++c1e1 )
     {
-        for( int c2e1 = 0; c2e1 < c1e1; ++c2e1 )
+        for( int c2e1 = c1e1+1; c2e1 < e1.nComponents1; ++c2e1 )
         {
             const int k1 = Feel::detail::symmetricIndex(c1e1,c2e1,e1.nComponents1);
             ak.block( N0c*k1, N0, N0c, N1 ) = a01.block( N0c*(c1e1*e1.nComponents1+c2e1), 0, N0c, N1 );
@@ -194,10 +187,10 @@ extractBlock( A00_t const& a00, A01_t const& a01, A10_t const& a10,
             ak.block( N0, N0c*k1, N1, N0c ) += a10.block( 0, N0c*(c2e1*e1.nComponents1+c1e1), N1, N0c );
         }
         const int k1 = Feel::detail::symmetricIndex(c1e1,c1e1,e1.nComponents1);
+
         ak.block( N0c*k1, N0, N0c, N1 ) = a01.block( N0c*(c1e1*e1.nComponents1+c1e1), 0, N0c, N1 );
-        ak.block( N0, N0c*k1, N1, N0c ) = a10.block( 0, N0c*(c1e1*e1.nComponents1+c1e1), N1, N0c );
+        ak.block( N0, N0c*k1, N1, N0c ) += a10.block( 0, N0c*(c1e1*e1.nComponents1+c1e1), N1, N0c );
     }
-    //cout << "AK.2 = " << std::endl << ak << std::endl;
 }
 
 template<typename A00_t,typename A01_t,typename A10_t, typename M2, typename E1, typename E2>
@@ -238,14 +231,14 @@ extractBlock( A02_t const& A02K, Key1_t const& key2,
     {
         for( int c1e1 = 0; c1e1 < e1.nComponents1; ++c1e1 )
         {
-            for( int c2e1 = 0; c2e1 < c1e1; ++c2e1 )
+            for( int c2e1 = c1e1+1; c2e1 < e1.nComponents1; ++c2e1 )
             {
                 const int k1 = Feel::detail::symmetricIndex(c1e1,c2e1,e1.nComponents1);
-                BK.block(N0c*k1, n*N2, N0c, N2 ) = A02K.at(key2).block( N0c*(c1e1*e1.nComponents1+c2e1), 0, N0c, N2 );
+                BK.block(N0c*k1, n*N2, N0c, N2 ) += A02K.at(key2).block( N0c*(c1e1*e1.nComponents1+c2e1), 0, N0c, N2 );
                 BK.block(N0c*k1, n*N2, N0c, N2 ) += A02K.at(key2).block( N0c*(c2e1*e1.nComponents1+c1e1), 0, N0c, N2 );
             }
             const int k1 = Feel::detail::symmetricIndex(c1e1,c1e1,e1.nComponents1);
-            BK.block(N0c*k1, n*N2, N0c, N2 ) = A02K.at(key2).block( N0c*(c1e1*e1.nComponents1+c1e1), 0, N0c, N2 );
+            BK.block(N0c*k1, n*N2, N0c, N2 ) += A02K.at(key2).block( N0c*(c1e1*e1.nComponents1+c1e1), 0, N0c, N2 );
         }
     }
 
@@ -253,14 +246,14 @@ extractBlock( A02_t const& A02K, Key1_t const& key2,
     {
         for( int c1e1 = 0; c1e1 < e1.nComponents1; ++c1e1 )
         {
-            for( int c2e1 = 0; c2e1 < c1e1; ++c2e1 )
+            for( int c2e1 = c1e1+1; c2e1 < e1.nComponents1; ++c2e1 )
             {
                 const int k1 = Feel::detail::symmetricIndex(c1e1,c2e1,e1.nComponents1);
-                CK.block(n*N2, N0c*k1, N2, N0c ) = A20K.at(key3).block(0, N0c*(c1e1*e1.nComponents1+c2e1), N2, N0c );
+                CK.block(n*N2, N0c*k1, N2, N0c ) += A20K.at(key3).block(0, N0c*(c1e1*e1.nComponents1+c2e1), N2, N0c );
                 CK.block(n*N2, N0c*k1, N2, N0c ) += A20K.at(key3).block(0, N0c*(c2e1*e1.nComponents1+c1e1), N2, N0c );
             }
             const int k1 = Feel::detail::symmetricIndex(c1e1,c1e1,e1.nComponents1);
-            CK.block(n*N2, N0c*k1, N2, N0c ) = A20K.at(key3).block(0, N0c*(c1e1*e1.nComponents1+c1e1), N2, N0c );
+            CK.block(n*N2, N0c*k1, N2, N0c ) += A20K.at(key3).block(0, N0c*(c1e1*e1.nComponents1+c1e1), N2, N0c );
         }
     }
 
@@ -298,14 +291,14 @@ extractBlock( F0K_t const& F0K, size_type K,
     {
         for( int c1e1 = 0; c1e1 < e1.nComponents1; ++c1e1 )
         {
-            for( int c2e1 = 0; c2e1 < c1e1; ++c2e1 )
+            for( int c2e1 = c1e1+1; c2e1 < e1.nComponents1; ++c2e1 )
             {
                 const int k1 = Feel::detail::symmetricIndex(c1e1,c2e1,e1.nComponents1);
-                FK.segment(N0c*k1, N0c) = F0K.at(K).segment( N0c*(c1e1*e1.nComponents1+c2e1), N0c );
+                FK.segment(N0c*k1, N0c) += F0K.at(K).segment( N0c*(c1e1*e1.nComponents1+c2e1), N0c );
                 FK.segment(N0c*k1, N0c) += F0K.at(K).segment( N0c*(c2e1*e1.nComponents1+c1e1), N0c );
             }
             const int k1 = Feel::detail::symmetricIndex(c1e1,c1e1,e1.nComponents1);
-            FK.segment(N0c*k1, N0c) = F0K.at(K).segment( N0c*(c1e1*e1.nComponents1+c1e1), N0c );
+            FK.segment(N0c*k1, N0c) += F0K.at(K).segment( N0c*(c1e1*e1.nComponents1+c1e1), N0c );
         }
     }
 }
@@ -382,6 +375,10 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         DVLOG(2) << "A01K=" << A01K.at(key);
         DVLOG(2) << "A10K=" << A10K.at(key);
 
+        AK = local_matrix_t::Zero( N, N );
+        BK = local_matrix_t::Zero( N, N3 );
+        CK = local_matrix_t::Zero( N3, N );
+
 
         extractBlock( A00K.at(key), A01K.at(key), A10K.at(key), AK, e1, e2 );
         AK.bottomRightCorner(N1, N1 ) = A11K.at(key);
@@ -433,19 +430,6 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
 
         extractBlock( F0K, K, FK, e1 );
         FK.tail(N1) = F1K.at(K);
-
-        if ( VLOG_IS_ON(2) )
-        {
-            cout<< "A22=" << A22 << std::endl;
-            cout<< "BK=" << BK << std::endl;
-            cout<< "CK=" << CK << std::endl;
-            cout<< "CK.T=" << CK.transpose() << std::endl;
-            cout<< "FK=" << FK << std::endl;
-            cout<< "F2=" << F2 << std::endl;
-        }
-
-
-
 
 #if 1
         auto Aldlt = AK.ldlt();

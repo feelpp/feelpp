@@ -3,7 +3,7 @@
  *  Functions to normalize polynomials in a field. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,34 +29,14 @@
 
 namespace GiNaC {
 
-/// Make the univariate polynomial @a a \in F[x] unit normal.
-/// F should be a field.
-/// Returns true if the polynomial @x is already unit normal, and false
-/// otherwise.
-static bool normalize_in_field(umodpoly& a, cln::cl_MI* content_ = 0)
-{
-	if (a.size() == 0)
-		return true;
-	if (lcoeff(a) == the_one(a[0])) {
-		if (content_)
-			*content_ = the_one(a[0]);
-		return true;
-	}
-
-	const cln::cl_MI lc_1 = recip(lcoeff(a));
-	for (std::size_t k = a.size(); k-- != 0; )
-		a[k] = a[k]*lc_1;
-	if (content_)
-		*content_ = lc_1;
-	return false;
-}
+bool normalize_in_field(umodpoly& a, cln::cl_MI* content_ = nullptr);
 
 /// Make the univariate polynomial @a x unit normal. This version is used
 /// for rings which are not fields. 
 /// Returns true if the polynomial @x is already unit normal, and false
 /// otherwise.
 template<typename T> bool
-normalize_in_ring(T& x, typename T::value_type* content_ = 0, int* unit_ = 0)
+normalize_in_ring(T& x, typename T::value_type* content_ = nullptr, int* unit_ = nullptr)
 {
 	typedef typename T::value_type ring_t;
 	static const ring_t one(1);

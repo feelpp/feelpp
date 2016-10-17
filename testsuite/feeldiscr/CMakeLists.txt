@@ -14,6 +14,8 @@ feelpp_add_test( geomap )
 
 feelpp_add_test( spacefunc )
 
+feelpp_add_test( space_0d )
+
 
 feelpp_add_test( hdiv CFG test_hdiv.cfg NO_MPI_TEST)
 feelpp_add_test( hdiv_oneelt CFG test_hdiv_oneelt.cfg NO_MPI_TEST )
@@ -79,5 +81,5 @@ feelpp_add_test( upmarker_faces )
 feelpp_add_test( listofrange )
 
 feelpp_add_test( productspaces )
-
+feelpp_add_test( element0D )
 

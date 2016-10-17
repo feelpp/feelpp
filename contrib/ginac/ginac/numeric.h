@@ -3,7 +3,7 @@
  *  Makes the interface to the underlying bignum package available. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,12 +28,6 @@
 #include "archive.h"
 
 #include <cln/complex.h>
-#if defined(G__CINTVERSION) && !defined(__MAKECINT__)
-// Cint @$#$! doesn't like forward declaring classes used for casting operators
-// so we have to include the definition of cln::cl_N here, but it is enough to
-// do so for the compiler, hence the !defined(__MAKECINT__).
-  #include <cln/complex_class.h>
-#endif
 #include <stdexcept>
 #include <vector>
 
@@ -50,7 +44,7 @@ typedef void (* digits_changed_callback)(long);
  *  than a dumber basic type since as a side-effect we let it change
  *  cl_default_float_format when it gets changed.  The only other
  *  meaningful thing to do with it is converting it to an unsigned,
- *  for temprary storing its value e.g.  The user must not create an
+ *  for temporarily storing its value e.g.  The user must not create an
  *  own working object of this class!  Since C++ forces us to make the
  *  class definition visible in order to use an object we put in a
  *  flag which prevents other objects of that class to be created. */
@@ -102,35 +96,35 @@ public:
 	
 	// functions overriding virtual functions from base classes
 public:
-	unsigned precedence() const {return 30;}
-	bool info(unsigned inf) const;
-	bool is_polynomial(const ex & var) const;
-	int degree(const ex & s) const;
-	int ldegree(const ex & s) const;
-	ex coeff(const ex & s, int n = 1) const;
-	bool has(const ex &other, unsigned options = 0) const;
-	ex eval(int level = 0) const;
-	ex evalf(int level = 0) const;
-	ex subs(const exmap & m, unsigned options = 0) const { return subs_one_level(m, options); } // overwrites basic::subs() for performance reasons
-	ex normal(exmap & repl, exmap & rev_lookup, int level = 0) const;
-	ex to_rational(exmap & repl) const;
-	ex to_polynomial(exmap & repl) const;
-	numeric integer_content() const;
-	ex smod(const numeric &xi) const;
-	numeric max_coefficient() const;
-	ex conjugate() const;
-	ex real_part() const;
-	ex imag_part() const;
+	unsigned precedence() const override {return 30;}
+	bool info(unsigned inf) const override;
+	bool is_polynomial(const ex & var) const override;
+	int degree(const ex & s) const override;
+	int ldegree(const ex & s) const override;
+	ex coeff(const ex & s, int n = 1) const override;
+	bool has(const ex &other, unsigned options = 0) const override;
+	ex eval() const override;
+	ex evalf() const override;
+	ex subs(const exmap & m, unsigned options = 0) const override { return subs_one_level(m, options); } // overwrites basic::subs() for performance reasons
+	ex normal(exmap & repl, exmap & rev_lookup) const override;
+	ex to_rational(exmap & repl) const override;
+	ex to_polynomial(exmap & repl) const override;
+	numeric integer_content() const override;
+	ex smod(const numeric &xi) const override;
+	numeric max_coefficient() const override;
+	ex conjugate() const override;
+	ex real_part() const override;
+	ex imag_part() const override;
 	/** Save (a.k.a. serialize) object into archive. */
-	void archive(archive_node& n) const;
+	void archive(archive_node& n) const override;
 	/** Read (a.k.a. deserialize) object from archive. */
-	void read_archive(const archive_node& n, lst& syms);
+	void read_archive(const archive_node& n, lst& syms) override;
 protected:
 	/** Implementation of ex::diff for a numeric always returns 0.
 	 *  @see ex::diff */
-	ex derivative(const symbol &s) const { return 0; }
-	bool is_equal_same_type(const basic &other) const;
-	unsigned calchash() const;
+	ex derivative(const symbol &s) const override { return 0; }
+	bool is_equal_same_type(const basic &other) const override;
+	unsigned calchash() const override;
 	
 	// new virtual functions which can be overridden by derived classes
 	// (none)
@@ -332,10 +326,5 @@ ex CatalanEvalf();
 
 
 } // namespace GiNaC
-
-#ifdef __MAKECINT__
-#pragma link off defined_in cln/number.h;
-#pragma link off defined_in cln/complex_class.h;
-#endif
 
 #endif // ndef GINAC_NUMERIC_H

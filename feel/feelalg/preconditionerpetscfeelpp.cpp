@@ -60,13 +60,30 @@ static PetscErrorCode PCApply_FEELPP(PC pc,Vec x,Vec y)
     if ( preconditioner->worldComm().localSize() > 1 )
     {
         CHECK ( preconditioner->matrix() ) << "matrix is not defined";
-        x_vec.reset( new Feel::VectorPetscMPI<double>( x, preconditioner->matrix()->mapColPtr() ) );
-        y_vec.reset( new Feel::VectorPetscMPI<double>( y, preconditioner->matrix()->mapRowPtr() ) );
+
+        bool xIsGhosted = false, yIsGhosted = false;
+        Vec lxIn;
+        VecGhostGetLocalForm(x,&lxIn);
+        if ( lxIn ) xIsGhosted=true;
+        VecGhostRestoreLocalForm(x,&lxIn);
+        Vec lyIn;
+        VecGhostGetLocalForm(y,&lyIn);
+        if ( lyIn ) yIsGhosted=true;
+        VecGhostRestoreLocalForm(y,&lyIn);
+
+        if ( xIsGhosted )
+            x_vec.reset( new Feel::VectorPetscMPI<double>( x, preconditioner->matrix()->mapColPtr() ) );
+        else
+            x_vec.reset( new Feel::VectorPetscMPIRange<double>( x, preconditioner->matrix()->mapColPtr() ) );
+        if ( yIsGhosted )
+            y_vec.reset( new Feel::VectorPetscMPI<double>( y, preconditioner->matrix()->mapRowPtr() ) );
+        else
+            y_vec.reset( new Feel::VectorPetscMPIRange<double>( y, preconditioner->matrix()->mapRowPtr() ) );
     }
     else
     {
         x_vec.reset( new Feel::VectorPetsc<double>( x, preconditioner->matrix()->mapColPtr() ) );
-        y_vec.reset( new Feel::VectorPetsc<double>( y, preconditioner->matrix()->mapColPtr() ) );
+        y_vec.reset( new Feel::VectorPetsc<double>( y, preconditioner->matrix()->mapRowPtr() ) );
     }
     preconditioner->apply( *x_vec,*y_vec );
 

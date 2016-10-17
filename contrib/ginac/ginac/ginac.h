@@ -3,7 +3,7 @@
  *  This include file includes all other public GiNaC headers. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -74,11 +74,6 @@
 #include "parser.h"
 #else
 #include "parser/parser.h"
-#endif
-
-#ifdef __MAKECINT__
-#pragma link C++ nestedclass;
-#pragma link C++ nestedtypedef;
 #endif
 
 #endif // ndef GINAC_H

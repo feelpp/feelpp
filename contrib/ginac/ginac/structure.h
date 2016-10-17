@@ -3,7 +3,7 @@
  *  Wrapper template for making GiNaC classes out of C++ structures. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -126,77 +126,76 @@ public:
 	// All these are just defaults that can be specialized by the user
 public:
 	// evaluation
-	ex eval(int level = 0) const { return hold(); }
-	ex evalf(int level = 0) const { return inherited::evalf(level); }
-	ex evalm() const { return inherited::evalm(); }
+	ex eval() const override { return hold(); }
+	ex evalm() const override { return inherited::evalm(); }
 protected:
-	ex eval_ncmul(const exvector & v) const { return hold_ncmul(v); }
+	ex eval_ncmul(const exvector & v) const override { return hold_ncmul(v); }
 public:
-	ex eval_indexed(const basic & i) const { return i.hold(); }
+	ex eval_indexed(const basic & i) const override { return i.hold(); }
 
 	// printing
-	void print(const print_context & c, unsigned level = 0) const { inherited::print(c, level); }
-	unsigned precedence() const { return 70; }
+	void print(const print_context & c, unsigned level = 0) const override { inherited::print(c, level); }
+	unsigned precedence() const override { return 70; }
 
 	// info
-	bool info(unsigned inf) const { return false; }
+	bool info(unsigned inf) const override { return false; }
 
 	// operand access
-	size_t nops() const { return 0; }
-	ex op(size_t i) const { return inherited::op(i); }
-	ex operator[](const ex & index) const { return inherited::operator[](index); }
-	ex operator[](size_t i) const { return inherited::operator[](i); }
-	ex & let_op(size_t i) { return inherited::let_op(i); }
-	ex & operator[](const ex & index) { return inherited::operator[](index); }
-	ex & operator[](size_t i) { return inherited::operator[](i); }
+	size_t nops() const override { return 0; }
+	ex op(size_t i) const override { return inherited::op(i); }
+	ex operator[](const ex & index) const override { return inherited::operator[](index); }
+	ex operator[](size_t i) const override { return inherited::operator[](i); }
+	ex & let_op(size_t i) override { return inherited::let_op(i); }
+	ex & operator[](const ex & index) override { return inherited::operator[](index); }
+	ex & operator[](size_t i) override { return inherited::operator[](i); }
 
 	// pattern matching
-	bool has(const ex & other, unsigned options = 0) const { return inherited::has(other, options); }
-	bool match(const ex & pattern, exmap& repl_lst) const { return inherited::match(pattern, repl_lst); }
+	bool has(const ex & other, unsigned options = 0) const override { return inherited::has(other, options); }
+	bool match(const ex & pattern, exmap& repl_lst) const override { return inherited::match(pattern, repl_lst); }
 protected:
-	bool match_same_type(const basic & other) const { return true; }
+	bool match_same_type(const basic & other) const override { return true; }
 public:
 
 	// substitutions
-	ex subs(const exmap & m, unsigned options = 0) const { return inherited::subs(m, options); }
+	ex subs(const exmap & m, unsigned options = 0) const override { return inherited::subs(m, options); }
 
 	// function mapping
-	ex map(map_function & f) const { return inherited::map(f); }
+	ex map(map_function & f) const override { return inherited::map(f); }
 
 	// degree/coeff
-	int degree(const ex & s) const { return inherited::degree(s); }
-	int ldegree(const ex & s) const { return inherited::ldegree(s); }
-	ex coeff(const ex & s, int n = 1) const { return inherited::coeff(s, n); }
+	int degree(const ex & s) const override { return inherited::degree(s); }
+	int ldegree(const ex & s) const override { return inherited::ldegree(s); }
+	ex coeff(const ex & s, int n = 1) const override { return inherited::coeff(s, n); }
 
 	// expand/collect
-	ex expand(unsigned options = 0) const { return inherited::expand(options); }
-	ex collect(const ex & s, bool distributed = false) const { return inherited::collect(s, distributed); }
+	ex expand(unsigned options = 0) const override { return inherited::expand(options); }
+	ex collect(const ex & s, bool distributed = false) const override { return inherited::collect(s, distributed); }
 
 	// differentiation and series expansion
 protected:
-	ex derivative(const symbol & s) const { return inherited::derivative(s); }
+	ex derivative(const symbol & s) const override { return inherited::derivative(s); }
 public:
-	ex series(const relational & r, int order, unsigned options = 0) const { return inherited::series(r, order, options); }
+	ex series(const relational & r, int order, unsigned options = 0) const override { return inherited::series(r, order, options); }
 
 	// rational functions
-	ex normal(exmap & repl, exmap & rev_lookup, int level = 0) const { return inherited::normal(repl, rev_lookup, level); }
-	ex to_rational(exmap & repl) const { return inherited::to_rational(repl); }
-	ex to_polynomial(exmap & repl) const { return inherited::to_polynomial(repl); }
+	ex normal(exmap & repl, exmap & rev_lookup) const override { return inherited::normal(repl, rev_lookup); }
+	ex to_rational(exmap & repl) const override { return inherited::to_rational(repl); }
+	ex to_polynomial(exmap & repl) const override { return inherited::to_polynomial(repl); }
 
 	// polynomial algorithms
-	numeric integer_content() const { return 1; }
-	ex smod(const numeric & xi) const { return *this; }
-	numeric max_coefficient() const { return 1; }
+	numeric integer_content() const override { return 1; }
+	ex smod(const numeric & xi) const override { return *this; }
+	numeric max_coefficient() const override { return 1; }
 
 	// indexed objects
-	exvector get_free_indices() const { return exvector(); }
-	ex add_indexed(const ex & self, const ex & other) const { return self + other; }
-	ex scalar_mul_indexed(const ex & self, const numeric & other) const { return self * ex(other); }
-	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const { return false; }
+	exvector get_free_indices() const override { return exvector(); }
+	ex add_indexed(const ex & self, const ex & other) const override { return self + other; }
+	ex scalar_mul_indexed(const ex & self, const numeric & other) const override { return self * ex(other); }
+	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const override { return false; }
 
 	// noncommutativity
-	unsigned return_type() const { return return_types::commutative; }
-	return_type_t return_type_tinfo() const 
+	unsigned return_type() const override { return return_types::commutative; }
+	return_type_t return_type_tinfo() const override
 	{
 		return_type_t r;
 		r.rl = 0;
@@ -205,7 +204,7 @@ public:
 	}
 
 protected:
-	bool is_equal_same_type(const basic & other) const
+	bool is_equal_same_type(const basic & other) const override
 	{
 		GINAC_ASSERT(is_a<structure>(other));
 		const structure & o = static_cast<const structure &>(other);
@@ -213,7 +212,7 @@ protected:
 		return this->struct_is_equal(&obj, &o.obj);
 	}
 
-	unsigned calchash() const { return inherited::calchash(); }
+	unsigned calchash() const override { return inherited::calchash(); }
 
 	// non-virtual functions in this class
 public:

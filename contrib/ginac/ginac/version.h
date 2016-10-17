@@ -3,7 +3,7 @@
  *  GiNaC library version information. */
 
 /*
- *  GiNaC Copyright (C) 1999-2008 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,10 +27,10 @@
 #define GINACLIB_MAJOR_VERSION 1
 
 /* Minor version of GiNaC */
-#define GINACLIB_MINOR_VERSION 6
+#define GINACLIB_MINOR_VERSION 7
 
 /* Micro version of GiNaC */
-#define GINACLIB_MICRO_VERSION 2
+#define GINACLIB_MICRO_VERSION 1
 
 // GiNaC library version information. It has very little to do with GiNaC
 // version number. In particular, library version is OS dependent. 
@@ -49,9 +49,9 @@
 // increasing. This doesn't matter, though: there is not incurred cost
 // for numbers that are omitted, except for shrinking the available space
 // of leftover numbers. Not something we need to worry about yet. ;-)
-#define GINAC_LT_CURRENT  3
-#define GINAC_LT_REVISION 0
-#define GINAC_LT_AGE      1
+#define GINAC_LT_CURRENT  6
+#define GINAC_LT_REVISION 1
+#define GINAC_LT_AGE      0
 
 /*
  * GiNaC archive file version information.
