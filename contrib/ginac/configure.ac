@@ -18,7 +18,7 @@ AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_HEADERS([config/config.h])
 AC_CONFIG_MACRO_DIR([m4])
 dnl This defines PACKAGE and VERSION.
-AM_INIT_AUTOMAKE([gnu 1.8 dist-bzip2])
+AM_INIT_AUTOMAKE([gnu 1.8 dist-bzip2 subdir-objects])
 
 dnl libtool versioning
 LT_VERSION_INFO="ginac_lt_current:ginac_lt_revision:ginac_lt_age"
@@ -32,13 +32,14 @@ AM_PROG_LIBTOOL
 AC_PROG_LEX
 AC_PROG_YACC
 AC_PATH_PROG(YACCEXE, $YACC, "")
-AS_IF([test "x$LEX" = "x:" -a ! -f $srcdir/ginsh/ginsh_lexer.cc],
+AS_IF([test "x$LEX" = "x:" -a ! -f $srcdir/ginsh/ginsh_lexer.cpp],
       [GINAC_WARNING([ginsh will not compile, because lex/flex is missing])])
-AS_IF([test -z "$YACCEXE" -a ! -f $srcdir/ginsh/ginsh_parser.h],
+AS_IF([test -z "$YACCEXE" -a ! -f $srcdir/ginsh/ginsh_parser.hpp],
       [GINAC_WARNING([ginsh will not compile, because yacc/bison is missing])])
 
 dnl Switch to C++ language mode for the following libraries and headers.
 AC_LANG([C++])
+AX_CXX_COMPILE_STDCXX([11])
 
 dnl Make sure all the necessary standard headers are installed on the system.
 GINAC_STD_CXX_HEADERS

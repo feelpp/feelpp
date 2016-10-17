@@ -1,0 +1,69 @@
+This is ginac-examples.info, produced by makeinfo version 6.3 from
+ginac-examples.texi.
+
+INFO-DIR-SECTION Mathematics
+START-INFO-DIR-ENTRY
+* ginac-examples: (ginac-examples).                   C++ library for symbolic computation.
+END-INFO-DIR-ENTRY
+
+
+File: ginac-examples.info,  Node: Top,  Up: (dir)
+
+GiNaC Examples
+**************
+
+This is a collection of code examples using GiNaC.
+
+1 Input / Output
+****************
+
+1.1 Archiving expressions (source) (archive1.cpp)
+=================================================
+
+Two expression are stored in an archive on the disk and are restored
+again.
+
+1.2 Input and output of expressions
+===================================
+
+1.2.1 Expression input (source) (derivative.cpp)
+------------------------------------------------
+
+Interactively input expression and compute its derivative with respect
+to the "x" variable.
+
+2 Monte Carlo Integration
+*************************
+
+2.1 Example showing compile_ex (source) (compile1.cpp)
+======================================================
+
+Simple example showing compile_ex with one free variable.  Timing
+between CLN and C double numerics is done.
+
+2.2 Using VEGAS from CUBA (source) (compile2.cpp)
+=================================================
+
+An expression in two variables is integrated by using VEGAS from the
+CUBA library (http://www.feynarts.de/cuba/).
+
+2.3 Example showing link_ex (source) (compile3.cpp)
+===================================================
+
+Demonstrates the use of link_ex.  Program has to be called more than
+once to see the effect.
+
+3 Lanczos Approximation
+***********************
+
+The program lanczos.cpp calculates coefficients for use in the Lanczos
+approximation of the gamma function.  The Lanczos approximation is used
+by the function inside GiNaC that approximates the gamma function
+numerically.  See the comments in the source file for more information.
+
+
+
+Tag Table:
+Node: Top251
+
+End Tag Table

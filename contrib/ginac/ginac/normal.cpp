@@ -6,7 +6,7 @@
  *  computation, square-free factorization and rational function normalization. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -120,6 +120,11 @@ static bool get_first_symbol(const ex &e, ex &x)
  *
  *  @see get_symbol_stats */
 struct sym_desc {
+	/** Initialize symbol, leave other variables uninitialized */
+	sym_desc(const ex& s)
+	  : sym(s), deg_a(0), deg_b(0), ldeg_a(0), ldeg_b(0), max_deg(0), max_lcnops(0)
+	{ }
+
 	/** Reference to symbol */
 	ex sym;
 
@@ -141,7 +146,7 @@ struct sym_desc {
 	/** Maximum number of terms of leading coefficient of symbol in both polynomials */
 	size_t max_lcnops;
 
-	/** Commparison operator for sorting */
+	/** Comparison operator for sorting */
 	bool operator<(const sym_desc &x) const
 	{
 		if (max_deg == x.max_deg)
@@ -157,15 +162,11 @@ typedef std::vector<sym_desc> sym_desc_vec;
 // Add symbol the sym_desc_vec (used internally by get_symbol_stats())
 static void add_symbol(const ex &s, sym_desc_vec &v)
 {
-	sym_desc_vec::const_iterator it = v.begin(), itend = v.end();
-	while (it != itend) {
-		if (it->sym.is_equal(s))  // If it's already in there, don't add it a second time
+	for (auto & it : v)
+		if (it.sym.is_equal(s))  // If it's already in there, don't add it a second time
 			return;
-		++it;
-	}
-	sym_desc d;
-	d.sym = s;
-	v.push_back(d);
+
+	v.push_back(sym_desc(s));
 }
 
 // Collect all symbols of an expression (used internally by get_symbol_stats())
@@ -195,19 +196,17 @@ static void collect_symbols(const ex &e, sym_desc_vec &v)
  *  @param v  vector of sym_desc structs (filled in) */
 static void get_symbol_stats(const ex &a, const ex &b, sym_desc_vec &v)
 {
-	collect_symbols(a.eval(), v);   // eval() to expand assigned symbols
-	collect_symbols(b.eval(), v);
-	sym_desc_vec::iterator it = v.begin(), itend = v.end();
-	while (it != itend) {
-		int deg_a = a.degree(it->sym);
-		int deg_b = b.degree(it->sym);
-		it->deg_a = deg_a;
-		it->deg_b = deg_b;
-		it->max_deg = std::max(deg_a, deg_b);
-		it->max_lcnops = std::max(a.lcoeff(it->sym).nops(), b.lcoeff(it->sym).nops());
-		it->ldeg_a = a.ldegree(it->sym);
-		it->ldeg_b = b.ldegree(it->sym);
-		++it;
+	collect_symbols(a, v);
+	collect_symbols(b, v);
+	for (auto & it : v) {
+		int deg_a = a.degree(it.sym);
+		int deg_b = b.degree(it.sym);
+		it.deg_a = deg_a;
+		it.deg_b = deg_b;
+		it.max_deg = std::max(deg_a, deg_b);
+		it.max_lcnops = std::max(a.lcoeff(it.sym).nops(), b.lcoeff(it.sym).nops());
+		it.ldeg_a = a.ldegree(it.sym);
+		it.ldeg_b = b.ldegree(it.sym);
 	}
 	std::sort(v.begin(), v.end());
 
@@ -271,9 +270,15 @@ static numeric lcm_of_coefficients_denominators(const ex &e)
  *  @param lcm  LCM to multiply in */
 static ex multiply_lcm(const ex &e, const numeric &lcm)
 {
+	if (lcm.is_equal(*_num1_p))
+		// e * 1 -> e;
+		return e;
+
 	if (is_exactly_a<mul>(e)) {
+		// (a*b*...)*lcm -> (a*lcma)*(b*lcmb)*...*(lcm/(lcma*lcmb*...))
 		size_t num = e.nops();
-		exvector v; v.reserve(num + 1);
+		exvector v;
+		v.reserve(num + 1);
 		numeric lcm_accum = *_num1_p;
 		for (size_t i=0; i<num; i++) {
 			numeric op_lcm = lcmcoeff(e.op(i), *_num1_p);
@@ -281,20 +286,26 @@ static ex multiply_lcm(const ex &e, const numeric &lcm)
 			lcm_accum *= op_lcm;
 		}
 		v.push_back(lcm / lcm_accum);
-		return (new mul(v))->setflag(status_flags::dynallocated);
+		return dynallocate<mul>(v);
 	} else if (is_exactly_a<add>(e)) {
+		// (a+b+...)*lcm -> a*lcm+b*lcm+...
 		size_t num = e.nops();
-		exvector v; v.reserve(num);
+		exvector v;
+		v.reserve(num);
 		for (size_t i=0; i<num; i++)
 			v.push_back(multiply_lcm(e.op(i), lcm));
-		return (new add(v))->setflag(status_flags::dynallocated);
+		return dynallocate<add>(v);
 	} else if (is_exactly_a<power>(e)) {
-		if (is_a<symbol>(e.op(0)))
-			return e * lcm;
-		else
-			return pow(multiply_lcm(e.op(0), lcm.power(ex_to<numeric>(e.op(1)).inverse())), e.op(1));
-	} else
-		return e * lcm;
+		if (!is_a<symbol>(e.op(0))) {
+			// (b^e)*lcm -> (b*lcm^(1/e))^e if lcm^(1/e) ∈ ℚ (i.e. not a float)
+			// but not for symbolic b, as evaluation would undo this again
+			numeric root_of_lcm = lcm.power(ex_to<numeric>(e.op(1)).inverse());
+			if (root_of_lcm.is_rational())
+				return pow(multiply_lcm(e.op(0), root_of_lcm), e.op(1));
+		}
+	}
+	// can't recurse down into e
+	return dynallocate<mul>(e, lcm);
 }
 
 
@@ -321,15 +332,12 @@ numeric numeric::integer_content() const
 
 numeric add::integer_content() const
 {
-	epvector::const_iterator it = seq.begin();
-	epvector::const_iterator itend = seq.end();
 	numeric c = *_num0_p, l = *_num1_p;
-	while (it != itend) {
-		GINAC_ASSERT(!is_exactly_a<numeric>(it->rest));
-		GINAC_ASSERT(is_exactly_a<numeric>(it->coeff));
-		c = gcd(ex_to<numeric>(it->coeff).numer(), c);
-		l = lcm(ex_to<numeric>(it->coeff).denom(), l);
-		it++;
+	for (auto & it : seq) {
+		GINAC_ASSERT(!is_exactly_a<numeric>(it.rest));
+		GINAC_ASSERT(is_exactly_a<numeric>(it.coeff));
+		c = gcd(ex_to<numeric>(it.coeff).numer(), c);
+		l = lcm(ex_to<numeric>(it.coeff).denom(), l);
 	}
 	GINAC_ASSERT(is_exactly_a<numeric>(overall_coeff));
 	c = gcd(ex_to<numeric>(overall_coeff).numer(), c);
@@ -340,11 +348,8 @@ numeric add::integer_content() const
 numeric mul::integer_content() const
 {
 #ifdef DO_GINAC_ASSERT
-	epvector::const_iterator it = seq.begin();
-	epvector::const_iterator itend = seq.end();
-	while (it != itend) {
-		GINAC_ASSERT(!is_exactly_a<numeric>(recombine_pair_to_ex(*it)));
-		++it;
+	for (auto & it : seq) {
+		GINAC_ASSERT(!is_exactly_a<numeric>(recombine_pair_to_ex(it)));
 	}
 #endif // def DO_GINAC_ASSERT
 	GINAC_ASSERT(is_exactly_a<numeric>(overall_coeff));
@@ -393,16 +398,16 @@ ex quo(const ex &a, const ex &b, const ex &x, bool check_args)
 			term = rcoeff / blcoeff;
 		else {
 			if (!divide(rcoeff, blcoeff, term, false))
-				return (new fail())->setflag(status_flags::dynallocated);
+				return dynallocate<fail>();
 		}
-		term *= power(x, rdeg - bdeg);
+		term *= pow(x, rdeg - bdeg);
 		v.push_back(term);
 		r -= (term * b).expand();
 		if (r.is_zero())
 			break;
 		rdeg = r.degree(x);
 	}
-	return (new add(v))->setflag(status_flags::dynallocated);
+	return dynallocate<add>(v);
 }
 
 
@@ -446,9 +451,9 @@ ex rem(const ex &a, const ex &b, const ex &x, bool check_args)
 			term = rcoeff / blcoeff;
 		else {
 			if (!divide(rcoeff, blcoeff, term, false))
-				return (new fail())->setflag(status_flags::dynallocated);
+				return dynallocate<fail>();
 		}
-		term *= power(x, rdeg - bdeg);
+		term *= pow(x, rdeg - bdeg);
 		r -= (term * b).expand();
 		if (r.is_zero())
 			break;
@@ -508,23 +513,23 @@ ex prem(const ex &a, const ex &b, const ex &x, bool check_args)
 		if (bdeg == 0)
 			eb = _ex0;
 		else
-			eb -= blcoeff * power(x, bdeg);
+			eb -= blcoeff * pow(x, bdeg);
 	} else
 		blcoeff = _ex1;
 
 	int delta = rdeg - bdeg + 1, i = 0;
 	while (rdeg >= bdeg && !r.is_zero()) {
 		ex rlcoeff = r.coeff(x, rdeg);
-		ex term = (power(x, rdeg - bdeg) * eb * rlcoeff).expand();
+		ex term = (pow(x, rdeg - bdeg) * eb * rlcoeff).expand();
 		if (rdeg == 0)
 			r = _ex0;
 		else
-			r -= rlcoeff * power(x, rdeg);
+			r -= rlcoeff * pow(x, rdeg);
 		r = (blcoeff * r).expand() - term;
 		rdeg = r.degree(x);
 		i++;
 	}
-	return power(blcoeff, delta - i) * r;
+	return pow(blcoeff, delta - i) * r;
 }
 
 
@@ -560,17 +565,17 @@ ex sprem(const ex &a, const ex &b, const ex &x, bool check_args)
 		if (bdeg == 0)
 			eb = _ex0;
 		else
-			eb -= blcoeff * power(x, bdeg);
+			eb -= blcoeff * pow(x, bdeg);
 	} else
 		blcoeff = _ex1;
 
 	while (rdeg >= bdeg && !r.is_zero()) {
 		ex rlcoeff = r.coeff(x, rdeg);
-		ex term = (power(x, rdeg - bdeg) * eb * rlcoeff).expand();
+		ex term = (pow(x, rdeg - bdeg) * eb * rlcoeff).expand();
 		if (rdeg == 0)
 			r = _ex0;
 		else
-			r -= rlcoeff * power(x, rdeg);
+			r -= rlcoeff * pow(x, rdeg);
 		r = (blcoeff * r).expand() - term;
 		rdeg = r.degree(x);
 	}
@@ -660,7 +665,7 @@ bool divide(const ex &a, const ex &b, ex &q, bool check_args)
 				else
 					resv.push_back(a.op(j));
 			}
-			q = (new mul(resv))->setflag(status_flags::dynallocated);
+			q = dynallocate<mul>(resv);
 			return true;
 		}
 	} else if (is_exactly_a<power>(a)) {
@@ -670,7 +675,7 @@ bool divide(const ex &a, const ex &b, ex &q, bool check_args)
 		int a_exp = ex_to<numeric>(a.op(1)).to_int();
 		ex rem_i;
 		if (divide(ab, b, rem_i, false)) {
-			q = rem_i*power(ab, a_exp - 1);
+			q = rem_i * pow(ab, a_exp - 1);
 			return true;
 		}
 // code below is commented-out because it leads to a significant slowdown
@@ -700,11 +705,11 @@ bool divide(const ex &a, const ex &b, ex &q, bool check_args)
 		else
 			if (!divide(rcoeff, blcoeff, term, false))
 				return false;
-		term *= power(x, rdeg - bdeg);
+		term *= pow(x, rdeg - bdeg);
 		v.push_back(term);
 		r -= (term * b).expand();
 		if (r.is_zero()) {
-			q = (new add(v))->setflag(status_flags::dynallocated);
+			q = dynallocate<add>(v);
 			return true;
 		}
 		rdeg = r.degree(x);
@@ -796,10 +801,10 @@ static bool divide_in_z(const ex &a, const ex &b, ex &q, sym_desc_vec::const_ite
 
 	if (is_exactly_a<mul>(b)) {
 		ex qbar = a;
-		for (const_iterator itrb = b.begin(); itrb != b.end(); ++itrb) {
+		for (const auto & it : b) {
 			sym_desc_vec sym_stats;
-			get_symbol_stats(a, *itrb, sym_stats);
-			if (!divide_in_z(qbar, *itrb, q, sym_stats.begin()))
+			get_symbol_stats(a, it, sym_stats);
+			if (!divide_in_z(qbar, it, q, sym_stats.begin()))
 				return false;
 
 			qbar = q;
@@ -883,11 +888,11 @@ static bool divide_in_z(const ex &a, const ex &b, ex &q, sym_desc_vec::const_ite
 		ex term, rcoeff = r.coeff(x, rdeg);
 		if (!divide_in_z(rcoeff, blcoeff, term, var+1))
 			break;
-		term = (term * power(x, rdeg - bdeg)).expand();
+		term = (term * pow(x, rdeg - bdeg)).expand();
 		v.push_back(term);
 		r -= (term * eb).expand();
 		if (r.is_zero()) {
-			q = (new add(v))->setflag(status_flags::dynallocated);
+			q = dynallocate<add>(v);
 #if USE_REMEMBER
 			dr_remember[ex2(a, b)] = exbool(q, true);
 #endif
@@ -961,7 +966,7 @@ ex ex::content(const ex &x) const
 		return lcoeff * c / lcoeff.unit(x);
 	ex cont = _ex0;
 	for (int i=ldeg; i<=deg; i++)
-		cont = gcd(r.coeff(x, i), cont, NULL, NULL, false);
+		cont = gcd(r.coeff(x, i), cont, nullptr, nullptr, false);
 	return cont * c;
 }
 
@@ -1101,7 +1106,7 @@ static ex sr_gcd(const ex &a, const ex &b, sym_desc_vec::const_iterator var)
 	// Remove content from c and d, to be attached to GCD later
 	ex cont_c = c.content(x);
 	ex cont_d = d.content(x);
-	ex gamma = gcd(cont_c, cont_d, NULL, NULL, false);
+	ex gamma = gcd(cont_c, cont_d, nullptr, nullptr, false);
 	if (ddeg == 0)
 		return gamma;
 	c = c.primpart(x, cont_c);
@@ -1165,17 +1170,14 @@ numeric numeric::max_coefficient() const
 
 numeric add::max_coefficient() const
 {
-	epvector::const_iterator it = seq.begin();
-	epvector::const_iterator itend = seq.end();
 	GINAC_ASSERT(is_exactly_a<numeric>(overall_coeff));
 	numeric cur_max = abs(ex_to<numeric>(overall_coeff));
-	while (it != itend) {
+	for (auto & it : seq) {
 		numeric a;
-		GINAC_ASSERT(!is_exactly_a<numeric>(it->rest));
-		a = abs(ex_to<numeric>(it->coeff));
+		GINAC_ASSERT(!is_exactly_a<numeric>(it.rest));
+		a = abs(ex_to<numeric>(it.coeff));
 		if (a > cur_max)
 			cur_max = a;
-		it++;
 	}
 	return cur_max;
 }
@@ -1183,11 +1185,8 @@ numeric add::max_coefficient() const
 numeric mul::max_coefficient() const
 {
 #ifdef DO_GINAC_ASSERT
-	epvector::const_iterator it = seq.begin();
-	epvector::const_iterator itend = seq.end();
-	while (it != itend) {
-		GINAC_ASSERT(!is_exactly_a<numeric>(recombine_pair_to_ex(*it)));
-		it++;
+	for (auto & it : seq) {
+		GINAC_ASSERT(!is_exactly_a<numeric>(recombine_pair_to_ex(it)));
 	}
 #endif // def DO_GINAC_ASSERT
 	GINAC_ASSERT(is_exactly_a<numeric>(overall_coeff));
@@ -1215,36 +1214,30 @@ ex add::smod(const numeric &xi) const
 {
 	epvector newseq;
 	newseq.reserve(seq.size()+1);
-	epvector::const_iterator it = seq.begin();
-	epvector::const_iterator itend = seq.end();
-	while (it != itend) {
-		GINAC_ASSERT(!is_exactly_a<numeric>(it->rest));
-		numeric coeff = GiNaC::smod(ex_to<numeric>(it->coeff), xi);
+	for (auto & it : seq) {
+		GINAC_ASSERT(!is_exactly_a<numeric>(it.rest));
+		numeric coeff = GiNaC::smod(ex_to<numeric>(it.coeff), xi);
 		if (!coeff.is_zero())
-			newseq.push_back(expair(it->rest, coeff));
-		it++;
+			newseq.push_back(expair(it.rest, coeff));
 	}
 	GINAC_ASSERT(is_exactly_a<numeric>(overall_coeff));
 	numeric coeff = GiNaC::smod(ex_to<numeric>(overall_coeff), xi);
-	return (new add(newseq,coeff))->setflag(status_flags::dynallocated);
+	return dynallocate<add>(std::move(newseq), coeff);
 }
 
 ex mul::smod(const numeric &xi) const
 {
 #ifdef DO_GINAC_ASSERT
-	epvector::const_iterator it = seq.begin();
-	epvector::const_iterator itend = seq.end();
-	while (it != itend) {
-		GINAC_ASSERT(!is_exactly_a<numeric>(recombine_pair_to_ex(*it)));
-		it++;
+	for (auto & it : seq) {
+		GINAC_ASSERT(!is_exactly_a<numeric>(recombine_pair_to_ex(it)));
 	}
 #endif // def DO_GINAC_ASSERT
-	mul * mulcopyp = new mul(*this);
+	mul & mulcopy = dynallocate<mul>(*this);
 	GINAC_ASSERT(is_exactly_a<numeric>(overall_coeff));
-	mulcopyp->overall_coeff = GiNaC::smod(ex_to<numeric>(overall_coeff),xi);
-	mulcopyp->clearflag(status_flags::evaluated);
-	mulcopyp->clearflag(status_flags::hash_calculated);
-	return mulcopyp->setflag(status_flags::dynallocated);
+	mulcopy.overall_coeff = GiNaC::smod(ex_to<numeric>(overall_coeff),xi);
+	mulcopy.clearflag(status_flags::evaluated);
+	mulcopy.clearflag(status_flags::hash_calculated);
+	return mulcopy;
 }
 
 
@@ -1256,10 +1249,10 @@ static ex interpolate(const ex &gamma, const numeric &xi, const ex &x, int degre
 	numeric rxi = xi.inverse();
 	for (int i=0; !e.is_zero(); i++) {
 		ex gi = e.smod(xi);
-		g.push_back(gi * power(x, i));
+		g.push_back(gi * pow(x, i));
 		e = (e - gi) * rxi;
 	}
-	return (new add(g))->setflag(status_flags::dynallocated);
+	return dynallocate<add>(g);
 }
 
 /** Exception thrown by heur_gcd() to signal failure. */
@@ -1272,9 +1265,9 @@ class gcdheu_failed {};
  *
  *  @param a  first integer multivariate polynomial (expanded)
  *  @param b  second integer multivariate polynomial (expanded)
- *  @param ca  cofactor of polynomial a (returned), NULL to suppress
+ *  @param ca  cofactor of polynomial a (returned), nullptr to suppress
  *             calculation of cofactor
- *  @param cb  cofactor of polynomial b (returned), NULL to suppress
+ *  @param cb  cofactor of polynomial b (returned), nullptr to suppress
  *             calculation of cofactor
  *  @param var iterator to first element of vector of sym_desc structs
  *  @param res the GCD (returned)
@@ -1365,9 +1358,9 @@ static bool heur_gcd_z(ex& res, const ex &a, const ex &b, ex *ca, ex *cb,
  *
  *  @param a  first rational multivariate polynomial (expanded)
  *  @param b  second rational multivariate polynomial (expanded)
- *  @param ca  cofactor of polynomial a (returned), NULL to suppress
+ *  @param ca  cofactor of polynomial a (returned), nullptr to suppress
  *             calculation of cofactor
- *  @param cb  cofactor of polynomial b (returned), NULL to suppress
+ *  @param cb  cofactor of polynomial b (returned), nullptr to suppress
  *             calculation of cofactor
  *  @param var iterator to first element of vector of sym_desc structs
  *  @param res the GCD (returned)
@@ -1431,8 +1424,8 @@ static ex gcd_pf_mul(const ex& a, const ex& b, ex* ca, ex* cb);
  *
  *  @param a  first multivariate polynomial
  *  @param b  second multivariate polynomial
- *  @param ca pointer to expression that will receive the cofactor of a, or NULL
- *  @param cb pointer to expression that will receive the cofactor of b, or NULL
+ *  @param ca pointer to expression that will receive the cofactor of a, or nullptr
+ *  @param cb pointer to expression that will receive the cofactor of b, or nullptr
  *  @param check_args  check whether a and b are polynomials with rational
  *         coefficients (defaults to "true")
  *  @return the GCD as a new expression */
@@ -1535,7 +1528,7 @@ ex gcd(const ex &a, const ex &b, ex *ca, ex *cb, bool check_args, unsigned optio
 		if (ca)
 			*ca = ex_to<numeric>(aex)/g;
 		if (cb)
-	 		*cb = bex/g;
+			*cb = bex/g;
 		return g;
 	}
 
@@ -1555,7 +1548,7 @@ ex gcd(const ex &a, const ex &b, ex *ca, ex *cb, bool check_args, unsigned optio
 
 	// The symbol with least degree which is contained in both polynomials
 	// is our main variable
-	sym_desc_vec::iterator vari = sym_stats.begin();
+	auto vari = sym_stats.begin();
 	while ((vari != sym_stats.end()) && 
 	       (((vari->ldeg_b == 0) && (vari->deg_b == 0)) ||
 	        ((vari->ldeg_a == 0) && (vari->deg_a == 0))))
@@ -1582,7 +1575,7 @@ ex gcd(const ex &a, const ex &b, ex *ca, ex *cb, bool check_args, unsigned optio
 	int ldeg_b = var->ldeg_b;
 	int min_ldeg = std::min(ldeg_a,ldeg_b);
 	if (min_ldeg > 0) {
-		ex common = power(x, min_ldeg);
+		ex common = pow(x, min_ldeg);
 		return gcd((aex / common).expand(), (bex / common).expand(), ca, cb, false) * common;
 	}
 
@@ -1663,14 +1656,14 @@ static ex gcd_pf_pow_pow(const ex& a, const ex& b, ex* ca, ex* cb)
 			if (ca)
 				*ca = _ex1;
 			if (cb)
-				*cb = power(p, exp_b - exp_a);
-			return power(p, exp_a);
+				*cb = pow(p, exp_b - exp_a);
+			return pow(p, exp_a);
 		} else {
 			if (ca)
-				*ca = power(p, exp_a - exp_b);
+				*ca = pow(p, exp_a - exp_b);
 			if (cb)
 				*cb = _ex1;
-			return power(p, exp_b);
+			return pow(p, exp_b);
 		}
 	}
 
@@ -1690,11 +1683,11 @@ static ex gcd_pf_pow_pow(const ex& a, const ex& b, ex* ca, ex* cb)
 	// a(x) = g(x)^n A(x)^n, b(x) = g(x)^m B(x)^m ==>
 	// gcd(a, b) = g(x)^n gcd(A(x)^n, g(x)^(n-m) B(x)^m
 	if (exp_a < exp_b) {
-		ex pg =  gcd(power(p_co, exp_a), power(p_gcd, exp_b-exp_a)*power(pb_co, exp_b), ca, cb, false);
-		return power(p_gcd, exp_a)*pg;
+		ex pg =  gcd(pow(p_co, exp_a), pow(p_gcd, exp_b-exp_a)*pow(pb_co, exp_b), ca, cb, false);
+		return pow(p_gcd, exp_a)*pg;
 	} else {
-		ex pg = gcd(power(p_gcd, exp_a - exp_b)*power(p_co, exp_a), power(pb_co, exp_b), ca, cb, false);
-		return power(p_gcd, exp_b)*pg;
+		ex pg = gcd(pow(p_gcd, exp_a - exp_b)*pow(p_co, exp_a), pow(pb_co, exp_b), ca, cb, false);
+		return pow(p_gcd, exp_b)*pg;
 	}
 }
 
@@ -1713,7 +1706,7 @@ static ex gcd_pf_pow(const ex& a, const ex& b, ex* ca, ex* cb)
 	if (p.is_equal(b)) {
 		// a = p^n, b = p, gcd = p
 		if (ca)
-			*ca = power(p, a.op(1) - 1);
+			*ca = pow(p, a.op(1) - 1);
 		if (cb)
 			*cb = _ex1;
 		return p;
@@ -1731,7 +1724,7 @@ static ex gcd_pf_pow(const ex& a, const ex& b, ex* ca, ex* cb)
 		return _ex1;
 	}
 	// a(x) = g(x)^n A(x)^n, b(x) = g(x) B(x) ==> gcd(a, b) = g(x) gcd(g(x)^(n-1) A(x)^n, B(x))
-	ex rg = gcd(power(p_gcd, exp_a-1)*power(p_co, exp_a), bpart_co, ca, cb, false);
+	ex rg = gcd(pow(p_gcd, exp_a-1)*pow(p_co, exp_a), bpart_co, ca, cb, false);
 	return p_gcd*rg;
 }
 
@@ -1756,10 +1749,10 @@ static ex gcd_pf_mul(const ex& a, const ex& b, ex* ca, ex* cb)
 		part_b = part_cb;
 	}
 	if (ca)
-		*ca = (new mul(acc_ca))->setflag(status_flags::dynallocated);
+		*ca = dynallocate<mul>(acc_ca);
 	if (cb)
 		*cb = part_b;
-	return (new mul(g))->setflag(status_flags::dynallocated);
+	return dynallocate<mul>(g);
 }
 
 /** Compute LCM (Least Common Multiple) of multivariate polynomials in Z[X].
@@ -1790,7 +1783,7 @@ ex lcm(const ex &a, const ex &b, bool check_args)
  *  Yun's algorithm.  Used internally by sqrfree().
  *
  *  @param a  multivariate polynomial over Z[X], treated here as univariate
- *            polynomial in x.
+ *            polynomial in x (needs not be expanded).
  *  @param x  variable to factor in
  *  @return   vector of factors sorted in ascending degree */
 static exvector sqrfree_yun(const ex &a, const symbol &x)
@@ -1799,6 +1792,9 @@ static exvector sqrfree_yun(const ex &a, const symbol &x)
 	ex w = a;
 	ex z = w.diff(x);
 	ex g = gcd(w, z);
+	if (g.is_zero()) {
+		return res;
+	}
 	if (g.is_equal(_ex1)) {
 		res.push_back(a);
 		return res;
@@ -1806,6 +1802,9 @@ static exvector sqrfree_yun(const ex &a, const symbol &x)
 	ex y;
 	do {
 		w = quo(w, g, x);
+		if (w.is_zero()) {
+			return res;
+		}
 		y = quo(z, g, x);
 		z = y - w.diff(x);
 		g = gcd(w, z);
@@ -1817,7 +1816,7 @@ static exvector sqrfree_yun(const ex &a, const symbol &x)
 
 /** Compute a square-free factorization of a multivariate polynomial in Q[X].
  *
- *  @param a  multivariate polynomial over Q[X]
+ *  @param a  multivariate polynomial over Q[X] (needs not be expanded)
  *  @param l  lst of variables to factor in, may be left empty for autodetection
  *  @return   a square-free factorization of \p a.
  *
@@ -1852,8 +1851,8 @@ static exvector sqrfree_yun(const ex &a, const symbol &x)
  */
 ex sqrfree(const ex &a, const lst &l)
 {
-	if (is_exactly_a<numeric>(a) ||     // algorithm does not trap a==0
-	    is_a<symbol>(a))        // shortcut
+	if (is_exactly_a<numeric>(a) ||
+	    is_a<symbol>(a))        // shortcuts
 		return a;
 
 	// If no lst of variables to factorize in was specified we have to
@@ -1863,11 +1862,8 @@ ex sqrfree(const ex &a, const lst &l)
 	if (l.nops()==0) {
 		sym_desc_vec sdv;
 		get_symbol_stats(a, _ex0, sdv);
-		sym_desc_vec::const_iterator it = sdv.begin(), itend = sdv.end();
-		while (it != itend) {
-			args.append(it->sym);
-			++it;
-		}
+		for (auto & it : sdv)
+			args.append(it.sym);
 	} else {
 		args = l;
 	}
@@ -1890,18 +1886,15 @@ ex sqrfree(const ex &a, const lst &l)
 
 	// recurse down the factors in remaining variables
 	if (newargs.nops()>0) {
-		exvector::iterator i = factors.begin();
-		while (i != factors.end()) {
-			*i = sqrfree(*i, newargs);
-			++i;
-		}
+		for (auto & it : factors)
+			it = sqrfree(it, newargs);
 	}
 
 	// Done with recursion, now construct the final result
 	ex result = _ex1;
-	exvector::const_iterator it = factors.begin(), itend = factors.end();
-	for (int p = 1; it!=itend; ++it, ++p)
-		result *= power(*it, p);
+	int p = 1;
+	for (auto & it : factors)
+		result *= pow(it, p++);
 
 	// Yun's algorithm does not account for constant factors.  (For univariate
 	// polynomials it works only in the monic case.)  We can correct this by
@@ -1912,7 +1905,7 @@ ex sqrfree(const ex &a, const lst &l)
 	else
 		result *= quo(tmp, result, x);
 
-	// Put in the reational overall factor again and return
+	// Put in the rational overall factor again and return
 	return result *	lcm.inverse();
 }
 
@@ -2006,16 +1999,18 @@ ex sqrfree_parfrac(const ex & a, const symbol & x)
  *  @see ex::normal */
 static ex replace_with_symbol(const ex & e, exmap & repl, exmap & rev_lookup)
 {
+	// Since the repl contains replaced expressions we should search for them
+	ex e_replaced = e.subs(repl, subs_options::no_pattern);
+
 	// Expression already replaced? Then return the assigned symbol
-	exmap::const_iterator it = rev_lookup.find(e);
+	auto it = rev_lookup.find(e_replaced);
 	if (it != rev_lookup.end())
 		return it->second;
-	
+
 	// Otherwise create new symbol and add to list, taking care that the
 	// replacement expression doesn't itself contain symbols from repl,
 	// because subs() is not recursive
-	ex es = (new symbol)->setflag(status_flags::dynallocated);
-	ex e_replaced = e.subs(repl, subs_options::no_pattern);
+	ex es = dynallocate<symbol>();
 	repl.insert(std::make_pair(es, e_replaced));
 	rev_lookup.insert(std::make_pair(e_replaced, es));
 	return es;
@@ -2028,16 +2023,18 @@ static ex replace_with_symbol(const ex & e, exmap & repl, exmap & rev_lookup)
  *  @see basic::to_polynomial */
 static ex replace_with_symbol(const ex & e, exmap & repl)
 {
+	// Since the repl contains replaced expressions we should search for them
+	ex e_replaced = e.subs(repl, subs_options::no_pattern);
+
 	// Expression already replaced? Then return the assigned symbol
-	for (exmap::const_iterator it = repl.begin(); it != repl.end(); ++it)
-		if (it->second.is_equal(e))
-			return it->first;
-	
+	for (auto & it : repl)
+		if (it.second.is_equal(e_replaced))
+			return it.first;
+
 	// Otherwise create new symbol and add to list, taking care that the
 	// replacement expression doesn't itself contain symbols from repl,
 	// because subs() is not recursive
-	ex es = (new symbol)->setflag(status_flags::dynallocated);
-	ex e_replaced = e.subs(repl, subs_options::no_pattern);
+	ex es = dynallocate<symbol>();
 	repl.insert(std::make_pair(es, e_replaced));
 	return es;
 }
@@ -2045,36 +2042,27 @@ static ex replace_with_symbol(const ex & e, exmap & repl)
 
 /** Function object to be applied by basic::normal(). */
 struct normal_map_function : public map_function {
-	int level;
-	normal_map_function(int l) : level(l) {}
-	ex operator()(const ex & e) { return normal(e, level); }
+	ex operator()(const ex & e) override { return normal(e); }
 };
 
 /** Default implementation of ex::normal(). It normalizes the children and
  *  replaces the object with a temporary symbol.
  *  @see ex::normal */
-ex basic::normal(exmap & repl, exmap & rev_lookup, int level) const
+ex basic::normal(exmap & repl, exmap & rev_lookup) const
 {
 	if (nops() == 0)
-		return (new lst(replace_with_symbol(*this, repl, rev_lookup), _ex1))->setflag(status_flags::dynallocated);
-	else {
-		if (level == 1)
-			return (new lst(replace_with_symbol(*this, repl, rev_lookup), _ex1))->setflag(status_flags::dynallocated);
-		else if (level == -max_recursion_level)
-			throw(std::runtime_error("max recursion level reached"));
-		else {
-			normal_map_function map_normal(level - 1);
-			return (new lst(replace_with_symbol(map(map_normal), repl, rev_lookup), _ex1))->setflag(status_flags::dynallocated);
-		}
-	}
+		return dynallocate<lst>({replace_with_symbol(*this, repl, rev_lookup), _ex1});
+
+	normal_map_function map_normal;
+	return dynallocate<lst>({replace_with_symbol(map(map_normal), repl, rev_lookup), _ex1});
 }
 
 
 /** Implementation of ex::normal() for symbols. This returns the unmodified symbol.
  *  @see ex::normal */
-ex symbol::normal(exmap & repl, exmap & rev_lookup, int level) const
+ex symbol::normal(exmap & repl, exmap & rev_lookup) const
 {
-	return (new lst(*this, _ex1))->setflag(status_flags::dynallocated);
+	return dynallocate<lst>({*this, _ex1});
 }
 
 
@@ -2082,7 +2070,7 @@ ex symbol::normal(exmap & repl, exmap & rev_lookup, int level) const
  *  into re+I*im and replaces I and non-rational real numbers with a temporary
  *  symbol.
  *  @see ex::normal */
-ex numeric::normal(exmap & repl, exmap & rev_lookup, int level) const
+ex numeric::normal(exmap & repl, exmap & rev_lookup) const
 {
 	numeric num = numer();
 	ex numex = num;
@@ -2098,7 +2086,7 @@ ex numeric::normal(exmap & repl, exmap & rev_lookup, int level) const
 	}
 
 	// Denominator is always a real integer (see numeric::denom())
-	return (new lst(numex, denom()))->setflag(status_flags::dynallocated);
+	return dynallocate<lst>({numex, denom()});
 }
 
 
@@ -2116,11 +2104,11 @@ static ex frac_cancel(const ex &n, const ex &d)
 
 	// Handle trivial case where denominator is 1
 	if (den.is_equal(_ex1))
-		return (new lst(num, den))->setflag(status_flags::dynallocated);
+		return dynallocate<lst>({num, den});
 
 	// Handle special cases where numerator or denominator is 0
 	if (num.is_zero())
-		return (new lst(num, _ex1))->setflag(status_flags::dynallocated);
+		return dynallocate<lst>({num, _ex1});
 	if (den.expand().is_zero())
 		throw(std::overflow_error("frac_cancel: division by zero in frac_cancel"));
 
@@ -2159,32 +2147,25 @@ static ex frac_cancel(const ex &n, const ex &d)
 
 	// Return result as list
 //std::clog << " returns num = " << num << ", den = " << den << ", pre_factor = " << pre_factor << std::endl;
-	return (new lst(num * pre_factor.numer(), den * pre_factor.denom()))->setflag(status_flags::dynallocated);
+	return dynallocate<lst>({num * pre_factor.numer(), den * pre_factor.denom()});
 }
 
 
 /** Implementation of ex::normal() for a sum. It expands terms and performs
  *  fractional addition.
  *  @see ex::normal */
-ex add::normal(exmap & repl, exmap & rev_lookup, int level) const
+ex add::normal(exmap & repl, exmap & rev_lookup) const
 {
-	if (level == 1)
-		return (new lst(replace_with_symbol(*this, repl, rev_lookup), _ex1))->setflag(status_flags::dynallocated);
-	else if (level == -max_recursion_level)
-		throw(std::runtime_error("max recursion level reached"));
-
 	// Normalize children and split each one into numerator and denominator
 	exvector nums, dens;
 	nums.reserve(seq.size()+1);
 	dens.reserve(seq.size()+1);
-	epvector::const_iterator it = seq.begin(), itend = seq.end();
-	while (it != itend) {
-		ex n = ex_to<basic>(recombine_pair_to_ex(*it)).normal(repl, rev_lookup, level-1);
+	for (auto & it : seq) {
+		ex n = ex_to<basic>(recombine_pair_to_ex(it)).normal(repl, rev_lookup);
 		nums.push_back(n.op(0));
 		dens.push_back(n.op(1));
-		it++;
 	}
-	ex n = ex_to<numeric>(overall_coeff).normal(repl, rev_lookup, level-1);
+	ex n = ex_to<numeric>(overall_coeff).normal(repl, rev_lookup);
 	nums.push_back(n.op(0));
 	dens.push_back(n.op(1));
 	GINAC_ASSERT(nums.size() == dens.size());
@@ -2194,8 +2175,8 @@ ex add::normal(exmap & repl, exmap & rev_lookup, int level) const
 //std::clog << "add::normal uses " << nums.size() << " summands:\n";
 
 	// Add fractions sequentially
-	exvector::const_iterator num_it = nums.begin(), num_itend = nums.end();
-	exvector::const_iterator den_it = dens.begin(), den_itend = dens.end();
+	auto num_it = nums.begin(), num_itend = nums.end();
+	auto den_it = dens.begin(), den_itend = dens.end();
 //std::clog << " num = " << *num_it << ", den = " << *den_it << std::endl;
 	ex num = *num_it++, den = *den_it++;
 	while (num_it != num_itend) {
@@ -2208,7 +2189,7 @@ ex add::normal(exmap & repl, exmap & rev_lookup, int level) const
 			num_it++; den_it++;
 		}
 
-		// Additiion of two fractions, taking advantage of the fact that
+		// Addition of two fractions, taking advantage of the fact that
 		// the heuristic GCD algorithm computes the cofactors at no extra cost
 		ex co_den1, co_den2;
 		ex g = gcd(den, next_den, &co_den1, &co_den2, false);
@@ -2225,31 +2206,23 @@ ex add::normal(exmap & repl, exmap & rev_lookup, int level) const
 /** Implementation of ex::normal() for a product. It cancels common factors
  *  from fractions.
  *  @see ex::normal() */
-ex mul::normal(exmap & repl, exmap & rev_lookup, int level) const
+ex mul::normal(exmap & repl, exmap & rev_lookup) const
 {
-	if (level == 1)
-		return (new lst(replace_with_symbol(*this, repl, rev_lookup), _ex1))->setflag(status_flags::dynallocated);
-	else if (level == -max_recursion_level)
-		throw(std::runtime_error("max recursion level reached"));
-
 	// Normalize children, separate into numerator and denominator
 	exvector num; num.reserve(seq.size());
 	exvector den; den.reserve(seq.size());
 	ex n;
-	epvector::const_iterator it = seq.begin(), itend = seq.end();
-	while (it != itend) {
-		n = ex_to<basic>(recombine_pair_to_ex(*it)).normal(repl, rev_lookup, level-1);
+	for (auto & it : seq) {
+		n = ex_to<basic>(recombine_pair_to_ex(it)).normal(repl, rev_lookup);
 		num.push_back(n.op(0));
 		den.push_back(n.op(1));
-		it++;
 	}
-	n = ex_to<numeric>(overall_coeff).normal(repl, rev_lookup, level-1);
+	n = ex_to<numeric>(overall_coeff).normal(repl, rev_lookup);
 	num.push_back(n.op(0));
 	den.push_back(n.op(1));
 
 	// Perform fraction cancellation
-	return frac_cancel((new mul(num))->setflag(status_flags::dynallocated),
-	                   (new mul(den))->setflag(status_flags::dynallocated));
+	return frac_cancel(dynallocate<mul>(num), dynallocate<mul>(den));
 }
 
 
@@ -2257,16 +2230,11 @@ ex mul::normal(exmap & repl, exmap & rev_lookup, int level) const
  *  distributes integer exponents to numerator and denominator, and replaces
  *  non-integer powers by temporary symbols.
  *  @see ex::normal */
-ex power::normal(exmap & repl, exmap & rev_lookup, int level) const
+ex power::normal(exmap & repl, exmap & rev_lookup) const
 {
-	if (level == 1)
-		return (new lst(replace_with_symbol(*this, repl, rev_lookup), _ex1))->setflag(status_flags::dynallocated);
-	else if (level == -max_recursion_level)
-		throw(std::runtime_error("max recursion level reached"));
-
 	// Normalize basis and exponent (exponent gets reassembled)
-	ex n_basis = ex_to<basic>(basis).normal(repl, rev_lookup, level-1);
-	ex n_exponent = ex_to<basic>(exponent).normal(repl, rev_lookup, level-1);
+	ex n_basis = ex_to<basic>(basis).normal(repl, rev_lookup);
+	ex n_exponent = ex_to<basic>(exponent).normal(repl, rev_lookup);
 	n_exponent = n_exponent.op(0) / n_exponent.op(1);
 
 	if (n_exponent.info(info_flags::integer)) {
@@ -2274,12 +2242,12 @@ ex power::normal(exmap & repl, exmap & rev_lookup, int level) const
 		if (n_exponent.info(info_flags::positive)) {
 
 			// (a/b)^n -> {a^n, b^n}
-			return (new lst(power(n_basis.op(0), n_exponent), power(n_basis.op(1), n_exponent)))->setflag(status_flags::dynallocated);
+			return dynallocate<lst>({pow(n_basis.op(0), n_exponent), pow(n_basis.op(1), n_exponent)});
 
 		} else if (n_exponent.info(info_flags::negative)) {
 
 			// (a/b)^-n -> {b^n, a^n}
-			return (new lst(power(n_basis.op(1), -n_exponent), power(n_basis.op(0), -n_exponent)))->setflag(status_flags::dynallocated);
+			return dynallocate<lst>({pow(n_basis.op(1), -n_exponent), pow(n_basis.op(0), -n_exponent)});
 		}
 
 	} else {
@@ -2287,43 +2255,41 @@ ex power::normal(exmap & repl, exmap & rev_lookup, int level) const
 		if (n_exponent.info(info_flags::positive)) {
 
 			// (a/b)^x -> {sym((a/b)^x), 1}
-			return (new lst(replace_with_symbol(power(n_basis.op(0) / n_basis.op(1), n_exponent), repl, rev_lookup), _ex1))->setflag(status_flags::dynallocated);
+			return dynallocate<lst>({replace_with_symbol(pow(n_basis.op(0) / n_basis.op(1), n_exponent), repl, rev_lookup), _ex1});
 
 		} else if (n_exponent.info(info_flags::negative)) {
 
 			if (n_basis.op(1).is_equal(_ex1)) {
 
 				// a^-x -> {1, sym(a^x)}
-				return (new lst(_ex1, replace_with_symbol(power(n_basis.op(0), -n_exponent), repl, rev_lookup)))->setflag(status_flags::dynallocated);
+				return dynallocate<lst>({_ex1, replace_with_symbol(pow(n_basis.op(0), -n_exponent), repl, rev_lookup)});
 
 			} else {
 
 				// (a/b)^-x -> {sym((b/a)^x), 1}
-				return (new lst(replace_with_symbol(power(n_basis.op(1) / n_basis.op(0), -n_exponent), repl, rev_lookup), _ex1))->setflag(status_flags::dynallocated);
+				return dynallocate<lst>({replace_with_symbol(pow(n_basis.op(1) / n_basis.op(0), -n_exponent), repl, rev_lookup), _ex1});
 			}
 		}
 	}
 
 	// (a/b)^x -> {sym((a/b)^x, 1}
-	return (new lst(replace_with_symbol(power(n_basis.op(0) / n_basis.op(1), n_exponent), repl, rev_lookup), _ex1))->setflag(status_flags::dynallocated);
+	return dynallocate<lst>({replace_with_symbol(pow(n_basis.op(0) / n_basis.op(1), n_exponent), repl, rev_lookup), _ex1});
 }
 
 
 /** Implementation of ex::normal() for pseries. It normalizes each coefficient
  *  and replaces the series by a temporary symbol.
  *  @see ex::normal */
-ex pseries::normal(exmap & repl, exmap & rev_lookup, int level) const
+ex pseries::normal(exmap & repl, exmap & rev_lookup) const
 {
 	epvector newseq;
-	epvector::const_iterator i = seq.begin(), end = seq.end();
-	while (i != end) {
-		ex restexp = i->rest.normal();
+	for (auto & it : seq) {
+		ex restexp = it.rest.normal();
 		if (!restexp.is_zero())
-			newseq.push_back(expair(restexp, i->coeff));
-		++i;
+			newseq.push_back(expair(restexp, it.coeff));
 	}
-	ex n = pseries(relational(var,point), newseq);
-	return (new lst(replace_with_symbol(n, repl, rev_lookup), _ex1))->setflag(status_flags::dynallocated);
+	ex n = pseries(relational(var,point), std::move(newseq));
+	return dynallocate<lst>({replace_with_symbol(n, repl, rev_lookup), _ex1});
 }
 
 
@@ -2337,13 +2303,12 @@ ex pseries::normal(exmap & repl, exmap & rev_lookup, int level) const
  *  expression can be treated as a rational function). normal() is applied
  *  recursively to arguments of functions etc.
  *
- *  @param level maximum depth of recursion
  *  @return normalized expression */
-ex ex::normal(int level) const
+ex ex::normal() const
 {
 	exmap repl, rev_lookup;
 
-	ex e = bp->normal(repl, rev_lookup, level);
+	ex e = bp->normal(repl, rev_lookup);
 	GINAC_ASSERT(is_a<lst>(e));
 
 	// Re-insert replaced symbols
@@ -2364,7 +2329,7 @@ ex ex::numer() const
 {
 	exmap repl, rev_lookup;
 
-	ex e = bp->normal(repl, rev_lookup, 0);
+	ex e = bp->normal(repl, rev_lookup);
 	GINAC_ASSERT(is_a<lst>(e));
 
 	// Re-insert replaced symbols
@@ -2384,7 +2349,7 @@ ex ex::denom() const
 {
 	exmap repl, rev_lookup;
 
-	ex e = bp->normal(repl, rev_lookup, 0);
+	ex e = bp->normal(repl, rev_lookup);
 	GINAC_ASSERT(is_a<lst>(e));
 
 	// Re-insert replaced symbols
@@ -2394,7 +2359,7 @@ ex ex::denom() const
 		return e.op(1).subs(repl, subs_options::no_pattern);
 }
 
-/** Get numerator and denominator of an expression. If the expresison is not
+/** Get numerator and denominator of an expression. If the expression is not
  *  of the normal form "numerator/denominator", it is first converted to this
  *  form and then a list [numerator, denominator] is returned.
  *
@@ -2404,7 +2369,7 @@ ex ex::numer_denom() const
 {
 	exmap repl, rev_lookup;
 
-	ex e = bp->normal(repl, rev_lookup, 0);
+	ex e = bp->normal(repl, rev_lookup);
 	GINAC_ASSERT(is_a<lst>(e));
 
 	// Re-insert replaced symbols
@@ -2433,45 +2398,9 @@ ex ex::to_rational(exmap & repl) const
 	return bp->to_rational(repl);
 }
 
-// GiNaC 1.1 compatibility function
-ex ex::to_rational(lst & repl_lst) const
-{
-	// Convert lst to exmap
-	exmap m;
-	for (lst::const_iterator it = repl_lst.begin(); it != repl_lst.end(); ++it)
-		m.insert(std::make_pair(it->op(0), it->op(1)));
-
-	ex ret = bp->to_rational(m);
-
-	// Convert exmap back to lst
-	repl_lst.remove_all();
-	for (exmap::const_iterator it = m.begin(); it != m.end(); ++it)
-		repl_lst.append(it->first == it->second);
-
-	return ret;
-}
-
 ex ex::to_polynomial(exmap & repl) const
 {
 	return bp->to_polynomial(repl);
-}
-
-// GiNaC 1.1 compatibility function
-ex ex::to_polynomial(lst & repl_lst) const
-{
-	// Convert lst to exmap
-	exmap m;
-	for (lst::const_iterator it = repl_lst.begin(); it != repl_lst.end(); ++it)
-		m.insert(std::make_pair(it->op(0), it->op(1)));
-
-	ex ret = bp->to_polynomial(m);
-
-	// Convert exmap back to lst
-	repl_lst.remove_all();
-	for (exmap::const_iterator it = m.begin(); it != m.end(); ++it)
-		repl_lst.append(it->first == it->second);
-
-	return ret;
 }
 
 /** Default implementation of ex::to_rational(). This replaces the object with
@@ -2544,7 +2473,7 @@ ex numeric::to_polynomial(exmap & repl) const
 ex power::to_rational(exmap & repl) const
 {
 	if (exponent.info(info_flags::integer))
-		return power(basis.to_rational(repl), exponent);
+		return pow(basis.to_rational(repl), exponent);
 	else
 		return replace_with_symbol(*this, repl);
 }
@@ -2554,17 +2483,17 @@ ex power::to_rational(exmap & repl) const
 ex power::to_polynomial(exmap & repl) const
 {
 	if (exponent.info(info_flags::posint))
-		return power(basis.to_rational(repl), exponent);
+		return pow(basis.to_rational(repl), exponent);
 	else if (exponent.info(info_flags::negint))
 	{
 		ex basis_pref = collect_common_factors(basis);
 		if (is_exactly_a<mul>(basis_pref) || is_exactly_a<power>(basis_pref)) {
 			// (A*B)^n will be automagically transformed to A^n*B^n
-			ex t = power(basis_pref, exponent);
+			ex t = pow(basis_pref, exponent);
 			return t.to_polynomial(repl);
 		}
 		else
-			return power(replace_with_symbol(power(basis, _ex_1), repl), -exponent);
+			return pow(replace_with_symbol(pow(basis, _ex_1), repl), -exponent);
 	} 
 	else
 		return replace_with_symbol(*this, repl);
@@ -2576,17 +2505,15 @@ ex expairseq::to_rational(exmap & repl) const
 {
 	epvector s;
 	s.reserve(seq.size());
-	epvector::const_iterator i = seq.begin(), end = seq.end();
-	while (i != end) {
-		s.push_back(split_ex_to_pair(recombine_pair_to_ex(*i).to_rational(repl)));
-		++i;
-	}
+	for (auto & it : seq)
+		s.push_back(split_ex_to_pair(recombine_pair_to_ex(it).to_rational(repl)));
+
 	ex oc = overall_coeff.to_rational(repl);
 	if (oc.info(info_flags::numeric))
-		return thisexpairseq(s, overall_coeff);
+		return thisexpairseq(std::move(s), overall_coeff);
 	else
-		s.push_back(combine_ex_with_coeff_to_pair(oc, _ex1));
-	return thisexpairseq(s, default_overall_coeff());
+		s.push_back(expair(oc, _ex1));
+	return thisexpairseq(std::move(s), default_overall_coeff());
 }
 
 /** Implementation of ex::to_polynomial() for expairseqs. */
@@ -2594,17 +2521,15 @@ ex expairseq::to_polynomial(exmap & repl) const
 {
 	epvector s;
 	s.reserve(seq.size());
-	epvector::const_iterator i = seq.begin(), end = seq.end();
-	while (i != end) {
-		s.push_back(split_ex_to_pair(recombine_pair_to_ex(*i).to_polynomial(repl)));
-		++i;
-	}
+	for (auto & it : seq)
+		s.push_back(split_ex_to_pair(recombine_pair_to_ex(it).to_polynomial(repl)));
+
 	ex oc = overall_coeff.to_polynomial(repl);
 	if (oc.info(info_flags::numeric))
-		return thisexpairseq(s, overall_coeff);
+		return thisexpairseq(std::move(s), overall_coeff);
 	else
-		s.push_back(combine_ex_with_coeff_to_pair(oc, _ex1));
-	return thisexpairseq(s, default_overall_coeff());
+		s.push_back(expair(oc, _ex1));
+	return thisexpairseq(std::move(s), default_overall_coeff());
 }
 
 
@@ -2659,7 +2584,7 @@ static ex find_common_factor(const ex & e, ex & factor, exmap & repl)
 							else
 								v.push_back(t.op(k));
 						}
-						t = (new mul(v))->setflag(status_flags::dynallocated);
+						t = dynallocate<mul>(v);
 						goto term_done;
 					}
 				}
@@ -2669,7 +2594,7 @@ static ex find_common_factor(const ex & e, ex & factor, exmap & repl)
 			t = x;
 term_done:	;
 		}
-		return (new add(terms))->setflag(status_flags::dynallocated);
+		return dynallocate<add>(terms);
 
 	} else if (is_exactly_a<mul>(e)) {
 
@@ -2679,7 +2604,7 @@ term_done:	;
 		for (size_t i=0; i<num; i++)
 			v.push_back(find_common_factor(e.op(i), factor, repl));
 
-		return (new mul(v))->setflag(status_flags::dynallocated);
+		return dynallocate<mul>(v);
 
 	} else if (is_exactly_a<power>(e)) {
 		const ex e_exp(e.op(1));
@@ -2687,8 +2612,8 @@ term_done:	;
 			ex eb = e.op(0).to_polynomial(repl);
 			ex factor_local(_ex1);
 			ex pre_res = find_common_factor(eb, factor_local, repl);
-			factor *= power(factor_local, e_exp);
-			return power(pre_res, e_exp);
+			factor *= pow(factor_local, e_exp);
+			return pow(pre_res, e_exp);
 			
 		} else
 			return e.to_polynomial(repl);

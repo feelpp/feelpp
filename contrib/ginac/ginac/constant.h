@@ -3,7 +3,7 @@
  *  Interface to GiNaC's constant types and some special constants. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,23 +42,23 @@ class constant : public basic
 	GINAC_DECLARE_REGISTERED_CLASS(constant, basic)
 	// other constructors
 public:
-	constant(const std::string & initname, evalffunctype efun = 0, const std::string & texname = std::string(), unsigned domain = domain::complex);
+	constant(const std::string & initname, evalffunctype efun = nullptr, const std::string & texname = std::string(), unsigned domain = domain::complex);
 	constant(const std::string & initname, const numeric & initnumber, const std::string & texname = std::string(), unsigned domain = domain::complex);
 	
 	// functions overriding virtual functions from base classes
 public:
-	bool info(unsigned inf) const;
-	ex evalf(int level = 0) const;
-	bool is_polynomial(const ex & var) const;
-	ex conjugate() const;
-	ex real_part() const;
-	ex imag_part() const;
-	void archive(archive_node& n) const;
-	void read_archive(const archive_node& n, lst& syms);
+	bool info(unsigned inf) const override;
+	ex evalf() const override;
+	bool is_polynomial(const ex & var) const override;
+	ex conjugate() const override;
+	ex real_part() const override;
+	ex imag_part() const override;
+	void archive(archive_node& n) const override;
+	void read_archive(const archive_node& n, lst& syms) override;
 protected:
-	ex derivative(const symbol & s) const;
-	bool is_equal_same_type(const basic & other) const;
-	unsigned calchash() const;
+	ex derivative(const symbol & s) const override;
+	bool is_equal_same_type(const basic & other) const override;
+	unsigned calchash() const override;
 	
 	// non-virtual functions in this class
 protected:

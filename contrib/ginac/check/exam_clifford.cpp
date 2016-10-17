@@ -3,7 +3,7 @@
  *  Here we test GiNaC's Clifford algebra objects. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -67,14 +67,14 @@ static unsigned check_equal_simplify_term(const ex & e1, const ex & e2, idx & mu
 {
 	ex e = expand_dummy_sum(normal(simplify_indexed(e1) - e2), true);
 
- 	for (int j=0; j<4; j++) {
+	for (int j=0; j<4; j++) {
 		ex esub = e.subs(
 				is_a<varidx>(mu)
-					? lst (
+					? lst {
 							mu == idx(j, mu.get_dim()),
 							ex_to<varidx>(mu).toggle_variance() == idx(j, mu.get_dim())
-						)
-					: lst(mu == idx(j, mu.get_dim()))
+						}
+					: lst{mu == idx(j, mu.get_dim())}
 			);
 		if (!(canonicalize_clifford(esub).is_zero())) {
 			clog << "simplify_indexed(" << e1 << ") - (" << e2 << ") erroneously returned "
@@ -87,7 +87,7 @@ static unsigned check_equal_simplify_term(const ex & e1, const ex & e2, idx & mu
 
 static unsigned check_equal_simplify_term2(const ex & e1, const ex & e2)
 {
- 	ex e = expand_dummy_sum(normal(simplify_indexed(e1) - e2), true);
+	ex e = expand_dummy_sum(normal(simplify_indexed(e1) - e2), true);
 	if (!(canonicalize_clifford(e).is_zero())) {
 		clog << "simplify_indexed(" << e1 << ") - (" << e2 << ") erroneously returned "
 			 << canonicalize_clifford(e) << " instead of 0" << endl;
@@ -242,15 +242,15 @@ static unsigned clifford_check3()
 	result += check_equal(dirac_trace(e, 0), dirac_ONE(1) / 4);
 	result += check_equal(dirac_trace(e, 1), dirac_ONE(0) / 4);
 	result += check_equal(dirac_trace(e, 2), e);
-	result += check_equal(dirac_trace(e, lst(0, 1)), 1);
+	result += check_equal(dirac_trace(e, lst{0, 1}), 1);
 
 	e = dirac_gamma(mu, 0) * dirac_gamma(mu.toggle_variance(), 1) * dirac_gamma(nu, 0) * dirac_gamma(nu.toggle_variance(), 1);
 	result += check_equal_simplify(dirac_trace(e, 0), 4 * dim * dirac_ONE(1));
 	result += check_equal_simplify(dirac_trace(e, 1), 4 * dim * dirac_ONE(0));
-	// Fails with new tinfo mechanism because the order of gamme matrices with different rl depends on luck. 
+	// Fails with new tinfo mechanism because the order of gamma matrices with different rl depends on luck.
 	// TODO: better check.
 	//result += check_equal_simplify(dirac_trace(e, 2), canonicalize_clifford(e)); // e will be canonicalized by the calculation of the trace
-	result += check_equal_simplify(dirac_trace(e, lst(0, 1)), 16 * dim);
+	result += check_equal_simplify(dirac_trace(e, lst{0, 1}), 16 * dim);
 
 	return result;
 }
@@ -417,51 +417,50 @@ template <typename IDX> unsigned clifford_check6(const matrix &A)
 	realsymbol s("s"), t("t"), x("x"), y("y"), z("z");
 
 	ex c = clifford_unit(nu, A, 1);
-	e = lst_to_clifford(lst(t, x, y, z), mu, A, 1) * lst_to_clifford(lst(1, 2, 3, 4), c);
+	e = lst_to_clifford(lst{t, x, y, z}, mu, A, 1) * lst_to_clifford(lst{1, 2, 3, 4}, c);
 	e1 = clifford_inverse(e);
 	result += check_equal_simplify_term2((e*e1).simplify_indexed(), dirac_ONE(1));
 
 /* lst_to_clifford() and clifford_to_lst()  check for vectors*/
-	e = lst(t, x, y, z);
+	e = lst{t, x, y, z};
 	result += check_equal_lst(clifford_to_lst(lst_to_clifford(e, c), c, false), e);
 	result += check_equal_lst(clifford_to_lst(lst_to_clifford(e, c), c, true), e);
 
 /* lst_to_clifford() and clifford_to_lst()  check for pseudovectors*/
-	e = lst(s, t, x, y, z);
+	e = lst{s, t, x, y, z};
 	result += check_equal_lst(clifford_to_lst(lst_to_clifford(e, c), c, false), e);
 	result += check_equal_lst(clifford_to_lst(lst_to_clifford(e, c), c, true), e);
 
 /* Moebius map (both forms) checks for symmetric metrics only */
-	matrix M1(2, 2),  M2(2, 2);
 	c = clifford_unit(nu, A);
 
 	e = clifford_moebius_map(0, dirac_ONE(), 
-							 dirac_ONE(), 0, lst(t, x, y, z), A); 
+	                         dirac_ONE(), 0, lst{t, x, y, z}, A);
 /* this is just the inversion*/
-	M1 = 0, dirac_ONE(),
-		dirac_ONE(), 0;
-	e1 = clifford_moebius_map(M1, lst(t, x, y, z), A); 
+	matrix M1 = {{0, dirac_ONE()},
+	             {dirac_ONE(), 0}};
+	e1 = clifford_moebius_map(M1, lst{t, x, y, z}, A);
 /* the inversion again*/
 	result += check_equal_lst(e, e1);
 
-	e1 = clifford_to_lst(clifford_inverse(lst_to_clifford(lst(t, x, y, z), mu, A)), c);
+	e1 = clifford_to_lst(clifford_inverse(lst_to_clifford(lst{t, x, y, z}, mu, A)), c);
 	result += check_equal_lst(e, e1);
 
-	e = clifford_moebius_map(dirac_ONE(), lst_to_clifford(lst(1, 2, 3, 4), nu, A), 
-							 0, dirac_ONE(), lst(t, x, y, z), A); 
+	e = clifford_moebius_map(dirac_ONE(), lst_to_clifford(lst{1, 2, 3, 4}, nu, A),
+	                         0, dirac_ONE(), lst{t, x, y, z}, A);
 /*this is just a shift*/
-	M2 = dirac_ONE(), lst_to_clifford(lst(1, 2, 3, 4), c),
-		0, dirac_ONE();
-	e1 = clifford_moebius_map(M2, lst(t, x, y, z), c); 
+	matrix M2 = {{dirac_ONE(), lst_to_clifford(lst{1, 2, 3, 4}, c),},
+	             {0, dirac_ONE()}};
+	e1 = clifford_moebius_map(M2, lst{t, x, y, z}, c);
 /* the same shift*/
 	result += check_equal_lst(e, e1);
 
-	result += check_equal(e, lst(t+1, x+2, y+3, z+4));
+	result += check_equal(e, lst{t+1, x+2, y+3, z+4});
 
 /* Check the group law for Moebius maps */
 	e = clifford_moebius_map(M1, ex_to<lst>(e1), c);
 /*composition of M1 and M2*/
-	e1 = clifford_moebius_map(M1.mul(M2), lst(t, x, y, z), c);
+	e1 = clifford_moebius_map(M1.mul(M2), lst{t, x, y, z}, c);
 /* the product M1*M2*/
 	result += check_equal_lst(e, e1);
 	return result;
@@ -543,11 +542,48 @@ static unsigned clifford_check8()
 {
 	unsigned result = 0;
 
-	realsymbol a("a");
+	realsymbol a("a"), b("b"), x("x");
 	varidx mu(symbol("mu", "\\mu"), 1);
 
-	ex e = clifford_unit(mu, diag_matrix(lst(-1))), e0 = e.subs(mu==0);
+	ex e = clifford_unit(mu, diag_matrix({-1})), e0 = e.subs(mu==0);
 	result += ( exp(a*e0)*e0*e0 == -exp(e0*a) ) ? 0 : 1;
+
+	ex P = color_T(idx(a,8))*color_T(idx(b,8))*(x*dirac_ONE()+sqrt(x-1)*e0);
+	ex P_prime = color_T(idx(a,8))*color_T(idx(b,8))*(x*dirac_ONE()-sqrt(x-1)*e0);
+
+	result += check_equal(clifford_prime(P), P_prime);
+	result += check_equal(clifford_star(P), P);
+	result += check_equal(clifford_bar(P), P_prime);
+
+	return result;
+}
+
+static unsigned clifford_check9()
+{
+	unsigned result = 0;
+
+	realsymbol a("a"), b("b"), x("x");;
+	varidx mu(symbol("mu", "\\mu"), 4),  nu(symbol("nu", "\\nu"), 4);
+
+	ex e = clifford_unit(mu, lorentz_g(mu, nu));
+	ex e0 = e.subs(mu==0);
+	ex e1 = e.subs(mu==1);
+	ex e2 = e.subs(mu==2);
+	ex e3 = e.subs(mu==3);
+	ex one = dirac_ONE();
+
+	ex P = color_T(idx(a,8))*color_T(idx(b,8))
+	       *(x*one+sqrt(x-1)*e0+sqrt(x-2)*e0*e1 +sqrt(x-3)*e0*e1*e2 +sqrt(x-4)*e0*e1*e2*e3);
+	ex P_prime = color_T(idx(a,8))*color_T(idx(b,8))
+	       *(x*one-sqrt(x-1)*e0+sqrt(x-2)*e0*e1 -sqrt(x-3)*e0*e1*e2 +sqrt(x-4)*e0*e1*e2*e3);
+	ex P_star = color_T(idx(a,8))*color_T(idx(b,8))
+	       *(x*one+sqrt(x-1)*e0+sqrt(x-2)*e1*e0 +sqrt(x-3)*e2*e1*e0 +sqrt(x-4)*e3*e2*e1*e0);
+	ex P_bar = color_T(idx(a,8))*color_T(idx(b,8))
+	       *(x*one-sqrt(x-1)*e0+sqrt(x-2)*e1*e0 -sqrt(x-3)*e2*e1*e0 +sqrt(x-4)*e3*e2*e1*e0);
+
+	result += check_equal(clifford_prime(P), P_prime);
+	result += check_equal(clifford_star(P), P_star);
+	result += check_equal(clifford_bar(P), P_bar);
 
 	return result;
 }
@@ -565,45 +601,45 @@ unsigned exam_clifford()
 	result += clifford_check5(); cout << '.' << flush;
 
 	// anticommuting, symmetric examples
-	result += clifford_check6<varidx>(ex_to<matrix>(diag_matrix(lst(-1, 1, 1, 1))));
-	result += clifford_check6<idx>(ex_to<matrix>(diag_matrix(lst(-1, 1, 1, 1))));; cout << '.' << flush;
-	result += clifford_check6<varidx>(ex_to<matrix>(diag_matrix(lst(-1, -1, -1, -1))))+clifford_check6<idx>(ex_to<matrix>(diag_matrix(lst(-1, -1, -1, -1))));; cout << '.' << flush;
-	result += clifford_check6<idx>(ex_to<matrix>(diag_matrix(lst(-1, 1, 1, -1))))+clifford_check6<idx>(ex_to<matrix>(diag_matrix(lst(-1, 1, 1, -1))));; cout << '.' << flush;
-	result += clifford_check6<varidx>(ex_to<matrix>(diag_matrix(lst(-1, 0, 1, -1))))+clifford_check6<idx>(ex_to<matrix>(diag_matrix(lst(-1, 0, 1, -1))));; cout << '.' << flush;
-	result += clifford_check6<varidx>(ex_to<matrix>(diag_matrix(lst(-3, 0, 2, -1))))+clifford_check6<idx>(ex_to<matrix>(diag_matrix(lst(-3, 0, 2, -1))));; cout << '.' << flush;
+	result += clifford_check6<varidx>(ex_to<matrix>(diag_matrix({-1, 1, 1, 1})));
+	result += clifford_check6<idx>(ex_to<matrix>(diag_matrix({-1, 1, 1, 1})));; cout << '.' << flush;
+	result += clifford_check6<varidx>(ex_to<matrix>(diag_matrix({-1, -1, -1, -1})))+clifford_check6<idx>(ex_to<matrix>(diag_matrix({-1, -1, -1, -1})));; cout << '.' << flush;
+	result += clifford_check6<idx>(ex_to<matrix>(diag_matrix({-1, 1, 1, -1})))+clifford_check6<idx>(ex_to<matrix>(diag_matrix({-1, 1, 1, -1})));; cout << '.' << flush;
+	result += clifford_check6<varidx>(ex_to<matrix>(diag_matrix({-1, 0, 1, -1})))+clifford_check6<idx>(ex_to<matrix>(diag_matrix({-1, 0, 1, -1})));; cout << '.' << flush;
+	result += clifford_check6<varidx>(ex_to<matrix>(diag_matrix({-3, 0, 2, -1})))+clifford_check6<idx>(ex_to<matrix>(diag_matrix({-3, 0, 2, -1})));; cout << '.' << flush;
 
-	realsymbol s("s"), t("t"); // symbolic entries in matric
-	result += clifford_check6<varidx>(ex_to<matrix>(diag_matrix(lst(-1, 1, s, t))))+clifford_check6<idx>(ex_to<matrix>(diag_matrix(lst(-1, 1, s, t))));; cout << '.' << flush;
+	realsymbol s("s"), t("t"); // symbolic entries in matrix
+	result += clifford_check6<varidx>(ex_to<matrix>(diag_matrix({-1, 1, s, t})))+clifford_check6<idx>(ex_to<matrix>(diag_matrix({-1, 1, s, t})));; cout << '.' << flush;
 
 	matrix A(4, 4);
-	A = 1, 0, 0, 0, // anticommuting, not symmetric, Tr=0
-		0, -1, 0, 0,
-		0, 0, 0, -1,
-		0, 0, 1, 0; 
+	A = {{1,  0,  0,  0}, // anticommuting, not symmetric, Tr=0
+	     {0, -1,  0,  0},
+	     {0,  0,  0, -1},
+	     {0,  0,  1,  0}};
 	result += clifford_check6<varidx>(A)+clifford_check6<idx>(A);; cout << '.' << flush;
 
-	A = 1, 0, 0, 0, // anticommuting, not symmetric, Tr=2
-		0, 1, 0, 0,
-		0, 0, 0, -1,
-		0, 0, 1, 0; 
+	A = {{1,  0,  0,  0}, // anticommuting, not symmetric, Tr=2
+	     {0,  1,  0,  0},
+	     {0,  0,  0, -1},
+	     {0,  0,  1,  0}};
 	result += clifford_check6<varidx>(A)+clifford_check6<idx>(A);; cout << '.' << flush;
 
-	A = 1, 0, 0, 0, // not anticommuting, symmetric, Tr=0
-		0, -1, 0, 0,
-		0, 0, 0, -1,
-		0, 0, -1, 0; 
+	A = {{1,  0,  0,  0}, // not anticommuting, symmetric, Tr=0
+	     {0, -1,  0,  0},
+	     {0,  0,  0, -1},
+	     {0,  0, -1,  0}};
 	result += clifford_check6<varidx>(A)+clifford_check6<idx>(A);; cout << '.' << flush;
 
-	A = 1, 0, 0, 0, // not anticommuting, symmetric, Tr=2
-		0, 1, 0, 0,
-		0, 0, 0, -1,
-		0, 0, -1, 0; 
+	A = {{1,  0,  0,  0}, // not anticommuting, symmetric, Tr=2
+	     {0,  1,  0,  0},
+	     {0,  0,  0, -1},
+	     {0,  0, -1,  0}};
 	result += clifford_check6<varidx>(A)+clifford_check6<idx>(A);; cout << '.' << flush;
 
-	A = 1, 1, 0, 0, // not anticommuting, not symmetric, Tr=4
-		0, 1, 1, 0,
-		0, 0, 1, 1,
-		0, 0, 0, 1; 
+	A = {{1,  1,  0,  0}, // not anticommuting, not symmetric, Tr=4
+	     {0,  1,  1,  0},
+	     {0,  0,  1,  1},
+	     {0,  0,  0,  1}};
 	result += clifford_check6<varidx>(A)+clifford_check6<idx>(A);; cout << '.' << flush;
 
 	symbol dim("D");
@@ -618,6 +654,8 @@ unsigned exam_clifford()
 	result += clifford_check7(-2*delta_tensor(xi, chi), dim); cout << '.' << flush;
 
 	result += clifford_check8(); cout << '.' << flush;
+
+	result += clifford_check9(); cout << '.' << flush;
 
 	return result;
 }
