@@ -25,6 +25,8 @@
 #include <feel/feelpoly/raviartthomas.hpp>
 #include <feel/feeldiscr/pdhm.hpp>
 
+// #define USE_SAME_MATH 1
+
 namespace Feel {
 
 namespace FeelModels {
@@ -43,6 +45,7 @@ makeMixedElasticityOptions( std::string prefix = "mixedelasticity" )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ( prefixvm( prefix,"tau_constant").c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( prefixvm( prefix,"tau_order").c_str(), po::value<int>()->default_value( -1 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
+        ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")           
         ;
     mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
 	mpOptions.add ( feel_options() ).add( backend_options("sc") );
@@ -58,12 +61,14 @@ makeMixedElasticityLibOptions( std::string prefix = "mixedelasticity" )
     return mpLibOptions;
 }
 
-template<int Dim, int Order, int G_Order = 1>
+template<int Dim, int Order, int G_Order = 1, int E_Order = 2>
 class MixedElasticity    :	public ModelNumerical
 {
 public:
     typedef ModelNumerical super_type;
 
+
+    static const uint16_type expr_order = Order + E_Order;
     //! numerical type is double
     typedef double value_type;
     //! linear algebra backend factory
@@ -71,7 +76,7 @@ public:
     //! linear algebra backend factory shared_ptr<> type
     typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
 
-    typedef MixedElasticity<Dim,Order,G_Order> self_type;
+    typedef MixedElasticity<Dim,Order,G_Order,E_Order> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     using sparse_matrix_type = backend_type::sparse_matrix_type;
@@ -219,8 +224,8 @@ public:
 	
 };
 
-template<int Dim, int Order, int G_Order>
-MixedElasticity<Dim, Order, G_Order>::MixedElasticity( std::string const& prefix,
+template<int Dim, int Order, int G_Order, int E_Order>
+MixedElasticity<Dim, Order, G_Order, E_Order>::MixedElasticity( std::string const& prefix,
                                                     WorldComm const& worldComm,
                                                     std::string const& subPrefix,
                                                     std::string const& rootRepository )
@@ -253,8 +258,8 @@ MixedElasticity<Dim, Order, G_Order>::MixedElasticity( std::string const& prefix
 }
 
 
-template<int Dim, int Order, int G_Order>
-void MixedElasticity<Dim, Order, G_Order>::initTimeStep()
+template<int Dim, int Order, int G_Order, int E_Order>
+void MixedElasticity<Dim, Order, G_Order, E_Order>::initTimeStep()
 {
         // start or restart time step scheme
     if (!this->doRestart())
@@ -281,8 +286,8 @@ void MixedElasticity<Dim, Order, G_Order>::initTimeStep()
     }
 
 }
-template<int Dim, int Order, int G_Order>
-void MixedElasticity<Dim, Order, G_Order>::updateTimeStepNM()
+template<int Dim, int Order, int G_Order, int E_Order>
+void MixedElasticity<Dim, Order, G_Order, E_Order>::updateTimeStepNM()
 {
     this->log("MixedElasticity","updateTimeStepNM", "start" );
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
@@ -303,9 +308,9 @@ void MixedElasticity<Dim, Order, G_Order>::updateTimeStepNM()
     this->log("MixedElasticity","updateTimeStepNM", "finish" );
 }
 
-template<int Dim, int Order, int G_Order>
+template<int Dim, int Order, int G_Order, int E_Order>
 void
-MixedElasticity<Dim,Order,G_Order>::createTimeDiscretization()
+MixedElasticity<Dim,Order,G_Order, E_Order>::createTimeDiscretization()
 {
     this->log("MixedElasticity","createTimeDiscretization", "start" );
     this->timerTool("Constructor").start();
@@ -337,18 +342,18 @@ MixedElasticity<Dim,Order,G_Order>::createTimeDiscretization()
     this->log("MixedElasticity","createTimeDiscretization", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
-template<int Dim, int Order, int G_Order>
-typename MixedElasticity<Dim,Order, G_Order>::self_ptrtype
-MixedElasticity<Dim,Order,G_Order>::New( std::string const& prefix,
+template<int Dim, int Order, int G_Order, int E_Order>
+typename MixedElasticity<Dim,Order, G_Order, E_Order>::self_ptrtype
+MixedElasticity<Dim,Order,G_Order,E_Order>::New( std::string const& prefix,
                                          WorldComm const& worldComm, std::string const& subPrefix,
                                          std::string const& rootRepository )
 {
     return boost::make_shared<self_type> ( prefix,worldComm,subPrefix,rootRepository );
 }
 
-template<int Dim, int Order, int G_Order>
+template<int Dim, int Order, int G_Order, int E_Order>
 void
-MixedElasticity<Dim, Order, G_Order>::init( mesh_ptrtype mesh, mesh_ptrtype meshVisu )
+MixedElasticity<Dim, Order, G_Order, E_Order>::init( mesh_ptrtype mesh, mesh_ptrtype meshVisu )
 {
     tic();
     if ( !mesh )
@@ -385,9 +390,9 @@ MixedElasticity<Dim, Order, G_Order>::init( mesh_ptrtype mesh, mesh_ptrtype mesh
 
 }
 
-template<int Dim, int Order, int G_Order>
+template<int Dim, int Order, int G_Order, int E_Order>
 void
-MixedElasticity<Dim, Order, G_Order>::initModel()
+MixedElasticity<Dim, Order, G_Order, E_Order>::initModel()
 {
 
 
@@ -468,9 +473,9 @@ MixedElasticity<Dim, Order, G_Order>::initModel()
 }
 
 
-template<int Dim, int Order, int G_Order>
+template<int Dim, int Order, int G_Order, int E_Order>
 void
-MixedElasticity<Dim, Order, G_Order>::initSpaces()
+MixedElasticity<Dim, Order, G_Order, E_Order>::initSpaces()
 {
 
 
@@ -488,9 +493,9 @@ MixedElasticity<Dim, Order, G_Order>::initSpaces()
          << "Mh<" << Order << "> : " << M_Mh->nDof() << std::endl;
 }
 
-template<int Dim, int Order, int G_Order>
+template<int Dim, int Order, int G_Order, int E_Order>
 void
-MixedElasticity<Dim, Order, G_Order>::initExporter( mesh_ptrtype meshVisu ) 
+MixedElasticity<Dim, Order, G_Order, E_Order>::initExporter( mesh_ptrtype meshVisu ) 
 {
      std::string geoExportType="static"; //change_coords_only, change, static
      M_exporter = exporter ( _mesh=meshVisu?meshVisu:this->mesh(),
@@ -500,9 +505,9 @@ MixedElasticity<Dim, Order, G_Order>::initExporter( mesh_ptrtype meshVisu )
 }
 
 
-template<int Dim, int Order, int G_Order>
+template<int Dim, int Order, int G_Order, int E_Order>
 void
-MixedElasticity<Dim, Order, G_Order>::assemble()
+MixedElasticity<Dim, Order, G_Order, E_Order>::assemble()
 {
 
     auto ps = product(M_Vh,M_Wh,M_Mh);
@@ -526,9 +531,9 @@ MixedElasticity<Dim, Order, G_Order>::assemble()
 }
 
 
-template<int Dim, int Order, int G_Order>
+template<int Dim, int Order, int G_Order, int E_Order>
 void
-MixedElasticity<Dim, Order, G_Order>::solve()
+MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
 {
     
     auto ps = product(M_Vh,M_Wh,M_Mh);
@@ -539,27 +544,34 @@ MixedElasticity<Dim, Order, G_Order>::solve()
     M_F->close();
     toc("assemble F");
     
-	tic();
-    auto U = ps.element();
+	auto U = ps.element();
 	auto bbf = blockform2( ps, M_A_cst );
 	auto blf = blockform1( ps, M_F );
-	bbf.solve( _solution=U, _rhs=blf );
-	/*
-	auto M_U = M_backend->newBlockVector(_block=U,_copy_values= false);
-	M_backend->solve(_matrix=M_A_cst, _rhs = M_F , _solution=M_U) ;
-	U.localize(M_U);	
-	*/
+
+    tic();
+    if ( !boption(prefixvm(prefix(), "use-sc")) )
+    {
+        auto M_U = M_backend->newBlockVector(_block=U, _copy_values=false);
+        backend(_rebuild=true, _name=prefix())->solve( _matrix=M_A_cst, _rhs=M_F, _solution=M_U);
+        U.localize(M_U);
+    }
+    else
+    {
+        bbf.solve(_solution=U, _rhs=blf);
+    }
+  
+    toc("MixedElasticity : static condensation");
     M_up = U(0_c);
     M_pp = U(1_c);
-   
-    toc("solve");
+
+ 
 }
 
 
-template<int Dim, int Order, int G_Order>
+template<int Dim, int Order, int G_Order, int E_Order>
 template<typename PS>
 void
-MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
+MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD(PS&& ps)
 {
     auto tau_constant = cst(M_tau_constant); 
     auto face_mesh = M_Mh->mesh();//createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 ); 
@@ -581,6 +593,8 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
 	    H.on( _range=elements(M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
     else
 	    H.on( _range=elements(M0h->mesh()), _expr=h() );
+
+    auto sc_param = boption(prefixvm(prefix(), "use-sc")) ? 0.5 : 1.0;
 
     auto bbf = blockform2 ( ps, M_A_cst );
 
@@ -651,7 +665,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
 				    rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
 
     bbf( 2_c, 2_c) += integrate(_range=internalfaces(M_mesh),
-    _expr=cst(0.5)*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
+    _expr=sc_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
 				    rightface( pow(idv(H),M_tau_order) )));
 
     auto itField = M_modelProperties->boundaryConditions().find( "displacement");
@@ -715,10 +729,10 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
 } // end assemble STD
   
 
-template<int Dim, int Order, int G_Order>
+template<int Dim, int Order, int G_Order, int E_Order>
 template< typename PS>
 void
-MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
+MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF(PS&& ps)
 {
     M_F->zero();
     auto blf = blockform1( ps, M_F );
@@ -816,9 +830,9 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
 
 
 
-template <int Dim, int Order, int G_Order>
+template <int Dim, int Order, int G_Order, int E_Order>
 void
-MixedElasticity<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh , op_interp_ptrtype Idh , opv_interp_ptrtype Idhv )
+MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_ptrtype mesh , op_interp_ptrtype Idh , opv_interp_ptrtype Idhv )
 {
     this->log("MixedElasticity","exportResults", "start");
     this->timerTool("PostProcessing").start();
