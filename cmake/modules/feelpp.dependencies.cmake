@@ -394,7 +394,7 @@ else()
 endif()
 
 if ( FEELPP_ENABLE_HDF5 )
-  find_package(HDF5)
+  find_package(HDF5 COMPONENTS C)
   if( HDF5_FOUND ) 
     if( HDF5_IS_PARALLEL )
         message(STATUS "[feelpp] HDF5 - Headers ${HDF5_INCLUDE_DIRS}" )
