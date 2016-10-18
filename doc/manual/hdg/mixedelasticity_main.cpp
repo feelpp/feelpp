@@ -31,13 +31,13 @@ int main(int argc, char *argv[])
                            );
 
 
-    typedef FeelModels::MixedElasticity<FEELPP_DIM,FEELPP_ORDER> me_type;
+    typedef FeelModels::MixedElasticity<FEELPP_DIM,FEELPP_ORDER,FEELPP_GEO_ORDER> me_type;
 
     auto ME = me_type::New("mixedelasticity");
     auto mesh = loadMesh( _mesh=new me_type::mesh_type );
     
-    decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<1>(mesh) ) ) Idh ;
-    decltype( IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(mesh), _imageSpace=Pdhms<1>(mesh) ) ) Idhv;
+    decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<FEELPP_ORDER>(mesh) ) ) Idh ;
+    decltype( IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(mesh), _imageSpace=Pdhms<FEELPP_ORDER>(mesh) ) ) Idhv;
     ME -> init (mesh);
 	/*
 	if ( soption("gmsh.submesh").empty() )
@@ -55,8 +55,8 @@ int main(int argc, char *argv[])
 			listSubmeshes.push_back( soption("gmsh.submesh2") );
 		}
 		auto cmesh = createSubmesh( mesh, markedelements(mesh,listSubmeshes), Environment::worldComm() );
-		Idh = IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(cmesh), _imageSpace=Pdhv<1>(mesh) );
-    	Idhv = IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(cmesh), _imageSpace=Pdhms<1>(mesh) );
+		Idh = IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(cmesh), _imageSpace=Pdhv<FEELPP_ORDER>(mesh) );
+    	Idhv = IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(cmesh), _imageSpace=Pdhms<FEELPP_ORDER>(mesh) );
     	ME -> init( cmesh, mesh );
 	}
 	*/ 
