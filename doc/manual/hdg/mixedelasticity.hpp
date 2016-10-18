@@ -125,6 +125,7 @@ public:
     using model_prop_ptrtype = std::shared_ptr<model_prop_type>;
 
     using product_space_std = ProductSpaces<Vh_ptr_t,Wh_ptr_t,Mh_ptr_t>;
+	using product_space_ptrtype = boost::shared_ptr<product_space_std>;
     using bilinear_block_std = BlockBilinearForm<product_space_std>;
 
     typedef Exporter<mesh_type,G_Order> exporter_type;
@@ -144,6 +145,8 @@ protected:
     Vh_ptr_t M_Vh; // flux
     Wh_ptr_t M_Wh; // potential
     Mh_ptr_t M_Mh; // potential trace
+
+	product_space_ptrtype M_ps;
 
     backend_ptrtype M_backend;
     sparse_matrix_ptrtype M_A_cst;
@@ -205,10 +208,9 @@ public:
     
 	virtual void assemble();
     
-    template<typename PS>
-    void assembleSTD(PS&& ps);
-    template<typename PS>
-    void assembleF(PS&& ps);
+  
+    void assembleSTD();   
+    void assembleF();
     void solve();
 	
 
@@ -485,6 +487,8 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::initSpaces()
     M_Wh = Pdhv<Order>( M_mesh, true );
     M_Mh = Pdhv<Order>( face_mesh, true );
 
+	M_ps = boost::make_shared<product_space_std>(product(M_Vh,M_Wh,M_Mh));
+
     M_up = M_Vh->element( "u" ); // Strain
     M_pp = M_Wh->element( "p" ); // Displacement
 
@@ -510,24 +514,19 @@ void
 MixedElasticity<Dim, Order, G_Order, E_Order>::assemble()
 {
 
-    auto ps = product(M_Vh,M_Wh,M_Mh);
+    // auto ps = product(M_Vh,M_Wh,M_Mh);
 
     tic();
-    auto U = ps.element();
-    M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
-    M_F = M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
+    auto U = M_ps -> element();
+    M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
+    M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
     toc("creating matrices and vectors");
     
     tic();
-    this->assembleSTD( ps );
+    this->assembleSTD();
     M_A_cst->close();
     toc("assemble A");
-    
-    //tic();
-    //this->assembleF( ps );
-    //M_F->close();
-    //toc("assemble F");
-    
+     
 }
 
 
@@ -536,17 +535,16 @@ void
 MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
 {
     
-    auto ps = product(M_Vh,M_Wh,M_Mh);
+    // auto ps = product(M_Vh,M_Wh,M_Mh);
 
     tic();
-	M_F->clear();
-    this->assembleF( ps );
+    this->assembleF( );
     M_F->close();
     toc("assemble F");
     
-	auto U = ps.element();
-	auto bbf = blockform2( ps, M_A_cst );
-	auto blf = blockform1( ps, M_F );
+	auto U = M_ps -> element();
+	auto bbf = blockform2( *M_ps, M_A_cst );
+	auto blf = blockform1( *M_ps, M_F );
 
     tic();
     if ( !boption(prefixvm(prefix(), "use-sc")) )
@@ -569,9 +567,8 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
 
 
 template<int Dim, int Order, int G_Order, int E_Order>
-template<typename PS>
 void
-MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD(PS&& ps)
+MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 {
     auto tau_constant = cst(M_tau_constant); 
     auto face_mesh = M_Mh->mesh();//createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 ); 
@@ -596,7 +593,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD(PS&& ps)
 
     auto sc_param = boption(prefixvm(prefix(), "use-sc")) ? 0.5 : 1.0;
 
-    auto bbf = blockform2 ( ps, M_A_cst );
+    auto bbf = blockform2 ( *M_ps, M_A_cst );
 
 
     for( auto const& pairMat : M_modelProperties->materials() )
@@ -730,12 +727,11 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD(PS&& ps)
   
 
 template<int Dim, int Order, int G_Order, int E_Order>
-template< typename PS>
 void
-MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF(PS&& ps)
+MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 {
     M_F->zero();
-    auto blf = blockform1( ps, M_F );
+    auto blf = blockform1( *M_ps, M_F );
 
     auto w     = M_Wh->element( "w" ); 
     auto m     = M_Mh->element( "m" ); 
