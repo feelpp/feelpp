@@ -128,6 +128,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     {
         M_modGradPhiAdvection->init();
     }
+    // Init stretch advection
+    if( M_useStretchAugmented )
+    {
+        M_stretchAdvection->init();
+    }
 
     // Init iterSinceReinit
     if( this->doRestart() )
@@ -239,6 +244,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
         // Initialize modGradPhi
         M_modGradPhiAdvection->fieldSolutionPtr()->setConstant(1.);
     }
+    if( M_useStretchAugmented )
+    {
+        // Initialize modGradPhi
+        M_stretchAdvection->fieldSolutionPtr()->setConstant(1.);
+    }
 
     this->log("LevelSet", "initLevelsetValue", "finish");
 }
@@ -276,6 +286,38 @@ LEVELSET_CLASS_TEMPLATE_TYPE::addShape(
         }
         break;
     }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_type
+LEVELSET_CLASS_TEMPLATE_TYPE::interfaceRectangularFunction( element_levelset_ptrtype const& p ) const
+{
+    //auto phi = idv(this->phi());
+    auto phi = idv(p);
+    double epsilon = this->thicknessInterface();
+    double epsilon_rect = 2.*epsilon;
+    double epsilon_delta = (epsilon_rect - epsilon)/2.;
+    double epsilon_zero = epsilon + epsilon_delta;
+
+    auto R_expr =
+        vf::chi( phi<-epsilon_rect )*vf::constant(0.0)
+        +
+        vf::chi( phi>=-epsilon_rect )*vf::chi( phi<=-epsilon )*
+        1/2*(1 + (phi+epsilon_zero)/epsilon_delta + 1/M_PI*vf::sin( M_PI*(phi+epsilon_zero)/epsilon_delta ) )
+        +
+        vf::chi( phi>=-epsilon )*vf::chi( phi<=epsilon )*vf::constant(1.0)
+        +
+        vf::chi( phi>=epsilon )*vf::chi( phi<=epsilon_rect )*
+        1/2*(1 - (phi-epsilon_zero)/epsilon_delta - 1/M_PI*vf::sin( M_PI*(phi-epsilon_zero)/epsilon_delta ) )
+        +
+        vf::chi(phi>epsilon_rect)*vf::constant(0.0)
+        ;
+
+    return vf::project( 
+            this->functionSpace(), 
+            elements(this->mesh()),
+            R_expr
+            );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -360,6 +402,18 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
         M_modGradPhiAdvection->timeStepBDF()->setOrder( this->timeStepBDF()->bdfOrder() );
 
         M_modGradPhiAdvection->getExporter()->setDoExport( boption( _name="do_export_modgradphi-advection", _prefix=this->prefix() ) );
+    }
+    if( M_useStretchAugmented )
+    {
+        M_stretchAdvection = modgradphi_advection_type::New(
+                prefixvm(this->prefix(), "stretch-advection"),
+                this->worldComm()
+                );
+        M_stretchAdvection->setModelName( "Advection-Reaction" );
+        M_stretchAdvection->build( this->functionSpace() );
+        M_stretchAdvection->timeStepBDF()->setOrder( this->timeStepBDF()->bdfOrder() );
+
+        M_stretchAdvection->getExporter()->setDoExport( boption( _name="do_export_stretch-advection", _prefix=this->prefix() ) );
     }
 }
 
@@ -465,6 +519,27 @@ LEVELSET_CLASS_TEMPLATE_TYPE::modGradPhi() const
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::stretch() const
+{
+    if( !M_levelsetStretch )
+        M_levelsetStretch.reset( new element_levelset_type(this->functionSpace(), "Stretch") );
+
+    if( M_useStretchAugmented )
+    {
+        *M_levelsetStretch = *(M_stretchAdvection->fieldSolutionPtr());
+    }
+    else
+    {
+        *M_levelsetStretch = *(this->modGradPhi());
+    }
+
+    M_levelsetStretch->add(-1.);
+
+    return M_levelsetStretch;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::heaviside() const
 {
     if( !M_heaviside )
@@ -561,6 +636,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
         M_doSmoothCurvature = boption( _name="smooth-curvature", _prefix=this->prefix() );
 
     M_useGradientAugmented = boption( _name="use-gradient-augmented", _prefix=this->prefix() );
+    M_reinitGradientAugmented = boption( _name="reinit-gradient-augmented", _prefix=this->prefix() );
+
+    M_useStretchAugmented = boption( _name="use-stretch-augmented", _prefix=this->prefix() );
 
     //M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
 }
@@ -1155,6 +1233,20 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
                 );
         M_modGradPhiAdvection->solve();
     }
+    if( M_useStretchAugmented )
+    {
+        // Solve stretch modGradPhi
+        auto modGradPhi = M_stretchAdvection->fieldSolutionPtr();
+        auto u = this->fieldAdvectionVelocityPtr();
+        auto NxN = idv(this->N()) * trans(idv(this->N()));
+        auto Du = sym( gradv(u) );
+        M_stretchAdvection->updateAdvectionVelocity( idv(u) );
+        M_stretchAdvection->updateReactionCoeff( inner(NxN, Du) );
+        //M_stretchAdvection->updateSourceAdded(
+                //- idv(modGradPhi) * inner( NxN, Du)
+                //);
+        M_stretchAdvection->solve();
+    }
     // Update interface-related quantities
     this->updateInterfaceQuantities();
 
@@ -1183,12 +1275,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
     super_type::updateTimeStep();
     if( M_useGradientAugmented )
         M_modGradPhiAdvection->updateTimeStep();
+    if( M_useStretchAugmented )
+        M_stretchAdvection->updateTimeStep();
 
     if( M_iterSinceReinit < M_timeOrder )
     {
         this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
         if( M_useGradientAugmented )
             M_modGradPhiAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+        if( M_useStretchAugmented )
+            M_stretchAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
         //this->timeStepBDF()->setTimeInitial( current_time ); 
         //this->timeStepBDF()->restart();
         //this->timeStepBDF()->setTimeInitial( this->timeInitial() );
@@ -1282,10 +1378,20 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
     *phi = M_reinitializer->run( *phi );
 
-    if( M_useGradientAugmented )
+    if( M_useGradientAugmented && M_reinitGradientAugmented )
     {
         auto sol = M_modGradPhiAdvection->fieldSolutionPtr();
         sol->setConstant(1.);
+    }
+    if( M_useStretchAugmented && M_reinitGradientAugmented )
+    {
+        auto R = this->interfaceRectangularFunction();
+        auto sol = M_stretchAdvection->fieldSolutionPtr();
+        *sol = vf::project(
+                _space=M_stretchAdvection->functionSpace(),
+                _range=elements(M_stretchAdvection->mesh()),
+                _expr = 1. + (idv(sol)-1.)*idv(R)
+                );
     }
 
     M_hasReinitialized = true;
@@ -1443,12 +1549,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                        *this->modGradPhi() );
     }
 
-    super_type::exportResultsImpl( time );
-
     if( M_useGradientAugmented )
     {
         M_modGradPhiAdvection->exportResults( time );
     }
+    if( M_useStretchAugmented )
+    {
+        M_stretchAdvection->exportResults( time );
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"InterfaceRectangularF"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"InterfaceRectangularF")),
+                                       this->interfaceRectangularFunction() );
+    }
+
+    super_type::exportResultsImpl( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
     this->log("LevelSet","exportResults", "finish");
