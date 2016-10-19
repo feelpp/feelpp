@@ -517,6 +517,7 @@ private:
     int M_iterSinceReinit;
     // Vector that stores the iterSinceReinit of each time-step
     std::vector<int> M_vecIterSinceReinit;
+    bool M_useSmoothReinitialization;
 
     //--------------------------------------------------------------------//
     // Backends

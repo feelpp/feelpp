@@ -624,7 +624,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     else
         CHECK( false ) << reinitmethod << " is not a valid reinitialization method\n";
 
-    M_useMarkerDiracAsMarkerDoneFM = boption( _name="use-marker2-as-done", _prefix=prefixvm(this->prefix(), "reinit-fm") );
+    M_useSmoothReinitialization = boption( _name="use-smooth-reinit", _prefix=this->prefix() );
+
+    M_useMarkerDiracAsMarkerDoneFM = M_useSmoothReinitialization
 
     M_strategyBeforeFM = (strategy_before_FM_type) ioption(prefixvm(this->prefix(),"fm-init-first-elts-strategy"));
 
@@ -1321,6 +1323,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
         this->createReinitialization();
 
     auto phi = this->phi();
+    auto phiReinit = this->functionSpace()->elementPtr();
 
     if ( M_reinitMethod == LevelSetReinitMethod::FM )
     {
@@ -1339,7 +1342,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
                 auto gradPhi = trans(gradv(phi));
                 auto modgradphi = M_smootherFM->project( sqrt( trans(gradPhi)*gradPhi ) );
                 
-                *phi = vf::project(this->functionSpace(), elements(this->mesh()), idv(phi)/idv(modgradphi) );
+                //*phi = vf::project(this->functionSpace(), elements(this->mesh()), idv(phi)/idv(modgradphi) );
+                *phiReinit = vf::project(this->functionSpace(), elements(this->mesh()), idv(phi)/idv(modgradphi) );
             }
             break;
 
@@ -1376,7 +1380,21 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
         //LOG(INFO)<<"reinit done in "<<ch.elapsed()<<" s\n";
     } // Hamilton-Jacobi
 
-    *phi = M_reinitializer->run( *phi );
+    //*phi = M_reinitializer->run( *phi );
+    *phiReinit = M_reinitializer->run( *phiReinit );
+    if( M_useSmoothReinitialization )
+    {
+        auto R = this->interfaceRectangularFunction(phiReinit);
+        *phi = vf::project(
+                _space=this->functionSpace(),
+                _range=elements(this->mesh()),
+                _expr=idv(phi)*idv(R) + idv(phiReinit)*(1.-idv(R))
+                );
+    }
+    else
+    {
+        *phi = *phiReinit;
+    }
 
     if( M_useGradientAugmented && M_reinitGradientAugmented )
     {
