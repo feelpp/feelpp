@@ -269,7 +269,7 @@ public :
     template<typename ExprT>
     void updateReactionCoeff(vf::Expr<ExprT> const& expr)
     {
-        this->diffusionReactionCoeff()->updateReactionCoeff(expr);
+        this->diffusionReactionModel()->updateReactionCoeff(expr);
     }
 
     //--------------------------------------------------------------------//

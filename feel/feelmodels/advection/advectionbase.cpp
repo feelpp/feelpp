@@ -380,6 +380,11 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
         M_modelName = "Advection-Diffusion";
         M_solverName = "LinearSystem";
     }
+    else if ( type == "Advection-Reaction" )
+    {
+        M_modelName = "Advection-Reaction";
+        M_solverName = "LinearSystem";
+    }
     else if ( type == "Advection-Diffusion-Reaction" )
     {
         M_modelName = "Advection-Diffusion-Reaction";
@@ -400,7 +405,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 bool
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::hasReaction() const
 {
-    return (this->modelName() == "Advection-Diffusion-Reaction");
+    return (this->modelName() == "Advection-Reaction" || this->modelName() == "Advection-Diffusion-Reaction");
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
