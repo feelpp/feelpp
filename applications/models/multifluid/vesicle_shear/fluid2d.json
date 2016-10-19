@@ -18,17 +18,23 @@
                 {
                     "expr":"{gammaDot*y,0}:gammaDot:y"
                 },
-                "Top":
-                {
-                    "expr":"{0,0}"
-                },
-                "Bottom":
-                {
-                    "expr":"{0,0}"
-                },
                 "Right":
                 {
                     "expr":"{gammaDot*y,0}:gammaDot:y"
+                }
+            }
+        },
+        "fluid":
+        {
+            "slip":
+            {
+                "Top":
+                {
+                    "expr":"0"
+                },
+                "Bottom":
+                {
+                    "expr":"0"
                 }
             }
         }
