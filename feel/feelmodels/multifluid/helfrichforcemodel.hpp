@@ -1,7 +1,7 @@
 #ifndef _HELFRICHFORCEMODEL_HPP
 #define _HELFRICHFORCEMODEL_HPP 1
 
-#define DEBUG_HELFRICHFORCEMODEL
+//#define DEBUG_HELFRICHFORCEMODEL
 
 #include <feel/feelmodels/multifluid/interfaceforcesmodel.hpp>
 
