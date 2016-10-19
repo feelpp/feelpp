@@ -61,7 +61,7 @@ makeMixedElasticityLibOptions( std::string prefix = "mixedelasticity" )
     return mpLibOptions;
 }
 
-template<int Dim, int Order, int G_Order = 1, int E_Order = 2>
+template<int Dim, int Order, int G_Order = 1, int E_Order = 4>
 class MixedElasticity    :	public ModelNumerical
 {
 public:
