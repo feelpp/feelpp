@@ -626,7 +626,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     M_useSmoothReinitialization = boption( _name="use-smooth-reinit", _prefix=this->prefix() );
 
-    M_useMarkerDiracAsMarkerDoneFM = M_useSmoothReinitialization
+    M_useMarkerDiracAsMarkerDoneFM = boption( _name="use-marker2-as-done", _prefix=prefixvm(this->prefix(), "reinit-fm") );
 
     M_strategyBeforeFM = (strategy_before_FM_type) ioption(prefixvm(this->prefix(),"fm-init-first-elts-strategy"));
 
