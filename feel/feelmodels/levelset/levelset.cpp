@@ -1577,6 +1577,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
         this->M_exporter->step( time )->add( prefixvm(this->prefix(),"InterfaceRectangularF"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"InterfaceRectangularF")),
                                        this->interfaceRectangularFunction() );
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Stretch"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Stretch")),
+                                       *this->stretch() );
     }
 
     super_type::exportResultsImpl( time );
