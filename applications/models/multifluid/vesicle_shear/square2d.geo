@@ -1,6 +1,6 @@
 h = 0.1;
-xmin = -4;
-xmax = 4;
+xmin = -4.5;
+xmax = 4.5;
 ymin = -4;
 ymax = 4;
 Point(1) = {xmin,ymin,0.0,h};
