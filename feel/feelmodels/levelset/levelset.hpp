@@ -285,6 +285,7 @@ public:
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
     element_levelset_vectorial_ptrtype const& gradPhi() const;
     element_levelset_ptrtype const& modGradPhi() const;
+    element_levelset_ptrtype const& stretch() const;
     element_levelset_ptrtype const& heaviside() const;
     element_levelset_ptrtype const& H() const { return this->heaviside(); }
     element_levelset_ptrtype const& dirac() const;
@@ -427,6 +428,11 @@ private:
 
     //--------------------------------------------------------------------//
     element_levelset_ptrtype const& phio() const { return this->timeStepBDF()->unknowns()[1]; }
+
+    //--------------------------------------------------------------------//
+    // Interface rectangular function
+    element_levelset_type interfaceRectangularFunction() const { return this->interfaceRectangularFunction(this->phi()); }
+    element_levelset_type interfaceRectangularFunction( element_levelset_ptrtype const& p ) const;
     //--------------------------------------------------------------------//
     // Export
     void exportResultsImpl( double time );
@@ -523,7 +529,14 @@ private:
     //--------------------------------------------------------------------//
     // ModGradPhi advection
     bool M_useGradientAugmented;
+    bool M_reinitGradientAugmented;
     modgradphi_advection_ptrtype M_modGradPhiAdvection;
+
+    //--------------------------------------------------------------------//
+    // Stretch advection
+    bool M_useStretchAugmented;
+    modgradphi_advection_ptrtype M_stretchAdvection;
+    mutable element_levelset_ptrtype M_levelsetStretch;
 
     //--------------------------------------------------------------------//
     // Export
