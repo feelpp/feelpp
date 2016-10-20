@@ -1384,7 +1384,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
     *phiReinit = M_reinitializer->run( *phiReinit );
     if( M_useSmoothReinitialization )
     {
-        auto R = this->interfaceRectangularFunction(phiReinit);
+        //auto R = this->interfaceRectangularFunction(phiReinit);
+        auto R = this->interfaceRectangularFunction();
         *phi = vf::project(
                 _space=this->functionSpace(),
                 _range=elements(this->mesh()),
