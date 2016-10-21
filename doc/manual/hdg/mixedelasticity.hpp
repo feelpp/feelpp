@@ -748,7 +748,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
         {
             for ( auto const& exAtMarker : (*itType).second )
             {
-                auto g = expr<Dim,G_Order> (exAtMarker.expression());
+                auto g = expr<Dim,G_Order,expr_order> (exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
 				blf( 1_c ) += integrate(_range=elements(M_mesh),
@@ -761,22 +761,22 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
             for ( auto const& exAtMarker : (*itType).second )
             {
 				auto marker = exAtMarker.marker();
-                auto g = expr<Dim,Dim> (exAtMarker.expression());
+                auto g = expr<Dim,Dim,expr_order> (exAtMarker.expression());
 				if ( !this->isStationary() )
                     g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
-				cout << "Neumann condition on " << marker << ": " << g << std::endl;
-				blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
-									    _expr=trans(id(m))*(g*N()));
-            }
-		}	
-		itType = mapField.find("Neumann_scalar");
-		if ( itType != mapField.end() )
+			cout << "Neumann condition on " << marker << ": " << g << std::endl;
+			blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+									_expr=trans(id(m))*(g*N()));
+		}
+	}	
+	itType = mapField.find("Neumann_scalar");
+	if ( itType != mapField.end() )
+	{
+		for ( auto const& exAtMarker : (*itType).second )
 		{
-            for ( auto const& exAtMarker : (*itType).second )
-            {
-				auto marker = exAtMarker.marker();
-				auto g = expr(exAtMarker.expression());
-				if ( !this->isStationary() )
+			auto marker = exAtMarker.marker();
+			auto g = expr<expr_order>(exAtMarker.expression());
+			if ( !this->isStationary() )
                     g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
                 // auto g = expr<Dim,Dim> ( scalar*eye<Dim,Dim>() );
 				cout << "Neumann scalar condition on " << marker << ": " << g << std::endl;
@@ -796,7 +796,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
             for ( auto const& exAtMarker : (*itType).second )
             {
 				auto marker = exAtMarker.marker();
-                auto g = expr<Dim,G_Order>(exAtMarker.expression());
+                auto g = expr<Dim,G_Order, expr_order>(exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
 				cout << "Dirichlet condition on " << marker << ": " << g << std::endl;
@@ -874,7 +874,7 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
  						{
     		    			if (exAtMarker.isExpression() )
  			    			{		
-								auto u_exact = expr<Dim,1> (exAtMarker.expression());
+								auto u_exact = expr<Dim,1,expr_order> (exAtMarker.expression());
 								if ( !this->isStationary() )
 								    u_exact.setParameterValues( { {"t", time } } );
 
