@@ -26,6 +26,7 @@
 #include <feel/feelcore/environment.hpp>
 
 #include <feel/feelmodels/modelparameters.hpp>
+#include <boost/optional.hpp>
 
 namespace Feel {
 
@@ -58,44 +59,42 @@ ModelParameters::setup()
         LOG(INFO) << "reading parameter " << v.first  << "\n";
         std::string t = v.first; // parameter name
         auto f= v.second;
+        if ( f.empty() ) // parameter is not a node but a leaf
         {
-            try
+            if( boost::optional<double> d = f.get_value_optional<double>() )
             {
-                auto val= M_p.get<double>(v.first);
-                LOG(INFO) << "adding parameter " << t << " with value " << val;
-                this->operator[](t) = ModelParameter( t, val, val, val );
+                LOG(INFO) << "adding parameter " << t << " with value " << *d;
+                this->operator[](t) = ModelParameter( t, *d, 0, 0 );
             }
-            catch( ... )
+            else if ( boost::optional<std::string> s = f.get_value_optional<std::string>() )
             {
-                try
-                {
-                    auto val= M_p.get<std::string>(v.first);
-                    LOG(INFO) << "adding parameter " << t << " with value " << val;
-                    this->operator[](t) = ModelParameter( t, val, M_directoryLibExpr, M_worldComm );
-                }
-                catch( ... )
-                {
-                    try
-                    {
-                        auto val= f.get<double>("value");
-                        LOG(INFO) << "adding parameter " << t << " with value " << val;
-                        this->operator[](t) = ModelParameter( t, val, val, val );
-                    }
-                    catch( ... )
-                    {
-                        try
-                        {
-                            auto val= f.get<std::string>("value");
-                            LOG(INFO) << "adding parameter " << t << " with value " << val;
-                            this->operator[](t) = ModelParameter( t, val, M_directoryLibExpr, M_worldComm );
-                        }
-                        catch( ... )
-                        {
-                            this->operator[](t) = ModelParameter( t, 0., 0., 0. );
-                        }
-                    }
-                }
+                LOG(INFO) << "adding parameter " << t << " with expr " << *s;
+                this->operator[](t) = ModelParameter( t, *s, M_directoryLibExpr, M_worldComm );
             }
+            else
+            {
+                LOG(INFO) << "adding parameter " << t << " with default value 0";
+                this->operator[](t) = ModelParameter( t, 0, 0, 0 );
+            }
+        }
+        else
+        {
+            std::string name = t;
+            double val = 0.;
+            double min = 0.;
+            double max = 0.;
+            if( boost::optional<std::string> n = f.get_optional<std::string>("name") )
+                name = *n;
+            if( boost::optional<double> d = f.get_optional<double>("min") )
+                min = *d;
+            if( boost::optional<double> d = f.get_optional<double>("max") )
+                max = *d;
+            if( boost::optional<double> d = f.get_optional<double>("value") )
+                this->operator[](t) = ModelParameter( name, *d, min, max );
+            else if ( boost::optional<std::string> s = f.get_optional<std::string>("value") )
+                this->operator[](t) = ModelParameter( name, *s, M_directoryLibExpr, M_worldComm, min, max );
+            else
+                this->operator[](t) = ModelParameter( name, 0., min, max );
         }
     }
 }
