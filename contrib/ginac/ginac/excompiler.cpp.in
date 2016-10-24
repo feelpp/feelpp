@@ -256,9 +256,9 @@ public:
 	 */
 	void* link_so_file(const std::string filename, bool clean_up)
 	{
-		void* module = NULL;
+		void* module = nullptr;
 		module = dlopen(filename.c_str(), RTLD_NOW);
-		if (module == NULL)	{
+		if (module == nullptr)	{
 			throw std::runtime_error("excompiler::link_so_file: could not open compiled module!");
 		}
 

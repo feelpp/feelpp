@@ -7,7 +7,7 @@
  *  Please do not modify it directly, edit function.cppy instead!
  *  function.py options: maxargs=@maxargs@
  *
- *  GiNaC Copyright (C) 1999-2010 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,7 +34,6 @@
 #include "power.h"
 #include "archive.h"
 #include "inifcns.h"
-#include "tostring.h"
 #include "utils.h"
 #include "hash_seed.h"
 #include "remember.h"
@@ -78,8 +77,9 @@ void function_options::initialize()
 {
 	set_name("unnamed_function", "\\\\mbox{unnamed}");
 	nparams = 0;
-	eval_f = evalf_f = real_part_f = imag_part_f = conjugate_f = derivative_f
-		= power_f = series_f = 0;
+	eval_f = evalf_f = real_part_f = imag_part_f = conjugate_f = expand_f
+		= derivative_f = expl_derivative_f = power_f = series_f = nullptr;
+	info_f = nullptr;
 	evalf_params_first = true;
 	use_return_type = false;
 	eval_use_exvector_args = false;
@@ -87,10 +87,13 @@ void function_options::initialize()
 	conjugate_use_exvector_args = false;
 	real_part_use_exvector_args = false;
 	imag_part_use_exvector_args = false;
+	expand_use_exvector_args = false;
 	derivative_use_exvector_args = false;
+	expl_derivative_use_exvector_args = false;
 	power_use_exvector_args = false;
 	series_use_exvector_args = false;
 	print_use_exvector_args = false;
+	info_use_exvector_args = false;
 	use_remember = false;
 	functions_with_same_name = 1;
 	symtree = 0;
@@ -115,7 +118,7 @@ function_options & function_options::latex_name(std::string const & tn)
 
 // the following lines have been generated for max. @maxargs@ parameters
 +++ for method, N in [ (f, N) for f in methods[0:-1] for N in range(1, maxargs + 1)]:
-function_options & function_options::@method@_func(@method@_funcp_@N@ e)
+function_options & function_options::@method@_func(@method@_funcp_@N@ e) 
 {
 	test_and_set_nparams(@N@);
 	@method@_f = @method@_funcp(e);
@@ -139,7 +142,7 @@ function_options & function_options::set_return_type(unsigned rt, const return_t
 {
 	use_return_type = true;
 	return_type = rt;
-	if (rtt != 0)
+	if (rtt != nullptr)
 		return_type_tinfo = *rtt;
 	else
 		return_type_tinfo = make_return_type_t<function>();
@@ -174,7 +177,7 @@ function_options & function_options::set_symmetry(const symmetry & s)
 	symtree = s;
 	return *this;
 }
-
+	
 void function_options::test_and_set_nparams(unsigned n)
 {
 	if (nparams==0) {
@@ -184,7 +187,7 @@ void function_options::test_and_set_nparams(unsigned n)
 		// usually executed before main(), so the exception could not
 		// be caught anyhow
 		std::cerr << "WARNING: " << name << "(): number of parameters ("
-		          << n << ") differs from number set before ("
+		          << n << ") differs from number set before (" 
 		          << nparams << ")" << std::endl;
 	}
 }
@@ -225,7 +228,7 @@ function::function(unsigned ser) : serial(ser)
 // the following lines have been generated for max. @maxargs@ parameters
 +++ for N in range(1, maxargs + 1):
 function::function(unsigned ser, @seq('const ex & param%(n)d', N)@)
-	: exprseq(@seq('param%(n)d', N)@), serial(ser)
+	: exprseq{@seq('param%(n)d', N)@}, serial(ser)
 {
 }
 ---
@@ -238,13 +241,13 @@ function::function(unsigned ser, const exprseq & es) : exprseq(es), serial(ser)
 	clearflag(status_flags::evaluated);
 }
 
-function::function(unsigned ser, const exvector & v, bool discardable)
-  : exprseq(v,discardable), serial(ser)
+function::function(unsigned ser, const exvector & v)
+  : exprseq(v), serial(ser)
 {
 }
 
-function::function(unsigned ser, boost::shared_ptr<exvector> vp)
-  : exprseq(vp), serial(ser)
+function::function(unsigned ser, exvector && v)
+  : exprseq(std::move(v)), serial(ser)
 {
 }
 
@@ -260,13 +263,12 @@ void function::read_archive(const archive_node& n, lst& sym_lst)
 	std::string s;
 	if (n.find_string("name", s)) {
 		unsigned int ser = 0;
-		std::vector<function_options>::const_iterator i = registered_functions().begin(), iend = registered_functions().end();
-		while (i != iend) {
-			if (s == i->name) {
+		for (auto & it : registered_functions()) {
+			if (s == it.name) {
 				serial = ser;
 				return;
 			}
-			++i; ++ser;
+			++ser;
 		}
 		throw (std::runtime_error("unknown function '" + s + "' in archive"));
 	} else
@@ -300,7 +302,7 @@ void function::print(const print_context & c, unsigned level) const
 
 next_context:
 	unsigned id = pc_info->options.get_id();
-	if (id >= pdt.size() || pdt[id] == NULL) {
+	if (id >= pdt.size() || pdt[id] == nullptr) {
 
 		// Method not found, try parent print_context class
 		const print_context_class_info *parent_pc_info = pc_info->get_parent();
@@ -360,20 +362,10 @@ next_context:
 	}
 }
 
-ex function::expand(unsigned options) const
+ex function::eval() const
 {
-	// Only expand arguments when asked to do so
-	if (options & expand_options::expand_function_args)
-		return inherited::expand(options);
-	else
-		return (options == 0) ? setflag(status_flags::expanded) : *this;
-}
-
-ex function::eval(int level) const
-{
-	if (level>1) {
-		// first evaluate children, then we will end up here again
-		return function(serial,evalchildren(level));
+	if (flags & status_flags::evaluated) {
+		return *this;
 	}
 
 	GINAC_ASSERT(serial<registered_functions().size());
@@ -388,11 +380,11 @@ ex function::eval(int level) const
 			// Something has changed while sorting arguments, more evaluations later
 			if (sig == 0)
 				return _ex0;
-			return ex(sig) * thiscontainer(v);
+			return ex(sig) * thiscontainer(std::move(v));
 		}
 	}
 
-	if (opt.eval_f==0) {
+	if (opt.eval_f==nullptr) {
 		return this->hold();
 	}
 
@@ -422,28 +414,23 @@ ex function::eval(int level) const
 	return eval_result;
 }
 
-ex function::evalf(int level) const
+ex function::evalf() const
 {
 	GINAC_ASSERT(serial<registered_functions().size());
 	const function_options &opt = registered_functions()[serial];
 
 	// Evaluate children first
 	exvector eseq;
-	if (level == 1 || !(opt.evalf_params_first))
+	if (!opt.evalf_params_first)
 		eseq = seq;
-	else if (level == -max_recursion_level)
-		throw(std::runtime_error("max recursion level reached"));
 	else {
 		eseq.reserve(seq.size());
-		--level;
-		exvector::const_iterator it = seq.begin(), itend = seq.end();
-		while (it != itend) {
-			eseq.push_back(it->evalf(level));
-			++it;
+		for (auto & it : seq) {
+			eseq.push_back(it.evalf());
 		}
 	}
 
-	if (opt.evalf_f==0) {
+	if (opt.evalf_f==nullptr) {
 		return function(serial,eseq).hold();
 	}
 	current_serial = serial;
@@ -461,7 +448,7 @@ ex function::evalf(int level) const
 }
 
 /**
- *  This method is defined to be in line with behaviour of function::return_type()
+ *  This method is defined to be in line with behavior of function::return_type()
  */
 ex function::eval_ncmul(const exvector & v) const
 {
@@ -490,9 +477,9 @@ ex function::thiscontainer(const exvector & v) const
 	return function(serial, v);
 }
 
-ex function::thiscontainer(boost::shared_ptr<exvector> vp) const
+ex function::thiscontainer(exvector && v) const
 {
-	return function(serial, vp);
+	return function(serial, std::move(v));
 }
 
 /** Implementation of ex::series for functions.
@@ -502,7 +489,7 @@ ex function::series(const relational & r, int order, unsigned options) const
 	GINAC_ASSERT(serial<registered_functions().size());
 	const function_options &opt = registered_functions()[serial];
 
-	if (opt.series_f==0) {
+	if (opt.series_f==nullptr) {
 		return basic::series(r, order);
 	}
 	ex res;
@@ -537,7 +524,7 @@ ex function::conjugate() const
 	GINAC_ASSERT(serial<registered_functions().size());
 	const function_options & opt = registered_functions()[serial];
 
-	if (opt.conjugate_f==0) {
+	if (opt.conjugate_f==nullptr) {
 		return conjugate_function(*this).hold();
 	}
 
@@ -562,7 +549,7 @@ ex function::real_part() const
 	GINAC_ASSERT(serial<registered_functions().size());
 	const function_options & opt = registered_functions()[serial];
 
-	if (opt.real_part_f==0)
+	if (opt.real_part_f==nullptr)
 		return basic::real_part();
 
 	if (opt.real_part_use_exvector_args)
@@ -585,7 +572,7 @@ ex function::imag_part() const
 	GINAC_ASSERT(serial<registered_functions().size());
 	const function_options & opt = registered_functions()[serial];
 
-	if (opt.imag_part_f==0)
+	if (opt.imag_part_f==nullptr)
 		return basic::imag_part();
 
 	if (opt.imag_part_use_exvector_args)
@@ -602,6 +589,31 @@ ex function::imag_part() const
 	throw(std::logic_error("function::imag_part(): invalid nparams"));
 }
 
+/** Implementation of ex::info for functions. */
+bool function::info(unsigned inf) const
+{
+	GINAC_ASSERT(serial<registered_functions().size());
+	const function_options & opt = registered_functions()[serial];
+
+	if (opt.info_f==nullptr) {
+		return basic::info(inf);
+	}
+
+	if (opt.info_use_exvector_args) {
+		return ((info_funcp_exvector)(opt.info_f))(seq, inf);
+	}
+
+	switch (opt.nparams) {
+		// the following lines have been generated for max. @maxargs@ parameters
++++ for N in range(1, maxargs + 1):
+		case @N@:
+			return ((info_funcp_@N@)(opt.info_f))(@seq('seq[%(n)d]', N, 0)@, inf);
+---
+		// end of generated lines
+	}
+	throw(std::logic_error("function::info(): invalid nparams"));
+}
+
 // protected
 
 /** Implementation of ex::diff() for functions. It applies the chain rule,
@@ -611,10 +623,10 @@ ex function::derivative(const symbol & s) const
 {
 	ex result;
 
-	if (serial == Order_SERIAL::serial) {
-		// Order Term function only differentiates the argument
-		return Order(seq[0].diff(s));
-	} else {
+	try {
+		// Explicit derivation
+		result = expl_derivative(s);
+	} catch (...) {
 		// Chain rule
 		ex arg_diff;
 		size_t num = seq.size();
@@ -714,46 +726,95 @@ ex function::pderivative(unsigned diff_param) const // partial differentiation
 {
 	GINAC_ASSERT(serial<registered_functions().size());
 	const function_options &opt = registered_functions()[serial];
-
-	// No derivative defined? Then return abstract derivative object
-	if (opt.derivative_f == NULL)
-		return fderivative(serial, diff_param, seq);
-
-	current_serial = serial;
-	if (opt.derivative_use_exvector_args)
-		return ((derivative_funcp_exvector)(opt.derivative_f))(seq, diff_param);
-	switch (opt.nparams) {
-		// the following lines have been generated for max. @maxargs@ parameters
+	
+	if (opt.derivative_f) {
+		// Invoke the defined derivative function.
+		current_serial = serial;
+		if (opt.derivative_use_exvector_args)
+			return ((derivative_funcp_exvector)(opt.derivative_f))(seq, diff_param);
+		switch (opt.nparams) {
+			// the following lines have been generated for max. @maxargs@ parameters
 +++ for N in range(1, maxargs + 1):
-		case @N@:
-			return ((derivative_funcp_@N@)(opt.derivative_f))(@seq('seq[%(n)d]', N, 0)@, diff_param);
+			case @N@:
+				return ((derivative_funcp_@N@)(opt.derivative_f))(@seq('seq[%(n)d]', N, 0)@, diff_param);
 ---
-		// end of generated lines
+			// end of generated lines
+		}
 	}
-	throw(std::logic_error("function::pderivative(): no diff function defined"));
+	// No derivative defined? Fall back to abstract derivative object.
+	return fderivative(serial, diff_param, seq);
+}
+
+ex function::expl_derivative(const symbol & s) const // explicit differentiation
+{
+	GINAC_ASSERT(serial<registered_functions().size());
+	const function_options &opt = registered_functions()[serial];
+
+	if (opt.expl_derivative_f) {
+		// Invoke the defined explicit derivative function.
+		current_serial = serial;
+		if (opt.expl_derivative_use_exvector_args)
+			return ((expl_derivative_funcp_exvector)(opt.expl_derivative_f))(seq, s);
+		switch (opt.nparams) {
+			// the following lines have been generated for max. @maxargs@ parameters
++++ for N in range(1, maxargs + 1):
+			case @N@:
+				return ((expl_derivative_funcp_@N@)(opt.expl_derivative_f))(@seq('seq[%(n)d]', N, 0)@, s);
+---
+			// end of generated lines
+		}
+	}
+	// There is no fallback for explicit derivative.
+	throw(std::logic_error("function::expl_derivative(): explicit derivation is called, but no such function defined"));
 }
 
 ex function::power(const ex & power_param) const // power of function
 {
 	GINAC_ASSERT(serial<registered_functions().size());
 	const function_options &opt = registered_functions()[serial];
-
-	if (opt.power_f == NULL)
-		return (new GiNaC::power(*this, power_param))->setflag(status_flags::dynallocated |
-		                                                       status_flags::evaluated);
-
-	current_serial = serial;
-	if (opt.power_use_exvector_args)
-		return ((power_funcp_exvector)(opt.power_f))(seq,  power_param);
-	switch (opt.nparams) {
-		// the following lines have been generated for max. @maxargs@ parameters
+	
+	if (opt.power_f) {
+		// Invoke the defined power function.
+		current_serial = serial;
+		if (opt.power_use_exvector_args)
+			return ((power_funcp_exvector)(opt.power_f))(seq,  power_param);
+		switch (opt.nparams) {
+			// the following lines have been generated for max. @maxargs@ parameters
 +++ for N in range(1, maxargs + 1):
-		case @N@:
-			return ((power_funcp_@N@)(opt.power_f))(@seq('seq[%(n)d]', N, 0)@, power_param);
+			case @N@:
+				return ((power_funcp_@N@)(opt.power_f))(@seq('seq[%(n)d]', N, 0)@, power_param);
 ---
-		// end of generated lines
+			// end of generated lines
+		}
 	}
-	throw(std::logic_error("function::power(): no power function defined"));
+	// No power function defined? Fall back to returning a power object.
+	return dynallocate<GiNaC::power>(*this, power_param).setflag(status_flags::evaluated);
+}
+
+ex function::expand(unsigned options) const
+{
+	GINAC_ASSERT(serial<registered_functions().size());
+	const function_options &opt = registered_functions()[serial];
+
+	if (opt.expand_f) {
+		// Invoke the defined expand function.
+		current_serial = serial;
+		if (opt.expand_use_exvector_args)
+			return ((expand_funcp_exvector)(opt.expand_f))(seq,  options);
+		switch (opt.nparams) {
+			// the following lines have been generated for max. @maxargs@ parameters
++++ for N in range(1, maxargs + 1):
+			case @N@:
+				return ((expand_funcp_@N@)(opt.expand_f))(@seq('seq[%(n)d]', N, 0)@, options);
+---
+			// end of generated lines
+		}
+	}
+	// No expand function defined? Return the same function with expanded arguments (if required)
+	if (options & expand_options::expand_function_args)
+		return inherited::expand(options);
+	else
+		return (options == 0) ? setflag(status_flags::expanded) : *this;
 }
 
 std::vector<function_options> & function::registered_functions()
@@ -777,8 +838,8 @@ void function::store_remember_table(ex const & result) const
 unsigned function::register_new(function_options const & opt)
 {
 	size_t same_name = 0;
-	for (size_t i=0; i<registered_functions().size(); ++i) {
-		if (registered_functions()[i].name==opt.name) {
+	for (auto & i : registered_functions()) {
+		if (i.name==opt.name) {
 			++same_name;
 		}
 	}
@@ -805,15 +866,13 @@ unsigned function::register_new(function_options const & opt)
  *  Throws exception if function was not found. */
 unsigned function::find_function(const std::string &name, unsigned nparams)
 {
-	std::vector<function_options>::const_iterator i = function::registered_functions().begin(), end = function::registered_functions().end();
 	unsigned serial = 0;
-	while (i != end) {
-		if (i->get_name() == name && i->get_nparams() == nparams)
+	for (auto & it : function::registered_functions()) {
+		if (it.get_name() == name && it.get_nparams() == nparams)
 			return serial;
-		++i;
 		++serial;
 	}
-	throw (std::runtime_error("no function '" + name + "' with " + ToString(nparams) + " parameters defined"));
+	throw (std::runtime_error("no function '" + name + "' with " + std::to_string(nparams) + " parameters defined"));
 }
 
 /** Return the print name of the function. */

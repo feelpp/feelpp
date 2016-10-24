@@ -3,7 +3,7 @@
  *  Code to deal with binary operators. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,11 +26,10 @@
 #include "add.h"
 #include "power.h"
 #include "operators.h"
-#include "relational.h"
 #include "parser.h"
 #include "lexer.h"
 #include "debug.h"
-
+#include "relational.h"
 #include <sstream>
 #include <stdexcept>
 
@@ -122,9 +121,9 @@ static ex make_minus_expr(const exvector& args)
 	exvector rest_args;
 	rest_args.reserve(args.size() - 1);
 	std::copy(args.begin() + 1, args.end(), std::back_inserter(rest_args));
-	ex rest_base = (new add(rest_args))->setflag(status_flags::dynallocated);
-	ex rest = (new mul(rest_base, *_num_1_p))->setflag(status_flags::dynallocated);
-	ex ret = (new add(args[0], rest))->setflag(status_flags::dynallocated);
+	ex rest_base = dynallocate<add>(rest_args);
+	ex rest = dynallocate<mul>(rest_base, *_num_1_p);
+	ex ret = dynallocate<add>(args[0], rest);
 	return ret;
 }
 
@@ -133,27 +132,27 @@ static ex make_divide_expr(const exvector& args)
 	exvector rest_args;
 	rest_args.reserve(args.size() - 1);
 	std::copy(args.begin() + 1, args.end(), std::back_inserter(rest_args));
-	ex rest_base = (new mul(rest_args))->setflag(status_flags::dynallocated);
+	ex rest_base = dynallocate<mul>(rest_args);
 	ex rest = pow(rest_base, *_num_1_p);
-	return (new mul(args[0], rest))->setflag(status_flags::dynallocated);
+	return dynallocate<mul>(args[0], rest);
 }
-
 
 static ex make_binop_expr(const int binop, const exvector& args)
 {
 	switch (binop) {
 		case '+':
-			return (new add(args))->setflag(status_flags::dynallocated);
+			return dynallocate<add>(args);
 		case '-':
 			return make_minus_expr(args);
 		case '*':
-			return (new mul(args))->setflag(status_flags::dynallocated);
+			return dynallocate<mul>(args);
 		case '/':
 			return make_divide_expr(args);
         case '<':
             return (new relational(args[0],args[1],relational::less))->setflag(status_flags::dynallocated);
         case '>':
             return (new relational(args[0],args[1],relational::greater))->setflag(status_flags::dynallocated);
+            
 		case '^':
 			if (args.size() != 2)
 				throw std::invalid_argument(
@@ -173,7 +172,7 @@ static inline bool is_binop(const int c)
 	switch (c) {
 		case '+':
 		case '-':
-        case '*':
+		case '*':
 		case '/':
         case '<':
         case '>':
