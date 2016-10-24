@@ -94,6 +94,7 @@ pcTypeConvertStrToEnum( std::string const& type )
     else                             return PreconditionerType::LU_PRECOND;
 }
 
+#if FEELPP_HAS_PETSC
 KSPNormType
 kspNormTypeConvertStrToEnum( std::string const& type )
 {
@@ -104,6 +105,7 @@ kspNormTypeConvertStrToEnum( std::string const& type )
     else if ( type=="natural" )          return KSP_NORM_NATURAL;
     else                                 return KSP_NORM_DEFAULT;
 }
+#endif
 
 
 SolverType
@@ -184,14 +186,16 @@ matSolverPackageConvertStrToEnum( std::string const& type )
     else if ( type=="pastix" )       return MatSolverPackageType::MATSOLVER_PASTIX;
     else if ( type=="dscpack" )      return MatSolverPackageType::MATSOLVER_DSCPACK;
     else if ( type=="matlab" )       return MatSolverPackageType::MATSOLVER_MATLAB;
+#if FEELPP_HAS_PETSC
     else if ( type=="petsc" )        return MatSolverPackageType::MATSOLVER_PETSC;
+#endif
     else if ( type=="plapack" )      return MatSolverPackageType::MATSOLVER_PLAPACK;
     else if ( type=="bas" )          return MatSolverPackageType::MATSOLVER_BAS;
     else if ( type=="boomeramg" )    return MatSolverPackageType::MATSOLVER_BOOMERAMG;
     else if ( type=="ams" )          return MatSolverPackageType::MATSOLVER_AMS;
     else if ( type=="euclid" )       return MatSolverPackageType::MATSOLVER_EUCLID;
     else if ( type=="pilut" )        return MatSolverPackageType::MATSOLVER_PILUT;
-    else                             return MatSolverPackageType::MATSOLVER_PETSC;
+    else                             return MatSolverPackageType::MATSOLVER_NONE;
 }
 
 FieldSplitType

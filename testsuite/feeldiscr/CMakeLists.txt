@@ -42,7 +42,7 @@ feelpp_add_test( on_inside GEO test_on_inside.geo)
 
 feelpp_add_test( operatorlinearfree )
 feelpp_add_test( project NO_MPI_TEST)
-feelpp_add_test( projector CLI "--pc-type=gasm" ) # avoid destructor issue with LU-mumps in //
+feelpp_add_test( projector CLI "--pc-type=gasm --gmsh.hsize=0.2" ) # avoid destructor issue with LU-mumps in //
 feelpp_add_test( spaces )
 feelpp_add_test( stencil )
 feelpp_add_test( submesh )
@@ -78,4 +78,5 @@ feelpp_add_test( markerhdf5_3D SRCS test_markerhdf5 DEFS CHECKH5_DIM=3 GEO marke
 feelpp_add_test( upmarker_faces )
 feelpp_add_test( listofrange )
 
+feelpp_add_test( element0D )
 

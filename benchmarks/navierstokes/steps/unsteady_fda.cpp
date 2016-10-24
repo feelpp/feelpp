@@ -48,8 +48,10 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
     constexpr int dim = FEELPP_DIM;
     constexpr int p_order = FEELPP_ORDER_P;
+    constexpr int geo_order = FEELPP_ORDER_GEO;
+    
     tic();
-    auto mesh = loadMesh( new Mesh<Simplex<dim>> );
+    auto mesh = loadMesh( new Mesh<Simplex<dim,geo_order,dim>> );
     size_type nbdyfaces = nelements(boundaryfaces(mesh));
     if ( Environment::isMasterRank() )
     {
@@ -67,11 +69,13 @@ int main(int argc, char**argv )
         std::cout << "                h avg : " << mesh->hAverage() << std::endl;
         std::cout << "              measure : " << mesh->measure() << std::endl;
     }
-
+    Environment::saveTimers(true);
+    
     //CHECK( mesh->hasMarkers( {"wall","inlet"} ) ) << "Mesh markers wall or inlet are not set properly in "  << soption("gmsh.filename");
     toc("mesh");tic();
     // Taylor Hood P_N+1 velocity P_N  pressure space (N==p_order)
     auto Vh = THch<p_order>( mesh );
+    //auto P1h = lagrangeP1( _space=Vh->functionSpace<0>() );
     auto U = Vh->element();
     auto V = Vh->element();
     auto u = U.element<0>();
@@ -101,32 +105,6 @@ int main(int argc, char**argv )
         std::cout << std::left << Vh->functionSpace<0>()->nDof();
         std::cout.width(16);
         std::cout << std::left << Vh->functionSpace<1>()->nDof() << "\n";
-        if( soption("ns.preconditioner") != "petsc" )
-        {
-            std::cout << "[blockns]\n";
-            std::cout << " - cd: " << boption( "blockns.cd" ) << "\n";
-            std::cout << " - pcd: " << boption( "blockns.pcd" ) << "\n";
-            std::cout << " - pcd.inflow: " << soption( "blockns.pcd.inflow" ) << "\n";
-            std::cout << " - pcd.outflow: " << soption( "blockns.pcd.outflow" ) << "\n";
-            std::cout << " - pcd.order: " << ioption( "blockns.pcd.order" ) << "\n\n";
-            
-            /*std::cout << " - Stokes rtol: " << doption( "stokes.ksp-rtol" ) << "\n";
-             std::cout << " - Picard rtol: " << doption( "picard.ksp-rtol" ) << "\n\n";
-            
-             std::cout << " - Ap preconditioner: " << soption( "Ap.pc-type" ) << "\n";
-             std::cout << " - Ap relative tolerence: " << doption( "Ap.ksp-rtol" ) << "\n";
-             std::cout << " - Ap reuse-prec: " << boption( "Ap.reuse-prec" ) << "\n\n";
-            
-             std::cout << " - Mp preconditioner: " << soption( "Mp.pc-type" ) << "\n";
-             std::cout << " - Mp relative tolerence: " << doption( "Mp.ksp-rtol" ) << "\n";
-             std::cout << " - Mp reuse-prec: " << boption( "Mp.reuse-prec" ) << "\n\n";
-            
-             std::cout << " - Fu preconditioner: " << soption( "Fu.pc-type" ) << "\n";
-             std::cout << " - Fu relative tolerence: " << doption( "Fu.ksp-rtol" ) << "\n";
-             std::cout << " - Fu reuse-prec: " << boption( "Fu.reuse-prec" ) << "\n\n";*/
-
-        }
-        
     }
 
     toc("space");tic();
@@ -162,7 +140,7 @@ int main(int argc, char**argv )
 
     a = integrate( _range=elements( mesh ), _expr=mu*inner( deft, grad(v) ) + rho*mybdf->polyDerivCoefficient(0)*trans(idt(u))*id(u) );
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
-    auto e = exporter( _mesh=mesh );
+    //auto e = exporter( _mesh=mesh );
     auto w = Vh->functionSpace<0>()->element( curlv(u), "w" );
 
     /*
@@ -179,12 +157,19 @@ int main(int argc, char**argv )
                               _type=soption("ns.preconditioner"),
                               _bc=BoundaryConditionFactory::instance(),
                               _matrix= a.matrixPtr(),
-                              _alpha=rho*mybdf->polyDerivCoefficient(0),
-                              _mu=mu,
-                              _rho=rho,
+                              _properties_space = Pdh<0>( mesh ),
+                              _alpha=cst(rho*mybdf->polyDerivCoefficient(0)),
+                              _mu=cst(mu),
+                              _rho=cst(rho),
                               _prefix="velocity" );
     
     toc("bdf, forms,...");
+    auto b = backend(_prefix="ns",_name="ns");
+    
+    auto precPetsc = preconditioner( _prefix="ns",_matrix=a.matrixPtr(),_pc=b->pcEnumType(),
+                                    _pcfactormatsolverpackage=b->matSolverPackageEnumType(), _backend=b->shared_from_this(),
+                                    _worldcomm=b->comm() );
+
 
     for ( mybdf->restart();  mybdf->isFinished() == false; mybdf->next(U) )
     {
@@ -235,7 +220,8 @@ int main(int argc, char**argv )
         else
         {
             // use petsc preconditioner
-            at.solveb(_rhs=ft,_solution=U,_backend=backend(_name="ns"));
+            //at.solveb(_rhs=ft,_solution=U,_backend=backend(_name="ns"));
+            backend(_name="ns")->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=ft.vectorPtr(),_prec=precPetsc );
         }
         toc("Solve");
 
@@ -262,6 +248,8 @@ int main(int argc, char**argv )
         
         toc("Postprocess");
         tic();
+        
+        auto e = exporter( _mesh=mesh );
         e->step(mybdf->time())->add( "u", u );
         w.on( _range=elements(mesh), _expr=curlv(u) );
         e->step(mybdf->time())->add( "w", w );
@@ -269,12 +257,39 @@ int main(int argc, char**argv )
         auto mean_p = mean( _range=elements(mesh), _expr=idv(p) )( 0, 0 );
         e->step(mybdf->time())->addScalar( "mean_p", mean_p );
         e->save();
-        //e->restart( mybdf->time() );
+        Environment::saveTimers( true );
+            
+    }
         toc("Exporter");
         toc("time step");
+    
+    tic();
+    
+    if(geo_order>1 || p_order>1)
+    {
+        auto meshP1 = lagrangeP1(_space=Vh->template functionSpace<0>())->mesh();
+        auto XhVisuU = Pchv<1>(meshP1,true);
+        auto XhVisuP = Pch<1>(meshP1,true);
+        auto opIVisuU = opInterpolation(_domainSpace=Vh->template functionSpace<0>(),
+                                        _imageSpace=XhVisuU,
+                                        _type=InterpolationNonConforme(false,true,false) );
+        auto opIVisuP = opInterpolation(_domainSpace=Vh->template functionSpace<1>(),
+                                        _imageSpace=XhVisuP,
+                                        _type=InterpolationNonConforme(false,true,false) );
+        
+        auto uVisu = opIVisuU->operator()(u);
+        auto pVisu = opIVisuP->operator()(p);
+        
+        // exporter mesh and harmonic extension
+        auto e2 = exporter( _mesh=meshP1, _name="VisuP1" );
+        e2->step(mybdf->time())->setMesh( meshP1 );
+        e2->step(mybdf->time())->add( "u", uVisu );
+        e2->step(mybdf->time())->add( "p", pVisu );
+        e2->save();
 
     }
-    //! [marker1]
+    toc("ExporterHO");
+    Environment::saveTimers( true );
 
 
 

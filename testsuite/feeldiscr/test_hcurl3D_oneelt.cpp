@@ -133,8 +133,7 @@ public:
     TestHCurl3DOneElt()
         :
         super(),
-        M_backend( backend_type::build( soption( _name="backend" ) ) ),
-        exporter( Exporter<mesh_type>::New( this->vm() ) )
+        M_backend( backend_type::build( soption( _name="backend" ) ) )
     {
         std::cout << "[TestHCurl3DOneElt]\n";
 
@@ -150,9 +149,6 @@ public:
 private:
     //! linear algebra backend
     backend_ptrtype M_backend;
-
-    //! exporter factory
-    export_ptrtype exporter;
 
 }; //TestHDiv
 
@@ -215,13 +211,11 @@ TestHCurl3DOneElt::testProjector(std::string one_element_mesh )
 #endif
 
     std::string proj_name = "projection";
-    export_ptrtype exporter_proj( export_type::New( this->vm(),
-                                  ( boost::format( "%1%-%2%-%3%" )
-                                    % this->about().appName()
-                                    % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
-                                    % proj_name ).str() ) );
-
-    exporter_proj->step( 0 )->setMesh( mesh );
+    std::string exporter_proj_name = ( boost::format( "%1%-%2%-%3%" )
+                                       % this->about().appName()
+                                       % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
+                                       % proj_name ).str();
+    auto exporter_proj = exporter( _mesh=mesh,_name=exporter_proj_name );
     exporter_proj->step( 0 )->add( "proj_L2_E[Lagrange]", E_pL2_lag );
     exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag );
     exporter_proj->step( 0 )->add( "proj_HDiv_E[Lagrange]", E_pHCURL_lag );
@@ -258,14 +252,11 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
     std::vector<element_type> u_vec( Xh->nLocalDof() );
 
     std::string shape_name = "shape_functions";
-    export_ptrtype exporter_shape( export_type::New( this->vm(),
-                                   ( boost::format( "%1%-%2%-%3%" )
-                                     % this->about().appName()
-                                     % mesh_path.stem().string()
-                                     % shape_name ).str() ) );
-
-    exporter_shape->step( 0 )->setMesh( mesh );
-
+    std::string exporter_shape_name = ( boost::format( "%1%-%2%-%3%" )
+                                        % this->about().appName()
+                                        % mesh_path.stem().string()
+                                        % shape_name ).str();
+    auto exporter_shape = exporter( _mesh=mesh,_name=exporter_shape_name );
     for ( size_type i = 0; i < Xh->nLocalDof(); ++i )
     {
         // U_ref corresponds to shape function (on reference element)
@@ -290,7 +281,7 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
     std::vector<std::string> edges = {"zAxis","yAxis","yzAxis","xyAxis","xzAxis","xAxis"};
 
     submesh1d_ptrtype edgeMesh( new submesh1d_type );
-    edgeMesh = createSubmesh(oneelement_mesh, boundaryedges(oneelement_mesh) ); //submesh of edges
+    edgeMesh = createSubmesh(oneelement_mesh, boundaryedges(oneelement_mesh), 0 ); //submesh of edges
 
     double div1sqrt2 = 1/sqrt(2.);
 

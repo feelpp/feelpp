@@ -3,7 +3,7 @@
  *  Interface to GiNaC's symbolic objects. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -45,32 +45,36 @@ public:
 	
 	// functions overriding virtual functions from base classes
 public:
-	bool info(unsigned inf) const;
-	ex eval(int level = 0) const { return *this; } // for performance reasons
-	ex evalf(int level = 0) const { return *this; } // overwrites basic::evalf() for performance reasons
-	ex series(const relational & s, int order, unsigned options = 0) const;
-	ex subs(const exmap & m, unsigned options = 0) const { return subs_one_level(m, options); } // overwrites basic::subs() for performance reasons
-	ex normal(exmap & repl, exmap & rev_lookup, int level = 0) const;
-	ex to_rational(exmap & repl) const;
-	ex to_polynomial(exmap & repl) const;
-	ex conjugate() const;
-	ex real_part() const;
-	ex imag_part() const;
-	bool is_polynomial(const ex & var) const;
+	bool info(unsigned inf) const override;
+	ex eval() const override { return *this; } // for performance reasons
+	ex evalf() const override { return *this; } // overwrites basic::evalf() for performance reasons
+	ex series(const relational & s, int order, unsigned options = 0) const override;
+	ex subs(const exmap & m, unsigned options = 0) const override { return subs_one_level(m, options); } // overwrites basic::subs() for performance reasons
+	ex normal(exmap & repl, exmap & rev_lookup) const override;
+	ex to_rational(exmap & repl) const override;
+	ex to_polynomial(exmap & repl) const override;
+	ex conjugate() const override;
+	ex real_part() const override;
+	ex imag_part() const override;
+	bool is_polynomial(const ex & var) const override;
 	/** Save (a.k.a. serialize) object into archive. */
-	void archive(archive_node& n) const;
+	void archive(archive_node& n) const override;
 	/** Read (a.k.a. deserialize) object from archive. */
-	void read_archive(const archive_node& n, lst& syms);
+	void read_archive(const archive_node& n, lst& syms) override;
 protected:
-	ex derivative(const symbol & s) const;
-	bool is_equal_same_type(const basic & other) const;
-	unsigned calchash() const;
+	ex derivative(const symbol & s) const override;
+	bool is_equal_same_type(const basic & other) const override;
+	unsigned calchash() const override;
+
+	// new virtual functions which can be overridden by derived classes
+public:
+	virtual unsigned get_domain() const { return domain::complex; }
 	
 	// non-virtual functions in this class
 public:
 	void set_name(const std::string & n) { name = n; }
+	void set_TeX_name(const std::string & n) { TeX_name = n; }
 	std::string get_name() const;
-	virtual unsigned get_domain() const { return domain::complex; }
 protected:
 	void do_print(const print_context & c, unsigned level) const;
 	void do_print_latex(const print_latex & c, unsigned level) const;
@@ -97,13 +101,18 @@ public:
 	explicit realsymbol(const std::string & initname);
 	realsymbol(const std::string & initname, const std::string & texname);
 
-	unsigned get_domain() const { return domain::real; }
+	unsigned get_domain() const override { return domain::real; }
 
-	ex conjugate() const { return *this; }
-	ex real_part() const { return *this; }
-	ex imag_part() const { return 0; }
+	ex conjugate() const override { return *this; }
+	ex real_part() const override { return *this; }
+	ex imag_part() const override { return 0; }
 
-	realsymbol* duplicate() const { return new realsymbol(*this); }
+	realsymbol* duplicate() const override
+	{
+		realsymbol * bp = new realsymbol(*this);
+		bp->setflag(status_flags::dynallocated);
+		return bp;
+	}
 };
 GINAC_DECLARE_UNARCHIVER(realsymbol);
 
@@ -116,9 +125,14 @@ public:
 	explicit possymbol(const std::string & initname);
 	possymbol(const std::string & initname, const std::string & texname);
 
-	unsigned get_domain() const { return domain::positive; }
+	unsigned get_domain() const override { return domain::positive; }
 
-	possymbol* duplicate() const { return new possymbol(*this); }
+	possymbol* duplicate() const override
+	{
+		possymbol * bp = new possymbol(*this);
+		bp->setflag(status_flags::dynallocated);
+		return bp;
+	}
 };
 GINAC_DECLARE_UNARCHIVER(possymbol);
 

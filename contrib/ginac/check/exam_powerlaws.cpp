@@ -4,7 +4,7 @@
  *  this code, it is a sanity check rather deeply rooted in GiNaC's classes. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -69,19 +69,19 @@ static unsigned exam_powerlaws1()
 		return 1;
 	}
 	
-	ex e4 = e1.subs(lst(a==-1, b==2.5));
+	ex e4 = e1.subs(lst{a==-1, b==-2.5});
 	if (!(is_exactly_a<power>(e4) &&
 	      is_exactly_a<power>(e4.op(0)) &&
 	      is_exactly_a<symbol>(e4.op(0).op(0)) &&
 	      is_exactly_a<numeric>(e4.op(0).op(1)) &&
 	      is_exactly_a<numeric>(e4.op(1)) &&
-	      e4.is_equal(power(power(x,-1),2.5)) )) {
-		clog << "(x^a)^b, x symbolic, a==-1, b==2.5 wrong" << endl;
+	      e4.is_equal(power(power(x,-1),-2.5)) )) {
+		clog << "(x^a)^b, x symbolic, a==-1, b==-2.5 wrong" << endl;
 		clog << "returned: " << e4 << endl;
 		return 1;
 	}
 	
-	ex e5 = e1.subs(lst(a==-0.9, b==2.5));
+	ex e5 = e1.subs(lst{a==-0.9, b==2.5});
 	if (!(is_exactly_a<power>(e5) &&
 	      is_exactly_a<symbol>(e5.op(0)) &&
 	      is_exactly_a<numeric>(e5.op(1)) &&
@@ -91,7 +91,7 @@ static unsigned exam_powerlaws1()
 		return 1;
 	}
 	
-	ex e6 = e1.subs(lst(a==numeric(3)+numeric(5.3)*I, b==-5));
+	ex e6 = e1.subs(lst{a==numeric(3)+numeric(5.3)*I, b==-5});
 	if (!(is_exactly_a<power>(e6) &&
 	      is_exactly_a<symbol>(e6.op(0)) &&
 	      is_exactly_a<numeric>(e6.op(1)) &&
@@ -162,7 +162,7 @@ static unsigned exam_powerlaws2()
 		return 1;
 	}
 	
-	ex e5 = e1.subs(lst(a==3.2, b==3+numeric(5)*I));
+	ex e5 = e1.subs(lst{a==3.2, b==3+numeric(5)*I});
 	if (!(is_exactly_a<mul>(e5) &&
 	      (e5.nops()==2) &&
 	      is_exactly_a<power>(e5.op(0)) &&
@@ -174,7 +174,7 @@ static unsigned exam_powerlaws2()
 		return 1;
 	}
 	
-	ex e6 = e1.subs(lst(a==-3.2, b==3+numeric(5)*I));
+	ex e6 = e1.subs(lst{a==-3.2, b==3+numeric(5)*I});
 	if (!(is_exactly_a<mul>(e6) &&
 	      (e6.nops()==2) &&
 	      is_exactly_a<power>(e6.op(0)) &&
@@ -186,7 +186,7 @@ static unsigned exam_powerlaws2()
 		return 1;
 	}
 	
-	ex e7 = e1.subs(lst(a==3+numeric(5)*I, b==3.2));
+	ex e7 = e1.subs(lst{a==3+numeric(5)*I, b==3.2});
 	if (!(is_exactly_a<power>(e7) &&
 	      is_exactly_a<mul>(e7.op(0)) &&
 	      (e7.op(0).nops()==2) &&
@@ -288,6 +288,37 @@ static unsigned exam_powerlaws5()
 	return 0;
 }
 
+static unsigned exam_powerlaws6()
+{
+	// check expansion rules for positive symbols
+
+	symbol a("a");
+	symbol b("b");
+	symbol c("c");
+	realsymbol x("x");
+	realsymbol y("y");
+	possymbol p("p");
+	possymbol q("q");
+	numeric half=numeric(1,2);
+
+	ex e1 = pow(5*pow(3*a*b*x*y*p*q,2),7*half*c).expand();
+	ex e2 = pow(p,7*c)*pow(q,7*c)*pow(pow(a*b*x*y,2),numeric(7,2)*c)*pow(45,numeric(7,2)*c);
+	if (!e1.is_equal(e2)) {
+		clog << "Could not expand exponents with positive bases in " << e1 << endl;
+		return 1;
+	}
+
+	ex e3 = pow(-pow(-a*x*p,3)*pow(b*y*p,3),half*c).expand().normal();
+	ex e4 = pow(p,3*c)*pow(pow(a*b*x*y,3),half*c);
+
+	if (!e3.is_equal(e4)) {
+		clog << "Could not expand exponents with positive bases in " << e3 << endl;
+		return 1;
+	}
+
+	return 0;
+}
+
 unsigned exam_powerlaws()
 {
 	unsigned result = 0;
@@ -299,6 +330,7 @@ unsigned exam_powerlaws()
 	result += exam_powerlaws3();  cout << '.' << flush;
 	result += exam_powerlaws4();  cout << '.' << flush;
 	result += exam_powerlaws5();  cout << '.' << flush;
+	result += exam_powerlaws6();  cout << '.' << flush;
 	
 	return result;
 }

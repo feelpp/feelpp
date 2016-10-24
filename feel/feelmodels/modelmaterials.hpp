@@ -1,22 +1,22 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
+
  This file is part of the Feel++ library
- 
+
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 16 Mar 2015
- 
+
  Copyright (C) 2015 Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -26,6 +26,8 @@
 
 
 #include <vector>
+#include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/ginac.hpp>
 
 #include <boost/property_tree/ptree.hpp>
 
@@ -40,9 +42,10 @@ struct ModelMaterial
     ModelMaterial( ModelMaterial&& ) = default;
     ModelMaterial& operator=( ModelMaterial const& ) = default;
     ModelMaterial& operator=( ModelMaterial && ) = default;
-    ModelMaterial( std::string name )
+    ModelMaterial( std::string name, pt::ptree p )
         :
         M_name( name ),
+        M_p( p ),
         M_rho( 1. ),
         M_mu(1. ),
         M_Cp( 1 ),
@@ -81,7 +84,7 @@ struct ModelMaterial
      */
     double mu() const { return M_mu; }
     void setMu( double v ) { M_mu = v; }
-    
+
     /*! Specify the constant-pressure specific heat Cp.
      */
     double Cp() const {  return M_Cp; }
@@ -105,12 +108,12 @@ struct ModelMaterial
     void setK23( double t) { M_k23 = t; }
     double k33() const {  return M_k33; }
     void setK33( double t) { M_k33 = t; }
-    
+
     /*! Material Reference temperature
      */
     double Tref() const {  return M_Tref; }
     void setTref( double t) { M_Tref = t; }
-    
+
     /*! Material coefficient for thermal expansion
      */
     double beta() const {  return M_beta; }
@@ -135,7 +138,7 @@ struct ModelMaterial
     void setKl( double const &v )  { M_Kl = v;}
     void setTsol( double const &v )    { M_Tsol   = v;}
     void setTliq( double const &v )    { M_Tliq   = v;}
-    
+
     // Mechanical properties
     /*! Young's Modulus
      */
@@ -150,43 +153,179 @@ struct ModelMaterial
      */
     double sigma() const {  return M_sigma; }
     void setSigma( double const& t) { M_sigma = t; }
-    
+
     void load( std::string const& );
-    
-    std::map<std::string, double> 
-    materialToMap( void ) const
-        {
-            std::map<std::string, double> _map;
-            _map["rho"]   = rho();
-            _map["mu"]    = mu();
-            _map["C"]     = C();
-            _map["Cp"]    = Cp();
-            _map["Cv"]    = Cv();
-            _map["Tref"]  = Tref();
-            _map["beta"]  = beta();
-            _map["k11"]   = k11();
-            _map["k12"]   = k12();
-            _map["k13"]   = k13();
-            _map["k22"]   = k22();
-            _map["k23"]   = k23();
-            _map["k33"]   = k33();
-            _map["E"]     = E();
-            _map["nu"]    = nu();
-            _map["sigma"] = sigma();
-            _map["Cs"]    = Cs();
-            _map["Cl"]    = Cl();
-            _map["L"]     = L();
-            _map["Ks"]    = Ks();
-            _map["Kl"]    = Kl();
-            _map["Tsol"]  = Tsol();
-            _map["Tliq"]  = Tliq();
-            return _map;
+
+    /**
+     *
+     */
+    std::string getString( std::string const& key ) {
+        try { return M_p.get<std::string>( key ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
         }
+    }
+
+    /**
+     *
+     */
+    int getInt( std::string const& key ) {
+        try { return M_p.get<int>( key ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+
+    /**
+     *
+     */
+    double getDouble( std::string const& key ) {
+        try { return M_p.get<double>( key ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+    /**
+     *
+     */
+    Expr<GinacEx<2> > getScalar( std::string const& key ) {
+        try { return expr( M_p.get<std::string>( key ) ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+    // Expr<GinacEx<2> > getScalar( std::string const& key, std::pair<std::string,double> const& params ) { return expr( M_p.get( key, "0" ), params ); }
+    /**
+     *
+     */
+    Expr<GinacEx<2> > getScalar( std::string const& key, std::map<std::string,double> const& params ) {
+        try { return expr( M_p.get<std::string>( key ), params ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+
+    /**
+     *
+     */
+    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
+                                                                std::string const& sym, ExprT e ) {
+        try { return expr( M_p.get<std::string>( key ), sym, e ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+
+    /**
+     *
+     */
+    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
+                                                                std::initializer_list<std::string> const& sym,
+                                                                std::initializer_list<ExprT> e ) {
+        try { return expr( M_p.get<std::string>( key ), sym, e ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+
+    /**
+     *
+     */
+    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
+                                                                std::vector<std::string> const& sym,
+                                                                std::vector<ExprT> e ) {
+        try { return expr( M_p.get<std::string>( key ), sym, e ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+
+    /**
+     *
+     */
+    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
+                                                                std::initializer_list<std::string> const& sym,
+                                                                std::initializer_list<ExprT> e,
+                                                                std::map<std::string, double> params ) {
+        try {
+            auto ex = expr( M_p.get<std::string>( key ), sym, e );
+            ex.setParameterValues( params );
+            return ex;
+        }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key ) {
+        try { return expr<T,1>( M_p.get<std::string>( key ) ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key,
+                                                         std::pair<std::string,double> const& params ) {
+        try { return expr<T,1>( M_p.get<std::string>( key ), params ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key,
+                                                         std::map<std::string,double> const& params ) {
+        try { return expr<T,1>( M_p.get<std::string>( key ), params ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+    // template<int T, typename ExprT> Expr<GinacMatrixVF<ExprT> > getVector( std::string const& key, std::string const& sym, ExprT e );
+    // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e );
+    // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e );
+    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key ) {
+        try { return expr<T1,T2>( M_p.get<std::string>( key ) ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key,
+                                                                       std::pair<std::string,double> const& params ) {
+        try { return expr<T1,T2>( M_p.get<std::string>( key ), params ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key,
+                                                                       std::map<std::string,double> const& params ) {
+        try { return expr<T1,T2>( M_p.get<std::string>( key ), params ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+    // template<int T1, int T2, typename ExprT> Expr<GinacExVF<ExprT> > getMatrix( std::string const& key, std::string const& sym, ExprT e );
+    // template<int T1, int T2, typename ExprT> Expr<GinacExVF<ExprT> > getMatrix( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e );
+    // template<int T1, int T2, typename ExprT> Expr<GinacExVF<ExprT> > getMatrix( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e );
+
 private:
+
     std::string M_name; /*!< Material name*/
+    pt::ptree M_p;
+
     double M_rho; /*!< Density */
     double M_mu;  /*!< Molecular(dynamic) viscosity */
-    
+
     double M_Cp; /*!< Constant-pressure specific heat Cp */
     double M_Cv; /*!< Constant-volume specific heat Cv */
 
@@ -207,7 +346,7 @@ private:
     double M_Kl;   /*!< Conductivity (liquid)  */
     double M_Tsol; /*!< Solidus temperature    */
     double M_Tliq; /*!< Liquidus temperature   */
-    
+
     // Mechanical Properties
     double M_young_modulus; /*!< Young's modulus */
     double M_nu; /*!< Poisson's Ration */
@@ -241,7 +380,7 @@ public:
             if ( it == this->end() )
                 throw std::invalid_argument( std::string("ModelMaterial: Invalid material marker ") + m );
             return it->second;
-            
+
         }
     void saveMD(std::ostream &os);
 private:

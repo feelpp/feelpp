@@ -96,6 +96,8 @@ public:
 
     MatrixEigenDense( size_type r, size_type c, WorldComm const& worldComm=Environment::worldComm() );
 
+    MatrixEigenDense( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
+
     MatrixEigenDense( MatrixEigenDense const & m );
 
     ~MatrixEigenDense();
@@ -181,16 +183,6 @@ public:
      * optimized matrix into a read optimized matrix
      */
     void close () const;
-
-
-    /**
-     * see if Eigen matrix has been closed
-     * and fully assembled yet
-     */
-    bool closed() const
-    {
-        return M_is_closed;
-    }
 
 
     /**
@@ -366,7 +358,7 @@ public:
      * stores the result in \p Res:
      * \f$ Res = \texttt{this}*In \f$.
      */
-    void matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res );
+    void matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res ) const;
 
     /**
      * Multiply this by a Sparse matrix \p In,
@@ -472,7 +464,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
 
 
     //@}
@@ -486,7 +478,6 @@ protected:
 private:
 
     bool M_is_initialized;
-    mutable bool M_is_closed;
 
     /**
      * the eigen sparse matrix data structure

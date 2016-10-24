@@ -38,6 +38,13 @@ if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
 	#message(STATUS "[feelpp] use NEW policy CMP0046" )
 	#cmake_policy(SET CMP0046 NEW)
 endif()
+# CMake 3.5.2 warns about this policy introduced in 3.1
+# Use the old behavior for now to suppress warnings
+# for more info : cmake --help-policy CMP0053
+if ( ${CMAKE_VERSION} VERSION_GREATER 3.1 )
+    message(STATUS "[feelpp] use old policy CMP0053" )
+    cmake_policy(SET CMP0053 OLD)
+endif()
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
@@ -113,6 +120,7 @@ OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
 SET(FEELPP_DEFAULT_TEST_TIMEOUT "300")
 OPTION(FEELPP_ENABLE_DOXYGEN "enable Feel++ doxygen documentation generation" OFF)
 OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
+OPTION(FEELPP_MINIMAL_BUILD "Enable Feel++ minimal build" OFF)
 
 OPTION(FEELPP_USE_GMSH_PACKAGE "Use system installed package" ON)
 

@@ -363,11 +363,11 @@ template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprCo
 void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( size_type elt_0 )
 {
-    size_type row_start = M_lb.front().globalRowStart();
 
     if ( !UseMortar )
     {
-        M_local_rows = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
+        M_local_rows = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerId() ).array();
+
 #if !defined(NDEBUG)
         DVLOG(2) << "lf dof (elt=" << elt_0 << ") = " << M_local_rows << "\n";
 #endif
@@ -386,7 +386,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 #if !defined(NDEBUG)
         CHECK( M_test_dof->mesh()->isBoundaryElement( elt_0 ) ) << "element in context must be on boundary";
 #endif
-        M_mortar_local_rows = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
+        M_mortar_local_rows = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerId() ).array();
         if ( test_dof_type::is_modal || is_hdiv_conforming<test_fe_type>::value || is_hcurl_conforming<test_fe_type>::value )
         {
             CHECK( false ) << "TODO";
@@ -400,9 +400,8 @@ template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprCo
 void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( size_type elt_0, size_type elt_1 )
 {
-    size_type row_start = M_lb.front().globalRowStart();
-    M_local_rows_2.template head<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
-    M_local_rows_2.template tail<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalIndices( elt_1 ).array() + row_start;
+    M_local_rows_2.template head<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerId() ).array();
+    M_local_rows_2.template tail<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalIndices( elt_1, M_form.dofIdToContainerId() ).array();
 
     if ( test_dof_type::is_modal )
     {

@@ -50,6 +50,7 @@
 #include <feel/feelcore/worldscomm.hpp>
 #include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/about.hpp>
+#include <feel/feelcore/termcolor.hpp>
 #include <feel/options.hpp>
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
@@ -61,31 +62,33 @@
 
 namespace Feel
 {
+namespace tc = termcolor;
+
 class TimerTable;
 struct MemoryUsage
 {
     MemoryUsage()
         :
+        memory_usage(0)
 #if defined ( FEELPP_HAS_PETSC_H )
-        memory_usage(0),
-        petsc_malloc_usage(0),
-        petsc_malloc_maximum_usage(0)
+        , petsc_malloc_usage(0)
+        , petsc_malloc_maximum_usage(0)
 #endif
         {}
     MemoryUsage(MemoryUsage const& m )
         :
+        memory_usage(m.memory_usage)
 #if defined ( FEELPP_HAS_PETSC_H )
-        memory_usage(m.memory_usage),
-        petsc_malloc_usage(m.petsc_malloc_usage),
-        petsc_malloc_maximum_usage(m.petsc_malloc_maximum_usage)
+        , petsc_malloc_usage(m.petsc_malloc_usage)
+        , petsc_malloc_maximum_usage(m.petsc_malloc_maximum_usage)
 #endif
         {}
     MemoryUsage& operator=(MemoryUsage const& m )
         {
             if ( this != &m )
             {
-#if defined ( FEELPP_HAS_PETSC_H )
                 memory_usage = m.memory_usage;
+#if defined ( FEELPP_HAS_PETSC_H )
                 petsc_malloc_usage = m.petsc_malloc_usage;
                 petsc_malloc_maximum_usage = m.petsc_malloc_maximum_usage;
 #endif
@@ -96,6 +99,8 @@ struct MemoryUsage
     PetscLogDouble memory_usage;
     PetscLogDouble petsc_malloc_usage;
     PetscLogDouble petsc_malloc_maximum_usage;
+#else
+    double memory_usage;
 #endif
 
 };

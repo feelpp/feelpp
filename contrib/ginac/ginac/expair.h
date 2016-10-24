@@ -3,7 +3,7 @@
  *  Definition of expression pairs (building blocks of expairseq). */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -92,7 +92,7 @@ public:
 };
 
 /** Function object for insertion into third argument of STL's sort() etc. */
-struct expair_is_less : public std::binary_function<expair, expair, bool> {
+struct expair_is_less {
 	bool operator()(const expair &lh, const expair &rh) const { return lh.is_less(rh); }
 };
 
@@ -100,20 +100,16 @@ struct expair_is_less : public std::binary_function<expair, expair, bool> {
  *  into third argument of STL's sort().  Note that this does not define a
  *  strict weak ordering since for any symbol x we have neither 3*x<2*x or
  *  2*x<3*x.  Handle with care! */
-struct expair_rest_is_less : public std::binary_function<expair, expair, bool> {
+struct expair_rest_is_less {
 	bool operator()(const expair &lh, const expair &rh) const { return (lh.rest.compare(rh.rest)<0); }
 };
 
-struct expair_swap : public std::binary_function<expair, expair, void> {
+struct expair_swap {
 	void operator()(expair &lh, expair &rh) const { lh.swap(rh); }
 };
 
 inline void swap(expair & e1, expair & e2)
 { e1.swap(e2); }
-
-// This makes STL algorithms use the more efficient swap operation for ex objects
-inline void iter_swap(std::vector<expair>::iterator i1, std::vector<expair>::iterator i2)
-{ i1->swap(*i2); }
 
 } // namespace GiNaC
 

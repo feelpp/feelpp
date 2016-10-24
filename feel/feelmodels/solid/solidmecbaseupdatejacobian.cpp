@@ -2,7 +2,7 @@
 
 #include <feel/feelmodels/solid/solidmecbase.hpp>
 
-#include <feel/feelmodels/modelvf/solidmecstvenantkirchhoff.hpp>
+//#include <feel/feelmodels/modelvf/solidmecstvenantkirchhoff.hpp>
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
 #include <feel/feelmodels/modelvf/solidmecincompressibility.hpp>
 
@@ -46,11 +46,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
                                               _rowstart=rowStartInMatrix,
                                               _colstart=colStartInMatrix );
 
-    auto u = M_XhDisplacement->element(); //u = *X;
-    // copy vector values in fluid element
-    for ( size_type k=0;k<M_XhDisplacement->nLocalDofWithGhost();++k )
-        u(k) = X->operator()(rowStartInVector+k);
-    auto v = u;//M_Xh->element("v");
+    auto const u = M_XhDisplacement->element(X, rowStartInVector);
+    auto const& v = this->fieldDisplacement();
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -157,11 +154,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
     // incompressibility terms
     if (M_useDisplacementPressureFormulation && !BuildCstPart)
     {
-        auto p = M_XhPressure->element();//*M_fieldPressure;
-        // copy vector values in pressure element
-        size_type startDofIndexPressure = this->startDofIndexFieldsInMatrix().find("pressure")->second;
-        for ( size_type k=0;k<M_XhPressure->nLocalDofWithGhost();++k )
-            p(k) = X->operator()(rowStartInVector+startDofIndexPressure+k);
+        // define pressure field
+        size_type blockIndexPressure = rowStartInVector+this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+        auto const p = M_XhPressure->element(X, blockIndexPressure);
         // assemble
         this->updateJacobianIncompressibilityTerms(u,p,J);
     }
@@ -237,7 +232,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( element_displacement_type const& u, element_pressure_type const& p, sparse_matrix_ptrtype& J) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( element_displacement_external_storage_type const& u,
+                                                                              element_pressure_external_storage_type const& p,
+                                                                              sparse_matrix_ptrtype& J) const
 {
     using namespace Feel::vf;
 
@@ -245,12 +242,12 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
     this->log("SolidMechanics","updateJacobianIncompressibilityTerms", "start " );
 
     auto mesh = M_XhDisplacement->mesh();
-    auto v = u;
-    auto q = p;
+    auto const& v = this->fieldDisplacement();
+    auto const& q = this->fieldPressure();
 
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
-    size_type startDofIndexPressure = this->startDofIndexFieldsInMatrix().find("pressure")->second;
+    size_type startBlockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
 
     double alpha_f=M_genAlpha_alpha_f;
     double alpha_m=M_genAlpha_alpha_m;
@@ -268,7 +265,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
         auto pFmtNLa = Feel::vf::FeelModels::solidMecPressureFormulationMultiplierJacobianTrialPressure(u,p,*this->mechanicalProperties());
         form2( _test=M_XhDisplacement, _trial=M_XhPressure, _matrix=J,
                _rowstart=rowStartInMatrix,
-               _colstart=colStartInMatrix+startDofIndexPressure ) +=
+               _colstart=colStartInMatrix+startBlockIndexPressure ) +=
             integrate ( _range=elements(mesh),
                         _expr= inner(pFmtNLa,grad(v) ),
                         _geomap=this->geomap() );
@@ -286,7 +283,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
     {
         form2( _test=M_XhDisplacement, _trial=M_XhPressure, _matrix=J,
                _rowstart=rowStartInMatrix,
-               _colstart=colStartInMatrix+startDofIndexPressure ) +=
+               _colstart=colStartInMatrix+startBlockIndexPressure ) +=
             integrate ( _range=elements(mesh),
                         _expr= -trace(alpha_f*idt(p)*Id*trans(grad(v))),
                         _geomap=this->geomap() );
@@ -298,7 +295,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
     auto detJm1 = Feel::vf::FeelModels::solidMecPressureFormulationConstraintJacobian(u,/*p,*/  *this->mechanicalProperties());
 
     form2( _test=M_XhPressure, _trial=M_XhDisplacement, _matrix=J,
-           _rowstart=rowStartInMatrix+startDofIndexPressure,
+           _rowstart=rowStartInMatrix+startBlockIndexPressure,
            _colstart=colStartInMatrix ) +=
         integrate( _range=elements(mesh),
                    _expr=detJm1*id(q),
@@ -308,8 +305,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
     if (this->mechanicalProperties()->materialLaw() == "StVenantKirchhoff")
     {
         form2( _test=M_XhPressure, _trial=M_XhPressure, _matrix=J,
-               _rowstart=rowStartInMatrix+startDofIndexPressure,
-               _colstart=colStartInMatrix+startDofIndexPressure ) +=
+               _rowstart=rowStartInMatrix+startBlockIndexPressure,
+               _colstart=colStartInMatrix+startBlockIndexPressure ) +=
             integrate(_range=elements(mesh),
                       _expr= -(cst(1.)/idv(coeffLame1))*idt(p)*id(q),
                       _geomap=this->geomap() );
@@ -318,8 +315,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
     {
         auto kappa = idv(this->mechanicalProperties()->fieldBulkModulus());
         form2( _test=M_XhPressure, _trial=M_XhPressure, _matrix=J,
-               _rowstart=rowStartInMatrix+startDofIndexPressure,
-               _colstart=colStartInMatrix+startDofIndexPressure ) +=
+               _rowstart=rowStartInMatrix+startBlockIndexPressure,
+               _colstart=colStartInMatrix+startBlockIndexPressure ) +=
             integrate( _range=elements(mesh),
                        _expr= -(cst(1.)/kappa)*idt(p)*id(q),
                        _geomap=this->geomap() );
@@ -339,7 +336,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianViscoElasticityTerms( element_displacement_type const& u, sparse_matrix_ptrtype& J) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianViscoElasticityTerms( element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const
 {
 #if 0
     using namespace Feel::vf;

@@ -2,33 +2,30 @@ PREREQUISITES
 =============
 
 GiNaC requires the CLN library by Bruno Haible installed on your system.
-It is available from <ftp://ftpthep.physik.uni-mainz.de/pub/gnu/>.
+It is available from <http://www.ginac.de/CLN/>.
 
-You will also need a decent ANSI-compliant C++-compiler. We recommend the
-C++ compiler from the GNU compiler collection, GCC >= 3.4. If you have a
+You will also need a decent ISO C++-11 compiler. We recommend the C++
+compiler from the GNU compiler collection, GCC >= 4.8. If you have a
 different or older compiler you are on your own. Note that you may have to
 use the same compiler you compiled CLN with because of differing
 name-mangling schemes.
 
 The pkg-config utility is required for configuration, it can be downloaded
-from <http://pkg-config.freedesktop.org/>.
+from <http://pkg-config.freedesktop.org/>. Also Python version >= 2.6 is
+required.
 
 To build the GiNaC tutorial and reference manual the doxygen utility
 (it can be downloaded from http://www.stack.nl/~dimitri/doxygen) and
 TeX are necessary.
 
 Known to work with:
- - Linux on x86 and x86_64 using 
-   - GCC 3.4, 4.0, 4.1, 4.2, 4.3.x (x >= 1), 4.4, 4.5, and 4.6
-   - Clang 2.8
- - Windows on x86 using GCC 3.4 (MinGW)
+ - Linux on x86 and x86_64 using
+   - GCC 4.8, 4.9, 5.1, 5.2, 5.3, and 6.1
+   - Clang 3.5, 3.6, 3.7, 3.8
 
 Known not to work with:
  - Clang 2.7 and earlier due to poor C++ support.
- - GCC 4.3.0 due to the compiler bug,
-   see <http://gcc.gnu.org/bugzilla/show_bug.cgi?id=35548>.
- - GCC 2.96 or earlier because proper exception and standard library support
-   is missing there.
+ - GCC < 4.6.0 due to missing C++-11 support
 
 If you install from git, you also need GNU autoconf (>=2.59), automake (>=1.8),
 libtool (>= 1.5), python (>= 2.5), bison (>= 2.3), flex (>= 2.5.33) to be installed.
@@ -37,7 +34,7 @@ libtool (>= 1.5), python (>= 2.5), bison (>= 2.3), flex (>= 2.5.33) to be instal
 INSTALLATION
 ============
 
-To install from a source .tar.bz2 distribution:
+To install from an unpacked source .tar.bz2 distribution:
 
  $ ./configure
  $ make
@@ -74,16 +71,11 @@ A few of the more important ones:
 More detailed installation instructions can be found in the documentation,
 in the doc/ directory.
 
-The time the "make" step takes depends on optimization levels. To give you
-a rough idea of what you have to expect the following table may be helpful.
-It was measured on an Athlon X2/3GHz with 4Gb of RAM.
-
-step          | GCC optimization  | comment
-              |   -O1   |   -O2   |
---------------+---------+---------+----------------------------------------
-make          |   ~1m   |   ~2m   | shared library only (--disable-static),
-              |         |         | parallel compilation (MAKEFLAGS=-j2)
-make check    |   ~6m   |   ~6m   | largely due to compilation
+The time to build the library depends to a large degree on optimization levels.
+Using the default high optimization, 'make' takes a few minutes on a fast
+machine and 'make check' takes some more minutes. You can speed this up with a
+parallel build with 'make -j2' or higher, depending on the number of available
+CPU cores.
 
 
 To install from git 

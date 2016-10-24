@@ -78,6 +78,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         typedef boost::shared_ptr<space_temperature_type> space_temperature_ptrtype;
         typedef typename space_temperature_type::element_type element_temperature_type;
         typedef boost::shared_ptr<element_temperature_type> element_temperature_ptrtype;
+        typedef typename space_temperature_type::element_external_storage_type element_temperature_external_storage_type;
         // function space velocity convection
         typedef FunctionSpace<mesh_type, bases<basis_velocityconvection_type> > space_velocityconvection_type;
         typedef boost::shared_ptr<space_velocityconvection_type> space_velocityconvection_ptrtype;
@@ -169,15 +170,17 @@ class ThermoDynamicsBase : public ModelNumerical,
         void exportMeasures( double time );
         void exportResults() { this->exportResults( this->currentTime() ); }
         void exportResults( double time );
-
+        void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
 
         void build();
         void loadMesh( mesh_ptrtype mesh );
 
+        void updateParameterValues();
+
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
         // apply assembly and solver
-        virtual void solve();
+        /*virtual*/ void solve();
 
         void updateLinearPDE( DataUpdateLinear & data ) const;
         virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const = 0;
@@ -190,7 +193,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         void updateResidual( DataUpdateResidual & data ) const;
         void updateBCDirichletStrongResidual( vector_ptrtype& R ) const;
         void updateBCNeumannResidual( vector_ptrtype& R, bool buildCstPart ) const;
-        void updateBCRobinResidual( element_temperature_type const& u, vector_ptrtype& R, bool buildCstPart ) const;
+        void updateBCRobinResidual( element_temperature_external_storage_type const& u, vector_ptrtype& R, bool buildCstPart ) const;
         void updateSourceTermResidual( vector_ptrtype& R, bool buildCstPart ) const;
         void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
         void updateBCRobinJacobian( sparse_matrix_ptrtype& J, bool buildCstPart ) const;
