@@ -73,21 +73,29 @@ namespace FeelModels
 
         // shapes used
         typedef Shape<shape_type::nDim, Scalar, false, false> shape_scalar;
-        typedef Eigen::Matrix<value_type,shape_scalar::M,shape_scalar::N> loc_scalar_type;
+        //typedef Eigen::Matrix<value_type,shape_scalar::M,shape_scalar::N> loc_scalar_type;
+        typedef Eigen::Tensor<value_type,2> loc_scalar_type;
         typedef boost::multi_array<loc_scalar_type,1> array_scalar_type;
 
         typedef Shape<shape_type::nDim, Vectorial, false, false> shape_vectorial;
-        typedef Eigen::Matrix<value_type,shape_vectorial::M,shape_vectorial::N> loc_vectorial_type;
+        //typedef Eigen::Matrix<value_type,shape_vectorial::M,shape_vectorial::N> loc_vectorial_type;
+        typedef Eigen::Tensor<value_type,2> loc_vectorial_type;
         typedef boost::multi_array<loc_vectorial_type,1> array_vectorial_type;
 
         typedef Shape<shape_type::nDim, Vectorial, true, false> shape_vectorial_transpose;
-        typedef Eigen::Matrix<value_type,shape_vectorial_transpose::M,shape_vectorial_transpose::N> loc_vectorial_transpose_type;
+        //typedef Eigen::Matrix<value_type,shape_vectorial_transpose::M,shape_vectorial_transpose::N> loc_vectorial_transpose_type;
+        typedef Eigen::Tensor<value_type,2> loc_vectorial_transpose_type;
         typedef boost::multi_array<loc_vectorial_transpose_type,1> array_vectorial_transpose_type;
 
         typedef Shape<shape_type::nDim, Tensor2, false, false> shape_tensor2;
-        typedef Eigen::Matrix<value_type,shape_tensor2::M,shape_tensor2::N> loc_tensor2_type;
+        //typedef Eigen::Matrix<value_type,shape_tensor2::M,shape_tensor2::N> loc_tensor2_type;
+        typedef Eigen::Tensor<value_type,2> loc_tensor2_type;
         typedef boost::multi_array<loc_tensor2_type,1> array_tensor2_type;
 
+        typedef Eigen::Matrix<value_type,shape_tensor2::M,shape_tensor2::N> loc_matrix_tensor2_type;
+        typedef boost::multi_array<loc_matrix_tensor2_type,1> array_matrix_tensor2_type;
+
+        typedef boost::multi_array<value_type,1> array_value_type;
 
 
         tensorBase( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -95,24 +103,48 @@ namespace FeelModels
             M_geot( fusion::at_key<key_type>( geom ) ),
             M_fecTest( fusion::at_key<basis_fec_test_key_type>( fev ).get() ),
             M_fecTrial( fusion::at_key<basis_fec_trial_key_type>( feu ).get() ),
-            M_locMatrixShape( matrix_shape_type::Zero() )
-        {}
+            M_locMatrixShape( matrix_shape_type::Zero() ),
+            M_zeroLocScalar( shape_scalar::M,shape_scalar::N ),
+            M_zeroLocVectorial( shape_vectorial::M,shape_vectorial::N ),
+            M_zeroLocTensor2( shape_tensor2::M,shape_tensor2::N )
+            {
+                M_zeroLocScalar.setZero();
+                M_zeroLocVectorial.setZero();
+                M_zeroLocTensor2.setZero();
+            }
         tensorBase( Geo_t const& geom, Basis_i_t const& fev )
             :
             M_geot( fusion::at_key<key_type>( geom ) ),
             M_fecTest( fusion::at_key<basis_fec_test_key_type>( fev ).get() ),
-            M_locMatrixShape( matrix_shape_type::Zero() )
-        {}
+            M_locMatrixShape( matrix_shape_type::Zero() ),
+            M_zeroLocScalar( shape_scalar::M,shape_scalar::N ),
+            M_zeroLocVectorial( shape_vectorial::M,shape_vectorial::N ),
+            M_zeroLocTensor2( shape_tensor2::M,shape_tensor2::N )
+            {
+                M_zeroLocScalar.setZero();
+                M_zeroLocVectorial.setZero();
+                M_zeroLocTensor2.setZero();
+            }
         tensorBase( Geo_t const& geom )
             :
             M_geot( fusion::at_key<key_type>( geom ) ),
-            M_locMatrixShape( matrix_shape_type::Zero() )
-        {}
+            M_locMatrixShape( matrix_shape_type::Zero() ),
+            M_zeroLocScalar( shape_scalar::M,shape_scalar::N ),
+            M_zeroLocVectorial( shape_vectorial::M,shape_vectorial::N ),
+            M_zeroLocTensor2( shape_tensor2::M,shape_tensor2::N )
+            {
+                M_zeroLocScalar.setZero();
+                M_zeroLocVectorial.setZero();
+                M_zeroLocTensor2.setZero();
+            }
         tensorBase( tensorBase const& t )
             :
             M_geot( t.M_geot ),
             M_fecTest( t.M_fecTest ),
-            M_fecTrial( t.M_fecTrial )
+            M_fecTrial( t.M_fecTrial ),
+            M_zeroLocScalar( shape_scalar::M,shape_scalar::N ),
+            M_zeroLocVectorial( shape_vectorial::M,shape_vectorial::N ),
+            M_zeroLocTensor2( shape_tensor2::M,shape_tensor2::N )
         {}
         virtual ~tensorBase() {}
 
@@ -124,26 +156,8 @@ namespace FeelModels
         virtual void update( Geo_t const& geom ) = 0;
         virtual void update( Geo_t const& geom, uint16_type face ) = 0;
 
-
-#if 0
         virtual
-        Eigen::Matrix<value_type, shape_type::M, shape_type::N> const&
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const = 0;
-
-        virtual
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
-
-        virtual
-        value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
-
-        virtual
-        value_type
-        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
-#else
-        virtual
-        Eigen::Matrix<value_type, shape_type::M, shape_type::N> const&
+        matrix_shape_type const&
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             CHECK( false ) << "not allow\n";
@@ -165,6 +179,13 @@ namespace FeelModels
             CHECK( false ) << "not allow\n";
             return value_type(0);
         }
+        virtual
+        matrix_shape_type const&
+        evaliq( uint16_type i, uint16_type q ) const
+        {
+            CHECK( false ) << "not allow\n";
+            return M_locMatrixShape;
+        }
 
         virtual
         value_type
@@ -173,14 +194,24 @@ namespace FeelModels
             CHECK( false ) << "not allow\n";
             return value_type(0);
         }
+        virtual
+        matrix_shape_type const&
+        evalq( uint16_type q ) const
+        {
+            CHECK( false ) << "not allow\n";
+            return M_locMatrixShape;
+        }
 
-#endif
     private:
         gmc_ptrtype M_geot;
         basis_fec_test_ptrtype M_fecTest;
         basis_fec_trial_ptrtype M_fecTrial;
+
     protected :
         mutable matrix_shape_type M_locMatrixShape;
+        loc_scalar_type M_zeroLocScalar;
+        loc_vectorial_type M_zeroLocVectorial;
+        loc_tensor2_type M_zeroLocTensor2;
 
     };
 

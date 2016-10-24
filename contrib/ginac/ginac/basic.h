@@ -3,7 +3,7 @@
  *  Interface to GiNaC's ABC. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,13 +28,12 @@
 #include "assertion.h"
 #include "registrar.h"
 
-// CINT needs <algorithm> to work properly with <vector>
-#include <algorithm>
 #include <cstddef> // for size_t
 #include <map>
 #include <set>
 #include <typeinfo> // for typeid
 #include <vector>
+#include <utility>
 
 namespace GiNaC {
 
@@ -93,7 +92,8 @@ struct map_function {
 
 /** Degenerate base class for visitors. basic and derivative classes
  *  support Robert C. Martin's Acyclic Visitor pattern (cf.
- *  http://objectmentor.com/publications/acv.pdf). */
+ *  http://condor.depaul.edu/dmumaugh/OOT/Design-Principles/acv.pdf
+ *  or chapter 10 of Andrei Alexandrescu's "Modern C++ Design"). */
 class visitor {
 protected:
 	virtual ~visitor() {}
@@ -104,9 +104,9 @@ protected:
 class basic : public refcounted
 {
 	GINAC_DECLARE_REGISTERED_CLASS_NO_CTORS(basic, void)
-
+	
 	friend class ex;
-
+	
 	// default constructor, destructor, copy constructor and assignment operator
 protected:
 	basic() : flags(0) {}
@@ -128,11 +128,16 @@ public: // only const functions please (may break reference counting)
 	/** Create a clone of this object on the heap.  One can think of this as
 	 *  simulating a virtual copy constructor which is needed for instance by
 	 *  the refcounted construction of an ex from a basic. */
-	virtual basic * duplicate() const { return new basic(*this); }
+	virtual basic * duplicate() const
+	{
+		basic * bp = new basic(*this);
+		bp->setflag(status_flags::dynallocated);
+		return bp;
+	}
 
 	// evaluation
-	virtual ex eval(int level = 0) const;
-	virtual ex evalf(int level = 0) const;
+	virtual ex eval() const;
+	virtual ex evalf() const;
 	virtual ex evalm() const;
 	virtual ex eval_integ() const;
 protected:
@@ -195,7 +200,7 @@ public:
 	virtual ex series(const relational & r, int order, unsigned options = 0) const;
 
 	// rational functions
-	virtual ex normal(exmap & repl, exmap & rev_lookup, int level = 0) const;
+	virtual ex normal(exmap & repl, exmap & rev_lookup) const;
 	virtual ex to_rational(exmap & repl) const;
 	virtual ex to_polynomial(exmap & repl) const;
 
@@ -225,7 +230,7 @@ protected:
 	virtual bool is_equal_same_type(const basic & other) const;
 
 	virtual unsigned calchash() const;
-
+	
 	// non-virtual functions in this class
 public:
 	/** Like print(), but dispatch to the specified class. Can be used by
@@ -291,17 +296,14 @@ protected:
 	void do_print(const print_context & c, unsigned level) const;
 	void do_print_tree(const print_tree & c, unsigned level) const;
 	void do_print_python_repr(const print_python_repr & c, unsigned level) const;
-
+	
 	// member variables
 protected:
 	mutable unsigned flags;             ///< of type status_flags
 	mutable unsigned hashvalue;         ///< hash value
 };
 
-
 // global variables
-
-extern int max_recursion_level;
 
 
 // convenience type checker template functions
@@ -310,7 +312,7 @@ extern int max_recursion_level;
 template <class T>
 inline bool is_a(const basic &obj)
 {
-	return dynamic_cast<const T *>(&obj) != 0;
+	return dynamic_cast<const T *>(&obj) != nullptr;
 }
 
 /** Check if obj is a T, not including base classes. */
@@ -318,6 +320,31 @@ template <class T>
 inline bool is_exactly_a(const basic & obj)
 {
 	return typeid(T) == typeid(obj);
+}
+
+/** Constructs a new (class basic or derived) B object on the heap.
+ *
+ *  This function picks the object's ctor based on the given argument types.
+ *
+ *  This helps the constructor of ex from basic (or a derived class B) because
+ *  then the constructor doesn't have to duplicate the object onto the heap.
+ *  See ex::construct_from_basic(const basic &) for more information.
+ */
+template<class B, typename... Args>
+inline B & dynallocate(Args &&... args)
+{
+	return const_cast<B &>(static_cast<const B &>((new B(std::forward<Args>(args)...))->setflag(status_flags::dynallocated)));
+}
+/** Constructs a new (class basic or derived) B object on the heap.
+ *
+ *  This function is needed for GiNaC classes which have public ctors from
+ *  initializer lists of expressions (which are not a type and not captured
+ *  by the variadic template version).
+ */
+template<class B>
+inline B & dynallocate(std::initializer_list<ex> il)
+{
+	return const_cast<B &>(static_cast<const B &>((new B(il))->setflag(status_flags::dynallocated)));
 }
 
 } // namespace GiNaC

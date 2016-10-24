@@ -34,7 +34,7 @@ struct traits<TensorForcedEvalOp<XprType> >
   static const int Layout = XprTraits::Layout;
 
   enum {
-    Flags = 0,
+    Flags = 0
   };
 };
 
@@ -55,7 +55,7 @@ struct nested<TensorForcedEvalOp<XprType>, 1, typename eval<TensorForcedEvalOp<X
 
 
 template<typename XprType>
-class TensorForcedEvalOp : public TensorBase<TensorForcedEvalOp<XprType> >
+class TensorForcedEvalOp : public TensorBase<TensorForcedEvalOp<XprType>, ReadOnlyAccessors>
 {
   public:
   typedef typename Eigen::internal::traits<TensorForcedEvalOp>::Scalar Scalar;
@@ -83,10 +83,14 @@ struct TensorEvaluator<const TensorForcedEvalOp<ArgType>, Device>
   typedef TensorForcedEvalOp<ArgType> XprType;
   typedef typename ArgType::Scalar Scalar;
   typedef typename TensorEvaluator<ArgType, Device>::Dimensions Dimensions;
+  typedef typename XprType::Index Index;
+  typedef typename XprType::CoeffReturnType CoeffReturnType;
+  typedef typename PacketType<CoeffReturnType, Device>::type PacketReturnType;
+  static const int PacketSize = internal::unpacket_traits<PacketReturnType>::size;
 
   enum {
     IsAligned = true,
-    PacketAccess = (internal::packet_traits<Scalar>::size > 1),
+    PacketAccess = (PacketSize > 1),
     Layout = TensorEvaluator<ArgType, Device>::Layout,
     RawAccess = true
   };
@@ -95,14 +99,10 @@ struct TensorEvaluator<const TensorForcedEvalOp<ArgType>, Device>
       : m_impl(op.expression(), device), m_op(op.expression()), m_device(device), m_buffer(NULL)
   { }
 
-  typedef typename XprType::Index Index;
-  typedef typename XprType::CoeffReturnType CoeffReturnType;
-  typedef typename PacketType<CoeffReturnType, Device>::type PacketReturnType;
-
   EIGEN_DEVICE_FUNC const Dimensions& dimensions() const { return m_impl.dimensions(); }
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool evalSubExprsIfNeeded(CoeffReturnType*) {
-    const Index numValues = m_impl.dimensions().TotalSize();
+    const Index numValues =  internal::array_prod(m_impl.dimensions());
     m_buffer = (CoeffReturnType*)m_device.allocate(numValues * sizeof(CoeffReturnType));
     // Should initialize the memory in case we're dealing with non POD types.
     if (NumTraits<CoeffReturnType>::RequireInitialization) {
@@ -130,6 +130,10 @@ struct TensorEvaluator<const TensorForcedEvalOp<ArgType>, Device>
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE PacketReturnType packet(Index index) const
   {
     return internal::ploadt<PacketReturnType, LoadMode>(m_buffer + index);
+  }
+
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorOpCost costPerCoeff(bool vectorized) const {
+    return TensorOpCost(sizeof(CoeffReturnType), 0, 0, vectorized, PacketSize);
   }
 
   EIGEN_DEVICE_FUNC Scalar* data() const { return m_buffer; }

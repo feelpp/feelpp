@@ -29,7 +29,9 @@
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelpde/operatorpcd.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
+#if FEELPP_HAS_PETSC
 #include <feel/feelalg/backendpetsc.hpp>
+#endif
 #include <feel/feeldiscr/pdh.hpp>
 
 namespace Feel
@@ -310,8 +312,8 @@ PreconditionerBlockNS( std::string t,
     M_Xh( Xh ),
     M_Vh( M_Xh->template functionSpace<0>() ),
     M_Qh( M_Xh->template functionSpace<1>() ),
-    M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
-    M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
+    M_Vh_indices( A->mapRow().dofIdToContainerId( 0 ) ),
+    M_Qh_indices( A->mapRow().dofIdToContainerId( 1 ) ),
     M_Ph( properties_space_type::New(Xh->mesh()) ),
     M_helm ( M_b->newMatrix( M_Vh, M_Vh ) ),
     G( M_b->newMatrix( M_Vh, M_Vh ) ),
@@ -340,8 +342,6 @@ PreconditionerBlockNS( std::string t,
     tic();
     LOG(INFO) << "[PreconditionerBlockNS] setup starts";
     this->setMatrix( A );
-    std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
-    std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
 
     this->createSubMatrices();
 
@@ -370,8 +370,8 @@ PreconditionerBlockNS( std::string t,
     M_Xh( Xh ),
     M_Vh( M_Xh->template functionSpace<0>() ),
     M_Qh( M_Xh->template functionSpace<1>() ),
-    M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
-    M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
+    M_Vh_indices( A->mapRow().dofIdToContainerId( 0 ) ),
+    M_Qh_indices( A->mapRow().dofIdToContainerId( 1 ) ),
     M_Ph( Ph ),
     M_helm ( M_b->newMatrix( M_Vh, M_Vh ) ),
     G( M_b->newMatrix( M_Vh, M_Vh ) ),
@@ -400,8 +400,6 @@ PreconditionerBlockNS( std::string t,
     tic();
     LOG(INFO) << "[PreconditionerBlockNS] setup starts";
     this->setMatrix( A );
-    std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
-    std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
 
     this->createSubMatrices();
 
@@ -597,6 +595,7 @@ template < typename SpaceType, typename PropertiesSpaceType >
 int
 PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::applyInverse ( const vector_type& X, vector_type& Y ) const
 {
+#if 0
     tic();
     U = X;
     U.close();
@@ -674,6 +673,75 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::applyInverse ( const vecto
     toc("PreconditionerBlockNS::applyInverse update solution",FLAGS_v>0);
     toc("PreconditionerBlockNS::applyInverse", FLAGS_v > 0 );
     return 0;
+#else
+    tic();
+    LOG(INFO) << "Create velocity/pressure component...\n";
+    auto XUblas = M_Xh->element( X );
+    auto vinUblas = XUblas.template element<0>();
+    auto pinUblas = XUblas.template element<1>();
+    auto YUblas = M_Xh->element( Y );
+    auto voutUblas = YUblas.template element<0>();
+    auto poutUblas = YUblas.template element<1>();
+    auto vin = toPETScPtr( vinUblas );
+    auto pin = toPETScPtr( pinUblas );
+    auto vout = toPETScPtr( voutUblas );
+    auto pout = toPETScPtr( poutUblas );
+
+    *M_aux = *vin;
+
+    if ( this->type() == PMM )
+    {
+        LOG(INFO) << "Applying PMM:  pressure mass matrix";
+        tic();
+        pm->applyInverse( *pin, *pout );
+        pout->scale(-1);
+        toc("PreconditionerBlockNS::applyInverse PMM::Q^-1",FLAGS_v>0);
+        LOG(INFO) << "Applying PMM done";
+    }
+    if ( this->type() == PCD || this->type() == PCD_ACCELERATION )
+    {
+        if ( boption("blockns.pcd") )
+        {
+            LOG(INFO) << "pressure blockns: Solve for the pressure convection diffusion...\n";
+            CHECK(pcdOp) << "Invalid PCD operator\n";
+            CHECK(M_aux) << "Invalid aux vector\n";
+            CHECK(pout) << "Invalid aux vector\n";
+            tic();
+            pcdOp->applyInverse( *pin, *pout );
+            pout->scale(-1);
+            toc("PreconditionerBlockNS::applyInverse PCD::S^-1",FLAGS_v>0);
+
+            LOG(INFO) << "pressure blockns: Solve for the pressure convection diffusion done\n";
+        }
+        else
+        {
+            *pout = *pin;
+        }
+    }
+    LOG(INFO) << "pressure/velocity blockns : apply divergence...\n";
+    tic();
+    divOp->apply( *pout, *vout );
+
+
+    M_aux->add( -1.0, *vout );
+    toc("PreconditionerBlockNS::applyInverse apply B^T",FLAGS_v>0);
+
+    if ( boption("blockns.cd") )
+    {
+
+        LOG(INFO) << "velocity blockns : apply inverse convection diffusion...\n";
+        tic();
+        helmOp->applyInverse(*M_aux, *vout);
+        toc("PreconditionerBlockNS::applyInverse Fu^-1",FLAGS_v>0);
+    }
+    else
+    {
+        *vout = *vin;
+    }
+
+    toc("PreconditionerBlockNS::applyInverse", FLAGS_v > 0 );
+    return 0;
+#endif
 }
 
 template < typename SpaceType, typename PropertiesSpaceType >

@@ -115,7 +115,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "velocity", "Dirichlet" );
     for( auto const& d : M_bcDirichlet )
     {
-        std::pair<bool,std::string> dirichletbcTypeRead = this->modelProperties().boundaryConditions().sparam( "velocity", "Dirichlet", marker(d), "type" );
+        std::pair<bool,std::string> dirichletbcTypeRead = this->modelProperties().boundaryConditions().sparam( "velocity", "Dirichlet", marker(d), "method" );
         std::string dirichletbcType = ( dirichletbcTypeRead.first )? dirichletbcTypeRead.second : soption(_name="dirichletbc.type",_prefix=this->prefix());
         CHECK( dirichletbcType=="elimination" || dirichletbcType=="nitsche" || dirichletbcType=="lm" ) << "invalid dirichletbc.type " << dirichletbcType;
 
@@ -135,7 +135,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
         M_bcDirichletComponents[comp] = this->modelProperties().boundaryConditions().getScalarFields( { { bcDirichletCompField, bcDirichletCompKeyword } } );
         for( auto const& d : M_bcDirichletComponents.find(comp)->second )
         {
-            std::pair<bool,std::string> dirichletbcTypeRead = this->modelProperties().boundaryConditions().sparam( bcDirichletCompField, bcDirichletCompKeyword, marker(d), "type" );
+            std::pair<bool,std::string> dirichletbcTypeRead = this->modelProperties().boundaryConditions().sparam( bcDirichletCompField, bcDirichletCompKeyword, marker(d), "method" );
             std::string dirichletbcType = ( dirichletbcTypeRead.first )? dirichletbcTypeRead.second : soption(_name="dirichletbc.type",_prefix=this->prefix());
             CHECK( dirichletbcType=="elimination" || dirichletbcType=="nitsche" || dirichletbcType=="lm" ) << "invalid dirichletbc.type " << dirichletbcType;
 
@@ -189,13 +189,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
             this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
     }
 
-    M_bcPressure = this->modelProperties().boundaryConditions().getScalarFields( "pressure", "weak" );
+    M_bcPressure = this->modelProperties().boundaryConditions().getScalarFields( "pressure", "Dirichlet" );
     for( auto const& d : M_bcPressure )
     {
-        this->addMarkerPressureBC(marker(d));
-        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "pressure", "weak", marker(d), "alemesh_bc" );
+        std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "pressure", "Dirichlet", marker(d) );
+        this->setMarkerPressureBC(marker(d),markerList);
+
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "pressure", "Dirichlet", marker(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
-        this->addMarkerALEMeshBC(bcTypeMeshALE,marker(d));
+        for (std::string const& currentMarker : markerList )
+            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
     }
     for( std::string const& bcMarker : this->modelProperties().boundaryConditions().markers("fluid", "slip") )
     {
@@ -210,11 +213,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
 
         std::string typeOutlet = soption(_name="fluid-outlet.type", _prefix=this->prefix());//"free";
-        std::pair<bool,std::string> typeOutletRead = this->modelProperties().boundaryConditions().sparam( "fluid", "outlet", bcMarker, "type" );
+        std::pair<bool,std::string> typeOutletRead = this->modelProperties().boundaryConditions().sparam( "fluid", "outlet", bcMarker, "model" );
         if ( typeOutletRead.first )
         {
             typeOutlet = typeOutletRead.second;
-            CHECK( typeOutlet == "free" || typeOutlet == "windkessel" ) << "invalid outlet type " << typeOutlet;
+            CHECK( typeOutlet == "free" || typeOutlet == "windkessel" ) << "invalid outlet model " << typeOutlet;
         }
         std::string typeCouplingWindkesselOutlet = soption(_name="fluid-outlet.windkessel.coupling", _prefix=this->prefix());
         std::pair<bool,std::string> typeCouplingWindkesselOutletRead = this->modelProperties().boundaryConditions().sparam( "fluid", "outlet", bcMarker, "windkessel_coupling" );
@@ -397,7 +400,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             std::list<std::string> markList;
             for ( auto const& bcOutlet : this->M_fluidOutletsBCType )
                 markList.push_back( std::get<0>(bcOutlet) );
-            ExpressionStringAtMarker myBcDesc2( std::make_tuple( "wind","0","" ) );
+            ExpressionStringAtMarker myBcDesc2( std::make_tuple( "expression","wind","0","","" ) );
             myBcDesc2.setMeshMarkers( markList );
             bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
         }
@@ -529,6 +532,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     M_bcNeumannScalar.setParameterValues( paramValues );
     M_bcNeumannVectorial.setParameterValues( paramValues );
     M_bcNeumannTensor2.setParameterValues( paramValues );
+    M_bcPressure.setParameterValues( paramValues );
     M_volumicForcesProperties.setParameterValues( paramValues );
     this->updateFluidInletVelocity();
 
@@ -541,6 +545,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
             boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
         myPrecBlockNs->setParameterValues( paramValues );
     }
+
+    if ( this->M_useThermodynModel && this->M_useGravityForce )
+        this->M_thermodynModel->updateParameterValues();
 
     super_type::solve();
 }
@@ -557,10 +564,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInitialNewtonSolutionBCDirichlet(vecto
 
     boost::mpi::timer timerBCnewton;
 
-    auto const& u = this->fieldVelocity();
-    auto Xh = this->functionSpace();
-    auto mesh = this->mesh();
     size_type rowStartInVector = this->rowStartInVector();
+    //auto const& u = this->fieldVelocity();
+    auto Xh = this->functionSpace();
+    auto up = Xh->element( U, rowStartInVector );
+    auto u = up.template element<0>();
+    auto mesh = this->mesh();
 
     if (!Xh->worldsComm()[0].isActive()) // only on Velocity Proc
         return;
@@ -592,8 +601,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInitialNewtonSolutionBCDirichlet(vecto
     {
         auto const& listMarkerFaces = std::get<0>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
         if ( !listMarkerFaces.empty() )
-            modifVec(markedfaces(mesh,listMarkerFaces ),
-                     u, U, expression(d), rowStartInVector );
+            u.on(_range=markedfaces(mesh,listMarkerFaces ),
+                 _expr=expression(d) );
     }
     for ( auto const& bcDirComp : M_bcDirichletComponents )
     {
@@ -602,9 +611,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInitialNewtonSolutionBCDirichlet(vecto
         {
             auto const& listMarkerFaces = std::get<0>(  mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) )->second );
             if ( !listMarkerFaces.empty() )
-                modifVec(markedfaces(mesh,listMarkerFaces ),
-                         this->M_Solution->template element<0>()[comp], //u[comp]
-                         U, expression(d), rowStartInVector, element_velocity_type::nComponents );
+                u[comp].on(_range=markedfaces(mesh,listMarkerFaces ),
+                           _expr=expression(d) );
         }
     }
 
@@ -613,8 +621,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInitialNewtonSolutionBCDirichlet(vecto
     {
         auto const& listMarkerEdges = std::get<1>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
         if ( !listMarkerEdges.empty() )
-            modifVec(markededges(mesh,listMarkerEdges ),
-                     u, U, expression(d), rowStartInVector );
+            u.on(_range=markededges(mesh,listMarkerEdges ),
+                 _expr=expression(d) );
     }
     for ( auto const& bcDirComp : M_bcDirichletComponents )
     {
@@ -623,9 +631,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInitialNewtonSolutionBCDirichlet(vecto
         {
             auto const& listMarkerEdges = std::get<1>(  mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) )->second );
             if ( !listMarkerEdges.empty() )
-                modifVec(markedfaces(mesh,listMarkerEdges ),
-                         this->M_Solution->template element<0>()[comp], //u[comp]
-                         U, expression(d), rowStartInVector, element_velocity_type::nComponents );
+                u[comp].on(_range=markededges(mesh,listMarkerEdges ),
+                           _expr=expression(d) );
         }
     }
 
@@ -634,8 +641,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInitialNewtonSolutionBCDirichlet(vecto
     {
         auto const& listMarkerPoints = std::get<2>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
         if ( !listMarkerPoints.empty() )
-            modifVec(markedfaces(mesh,listMarkerPoints ),
-                     u, U, expression(d), rowStartInVector );
+            u.on(_range=markedfaces(mesh,listMarkerPoints ),
+                 _expr=expression(d) );
     }
     for ( auto const& bcDirComp : M_bcDirichletComponents )
     {
@@ -644,9 +651,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInitialNewtonSolutionBCDirichlet(vecto
         {
             auto const& listMarkerPoints = std::get<2>(  mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) )->second );
             if ( !listMarkerPoints.empty() )
-                modifVec(markedfaces(mesh,listMarkerPoints ),
-                         this->M_Solution->template element<0>()[comp], //u[comp]
-                         U, expression(d), rowStartInVector, element_velocity_type::nComponents );
+                u[comp].on(_range=markedfaces(mesh,listMarkerPoints ),
+                           _expr=expression(d) );
         }
     }
 
@@ -865,7 +871,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletResidual(vector_ptrty
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
     size_type rowStartInVector = this->rowStartInVector();
-    auto const& u = this->fieldVelocity();
+    //auto const& u = this->fieldVelocity();
+    auto up = Xh->element(R,rowStartInVector);
+    auto u = up.template element<0>();
 
     //R->close();
     if (!Xh->worldsComm()[0].isActive()) // only on Velocity Proc
@@ -881,14 +889,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletResidual(vector_ptrty
         auto const& listMarkerPoints = std::get<2>( ret );
         auto exprUsed = vf::zero<super_type::nDim,1>();// 0*vf::one();
         if ( !listMarkerFaces.empty() )
-            modifVec(markedfaces(mesh,listMarkerFaces ),
-                     u, R, exprUsed, rowStartInVector );
+            u.on(_range=markedfaces(mesh,listMarkerFaces ),
+                 _expr=exprUsed );
         if ( !listMarkerEdges.empty() )
-            modifVec(markededges(mesh,listMarkerEdges),
-                     u, R, exprUsed, rowStartInVector );
+            u.on(_range=markededges(mesh,listMarkerEdges),
+                 _expr=exprUsed );
         if ( !listMarkerPoints.empty() )
-            modifVec(markedpoints(mesh,listMarkerPoints),
-                     u, R, exprUsed, rowStartInVector );
+            u.on(_range=markedpoints(mesh,listMarkerPoints),
+                 _expr=exprUsed );
     }
     for ( auto const& bcDirComp : M_bcDirichletComponents )
     {
@@ -901,17 +909,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletResidual(vector_ptrty
             auto const& listMarkerPoints = std::get<2>( ret );
             auto exprUsed = vf::zero<1,1>();// cst(0.);
             if ( !listMarkerFaces.empty() )
-                modifVec(markedfaces(mesh,listMarkerFaces ),
-                         this->M_Solution->template element<0>()[comp], //u[comp]
-                         R, exprUsed, rowStartInVector, element_velocity_type::nComponents );
+                u[comp].on(_range=markedfaces(mesh,listMarkerFaces ),
+                           _expr=exprUsed );
             if ( !listMarkerEdges.empty() )
-                modifVec(markededges(mesh,listMarkerEdges),
-                         this->M_Solution->template element<0>()[comp], //u[comp],
-                         R, exprUsed, rowStartInVector, element_velocity_type::nComponents );
+                u[comp].on(_range=markededges(mesh,listMarkerEdges),
+                           _expr=exprUsed );
             if ( !listMarkerPoints.empty() )
-                modifVec(markedpoints(mesh,listMarkerPoints),
-                         this->M_Solution->template element<0>()[comp], //u[comp],
-                         R, exprUsed, rowStartInVector, element_velocity_type::nComponents );
+                u[comp].on(_range=markedpoints(mesh,listMarkerPoints),
+                           _expr=exprUsed );
         }
     }
 
@@ -1044,40 +1049,34 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCPressureLinearPDE( vector_ptrtype& F ) const
 {
-#if 0 //TODO
-    auto const bcDef = FLUIDMECHANICS_BC(this->shared_from_this());
-    if ( bcDef.hasPressure() )
+    if ( M_bcPressure.empty() ) return;
+    auto myLinearForm = form1( _test=this->functionSpace(), _vector=F,
+                               _rowstart=this->rowStartInVector() );
+    auto const& v = this->fieldVelocity();
+    for( auto const& d : M_bcPressure )
     {
-        auto myLinearForm = form1( _test=this->functionSpace(), _vector=F,
-                                   _rowstart=this->rowStartInVector() );
-        auto const& v = this->fieldVelocity();
-        ForEachBC( bcDef,cl::pressure,
-                   myLinearForm +=
-                   /**/ integrate( _range=markedfaces(this->mesh(),PhysicalName),
-                                   _expr= trans(-Expression*N())*id(v),
-                                   _geomap=this->geomap() ) );
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerPressureBC(marker(d)) ),
+                       _expr= -expression(d)*trans(N())*id(v),
+                       _geomap=this->geomap() );
     }
-#endif // TODO
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCPressureResidual( vector_ptrtype& R ) const
 {
-#if 0 //TODO
-    auto const bcDef = FLUIDMECHANICS_BC(this->shared_from_this());
-    if ( bcDef.hasPressure() )
+    if ( M_bcPressure.empty() ) return;
+    auto myLinearForm = form1( _test=this->functionSpace(), _vector=R,
+                               _rowstart=this->rowStartInVector() );
+    auto const& v = this->fieldVelocity();
+    for( auto const& d : M_bcPressure )
     {
-        auto myLinearForm = form1( _test=this->functionSpace(), _vector=R,
-                                   _rowstart=this->rowStartInVector() );
-        auto const& v = this->fieldVelocity();
-        ForEachBC( bcDef,cl::pressure,
-                   myLinearForm +=
-                   /**/ integrate( _range=markedfaces(this->mesh(),PhysicalName),
-                                   _expr= -trans(-Expression*N())*id(v),
-                                   _geomap=this->geomap() ) );
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerPressureBC(marker(d)) ),
+                       _expr= expression(d)*trans(N())*id(v),
+                       _geomap=this->geomap() );
     }
-#endif // TODO
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1087,10 +1086,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletLagMultLinearPDE( vector_pt
     if ( M_bcDirichlet.empty() ) return;
 
     auto lambdaBC = this->XhDirichletLM()->element();
-    size_type startDofIndexDirichletLM = this->startDofIndexFieldsInMatrix().find("dirichletlm")->second;
+    size_type startBlockIndexDirichletLM = this->startBlockIndexFieldsInMatrix().find("dirichletlm")->second;
     for( auto const& d : M_bcDirichlet )
         form1( _test=this->XhDirichletLM(),_vector=F,
-               _rowstart=this->rowStartInVector()+startDofIndexDirichletLM ) +=
+               _rowstart=this->rowStartInVector()+startBlockIndexDirichletLM ) +=
             integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "lm",marker(d) ) ),
                        //_range=markedelements(this->meshDirichletLM(),PhysicalName),
                        _expr= inner( expression(d),id(lambdaBC) ),
@@ -1104,10 +1103,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletLagMultResidual( vector_ptr
     if ( M_bcDirichlet.empty() ) return;
 
     auto lambdaBC = this->XhDirichletLM()->element();
-    size_type startDofIndexDirichletLM = this->startDofIndexFieldsInMatrix().find("dirichletlm")->second;
+    size_type startBlockIndexDirichletLM = this->startBlockIndexFieldsInMatrix().find("dirichletlm")->second;
     for( auto const& d : M_bcDirichlet )
         form1( _test=this->XhDirichletLM(),_vector=R,
-               _rowstart=this->rowStartInVector()+startDofIndexDirichletLM ) +=
+               _rowstart=this->rowStartInVector()+startBlockIndexDirichletLM ) +=
             integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "lm",marker(d) ) ),
                        //_range=markedelements(this->meshDirichletLM(),PhysicalName),
                        _expr= -inner( expression(d),id(lambdaBC) ),

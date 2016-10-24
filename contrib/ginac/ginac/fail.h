@@ -4,7 +4,7 @@
  *  somewhat obsolete (most of this can be replaced by exceptions). */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ class fail : public basic
 	
 	// functions overriding virtual functions from base classes
 protected:
-	unsigned return_type() const { return return_types::noncommutative_composite; };
+	unsigned return_type() const override { return return_types::noncommutative_composite; };
 
 	// non-virtual functions in this class
 protected:

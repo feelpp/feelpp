@@ -1091,7 +1091,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     {
         size_type thedofGC = dofAsked.first;
         CHECK( imagedof->dofGlobalClusterIsOnProc( thedofGC ) ) << " thedofGC "<< thedofGC << "is not on proc\n";
-        size_type thedofGP = imagedof->mapGlobalClusterToGlobalProcess( thedofGC - imagedof->firstDofGlobalCluster() );
+        size_type thedofGP = thedofGC - imagedof->firstDofGlobalCluster();
 
         CHECK ( imagedof->mapGlobalProcessToGlobalCluster( thedofGP ) == thedofGC ) << "error " << imagedof->mapGlobalProcessToGlobalCluster( thedofGP ) << "must be equal to " << thedofGC;
 
@@ -1886,7 +1886,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         }
     //std::cout << "mapCol_nLocalDof " << mapCol_nLocalDof << std::endl;
     std::vector<size_type> mapCol_globalProcessToGlobalCluster(mapCol_nLocalDof);
-    std::vector<size_type> new_mapGlobalClusterToGlobalProcess(new_nLocalDofWithoutGhost);
+    //std::vector<size_type> new_mapGlobalClusterToGlobalProcess(new_nLocalDofWithoutGhost);
     std::vector<std::map<size_type,size_type> > mapCol_LocalSpaceDofToLocalInterpDof(nProc_col);
     size_type currentLocalDof=0;
     for (int p = 0 ; p<nProc_col;++p)
@@ -1898,8 +1898,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                     mapCol_globalProcessToGlobalCluster[currentLocalDof]=it_map->second;//memory_col_globalProcessToGlobalCluster[proc_id][i];
                     mapCol_LocalSpaceDofToLocalInterpDof[p][it_map->first]=currentLocalDof;
 
-                    if ( new_firstdofcol<=it_map->second && new_lastdofcol>=it_map->second)
-                        new_mapGlobalClusterToGlobalProcess[it_map->second-new_firstdofcol]=currentLocalDof;
+                    //if ( new_firstdofcol<=it_map->second && new_lastdofcol>=it_map->second)
+                    //    new_mapGlobalClusterToGlobalProcess[it_map->second-new_firstdofcol]=currentLocalDof;
 
                     ++currentLocalDof;
                 }
@@ -1922,7 +1922,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     mapColInterp->setFirstDofGlobalCluster( proc_id, new_firstdofcol );
     mapColInterp->setLastDofGlobalCluster( proc_id, new_lastdofcol );
     mapColInterp->setMapGlobalProcessToGlobalCluster(mapCol_globalProcessToGlobalCluster);
-    mapColInterp->setMapGlobalClusterToGlobalProcess(new_mapGlobalClusterToGlobalProcess);
+    //mapColInterp->setMapGlobalClusterToGlobalProcess(new_mapGlobalClusterToGlobalProcess);
     //if ( this->dualImageSpace()->worldComm().isActive() ) mapColInterp.showMeMapGlobalProcessToGlobalCluster();
 
     //-----------------------------------------
@@ -3463,6 +3463,32 @@ BOOST_PARAMETER_FUNCTION(
 #endif
 
     return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
+
+} // opInterpolation
+
+
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename compute_opInterpolation_return<Args>::ptrtype ), // 1. return type
+    IPtr,                        // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required
+      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+    ) // required
+    ( optional
+      ( range,          *, elements( imageSpace->mesh() )  )
+      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
+      ( type,           *, InterpolationNonConforming() )
+      ( ddmethod,  (bool),  false )
+    ) // optional
+)
+{
+#if BOOST_VERSION < 105900
+    Feel::detail::ignore_unused_variable_warning( args );
+#endif
+
+    return opInterpPtr( domainSpace,imageSpace,range,backend,type,ddmethod );
 
 } // opInterpolation
 

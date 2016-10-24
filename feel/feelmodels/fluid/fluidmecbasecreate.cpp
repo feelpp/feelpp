@@ -127,7 +127,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     //--------------------------------------------------------------//
     // exporters options
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
     M_isHOVisu =nOrderGeo > 1;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
         M_isHOVisu = boption(_name="hovisu",_prefix=this->prefix());
@@ -225,6 +225,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_definePressureCst = boption(_name="define-pressure-cst",_prefix=this->prefix());
     M_definePressureCstMethod = soption(_name="define-pressure-cst.method",_prefix=this->prefix());
+    CHECK( M_definePressureCstMethod == "lagrange-multiplier" || M_definePressureCstMethod == "penalisation" ||
+           M_definePressureCstMethod == "algebraic" ) << "lagrange-multiplier or penalisation or algebraic";
     M_definePressureCstPenalisationBeta = doption(_name="define-pressure-cst.penalisation-beta",_prefix=this->prefix());
 
     //--------------------------------------------------------------//
@@ -544,7 +546,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
     }
     else
     {
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
         //M_exporter_ho = export_ho_type::New( this->application()->vm(), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Export_HO"))/*.c_str()*/, M_Xh->worldComm() );
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -883,7 +885,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateFluidInletVelocity()
 }
 
 
-
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
@@ -899,10 +900,19 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     if ( !M_hasBuildFromMesh )
         this->build();
 
+    // update definePressureCst respect to the method choosen
+    if ( this->definePressureCst() )
+        this->updateDefinePressureCst();
 
-    // build definePressureCst space if not done yet
-    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" && !M_XhMeanPressureLM )
-        M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+    // lagrange multiplier for pressure bc
+    if ( this->hasMarkerPressureBC() )
+    {
+        M_meshLagrangeMultiplierPressureBC = createSubmesh(this->mesh(),markedfaces(this->mesh(),this->markerPressureBC()) );
+        M_spaceLagrangeMultiplierPressureBC = space_trace_velocity_component_type::New( _mesh=M_meshLagrangeMultiplierPressureBC, _worldscomm=this->localNonCompositeWorldsComm() );
+        M_fieldLagrangeMultiplierPressureBC1.reset( new element_trace_velocity_component_type( M_spaceLagrangeMultiplierPressureBC ) );
+        if ( nDim == 3 )
+            M_fieldLagrangeMultiplierPressureBC2.reset( new element_trace_velocity_component_type( M_spaceLagrangeMultiplierPressureBC ) );
+    }
 
     // update marker in mesh (mainly used with CIP stab)
     if ( (this->doCIPStabConvection() || this->doCIPStabDivergence() || this->doCIPStabPressure() ) && !this->applyCIPStabOnlyOnBoundaryFaces() )
@@ -914,6 +924,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
                                                          this->subPrefix(), this->rootRepositoryWithoutNumProc() ) );
         M_thermodynModel->setFieldVelocityConvectionIsUsed( !M_useGravityForce/*false*/ );
         M_thermodynModel->loadMesh( this->mesh() );
+        // disable thermo exporter if we use fluid exporter
+        M_thermodynModel->setDoExportResults( false );
         M_thermodynModel->init( !M_useGravityForce/*false*/ );
     }
     //-------------------------------------------------//
@@ -957,32 +969,37 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
 
     //-------------------------------------------------//
     this->initFluidOutlet();
+    // init function defined in json
+    this->initUserFunctions();
+    // init post-processinig (exporter, measure at point, ...)
     this->initPostProcess();
     //-------------------------------------------------//
     // define start dof index ( lm , windkessel )
-    size_type currentStartIndex = 0;
-    currentStartIndex += M_Xh->nLocalDofWithGhost();
+    size_type currentStartIndex = 2;// velocity and pressure before
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
-        M_startDofIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex;
-        currentStartIndex += M_XhMeanPressureLM->nLocalDofWithGhost() ;
+        M_startBlockIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex++;
     }
     if (this->hasMarkerDirichletBClm())
     {
-        M_startDofIndexFieldsInMatrix["dirichletlm"] = currentStartIndex;
-        currentStartIndex += this->XhDirichletLM()->nLocalDofWithGhost() ;
+        M_startBlockIndexFieldsInMatrix["dirichletlm"] = currentStartIndex++;
+    }
+    if ( this->hasMarkerPressureBC() )
+    {
+        M_startBlockIndexFieldsInMatrix["pressurelm1"] = currentStartIndex++;
+        if ( nDim == 3 )
+            M_startBlockIndexFieldsInMatrix["pressurelm2"] = currentStartIndex++;
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
-        M_startDofIndexFieldsInMatrix["windkessel"] = currentStartIndex;
-        currentStartIndex += 2*this->nFluidOutletWindkesselImplicit();
+        M_startBlockIndexFieldsInMatrix["windkessel"] = currentStartIndex++;
     }
     if ( M_useThermodynModel && M_useGravityForce )
     {
         M_thermodynModel->setRowStartInMatrix( currentStartIndex );
         M_thermodynModel->setColStartInMatrix( currentStartIndex );
         M_thermodynModel->setRowStartInVector( currentStartIndex );
-        currentStartIndex += M_thermodynModel->nLocalDof();
+        ++currentStartIndex;
     }
     //-------------------------------------------------//
     // prepare block vector
@@ -1001,6 +1018,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     {
         M_blockVectorSolution(cptBlock) = this->backend()->newVector( this->XhDirichletLM() );
         ++cptBlock;
+    }
+    if ( this->hasMarkerPressureBC() )
+    {
+        M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC1;
+        if ( nDim == 3 )
+            M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC2;
     }
     // windkessel outel with implicit scheme
     if ( this->hasFluidOutletWindkesselImplicit() )
@@ -1284,6 +1307,80 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initFluidOutlet()
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initUserFunctions()
+{
+    if ( this->modelProperties().functions().empty() )
+        return;
+
+    for ( auto const& modelfunc : this->modelProperties().functions() )
+    {
+        auto const& funcData = modelfunc.second;
+        std::string funcName = funcData.name();
+
+        if ( funcData.isScalar() )
+        {
+            if ( this->hasFieldUserScalar( funcName ) )
+                continue;
+            M_fieldsUserScalar[funcName] = this->functionSpaceVelocity()->compSpace()->elementPtr();
+        }
+        else if ( funcData.isVectorial2() )
+        {
+            if ( nDim != 2 ) continue;
+            if ( this->hasFieldUserVectorial( funcName ) )
+                continue;
+            M_fieldsUserVectorial[funcName] = this->functionSpaceVelocity()->elementPtr();
+        }
+        else if ( funcData.isVectorial3() )
+        {
+            if ( nDim != 3 ) continue;
+            if ( this->hasFieldUserVectorial( funcName ) )
+                continue;
+            M_fieldsUserVectorial[funcName] = this->functionSpaceVelocity()->elementPtr();
+        }
+    }
+
+    this->updateUserFunctions();
+}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSymbol )
+{
+    if ( this->modelProperties().functions().empty() )
+        return;
+
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().functions().setParameterValues( paramValues );
+    for ( auto const& modelfunc : this->modelProperties().functions() )
+    {
+        auto const& funcData = modelfunc.second;
+        if ( onlyExprWithTimeSymbol && !funcData.hasSymbol("t") )
+            continue;
+
+        std::string funcName = funcData.name();
+        if ( funcData.isScalar() )
+        {
+            CHECK( this->hasFieldUserScalar( funcName ) ) << "user function " << funcName << "not registered";
+            M_fieldsUserScalar[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionScalar() );
+        }
+        else if ( funcData.isVectorial2() )
+        {
+            if ( nDim != 2 ) continue;
+            CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
+            M_fieldsUserVectorial[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionVectorial2() );
+        }
+        else if ( funcData.isVectorial3() )
+        {
+            if ( nDim != 3 ) continue;
+            CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
+            M_fieldsUserVectorial[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionVectorial3() );
+        }
+    }
+}
+
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     // update post-process expression
@@ -1299,6 +1396,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
         M_postProcessFieldExported.erase( FluidMechanicsPostProcessFieldExported::Displacement );
         M_postProcessFieldExported.erase( FluidMechanicsPostProcessFieldExported::ALEMesh );
     }
+
     // restart exporters if restart is activated
     if (this->doRestart() && this->restartPath().empty() )
     {
@@ -1316,9 +1414,19 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
         else
         {
-#if defined(FEELPP_HAS_VTK)
-            if ( M_exporter_ho->doExport() ) M_exporter_ho->restart(this->timeInitial());
+#if 1 // defined(FEELPP_HAS_VTK)
+            if ( M_exporter_ho && M_exporter_ho->doExport() ) M_exporter_ho->restart(this->timeInitial());
 #endif
+        }
+    }
+
+    // add user functions
+    if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
+    {
+        for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
+        {
+            if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
+                M_postProcessUserFieldExported.insert( o );
         }
     }
 

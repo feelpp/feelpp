@@ -40,7 +40,6 @@ MatrixEigenSparse<T>::MatrixEigenSparse()
     :
     super(),
     M_is_initialized( false ),
-    M_is_closed( false ),
     M_mat()
 {}
 template <typename T>
@@ -48,8 +47,15 @@ MatrixEigenSparse<T>::MatrixEigenSparse( size_type r, size_type c, WorldComm con
     :
     super(worldComm),
     M_is_initialized( false ),
-    M_is_closed( false ),
     M_mat( r, c )
+{}
+
+template <typename T>
+MatrixEigenSparse<T>::MatrixEigenSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
+    :
+    super( dmRow,dmCol ),
+    M_is_initialized( false ),
+    M_mat( dmRow->nDof(), dmCol->nDof() )
 {}
 
 template <typename T>
@@ -57,7 +63,6 @@ MatrixEigenSparse<T>::MatrixEigenSparse( MatrixEigenSparse const & m )
     :
     super( m ),
     M_is_initialized( m.M_is_initialized ),
-    M_is_closed( m.M_is_closed ),
     M_mat( m.M_mat )
 
 {}
@@ -137,13 +142,13 @@ void
 MatrixEigenSparse<T>::close() const
 {
 
-    if ( !M_is_closed )
+    if ( !this->closed() )
     {
         LOG(INFO) << "Closing matrix";
         M_mat.setFromTriplets(M_tripletList.begin(), M_tripletList.end());
         M_mat.makeCompressed();
         std::vector<triplet>().swap(M_tripletList);
-        M_is_closed = true;
+        this->setIsClosed( true );
     }
 }
 
@@ -151,10 +156,12 @@ template<typename T>
 void
 MatrixEigenSparse<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) const
 {
-    if(M_is_closed) {
+    if(this->closed()) {
         MatrixEigenSparse<T>* Atrans = dynamic_cast<MatrixEigenSparse<T>*>(&Mt);
         Atrans->M_mat = M_mat.transpose().eval();
-        Atrans->M_is_closed = Atrans->M_is_initialized = true;
+        Atrans->M_is_initialized = true;
+        Atrans->setIsClosed( true );
+
     }
 }
 
@@ -211,9 +218,9 @@ MatrixEigenSparse<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _
 }
 template<typename T>
 void
-MatrixEigenSparse<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m,
-                                      std::vector<size_type> start_i,
-                                      std::vector<size_type> start_j )
+MatrixEigenSparse<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m,
+                                      std::vector<size_type> const& start_i,
+                                      std::vector<size_type> const& start_j )
 {
     LOG(ERROR) << "Invalid call to updateBlockMat, not yet implemented\n";
 }

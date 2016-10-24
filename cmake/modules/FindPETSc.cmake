@@ -41,7 +41,7 @@ function (petsc_get_version)
   endif ()
 endfunction ()
 
-find_program (MAKE_EXECUTABLE NAMES make gmake)
+find_program (MAKE_EXECUTABLE NAMES gmake make)
 
 foreach( debian_arches linux kfreebsd )
   IF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
@@ -66,8 +66,10 @@ if ( NOT PETSC_DIR )
       message(STATUS "checking version ${version} for file ${flavor}/include/petsc.h...")
       find_path (PETSC_DIR include/petsc.h
         PATHS
+        /usr/local/opt/petsc/real
         /usr/lib/petscdir/${version}/${flavor}
         /usr/local/Cellar/petsc/${version}/${flavor}
+        /usr/local/
         NO_DEFAULT_PATH
         DOC "PETSc Directory")
     endforeach()
@@ -82,6 +84,7 @@ find_path (PETSC_DIR include/petsc.h
   /usr/lib/petscdir/3.4.4 /usr/lib/petscdir/3.4.3 /usr/lib/petscdir/3.4.2
   /usr/lib/petscdir/3.3 /usr/lib/petscdir/3.2 /usr/lib/petscdir/3.1 /usr/lib/petscdir/3.0.0 /usr/lib/petscdir/2.3.3 /usr/lib/petscdir/2.3.2 # Debian
   /opt/local/lib/petsc # macports
+  /usr/local/lib/petsc # freebsd
   $ENV{HOME}/petsc
   $ENV{PETSC_HOME}
   $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}
@@ -237,7 +240,7 @@ int main(int argc,char *argv[]) {
   ierr = PetscInitialize(&argc,&argv,0,help);CHKERRQ(ierr);
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
-  ierr = TSDestroy(ts);CHKERRQ(ierr);
+  ierr = TSDestroy(&ts);CHKERRQ(ierr);
   ierr = PetscFinalize();CHKERRQ(ierr);
   return 0;
 }
@@ -313,10 +316,6 @@ find_package_handle_standard_args (PETSc
   PETSC_INCLUDES PETSC_LIBRARIES )
 
 if ( PETSC_FOUND )
-  add_definitions( -DFEELPP_HAS_PETSC -DFEELPP_HAS_PETSC_H )
-  set(FEELPP_HAS_PETSC 1)
-  set(FEELPP_HAS_PETSC_H 1)
-
   # add PETSC includes (in case of non conventionnal install of petsc TPS)
   include_directories(${PETSC_INCLUDES})
 endif( PETSC_FOUND )

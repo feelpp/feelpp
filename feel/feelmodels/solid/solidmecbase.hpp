@@ -102,6 +102,7 @@ public:
     typedef boost::shared_ptr<space_displacement_type> space_displacement_ptrtype;
     typedef typename space_displacement_type::element_type element_displacement_type;
     typedef boost::shared_ptr<element_displacement_type> element_displacement_ptrtype;
+    typedef typename space_displacement_type::element_external_storage_type element_displacement_external_storage_type;
     typedef typename space_displacement_type::element_type element_vectorial_type;
     typedef boost::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
     typedef typename space_displacement_type::component_functionspace_type space_displacement_scalar_type;
@@ -113,6 +114,7 @@ public:
     typedef boost::shared_ptr<space_pressure_type> space_pressure_ptrtype;
     typedef typename space_pressure_type::element_type element_pressure_type;
     typedef boost::shared_ptr<element_pressure_type> element_pressure_ptrtype;
+    typedef typename space_pressure_type::element_external_storage_type element_pressure_external_storage_type;
     //___________________________________________________________________________________//
     // vectorial constraint space
     typedef FunctionSpace<mesh_type, bases<basis_constraint_vec_type> > space_constraint_vec_type;
@@ -185,7 +187,7 @@ public:
     typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
     //typedef Exporter<mesh_type,nOrderGeo> gmsh_export_type;
     //typedef boost::shared_ptr<gmsh_export_type> gmsh_export_ptrtype;
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
     //fais comme ca car bug dans opeartorlagrangeP1 pour les champs vectorielles
     typedef FunctionSpace<mesh_type,bases<Lagrange<nOrder,Scalar,Continuous,PointSetFekete> > > space_create_ho_type;
 
@@ -497,7 +499,7 @@ public :
     BlocksBaseGraphCSR buildBlockMatrixGraph() const;
     graph_ptrtype buildMatrixGraph() const;
     int nBlockMatrixGraph() const;
-    std::map<std::string,size_type> const& startDofIndexFieldsInMatrix() const { return M_startDofIndexFieldsInMatrix; }
+    std::map<std::string,size_type> const& startBlockIndexFieldsInMatrix() const { return M_startBlockIndexFieldsInMatrix; }
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
     void updateBlockVectorSolution();
@@ -606,21 +608,21 @@ public :
     void updateLinearElasticityGeneralisedAlpha( DataUpdateLinear & data ) const;
     void updateLinearElasticityAxiSymGeneralisedAlpha( DataUpdateLinear & data ) const {};
 
-    void updateJacobianIncompressibilityTerms( element_displacement_type const& u, element_pressure_type const& p, sparse_matrix_ptrtype& J) const;
-    void updateResidualIncompressibilityTerms( element_displacement_type const& u, element_pressure_type const& p, vector_ptrtype& R) const;
+    void updateJacobianIncompressibilityTerms( element_displacement_external_storage_type const& u, element_pressure_external_storage_type const& p, sparse_matrix_ptrtype& J) const;
+    void updateResidualIncompressibilityTerms( element_displacement_external_storage_type const& u, element_pressure_external_storage_type const& p, vector_ptrtype& R) const;
 
-    void updateJacobianViscoElasticityTerms( element_displacement_type const& u, sparse_matrix_ptrtype& J) const;
-    void updateResidualViscoElasticityTerms( element_displacement_type const& u, vector_ptrtype& R) const;
+    void updateJacobianViscoElasticityTerms( element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const;
+    void updateResidualViscoElasticityTerms( element_displacement_external_storage_type const& u, vector_ptrtype& R) const;
 
 
     virtual void updateBCDirichletStrongResidual(vector_ptrtype& R) const = 0;
     virtual void updateBCNeumannResidual( vector_ptrtype& R ) const = 0;
-    virtual void updateBCRobinResidual( element_displacement_type const& u, vector_ptrtype& R ) const = 0;
-    virtual void updateBCFollowerPressureResidual(element_displacement_type const& u, vector_ptrtype& R ) const = 0;
+    virtual void updateBCRobinResidual( element_displacement_external_storage_type const& u, vector_ptrtype& R ) const = 0;
+    virtual void updateBCFollowerPressureResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R ) const = 0;
     virtual void updateSourceTermResidual( vector_ptrtype& R ) const = 0;
 
     virtual void updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J, vector_ptrtype& RBis ) const = 0;
-    virtual void updateBCFollowerPressureJacobian(element_displacement_type const& u, sparse_matrix_ptrtype& J) const = 0;
+    virtual void updateBCFollowerPressureJacobian(element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const = 0;
     virtual void updateBCRobinJacobian( sparse_matrix_ptrtype& J) const = 0;
 
     virtual void updateBCDirichletStrongLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const = 0;
@@ -676,8 +678,8 @@ protected:
     savets_pressure_ptrtype M_savetsPressure;
     // algebraic solver ( assembly+solver )
     model_algebraic_factory_ptrtype M_algebraicFactory;
-    // start dof index fields in matrix (lm,windkessel,...)
-    std::map<std::string,size_type> M_startDofIndexFieldsInMatrix;
+    // start block index fields in matrix (lm,windkessel,...)
+    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
     // backend
     backend_ptrtype M_backend;
     // block vector solution
@@ -694,7 +696,7 @@ protected:
     exporter_ptrtype M_exporter;
     // ho exporter
     bool M_isHOVisu;
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
     export_ho_ptrtype M_exporter_ho;
     space_vectorial_visu_ho_ptrtype M_XhVectorialVisuHO;
     element_vectorial_visu_ho_ptrtype M_displacementVisuHO;

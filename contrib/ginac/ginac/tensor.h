@@ -3,7 +3,7 @@
  *  Interface to GiNaC's special tensors. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ class tensor : public basic
 
 	// functions overriding virtual functions from base classes
 protected:
-	unsigned return_type() const { return return_types::noncommutative_composite; }
+	unsigned return_type() const override { return return_types::noncommutative_composite; }
 
 	// non-virtual functions in this class
 public:
@@ -56,13 +56,14 @@ class tensdelta : public tensor
 
 	// functions overriding virtual functions from base classes
 public:
-	bool info(unsigned inf) const;
-	ex eval_indexed(const basic & i) const;
-	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const;
+	bool info(unsigned inf) const override;
+	ex eval_indexed(const basic & i) const override;
+	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const override;
+protected:
+	unsigned return_type() const override { return return_types::commutative; }
 
 	// non-virtual functions in this class
 protected:
-	unsigned return_type() const { return return_types::commutative; }
 	void do_print(const print_context & c, unsigned level) const;
 	void do_print_latex(const print_latex & c, unsigned level) const;
 };
@@ -78,13 +79,14 @@ class tensmetric : public tensor
 
 	// functions overriding virtual functions from base classes
 public:
-	bool info(unsigned inf) const;
-	ex eval_indexed(const basic & i) const;
-	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const;
+	bool info(unsigned inf) const override;
+	ex eval_indexed(const basic & i) const override;
+	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const override;
+protected:
+	unsigned return_type() const override { return return_types::commutative; }
 
 	// non-virtual functions in this class
 protected:
-	unsigned return_type() const { return return_types::commutative; }
 	void do_print(const print_context & c, unsigned level) const;
 };
 GINAC_DECLARE_UNARCHIVER(tensmetric);
@@ -104,16 +106,18 @@ public:
 
 	// functions overriding virtual functions from base classes
 public:
-	bool info(unsigned inf) const;
-	ex eval_indexed(const basic & i) const;
+	bool info(unsigned inf) const override;
+	ex eval_indexed(const basic & i) const override;
 
 	/** Save (a.k.a. serialize) object into archive. */
-	void archive(archive_node& n) const;
+	void archive(archive_node& n) const override;
 	/** Read (a.k.a. deserialize) object from archive. */
-	void read_archive(const archive_node& n, lst& syms);
+	void read_archive(const archive_node& n, lst& syms) override;
+protected:
+	unsigned return_type() const override { return return_types::commutative; }
+
 	// non-virtual functions in this class
 protected:
-	unsigned return_type() const { return return_types::commutative; }
 	void do_print(const print_context & c, unsigned level) const;
 	void do_print_latex(const print_latex & c, unsigned level) const;
 
@@ -134,9 +138,9 @@ class spinmetric : public tensmetric
 
 	// functions overriding virtual functions from base classes
 public:
-	bool info(unsigned inf) const;
-	ex eval_indexed(const basic & i) const;
-	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const;
+	bool info(unsigned inf) const override;
+	ex eval_indexed(const basic & i) const override;
+	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const override;
 
 protected:
 	void do_print(const print_context & c, unsigned level) const;
@@ -158,17 +162,19 @@ public:
 
 	// functions overriding virtual functions from base classes
 public:
-	bool info(unsigned inf) const;
-	ex eval_indexed(const basic & i) const;
-	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const;
+	bool info(unsigned inf) const override;
+	ex eval_indexed(const basic & i) const override;
+	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const override;
 
 	/** Save (a.k.a. serialize) object into archive. */
-	void archive(archive_node& n) const;
+	void archive(archive_node& n) const override;
 	/** Read (a.k.a. deserialize) object from archive. */
-	void read_archive(const archive_node& n, lst& syms);
+	void read_archive(const archive_node& n, lst& syms) override;
+protected:
+	unsigned return_type() const override { return return_types::commutative; }
+
 	// non-virtual functions in this class
 protected:
-	unsigned return_type() const { return return_types::commutative; }
 	void do_print(const print_context & c, unsigned level) const;
 	void do_print_latex(const print_latex & c, unsigned level) const;
 

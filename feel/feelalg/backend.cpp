@@ -35,7 +35,9 @@
 // undef MatType here to ensure compilation since it is not needed to compile this file
 #undef MatType
 #include <feel/feelalg/backendeigen.hpp>
+#if FEELPP_HAS_PETSC
 #include <feel/feelalg/backendpetsc.hpp>
+#endif
 #include <feel/feelalg/backendtrilinos.hpp>
 
 
@@ -74,7 +76,9 @@ Backend<T>::Backend( WorldComm const& worldComm )
     M_ksp( "gmres" ),
     M_pc( "lu" ),
     M_fieldSplit( "additive" ),
+#if FEELPP_HAS_PETSC
     M_pcFactorMatSolverPackage( "petsc" ),
+#endif
     M_constant_null_space( false ),
     M_showKSPMonitor( false ),
     M_showKSPConvergedReason( false )
@@ -383,6 +387,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
 
         // configure reusePC,reuseJac in non linear solver
         int typeReusePrec = 1,typeReuseJac = 1 ;
+#if FEELPP_HAS_PETSC 
 #if PETSC_VERSION_LESS_THAN(3,5,0)
         // if first time or rebuild prec at first newton step, need to get matStructInitial
         if ( reusePC && (!M_reusePrecIsBuild || M_reusePrecRebuildAtFirstNewtonStep) )
@@ -399,6 +404,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
             M_nlsolver->setPrecMatrixStructure( SAME_PRECONDITIONER );
             typeReusePrec = (M_reusePrecRebuildAtFirstNewtonStep)? -2 : -1;
         }
+#endif
 #endif
         if ( reuseJac ) typeReuseJac = (M_reuseJacRebuildAtFirstNewtonStep)? -2 : -1;
 
@@ -428,6 +434,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         // reset to initial solution
         x_save->close();
         *x=*x_save;
+        x->close();
 
         //M_nlsolver->init();
         //M_nlsolver->setPreconditionerType( this->pcEnumType() );
@@ -761,18 +768,22 @@ void updateBackendKSPOptions( po::options_description & _options, std::string co
         ( prefixvm( prefix,kspctx+"constant-null-space" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( 0 ):Feel::po::value<bool>(),
           "set the null space to be the constant values" )
+#if FEELPP_HAS_PETSC
         ( prefixvm( prefix,kspctx+"ksp-use-config-default-petsc" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
           "configure ksp with default petsc options" )
+#endif
 
         ( prefixvm( prefix,kspctx+"ksp-use-initial-guess-nonzero" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
           "tells the iterative solver that the initial guess is nonzero" )
         
         // Default value : "" let the default behavior
+#if FEELPP_HAS_PETSC
         ( prefixvm( prefix,kspctx+"ksp-norm-type" ).c_str(),
           Feel::po::value<std::string>()->default_value( "default" ),
           "Sets the norm that is used for convergence testing. Leaving this empty will use default petsc behavior. default, none, preconditioned, unpreconditioned, natural" )
+#endif
 
         ( prefixvm( prefix,kspctx+"gmres-restart" ).c_str(),
           (useDefaultValue)?Feel::po::value<int>()->default_value( 30 ):Feel::po::value<int>(),
@@ -916,10 +927,12 @@ po::options_description backend_options( std::string const& prefix )
         ( prefixvm( prefix,"export-matlab" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "export matrix/vector to matlab, default empty string means no export, other string is used as prefix" )
 
         ( prefixvm( prefix,"snes-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Prints the SNES data structure" )
+#if FEELPP_HAS_PETSC
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
         ( prefixvm( prefix,"snes-type" ).c_str(), Feel::po::value<std::string>()->default_value( SNESNEWTONLS ), "Set the SNES solver" )
 #else
         ( prefixvm( prefix,"snes-type" ).c_str(), Feel::po::value<std::string>()->default_value( SNESLS ), "Set the SNES solver" )
+#endif
 #endif
         ( prefixvm( prefix,"snes-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "relative tolerance" )
         ( prefixvm( prefix,"snes-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
@@ -953,12 +966,15 @@ po::options_description backend_options( std::string const& prefix )
         ( prefixvm( prefix,"pc-view" ).c_str(),
           Feel::po::value<bool>()->default_value( false ),
           "display preconditioner information" )
+#if FEELPP_HAS_PETSC
         ( prefixvm( prefix,"pc-use-config-default-petsc" ).c_str(),
           Feel::po::value<bool>()->default_value( false ),
           "configure pc with defult petsc options" )
+#endif
         ( prefixvm( prefix,"pc-factor-shift-type" ).c_str(),
           Feel::po::value<std::string>()->default_value( "none" ),
           "adds a particular type of quantity to the diagonal of the matrix during numerical factorization, thus the matrix has nonzero pivots (none, nonzero, positive_definite, inblocks)" )
+#if FEELPP_HAS_PETSC
 #if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
         ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),
           Feel::po::value<std::string>()->default_value( "mumps" ),
@@ -966,6 +982,11 @@ po::options_description backend_options( std::string const& prefix )
 #else
         ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),
           Feel::po::value<std::string>()->default_value( "petsc" ),
+          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+#endif
+#else
+        ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),
+          Feel::po::value<std::string>()->default_value( "mumps" ),
           "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
 #endif
         ( prefixvm( prefix,"fieldsplit-type" ).c_str(), Feel::po::value<std::string>()->default_value( "additive" ),

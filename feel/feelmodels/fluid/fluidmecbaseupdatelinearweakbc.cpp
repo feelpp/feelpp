@@ -84,20 +84,20 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
 
     if (this->hasMarkerDirichletBClm())
     {
-        CHECK( this->startDofIndexFieldsInMatrix().find("dirichletlm") != this->startDofIndexFieldsInMatrix().end() )
+        CHECK( this->startBlockIndexFieldsInMatrix().find("dirichletlm") != this->startBlockIndexFieldsInMatrix().end() )
             << " start dof index for dirichletlm is not present\n";
-        size_type startDofIndexDirichletLM = this->startDofIndexFieldsInMatrix().find("dirichletlm")->second;
+        size_type startBlockIndexDirichletLM = this->startBlockIndexFieldsInMatrix().find("dirichletlm")->second;
         auto lambdaBC = this->XhDirichletLM()->element();
         if (BuildCstPart)
         {
             form2( _test=Xh,_trial=this->XhDirichletLM(),_matrix=A,_pattern=size_type(Pattern::COUPLED),
                    _rowstart=rowStartInMatrix,
-                   _colstart=colStartInMatrix+startDofIndexDirichletLM ) +=
+                   _colstart=colStartInMatrix+startBlockIndexDirichletLM ) +=
                 integrate( _range=elements(this->meshDirichletLM()),
                            _expr= inner( idt(lambdaBC),id(u) ) );
 
             form2( _test=this->XhDirichletLM(),_trial=Xh,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-                   _rowstart=rowStartInMatrix+startDofIndexDirichletLM,
+                   _rowstart=rowStartInMatrix+startBlockIndexDirichletLM,
                    _colstart=colStartInMatrix ) +=
                 integrate( _range=elements(this->meshDirichletLM()),
                            _expr= inner( idt(u),id(lambdaBC) ) );
@@ -110,7 +110,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
             if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" && false )
             {
                 form1( _test=this->XhDirichletLM(),_vector=F,
-                       _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
+                       _rowstart=rowStartInVector+startBlockIndexDirichletLM ) +=
                     integrate( _range=markedfaces(mesh,this->markersNameMovingBoundary() ),
                                _expr= inner( idv(this->meshVelocity2()),id(lambdaBC) ) );
             }
@@ -144,6 +144,77 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
                                _geomap=this->geomap() );
             }
 #endif
+        }
+
+    }
+
+    //--------------------------------------------------------------------------------------------------//
+
+    if ( this->hasMarkerPressureBC() )
+    {
+        CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm1") != this->startBlockIndexFieldsInMatrix().end() )
+            << " start dof index for pressurelm1 is not present\n";
+
+        size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+        if (BuildCstPart)
+        {
+            if ( nDim == 2 )
+            {
+                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix,
+                       _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(id(u),N()))(0,0)*idt(M_fieldLagrangeMultiplierPressureBC1),
+                               _geomap=this->geomap() );
+
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
+                       _colstart=colStartInMatrix ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(idt(u),N()))(0,0)*id(M_fieldLagrangeMultiplierPressureBC1),
+                               _geomap=this->geomap() );
+            }
+            else if ( nDim == 3 )
+            {
+                auto alpha = 1./sqrt(1-Nz()*Nz());
+                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix,
+                       _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(id(u),N()))(0,2)*idt(M_fieldLagrangeMultiplierPressureBC1)*alpha,
+                               _geomap=this->geomap() );
+
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
+                       _colstart=colStartInMatrix ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(idt(u),N()))(0,2)*id(M_fieldLagrangeMultiplierPressureBC1)*alpha,
+                               _geomap=this->geomap() );
+
+                CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm2") != this->startBlockIndexFieldsInMatrix().end() )
+                    << " start dof index for pressurelm2 is not present\n";
+                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+
+                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix,
+                       _colstart=colStartInMatrix+startBlockIndexPressureLM2 ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr= -trans(cross(id(u),N()))(0,0)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Ny()
+                               +trans(cross(id(u),N()))(0,1)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
+                               _geomap=this->geomap() );
+
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix+startBlockIndexPressureLM2,
+                       _colstart=colStartInMatrix ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr= -trans(cross(idt(u),N()))(0,0)*alpha*id(M_fieldLagrangeMultiplierPressureBC2)*Ny()
+                               +trans(cross(idt(u),N()))(0,1)*alpha*id(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
+                               _geomap=this->geomap() );
+            }
+        }
+        if ( BuildNonCstPart )
+        {
+            this->updateBCPressureLinearPDE( F );
         }
 
     }
@@ -198,9 +269,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
         }
         if ( this->hasFluidOutletWindkesselImplicit() )
         {
-            CHECK( this->startDofIndexFieldsInMatrix().find("windkessel") != this->startDofIndexFieldsInMatrix().end() )
+            CHECK( this->startBlockIndexFieldsInMatrix().find("windkessel") != this->startBlockIndexFieldsInMatrix().end() )
                 << " start dof index for windkessel is not present\n";
-            size_type startDofIndexWindkessel = this->startDofIndexFieldsInMatrix().find("windkessel")->second;
+            size_type startBlockIndexWindkessel = this->startBlockIndexFieldsInMatrix().find("windkessel")->second;
 
             if (BuildNonCstPart)
             {
@@ -222,43 +293,63 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
                     double Cd=std::get<3>(windkesselParam);
                     double Deltat = this->timeStepBDF()->timeStep();
 
-                    const size_type rowStartInMatrixWindkessel = rowStartInMatrix + startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
-                    const size_type colStartInMatrixWindkessel = colStartInMatrix + startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
-                    const size_type rowStartInVectorWindkessel = rowStartInVector + startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
+                    bool hasWindkesselActiveDof = M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0;
+                    int blockStartWindkesselRow = rowStartInMatrix + startBlockIndexWindkessel + 2*cptOutletUsed;
+                    int blockStartWindkesselCol = colStartInMatrix + startBlockIndexWindkessel + 2*cptOutletUsed;
+                    int blockStartWindkesselVec = rowStartInVector + startBlockIndexWindkessel + 2*cptOutletUsed;
+                    auto const& basisToContainerGpPressureDistalRow = A->mapRow().dofIdToContainerId( blockStartWindkesselRow );
+                    auto const& basisToContainerGpPressureDistalCol = A->mapCol().dofIdToContainerId( blockStartWindkesselCol );
+                    auto const& basisToContainerGpPressureDistalVec = F->map().dofIdToContainerId( blockStartWindkesselVec );
+                    auto const& basisToContainerGpPressureProximalRow = A->mapRow().dofIdToContainerId( blockStartWindkesselRow+1 );
+                    auto const& basisToContainerGpPressureProximalCol = A->mapCol().dofIdToContainerId( blockStartWindkesselCol+1 );
+                    auto const& basisToContainerGpPressureProximalVec = F->map().dofIdToContainerId( blockStartWindkesselVec+1 );
+                    if ( hasWindkesselActiveDof )
+                        CHECK( !basisToContainerGpPressureDistalRow.empty() && !basisToContainerGpPressureDistalCol.empty() &&
+                               !basisToContainerGpPressureProximalRow.empty() && !basisToContainerGpPressureProximalCol.empty() &&
+                               !basisToContainerGpPressureDistalVec.empty() && !basisToContainerGpPressureProximalVec.empty() ) << "incomplete datamap info";
+                    const size_type gpPressureDistalRow = (hasWindkesselActiveDof)? basisToContainerGpPressureDistalRow[0] : 0;
+                    const size_type gpPressureDistalCol = (hasWindkesselActiveDof)? basisToContainerGpPressureDistalCol[0] : 0;
+                    const size_type gpPressureDistalVec = (hasWindkesselActiveDof)? basisToContainerGpPressureDistalVec[0] : 0;
+                    const size_type gpPressureProximalRow = (hasWindkesselActiveDof)? basisToContainerGpPressureProximalRow[0] : 0;
+                    const size_type gpPressureProximalCol = (hasWindkesselActiveDof)? basisToContainerGpPressureProximalCol[0] : 0;
+
+                    //const size_type rowStartInMatrixWindkessel = rowStartInMatrix + startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
+                    //const size_type colStartInMatrixWindkessel = colStartInMatrix + startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
+                    //const size_type rowStartInVectorWindkessel = rowStartInVector + startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
                     ++cptOutletUsed;
                     //--------------------//
                     // 1ere ligne
-                    if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
+                    if ( hasWindkesselActiveDof )
                     {
-                        A->add( rowStartInMatrixWindkessel,colStartInMatrixWindkessel,
+                        A->add( gpPressureDistalRow/*rowStartInMatrixWindkessel*/,gpPressureDistalCol/*colStartInMatrixWindkessel*/,
                                 Cd*this->timeStepBDF()->polyDerivCoefficient(0)+1./Rd );
                     }
 
                     form2( _test=M_fluidOutletWindkesselSpace,_trial=Xh,_matrix=A,
-                           _rowstart=rowStartInMatrixWindkessel,
+                           _rowstart=blockStartWindkesselRow/*rowStartInMatrixWindkessel*/,
                            _colstart=colStartInMatrix ) +=
                         integrate( _range=markedfaces(mesh,markerOutlet),
                                    _expr=-(trans(idt(u))*N())*id(presDistal) );
 
-                    if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
+                    if ( hasWindkesselActiveDof )
                     {
                         double pressureDistalOld  = 0;
                         for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
                             pressureDistalOld += this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld().find(k)->second[i];
                         // add in vector
-                        F->add( rowStartInVectorWindkessel, Cd*pressureDistalOld);
+                        F->add( gpPressureDistalVec/*rowStartInVectorWindkessel*/, Cd*pressureDistalOld);
                     }
                     //--------------------//
                     // 2eme ligne
-                    if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
+                    if ( hasWindkesselActiveDof )
                     {
-                        A->add( rowStartInMatrixWindkessel+1, colStartInMatrixWindkessel+1,  1.);
+                        A->add( gpPressureProximalRow/*rowStartInMatrixWindkessel+1*/, gpPressureProximalCol/*colStartInMatrixWindkessel+1*/,  1.);
 
-                        A->add( rowStartInMatrixWindkessel+1, colStartInMatrixWindkessel  , -1.);
+                        A->add( gpPressureProximalRow/*rowStartInMatrixWindkessel+1*/, gpPressureDistalCol/*colStartInMatrixWindkessel*/  , -1.);
                     }
 
                     form2( _test=M_fluidOutletWindkesselSpace,_trial=Xh,_matrix=A,
-                           _rowstart=rowStartInMatrixWindkessel,
+                           _rowstart=blockStartWindkesselRow/*rowStartInMatrixWindkessel*/,
                            _colstart=colStartInMatrix )+=
                         integrate( _range=markedfaces(mesh,markerOutlet),
                                    _expr=-Rp*(trans(idt(u))*N())*id(presProximal) );
@@ -266,7 +357,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
                     // coupling with fluid model
                     form2( _test=Xh, _trial=M_fluidOutletWindkesselSpace, _matrix=A,
                            _rowstart=rowStartInMatrix,
-                           _colstart=colStartInMatrixWindkessel ) +=
+                           _colstart=blockStartWindkesselCol/*colStartInMatrixWindkessel*/ ) +=
                         integrate( _range=markedfaces(mesh,markerOutlet),
                                    _expr= idt(presProximal)*trans(N())*id(v),
                                    _geomap=this->geomap() );
@@ -411,16 +502,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
                     if ( this->couplingFSI_RNG_matrix() )
                     {
                         auto tempVec = M_backend->newVector( F->mapPtr() );
-                        *tempVec = *this->couplingFSI_RNG_evalForm1();
+                        auto spaceEvalForm1 = this->couplingFSI_RNG_evalForm1()->functionSpace();
+                        spaceEvalForm1->element( tempVec,rowStartInVector ).on(_range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                                                               _expr= -idv(this->couplingFSI_RNG_evalForm1() ) );
                         tempVec->close();
-                        tempVec->scale(-1);
-                        tempVec->close();
-                        //tempVec->add( -1.,*this->couplingFSI_RNG_evalForm1() );
-                        //tempVec->close();
-                        //tempVec->addVector(*this->couplingFSI_RNG_evalForm1(), *A );
                         F->addVector( tempVec, this->couplingFSI_RNG_matrix() );
-                        //F->add( -1., tempVec );
-                        F->close();
                     }
                     else
                     {

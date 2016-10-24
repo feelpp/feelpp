@@ -25,7 +25,16 @@
 #ifndef FEELPP_DETAIL_GINACBUILDLIBRARY_HPP
 #define FEELPP_DETAIL_GINACBUILDLIBRARY_HPP 1
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundefined-var-template"
+#endif
+
 #include <ginac/ginac.h>
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/worldcomm.hpp>

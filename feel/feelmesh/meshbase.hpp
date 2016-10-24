@@ -96,20 +96,16 @@ public:
      */
     //@{
 
-    /**
-     * Default constructor
-     */
-    MeshBase( WorldComm const& worldComm = Environment::worldComm() );
-
-    /**
-     * copy constructor
-     */
-    MeshBase( MeshBase const& );
-
-    /**
-     * destructor. make it virtual for derived classes
-     */
+    MeshBase() = default;
+    MeshBase( MeshBase const& ) = default;
+    MeshBase( MeshBase && ) = default;
     virtual ~MeshBase();
+
+    /**
+     * build from a topological dimension, a real dimension and a communicator
+     */
+    MeshBase( uint16_type topodim, uint16_type realdim,
+              WorldComm const& worldComm = Environment::worldComm() );
 
     //@}
 
@@ -117,10 +113,8 @@ public:
      */
     //@{
 
-    /**
-     * copy operator
-     */
-    MeshBase& operator=( MeshBase const& m );
+    MeshBase& operator=( MeshBase const& m ) = default;
+    MeshBase& operator=( MeshBase && m ) = default;
 
     //@}
 
@@ -484,6 +478,121 @@ public:
             return invalid_size_type_value;
         }
 
+
+    /**
+     * @return true if \p marker exists, false otherwise
+     */
+    bool
+    hasMarker( std::string const& marker ) const
+        {
+            return markerName( marker ) != invalid_size_type_value;
+        }
+
+    /**
+     * @return true if \p marker exists and topological dimension of the entity
+     * associated is Dim-1, false otherwise
+     */
+    bool
+    hasFaceMarker( std::string const& marker ) const
+        {
+            return hasMarker( marker ) && ( markerDim( marker ) == M_topodim-1 );
+        }
+
+    /**
+     * @return true if \p marker exists and topological dimension of the entity
+     * associated is Dim-2, false otherwise
+     */
+    bool
+    hasEdgeMarker( std::string const& marker ) const
+        {
+            return (M_topodim == 3) && hasMarker( marker ) &&  ( markerDim( marker ) == M_topodim-2 );
+        }
+
+    /**
+     * @return true if \p marker exists and topological dimension of the entity
+     * associated is 0, false otherwise
+     */
+    bool
+    hasPointMarker( std::string const& marker ) const
+        {
+            return hasMarker( marker ) &&  ( markerDim( marker ) == 0 );
+        }
+
+    /**
+     * @return true if all markers are defined in the mesh, false otherwise
+     */
+    bool hasMarkers( std::initializer_list<std::string> l ) const
+        {
+            for( auto m : l )
+            {
+                if ( !hasMarker( m ) ) return false;
+            }
+            return true;
+
+        }
+    
+
+    /**
+     * @return the id associated to the \p marker
+     */
+    size_type markerName( std::string const& marker ) const
+    {
+        auto mit = M_markername.find( marker );
+        if (  mit != M_markername.end() )
+            return mit->second[0];
+        return invalid_size_type_value;
+    }
+    /**
+     * @return the marker name associated to the \p marker id
+     */
+    std::string markerName( size_type marker ) const
+        {
+            for( auto const& n : M_markername )
+            {
+                if (n.second[0] == marker )
+                    return n.first;
+            }
+            return std::string();
+        }
+
+    /**
+     * @return the topological dimension associated to the \p marker
+     */
+    size_type markerDim( std::string const& marker ) const
+    {
+        auto mit = M_markername.find( marker );
+        if (  mit != M_markername.end() )
+            return mit->second[1];
+        return invalid_size_type_value;
+    }
+
+    /**
+     * @return the marker names
+     */
+    std::map<std::string, std::vector<size_type> > markerNames() const
+    {
+        return M_markername;
+    }
+
+    /**
+     * add a new marker name
+     */
+    void addMarkerName( std::pair<std::string, std::vector<size_type> > const& marker )
+        {
+            M_markername.insert( marker );
+        }
+
+    /**
+     * add a new marker name
+     */
+    void addMarkerName( std::string __name, int __id ,int __topoDim )
+        {
+            M_markername[__name] = { static_cast<size_type>(__id), static_cast<size_type>(__topoDim) };
+        }
+
+    /// @return the marker id given the marker name \p marker
+    flag_type markerId( boost::any const& marker );
+
     //@}
 
 
@@ -540,9 +649,29 @@ private:
             ar & M_is_parametric;
             ar & M_n_vertices;
             ar & M_n_parts;
+            ar & M_markername;
         }
+protected:
+    
+    /**
+     * marker name dictionnary ( std::string -> <int,int> )
+     * get<0>() provides the id
+     * get<1>() provides the topological dimension
+     */
+    std::map<std::string, std::vector<size_type> > M_markername;
+
 private:
 
+    /**
+     * topological dimension
+     */
+    uint16_type M_topodim;
+
+    /**
+     * real dimension
+     */
+    uint16_type M_realdim;
+    
     /**
      * encodes components that should be updated
      */
@@ -578,6 +707,7 @@ private:
 
     // sub mesh data
     smd_ptrtype M_smd;
+
 
 };
 }

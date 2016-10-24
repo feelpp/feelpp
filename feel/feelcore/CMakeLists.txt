@@ -22,7 +22,6 @@
 #
 #
 set(SRC
-  hdf5.cpp
   info.cpp
   feel.cpp
   feelio.cpp
@@ -39,6 +38,9 @@ set(SRC
   utility.cpp
   removecomments.cpp
   )
+if(FEELPP_HAS_HDF5)
+    set(SRC hdf5.cpp ${SRC})
+endif()
 if (NOT FEELPP_HAS_STDIO_FMEMOPEN )
   set( SRC fmemopen.c ${SRC})
 endif()
