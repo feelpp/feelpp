@@ -59,6 +59,8 @@ ei_add_test(alignedvector3)
 
 ei_add_test(FFT)
 
+ei_add_test(EulerAngles)
+
 find_package(MPFR 2.3.0)
 find_package(GMP)
 if(MPFR_FOUND AND EIGEN_COMPILER_SUPPORT_CXX11)
@@ -201,7 +203,7 @@ if(CUDA_FOUND AND EIGEN_TEST_CUDA)
   message(STATUS "Flags used to compile cuda code: " ${CMAKE_CXX_FLAGS})
 
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(CUDA_NVCC_FLAGS "-ccbin /usr/bin/clang" CACHE STRING "nvcc flags" FORCE)
+    set(CUDA_NVCC_FLAGS "-ccbin ${CMAKE_C_COMPILER}" CACHE STRING "nvcc flags" FORCE)
   endif()
   if(EIGEN_TEST_CUDA_CLANG)
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 --cuda-gpu-arch=sm_${EIGEN_CUDA_COMPUTE_ARCH}")
@@ -223,20 +225,26 @@ if(CUDA_FOUND AND EIGEN_TEST_CUDA)
   cuda_include_directories("${CMAKE_CURRENT_BINARY_DIR}" "${CUDA_TOOLKIT_ROOT_DIR}/include")
   set(EIGEN_ADD_TEST_FILENAME_EXTENSION "cu")
 
-  ei_add_test(cxx11_tensor_device)
-  ei_add_test(cxx11_tensor_cuda)
-  ei_add_test(cxx11_tensor_contract_cuda)
+  ei_add_test(cxx11_tensor_complex_cuda)
+  ei_add_test(cxx11_tensor_complex_cwise_ops_cuda)
   ei_add_test(cxx11_tensor_reduction_cuda)
   ei_add_test(cxx11_tensor_argmax_cuda)
   ei_add_test(cxx11_tensor_cast_float16_cuda)
   ei_add_test(cxx11_tensor_scan_cuda)
+
+  # Contractions require arch 3.0 or higher
+  if (${EIGEN_CUDA_COMPUTE_ARCH} GREATER 29)
+    ei_add_test(cxx11_tensor_device)
+    ei_add_test(cxx11_tensor_cuda)
+    ei_add_test(cxx11_tensor_contract_cuda)
+    ei_add_test(cxx11_tensor_of_float16_cuda)
+  endif()
 
   # The random number generation code requires arch 3.5 or greater.
   if (${EIGEN_CUDA_COMPUTE_ARCH} GREATER 34)
     ei_add_test(cxx11_tensor_random_cuda)
   endif()
 
-  ei_add_test(cxx11_tensor_of_float16_cuda)
 
   unset(EIGEN_ADD_TEST_FILENAME_EXTENSION)
 endif()

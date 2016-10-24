@@ -3,7 +3,7 @@
  *  Rational function normalization test suite. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -163,7 +163,12 @@ static unsigned exam_normal4()
 	e = (pow(x-y*2,4)/pow(pow(x,2)-pow(y,2)*4,2)+1)*(x+y*2)*(y+z)/(pow(x,2)+pow(y,2)*4);
 	d = (y*2 + z*2) / (x + y*2);
 	result += check_normal(e, d);
-	
+
+	// Replacement of nested functions with temporary symbols
+	e = x/(sqrt(sin(z)-1)) + y/(sqrt(sin(z)-1));
+	d = (x + y)/(sqrt(sin(z)-1));
+	result += check_normal(e, d);
+
 	return result;
 }
 
