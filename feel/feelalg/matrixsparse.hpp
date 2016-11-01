@@ -259,6 +259,11 @@ public:
         M_graph = graph;
     }
 
+    //!
+    //! @return the number of allocated non-zero entries
+    //!
+    virtual std::size_t nnz() const = 0;
+    
     /**
      * set matrix properties, @see MatrixProperties
      */

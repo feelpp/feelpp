@@ -49,12 +49,14 @@ struct ModelParameter
         M_max( max )
         {}
     ModelParameter( std::string const& name, std::string const& expression,
-                    std::string const& dirLibExpr = "", WorldComm const& world = Environment::worldComm() )
+                    std::string const& dirLibExpr = "",
+                    WorldComm const& world = Environment::worldComm(),
+                    double min = 0., double max = 0. )
         :
         M_name( name ),
         M_value( 0. ),
-        M_min( 0. ),
-        M_max( 0. ),
+        M_min( min ),
+        M_max( max ),
         M_expr( expr<2>( expression,"",world,dirLibExpr ) )
         {
             M_value = M_expr->evaluate();
