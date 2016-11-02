@@ -2479,7 +2479,7 @@ void MatrixPetscMPI<T>::init( const size_type /*m*/,
     //CHKERRABORT(this->comm(),ierr);
 
     // generates an error for new matrix entry
-    ierr = MatSetOption ( this->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE );
+    ierr = MatSetOption ( this->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
     CHKERRABORT( this->comm(),ierr );
 #endif
 
