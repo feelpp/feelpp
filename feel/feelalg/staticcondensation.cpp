@@ -46,7 +46,7 @@ void StaticCondensation<T>::addLocalMatrix ( int* rows, int nrows,
         this->M_local_matrices[this->M_block_rowcol][key]+=raw_matrix_map_t( data, nrows, ncols );
         //cout << "SC adding matrix entry [" << this->M_block_rowcol << "][" << key << "]=" << this->M_local_matrices[this->M_block_rowcol][key] << std::endl;
     }
-    LOG(INFO) << "[" << this->M_block_rowcol << "][" << key << "]=" << this->M_local_matrices[this->M_block_rowcol][key];
+    //LOG(INFO) << "[" << this->M_block_rowcol << "][" << key << "]=" << this->M_local_matrices[this->M_block_rowcol][key];
 #if 0
     this->M_local_rows[this->M_block_rowcol][key] = raw_index_map_t( rows, nrows );
     this->M_local_cols[this->M_block_rowcol][key] = raw_index_map_t( cols, ncols );
