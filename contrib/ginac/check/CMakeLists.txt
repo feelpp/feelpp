@@ -6,6 +6,7 @@ set(ginac_tests
 	check_inifcns
 	check_matrices
 	check_lsolve
+	check_mul_info
 	heur_gcd_bug
 	exam_paranoia
 	exam_heur_gcd
@@ -32,7 +33,9 @@ set(ginac_tests
 	exam_misc
 	exam_mod_gcd
 	exam_cra
+	exam_real_imag
 	bugme_chinrem_gcd
+	factor_univariate_bug
 	pgcd_relatively_prime_bug
 	pgcd_infinite_loop)
 
@@ -69,8 +72,8 @@ macro(add_ginac_test thename)
 		set(${thename}_sources ${thename}.cpp ${${thename}_extra_src})
 	endif()
 	add_executable(${thename} EXCLUDE_FROM_ALL ${${thename}_sources})
-	target_link_libraries(${thename} ginac)
-	add_dependencies(check-ginac ${thename})
+	target_link_libraries(${thename} ginac ${LIBDL_LIBRARIES})
+	add_dependencies(check ${thename})
 	add_test(NAME ${thename} COMMAND ${thename}${CMAKE_EXECUTABLE_SUFFIX})
 endmacro()
 

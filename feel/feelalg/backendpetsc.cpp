@@ -137,7 +137,26 @@ BackendPetsc<T>::toBackendVectorPtr( vector_type const& v  )
         return _newvec;
     }
 #endif
-
+    petsc_vector_type * vecPetsc = const_cast<petsc_vector_type *>( dynamic_cast<petsc_vector_type const*>( &v ) );
+    if ( vecPetsc )
+    {
+        typedef VectorPetscMPIRange<value_type> petscMPIRange_vector_type;
+        petscMPIRange_vector_type * vecPetscMPIRange = const_cast<petscMPIRange_vector_type *>( dynamic_cast<petscMPIRange_vector_type const*>( &v ) );
+        if ( vecPetscMPIRange )
+        {
+            vector_ptrtype _newvec( boost::make_shared<petscMPIRange_vector_type>( vecPetscMPIRange->vec(), vecPetscMPIRange->vecGhost(),
+                                                                                   vecPetscMPIRange->vecScatterGhost(), vecPetsc->mapPtr() ) );
+            return _newvec;
+        }
+        petscMPI_vector_type * vecPetscMPI = const_cast<petscMPI_vector_type *>( dynamic_cast<petscMPI_vector_type const*>( &v ) );
+        if ( vecPetscMPI )
+        {
+            vector_ptrtype _newvec( boost::make_shared<petscMPI_vector_type>( vecPetsc->vec(), vecPetsc->mapPtr() ) );
+            return _newvec;
+        }
+        vector_ptrtype _newvecPetsc( boost::make_shared<petsc_vector_type>( vecPetsc->vec(), vecPetsc->mapPtr() ) );
+        return _newvecPetsc;
+    }
     //std::cout << "DefaultConvert vector\n";
     return super::toBackendVectorPtr( v );
 }

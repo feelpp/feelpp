@@ -79,5 +79,6 @@ feelpp_add_test( upmarker_faces )
 feelpp_add_test( listofrange )
 
 feelpp_add_test( productspaces )
+feelpp_add_test( element0D )
 
 

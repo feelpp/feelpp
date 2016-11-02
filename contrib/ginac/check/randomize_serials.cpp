@@ -1,10 +1,10 @@
 /** @file randomize_serials.cpp
  *
- *  Utilitiy function used by the benchmarks.
+ *  Utility function used by the benchmarks.
  */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,13 +28,13 @@ using namespace GiNaC;
 #include <ctime>
 using namespace std;
 
-/** Generate a random amount of symbols and destroy them again immediatly.
+/** Generate a random amount of symbols and destroy them again immediately.
  *  This operation effectively makes the serial numbers of all subsequent
  *  symbols unpredictable.  If the serials are unpredictable, then so are
  *  their hash values.  If the hash values are unpredictable, then so are
  *  the canonical orderings.  If the canonical orderings are unpredictable,
  *  all subsequent times are subject to some variation.  This variation,
- *  however is natural and desireable for two reasons: First, we cannot know
+ *  however is natural and desirable for two reasons: First, we cannot know
  *  how many symbols have been generated before in real world computations.
  *  Second, the following timings are subject to some semi-random variation
  *  anyways because short timings need to be repeated until enough time has
@@ -45,7 +45,7 @@ using namespace std;
  */
 void randomify_symbol_serials()
 {
-	srand(time(NULL));
+	srand(time(nullptr));
 	const int m = rand() % 666;
 	for (int s=0; s<m; ++s ) {
 		symbol("dummy");

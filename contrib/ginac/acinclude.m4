@@ -29,23 +29,39 @@ AC_CACHE_CHECK([for standard C++ header files], [ginac_cv_std_cxx_headers], [
 	ginac_cv_std_cxx_headers="no"
 	AC_LANG_PUSH([C++])
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+		#include <algorithm>
+		#include <cstddef>
+		#include <cstdio>
+		#include <cstdlib>
+		#include <cstring>
+		#include <cstddef>
+		#include <cstdint>
+		#include <ctime>
+		#include <fstream>
+		#include <functional>
+		#include <iomanip>
+		#include <ios>
 		#include <iosfwd>
 		#include <iostream>
-		#include <vector>
+		#include <iterator>
+		#include <limits>
 		#include <list>
 		#include <map>
+		#include <memory>
+		#include <numeric>
+		#include <ostream>
 		#include <set>
-		#include <string>
 		#include <sstream>
-		#include <typeinfo>
+		#include <stack>
 		#include <stdexcept>
-		#include <algorithm>
-		#include <limits>
-		#include <ctime>
+		#include <string>
+		#include <typeinfo>
+		#include <utility>
+		#include <vector>
 		]])], [ginac_cv_std_cxx_headers="yes"])
 	AC_LANG_POP([C++])])
 if test "${ginac_cv_std_cxx_headers}" != "yes"; then
-	AC_MSG_ERROR([Standard ISO C++ 98 headers are missing])
+	AC_MSG_ERROR([Standard ISO C++ headers are missing])
 fi
 ])
 
@@ -68,7 +84,7 @@ else
 	AC_CACHE_CHECK([for version of libreadline], [ginac_cv_rl_supported], [
 		ginac_cv_rl_supported="no"
 		AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-			#include <stdio.h>
+			#include <cstdio>
 			#include <readline/readline.h>
 			#if !defined(RL_VERSION_MAJOR) || !defined(RL_VERSION_MINOR)
 			#error "Ancient/unsupported version of readline"

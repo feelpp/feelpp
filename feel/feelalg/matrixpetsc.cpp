@@ -783,6 +783,19 @@ size_type MatrixPetsc<T>::rowStop () const
     return static_cast<size_type>( stop );
 }
 
+template <typename T>
+inline
+std::size_t MatrixPetsc<T>::nnz () const
+{
+    FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );;
+
+    MatInfo info;
+    int ierr = MatGetInfo( M_mat, MAT_GLOBAL_SUM, &info);
+    
+    CHKERRABORT( this->comm(),ierr );
+    return info.nz_allocated;
+}
+
 
 
 template <typename T>
@@ -2317,10 +2330,7 @@ void MatrixPetsc<T>::threshold(void)
 
     this->close();
 }
-//----------------------------------------------------------------------------------------------------//
-//----------------------------------------------------------------------------------------------------//
-//----------------------------------------------------------------------------------------------------//
-//----------------------------------------------------------------------------------------------------//
+
 //----------------------------------------------------------------------------------------------------//
 
 template <typename T>

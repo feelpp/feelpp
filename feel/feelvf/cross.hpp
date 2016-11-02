@@ -21,8 +21,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef FEELPP_PRODUCTS_HPP
-#define FEELPP_PRODUCTS_HPP 1
+#ifndef FEELPP_FEELVF_CROSS_HPP
+#define FEELPP_FEELVF_CROSS_HPP 1
 
 #include <Eigen/Core>
 
