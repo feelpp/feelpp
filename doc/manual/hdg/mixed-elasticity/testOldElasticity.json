@@ -4,14 +4,7 @@
     "Model":"hdg",
     "Materials":
     {
-        "internal_cylinder":
-        {
-            "name":"copper",
-			"rho":"1",
-            "lambda":"1",
-	    	"mu":"1"
-        },
-        "external_cylinder":
+        "omega":
         {
             "name":"copper",
 			"rho":"1",
@@ -25,13 +18,9 @@
         {
             "SourceTerm":
             {
-                "internal_cylinder":
+                "omega":
                 {
 					"expr":"{8,0,0}"// "{8,0,0}"
-                },
-                "external_cylinder":
-                {
-                    "expr":"{8,0,0}"
                 }
             }/*,
             "Neumann":
@@ -46,29 +35,21 @@
 		{
 	    	"Dirichlet":
 	    	{
-        		"top_internal":
-                {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-                },/*
-        		"lateral_internal":
-                {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-                },*/
-        		"bottom_internal":
+        		"top":
                 {
 		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
                 },
-        		"lateral_external":
+        		"bottom":
                 {
 		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
                 },
-        		"bottom_external":
+        		"out":
                 {
 		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
                 },
-                "top_external":
+        		"in":
                 {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z"  
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
                 }
  	    	}
     	},
@@ -76,11 +57,7 @@
 		{
 			"u_exact":
 			{
-				"internal_cylinder":
-				{
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-				},
-				"external_cylinder":
+				"omega":
 				{
 		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
 				}

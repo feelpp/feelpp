@@ -182,12 +182,8 @@ public:
     vector_ptrtype getF() {return M_F; }
  
     // Exporter
-    virtual void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  )
-    {
-    	this->exportResults (this->currentTime(), mesh , Idh, Idhv);
-        M_exporter -> save();
-    }
-    void exportResults ( double Time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  ) ;
+    void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  );
+    void exporterResults ( double Time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  ) ;
     exporter_ptrtype M_exporter;
     exporter_ptrtype exporterME() { return M_exporter; }
 
@@ -389,7 +385,7 @@ MixedElasticity<Dim, Order, G_Order>::initModel()
 
     // initialize marker lists for each boundary condition type
     // Strain
-    auto itField = M_modelProperties->boundaryConditions().find( "strain");
+    auto itField = M_modelProperties->boundaryConditions().find( "stress");
     if ( itField != M_modelProperties->boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
@@ -575,13 +571,14 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
     for( auto const& pairMat : M_modelProperties->materials() )
     {
 		auto material = pairMat.second;
+        auto matmarker = pairMat.first;
 		auto lambda = expr(material.getScalar("lambda"));
 		Feel::cout << "Lambda: " << lambda << std::endl;
 		auto mu = expr(material.getScalar("mu"));
 		auto c1 = cst(0.5)/mu; 
     	auto c2 = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu)); 
-		bbf( 0_c, 0_c ) +=  integrate(_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
-    	bbf( 0_c, 0_c ) += integrate(_range=elements(M_mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
+		bbf( 0_c, 0_c ) +=  integrate(_range=markedelements(M_mesh,matmarker),_expr=(c1*inner(idt(sigma),id(v))) );
+    	bbf( 0_c, 0_c ) += integrate(_range=markedelements(M_mesh,matmarker),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
     }
 
 
@@ -602,10 +599,11 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
     	for( auto const& pairMat : M_modelProperties->materials() )
     	{
 			auto material = pairMat.second;
+            auto matmarker = pairMat.first;
 			auto rho = expr(material.getScalar("rho"));
 			// bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
         	//                              _expr = this->timeStepNM()->polySecondDerivCoefficient()*rho*inner(idt(u),id(w)) );
-			bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
+			bbf( 1_c, 1_c ) += integrate(_range=markedelements(M_mesh,matmarker),
             	                         _expr = rho*inner(idt(u),id(w))/(dt*dt) );
 		}
     }
@@ -659,7 +657,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleSTD(PS&& ps)
 	
     }
     
-	itField = M_modelProperties->boundaryConditions().find( "strain");
+	itField = M_modelProperties->boundaryConditions().find( "stress");
     if ( itField != M_modelProperties->boundaryConditions().end() )
     {	
 	    auto mapField = (*itField).second;
@@ -715,7 +713,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
     
     // Building the RHS
 
-    auto itField = M_modelProperties->boundaryConditions().find("strain");
+    auto itField = M_modelProperties->boundaryConditions().find("stress");
     if (itField != M_modelProperties->boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
@@ -725,10 +723,11 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
         {
             for ( auto const& exAtMarker : (*itType).second )
             {
+                auto matmarker = exAtMarker.marker();
                 auto g = expr<Dim,G_Order> (exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
-				blf( 1_c ) += integrate(_range=elements(M_mesh),
+				blf( 1_c ) += integrate(_range=markedelements(M_mesh, matmarker),
                     			  	      _expr=trans(g)*id(w));
             }
         }
@@ -788,6 +787,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
     {
     	for( auto const& pairMat : M_modelProperties->materials() )
     	{
+            auto matmarker = pairMat.first;
 			auto material = pairMat.second;
 			auto rho = expr(material.getScalar("rho"));
 			auto u = this->timeStepNM()->previousUnknown(0);
@@ -795,7 +795,7 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
 			auto dt = this-> timeStep();
         	// blf(1_c) += integrate( _range=elements(M_mesh),
         	//                         _expr= rho*inner(idv(this->timeStepNM()->polyDeriv()),id(w)) );
-        	blf(1_c) += integrate( _range=elements(M_mesh), _expr= rho*inner( 2*idv(u)-idv(u1) ,id(w))/(dt*dt) );
+        	blf(1_c) += integrate( _range=markedelements(M_mesh,matmarker), _expr= rho*inner( 2*idv(u)-idv(u1) ,id(w))/(dt*dt) );
 		}
     }
 
@@ -804,7 +804,15 @@ MixedElasticity<Dim, Order, G_Order>::assembleF(PS&& ps)
 
 template <int Dim, int Order, int G_Order>
 void
-MixedElasticity<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh , op_interp_ptrtype Idh , opv_interp_ptrtype Idhv )
+MixedElasticity<Dim,Order, G_Order>::exportResults( mesh_ptrtype mesh, op_interp_ptrtype Idh , opv_interp_ptrtype Idhv  )
+{
+  	this->exporterResults (this->currentTime(), mesh , Idh, Idhv);
+    M_exporter -> save();
+}
+
+template <int Dim, int Order, int G_Order>
+void
+MixedElasticity<Dim,Order, G_Order>::exporterResults( double time, mesh_ptrtype mesh , op_interp_ptrtype Idh , opv_interp_ptrtype Idhv )
 {
     this->log("MixedElasticity","exportResults", "start");
     this->timerTool("PostProcessing").start();
@@ -829,10 +837,10 @@ MixedElasticity<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype me
      {
          for ( auto const& field : (*itField).second )
          {
-            if ( field == "strain" )
+            if ( field == "stress" )
             {
-                LOG(INFO) << "exporting strain at time " << time;
-		 		M_exporter->step(time)->add(prefixvm(M_prefix, "strain"), Idhv?(*Idhv)( M_up):M_up );
+                LOG(INFO) << "exporting stress at time " << time;
+		 		M_exporter->step(time)->add(prefixvm(M_prefix, "stress"), Idhv?(*Idhv)( M_up):M_up );
             }
             else if ( field == "displacement" )
         	{
@@ -846,48 +854,60 @@ MixedElasticity<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype me
  		    		auto itType = mapField.find( "u_exact" );
  				    if (itType != mapField.end() )
  				    {
+                        auto export_uEX = M_Wh->element();
+                        auto export_sigmaEX = M_Vh->element();
+                        double l2err_u = 0;
+                        double l2norm_uex = 0;
+                        double l2err_sigma = 0;
+                        double l2norm_sigmaex = 0;
  						for (auto const& exAtMarker : (*itType).second )
  						{
+				            auto marker = exAtMarker.marker();
     		    			if (exAtMarker.isExpression() )
  			    			{		
 								auto u_exact = expr<Dim,1> (exAtMarker.expression());
 								if ( !this->isStationary() )
 								    u_exact.setParameterValues( { {"t", time } } );
 
-								auto export_uEX = project( _space=M_Wh, _range=elements( M_mesh ), _expr=u_exact);
-								M_exporter->step(time)->add(prefixvm(M_prefix, "u_exact"), Idh?(*Idh)( export_uEX): export_uEX );		
+								export_uEX += project( _space=M_Wh, _range=markedelements( M_mesh, marker ), _expr=u_exact);
 
-								auto l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(M_pp) );
-								auto l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
-								if (l2norm_uex < 1)
-									l2norm_uex = 1.0;	
-								cout << "----- Computed Errors -----" << std::endl;
-								cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
-								// Export the errors
-								M_exporter -> step( time )->add(prefixvm(M_prefix, "u_error_L2"), l2err_u/l2norm_uex );
+
+								l2err_u += normL2( _range=markedelements(M_mesh, marker), _expr=u_exact - idv(M_pp) );
+								l2norm_uex += normL2( _range=markedelements(M_mesh, marker), _expr=u_exact );
+
 							    //------ Sigma 	------//
 								auto gradu_exact = grad(u_exact);
 								auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
 								for( auto const& pairMat : M_modelProperties->materials() )
 								{
 									auto material = pairMat.second;
-									auto lambda = expr(material.getScalar("lambda"));
-									auto mu = expr(material.getScalar("mu"));
-									auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
+                                    auto matmarker = pairMat.first;
+                                    if (matmarker == marker)
+									{
+                                        auto lambda = expr(material.getScalar("lambda"));
+									    auto mu = expr(material.getScalar("mu"));
+									    auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
+									    export_sigmaEX += project( _space=M_Vh, _range=markedelements(M_mesh,matmarker), _expr=sigma_exact); 
+    									l2err_sigma += normL2( _range=markedelements(M_mesh,matmarker), _expr=sigma_exact - idv(M_up) );
+	    								l2norm_sigmaex += normL2( _range=markedelements(M_mesh,matmarker), _expr=sigma_exact );
+                                    }
+                                }
 
-									auto export_sigmaEX = project( _space=M_Vh, _range=elements(M_mesh), _expr=sigma_exact); 
-									M_exporter->add(prefixvm(M_prefix, "sigma_exact"), Idhv?(*Idhv)( export_sigmaEX): export_sigmaEX );
+    						}
+							if (l2norm_uex < 1)
+								l2norm_uex = 1.0;	
+							if (l2norm_sigmaex < 1)
+								l2norm_sigmaex = 1.0;		
+							// Export the errors
+							cout << "----- Computed Errors -----" << std::endl;
+							cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
+							cout << "||sigma-sigma_ex||_L2=\t" << l2err_sigma/l2norm_sigmaex << std::endl;
+							cout << "---------------------------" << std::endl;
+							M_exporter -> step( time )->add(prefixvm(M_prefix, "u_error_L2"), l2err_u/l2norm_uex );
+							M_exporter -> step( time )->add(prefixvm(M_prefix, "sigma_error_L2"), l2err_sigma/l2norm_sigmaex ); 
 
-									auto l2err_sigma = normL2( _range=elements(M_mesh), _expr=sigma_exact - idv(M_up) );
-									auto l2norm_sigmaex = normL2( _range=elements(M_mesh), _expr=sigma_exact );
-									if (l2norm_sigmaex < 1)
-										l2norm_sigmaex = 1.0;		
-									cout << "||sigma-sigma_ex||_L2=\t" << l2err_sigma/l2norm_sigmaex << std::endl;
-									cout << "---------------------------" << std::endl;
-									// Export the errors
-									M_exporter -> step( time )->add(prefixvm(M_prefix, "sigma_error_L2"), l2err_sigma/l2norm_sigmaex );
-								} 
- 							}
+							M_exporter->step(time)->add(prefixvm(M_prefix, "u_exact"), Idh?(*Idh)( export_uEX): export_uEX );		
+							M_exporter->add(prefixvm(M_prefix, "sigma_exact"), Idhv?(*Idhv)( export_sigmaEX): export_sigmaEX );
  		    			}
  					}
 				}

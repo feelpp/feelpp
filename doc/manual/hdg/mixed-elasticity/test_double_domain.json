@@ -4,14 +4,14 @@
     "Model":"hdg",
     "Materials":
     {
-        "internal_cylinder":
+        "omega1":
         {
             "name":"copper",
 			"rho":"1",
             "lambda":"1",
 	    	"mu":"1"
         },
-        "external_cylinder":
+        "omega2":
         {
             "name":"copper",
 			"rho":"1",
@@ -25,66 +25,54 @@
         {
             "SourceTerm":
             {
-                "internal_cylinder":
+                "omega1":
                 {
-					"expr":"{8,0,0}"// "{8,0,0}"
+					"expr":"{8,0,0}"
                 },
-                "external_cylinder":
+                "omega2":
                 {
-                    "expr":"{8,0,0}"
+					"expr":"{8,0,0}"
                 }
-            }/*,
+            },
             "Neumann":
             {
-                "bottom_internal":
+                "base2":
                 {
                      "expr":"{6*x+1,2*y,0, 2*y, 2*x+1,0, 0,0,2*x+3}:x:y"
                 }
-            }*/
+            }
 		},
 		"displacement":
 		{
 	    	"Dirichlet":
 	    	{
-        		"top_internal":
-                {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-                },/*
-        		"lateral_internal":
-                {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-                },*/
-        		"bottom_internal":
+        		"dirichlet1":
                 {
 		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
                 },
-        		"lateral_external":
+        		"lateral2":
                 {
 		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-                },
-        		"bottom_external":
+                }/*,
+        		"interface":
                 {
 		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-                },
-                "top_external":
-                {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z"  
-                }
+                }*/
  	    	}
     	},
 		"ExactSolution":
 		{
 			"u_exact":
 			{
-				"internal_cylinder":
+				"omega1":
 				{
 		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
 				},
-				"external_cylinder":
+				"omega2":
 				{
 		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
 				}
-			}
+            }
 		}
      },
     "PostProcess":

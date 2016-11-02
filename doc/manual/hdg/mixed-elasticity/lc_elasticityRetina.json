@@ -10,18 +10,11 @@
 			"rho":"0.0011",
             "lambda":"3.280",
 	    	"mu":"0.067"
-        }/*,
-        "Lamina": 
-        {
-            "name":"copper",
-			"rho":"0",
-            "lambda":"0.588",
-	    	"mu":"0.012"
-        }*/
+        }
     },
     "BoundaryConditions":
     {
-        "strain":
+        "stress":
         {
             "SourceTerm":
             {
@@ -32,9 +25,9 @@
             },
 			"Neumann_scalar":
 			{	
-                "BC_spherical_Retina": 			// IOP
+                "BC_spherical_Retina": 			// IOP  -0.2066
                 {
-                    "expr":"-0.2066 + 0.0366 * sin (pi*t):t" 	
+                    "expr":"-0.30 + 0.0366 * sin (pi*t):t" 	
                 }
 			},
             "Neumann":
@@ -78,7 +71,7 @@
      },
     "PostProcess":
     {
-        "Fields":["strain","displacement"]
+        "Fields":["stress","displacement"]
     }
 }
 

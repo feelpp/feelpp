@@ -221,11 +221,11 @@ public:
     void updateTimeStep() { this->updateTimeStepBDF(); }
 
     // Exporter
-    virtual void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr )
-        {
+    void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr );
+        /*{
             this->exportResults (this->currentTime(), mesh );
             M_exporter -> save();
-        }
+        }*/
     void exportResults ( double Time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  ) ;
     exporter_ptrtype M_exporter;
     exporter_ptrtype exporterMP() { return M_exporter; }
@@ -252,6 +252,15 @@ public:
     void assembleIBC(int i);
     void assembleIBCRHS(int i);
 };
+
+
+template<int Dim, int Order, int G_Order>
+void 
+MixedPoisson<Dim,Order,G_Order>::exportResults( mesh_ptrtype mesh, op_interp_ptrtype Idh, opv_interp_ptrtype Idhv  )
+{
+    this->exportResults (this->currentTime(), mesh );
+    M_exporter -> save();
+}
 
 template<int Dim, int Order, int G_Order>
 MixedPoisson<Dim, Order, G_Order>::MixedPoisson( std::string const& prefix,
@@ -658,7 +667,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleSTD()
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                auto g = expr(exAtMarker.expression1());
+                auto g = expr<Order+2>(exAtMarker.expression1());
                 // <j.n,mu>_Gamma_R
                 bbf( 2_c, 0_c ) += integrate(_range=markedfaces(M_mesh,marker),
                                              _expr=( id(l)*(trans(idt(u))*N()) ));
@@ -749,7 +758,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleIBCRHS( int i )
                     double meas = integrate( _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
                     if ( exAtMarker.isExpression() )
                     {
-                        auto g = expr(exAtMarker.expression());
+                        auto g = expr<Order+2>(exAtMarker.expression());
                         if ( !this->isStationary() )
                             g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                         // <I_target,m>_Gamma_I
@@ -809,7 +818,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleFstd()
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                auto g = expr(exAtMarker.expression());
+                auto g = expr<Order+2>(exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 // (f, w)_Omega
@@ -826,7 +835,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleFstd()
                 std::string marker = exAtMarker.marker();
                 if ( exAtMarker.isExpression() )
                 {
-                    auto g = expr(exAtMarker.expression());
+                    auto g = expr<Order+2>(exAtMarker.expression());
                     if ( !this->isStationary() )
                         g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                     // <g_D, mu>_Gamma_D
@@ -863,7 +872,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleFstd()
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                auto g = expr(exAtMarker.expression());
+                auto g = expr<Order+2>(exAtMarker.expression());
                 if ( !this->isStationary() )
                        g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 // <g_N,mu>_Gamma_N
@@ -877,7 +886,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleFstd()
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                auto g = expr(exAtMarker.expression2());
+                auto g = expr<Order+2>(exAtMarker.expression2());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 // <g_R^2,mu>_Gamma_R
@@ -897,7 +906,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleFstd()
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                auto g = expr<3,1>(exAtMarker.expression());
+                auto g = expr<3,1,Order+2>(exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 // (g, v)_Omega
@@ -1135,7 +1144,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                         {
                             if (exAtMarker.isExpression() )
                             {
-                                auto p_exact = expr(exAtMarker.expression() );
+                                auto p_exact = expr<Order+2>(exAtMarker.expression() );
                                 if ( !this->isStationary() )
                                     p_exact.setParameterValues( { {"t", time } } );
                                 double K = 1;
