@@ -848,7 +848,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
 
     if (M_useRegularPhi)
     {
-        auto psi = idv(this->phi()) / sqrt( gradv(this->phi()) * trans(gradv(this->phi())) );
+        //auto psi = idv(this->phi()) / sqrt( gradv(this->phi()) * trans(gradv(this->phi())) );
+        auto psi = idv(this->phi()) / idv(this->modGradPhi());
         auto D_expr = vf::chi( psi<-eps )*vf::constant(0.0)
             +
             vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
