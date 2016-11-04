@@ -177,7 +177,10 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
     //auto EpN = this->levelset()->projectorL2Vectorial()->project(
             //_expr=idv(Ep)*idv(N)
             //);
-    auto GradEp = this->levelset()->smootherVectorial()->project(
+    //auto GradEp = this->levelset()->smootherVectorial()->project(
+            //_expr=trans(gradv(Ep))
+            //);
+    auto GradEp = this->levelset()->projectorL2Vectorial()->project(
             _expr=trans(gradv(Ep))
             );
     //auto DivEpNtN = this->levelset()->smootherVectorial()->project(
@@ -198,7 +201,7 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
 
 #ifdef DEBUG_INEXTENSIBILITYFORCEMODEL
     M_exporter->step(this->levelset()->time())->add(
-            "modGradPhi", "modGradPhi", M_levelsetModGradPhi );
+            "gradEp", "gradEp", GradEp );
     M_exporter->step(this->levelset()->time())->add(
             "Ep", "Ep", Ep );
     M_exporter->step(this->levelset()->time())->add(
