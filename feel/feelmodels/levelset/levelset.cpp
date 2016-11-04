@@ -1367,7 +1367,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
             }
             break;
             case NONE :
-            {}
+            {
+                *phiReinit = *phi;
+            }
             break;
 
             default:
