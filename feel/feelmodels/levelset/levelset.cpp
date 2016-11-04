@@ -254,11 +254,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
                     _range=elements(this->mesh()),
                     _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) 
                     );
-        M_modGradPhiAdvection->fieldSolutionPtr()->setConstant(1.);
+        }
     }
     if( M_useStretchAugmented )
     {
-        // Initialize modGradPhi
+        // Initialize stretch modGradPhi
         M_stretchAdvection->fieldSolutionPtr()->setConstant(1.);
     }
 
