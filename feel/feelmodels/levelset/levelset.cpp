@@ -242,6 +242,18 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     if( M_useGradientAugmented )
     {
         // Initialize modGradPhi
+        if( M_reinitInitialValue )
+        {
+            M_modGradPhiAdvection->fieldSolutionPtr()->setConstant(1.);
+        }
+        else
+        {
+            auto gradPhi = this->gradPhi();
+            *(M_modGradPhiAdvection->fieldSolutionPtr()) = vf::project( 
+                    _space=this->functionSpace(),
+                    _range=elements(this->mesh()),
+                    _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) 
+                    );
         M_modGradPhiAdvection->fieldSolutionPtr()->setConstant(1.);
     }
     if( M_useStretchAugmented )
