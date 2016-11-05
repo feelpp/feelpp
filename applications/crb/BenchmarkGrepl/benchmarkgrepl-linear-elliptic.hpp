@@ -371,23 +371,15 @@ void BenchmarkGreplLinearElliptic<Order>::setupSpecificityModel( boost::property
     this->M_betaFqm[1][0].resize( 1 );
 #endif
 
-    auto const& ptreeEim = ptree.get_child( "eim" );
-    auto const& ptreeEimg = ptreeEim.get_child( "eim_g" );
-    std::string dbnameEimg = ptreeEimg.template get<std::string>( "database-filename" );
-    std::cout << "dbnameEimg " << dbnameEimg << "\n";
-    if ( !dbDir.empty() )
-    {
-        fs::path trydbfilename = fs::path(dbDir)/fs::path( "EIMFunction_"+this->modelName() )/fs::path(dbnameEimg).filename();
-        if ( fs::exists( trydbfilename ) )
-            dbnameEimg = trydbfilename.string();
-    }
-
     boost::shared_ptr<space_type> Xh;
     if ( !pT )
         pT.reset( new element_type );
 
-    std::cout << "dbnameEimg2 " << dbnameEimg << "\n";
-    // fs::path eim_g_filemanme = fs::path( dbDir )/ fs::path( "EIMFunction_"+this->modelName() );
+    auto const& ptreeEim = ptree.get_child( "eim" );
+    auto const& ptreeEimg = ptreeEim.get_child( "eim_g" );
+    std::string dbnameEimg = ptreeEimg.template get<std::string>( "database-filename" );
+    // std::cout << "dbnameEimg " << dbnameEimg << "\n";
+
     auto eim_g = eim( _model=eim_no_solve(super_type::shared_from_this()),
                       _element=*pT,
                       _space=Xh,
@@ -395,7 +387,8 @@ void BenchmarkGreplLinearElliptic<Order>::setupSpecificityModel( boost::property
                       _expr=1./sqrt( (Px()-cst_ref(M_mu(0)))*(Px()-cst_ref(M_mu(0))) + (Py()-cst_ref(M_mu(1)))*(Py()-cst_ref(M_mu(1))) ),
                       //_sampling=Pset,
                       _name="eim_g",
-                      _filename=dbnameEimg);
+                      _filename=dbnameEimg,
+                      _directory=dbDir );
     this->addEim( eim_g );
 }
 
