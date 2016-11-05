@@ -407,6 +407,7 @@ eimOptions( std::string const& prefix )
     Feel::po::options_description eimoptions( "EIM Options" );
     eimoptions.add_options()
         ( "eim.sampling-size"   , Feel::po::value<int>()->default_value( 30 ), "Offline  sampling size " )
+        ( "eim.sampling-mode"   , Feel::po::value<std::string>()->default_value( "random" ), "EIM Offline : random, log-random, log-equidistribute, equidistribute " )
         ( "eim.error-max"   , Feel::po::value<double>()->default_value( 1e-6 ),       "Offline  tolerance" )
         ( "eim.online-tolerance"   , Feel::po::value<double>()->default_value( 1e-2 ),       "Online  tolerance" )
         ( "eim.dimension-max"   , Feel::po::value<int>()->default_value( 50 ),       "Offline  max WN size" )

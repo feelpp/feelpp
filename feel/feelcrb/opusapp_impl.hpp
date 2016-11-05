@@ -56,6 +56,7 @@ OpusApp<ModelType,RM,Model>::SER()
         {
             //Begin with rb since first eim has already been built in initModel
             //this->loadDB(); // update AffineDecomposition and enrich RB database
+            tic();
             crb->setOfflineStep( true );
             do  // SER r-adaptation for RB
             {
@@ -63,10 +64,12 @@ OpusApp<ModelType,RM,Model>::SER()
                 crb->offline();
             }
             while(crb->adaptationSER());
+            toc("SER - crb offline", FLAGS_v>0);
 
             crb->setRebuild( false ); //do not rebuild since co-build is not finished
             int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection") || boption(_name="ser.use-rb-in-eim-basis-build");
 
+            tic();
             if( do_offline_eim && crb->offlineStep() ) //Continue to enrich EIM functionspace only is RB is not complete
             {
                 do_offline_eim = false; //re-init
@@ -128,6 +131,7 @@ OpusApp<ModelType,RM,Model>::SER()
 
                 model->assemble(); //Affine decomposition has changed since eim has changed
             }
+            toc("SER - eim offline + re-assemble", FLAGS_v>0);
         }
         while( crb->offlineStep() );
     } // ser level
