@@ -389,12 +389,6 @@ void BenchmarkGreplNonlinearElliptic<Order>::setupSpecificityModel( boost::prope
     auto const& ptreeEim = ptree.get_child( "eim" );
     auto const& ptreeEimg = ptreeEim.get_child( "eim_g" );
     std::string dbnameEimg = ptreeEimg.template get<std::string>( "database-filename" );
-    if ( !dbDir.empty() )
-    {
-        fs::path trydbfilename = fs::path(dbDir)/fs::path( "EIMFunction_"+this->modelName() )/fs::path(dbnameEimg).filename();
-        if ( fs::exists( trydbfilename ) )
-            dbnameEimg = trydbfilename.string();
-    }
 
     auto eim_g = eim( _model=boost::dynamic_pointer_cast< BenchmarkGreplNonlinearElliptic<Order> >( this->shared_from_this() ),
                       _element=*pT,
@@ -403,7 +397,8 @@ void BenchmarkGreplNonlinearElliptic<Order>::setupSpecificityModel( boost::prope
                       _expr=( cst_ref(M_mu(0))/cst_ref(M_mu(1)) )*( exp( cst_ref(M_mu(1))*_e1 ) - 1 ),
                       //_sampling=Pset,
                       _name="eim_g",
-                      _filename=dbnameEimg );
+                      _filename=dbnameEimg,
+                      _directory=dbDir );
     this->addEim( eim_g );
 }
 template<int Order>
