@@ -120,10 +120,11 @@ public :
             size_type rbdim = ptree.template get<int>( "dimension" );
             this->setMN( rbdim );
             std::string dbname = ptree.template get<std::string>( "database-filename" );
-            this->setDBFilename( fs::path( dbname ).filename().string() );
-            if ( dbDir.empty() )
-                this->setDBDirectory( fs::path( dbname ).parent_path().string() );
-            else
+            fs::path dbnamePath = fs::path( dbname );
+            this->setDBFilename( dbnamePath.filename().string() );
+            if ( dbnamePath.is_absolute() )
+                this->setDBDirectory( dbnamePath.parent_path().string() );
+            else if ( !dbDir.empty() )
                 this->setDBDirectory( dbDir );
             this->setIsLoaded( false );
             CHECK( this->loadDB() ) << "loading of crb basis function fails";

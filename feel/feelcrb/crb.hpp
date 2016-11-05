@@ -528,6 +528,12 @@ public:
         return M_error_type;
     }
 
+    //! \return true if solveDualProblem
+    bool solveDualProblem() const
+    {
+        return M_solve_dual_problem;
+    }
+
     //! \return the scm object
     scm_ptrtype const& scm() const
     {
@@ -571,6 +577,12 @@ public:
     void setTolerance( double tolerance )
     {
         M_tolerance = tolerance;
+    }
+
+    //! set solve dual problem
+    void setSolveDualProblem( bool b )
+    {
+        M_solve_dual_problem = b;
     }
 
     //! set the truth offline model
@@ -11190,10 +11202,11 @@ CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type 
     this->setName( ptreeCrb.template get<std::string>( "name" ) );
     M_solve_dual_problem = ptreeCrb.template get<bool>( "has-solve-dual-problem" );
     std::string dbname = ptreeCrb.template get<std::string>( "database-filename" );
-    this->setDBFilename( fs::path( dbname ).filename().string() );
-    if ( dbDir.empty() )
-        this->setDBDirectory( fs::path( dbname ).parent_path().string() );
-    else
+    fs::path dbnamePath = fs::path( dbname );
+    this->setDBFilename( dbnamePath.filename().string() );
+    if ( dbnamePath.is_absolute() )
+        this->setDBDirectory( fs::absolute( dbnamePath ).parent_path().string() );
+    else if ( !dbDir.empty() )
         this->setDBDirectory( dbDir );
     this->setIsLoaded( false );
     CHECK( this->loadDB() ) << "crb load fails";
@@ -11247,15 +11260,18 @@ CRB<TruthModelType>::saveDB()
 
         boost::property_tree::ptree ptreeReducedBasisSpace;
         std::string meshFilename = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
-        ptreeReducedBasisSpace.add( "mesh-filename",(M_elements_database.dbLocalPath() / fs::path(meshFilename)).string() );
-        ptreeReducedBasisSpace.add( "database-filename", (M_elements_database.dbLocalPath() / M_elements_database.dbFilename()).string() );
+        // ptreeReducedBasisSpace.add( "mesh-filename",(M_elements_database.dbLocalPath() / fs::path(meshFilename)).string() );
+        ptreeReducedBasisSpace.add( "mesh-filename",meshFilename );
+        // ptreeReducedBasisSpace.add( "database-filename", (M_elements_database.dbLocalPath() / M_elements_database.dbFilename()).string() );
+        ptreeReducedBasisSpace.add( "database-filename", M_elements_database.dbFilename() );
         ptreeReducedBasisSpace.add( "dimension", M_N );
         ptree.add_child( "reduced-basis-space", ptreeReducedBasisSpace );
 
         boost::property_tree::ptree ptreeCrb;//Database;
         ptreeCrb.add( "dimension", M_N );
         ptreeCrb.add( "name", this->name() );
-        ptreeCrb.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
+        // ptreeCrb.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
+        ptreeCrb.add( "database-filename", this->dbFilename() );
         ptreeCrb.add( "has-solve-dual-problem",M_solve_dual_problem );
         ptree.add_child( "crb", ptreeCrb );
 

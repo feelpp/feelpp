@@ -1076,12 +1076,13 @@ public:
                 {
                     std::string const& inputFilename = inputFilenamePair.second;
                     fs::path inputPath = inputFilename;
-                    fs::path copyPath = fs::path(dir)/fs::path(inputFilename).filename();
+                    fs::path relativeDbPath = fs::path(inputFilename).filename();
+                    fs::path copyPath = fs::path(dir)/relativeDbPath;
                     boost::system::error_code ec;
                     if ( M_model->worldComm().isMasterRank() )
                         fs::copy_file( inputPath, copyPath, fs::copy_option::overwrite_if_exists, ec );
                     // replace entry with copy path
-                    M_model->addModelFile( inputFilenamePair.first, copyPath.string() );
+                    M_model->addModelFile( inputFilenamePair.first, relativeDbPath.string() );
                 }
                 M_model->worldComm().barrier();
             }
