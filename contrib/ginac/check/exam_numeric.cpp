@@ -1,10 +1,10 @@
 /** @file exam_numeric.cpp
  *
- *  These exams creates some numbers and check the result of several boolean
+ *  These exams creates some numbers and check the result of several Boolean
  *  tests on these numbers like is_integer() etc... */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -366,7 +366,7 @@ static unsigned exam_numeric6()
 
 					// Read back expression from string
 					string x_as_string = s.str();
-					ex x_again(x_as_string, lst(sym));
+					ex x_again(x_as_string, lst{sym});
 
 					// They should be equal
 					if (!x_again.is_equal(x)) {

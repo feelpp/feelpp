@@ -16,4 +16,4 @@ all: $(EXFILES)
 
 CLEANFILES = $(TXT) $(HTML)
 
-EXTRA_DIST = $(EXFILES)
+EXTRA_DIST = $(EXFILES) CMakeLists.txt

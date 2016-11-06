@@ -4,7 +4,7 @@
  *  Lewis and Michael Wester. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ using namespace GiNaC;
 #include <iostream>
 using namespace std;
 
-static const bool do_test = false;  // set to true in order to run this beast
+constexpr bool do_test = false;  // set to true in order to run this beast
 
 static unsigned test()
 {
