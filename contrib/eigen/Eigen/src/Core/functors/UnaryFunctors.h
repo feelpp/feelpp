@@ -1,7 +1,7 @@
 // This file is part of Eigen, a lightweight C++ template library
 // for linear algebra.
 //
-// Copyright (C) 2008-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
+// Copyright (C) 2008-2016 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -248,7 +248,7 @@ struct functor_traits<scalar_exp_op<Scalar> > {
      // double: 7 pmadd, 5 pmul, 3 padd/psub, 1 div,  13 other
      : (14 * NumTraits<Scalar>::AddCost +
         6 * NumTraits<Scalar>::MulCost +
-        NumTraits<Scalar>::template Div<packet_traits<Scalar>::HasDiv>::Cost))
+        scalar_div_cost<Scalar,packet_traits<Scalar>::HasDiv>::value))
 #else
     Cost =
     (sizeof(Scalar) == 4
@@ -257,7 +257,7 @@ struct functor_traits<scalar_exp_op<Scalar> > {
      // double: 7 pmadd, 5 pmul, 3 padd/psub, 1 div,  13 other
      : (23 * NumTraits<Scalar>::AddCost +
         12 * NumTraits<Scalar>::MulCost +
-        NumTraits<Scalar>::template Div<packet_traits<Scalar>::HasDiv>::Cost))
+        scalar_div_cost<Scalar,packet_traits<Scalar>::HasDiv>::value))
 #endif
   };
 };
@@ -321,7 +321,7 @@ struct functor_traits<scalar_log1p_op<Scalar> > {
   */
 template<typename Scalar> struct scalar_log10_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_log10_op)
-  EIGEN_DEVICE_FUNC inline const Scalar operator() (const Scalar& a) const { using std::log10; return log10(a); }
+  EIGEN_DEVICE_FUNC inline const Scalar operator() (const Scalar& a) const { EIGEN_USING_STD_MATH(log10) return log10(a); }
   template <typename Packet>
   EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const { return internal::plog10(a); }
 };
@@ -491,85 +491,40 @@ struct functor_traits<scalar_atan_op<Scalar> >
   };
 };
 
-
 /** \internal
   * \brief Template functor to compute the tanh of a scalar
   * \sa class CwiseUnaryOp, ArrayBase::tanh()
   */
-template<typename Scalar> struct scalar_tanh_op {
+template <typename Scalar>
+struct scalar_tanh_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_tanh_op)
-  EIGEN_DEVICE_FUNC inline const Scalar operator() (const Scalar& a) const { return numext::tanh(a); }
+  EIGEN_DEVICE_FUNC inline const Scalar operator()(const Scalar& a) const { return numext::tanh(a); }
   template <typename Packet>
-  EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& _x) const {
-    /** \internal \returns the hyperbolic tan of \a a (coeff-wise)
-        Doesn't do anything fancy, just a 13/6-degree rational interpolant which
-        is accurate up to a couple of ulp in the range [-9, 9], outside of which the
-        fl(tanh(x)) = +/-1. */
-
-    // Clamp the inputs to the range [-9, 9] since anything outside
-    // this range is +/-1.0f in single-precision.
-    const Packet plus_9 = pset1<Packet>(9.0);
-    const Packet minus_9 = pset1<Packet>(-9.0);
-    const Packet x = pmax(minus_9, pmin(plus_9, _x));
-    
-    // The monomial coefficients of the numerator polynomial (odd).
-    const Packet alpha_1 = pset1<Packet>(4.89352455891786e-03);
-    const Packet alpha_3 = pset1<Packet>(6.37261928875436e-04);
-    const Packet alpha_5 = pset1<Packet>(1.48572235717979e-05);
-    const Packet alpha_7 = pset1<Packet>(5.12229709037114e-08);
-    const Packet alpha_9 = pset1<Packet>(-8.60467152213735e-11);
-    const Packet alpha_11 = pset1<Packet>(2.00018790482477e-13);
-    const Packet alpha_13 = pset1<Packet>(-2.76076847742355e-16);
-    
-    // The monomial coefficients of the denominator polynomial (even).
-    const Packet beta_0 = pset1<Packet>(4.89352518554385e-03);
-    const Packet beta_2 = pset1<Packet>(2.26843463243900e-03);
-    const Packet beta_4 = pset1<Packet>(1.18534705686654e-04);
-    const Packet beta_6 = pset1<Packet>(1.19825839466702e-06);
-    
-    // Since the polynomials are odd/even, we need x^2.
-    const Packet x2 = pmul(x, x);
-  
-  // Evaluate the numerator polynomial p.
-    Packet p = pmadd(x2, alpha_13, alpha_11);
-    p = pmadd(x2, p, alpha_9);
-    p = pmadd(x2, p, alpha_7);
-    p = pmadd(x2, p, alpha_5);
-    p = pmadd(x2, p, alpha_3);
-    p = pmadd(x2, p, alpha_1);
-    p = pmul(x, p);
-    
-    // Evaluate the denominator polynomial p.
-    Packet q = pmadd(x2, beta_6, beta_4);
-    q = pmadd(x2, q, beta_2);
-    q = pmadd(x2, q, beta_0);
-    
-    // Divide the numerator by the denominator.
-    return pdiv(p, q);
-  }
+  EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& x) const { return ptanh(x); }
 };
-template<typename Scalar>
-struct functor_traits<scalar_tanh_op<Scalar> >
-{
+
+template <typename Scalar>
+struct functor_traits<scalar_tanh_op<Scalar> > {
   enum {
     PacketAccess = packet_traits<Scalar>::HasTanh,
-    Cost =
-    (PacketAccess
-     // The following numbers are based on the AVX implementation,
+    Cost = ( (EIGEN_FAST_MATH && is_same<Scalar,float>::value)
+// The following numbers are based on the AVX implementation,
 #ifdef EIGEN_VECTORIZE_FMA
-     // Haswell can issue 2 add/mul/madd per cycle.
-     // 9 pmadd, 2 pmul, 1 div, 2 other
-     ? (2 * NumTraits<Scalar>::AddCost + 6 * NumTraits<Scalar>::MulCost +
-     NumTraits<Scalar>::template Div<packet_traits<Scalar>::HasDiv>::Cost)
+                // Haswell can issue 2 add/mul/madd per cycle.
+                // 9 pmadd, 2 pmul, 1 div, 2 other
+                ? (2 * NumTraits<Scalar>::AddCost +
+                   6 * NumTraits<Scalar>::MulCost +
+                   scalar_div_cost<Scalar,packet_traits<Scalar>::HasDiv>::value)
 #else
-     ? (11 * NumTraits<Scalar>::AddCost +
-        11 * NumTraits<Scalar>::MulCost +
-        NumTraits<Scalar>::template Div<packet_traits<Scalar>::HasDiv>::Cost)
+                ? (11 * NumTraits<Scalar>::AddCost +
+                   11 * NumTraits<Scalar>::MulCost +
+                   scalar_div_cost<Scalar,packet_traits<Scalar>::HasDiv>::value)
 #endif
-     // This number assumes a naive implementation of tanh
-     : (6 * NumTraits<Scalar>::AddCost + 3 * NumTraits<Scalar>::MulCost +
-        2 * NumTraits<Scalar>::template Div<packet_traits<Scalar>::HasDiv>::Cost +
-        functor_traits<scalar_exp_op<Scalar> >::Cost))
+                // This number assumes a naive implementation of tanh
+                : (6 * NumTraits<Scalar>::AddCost +
+                   3 * NumTraits<Scalar>::MulCost +
+                   2 * scalar_div_cost<Scalar,packet_traits<Scalar>::HasDiv>::value +
+                   functor_traits<scalar_exp_op<Scalar> >::Cost))
   };
 };
 

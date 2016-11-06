@@ -45,9 +45,11 @@ set(ginaclib_sources
     polynomial/gcd_uvar.cpp
     polynomial/mgcd.cpp
     polynomial/mod_gcd.cpp
+    polynomial/normalize.cpp
     polynomial/optimal_vars_finder.cpp
     polynomial/pgcd.cpp
     polynomial/primpart_content.cpp
+    polynomial/remainder.cpp
     polynomial/upoly_io.cpp
     power.cpp
     print.cpp
@@ -71,12 +73,13 @@ set(ginaclib_public_headers
     class_info.h
     clifford.h
     color.h
+    compiler.h
     constant.h
     container.h
     ex.h
     excompiler.h
     expair.h
-    expairseq.h
+    expairseq.h 
     exprseq.h
     fail.h
     factor.h
@@ -85,7 +88,7 @@ set(ginaclib_public_headers
     ${CMAKE_CURRENT_BINARY_DIR}/function.h
     hash_map.h
     idx.h
-    indexed.h
+    indexed.h 
     inifcns.h
     integral.h
     lst.h
@@ -94,30 +97,28 @@ set(ginaclib_public_headers
     ncmul.h
     normal.h
     numeric.h
-    operators.h
+    operators.h 
     power.h
     print.h
     pseries.h
     ptr.h
     registrar.h
     relational.h
-    structure.h
+    structure.h 
     symbol.h
     symmetry.h
     tensor.h
     version.h
-    wildcard.h
-    parser/parser.h
+    wildcard.h 
+    parser/parser.h 
     parser/parse_context.h
 )
 
 set(ginaclib_private_headers
     remember.h
-    tostring.h
     utils.h
     crc32.h
     hash_seed.h
-    compiler.h
     parser/lexer.h
     parser/debug.h
     polynomial/gcd_euclid.h
@@ -148,6 +149,7 @@ set(ginaclib_private_headers
 )
 
 add_library(feelpp_ginac ${ginaclib_sources})
+add_definitions(-DLIBEXECDIR="${LIBEXECDIR}/")
 set_target_properties(feelpp_ginac PROPERTIES
 	SOVERSION ${ginaclib_soversion}
 	VERSION ${ginaclib_version})
@@ -155,26 +157,27 @@ target_link_libraries(feelpp_ginac ${CLN_LIBRARIES} ${CMAKE_DL_LIBS} ${Boost_MPI
 include_directories(${CMAKE_SOURCE_DIR}/contrib/ginac/ginac ${MPI_CXX_INCLUDE_PATH})
 
 if (NOT BUILD_SHARED_LIBS)
-	set_target_properties(feelpp_ginac PROPERTIES OUTPUT_NAME "feelpp_ginac")
+    set_target_properties(feelpp_ginac PROPERTIES OUTPUT_NAME "feelpp_ginac")
 	# Avoid the static library vs import library conflict (necessary for
 	# m$ toolchain).
 	set_target_properties(feelpp_ginac PROPERTIES PREFIX "lib")
-else()
-  set_property(TARGET feelpp_ginac PROPERTY MACOSX_RPATH ON)
+  else()
+    set_property(TARGET feelpp_ginac PROPERTY MACOSX_RPATH ON)
 endif()
 
 install(TARGETS feelpp_ginac LIBRARY DESTINATION "${LIB_INSTALL_DIR}" COMPONENT Libs
-		      RUNTIME DESTINATION "${BIN_INSTALL_DIR}" COMPONENT Libs
-		      ARCHIVE DESTINATION "${LIB_INSTALL_DIR}" COMPONENT Libs)
+  RUNTIME DESTINATION "${BIN_INSTALL_DIR}" COMPONENT Libs
+  ARCHIVE DESTINATION "${LIB_INSTALL_DIR}" COMPONENT Libs)
 install(FILES ${ginaclib_public_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/ginac" COMPONENT Devel)
 
 ## Feel++ modification
 ## Those headers will be installed twice, Needed for custom installations to properly work and not breaking codes for now
 set(ginaclib_public_parser_headers
-    parser/parser.h
-    parser/parse_context.h)
+      parser/parser.h
+      parser/parse_context.h)
 install(FILES ${ginaclib_public_parser_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/ginac/parser" COMPONENT Devel)
 ## End Feel++ modification
+
 
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/function.h
@@ -185,3 +188,4 @@ add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/function.cpp
 	COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/function.py -o ${CMAKE_CURRENT_BINARY_DIR}/function.cpp ${CMAKE_CURRENT_SOURCE_DIR}/function.cppy
 	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/function.h ${CMAKE_CURRENT_SOURCE_DIR}/function.cppy ${CMAKE_CURRENT_SOURCE_DIR}/function.py)
+

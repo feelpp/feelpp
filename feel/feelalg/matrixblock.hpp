@@ -277,6 +277,11 @@ class MatrixBlockBase : public MatrixSparse<T>
      */
     size_type size2() const;
 
+    //!
+    //! @return the number of non-zero entries
+    //!
+    std::size_t nnz() const { return M_mat->nnz(); }
+    
     /**
      * return row_start, the index of the first
      * matrix row stored on this processor

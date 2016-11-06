@@ -53,7 +53,7 @@ pdflatex/reference.pdf: pdflatex/reference.tex
 		cd pdflatex; \
 	  ${PDFLATEX} reference.tex ;\
 	  ${MAKEINDEX} reference.idx ;\
-	  ${PYTHON} $(top_srcdir)/scripts/fixupind.py reference.ind; \
+	  ${PYTHON} $(abs_top_srcdir)/scripts/fixupind.py reference.ind; \
 	  ${PDFLATEX} reference.tex
 
 reference.dvi: latex latex/reference.dvi
@@ -71,3 +71,4 @@ endif
 ## CONFIG_DOXYGEN
 
 CLEANFILES = reference.dvi reference.ps reference.pdf html_files/* latex/* pdflatex/*
+EXTRA_DIST = CMakeLists.txt
