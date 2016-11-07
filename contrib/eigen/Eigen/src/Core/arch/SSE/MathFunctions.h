@@ -32,7 +32,7 @@ Packet4f plog<Packet4f>(const Packet4f& _x)
   /* the smallest non denormalized float number */
   _EIGEN_DECLARE_CONST_Packet4f_FROM_INT(min_norm_pos,  0x00800000);
   _EIGEN_DECLARE_CONST_Packet4f_FROM_INT(minus_inf,     0xff800000);//-1.f/0.f);
-  
+
   /* natural logarithm computed for 4 simultaneous float
     return NaN for x <= 0
   */
@@ -444,25 +444,33 @@ Packet4f pcos<Packet4f>(const Packet4f& _x)
 
 #if EIGEN_FAST_MATH
 
-// This is based on Quake3's fast inverse square root.
+// Functions for sqrt.
+// The EIGEN_FAST_MATH version uses the _mm_rsqrt_ps approximation and one step
+// of Newton's method, at a cost of 1-2 bits of precision as opposed to the
+// exact solution. It does not handle +inf, or denormalized numbers correctly.
+// The main advantage of this approach is not just speed, but also the fact that
+// it can be inlined and pipelined with other computations, further reducing its
+// effective latency. This is similar to Quake3's fast inverse square root.
 // For detail see here: http://www.beyond3d.com/content/articles/8/
-// It lacks 1 (or 2 bits in some rare cases) of precision, and does not handle negative, +inf, or denormalized numbers correctly.
 template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
 Packet4f psqrt<Packet4f>(const Packet4f& _x)
 {
   Packet4f half = pmul(_x, pset1<Packet4f>(.5f));
+  Packet4f denormal_mask = _mm_and_ps(
+      _mm_cmpge_ps(_x, _mm_setzero_ps()),
+      _mm_cmplt_ps(_x, pset1<Packet4f>((std::numeric_limits<float>::min)())));
 
-  /* select only the inverse sqrt of non-zero inputs */
-  Packet4f non_zero_mask = _mm_cmpge_ps(_x, pset1<Packet4f>((std::numeric_limits<float>::min)()));
-  Packet4f x = _mm_and_ps(non_zero_mask, _mm_rsqrt_ps(_x));
-
+  // Compute approximate reciprocal sqrt.
+  Packet4f x = _mm_rsqrt_ps(_x);
+  // Do a single step of Newton's iteration.
   x = pmul(x, psub(pset1<Packet4f>(1.5f), pmul(half, pmul(x,x))));
-  return pmul(_x,x);
+  // Flush results for denormals to zero.
+  return _mm_andnot_ps(denormal_mask, pmul(_x,x));
 }
 
 #else
 
-template<>EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED 
+template<>EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
 Packet4f psqrt<Packet4f>(const Packet4f& x) { return _mm_sqrt_ps(x); }
 
 #endif
@@ -491,7 +499,7 @@ Packet4f prsqrt<Packet4f>(const Packet4f& _x) {
   Packet4f neg_mask = _mm_cmplt_ps(_x, _mm_setzero_ps());
   Packet4f zero_mask = _mm_andnot_ps(neg_mask, le_zero_mask);
   Packet4f infs_and_nans = _mm_or_ps(_mm_and_ps(neg_mask, p4f_nan),
-                                        _mm_and_ps(zero_mask, p4f_inf));
+                                     _mm_and_ps(zero_mask, p4f_inf));
 
   // Do a single step of Newton's iteration.
   x = pmul(x, pmadd(neg_half, pmul(x, x), p4f_one_point_five));
@@ -517,52 +525,10 @@ Packet2d prsqrt<Packet2d>(const Packet2d& x) {
 }
 
 // Hyperbolic Tangent function.
-// Doesn't do anything fancy, just a 13/6-degree rational interpolant which
-// is accurate up to a couple of ulp in the range [-9, 9], outside of which the
-// fl(tanh(x)) = +/-1.
 template <>
 EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet4f
-ptanh<Packet4f>(const Packet4f& _x) {
-  // Clamp the inputs to the range [-9, 9] since anything outside
-  // this range is +/-1.0f in single-precision.
-  _EIGEN_DECLARE_CONST_Packet4f(plus_9, 9.0f);
-  _EIGEN_DECLARE_CONST_Packet4f(minus_9, -9.0f);
-  const Packet4f x = pmax(p4f_minus_9, pmin(p4f_plus_9, _x));
-
-  // The monomial coefficients of the numerator polynomial (odd).
-  _EIGEN_DECLARE_CONST_Packet4f(alpha_1, 4.89352455891786e-03f);
-  _EIGEN_DECLARE_CONST_Packet4f(alpha_3, 6.37261928875436e-04f);
-  _EIGEN_DECLARE_CONST_Packet4f(alpha_5, 1.48572235717979e-05f);
-  _EIGEN_DECLARE_CONST_Packet4f(alpha_7, 5.12229709037114e-08f);
-  _EIGEN_DECLARE_CONST_Packet4f(alpha_9, -8.60467152213735e-11f);
-  _EIGEN_DECLARE_CONST_Packet4f(alpha_11, 2.00018790482477e-13f);
-  _EIGEN_DECLARE_CONST_Packet4f(alpha_13, -2.76076847742355e-16f);
-
-  // The monomial coefficients of the denominator polynomial (even).
-  _EIGEN_DECLARE_CONST_Packet4f(beta_0, 4.89352518554385e-03f);
-  _EIGEN_DECLARE_CONST_Packet4f(beta_2, 2.26843463243900e-03f);
-  _EIGEN_DECLARE_CONST_Packet4f(beta_4, 1.18534705686654e-04f);
-  _EIGEN_DECLARE_CONST_Packet4f(beta_6, 1.19825839466702e-06f);
-
-  // Since the polynomials are odd/even, we need x^2.
-  const Packet4f x2 = pmul(x, x);
-
-  // Evaluate the numerator polynomial p.
-  Packet4f p = pmadd(x2, p4f_alpha_13, p4f_alpha_11);
-  p = pmadd(x2, p, p4f_alpha_9);
-  p = pmadd(x2, p, p4f_alpha_7);
-  p = pmadd(x2, p, p4f_alpha_5);
-  p = pmadd(x2, p, p4f_alpha_3);
-  p = pmadd(x2, p, p4f_alpha_1);
-  p = pmul(x, p);
-
-  // Evaluate the denominator polynomial p.
-  Packet4f q = pmadd(x2, p4f_beta_6, p4f_beta_4);
-  q = pmadd(x2, q, p4f_beta_2);
-  q = pmadd(x2, q, p4f_beta_0);
-
-  // Divide the numerator by the denominator.
-  return pdiv(p, q);
+ptanh<Packet4f>(const Packet4f& x) {
+  return internal::generic_fast_tanh_float(x);
 }
 
 } // end namespace internal

@@ -3,7 +3,7 @@
  *  Implementation of modular GCD. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include <cln/numtheory.h>
 #include <cln/random.h>
 #include <stdexcept>
+#include <algorithm>
 
 namespace GiNaC {
 
@@ -43,7 +44,7 @@ static void remove_content(upoly& A, upoly& B, upoly::value_type& c)
 	normalize_in_ring(A, &acont);
 	normalize_in_ring(B, &bcont);
 	c = gcd(acont, bcont);
-}
+};
 
 /// Check if @a candidate divides both @a A and @a B
 static bool
