@@ -6,7 +6,7 @@
  *  computation, square-free factorization and rational function normalization. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@
 namespace GiNaC {
 
 /**
- * Flags to control the behaviour of gcd() and friends
+ * Flags to control the behavior of gcd() and friends
  */
 struct gcd_options
 {
@@ -85,8 +85,8 @@ extern ex sprem(const ex &a, const ex &b, const ex &x, bool check_args = true);
 extern bool divide(const ex &a, const ex &b, ex &q, bool check_args = true);
 
 // Polynomial GCD in Z[X], cofactors are returned in ca and cb, if desired
-extern ex gcd(const ex &a, const ex &b, ex *ca = NULL, ex *cb = NULL,
-	      bool check_args = true, unsigned options = 0);
+extern ex gcd(const ex &a, const ex &b, ex *ca = nullptr, ex *cb = nullptr,
+              bool check_args = true, unsigned options = 0);
 
 // Polynomial LCM in Z[X]
 extern ex lcm(const ex &a, const ex &b, bool check_args = true);

@@ -3,7 +3,7 @@
  *  Interface to abstract derivatives of functions. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -55,24 +55,25 @@ public:
 	fderivative(unsigned ser, const paramset & params, const exvector & args);
 
 	// internal constructors
-	fderivative(unsigned ser, const paramset & params, boost::shared_ptr<exvector> vp);
+	fderivative(unsigned ser, const paramset & params, exvector && v);
 
 	// functions overriding virtual functions from base classes
 public:
-	void print(const print_context & c, unsigned level = 0) const;
-	ex eval(int level = 0) const;
-	ex evalf(int level = 0) const;
-	ex series(const relational & r, int order, unsigned options = 0) const;
-	ex thiscontainer(const exvector & v) const;
-	ex thiscontainer(boost::shared_ptr<exvector> vp) const;
-	void archive(archive_node& n) const;
-	void read_archive(const archive_node& n, lst& syms);
+	void print(const print_context & c, unsigned level = 0) const override;
+	ex eval() const override;
+	ex series(const relational & r, int order, unsigned options = 0) const override;
+	ex thiscontainer(const exvector & v) const override;
+	ex thiscontainer(exvector && v) const override;
+	void archive(archive_node& n) const override;
+	void read_archive(const archive_node& n, lst& syms) override;
 protected:
-	ex derivative(const symbol & s) const;
-	bool is_equal_same_type(const basic & other) const;
-	bool match_same_type(const basic & other) const;
+	ex derivative(const symbol & s) const override;
+	bool is_equal_same_type(const basic & other) const override;
+	bool match_same_type(const basic & other) const override;
 
 	// non-virtual functions in this class
+public:
+	const paramset& derivatives() const;
 protected:
 	void do_print(const print_context & c, unsigned level) const;
 	void do_print_csrc(const print_csrc & c, unsigned level) const;
@@ -82,7 +83,7 @@ protected:
 protected:
 	paramset parameter_set; /**< Set of parameter numbers with respect to which to take the derivative */
 };
-GINAC_DECLARE_UNARCHIVER(fderivative);
+GINAC_DECLARE_UNARCHIVER(fderivative); 
 
 } // namespace GiNaC
 

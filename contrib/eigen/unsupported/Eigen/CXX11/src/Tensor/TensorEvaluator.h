@@ -131,7 +131,7 @@ double loadConstant(const double* address) {
 }
 template <> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
 Eigen::half loadConstant(const Eigen::half* address) {
-  return Eigen::half(internal::raw_uint16_to_half(__ldg(&address->x)));
+  return Eigen::half(half_impl::raw_uint16_to_half(__ldg(&address->x)));
 }
 #endif
 }
@@ -226,7 +226,7 @@ struct TensorEvaluator<const TensorCwiseNullaryOp<NullaryOp, ArgType>, Device>
 
   EIGEN_DEVICE_FUNC
   TensorEvaluator(const XprType& op, const Device& device)
-      : m_functor(op.functor()), m_argImpl(op.nestedExpression(), device)
+      : m_functor(op.functor()), m_argImpl(op.nestedExpression(), device), m_wrapper()
   { }
 
   typedef typename XprType::Index Index;
@@ -243,13 +243,13 @@ struct TensorEvaluator<const TensorCwiseNullaryOp<NullaryOp, ArgType>, Device>
 
   EIGEN_DEVICE_FUNC CoeffReturnType coeff(Index index) const
   {
-    return m_functor(index);
+    return m_wrapper(m_functor, index);
   }
 
   template<int LoadMode>
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE PacketReturnType packet(Index index) const
   {
-    return m_functor.template packetOp<Index, PacketReturnType>(index);
+    return m_wrapper.template packetOp<PacketReturnType, Index>(m_functor, index);
   }
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorOpCost
@@ -263,6 +263,7 @@ struct TensorEvaluator<const TensorCwiseNullaryOp<NullaryOp, ArgType>, Device>
  private:
   const NullaryOp m_functor;
   TensorEvaluator<ArgType, Device> m_argImpl;
+  const internal::nullary_wrapper<CoeffReturnType,NullaryOp> m_wrapper;
 };
 
 
@@ -574,7 +575,7 @@ struct TensorEvaluator<const TensorSelectOp<IfArgType, ThenArgType, ElseArgType>
         .cwiseMax(m_elseImpl.costPerCoeff(vectorized));
   }
 
-  EIGEN_DEVICE_FUNC CoeffReturnType* data() const { return NULL; }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType* data() const { return NULL; }
 
  private:
   TensorEvaluator<IfArgType, Device> m_condImpl;
