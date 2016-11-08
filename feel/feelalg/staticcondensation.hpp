@@ -450,8 +450,8 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         tic();
         auto dofs = e3.dofs(dK);
 
-        S->addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
-        V->addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
+        S.addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
+        V.addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
         toc("sc.condense.globalassembly", FLAGS_v>0);
     }
 }
@@ -603,8 +603,8 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
 
         auto dofs = e3.dofs(dK);
 
-        S->addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
-        V->addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
+        S.addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
+        V.addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
     }
 }
 
