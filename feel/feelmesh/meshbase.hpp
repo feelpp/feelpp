@@ -436,8 +436,10 @@ public:
             CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
             std::vector<size_type> sid;//(std::distance(p.first,p.second) );
             std::for_each( p.begin(), p.end(), [&]( auto const& id ){
-                    //if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
+                    if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
                         sid.push_back( M_smd->bm.right.find( id )->second );
+                    else
+                        sid.push_back( invalid_size_type_value );
                     // the submesh element id has not been found, return invalid value
                     //return invalid_size_type_value;
                 });
