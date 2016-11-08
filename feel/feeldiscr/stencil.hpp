@@ -1,26 +1,27 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
 
-  This file is part of the Feel library
+//! This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2011-12-23
+//! Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! Date: 2011-12-23
 
-  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+//! Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+//! Copyright (C) 2011-2016 Feel++ Consortium
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
 #ifndef __galerkingraph_H
 #define __galerkingraph_H 1
 
@@ -33,10 +34,15 @@
 #include <feel/feelalg/graphcsr.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
+#include <boost/hana.hpp>
+#include <boost/hana/ext/std/integral_constant.hpp>
 
 #if 1
 namespace Feel
 {
+namespace hana = boost::hana;
+using namespace hana::literals; // contains the _c suffix
+
 namespace detail
 {
 template<typename BFType, typename Space1Type>
@@ -318,6 +324,32 @@ struct stencilQuadSet :
     {}
 };
 
+using single_space_t = hana::integral_constant< int, 1 >;
+constexpr single_space_t single_space_c{};
+using multiple_space_t = hana::integral_constant< int, 2 >;
+constexpr multiple_space_t multiple_space_c{};
+using single_spaces_t = single_space_t;
+using multiple_spaces_t = multiple_space_t;
+
+//!
+//! @return single_space_t if the space is not a cartesian product, multiple_space_t otherwise
+//!
+template <typename T>
+constexpr hana::integral_constant<int,(decay_type<T>::nSpaces == 1)?1:2>
+type_space_t( T&& t )
+{
+    return hana::integral_constant<int,(decay_type<T>::nSpaces == 1)?1:2>{};
+}
+
+//!
+//! @return single_spaces_t if the spaces aren't cartesian products, multiple_space_t otherwise
+//!
+template <typename T1, typename T2>
+constexpr hana::integral_constant<int,(decay_type<T1>::nSpaces == 1 && decay_type<T2>::nSpaces == 1)?1:2>
+type_spaces_t( T1&& t1, T2&& t2 )
+{
+    return hana::integral_constant<int,(decay_type<T1>::nSpaces == 1 && decay_type<T2>::nSpaces == 1)?1:2>{};
+}
 
 template<typename X1, typename X2,
          typename RangeIteratorTestType = stencilRangeMap0Type,
@@ -337,6 +369,7 @@ public:
     typedef RangeIteratorTestType rangeiterator_test_type;
     typedef RangeExtendedIteratorType rangeiterator_extended_type;
     typedef QuadSetType nonstandard_quadset_type;
+
 
     Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh,
              size_type graph_hints,
@@ -404,26 +437,35 @@ public:
         return ctx.test( ZERO );
     }
 
+    //!
+    //! @return the graph
+    //!
     graph_ptrtype computeGraph( size_type hints );
 
-    graph_ptrtype computeGraph( size_type hints, mpl::bool_<true> );
-    graph_ptrtype computeGraph( size_type hints, mpl::bool_<false> );
-    graph_ptrtype computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<true> );
-    graph_ptrtype computeGraph( size_type hints, mpl::bool_<false>, mpl::bool_<true> );
-    graph_ptrtype computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<false> );
+public:
+    //!
+    //! Specific function to compute the graph associated to the static condensation of the HDG method
+    //!
+    graph_ptrtype computeGraphHDG( size_type hints );
 
-    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> );
-    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> );
-    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<true> );
-    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false>, mpl::bool_<true> );
-    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<false> );
+    graph_ptrtype computeGraph( size_type hints, single_spaces_t );
+    graph_ptrtype computeGraph( size_type hints, multiple_spaces_t );
+    graph_ptrtype computeGraph( size_type hints, multiple_space_t, multiple_space_t );
+    graph_ptrtype computeGraph( size_type hints, single_space_t, multiple_space_t );
+    graph_ptrtype computeGraph( size_type hints, multiple_space_t, single_space_t );
+
+    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, single_spaces_t );
+    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, multiple_spaces_t );
+    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, multiple_space_t, multiple_space_t );
+    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, single_space_t, multiple_space_t );
+    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, multiple_space_t, single_space_t );
 
 
     void mergeGraph( int row, int col, graph_ptrtype g );
     void mergeGraphMPI( size_type test_index, size_type trial_index,
                         DataMap const& mapOnTest, DataMap const& mapOnTrial,
                         graph_ptrtype g);
-
+public:
     test_space_ptrtype testSpace() const
     {
         return _M_X1;
@@ -1054,29 +1096,33 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
     VLOG(2) << "computeGraph: deciding whether the mesh are related to optimize the stencil\n";
     //if ( (is_shared_ptr<typename test_space_type::mesh_ptrtype>::value && is_shared_ptr<typename trial_space_type::mesh_ptrtype>::value ) &&
     //dynamic_cast<void*>( _M_X1->template mesh<0>().get() ) == dynamic_cast<void*>( _M_X2->template mesh<0>().get() ) )
+    Feel::Context graph( hints );
+    if ( graph.test( Pattern::HDG ) )
+    {
+        CHECK( _M_X1->mesh()->dimension() == _M_X1->mesh()->realDimension()-1 ) << "topological dimension must be d-1 if d is the real dimension of the problem";
+        return this->computeGraphHDG( hints );
+    }
     if ( _M_X1->template mesh<0>()->isRelatedTo( _M_X2->template mesh<0>() ) )
     {
         VLOG(2) << "computeGraph: meshes are related\n";
-        return this->computeGraph( hints, mpl::bool_<mpl::and_< mpl::bool_< ( test_space_type::nSpaces == 1 )>,
-                                                                mpl::bool_< ( trial_space_type::nSpaces == 1 )> >::type::value >() );
+        return this->computeGraph( hints, type_spaces_t( _M_X1, _M_X2 ) );
     }
     else
     {
         VLOG(2) << "computeGraph: meshes are not related\n";
-        return this->computeGraphInCaseOfInterpolate( hints, mpl::bool_<mpl::and_< mpl::bool_< ( test_space_type::nSpaces == 1 )>,
-                                                                                   mpl::bool_< ( trial_space_type::nSpaces == 1 )> >::type::value >() );
+        return this->computeGraphInCaseOfInterpolate( hints, type_spaces_t( _M_X1, _M_X2 ) );
     }
 }
 
 
 template<typename X1,  typename X2, typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<false> )
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, multiple_spaces_t )
 {
     boost::timer t;
     DVLOG(2) << "compute graph for composite bilinear form with interpolation\n";
 
-    auto graph = computeGraph( hints, mpl::bool_< ( test_space_type::nSpaces > 1 )>(), mpl::bool_< ( trial_space_type::nSpaces > 1 )>() );
+    auto graph = computeGraph( hints, type_space_t( _M_X1 ), type_space_t( _M_X2 ) );
 
     DVLOG(2) << "closing graph for composite bilinear form with interpolation done in " << t.elapsed() << "s\n";
     t.restart();
@@ -1088,7 +1134,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
 
  template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
  typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
- Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
+ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, multiple_space_t, multiple_space_t )
 {
     fusion::for_each( _M_X1->functionSpaces(),
                       Feel::detail::compute_graph1<self_type>( this, hints ) );
@@ -1097,7 +1143,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
 
 template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, multiple_space_t, single_space_t )
 {
     fusion::for_each( _M_X1->functionSpaces(),
                       Feel::detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
@@ -1106,7 +1152,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
 
 template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, single_space_t, multiple_space_t )
 {
     fusion::for_each( _M_X2->functionSpaces(),
                       Feel::detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
@@ -1115,13 +1161,13 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
 
 template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> )
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, multiple_spaces_t )
 {
     boost::timer t;
     DVLOG(2) << "compute graph for composite bilinear form with interpolation\n";
     auto graph = computeGraphInCaseOfInterpolate( hints,
-                                                  mpl::bool_< ( test_space_type::nSpaces > 1 )>(),
-                                                  mpl::bool_< ( trial_space_type::nSpaces > 1 )>() );
+                                                  type_space_t( _M_X1 ),
+                                                  type_space_t( _M_X2 ));
 
     DVLOG(2) << "closing graph for composite bilinear form with interpolation done in " << t.elapsed() << "s\n";
     return graph;
@@ -1129,7 +1175,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 
 template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, multiple_space_t, multiple_space_t )
 {
     fusion::for_each( _M_X1->functionSpaces(),
                       Feel::detail::compute_graph1<self_type>( this, hints ) );
@@ -1138,7 +1184,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 
 template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, multiple_space_t, single_space_t )
 {
     fusion::for_each( _M_X1->functionSpaces(),
                       Feel::detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
@@ -1147,7 +1193,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 
 template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, single_space_t, multiple_space_t )
 {
     fusion::for_each( _M_X2->functionSpaces(),
                       Feel::detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
@@ -1160,7 +1206,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 #if 0
 template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<true> )
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, single_spaces_t )
 {
     boost::timer t;
     // Compute the sparsity structure of the global matrix.  This can be
@@ -1422,7 +1468,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
 #else
 template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<true> )
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, single_spaces_t )
 {
     static const bool hasNotFindRangeStandard = rangeiteratorType<0,0>::hasnotfindrange_type::value;
     static const bool hasNotFindRangeExtended = rangeExtendedIteratorType<0,0>::hasnotfindrange_type::value;
@@ -1702,6 +1748,127 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
     return sparsity_graph;
 }
 #endif
+
+template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG( size_type hints )
+{
+    static const bool hasNotFindRangeStandard = rangeiteratorType<0,0>::hasnotfindrange_type::value;
+    static const bool hasNotFindRangeExtended = rangeExtendedIteratorType<0,0>::hasnotfindrange_type::value;
+
+    boost::timer t;
+    // Compute the sparsity structure of the global matrix.  This can be
+    // fed into a PetscMatrix to allocate exacly the number of nonzeros
+    // necessary to store the matrix.  This algorithm should be linear
+    // in the (# of elements)*(# nodes per element)
+    const size_type proc_id           = _M_X1->worldsComm()[0].localRank();
+    const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
+    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
+    const size_type first1_dof_on_proc = _M_X1->dof()->firstDofGlobalCluster( proc_id );
+    const size_type last1_dof_on_proc = _M_X1->dof()->lastDofGlobalCluster( proc_id );
+    const size_type first2_dof_on_proc = _M_X2->dof()->firstDofGlobalCluster( proc_id );
+    const size_type last2_dof_on_proc = _M_X2->dof()->lastDofGlobalCluster( proc_id );
+
+    graph_ptrtype sparsity_graph( new graph_type( _M_X1->dof(),_M_X2->dof() ) );
+
+
+    Feel::Context graph( hints );
+    CHECK( graph.test( Pattern::HDG ) ) << "Invalid graph pattern, must be set to HDG";
+
+    std::vector<size_type> element_dof2( _M_X2->dof()->getIndicesSize() );
+    std::vector<size_type> neighbor_dof;
+
+    const uint16_type nDimTest = test_space_type::mesh_type::nDim;
+    const uint16_type nRealDimTest = test_space_type::mesh_type::nRealDim;
+    const uint16_type nDimTrial = trial_space_type::mesh_type::nDim;
+    const uint16_type nRealDimTrial = trial_space_type::mesh_type::nRealDim;
+    CHECK( nDimTest == nDimTrial ) << "Must be the same dimension";
+    CHECK( nDimTest == nRealDimTest-1 ) << "Test topological dimension should be " << nRealDimTest-1;
+    CHECK( nDimTrial == nRealDimTrial-1 ) << "Trial topological dimension should be " << nRealDimTrial-1;
+
+    auto rangeListTest = this->rangeiterator<0,0>( mpl::bool_<hasNotFindRangeStandard>() );
+
+    //auto r = elements( _M_X1->mesh(), EntityProcessType::ALL );
+    auto m = dynamic_cast<typename test_space_type::mesh_type::parent_mesh_type const*>(_M_X1->mesh()->parentMesh().get());
+    auto r = faces(m, EntityProcessType::ALL );
+
+    auto elem_it = r.template get<1>();
+    auto elem_en = r.template get<2>();
+
+    DVLOG(2) << " nv elements : " << std::distance( elem_it, elem_en ) << std::endl;
+    for ( ; elem_it != elem_en; ++elem_it )
+    {
+        auto const& elem = elem_it->get();
+        auto eId = _M_X1->mesh()->meshToSubMesh( elem.id() );
+        DVLOG(2) << "[Stencil::computeGraphHDG] element " << elem.id() << " on proc " << elem.processId() << std::endl;
+        // elem_it contains the id of the current face
+        // we need to get the list of all the faces it is connected to through 1 or 2 elements it is connected to
+        // we start by getting the id of the parent element submesh
+        //auto const& F = dynamic_cast<typename test_space_type::mesh_type::parent_mesh_type const*>(_M_X1->mesh()->parentMesh().get())->face(elem.id());
+        auto const& F = m->face(elem.id());
+        DVLOG(2) << "[Stencil::computeGraphHDG] F.isGhostCell:" << F.isGhostCell() << " isInterProcess: " << F.isInterProcessDomain() << std::endl;
+        if ( F.isConnectedTo1() )
+            DVLOG(2) << "[Stencil::computeGraphHDG] F.id=" << F.id() << " element0().id: " << F.idElement0() << " element1().id:" << F.idElement1();
+        else
+            DVLOG(2) << "[Stencil::computeGraphHDG] F.id=" << F.id() << " element0().id: " << F.idElement0();
+        std::vector<size_type> list_of_connected_faces;
+        std::vector<size_type> dK =  _M_X1->mesh()->meshToSubMesh( F.element0().facesId()), dK1;
+        DVLOG(2) << "dK=" << dK;
+        if ( F.isConnectedTo1() )
+            dK1 =  _M_X1->mesh()->meshToSubMesh( F.element1().facesId());
+        DVLOG(2) << "dK1=" << dK1;
+        list_of_connected_faces.resize( dK.size()+dK1.size() );
+        std::copy( dK.begin(), dK.end(), list_of_connected_faces.begin() );
+        std::copy( dK1.begin(), dK1.end(), list_of_connected_faces.begin()+dK.size() );
+
+        const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize(eId);
+
+        // loop on test dof
+        for ( size_type i=0; i<n1_dof_on_element; i++ )
+        {
+            // numLocal without ghosts ! very important for the graph with petsc
+            const size_type il1 = _M_X1->dof()->localToGlobalId( eId, i );
+            const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[il1];
+            auto theproc = _M_X1->dof()->procOnGlobalCluster( ig1 );
+
+            graph_type::row_type& row = sparsity_graph->row( ig1 );
+            row.get<0>() = theproc ;
+            row.get<1>() = il1;
+
+            DVLOG(2) << "[Stencil::computeGraphHDG] work with row " << ig1 << " local index " << il1 << " proc " << theproc << "\n" << std::endl;
+
+            //const size_type ig1 = element_dof1[i];
+            const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
+            const int ncomp1 = i / ndofpercomponent1;
+
+            // now we loop on each face to which the current face is connected
+            // to, including itself.
+            for( auto dKi : list_of_connected_faces )
+            {
+                if ( dKi >= 1e6 )
+                    continue;
+                DVLOG(2) << "[Stencil::computeGraphHDG] trial dKi=" << dKi << std::endl;
+                // Get the global indices of the DOFs with support on this element
+                _M_X2->dof()->getIndicesSetOnGlobalCluster( dKi, element_dof2 );
+
+                // We can be more efficient if we sort the element DOFs
+                // into increasing order
+                //std::sort(element_dof1.begin(), element_dof1.end());
+                std::sort( element_dof2.begin(), element_dof2.end() );
+
+                const uint16_type  n2_dof_on_element = element_dof2.size();
+                const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
+
+                row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
+
+            } // trial face/dof loop
+            DVLOG(2) << "[Stencil::computeGraphHDG] work with row " << ig1 << " " << row << std::endl;
+        } // test dof loop
+    } // element iterator loop
+
+    return sparsity_graph;
+}
+
 namespace detail
 {
 template<typename EltType>
@@ -1813,7 +1980,7 @@ idEltStencil( mpl::size_t<MESH_FACES> /**/, FaceType const& theface )
 
 template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> )
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, single_spaces_t )
 {
     //std::cout << "\n start graphInterp "<< std::endl;
     typedef mpl::int_< boost::remove_reference<typename fusion::result_of::at_c<QuadSetType,0>::type>::type::order > order_1d_type;
