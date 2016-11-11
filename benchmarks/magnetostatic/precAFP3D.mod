@@ -31,8 +31,7 @@
       {
         "Border":
         {
-          "expr":"{0,0,0}:x:y:z"
-          //"expr":"{pi*sin(pi*x)*cos(pi*y),-pi*cos(pi*x)*sin(pi*y)}:x:y"
+          "expr":"{pi* cos(pi* x)* sin(pi* y)* sin(pi*z),-2*pi* sin(pi* x)* cos(pi* y)* sin(pi*z),pi* sin(pi* x)* sin(pi* y)* cos(pi*z)}:x:y:z"
         }
       }
     },

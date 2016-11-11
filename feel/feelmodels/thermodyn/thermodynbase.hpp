@@ -175,10 +175,12 @@ class ThermoDynamicsBase : public ModelNumerical,
         void build();
         void loadMesh( mesh_ptrtype mesh );
 
+        void updateParameterValues();
+
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
         // apply assembly and solver
-        virtual void solve();
+        /*virtual*/ void solve();
 
         void updateLinearPDE( DataUpdateLinear & data ) const;
         virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const = 0;

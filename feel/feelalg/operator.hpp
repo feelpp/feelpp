@@ -196,8 +196,8 @@ public:
         :
         OperatorBase<T>( F->mapColPtr(), F->mapRowPtr(), _label, transpose, true ),
         M_F( F ),
-        M_xx( backend(_name=this->label())->newVector( F->mapRowPtr() ) ),
-        M_yy( backend(_name=this->label())->newVector( F->mapColPtr() ) ),
+        // M_xx( backend(_name=this->label())->newVector( F->mapRowPtr() ) ),
+        // M_yy( backend(_name=this->label())->newVector( F->mapColPtr() ) ),
         M_hasInverse( 1 ),
         M_hasApply( 1 ),
         M_closeMatrixRhs( true )
@@ -211,8 +211,8 @@ public:
         :
         OperatorBase<T>( tc ),
         M_F( tc.M_F ),
-        M_xx( tc.M_xx ),
-        M_yy( tc.M_yy ),
+        // M_xx( tc.M_xx ),
+        // M_yy( tc.M_yy ),
         M_hasInverse( tc.M_hasInverse ),
         M_hasApply( tc.M_hasApply ),
         M_closeMatrixRhs( tc.M_closeMatrixRhs )
@@ -239,35 +239,37 @@ public:
         LOG(INFO) << "OperatorMatrix: apply(X,Y)";
         tic();
         M_F->multVector( X, Y );
-        Y.close();
         toc((boost::format("OperatorMatrix::apply %1%")%this->label()).str(),FLAGS_v>0);
         return !hasApply();
     }
     
-    int applyInverse ( const vector_type& X, vector_type& Y ) const
+    int applyInverse(const vector_ptrtype& X, vector_ptrtype& Y) const
     {
         CHECK( hasInverse() ) << "Operator " << this->label() << "cannot be inverted.";
         LOG(INFO) << "OperatorMatrix: applyInverse(X,Y) with backend " << this->label();
         tic();
-        *M_xx = X;
-        M_xx->close();
         // Petsc sets M_yy to zero when boption(_name="ksp-use-initial-guess-nonzero", _prefix=this->label()) is false
-        
-        bool cv;
+
         if(!this->M_pc)
         {
-            this->M_return = backend(_name=this->label())->solve( _matrix=M_F, _rhs=M_xx, _solution=M_yy, _close=M_closeMatrixRhs );
-            cv = this->M_return.isConverged();
+            this->M_return = backend(_name=this->label())->solve( _matrix=M_F,_rhs=X,
+                                                                  _solution=Y,_close=M_closeMatrixRhs );
         }
         else
         {
-            this->M_return = backend(_name=this->label())->solve( _matrix=M_F, _rhs=M_xx, _solution=M_yy, _prec=this->M_pc, _close=M_closeMatrixRhs );
-            cv = this->M_return.isConverged();
+            this->M_return = backend(_name=this->label())->solve( _matrix=M_F,_rhs=X,
+                                                                  _solution=Y,_prec=this->M_pc, _close=M_closeMatrixRhs );
         }
-        Y=*M_yy;
-        Y.close();
+        bool cv = this->M_return.isConverged();
         toc((boost::format("OperatorMatrix::applyInverse %1%")%this->label()).str(),FLAGS_v>0);
         return cv;
+    }
+    int applyInverse ( const vector_type& X, vector_type& Y ) const
+    {
+        auto thebackend = backend(_name=this->label());
+        auto vecptrX = thebackend->toBackendVectorPtr( X );
+        auto vecptrY = thebackend->toBackendVectorPtr( Y );
+        return this->applyInverse( vecptrX, vecptrY );
     }
 
     value_type normInf() const
@@ -284,7 +286,7 @@ private:
 
     sparse_matrix_ptrtype M_F;
 
-    mutable vector_ptrtype M_xx, M_yy;
+    // mutable vector_ptrtype M_xx, M_yy;
     bool M_hasInverse, M_hasApply;
     bool M_closeMatrixRhs;
 };
@@ -604,7 +606,6 @@ public:
         M_F->apply( X,Y );
 
         Y.scale( M_alpha );
-        Y.close();
 
         return !hasApply();
     }
@@ -618,7 +619,6 @@ public:
         
         M_F->applyInverse( X,Y );
         Y.scale( 1./M_alpha );
-        Y.close();
 
         return !hasInverse();
     }

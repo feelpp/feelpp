@@ -19,21 +19,15 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include <functional>
 
 #include <feel/feel.hpp>
 #include <feel/feelopt/nlopt.hpp>
 
 
-constexpr static int ORDER = 1;
-// Fixed: do not change.
-constexpr static int DIM = 2;
-constexpr static int N_UNKNOWNS = 3;
-
-
 int main(int argc, char**argv )
 {
     using namespace Feel;
+
     po::options_description nloptoptions( "NLOpt options" );
     nloptoptions.add_options()
         ( "k", po::value<double>()->default_value( 1.0 ), "Diffusion coefficient background" )
@@ -45,13 +39,31 @@ int main(int argc, char**argv )
         ( "k2init", po::value<double>()->default_value( 1.0 ), "Diffusion coefficient inclusion 3 in [0,1]" )
         ( "lb", po::value<double>()->default_value( 1e-4 ), "Lowerbound value" )
         ( "ub", po::value<double>()->default_value( 1e1 ), "Upperbound value" )
+        ( "nlopt.algo", po::value<std::string>()->default_value( "LN_NEWUOA" ), "NLOPT algorithm [LN_NEWUOA,LD_LBFGS]" )
         ;
+
+    nloptoptions.add( backend_options("forward") );
+    nloptoptions.add( backend_options("inverse") );
 
     Environment env( _argc=argc, _argv=argv,
                      _desc=nloptoptions,
                      _about=about(_name="laplacian_nlopt",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
+
+    constexpr static int ORDER = 1;
+    // Fixed: do not change.
+    constexpr static int DIM = 2;
+    constexpr static int N_UNKNOWNS = 3;
+
+    // List of NLOPT algorithm
+    const boost::unordered_map< const std::string, ::nlopt::algorithm >& authAlgo = boost::assign::map_list_of
+        ("LN_NEWUOA", ::nlopt::LN_NEWUOA )
+        ("LN_COBYLA", ::nlopt::LN_COBYLA )
+        ("LN_BOBYQA", ::nlopt::LN_BOBYQA )
+        ("LD_LBFGS", ::nlopt::LD_LBFGS )
+        ("LD_MMA", ::nlopt::LD_MMA )
+        ("LD_SLSQP", ::nlopt::LD_SLSQP );
 
     using vec = std::vector<double>;
 
@@ -60,7 +72,7 @@ int main(int argc, char**argv )
 
     auto g = expr( soption(_name="functions.g") );
 
-    auto Vh = Pch<ORDER>( mesh ) ;
+    auto Vh = Pch<ORDER>( mesh );
     auto a = form2( _trial=Vh, _test=Vh);
     auto l = form1( _test=Vh);
 
@@ -75,8 +87,24 @@ int main(int argc, char**argv )
 
     auto e = exporter( mesh );
     int iter=0;
+    bool isGradAlloc=false;
 
     std::list<std::string> omega = {"homogeneous","inclusion0","inclusion1","inclusion2"};
+
+    auto backend_forward = backend( _name="forward", _prefix="forward" );
+    auto prec_forward = preconditioner( _prefix="forward",
+                                        _matrix=a.matrixPtr(),
+                                        _pc=backend_forward->pcEnumType()/*LU_PRECOND*/,
+                                        _pcfactormatsolverpackage=backend_forward->matSolverPackageEnumType(),
+                                        _backend=backend_forward );
+
+    auto backend_inverse = backend( _name="inverse", _prefix="inverse" );
+    auto prec_inverse = preconditioner( _prefix="inverse",
+                                        _matrix=a.matrixPtr(),
+                                        _pc=backend_inverse->pcEnumType()/*LU_PRECOND*/,
+                                        _pcfactormatsolverpackage=backend_inverse->matSolverPackageEnumType(),
+                                        _backend=backend_inverse );
+
 
     auto forwardProblem = [&]( const double* x )
     {
@@ -94,14 +122,22 @@ int main(int argc, char**argv )
                       _expr=idv(k)*gradt(u)*trans(grad(v)) );
         // Dirichlet boundary condition.
         a+=on( _range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g );
-        a.solve( _rhs=l, _solution=u );
 
-        iter++;
+        a.solveb( _rhs=l, _solution=u, _prec=prec_forward, _backend=backend_forward );
+
+        if(e->doExport())
+        {
+            e->step(iter)->add( "k_real", k_real );
+            e->step(iter)->add( "u_obs", u_obs );
+            e->step(iter)->add( "u", u );
+            e->step(iter)->add( "k", k );
+        }
     };
 
     auto adjointProblem = [&]( const double* x )
     {
         LOG(INFO) << "Compute adjoint problem";
+        // Re-use bilinear form matrix.
         a.zero();
         l.zero();
         l = integrate( _range=markedelements(mesh,omega),
@@ -110,7 +146,13 @@ int main(int argc, char**argv )
                        _expr=idv(k)*gradt(p)*trans(grad(v)) );
         // Dirichlet boundary condition.
         a+=on( _range=boundaryfaces(mesh), _rhs=l, _element=p, _expr=cst(0) );
-        a.solve( _rhs=l, _solution=p );
+
+        a.solveb( _rhs=l, _solution=p, _prec=prec_inverse, _backend=backend_inverse );
+
+        if(e->doExport())
+        {
+            e->step(iter)->add( "p", p );
+        }
     };
 
     // Objective function.
@@ -125,6 +167,8 @@ int main(int argc, char**argv )
     // Gradient
     auto gradJ = [&]( const double* x, double* grad )->double*
     {
+
+        // TODO REMOVE THAT
         grad[0] = integrate( _range=markedelements(mesh,"inclusion0"),
                              _expr=-gradv(p)*trans(gradv(u)) ).evaluate()(0,0);
         grad[1] = integrate( _range=markedelements(mesh,"inclusion1"),
@@ -137,6 +181,12 @@ int main(int argc, char**argv )
     // We could use the vector version here (see ::NLOPT::vfunc).
     auto myfunc = [&]( unsigned n, const double* x, double* grad, void *my_func_data )->double
     {
+        if(grad==nullptr)
+        {
+            grad = new double(3);
+            isGradAlloc=true;
+        }
+
         forwardProblem(x);
         double obj=J();
 
@@ -147,6 +197,19 @@ int main(int argc, char**argv )
                    << " for diffusion coefficients k0=" << x[0] << ", k1=" << x[1] << ", k2=" << x[2]
                    << " gradient DJk0=" << grad[0] << ", DJk1=" << grad[1] << ", DJk2=" << grad[2]
                    << "\n";
+
+        if(isGradAlloc)
+        {
+            delete grad;
+            isGradAlloc=false;
+        }
+
+        if(e->doExport())
+        {
+            e->save();
+        }
+        iter++;
+
         return obj;
     };
 
@@ -161,10 +224,13 @@ int main(int argc, char**argv )
     k_real=k;
     u_obs=u;
 
-    // Set default inclusion diffusion coefficients.
+    // Set a priori inclusion diffusion coefficients.
     x = { doption("k0init"), doption("k1init"), doption("k2init") };
 
-    ::nlopt::opt opt( ::nlopt::LD_LBFGS, N_UNKNOWNS );
+    auto salgo = soption("nlopt.algo"); 
+    Feel::cout << "NLOP algorithm: " << salgo << "\n";
+    auto algo = authAlgo.at(salgo);
+    ::nlopt::opt opt( algo, N_UNKNOWNS );
 
     // We keep diffusion coefficients in [0,1].
     vec lb = { doption("lb"), doption("lb"), doption("lb") }; // lowerbound
@@ -177,31 +243,53 @@ int main(int argc, char**argv )
 
     opt.set_min_objective( f, nullptr );
     opt.set_maxeval( ioption("nlopt.maxeval") );
-    opt.set_xtol_rel( 1e-4 );
+    opt.set_xtol_rel( doption("nlopt.xtol_rel") );
+    opt.set_ftol_rel( doption("nlopt.ftol_rel") );
+    opt.set_xtol_abs( doption("nlopt.xtol_abs") );
+    opt.set_ftol_abs( doption("nlopt.ftol_abs") );
 
     double minf;
 
-    //myfunc(0,&x[0],NULL,NULL);
-
     ::nlopt::result result = opt.optimize(x, minf);
-    if (result < 0)
-    {
-        Feel::cout << "nlopt failed!\n";
-    }
-    else
-    {
-        Feel::cout << "Diffusion coefficient found!\n"
-                   << "k0=" << x[0] << ", k1=" << x[1] << ", k2=" << x[2]
-                   << "\n";
-    }
 
-    if(e->doExport())
+    switch( result )
     {
-        e->add( "k_real", k_real );
-        e->add( "u_obs", u_obs );
-        e->add( "u", u );
-        e->add( "k", k );
-        e->save();
+        case ::nlopt::FAILURE:
+            Feel::cerr << "NLOPT Generic Failure!" << "\n";
+            break;
+        case ::nlopt::INVALID_ARGS:
+            Feel::cerr << "NLOPT Invalid arguments!" << "\n";
+            break;
+        case ::nlopt::OUT_OF_MEMORY:
+            Feel::cerr << "NLOPT Out of memory!" << "\n";
+            break;
+        case ::nlopt::ROUNDOFF_LIMITED:
+            Feel::cerr << "NLOPT Roundoff limited!" << "\n";
+            break;
+        case ::nlopt::FORCED_STOP:
+            Feel::cerr << "NLOPT Forced stop!" << "\n";
+            break;
+        case::nlopt::SUCCESS:
+            Feel::cout << "NLOPT Diffusion coefficient found! (status " << result << ") \n"
+                << "k0=" << x[0] << ", k1=" << x[1] << ", k2=" << x[2]
+                << "\n"
+                << "Evaluation number: " << iter << "\n";
+            break;
+        case ::nlopt::STOPVAL_REACHED:
+            Feel::cout << "NLOPT Stop value reached!" << "\n";
+            break;
+        case ::nlopt::FTOL_REACHED:
+            Feel::cout << "NLOPT ftol reached!" << "\n";
+            break;
+        case ::nlopt::XTOL_REACHED:
+            Feel::cout << "NLOPT xtol reached!" << "\n";
+            break;
+        case ::nlopt::MAXEVAL_REACHED:
+            Feel::cout << "NLOPT Maximum number of evaluation reached!" << "\n";
+            break;
+        case ::nlopt::MAXTIME_REACHED:
+            Feel::cout << "NLOPT Maximum time reached" << "\n";
+            break;
     }
 
     return 0;

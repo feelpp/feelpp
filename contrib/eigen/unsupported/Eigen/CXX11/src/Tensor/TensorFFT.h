@@ -10,8 +10,9 @@
 #ifndef EIGEN_CXX11_TENSOR_TENSOR_FFT_H
 #define EIGEN_CXX11_TENSOR_TENSOR_FFT_H
 
-// NVCC fails to compile this code
-#if !defined(__CUDACC__)
+// This code requires the ability to initialize arrays of constant
+// values directly inside a class.
+#if __cplusplus >= 201103L || EIGEN_COMP_MSVC >= 1900
 
 namespace Eigen {
 
@@ -128,6 +129,7 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
   typedef typename internal::conditional<FFTResultType == RealPart || FFTResultType == ImagPart, RealScalar, ComplexScalar>::type OutputScalar;
   typedef OutputScalar CoeffReturnType;
   typedef typename PacketType<OutputScalar, Device>::type PacketReturnType;
+  static const int PacketSize = internal::unpacket_traits<PacketReturnType>::size;
 
   enum {
     IsAligned = false,
@@ -175,7 +177,6 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
     }
   }
 
-
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void cleanup() {
     if (m_data) {
       m_device.deallocate(m_data);
@@ -188,9 +189,15 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
     return m_data[index];
   }
 
-  template<int LoadMode>
-  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketReturnType packet(Index index) const {
+  template <int LoadMode>
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketReturnType
+  packet(Index index) const {
     return internal::ploadt<PacketReturnType, LoadMode>(m_data + index);
+  }
+
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorOpCost
+  costPerCoeff(bool vectorized) const {
+    return TensorOpCost(sizeof(CoeffReturnType), 0, 0, vectorized, PacketSize);
   }
 
   EIGEN_DEVICE_FUNC Scalar* data() const { return m_data; }
@@ -322,7 +329,7 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
 
     for (Index i = 0; i < n; ++i) {
       if(FFTDir == FFT_FORWARD) {
-        a[i] = data[i] * std::conj(pos_j_base_powered[i]);
+        a[i] = data[i] * numext::conj(pos_j_base_powered[i]);
       }
       else {
         a[i] = data[i] * pos_j_base_powered[i];
@@ -337,7 +344,7 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
         b[i] = pos_j_base_powered[i];
       }
       else {
-        b[i] = std::conj(pos_j_base_powered[i]);
+        b[i] = numext::conj(pos_j_base_powered[i]);
       }
     }
     for (Index i = n; i < m - n; ++i) {
@@ -348,7 +355,7 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
         b[i] = pos_j_base_powered[m-i];
       }
       else {
-        b[i] = std::conj(pos_j_base_powered[m-i]);
+        b[i] = numext::conj(pos_j_base_powered[m-i]);
       }
     }
 
@@ -372,7 +379,7 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
 
     for (Index i = 0; i < n; ++i) {
       if(FFTDir == FFT_FORWARD) {
-        data[i] = a[i] * std::conj(pos_j_base_powered[i]);
+        data[i] = a[i] * numext::conj(pos_j_base_powered[i]);
       }
       else {
         data[i] = a[i] * pos_j_base_powered[i];
@@ -564,7 +571,7 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
 
   // This will support a maximum FFT size of 2^32 for each dimension
   // m_sin_PI_div_n_LUT[i] = (-2) * std::sin(M_PI / std::pow(2,i)) ^ 2;
-  RealScalar m_sin_PI_div_n_LUT[32] = {
+  const RealScalar m_sin_PI_div_n_LUT[32] = {
     RealScalar(0.0),
     RealScalar(-2),
     RealScalar(-0.999999999999999),
@@ -600,7 +607,7 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
   };
 
   // m_minus_sin_2_PI_div_n_LUT[i] = -std::sin(2 * M_PI / std::pow(2,i));
-  RealScalar m_minus_sin_2_PI_div_n_LUT[32] = {
+  const RealScalar m_minus_sin_2_PI_div_n_LUT[32] = {
     RealScalar(0.0),
     RealScalar(0.0),
     RealScalar(-1.00000000000000e+00),
@@ -638,7 +645,7 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
 
 }  // end namespace Eigen
 
-#endif  // __CUDACC__
+#endif  // EIGEN_HAS_CONSTEXPR
 
 
 #endif  // EIGEN_CXX11_TENSOR_TENSOR_FFT_H

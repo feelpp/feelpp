@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
 
 #include <feel/feelmodels/fluid/fluidmecbase.hpp>
 
@@ -331,18 +331,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     {
         this->updateBCNeumannLinearPDE( F );
     }
-    //pressure fix condition
-    if (BuildCstPart && !this->markerPressureBC().empty() )
-    {
-        bilinearForm_PatternCoupled +=
-            integrate( _range=markedfaces(mesh,this->markerPressureBC() ),
-                       _expr= -trans(2*idv(this->densityViscosityModel()->fieldMu())*deft*N())*id(v),
-                       _geomap=this->geomap() );
-    }
-    if (BuildNonCstPart)
-    {
-        this->updateBCPressureLinearPDE( F );
-    }
+
     // others bc
     this->updateLinearPDEWeakBC(A,F,_BuildCstPart);
 
@@ -374,6 +363,25 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
                 on( _range=markedfaces(this->mesh(),marker),
                     _element=u, _rhs=F,
                     _expr=-idv(inletVel)*N() );
+        }
+
+        if ( this->hasMarkerPressureBC() )
+        {
+            size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+            form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,
+                   _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
+                   _colstart=rowStartInMatrix+startBlockIndexPressureLM1 ) +=
+                on( _range=boundaryfaces(M_meshLagrangeMultiplierPressureBC), _rhs=F,
+                    _element=*M_fieldLagrangeMultiplierPressureBC1, _expr=cst(0.));
+            if ( nDim == 3 )
+            {
+                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,
+                       _rowstart=rowStartInMatrix+startBlockIndexPressureLM2,
+                       _colstart=rowStartInMatrix+startBlockIndexPressureLM2 ) +=
+                    on( _range=boundaryfaces(M_meshLagrangeMultiplierPressureBC), _rhs=F,
+                        _element=*M_fieldLagrangeMultiplierPressureBC2, _expr=cst(0.));
+            }
         }
 
         double timeElapsedDirichletBC = this->timerTool("Solve").stop();

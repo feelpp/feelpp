@@ -30,43 +30,42 @@
 #ifndef __MatrixBlock_H
 #define __MatrixBlock_H 1
 
-#include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/backend.hpp>
+#include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelvf/block.hpp>
-
 
 namespace Feel
 {
 
+template <typename T>
+class Backend;
 
-template<typename T> class Backend;
-
-template <typename T=double>
-class BlocksBaseSparseMatrix : public vf::BlocksBase<boost::shared_ptr<MatrixSparse<T> > >
+template <typename T = double>
+class BlocksBaseSparseMatrix : public vf::BlocksBase<boost::shared_ptr<MatrixSparse<T>>>
 {
-public :
-    typedef vf::BlocksBase<boost::shared_ptr<MatrixSparse<T> > > super_type;
+  public:
+    typedef vf::BlocksBase<boost::shared_ptr<MatrixSparse<T>>> super_type;
     typedef typename super_type::index_type index_type;
     typedef BlocksBaseSparseMatrix<T> self_type;
-    typedef boost::shared_ptr<MatrixSparse<T> > matrix_sparse_ptrtype;
+    typedef boost::shared_ptr<MatrixSparse<T>> matrix_sparse_ptrtype;
 
-    BlocksBaseSparseMatrix( index_type nr=0,index_type nc=0 )
-        :
-        super_type( nr,nc ),
-        M_isClosed( false )
-    {}
+    BlocksBaseSparseMatrix( index_type nr = 0, index_type nc = 0 )
+        : super_type( nr, nc ),
+          M_isClosed( false )
+    {
+    }
 
-    BlocksBaseSparseMatrix( self_type const & b )
-        :
-        super_type( b ),
-        M_isClosed( b.M_isClosed )
-    {}
+    BlocksBaseSparseMatrix( self_type const& b )
+        : super_type( b ),
+          M_isClosed( b.M_isClosed )
+    {
+    }
 
-    BlocksBaseSparseMatrix( super_type const & b )
-        :
-        super_type( b ),
-        M_isClosed( false )
-    {}
+    BlocksBaseSparseMatrix( super_type const& b )
+        : super_type( b ),
+          M_isClosed( false )
+    {
+    }
 
     self_type
     operator<<( matrix_sparse_ptrtype const& m ) const
@@ -78,15 +77,14 @@ public :
 
     bool isClosed() const { return M_isClosed; }
 
-private :
+  private:
     bool M_isClosed;
-
 };
 
-template <int NR, int NC, typename T=double>
+template <int NR, int NC, typename T = double>
 class BlocksSparseMatrix : public BlocksBaseSparseMatrix<T>
 {
-public :
+  public:
     typedef typename BlocksBaseSparseMatrix<T>::index_type index_type;
     static const index_type NBLOCKROWS = NR;
     static const index_type NBLOCKCOLS = NC;
@@ -94,14 +92,10 @@ public :
     typedef BlocksBaseSparseMatrix<T> super_type;
 
     BlocksSparseMatrix()
-        :
-        super_type(NBLOCKROWS,NBLOCKCOLS)
-    {}
-
+        : super_type( NBLOCKROWS, NBLOCKCOLS )
+    {
+    }
 };
-
-
-
 
 /**
  * \class MatrixBlock
@@ -117,12 +111,12 @@ public :
  * @author Vincent Chabannes
  */
 
-template< typename T>
+template <typename T>
 class MatrixBlockBase : public MatrixSparse<T>
 {
     typedef MatrixSparse<T> super;
-public:
 
+  public:
     /** @name Typedefs
      */
     //@{
@@ -152,42 +146,40 @@ public:
      */
     //@{
 
-    MatrixBlockBase( vf::BlocksBase<matrix_ptrtype > const & blockSet,
+    MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const& blockSet,
                      backend_ptrtype backend,
-                     bool copy_values=true,
-                     bool diag_is_nonzero=true );
+                     bool copy_values = true,
+                     bool diag_is_nonzero = true );
 
-    MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & graph,
+    MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const& graph,
                      backend_ptrtype backend,
-                     bool diag_is_nonzero=true );
+                     bool diag_is_nonzero = true );
 
-    
-    MatrixBlockBase( vf::BlocksBase<matrix_ptrtype > const & blockSet,
-                     backend_type &backend,
-                     bool copy_values=true,
-                     bool diag_is_nonzero=true )
-        :
-        MatrixBlockBase( blockSet, backend.shared_from_this(), copy_values, diag_is_nonzero )
-    {}
+    MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const& blockSet,
+                     backend_type& backend,
+                     bool copy_values = true,
+                     bool diag_is_nonzero = true )
+        : MatrixBlockBase( blockSet, backend.shared_from_this(), copy_values, diag_is_nonzero )
+    {
+    }
 
-    MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & graph,
-                     backend_type &backend,
-                     bool diag_is_nonzero=true )
-        :
-        MatrixBlockBase( graph, backend.shared_from_this(), diag_is_nonzero )
-    {}
+    MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const& graph,
+                     backend_type& backend,
+                     bool diag_is_nonzero = true )
+        : MatrixBlockBase( graph, backend.shared_from_this(), diag_is_nonzero )
+    {
+    }
 
-    
-
-    MatrixBlockBase( MatrixBlockBase const & mb )
-        :
-        super( mb ),
-        M_backend(mb.M_backend),
-        M_mat( mb.M_mat )
-    {}
+    MatrixBlockBase( MatrixBlockBase const& mb )
+        : super( mb ),
+          M_backend( mb.M_backend ),
+          M_mat( mb.M_mat )
+    {
+    }
 
     ~MatrixBlockBase()
-    {}
+    {
+    }
 
     //@}
 
@@ -220,7 +212,6 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name  Methods
@@ -235,70 +226,73 @@ public:
      * \p noz is the number of on-processor
      * nonzeros per row (defaults to 30).
      */
-    void init ( const size_type m,
-                const size_type n,
-                const size_type m_l,
-                const size_type n_l,
-                const size_type nnz=30,
-                const size_type noz=10 );
+    void init( const size_type m,
+               const size_type n,
+               const size_type m_l,
+               const size_type n_l,
+               const size_type nnz = 30,
+               const size_type noz = 10 );
 
     /**
      * Initialize using sparsity structure computed by \p dof_map.
      */
-    void init ( const size_type m,
-                const size_type n,
-                const size_type m_l,
-                const size_type n_l,
-                graph_ptrtype const& graph );
-
+    void init( const size_type m,
+               const size_type n,
+               const size_type m_l,
+               const size_type n_l,
+               graph_ptrtype const& graph );
 
     /**
      * Release all memory and return to a state just like after having
      * called the default constructor.
      */
-    void clear ();
+    void clear();
 
     /**
      * Set all entries to 0.
      */
-    void zero ();
+    void zero();
 
     /**
      * Set entries between to 0.
      */
-    void zero ( size_type start1, size_type size1,
-                size_type start2, size_type size2 );
-
+    void zero( size_type start1, size_type size1,
+               size_type start2, size_type size2 );
 
     /**
      * Call the Sparse assemble routines.  sends necessary messages to
      * other processors
      */
-    void close () const;
+    void close() const;
 
     /**
      * @returns \p m, the row-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    size_type size1 () const;
+    size_type size1() const;
 
     /**
      * @returns \p n, the column-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    size_type size2 () const;
+    size_type size2() const;
 
+    //!
+    //! @return the number of non-zero entries
+    //!
+    std::size_t nnz() const { return M_mat->nnz(); }
+    
     /**
      * return row_start, the index of the first
      * matrix row stored on this processor
      */
-    size_type rowStart () const;
+    size_type rowStart() const;
 
     /**
      * return row_stop, the index of the last
      * matrix row (+1) stored on this processor
      */
-    size_type rowStop () const;
+    size_type rowStop() const;
 
     /**
      * Set the element \p (i,j) to \p value.
@@ -306,9 +300,9 @@ public:
      * not exist. Still, it is allowed to store
      * zero values in non-existent fields.
      */
-    void set ( const size_type i,
-               const size_type j,
-               const value_type& value );
+    void set( const size_type i,
+              const size_type j,
+              const value_type& value );
 
     /**
      * Add \p value to the element
@@ -318,9 +312,9 @@ public:
      * store zero values in
      * non-existent fields.
      */
-    void add ( const size_type i,
-               const size_type j,
-               const value_type& value );
+    void add( const size_type i,
+              const size_type j,
+              const value_type& value );
 
     /**
      * Add the full matrix to the
@@ -328,9 +322,9 @@ public:
      * for adding an element matrix
      * at assembly time
      */
-    void addMatrix ( const ublas::matrix<value_type> &dm,
-                     const std::vector<size_type> &rows,
-                     const std::vector<size_type> &cols );
+    void addMatrix( const ublas::matrix<value_type>& dm,
+                    const std::vector<size_type>& rows,
+                    const std::vector<size_type>& cols );
 
     /**
      * Add the full matrix to the
@@ -338,29 +332,28 @@ public:
      * for adding an element matrix
      * at assembly time
      */
-    void addMatrix ( int* rows, int nrows,
-                     int* cols, int ncols,
-                     value_type* data );
+    void addMatrix( int* rows, int nrows,
+                    int* cols, int ncols,
+                    value_type* data );
 
     /**
      * Same, but assumes the row and column maps are the same.
      * Thus the matrix \p dm must be square.
      */
-    void addMatrix ( const ublas::matrix<value_type> &dm,
-                     const std::vector<size_type> &dof_indices )
+    void addMatrix( const ublas::matrix<value_type>& dm,
+                    const std::vector<size_type>& dof_indices )
     {
-        this->addMatrix ( dm, dof_indices, dof_indices );
+        this->addMatrix( dm, dof_indices, dof_indices );
     }
-
 
     /**
      * Add a Sparse matrix \p _X, scaled with \p _a, to \p this,
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix ( const value_type, MatrixSparse<value_type> const& );
+    void addMatrix( const value_type, MatrixSparse<value_type> const& );
 
-    void scale ( const value_type );
+    void scale( const value_type );
 
     /**
      * Return the value of the entry \p (i,j).  This may be an
@@ -373,13 +366,13 @@ public:
      * entries that are not in the sparsity pattern of the matrix),
      * use the \p el function.
      */
-    value_type operator () ( const size_type i,
-                             const size_type j ) const;
+    value_type operator()( const size_type i,
+                           const size_type j ) const;
 
     /**
      *
      */
-    self_type & operator = ( MatrixSparse<value_type> const& M );
+    self_type& operator=( MatrixSparse<value_type> const& M );
 
     /**
      * Returns the diagonal of the block matrix
@@ -410,7 +403,7 @@ public:
      * This is the natural matrix norm that is compatible to the
      * l1-norm for vectors, i.e.  \f$|Mv|_1\leq |M|_1 |v|_1\f$.
      */
-    real_type l1Norm () const;
+    real_type l1Norm() const;
 
     /**
      * Return the linfty-norm of the matrix, that is
@@ -422,7 +415,7 @@ public:
      * compatible to the linfty-norm of vectors, i.e.
      * \f$|Mv|_\infty \leq |M|_\infty |v|_\infty\f$.
      */
-    real_type linftyNorm () const;
+    real_type linftyNorm() const;
 
     /**
      * see if Sparse matrix has been closed
@@ -435,23 +428,24 @@ public:
      * in a uniform style, regardless of matrix/solver
      * package being used.
      */
-    void print( std::ostream& os=std::cout ) const;
+    void print( std::ostream& os = std::cout ) const;
 
     /**
      * Same as the print method above, but allows you
      * to print to a stream in the standard syntax.
      */
     template <typename U>
-    friend std::ostream& operator << ( std::ostream& os, const MatrixSparse<U>& m );
+    friend std::ostream& operator<<( std::ostream& os, const MatrixSparse<U>& m );
 
     /**
      * Print the contents of the matrix to the screen
      * in a package-personalized style, if available.
      */
-    void printPersonal( std::ostream& /*os*/=std::cout ) const
+    void printPersonal( std::ostream& /*os*/ = std::cout ) const
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
-        FEELPP_ASSERT( 0 ).error( "invalid call" );
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call" );
     }
 
     /**
@@ -460,7 +454,7 @@ public:
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL" ) const;
+    void printMatlab( const std::string name = "NULL" ) const;
 
     /**
      * This function creates a matrix called "submatrix" which is defined
@@ -502,29 +496,23 @@ public:
      */
     void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal );
 
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type>> const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
 
     //@}
 
-
-
-protected:
-
-private:
-
+  protected:
+  private:
     backend_ptrtype M_backend;
 
-    boost::shared_ptr<MatrixSparse<value_type> > M_mat;
+    boost::shared_ptr<MatrixSparse<value_type>> M_mat;
 };
 
-
-template<int NR, int NC, typename T>
+template <int NR, int NC, typename T>
 class MatrixBlock : public MatrixBlockBase<T>
 {
     typedef MatrixBlockBase<T> super_type;
 
-public:
-
+  public:
     static const uint16_type NBLOCKROWS = NR;
     static const uint16_type NBLOCKCOLS = NC;
     static const uint16_type NBLOCKSIZE = NR * NC;
@@ -532,20 +520,20 @@ public:
     typedef typename super_type::value_type value_type;
     typedef typename super_type::matrix_ptrtype matrix_ptrtype;
     typedef typename super_type::backend_type backend_type;
-    typedef vf::Blocks<NBLOCKROWS,NBLOCKCOLS,matrix_ptrtype > blocks_type;
+    typedef vf::Blocks<NBLOCKROWS, NBLOCKCOLS, matrix_ptrtype> blocks_type;
     typedef vf::BlocksBase<matrix_ptrtype> blocksbase_type;
-    MatrixBlock(  blocksbase_type const & blockSet,
-                  backend_type &backend,
-                  bool copy_values=true,
-                  bool diag_is_nonzero=true )
-        :
-        super_type( blockSet,backend,copy_values,diag_is_nonzero )
-    {}
+    MatrixBlock( blocksbase_type const& blockSet,
+                 backend_type& backend,
+                 bool copy_values = true,
+                 bool diag_is_nonzero = true )
+        : super_type( blockSet, backend, copy_values, diag_is_nonzero )
+    {
+    }
 
-    MatrixBlock( MatrixBlock const & mb )
-        :
-        super_type( mb )
-    {}
+    MatrixBlock( MatrixBlock const& mb )
+        : super_type( mb )
+    {
+    }
 
     MatrixBlock operator=( MatrixBlock const& mb )
     {
@@ -553,7 +541,7 @@ public:
         return *this;
     }
 
-    MatrixBlock & operator = ( matrix_ptrtype const& M )
+    MatrixBlock& operator=( matrix_ptrtype const& M )
     {
         super_type::operator=( M );
         return *this;
@@ -561,10 +549,7 @@ public:
 
 }; // MatrixBlock
 
-
-
 } // Feel
-
 
 //#include <feel/feelalg/matrixblock.cpp>
 

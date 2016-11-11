@@ -3,7 +3,7 @@
  *  Interface to utility functions. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ typedef std::vector<int> exp_vector_t;
 static inline bool operator<(const exp_vector_t& v1, const exp_vector_t& v2)
 {
 	return std::lexicographical_compare(v1.rbegin(), v1.rend(),
-					    v2.rbegin(), v2.rend());
+	                                    v2.rbegin(), v2.rend());
 }
 
 static inline bool operator>(const exp_vector_t& v1, const exp_vector_t& v2)
@@ -49,14 +49,14 @@ static inline bool operator>(const exp_vector_t& v1, const exp_vector_t& v2)
 
 static inline bool zerop(const exp_vector_t& v)
 {
-	for (exp_vector_t::const_reverse_iterator i = v.rbegin(); i != v.rend(); ++i) {
-		if (*i != 0) 
+	for (auto & i : v) {
+		if (i != 0)
 			return false;
 	}
 	return true;
 }
 
-typedef std::vector<std::pair<exp_vector_t, ex> > ex_collect_t;
+typedef std::vector<std::pair<exp_vector_t, ex>> ex_collect_t;
 
 extern void
 collect_vargs(ex_collect_t& ec, const ex& e, const exvector& x);

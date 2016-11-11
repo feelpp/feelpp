@@ -3,7 +3,7 @@
  *  Functions to optimize the choice of variable for multivariate GCD. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -46,6 +46,11 @@ namespace {
  *  @see get_symbol_stats */
 struct sym_desc 
 {
+	/** Initialize symbol, leave other variables uninitialized */
+	sym_desc(const ex& s)
+	  : sym(s), deg_a(0), deg_b(0), ldeg_a(0), ldeg_b(0), max_deg(0), max_lcnops(0)
+	{ }
+
 	/** Reference to symbol */
 	ex sym;
 
@@ -67,7 +72,7 @@ struct sym_desc
 	/** Maximum number of terms of leading coefficient of symbol in both polynomials */
 	std::size_t max_lcnops;
 
-	/** Commparison operator for sorting */
+	/** Comparison operator for sorting */
 	bool operator<(const sym_desc &x) const
 	{
 		if (max_deg == x.max_deg)
@@ -83,15 +88,11 @@ typedef std::vector<sym_desc> sym_desc_vec;
 // Add symbol the sym_desc_vec (used internally by get_symbol_stats())
 static void add_symbol(const ex &s, sym_desc_vec &v)
 {
-	sym_desc_vec::const_iterator it = v.begin(), itend = v.end();
-	while (it != itend) {
-		if (it->sym.is_equal(s))  // If it's already in there, don't add it a second time
+	for (auto & it : v) {
+		if (it.sym.is_equal(s))  // If it's already in there, don't add it a second time
 			return;
-		++it;
 	}
-	sym_desc d;
-	d.sym = s;
-	v.push_back(d);
+	v.push_back(sym_desc(s));
 }
 
 // Collect all symbols of an expression (used internally by get_symbol_stats())
@@ -123,17 +124,15 @@ static void get_symbol_stats(const ex &a, const ex &b, sym_desc_vec &v)
 {
 	collect_symbols(a, v);
 	collect_symbols(b, v);
-	sym_desc_vec::iterator it = v.begin(), itend = v.end();
-	while (it != itend) {
-		int deg_a = a.degree(it->sym);
-		int deg_b = b.degree(it->sym);
-		it->deg_a = deg_a;
-		it->deg_b = deg_b;
-		it->max_deg = std::max(deg_a, deg_b);
-		it->max_lcnops = std::max(a.lcoeff(it->sym).nops(), b.lcoeff(it->sym).nops());
-		it->ldeg_a = a.ldegree(it->sym);
-		it->ldeg_b = b.ldegree(it->sym);
-		++it;
+	for (auto & it : v) {
+		int deg_a = a.degree(it.sym);
+		int deg_b = b.degree(it.sym);
+		it.deg_a = deg_a;
+		it.deg_b = deg_b;
+		it.max_deg = std::max(deg_a, deg_b);
+		it.max_lcnops = std::max(a.lcoeff(it.sym).nops(), b.lcoeff(it.sym).nops());
+		it.ldeg_a = a.ldegree(it.sym);
+		it.ldeg_b = b.ldegree(it.sym);
 	}
 	std::sort(v.begin(), v.end());
 }

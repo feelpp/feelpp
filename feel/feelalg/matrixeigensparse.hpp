@@ -95,6 +95,8 @@ public:
 
     MatrixEigenSparse( size_type r, size_type c, WorldComm const& worldComm=Environment::worldComm() );
 
+    MatrixEigenSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
+
     MatrixEigenSparse( MatrixEigenSparse const & m );
 
     ~MatrixEigenSparse();
@@ -147,7 +149,7 @@ public:
      */
     size_type nnz() const
     {
-        return M_mat.rows()*M_mat.cols();
+        return M_mat.nonZeros();
     }
 
     /**

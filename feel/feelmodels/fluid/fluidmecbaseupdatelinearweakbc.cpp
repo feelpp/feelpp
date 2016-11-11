@@ -150,6 +150,77 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
 
     //--------------------------------------------------------------------------------------------------//
 
+    if ( this->hasMarkerPressureBC() )
+    {
+        CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm1") != this->startBlockIndexFieldsInMatrix().end() )
+            << " start dof index for pressurelm1 is not present\n";
+
+        size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+        if (BuildCstPart)
+        {
+            if ( nDim == 2 )
+            {
+                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix,
+                       _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(id(u),N()))(0,0)*idt(M_fieldLagrangeMultiplierPressureBC1),
+                               _geomap=this->geomap() );
+
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
+                       _colstart=colStartInMatrix ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(idt(u),N()))(0,0)*id(M_fieldLagrangeMultiplierPressureBC1),
+                               _geomap=this->geomap() );
+            }
+            else if ( nDim == 3 )
+            {
+                auto alpha = 1./sqrt(1-Nz()*Nz());
+                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix,
+                       _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(id(u),N()))(0,2)*idt(M_fieldLagrangeMultiplierPressureBC1)*alpha,
+                               _geomap=this->geomap() );
+
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
+                       _colstart=colStartInMatrix ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(idt(u),N()))(0,2)*id(M_fieldLagrangeMultiplierPressureBC1)*alpha,
+                               _geomap=this->geomap() );
+
+                CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm2") != this->startBlockIndexFieldsInMatrix().end() )
+                    << " start dof index for pressurelm2 is not present\n";
+                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+
+                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix,
+                       _colstart=colStartInMatrix+startBlockIndexPressureLM2 ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr= -trans(cross(id(u),N()))(0,0)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Ny()
+                               +trans(cross(id(u),N()))(0,1)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
+                               _geomap=this->geomap() );
+
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                       _rowstart=rowStartInMatrix+startBlockIndexPressureLM2,
+                       _colstart=colStartInMatrix ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr= -trans(cross(idt(u),N()))(0,0)*alpha*id(M_fieldLagrangeMultiplierPressureBC2)*Ny()
+                               +trans(cross(idt(u),N()))(0,1)*alpha*id(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
+                               _geomap=this->geomap() );
+            }
+        }
+        if ( BuildNonCstPart )
+        {
+            this->updateBCPressureLinearPDE( F );
+        }
+
+    }
+
+    //--------------------------------------------------------------------------------------------------//
+
     if ( this->hasFluidOutletWindkessel() )
     {
         this->timerTool("Solve").start();
@@ -431,16 +502,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
                     if ( this->couplingFSI_RNG_matrix() )
                     {
                         auto tempVec = M_backend->newVector( F->mapPtr() );
-                        *tempVec = *this->couplingFSI_RNG_evalForm1();
+                        auto spaceEvalForm1 = this->couplingFSI_RNG_evalForm1()->functionSpace();
+                        spaceEvalForm1->element( tempVec,rowStartInVector ).on(_range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                                                               _expr= -idv(this->couplingFSI_RNG_evalForm1() ) );
                         tempVec->close();
-                        tempVec->scale(-1);
-                        tempVec->close();
-                        //tempVec->add( -1.,*this->couplingFSI_RNG_evalForm1() );
-                        //tempVec->close();
-                        //tempVec->addVector(*this->couplingFSI_RNG_evalForm1(), *A );
                         F->addVector( tempVec, this->couplingFSI_RNG_matrix() );
-                        //F->add( -1., tempVec );
-                        F->close();
                     }
                     else
                     {

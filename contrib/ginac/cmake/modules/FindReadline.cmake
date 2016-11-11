@@ -21,7 +21,7 @@ if (READLINE_INCLUDE_DIRS AND READLINE_LIBRARIES)
 	set(_save_req_includes ${CMAKE_REQUIRED_INCLUDES})
 	set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} ${READLINE_INCLUDE_DIR})
 	check_cxx_source_compiles("
-		#include <stdio.h>
+		#include <cstdio>
 		#include <readline/readline.h>
 		#if !defined(RL_VERSION_MAJOR) || !defined(RL_VERSION_MINOR)
 		#error Ancient version of readline
