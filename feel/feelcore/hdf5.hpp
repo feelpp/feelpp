@@ -112,9 +112,11 @@ public:
      * \param comm pointer to Epetra_Comm
      * \param existing boolean flag indicating whether the file exists already
      *        or not. If it exists, data is appended
+     * \param rdwr when opening an existing file, specifies whether to open it 
+     *        in read-only or read/write mode.
      */
     void openFile( const std::string& fileName, const comm_type& comm,
-                   const bool& existing );
+                   const bool& existing, const bool& rdwr = false );
 
     //! Create a new group
     /*!
@@ -149,12 +151,14 @@ public:
      * \param fileDataType data type that is to be used in the HDF5 container
      *        should be a standard HDF5 type, not a machine native type;
      *        consult HDF5 documentation for more information
-     * \param tableDimensions array of hsize_t of size 2 which holds the
+     * \param tableDimensions array of hsize_t of size nbDims which holds the
      *        dimensions of the table
+     * \param nbDims the number of dimensions of the array to store 
      */
     void createTable( const std::string& tableName,
                       hid_t& fileDataType,
-                      hsize_t tableDimensions[] );
+                      hsize_t tableDimensions[],
+                      unsigned int nbDims = 2 );
 
     //! Create a new table
     /*!
@@ -164,14 +168,16 @@ public:
      * \param fileDataType Data type that is to be used in the HDF5 container
      *        should be a standard HDF5 type, not a machine native type;
      *        Consult HDF5 documentation for more information.
-     * \param tableDimensions Array of hsize_t of size 2 which holds the
+     * \param tableDimensions Array of hsize_t of size nbDims which holds the
      *        dimensions of the table.
+     * \param nbDims the number of dimensions of the array to store 
      */
     void createTable( const std::string& GroupName,
                       const std::string& tableName,
                       hid_t& fileDataType,
                       hsize_t tableDimensions[],
-                      const bool& existing );
+                      const bool& existing,
+                      unsigned int nbDims = 2 );
 
     //! Open a new table
     /*!
@@ -187,18 +193,20 @@ public:
      * \param tableName a string containing the table name
      * \param memDataType the type (described as an HDF5 machine native type)
      *        of the data in the buffer that is to be written
-     * \param currentCount an array of hsize_t of size two describing the shape
+     * \param currentCount an array of hsize_t of size nbDims describing the shape
      *        of the block to be written (see HDF5 documentation)
-     * \param currentOffset an array of hsize_t of size two describing the
+     * \param currentOffset an array of hsize_t of size nbDims describing the
      *        stride of the block to be written (see HDF5 documentation)
      * \param buffer pointer to a memory region containing the data to be
      *        written
+     * \param nbDims the number of dimensions of the array to store 
      */
     void write( const std::string& tableName,
                 hid_t& memDataType,
                 hsize_t currentCount[],
                 hsize_t currentOffset[],
-                void* buffer );
+                void* buffer,
+                unsigned int nbDims = 2 );
 
     //! Read
     /*!
@@ -211,12 +219,14 @@ public:
      *        stride of the block to be read (see HDF5 documentation)
      * \param buffer pointer to a memory region that represents the destination
      *        of the read operation
+     * \param nbDims the number of dimensions of the array to store 
      */
     void read( const std::string& tableName,
                hid_t& memDataType,
                hsize_t currentCount[],
                hsize_t currentOffset[],
-               void* buffer );
+               void* buffer,
+               int nbDims = 2 );
 
     //! Close an open group.
     /*

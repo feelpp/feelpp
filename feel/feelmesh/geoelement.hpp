@@ -1298,8 +1298,6 @@ public:
     edge_type const* facePtr( uint16_type i ) const
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
-        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
-
         return M_edges[i];
     }
 
@@ -1784,5 +1782,18 @@ const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::numLocalEdges;
 template <uint16_type Dim, typename GEOSHAPE, typename T>
 const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::nDim;
 
+template<typename EltType>
+bool
+hasFaceWithMarker( EltType const& e, boost::any const& flag )
+{
+    flag_type theflag = e.mesh()->markerId( flag );
+    for( auto const& f : e.faces() )
+    {
+        if ( f.marker().value() == theflag )
+            return true;
+    }
+    return false;
+}
+    
 } // Feel
 #endif

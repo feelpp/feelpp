@@ -34,3 +34,7 @@ if(GMSH_ADAPTMESH_INCLUDE_DIR)
 else()
   message(STATUS "doc_LShape: compilation cancelled. Some headers (Openfile.h Field.h) needed for meshadaptation are missing.")
 endif()
+
+feelpp_add_application(meshadaptfromparamcurve SRCS meshadaptfromparamcurve.cpp CFG meshadaptfromls.cfg )
+feelpp_add_application(meshadaptfromsimplels_d2 SRCS meshadaptfromsimplels.cpp DEFS FEELPP_DIM=2 CFG meshadaptfromls.cfg )
+feelpp_add_application(meshadaptfromsimplels_d3 SRCS meshadaptfromsimplels.cpp DEFS FEELPP_DIM=3 CFG meshadaptfromls.cfg )

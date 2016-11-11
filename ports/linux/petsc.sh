@@ -20,5 +20,6 @@ export PETSC_DIR=`pwd`
     --download-ptscotch \
     --download-ml \
     --download-hypre \
+    --download-fftw \
     --download-suitesparse\
     --download-superlu

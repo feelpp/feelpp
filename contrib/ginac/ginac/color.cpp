@@ -3,7 +3,7 @@
  *  Implementation of GiNaC's color (SU(3) Lie algebra) objects. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -86,11 +86,11 @@ color::color(const ex & b, const ex & i1, unsigned char rl) : inherited(b, i1), 
 {
 }
 
-color::color(unsigned char rl, const exvector & v, bool discardable) : inherited(not_symmetric(), v, discardable), representation_label(rl)
+color::color(unsigned char rl, const exvector & v) : inherited(not_symmetric(), v), representation_label(rl)
 {
 }
 
-color::color(unsigned char rl, boost::shared_ptr<exvector> vp) : inherited(not_symmetric(), vp), representation_label(rl)
+color::color(unsigned char rl, exvector && v) : inherited(not_symmetric(), std::move(v)), representation_label(rl)
 {
 }
 
@@ -166,11 +166,9 @@ ex color::eval_ncmul(const exvector & v) const
 	s.reserve(v.size());
 
 	// Remove superfluous ONEs
-	exvector::const_iterator it = v.begin(), itend = v.end();
-	while (it != itend) {
-		if (!is_a<su3one>(it->op(0)))
-			s.push_back(*it);
-		it++;
+	for (auto & it : v) {
+		if (!is_a<su3one>(it.op(0)))
+			s.push_back(it);
 	}
 
 	if (s.empty())
@@ -184,9 +182,9 @@ ex color::thiscontainer(const exvector & v) const
 	return color(representation_label, v);
 }
 
-ex color::thiscontainer(boost::shared_ptr<exvector> vp) const
+ex color::thiscontainer(exvector && v) const
 {
-	return color(representation_label, vp);
+	return color(representation_label, std::move(v));
 }
 
 /** Given a vector iv3 of three indices and a vector iv2 of two indices that
@@ -195,7 +193,7 @@ ex color::thiscontainer(boost::shared_ptr<exvector> vp) const
  *
  *  @param iv3 Vector of 3 indices
  *  @param iv2 Vector of 2 indices, must be a subset of iv3
- *  @param sig Returs sign introduced by index permutation
+ *  @param sig Returns sign introduced by index permutation
  *  @return the free index (the one that is in iv3 but not in iv2) */
 static ex permute_free_index_to_front(const exvector & iv3, const exvector & iv2, int & sig)
 {
@@ -209,7 +207,7 @@ static ex permute_free_index_to_front(const exvector & iv3, const exvector & iv2
 		sig = P; \
 		return iv3[A]; \
 	}
-
+	
 	TEST_PERMUTATION(0,1,2,  1);
 	TEST_PERMUTATION(0,2,1, -1);
 	TEST_PERMUTATION(1,0,2, -1);
@@ -314,7 +312,7 @@ bool su3t::contract_with(exvector::iterator self, exvector::iterator other, exve
 
 	if (is_exactly_a<su3t>(other->op(0))) {
 
-		// Contraction only makes sense if the represenation labels are equal
+		// Contraction only makes sense if the representation labels are equal
 		GINAC_ASSERT(is_a<color>(*other));
 		if (ex_to<color>(*other).get_representation_label() != rl)
 			return false;
@@ -334,7 +332,7 @@ bool su3t::contract_with(exvector::iterator self, exvector::iterator other, exve
 
 		// T.a S T.a = 1/2 Tr(S) - 1/6 S
 		} else {
-			exvector::iterator it = self + 1;
+			auto it = self + 1;
 			while (it != other) {
 				if (!is_a<color>(*it)) {
 					return false;
@@ -402,9 +400,7 @@ bool su3d::contract_with(exvector::iterator self, exvector::iterator other, exve
 		 && ex_to<indexed>(*self).has_dummy_index_for(other[1].op(1))) {
 
 			exvector self_indices = ex_to<indexed>(*self).get_indices();
-			exvector dummy_indices;
-			dummy_indices.push_back(other[0].op(1));
-			dummy_indices.push_back(other[1].op(1));
+			exvector dummy_indices = {other[0].op(1), other[1].op(1)};
 			int sig;
 			ex a = permute_free_index_to_front(self_indices, dummy_indices, sig);
 			*self = numeric(5, 6);
@@ -455,9 +451,7 @@ bool su3f::contract_with(exvector::iterator self, exvector::iterator other, exve
 		 && ex_to<indexed>(*self).has_dummy_index_for(other[1].op(1))) {
 
 			exvector self_indices = ex_to<indexed>(*self).get_indices();
-			exvector dummy_indices;
-			dummy_indices.push_back(other[0].op(1));
-			dummy_indices.push_back(other[1].op(1));
+			exvector dummy_indices = {other[0].op(1), other[1].op(1)};
 			int sig;
 			ex a = permute_free_index_to_front(self_indices, dummy_indices, sig);
 			*self = numeric(3, 2) * sig * I;
@@ -476,13 +470,13 @@ bool su3f::contract_with(exvector::iterator self, exvector::iterator other, exve
 
 ex color_ONE(unsigned char rl)
 {
-	static ex ONE = (new su3one)->setflag(status_flags::dynallocated);
+	static ex ONE = dynallocate<su3one>();
 	return color(ONE, rl);
 }
 
 ex color_T(const ex & a, unsigned char rl)
 {
-	static ex t = (new su3t)->setflag(status_flags::dynallocated);
+	static ex t = dynallocate<su3t>();
 
 	if (!is_a<idx>(a))
 		throw(std::invalid_argument("indices of color_T must be of type idx"));
@@ -494,7 +488,7 @@ ex color_T(const ex & a, unsigned char rl)
 
 ex color_f(const ex & a, const ex & b, const ex & c)
 {
-	static ex f = (new su3f)->setflag(status_flags::dynallocated);
+	static ex f = dynallocate<su3f>();
 
 	if (!is_a<idx>(a) || !is_a<idx>(b) || !is_a<idx>(c))
 		throw(std::invalid_argument("indices of color_f must be of type idx"));
@@ -506,7 +500,7 @@ ex color_f(const ex & a, const ex & b, const ex & c)
 
 ex color_d(const ex & a, const ex & b, const ex & c)
 {
-	static ex d = (new su3d)->setflag(status_flags::dynallocated);
+	static ex d = dynallocate<su3d>();
 
 	if (!is_a<idx>(a) || !is_a<idx>(b) || !is_a<idx>(c))
 		throw(std::invalid_argument("indices of color_d must be of type idx"));
@@ -597,7 +591,7 @@ ex color_trace(const ex & e, const std::set<unsigned char> & rls)
 			//   + 1/2 h_a(n-1)_an_k Tr T_a1 .. T_a(n-2) T_k
 			const ex &last_index = e.op(num - 1).op(1);
 			const ex &next_to_last_index = e.op(num - 2).op(1);
-			idx summation_index((new symbol)->setflag(status_flags::dynallocated), 8);
+			idx summation_index(dynallocate<symbol>(), 8);
 
 			exvector v1;
 			v1.reserve(num - 2);
@@ -625,9 +619,9 @@ ex color_trace(const ex & e, const lst & rll)
 {
 	// Convert list to set
 	std::set<unsigned char> rls;
-	for (lst::const_iterator i = rll.begin(); i != rll.end(); ++i) {
-		if (i->info(info_flags::nonnegint))
-			rls.insert(ex_to<numeric>(*i).to_int());
+	for (auto & it : rll) {
+		if (it.info(info_flags::nonnegint))
+			rls.insert(ex_to<numeric>(it).to_int());
 	}
 
 	return color_trace(e, rls);

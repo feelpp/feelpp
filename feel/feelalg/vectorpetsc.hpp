@@ -945,10 +945,18 @@ public:
 
     VectorPetscMPIRange( datamap_ptrtype const& dm );
 
+    VectorPetscMPIRange( Vec v, datamap_ptrtype const& dm, bool duplicate = false );
+
+    VectorPetscMPIRange( Vec v, Vec vGhost, datamap_ptrtype const& dm, bool duplicate = false );
+
+    VectorPetscMPIRange( Vec v, Vec vGhost, VecScatter vecScatterGhost, datamap_ptrtype const& dm );
+
     template<typename Storage>
     VectorPetscMPIRange( VectorUblas<T,Storage> const& v )
         :
-        super_type( v.mapPtr(), false )
+        super_type( v.mapPtr(), false ),
+        M_destroyVecGhostOnExit( true ),
+        M_destroyVecScatterGhostOnExit( true )
         {
             const PetscScalar* arrayActive = ( this->map().nLocalDofWithoutGhost() > 0 )? std::addressof( *v.begin() ) : NULL;
             const PetscScalar* arrayGhost = ( this->map().nLocalGhosts() > 0 )? std::addressof( *v.beginGhost() ) : NULL;
@@ -1036,12 +1044,25 @@ public:
         return M_vecGhost;
     }
 
+    VecScatter vecScatterGhost() const
+    {
+        FEELPP_ASSERT ( M_vecScatterGhost != 0 ).error( "invalid petsc vector" );
+        return M_vecScatterGhost;
+    }
+    VecScatter& vecScatterGhost()
+    {
+        FEELPP_ASSERT ( M_vecScatterGhost != 0 ).error( "invalid vector scatter" );
+        return M_vecScatterGhost;
+    }
+
 private :
     void initRangeView( const PetscScalar arrayActive[], const PetscScalar arrayGhost[] );
-
+    void initVecScatterGhost();
 private :
     Vec M_vecGhost;
     VecScatter M_vecScatterGhost;
+    bool M_destroyVecGhostOnExit, M_destroyVecScatterGhostOnExit;
+
 
 };
 /**

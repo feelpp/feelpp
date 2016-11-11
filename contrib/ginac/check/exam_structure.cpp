@@ -3,7 +3,7 @@
  *  Small test for the structure<> template. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@ template <> void sprod::print(const print_context & c, unsigned level) const
 	c.s << "<" << sp.left << "|" << sp.right << ">";
 }
 
-template <> ex sprod::eval(int level) const
+template <> ex sprod::eval() const
 {
 	// symmetric scalar product
 	const sprod_s & sp = get_struct();

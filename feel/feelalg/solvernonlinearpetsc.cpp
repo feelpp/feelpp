@@ -110,48 +110,47 @@ extern "C"
     {
         Feel::SolverNonLinearPetsc<double>* solver =
             static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
+        if ( !solver ) return 1;
 
+        if ( solver->worldComm().isMasterRank() )
+            std::cout << " " << its  << " " << solver->prefix() << " SNES Function norm " << std::scientific << fnorm << "\n";
 
-        //int ierr=0;
-        //if (its > 0)
-        std::ostringstream ostr;
-
-        ostr << "[SolverNonLinearPetsc] NL step " << its
-             << std::scientific
-             << ", |residual|_2 = " << fnorm;
-        //LOG(INFO) << ostr.str() << "\n";
-        //std::cout << ostr.str() << "\n";
-#if 1
-        KSP            ksp;         /* linear solver context */
-        SNESGetKSP( snes,&ksp );
-        PetscInt lits;
-        int ierr = KSPGetIterationNumber ( ksp, &lits );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
-
-        PetscReal final_resid;
-        // Get the norm of the final residual to return to the user.
-        ierr = KSPGetResidualNorm ( ksp, &final_resid );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
-        ///LOG(INFO) << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
-        //std::cout << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
-#endif
-        KSPConvergedReason reason;
-        KSPGetConvergedReason( ksp,&reason );
-        if ( reason> 0 )
+        if ( its>0 && solver->showKSPConvergedReason() )
         {
-            if ( solver->showKSPConvergedReason() && solver->worldComm().globalRank() == solver->worldComm().masterRank() && its>0 )
-                std::cout<< "  Linear solve converged due to " << Feel::PetscConvertKSPReasonToString(reason)
-                         << " iterations " << lits << std::endl;
-        }
-        else
-        {
-            if ( solver->showKSPConvergedReason() && solver->worldComm().globalRank() == solver->worldComm().masterRank() && its>0 )
-                std::cout<< "  Linear solve did not converge due to " << Feel::PetscConvertKSPReasonToString(reason)
-                         << " iterations " << lits << std::endl;
+            KSP            ksp;         /* linear solver context */
+            SNESGetKSP( snes,&ksp );
+            PetscInt lits;
+            int ierr = KSPGetIterationNumber ( ksp, &lits );
+            CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+            PetscReal final_resid;
+            // Get the norm of the final residual to return to the user.
+            ierr = KSPGetResidualNorm ( ksp, &final_resid );
+            CHKERRABORT( PETSC_COMM_WORLD,ierr );
+            ///LOG(INFO) << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
+            //std::cout << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
+
+            KSPConvergedReason reason;
+            KSPGetConvergedReason( ksp,&reason );
+            if ( solver->worldComm().isMasterRank() )
+            {
+                if ( reason> 0 )
+                    std::cout<< "  Linear solve converged due to " << Feel::PetscConvertKSPReasonToString(reason)
+                             << " iterations " << lits << std::endl;
+                else
+                    std::cout<< "  Linear solve did not converge due to " << Feel::PetscConvertKSPReasonToString(reason)
+                             << " iterations " << lits << std::endl;
+            }
         }
 
-
-        //return ierr;
+        return 0;
+    }
+    PetscErrorCode __feel_petsc_snes_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm,void* ctx)
+    {
+        Feel::SolverNonLinearPetsc<double> *solver  = static_cast<Feel::SolverNonLinearPetsc<double>*>( ctx );
+        if ( !solver ) return 1;
+        if ( solver->worldComm().isMasterRank() )
+            std::cout << "   " << it  << " " << solver->prefix() << " KSP Residual norm " << std::scientific << rnorm << "\n";
         return 0;
     }
 
@@ -558,16 +557,6 @@ void SolverNonLinearPetsc<T>::init ()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 #endif
-#if PETSC_VERSION_LESS_THAN(2,3,3)
-        ierr = SNESSetMonitor ( M_snes, __feel_petsc_snes_monitor,
-                                this, PETSC_NULL );
-#else
-        // API name change in PETSc 2.3.3
-        ierr = SNESMonitorSet ( M_snes, __feel_petsc_snes_monitor,
-                                this, PETSC_NULL );
-#endif
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-
 
         ierr = SNESSetFromOptions( M_snes );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
@@ -764,13 +753,15 @@ void SolverNonLinearPetsc<T>::init ()
 
         if ( this->showSNESMonitor() )
         {
-            ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_NULL,PETSC_NULL );
+            ierr = SNESMonitorSet( M_snes,__feel_petsc_snes_monitor,(void*) this,PETSC_NULL );
+            //ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_NULL,PETSC_NULL );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
         if ( this->showKSPMonitor() )
         {
-            ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+            ierr = KSPMonitorSet( M_ksp,__feel_petsc_snes_ksp_monitor,(void*) this,PETSC_NULL );
+            //ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
