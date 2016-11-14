@@ -3,7 +3,7 @@
  *  Time the different GCD algorithms. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1616,7 +1616,7 @@ static const std::string r2_srep_3("\
 class sym_finder : public visitor, public symbol::visitor
 {
 protected:
-	inline void visit(const symbol& s)
+	inline void visit(const symbol& s) override
 	{
 		found.insert(s);
 	}
@@ -1883,7 +1883,7 @@ run_with_random_intputs(const unsigned d1, const unsigned d2)
 
 int main(int argc, char** argv)
 {
-	std::cout << "timing univarite GCD" << std::endl << std::flush;
+	std::cout << "timing univariate GCD" << std::endl << std::flush;
 	run_with_random_intputs(100, 50);
 	// run PRS gcd tests, both with upoly and ex
 	run_test(p1_srep, p2_srep, true, true);

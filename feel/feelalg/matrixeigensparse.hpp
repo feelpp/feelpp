@@ -149,7 +149,7 @@ public:
      */
     size_type nnz() const
     {
-        return M_mat.rows()*M_mat.cols();
+        return M_mat.nonZeros();
     }
 
     /**
