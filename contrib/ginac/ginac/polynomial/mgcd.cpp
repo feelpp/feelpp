@@ -3,7 +3,7 @@
  *  Chinese remainder algorithm. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ static cln::cl_I extract_integer_content(ex& Apr, const ex& A)
 		}
 	} else {
 		Apr = (A/icont_).expand();
-		// A is a polynomail over rationals, so GCD is defined
+		// A is a polynomial over rationals, so GCD is defined
 		// up to arbitrary rational number.
 		return n1;
 	}
@@ -69,7 +69,6 @@ ex chinrem_gcd(const ex& A_, const ex& B_, const exvector& vars)
 	const cln::cl_I b_lc = integer_lcoeff(B, vars);
 	const cln::cl_I g_lc = cln::gcd(a_lc, b_lc);
 
-	const ex& x(vars.back());
 	exp_vector_t n = std::min(degree_vector(A, vars), degree_vector(B, vars));
 	const int nTot = std::accumulate(n.begin(), n.end(), 0);
 	const cln::cl_I A_max_coeff = to_cl_I(A.max_coefficient()); 

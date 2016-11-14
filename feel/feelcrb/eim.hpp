@@ -1799,7 +1799,8 @@ public:
                  expr_type& expr,
                  sampling_ptrtype sampling,
                  std::string const& name,
-                 std::string const& dbfilename )
+                 std::string const& dbfilename,
+                 std::string const& dbdirectory)
         :
         super( space, model->parameterSpace(), sampling, model->modelName(), name ),
         M_model( model ),
@@ -1846,11 +1847,28 @@ public:
             }
             else
             {
-                auto dbfilenamePath = fs::absolute( fs::path( dbfilename ) );
-                if ( !dbfilenamePath.is_absolute() )
-                    dbfilenamePath = fs::absolute( dbfilenamePath );
+                fs::path dbfilenamePath = dbfilename;
                 this->setDBFilename( dbfilenamePath.filename().string() );
-                this->setDBDirectory( dbfilenamePath.parent_path().string() );
+                if ( dbfilenamePath.is_relative() )
+                {
+                    std::string mysubDir;
+                    if ( !dbfilenamePath.parent_path().empty() )
+                        mysubDir = dbfilenamePath.parent_path().string();
+
+                    fs::path dbdirectoryPath = dbdirectory;
+                    if ( !dbdirectoryPath.is_absolute() )
+                        dbdirectoryPath = fs::absolute( dbdirectoryPath );
+                    this->setDBDirectory( dbdirectoryPath.string() );
+
+                    dbfilenamePath = (dbdirectoryPath/dbfilenamePath).string();
+
+                    if ( !mysubDir.empty() )
+                        this->addDBSubDirectory( mysubDir );
+                }
+                else
+                {
+                    this->setDBDirectory( dbfilenamePath.parent_path().string() );
+                }
             }
 
             // reload maybe a database
@@ -3342,6 +3360,7 @@ BOOST_PARAMETER_FUNCTION(
       ( sampling, *, model->parameterSpace()->sampling() )
       ( verbose, (int), 0 )
       ( filename, *( boost::is_convertible<mpl::_,std::string> ), "" )
+      ( directory, *( boost::is_convertible<mpl::_,std::string> ), "" )
         ) // optionnal
 )
 {
@@ -3351,7 +3370,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename Feel::detail::compute_eim_return<Args>::type eim_type;
     typedef typename Feel::detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
     // return boost::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename );
-    auto eimFunc = boost::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename );
+    auto eimFunc = boost::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename, directory );
     if ( eim_type::model_use_nosolve )
         eimFunc->attachModel( model );
     return eimFunc;

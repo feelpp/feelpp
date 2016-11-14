@@ -608,13 +608,15 @@ public :
         for ( auto const& eimObject : this->scalarContinuousEim() )
         {
             boost::property_tree::ptree ptreeEimObject;
-            ptreeEimObject.add("database-filename", (fs::path(eimObject->dbDirectory())/fs::path(eimObject->dbFilename())).string() );
+            // ptreeEimObject.add("database-filename", (fs::path(eimObject->dbDirectory())/fs::path(eimObject->dbFilename())).string() );
+            ptreeEimObject.add("database-filename", eimObject->dbRelativePath() );
             ptreeEim.add_child( eimObject->name(), ptreeEimObject );
         }
         for ( auto const& eimObject : this->scalarDiscontinuousEim() )
         {
             boost::property_tree::ptree ptreeEimObject;
-            ptreeEimObject.add("database-filename", (fs::path(eimObject->dbDirectory())/fs::path(eimObject->dbFilename())).string() );
+            // ptreeEimObject.add("database-filename", (fs::path(eimObject->dbDirectory())/fs::path(eimObject->dbFilename())).string() );
+            ptreeEimObject.add("database-filename", eimObject->dbRelativePath() );
             ptreeEim.add_child( eimObject->name(), ptreeEimObject );
         }
         ptree.add_child( "eim", ptreeEim );
@@ -661,11 +663,14 @@ public :
                 std::string const& key = ptreeModelFilePair.first;
                 auto const& ptreeModelFile = ptreeModelFilePair.second;
                 std::string filenameAdded  = ptreeModelFile.template get<std::string>( "filename" );
-                if ( !dbDir.empty() )
-                    filenameAdded = (fs::path(dbDir)/fs::path(filenameAdded).filename()).string();
+                fs::path filenameAddedPath = fs::path( filenameAdded );
+                if ( !dbDir.empty() && filenameAddedPath.is_relative() )
+                    filenameAddedPath = fs::path(dbDir) / filenameAddedPath;
 
-                std::cout << "additional-model-files : key=" << key << " filename=" << filenameAdded << "\n";
-                this->addModelFile( key, filenameAdded );
+                // filenameAdded = (fs::path(dbDir)/fs::path(filenameAdded).filename()).string();
+
+                // std::cout << "additional-model-files : key=" << key << " filename=" << filenameAddedPath.string() << "\n";
+                this->addModelFile( key, filenameAddedPath.string()/*filenameAdded*/ );
             }
 
         this->setupSpecificityModel( ptree, dbDir );

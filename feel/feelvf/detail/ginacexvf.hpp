@@ -108,7 +108,7 @@ public:
             M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::current_path()/filenameExpanded).string();
 
             DVLOG(2) << "Ginac constructor with expression_type \n";
-            GiNaC::lst exprs(fun);
+            GiNaC::lst exprs({fun});
             GiNaC::lst syml;
             std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
 

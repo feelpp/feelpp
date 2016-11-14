@@ -194,7 +194,6 @@ struct Assignment<DstXprType, CwiseBinaryOp<internal::scalar_product_op<ScalarBi
 //----------------------------------------
 // Catch "Dense ?= xpr + Product<>" expression to save one temporary
 // FIXME we could probably enable these rules for any product, i.e., not only Dense and DefaultProduct
-// TODO enable it for "Dense ?= xpr - Product<>" as well.
 
 template<typename OtherXpr, typename Lhs, typename Rhs>
 struct evaluator_assume_aliasing<CwiseBinaryOp<internal::scalar_sum_op<typename OtherXpr::Scalar,typename Product<Lhs,Rhs,DefaultProduct>::Scalar>, const OtherXpr,
@@ -203,10 +202,9 @@ struct evaluator_assume_aliasing<CwiseBinaryOp<internal::scalar_sum_op<typename 
 };
 
 template<typename DstXprType, typename OtherXpr, typename ProductType, typename Func1, typename Func2>
-struct assignment_from_xpr_plus_product
+struct assignment_from_xpr_op_product
 {
-  typedef CwiseBinaryOp<internal::scalar_sum_op<typename OtherXpr::Scalar,typename ProductType::Scalar>, const OtherXpr, const ProductType> SrcXprType;
-  template<typename InitialFunc>
+  template<typename SrcXprType, typename InitialFunc>
   static EIGEN_STRONG_INLINE
   void run(DstXprType &dst, const SrcXprType &src, const InitialFunc& /*func*/)
   {
@@ -215,21 +213,21 @@ struct assignment_from_xpr_plus_product
   }
 };
 
-template< typename DstXprType, typename OtherXpr, typename Lhs, typename Rhs, typename DstScalar, typename SrcScalar, typename OtherScalar,typename ProdScalar>
-struct Assignment<DstXprType, CwiseBinaryOp<internal::scalar_sum_op<OtherScalar,ProdScalar>, const OtherXpr,
-                                           const Product<Lhs,Rhs,DefaultProduct> >, internal::assign_op<DstScalar,SrcScalar>, Dense2Dense>
-  : assignment_from_xpr_plus_product<DstXprType, OtherXpr, Product<Lhs,Rhs,DefaultProduct>, internal::assign_op<DstScalar,OtherScalar>, internal::add_assign_op<DstScalar,ProdScalar> >
-{};
-template< typename DstXprType, typename OtherXpr, typename Lhs, typename Rhs, typename DstScalar, typename SrcScalar, typename OtherScalar,typename ProdScalar>
-struct Assignment<DstXprType, CwiseBinaryOp<internal::scalar_sum_op<OtherScalar,ProdScalar>, const OtherXpr,
-                                           const Product<Lhs,Rhs,DefaultProduct> >, internal::add_assign_op<DstScalar,SrcScalar>, Dense2Dense>
-  : assignment_from_xpr_plus_product<DstXprType, OtherXpr, Product<Lhs,Rhs,DefaultProduct>, internal::add_assign_op<DstScalar,OtherScalar>, internal::add_assign_op<DstScalar,ProdScalar> >
-{};
-template< typename DstXprType, typename OtherXpr, typename Lhs, typename Rhs, typename DstScalar, typename SrcScalar, typename OtherScalar,typename ProdScalar>
-struct Assignment<DstXprType, CwiseBinaryOp<internal::scalar_sum_op<OtherScalar,ProdScalar>, const OtherXpr,
-                                           const Product<Lhs,Rhs,DefaultProduct> >, internal::sub_assign_op<DstScalar,SrcScalar>, Dense2Dense>
-  : assignment_from_xpr_plus_product<DstXprType, OtherXpr, Product<Lhs,Rhs,DefaultProduct>, internal::sub_assign_op<DstScalar,OtherScalar>, internal::sub_assign_op<DstScalar,ProdScalar> >
-{};
+#define EIGEN_CATCH_ASSIGN_XPR_OP_PRODUCT(ASSIGN_OP,BINOP,ASSIGN_OP2) \
+  template< typename DstXprType, typename OtherXpr, typename Lhs, typename Rhs, typename DstScalar, typename SrcScalar, typename OtherScalar,typename ProdScalar> \
+  struct Assignment<DstXprType, CwiseBinaryOp<internal::BINOP<OtherScalar,ProdScalar>, const OtherXpr, \
+                                            const Product<Lhs,Rhs,DefaultProduct> >, internal::ASSIGN_OP<DstScalar,SrcScalar>, Dense2Dense> \
+    : assignment_from_xpr_op_product<DstXprType, OtherXpr, Product<Lhs,Rhs,DefaultProduct>, internal::ASSIGN_OP<DstScalar,OtherScalar>, internal::ASSIGN_OP2<DstScalar,ProdScalar> > \
+  {}
+
+EIGEN_CATCH_ASSIGN_XPR_OP_PRODUCT(assign_op,    scalar_sum_op,add_assign_op);
+EIGEN_CATCH_ASSIGN_XPR_OP_PRODUCT(add_assign_op,scalar_sum_op,add_assign_op);
+EIGEN_CATCH_ASSIGN_XPR_OP_PRODUCT(sub_assign_op,scalar_sum_op,sub_assign_op);
+
+EIGEN_CATCH_ASSIGN_XPR_OP_PRODUCT(assign_op,    scalar_difference_op,sub_assign_op);
+EIGEN_CATCH_ASSIGN_XPR_OP_PRODUCT(add_assign_op,scalar_difference_op,sub_assign_op);
+EIGEN_CATCH_ASSIGN_XPR_OP_PRODUCT(sub_assign_op,scalar_difference_op,add_assign_op);
+
 //----------------------------------------
 
 template<typename Lhs, typename Rhs>
@@ -267,7 +265,7 @@ void outer_product_selector_run(Dst& dst, const Lhs &lhs, const Rhs &rhs, const 
   // FIXME not very good if rhs is real and lhs complex while alpha is real too
   const Index cols = dst.cols();
   for (Index j=0; j<cols; ++j)
-    func(dst.col(j), rhsEval.coeff(0,j) * actual_lhs);
+    func(dst.col(j), rhsEval.coeff(Index(0),j) * actual_lhs);
 }
 
 // Row major result
@@ -280,7 +278,7 @@ void outer_product_selector_run(Dst& dst, const Lhs &lhs, const Rhs &rhs, const 
   // FIXME not very good if lhs is real and rhs complex while alpha is real too
   const Index rows = dst.rows();
   for (Index i=0; i<rows; ++i)
-    func(dst.row(i), lhsEval.coeff(i,0) * actual_rhs);
+    func(dst.row(i), lhsEval.coeff(i,Index(0)) * actual_rhs);
 }
 
 template<typename Lhs, typename Rhs>
@@ -439,6 +437,18 @@ struct product_evaluator<Product<Lhs, Rhs, LazyProduct>, ProductTag, DenseShape,
     EIGEN_INTERNAL_CHECK_COST_VALUE(NumTraits<Scalar>::MulCost);
     EIGEN_INTERNAL_CHECK_COST_VALUE(NumTraits<Scalar>::AddCost);
     EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
+#if 0
+    std::cerr << "LhsOuterStrideBytes=  " << LhsOuterStrideBytes << "\n";
+    std::cerr << "RhsOuterStrideBytes=  " << RhsOuterStrideBytes << "\n";
+    std::cerr << "LhsAlignment=         " << LhsAlignment << "\n";
+    std::cerr << "RhsAlignment=         " << RhsAlignment << "\n";
+    std::cerr << "CanVectorizeLhs=      " << CanVectorizeLhs << "\n";
+    std::cerr << "CanVectorizeRhs=      " << CanVectorizeRhs << "\n";
+    std::cerr << "CanVectorizeInner=    " << CanVectorizeInner << "\n";
+    std::cerr << "EvalToRowMajor=       " << EvalToRowMajor << "\n";
+    std::cerr << "Alignment=            " << Alignment << "\n";
+    std::cerr << "Flags=                " << Flags << "\n";
+#endif
   }
 
   // Everything below here is taken from CoeffBasedProduct.h
@@ -489,8 +499,8 @@ struct product_evaluator<Product<Lhs, Rhs, LazyProduct>, ProductTag, DenseShape,
       
     SameType = is_same<typename LhsNestedCleaned::Scalar,typename RhsNestedCleaned::Scalar>::value,
 
-    CanVectorizeRhs = bool(RhsRowMajor) && (RhsFlags & PacketAccessBit),
-    CanVectorizeLhs = (!LhsRowMajor) && (LhsFlags & PacketAccessBit),
+    CanVectorizeRhs = bool(RhsRowMajor) && (RhsFlags & PacketAccessBit) && (ColsAtCompileTime!=1),
+    CanVectorizeLhs = (!LhsRowMajor) && (LhsFlags & PacketAccessBit) && (RowsAtCompileTime!=1),
 
     EvalToRowMajor = (MaxRowsAtCompileTime==1&&MaxColsAtCompileTime!=1) ? 1
                     : (MaxColsAtCompileTime==1&&MaxRowsAtCompileTime!=1) ? 0
@@ -505,8 +515,8 @@ struct product_evaluator<Product<Lhs, Rhs, LazyProduct>, ProductTag, DenseShape,
     LhsOuterStrideBytes = int(LhsNestedCleaned::OuterStrideAtCompileTime) * int(sizeof(typename LhsNestedCleaned::Scalar)),
     RhsOuterStrideBytes = int(RhsNestedCleaned::OuterStrideAtCompileTime) * int(sizeof(typename RhsNestedCleaned::Scalar)),
 
-    Alignment = bool(CanVectorizeLhs) ? (LhsOuterStrideBytes<0 || (int(LhsOuterStrideBytes) % EIGEN_PLAIN_ENUM_MAX(1,LhsAlignment))!=0 ? 0 : LhsAlignment)
-              : bool(CanVectorizeRhs) ? (RhsOuterStrideBytes<0 || (int(RhsOuterStrideBytes) % EIGEN_PLAIN_ENUM_MAX(1,RhsAlignment))!=0 ? 0 : RhsAlignment)
+    Alignment = bool(CanVectorizeLhs) ? (LhsOuterStrideBytes<=0 || (int(LhsOuterStrideBytes) % EIGEN_PLAIN_ENUM_MAX(1,LhsAlignment))!=0 ? 0 : LhsAlignment)
+              : bool(CanVectorizeRhs) ? (RhsOuterStrideBytes<=0 || (int(RhsOuterStrideBytes) % EIGEN_PLAIN_ENUM_MAX(1,RhsAlignment))!=0 ? 0 : RhsAlignment)
               : 0,
 
     /* CanVectorizeInner deserves special explanation. It does not affect the product flags. It is not used outside
@@ -532,8 +542,8 @@ struct product_evaluator<Product<Lhs, Rhs, LazyProduct>, ProductTag, DenseShape,
    */
   EIGEN_DEVICE_FUNC const CoeffReturnType coeff(Index index) const
   {
-    const Index row = RowsAtCompileTime == 1 ? 0 : index;
-    const Index col = RowsAtCompileTime == 1 ? index : 0;
+    const Index row = (RowsAtCompileTime == 1 || MaxRowsAtCompileTime==1) ? 0 : index;
+    const Index col = (RowsAtCompileTime == 1 || MaxRowsAtCompileTime==1) ? index : 0;
     return (m_lhs.row(row).transpose().cwiseProduct( m_rhs.col(col) )).sum();
   }
 
@@ -551,8 +561,8 @@ struct product_evaluator<Product<Lhs, Rhs, LazyProduct>, ProductTag, DenseShape,
   template<int LoadMode, typename PacketType>
   const PacketType packet(Index index) const
   {
-    const Index row = RowsAtCompileTime == 1 ? 0 : index;
-    const Index col = RowsAtCompileTime == 1 ? index : 0;
+    const Index row = (RowsAtCompileTime == 1 || MaxRowsAtCompileTime==1) ? 0 : index;
+    const Index col = (RowsAtCompileTime == 1 || MaxRowsAtCompileTime==1) ? index : 0;
     return packet<LoadMode,PacketType>(row,col);
   }
 
@@ -592,7 +602,7 @@ struct etor_product_packet_impl<RowMajor, UnrollingIndex, Lhs, Rhs, Packet, Load
   static EIGEN_STRONG_INLINE void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, Index innerDim, Packet &res)
   {
     etor_product_packet_impl<RowMajor, UnrollingIndex-1, Lhs, Rhs, Packet, LoadMode>::run(row, col, lhs, rhs, innerDim, res);
-    res =  pmadd(pset1<Packet>(lhs.coeff(row, UnrollingIndex-1)), rhs.template packet<LoadMode,Packet>(UnrollingIndex-1, col), res);
+    res =  pmadd(pset1<Packet>(lhs.coeff(row, Index(UnrollingIndex-1))), rhs.template packet<LoadMode,Packet>(Index(UnrollingIndex-1), col), res);
   }
 };
 
@@ -602,7 +612,7 @@ struct etor_product_packet_impl<ColMajor, UnrollingIndex, Lhs, Rhs, Packet, Load
   static EIGEN_STRONG_INLINE void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, Index innerDim, Packet &res)
   {
     etor_product_packet_impl<ColMajor, UnrollingIndex-1, Lhs, Rhs, Packet, LoadMode>::run(row, col, lhs, rhs, innerDim, res);
-    res =  pmadd(lhs.template packet<LoadMode,Packet>(row, UnrollingIndex-1), pset1<Packet>(rhs.coeff(UnrollingIndex-1, col)), res);
+    res =  pmadd(lhs.template packet<LoadMode,Packet>(row, Index(UnrollingIndex-1)), pset1<Packet>(rhs.coeff(Index(UnrollingIndex-1), col)), res);
   }
 };
 
@@ -611,7 +621,7 @@ struct etor_product_packet_impl<RowMajor, 1, Lhs, Rhs, Packet, LoadMode>
 {
   static EIGEN_STRONG_INLINE void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, Index /*innerDim*/, Packet &res)
   {
-    res = pmul(pset1<Packet>(lhs.coeff(row, 0)),rhs.template packet<LoadMode,Packet>(0, col));
+    res = pmul(pset1<Packet>(lhs.coeff(row, Index(0))),rhs.template packet<LoadMode,Packet>(Index(0), col));
   }
 };
 
@@ -620,7 +630,7 @@ struct etor_product_packet_impl<ColMajor, 1, Lhs, Rhs, Packet, LoadMode>
 {
   static EIGEN_STRONG_INLINE void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, Index /*innerDim*/, Packet &res)
   {
-    res = pmul(lhs.template packet<LoadMode,Packet>(row, 0), pset1<Packet>(rhs.coeff(0, col)));
+    res = pmul(lhs.template packet<LoadMode,Packet>(row, Index(0)), pset1<Packet>(rhs.coeff(Index(0), col)));
   }
 };
 
@@ -629,7 +639,7 @@ struct etor_product_packet_impl<RowMajor, 0, Lhs, Rhs, Packet, LoadMode>
 {
   static EIGEN_STRONG_INLINE void run(Index /*row*/, Index /*col*/, const Lhs& /*lhs*/, const Rhs& /*rhs*/, Index /*innerDim*/, Packet &res)
   {
-    res = pset1<Packet>(0);
+    res = pset1<Packet>(typename unpacket_traits<Packet>::type(0));
   }
 };
 
@@ -638,7 +648,7 @@ struct etor_product_packet_impl<ColMajor, 0, Lhs, Rhs, Packet, LoadMode>
 {
   static EIGEN_STRONG_INLINE void run(Index /*row*/, Index /*col*/, const Lhs& /*lhs*/, const Rhs& /*rhs*/, Index /*innerDim*/, Packet &res)
   {
-    res = pset1<Packet>(0);
+    res = pset1<Packet>(typename unpacket_traits<Packet>::type(0));
   }
 };
 
@@ -647,7 +657,7 @@ struct etor_product_packet_impl<RowMajor, Dynamic, Lhs, Rhs, Packet, LoadMode>
 {
   static EIGEN_STRONG_INLINE void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, Index innerDim, Packet& res)
   {
-    res = pset1<Packet>(0);
+    res = pset1<Packet>(typename unpacket_traits<Packet>::type(0));
     for(Index i = 0; i < innerDim; ++i)
       res =  pmadd(pset1<Packet>(lhs.coeff(row, i)), rhs.template packet<LoadMode,Packet>(i, col), res);
   }
@@ -658,7 +668,7 @@ struct etor_product_packet_impl<ColMajor, Dynamic, Lhs, Rhs, Packet, LoadMode>
 {
   static EIGEN_STRONG_INLINE void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, Index innerDim, Packet& res)
   {
-    res = pset1<Packet>(0);
+    res = pset1<Packet>(typename unpacket_traits<Packet>::type(0));
     for(Index i = 0; i < innerDim; ++i)
       res =  pmadd(lhs.template packet<LoadMode,Packet>(row, i), pset1<Packet>(rhs.coeff(i, col)), res);
   }

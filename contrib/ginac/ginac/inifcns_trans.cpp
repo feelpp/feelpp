@@ -4,7 +4,7 @@
  *  functions. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@
 #include "inifcns.h"
 #include "ex.h"
 #include "constant.h"
+#include "add.h"
+#include "mul.h"
 #include "numeric.h"
 #include "power.h"
 #include "operators.h"
@@ -81,6 +83,27 @@ static ex exp_eval(const ex & x)
 	return exp(x).hold();
 }
 
+static ex exp_expand(const ex & arg, unsigned options)
+{
+	ex exp_arg;
+	if (options & expand_options::expand_function_args)
+		exp_arg = arg.expand(options);
+	else
+		exp_arg=arg;
+
+	if ((options & expand_options::expand_transcendental)
+		&& is_exactly_a<add>(exp_arg)) {
+		exvector prodseq;
+		prodseq.reserve(exp_arg.nops());
+		for (const_iterator i = exp_arg.begin(); i != exp_arg.end(); ++i)
+			prodseq.push_back(exp(*i));
+
+		return dynallocate<mul>(prodseq).setflag(status_flags::expanded);
+	}
+
+	return exp(exp_arg).hold();
+}
+
 static ex exp_deriv(const ex & x, unsigned deriv_param)
 {
 	GINAC_ASSERT(deriv_param==0);
@@ -107,11 +130,12 @@ static ex exp_conjugate(const ex & x)
 
 REGISTER_FUNCTION(exp, eval_func(exp_eval).
                        evalf_func(exp_evalf).
+                       expand_func(exp_expand).
                        derivative_func(exp_deriv).
                        real_part_func(exp_real_part).
                        imag_part_func(exp_imag_part).
                        conjugate_func(exp_conjugate).
-                       latex_name("\\exp"))
+                       latex_name("\\exp"));
 
 //////////
 // natural logarithm
@@ -150,7 +174,7 @@ static ex log_eval(const ex & x)
 		if (t.info(info_flags::real))
 			return t;
 	}
-	
+
 	return log(x).hold();
 }
 
@@ -180,6 +204,10 @@ static ex log_series(const ex &arg,
 	if (arg_pt.is_zero())
 		must_expand_arg = true;
 	
+	if (arg.diff(ex_to<symbol>(rel.lhs())).is_zero()) {
+		throw do_taylor();
+	}
+
 	if (must_expand_arg) {
 		// method:
 		// This is the branch point: Series expand the argument first, then
@@ -214,25 +242,19 @@ static ex log_series(const ex &arg,
 			// in this case n more (or less) terms are needed
 			// (sadly, to generate them, we have to start from the beginning)
 			if (n == 0 && coeff == 1) {
-				epvector epv;
-				ex acc = (new pseries(rel, epv))->setflag(status_flags::dynallocated);
-				epv.reserve(2);
-				epv.push_back(expair(-1, _ex0));
-				epv.push_back(expair(Order(_ex1), order));
-				ex rest = pseries(rel, epv).add_series(argser);
+				ex rest = pseries(rel, epvector{expair(-1, _ex0), expair(Order(_ex1), order)}).add_series(argser);
+				ex acc = dynallocate<pseries>(rel, epvector());
 				for (int i = order-1; i>0; --i) {
-					epvector cterm;
-					cterm.reserve(1);
-					cterm.push_back(expair(i%2 ? _ex1/i : _ex_1/i, _ex0));
-					acc = pseries(rel, cterm).add_series(ex_to<pseries>(acc));
+					epvector cterm { expair(i%2 ? _ex1/i : _ex_1/i, _ex0) };
+					acc = pseries(rel, std::move(cterm)).add_series(ex_to<pseries>(acc));
 					acc = (ex_to<pseries>(rest)).mul_series(ex_to<pseries>(acc));
 				}
 				return acc;
 			}
 			const ex newarg = ex_to<pseries>((arg/coeff).series(rel, order+n, options)).shift_exponents(-n).convert_to_poly(true);
-			return pseries(rel, seq).add_series(ex_to<pseries>(log(newarg).series(rel, order, options)));
+			return pseries(rel, std::move(seq)).add_series(ex_to<pseries>(log(newarg).series(rel, order, options)));
 		} else  // it was a monomial
-			return pseries(rel, seq);
+			return pseries(rel, std::move(seq));
 	}
 	if (!(options & series_options::suppress_branchcut) &&
 	     arg_pt.info(info_flags::negative)) {
@@ -244,9 +266,12 @@ static ex log_series(const ex &arg,
 		const symbol foo;
 		const ex replarg = series(log(arg), s==foo, order).subs(foo==point, subs_options::no_pattern);
 		epvector seq;
-		seq.push_back(expair(-I*csgn(arg*I)*Pi, _ex0));
+		if (order > 0) {
+			seq.reserve(2);
+			seq.push_back(expair(-I*csgn(arg*I)*Pi, _ex0));
+		}
 		seq.push_back(expair(Order(_ex1), order));
-		return series(replarg - I*Pi + pseries(rel, seq), rel, order);
+		return series(replarg - I*Pi + pseries(rel, std::move(seq)), rel, order);
 	}
 	throw do_taylor();  // caught by function::series()
 }
@@ -265,6 +290,53 @@ static ex log_imag_part(const ex & x)
 	return atan2(GiNaC::imag_part(x), GiNaC::real_part(x));
 }
 
+static ex log_expand(const ex & arg, unsigned options)
+{
+	if ((options & expand_options::expand_transcendental)
+		&& is_exactly_a<mul>(arg) && !arg.info(info_flags::indefinite)) {
+		exvector sumseq;
+		exvector prodseq;
+		sumseq.reserve(arg.nops());
+		prodseq.reserve(arg.nops());
+		bool possign=true;
+
+		// searching for positive/negative factors
+		for (const_iterator i = arg.begin(); i != arg.end(); ++i) {
+			ex e;
+			if (options & expand_options::expand_function_args)
+				e=i->expand(options);
+			else
+				e=*i;
+			if (e.info(info_flags::positive))
+				sumseq.push_back(log(e));
+			else if (e.info(info_flags::negative)) {
+				sumseq.push_back(log(-e));
+				possign = !possign;
+			} else
+				prodseq.push_back(e);
+		}
+
+		if (sumseq.size() > 0) {
+			ex newarg;
+			if (options & expand_options::expand_function_args)
+				newarg=((possign?_ex1:_ex_1)*mul(prodseq)).expand(options);
+			else {
+				newarg=(possign?_ex1:_ex_1)*mul(prodseq);
+				ex_to<basic>(newarg).setflag(status_flags::purely_indefinite);
+			}
+			return add(sumseq)+log(newarg);
+		} else {
+			if (!(options & expand_options::expand_function_args))
+				ex_to<basic>(arg).setflag(status_flags::purely_indefinite);
+		}
+	}
+
+	if (options & expand_options::expand_function_args)
+		return log(arg.expand(options)).hold();
+	else
+		return log(arg).hold();
+}
+
 static ex log_conjugate(const ex & x)
 {
 	// conjugate(log(x))==log(conjugate(x)) unless on the branch cut which
@@ -281,12 +353,13 @@ static ex log_conjugate(const ex & x)
 
 REGISTER_FUNCTION(log, eval_func(log_eval).
                        evalf_func(log_evalf).
+                       expand_func(log_expand).
                        derivative_func(log_deriv).
                        series_func(log_series).
                        real_part_func(log_real_part).
                        imag_part_func(log_imag_part).
                        conjugate_func(log_conjugate).
-                       latex_name("\\ln"))
+                       latex_name("\\ln"));
 
 //////////
 // sine (trigonometric function)
@@ -393,7 +466,7 @@ REGISTER_FUNCTION(sin, eval_func(sin_eval).
                        real_part_func(sin_real_part).
                        imag_part_func(sin_imag_part).
                        conjugate_func(sin_conjugate).
-                       latex_name("\\sin"))
+                       latex_name("\\sin"));
 
 //////////
 // cosine (trigonometric function)
@@ -500,7 +573,7 @@ REGISTER_FUNCTION(cos, eval_func(cos_eval).
                        real_part_func(cos_real_part).
                        imag_part_func(cos_imag_part).
                        conjugate_func(cos_conjugate).
-                       latex_name("\\cos"))
+                       latex_name("\\cos"));
 
 //////////
 // tangent (trigonometric function)
@@ -625,7 +698,7 @@ REGISTER_FUNCTION(tan, eval_func(tan_eval).
                        real_part_func(tan_real_part).
                        imag_part_func(tan_imag_part).
                        conjugate_func(tan_conjugate).
-                       latex_name("\\tan"))
+                       latex_name("\\tan"));
 
 //////////
 // inverse sine (arc sine)
@@ -698,7 +771,7 @@ REGISTER_FUNCTION(asin, eval_func(asin_eval).
                         evalf_func(asin_evalf).
                         derivative_func(asin_deriv).
                         conjugate_func(asin_conjugate).
-                        latex_name("\\arcsin"))
+                        latex_name("\\arcsin"));
 
 //////////
 // inverse cosine (arc cosine)
@@ -771,7 +844,7 @@ REGISTER_FUNCTION(acos, eval_func(acos_eval).
                         evalf_func(acos_evalf).
                         derivative_func(acos_deriv).
                         conjugate_func(acos_conjugate).
-                        latex_name("\\arccos"))
+                        latex_name("\\arccos"));
 
 //////////
 // inverse tangent (arc tangent)
@@ -860,9 +933,12 @@ static ex atan_series(const ex &arg,
 		else
 			Order0correction += log((I*arg_pt+_ex1)/(I*arg_pt+_ex_1))*I*_ex1_2;
 		epvector seq;
-		seq.push_back(expair(Order0correction, _ex0));
+		if (order > 0) {
+			seq.reserve(2);
+			seq.push_back(expair(Order0correction, _ex0));
+		}
 		seq.push_back(expair(Order(_ex1), order));
-		return series(replarg - pseries(rel, seq), rel, order);
+		return series(replarg - pseries(rel, std::move(seq)), rel, order);
 	}
 	throw do_taylor();
 }
@@ -888,7 +964,7 @@ REGISTER_FUNCTION(atan, eval_func(atan_eval).
                         derivative_func(atan_deriv).
                         series_func(atan_series).
                         conjugate_func(atan_conjugate).
-                        latex_name("\\arctan"))
+                        latex_name("\\arctan"));
 
 //////////
 // inverse tangent (atan2(y,x))
@@ -987,7 +1063,7 @@ static ex atan2_deriv(const ex & y, const ex & x, unsigned deriv_param)
 
 REGISTER_FUNCTION(atan2, eval_func(atan2_eval).
                          evalf_func(atan2_evalf).
-                         derivative_func(atan2_deriv))
+                         derivative_func(atan2_deriv));
 
 //////////
 // hyperbolic sine (trigonometric function)
@@ -1071,7 +1147,7 @@ REGISTER_FUNCTION(sinh, eval_func(sinh_eval).
                         real_part_func(sinh_real_part).
                         imag_part_func(sinh_imag_part).
                         conjugate_func(sinh_conjugate).
-                        latex_name("\\sinh"))
+                        latex_name("\\sinh"));
 
 //////////
 // hyperbolic cosine (trigonometric function)
@@ -1155,7 +1231,7 @@ REGISTER_FUNCTION(cosh, eval_func(cosh_eval).
                         real_part_func(cosh_real_part).
                         imag_part_func(cosh_imag_part).
                         conjugate_func(cosh_conjugate).
-                        latex_name("\\cosh"))
+                        latex_name("\\cosh"));
 
 //////////
 // hyperbolic tangent (trigonometric function)
@@ -1260,7 +1336,7 @@ REGISTER_FUNCTION(tanh, eval_func(tanh_eval).
                         real_part_func(tanh_real_part).
                         imag_part_func(tanh_imag_part).
                         conjugate_func(tanh_conjugate).
-                        latex_name("\\tanh"))
+                        latex_name("\\tanh"));
 
 //////////
 // inverse hyperbolic sine (trigonometric function)
@@ -1321,7 +1397,7 @@ static ex asinh_conjugate(const ex & x)
 REGISTER_FUNCTION(asinh, eval_func(asinh_eval).
                          evalf_func(asinh_evalf).
                          derivative_func(asinh_deriv).
-                         conjugate_func(asinh_conjugate))
+                         conjugate_func(asinh_conjugate));
 
 //////////
 // inverse hyperbolic cosine (trigonometric function)
@@ -1385,7 +1461,7 @@ static ex acosh_conjugate(const ex & x)
 REGISTER_FUNCTION(acosh, eval_func(acosh_eval).
                          evalf_func(acosh_evalf).
                          derivative_func(acosh_deriv).
-                         conjugate_func(acosh_conjugate))
+                         conjugate_func(acosh_conjugate));
 
 //////////
 // inverse hyperbolic tangent (trigonometric function)
@@ -1454,22 +1530,25 @@ static ex atanh_series(const ex &arg,
 		return ((log(_ex1+arg)-log(_ex1-arg))*_ex1_2).series(rel, order, options);
 	// ...and the branch cuts (the discontinuity at the cut being just I*Pi)
 	if (!(options & series_options::suppress_branchcut)) {
- 		// method:
- 		// This is the branch cut: assemble the primitive series manually and
- 		// then add the corresponding complex step function.
- 		const symbol &s = ex_to<symbol>(rel.lhs());
- 		const ex &point = rel.rhs();
- 		const symbol foo;
- 		const ex replarg = series(atanh(arg), s==foo, order).subs(foo==point, subs_options::no_pattern);
+		// method:
+		// This is the branch cut: assemble the primitive series manually and
+		// then add the corresponding complex step function.
+		const symbol &s = ex_to<symbol>(rel.lhs());
+		const ex &point = rel.rhs();
+		const symbol foo;
+		const ex replarg = series(atanh(arg), s==foo, order).subs(foo==point, subs_options::no_pattern);
 		ex Order0correction = replarg.op(0)+csgn(I*arg)*Pi*I*_ex1_2;
 		if (arg_pt<_ex0)
 			Order0correction += log((arg_pt+_ex_1)/(arg_pt+_ex1))*_ex1_2;
 		else
 			Order0correction += log((arg_pt+_ex1)/(arg_pt+_ex_1))*_ex_1_2;
- 		epvector seq;
-		seq.push_back(expair(Order0correction, _ex0));
- 		seq.push_back(expair(Order(_ex1), order));
- 		return series(replarg - pseries(rel, seq), rel, order);
+		epvector seq;
+		if (order > 0) {
+			seq.reserve(2);
+			seq.push_back(expair(Order0correction, _ex0));
+		}
+		seq.push_back(expair(Order(_ex1), order));
+		return series(replarg - pseries(rel, std::move(seq)), rel, order);
 	}
 	throw do_taylor();
 }
@@ -1489,7 +1568,7 @@ REGISTER_FUNCTION(atanh, eval_func(atanh_eval).
                          evalf_func(atanh_evalf).
                          derivative_func(atanh_deriv).
                          series_func(atanh_series).
-                         conjugate_func(atanh_conjugate))
+                         conjugate_func(atanh_conjugate));
 
 
 } // namespace GiNaC

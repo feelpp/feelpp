@@ -115,6 +115,19 @@ public:
         return M_dbDirectory;
     }
 
+    //! \return sub directory
+    std::string const& dbSubDirectory() const
+    {
+        return M_dbSubDirectory;
+    }
+
+    //! \return relative path
+    std::string dbRelativePath() const
+    {
+        return ( M_dbSubDirectory.empty() )? this->dbFilename() :
+            (fs::path( M_dbSubDirectory ) / fs::path(this->dbFilename())).string();
+    }
+
     //! \return the db local path
     virtual fs::path dbLocalPath() const;
 
@@ -163,6 +176,10 @@ public:
     //! add a subdirectory to the database directory
     void addDBSubDirectory( std::string const& subdirectory )
     {
+        if ( M_dbSubDirectory.empty() )
+            M_dbSubDirectory = subdirectory;
+        else
+            M_dbSubDirectory = (fs::path( M_dbSubDirectory ) / fs::path(subdirectory )).string();
         M_dbDirectory = ( fs::path( M_dbDirectory )/fs::path( subdirectory ) ).string();
     }
 
@@ -211,6 +228,7 @@ private:
     std::string M_name;
     std::string M_dbfilename;
     std::string M_dbDirectory;
+    std::string M_dbSubDirectory;
     bool M_isloaded;
 
 
