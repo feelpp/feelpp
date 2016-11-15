@@ -300,12 +300,16 @@ public:
 
         M_has_eim=false;
 
-        M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
-                                                 _backend= M_backend_primal,
-                                                 _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
-                                                 _worldcomm=M_backend_primal->comm(),
-                                                 _prefix=M_backend_primal->prefix() ,
-                                                 _rebuild=M_useSER);
+        if( boption(_name="crb.use-primal-pc") )
+        {
+            M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                                     _backend= M_backend_primal,
+                                                     _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                                     _worldcomm=M_backend_primal->comm(),
+                                                     _prefix=M_backend_primal->prefix() ,
+                                                     _rebuild=M_useSER);
+        }
+
         M_preconditioner_dual = preconditioner(_pc=(PreconditionerType) M_backend_dual->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                                _backend= M_backend_dual,
                                                _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_dual->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
@@ -3440,8 +3444,15 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
             A->addMatrix( bdf_coeff, M );
             Rhs->addVector( *vec_bdf_poly, *M );
         }
-        M_preconditioner_primal->setMatrix( A );
-        M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
+        if( boption(_name="crb.use-primal-pc") )
+        {
+            M_preconditioner_primal->setMatrix( A );
+            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
+        }
+        else
+        {
+            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs, _rebuild=true);
+        }
         mybdf->shiftRight(u);
     }
 
@@ -3521,8 +3532,15 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
                 F[0]->addVector( *vec_bdf_poly, *M );
             }
             uold=u;
-            M_preconditioner_primal->setMatrix( A );
-            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+            if( boption(_name="crb.use-primal-pc") )
+            {
+                M_preconditioner_primal->setMatrix( A );
+                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+            }
+            else
+            {
+                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
+            }
 
             mybdf->shiftRight(u);
 
@@ -3561,8 +3579,15 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
         if ( is_linear )
         {
             boost::tie(boost::tuples::ignore, A, F) = this->update( mu );
-            M_preconditioner_primal->setMatrix( A );
-            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+            if( boption(_name="crb.use-primal-pc") )
+            {
+                M_preconditioner_primal->setMatrix( A );
+                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+            }
+            else
+            {
+                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
+            }
         }
         else
         {
@@ -3579,8 +3604,16 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
 
                 boost::tie(boost::tuples::ignore, A, F) = this->update( mu , u );
 
-                M_preconditioner_primal->setMatrix( A );
-                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+                if( boption(_name="crb.use-primal-pc") )
+                {
+                    M_preconditioner_primal->setMatrix( A );
+                    M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+                }
+                else
+                {
+                    M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
+                }
+                Feel::cout << "[OFFLINE] iteration " << iter << ", increment_norm = " <<  norm << "\n";
 
                 if ( !useAitkenRelaxation )
                 {
@@ -3661,8 +3694,15 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                 Rhs->addVector( *vec_bdf_poly, *M );
             }
             uold = u;
-            M_preconditioner_primal->setMatrix( A );
-            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
+            if( boption(_name="crb.use-primal-pc") )
+            {
+                M_preconditioner_primal->setMatrix( A );
+                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
+            }
+            else
+            {
+                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs);
+            }
 
             if( is_linear )
                 norm = 0;
@@ -3696,8 +3736,13 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionNewton( parameter_type
     //M_backend_primal->nlSolver()->setType( TRUST_REGION );
 
     auto solution = this->functionSpace()->element();
-    M_preconditioner_primal->setMatrix( J );
-    M_backend_primal->nlSolve(_jacobian=J, _solution=solution, _residual=R,_prec=M_preconditioner_primal);
+    if( boption(_name="crb.use-primal-pc") )
+    {
+        M_preconditioner_primal->setMatrix( J );
+        M_backend_primal->nlSolve(_jacobian=J, _solution=solution, _residual=R,_prec=M_preconditioner_primal);
+    }
+    else
+        M_backend_primal->nlSolve(_jacobian=J, _solution=solution, _residual=R);
     return solution;
 }
 

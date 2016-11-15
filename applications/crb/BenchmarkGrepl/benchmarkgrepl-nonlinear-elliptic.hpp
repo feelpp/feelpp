@@ -58,7 +58,7 @@ public :
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
 };
 
-template<int Order>
+template<int Order, int Dim>
 class FunctionSpaceDefinition
 {
 public :
@@ -66,7 +66,7 @@ public :
     typedef double value_type;
 
     /*mesh*/
-    typedef Simplex<2,1> entity_type; /*dim,order*/
+    typedef Simplex<Dim,1> entity_type; /*dim,order*/
     typedef Mesh<entity_type> mesh_type;
 
     /*basis*/
@@ -115,21 +115,21 @@ public :
  * @author Stephane Veys
  * @see
  */
-template<int Order>
+template<int Order, int Dim>
 class BenchmarkGreplNonlinearElliptic :
         public ModelCrbBase< BenchmarkGreplNonlinearElliptic_Definition::ParameterDefinition,
-                             BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order>,
+                             BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order,Dim>,
                              NonLinear,
                              BenchmarkGreplNonlinearElliptic_Definition::EimDefinition<BenchmarkGreplNonlinearElliptic_Definition::ParameterDefinition,
-                                                                                       BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order> > >
+                                                                                       BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order,Dim> > >
 {
 public:
 
     typedef ModelCrbBase<BenchmarkGreplNonlinearElliptic_Definition::ParameterDefinition,
-                         BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order>,
+                         BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order,Dim>,
                          NonLinear,
                          BenchmarkGreplNonlinearElliptic_Definition::EimDefinition<BenchmarkGreplNonlinearElliptic_Definition::ParameterDefinition,
-                                                                                   BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order> > > super_type;
+                                                                                   BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order,Dim> > > super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -141,9 +141,9 @@ public:
     typedef typename super_type::mesh_type mesh_type;
     typedef typename super_type::mesh_ptrtype mesh_ptrtype;
 
-    typedef typename BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order>::space_type space_type;
+    typedef typename BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order,Dim>::space_type space_type;
     typedef typename boost::shared_ptr<space_type> space_ptrtype;
-    typedef typename BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order>::space_type_eimg space_type_eimg;
+    typedef typename BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order,Dim>::space_type_eimg space_type_eimg;
     typedef typename boost::shared_ptr<space_type_eimg> space_ptrtype_eimg;
 
     typedef typename super_type::beta_vector_type beta_vector_type;
@@ -158,11 +158,11 @@ public:
     using super_type::computeBetaQm;
     typedef boost::tuple<beta_vector_type,  std::vector<beta_vector_type> > beta_type;
 
-    typedef BenchmarkGreplNonlinearElliptic<Order> self_type;
+    typedef BenchmarkGreplNonlinearElliptic<Order,Dim> self_type;
 
     BenchmarkGreplNonlinearElliptic()
         :
-        super_type( "BenchMarkGreplNonlinearElliptic" + std::to_string(Order) ),
+        super_type( "BenchMarkGreplNonlinearElliptic" + std::to_string(Order) + "-" + std::to_string(Dim) + "D" ),
         M_use_newton( boption(_name="crb.use-newton") ),
         M_useSerErrorEstimation( boption(_name="ser.error-estimation") )
         {}
@@ -370,8 +370,8 @@ private:
 };
 
 
-template<int Order>
-void BenchmarkGreplNonlinearElliptic<Order>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
+template<int Order, int Dim>
+void BenchmarkGreplNonlinearElliptic<Order,Dim>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
 {
     this->M_betaAqm.resize( 1 );
     this->M_betaAqm[0].resize( 1 );
@@ -390,7 +390,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::setupSpecificityModel( boost::prope
     auto const& ptreeEimg = ptreeEim.get_child( "eim_g" );
     std::string dbnameEimg = ptreeEimg.template get<std::string>( "database-filename" );
 
-    auto eim_g = eim( _model=boost::dynamic_pointer_cast< BenchmarkGreplNonlinearElliptic<Order> >( this->shared_from_this() ),
+    auto eim_g = eim( _model=boost::dynamic_pointer_cast< BenchmarkGreplNonlinearElliptic<Order,Dim> >( this->shared_from_this() ),
                       _element=*pT,
                       _space=Xh_eimg,
                       _parameter=M_mu,
@@ -401,8 +401,8 @@ void BenchmarkGreplNonlinearElliptic<Order>::setupSpecificityModel( boost::prope
                       _directory=dbDir );
     this->addEim( eim_g );
 }
-template<int Order>
-void BenchmarkGreplNonlinearElliptic<Order>::initModel()
+template<int Order, int Dim>
+void BenchmarkGreplNonlinearElliptic<Order,Dim>::initModel()
 {
     std::string mshfile_name = option("mshfile").as<std::string>();
 
@@ -416,7 +416,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
         mesh = createGMSHMesh( _mesh=new mesh_type,
                                _desc=domain( _name = "benchmarkgrepl",
                                              _shape = "hypercube",
-                                             _dim = 2,
+                                             _dim = Dim,
                                              _h=hsize,
                                              _xmin=0,_xmax=1,
                                              _ymin=0,_ymax=1 ) );
@@ -483,7 +483,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
         Pset->readFromFile(supersamplingname);
     }
 
-    auto eim_g = eim( _model=boost::dynamic_pointer_cast< BenchmarkGreplNonlinearElliptic<Order> >( this->shared_from_this() ),
+    auto eim_g = eim( _model=boost::dynamic_pointer_cast< BenchmarkGreplNonlinearElliptic<Order,Dim> >( this->shared_from_this() ),
                       _element=*pT,
                       _space=Xh_eimg,
                       _parameter=M_mu,
@@ -575,9 +575,9 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
 
 } // BenchmarkGreplNonlinearElliptic::init
 
-template <int Order>
+template <int Order, int Dim>
 void
-BenchmarkGreplNonlinearElliptic<Order>::assembleJacobianWithAffineDecomposition( std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm)
+BenchmarkGreplNonlinearElliptic<Order,Dim>::assembleJacobianWithAffineDecomposition( std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm)
 {
     auto Xh = this->Xh;
     auto v = Xh->element(); //test
@@ -611,9 +611,9 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleJacobianWithAffineDecomposition(
 
 }
 
-template <int Order>
+template <int Order, int Dim>
 void
-BenchmarkGreplNonlinearElliptic<Order>::assembleResidualWithAffineDecomposition(std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm)
+BenchmarkGreplNonlinearElliptic<Order,Dim>::assembleResidualWithAffineDecomposition(std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm)
 {
     auto Xh = this->Xh;
     auto v = Xh->element(); //test
@@ -643,8 +643,12 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleResidualWithAffineDecomposition(
         Rqm[0][1][m]->close();
     }
 
-    form1( _test=Xh, _vector=Rqm[0][2][0] ) =
-        integrate( _range= elements( mesh ), _expr=sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
+    if( Dim == 2 )
+        form1( _test=Xh, _vector=Rqm[0][2][0] ) =
+            integrate( _range= elements( mesh ), _expr=sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
+    else if( Dim == 3 )
+        form1( _test=Xh, _vector=Rqm[0][2][0] ) =
+            integrate( _range= elements( mesh ), _expr=sin(2*M_PI*Px())*sin(2*M_PI*Py())*sin(2*M_PI*Pz()) * id(v) );
 
     form1( _test=Xh, _vector=Rqm[1][0][0] ) =
         integrate( _range= elements( mesh ), _expr=id(v) );
@@ -653,9 +657,9 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleResidualWithAffineDecomposition(
     Rqm[1][0][0]->close();
 }
 
-template <int Order>
+template <int Order, int Dim>
 bool
-BenchmarkGreplNonlinearElliptic<Order>::updateResidual(element_type const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm)
+BenchmarkGreplNonlinearElliptic<Order,Dim>::updateResidual(element_type const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm)
 {
     auto Xh = this->Xh;
     auto u = Xh->element();
@@ -678,9 +682,9 @@ BenchmarkGreplNonlinearElliptic<Order>::updateResidual(element_type const& X, st
     return true;
 }
 
-template <int Order>
+template <int Order, int Dim>
 void
-BenchmarkGreplNonlinearElliptic<Order>::updateJacobianMonolithic( vector_ptrtype const& X,
+BenchmarkGreplNonlinearElliptic<Order,Dim>::updateJacobianMonolithic( vector_ptrtype const& X,
                                                                   sparse_matrix_ptrtype & J,
                                                                   parameter_type const& mu )
 {
@@ -708,9 +712,9 @@ BenchmarkGreplNonlinearElliptic<Order>::updateJacobianMonolithic( vector_ptrtype
 
 }
 
-template <int Order>
+template <int Order, int Dim>
 void
-BenchmarkGreplNonlinearElliptic<Order>::updateResidualMonolithic(vector_ptrtype const& X,
+BenchmarkGreplNonlinearElliptic<Order,Dim>::updateResidualMonolithic(vector_ptrtype const& X,
                                                                  vector_ptrtype & R,
                                                                  parameter_type const& mu )
 {
@@ -739,15 +743,19 @@ BenchmarkGreplNonlinearElliptic<Order>::updateResidualMonolithic(vector_ptrtype 
     form1( _test=Xh, _vector=R ) +=
         integrate( _range= elements( mesh ), _expr= -mu(0)/mu(1)*( id(v)) );
 
-    form1( _test=Xh, _vector=R ) +=
-        integrate( _range= elements( mesh ), _expr=-100*sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
+    if( Dim == 2 )
+        form1( _test=Xh, _vector=R ) +=
+            integrate( _range= elements( mesh ), _expr=-100*sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
+    else if( Dim == 3 )
+        form1( _test=Xh, _vector=R ) +=
+            integrate( _range= elements( mesh ), _expr=-100*sin(2*M_PI*Px())*sin(2*M_PI*Py())*sin(2*M_PI*Pz()) * id(v) );
 
     R->close();
 
 }
 
-template<int Order>
-void BenchmarkGreplNonlinearElliptic<Order>::assemble()
+template<int Order, int Dim>
+void BenchmarkGreplNonlinearElliptic<Order,Dim>::assemble()
 {
     auto Xh = this->Xh;
     auto u = Xh->element();
@@ -780,8 +788,12 @@ void BenchmarkGreplNonlinearElliptic<Order>::assemble()
             this->M_Fqm[0][0][m]->close();
         }
 
-        form1( _test=Xh, _vector=this->M_Fqm[0][1][0] ) =
-            integrate( _range= elements( mesh ),_expr=sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
+        if( Dim == 2 )
+            form1( _test=Xh, _vector=this->M_Fqm[0][1][0] ) =
+                integrate( _range= elements( mesh ),_expr=sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
+        else if ( Dim == 3 )
+            form1( _test=Xh, _vector=this->M_Fqm[0][1][0] ) =
+                integrate( _range= elements( mesh ),_expr=sin(2*M_PI*Px())*sin(2*M_PI*Py())*sin(2*M_PI*Pz()) * id(v) );
         this->M_Fqm[0][1][0]->close();
 
         form1( _test=Xh, _vector=this->M_Fqm[1][0][0] ) =
@@ -793,9 +805,9 @@ void BenchmarkGreplNonlinearElliptic<Order>::assemble()
 
 }
 
-template<int Order>
-typename BenchmarkGreplNonlinearElliptic<Order>::monolithic_type
-BenchmarkGreplNonlinearElliptic<Order>::computeMonolithicFormulationU( parameter_type const& mu , element_type const& solution)
+template<int Order, int Dim>
+typename BenchmarkGreplNonlinearElliptic<Order,Dim>::monolithic_type
+BenchmarkGreplNonlinearElliptic<Order,Dim>::computeMonolithicFormulationU( parameter_type const& mu , element_type const& solution)
 {
     auto Xh = this->Xh;
     auto u=Xh->element();
@@ -813,8 +825,12 @@ BenchmarkGreplNonlinearElliptic<Order>::computeMonolithicFormulationU( parameter
                                                                 - (gradt(u)*vf::N())*id(v)
                                                                 - (grad(v)*vf::N())*idt(u) );
 
-    form1( _test=Xh, _vector=M_monoF[0] ) =
-        integrate( _range= elements( mesh ), _expr=-mu(0)/mu(1)*( exp( mu(1)*idv(solution) ) - 1 )*id(v) + 100*sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
+    if( Dim == 2 )
+        form1( _test=Xh, _vector=M_monoF[0] ) =
+            integrate( _range= elements( mesh ), _expr=-mu(0)/mu(1)*( exp( mu(1)*idv(solution) ) - 1 )*id(v) + 100*sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
+    else if ( Dim == 3 )
+        form1( _test=Xh, _vector=M_monoF[0] ) =
+            integrate( _range= elements( mesh ), _expr=-mu(0)/mu(1)*( exp( mu(1)*idv(solution) ) - 1 )*id(v) + 100*sin(2*M_PI*Px())*sin(2*M_PI*Py())*sin(2*M_PI*Pz()) * id(v) );
 
     form1( _test=Xh, _vector=M_monoF[1] ) =
         integrate( _range= elements( mesh ), _expr=id(v) );
@@ -827,9 +843,9 @@ BenchmarkGreplNonlinearElliptic<Order>::computeMonolithicFormulationU( parameter
 
 }
 
-template<int Order>
-typename BenchmarkGreplNonlinearElliptic<Order>::element_type
-BenchmarkGreplNonlinearElliptic<Order>::solve( parameter_type const& mu )
+template<int Order, int Dim>
+typename BenchmarkGreplNonlinearElliptic<Order,Dim>::element_type
+BenchmarkGreplNonlinearElliptic<Order,Dim>::solve( parameter_type const& mu )
 {
     auto Xh=this->Xh;
     sparse_matrix_ptrtype J = backend()->newMatrix( Xh, Xh);
@@ -847,9 +863,9 @@ BenchmarkGreplNonlinearElliptic<Order>::solve( parameter_type const& mu )
 }
 
 
-template<int Order>
-typename BenchmarkGreplNonlinearElliptic<Order>::vector_sparse_matrix
-BenchmarkGreplNonlinearElliptic<Order>::computeLinearDecompositionA()
+template<int Order, int Dim>
+typename BenchmarkGreplNonlinearElliptic<Order,Dim>::vector_sparse_matrix
+BenchmarkGreplNonlinearElliptic<Order,Dim>::computeLinearDecompositionA()
 {
     auto Xh=this->Xh;
     auto u=Xh->element();
@@ -871,9 +887,9 @@ BenchmarkGreplNonlinearElliptic<Order>::computeLinearDecompositionA()
 
 }
 
-template<int Order>
-typename BenchmarkGreplNonlinearElliptic<Order>::affine_decomposition_type
-BenchmarkGreplNonlinearElliptic<Order>::computeAffineDecomposition()
+template<int Order, int Dim>
+typename BenchmarkGreplNonlinearElliptic<Order,Dim>::affine_decomposition_type
+BenchmarkGreplNonlinearElliptic<Order,Dim>::computeAffineDecomposition()
 {
     if( M_use_newton )
         return boost::make_tuple( this->M_Jqm, this->M_Rqm );
@@ -881,30 +897,33 @@ BenchmarkGreplNonlinearElliptic<Order>::computeAffineDecomposition()
         return boost::make_tuple( this->M_Aqm, this->M_Fqm );
 }
 
-template<int Order>
-typename BenchmarkGreplNonlinearElliptic<Order>::affine_decomposition_type
-BenchmarkGreplNonlinearElliptic<Order>::computePicardAffineDecomposition()
+template<int Order, int Dim>
+typename BenchmarkGreplNonlinearElliptic<Order,Dim>::affine_decomposition_type
+BenchmarkGreplNonlinearElliptic<Order,Dim>::computePicardAffineDecomposition()
 {
     return boost::make_tuple( this->M_Aqm, this->M_Fqm );
 }
 
-template<int Order>
-std::vector< std::vector< typename BenchmarkGreplNonlinearElliptic<Order>::element_ptrtype > >
-BenchmarkGreplNonlinearElliptic<Order>::computeInitialGuessAffineDecomposition( )
+template<int Order, int Dim>
+std::vector< std::vector< typename BenchmarkGreplNonlinearElliptic<Order,Dim>::element_ptrtype > >
+BenchmarkGreplNonlinearElliptic<Order,Dim>::computeInitialGuessAffineDecomposition( )
 {
     return M_InitialGuess;
 }
 
 
-template<int Order>
-double BenchmarkGreplNonlinearElliptic<Order>::output( int output_index, parameter_type const& mu, element_type &solution, bool need_to_solve )
+template<int Order, int Dim>
+double BenchmarkGreplNonlinearElliptic<Order,Dim>::output( int output_index, parameter_type const& mu, element_type &solution, bool need_to_solve )
 {
     //CHECK( need_to_solve ) << "The model need to have the solution to compute the output\n";
 
     double s=0;
     if ( output_index==0 )
     {
-        s = integrate( _range= elements( mesh ), _expr=-100*sin(2*M_PI*Px())*sin(2*M_PI*Py()) * idv( solution ) ).evaluate()(0,0);
+        if( Dim == 2 )
+            s = integrate( _range= elements( mesh ), _expr=-100*sin(2*M_PI*Px())*sin(2*M_PI*Py()) * idv( solution ) ).evaluate()(0,0);
+        else if ( Dim == 3 )
+            s = integrate( _range= elements( mesh ), _expr=-100*sin(2*M_PI*Px())*sin(2*M_PI*Py())*sin(2*M_PI*Pz()) * idv( solution ) ).evaluate()(0,0);
     }
     if( output_index==1 )
     {

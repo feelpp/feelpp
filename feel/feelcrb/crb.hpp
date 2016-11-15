@@ -392,12 +392,17 @@ public:
         M_backend =  backend();
         M_backend_primal = backend(_name="backend-primal");
         M_backend_dual = backend(_name="backend-dual");
-        M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
-                                                 _backend= M_backend_primal,
-                                                 _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
-                                                 _worldcomm=M_backend_primal->comm(),
-                                                 _prefix=M_backend_primal->prefix() ,
-                                                 _rebuild=M_model->useSER());
+
+        if( boption(_name="crb.use-primal-pc") )
+        {
+            M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                                     _backend= M_backend_primal,
+                                                     _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                                     _worldcomm=M_backend_primal->comm(),
+                                                     _prefix=M_backend_primal->prefix() ,
+                                                     _rebuild=M_model->useSER());
+        }
+
         M_preconditioner_dual = preconditioner(_pc=(PreconditionerType) M_backend_dual->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                                _backend= M_backend_dual,
                                                _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_dual->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
@@ -1526,8 +1531,13 @@ protected:
     //true if the model is executed in steady mode
     bool M_model_executed_in_steady_mode;
 
+    std::vector< std::vector<element_ptrtype> > M_InitialGuessV;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Jqm;
     std::vector< std::vector< std::vector<vector_ptrtype> > > M_Rqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Lqm;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
 
     bool M_save_output_behavior;
 
@@ -1695,11 +1705,19 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
             uold = u;
 
             //solve
-            M_preconditioner_primal->setMatrix( Apr );
-
-            auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs,  _prec=M_preconditioner_primal, _reuse_prec=( bdf_iter >= 2 ) );
-            if  ( !ret.template get<0>() )
-                LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
+            if( boption(_name="crb.use-primal-pc") )
+            {
+                M_preconditioner_primal->setMatrix( Apr );
+                auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs,  _prec=M_preconditioner_primal, _reuse_prec=( bdf_iter >= 2 ) );
+                if  ( !ret.template get<0>() )
+                    LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
+            }
+            else
+            {
+                auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs, _rebuild=true);
+                if  ( !ret.template get<0>() )
+                    LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
+            }
 
             //on each subspace the norme of the increment is computed and then we perform the sum
             if( is_linear )
@@ -2171,6 +2189,7 @@ CRB<TruthModelType>::offline()
     int Nrestart = ioption(_name="crb.restart-from-N");
     int Frestart = ioption(_name="ser.rb-rebuild-freq");
 
+#if 0
     //we do affine decomposition here to then have access to Qa, mMax ect...
     //and then resize data structure if necessary
     std::vector< std::vector<sparse_matrix_ptrtype> > Jqm;
@@ -2184,19 +2203,22 @@ CRB<TruthModelType>::offline()
     //so InitialGuessV is the mu-independant part of the vector F
     std::vector< std::vector<element_ptrtype> > InitialGuessV;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
+#endif
 
     bool model_is_linear = M_model->isLinear();
     if( ! model_is_linear )
-        InitialGuessV = M_model->computeInitialGuessVAffineDecomposition();
+        M_InitialGuessV = M_model->computeInitialGuessVAffineDecomposition();
 
     if( M_use_newton )
     {
-        boost::tie( Mqm , Jqm, Rqm ) = M_model->computeAffineDecomposition();
+        //boost::tie( Mqm , Jqm, Rqm ) = M_model->computeAffineDecomposition();
+        boost::tie( M_Mqm , M_Jqm, M_Rqm ) = M_model->computeAffineDecomposition(); //TEST CD
     }
     else
     {
         if( boption("crb.stock-matrices") )
-            boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+            //boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+            boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
     }
 
     M_model->countAffineDecompositionTerms();
@@ -2488,7 +2510,6 @@ CRB<TruthModelType>::offline()
 
         if ( M_model->isSteady()  )
         {
-
             if( ! M_use_newton )
             {
                 timer2.restart();
@@ -4678,7 +4699,6 @@ CRB<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_den
             double norm=M_Rqm_pr[q][m].norm();
         }
     }
-
 }
 
 template<typename TruthModelType>
@@ -7637,11 +7657,14 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
     vector_ptrtype __W(  M_backend->newVector( M_model->functionSpace() ) );
     namespace ublas = boost::numeric::ublas;
 
+#if 0
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm;
     std::vector<std::vector<vector_ptrtype> > MFqm;
-    boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+#endif
+    //boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+    boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
     __X->zero();
     __X->add( 1.0 );
     //std::cout << "measure of domain= " << M_model->scalarProduct( __X, __X ) << "\n";
@@ -7672,7 +7695,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
             {
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
-                    Mqm[__q1][__m1]->multVector(  __X, __W );
+                    M_Mqm[__q1][__m1]->multVector(  __X, __W );
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
 
@@ -7682,7 +7705,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                         {
 
                             M_Cmf_pr[__q1][__m1][__q2][__m2].conservativeResize( __N );
-                            M_model->l2solve( __Z2, Fqm[0][__q2][__m2] );
+                            M_model->l2solve( __Z2, M_Fqm[0][__q2][__m2] );
                             M_Cmf_pr[ __q1][ __m1][ __q2][ __m2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
                         }// elem
                     }//m2
@@ -7702,7 +7725,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
             {
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
-                    Mqm[__q1][__m1]->multVector(  __X, __W );
+                    M_Mqm[__q1][__m1]->multVector(  __X, __W );
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
 
@@ -7716,7 +7739,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                             for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                             {
                                 M_Cma_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
-                                Aqm[__q2][__m2]->multVector(  __Y, __W );
+                                M_Aqm[__q2][__m2]->multVector(  __Y, __W );
                                 __W->scale( -1. );
                                 M_model->l2solve( __Z2, __W );
                                 M_Cma_pr[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
@@ -7734,7 +7757,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
             {
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
-                    Mqm[__q1][__m1]->multVector(  __X, __W );
+                    M_Mqm[__q1][__m1]->multVector(  __X, __W );
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
 
@@ -7748,7 +7771,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                             for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                             {
 
-                                Aqm[__q2][ __m2]->multVector(  __Y, __W );
+                                M_Aqm[__q2][ __m2]->multVector(  __Y, __W );
                                 __W->scale( -1. );
                                 M_model->l2solve( __Z2, __W );
                                 M_Cma_pr[ __q1][ __m1][ __q2][ __m2]( __j,elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
@@ -7773,7 +7796,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
-                    Mqm[__q1][__m1]->multVector(  __X, __W );
+                    M_Mqm[__q1][__m1]->multVector(  __X, __W );
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
 
@@ -7792,7 +7815,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                                     M_Cmm_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
                                     M_Cmm_pr[__q2][__m2][__q1][__m1].conservativeResize( __N, __N );
 
-                                    Mqm[__q2][__m2]->multVector(  __Y, __W );
+                                    M_Mqm[__q2][__m2]->multVector(  __Y, __W );
                                     __W->scale( -1. );
                                     M_model->l2solve( __Z2, __W );
                                     double prod = M_model->scalarProduct( __Z1, __Z2 );
@@ -7801,7 +7824,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                                 } // m2
                             } // q2
                             //diagonal elements
-                            Mqm[__q1][__m1]->multVector(  __Y, __W );
+                            M_Mqm[__q1][__m1]->multVector(  __Y, __W );
                             __W->scale( -1. );
                             M_model->l2solve( __Z2, __W );
                             M_Cmm_pr[__q1][__m1][__q1][__m1].conservativeResize( __N, __N );
@@ -7819,7 +7842,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 
                                     M_Cmm_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
 
-                                    Mqm[__q2][__m2]->multVector(  __Y, __W );
+                                    M_Mqm[__q2][__m2]->multVector(  __Y, __W );
                                     __W->scale( -1. );
                                     M_model->l2solve( __Z2, __W );
 
@@ -7839,7 +7862,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
             {
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
-                    Mqm[__q1][ __m1]->multVector(  __X, __W );
+                    M_Mqm[__q1][ __m1]->multVector(  __X, __W );
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
 
@@ -7854,7 +7877,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                             {
                                 for ( int __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
                                 {
-                                    Mqm[__q2][__m2]->multVector(  __Y, __W );
+                                    M_Mqm[__q2][__m2]->multVector(  __Y, __W );
                                     __W->scale( -1. );
                                     M_model->l2solve( __Z2, __W );
                                     double prod = M_model->scalarProduct( __Z1, __Z2 );
@@ -7863,7 +7886,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                                 } // m2
                             } // q2
                             //diagonal elements
-                            Mqm[__q1][__m1]->multVector(  __Y, __W );
+                            M_Mqm[__q1][__m1]->multVector(  __Y, __W );
                             __W->scale( -1. );
                             M_model->l2solve( __Z2, __W );
                             double prod = M_model->scalarProduct( __Z1, __Z2 );
@@ -7876,7 +7899,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                             {
                                 for ( int __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
                                 {
-                                    Mqm[__q2][ __m2]->multVector(  __Y, __W );
+                                    M_Mqm[__q2][ __m2]->multVector(  __Y, __W );
                                     __W->scale( -1. );
                                     M_model->l2solve( __Z2, __W );
 
@@ -7914,7 +7937,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
 
-                    Mqm[__q1][__m1]->multVector(  __X, __W );
+                    M_Mqm[__q1][__m1]->multVector(  __X, __W );
                     __W->close();
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
@@ -7927,14 +7950,14 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                             M_Cmf_du[__q1][__m1][__q2][__m2].conservativeResize( __N );
                             M_Cmf_du_ini[__q1][__m1][__q2][__m2].conservativeResize( __N );
 
-                            *__Fdu = *Fqm[M_output_index][__q2][__m2];
+                            *__Fdu = *M_Fqm[M_output_index][__q2][__m2];
                             __Fdu->close();
                             __Fdu->scale( -1.0 );
                             M_model->l2solve( __Z2, __Fdu );
 
                             M_Cmf_du[ __q1][__m1][ __q2][__m2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
 
-                            *__Fdu = *Fqm[M_output_index][__q2][__m2];
+                            *__Fdu = *M_Fqm[M_output_index][__q2][__m2];
                             __Fdu->close();
                             M_model->l2solve( __Z2, __Fdu );
                             M_Cmf_du_ini[ __q1][__m1][ __q2][__m2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
@@ -7959,7 +7982,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
 
-                    Mqm[__q1][__m1]->multVector(  __X, __W );
+                    M_Mqm[__q1][__m1]->multVector(  __X, __W );
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
 
@@ -7974,9 +7997,9 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                             {
 
                                 if( boption("crb.use-symmetric-matrix") )
-                                    Atq2 = Aqm[__q2][__m2];
+                                    Atq2 = M_Aqm[__q2][__m2];
                                 else
-                                    Aqm[__q2][__m2]->transpose( Atq2 );
+                                    M_Aqm[__q2][__m2]->transpose( Atq2 );
 
                                 M_Cma_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
 
@@ -8000,7 +8023,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
 
-                    Mqm[__q1][__m1]->multVector(  __X, __W );
+                    M_Mqm[__q1][__m1]->multVector(  __X, __W );
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
 
@@ -8014,9 +8037,9 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                             {
 
                                 if( boption("crb.use-symmetric-matrix") )
-                                    Atq2 = Aqm[__q2][__m2];
+                                    Atq2 = M_Aqm[__q2][__m2];
                                 else
-                                    Aqm[__q2][__m2]->transpose( Atq2 );
+                                    M_Aqm[__q2][__m2]->transpose( Atq2 );
 
 
                                 Atq2->multVector(  __Y, __W );
@@ -8048,7 +8071,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
 
-                    Mqm[__q1][__m1]->multVector(  __X, __W );
+                    M_Mqm[__q1][__m1]->multVector(  __X, __W );
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
 
@@ -8067,7 +8090,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                                     M_Cmm_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
                                     M_Cmm_du[__q2][__m2][__q1][__m1].conservativeResize( __N, __N );
 
-                                    Mqm[__q2][__m2]->multVector(  __Y, __W );
+                                    M_Mqm[__q2][__m2]->multVector(  __Y, __W );
                                     __W->scale( -1. );
                                     M_model->l2solve( __Z2, __W );
                                     double prod = M_model->scalarProduct( __Z1, __Z2 );
@@ -8076,7 +8099,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                                 } // m2
                             } // q2
                             //diagonal elements
-                            Mqm[__q1][__m1]->multVector(  __Y, __W );
+                            M_Mqm[__q1][__m1]->multVector(  __Y, __W );
                             __W->scale( -1. );
                             M_model->l2solve( __Z2, __W );
                             M_Cmm_du[__q1][__m1][__q1][__m1].conservativeResize( __N, __N );
@@ -8092,7 +8115,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                                 {
                                     M_Cmm_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
 
-                                    Mqm[__q2][__m2]->multVector(  __Y, __W );
+                                    M_Mqm[__q2][__m2]->multVector(  __Y, __W );
                                     __W->scale( -1. );
                                     M_model->l2solve( __Z2, __W );
 
@@ -8114,7 +8137,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
 
-                    Mqm[__q1][__m1]->multVector(  __X, __W );
+                    M_Mqm[__q1][__m1]->multVector(  __X, __W );
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
 
@@ -8129,7 +8152,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                             {
                                 for ( int __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
                                 {
-                                    Mqm[__q2][__m2]->multVector(  __Y, __W );
+                                    M_Mqm[__q2][__m2]->multVector(  __Y, __W );
                                     __W->scale( -1. );
                                     M_model->l2solve( __Z2, __W );
                                     double prod = M_model->scalarProduct( __Z1, __Z2 );
@@ -8138,7 +8161,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                                 } // m2
                             } // q2
                             //diagonal elements
-                            Mqm[__q1][__m1]->multVector(  __Y, __W );
+                            M_Mqm[__q1][__m1]->multVector(  __Y, __W );
                             __W->scale( -1. );
                             M_model->l2solve( __Z2, __W );
                             double prod = M_model->scalarProduct( __Z1, __Z2 );
@@ -8151,7 +8174,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                             {
                                 for ( int __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
                                 {
-                                    Mqm[__q2][__m2]->multVector(  __Y, __W );
+                                    M_Mqm[__q2][__m2]->multVector(  __Y, __W );
                                     __W->scale( -1. );
                                     M_model->l2solve( __Z2, __W );
 
@@ -8215,10 +8238,13 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
     vector_ptrtype __W(  M_backend->newVector( M_model->functionSpace() ) );
     namespace ublas = boost::numeric::ublas;
 
+#if 0
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm,Mqm;
     std::vector< std::vector<vector_ptrtype> > MFqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
-    boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+#endif
+    //boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+    boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
     __X->zero();
     __X->add( 1.0 );
 
@@ -8250,14 +8276,14 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
             for ( int __m1 = 0; __m1 < M_model->mMaxF(0,__q1); ++__m1 )
             {
                 //LOG(INFO) << "__Fq->norm1=" << Fq[0][__q1][__m1]->l2Norm() << "\n";
-                M_model->l2solve( __Z1, Fqm[0][__q1][__m1] );
+                M_model->l2solve( __Z1, M_Fqm[0][__q1][__m1] );
                 //for ( int __q2 = 0;__q2 < __q1;++__q2 )
                 for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
                 {
                     for ( int __m2 = 0; __m2 < M_model->mMaxF(0,__q2); ++__m2 )
                     {
                         //LOG(INFO) << "__Fq->norm 2=" << Fq[0][__q2][__m2]->l2Norm() << "\n";
-                        M_model->l2solve( __Z2, Fqm[0][__q2][__m2] );
+                        M_model->l2solve( __Z2, M_Fqm[0][__q2][__m2] );
                         //M_C0_pr[__q1][__m1][__q2][__m2] = M_model->scalarProduct( __X, Fq[0][__q2][__m2] );
                         M_C0_pr[__q1][__m1][__q2][__m2] = M_model->scalarProduct( __Z1, __Z2 );
                         //M_C0_pr[__q2][__q1] = M_C0_pr[__q1][__q2];
@@ -8327,7 +8353,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
         {
             for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1) ; ++__m1 )
             {
-                Aqm[__q1][__m1]->multVector(  __X, __W );
+                M_Aqm[__q1][__m1]->multVector(  __X, __W );
                 __W->scale( -1. );
                 //std::cout << "__W->norm=" << __W->l2Norm() << "\n";
                 M_model->l2solve( __Z1, __W );
@@ -8338,7 +8364,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                         M_Lambda_pr[__q1][__m1][__q2][__m2].conservativeResize( __N );
                         //__Y = Fq[0][__q2];
                         //std::cout << "__Fq->norm=" << Fq[0][__q2]->l2Norm() << "\n";
-                        M_model->l2solve( __Z2, Fqm[0][__q2][__m2] );
+                        M_model->l2solve( __Z2, M_Fqm[0][__q2][__m2] );
                         M_Lambda_pr[ __q1][ __m1][ __q2][ __m2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
                         //VLOG(1) << "M_Lambda_pr[" << __q1 << "][" << __m1 << "][" << __q2 << "][" << __m2 << "][" << __j << "]=" <<  M_Lambda_pr[__q1][__m1][__q2][__m2][__j] << "\n";
                         //std::cout << "M_Lambda_pr[" << __q1 << "][" << __m1 << "][" << __q2 << "][" << __m2 << "][" << __j << "]=" << M_Lambda_pr[__q1][__m1][__q2][__m2][__j] << "\n";
@@ -8360,7 +8386,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
         {
             for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
             {
-                Aqm[__q1][__m1]->multVector(  __X, __W );
+                M_Aqm[__q1][__m1]->multVector(  __X, __W );
                 __W->scale( -1. );
                 M_model->l2solve( __Z1, __W );
 
@@ -8378,7 +8404,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                                 M_Gamma_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
                                 M_Gamma_pr[__q2][__m2][__q1][__m1].conservativeResize( __N, __N );
 
-                                Aqm[__q2][__m2]->multVector(  __Y, __W );
+                                M_Aqm[__q2][__m2]->multVector(  __Y, __W );
                                 __W->scale( -1. );
                                 M_model->l2solve( __Z2, __W );
                                 double prod = M_model->scalarProduct( __Z1, __Z2 );
@@ -8387,7 +8413,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                             } // m2
                         } // q2
                         //diagonal elements
-                        Aqm[__q1][__m1]->multVector(  __Y, __W );
+                        M_Aqm[__q1][__m1]->multVector(  __Y, __W );
                         __W->scale( -1. );
                         M_model->l2solve( __Z2, __W );
                         M_Gamma_pr[__q1][__m1][__q1][__m1].conservativeResize( __N, __N );
@@ -8402,7 +8428,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                             {
                                 M_Gamma_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
 
-                                Aqm[__q2][__m2]->multVector(  __Y, __W );
+                                M_Aqm[__q2][__m2]->multVector(  __Y, __W );
                                 __W->scale( -1. );
                                 M_model->l2solve( __Z2, __W );
                                 M_Gamma_pr[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = M_model->scalarProduct( __Z1, __Z2 );
@@ -8421,7 +8447,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
         {
             for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
             {
-                Aqm[__q1][__m1]->multVector(  __X, __W );
+                M_Aqm[__q1][__m1]->multVector(  __X, __W );
                 __W->scale( -1. );
                 M_model->l2solve( __Z1, __W );
 
@@ -8438,7 +8464,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                         {
                             for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                             {
-                                Aqm[__q2][__m2]->multVector(  __Y, __W );
+                                M_Aqm[__q2][__m2]->multVector(  __Y, __W );
                                 __W->scale( -1. );
                                 M_model->l2solve( __Z2, __W );
                                 double prod = M_model->scalarProduct( __Z1, __Z2 );
@@ -8447,7 +8473,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                             } // m2
                         } // q2
                         //diagonal elements
-                        Aqm[__q1][__m1]->multVector(  __Y, __W );
+                        M_Aqm[__q1][__m1]->multVector(  __Y, __W );
                         __W->scale( -1. );
                         M_model->l2solve( __Z2, __W );
                         double prod = M_model->scalarProduct( __Z1, __Z2 );
@@ -8459,7 +8485,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                         {
                             for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                             {
-                                Aqm[__q2][__m2]->multVector(  __Y, __W );
+                                M_Aqm[__q2][__m2]->multVector(  __Y, __W );
                                 __W->scale( -1. );
                                 M_model->l2solve( __Z2, __W );
                                 M_Gamma_pr[ __q1][ __m1][ __q2][ __m2]( __j,elem ) = M_model->scalarProduct( __Z1, __Z2 );
@@ -8492,7 +8518,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
             {
                 for ( int __m1 = 0; __m1 < M_model->mMaxF(M_output_index,__q1); ++__m1 )
                 {
-                    *__Fdu = *Fqm[M_output_index][__q1][__m1];
+                    *__Fdu = *M_Fqm[M_output_index][__q1][__m1];
                     __Fdu->close();
                     __Fdu->scale( -1.0 );
                     M_model->l2solve( __Z1, __Fdu );
@@ -8501,7 +8527,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                     {
                         for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q2); ++__m2 )
                         {
-                            *__Fdu = *Fqm[M_output_index][__q2][__m2];
+                            *__Fdu = *M_Fqm[M_output_index][__q2][__m2];
                             __Fdu->close();
                             __Fdu->scale( -1.0 );
                             M_model->l2solve( __Z2, __Fdu );
@@ -8530,9 +8556,9 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                 {
 
                     if( boption("crb.use-symmetric-matrix") )
-                        Atq1 = Aqm[__q1][__m1];
+                        Atq1 = M_Aqm[__q1][__m1];
                     else
-                        Aqm[__q1][__m1]->transpose( Atq1 );
+                        M_Aqm[__q1][__m1]->transpose( Atq1 );
 
                     Atq1->multVector(  __X, __W );
                     __W->close();
@@ -8546,7 +8572,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                         {
                             M_Lambda_du[__q1][__m1][__q2][__m2].conservativeResize( __N );
 
-                            *__Fdu = *Fqm[M_output_index][__q2][__m2];
+                            *__Fdu = *M_Fqm[M_output_index][__q2][__m2];
                             __Fdu->close();
                             __Fdu->scale( -1.0 );
                             M_model->l2solve( __Z2, __Fdu );
@@ -8573,9 +8599,9 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                 for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
                 {
                     if( boption("crb.use-symmetric-matrix") )
-                        Atq1=Aqm[__q1][__m1];
+                        Atq1=M_Aqm[__q1][__m1];
                     else
-                        Aqm[__q1][__m1]->transpose( Atq1 );
+                        M_Aqm[__q1][__m1]->transpose( Atq1 );
 
                     Atq1->multVector(  __X, __W );
                     __W->scale( -1. );
@@ -8593,9 +8619,9 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                                 for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                                 {
                                     if( boption("crb.use-symmetric-matrix") )
-                                        Atq2 = Aqm[__q2][__m2];
+                                        Atq2 = M_Aqm[__q2][__m2];
                                     else
-                                        Aqm[__q2][__m2]->transpose( Atq2 );
+                                        M_Aqm[__q2][__m2]->transpose( Atq2 );
 
                                     M_Gamma_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
                                     M_Gamma_du[__q2][__m2][__q1][__m1].conservativeResize( __N, __N );
@@ -8623,9 +8649,9 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                                 for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                                 {
                                     if( boption("crb.use-symmetric-matrix") )
-                                        Atq2 = Aqm[__q2][__m2];
+                                        Atq2 = M_Aqm[__q2][__m2];
                                     else
-                                        Aqm[__q2][__m2]->transpose( Atq2 );
+                                        M_Aqm[__q2][__m2]->transpose( Atq2 );
 
                                     M_Gamma_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
 
@@ -8651,9 +8677,9 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                 for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
                 {
                     if( boption("crb.use-symmetric-matrix") )
-                        Atq1=Aqm[__q1][__m1];
+                        Atq1=M_Aqm[__q1][__m1];
                     else
-                        Aqm[__q1][__m1]->transpose( Atq1 );
+                        M_Aqm[__q1][__m1]->transpose( Atq1 );
 
                     Atq1->multVector(  __X, __W );
                     __W->scale( -1. );
@@ -8672,9 +8698,9 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                                 for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                                 {
                                     if( boption("crb.use-symmetric-matrix") )
-                                        Atq2 = Aqm[__q2][__m2];
+                                        Atq2 = M_Aqm[__q2][__m2];
                                     else
-                                        Aqm[__q2][__m2]->transpose( Atq2 );
+                                        M_Aqm[__q2][__m2]->transpose( Atq2 );
 
                                     Atq2->multVector(  __Y, __W );
                                     __W->scale( -1. );
@@ -8698,9 +8724,9 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                                 for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                                 {
                                     if( boption("crb.use-symmetric-matrix") )
-                                        Atq2 = Aqm[__q2][__m2];
+                                        Atq2 = M_Aqm[__q2][__m2];
                                     else
-                                        Aqm[__q2][__m2]->transpose( Atq2 );
+                                        M_Aqm[__q2][__m2]->transpose( Atq2 );
 
                                     Atq2->multVector(  __Y, __W );
                                     __W->scale( -1. );
@@ -8740,11 +8766,13 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
     vector_ptrtype __Fdu( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype __W( M_backend->newVector( M_model->functionSpace() ) );
     namespace ublas = boost::numeric::ublas;
-
+#if 0
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm,Mqm;
     std::vector< std::vector<vector_ptrtype> > MFqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
-    boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+#endif
+    //boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+    boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
 
     if( Environment::isMasterRank() )
         std::cout << "     o initialize offlineResidual in " << ti.elapsed() << "s\n";
@@ -8768,7 +8796,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
             for ( int __m2 = 0; __m2 < M_model->mMaxF(0, __q2); ++__m2 )
             {
                 auto myvec = M_backend->newVector( M_model->functionSpace() );
-                M_model->l2solve( myvec, Fqm[0][__q2][__m2] );
+                M_model->l2solve( myvec, M_Fqm[0][__q2][__m2] );
                 M_precomputeResidualPrF[__q2][__m2] = myvec;
             }
         }
@@ -8811,7 +8839,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
         {
             for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
             {
-                Aqm[__q1][__m1]->multVector(  __X, __W );
+                M_Aqm[__q1][__m1]->multVector(  __X, __W );
                 __W->scale( -1. );
                 auto myvec = M_backend->newVector( M_model->functionSpace() );
                 M_model->l2solve( myvec, __W );
@@ -8896,7 +8924,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
                 M_precomputeResidualDuF[__q2].resize( M_model->mMaxF(M_output_index,__q2) );
                 for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q2); ++__m2 )
                 {
-                    *__Fdu = *Fqm[M_output_index][__q2][__m2];
+                    *__Fdu = *M_Fqm[M_output_index][__q2][__m2];
                     __Fdu->close();
                     __Fdu->scale( -1.0 );
                     auto myvec = M_backend->newVector( M_model->functionSpace() );
@@ -8944,9 +8972,9 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
                 for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
                 {
                     if( opIsSym )
-                        Atq1=Aqm[__q1][__m1];
+                        Atq1=M_Aqm[__q1][__m1];
                     else
-                        Aqm[__q1][__m1]->transpose( Atq1 );
+                        M_Aqm[__q1][__m1]->transpose( Atq1 );
 
                     Atq1->multVector(  __X, __W );
                     __W->scale( -1. );
@@ -9039,11 +9067,13 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
     vector_ptrtype __W(  M_backend->newVector( M_model->functionSpace() ) );
     namespace ublas = boost::numeric::ublas;
 
+#if 0
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm,Mqm;
     std::vector< std::vector<vector_ptrtype> > MFqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
-
-    boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+#endif
+    //boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+    boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
 
     __X->zero();
     __X->add( 1.0 );
@@ -9068,14 +9098,14 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 //remember that in C++ index begins at 0
                 //so to have max+1, we call [max]
                 int Mmaxq1 = M_model->mMaxF(0,__q1);
-                M_model->l2solve( __Z1, Fqm[0][__q1][Mmaxq1] );
+                M_model->l2solve( __Z1, M_Fqm[0][__q1][Mmaxq1] );
                 for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
                 {
                     int Mmaxq2 = M_model->mMaxF(0,__q2);
                     auto itq2 = eim_interpolation_errors_F[0].find(__q2);
                     if( itq2 != endF )
                     {
-                        M_model->l2solve( __Z2, Fqm[0][__q2][Mmaxq2] );
+                        M_model->l2solve( __Z2, M_Fqm[0][__q2][Mmaxq2] );
                         M_C0_pr_eim[__q1][__q2] = M_model->scalarProduct( __Z1, __Z2 );
                     }
                     else
@@ -9086,7 +9116,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             }
             else
             {
-                //no eim error associated to Fqm[0][__q1]
+                //no eim error associated to M_Fqm[0][__q1]
                 for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
                 {
                     M_C0_pr_eim[__q1][__q2] = 0;
@@ -9116,7 +9146,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             if( itq1 != endA )
             {
                 int Mmaxq1 = M_model->mMaxA(__q1);
-                Aqm[__q1][Mmaxq1]->multVector(  __X, __W );
+                M_Aqm[__q1][Mmaxq1]->multVector(  __X, __W );
                 __W->scale( -1. );
                 M_model->l2solve( __Z1, __W );
                 for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
@@ -9126,7 +9156,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                     M_Lambda_pr_eim[__q1][__q2].conservativeResize( __N );
                     if( itq2 != endF )
                     {
-                        M_model->l2solve( __Z2, Fqm[0][__q2][Mmaxq2] );
+                        M_model->l2solve( __Z2, M_Fqm[0][__q2][Mmaxq2] );
                         M_Lambda_pr_eim[ __q1][ __q2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
                     }
                     else
@@ -9160,7 +9190,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             if( itq1 != endA )
             {
                 int Mmaxq1 = M_model->mMaxA(__q1);
-                Aqm[__q1][Mmaxq1]->multVector(  __X, __W );
+                M_Aqm[__q1][Mmaxq1]->multVector(  __X, __W );
                 __W->scale( -1. );
                 M_model->l2solve( __Z1, __W );
                 for ( int __l = 0; __l < ( int )__N; ++__l )
@@ -9172,7 +9202,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                         if( itq2 != endA )
                         {
                             int Mmaxq2 = M_model->mMaxA(__q2);
-                            Aqm[__q2][Mmaxq2]->multVector(  __Y, __W );
+                            M_Aqm[__q2][Mmaxq2]->multVector(  __Y, __W );
                             M_Gamma_pr_eim[__q1][__q2].conservativeResize( __N, __N );
                             __W->scale( -1. );
                             M_model->l2solve( __Z2, __W );
@@ -9209,7 +9239,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             if( itq1 != endA )
             {
                 int Mmaxq1 = M_model->mMaxA(__q1);
-                Aqm[__q1][Mmaxq1]->multVector(  __X, __W );
+                M_Aqm[__q1][Mmaxq1]->multVector(  __X, __W );
                 __W->scale( -1. );
                 M_model->l2solve( __Z1, __W );
 
@@ -9225,7 +9255,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                         if( itq2 != endA )
                         {
                             int Mmaxq2 = M_model->mMaxA(__q2);
-                            Aqm[__q2][Mmaxq2]->multVector(  __Y, __W );
+                            M_Aqm[__q2][Mmaxq2]->multVector(  __Y, __W );
                             __W->scale( -1. );
                             M_model->l2solve( __Z2, __W );
                             M_Gamma_pr_eim[ __q1][ __q2]( __j,elem ) = M_model->scalarProduct( __Z1, __Z2 );
@@ -9275,7 +9305,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 if( itq1 != endFo )
                 {
                     int Mmaxq1 = M_model->mMaxF(M_output_index,__q1);
-                    *__Fdu = *Fqm[M_output_index][__q1][Mmaxq1];
+                    *__Fdu = *M_Fqm[M_output_index][__q1][Mmaxq1];
                     __Fdu->close();
                     __Fdu->scale( -1.0 );
                     M_model->l2solve( __Z1, __Fdu );
@@ -9285,7 +9315,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                         if( itq2 != endFo )
                         {
                             int Mmaxq2 = M_model->mMaxF(M_output_index,__q2);
-                            *__Fdu = *Fqm[M_output_index][__q2][Mmaxq2];
+                            *__Fdu = *M_Fqm[M_output_index][__q2][Mmaxq2];
                             __Fdu->close();
                             __Fdu->scale( -1.0 );
                             M_model->l2solve( __Z2, __Fdu );
@@ -9324,9 +9354,9 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 {
                     int Mmaxq1 = M_model->mMaxA(__q1);
                     if( boption("crb.use-symmetric-matrix") )
-                        Atq1 = Aqm[__q1][Mmaxq1];
+                        Atq1 = M_Aqm[__q1][Mmaxq1];
                     else
-                        Aqm[__q1][Mmaxq1]->transpose( Atq1 );
+                        M_Aqm[__q1][Mmaxq1]->transpose( Atq1 );
                     Atq1->multVector(  __X, __W );
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
@@ -9338,7 +9368,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                         if( itq2 != endFo )
                         {
                             int Mmaxq2 = M_model->mMaxF(M_output_index,__q2);
-                            *__Fdu = *Fqm[M_output_index][__q2][Mmaxq2];
+                            *__Fdu = *M_Fqm[M_output_index][__q2][Mmaxq2];
                             __Fdu->scale( -1.0 );
                             M_model->l2solve( __Z2, __Fdu );
                             M_Lambda_du_eim[__q1][__q2]( elem ) = 2.0*M_model->scalarProduct( __Z2, __Z1 );
@@ -9377,9 +9407,9 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                     int Mmaxq1 = M_model->mMaxA(__q1);
 
                     if( boption("crb.use-symmetric-matrix") )
-                        Atq1=Aqm[__q1][Mmaxq1];
+                        Atq1=M_Aqm[__q1][Mmaxq1];
                     else
-                        Aqm[__q1][Mmaxq1]->transpose( Atq1 );
+                        M_Aqm[__q1][Mmaxq1]->transpose( Atq1 );
 
                     Atq1->multVector(  __X, __W );
                     __W->scale( -1. );
@@ -9397,9 +9427,9 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                             {
                                 int Mmaxq2 = M_model->mMaxA(__q2);
                                 if( boption("crb.use-symmetric-matrix") )
-                                    Atq2 = Aqm[__q2][Mmaxq2];
+                                    Atq2 = M_Aqm[__q2][Mmaxq2];
                                 else
-                                    Aqm[__q2][Mmaxq2]->transpose( Atq2 );
+                                    M_Aqm[__q2][Mmaxq2]->transpose( Atq2 );
 
                                 Atq2->multVector(  __Y, __W );
                                 __W->scale( -1. );
@@ -9441,9 +9471,9 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                     int Mmaxq1 = M_model->mMaxA(__q1);
 
                     if( boption("crb.use-symmetric-matrix") )
-                        Atq1=Aqm[__q1][Mmaxq1];
+                        Atq1=M_Aqm[__q1][Mmaxq1];
                     else
-                        Aqm[__q1][Mmaxq1]->transpose( Atq1 );
+                        M_Aqm[__q1][Mmaxq1]->transpose( Atq1 );
 
                     Atq1->multVector(  __X, __W );
                     __W->scale( -1. );
@@ -9461,9 +9491,9 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                                 int Mmaxq2 = M_model->mMaxA(__q2);
 
                                 if( boption("crb.use-symmetric-matrix") )
-                                    Atq2 = Aqm[__q2][Mmaxq2];
+                                    Atq2 = M_Aqm[__q2][Mmaxq2];
                                 else
-                                    Aqm[__q2][Mmaxq2]->transpose( Atq2 );
+                                    M_Aqm[__q2][Mmaxq2]->transpose( Atq2 );
 
                                 Atq2->multVector(  __Y, __W );
                                 __W->scale( -1. );
