@@ -930,6 +930,8 @@ private:
             ar & M_points;
             DVLOG(2) << "  - G...\n";
             ar & M_G;
+            DVLOG(2) << "  - measures...\n";
+            ar & M_measures;
             DVLOG(2) << "  - marker1...\n";
             ar & M_marker1;
             DVLOG(2) << "  - marker1: " << M_marker1.value() << "...\n";
