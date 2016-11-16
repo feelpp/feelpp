@@ -25,6 +25,7 @@
 #define FEELPP_SERIALIZATION_HPP 1
 
 #include <boost/multi_array.hpp>
+#include <boost/detail/identifier.hpp>
 #include <boost/serialization/split_free.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
@@ -647,7 +648,33 @@ void serialize( Archive & ar,
 }
 
 
-
+//
+// boost::detail::identifier<T, D>
+//
+template<typename T, typename D, class Archive>
+void load( Archive & ar,
+           boost::detail::identifier<T, D> & t,
+           const unsigned int file_version )
+{
+    T value;
+    ar >> BOOST_SERIALIZATION_NVP( value );
+    t.assign( value );
+}
+template<typename T, typename D, class Archive>
+void save( Archive & ar,
+           boost::detail::identifier<T, D> const& t,
+           const unsigned int file_version )
+{
+    T value = t.value();
+    ar << BOOST_SERIALIZATION_NVP( value );
+}
+template<typename T, typename D, class Archive>
+void serialize( Archive & ar,
+                boost::detail::identifier<T, D> & t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
 
 } // serialization
 } //boost

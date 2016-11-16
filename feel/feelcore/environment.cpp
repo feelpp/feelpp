@@ -1246,6 +1246,7 @@ Environment::doOptions( int argc, char** argv,
                 for ( std::string cfgfile : configFiles )
                 {
                     if ( !fs::exists( cfgfile ) ) continue;
+                    cout << tc::green << "Reading " << cfgfile << "..." << tc::reset << std::endl;
                     // LOG( INFO ) << "Reading " << cfgfile << "...";
                     S_configFileNames.insert( fs::absolute( cfgfile ).string() );
                     S_cfgdir = fs::absolute( cfgfile ).parent_path();
@@ -1256,6 +1257,8 @@ Environment::doOptions( int argc, char** argv,
 
             if ( S_vm.count( "config-file" ) && fs::exists(  S_vm["config-file"].as<std::string>() ) )
             {
+                cout << tc::green << "Reading " << S_vm["config-file"].as<std::string>()
+                     << "..." << tc::reset << std::endl;
                 // LOG( INFO ) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
                 S_configFileNames.insert( fs::absolute( S_vm["config-file"].as<std::string>() ).string() );
                 S_cfgdir = fs::absolute( S_vm["config-file"].as<std::string>() ).parent_path();
