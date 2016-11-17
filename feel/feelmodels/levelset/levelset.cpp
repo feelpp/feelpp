@@ -31,6 +31,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     //M_periodicity(periodicityLS),
     M_reinitializerIsUpdatedForUse(false),
     M_hasReinitialized(false),
+    M_hasReinitializedSmooth(false),
     M_iterSinceReinit(0)
 {
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
@@ -636,7 +637,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     else
         CHECK( false ) << reinitmethod << " is not a valid reinitialization method\n";
 
-    M_useSmoothReinitialization = boption( _name="use-smooth-reinit", _prefix=this->prefix() );
+    //M_useSmoothReinitialization = boption( _name="use-smooth-reinit", _prefix=this->prefix() );
 
     M_useMarkerDiracAsMarkerDoneFM = boption( _name="use-marker2-as-done", _prefix=prefixvm(this->prefix(), "reinit-fm") );
 
@@ -1290,6 +1291,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
 
     // Reset hasReinitialized
     M_hasReinitialized = false;
+    M_hasReinitializedSmooth = false;
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("LevelSet","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
@@ -1350,7 +1352,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
 // Reinitialization
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
+LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
 { 
     this->log("LevelSet", "reinitialize", "start");
     this->timerTool("Reinit").start();
@@ -1420,7 +1422,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 
     //*phi = M_reinitializer->run( *phi );
     *phiReinit = M_reinitializer->run( *phiReinit );
-    if( M_useSmoothReinitialization )
+    if( useSmoothReinit )
     {
         //auto R = this->interfaceRectangularFunction(phiReinit);
         auto R = this->interfaceRectangularFunction();
@@ -1451,7 +1453,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
                 );
     }
 
-    M_hasReinitialized = true;
+    if( useSmoothReinit )
+        M_hasReinitializedSmooth = true;
+    else
+        M_hasReinitialized = true;
 
     double timeElapsed = this->timerTool("Reinit").stop();
     this->log("LevelSet","reinitialize","finish in "+(boost::format("%1% s") %timeElapsed).str() );

@@ -392,7 +392,7 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"h-d-nodal-proj").c_str(), Feel::po::value<bool>()->default_value( true ), "use nodal projection to compute dirac and heaviside functions (if false, use L2 projection)")
         (prefixvm(prefix,"thickness-interface").c_str(), Feel::po::value<double>(), "thickness of the interface (support for Dirac and Heaviside functions)")
         (prefixvm(prefix,"reinit-method").c_str(), Feel::po::value<std::string>()->default_value( "fm" ), "levelset reinitialization method (fm: fast-marching, hj: hamilton-jacobi)")
-        (prefixvm(prefix,"use-smooth-reinit").c_str(), Feel::po::value<bool>()->default_value(false), "Use smooth reinitialization")
+        //(prefixvm(prefix,"use-smooth-reinit").c_str(), Feel::po::value<bool>()->default_value(false), "Use smooth reinitialization")
         (prefixvm(prefix,"fm-init-first-elts-strategy").c_str(), Feel::po::value<int>()->default_value(1), "strategy to initialize the first elements before the fast marching:\n0 = do nothing\n1 = interface local projection by nodal (phi) and smooth (|grad phi|) projections, smoothing coeff given by option fm-smooth-coeff \n2 = Hamilton Jacoby equation (with parameters given in options)")
 
         (prefixvm(prefix,"reinit-initial-value").c_str(), Feel::po::value<bool>()->default_value( false ), "reinitialize levelset after setting initial value")
@@ -467,6 +467,7 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
         multifluidOptions.add_options()
             // Reinitialization
             (prefixvm(levelset_prefix,"reinit-every").c_str(), Feel::po::value<int>()->default_value( 10 ), "reinitialize levelset every n iterations" )
+            (prefixvm(levelset_prefix,"reinit-smooth-every").c_str(), Feel::po::value<int>()->default_value( 10 ), "reinitialize levelset smoothly every n iterations (needs to be <= reinit-every)" )
             // Interface forces model
             (prefixvm(levelset_prefix,"interface-forces-model").c_str(), Feel::po::value<std::vector<std::string>>()->multitoken(), "models for interface forces (helfrich, ...)" )
             ;
