@@ -152,6 +152,7 @@ private:
     //--------------------------------------------------------------------//
     // Reinitialization
     std::vector<int> M_levelsetReinitEvery;
+    std::vector<int> M_levelsetReinitSmoothEvery;
 };
         
 
