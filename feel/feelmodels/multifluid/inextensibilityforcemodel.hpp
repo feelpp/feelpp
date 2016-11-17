@@ -1,7 +1,7 @@
 #ifndef _INEXTENSIBILITYFORCEMODEL_HPP
 #define _INEXTENSIBILITYFORCEMODEL_HPP 1
 
-//#define DEBUG_INEXTENSIBILITYFORCEMODEL
+#define DEBUG_INEXTENSIBILITYFORCEMODEL
 
 #include <feel/feelmodels/multifluid/interfaceforcesmodel.hpp>
 
