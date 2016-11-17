@@ -335,7 +335,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Reinitialization
-    void reinitialize();
+    void reinitialize( bool useSmoothReinit = false );
 
     void setStrategyBeforeFm( int strat = 1 );
     strategy_before_FM_type strategyBeforeFm() { return M_strategyBeforeFM; }
@@ -514,10 +514,11 @@ private:
     boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smootherFM;
 
     bool M_hasReinitialized;
+    bool M_hasReinitializedSmooth;
     int M_iterSinceReinit;
     // Vector that stores the iterSinceReinit of each time-step
     std::vector<int> M_vecIterSinceReinit;
-    bool M_useSmoothReinitialization;
+    //bool M_useSmoothReinitialization;
 
     //--------------------------------------------------------------------//
     // Backends

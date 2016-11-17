@@ -193,10 +193,12 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     uint16_type nLevelSets = M_nFluids - 1;
     M_levelsetReinitEvery.resize(nLevelSets);
+    M_levelsetReinitSmoothEvery.resize(nLevelSets);
     for( uint16_type n = 0; n < nLevelSets; ++n )
     {
         auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(n+1)).str());
         M_levelsetReinitEvery[n] = ioption( _name="reinit-every", _prefix=levelset_prefix );
+        M_levelsetReinitSmoothEvery[n] = ioption( _name="reinit-smooth-every", _prefix=levelset_prefix );
     }
 }
 
@@ -231,6 +233,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
         if( M_levelsetReinitEvery[n] > 0 
                 && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitEvery[n] == 0 )
             M_levelsets[n]->reinitialize();
+        else if( M_levelsetReinitSmoothEvery[n] > 0 
+                && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitSmoothEvery[n] == 0 )
+            M_levelsets[n]->reinitialize( true );
     }
     // Update global levelset
     this->updateGlobalLevelset();
