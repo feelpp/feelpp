@@ -467,7 +467,7 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
         multifluidOptions.add_options()
             // Reinitialization
             (prefixvm(levelset_prefix,"reinit-every").c_str(), Feel::po::value<int>()->default_value( 10 ), "reinitialize levelset every n iterations" )
-            (prefixvm(levelset_prefix,"reinit-smooth-every").c_str(), Feel::po::value<int>()->default_value( 10 ), "reinitialize levelset smoothly every n iterations (needs to be <= reinit-every)" )
+            (prefixvm(levelset_prefix,"reinit-smooth-every").c_str(), Feel::po::value<int>()->default_value( -1 ), "reinitialize levelset smoothly every n iterations (needs to be <= reinit-every)" )
             // Interface forces model
             (prefixvm(levelset_prefix,"interface-forces-model").c_str(), Feel::po::value<std::vector<std::string>>()->multitoken(), "models for interface forces (helfrich, ...)" )
             ;
