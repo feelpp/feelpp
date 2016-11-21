@@ -47,6 +47,7 @@ macro(feelpp_add_testcase )
   #message(STATUS "testcase ${FEELPP_CASE_NAME} -> ${relpath} ")
   if ( FEELPP_CASE_CATEGORY )
     if (NOT EXISTS ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY})
+      execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/)
       execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY})
     endif()
     
