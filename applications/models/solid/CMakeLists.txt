@@ -44,5 +44,5 @@ install(TARGETS feelpp_application_solid_2d feelpp_application_solid_3d feelpp_a
 feelpp_add_testcase(NAFEMS-LE1 CATEGORY solid)
 feelpp_add_testcase(NAFEMS-LE10 CATEGORY solid)
 feelpp_add_testcase(Solenoid CATEGORY solid)
-feelpp_add_testcase(TurekHron CATEGORY solid)
-feelpp_add_testcase(torsionbarCATEGORY solid)
+feelpp_add_testcase(TurekHron PREFIX solid CATEGORY solid)
+feelpp_add_testcase(torsionbar CATEGORY solid)
