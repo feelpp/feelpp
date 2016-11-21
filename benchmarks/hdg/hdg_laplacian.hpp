@@ -252,12 +252,13 @@ Hdg<Dim, OrderP>::convergence()
 
         Vh_ptr_t Vh = Pdhv<OrderP>( mesh, true );
         Wh_ptr_t Wh = Pdh<OrderP>( mesh, true );
-        auto face_mesh = createSubmesh( mesh, faces(mesh, EntityProcessType::ALL ), EXTRACTION_KEEP_MESH_RELATION, 0 );
+        auto face_mesh = createSubmesh( mesh, faces(mesh ), EXTRACTION_KEEP_MESH_RELATION, 0 );
         Mh_ptr_t Mh = Pdh<OrderP>( face_mesh,true );
 
         toc("spaces",true);
 
-
+        LOG(INFO)<< "number elemnts:" << mesh->numGlobalElements() << std::endl;
+        LOG(INFO) << "number local elemnts:" << mesh->numElements() << std::endl;
         size_type nFaceInParallelMesh = nelements(faces(mesh),true) - nelements(interprocessfaces(mesh),true)/2;
         //CHECK( nelements(elements(face_mesh),true) == nFaceInParallelMesh  ) << "something wrong with face mesh" << nelements(elements(face_mesh),true) << " " << nFaceInParallelMesh;
         auto Xh = Pdh<0>(face_mesh);
