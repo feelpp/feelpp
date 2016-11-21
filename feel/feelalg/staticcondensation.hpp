@@ -369,6 +369,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         tic();
         auto key = it->first;
         size_type K = key.first;
+
         DVLOG(2) << "======= Key=" << key ;
 
         DVLOG(2) << "A00K=" << A00K.at(key);

@@ -1799,6 +1799,9 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
     for ( ; elem_it != elem_en; ++elem_it )
     {
         auto const& elem = elem_it->get();
+        if ( elem.isGhostFace() )
+            continue;
+
         auto eId = _M_X1->mesh()->meshToSubMesh( elem.id() );
         DVLOG(2) << "[Stencil::computeGraphHDG] element " << elem.id() << " on proc " << elem.processId() << std::endl;
         // elem_it contains the id of the current face
@@ -1845,8 +1848,6 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
             // to, including itself.
             for( auto dKi : list_of_connected_faces )
             {
-                if ( dKi >= 1e6 )
-                    continue;
                 DVLOG(2) << "[Stencil::computeGraphHDG] trial dKi=" << dKi << std::endl;
                 // Get the global indices of the DOFs with support on this element
                 _M_X2->dof()->getIndicesSetOnGlobalCluster( dKi, element_dof2 );
