@@ -116,7 +116,7 @@ if (GINAC_INCLUDE_DIRS AND GINAC_LIBRARIES AND NOT CMAKE_CROSSCOMPILING)
 	check_cxx_source_runs("
 		#include <ginac/version.h>
 		#include <cln/version.h>
-		#include <stdio.h>
+		#include <cstdio>
 		int main() {
 			return (CL_VERSION_MAJOR == cln::version_major) &&
 			       (CL_VERSION_MINOR == cln::version_minor) &&

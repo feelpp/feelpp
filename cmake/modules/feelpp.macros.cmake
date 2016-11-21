@@ -17,7 +17,7 @@ endmacro(feelpp_list_subdirs)
 
 macro(feelpp_add_testcase )
   PARSE_ARGUMENTS(FEELPP_CASE
-    "NAME;PREFIX;DEPS"
+    "NAME;PREFIX;DEPS;CATEGORY"
     ""
     ${ARGN}
     )
@@ -43,6 +43,26 @@ macro(feelpp_add_testcase )
     COMMENT "Syncing testcase ${testcase} in ${CMAKE_CURRENT_BINARY_DIR} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}")
   #execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${testcase} ${CMAKE_CURRENT_BINARY_DIR} )
   #file(COPY ${testcase} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+  #get_filename_component( relpath ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME} DIRECTORY BASE_DIR ${FEELPP_SOURCE_DIR})
+  #message(STATUS "testcase ${FEELPP_CASE_NAME} -> ${relpath} ")
+  if ( FEELPP_CASE_CATEGORY )
+    if (NOT EXISTS ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY})
+      execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/feel/)
+      execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/)
+      execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY})
+    endif()
+    
+    #INSTALL(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME} DESTINATION share/feel/applications/${CATEGORY} COMPONENT install-testcase)
+    ADD_CUSTOM_COMMAND(
+    TARGET ${target}
+    POST_BUILD
+    COMMAND rsync
+    ARGS -av
+    ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
+    ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY}
+    COMMENT "Syncing testcase ${testcase} in ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}")
+    add_dependencies(install-testcase ${target})
+endif()
 endmacro(feelpp_add_testcase)
 
 
@@ -264,15 +284,21 @@ macro(feelpp_add_test)
 
 
     if ( NOT FEELPP_TEST_NO_TEST )
+      # split command line options by whitespace into cmake list
+      separate_arguments(FEELPP_TEST_CLI)
       set(BOOST_TEST_SEPARATOR "")
-      if ( Boost_MAJOR_VERSION GREATER 0 AND Boost_MINOR_VERSION GREATER 59 AND FEELPP_TEST_CLI )
+      if ( Boost_MAJOR_VERSION GREATER 0 AND Boost_MINOR_VERSION GREATER 59 AND (FEELPP_TEST_CLI OR FEELPP_TEST_CFG) )
         set(BOOST_TEST_SEPARATOR "--")
       endif()
+      unset( FEELPP_TEST_CFG_CLI )
+      if ( FEELPP_TEST_CFG )
+        set( FEELPP_TEST_CFG_CLI --config-file=${CMAKE_CURRENT_BINARY_DIR}/${FEELPP_TEST_CFG} )
+      endif()
       IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
-        add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CLI} )
+        add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} )
         set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY} )
       ENDIF()
-      add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CLI})
+      add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI})
       set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} )
     endif()
 
@@ -421,7 +447,7 @@ endmacro(feelpp_min)
 # This macros cleans up a variable containing a list of paths
 # It:
 # - Removes any reference to the original git source directory used for builds (important for instal with tarball)
-# - Removes any reference to the original build directory (important for instal with tarball)
+# - Removes any reference to the original build directory (important for install with tarball)
 function(feelpp_clean_variable old_var new_var)
     set(tmp_var "")
     foreach(_entry ${old_var})

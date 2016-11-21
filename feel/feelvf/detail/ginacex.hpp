@@ -107,7 +107,7 @@ public:
             M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::current_path()/filenameExpanded).string();
 
             DVLOG(2) << "Ginac constructor with expression_type \n";
-            GiNaC::lst exprs(fun);
+            GiNaC::lst exprs({fun});
             GiNaC::lst syml;
             std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
 
@@ -273,10 +273,11 @@ public:
             }
         }
 
-    template<typename CTX>
-    void updateContext( CTX const& ctx )
+    template<typename ... CTX>
+    void updateContext( CTX const& ... ctx )
         {
-            update( ctx->gmContext() );
+            boost::fusion::vector<CTX...> ctxvec( ctx... );
+            update( boost::fusion::at_c<0>( ctxvec )->gmContext() );
         }
 
     value_type

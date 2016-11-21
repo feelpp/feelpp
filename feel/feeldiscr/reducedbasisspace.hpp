@@ -56,6 +56,138 @@ typedef parameter::parameters<
     , parameter::optional<parameter::deduced<tag::periodicity_type>, boost::is_base_and_derived<Feel::detail::periodicity_base,_> >
     > reducedbasisspace_signature;
 
+
+namespace detail
+{
+template<typename RbSpaceType>
+struct InitializeRbSubSpace
+{
+    InitializeRbSubSpace( RbSpaceType const& rbSpaceType )
+        :
+        M_rbSpaceType( rbSpaceType )
+    {}
+
+    template <typename T>
+    void operator()( T & x ) const
+    {
+        typedef typename T::first_type key_type;
+        typedef typename T::second_type::element_type rbsubspace_type;
+        auto rbSubSpace = boost::shared_ptr<rbsubspace_type>( new rbsubspace_type( M_rbSpaceType.worldComm() ) );
+        rbSubSpace->setModel( M_rbSpaceType.model(), false );
+        rbSubSpace->setFunctionSpace( M_rbSpaceType.template subFeFunctionSpace<key_type::value>() );
+        x = std::make_pair(key_type(), rbSubSpace);
+    }
+private :
+    RbSpaceType const& M_rbSpaceType;
+};
+
+/**
+ * add basis in subRbSpace
+ * Type=0 : primal basis
+ * Type=1 : dual basis
+ */
+template<typename RbSpaceType,int Type>
+struct AddBasisElementRbSubSpace
+{
+    AddBasisElementRbSubSpace( RbSpaceType const& rbSpaceType, typename RbSpaceType::space_element_type const & e )
+        :
+        M_rbSpaceType( rbSpaceType ),
+        M_e( e )
+        {}
+
+    template <typename T>
+    void operator()( T & x ) const
+        {
+            this->operator()( x,mpl::int_<Type>() );
+        }
+    template <typename T>
+    void operator()( T & x, mpl::int_<0> ) const
+        {
+            typedef typename T::first_type key_type;
+            // create new element
+            auto basiselt = M_rbSpaceType.template subFeFunctionSpace<key_type::value>()->element();
+            // copy view in element
+            basiselt = M_e.template element<key_type::value>();
+            // add basis in subspace
+            x.second->addPrimalBasisElement( basiselt );
+        }
+    template <typename T>
+    void operator()( T & x, mpl::int_<1> ) const
+        {
+            typedef typename T::first_type key_type;
+            // create new element
+            auto basiselt = M_rbSpaceType.template subFeFunctionSpace<key_type::value>()->element();
+            // copy view in element
+            basiselt = M_e.template element<key_type::value>();
+            // add basis in subspace
+            x.second->addDualBasisElement( basiselt );
+        }
+private :
+    RbSpaceType const& M_rbSpaceType;
+    typename RbSpaceType::space_element_type const & M_e;
+};
+
+/**
+ * delete n-last basis in subRbSpace
+ * Type=0 : primal basis
+ * Type=1 : dual basis
+ */
+template<typename RbSpaceType,int Type>
+struct DeleteLastBasisElementsRbSubSpace
+{
+    DeleteLastBasisElementsRbSubSpace( RbSpaceType const& rbSpaceType, int number )
+        :
+        M_rbSpaceType( rbSpaceType ),
+        M_number( number )
+        {}
+
+    template <typename T>
+    void operator()( T & x ) const
+        {
+            this->operator()( x,mpl::int_<Type>() );
+        }
+    template <typename T>
+    void operator()( T & x, mpl::int_<0> ) const
+        {
+            x.second->deleteLastPrimalBasisElements( M_number );
+        }
+    template <typename T>
+    void operator()( T & x, mpl::int_<1> ) const
+        {
+            x.second->deleteLastDualBasisElements( M_number );
+        }
+private :
+    RbSpaceType const& M_rbSpaceType;
+    int M_number;
+};
+
+/**
+ * delete all basis in subRbSpace
+ * Type=0 : primal basis
+ * Type=1 : dual basis
+ */
+template<int Type>
+struct ClearBasisElementsRbSubSpace
+{
+    template <typename T>
+    void operator()( T & x ) const
+        {
+            this->operator()( x,mpl::int_<Type>() );
+        }
+    template <typename T>
+    void operator()( T & x, mpl::int_<0> ) const
+        {
+            x.second->primalRB().clear();
+        }
+    template <typename T>
+    void operator()( T & x, mpl::int_<1> ) const
+        {
+            x.second->dualRB().clear();
+        }
+};
+
+}
+
 /**
  * \class ReducedBasisSpace
  * \brief Reduced Basis Space class
@@ -64,11 +196,11 @@ typedef parameter::parameters<
  * @see
  */
 
-template<typename ModelType>
-class ReducedBasisSpace : public ModelType::functionspace_type
+template<typename ModelType, typename FeSpaceType=typename ModelType::functionspace_type >
+class ReducedBasisSpace : public FeSpaceType
 {
 
-    typedef typename ModelType::functionspace_type super;
+    typedef FeSpaceType/*typename ModelType::functionspace_type*/ super;
     typedef boost::shared_ptr<super> super_ptrtype;
 
 public :
@@ -77,8 +209,9 @@ public :
 
     typedef ModelType model_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef boost::weak_ptr<model_type> model_weakptrtype;
 
-    typedef typename ModelType::mesh_type mesh_type;
+    typedef typename /*ModelType*/super::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef super fespace_type;
@@ -87,13 +220,13 @@ public :
     typedef super_ptrtype functionspace_ptrtype;
 
     //typedef typename super::element_type space_element_type;
-    typedef typename model_type::element_type space_element_type;
+    typedef typename fespace_type /*model_type*/::element_type space_element_type;
     typedef boost::shared_ptr<space_element_type> space_element_ptrtype;
 
     typedef std::vector< space_element_type > rb_basis_type;
     typedef boost::shared_ptr<rb_basis_type> rb_basis_ptrtype;
 
-    typedef ReducedBasisSpace<ModelType> this_type;
+    typedef ReducedBasisSpace<ModelType,FeSpaceType> this_type;
     typedef boost::shared_ptr<this_type> this_ptrtype;
 
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> eigen_vector_type;
@@ -165,6 +298,27 @@ public :
     typedef typename super::basis_type basis_type;
 #endif
 
+    template<int i>
+    struct sub_rbfunctionspace
+    {
+        typedef ReducedBasisSpace<model_type, typename fespace_type::template sub_functionspace<i>::type > type;
+        typedef boost::shared_ptr<type> ptrtype;
+    };
+
+    template<typename keyType>
+    struct ChangeRbSpace
+    {
+        typedef std::pair< keyType, typename sub_rbfunctionspace<keyType::value>::ptrtype > the_type;
+        typedef typename mpl::if_<mpl::bool_<fespace_type::is_composite>,
+                                  mpl::identity<the_type>,
+                                  mpl::identity<boost::none_t> >::type::type type;
+    };
+    typedef mpl::range_c<int,0, fespace_type::nSpaces> rangeRbSpaceType;
+    typedef typename mpl::transform< rangeRbSpaceType, ChangeRbSpace<mpl::_1>,
+                                    mpl::back_inserter<fusion::vector<> > >::type rbfunctionspace_vector_type;
+
+
+#if 0
     ReducedBasisSpace( model_ptrtype const& model )
         :
         super( *(model->functionSpace()) ),
@@ -173,34 +327,106 @@ public :
         {
             this->init();
         }
+#else
+    ReducedBasisSpace( WorldComm const& worldcomm = Environment::worldComm() )
+        {
+            this->init( mpl::bool_<fespace_type::is_composite>() );
+        }
+
+    ReducedBasisSpace( model_ptrtype const& model, WorldComm const& worldcomm = Environment::worldComm() )
+        :
+        super( worldcomm ),
+        M_mesh(),
+        M_model( model )
+        {
+            if ( model && model->functionSpace() )
+            {
+                this->setFunctionSpace( model->functionSpace() );
+            }
+            else
+                this->init( mpl::bool_<fespace_type::is_composite>() );
+        }
+    template< typename TheSpaceType>
+    void setFunctionSpace( TheSpaceType const& feSpace )
+        {
+            this->setFunctionSpace( feSpace, mpl::bool_< boost::is_same<TheSpaceType,functionspace_ptrtype>::value> () );
+        }
+    template< typename TheSpaceType>
+    void setFunctionSpace( TheSpaceType/*functionspace_ptrtype*/ const& feSpace, mpl::false_ )
+        {}
+    void setFunctionSpace( functionspace_ptrtype const& feSpace, mpl::true_ )
+        {
+            if ( feSpace )
+            {
+                super::shallowCopy( feSpace );
+                M_feSpace = feSpace;
+                M_mesh = feSpace->mesh();
+                this->init( mpl::bool_<fespace_type::is_composite>() );
+            }
+        }
+    void setModel( model_ptrtype const& model, bool useFeModelSpace = true )
+        {
+            M_model = model;
+            if ( useFeModelSpace && model && model->functionSpace() )
+            {
+                this->setFunctionSpace( model->functionSpace() );
+            }
+            //this->init();
+        }
+#endif
 
     //copy constructor
     ReducedBasisSpace( ReducedBasisSpace const& rb )
-    :
-    super ( rb ),
-    M_primal_rb_basis( rb.M_primal_rb_basis ),
-    M_dual_rb_basis( rb.M_dual_rb_basis ),
-    M_mesh( rb.M_mesh )
+        :
+        super ( rb ),
+        M_primal_rb_basis( rb.M_primal_rb_basis ),
+        M_dual_rb_basis( rb.M_dual_rb_basis ),
+        M_mesh( rb.M_mesh )
         {}
 
     ReducedBasisSpace( this_ptrtype const& rb )
-    :
-    super ( *rb ),
-    M_primal_rb_basis( rb->M_primal_rb_basis ),
-    M_dual_rb_basis( rb->M_dual_rb_basis ),
-    M_mesh( rb->M_mesh )
+        :
+        super ( *rb ),
+        M_primal_rb_basis( rb->M_primal_rb_basis ),
+        M_dual_rb_basis( rb->M_dual_rb_basis ),
+        M_mesh( rb->M_mesh )
         {}
 
-    void init()
+    void init( mpl::false_ )
         {
             //M_rbbasis = rbbasis_ptrtype( new rb_basis_type() );
+        }
+    void init( mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::InitializeRbSubSpace<this_type>( *this ) );
+        }
+
+    void setup( boost::property_tree::ptree const& ptree, std::string const& dbDir )
+        {
+            tic();
+            // WorldComm const& worldcomm = (M_model)? M_model->worldComm() : Environment::worldComm();
+            WorldComm const& worldcomm = this->worldComm();
+            std::string meshFilename = ptree.template get<std::string>( "mesh-filename" );
+            if ( !dbDir.empty() && !fs::path(meshFilename).is_absolute() )
+                meshFilename = (fs::path(dbDir)/fs::path(meshFilename).filename()).string();
+            auto mesh = loadMesh(_mesh=new mesh_type(worldcomm),_filename=meshFilename,
+                                 //_update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
+                                 _update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
+                                 //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
+            toc("ReducedBasisSpace::setup : load mesh",FLAGS_v>0);
+            tic();
+            auto feSpace = functionspace_type::New( _mesh=mesh,
+                                                    _worldscomm=this->worldsComm() );//std::vector<WorldComm>(functionspace_type::nSpaces,this->worldComm()) );
+            this->setFunctionSpace( feSpace );
+            toc("ReducedBasisSpace::setup : init spaces",FLAGS_v>0);
         }
 
 
     /*
      * Get the mesh
      */
-    mesh_ptrtype mesh()
+    mesh_ptrtype const& mesh() const
         {
             return M_mesh;
         }
@@ -212,11 +438,12 @@ public :
     void addPrimalBasisElement( space_element_type const & e )
         {
             M_primal_rb_basis.push_back( e );
+            this->addPrimalBasisElementInSubSpace( e, mpl::bool_<fespace_type::is_composite>() );
         }
 
     void addPrimalBasisElement( space_element_ptrtype const & e )
         {
-            M_primal_rb_basis.push_back( *e );
+            this->addPrimalBasisElement( *e );
         }
 
     space_element_type& primalBasisElement( int index )
@@ -228,11 +455,12 @@ public :
     void addDualBasisElement( space_element_type const & e )
         {
             M_dual_rb_basis.push_back( e );
+            this->addDualBasisElementInSubSpace( e, mpl::bool_<fespace_type::is_composite>() );
         }
 
     void addDualBasisElement( space_element_ptrtype const & e )
         {
-            M_dual_rb_basis.push_back( *e );
+            this->addDualBasisElement( *e );
         }
 
     space_element_type& dualBasisElement( int index )
@@ -250,6 +478,7 @@ public :
             {
                 M_primal_rb_basis.pop_back();
             }
+            this->deleteLastPrimalBasisElementsInSubSpace( number, mpl::bool_<fespace_type::is_composite>() );
         }
 
     void deleteLastDualBasisElements( int number )
@@ -260,6 +489,7 @@ public :
             {
                 M_dual_rb_basis.pop_back();
             }
+            this->deleteLastDualBasisElementsInSubSpace( number, mpl::bool_<fespace_type::is_composite>() );
         }
 
     /*
@@ -273,11 +503,11 @@ public :
         {
             return M_dual_rb_basis;
         }
-    rb_basis_type & primalRB() const
+    rb_basis_type const& primalRB() const
         {
             return M_primal_rb_basis;
         }
-    rb_basis_type & dualRB() const
+    rb_basis_type const& dualRB() const
         {
             return M_dual_rb_basis;
         }
@@ -285,21 +515,40 @@ public :
     /*
      * Set basis of the reduced basis space
      */
-    void setBasis( boost::tuple< rb_basis_type , rb_basis_type > & tuple )
+    void setBasis( boost::tuple< rb_basis_type , rb_basis_type > const& tuple )
         {
-            auto primal = tuple.template get<0>();
+            this->setPrimalBasis( boost::get<0>( tuple ) );
+            this->setDualBasis( boost::get<1>( tuple ) );
+            /*auto primal = tuple.template get<0>();
             auto dual = tuple.template get<1>();
             M_primal_rb_basis = primal;
-            M_dual_rb_basis = dual;
+             M_dual_rb_basis = dual;*/
         }
 
     void setPrimalBasis( rb_basis_type const& rb)
         {
             M_primal_rb_basis = rb;
+            this->setPrimalBasisInSubSpace( M_primal_rb_basis, mpl::bool_<fespace_type::is_composite>() );
         }
     void setDualBasis( rb_basis_type const& rb)
         {
             M_dual_rb_basis = rb;
+            this->setDualBasisInSubSpace( M_dual_rb_basis, mpl::bool_<fespace_type::is_composite>() );
+        }
+
+    /**
+     * update primal basis in subrbspace (do nothing if not composite)
+     */
+    void updatePrimalBasisForUse()
+        {
+            this->setPrimalBasisInSubSpace( M_primal_rb_basis, mpl::bool_<fespace_type::is_composite>() );
+        }
+    /**
+     * update dual basis in subrbspace (do nothing if not composite)
+     */
+    void updateDualBasisForUse()
+        {
+            this->setDualBasisInSubSpace( M_dual_rb_basis, mpl::bool_<fespace_type::is_composite>() );
         }
 
     //basis of RB space are elements of FEM function space
@@ -313,14 +562,14 @@ public :
     /*
      * return true if the function space is composite
      */
-    bool isComposite()
+    bool isComposite() const
         {
             return super::is_composite;
         }
     /*
      * size of the reduced basis space : number of basis functions
      */
-    int size()
+    int size() const
         {
             return M_primal_rb_basis.size();
         }
@@ -349,17 +598,43 @@ public :
         }
 
 
-    model_ptrtype model()
+    // model_weakptrtype const& model() const
+    model_ptrtype /*const&*/ model() const
         {
-            return M_model;
+            // return M_model;
+            return M_model.lock();
         }
 
     /*
      * Get the FEM functionspace
      */
-    super_ptrtype functionSpace() const
+    super_ptrtype /*const&*/ functionSpace() const
         {
-            return M_model->functionSpace();
+            //return M_model->functionSpace();
+            //return super::shared_from_this();
+            if ( M_feSpace )
+                return M_feSpace;
+            return boost::const_pointer_cast<super>( super::shared_from_this() );
+            //return this->shared_from_this();
+        }
+
+    template<int i>
+    typename sub_rbfunctionspace<i>::type::fespace_ptrtype const&
+    subFeFunctionSpace() const
+    {
+        return super::template functionSpace<i>();
+    }
+
+    /**
+     * save mesh on disk
+     */
+    void saveMesh( std::string const& meshFilename ) const
+        {
+#if defined(FEELPP_HAS_HDF5)
+            tic();
+            M_mesh->saveHDF5( meshFilename );
+            toc("ReducedBasisSpace::saveMesh",FLAGS_v>0);
+#endif
         }
 
     class ContextRB
@@ -398,12 +673,20 @@ public :
 
             }
 
+        ContextRB() = default;
+        ContextRB( ContextRB const& rbCtx ) = default;
+        ContextRB& operator=( ContextRB const& ) = default;
+
         int pointIndex() const
             {
                 return M_index;
             }
 
         reducedbasisspace_ptrtype rbSpace() const { return M_rbspace; }
+
+        void setRbSpace( reducedbasisspace_ptrtype const& rbspace ) { M_rbspace = rbspace; }
+
+        void setMeshForRbContext( mesh_ptrtype const& meshForRbContext )  { M_meshForRbContext = meshForRbContext; }
 
         void update()
             {
@@ -413,7 +696,7 @@ public :
                 //
                 // id
                 //
-                M_phi = M_rbspace->evaluateBasis( this->shared_from_this() );
+                M_phi = M_rbspace->evaluateBasis( boost::dynamic_pointer_cast<super>( this->shared_from_this() ) );
 
                 //
                 // grad
@@ -421,7 +704,7 @@ public :
                 for( int i=0; i<N; i++)
                 {
                     //matrix containing grad at all points
-                    auto evaluation = M_rbspace->evaluateGradBasis( i , this->shared_from_this() );
+                    auto evaluation = M_rbspace->evaluateGradBasis( i , boost::dynamic_pointer_cast<super>( this->shared_from_this() ) );
                     for(int c=0; c<nComponents; c++)
                     {
                         for(int d=0; d<nDim; d++)
@@ -473,19 +756,20 @@ public :
          */
         eigen_vector_type grad( eigen_vector_type const& coeffs , int node_index=-1 ) const
             {
+#if 0
                 int npts = super::nPoints();
                 DCHECK(npts > node_index)<<"node_index "<<node_index<<" must be lower that npts "<<npts;
                 if( node_index >=0 )
                     npts=1; //we study only the node at node_index
-
+#endif
                 eigen_vector_type result ;
                 for(int d=0; d<nDim; d++)
                 {
                     for(int c=0; c<nComponents; c++)
                     {
-                        eigen_vector_type result_comp_dim( npts );
+                        //eigen_vector_type result_comp_dim( npts );
                         auto prod = coeffs.transpose()*M_grad[c][d];
-                        result_comp_dim=prod.transpose();
+                        eigen_vector_type result_comp_dim=prod.transpose();
                         //concatenate
                         int new_size = result.size() + result_comp_dim.size();
                         eigen_vector_type tmp( result );
@@ -545,23 +829,92 @@ public :
                 return result;
             }//d
 
+        auto id( int ldof, int q ) const -> decltype( super::id( ldof, q ) )
+            {
+                return super::id( ldof, q );
+            }
         value_type id( int ldof, int c1, int c2, int q ) const
             {
                 return super::id( ldof, c1, c2, q );
+            }
+        auto grad( int ldof, int q ) const -> decltype( super::grad( ldof, q ) )
+            {
+                return super::grad( ldof, q );
             }
         value_type grad( int ldof, int c1, int c2, int q ) const
             {
                 return super::grad( ldof, c1, c2, q );
             }
+
         value_type d( int ldof, int c1, int c2, int q ) const
             {
                 return super::d( ldof, c1, c2, q );
             }
 
+    private :
+
+        friend class boost::serialization::access;
+
+        template<class Archive>
+        void save( Archive & ar, const unsigned int version ) const
+            {
+                ar & BOOST_SERIALIZATION_NVP( M_index );
+                ar & BOOST_SERIALIZATION_NVP( M_phi );
+                ar & BOOST_SERIALIZATION_NVP( M_grad );
+                typename super::geometric_mapping_context_ptrtype/*auto*/ gmContext = this->gmContext();
+                auto const& meshEltCtx = gmContext->element();
+                ar & BOOST_SERIALIZATION_NVP( meshEltCtx );
+                //ar & BOOST_SERIALIZATION_NVP( *gmContext );
+                ar & boost::serialization::make_nvp( "gmContext", *gmContext );
+
+            }
+
+        template<class Archive>
+        void load( Archive & ar, const unsigned int version )
+            {
+                // std::cout <<" load crbctx archive\n";
+                ar & BOOST_SERIALIZATION_NVP( M_index );
+                ar & BOOST_SERIALIZATION_NVP( M_phi );
+                ar & BOOST_SERIALIZATION_NVP( M_grad );
+                // std::cout << "M_phi="<<M_phi<<"\n";
+                geoelement_type meshEltCtx;
+                ar & BOOST_SERIALIZATION_NVP( meshEltCtx );
+                if ( M_rbspace )
+                {
+                    // std::cout << "has rbspace\n";
+                    if ( M_meshForRbContext )
+                    {
+                        if ( !M_meshForRbContext->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) )
+                        {
+                            meshEltCtx.setMeshAndGm( M_meshForRbContext.get(), M_meshForRbContext->gm(), M_meshForRbContext->gm1() );
+                            M_meshForRbContext->addElement( meshEltCtx, false );
+                        }
+                        auto const& meshEltCtxRegister = M_meshForRbContext->element( meshEltCtx.id(), meshEltCtx.processId() );
+                        typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_meshForRbContext->gm(),meshEltCtxRegister ) );
+                        ar & boost::serialization::make_nvp( "gmContext", *gmContext );
+                        this->setGmContext( gmContext );
+                    }
+                    else if ( M_rbspace->mesh() )
+                    {
+                        // std::cout << "has mesh in rbspace\n";
+                        CHECK ( M_rbspace->mesh()->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) ) << "fails because mesh doesnt have the element reloaded for gmc";
+                        auto const& meshEltCtxRegister = M_rbspace->mesh()->element( meshEltCtx.id(), meshEltCtx.processId() );
+                        typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_rbspace->mesh()->gm(),meshEltCtxRegister ) );
+                        ar & boost::serialization::make_nvp( "gmContext", *gmContext );
+                        this->setGmContext( gmContext );
+                    }
+                    else
+                        CHECK( false ) << "fails because no mesh defined";
+                }
+                //typename super::geometric_mapping_context_ptrtype gmc( new typename super::geometric_mapping_context_type( M_rbspace->mesh()->gm(),meshEltCtx ) );
+
+            }
+        BOOST_SERIALIZATION_SPLIT_MEMBER()
 
     private :
         int M_index;
         reducedbasisspace_ptrtype M_rbspace;
+        mesh_ptrtype M_meshForRbContext; // only init when reload serialisation and no mesh defined in rbspace
         eigen_matrix_type M_phi;
         std::vector<std::vector< eigen_vector_type> > M_grad;
 
@@ -584,7 +937,7 @@ public :
         static const bool is_rb_context = true;
 
 
-        typedef ReducedBasisSpace<ModelType> rbspace_type;
+        typedef ReducedBasisSpace<ModelType,FeSpaceType> rbspace_type;
         typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
 
         typedef typename rbspace_type::super_ptrtype functionspace_ptrtype;
@@ -611,48 +964,78 @@ public :
         ~ContextRBSet() {}
 
         ContextRBSet( super const& s )
-        :
-        super( s ),
-        M_ctx_fespace(s.begin()->second->rbSpace()->functionSpace()),
-        M_rbspace(s.begin()->second->rbSpace())
+            :
+            super( s ),
+            M_ctx_fespace(s.begin()->second->rbSpace()->functionSpace()),
+            M_rbspace(s.begin()->second->rbSpace()),
+            M_ctxHaveBeenMpiBroadcasted( false )
             {
                 for( auto& m : s )
                 {
-                    M_ctx_fespace.addCtx( m.second, Environment::worldComm().globalRank() );
+                    M_ctx_fespace.addCtx( m.second, M_rbspace->worldComm().globalRank() );
                 }
+                M_nPoints = M_ctx_fespace.nPoints();
             }
 
-        ContextRBSet( rbspace_ptrtype rbspace )
-        :
-        super(),
-        M_ctx_fespace( rbspace->functionSpace() ),
-        M_rbspace( rbspace )
+        ContextRBSet( rbspace_ptrtype const& rbspace )
+            :
+            super(),
+            M_ctx_fespace( rbspace->functionSpace() ),
+            M_rbspace( rbspace ),
+            M_nPoints( M_ctx_fespace.nPoints() ),
+            M_ctxHaveBeenMpiBroadcasted( false )
             {
                 update();
             }
 
         //only because the function functionSpace()
         //returns an object : rb_functionspaceptrtype
-        ContextRBSet( functionspace_ptrtype functionspace )
-        :
-        super(),
-        M_ctx_fespace( functionspace )
+        ContextRBSet( functionspace_ptrtype const& functionspace )
+            :
+            super(),
+            M_ctx_fespace( functionspace ),
+            M_nPoints( M_ctx_fespace.nPoints() ),
+            M_ctxHaveBeenMpiBroadcasted( false )
             {
                 update();
             }
+
+        ContextRBSet()
+            :
+            M_nPoints( 0 ),
+            M_ctxHaveBeenMpiBroadcasted( false )
+            {}
+        ContextRBSet( ContextRBSet const& ctxRbSet ) = default;
+        ContextRBSet& operator=( ContextRBSet const& ) = default;
+
 
         functionspace_ptrtype functionSpace() const
             {
                 return M_rbspace->functionSpace();
             }
 
-        void update ( )
+        void update()
             {
                 for( auto& c : *this )
-                    c.second->update();
+                {
+                    rank_type procId = M_ctx_fespace.processorHavingPoint(c.first);
+                    if ( procId == M_rbspace->worldComm().globalRank() )
+                        c.second->update();
+                }
+                // update context for each process + define context mesh
+                if ( this->nPoints() > 0 )
+                {
+                    for ( int k=0;k<this->nPoints();++k )
+                    {
+                        this->syncCtx( k );
+                    }
+                    M_ctxHaveBeenMpiBroadcasted = true;
+                }
             }
 
-        rbspace_ptrtype rbFunctionSpace() const
+        bool ctxHaveBeenMpiBroadcasted() const { return M_ctxHaveBeenMpiBroadcasted; }
+
+        rbspace_ptrtype const& rbFunctionSpace() const
             {
                 return M_rbspace;
             }
@@ -662,22 +1045,28 @@ public :
                 return M_rbspace.get();
             }
 
+        void setRbFunctionSpace( rbspace_ptrtype const& rbSpace )
+            {
+                M_rbspace = rbSpace;
+            }
+
         std::pair<iterator,bool>
-        add( node_type t )
+        add( node_type const& t )
         {
             return add( t, mpl::bool_<is_composite>() );
         }
         std::pair<iterator,bool>
-        add( node_type t, mpl::bool_<true> )
+        add( node_type const& t, mpl::bool_<true> )
         {
             return std::make_pair( this->end(), false );
         }
         std::pair<iterator,bool>
-        add( node_type t, mpl::bool_<false> )
+        add( node_type const& t, mpl::bool_<false> )
         {
             // we suppose here that the point will be added which means that it
             // has been located in the underlying mesh
             auto ret = M_ctx_fespace.add( t );
+            M_nPoints = M_ctx_fespace.nPoints();
             // if the current processor handles the point previously located
             // add it to the ContextRB set
             if ( ret.second )
@@ -688,14 +1077,107 @@ public :
         }
         int nPoints() const
         {
-            return M_ctx_fespace.nPoints();
+            return M_nPoints;//M_ctx_fespace.nPoints();
         }
 
-        fe_context_type const& feContext() { return M_ctx_fespace; }
+        fe_context_type const& feContext() const { return M_ctx_fespace; }
+
+    private :
+
+        void syncCtx( int ptId )
+        {
+            rank_type procId = M_ctx_fespace.processorHavingPoint(ptId);
+            rank_type myrank = M_rbspace->worldComm().rank();
+
+            if ( !M_meshForRbContext )
+                M_meshForRbContext.reset( new mesh_type( M_rbspace->worldComm() ) );
+
+            ctxrb_ptrtype rbCtxReload;
+            if ( myrank == procId )
+            {
+                // update additional mesh used in rb context
+                CHECK( this->find( ptId ) != this->end() ) << "point id is not saved on this process";
+                rbCtxReload = this->operator[]( ptId );
+                CHECK( rbCtxReload ) << "rbCtxReload not init";
+                rbCtxReload->setMeshForRbContext( M_meshForRbContext );
+                auto const& modelMeshEltCtx = rbCtxReload->gmContext()->element();
+                if ( !M_meshForRbContext->hasElement( modelMeshEltCtx.id(), modelMeshEltCtx.processId() ) )
+                {
+                    geoelement_type meshEltCtx = modelMeshEltCtx;;
+                    meshEltCtx.setMeshAndGm( M_meshForRbContext.get(), M_meshForRbContext->gm(), M_meshForRbContext->gm1() );
+                    M_meshForRbContext->addElement( meshEltCtx, false );
+                }
+            }
+            else
+            {
+                // create a new rb context
+                rbCtxReload.reset( new ctxrb_type );
+                rbCtxReload->setRbSpace( M_rbspace );
+                rbCtxReload->setMeshForRbContext( M_meshForRbContext );
+            }
+            // recv rb context from process which have localized the point
+            mpi::broadcast( M_rbspace->worldComm().globalComm(), *rbCtxReload, procId );
+
+            // save rb context with process which doesnt have localized the point
+            if ( myrank != procId )
+                this->operator[]( ptId ) = rbCtxReload;
+
+            // std::cout << "["<<M_rbspace->worldComm().rank()<<"] M_meshForRbContext->numElements() : " << M_meshForRbContext->numElements() << "\n";
+        }
+
+
+        friend class boost::serialization::access;
+
+        template<class Archive>
+        void save( Archive & ar, const unsigned int version ) const
+            {
+                ar & BOOST_SERIALIZATION_NVP( M_nPoints );
+                std::vector<int> rbCtxKeys;
+                for ( auto const& rbCtxPair : *this )
+                    rbCtxKeys.push_back( rbCtxPair.first );
+                ar & BOOST_SERIALIZATION_NVP( rbCtxKeys );
+                for ( int rbCtxKey : rbCtxKeys )
+                {
+                    std::string rbctxNameInSerialization = (boost::format("rbSpaceContext_%1%")%rbCtxKey).str();
+                    ar & boost::serialization::make_nvp( rbctxNameInSerialization.c_str(), *(this->find( rbCtxKey )->second) );
+                }
+
+            }
+
+        template<class Archive>
+        void load( Archive & ar, const unsigned int version )
+            {
+                // std::cout << "reload rbctxset\n";
+                if ( M_rbspace )
+                {
+                    if ( !M_meshForRbContext )
+                        M_meshForRbContext.reset( new mesh_type( M_rbspace->worldComm() ) );
+                }
+
+                ar & BOOST_SERIALIZATION_NVP( M_nPoints );
+                std::vector<int> rbCtxKeys;
+                ar & BOOST_SERIALIZATION_NVP( rbCtxKeys );
+                for ( int rbCtxKey : rbCtxKeys )
+                {
+                    std::string rbctxNameInSerialization = (boost::format("rbSpaceContext_%1%")%rbCtxKey).str();
+                    boost::shared_ptr<ContextRB> rbCtxReload( new ContextRB );
+                    if ( M_rbspace )
+                    {
+                        rbCtxReload->setRbSpace( M_rbspace );
+                        rbCtxReload->setMeshForRbContext( M_meshForRbContext );
+                    }
+                    ar & boost::serialization::make_nvp( rbctxNameInSerialization.c_str(), *rbCtxReload );
+                    this->operator[]( rbCtxKey ) = rbCtxReload;
+                }
+            }
+        BOOST_SERIALIZATION_SPLIT_MEMBER()
 
     private :
         fe_context_type M_ctx_fespace;
         rbspace_ptrtype M_rbspace;
+        int M_nPoints;
+        mesh_ptrtype M_meshForRbContext; // only init when reload serialisation and no mesh defined in rbspace
+        bool M_ctxHaveBeenMpiBroadcasted;
     };
     typedef ContextRBSet ctxrbset_type;
     typedef boost::shared_ptr<ctxrbset_type> ctxrbset_ptrtype;
@@ -703,7 +1185,7 @@ public :
     /**
      * \return function space context
      */
-    ContextRBSet context() { return ContextRBSet( boost::dynamic_pointer_cast< ReducedBasisSpace<ModelType> >( this->shared_from_this() ) ); }
+    ContextRBSet context() { return ContextRBSet( boost::dynamic_pointer_cast< ReducedBasisSpace<ModelType,FeSpaceType> >( this->shared_from_this() ) ); }
 
     ctxrb_ptrtype
     contextBasis( std::pair<int,boost::shared_ptr<ContextRB>> const& p, ContextRBSet const& c )
@@ -715,11 +1197,13 @@ public :
      * evaluate all basis functions at (only one) node given by ctx
      * returns matrix of size nComponents x N if N is RB size
      */
-    eigen_matrix_type evaluateBasis( boost::shared_ptr<ContextRB> const& ctx )
+    template <typename ContextBasisFem>
+    eigen_matrix_type evaluateBasis( boost::shared_ptr<ContextBasisFem> const& ctx )
         {
             eigen_matrix_type m( nComponents, M_primal_rb_basis.size() );
-            std::map<int,ctxrb_ptrtype> mc{{0,ctx}};
-            ContextRBSet s( mc );
+
+            auto s = this->functionSpace()->context();
+            s.addCtx( ctx, this->functionSpace()->worldComm().localRank() );
 
             //index of the column to be filled
             int c = 0;
@@ -735,10 +1219,12 @@ public :
             return m;
         }
 
-    eigen_matrix_type evaluateGradBasis( int i , boost::shared_ptr<ContextRB> const& ctxs )
+    template <typename ContextBasisFem>
+    eigen_matrix_type evaluateGradBasis( int i , boost::shared_ptr<ContextBasisFem> const& ctxs )
         {
-            std::map<int,ctxrb_ptrtype> mc{{0,ctxs}};
-            ContextRBSet ctx( mc );
+            auto ctx = this->functionSpace()->context();
+            ctx.addCtx( ctxs, this->functionSpace()->worldComm().localRank() );
+
             int npts = ctx.nPoints();
             eigen_matrix_type evaluation;
             evaluation.resize( nDim , npts*nComponents );
@@ -789,7 +1275,7 @@ public :
         public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >
     {
     public:
-        typedef ReducedBasisSpace<ModelType> rbspace_type;
+        typedef ReducedBasisSpace<ModelType,FeSpaceType> rbspace_type;
         typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
 
         typedef rbspace_type::super functionspace_type;
@@ -842,8 +1328,14 @@ public :
         static const uint16_type nComponents2 = functionspace_type::nComponents2;
 
         typedef boost::multi_array<value_type,3> array_type;
+#if 0
         typedef Eigen::Matrix<value_type,nComponents1,1> _id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nRealDim> _grad_type;
+#else
+        using _id_type = Eigen::Tensor<value_type,2>;
+        using _grad_type = Eigen::Tensor<value_type,2>;
+        using eigen_matrix_to_tensor_map = Eigen::TensorMap<Eigen::Matrix<value_type, nComponents1, 1> >;
+#endif
         typedef boost::multi_array<_id_type,1> id_array_type;
         typedef boost::multi_array<_grad_type,1> grad_array_type;
 
@@ -983,8 +1475,10 @@ public :
         /*
          * evaluate the element to nodes in contextRBSet
          */
-        eigen_vector_type evaluate(  ctxrbset_type const& context_rb, bool do_communications=true )
+        eigen_vector_type evaluate(  ctxrbset_type const& context_rb, bool do_comm=true )
             {
+                bool do_communications = do_comm && M_rbspace.worldComm().globalSize() > 1 && !context_rb.ctxHaveBeenMpiBroadcasted();
+
                 int npts = context_rb.nPoints();
                 //from now we manipulate local datas
                 //one proc can have zero, one or more context_rb
@@ -1004,7 +1498,7 @@ public :
                 }
 
                 if( do_communications )
-                    mpi::all_reduce( Environment::worldComm() , local_result, global_result, std::plus< eigen_vector_type >() );
+                    mpi::all_reduce( M_rbspace.worldComm() , local_result, global_result, std::plus< eigen_vector_type >() );
                 else
                     global_result = local_result;
 
@@ -1027,6 +1521,25 @@ public :
         bool areGlobalValuesUpdated() const
             {
                 return true;
+            }
+
+
+        template <typename ... CTX>
+        decltype(auto) //ctxrb_ptrtype
+        selectContext( CTX const& ... ctx ) const
+            {
+                typedef boost::fusion::vector<CTX...> my_vector_ctx_type;
+                typedef typename boost::fusion::result_of::distance<typename boost::fusion::result_of::begin<my_vector_ctx_type>::type,
+                                                                    typename boost::fusion::result_of::find<my_vector_ctx_type,ctxrb_ptrtype>::type>::type pos_ctx_type;
+                typedef typename boost::fusion::result_of::distance<typename boost::fusion::result_of::begin<my_vector_ctx_type>::type,
+                                                                    typename boost::fusion::result_of::find<my_vector_ctx_type,
+                                                                                                            boost::shared_ptr<typename ctxrb_type::super> >::type>::type pos_fectx_type;
+
+                static const int myNumberOfCtx = boost::mpl::size<my_vector_ctx_type>::type::value;
+                CHECK( pos_ctx_type::value < myNumberOfCtx || pos_fectx_type::value < myNumberOfCtx ) << "no compatible context";
+                static const int ctxPosition = (pos_ctx_type::value < myNumberOfCtx)? pos_ctx_type::value : ( (pos_fectx_type::value < myNumberOfCtx)? pos_fectx_type::value : 0 );
+                my_vector_ctx_type ctxvec( ctx... );
+                return boost::fusion::at_c<ctxPosition>( ctxvec );
             }
 
 
@@ -1151,6 +1664,11 @@ public :
          * we need to have these functions
          */
         void
+        gradInterpolate( matrix_node_type __ptsReal, grad_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+        {
+            CHECK( false ) << "The function gradInterpolate is not yet implemented \n";
+        }
+        void
         dxInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
         {
             bool go = false;
@@ -1234,14 +1752,14 @@ public :
     //Access to an element of the reduced basis space
     element_type element( std::string const& name="u" )
         {
-            element_type u(boost::dynamic_pointer_cast<ReducedBasisSpace<ModelType>>(this->shared_from_this() ), name );
+            element_type u(boost::dynamic_pointer_cast<ReducedBasisSpace<ModelType,FeSpaceType>>(this->shared_from_this() ), name );
             u.setZero();
             return u;
         }
 
     element_ptrtype elementPtr( std::string const& name="u" )
         {
-            element_ptrtype u( new element_type( boost::dynamic_pointer_cast<ReducedBasisSpace<ModelType>>(this->shared_from_this() ) , name ) );
+            element_ptrtype u( new element_type( boost::dynamic_pointer_cast<ReducedBasisSpace<ModelType,FeSpaceType>>(this->shared_from_this() ) , name ) );
             u->setZero();
             return u;
         }
@@ -1258,47 +1776,109 @@ public :
             return Feel::expansion( M_primal_rb_basis, unknown , number_of_coeff );
         }
 
+
+    rbfunctionspace_vector_type const&
+    rbfunctionspaces() const
+    {
+        return M_rbfunctionspaces;
+    }
+
+    /**
+     * get the \p i -th \c FunctionSpace out the list
+     */
+    template<int i>
+    typename mpl::at_c<rbfunctionspace_vector_type,i>::type::second_type const&
+    rbFunctionSpace() const
+    {
+        return fusion::at_c<i>( M_rbfunctionspaces ).second;
+    }
+
 private :
+    void addPrimalBasisElementInSubSpace( space_element_type const & e, mpl::false_ ) {}
+    void addPrimalBasisElementInSubSpace( space_element_type const & e, mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::AddBasisElementRbSubSpace<this_type,0>( *this, e ) );
+        }
+    void deleteLastPrimalBasisElementsInSubSpace( int number, mpl::false_ ) {}
+    void deleteLastPrimalBasisElementsInSubSpace( int number, mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::DeleteLastBasisElementsRbSubSpace<this_type,0>( *this, number ) );
+        }
+    void setPrimalBasisInSubSpace( rb_basis_type const& rb, mpl::false_ ) {}
+    void setPrimalBasisInSubSpace( rb_basis_type const& rb, mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::ClearBasisElementsRbSubSpace<0>() );
+            for (auto const& thebasis : rb )
+                this->addPrimalBasisElementInSubSpace( thebasis, mpl::true_() );
+        }
+
+    void addDualBasisElementInSubSpace( space_element_type const & e, mpl::false_ ) {}
+    void addDualBasisElementInSubSpace( space_element_type const & e, mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::AddBasisElementRbSubSpace<this_type,1>( *this, e ) );
+        }
+    void deleteLastDualBasisElementsInSubSpace( int number, mpl::false_ ) {}
+    void deleteLastDualBasisElementsInSubSpace( int number, mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::DeleteLastBasisElementsRbSubSpace<this_type,1>( *this, number ) );
+        }
+    void setDualBasisInSubSpace( rb_basis_type const& rb, mpl::false_ ) {}
+    void setDualBasisInSubSpace( rb_basis_type const& rb, mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::ClearBasisElementsRbSubSpace<1>() );
+            for (auto const& thebasis : rb )
+                this->addDualBasisElementInSubSpace( thebasis, mpl::true_() );
+        }
+
+private :
+    fespace_ptrtype M_feSpace;
+    rbfunctionspace_vector_type M_rbfunctionspaces;
     rb_basis_type M_primal_rb_basis;
     rb_basis_type M_dual_rb_basis;
     mesh_ptrtype M_mesh;
-    model_ptrtype M_model;
+    model_weakptrtype M_model;
 
 };//ReducedBasisSpace
 
 
-template<typename ModelType>
-const uint16_type ReducedBasisSpace<ModelType>::nComponents;
+template<typename ModelType,typename FeSpaceType>
+const uint16_type ReducedBasisSpace<ModelType,FeSpaceType>::nComponents;
 
-template<typename ModelType>
-const uint16_type ReducedBasisSpace<ModelType>::ContextRB::nComponents;
+template<typename ModelType,typename FeSpaceType>
+const uint16_type ReducedBasisSpace<ModelType,FeSpaceType>::ContextRB::nComponents;
 
 
 
-template<typename ModelType>
+template<typename ModelType,typename FeSpaceType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
+ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
 {
     return id_( context, v, boost::is_same<Context_t,ContextRB>() );
 }
 
 
-template<typename ModelType>
+template<typename ModelType,typename FeSpaceType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v ) const
+ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v ) const
 {
     return grad_( context, v, boost::is_same<Context_t,ContextRB>() );
 }
 
-template<typename ModelType>
+template<typename ModelType,typename FeSpaceType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v ) const
+ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v ) const
 {
     return d_( N, context, v, boost::is_same<Context_t,ContextRB>() );
 }
@@ -1309,27 +1889,29 @@ ReducedBasisSpace<ModelType>::Element<Y,Cont>::d_( int N, Context_t const & cont
 //use u.evaluate( rb_context ) should go faster
 //because here we do the same thing ( context.id(*this) )
 //but we add a loop over points
-template<typename ModelType>
+template<typename ModelType,typename FeSpaceType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
+ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
 {
-    v[0] = context.id( *this );
+    //eigen_matrix_to_tensor_map m( context.id( *this ) );
+    auto idEigenMatrix = context.id( *this );
+    Eigen::TensorMap<_id_type> m( idEigenMatrix.data(), nComponents1, 1 );
+    v[0] = m;
 }
 
-template<typename ModelType>
+template<typename ModelType,typename FeSpaceType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v , mpl::bool_<true> ) const
+ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v , mpl::bool_<true> ) const
 {
-    ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
     //LOG( INFO ) << " grad_ with a RB context";
 
-    int index = rb_context.pointIndex();
+    //int index = rb_context.pointIndex();
     //evaluate the gradient at a specific point (called by evaluateFromContext)
-    auto evaluation = rb_context.grad( *this );
+    auto evaluation = context.grad( *this );
     for(int d=0;d<nDim;d++)
     {
         for(int c=0; c<nComponents; c++)
@@ -1339,16 +1921,15 @@ ReducedBasisSpace<ModelType>::Element<Y,Cont>::grad_( Context_t const & context,
     }
 }
 
-template<typename ModelType>
+template<typename ModelType,typename FeSpaceType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
+ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
 {
-    ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
     //LOG( INFO ) << " d_ with a RB context";
 
-    auto evaluation = rb_context.d(N, *this );
+    auto evaluation = context.d(N, *this );
 
     for(int c=0; c<nComponents; c++)
     {
@@ -1357,11 +1938,11 @@ ReducedBasisSpace<ModelType>::Element<Y,Cont>::d_( int N, Context_t const & cont
 
 }
 
-template<typename ModelType>
+template<typename ModelType,typename FeSpaceType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<false> ) const
+ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<false> ) const
 {
     //LOG( INFO ) << "id_ with a FEM context";
     if ( !this->areGlobalValuesUpdated() )
@@ -1419,11 +2000,11 @@ ReducedBasisSpace<ModelType>::Element<Y,Cont>::id_( Context_t const & context, i
 }
 
 
-template<typename ModelType>
+template<typename ModelType,typename FeSpaceType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v , mpl::bool_<false> ) const
+ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v , mpl::bool_<false> ) const
 {
 
     //LOG( INFO ) << "grad_ with a FEM context";
@@ -1480,11 +2061,11 @@ ReducedBasisSpace<ModelType>::Element<Y,Cont>::grad_( Context_t const & context,
 }
 
 
-template<typename ModelType>
+template<typename ModelType,typename FeSpaceType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v , mpl::bool_<false> ) const
+ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v , mpl::bool_<false> ) const
 {
 
     int rb_size = this->size();
@@ -1525,30 +2106,30 @@ ReducedBasisSpace<ModelType>::Element<Y,Cont>::d_( int N, Context_t const & cont
 
 
 
-template<typename ModelType>
+template<typename ModelType,typename FeSpaceType>
 template<typename Y,  typename Cont>
 void
-ReducedBasisSpace<ModelType>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+ReducedBasisSpace<ModelType,FeSpaceType>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
     bool go = false;
     CHECK( go ) << "The function idInterpolate is not yet implemented \n";
     LOG( INFO ) << "not yet implemented";
 }
 
-template<typename ModelType>
+template<typename ModelType,typename FeSpaceType=typename ModelType::functionspace_type>
 inline
-boost::shared_ptr<ReducedBasisSpace<ModelType> >
+boost::shared_ptr<ReducedBasisSpace<ModelType,FeSpaceType> >
 RbSpacePch(  boost::shared_ptr<ModelType> const& model )
 {
-    return ReducedBasisSpace<ModelType>::New( model );
+    return ReducedBasisSpace<ModelType,FeSpaceType>::New( model );
 }
 
-template<int Order, typename ModelType>
+template<int Order, typename ModelType,typename FeSpaceType=typename ModelType::functionspace_type>
 inline
-boost::shared_ptr<ReducedBasisSpace<ModelType>>
+boost::shared_ptr<ReducedBasisSpace<ModelType,FeSpaceType>>
 RbSpacePchv(  boost::shared_ptr<ModelType> const& model)
 {
-    return ReducedBasisSpace<ModelType>::New( model );
+    return ReducedBasisSpace<ModelType,FeSpaceType>::New( model );
 }
 
 

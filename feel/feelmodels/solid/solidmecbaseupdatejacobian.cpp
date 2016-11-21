@@ -2,7 +2,7 @@
 
 #include <feel/feelmodels/solid/solidmecbase.hpp>
 
-#include <feel/feelmodels/modelvf/solidmecstvenantkirchhoff.hpp>
+//#include <feel/feelmodels/modelvf/solidmecstvenantkirchhoff.hpp>
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
 #include <feel/feelmodels/modelvf/solidmecincompressibility.hpp>
 

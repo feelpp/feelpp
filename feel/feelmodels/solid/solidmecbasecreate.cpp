@@ -671,7 +671,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
     }
     else
     {
-#if defined(FEELPP_HAS_VTK)
+#if 1 //defined(FEELPP_HAS_VTK)
         boost::shared_ptr<mesh_visu_ho_type> meshVisuHO;
         std::string hovisuSpaceUsed = soption(_name="hovisu.space-used",_prefix=this->prefix());
         bool doLagP1parallel=false;
@@ -755,12 +755,15 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters1dReduced()
     //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
     std::string geoExportType="static";
 
-    M_exporter_1dReduced = exporter( _mesh=this->mesh1dReduced(),
+    if (!M_isHOVisu)
+    {
+        M_exporter_1dReduced = exporter( _mesh=this->mesh1dReduced(),
                                       //_name=prefixvm(this->prefix(), prefixvm(this->subPrefix(),"Export-1dReduced")),
                                       _name="Export-1dReduced",
                                       _geo=geoExportType,
                                       _worldcomm=M_Xh_1dReduced->worldComm(),
                                       _path=this->exporterPath() );
+    }
 
     this->log("SolidMechanics","createExporters1dReduced", "finish" );
 }

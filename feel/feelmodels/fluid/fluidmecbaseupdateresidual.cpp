@@ -154,8 +154,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
     {
         //neumann boundary condition
         this->updateBCNeumannResidual( R );
-        //pressure boundary condition
-        this->updateBCPressureResidual( R );
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -511,6 +509,76 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         }
 
     }
+    //------------------------------------------------------------------------------------//
+
+    if ( this->hasMarkerPressureBC() )
+    {
+
+        if ( !BuildCstPart && !UseJacobianLinearTerms )
+        {
+            CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm1") != this->startBlockIndexFieldsInMatrix().end() )
+                << " start dof index for pressurelm1 is not present\n";
+            size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+
+            auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( XVec, rowStartInVector+startBlockIndexPressureLM1 );
+
+            if ( nDim==2 )
+            {
+                form1( _test=Xh,_vector=R,
+                       _rowstart=rowStartInVector ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(id(u),N()))(0,0)*idv(lambdaPressure1),
+                               _geomap=this->geomap() );
+
+                form1( _test=M_spaceLagrangeMultiplierPressureBC,_vector=R,
+                       _rowstart=rowStartInVector+startBlockIndexPressureLM1 ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(idv(u),N()))(0,0)*id(lambdaPressure1),
+                               _geomap=this->geomap() );
+            }
+            else if ( nDim==3 )
+            {
+                auto alpha = 1./sqrt(1-Nz()*Nz());
+                form1( _test=Xh,_vector=R,
+                       _rowstart=rowStartInVector ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(id(u),N()))(0,2)*idv(lambdaPressure1)*alpha,
+                               _geomap=this->geomap() );
+
+                form1( _test=M_spaceLagrangeMultiplierPressureBC,_vector=R,
+                       _rowstart=rowStartInVector+startBlockIndexPressureLM1 ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr=-trans(cross(idv(u),N()))(0,2)*id(lambdaPressure1)*alpha,
+                               _geomap=this->geomap() );
+
+                CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm2") != this->startBlockIndexFieldsInMatrix().end() )
+                    << " start dof index for pressurelm2 is not present\n";
+                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+
+                auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( XVec, rowStartInVector+startBlockIndexPressureLM2 );
+
+                form1( _test=Xh,_vector=R,
+                       _rowstart=rowStartInVector ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr= -trans(cross(id(u),N()))(0,0)*alpha*idv(lambdaPressure2)*Ny()
+                               +trans(cross(id(u),N()))(0,1)*alpha*idv(lambdaPressure2)*Nx(),
+                               _geomap=this->geomap() );
+
+                form1( _test=M_spaceLagrangeMultiplierPressureBC,_vector=R,
+                       _rowstart=rowStartInVector+startBlockIndexPressureLM2 ) +=
+                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                               _expr= -trans(cross(idv(u),N()))(0,0)*alpha*id(M_fieldLagrangeMultiplierPressureBC2)*Ny()
+                               +trans(cross(idv(u),N()))(0,1)*alpha*id(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
+                               _geomap=this->geomap() );
+            }
+        }
+        if ( BuildCstPart )
+        {
+            this->updateBCPressureResidual( R );
+        }
+
+    }
+
 
     //------------------------------------------------------------------------------------//
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -713,6 +781,21 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             markerDirichletEliminationOthers.push_back( marker );
         }
 
+        if ( this->hasMarkerPressureBC() )
+        {
+            size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+            auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( XVec, rowStartInVector+startBlockIndexPressureLM1 );
+            lambdaPressure1.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
+                               _expr=vf::zero<1,1>() );
+            if ( nDim == 3 )
+            {
+                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+                auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( XVec, rowStartInVector+startBlockIndexPressureLM2 );
+                lambdaPressure2.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
+                                   _expr=vf::zero<1,1>() );
+            }
+        }
+
         if ( !markerDirichletEliminationOthers.empty() )
         {
             auto up = Xh->element(R,rowStartInVector);
@@ -764,6 +847,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
         auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
         u.on(_range=markedfaces(mesh, marker),
              _expr=-idv(inletVel)*N() );
+    }
+
+    if ( this->definePressureCst() && this->definePressureCstMethod() == "algebraic" )
+    {
+        auto upSol = this->functionSpace()->element( U, this->rowStartInVector() );
+        auto pSol = upSol.template element<1>();
+        CHECK( M_definePressureCstAlgebraicOperatorMeanPressure ) << "mean pressure operator does not init";
+        double meanPressureCurrent = inner_product( *M_definePressureCstAlgebraicOperatorMeanPressure, pSol );
+        double meanPressureImposed = 0;
+        pSol.add( meanPressureImposed - meanPressureCurrent );
     }
 
     if ( M_useThermodynModel && M_useGravityForce )

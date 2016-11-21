@@ -1,0 +1,25 @@
+Index: CMakeLists.txt
+===================================================================
+--- CMakeLists.txt	(révision 17945)
++++ CMakeLists.txt	(copie de travail)
+@@ -32,6 +32,7 @@
+ opt(3M "Enable proprietary 3M extension" OFF)
+ opt(ACIS "Enable ACIS geometrical models (experimental)" ${DEFAULT})
+ opt(ANN "Enable ANN (used for fast point search in mesh/post)" ${DEFAULT})
++opt(SEARCH_ANN_IN_SYSTEM "Search before in system if ANN is installed" ON)
+ opt(BAMG "Enable Bamg 2D anisotropic mesh generator" ${DEFAULT})
+ opt(BFGS "Enable BFGS (used by some mesh optimizers)" ${DEFAULT})
+ opt(BLAS_LAPACK "Enable BLAS/Lapack for linear algebra (required for meshing)" ON)
+@@ -590,8 +591,10 @@
+ 
+ if(HAVE_MESH OR HAVE_PLUGINS)
+   if(ENABLE_ANN)
+-    find_library(ANN_LIB ann PATH_SUFFIXES lib)
+-    find_path(ANN_INC "ANN.h" PATH_SUFFIXES src include ANN)
++    if(SEARCH_ANN_IN_SYSTEM)
++      find_library(ANN_LIB ann PATH_SUFFIXES lib)
++      find_path(ANN_INC "ANN.h" PATH_SUFFIXES src include ANN)
++    endif(SEARCH_ANN_IN_SYSTEM)
+     if(ANN_LIB AND ANN_INC)
+       list(APPEND EXTERNAL_LIBRARIES ${ANN_LIB})
+       list(APPEND EXTERNAL_INCLUDES ${ANN_INC})

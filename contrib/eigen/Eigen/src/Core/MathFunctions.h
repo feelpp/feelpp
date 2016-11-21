@@ -11,7 +11,9 @@
 #define EIGEN_MATHFUNCTIONS_H
 
 // source: http://www.geom.uiuc.edu/~huberty/math5337/groupe/digits.html
-#define EIGEN_PI 3.141592653589793238462643383279502884197169399375105820974944592307816406
+// TODO this should better be moved to NumTraits
+#define EIGEN_PI 3.141592653589793238462643383279502884197169399375105820974944592307816406L
+
 
 namespace Eigen {
 
@@ -23,7 +25,7 @@ double      abs(double      x) { return (fabs(x));  }
 float       abs(float       x) { return (fabsf(x)); }
 long double abs(long double x) { return (fabsl(x)); }
 #endif
-  
+
 namespace internal {
 
 /** \internal \class global_math_functions_filtering_base
@@ -95,6 +97,19 @@ struct real_default_impl<Scalar,true>
 
 template<typename Scalar> struct real_impl : real_default_impl<Scalar> {};
 
+#ifdef __CUDA_ARCH__
+template<typename T>
+struct real_impl<std::complex<T> >
+{
+  typedef T RealScalar;
+  EIGEN_DEVICE_FUNC
+  static inline T run(const std::complex<T>& x)
+  {
+    return x.real();
+  }
+};
+#endif
+
 template<typename Scalar>
 struct real_retval
 {
@@ -129,6 +144,19 @@ struct imag_default_impl<Scalar,true>
 };
 
 template<typename Scalar> struct imag_impl : imag_default_impl<Scalar> {};
+
+#ifdef __CUDA_ARCH__
+template<typename T>
+struct imag_impl<std::complex<T> >
+{
+  typedef T RealScalar;
+  EIGEN_DEVICE_FUNC
+  static inline T run(const std::complex<T>& x)
+  {
+    return x.imag();
+  }
+};
+#endif
 
 template<typename Scalar>
 struct imag_retval
@@ -457,30 +485,33 @@ struct arg_retval
 /****************************************************************************
 * Implementation of log1p                                                   *
 ****************************************************************************/
-template<typename Scalar, bool isComplex = NumTraits<Scalar>::IsComplex >
-struct log1p_impl
-{
-  static inline Scalar run(const Scalar& x)
-  {
+
+namespace std_fallback {
+  // fallback log1p implementation in case there is no log1p(Scalar) function in namespace of Scalar,
+  // or that there is no suitable std::log1p function available
+  template<typename Scalar>
+  EIGEN_DEVICE_FUNC inline Scalar log1p(const Scalar& x) {
     EIGEN_STATIC_ASSERT_NON_INTEGER(Scalar)
     typedef typename NumTraits<Scalar>::Real RealScalar;
     EIGEN_USING_STD_MATH(log);
     Scalar x1p = RealScalar(1) + x;
     return ( x1p == Scalar(1) ) ? x : x * ( log(x1p) / (x1p - RealScalar(1)) );
   }
-};
+}
 
-#if EIGEN_HAS_CXX11_MATH
 template<typename Scalar>
-struct log1p_impl<Scalar, false> {
+struct log1p_impl {
   static inline Scalar run(const Scalar& x)
   {
     EIGEN_STATIC_ASSERT_NON_INTEGER(Scalar)
+    #if EIGEN_HAS_CXX11_MATH
     using std::log1p;
+    #endif
+    using std_fallback::log1p;
     return log1p(x);
   }
 };
-#endif
+
 
 template<typename Scalar>
 struct log1p_retval
@@ -492,24 +523,26 @@ struct log1p_retval
 * Implementation of pow                                                  *
 ****************************************************************************/
 
-template<typename Scalar, bool IsInteger>
-struct pow_default_impl
+template<typename ScalarX,typename ScalarY, bool IsInteger = NumTraits<ScalarX>::IsInteger&&NumTraits<ScalarY>::IsInteger>
+struct pow_impl
 {
-  typedef Scalar retval;
-  static EIGEN_DEVICE_FUNC inline Scalar run(const Scalar& x, const Scalar& y)
+  //typedef Scalar retval;
+  typedef typename ScalarBinaryOpTraits<ScalarX,ScalarY,internal::scalar_pow_op<ScalarX,ScalarY> >::ReturnType result_type;
+  static EIGEN_DEVICE_FUNC inline result_type run(const ScalarX& x, const ScalarY& y)
   {
     EIGEN_USING_STD_MATH(pow);
     return pow(x, y);
   }
 };
 
-template<typename Scalar>
-struct pow_default_impl<Scalar, true>
+template<typename ScalarX,typename ScalarY>
+struct pow_impl<ScalarX,ScalarY, true>
 {
-  static EIGEN_DEVICE_FUNC inline Scalar run(Scalar x, Scalar y)
+  typedef ScalarX result_type;
+  static EIGEN_DEVICE_FUNC inline ScalarX run(ScalarX x, ScalarY y)
   {
-    Scalar res(1);
-    eigen_assert(!NumTraits<Scalar>::IsSigned || y >= 0);
+    ScalarX res(1);
+    eigen_assert(!NumTraits<ScalarY>::IsSigned || y >= 0);
     if(y & 1) res *= x;
     y >>= 1;
     while(y)
@@ -520,15 +553,6 @@ struct pow_default_impl<Scalar, true>
     }
     return res;
   }
-};
-
-template<typename Scalar>
-struct pow_impl : pow_default_impl<Scalar, NumTraits<Scalar>::IsInteger> {};
-
-template<typename Scalar>
-struct pow_retval
-{
-  typedef Scalar type;
 };
 
 /****************************************************************************
@@ -620,16 +644,18 @@ struct random_default_impl<Scalar, false, true>
     typedef typename conditional<NumTraits<Scalar>::IsSigned,std::ptrdiff_t,std::size_t>::type ScalarX;
     if(y<x)
       return x;
+    // the following difference might overflow on a 32 bits system,
+    // but since y>=x the result converted to an unsigned long is still correct.
     std::size_t range = ScalarX(y)-ScalarX(x);
     std::size_t offset = 0;
     // rejection sampling
-    std::size_t divisor    = (range+RAND_MAX-1)/(range+1);
-    std::size_t multiplier = (range+RAND_MAX-1)/std::size_t(RAND_MAX);
-
+    std::size_t divisor = 1;
+    std::size_t multiplier = 1;
+    if(range<RAND_MAX) divisor = (std::size_t(RAND_MAX)+1)/(range+1);
+    else               multiplier = 1 + range/(std::size_t(RAND_MAX)+1);
     do {
-      offset = ( (std::size_t(std::rand()) * multiplier) / divisor );
+      offset = (std::size_t(std::rand()) * multiplier) / divisor;
     } while (offset > range);
-
     return Scalar(ScalarX(x) + offset);
   }
 
@@ -704,11 +730,13 @@ EIGEN_DEVICE_FUNC
 typename internal::enable_if<(!internal::is_integral<T>::value)&&(!NumTraits<T>::IsComplex),bool>::type
 isfinite_impl(const T& x)
 {
-  #if EIGEN_USE_STD_FPCLASSIFY
+  #ifdef __CUDA_ARCH__
+    return (::isfinite)(x);
+  #elif EIGEN_USE_STD_FPCLASSIFY
     using std::isfinite;
     return isfinite EIGEN_NOT_A_MACRO (x);
   #else
-    return x<NumTraits<T>::highest() && x>NumTraits<T>::lowest();
+    return x<=NumTraits<T>::highest() && x>=NumTraits<T>::lowest();
   #endif
 }
 
@@ -717,7 +745,9 @@ EIGEN_DEVICE_FUNC
 typename internal::enable_if<(!internal::is_integral<T>::value)&&(!NumTraits<T>::IsComplex),bool>::type
 isinf_impl(const T& x)
 {
-  #if EIGEN_USE_STD_FPCLASSIFY
+  #ifdef __CUDA_ARCH__
+    return (::isinf)(x);
+  #elif EIGEN_USE_STD_FPCLASSIFY
     using std::isinf;
     return isinf EIGEN_NOT_A_MACRO (x);
   #else
@@ -730,7 +760,9 @@ EIGEN_DEVICE_FUNC
 typename internal::enable_if<(!internal::is_integral<T>::value)&&(!NumTraits<T>::IsComplex),bool>::type
 isnan_impl(const T& x)
 {
-  #if EIGEN_USE_STD_FPCLASSIFY
+  #ifdef __CUDA_ARCH__
+    return (::isnan)(x);
+  #elif EIGEN_USE_STD_FPCLASSIFY
     using std::isnan;
     return isnan EIGEN_NOT_A_MACRO (x);
   #else
@@ -780,9 +812,11 @@ template<> EIGEN_TMP_NOOPT_ATTRIB bool isinf_impl(const long double& x) { return
 #endif
 
 // The following overload are defined at the end of this file
-template<typename T> bool isfinite_impl(const std::complex<T>& x);
-template<typename T> bool isnan_impl(const std::complex<T>& x);
-template<typename T> bool isinf_impl(const std::complex<T>& x);
+template<typename T> EIGEN_DEVICE_FUNC bool isfinite_impl(const std::complex<T>& x);
+template<typename T> EIGEN_DEVICE_FUNC bool isnan_impl(const std::complex<T>& x);
+template<typename T> EIGEN_DEVICE_FUNC bool isinf_impl(const std::complex<T>& x);
+
+template<typename T> T generic_fast_tanh_float(const T& a_x);
 
 } // end namespace internal
 
@@ -819,7 +853,7 @@ template<>
 EIGEN_DEVICE_FUNC
 EIGEN_ALWAYS_INLINE float mini(const float& x, const float& y)
 {
-  return fmin(x, y);
+  return fminf(x, y);
 }
 template<typename T>
 EIGEN_DEVICE_FUNC
@@ -831,7 +865,7 @@ template<>
 EIGEN_DEVICE_FUNC
 EIGEN_ALWAYS_INLINE float maxi(const float& x, const float& y)
 {
-  return fmax(x, y);
+  return fmaxf(x, y);
 }
 #endif
 
@@ -841,7 +875,7 @@ EIGEN_DEVICE_FUNC
 inline EIGEN_MATHFUNC_RETVAL(real, Scalar) real(const Scalar& x)
 {
   return EIGEN_MATHFUNC_IMPL(real, Scalar)::run(x);
-}  
+}
 
 template<typename Scalar>
 EIGEN_DEVICE_FUNC
@@ -920,11 +954,19 @@ inline EIGEN_MATHFUNC_RETVAL(log1p, Scalar) log1p(const Scalar& x)
   return EIGEN_MATHFUNC_IMPL(log1p, Scalar)::run(x);
 }
 
-template<typename Scalar>
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float log1p(const float &x) { return ::log1pf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double log1p(const double &x) { return ::log1p(x); }
+#endif
+
+template<typename ScalarX,typename ScalarY>
 EIGEN_DEVICE_FUNC
-inline EIGEN_MATHFUNC_RETVAL(pow, Scalar) pow(const Scalar& x, const Scalar& y)
+inline typename internal::pow_impl<ScalarX,ScalarY>::result_type pow(const ScalarX& x, const ScalarY& y)
 {
-  return EIGEN_MATHFUNC_IMPL(pow, Scalar)::run(x, y);
+  return internal::pow_impl<ScalarX,ScalarY>::run(x, y);
 }
 
 template<typename T> EIGEN_DEVICE_FUNC bool (isnan)   (const T &x) { return internal::isnan_impl(x); }
@@ -961,6 +1003,15 @@ T (ceil)(const T& x)
   EIGEN_USING_STD_MATH(ceil);
   return ceil(x);
 }
+
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float ceil(const float &x) { return ::ceilf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double ceil(const double &x) { return ::ceil(x); }
+#endif
+
 
 /** Log base 2 for 32 bits positive integers.
   * Conveniently returns 0 for x==0. */
@@ -1010,22 +1061,7 @@ double log(const double &x) { return ::log(x); }
 
 template<typename T>
 EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
-T tan(const T &x) {
-  EIGEN_USING_STD_MATH(tan);
-  return tan(x);
-}
-
-#ifdef __CUDACC__
-template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
-float tan(const float &x) { return ::tanf(x); }
-
-template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
-double tan(const double &x) { return ::tan(x); }
-#endif
-
-template<typename T>
-EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
-T abs(const T &x) {
+typename NumTraits<T>::Real abs(const T &x) {
   EIGEN_USING_STD_MATH(abs);
   return abs(x);
 }
@@ -1036,6 +1072,16 @@ float abs(const float &x) { return ::fabsf(x); }
 
 template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
 double abs(const double &x) { return ::fabs(x); }
+
+template <> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float abs(const std::complex<float>& x) {
+  return ::hypotf(x.real(), x.imag());
+}
+
+template <> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double abs(const std::complex<double>& x) {
+  return ::hypot(x.real(), x.imag());
+}
 #endif
 
 template<typename T>
@@ -1053,24 +1099,186 @@ template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
 double exp(const double &x) { return ::exp(x); }
 #endif
 
+template<typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T cos(const T &x) {
+  EIGEN_USING_STD_MATH(cos);
+  return cos(x);
+}
+
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float cos(const float &x) { return ::cosf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double cos(const double &x) { return ::cos(x); }
+#endif
+
+template<typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T sin(const T &x) {
+  EIGEN_USING_STD_MATH(sin);
+  return sin(x);
+}
+
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float sin(const float &x) { return ::sinf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double sin(const double &x) { return ::sin(x); }
+#endif
+
+template<typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T tan(const T &x) {
+  EIGEN_USING_STD_MATH(tan);
+  return tan(x);
+}
+
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float tan(const float &x) { return ::tanf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double tan(const double &x) { return ::tan(x); }
+#endif
+
+template<typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T acos(const T &x) {
+  EIGEN_USING_STD_MATH(acos);
+  return acos(x);
+}
+
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float acos(const float &x) { return ::acosf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double acos(const double &x) { return ::acos(x); }
+#endif
+
+template<typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T asin(const T &x) {
+  EIGEN_USING_STD_MATH(asin);
+  return asin(x);
+}
+
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float asin(const float &x) { return ::asinf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double asin(const double &x) { return ::asin(x); }
+#endif
+
+template<typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T atan(const T &x) {
+  EIGEN_USING_STD_MATH(atan);
+  return atan(x);
+}
+
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float atan(const float &x) { return ::atanf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double atan(const double &x) { return ::atan(x); }
+#endif
+
+
+template<typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T cosh(const T &x) {
+  EIGEN_USING_STD_MATH(cosh);
+  return cosh(x);
+}
+
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float cosh(const float &x) { return ::coshf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double cosh(const double &x) { return ::cosh(x); }
+#endif
+
+template<typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T sinh(const T &x) {
+  EIGEN_USING_STD_MATH(sinh);
+  return sinh(x);
+}
+
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float sinh(const float &x) { return ::sinhf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double sinh(const double &x) { return ::sinh(x); }
+#endif
+
+template<typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T tanh(const T &x) {
+  EIGEN_USING_STD_MATH(tanh);
+  return tanh(x);
+}
+
+#if (!defined(__CUDACC__)) && EIGEN_FAST_MATH
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float tanh(float x) { return internal::generic_fast_tanh_float(x); }
+#endif
+
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float tanh(const float &x) { return ::tanhf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double tanh(const double &x) { return ::tanh(x); }
+#endif
+
+template <typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T fmod(const T& a, const T& b) {
+  EIGEN_USING_STD_MATH(fmod);
+  return fmod(a, b);
+}
+
+#ifdef __CUDACC__
+template <>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float fmod(const float& a, const float& b) {
+  return ::fmodf(a, b);
+}
+
+template <>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double fmod(const double& a, const double& b) {
+  return ::fmod(a, b);
+}
+#endif
+
 } // end namespace numext
 
 namespace internal {
 
 template<typename T>
-bool isfinite_impl(const std::complex<T>& x)
+EIGEN_DEVICE_FUNC bool isfinite_impl(const std::complex<T>& x)
 {
   return (numext::isfinite)(numext::real(x)) && (numext::isfinite)(numext::imag(x));
 }
 
 template<typename T>
-bool isnan_impl(const std::complex<T>& x)
+EIGEN_DEVICE_FUNC bool isnan_impl(const std::complex<T>& x)
 {
   return (numext::isnan)(numext::real(x)) || (numext::isnan)(numext::imag(x));
 }
 
 template<typename T>
-bool isinf_impl(const std::complex<T>& x)
+EIGEN_DEVICE_FUNC bool isinf_impl(const std::complex<T>& x)
 {
   return ((numext::isinf)(numext::real(x)) || (numext::isinf)(numext::imag(x))) && (!(numext::isnan)(x));
 }
@@ -1091,14 +1299,12 @@ struct scalar_fuzzy_default_impl<Scalar, false, false>
   template<typename OtherScalar> EIGEN_DEVICE_FUNC
   static inline bool isMuchSmallerThan(const Scalar& x, const OtherScalar& y, const RealScalar& prec)
   {
-    EIGEN_USING_STD_MATH(abs);
-    return abs(x) <= abs(y) * prec;
+    return numext::abs(x) <= numext::abs(y) * prec;
   }
   EIGEN_DEVICE_FUNC
   static inline bool isApprox(const Scalar& x, const Scalar& y, const RealScalar& prec)
   {
-    EIGEN_USING_STD_MATH(abs);
-    return abs(x - y) <= numext::mini(abs(x), abs(y)) * prec;
+    return numext::abs(x - y) <= numext::mini(numext::abs(x), numext::abs(y)) * prec;
   }
   EIGEN_DEVICE_FUNC
   static inline bool isApproxOrLessThan(const Scalar& x, const Scalar& y, const RealScalar& prec)
@@ -1132,11 +1338,12 @@ template<typename Scalar>
 struct scalar_fuzzy_default_impl<Scalar, true, false>
 {
   typedef typename NumTraits<Scalar>::Real RealScalar;
-  template<typename OtherScalar>
+  template<typename OtherScalar> EIGEN_DEVICE_FUNC
   static inline bool isMuchSmallerThan(const Scalar& x, const OtherScalar& y, const RealScalar& prec)
   {
     return numext::abs2(x) <= numext::abs2(y) * prec * prec;
   }
+  EIGEN_DEVICE_FUNC
   static inline bool isApprox(const Scalar& x, const Scalar& y, const RealScalar& prec)
   {
     return numext::abs2(x - y) <= numext::mini(numext::abs2(x), numext::abs2(y)) * prec * prec;

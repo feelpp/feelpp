@@ -3,7 +3,7 @@
  *  Input/Output function for univariate polynomials. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -68,8 +68,8 @@ void dbgprint(const type& p)                              \
 	print(p, std::cerr);                                  \
 }
 
-DEFINE_OPERATOR_OUT(upoly)
-DEFINE_OPERATOR_OUT(umodpoly)
+DEFINE_OPERATOR_OUT(upoly);
+DEFINE_OPERATOR_OUT(umodpoly);
 #undef DEFINE_OPERATOR_OUT
 
 } // namespace GiNaC

@@ -205,21 +205,27 @@ public:
 
         // output and usefull containter
         typedef Shape<gmc_type::nDim, Scalar, false, false> shape_scalar;
-        typedef Eigen::Matrix<value_type,shape_scalar::M,shape_scalar::N> loc_scalar_type;
+        //typedef Eigen::Matrix<value_type,shape_scalar::M,shape_scalar::N> loc_scalar_type;
+        typedef Eigen::Tensor<value_type,2> loc_scalar_type;
         typedef boost::multi_array<loc_scalar_type,1> array_scalar_type;
 
         typedef Shape<gmc_type::nDim, Vectorial, false, false> shape_vectorial;
-        typedef Eigen::Matrix<value_type,shape_vectorial::M,shape_vectorial::N> loc_vectorial_type;
+        //typedef Eigen::Matrix<value_type,shape_vectorial::M,shape_vectorial::N> loc_vectorial_type;
+        typedef Eigen::Tensor<value_type,2> loc_vectorial_type;
         typedef boost::multi_array<loc_vectorial_type,1> array_vectorial_type;
 
         typedef Shape<gmc_type::nDim, Tensor2, false, false> shape_tensor2;
-        typedef Eigen::Matrix<value_type,shape_tensor2::M,shape_tensor2::N> loc_tensor2_type;
+        //typedef Eigen::Matrix<value_type,shape_tensor2::M,shape_tensor2::N> loc_tensor2_type;
+        typedef Eigen::Tensor<value_type,2> loc_tensor2_type;
         typedef boost::multi_array<loc_tensor2_type,1> array_tensor2_type;
 
         typedef loc_vectorial_type loc_id_type;
         typedef array_vectorial_type array_id_type;
         typedef loc_tensor2_type loc_grad_type;
         typedef array_tensor2_type array_grad_type;
+
+        typedef Eigen::Matrix<value_type,shape_vectorial::M,shape_vectorial::N> loc_matrix_vectorial_type;
+        typedef boost::multi_array<loc_matrix_vectorial_type,1> array_matrix_vectorial_type;
 
         typedef typename mpl::if_<mpl::or_< boost::is_same<SpecificExprType,mpl::int_<0> >,
                                             boost::is_same<SpecificExprType,mpl::int_<1> > >,
@@ -245,9 +251,16 @@ public:
             M_loc( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locId( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locGrad( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
-            M_locMuP0( expr.muP0().idExtents(*fusion::at_key<key_type>( geom )) )
+            M_locMuP0( expr.muP0().idExtents(*fusion::at_key<key_type>( geom )) ),
+            M_zeroLocGrad( shape_tensor2::M,shape_tensor2::N ),
+            M_zeroLocId( shape_vectorial::M,shape_vectorial::N ),
+            M_zeroLocScalar( shape_scalar::M,shape_scalar::N )
             //M_zero( ret_type::Zero() )
-        {}
+            {
+                M_zeroLocGrad.setZero();
+                M_zeroLocId.setZero();
+                M_zeroLocScalar.setZero();
+            }
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
@@ -262,9 +275,16 @@ public:
             M_loc( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locId( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locGrad( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
-            M_locMuP0( expr.muP0().idExtents(*fusion::at_key<key_type>( geom )) )
+            M_locMuP0( expr.muP0().idExtents(*fusion::at_key<key_type>( geom )) ),
+            M_zeroLocGrad( shape_tensor2::M,shape_tensor2::N ),
+            M_zeroLocId( shape_vectorial::M,shape_vectorial::N ),
+            M_zeroLocScalar( shape_scalar::M,shape_scalar::N )
             //M_zero( ret_type::Zero() )
-        {}
+            {
+                M_zeroLocGrad.setZero();
+                M_zeroLocId.setZero();
+                M_zeroLocScalar.setZero();
+            }
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
@@ -277,9 +297,16 @@ public:
             M_loc( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locId( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locGrad( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
-            M_locMuP0( expr.muP0().idExtents(*fusion::at_key<key_type>( geom )) )
+            M_locMuP0( expr.muP0().idExtents(*fusion::at_key<key_type>( geom )) ),
+            M_zeroLocGrad( shape_tensor2::M,shape_tensor2::N ),
+            M_zeroLocId( shape_vectorial::M,shape_vectorial::N ),
+            M_zeroLocScalar( shape_scalar::M,shape_scalar::N )
             //M_zero( ret_type::Zero() )
-        {}
+            {
+                M_zeroLocGrad.setZero();
+                M_zeroLocId.setZero();
+                M_zeroLocScalar.setZero();
+            }
 
         template<typename IM>
         void init( IM const& im )
@@ -288,9 +315,9 @@ public:
         }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& feu )
         {
-            std::fill( M_locId.data(), M_locId.data()+M_locId.num_elements(), loc_id_type::Zero() );
-            std::fill( M_locGrad.data(), M_locGrad.data()+M_locGrad.num_elements(), loc_grad_type::Zero() );
-            std::fill( M_locMuP0.data(), M_locMuP0.data()+M_locMuP0.num_elements(), loc_scalar_type::Zero() );
+            std::fill( M_locId.data(), M_locId.data()+M_locId.num_elements(), M_zeroLocId/*loc_id_type::Zero()*/ );
+            std::fill( M_locGrad.data(), M_locGrad.data()+M_locGrad.num_elements(), M_zeroLocGrad/*loc_grad_type::Zero()*/ );
+            std::fill( M_locMuP0.data(), M_locMuP0.data()+M_locMuP0.num_elements(), M_zeroLocScalar/*loc_scalar_type::Zero()*/ );
 
             const uint16_type nQuadPts = M_geot->nPoints();
 
@@ -335,9 +362,9 @@ public:
         }
         void update( Geo_t const& geom )
         {
-            std::fill( M_locId.data(), M_locId.data()+M_locId.num_elements(), loc_id_type::Zero() );
-            std::fill( M_locGrad.data(), M_locGrad.data()+M_locGrad.num_elements(), loc_grad_type::Zero() );
-            std::fill( M_locMuP0.data(), M_locMuP0.data()+M_locMuP0.num_elements(), loc_scalar_type::Zero() );
+            std::fill( M_locId.data(), M_locId.data()+M_locId.num_elements(), M_zeroLocId/*loc_id_type::Zero()*/ );
+            std::fill( M_locGrad.data(), M_locGrad.data()+M_locGrad.num_elements(), M_zeroLocGrad/*loc_grad_type::Zero()*/ );
+            std::fill( M_locMuP0.data(), M_locMuP0.data()+M_locMuP0.num_elements(), M_zeroLocScalar/*loc_scalar_type::Zero()*/ );
 
             const uint16_type nQuadPts = M_geot->nPoints();
 
@@ -501,11 +528,21 @@ public:
         {
             return evalq( c1, c2, q );
         }
+        loc_matrix_vectorial_type const&
+        evaliq( uint16_type i, uint16_type q ) const
+        {
+            return M_loc[q];
+        }
 
         value_type
         evalq( uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
         {
             return M_loc[q](c1,0);
+        }
+        loc_matrix_vectorial_type const&
+        evalq( uint16_type q ) const
+        {
+            return M_loc[q];
         }
 
     private:
@@ -589,12 +626,16 @@ public:
         pc_muP0_ptrtype M_pcMuP0;
         ctx_muP0_ptrtype M_ctxMuP0;
 
-        array_vectorial_type M_loc;
+        array_matrix_vectorial_type M_loc;
 
         array_id_type M_locId;
         array_grad_type M_locGrad;
         array_scalar_type M_locMuP0;
         //ret_type M_zero;
+        loc_grad_type M_zeroLocGrad;
+        loc_id_type M_zeroLocId;
+        loc_scalar_type M_zeroLocScalar;
+
     };
 
 private:

@@ -215,6 +215,16 @@ private:
     FEELPP_NO_EXPORT void writeSoSFile() const;
 
     /**
+     * write case file variables
+     */
+    template<typename Iterator, typename TSt>
+    void writeCaseFileVariables( Iterator it, Iterator end,
+                                 std::string const& loc,
+                                 std::string const& type,
+                                 std::string const& ext,
+                                 TSt const& __ts,
+                                 std::ostream& __out ) const;
+    /**
        write the 'case' file for ensight
     */
     FEELPP_NO_EXPORT void writeCaseFile() const;

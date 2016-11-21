@@ -37,7 +37,12 @@ feelpp_add_application( application_solenoid_3d SRCS stress.cpp
 
 #feelpp_add_application( application_solid SRCS main_sm.cpp LINK_LIBRARIES feelpp_model_solidmechanics )
 
-install(TARGETS feelpp_application_solid_2d feelpp_application_solid_3d 
+install(TARGETS feelpp_application_solid_2d feelpp_application_solid_3d feelpp_application_stress_2d feelpp_application_stress_3d feelpp_application_solenoid_3d
         RUNTIME DESTINATION bin/ 
         COMPONENT ModelApplications)
 
+feelpp_add_testcase(NAFEMS-LE1 CATEGORY solid)
+feelpp_add_testcase(NAFEMS-LE10 CATEGORY solid)
+feelpp_add_testcase(Solenoid CATEGORY solid)
+feelpp_add_testcase(TurekHron PREFIX solid CATEGORY solid)
+feelpp_add_testcase(torsionbar CATEGORY solid)
