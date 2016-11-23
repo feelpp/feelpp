@@ -751,7 +751,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
                 auto g = expr<Dim,G_Order,expr_order> (exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
-				blf( 1_c ) += integrate(_range=elements(M_mesh),
+				blf( 1_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),
                     			  	      _expr=trans(g)*id(w));
             }
         }
@@ -761,11 +761,12 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
             for ( auto const& exAtMarker : (*itType).second )
             {
 				auto marker = exAtMarker.marker();
-                auto g = expr<Dim,Dim,expr_order> (exAtMarker.expression());
+                // auto g = expr<Dim,Dim,expr_order> (exAtMarker.expression());
+                auto g = expr<expr_order> (exAtMarker.expression());
 				if ( !this->isStationary() )
                     g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
 			cout << "Neumann condition on " << marker << ": " << g << std::endl;
-			blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+			blf( 2_c ) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
 									_expr=trans(id(m))*(g*N()));
 		}
 	}	
@@ -780,7 +781,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
                     g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
                 // auto g = expr<Dim,Dim> ( scalar*eye<Dim,Dim>() );
 				cout << "Neumann scalar condition on " << marker << ": " << g << std::endl;
-				blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+				blf( 2_c ) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
 									    _expr=trans(id(m))*(eye<Dim,Dim>()*g*N()));
             }
 		}
@@ -796,11 +797,12 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
             for ( auto const& exAtMarker : (*itType).second )
             {
 				auto marker = exAtMarker.marker();
-                auto g = expr<Dim,G_Order, expr_order>(exAtMarker.expression());
+                //auto g = expr<expr_order>(exAtMarker.expression());
+                auto g = expr<Dim,1, expr_order>(exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
 				cout << "Dirichlet condition on " << marker << ": " << g << std::endl;
-				blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+				blf( 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                 		      _expr=trans(id(m))*g);
             }
         }
@@ -818,7 +820,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 			auto dt = this-> timeStep();
         	// blf(1_c) += integrate( _range=elements(M_mesh),
         	//                         _expr= rho*inner(idv(this->timeStepNM()->polyDeriv()),id(w)) );
-        	blf(1_c) += integrate( _range=elements(M_mesh), _expr= rho*inner( 2*idv(u)-idv(u1) ,id(w))/(dt*dt) );
+        	blf(1_c) += integrate(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr= rho*inner( 2*idv(u)-idv(u1) ,id(w))/(dt*dt) );
 		}
     }
 
@@ -890,7 +892,7 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
 								// Export the errors
 								M_exporter -> step( time )->add(prefixvm(M_prefix, "u_error_L2"), l2err_u/l2norm_uex );
 							    //------ Sigma 	------//
-								auto gradu_exact = grad(u_exact);
+								auto gradu_exact = grad<Dim>(u_exact);
 								auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
 								for( auto const& pairMat : M_modelProperties->materials() )
 								{
