@@ -350,6 +350,8 @@ advection_options(std::string const& prefix)
         (prefixvm(prefix,"advec-stab-coeff").c_str(), Feel::po::value<double>()->default_value( 1 ), "stabilization coefficient")
         (prefixvm(prefix,"export-all").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_all")
         (prefixvm(prefix,"export-advection-velocity").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_advection_velocity")
+        (prefixvm(prefix,"export-diffusion").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_diffusion_coeff")
+        (prefixvm(prefix,"export-reaction").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_reaction_coeff")
         (prefixvm(prefix,"export-source").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_source_field")
         ;
     return advectionOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
