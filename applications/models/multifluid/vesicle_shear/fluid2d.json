@@ -3,10 +3,9 @@
     "ShortName":"Square2d",
     "Parameters":
     {
-        "gammaDot":
-        {
-            "value":"1."
-        }
+        "gammaDot": { "value":"1." },
+	"yMax": { "value":"4." },
+	"yMin": { "value":"-4." }
     },
     "BoundaryConditions":
     {
@@ -21,20 +20,14 @@
                 "Right":
                 {
                     "expr":"{gammaDot*y,0}:gammaDot:y"
-                }
-            }
-        },
-        "fluid":
-        {
-            "slip":
-            {
+                },
                 "Top":
                 {
-                    "expr":"0"
+                    "expr":"{gammaDot*yMax,0}:gammaDot:yMax"
                 },
                 "Bottom":
                 {
-                    "expr":"0"
+                    "expr":"{gammaDot*yMin,0}:gammaDot:yMin"
                 }
             }
         }
