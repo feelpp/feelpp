@@ -344,6 +344,8 @@ protected:
     exporter_ptrtype M_exporter;
     bool M_doExportAll;
     bool M_doExportAdvectionVelocity;
+    bool M_doExportDiffusionCoefficient;
+    bool M_doExportReactionCoefficient;
     bool M_doExportSourceField;
     //--------------------------------------------------------------------//
     // Stabilization
