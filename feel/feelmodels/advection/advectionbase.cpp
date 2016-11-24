@@ -219,6 +219,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     M_doExportAll = boption(_name="export-all",_prefix=this->prefix());
     M_doExportAdvectionVelocity = boption(_name="export-advection-velocity",_prefix=this->prefix());
+    M_doExportDiffusionCoefficient = boption(_name="export-diffusion", _prefix=this->prefix());
+    M_doExportReactionCoefficient = boption(_name="export-reaction", _prefix=this->prefix());
     M_doExportSourceField = boption(_name="export-source", _prefix=this->prefix());
     
     this->log("Advection","loadParametersFromOptionsVm", "finish");
@@ -932,9 +934,21 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                    this->fieldSolution() );
     if ( ( M_doExportAdvectionVelocity || M_doExportAll ) )
     {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"advection-velocity"),
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"advection_velocity"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"advection_velocity")),
                                        this->fieldAdvectionVelocity() );
+    }
+    if ( ( M_doExportDiffusionCoefficient || M_doExportAll ) )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"diffusion_coeff"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"diffusion_coeff")),
+                                       this->diffusionReactionModel()->fieldDiffusionCoeff() );
+    }
+    if ( ( M_doExportReactionCoefficient || M_doExportAll ) )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"reaction_coeff"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"reaction_coeff")),
+                                       this->diffusionReactionModel()->fieldReactionCoeff() );
     }
     if ( ( M_doExportSourceField || M_doExportAll ) )
     {
