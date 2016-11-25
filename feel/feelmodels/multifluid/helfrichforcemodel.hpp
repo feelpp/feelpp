@@ -66,6 +66,7 @@ HelfrichForceModel<LevelSetType>::loadParametersFromOptionsVm()
     M_exporter = Feel::exporter(
             _mesh=this->levelset()->mesh(),
             _name="HelfrichForce",
+            _geo="static",
             _path=this->levelset()->exporterPath()
             );
 #endif
