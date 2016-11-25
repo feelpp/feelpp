@@ -1302,6 +1302,45 @@ marked2elements( MeshType const& mesh, boost::any const& flag, EntityProcessType
                               myelts );
 }
 
+template<typename MeshType>
+ext_faces_t<MeshType>
+faces( MeshType const& mesh, EntityProcessType entity )
+{
+    typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > cont_range_type;
+    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+
+    if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
+        for ( auto const& theface : faces(mesh) )
+        {
+            myelts->push_back(boost::cref(theface));
+        }
+
+    if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
+    {
+        //std::set<size_type> faceGhostDone;
+        auto face_it = mesh->interProcessFaces().first;
+        auto const face_en = mesh->interProcessFaces().second;
+        for ( ; face_it!=face_en ; ++face_it )
+        {
+            auto const& elt0 = face_it->element0();
+            auto const& elt1 = face_it->element1();
+            const bool elt0isGhost = elt0.isGhostCell();
+            auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
+
+            for ( size_type f = 0; f < mesh->numLocalFaces(); f++ )
+            {
+                auto const& theface = eltOffProc.face(f);
+                myelts->push_back(boost::cref(theface));
+            }
+        }
+    }
+
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                              myelts->begin(),
+                              myelts->end(),
+                              myelts );
+
+}
 
 template<typename MeshType>
 ext_faces_t<MeshType>

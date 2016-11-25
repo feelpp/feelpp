@@ -362,13 +362,15 @@ public:
 
     static const bool is_product = true;
     static constexpr int Nm2 = (N>2)?N-2:0;
+    static constexpr int Nm1 = (N>0)?N-1:0;
 
     typedef Lagrange<N, RealDim, O, PolySetType, ContinuityType, T, Convex,  Pts, TheTAG> this_type;
     typedef Lagrange<N, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> component_basis_type;
 
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
+
+    typedef typename mpl::if_<mpl::less_equal<mpl::int_<nDim>, mpl::int_<1> >,
             mpl::identity<boost::none_t>,
-            mpl::identity< Lagrange<N-1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type face_basis_type;
+            mpl::identity< Lagrange<Nm1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type face_basis_type;
 
     typedef boost::shared_ptr<face_basis_type> face_basis_ptrtype;
     typedef typename mpl::if_<mpl::less_equal<mpl::int_<nDim>, mpl::int_<2> >,
@@ -485,11 +487,11 @@ public:
     /** @name  Methods
      */
     //@{
-    typedef Eigen::VectorXd local_interpolant_type;
+    typedef Eigen::MatrixXd local_interpolant_type;
     local_interpolant_type
-    localInterpolant( int n = 1 ) const
+    localInterpolant( int n = 1, int p = 1 ) const
         {
-            return local_interpolant_type::Zero( n*nComponents*nLocalDof );
+            return local_interpolant_type::Zero( n*nComponents*nLocalDof, p );
         }
 
     template<typename ExprType>

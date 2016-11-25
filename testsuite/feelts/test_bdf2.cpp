@@ -79,7 +79,7 @@ public :
         auto g=soption(_name="functions.g");
         auto vars = Symbols{"x","y","t","alpha","beta"};
         auto eg = parse(g,vars);
-        GiNaC::matrix fg = -laplacian( eg, {vars[0],vars[1]} ) + diff( eg,  {vars[2]},1);
+        auto fg = -laplacian( eg, {vars[0],vars[1]} ) + diff( eg,  {vars[2]},1);
         LOG(INFO) << "fg= " << fg;
 
         auto fe = expr( fg, vars, "fg" );

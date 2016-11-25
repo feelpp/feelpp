@@ -124,6 +124,7 @@ class Mesh1D
     typedef typename super_edges::location_face_const_iterator location_edge_const_iterator;
     typedef typename super_edges::pid_face_iterator pid_edge_iterator;
     typedef typename super_edges::pid_face_const_iterator pid_edge_const_iterator;
+    using pid_face_iterator = typename super_edges::pid_face_iterator;
 
     typedef Mesh1D<Shape> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;

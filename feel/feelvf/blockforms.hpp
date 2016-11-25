@@ -167,11 +167,12 @@ public :
             rhs.vectorPtr()->printMatlab("F.m");
 #endif
 
-#if 1
+#if 0
             auto S = backend(_name="sc",_rebuild=true)->newMatrix( _test=e3.functionSpace(), _trial=e3.functionSpace(), _pattern=size_type(Pattern::EXTENDED)  );
             auto V = backend(_name="sc")->newVector( _test=e3.functionSpace() );
 #else
-            auto S = form2( _test=e3.functionSpace(), _trial=e3.functionSpace() );
+            auto S = form2( _test=e3.functionSpace(), _trial=e3.functionSpace(), _pattern=size_type(Pattern::HDG)  );
+            MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
             auto V = form1( _test=e3.functionSpace() );
 
 #endif
@@ -180,12 +181,12 @@ public :
             tic();
             sc->condense ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c), S, V );
             toc("sc.condense", FLAGS_v>0);
-            //S.close();V.close();
+            S.close();V.close();
             cout << " . Condensation done" << std::endl;
             tic();
             cout << " . starting Solve" << std::endl;
-            //auto r = backend(_name="sc",_rebuild=rebuild)->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
-            auto r = backend(_name="sc",_rebuild=rebuild)->solve( _matrix=S, _rhs=V, _solution=e3);
+            auto r = backend(_name="sc",_rebuild=rebuild)->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
+            //auto r = backend(_name="sc",_rebuild=rebuild)->solve( _matrix=S, _rhs=V, _solution=e3);
             cout << " . Solve done" << std::endl;
             toc("sc.solve", FLAGS_v>0);
 
