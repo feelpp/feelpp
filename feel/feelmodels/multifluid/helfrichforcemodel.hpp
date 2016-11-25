@@ -106,14 +106,25 @@ HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int imp
             auto Fb_par = this->levelset()->projectorL2Vectorial()->project(
                     - idv(K)*idv(K)/2. * idv(N)
                     );
+            auto Fb_par_div = this->levelset()->smoother()->project(
+                    divv(Fb_par)
+                    );
             //auto Fb_ortho = this->levelset()->smootherVectorial()->project(
                     //(Id-NxN)*trans(gradv(modGradPhiK)) / sqrt( trans(idv(gradPhi)) * idv(gradPhi) )
                     //);
             auto Fb_ortho = this->levelset()->smootherVectorial()->project(
                     (trans(gradv(modGradPhiK)) - (gradv(modGradPhiK)*idv(N))*idv(N)) / idv(modGradPhi)
                     );
-            auto Fb_global = this->levelset()->smootherVectorial()->project(
-                    this->bendingModulus() * (divv(Fb_par) + divv(Fb_ortho)) * idv(N)
+            auto Fb_ortho_div = this->levelset()->smoother()->project(
+                    divv(Fb_ortho)
+                    );
+            //auto Fb_global = this->levelset()->smootherVectorial()->project(
+                    //this->bendingModulus() * (divv(Fb_par) + divv(Fb_ortho)) * idv(N)
+                    //);
+            auto Fb_global = vf::project(
+                    _space=this->levelset()->functionSpaceVectorial(),
+                    _range=elements(this->levelset()->mesh()),
+                    _expr=this->bendingModulus() * (idv(Fb_par_div) + idv(Fb_ortho_div)) * idv(N)
                     );
             //auto Fb_global = this->levelset()->projectorL2Vectorial()->project(
                     //this->bendingModulus() * (divv(Fb_par) + divv(Fb_ortho)) * idv(N)
