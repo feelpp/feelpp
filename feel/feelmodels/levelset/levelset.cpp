@@ -410,7 +410,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
                 prefixvm(this->prefix(), "modgradphi-advection"),
                 this->worldComm()
                 );
-        M_modGradPhiAdvection->setModelName( "Advection" );
+        M_modGradPhiAdvection->setModelName( "Advection-Reaction" );
         M_modGradPhiAdvection->build( this->functionSpace() );
         M_modGradPhiAdvection->timeStepBDF()->setOrder( this->timeStepBDF()->bdfOrder() );
 
