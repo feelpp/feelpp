@@ -38,7 +38,7 @@ namespace FeelModels {
 template< 
     typename ConvexType, typename BasisAdvectionType, 
     typename PeriodicityType = NoPeriodicity,
-    typename BasisDiffusionReactionType = Lagrange<0, Scalar, Discontinuous>
+    typename BasisDiffusionReactionType = BasisAdvectionType
         >
 class Advection
     : public AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType>
