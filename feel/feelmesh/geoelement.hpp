@@ -506,6 +506,7 @@ public:
 
     static const uint16_type nDim = 0;
     static const uint16_type nRealDim = Dim;
+    static const bool is_simplex = true;
 
     typedef Geo0D<Dim,T> geo0d_type;
     typedef typename geo0d_type::node_type node_type;
@@ -520,8 +521,8 @@ public:
                                            mpl::identity<typename SubFace::template Element<self_type>::type> >::type::type ;
 #else
     using element_type = self_type;
-    using gm_type = boost::none_t;
-    using gm1_type = boost::none_t;
+    using gm_type = GT_Lagrange<0, 1, nRealDim, Simplex, T>;
+    using gm1_type = gm_type;
 #endif
     typedef self_type point_type;
 

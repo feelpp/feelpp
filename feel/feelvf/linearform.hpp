@@ -672,9 +672,14 @@ public:
      */
     //@{
 
-    /**
-    * \return the test function space
-     */
+    //!
+    //! @return the name of the linear form
+    //!
+    std::string const& name() const { return M_name; }
+    
+    //!
+    //! \return the test function space
+    //! 
     space_ptrtype const& functionSpace() const
     {
         return M_X;
@@ -1008,7 +1013,8 @@ struct LFAssign
                 return;
             }
 
-            LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
+            LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( M_lf.name() + "["+std::to_string(M_index)+"]",
+                                                                                                  X,
                                                                                                   M_lf.vectorPtr(),
                                                                                                   M_lf.rowStartInVector() + M_index,
                                                                                                   false,

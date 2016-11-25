@@ -393,6 +393,14 @@ public:
 private:
 private:
 
+
+    static matrix_type
+    evaluate( points_type const& __pts, mpl::int_<0> )
+        {
+            matrix_type m(1,1);
+            m(0,0)=1;
+            return m;
+        }
     /**
      * Evaluation at a set of points of the expansion basis in 1D on
      * the line
@@ -411,6 +419,15 @@ private:
         return m;
     }
 
+    template<typename AE>
+    static vector_matrix_type
+    derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<0> )
+        {
+            vector_matrix_type m(1);
+            m[0].resize(1,1);
+            m[0](0,0)=0;
+            return m;
+        }
     /**
      * derivation at a set of points of the expansion basis in 1D on
      * the line

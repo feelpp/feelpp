@@ -783,6 +783,19 @@ size_type MatrixPetsc<T>::rowStop () const
     return static_cast<size_type>( stop );
 }
 
+template <typename T>
+inline
+std::size_t MatrixPetsc<T>::nnz () const
+{
+    FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );;
+
+    MatInfo info;
+    int ierr = MatGetInfo( M_mat, MAT_GLOBAL_SUM, &info);
+    
+    CHKERRABORT( this->comm(),ierr );
+    return info.nz_allocated;
+}
+
 
 
 template <typename T>
@@ -2316,10 +2329,7 @@ void MatrixPetsc<T>::threshold(void)
 
     this->close();
 }
-//----------------------------------------------------------------------------------------------------//
-//----------------------------------------------------------------------------------------------------//
-//----------------------------------------------------------------------------------------------------//
-//----------------------------------------------------------------------------------------------------//
+
 //----------------------------------------------------------------------------------------------------//
 
 template <typename T>
@@ -2479,7 +2489,7 @@ void MatrixPetscMPI<T>::init( const size_type /*m*/,
     //CHKERRABORT(this->comm(),ierr);
 
     // generates an error for new matrix entry
-    ierr = MatSetOption ( this->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE );
+    ierr = MatSetOption ( this->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
     CHKERRABORT( this->comm(),ierr );
 #endif
 

@@ -1204,6 +1204,11 @@ public:
      */
     //@{
 
+    //!
+    //! @return the name of the bilinear form
+    //!
+    std::string const& name() const { return M_name; }
+    
     /**
      * return the pattern
      */
@@ -1854,7 +1859,7 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
         bf.setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_bf.rowStartInMatrix() + M_test_index ) );
         bf.setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_bf.colStartInMatrix() + M_trial_index ) );
 #else
-        bf_type bf( M_test, trial, M_bf.matrixPtr(),
+        bf_type bf( M_bf.name()+"["+std::to_string(M_test_index)+","+std::to_string(M_trial_index)+"]", M_test, trial, M_bf.matrixPtr(),
                     M_bf.rowStartInMatrix() + M_test_index, M_bf.colStartInMatrix() + M_trial_index,
                     false, M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
 #endif
@@ -1934,7 +1939,8 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
         bf.setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_bf.rowStartInMatrix() + M_test_index ) );
         bf.setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_bf.colStartInMatrix() + M_trial_index ) );
 #else
-        bf_type bf( test, M_trial, M_bf.matrixPtr(),
+        bf_type bf( M_bf.name()+"["+std::to_string(M_test_index)+","+std::to_string(M_trial_index)+"]",
+                    test, M_trial, M_bf.matrixPtr(),
                     M_bf.rowStartInMatrix() + M_test_index, M_bf.colStartInMatrix()+ M_trial_index,
                     false, M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
 #endif

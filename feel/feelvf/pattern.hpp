@@ -37,7 +37,8 @@ enum  Pattern
     COUPLED   = 1 << 2,
     PATTERN_SYMMETRIC = 1 << 3,
     ZERO      = 1 << 4,
-    HAS_NO_BLOCK_PATTERN = 1 << 5
+    HAS_NO_BLOCK_PATTERN = 1 << 5,
+    HDG = 1 << 6
 };
 
 //} // namespace vf

@@ -2951,9 +2951,9 @@ struct GT_QK
 # /* List of dims. */
 # define FEELPP_DIMS                                      \
     BOOST_PP_TUPLE_TO_LIST(                             \
-                           3,                           \
+                           4,                           \
                            (                            \
-                            1,2,3                       \
+                               0,1,2,3                  \
                                                     )   \
                                                     )   \
     /**/
@@ -2970,8 +2970,9 @@ struct GT_QK
 
 # define FEELPP_NEWDIMS                                           \
     BOOST_PP_TUPLE_TO_LIST(                                     \
-                           6,                                   \
+                           9,                                   \
                            (                                    \
+                            (0,1),(0,2),(0,3),                  \
                             (1,1),(1,2),(1,3),                  \
                             (2,2),(2,3),                        \
                             (3,3)                                   \

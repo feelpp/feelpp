@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2014-03-23
  */
-#if !defined(FEELPP_PRODUCT_HPP)
-#define FEELPP_PRODUCT_HPP 1
+#if !defined(FEELPP_FEELDISCR_PRODUCT_HPP)
+#define FEELPP_FEELDISCR_PRODUCT_HPP 1
 
 #include <feel/feelalg/vectorblock.hpp>
 
