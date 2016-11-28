@@ -291,6 +291,39 @@ void serialize( Archive & ar,
     split_free( ar, t, file_version );
 }
 
+//
+// Matrix<RowsAtCompileTime,ColsAtCompileTime,Options,MaxRowsAtCompileTime,MaxColsAtCompileTime>
+//
+template<typename T, int RowsAtCompileTime, int ColsAtCompileTime, int Options, int MaxRowsAtCompileTime, int MaxColsAtCompileTime, class Archive>
+void load( Archive & ar,
+           Eigen::Matrix<T,RowsAtCompileTime,ColsAtCompileTime,Options,MaxRowsAtCompileTime,MaxColsAtCompileTime> & t,
+           const unsigned int file_version )
+{
+    int n0;
+    ar >> BOOST_SERIALIZATION_NVP( n0 );
+    int n1;
+    ar >> BOOST_SERIALIZATION_NVP( n1 );
+    t.resize( n0,n1 );
+    ar >> make_array( t.data(), n0*n1 );
+}
+template<typename T, int RowsAtCompileTime, int ColsAtCompileTime, int Options, int MaxRowsAtCompileTime, int MaxColsAtCompileTime, typename Archive>
+void save( Archive & ar,
+           const Eigen::Matrix<T,RowsAtCompileTime,ColsAtCompileTime,Options,MaxRowsAtCompileTime,MaxColsAtCompileTime> & t,
+           const unsigned int file_version )
+{
+    int n0 = t.rows();
+    int n1 = t.cols();
+    ar << BOOST_SERIALIZATION_NVP( n0 );
+    ar << BOOST_SERIALIZATION_NVP( n1 );
+    ar << boost::serialization::make_array( t.data(), n0*n1 );
+}
+template<typename T, int RowsAtCompileTime, int ColsAtCompileTime, int Options, int MaxRowsAtCompileTime, int MaxColsAtCompileTime, class Archive>
+void serialize( Archive & ar,
+                Eigen::Matrix<T,RowsAtCompileTime,ColsAtCompileTime,Options,MaxRowsAtCompileTime,MaxColsAtCompileTime>& t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
 
 template<class Archive>
 void load( Archive & ar,
