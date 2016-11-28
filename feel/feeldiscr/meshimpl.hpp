@@ -2486,7 +2486,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     }
     //------------------------------------------------------------------------------------------------//
     // init and resize the container to send
-    std::map< rank_type, std::vector<size_type> > dataToSend;
+    std::map< rank_type, std::vector<std::pair<size_type,size_type> > > dataToSend;
     auto itNDataInVecToSend = nDataInVecToSend.begin();
     auto const enNDataInVecToSend = nDataInVecToSend.end();
     for ( ; itNDataInVecToSend!=enNDataInVecToSend ; ++itNDataInVecToSend )
@@ -2511,7 +2511,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
         // save request
         memoryMsgToSend[idProc][nDataInVecToSendBis[idProc]] = __element.id();
         // update container
-        dataToSend[idProc][nDataInVecToSendBis[idProc]] = idEltInOtherPartition;
+        dataToSend[idProc][nDataInVecToSendBis[idProc]] = std::make_pair(__element.id(),idEltInOtherPartition);
         // update counter
         nDataInVecToSendBis[idProc]++;
     }
@@ -2554,7 +2554,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     }
     //------------------------------------------------------------------------------------------------//
     // first recv
-    std::map<rank_type,std::vector<size_type> > dataToRecv;
+    std::map<rank_type,std::vector<std::pair<size_type,size_type> > > dataToRecv;
     auto itProcToRecv = procToRecv.begin();
     auto const enProcToRecv = procToRecv.end();
     for ( ; itProcToRecv != enProcToRecv ; ++itProcToRecv )
@@ -2564,7 +2564,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
         ++cptRequest;
     }
 #else
-    std::map<rank_type,std::vector<size_type> > dataToRecv;
+    std::map<rank_type,std::vector<std::pair<size_type,size_type> > > dataToRecv;
     int neighborSubdomains = this->neighborSubdomains().size();
     int nbRequest = 2*neighborSubdomains;
     mpi::request * reqs = new mpi::request[nbRequest];
@@ -2591,10 +2591,14 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
         dataToReSend[idProc].resize( nDataRecv );
         for ( int k=0; k<nDataRecv; ++k )
         {
-            if ( !this->hasElement(itDataRecv->second[k]) )
+            size_type idEltOtherProcess = itDataRecv->second[k].first;
+            size_type idEltOnProcess = itDataRecv->second[k].second;
+            if ( !this->hasElement( idEltOnProcess ) )
                 continue;
 
-            auto const& theelt = this->element( itDataRecv->second[k] );
+            auto const& theelt = this->element( idEltOnProcess );
+            this->elements().modify( this->elementIterator( idEltOnProcess ), Feel::detail::updateIdInOthersPartitions( idProc, idEltOtherProcess ) );
+
             //---------------------------//
             // get faces id and bary
             resultghost_face_type idFacesWithBary(this->numLocalFaces(),boost::make_tuple(invalid_size_type_value, false, std::vector<double>(nRealDim,0.) ));
