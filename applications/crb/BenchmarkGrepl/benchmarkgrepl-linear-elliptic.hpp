@@ -42,37 +42,13 @@
 
 #include <feel/feelcrb/modelcrbbase.hpp>
 
+#include <applications/crb/BenchmarkGrepl/benchmarkgrepl-options.hpp>
 
 namespace Feel
 {
 
-po::options_description
-makeBenchmarkGreplLinearEllipticOptions()
+namespace BenchmarkGreplLinearElliptic_Definition
 {
-    po::options_description bgoptions( "BenchmarkGreplLinearElliptic options" );
-    bgoptions.add_options()
-        ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
-        ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ), "hsize")
-        ( "trainset-eim-size", Feel::po::value<int>()->default_value( 40 ), "EIM trainset is built using a equidistributed grid 40 * 40 by default")
-        ( "gamma", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary Dirichlet formulation" )
-        ;
-    return bgoptions;
-}
-AboutData
-makeBenchmarkGreplLinearEllipticAbout( std::string const& str = "benchmarkGrepl" )
-{
-    Feel::AboutData about( str.c_str(),
-                           str.c_str(),
-                           "0.1",
-                           "Benchmark Grepl",
-                           Feel::AboutData::License_GPL,
-                           "Copyright (C) 2011-2014 Feel++ Consortium" );
-
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
-    return about;
-}
-
 
 class ParameterDefinition
 {
@@ -118,6 +94,8 @@ public :
 
 };
 
+} // namespace BenchmarkGreplLinearElliptic_Definition
+
 /**
  * \class BenchmarkGreplLinearElliptic
  * \brief brief description
@@ -136,11 +114,19 @@ public :
  * @see
  */
 template<int Order>
-class BenchmarkGreplLinearElliptic : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order> ,TimeIndependent, EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Order> > >
+class BenchmarkGreplLinearElliptic : public ModelCrbBase< BenchmarkGreplLinearElliptic_Definition::ParameterDefinition,
+                                                          BenchmarkGreplLinearElliptic_Definition::FunctionSpaceDefinition<Order>,
+                                                          TimeIndependent,
+                                                          BenchmarkGreplLinearElliptic_Definition::EimDefinition<BenchmarkGreplLinearElliptic_Definition::ParameterDefinition,
+                                                                                                                 BenchmarkGreplLinearElliptic_Definition::FunctionSpaceDefinition<Order> > >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order>, TimeIndependent, EimDefinition<ParameterDefinition,FunctionSpaceDefinition<Order> > > super_type;
+    typedef ModelCrbBase<BenchmarkGreplLinearElliptic_Definition::ParameterDefinition,
+                         BenchmarkGreplLinearElliptic_Definition::FunctionSpaceDefinition<Order>,
+                         TimeIndependent,
+                         BenchmarkGreplLinearElliptic_Definition::EimDefinition<BenchmarkGreplLinearElliptic_Definition::ParameterDefinition,
+                                                                                BenchmarkGreplLinearElliptic_Definition::FunctionSpaceDefinition<Order> > > super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -152,7 +138,7 @@ public:
     typedef typename super_type::mesh_type mesh_type;
     typedef typename super_type::mesh_ptrtype mesh_ptrtype;
 
-    typedef typename FunctionSpaceDefinition<Order>::space_type space_type;
+    typedef typename BenchmarkGreplLinearElliptic_Definition::FunctionSpaceDefinition<Order>::space_type space_type;
 
     typedef typename super_type::beta_vector_type beta_vector_type;
     typedef typename super_type::affine_decomposition_type affine_decomposition_type;
@@ -165,22 +151,16 @@ public:
 
     using super_type::computeBetaQm;
 
+    BenchmarkGreplLinearElliptic()
+        :
+        super_type( "BenchMarkGreplLinearElliptic" + std::to_string(Order) )
+        {}
     //! initialization of the model
     void initModel();
+    void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir );
+
     //@}
 
-    std::string modelName()
-    {
-        std::ostringstream ostr;
-        ostr << "BenchMarkGreplLinearElliptic" <<  Order;
-        return ostr.str();
-    }
-
-    //\return the list of EIM objects
-    virtual funs_type scalarContinuousEim() const
-    {
-        return M_funs;
-    }
 
     int mMaxA( int q )
     {
@@ -188,7 +168,7 @@ public:
             return 1;
         if( q==1 )
         {
-            auto eim_g = M_funs[0];
+            auto eim_g = this->scalarContinuousEim()[0];
             return eim_g->mMax();
         }
         else
@@ -201,7 +181,7 @@ public:
             return 1;
         if( q == 1 )
         {
-            auto eim_g = M_funs[0];
+            auto eim_g = this->scalarContinuousEim()[0];
             return eim_g->mMax();
         }
         else
@@ -228,7 +208,7 @@ public:
         this->M_betaAqm[0].resize( 1 );
         this->M_betaAqm[0][0]=1;
 
-        auto eim_g = M_funs[0];
+        auto eim_g = this->scalarContinuousEim()[0];
         int M_g = eim_g->mMax();
         vectorN_type beta_g = eim_g->beta( mu );
         this->M_betaAqm[1].resize( M_g );
@@ -311,7 +291,7 @@ public:
         std::map<int,double> eim_error_aq;
         std::vector< std::map<int,double> > eim_error_fq;
 
-        auto eim_g = M_funs[0];
+        auto eim_g = this->scalarContinuousEim()[0];
         bool error;
         int max = eim_g->mMax(error);
         if( error )
@@ -345,7 +325,6 @@ private:
 
     parameter_type M_mu;
 
-    funs_type M_funs;
 };
 
 
@@ -379,8 +358,44 @@ BenchmarkGreplLinearElliptic<Order>::createGeo( double hsize )
 }
 
 template<int Order>
+void BenchmarkGreplLinearElliptic<Order>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
+{
+#if 0
+    this->M_betaAqm.resize( 1 );
+    this->M_betaAqm[0].resize( 1 );
+    this->M_betaFqm.resize(2);
+    this->M_betaFqm[0].resize( 2 );
+    //this->M_betaFqm[0][0].resize( M );
+    this->M_betaFqm[0][1].resize( 1 );
+    this->M_betaFqm[1].resize( 1 );
+    this->M_betaFqm[1][0].resize( 1 );
+#endif
+
+    boost::shared_ptr<space_type> Xh;
+    if ( !pT )
+        pT.reset( new element_type );
+
+    auto const& ptreeEim = ptree.get_child( "eim" );
+    auto const& ptreeEimg = ptreeEim.get_child( "eim_g" );
+    std::string dbnameEimg = ptreeEimg.template get<std::string>( "database-filename" );
+    // std::cout << "dbnameEimg " << dbnameEimg << "\n";
+
+    auto eim_g = eim( _model=eim_no_solve(super_type::shared_from_this()),
+                      _element=*pT,
+                      _space=Xh,
+                      _parameter=M_mu,
+                      _expr=1./sqrt( (Px()-cst_ref(M_mu(0)))*(Px()-cst_ref(M_mu(0))) + (Py()-cst_ref(M_mu(1)))*(Py()-cst_ref(M_mu(1))) ),
+                      //_sampling=Pset,
+                      _name="eim_g",
+                      _filename=dbnameEimg,
+                      _directory=dbDir );
+    this->addEim( eim_g );
+}
+
+template<int Order>
 void BenchmarkGreplLinearElliptic<Order>::initModel()
 {
+
     std::string mshfile_name = option("mshfile").as<std::string>();
 
     /*
@@ -391,18 +406,20 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
     {
         double hsize=doption(_name="hsize");
         mesh = createGMSHMesh( _mesh=new mesh_type,
-                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                               _update=MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                                _desc = createGeo( hsize ) );
 
         //mesh = unitSquare( hsize );
     }
     else
     {
-        mesh = loadGMSHMesh( _mesh=new mesh_type,
-                             _filename=option("mshfile").as<std::string>(),
-                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
+        mesh = loadMesh( _mesh=new mesh_type,
+                         _filename=mshfile_name,
+                         _update=MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+        // mesh = loadGMSHMesh( _mesh=new mesh_type,
+        //                      _filename=option("mshfile").as<std::string>(),
+        //                      _update=MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
     }
-
 
     /*
      * The function space and some associate elements are then defined
@@ -430,13 +447,8 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
 
     auto Pset = this->Dmu->sampling();
     //specify how many elements we take in each direction
-    std::vector<int> N(2);
+    std::vector<size_type> N(2);
     int Ne = ioption(_name="trainset-eim-size");
-    std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
-
-    // std::string file_name = ( boost::format("eim_trainset_Ne%1%-proc%2%on%3%") % Ne %proc_number %total_proc).str();
-    std::ifstream file ( supersamplingname );
-
     //40 elements in each direction
     N[0]=Ne; N[1]=Ne;
 
@@ -445,12 +457,17 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
     //else for a given mu we are not able to evaluate g at a node wich
     //is not on the same proc than mu (so it leads to wrong results !)
     bool all_proc_same_sampling=true;
+    std::string sampling_mode = "log-equidistribute";
+    std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
+    // std::string file_name = ( boost::format("eim_trainset_Ne%1%-proc%2%on%3%") % Ne %proc_number %total_proc).str();
+    std::ifstream file ( supersamplingname );
 
     if( ! file )
     {
         //std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
-        Pset->equidistributeProduct( N , all_proc_same_sampling , supersamplingname );
-        Pset->writeOnFile( supersamplingname );
+        //Pset->equidistributeProduct( N , all_proc_same_sampling , supersamplingname );
+        //Pset->writeOnFile( supersamplingname );
+        Pset->sample( N, sampling_mode, all_proc_same_sampling, supersamplingname );
     }
     else
     {
@@ -465,6 +482,7 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
                       _expr=1./sqrt( (Px()-cst_ref(M_mu(0)))*(Px()-cst_ref(M_mu(0))) + (Py()-cst_ref(M_mu(1)))*(Py()-cst_ref(M_mu(1))) ),
                       _sampling=Pset,
                       _name="eim_g" );
+    this->addEim( eim_g );
 
 #if 0
     if( Environment::worldComm().isMasterRank() )
@@ -473,8 +491,6 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
         std::cout<<" eim g mMax : "<<eim_g->mMax(error)<<" error : "<<error<<std::endl;
     }
 #endif
-
-    M_funs.push_back( eim_g );
 
     //checkEimExpansion();
 
@@ -505,7 +521,7 @@ void BenchmarkGreplLinearElliptic<Order>::checkEimExpansion()
         Pset->readFromFile(supersamplingname);
     }
 
-    auto eim_g = M_funs[0];
+    auto eim_g = this->scalarContinuousEim()[0];
 
     //check that eim expansion of g is positive on each vertice
     int max = eim_g->mMax();
@@ -606,7 +622,7 @@ void BenchmarkGreplLinearElliptic<Order>::assemble()
     auto v = Xh->element();
 
     double gamma_dir = doption(_name="gamma");
-    auto eim_g = M_funs[0];
+    auto eim_g = this->scalarContinuousEim()[0];
 
     this->M_Aqm.resize( 2 );
     this->M_Aqm[0].resize( 1 );

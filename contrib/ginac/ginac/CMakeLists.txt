@@ -79,7 +79,7 @@ set(ginaclib_public_headers
     ex.h
     excompiler.h
     expair.h
-    expairseq.h 
+    expairseq.h
     exprseq.h
     fail.h
     factor.h
@@ -88,7 +88,7 @@ set(ginaclib_public_headers
     ${CMAKE_CURRENT_BINARY_DIR}/function.h
     hash_map.h
     idx.h
-    indexed.h 
+    indexed.h
     inifcns.h
     integral.h
     lst.h
@@ -97,20 +97,20 @@ set(ginaclib_public_headers
     ncmul.h
     normal.h
     numeric.h
-    operators.h 
+    operators.h
     power.h
     print.h
     pseries.h
     ptr.h
     registrar.h
     relational.h
-    structure.h 
+    structure.h
     symbol.h
     symmetry.h
     tensor.h
     version.h
-    wildcard.h 
-    parser/parser.h 
+    wildcard.h
+    parser/parser.h
     parser/parse_context.h
 )
 
@@ -153,7 +153,7 @@ add_definitions(-DLIBEXECDIR="${LIBEXECDIR}/")
 set_target_properties(feelpp_ginac PROPERTIES
 	SOVERSION ${ginaclib_soversion}
 	VERSION ${ginaclib_version})
-target_link_libraries(feelpp_ginac ${CLN_LIBRARIES} ${CMAKE_DL_LIBS} ${Boost_MPI_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${MPI_CXX_LIBRARIES} ${MPI_LIBRARIES})
+target_link_libraries(feelpp_ginac ${CLN_LIBRARIES} ${CMAKE_DL_LIBS} ${Boost_MPI_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${MPI_LIBRARIES})
 include_directories(${CMAKE_SOURCE_DIR}/contrib/ginac/ginac ${MPI_CXX_INCLUDE_PATH})
 
 if (NOT BUILD_SHARED_LIBS)
@@ -188,4 +188,3 @@ add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/function.cpp
 	COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/function.py -o ${CMAKE_CURRENT_BINARY_DIR}/function.cpp ${CMAKE_CURRENT_SOURCE_DIR}/function.cppy
 	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/function.h ${CMAKE_CURRENT_SOURCE_DIR}/function.cppy ${CMAKE_CURRENT_SOURCE_DIR}/function.py)
-
