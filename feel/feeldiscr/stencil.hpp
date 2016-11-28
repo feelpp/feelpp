@@ -1790,7 +1790,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
 
     //auto r = elements( _M_X1->mesh(), EntityProcessType::ALL );
     auto m = dynamic_cast<typename test_space_type::mesh_type::parent_mesh_type const*>(_M_X1->mesh()->parentMesh().get());
-    auto r = faces(m, EntityProcessType::ALL );
+    auto r = faces(m, EntityProcessType::LOCAL_ONLY/*EntityProcessType::ALL*/ );
 
     auto elem_it = r.template get<1>();
     auto elem_en = r.template get<2>();
@@ -1799,8 +1799,6 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
     for ( ; elem_it != elem_en; ++elem_it )
     {
         auto const& elem = elem_it->get();
-        if ( elem.isGhostFace() )
-            continue;
 
         auto eId = _M_X1->mesh()->meshToSubMesh( elem.id() );
         DVLOG(2) << "[Stencil::computeGraphHDG] element " << elem.id() << " on proc " << elem.processId() << std::endl;
@@ -1815,14 +1813,19 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
         else
             DVLOG(2) << "[Stencil::computeGraphHDG] F.id=" << F.id() << " element0().id: " << F.idElement0();
         std::vector<size_type> list_of_connected_faces;
-        std::vector<size_type> dK =  _M_X1->mesh()->meshToSubMesh( F.element0().facesId()), dK1;
-        DVLOG(2) << "dK=" << dK;
-        if ( F.isConnectedTo1() )
+        std::vector<size_type> dK, dK1;
+        if ( F.isConnectedTo0() && !F.element0().isGhostCell() )
+            dK =  _M_X1->mesh()->meshToSubMesh( F.element0().facesId());
+        if ( F.isConnectedTo1() && !F.element1().isGhostCell() )
             dK1 =  _M_X1->mesh()->meshToSubMesh( F.element1().facesId());
+
+        DVLOG(2) << "dK=" << dK;
         DVLOG(2) << "dK1=" << dK1;
         list_of_connected_faces.resize( dK.size()+dK1.size() );
         std::copy( dK.begin(), dK.end(), list_of_connected_faces.begin() );
         std::copy( dK1.begin(), dK1.end(), list_of_connected_faces.begin()+dK.size() );
+        if ( list_of_connected_faces.empty() )
+            continue;
 
         const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize(eId);
 
