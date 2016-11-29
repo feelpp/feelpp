@@ -159,6 +159,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- nb elt in mesh  : " << M_mesh->numGlobalElements()//numElements()
         // << "\n     -- nb elt in mesh  : " << M_mesh->numElements()
         // << "\n     -- nb face in mesh : " << M_mesh->numFaces()
+           << "\n     -- hMin            : " << M_mesh->hMin()
+           << "\n     -- hMax            : " << M_mesh->hMax()
+           << "\n     -- hAverage        : " << M_mesh->hAverage()
            << "\n     -- geometry order  : " << nOrderGeo
            << "\n     -- velocity order  : " << nOrderVelocity
            << "\n     -- pressure order  : " << nOrderPressure

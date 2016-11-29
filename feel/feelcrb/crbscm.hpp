@@ -89,8 +89,8 @@ public:
     typedef double value_type;
     typedef boost::tuple<double,double> bounds_type;
 
-    typedef ParameterSpace<TruthModelType::ParameterSpaceDimension> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef typename TruthModelType::parameterspace_type parameterspace_type;
+    typedef typename TruthModelType::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
     typedef typename parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef typename parameterspace_type::sampling_type sampling_type;
@@ -114,111 +114,42 @@ public:
      */
     //@{
 
-    //! default constructor
-    CRBSCM()
+    //! constructor with no model
+    CRBSCM( std::string const& name = "defaultname_crbscm",
+            bool scm_for_mass_matrix = false,
+            WorldComm const& worldComm = Environment::worldComm() )
         :
-        super(),
+        super( name, worldComm ),
         M_is_initialized( false ),
         M_model(),
-        M_tolerance( 1e-2 ),
-        M_iter_max( 3 ),
-        M_Mplus( 10 ),
-        M_Malpha( 4 ),
-        M_Dmu( new parameterspace_type ),
-        M_Xi( M_Dmu ),
-        M_C( M_Dmu, 1, M_Xi ),
-        M_C_complement( M_Dmu, 1, M_Xi ),
-        M_scm_for_mass_matrix( false ),
-        M_mu_ref( M_Dmu->element() ),
-        M_use_scm( true )
-    {
-    }
-
-    //! constructor from command line options
-    CRBSCM( std::string const& name,
-            po::variables_map const& vm )
-        :
-        super( "scm",
-               ( boost::format( "%1%" ) % name ).str(),
-               ( boost::format( "%1%" ) % name ).str(),
-               vm ),
-        M_is_initialized( false ),
-        M_model(),
-        M_tolerance( vm["crb.scm.tol"].template as<double>() ),
-        M_iter_max( vm["crb.scm.iter-max"].template as<int>() ),
-        M_Mplus( vm["crb.scm.Mplus"].template as<int>() ),
-        M_Malpha( vm["crb.scm.Malpha"].template as<int>()  ),
-        M_Dmu( new parameterspace_type ),
-        M_Xi( new sampling_type( M_Dmu ) ),
-        M_C( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_vm( vm ),
-        M_scm_for_mass_matrix( false ),
-        M_mu_ref( M_Dmu->element() ),
-        M_use_scm( vm["crb.scm.use-scm"].template as<bool>() )
-    {
-        if ( this->loadDB() )
-            LOG( INFO ) << "Database " << this->lookForDB() << " available and loaded";
-    }
-
-
-    //! constructor from command line options
-    CRBSCM( std::string const& name,
-            po::variables_map const& vm ,
-            truth_model_ptrtype const & model )
-        :
-        super( "scm",
-               ( boost::format( "%1%" ) % name ).str(),
-               ( boost::format( "%1%" ) % name ).str(),
-               vm ),
-        M_is_initialized( false ),
-        M_model(),
-        M_tolerance( vm["crb.scm.tol"].template as<double>() ),
-        M_iter_max( vm["crb.scm.iter-max"].template as<int>() ),
-        M_Mplus( vm["crb.scm.Mplus"].template as<int>() ),
-        M_Malpha( vm["crb.scm.Malpha"].template as<int>()  ),
-        M_Dmu( new parameterspace_type ),
-        M_Xi( new sampling_type( M_Dmu ) ),
-        M_C( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_vm( vm ),
-        M_scm_for_mass_matrix( false ),
-        M_mu_ref( M_Dmu->element() ),
-        M_use_scm( vm["crb.scm.use-scm"].template as<bool>() )
-    {
-        this->setTruthModel( model );
-        if ( this->loadDB() )
-            LOG( INFO ) << "Database " << this->lookForDB() << " available and loaded";
-    }
-
-    //! constructor from command line options
-    CRBSCM( std::string const& name,
-            po::variables_map const& vm ,
-            truth_model_ptrtype const & model ,
-            bool scm_for_mass_matrix )
-        :
-        super( "scm",
-               ( boost::format( "%1%" ) % name ).str(),
-               ( boost::format( "%1%" ) % name ).str(),
-               vm ),
-        M_is_initialized( false ),
-        M_model(),
-        M_tolerance( vm["crb.scm.tol"].template as<double>() ),
-        M_iter_max( vm["crb.scm.iter-max"].template as<int>() ),
-        M_Mplus( vm["crb.scm.Mplus"].template as<int>() ),
-        M_Malpha( vm["crb.scm.Malpha"].template as<int>()  ),
-        M_Dmu( new parameterspace_type ),
-        M_Xi( new sampling_type( M_Dmu ) ),
-        M_C( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_vm( vm ),
+        M_tolerance( doption(_name="crb.scm.tol" ) ),
+        M_iter_max( ioption(_name="crb.scm.iter-max" ) ),
+        M_Mplus( ioption(_name="crb.scm.Mplus" ) ),
+        M_Malpha( ioption(_name="crb.scm.Malpha") ),
+        // M_Dmu( new parameterspace_type ),
+        // M_Xi( new sampling_type( M_Dmu ) ),
+        // M_C( new sampling_type( M_Dmu, 1, M_Xi ) ),
+        // M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_scm_for_mass_matrix( scm_for_mass_matrix ),
-        M_mu_ref( M_Dmu->element() ),
-        M_use_scm( vm["crb.scm.use-scm"].template as<bool>() )
+        //M_mu_ref( M_Dmu->element() ),
+        M_use_scm( boption(_name="crb.scm.use-scm") ),
+        M_rebuild( boption(_name="crb.scm.rebuild-database") )
+    {
+        //if ( this->loadDB() )
+        //LOG( INFO ) << "Database " << this->lookForDB() << " available and loaded";
+    }
+
+
+    //! constructor with model
+    CRBSCM( std::string const& name,
+            truth_model_ptrtype const & model ,
+            bool scm_for_mass_matrix = false )
+        :
+        CRBSCM( name,scm_for_mass_matrix )
     {
         this->setTruthModel( model );
-        if ( this->loadDB() )
-            LOG( INFO ) << "Database " << this->lookForDB() << " available and loaded";
+        // if ( this->loadDB() )
+        //     LOG( INFO ) << "Database " << this->lookForDB() << " available and loaded";
     }
 
     //! copy constructor
@@ -234,10 +165,10 @@ public:
         M_Xi( o.M_Xi ),
         M_C( o.M_C ),
         M_C_complement( o.M_C_complement ),
-        M_vm( o.M_vm ),
         M_scm_for_mass_matrix( o.M_scm_for_mass_matrix ),
         M_mu_ref( o.M_mu_ref ),
-        M_use_scm( o.M_use_scm )
+        M_use_scm( o.M_use_scm ),
+        M_rebuild( o.M_rebuild )
     {
     }
 
@@ -279,7 +210,7 @@ public:
     }
 
     //! return the parameter space
-    parameterspace_ptrtype Dmu() const
+    parameterspace_ptrtype const& Dmu() const
     {
         return M_Dmu;
     }
@@ -291,10 +222,17 @@ public:
     }
 
     //! get Malpha
-    int Malpha()
+    int Malpha() const
     {
         return M_Malpha;
     }
+
+    bool rebuildDB() const { return M_rebuild; }
+
+    bool doScmForMassMatrix() const { return M_scm_for_mass_matrix; }
+
+    //! use scm
+    bool useScm() const { return M_use_scm; }
 
     //@}
 
@@ -323,15 +261,18 @@ public:
     //! set the truth offline model
     void setTruthModel( truth_model_ptrtype const& model )
     {
+        if ( !model )
+            return;
         M_model = model;
         M_Dmu = M_model->parameterSpace();
+        M_mu_ref = M_model->refParameter();
 
-        if ( ! loadDB() )
-        {
+        //if ( ! loadDB() )
+        //{
             M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
             M_C = sampling_ptrtype( new sampling_type( M_Dmu ) );
             M_C_complement = sampling_ptrtype( new sampling_type( M_Dmu ) );
-        }
+            //}
     }
 
     //! set Kmax
@@ -512,9 +453,29 @@ public:
      */
     bool loadDB();
 
-    bool rebuildDB();
+    /**
+     * \brief update scm description in property_tree
+     * \param ptree to update
+     */
+    void updatePropertyTree( boost::property_tree::ptree & ptree ) const
+    {
+        ptree.add( "name", this->name() );
+        // ptree.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
+        ptree.add( "database-filename",this->dbFilename() );
+    }
+    void setup( boost::property_tree::ptree const& ptree, std::string const& dbDir )
+    {
+        this->setName( ptree.template get<std::string>( "name" ) );
+        std::string dbname = ptree.template get<std::string>( "database-filename" );
+        fs::path dbnamePath = fs::path( dbname );
+        this->setDBFilename( dbnamePath.filename().string() );
+        if ( dbnamePath.is_absolute() )
+            this->setDBDirectory( dbnamePath.parent_path().string() );
+        else if ( !dbDir.empty() )
+            this->setDBDirectory( dbDir );
+        CHECK( this->loadDB() ) << "crbscm load fails";
 
-    bool doScmForMassMatrix();
+    }
     //@}
 
 
@@ -571,13 +532,14 @@ private:
     std::vector< std::vector<double> > M_y_bounds_0;
     std::vector< std::vector<double> > M_y_bounds_1;
 
-    po::variables_map M_vm;
-
     bool M_scm_for_mass_matrix;
     bool M_print_matrix;
 
     parameter_type M_mu_ref;
     bool M_use_scm;
+
+    //! rebuild the database if true
+    bool M_rebuild;
 };
 
 template<typename TruthModelType>
@@ -616,18 +578,18 @@ CRBSCM<TruthModelType>::offlineNoSCM()
     modes=
         eigs( _matrixA=sym,
               _matrixB=inner_prod,
-              _solver=( EigenSolverType )M_vm["crb.scm.solvereigen-solver-type"].template as<int>(),
+              _solver=( EigenSolverType ) ioption(_name="crb.scm.solvereigen-solver-type"),
               _spectrum=SMALLEST_REAL,
               //_spectrum=LARGEST_MAGNITUDE,
               _transform=SINVERT,
-              _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
-              _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
-              _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
-              _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
+              _ncv=ioption(_name="crb.scm.solvereigen-ncv"),
+              _nev=ioption(_name="crb.scm.solvereigen-nev"),
+              _tolerance=doption(_name="crb.scm.solvereigen-tol"),
+              _maxit=ioption(_name="crb.scm.solvereigen-maxiter")
               );
     double eigen_value = modes.begin()->second.template get<0>();
 #if 0
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( this->worldComm().isMasterRank() )
     {
         std::cout<<"-------------------------------------------"<<std::endl;
         std::cout<<"eigenvalue ( min ) for mu_ref : "<<eigen_value<<std::endl;
@@ -667,13 +629,13 @@ CRBSCM<TruthModelType>::offlineSCM()
     M_model->countAffineDecompositionTerms();
     // random sampling
     bool all_procs_have_same_sampling=true;
-    M_Xi->randomize( M_vm["crb.scm.sampling-size"].template as<int>() , all_procs_have_same_sampling );
-    //M_Xi->logEquidistribute( M_vm["crb.scm.sampling-size"].template as<int>() );
+    M_Xi->randomize( ioption(_name="crb.scm.sampling-size") , all_procs_have_same_sampling );
+    //M_Xi->logEquidistribute( ioption(_name="crb.scm.sampling-size") );
     M_C->setSuperSampling( M_Xi );
     parameter_type mu( M_Dmu );
 
 
-    M_print_matrix = M_vm["crb.scm.print-matrix"].template as<bool>() ;
+    M_print_matrix = boption(_name="crb.scm.print-matrix");
 
 #if 0
 
@@ -700,8 +662,8 @@ CRBSCM<TruthModelType>::offlineSCM()
     size_type index;
 
     bool use_predefined_C = boption(_name="crb.scm.use-predefined-C");
-    int N_log_equi = this->vm()["crb.scm.use-logEquidistributed-C"].template as<int>() ;
-    int N_equi = this->vm()["crb.scm.use-equidistributed-C"].template as<int>() ;
+    int N_log_equi = ioption(_name="crb.scm.use-logEquidistributed-C");
+    int N_equi = ioption(_name="crb.scm.use-equidistributed-C");
     std::vector<int> index_vector;
 
     if( N_log_equi > 0 || N_equi > 0 )
@@ -723,7 +685,7 @@ CRBSCM<TruthModelType>::offlineSCM()
         mu = M_C->at( 0 ); // first element
         index = index_vector[0];
 
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout<<"[CRBSCM::offline] read sampling C ( sampling size : "<<M_iter_max<<" )"<<std::endl;
     }
     else
@@ -756,7 +718,7 @@ CRBSCM<TruthModelType>::offlineSCM()
 
     while ( relative_error > M_tolerance && K <= M_iter_max )
     {
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout << "============================================================\n";
             std::cout << "K=" << K << "\n";
@@ -794,7 +756,7 @@ CRBSCM<TruthModelType>::offlineSCM()
         symmMatrix = M_model->newMatrix();symmMatrix->close();
         Matrix->symmetricPart( symmMatrix );
 
-        if( M_print_matrix && ( Environment::worldComm().globalSize() == 1 ) )
+        if( M_print_matrix && ( this->worldComm().globalSize() == 1 ) )
         {
             if( M_scm_for_mass_matrix)
             {
@@ -824,14 +786,14 @@ CRBSCM<TruthModelType>::offlineSCM()
         modes=
             eigs( _matrixA=symmMatrix,
                   _matrixB=B,
-                  _solver=( EigenSolverType )M_vm["crb.scm.solvereigen-solver-type"].template as<int>(),
+                  _solver=( EigenSolverType ) ioption(_name="crb.scm.solvereigen-solver-type"),
                   _spectrum=SMALLEST_REAL,
                   //_spectrum=LARGEST_MAGNITUDE,
                   _transform=SINVERT,
-                  _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
-                  _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
-                  _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
-                  _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
+                  _ncv=ioption(_name="crb.scm.solvereigen-ncv"),
+                  _nev=ioption(_name="crb.scm.solvereigen-nev"),
+                  _tolerance=doption(_name="crb.scm.solvereigen-tol"),
+                  _maxit=ioption(_name="crb.scm.solvereigen-maxiter")
                 );
 
         if ( modes.empty()  )
@@ -918,7 +880,7 @@ CRBSCM<TruthModelType>::offlineSCM()
         // the coercivity constant is independant of the parameter set
         if ( relative_error > M_tolerance && K < M_iter_max  && ! use_predefined_C )
         {
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            if( this->worldComm().isMasterRank() )
                 std::cout << " -- inserting mu - index : "<<index<<" -  in C (" << M_C->size() << ")\n";
             M_C->push_back( mu, index );
 
@@ -932,7 +894,7 @@ CRBSCM<TruthModelType>::offlineSCM()
         }
 
         ++K;
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << "============================================================\n";
     }
 
@@ -1051,16 +1013,16 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
     SolverEigen<double>::eigenmodes_type modesmin=
         eigs( _matrixA=Matrix,
               _matrixB=M,
-              _solver=( EigenSolverType )M_vm["crb.scm.solvereigen-solver-type"].template as<int>(),
+              _solver=( EigenSolverType ) ioption(_name="crb.scm.solvereigen-solver-type"),
               //_spectrum=LARGEST_MAGNITUDE,
               //_spectrum=LARGEST_REAL,
               _spectrum=SMALLEST_REAL,
               //_spectrum=SMALLEST_MAGNITUDE,
               _transform=SINVERT,
-              _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
-              _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
-              _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
-              _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
+              _ncv=ioption(_name="crb.scm.solvereigen-ncv"),
+              _nev=ioption(_name="crb.scm.solvereigen-nev"),
+              _tolerance=doption(_name="crb.scm.solvereigen-tol"),
+              _maxit=ioption(_name="crb.scm.solvereigen-maxiter")
             );
 
     if ( modesmin.empty() )
@@ -1078,12 +1040,12 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
     SolverEigen<double>::eigenmodes_type modesmax=
         eigs( _matrixA=Matrix,
               _matrixB=M,
-              _solver=( EigenSolverType )M_vm["crb.scm.solvereigen-solver-type"].as<int>(),
+              _solver=( EigenSolverType ) ioption(_name="crb.scm.solvereigen-solver-type"),
               _spectrum=LARGEST_MAGNITUDE,
-              _ncv=M_vm["crb.scm.solvereigen-ncv"].as<int>(),
-              _nev=M_vm["crb.scm.solvereigen-nev"].as<int>(),
-              _tolerance=M_vm["crb.scm.solvereigen-tol"].as<double>(),
-              _maxit=M_vm["crb.scm.solvereigen-maxiter"].as<int>()
+              _ncv=ioption(_name="crb.scm.solvereigen-ncv"),
+              _nev=ioption(_name="crb.scm.solvereigen-nev"),
+              _tolerance=doption(_name="crb.scm.solvereigen-tol"),
+              _maxit=ioption(_name="crb.scm.solvereigen-maxiter")
             );
 
     if ( modesmax.empty() )
@@ -1177,8 +1139,8 @@ CRBSCM<TruthModelType>::lbSCM( parameter_type const& mu ,size_type K ,int indexm
     if ( indexmu >= 0 && ( M_C_alpha_lb[indexmu].find( K ) !=  M_C_alpha_lb[indexmu].end() ) )
         return  M_C_alpha_lb[indexmu][K] ;
 
-    //if ( K == std::max(size_type(0),M_C->size()-(size_type)M_vm["crb.scm.level"].template as<int>() ) ) return 0.0;
-    //int level = M_vm["crb.scm.level"].template as<int>();
+    //if ( K == std::max(size_type(0),M_C->size()-(size_type) ioption(_name="crb.scm.level") ) ) return 0.0;
+    //int level = ioption(_name="crb.scm.level");
 
     //std::cout << "[CRBSCM::lb] Alphalb size " << M_C_alpha_lb.size() << "\n";
 
@@ -1195,7 +1157,7 @@ CRBSCM<TruthModelType>::lbSCM( parameter_type const& mu ,size_type K ,int indexm
     int Mplus = std::min( M_Mplus,M_Xi->size()-K );
 
 
-    if ( M_vm["crb.scm.strategy"].template as<int>()==2 )
+    if ( ioption(_name="crb.scm.strategy")==2 )
         Mplus = std::min( M_Mplus,std::min( K, M_Xi->size()-K ) );
 
     // we have exactely Qa*(M+ + Malpha) entries in the matrix
@@ -1315,7 +1277,7 @@ CRBSCM<TruthModelType>::lbSCM( parameter_type const& mu ,size_type K ,int indexm
 
         glp_set_row_name( lp, Malpha+m+1, ( boost::format( "xi_c_%1%_%2%" ) % K % m ).str().c_str() );
 
-        switch ( M_vm["crb.scm.strategy"].template as<int>() )
+        switch ( ioption(_name="crb.scm.strategy") )
         {
             // Patera
         case 0:
@@ -1575,7 +1537,7 @@ CRBSCM<TruthModelType>::computeYBounds()
 
             Matrix->close();
             Matrix->symmetricPart( symmMatrix );
-            if( Environment::worldComm().globalSize() == 1 )
+            if( this->worldComm().globalSize() == 1 )
             {
                 os << "yb_Matrix" << q << " - "<< m << ".m";
                 Matrix->printMatlab( os.str() );
@@ -1624,13 +1586,13 @@ CRBSCM<TruthModelType>::computeYBounds()
                           _matrixB=B,
                           //_problem=(EigenProblemType)PGNHEP,
                           _problem=( EigenProblemType )GHEP,
-                          _solver=( EigenSolverType )M_vm["crb.scm.solvereigen-solver-type"].template as<int>(),
+                          _solver=( EigenSolverType ) ioption(_name="crb.scm.solvereigen-solver-type"),
                           //_spectrum=SMALLEST_REAL,
                           _spectrum=SMALLEST_MAGNITUDE,
-                          _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
-                          _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
-                          _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
-                          _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
+                          _ncv=ioption(_name="crb.scm.solvereigen-ncv"),
+                          _nev=ioption(_name="crb.scm.solvereigen-nev"),
+                          _tolerance=doption(_name="crb.scm.solvereigen-tol"),
+                          _maxit=ioption(_name="crb.scm.solvereigen-maxiter")
                           );
 
 #endif
@@ -1638,7 +1600,7 @@ CRBSCM<TruthModelType>::computeYBounds()
                 if ( modes.empty() )
                 {
                     LOG(INFO) << "[Computeybounds] eigmin did not converge for q=" << q << " (set to 0)\n";
-                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                    if( this->worldComm().isMasterRank() )
                         std::cout << "[Computeybounds] eigmin did not converge for q=" << q << " (set to 0)"<<std::endl;
                 }
 
@@ -1649,15 +1611,14 @@ CRBSCM<TruthModelType>::computeYBounds()
                           _matrixB=B,
                           //_problem=(EigenProblemType)PGNHEP,
                           _problem=( EigenProblemType )GHEP,
-                          _solver=( EigenSolverType )M_vm["crb.scm.solvereigen-solver-type"].template as<int>(),
+                          _solver=( EigenSolverType ) ioption(_name="crb.scm.solvereigen-solver-type"),
                           _spectrum=LARGEST_REAL,
                           //_spectrum=LARGEST_MAGNITUDE,
-                          _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
+                          _ncv=ioption(_name="crb.scm.solvereigen-ncv"),
                           //_ncv=20,
-                          _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
-                          _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
-                          //_tolerance=1e-7,
-                          _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
+                          _nev=ioption(_name="crb.scm.solvereigen-nev"),
+                          _tolerance=doption(_name="crb.scm.solvereigen-tol"),
+                          _maxit=ioption(_name="crb.scm.solvereigen-maxiter")
                           );
 
 #endif
@@ -1665,12 +1626,12 @@ CRBSCM<TruthModelType>::computeYBounds()
                 if ( modes.empty() )
                 {
                     LOG(INFO) << "[Computeybounds] eigmax did not converge for q=" << q << " (set to 0)\n";
-                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                    if( this->worldComm().isMasterRank() )
                         std::cout << "[Computeybounds] eigmax did not converge for q=" << q << " (set to 0)"<<std::endl;
                 }
 
                 double eigmax = modes.empty()?0:modes.rbegin()->second.template get<0>();
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                if( this->worldComm().isMasterRank() )
                     std::cout<<"[computeYBounds] bounds for (q,m) = ("<<q<<","<<m<<") [ "<<eigmin<<" ; "<<eigmax<<"]"<<std::endl;
                 LOG(INFO)<<"[computeYBounds] bounds for (q,m) = ("<<q<<","<<m<<") [ "<<eigmin<<" ; "<<eigmax<<"]\n";
                 //std::cout << "[Computeybounds] q= " << q << " eigmin=" << std::setprecision(16) << eigmin << " eigmax=" << std::setprecision(16) << eigmax << "\n";
@@ -1787,6 +1748,7 @@ CRBSCM<TruthModelType>::load( Archive & ar, const unsigned int version )
 {
 
     ar & M_use_scm ;
+#if 0
     bool use_scm =  boption(_name="crb.scm.use-scm") ;
     bool rebuild =  boption(_name="crb.scm.rebuild-database") ;
     if( M_use_scm != use_scm && rebuild==false)
@@ -1796,7 +1758,7 @@ CRBSCM<TruthModelType>::load( Archive & ar, const unsigned int version )
         else
             throw std::logic_error( "[CRBSCM::load] ERROR the database was created to use SCM. Use option crb.scm.rebuild-database=true");
     }
-
+#endif
     if( M_use_scm )
     {
         ar & M_Malpha;
@@ -1826,22 +1788,6 @@ CRBSCM<TruthModelType>::load( Archive & ar, const unsigned int version )
 }
 
 template<typename TruthModelType>
-bool
-CRBSCM<TruthModelType>::doScmForMassMatrix()
-{
-    bool b = this->vm()["crb.scm.do-scm-for-mass-matrix"].template as<bool>();
-    return b;
-}
-
-template<typename TruthModelType>
-bool
-CRBSCM<TruthModelType>::rebuildDB()
-{
-    bool rebuild = this->vm()["crb.scm.rebuild-database"].template as<bool>();
-    return rebuild;
-}
-
-template<typename TruthModelType>
 void
 CRBSCM<TruthModelType>::saveDB()
 {
@@ -1859,8 +1805,8 @@ template<typename TruthModelType>
 bool
 CRBSCM<TruthModelType>::loadDB()
 {
-    if ( this->rebuildDB() )
-        return false;
+    //if ( this->rebuildDB() )
+    //return false;
 
     fs::path db = this->lookForDB();
 

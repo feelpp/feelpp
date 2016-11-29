@@ -8,3 +8,5 @@ feelpp_add_application( application_thermodyn_3d SRCS main_td.cpp
   LINK_LIBRARIES feelpp_model_thermodyn3dP1G1
   DEFS FEELPP_DIM=3
   )
+
+feelpp_add_testcase(thermo2d CATEGORY thermodyn )
