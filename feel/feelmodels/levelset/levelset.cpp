@@ -1426,21 +1426,28 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
     } // Hamilton-Jacobi
 
     //*phi = M_reinitializer->run( *phi );
-    *phiReinit = M_reinitializer->run( *phiReinit );
     if( useSmoothReinit )
     {
-        //auto R = this->interfaceRectangularFunction(phiReinit);
-        auto R = this->interfaceRectangularFunction();
-        *phi = vf::project(
-                _space=this->functionSpace(),
-                _range=elements(this->mesh()),
-                _expr=idv(phi)*idv(R) + idv(phiReinit)*(1.-idv(R))
+        *phiReinit = this->smoother()->project(
+                _expr=idv(*phiReinit)
                 );
     }
-    else
-    {
-        *phi = *phiReinit;
-    }
+    *phi = M_reinitializer->run( *phiReinit );
+    //*phiReinit = M_reinitializer->run( *phiReinit );
+    //if( useSmoothReinit )
+    //{
+        ////auto R = this->interfaceRectangularFunction(phiReinit);
+        //auto R = this->interfaceRectangularFunction();
+        //*phi = vf::project(
+                //_space=this->functionSpace(),
+                //_range=elements(this->mesh()),
+                //_expr=idv(phi)*idv(R) + idv(phiReinit)*(1.-idv(R))
+                //);
+    //}
+    //else
+    //{
+        //*phi = *phiReinit;
+    //}
 
     if( M_useGradientAugmented && M_reinitGradientAugmented )
     {
@@ -1459,7 +1466,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
     }
 
     if( useSmoothReinit )
+    {
         M_hasReinitializedSmooth = true;
+        M_hasReinitialized = true;
+    }
     else
         M_hasReinitialized = true;
 
