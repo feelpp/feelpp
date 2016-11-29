@@ -196,9 +196,12 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
             //_range=elements(this->levelset()->mesh()),
             //_expr=M_inextensibilityForceCoefficient*(idv(GradEp)-idv(DivEpNtN))*idv(this->levelset()->D())
             //);
-    auto Fe = vf::project(
-            _space=this->levelset()->functionSpaceVectorial(),
-            _range=elements(this->levelset()->mesh()),
+    //auto Fe = vf::project(
+            //_space=this->levelset()->functionSpaceVectorial(),
+            //_range=elements(this->levelset()->mesh()),
+            //_expr=M_inextensibilityForceCoefficient*( (Id-NxN)*idv(GradEp)-idv(Ep)*idv(K)*idv(N) )*idv(this->levelset()->D())
+            //);
+    auto Fe = this->levelset()->smootherVectorial()->project(
             _expr=M_inextensibilityForceCoefficient*( (Id-NxN)*idv(GradEp)-idv(Ep)*idv(K)*idv(N) )*idv(this->levelset()->D())
             );
     *F += Fe;
