@@ -386,6 +386,11 @@ INCLUDE(CTest)
 ENABLE_TESTING()
 
 add_custom_target(check)
+add_custom_target(install-testcase
+  COMMAND ${CMAKE_COMMAND}
+  -D COMPONENT=install-testcase
+  -P cmake_install.cmake
+  )
 
 add_custom_target(check-full COMMAND "ctest")
 IF(FEELPP_ENABLE_TESTS )

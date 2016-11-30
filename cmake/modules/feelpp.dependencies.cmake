@@ -883,7 +883,7 @@ if ( NOT GFORTRAN_LIBRARY )
     /opt/local/lib
     /usr/lib/gcc/x86_64-linux-gnu/
     PATH_SUFFIXES
-    gcc5 gcc49 gcc48 gcc47 gcc46 gcc45 gcc44 4.7 4.6 4.5 4.4
+    gcc6 gcc5 gcc49 gcc48 gcc47 gcc46 gcc45 gcc44 4.7 4.6 4.5 4.4
     )
 endif()
 
