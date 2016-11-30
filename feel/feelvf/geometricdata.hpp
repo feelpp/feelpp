@@ -259,10 +259,11 @@ const size_type mctx = vm::MEASURE;
                 /*BOOST_STATIC_ASSERT( dim_ok );*/                      \
                 update( geom );                                         \
             }                                                           \
-            template<typename CTX>                                      \
-                void updateContext( CTX const& ctx )                    \
+            template<typename ... CTX>                                  \
+            void updateContext( CTX const& ... ctx )                    \
             {                                                           \
-                M_gmc = ctx->gmContext().get();                        \
+                boost::fusion::vector<CTX...> ctxvec( ctx... );        \
+                M_gmc = boost::fusion::at_c<0>( ctxvec )->gmContext().get(); \
             }                                                           \
                                                                         \
                 value_type                                              \

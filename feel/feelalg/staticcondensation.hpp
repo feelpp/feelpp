@@ -67,6 +67,210 @@ public:
                          size_type K = 0,
                          size_type K2 = invalid_size_type_value );
 
+
+    template <typename Space1,typename Space2>
+    void syncLocalMatrix( boost::shared_ptr<Space1> const& rowSpace, boost::shared_ptr<Space2> const& colSpace )
+        {
+            if ( rowSpace->worldComm().localSize() == 1 )
+                return;
+
+            std::map<size_type,rank_type> allghostIdsRow;
+            for ( auto it=rowSpace->mesh()->beginGhostElement(),en=rowSpace->mesh()->endGhostElement();it!=en;++it )
+                allghostIdsRow[ it->id() ] = it->processId();
+            std::map<size_type,rank_type> allghostIdsCol;
+            for ( auto it=colSpace->mesh()->beginGhostElement(),en=colSpace->mesh()->endGhostElement();it!=en;++it )
+                allghostIdsCol[ it->id() ] = it->processId();
+
+            std::map< rank_type, std::set< std::tuple<size_type,size_type,size_type,size_type> > > localMatKeysToSynchronize;
+
+            for ( auto const& localMat : this->M_local_matrices[this->M_block_rowcol] )
+            {
+                size_type K = localMat.first.first;
+                size_type K2 = localMat.first.second;
+                std::tuple<size_type,size_type,size_type,size_type> keySync = std::make_tuple( K,K2,K,K2 );
+
+                //if ( rowSpace->mesh()->dimension() == rowSpace->mesh()->realDimension() )
+                // {
+                auto itFindId = allghostIdsRow.find( K );
+                if ( itFindId != allghostIdsRow.end() )
+                {
+                    auto const& eltRow = rowSpace->mesh()->element( itFindId->first, itFindId->second );
+                    rank_type otherpid = eltRow.processId();
+                    auto itFindIdCol = allghostIdsCol.find( K2 );
+                    auto const& eltCol = (itFindIdCol != allghostIdsCol.end())?
+                        colSpace->mesh()->element( itFindIdCol->first, itFindIdCol->second ) :
+                        colSpace->mesh()->element( K2 );
+                    CHECK( eltRow.idInOthersPartitions().find( otherpid ) != eltRow.idInOthersPartitions().end() ) << "aie no idInOtherPartition = " << eltRow.G();
+                    CHECK( eltCol.idInOthersPartitions().find( otherpid ) != eltCol.idInOthersPartitions().end() ) << "aie no idInOtherPartition = " << eltCol.G();
+                    std::get<2>( keySync ) = eltRow.idInOthersPartitions( otherpid );
+                    std::get<3>( keySync ) = eltCol.idInOthersPartitions( otherpid );
+                    localMatKeysToSynchronize[otherpid].insert( keySync );
+                }
+                else if ( rowSpace->mesh()->dimension() != rowSpace->mesh()->realDimension() )
+                {
+                    CHECK( rowSpace->mesh()->hasElement( K ) ) << "mesh doesnt have an element with id " << K;
+                    auto const& eltRow = rowSpace->mesh()->element( K );
+                    for ( auto const& otherProcess : eltRow.idInOthersPartitions() )
+                    {
+                        rank_type otherpid = otherProcess.first;
+
+                        auto itFindIdCol = allghostIdsCol.find( K2 );
+                        auto const& eltCol = ( itFindIdCol != allghostIdsCol.end() )?
+                            colSpace->mesh()->element( itFindIdCol->first, itFindIdCol->second ) :
+                            colSpace->mesh()->element( K2 );
+                        auto itFindOtherPartitionCol = eltCol.idInOthersPartitions().find( otherpid );
+                        if ( itFindOtherPartitionCol != eltCol.idInOthersPartitions().end() )
+                        {
+                            std::get<2>( keySync ) = otherProcess.second;
+                            std::get<3>( keySync ) = itFindOtherPartitionCol->second;
+                            localMatKeysToSynchronize[otherpid].insert( keySync );
+                        }
+                    }
+                }
+
+                // }
+                //else if ( colSpace->mesh()->dimension() == colSpace->mesh()->realDimension() )
+                // else
+                // {
+                auto itFindIdCol = allghostIdsCol.find( K2 );
+                if ( itFindIdCol != allghostIdsCol.end() )
+                {
+                    auto const& eltCol = colSpace->mesh()->element( itFindIdCol->first, itFindIdCol->second );
+                    rank_type otherpid = eltCol.processId();
+
+                    auto itFindIdRow = allghostIdsRow.find( K );
+                    auto const& eltRow = ( itFindIdRow != allghostIdsRow.end() )?
+                        rowSpace->mesh()->element( itFindIdRow->first, itFindIdRow->second ) :
+                        rowSpace->mesh()->element( K );
+                    CHECK( eltCol.idInOthersPartitions().find( otherpid ) != eltCol.idInOthersPartitions().end() ) << "no idInOtherPartition("<<otherpid<<") with " << eltRow.G();
+                    CHECK( eltRow.idInOthersPartitions().find( otherpid ) != eltRow.idInOthersPartitions().end() ) << "no idInOtherPartition("<<otherpid<<") with " << eltRow.G();
+                    std::get<2>( keySync ) = eltRow.idInOthersPartitions( otherpid );
+                    std::get<3>( keySync ) = eltCol.idInOthersPartitions( otherpid );
+                    localMatKeysToSynchronize[otherpid].insert( keySync );
+                }
+                else if ( colSpace->mesh()->dimension() != colSpace->mesh()->realDimension() )
+                {
+                    CHECK( colSpace->mesh()->hasElement( K2 ) ) << "mesh doesnt have an element with id " << K;
+                    auto const& eltCol = colSpace->mesh()->element( K2 );
+                    for ( auto const& otherProcess : eltCol.idInOthersPartitions() )
+                    {
+                        rank_type otherpid = otherProcess.first;
+                        auto itFindIdRow = allghostIdsRow.find( K );
+                        auto const& eltRow = ( itFindIdRow != allghostIdsRow.end() )?
+                            rowSpace->mesh()->element( itFindIdRow->first, itFindIdRow->second ) :
+                            rowSpace->mesh()->element( K );
+                        auto itFindOtherPartitionRow = eltRow.idInOthersPartitions().find( otherpid );
+                        if ( itFindOtherPartitionRow != eltRow.idInOthersPartitions().end() )
+                        {
+                            std::get<2>( keySync ) = itFindOtherPartitionRow->second;
+                            std::get<3>( keySync ) = otherProcess.second;
+                            localMatKeysToSynchronize[otherpid].insert( keySync );
+                        }
+                    }
+                }
+
+                // }
+            }
+
+
+#undef FEELPP_STATICCONDENSATION_DETECT_LOCALDOF_PERMUTATIONS
+#define FEELPP_STATICCONDENSATION_DETECT_LOCALDOF_PERMUTATIONS 0
+
+#if FEELPP_STATICCONDENSATION_DETECT_LOCALDOF_PERMUTATIONS
+            std::map<rank_type,std::vector<boost::tuple<size_type,size_type,local_matrix_t,std::vector<size_type>,std::vector<size_type> > > > dataToSend;
+            std::map<rank_type,std::vector<boost::tuple<size_type,size_type,local_matrix_t,std::vector<size_type>,std::vector<size_type> > > > dataToRecv;
+#else
+            std::map<rank_type,std::vector<boost::tuple<size_type,size_type,local_matrix_t> > > dataToSend;
+            std::map<rank_type,std::vector<boost::tuple<size_type,size_type,local_matrix_t> > > dataToRecv;
+#endif
+
+            std::set<rank_type> neighborSubdomainsRowCol;
+            for ( rank_type neighborPid : rowSpace->mesh()->neighborSubdomains() )
+                neighborSubdomainsRowCol.insert( neighborPid );
+            for ( rank_type neighborPid : colSpace->mesh()->neighborSubdomains() )
+                neighborSubdomainsRowCol.insert( neighborPid );
+
+            // update dataToSend
+            for ( auto const& dataByProcess : localMatKeysToSynchronize )
+            {
+                rank_type pid = dataByProcess.first;
+                for ( auto const& dataSync : dataByProcess.second )
+                {
+                    auto key = std::make_pair(std::get<0>(dataSync),std::get<1>(dataSync));
+                    local_matrix_t localMat = this->M_local_matrices.find(this->M_block_rowcol)->second.find(key)->second;
+
+#if FEELPP_STATICCONDENSATION_DETECT_LOCALDOF_PERMUTATIONS
+                    auto localDofInEltRow = rowSpace->dof()->localDof( key.first/*K*/ );
+                    auto localDofInEltCol = colSpace->dof()->localDof( key.second/*K2*/ );
+                    if ( localDofInEltRow.first == localDofInEltRow.second || localDofInEltCol.first == localDofInEltCol.second )
+                        continue;
+                    dataToSend[pid].push_back( boost::make_tuple( std::get<2>( dataSync ),std::get<3>( dataSync ), localMat,
+                                                                  rowSpace->dof()->getIndicesOnGlobalCluster( key.first ),
+                                                                  colSpace->dof()->getIndicesOnGlobalCluster( key.second ) ) );
+#else
+                    dataToSend[pid].push_back( boost::make_tuple( std::get<2>( dataSync ),std::get<3>( dataSync ), localMat ) );
+#endif
+                }
+            }
+            // send/recv
+            int neighborSubdomains = neighborSubdomainsRowCol.size();
+            int nbRequest = 2*neighborSubdomains;
+            mpi::request * reqs = new mpi::request[nbRequest];
+            int cptRequest=0;
+            WorldComm const& worldComm = rowSpace->mesh()->worldComm();
+            for ( rank_type neighborPid : neighborSubdomainsRowCol )
+            {
+                reqs[cptRequest++] = worldComm.localComm().isend( neighborPid , 0, dataToSend[neighborPid] );
+                reqs[cptRequest++] = worldComm.localComm().irecv( neighborPid , 0, dataToRecv[neighborPid] );
+            }
+            mpi::wait_all(reqs, reqs + nbRequest);
+
+            // update local matrix
+            for ( auto const& dataRecvByProcess : dataToRecv )
+            {
+                rank_type pid = dataRecvByProcess.first;
+                for ( auto const& dataSync : dataRecvByProcess.second )
+                {
+                    // std::cout << "recv mat\n " << boost::get<2>(dataSync) << "\n";
+                    auto key = std::make_pair(boost::get<0>(dataSync),boost::get<1>(dataSync));
+
+#if FEELPP_STATICCONDENSATION_DETECT_LOCALDOF_PERMUTATIONS
+                    auto localDofInEltRow = rowSpace->dof()->localDof( key.first/*K*/ );
+                    auto localDofInEltCol = colSpace->dof()->localDof( key.second/*K2*/ );
+                    if ( localDofInEltRow.first == localDofInEltRow.second || localDofInEltCol.first == localDofInEltCol.second )
+                        continue;
+
+                    auto const& locIndicesFromCurrentProcRow = rowSpace->dof()->getIndicesOnGlobalCluster( key.first );
+                    auto const& locIndicesFromCurrentProcCol = colSpace->dof()->getIndicesOnGlobalCluster( key.second );
+                    auto const& locIndicesFromOtherProcRow = boost::get<3>(dataSync);
+                    auto const& locIndicesFromOtherProcCol = boost::get<4>(dataSync);
+                    for (int locDofCurrentProc = 0; locDofCurrentProc<locIndicesFromCurrentProcRow.size(); ++locDofCurrentProc )
+                    {
+                        size_type gcdof = locIndicesFromCurrentProcRow[locDofCurrentProc];
+                        for (int locDofOtherProc = 0; locDofOtherProc<locIndicesFromOtherProcRow.size(); ++locDofOtherProc )
+                        {
+                            if ( locIndicesFromOtherProcRow[locDofOtherProc] == gcdof )
+                            {
+                                if ( locDofCurrentProc != locDofOtherProc )
+                                    std::cout << "["<<Environment::worldComm().rank() << "] FIND permutation in local matrix (row) : "
+                                              << locDofCurrentProc << " and " << locDofOtherProc << "\n";
+                                break;
+                            }
+                        }
+                    }
+                    // BK.col(4).swap(BK.col(5));
+                    // CK.row(4).swap(CK.row(5));
+#endif
+
+                    auto entry = this->M_local_matrices[this->M_block_rowcol].find(key);
+                    if ( entry == this->M_local_matrices[this->M_block_rowcol].end() )
+                        this->M_local_matrices[this->M_block_rowcol][key] = boost::get<2>(dataSync);
+                    else
+                        this->M_local_matrices[this->M_block_rowcol][key] += boost::get<2>(dataSync);
+                }
+            }
+
+        } // syncLocalMatrix
     /**
      * get current block
      */

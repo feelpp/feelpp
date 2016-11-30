@@ -125,6 +125,25 @@ public :
         {
             M_matrix->zero();
         }
+    void syncLocalMatrix()
+        {
+            int s = M_ps.numberOfSpaces();
+            int n = 0;
+            auto cp = hana::cartesian_product( hana::make_tuple( M_ps, M_ps ) );
+            int nstatic = hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(hana::back(M_ps))>>{},
+                                    [s] (auto&& x ) { return s-hana::back(std::forward<decltype(x)>(x))->numberOfSpaces()+1; },
+                                    [s] (auto&& x ) { return s; } )( M_ps );
+            hana::for_each( cp, [&]( auto const& e )
+                            {
+                                int r = n/nstatic;
+                                int c = n%nstatic;
+                                auto test_space = e[0_c];
+                                auto trial_space = e[1_c];
+                                DVLOG( 1 ) << "syncLocalMatrix("<< r << ","<< c <<")dim "<< test_space->mesh()->dimension()<<" , " << trial_space->mesh()->dimension() <<"\n";
+                                M_matrix->block(r,c)->sc()->syncLocalMatrix( test_space,trial_space );
+                                ++n;
+                            });
+        }
     sparse_matrix_ptrtype matrixPtr() const { return M_matrix; }
     sparse_matrix_ptrtype matrixPtr() { return M_matrix; }
     using pre_solve_type = typename Backend<value_type>::pre_solve_type;
@@ -179,6 +198,7 @@ public :
 
             //e3.printMatlab("phat.m");
             tic();
+            this->syncLocalMatrix();
             sc->condense ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c), S, V );
             toc("sc.condense", FLAGS_v>0);
             S.close();V.close();
