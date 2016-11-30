@@ -14,6 +14,9 @@ makeConvOptions()
         ( "cvg.refine-factor", po::value<double>()->default_value(2), "factor of refinement" )
         ( "cvg.p_exact", po::value<std::string>()->default_value( "0" ), "exact potential" )
         ( "cvg.cond", po::value<double>()->default_value( -1.), "conductivity" )
+        ( "cvg.compute_normal_error", po::value<bool>()->default_value( false ), "compute the error on normal" )
+        ( "cvg.normal_exact", po::value<std::string>()->default_value( "{x/2.,y/2.,0}:x:y:z" ), "exact normal on cvg.marker_normal" )
+        ( "cvg.marker_normal", po::value<std::string>()->default_value( "ext"), "marker on which compute the error on the normal" )
         ( "cvg.use-dirichlet", po::value<bool>()->default_value( true ), "use dirichlet conditions" )
         ( "cvg.bc-dirichlet", po::value<std::vector<std::string> >(), "list of markers for Dirichlet condition ")
         ( "cvg.use-neumann", po::value<bool>()->default_value( false ), "use neumann conditions" )
@@ -86,6 +89,11 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::ConvergenceTest()
     Feel::cout << "using p exact     : " << M_p_exact << std::endl;
     Feel::cout << "grad_p_exact      : " << grad<Dim,expr_order>(M_p_exact) << std::endl;
     Feel::cout << "laplacian(p_exact): " << laplacian(M_p_exact) << std::endl;
+    if( boption("cvg.compute_normal_error") )
+    {
+        Feel::cout << "normale           : " << soption("cvg.normal_exact") << std::endl;
+        Feel::cout << "compute normale on " << soption("cvg.marker_normal") << std::endl;
+    }
 
     if ( boption("cvg.use-dirichlet") )
         M_markersDirichlet = vsoption("cvg.bc-dirichlet");
@@ -113,6 +121,7 @@ template<int Dim, int Order, int G_Order, int E_Order>
 void
 ConvergenceTest<Dim,Order,G_Order,E_Order>::assembleExact()
 {
+    tic();
     M_model->assembleCstPart();
 
     auto cond = cst(doption("cvg.cond"));
@@ -153,6 +162,7 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::assembleExact()
         if( M_mesh->hasFaceMarker(marker))
         {
             double intjn = integrate(_range=markedfaces(M_mesh,marker), _expr=inner(u_exact,N())).evaluate()(0,0);
+            // double intjn = -std::log(2)/(2.*boost::math::constants::pi<double>());
             M_model->assembleIBC(i++, marker, intjn);
             Feel::cout << "add ibc on " << marker << " with value of " << intjn << std::endl;
         }
@@ -161,6 +171,7 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::assembleExact()
             LOG(FATAL) << "marker for IBC condition " << marker << "does not exist";
         }
     }
+    toc("convergence assembly");
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -173,18 +184,28 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::run()
     auto grad_p_exact = grad<Dim,expr_order>(M_p_exact);
     auto u_exact = -cond*trans(grad_p_exact);
 
-    std::ofstream cvg_u, cvg_p;
+    std::ofstream cvg_u, cvg_p, cvg_n;
     cvg_u.open( "convergence_u.dat", std::ios::out | std::ios::trunc);
     cvg_p.open( "convergence_p.dat", std::ios::out | std::ios::trunc);
     boost::format fmter("%1% %|14t|%2% %|28t|%3%\n");
-    boost::format fmterOut("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5%\n");
+    boost::format fmterOut;
+    if( boption("cvg.compute_normal_error") )
+        fmterOut = boost::format("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5% %|70t|%6%\n");
+    else
+        fmterOut = boost::format("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5%\n");
     cvg_u << fmter % "#h" % "nDof" % "l2err";
     cvg_p << fmter % "#h" % "nDof" % "l2err";
+    if( boption("cvg.compute_normal_error") )
+    {
+        cvg_n.open( "convergence_n.dat", std::ios::out | std::ios::trunc);
+        cvg_n << fmter % "#h" % "nDof" % "l2err";
+    }
 
     export_ptrtype e( export_type::New( "convergence") );
 
     for ( int i = 0; i < ioption("cvg.refine-nb"); i++)
     {
+        tic();
         M_mesh = loadMesh( _mesh=new mesh_type, _h=h);
         M_model -> init(M_mesh);
 
@@ -206,29 +227,53 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::run()
         double mean_p = mean( elements(M_mesh), idv(M_p))(0,0);
         double errP = normL2(_range=elements(M_mesh), _expr=idv(M_p)-cst(mean_p)-M_p_exact+cst(mean_p_exact), _quad=_Q<expr_order>());
 
-        cout << fmterOut % "h" % "nDofU" % "errU" % "nDofP" % "errP";
-        cout << fmterOut % h % nDofU % errU % nDofP % errP;
+        if (boption("cvg.compute_normal_error") )
+        {
+            auto normal = expr<Dim,1,expr_order>(soption("cvg.normal_exact"));
+            auto un_exact = trans(u_exact)*normal;
+            double errN = normL2(_range=markedfaces(M_mesh, soption("cvg.marker_normal")),
+                                 _expr=inner(idv(M_u),N()) - un_exact,
+                                 _quad=_Q<expr_order>() );
+            cout << fmterOut % "h" % "nDofU" % "errU" % "nDofP" % "errP" % "errN";
+            cout << fmterOut % h % nDofU % errU % nDofP % errP % errN;
+            cvg_n << fmter % h % nDofU % errN;
+        }
+        else
+        {
+            cout << fmterOut % "h" % "nDofU" % "errU" % "nDofP" % "errP";
+            cout << fmterOut % h % nDofU % errU % nDofP % errP;
+        }
         cvg_u << fmter % h % nDofU % errU;
         cvg_p << fmter % h % nDofP % errP;
+
+        Feel::cout << "start projection" << std::endl;
 
         u_ex.on( elements(M_mesh), u_exact);
         p_ex.on( elements(M_mesh), M_p_exact);
         p_ex_mean.on( elements(M_mesh), M_p_exact-cst(mean_p_exact));
         p_mean.on( elements(M_mesh), idv(M_p)-cst(mean_p));
 
+        Feel::cout << "start export" << std::endl;
+
         e->step(i)->setMesh(M_mesh);
         e->step(i)->add("u", M_u);
         e->step(i)->add("p", M_p);
         e->step(i)->add("p_mean", p_mean);
+        e->step(i)->add("p_ex_mean", p_ex_mean);
         e->step(i)->add("u_ex", u_ex);
         e->step(i)->add("p_ex", p_ex);
         e->save();
 
+        Feel::cout << "end export" << std::endl;
+
         h /= doption("cvg.refine-factor");
+        toc("convergence loop");
     }
 
     cvg_u.close();
     cvg_p.close();
+    if( boption("cvg.compute_normal_error") )
+        cvg_n.close();
 }
 
 // } // end namespace FeelModels
