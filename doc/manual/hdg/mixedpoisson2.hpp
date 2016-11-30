@@ -501,16 +501,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::solve()
     auto U = M_ps->element();
 
     tic();
-    if ( !boption(prefixvm(prefix(), "use-sc")) )
-    {
-        auto M_U = M_backend->newBlockVector(_block=U, _copy_values=false);
-        backend(_rebuild=true, _name=prefix())->solve( _matrix=M_A_cst, _rhs=M_F, _solution=M_U);
-        U.localize(M_U);
-    }
-    else
-    {
-        bbf.solve(_solution=U, _rhs=blf);
-    }
+    bbf.solve(_solution=U, _rhs=blf, _condense=boption(prefixvm(prefix(), "use-sc")), _name=prefix());
     toc("MixedPoisson : static condensation");
 
     toc("solve");
