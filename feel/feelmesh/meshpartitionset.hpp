@@ -345,8 +345,9 @@ MeshPartitionSet<MeshType>::buildAllPartInOneProcess()
             }
         }
         // update containers
-        auto pt_it = M_mesh->beginPointWithProcessId(partId);
-        auto pt_en = M_mesh->endPointWithProcessId(partId);
+        auto rangePoints = M_mesh->pointsWithProcessId( partId );
+        auto pt_it = std::get<0>( rangePoints );
+        auto const pt_en = std::get<1>( rangePoints );
         for ( ; pt_it != pt_en ; ++pt_it )
         {
             M_containerPoints[partId].push_back( boost::cref(*pt_it) );
