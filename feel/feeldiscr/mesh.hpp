@@ -403,6 +403,7 @@ public:
     void updateNumGlobalElements( typename std::enable_if<is_3d<MT>::value>::type* = nullptr )
     {
         rank_type nProc = this->worldComm().localSize();
+        rank_type currentRank = this->worldComm().localRank();
 
         size_type ne = std::distance( this->beginElementWithProcessId(),
                                       this->endElementWithProcessId() );
@@ -410,8 +411,8 @@ public:
                                       this->endFaceWithProcessId() );
         size_type ned = std::distance( this->beginEdgeWithProcessId(),
                                        this->endEdgeWithProcessId() );
-        size_type np = std::distance( this->beginPointWithProcessId(),
-                                      this->endPointWithProcessId() );
+        auto rangePoints = this->pointsWithProcessId( currentRank );
+        size_type np = std::distance( std::get<0>( rangePoints ), std::get<1>(rangePoints) );
         size_type nv = this->numVertices();
 
         size_type neall = this->numElements();
@@ -496,14 +497,15 @@ public:
     void updateNumGlobalElements( typename std::enable_if<mpl::not_<is_3d<MT>>::value>::type* = nullptr )
     {
         rank_type nProc = this->worldComm().localSize();
-
+        rank_type currentRank = this->worldComm().localRank();
         size_type ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
                                       this->endElementWithProcessId( this->worldComm().rank() ) );
         size_type nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
                                       this->endFaceWithProcessId( this->worldComm().rank() ) );
         size_type ned = 0;
-        size_type np = std::distance( this->beginPointWithProcessId( this->worldComm().rank() ),
-                                      this->endPointWithProcessId( this->worldComm().rank() ) );
+
+        auto rangePoints = this->pointsWithProcessId( currentRank );
+        size_type np = std::distance( std::get<0>( rangePoints ), std::get<1>(rangePoints) );
         size_type nv = this->numVertices();
 
         size_type neall = this->numElements();
