@@ -808,8 +808,8 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
 
         auto dofs = e3.dofs(dK);
 
-        S.addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
-        V.addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
+        S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_size_type_value, invalid_size_type_value );
+        V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_size_type_value, invalid_size_type_value );
     }
 }
 
@@ -859,11 +859,13 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         auto const& F = M_AinvF.at( K );
 
         auto dK = e3.mesh()->meshToSubMesh( e1.mesh()->element(K).facesId());
+#if 0        
         auto pdK = get_trace( dK, e3, e4 );
 
         upK.noalias() = -A*pdK + F;
         e1.assignE( K, upK.head( N0 ) );
         e2.assignE( K, upK.tail( N1 ) );
+#endif
     }
 
 }

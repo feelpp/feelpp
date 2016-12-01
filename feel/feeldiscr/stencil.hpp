@@ -29,13 +29,13 @@
 #if FEELPP_EXPORT_GRAPH
 #include <feel/feelfilters/exporter.hpp>
 #endif
-
+#include <type_traits>
 #include <feel/feelvf/pattern.hpp>
 #include <feel/feelalg/graphcsr.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
 #include <boost/hana.hpp>
-#include <boost/hana/ext/std/integral_constant.hpp>
+#include <boost/hana/integral_constant.hpp>
 
 #if 1
 namespace Feel
@@ -447,6 +447,8 @@ public:
     //! Specific function to compute the graph associated to the static condensation of the HDG method
     //!
     graph_ptrtype computeGraphHDG( size_type hints );
+    graph_ptrtype computeGraphHDG( size_type hints, std::integral_constant<bool,false> );
+    graph_ptrtype computeGraphHDG( size_type hints, std::integral_constant<bool,true> );
 
     graph_ptrtype computeGraph( size_type hints, single_spaces_t );
     graph_ptrtype computeGraph( size_type hints, multiple_spaces_t );
@@ -1751,8 +1753,23 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
 
 template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG( size_type hints )
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG( size_type hints,
+                                                                                 std::integral_constant<bool,true> )
 {
+    //return computeGraphHDG( hints, std::is_same<X1,X2>() );
+}
+template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG( size_type hints,
+                                                                                 std::integral_constant<bool,false> )
+{
+}
+template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG( size_type hints )
+                                                                                 
+{
+
     static const bool hasNotFindRangeStandard = rangeiteratorType<0,0>::hasnotfindrange_type::value;
     static const bool hasNotFindRangeExtended = rangeExtendedIteratorType<0,0>::hasnotfindrange_type::value;
 
@@ -1802,6 +1819,8 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
 
         auto eId = _M_X1->mesh()->meshToSubMesh( elem.id() );
         DVLOG(2) << "[Stencil::computeGraphHDG] element " << elem.id() << " on proc " << elem.processId() << std::endl;
+        if ( eId == invalid_size_type_value )
+            continue;
         // elem_it contains the id of the current face
         // we need to get the list of all the faces it is connected to through 1 or 2 elements it is connected to
         // we start by getting the id of the parent element submesh
@@ -1815,9 +1834,9 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
         std::vector<size_type> list_of_connected_faces;
         std::vector<size_type> dK, dK1;
         if ( F.isConnectedTo0() && !F.element0().isGhostCell() )
-            dK =  _M_X1->mesh()->meshToSubMesh( F.element0().facesId());
+            dK =  _M_X2->mesh()->meshToSubMesh( F.element0().facesId());
         if ( F.isConnectedTo1() && !F.element1().isGhostCell() )
-            dK1 =  _M_X1->mesh()->meshToSubMesh( F.element1().facesId());
+            dK1 =  _M_X2->mesh()->meshToSubMesh( F.element1().facesId());
 
         DVLOG(2) << "dK=" << dK;
         DVLOG(2) << "dK1=" << dK1;
@@ -1852,6 +1871,9 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
             for( auto dKi : list_of_connected_faces )
             {
                 DVLOG(2) << "[Stencil::computeGraphHDG] trial dKi=" << dKi << std::endl;
+                if ( dKi == invalid_size_type_value )
+                    continue;
+                
                 // Get the global indices of the DOFs with support on this element
                 _M_X2->dof()->getIndicesSetOnGlobalCluster( dKi, element_dof2 );
 
