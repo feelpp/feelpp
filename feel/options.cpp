@@ -399,6 +399,15 @@ po::options_description stabilization_options( std::string const& prefix )
     return _options.add( backend_options( prefixvm(prefix,"stab") ) );
 }
 
+po::options_description sc_options( std::string const& prefix )
+{
+    po::options_description _options("Options for static condensation");
+    _options.add_options()
+        ( prefixvm( prefix, "sc.condense" ).c_str(), po::value<bool>()->default_value( false ), "enable/disable static condensation" )
+        ;
+
+    return _options;
+}
 
 
 Feel::po::options_description
@@ -855,6 +864,7 @@ feel_options( std::string const& prefix  )
         .add( backend_options("Fu") )
         .add( backend_options("Bt") )
         .add( blockns_options( prefix ) )
+        .add( sc_options( prefix ) )
         //.add( blockms_options( prefix ) )
 
         /* nonlinear solver options */
