@@ -188,13 +188,11 @@ using points_t =  boost::tuple<mpl::size_t<MESH_POINTS>,
 
 template<typename MeshType>
 using markedpoints_t = boost::tuple<mpl::size_t<MESH_POINTS>,
-                                    typename MeshTraits<MeshType>::marker_point_const_iterator,
-                                    typename MeshTraits<MeshType>::marker_point_const_iterator>;
-
+                                    typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+                                    typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+                                    typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype>;
 template<typename MeshType>
-using boundarypoints_t = boost::tuple<mpl::size_t<MESH_POINTS>,
-                                      typename MeshTraits<MeshType>::location_point_const_iterator,
-                                      typename MeshTraits<MeshType>::location_point_const_iterator>;
+using boundarypoints_t = markedpoints_t<MeshType>;
 template<typename MeshType>
 using internalpoints_t = boundarypoints_t<MeshType>;
 

@@ -523,38 +523,46 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::marker_point_const_iterator,
-      typename MeshTraits<MeshType>::marker_point_const_iterator>
-      markedpoints( MeshType const& mesh, size_type flag, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
+markedpoints( MeshType const& mesh, size_type flag, mpl::bool_<false> )
 {
+    auto rangePointsWithMarker = mesh.pointsWithMarker( flag );
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              mesh.beginPointWithMarker( flag ),
-                              mesh.endPointWithMarker( flag ) );
+                              std::get<0>( rangePointsWithMarker ),
+                              std::get<1>( rangePointsWithMarker ),
+                              std::get<2>( rangePointsWithMarker ) );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::marker_point_const_iterator,
-      typename MeshTraits<MeshType>::marker_point_const_iterator>
-      markedpoints( MeshType const& mesh, size_type flag, mpl::bool_<true> )
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
+markedpoints( MeshType const& mesh, size_type flag, mpl::bool_<true> )
 {
     return markedpoints( *mesh, flag, mpl::bool_<false>() );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::location_point_const_iterator,
-      typename MeshTraits<MeshType>::location_point_const_iterator>
-      boundarypoints( MeshType const& mesh, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
+boundarypoints( MeshType const& mesh, mpl::bool_<false> )
 {
+    auto rangeBoundaryPoints = mesh.boundaryPoints();
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              mesh.beginPointOnBoundary( ),
-                              mesh.endPointOnBoundary() );
+                              std::get<0>( rangeBoundaryPoints ),
+                              std::get<1>( rangeBoundaryPoints ),
+                              std::get<2>( rangeBoundaryPoints ) );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::location_point_const_iterator,
-      typename MeshTraits<MeshType>::location_point_const_iterator>
-      boundarypoints( MeshType const& mesh, mpl::bool_<true> )
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
+boundarypoints( MeshType const& mesh, mpl::bool_<true> )
 {
     return boundarypoints( *mesh, mpl::bool_<false>() );
 }
