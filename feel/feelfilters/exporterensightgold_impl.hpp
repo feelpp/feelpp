@@ -1049,7 +1049,8 @@ ExporterEnsightGold<MeshType, N>::computeMarkersToWrite(mesh_ptrtype mesh) const
         osss << this->worldComm().rank() << " parts/markers";
         for(std::set<int>::iterator it = M_markersToWrite.begin(); it != M_markersToWrite.end(); it++)
         {
-            osss << " " << *it << " (" << std::distance(mesh->beginElementWithMarker(*it), mesh->endElementWithMarker(*it)) << ")";
+            auto rangeMarkedElements = mesh->elementsWithMarker( *it );
+            osss << " " << *it << " (" << std::distance( std::get<0>( rangeMarkedElements ),std::get<1>( rangeMarkedElements ) ) << ")";
         }
         LOG(INFO) << osss.str() << std::endl;
     }

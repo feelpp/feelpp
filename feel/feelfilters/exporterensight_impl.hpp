@@ -655,10 +655,10 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
             size_type __field_size = nComponents*__evar->second.size()/__evar->second.nComponents;
             ublas::vector<float> __field( __field_size );
             __field.clear();
-            typename mesh_type::marker_element_const_iterator elt_it;
-            typename mesh_type::marker_element_const_iterator elt_en;
-            boost::tie( elt_it, elt_en ) = __step->mesh()->elementsWithMarker( p_it->first,
-                                                                               __evar->second.worldComm().localRank() ); // important localRank!!!!
+            auto rangeMarkedElements = __step->mesh()->elementsWithMarker( p_it->first,__step->mesh()->worldComm().localRank() );
+            auto elt_it = std::get<0>( rangeMarkedElements );
+            auto const elt_en = std::get<1>( rangeMarkedElements );
+
 
             if ( !__evar->second.areGlobalValuesUpdated() )
                 __evar->second.updateGlobalValues();
@@ -670,8 +670,9 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
 
             for ( ; elt_it != elt_en; ++elt_it, ++e )
             {
+                auto const& elt = boost::unwrap_ref( *elt_it );
                 DVLOG(2) << "pid : " << this->worldComm().globalRank()
-                              << " elt_it :  " << elt_it->id()
+                              << " elt_it :  " << elt.id()
                               << " e : " << e << "\n";
 
                 for ( int c = 0; c < nComponents; ++c )
@@ -680,7 +681,7 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
 
                     if ( c < __evar->second.nComponents )
                     {
-                        size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt_it->id(),0, c ) );
+                        size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt.id(),0, c ) );
 
                         DVLOG(2) << "c : " << c
                                       << " gdofid: " << global_node_id
@@ -774,12 +775,9 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
         strcpy( buffer, this->elementType().c_str() );
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
-        //    typename mesh_type::element_const_iterator elt_it = __mesh->beginElement();
-        //    typename mesh_type::element_const_iterator elt_en = __mesh->endElement();
-        typename mesh_type::marker_element_const_iterator elt_it;// = __mesh->beginElementWithMarker(p_it->first);
-        typename mesh_type::marker_element_const_iterator elt_en;// = __mesh->endElementWithMarker(p_it->first);
-        boost::tie( elt_it, elt_en ) = __mesh->elementsWithMarker( p_it->first,
-                                                                   __mesh->worldComm().localRank() ); // important localRank!!!!
+        auto rangeMarkedElements = __mesh->elementsWithMarker( p_it->first,__mesh->worldComm().localRank() );
+        auto elt_it = std::get<0>( rangeMarkedElements );
+        auto const elt_en = std::get<1>( rangeMarkedElements );
 
         //	int __ne = __mesh->numElements();
         //int __ne = p_it->second;
@@ -794,23 +792,21 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
 
         for ( size_type e = 0; elt_it != elt_en; ++elt_it, ++e )
         {
-            idelem[e] = elt_it->id() + 1;
+            idelem[e] = boost::unwrap_ref( *elt_it ).id() + 1;
         }
 
         __out.write( ( char * ) & idelem.front(), idelem.size() * sizeof( int ) );
 
-        //	elt_it = __mesh->beginElement();
-        boost::tie( elt_it, elt_en ) = __mesh->elementsWithMarker( p_it->first,
-                                                                   __mesh->worldComm().localRank() ); // important localRank!!!!
-        //elt_it = __mesh->beginElementWithMarker(p_it->first);
         std::vector<int> eids( __mesh->numLocalVertices()*__ne );
         size_type e= 0;
+        elt_it = std::get<2>( rangeMarkedElements )->begin();
         for ( ; elt_it != elt_en; ++elt_it, ++e )
         {
+            auto const& elt = boost::unwrap_ref( *elt_it );
             for ( size_type j = 0; j < __mesh->numLocalVertices(); j++ )
             {
                 // ensight id start at 1
-                int __id = mp.old2new[elt_it->point( j ).id()];
+                int __id = mp.old2new[ elt.point( j ).id()];
                 eids[__mesh->numLocalVertices()*e+j] = __id;
             }
         }
