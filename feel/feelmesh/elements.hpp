@@ -114,6 +114,7 @@ public:
                                            multi_index::const_mem_fun<element_type,
                                                                       size_type,
                                                                       &element_type::id> > >,
+#if 0
             // sort by less<int> on marker
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
                                             multi_index::composite_key<element_type,
@@ -142,6 +143,7 @@ public:
                                                                        multi_index::const_mem_fun<element_type,
                                                                                                   rank_type,
                                                                                                   &element_type::processId> > >,
+#endif
 
             // sort by less<int> on boundary
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
@@ -169,20 +171,10 @@ public:
     typedef typename elements_type::iterator element_iterator;
     typedef typename elements_type::const_iterator element_const_iterator;
 
-    // marker
-    typedef typename elements_type::template index<Feel::detail::by_marker>::type marker_elements;
-    typedef typename marker_elements::iterator marker_element_iterator;
-    typedef typename marker_elements::const_iterator marker_element_const_iterator;
-
-    // marker2
-    typedef typename elements_type::template index<Feel::detail::by_marker2>::type marker2_elements;
-    typedef typename marker2_elements::iterator marker2_element_iterator;
-    typedef typename marker2_elements::const_iterator marker2_element_const_iterator;
-
-    // marker3
-    typedef typename elements_type::template index<Feel::detail::by_marker3>::type marker3_elements;
-    typedef typename marker3_elements::iterator marker3_element_iterator;
-    typedef typename marker3_elements::const_iterator marker3_element_const_iterator;
+    typedef std::vector<boost::reference_wrapper<element_type const> > elements_reference_wrapper_type;
+    typedef std::shared_ptr<elements_reference_wrapper_type> elements_reference_wrapper_ptrtype;
+    typedef typename elements_reference_wrapper_type::iterator element_reference_wrapper_iterator;
+    typedef typename elements_reference_wrapper_type::const_iterator element_reference_wrapper_const_iterator;
 
     typedef typename elements_type::template index<Feel::detail::by_location>::type location_elements;
     typedef typename location_elements::iterator location_element_iterator;
@@ -490,92 +482,71 @@ public:
     }
 
     /**
-     * \return the iterator \c begin over the elements with \c Marker1 \p m
-     */
-    marker_element_const_iterator beginElementWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
-    }
-
-    /**
-     * \return the iterator \c begin over the elements with \c Marker2 \p m
-     */
-    marker2_element_const_iterator beginElementWithMarker2( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker2>().equal_range( boost::make_tuple( Marker2( m ), part ) ).first;
-    }
-
-    /**
-     * \return the iterator \c begin over the elements with \c Marker3 \p m
-     */
-    marker3_element_const_iterator beginElementWithMarker3( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker3>().equal_range( boost::make_tuple( Marker3( m ), part ) ).first;
-    }
-
-    /**
-     * \return the iterator \c end over the elements with \c Marker1 \p m
-     */
-    marker_element_const_iterator endElementWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
-    }
-
-    /**
-     * \return the iterator \c end over the elements with \c Marker2 \p m
-     */
-    marker2_element_const_iterator endElementWithMarker2( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker2>().equal_range( boost::make_tuple( Marker2( m ), part ) ).second;
-    }
-
-    /**
-     * \return the iterator \c end over the elements with \c Marker3 \p m
-     */
-    marker3_element_const_iterator endElementWithMarker3( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker3>().equal_range( boost::make_tuple( Marker3( m ), part ) ).second;
-    }
-
-    /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker1 \p m on processor \p p
      */
-    std::pair<marker_element_const_iterator, marker_element_const_iterator>
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     elementsWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) );
-    }
-
-
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
+            elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+            auto it = this->beginElement();
+            auto en = this->endElement();
+            for ( ; it!=en;++it )
+            {
+                auto const& elt = *it;
+                if ( elt.processId() != part )
+                    continue;
+                if ( elt.marker().value() != m )
+                    continue;
+                myelements->push_back(boost::cref(elt));
+            }
+            return std::make_tuple( myelements->begin(), myelements->end(), myelements );
+        }
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker2 \p m on processor \p p
      */
-    std::pair<marker2_element_const_iterator, marker2_element_const_iterator>
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     elementsWithMarker2( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker2>().equal_range( boost::make_tuple( Marker2( m ), part ) );
-    }
-
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
+            elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+            auto it = this->beginElement();
+            auto en = this->endElement();
+            for ( ; it!=en;++it )
+            {
+                auto const& elt = *it;
+                if ( elt.processId() != part )
+                    continue;
+                if ( elt.marker2().value() != m )
+                    continue;
+                myelements->push_back(boost::cref(elt));
+            }
+            return std::make_tuple( myelements->begin(), myelements->end(), myelements );
+        }
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker3 \p m on processor \p p
      */
-    std::pair<marker3_element_const_iterator, marker3_element_const_iterator>
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     elementsWithMarker3( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker3>().equal_range( boost::make_tuple( Marker3( m ), part ) );
-    }
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
+            elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+            auto it = this->beginElement();
+            auto en = this->endElement();
+            for ( ; it!=en;++it )
+            {
+                auto const& elt = *it;
+                if ( elt.processId() != part )
+                    continue;
+                if ( elt.marker3().value() != m )
+                    continue;
+                myelements->push_back(boost::cref(elt));
+            }
+            return std::make_tuple( myelements->begin(), myelements->end(), myelements );
+        }
 
     element_iterator beginElementWithProcessId( rank_type p = invalid_rank_type_value )
     {
@@ -636,77 +607,6 @@ public:
         return M_elements.template get<0>();
     }
 
-    /**
-     * get the elements container using the \c Marker1 view
-     *
-     *
-     * @return the element container using \c Marker1 view
-     */
-    marker_elements &
-    elementsByMarker()
-    {
-        return M_elements.template get<Feel::detail::by_marker>();
-    }
-
-    /**
-     * get the elements container using the \c Marker2 view
-     *
-     *
-     * @return the element container using \c Marker2 view
-     */
-    marker2_elements &
-    elementsByMarker2()
-    {
-        return M_elements.template get<Feel::detail::by_marker2>();
-    }
-
-    /**
-     * get the elements container using the \c Marker3 view
-     *
-     *
-     * @return the element container using \c Marker3 view
-     */
-    marker3_elements &
-    elementsByMarker3()
-    {
-        return M_elements.template get<Feel::detail::by_marker3>();
-    }
-
-    /**
-     * get the elements container using the \c Marker1 view
-     *
-     *
-     * @return the element container using \c Marker1 view
-     */
-    marker_elements const&
-    elementsByMarker() const
-    {
-        return M_elements.template get<Feel::detail::by_marker>();
-    }
-
-    /**
-     * get the elements container using the \c Marker2 view
-     *
-     *
-     * @return the element container using \c Marker2 view
-     */
-    marker2_elements const&
-    elementsByMarker2() const
-    {
-        return M_elements.template get<Feel::detail::by_marker2>();
-    }
-
-    /**
-     * get the elements container using the \c Marker3 view
-     *
-     *
-     * @return the element container using \c Marker3 view
-     */
-    marker3_elements const&
-    elementsByMarker3() const
-    {
-        return M_elements.template get<Feel::detail::by_marker3>();
-    }
     /**
      * \return the range of iterator \c (begin,end) over the boundary
      *  element on processor \p p
