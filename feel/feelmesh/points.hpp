@@ -63,8 +63,8 @@ public:
     point_type,
     multi_index::indexed_by<
     // sort by employee::operator<
-        multi_index::ordered_unique<multi_index::identity<point_type> >,
-
+        multi_index::ordered_unique<multi_index::identity<point_type> >
+#if 0
         // sort by less<int> on marker
         multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
                                         multi_index::composite_key<point_type,
@@ -85,6 +85,7 @@ public:
                                         multi_index::const_mem_fun<point_type,
                                                                    bool,
                                                                    &point_type::isOnBoundary> >
+#endif
     >
     > points_type;
 
@@ -92,6 +93,13 @@ public:
     typedef typename points_type::iterator point_iterator;
     typedef typename points_type::const_iterator point_const_iterator;
 
+    typedef std::vector<boost::reference_wrapper<point_type const> > points_reference_wrapper_type;
+    typedef std::shared_ptr<points_reference_wrapper_type> points_reference_wrapper_ptrtype;
+    typedef typename points_reference_wrapper_type::iterator point_reference_wrapper_iterator;
+    typedef typename points_reference_wrapper_type::const_iterator point_reference_wrapper_const_iterator;
+
+
+#if 0
     typedef typename points_type::template index<Feel::detail::by_marker>::type marker_points;
     typedef typename marker_points::iterator marker_point_iterator;
     typedef typename marker_points::const_iterator marker_point_const_iterator;
@@ -103,8 +111,7 @@ public:
     typedef typename points_type::template index<Feel::detail::by_location>::type location_points;
     typedef typename location_points::iterator location_point_iterator;
     typedef typename location_points::const_iterator location_point_const_iterator;
-
-
+#endif
 
     //@}
 
@@ -231,26 +238,24 @@ public:
             return std::make_pair( M_points.begin(), M_points.end() );
         }
 
-    marker_point_iterator beginPointWithMarker( size_type m, rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
-        return M_points.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
-    }
-    marker_point_const_iterator beginPointWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
-        return M_points.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
-    }
-    marker_point_iterator endPointWithMarker( size_type m, rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
-        return M_points.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
-    }
-    marker_point_const_iterator endPointWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
-        return M_points.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
-    }
+    std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
+    pointsWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+            points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
+            auto it = this->beginPoint();
+            auto en = this->endPoint();
+            for ( ; it!=en;++it )
+            {
+                auto const& point = *it;
+                if ( point.processId() != part )
+                    continue;
+                if ( point.marker().value() != m )
+                    continue;
+                mypoints->push_back(boost::cref(point));
+            }
+            return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
+        }
 
     point_iterator pointIterator( size_type i ) const
     {
@@ -286,158 +291,72 @@ public:
     }
 
     /**
-     * get the points container using the marker view
+     * get iterator over internal points
      *
      *
-     * @return the point container using marker view
+     * @return iterator over internal points
      */
-    marker_points &
-    pointsByMarker()
-    {
-        return M_points.template get<Feel::detail::by_marker>();
-    }
-
+    std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
+    internalPoints( rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+            points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
+            auto it = this->beginPoint();
+            auto en = this->endPoint();
+            for ( ; it!=en;++it )
+            {
+                auto const& point = *it;
+                if ( point.processId() != part )
+                    continue;
+                if ( !point.isInternal() )
+                    continue;
+                mypoints->push_back(boost::cref(point));
+            }
+            return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
+        }
     /**
-     * get the points container using the marker view
+     * get iterator over boundary points
      *
      *
-     * @return the point container using marker view
+     * @return iterator over boundary points
      */
-    marker_points const&
-    pointsByMarker() const
-    {
-        return M_points.template get<Feel::detail::by_marker>();
-    }
-    /**
-     * get the points container using the location view
-     *
-     *
-     * @return the point container using location view
-     */
-    location_points &
-    pointsByLocation()
-    {
-        return M_points.template get<Feel::detail::by_location>();
-    }
-
-    /**
-     * get the points container using the location view
-     *
-     *
-     * @return the point container using location view
-     */
-    location_points const&
-    pointsByLocation() const
-    {
-        return M_points.template get<Feel::detail::by_location>();
-    }
-
-    /**
-     * get the begin() iterator on all the internal points
-     *
-     * @return the begin() iterator on all the internal points
-     */
-    location_point_iterator beginInternalPoint()
-    {
-        return M_points.template get<Feel::detail::by_location>().lower_bound( INTERNAL );
-    }
-    /**
-     * get the end() iterator on all the internal points
-     *
-     * @return the end() iterator on all the internal points
-     */
-    location_point_iterator endInternalPoint()
-    {
-        return M_points.template get<Feel::detail::by_location>().upper_bound( INTERNAL );
-    }
-
-    /**
-     * get the begin() iterator on all the internal points
-     *
-     * @return the begin() iterator on all the internal points
-     */
-    location_point_const_iterator beginInternalPoint() const
-    {
-        return M_points.template get<Feel::detail::by_location>().lower_bound( INTERNAL );
-    }
-
-    /**
-     * get the end() iterator on all the internal points
-     *
-     * @return the end() iterator on all the internal points
-     */
-    location_point_const_iterator endInternalPoint() const
-    {
-        return M_points.template get<Feel::detail::by_location>().upper_bound( INTERNAL );
-    }
-
-    /**
-     * get the begin() iterator on all the boundary points
-     *
-     * @return the begin() iterator on all the boundary points
-     */
-    location_point_iterator beginPointOnBoundary()
-    {
-        return M_points.template get<Feel::detail::by_location>().lower_bound( ON_BOUNDARY );
-    }
-    /**
-     * get the end() iterator on all the boundary points
-     *
-     * @return the end() iterator on all the boundary points
-     */
-    location_point_iterator endPointOnBoundary()
-    {
-        return M_points.template get<Feel::detail::by_location>().upper_bound( ON_BOUNDARY );
-    }
-
-    /**
-     * get the begin() iterator on all the boundary points
-     *
-     * @return the begin() iterator on all the boundary points
-     */
-    location_point_const_iterator beginPointOnBoundary() const
-    {
-        return M_points.template get<Feel::detail::by_location>().lower_bound( ON_BOUNDARY );
-    }
-
-    /**
-     * get the end() iterator on all the boundary points
-     *
-     * @return the end() iterator on all the boundary points
-     */
-    location_point_const_iterator endPointOnBoundary() const
-    {
-        return M_points.template get<Feel::detail::by_location>().upper_bound( ON_BOUNDARY );
-    }
+    std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
+    boundaryPoints( rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+            points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
+            auto it = this->beginPoint();
+            auto en = this->endPoint();
+            for ( ; it!=en;++it )
+            {
+                auto const& point = *it;
+                if ( point.processId() != part )
+                    continue;
+                if ( !point.isOnBoundary() )
+                    continue;
+                mypoints->push_back(boost::cref(point));
+            }
+            return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
+        }
 
 
-    pid_point_iterator beginPointWithProcessId( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
-        return M_points.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
-    }
-    pid_point_const_iterator beginPointWithProcessId( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
-        return M_points.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
-    }
-    pid_point_iterator endPointWithProcessId( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
-        return M_points.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
-    }
-    pid_point_const_iterator endPointWithProcessId( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
-        return M_points.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
-    }
 
+    std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
+    pointsWithProcessId( rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+            points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
+            auto it = this->beginPoint();
+            auto en = this->endPoint();
+            for ( ; it!=en;++it )
+            {
+                auto const& point = *it;
+                if ( point.processId() == part )
+                    mypoints->push_back(boost::cref(point));
+            }
 
-    std::pair<pid_point_iterator, pid_point_iterator>
-    pointsWithProcessId( size_type p ) const
-    {
-        return M_points.template get<Feel::detail::by_pid>().equal_range( p );
-    }
+            return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
+        }
 
     //@}
 
