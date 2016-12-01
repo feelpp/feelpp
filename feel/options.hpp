@@ -132,6 +132,7 @@ po::options_description ams_options( std::string const& prefix = "" );
 
 po::options_description stabilization_options( std::string const& prefix="" );
 
+po::options_description sc_options( std::string const& prefix="" );
 /**
  * command line for data interpolator
  */
