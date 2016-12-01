@@ -41,6 +41,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelalg/datamap.hpp>
+#include <feel/feelvf/pattern.hpp>
 #include <feel/feelvf/block.hpp>
 #include <feel/feelalg/products.hpp>
 
@@ -518,6 +519,7 @@ private :
 template<typename PS>
 BlocksBaseGraphCSR
 csrGraphBlocks( PS&& ps,
+                size_type pattern = Pattern::COUPLED,
                 std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
     int s = ps.numberOfSpaces();
@@ -546,6 +548,7 @@ csrGraphBlocks( PS&& ps,
                                                                                             g( r+i, c+j ) =
                                                                                                 stencil( _test=(*x)[i],
                                                                                                          _trial=(*y)[j],
+                                                                                                         _pattern=pattern,
                                                                                                      _diag_is_nonzero=false, _close=false)->graph();
                                                                                         }
                                                                                 },
@@ -556,6 +559,7 @@ csrGraphBlocks( PS&& ps,
                                                                                         g( r+i, c ) =
                                                                                             stencil( _test=(*x)[i],
                                                                                                      _trial=y,
+                                                                                                     _pattern=pattern,
                                                                                                      _diag_is_nonzero=false, _close=false)->graph();
                                                                                     }
                                                                                 })(xx,yy); },
@@ -567,6 +571,7 @@ csrGraphBlocks( PS&& ps,
                                                                                               g( r, c+i ) =
                                                                                                   stencil( _test=x,
                                                                                                            _trial=(*y)[i],
+                                                                                                           _pattern=pattern,
                                                                                                            _diag_is_nonzero=false, _close=false)->graph();
                                                                                           }
                                                                                       },
@@ -575,6 +580,7 @@ csrGraphBlocks( PS&& ps,
                                                                                           g( r, c ) =
                                                                                               stencil( _test=x,
                                                                                                        _trial=y,
+                                                                                                       _pattern=pattern,
                                                                                                        _diag_is_nonzero=false, _close=false)->graph();
                                                                                       })(xx,yy); })(test_space,trial_space);
 
@@ -588,6 +594,7 @@ csrGraphBlocks( PS&& ps,
 template<typename PS>
 BlocksBaseGraphCSR
 csrGraphBlocks( PS&& ps,
+                size_type pattern = Pattern::COUPLED,
                 std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
     int s = ps.numberOfSpaces();
@@ -596,7 +603,7 @@ csrGraphBlocks( PS&& ps,
     for( int i = 0; i < ps.numberOfSpaces(); ++i )
         for( int j = 0; j < ps.numberOfSpaces(); ++j )
         {
-            g( i, j ) = stencil( _test=ps[i],_trial=ps[j], _diag_is_nonzero=false, _close=false)->graph();
+            g( i, j ) = stencil( _test=ps[i],_trial=ps[j], _pattern=pattern, _diag_is_nonzero=false, _close=false)->graph();
             cout << "filling out stencil (" << i << "," << j << ")\n";
         }
     return g;

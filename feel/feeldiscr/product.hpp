@@ -50,7 +50,8 @@ public:
     using underlying_functionspace_ptrtype = boost::shared_ptr<underlying_functionspace_type>;
     using mesh_type = typename underlying_functionspace_type::mesh_type;
     using mesh_ptrtype = typename underlying_functionspace_type::mesh_ptrtype;
-
+    using worldcomm_type = WorldComm;
+    
     /**
      * construct a product of n identical spaces from mesh \p m
      */
@@ -121,6 +122,10 @@ public:
 
         }
 
+    worldcomm_type const& worldComm()  { return this->front()->worldComm(); }
+    worldcomm_type const& worldComm() const { return this->front()->worldComm(); }
+    mesh_ptrtype mesh() const { return this->front()->mesh(); }
+    
     underlying_functionspace_ptrtype& operator[]( int i ) { return same_mesh?this->front():this->at(i); }
     underlying_functionspace_ptrtype const& operator[]( int i ) const { return same_mesh?this->front():this->at(i); }
 
@@ -179,7 +184,7 @@ public:
     using functionspace_type = ProductSpaces<SpaceList...>;
 
     ProductSpaces( SpaceList... l ) : super( l... ){}
-    int numberOfSpaces() const { return hana::size( *this ); }
+    constexpr int numberOfSpaces() const { return hana::size( *this ); }
 
     //! \return the total number of degrees of freedom
     size_type nDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nDof(); } ); }
@@ -254,7 +259,9 @@ public:
     using mesh_type = typename decay_type<T>::mesh_type;
     using mesh_ptrtype = typename decay_type<T>::mesh_ptrtype;
 
+    ProductSpaces2() = default;
     ProductSpaces2( boost::shared_ptr<ProductSpace<T,true>> const& p, SpaceList... l ) : super( l..., p) {}
+    
     int numberOfSpaces() const { return int(hana::size( *this ))+hana::back(*this)->numberOfSpaces()-1; }
 
     //! \return the total number of degrees of freedom
