@@ -122,29 +122,33 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::marker_element_const_iterator,
-      typename MeshTraits<MeshType>::marker_element_const_iterator>
-      markedelements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<false>  )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+markedelements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<false>  )
 {
-    typedef typename MeshTraits<MeshType>::marker_element_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.elementsWithMarker( flag, pid );
+    auto rangeElementsWithMarker = mesh.elementsWithMarker( flag );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              p.first, p.second );
+                              std::get<0>( rangeElementsWithMarker ),
+                              std::get<1>( rangeElementsWithMarker ),
+                              std::get<2>( rangeElementsWithMarker ) );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::marker_element_const_iterator,
-      typename MeshTraits<MeshType>::marker_element_const_iterator>
-      markedelements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<true> )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+markedelements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<true> )
 {
     return markedelements( *mesh, flag, pid, mpl::bool_<false>() );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::marker2_element_const_iterator,
-      typename MeshTraits<MeshType>::marker2_element_const_iterator>
-      marked2elements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+marked2elements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<false> )
 {
     typedef typename MeshTraits<MeshType>::marker2_element_const_iterator iterator;
     std::pair<iterator, iterator> p = mesh.elementsWithMarker2( flag, pid );
@@ -153,18 +157,20 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::marker2_element_const_iterator,
-      typename MeshTraits<MeshType>::marker2_element_const_iterator>
-      marked2elements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<true> )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+marked2elements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<true> )
 {
     return marked2elements( *mesh, flag, pid, mpl::bool_<false>() );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::marker3_element_const_iterator,
-      typename MeshTraits<MeshType>::marker3_element_const_iterator>
-      marked3elements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+marked3elements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<false> )
 {
     typedef typename MeshTraits<MeshType>::marker3_element_const_iterator iterator;
     std::pair<iterator, iterator> p = mesh.elementsWithMarker3( flag, pid );
@@ -173,9 +179,10 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::marker3_element_const_iterator,
-      typename MeshTraits<MeshType>::marker3_element_const_iterator>
-      marked3elements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<true> )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+marked3elements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<true> )
 {
     return marked3elements( *mesh, flag, pid, mpl::bool_<false>() );
 }
