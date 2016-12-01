@@ -77,18 +77,13 @@ using internalelements_t = boundaryelements_t<MeshType>;
 
 template<typename MeshType>
 using markedelements_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                                      typename MeshTraits<MeshType>::marker_element_const_iterator,
-                                      typename MeshTraits<MeshType>::marker_element_const_iterator>;
-
+                                      typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+                                      typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+                                      typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype>;
 template<typename MeshType>
-using marked2elements_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                                       typename MeshTraits<MeshType>::marker2_element_const_iterator,
-                                       typename MeshTraits<MeshType>::marker2_element_const_iterator>;
-
+using marked2elements_t = markedelements_t<MeshType>;
 template<typename MeshType>
-using marked3elements_t =  boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                                        typename MeshTraits<MeshType>::marker3_element_const_iterator,
-                                        typename MeshTraits<MeshType>::marker3_element_const_iterator> ;
+using marked3elements_t = markedelements_t<MeshType>;
 
 
 template<typename MeshType>
@@ -1222,7 +1217,8 @@ markedelements( MeshType const& mesh, boost::any const& flag, EntityProcessType 
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
         for ( auto const& elt : markedelements(mesh,flag) )
         {
-            myelts->push_back(boost::cref(elt));
+            // myelts->push_back(boost::cref(elt));
+            myelts->push_back( boost::cref( boost::unwrap_ref( elt ) ) );
         }
 
     if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )

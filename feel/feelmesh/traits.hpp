@@ -63,14 +63,10 @@ struct MeshTraits
     typedef typename mesh_type::element_iterator element_iterator;
     typedef typename mesh_type::element_const_iterator element_const_iterator;
 
-    typedef typename mesh_type::marker_element_iterator marker_element_iterator;
-    typedef typename mesh_type::marker_element_const_iterator marker_element_const_iterator;
-
-    typedef typename mesh_type::marker2_element_iterator marker2_element_iterator;
-    typedef typename mesh_type::marker2_element_const_iterator marker2_element_const_iterator;
-
-    typedef typename mesh_type::marker3_element_iterator marker3_element_iterator;
-    typedef typename mesh_type::marker3_element_const_iterator marker3_element_const_iterator;
+    typedef typename mesh_type::elements_reference_wrapper_type elements_reference_wrapper_type;
+    typedef typename mesh_type::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
+    typedef typename mesh_type::element_reference_wrapper_iterator element_reference_wrapper_iterator;
+    typedef typename mesh_type::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
 
     typedef typename mesh_type::location_element_iterator location_element_iterator;
     typedef typename mesh_type::location_element_const_iterator location_element_const_iterator;
