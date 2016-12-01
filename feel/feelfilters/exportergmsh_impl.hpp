@@ -180,8 +180,9 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
 
                         gmshSavePhysicalNames( out, __step->mesh() );
 
-                        auto pt_it = __step->mesh()->beginPointWithProcessId();
-                        auto const pt_en = __step->mesh()->endPointWithProcessId();
+                        auto rangePoints = __step->mesh()->pointsWithProcessId();
+                        auto pt_it = std::get<0>(rangePoints);
+                        auto const pt_en = std::get<1>(rangePoints);
 
                         gmshSaveNodesStart( out, __step->mesh(), std::distance(pt_it, pt_en) );
                         gmshSaveNodes( out,__step->mesh() );
@@ -509,19 +510,20 @@ ExporterGmsh<MeshType,N>::numberOfGlobalPtAndIndex( mesh_ptrtype mesh ) const
 {
     size_type nPointToWriteOnProcess=0;
 
-    auto itPt = mesh->beginPointWithProcessId();
-    auto const enPt = mesh->endPointWithProcessId();
+    auto rangePoints = mesh->pointsWithProcessId();
+    auto itPt = std::get<0>( rangePoints );
+    auto const enPt = std::get<1>( rangePoints );
 
-    
     /* If we want only one file, specify the same filename for each process */
     if(boption(_name="exporter.gmsh.merge") == true)
     {
         for ( ; itPt!=enPt ; ++itPt )
         {
-            if ( itPt->isLinkedToOtherPartitions() )
+            auto const& pt = boost::unwrap_ref( *itPt );
+            if ( pt.isLinkedToOtherPartitions() )
             {
                 // add if the processId() is the min rank
-                if (itPt->processId() < *std::min_element( itPt->neighborPartitionIds().begin(),itPt->neighborPartitionIds().end() ) )
+                if (pt.processId() < *std::min_element( pt.neighborPartitionIds().begin(),pt.neighborPartitionIds().end() ) )
                     ++nPointToWriteOnProcess;
             }
             else ++nPointToWriteOnProcess;
@@ -593,49 +595,52 @@ template<typename MeshType, int N>
 void
 ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, bool parametric ) const
 {
-    auto pt_it = mesh->beginPointWithProcessId();
-    auto const pt_en = mesh->endPointWithProcessId();
+    auto rangePoints = mesh->pointsWithProcessId();
+    auto pt_it = std::get<0>( rangePoints );
+    auto const pt_en = std::get<1>( rangePoints );
 
+    bool merge = boption(_name="exporter.gmsh.merge");
     for ( ; pt_it!=pt_en ; ++pt_it )
     {
+        auto const& pt = boost::unwrap_ref( *pt_it );
         // if we want only one file, we discard nodes shared by different processes
-        if(boption(_name="exporter.gmsh.merge") == true)
+        if( merge )
         {
-            if ( pt_it->isLinkedToOtherPartitions() )
+            if ( pt.isLinkedToOtherPartitions() )
             {
                 // add if the processId() is the min rank
-                if ( pt_it->processId() > *std::min_element( pt_it->neighborPartitionIds().begin(),pt_it->neighborPartitionIds().end() ) )
+                if ( pt.processId() > *std::min_element( pt.neighborPartitionIds().begin(),pt.neighborPartitionIds().end() ) )
                     continue;
             }
         }
         // otherwise we put all the nodes in each file (to have a complete nodeset)
 
         // warning add 1 to the id in order to be sure that all gmsh id >0
-        out << pt_it->id()+1
-            << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt_it->node()[0];
+        out << pt.id()+1
+            << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt.node()[0];
 
         if ( mesh_type::nRealDim >= 2 )
-            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt_it->node()[1];
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt.node()[1];
 
         else
             out << " 0";
 
         if ( mesh_type::nRealDim >= 3 )
-            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt_it->node()[2];
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt.node()[2];
 
         else
             out << " 0";
 
         if ( parametric && mesh->isParametric() )
         {
-            out << " " << pt_it->gDim() << " " << pt_it->gTag();
+            out << " " << pt.gDim() << " " << pt.gTag();
 
-            if ( pt_it->gDim() == 1 )
-                out << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt_it->u();
+            if ( pt.gDim() == 1 )
+                out << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt.u();
 
-            else if ( pt_it->gDim() == 2 )
-                out << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt_it->u()
-                    << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt_it->v();
+            else if ( pt.gDim() == 2 )
+                out << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt.u()
+                    << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt.v();
         }
 
         out << "\n";
