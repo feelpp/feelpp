@@ -33,6 +33,8 @@
 
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
+#include <feel/feelfilters/loadMESHmesh.hpp>
+#include <feel/feelfilters/loadMEDmesh.hpp>
 #include <feel/feelfilters/importeracusimrawmesh.hpp>
 #include <feel/feelfilters/geo.hpp>
 #include <feel/feelfilters/domain.hpp>
@@ -99,10 +101,13 @@ BOOST_PARAMETER_FUNCTION(
     int proc_rank = worldcomm.globalRank();
     //Environment::isMasterRank()
 
+    // add mesh format supported by gmsh: unv (i-deas), mesh(inria), bdf(nastran), actran, p3d, cgns, med
     LOG_IF( WARNING,
             mesh_name.extension() != ".geo" &&
             mesh_name.extension() != ".json" &&
             mesh_name.extension() != ".msh" &&
+            mesh_name.extension() != ".mesh" &&
+            mesh_name.extension() != ".med" &&
             mesh_name.extension() != ".arm" )
         << "Invalid filename " << filenameExpand << " it should have either the .geo. .json or .msh extension\n";
 
@@ -187,6 +192,56 @@ BOOST_PARAMETER_FUNCTION(
             m->saveHDF5( mesh_name.stem().string()+".json" );
 #endif
         return m;
+    }
+    if ( mesh_name.extension() == ".mesh"  )
+    {
+        Feel::cout << "[loadMesh] Loading mesh in format mesh: " << fs::system_complete(mesh_name) << std::endl;
+        auto m = loadMESHMesh( _mesh=mesh,
+                               _filename=mesh_name.string(),
+                               _refine=refine,
+                               _scale=scale,
+                               _update=update,
+                               _physical_are_elementary_regions=physical_are_elementary_regions,
+                               _worldcomm=worldcomm,
+                               _respect_partition=respect_partition,
+                               _rebuild_partitions=rebuild_partitions,
+                               _rebuild_partitions_filename=rebuild_partitions_filename,
+                               _partitions=partitions,
+                               _partitioner=partitioner,
+                               _partition_file=partition_file,
+                               _verbose=verbose
+                               );
+#if defined(FEELPP_HAS_HDF5)
+        if ( savehdf5 )
+            m->saveHDF5( mesh_name.stem().string()+".json" );
+#endif
+        return m;
+    }
+    if ( mesh_name.extension() == ".med"  )
+    {
+#if defined(FEEPP_HAS_GMSH_HAS_MED) && defined(FEELPP_HAS_HDF5)
+        Feel::cout << "[loadMesh] Loading mesh in format med: " << fs::system_complete(mesh_name) << std::endl;
+        auto m = loadMEDMesh( _mesh=mesh,
+                               _filename=mesh_name.string(),
+                               _refine=refine,
+                               _scale=scale,
+                               _update=update,
+                               _physical_are_elementary_regions=physical_are_elementary_regions,
+                               _worldcomm=worldcomm,
+                               _respect_partition=respect_partition,
+                               _rebuild_partitions=rebuild_partitions,
+                               _rebuild_partitions_filename=rebuild_partitions_filename,
+                               _partitions=partitions,
+                               _partitioner=partitioner,
+                               _partition_file=partition_file,
+                               _verbose=verbose
+                               );
+        if ( savehdf5 )
+            m->saveHDF5( mesh_name.stem().string()+".json" );
+        return m;
+#else
+        Feel::cout << "[loadMesh] Loading mesh in format med: not available as HDF5 is not supported" << std::endl;
+#endif
     }
 #if defined(FEELPP_HAS_HDF5)
     if ( mesh_name.extension() == ".json"  )
