@@ -77,12 +77,9 @@ using ext_elements_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
                                     >;
 
 template<typename MeshType>
-using boundaryelements_t =  boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                                         typename MeshTraits<MeshType>::location_element_const_iterator,
-                                         typename MeshTraits<MeshType>::location_element_const_iterator>;
-
+using boundaryelements_t = elements_reference_wrapper_t<MeshType>;
 template<typename MeshType>
-using internalelements_t = boundaryelements_t<MeshType>;
+using internalelements_t = elements_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
 using markedelements_t = elements_reference_wrapper_t<MeshType>;

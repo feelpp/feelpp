@@ -87,18 +87,22 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::location_element_const_iterator,
-      typename MeshTraits<MeshType>::location_element_const_iterator>
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
 boundaryelements( MeshType const& mesh, uint16_type entity_min_dim, uint16_type entity_max_dim, rank_type pid, mpl::bool_<false> )
 {
-    typedef typename MeshTraits<MeshType>::location_element_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.boundaryElements( entity_min_dim, entity_max_dim, pid );
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), p.first, p.second );
+    auto rangeElements = mesh.boundaryElements( entity_min_dim,entity_max_dim,pid );
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                              std::get<0>( rangeElements ),
+                              std::get<1>( rangeElements ),
+                              std::get<2>( rangeElements ) );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::location_element_const_iterator,
-      typename MeshTraits<MeshType>::location_element_const_iterator>
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
 boundaryelements( MeshType const& mesh, uint16_type entity_min_dim, uint16_type entity_max_dim, rank_type pid, mpl::bool_<true> )
 {
     return boundaryelements( *mesh, entity_min_dim, entity_max_dim, pid, mpl::bool_<false>() );
@@ -106,19 +110,23 @@ boundaryelements( MeshType const& mesh, uint16_type entity_min_dim, uint16_type 
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::location_element_const_iterator,
-      typename MeshTraits<MeshType>::location_element_const_iterator>
-      internalelements( MeshType const& mesh, rank_type pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+internalelements( MeshType const& mesh, rank_type pid, mpl::bool_<false> )
 {
-    typedef typename MeshTraits<MeshType>::location_element_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.internalElements( pid );
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), p.first, p.second );
+    auto rangeElements = mesh.internalElements( pid );
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                              std::get<0>( rangeElements ),
+                              std::get<1>( rangeElements ),
+                              std::get<2>( rangeElements ) );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::location_element_const_iterator,
-      typename MeshTraits<MeshType>::location_element_const_iterator>
-      internalelements( MeshType const& mesh, rank_type pid, mpl::bool_<true> )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+internalelements( MeshType const& mesh, rank_type pid, mpl::bool_<true> )
 {
     return internalelements( *mesh, pid, mpl::bool_<false>() );
 }
