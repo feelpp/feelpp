@@ -56,7 +56,7 @@ using range_t = typename mpl::if_< boost::is_std_list<RangeType>,
                                    mpl::identity<std::list<RangeType> > >::type::type::value_type;
 
 template<typename MeshType>
-using elements_t =  boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+using allelements_t =  boost::tuple<mpl::size_t<MESH_ELEMENTS>,
                                  typename MeshTraits<MeshType>::element_const_iterator,
                                  typename MeshTraits<MeshType>::element_const_iterator>;
 
@@ -248,7 +248,7 @@ struct marked3elements
  * \return a pair of iterators to iterate over elements with pid \p flag
  */
 template<typename MeshType>
-elements_t<MeshType>
+allelements_t<MeshType>
 allelements( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
@@ -484,7 +484,7 @@ marked3elements( MeshType const& mesh, std::initializer_list<boost::any> const& 
  * \return a pair of iterators to iterate over elements with id \p flag
  */
 template<typename MeshType>
-elements_t<MeshType>
+allelements_t<MeshType>
 idedelements( MeshType const& mesh, flag_type flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
