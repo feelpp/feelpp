@@ -2133,13 +2133,15 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
 
     //------------------------------------------------------------------------------------------------//
 
-    auto itEltActif = this->beginElementWithProcessId( this->worldComm().localRank() );
-    auto const enEltActif = this->endElementWithProcessId( this->worldComm().localRank() );
+    auto rangeElements = this->elementsWithProcessId( this->worldComm().localRank() );
+    auto itEltActif = std::get<0>( rangeElements );
+    auto const enEltActif = std::get<1>( rangeElements );
     for ( ; itEltActif!=enEltActif ; ++itEltActif )
     {
-        if (itEltActif->numberOfNeighborPartitions() == 0 ) continue;
-        auto itneighbor = itEltActif->neighborPartitionIds().begin();
-        auto const enneighbor = itEltActif->neighborPartitionIds().end();
+        auto const& elt = boost::unwrap_ref( *itEltActif );
+        if ( elt.numberOfNeighborPartitions() == 0 ) continue;
+        auto itneighbor = elt.neighborPartitionIds().begin();
+        auto const enneighbor = elt.neighborPartitionIds().end();
         for ( ; itneighbor!=enneighbor ; ++itneighbor )
             nbMsgToRecv[*itneighbor]++;
     }
@@ -3397,9 +3399,9 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 {
-    typename self_type::element_iterator el_it;
-    typename self_type::element_iterator el_en;
-    boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *M_mesh );
+    auto rangeElements = M_mesh->elementsWithProcessId();
+    auto el_it = std::get<0>( rangeElements );
+    auto el_en = std::get<1>( rangeElements );
     const size_type nActifElt = std::distance( el_it, el_en );
     if ( nActifElt==0 ) return;
 
@@ -3421,19 +3423,20 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 
     KDTree::points_type boxpts;
     gmc_ptrtype __c( new gmc_type( M_mesh->gm(),
-                                   *el_it,
+                                   boost::unwrap_ref( *el_it ),
                                    __geopc ) );
     VLOG(2) << "[Mesh::Inverse] distribute mesh points ion kdtree\n";
 
     for ( ; el_it != el_en; ++el_it )
     {
+        auto const& elt = boost::unwrap_ref( *el_it );
         // get geometric transformation
-        __c->update( *el_it );
-        gic_type gic( M_mesh->gm(), *el_it );
+        __c->update( elt );
+        gic_type gic( M_mesh->gm(), elt );
 
         // create bounding box
         //bb.make( el_it->points() );
-        bb.make( el_it->G() );
+        bb.make( elt.G() );
 
         for ( size_type k=0; k < bb.min.size(); ++k )
         {
@@ -3441,7 +3444,7 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
             bb.max[k] += 1e-10;
         }
 
-        DVLOG(2) << "G = " << el_it->G() << " min = " << bb.min << ", max = " << bb.max << "\n";
+        DVLOG(2) << "G = " << elt.G() << " min = " << bb.min << ", max = " << bb.max << "\n";
 
         // check if the points
         this->pointsInBox( boxpts, bb.min, bb.max );
@@ -3480,8 +3483,8 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
                 {
                     M_ref_coords[index] = gic.xRef();
                     M_dist[index] = dmin;
-                    M_cvx_pts[index]=el_it->id();
-                    M_pts_cvx[el_it->id()][index]=boost::get<2>( boxpts[i] );
+                    M_cvx_pts[index]=elt.id();
+                    M_pts_cvx[elt.id()][index]=boost::get<2>( boxpts[i] );
                     npt[index]=true;
                 }
             }
@@ -3506,26 +3509,28 @@ Mesh<Shape, T, Tag>::Localization::init()
     M_geoGlob_Elts.clear();
     M_kd_tree->clear();
 
-    typename self_type::element_iterator el_it;
-    typename self_type::element_iterator el_en;
-    boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *mesh );
+    auto rangeElements = mesh->elementsWithProcessId();
+    auto el_it = std::get<0>( rangeElements );
+    auto el_en = std::get<1>( rangeElements );
     if ( el_it != el_en )
     {
-        M_gic.reset( new gmc_inverse_type( mesh->gm(), *el_it, mesh->worldComm().subWorldCommSeq() ) );
-        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), *el_it, mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() ) );
+        auto const& elt = boost::unwrap_ref( *el_it );
+        M_gic.reset( new gmc_inverse_type( mesh->gm(), elt, mesh->worldComm().subWorldCommSeq() ) );
+        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), elt, mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() ) );
     }
 
     for ( ; el_it != el_en; ++el_it )
     {
-        for ( int i=0; i<el_it->nPoints(); ++i )
+        auto const& elt = boost::unwrap_ref( *el_it );
+        for ( int i=0; i<elt.nPoints(); ++i )
         {
-            if ( boost::get<1>( M_geoGlob_Elts[el_it->point( i ).id()] ).size()==0 )
+            if ( boost::get<1>( M_geoGlob_Elts[elt.point( i ).id()] ).size()==0 )
             {
-                boost::get<0>( M_geoGlob_Elts[el_it->point( i ).id()] ) = el_it->point( i ).node();
-                M_kd_tree->addPoint( el_it->point( i ).node(),el_it->point( i ).id() );
+                boost::get<0>( M_geoGlob_Elts[elt.point( i ).id()] ) = elt.point( i ).node();
+                M_kd_tree->addPoint( elt.point( i ).node(),elt.point( i ).id() );
             }
 
-            boost::get<1>( M_geoGlob_Elts[el_it->point( i ).id()] ).push_back( el_it->id() );
+            boost::get<1>( M_geoGlob_Elts[elt.point( i ).id()] ).push_back( elt.id() );
         }
     }
 

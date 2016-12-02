@@ -590,9 +590,10 @@ public :
         typedef typename fusion::result_of::find<rangeiterator_test_type,fusion::pair<mpl::int_<I>,mpl::int_<J> > >::type resultfindrange_it_type;
         typedef typename boost::is_same<resultfindrange_it_type, typename fusion::result_of::end<rangeiterator_test_type>::type> hasnotfindrange_type;
 
-        typedef typename boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                                      typename MeshTraits<typename test_space_type::mesh_type>::element_const_iterator,
-                                      typename MeshTraits<typename test_space_type::mesh_type>::element_const_iterator> defaultrange_type;
+        // typedef typename boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+        //                               typename MeshTraits<typename test_space_type::mesh_type>::element_const_iterator,
+        //                               typename MeshTraits<typename test_space_type::mesh_type>::element_const_iterator> defaultrange_type;
+        typedef elements_reference_wrapper_t<typename MeshTraits<typename test_space_type::mesh_type>::mesh_type> defaultrange_type;
 
         // fix compilation from boost 1.55
         // if not find in fusion map else there is a problem now with result_of::value_of
@@ -1480,9 +1481,10 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
 
     for ( ; elem_it != elem_en; ++elem_it )
     {
-        DVLOG(4) << "[Stencil::computePattern] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
+        auto const& eltRange = boost::unwrap_ref( *elem_it );
+        DVLOG(4) << "[Stencil::computePattern] element " << eltRange.id() << " on proc " << eltRange.processId() << "\n";
 
-        const std::set<std::pair<size_type,rank_type> > infoTestElts = testElementIdFromRange( iDimRange,*elem_it );
+        const std::set<std::pair<size_type,rank_type> > infoTestElts = testElementIdFromRange( iDimRange, eltRange );
         for ( std::pair<size_type,rank_type> const& infoTestElt : infoTestElts )
         {
         size_type idTestElt = infoTestElt.first;
@@ -1547,7 +1549,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                     {
                         for ( uint16_type ms=0; ms < elem.nNeighbors(); ms++ )
                         {
-                            const auto * neighbor = boost::addressof( *_M_X1->mesh()->beginElementWithProcessId() /*elem*/ );
+                            // const auto * neighbor = boost::addressof( *_M_X1->mesh()->beginElementWithProcessId() /*elem*/ );
                             size_type neighbor_id = elem.neighbor( ms ).first;
                             size_type neighbor_process_id = elem.neighbor( ms ).second;
 
@@ -1559,7 +1561,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                                              _M_X2->dof()->buildDofTableMPIExtended() ) )
                                         << "Both spaces must have the extended dof table and none of them should be P0 Continuous to build the matrix stencil. Use block pattern construction instead!";
 
-                                neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
+                                const auto * neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
                                                                                      neighbor_process_id ) );
 
                                 if ( neighbor_id == neighbor->id()  )
@@ -1887,16 +1889,17 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 
     if ( elem_it==elem_en ) return sparsity_graph;
 
-    CHECK( elem_it->mesh()->isSameMesh( _M_X1->mesh() ) ) << "case not take into account : mesh range is not the same that test mesh";
+    auto const& eltInit = boost::unwrap_ref( *elem_it );
+    CHECK( eltInit.mesh()->isSameMesh( _M_X1->mesh() ) ) << "case not take into account : mesh range is not the same that test mesh";
 
-    matrix_node_type ptsReal( elem_it->vertices().size1(), 1 );
-    auto gmc = Feel::detail::gmcStencil<theim_type>( iDimRange,*elem_it );
+    matrix_node_type ptsReal( eltInit.vertices().size1(), 1 );
+    auto gmc = Feel::detail::gmcStencil<theim_type>( iDimRange, eltInit );
 
     if ( _M_X1->nDof()>1 )
     {
         for ( ; elem_it != elem_en; ++elem_it )
         {
-            auto const& elem = *elem_it;
+            auto const& elem = boost::unwrap_ref( *elem_it );
             // Get the global indices of the DOFs with support on this element
             element_dof1_range = _M_X1->dof()->getIndices( elem.id(), iDimRange );
 
@@ -1915,7 +1918,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 
                 ublas::column(ptsReal,0 ) = ptRealDof;
                 if (notUseOptLocTrial) IdEltInXh2=invalid_size_type_value;
-                auto resLocalisationInXh2 = locToolForXh2->run_analysis(ptsReal,IdEltInXh2,elem_it->vertices(),mpl::int_<0>());
+                auto resLocalisationInXh2 = locToolForXh2->run_analysis(ptsReal,IdEltInXh2,elem.vertices(),mpl::int_<0>());
                 IdEltInXh2 = resLocalisationInXh2.template get<1>();
                 bool hasFind = resLocalisationInXh2.template get<0>()[0];
 
@@ -2048,7 +2051,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
     {
         for ( ; elem_it != elem_en; ++elem_it )
         {
-            auto const& elem = *elem_it;
+            auto const& elem = boost::unwrap_ref( *elem_it );
 
             // Get the global indices of the DOFs with support on this element
             const std::set<size_type> idsElt = Feel::detail::idEltStencil( iDimRange,elem );

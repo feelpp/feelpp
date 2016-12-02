@@ -405,8 +405,8 @@ public:
         rank_type nProc = this->worldComm().localSize();
         rank_type currentRank = this->worldComm().localRank();
 
-        size_type ne = std::distance( this->beginElementWithProcessId(),
-                                      this->endElementWithProcessId() );
+        auto rangeElements = this->elementsWithProcessId( currentRank );
+        size_type ne = std::distance( std::get<0>( rangeElements ), std::get<1>( rangeElements ) );
         size_type nf = std::distance( this->beginFaceWithProcessId(),
                                       this->endFaceWithProcessId() );
         size_type ned = std::distance( this->beginEdgeWithProcessId(),
@@ -498,8 +498,8 @@ public:
     {
         rank_type nProc = this->worldComm().localSize();
         rank_type currentRank = this->worldComm().localRank();
-        size_type ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
-                                      this->endElementWithProcessId( this->worldComm().rank() ) );
+        auto rangeElements = this->elementsWithProcessId( currentRank );
+        size_type ne = std::distance( std::get<0>( rangeElements ), std::get<1>( rangeElements ) );
         size_type nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
                                       this->endFaceWithProcessId( this->worldComm().rank() ) );
         size_type ned = 0;
