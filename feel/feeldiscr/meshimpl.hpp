@@ -3189,25 +3189,25 @@ Mesh<Shape, T, Tag>::encode()
     } // faces
 
 
-    auto eltOnProccess = elements( *this );
-    auto elt_it = eltOnProccess.template get<1>();
-    auto elt_en = eltOnProccess.template get<2>();
-
+    auto rangeElements = this->elementsWithProcessId();
+    auto elt_it = std::get<0>( rangeElements );
+    auto elt_en = std::get<1>( rangeElements );
     for ( ; elt_it != elt_en; ++elt_it )
     {
+        auto const& curelt = boost::unwrap_ref( *elt_it );
         std::vector<int> elts;
         elts.push_back( ordering.type() );
-        elts.push_back( 4 + elt_it->numberOfPartitions() );
-        elts.push_back( elt_it->marker().value() );
-        elts.push_back( elt_it->marker2().value() );
-        elts.push_back( elt_it->numberOfPartitions() );
-        elts.push_back( elt_it->processId() );
-        for ( size_type i=0 ; i<elt_it->numberOfNeighborPartitions(); ++i )
-            elts.push_back( -( elt_it->neighborPartitionIds()[i] ) );
+        elts.push_back( 4 + curelt.numberOfPartitions() );
+        elts.push_back( curelt.marker().value() );
+        elts.push_back( curelt.marker2().value() );
+        elts.push_back( curelt.numberOfPartitions() );
+        elts.push_back( curelt.processId() );
+        for ( size_type i=0 ; i<curelt.numberOfNeighborPartitions(); ++i )
+            elts.push_back( -( curelt.neighborPartitionIds()[i] ) );
         for ( uint16_type p=0; p<element_type::numPoints; ++p )
-            elts.push_back( elt_it->point( ordering.fromGmshId( p ) ).id()+1 );
+            elts.push_back( curelt.point( ordering.fromGmshId( p ) ).id()+1 );
 
-        M_enc_elts[elt_it->id()] = elts;
+        M_enc_elts[curelt.id()] = elts;
     } // elements
     //std::cout<<"encode=   " << this->worldComm().localSize() << std::endl;
 }

@@ -257,12 +257,12 @@ public:
     typedef boost::shared_ptr<space_fluidoutlet_windkessel_mesh_disp_type> space_fluidoutlet_windkessel_mesh_disp_ptrtype;
     typedef typename space_fluidoutlet_windkessel_mesh_disp_type::element_type element_fluidoutlet_windkessel_mesh_disp_type;
     typedef boost::shared_ptr<element_fluidoutlet_windkessel_mesh_disp_type> element_fluidoutlet_windkessel_mesh_disp_ptrtype;
-    typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
-                         typename MeshTraits<trace_mesh_type>::element_const_iterator,
-                         typename MeshTraits<trace_mesh_type>::element_const_iterator> range_fluidoutlet_windkessel_type;
+    // typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
+    //                      typename MeshTraits<trace_mesh_type>::element_const_iterator,
+    //                      typename MeshTraits<trace_mesh_type>::element_const_iterator> range_fluidoutlet_windkessel_type;
     typedef OperatorInterpolation<space_mesh_disp_type,
-                                  space_fluidoutlet_windkessel_mesh_disp_type,
-                                  range_fluidoutlet_windkessel_type> op_interpolation_fluidoutlet_windkessel_meshdisp_type;
+                                  space_fluidoutlet_windkessel_mesh_disp_type/*,
+                                                                              range_fluidoutlet_windkessel_type*/> op_interpolation_fluidoutlet_windkessel_meshdisp_type;
     typedef boost::shared_ptr<op_interpolation_fluidoutlet_windkessel_meshdisp_type> op_interpolation_fluidoutlet_windkessel_meshdisp_ptrtype;
 #endif
     //___________________________________________________________________________________//
@@ -301,31 +301,31 @@ public:
     typedef boost::shared_ptr<element_vectorialdisc_visu_ho_type> element_vectorialdisc_visu_ho_ptrtype;
     //___________________________________________________________________________________//
     //
-    typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
-                         typename MeshTraits<mesh_visu_ho_type>::element_const_iterator,
-                         typename MeshTraits<mesh_visu_ho_type>::element_const_iterator> range_visu_ho_type;
+    // typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
+    //                      typename MeshTraits<mesh_visu_ho_type>::element_const_iterator,
+    //                      typename MeshTraits<mesh_visu_ho_type>::element_const_iterator> range_visu_ho_type;
     //___________________________________________________________________________________//
 
     typedef OperatorInterpolation<space_fluid_velocity_type,
-                                  space_vectorial_visu_ho_type,
-                                  range_visu_ho_type> op_interpolation_visu_ho_vectorial_type;
+                                  space_vectorial_visu_ho_type/*,
+                                                               range_visu_ho_type*/> op_interpolation_visu_ho_vectorial_type;
     typedef boost::shared_ptr<op_interpolation_visu_ho_vectorial_type> op_interpolation_visu_ho_vectorial_ptrtype;
 
     typedef OperatorInterpolation<space_fluid_pressure_type,
-                                  space_scalar_visu_ho_type,
-                                  range_visu_ho_type> op_interpolation_visu_ho_scalar_type;
+                                  space_scalar_visu_ho_type/*,
+                                                            range_visu_ho_type*/> op_interpolation_visu_ho_scalar_type;
     typedef boost::shared_ptr<op_interpolation_visu_ho_scalar_type> op_interpolation_visu_ho_scalar_ptrtype;
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     typedef OperatorInterpolation<space_mesh_disp_type,
-                                  space_vectorial_visu_ho_type,
-                                  range_visu_ho_type> op_interpolation_visu_ho_meshdisp_type;
+                                  space_vectorial_visu_ho_type/*,
+                                                               range_visu_ho_type*/> op_interpolation_visu_ho_meshdisp_type;
     typedef boost::shared_ptr<op_interpolation_visu_ho_meshdisp_type> op_interpolation_visu_ho_meshdisp_ptrtype;
 #endif
 
     typedef OperatorInterpolation<space_stress_type,
-                                  space_vectorialdisc_visu_ho_type,
-                                  range_visu_ho_type> op_interpolation_visu_ho_vectorialdisc_type;
+                                  space_vectorialdisc_visu_ho_type/*,
+                                                                   range_visu_ho_type*/> op_interpolation_visu_ho_vectorialdisc_type;
     typedef boost::shared_ptr<op_interpolation_visu_ho_vectorialdisc_type> op_interpolation_visu_ho_vectorialdisc_ptrtype;
     //___________________________________________________________________________________//
 

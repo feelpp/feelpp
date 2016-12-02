@@ -2611,20 +2611,20 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     //-----------------------------------------------//
     pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<false>()->points() ) );
     VLOG(2) << "pts non mortar : " << __form.template testFiniteElement<false>()->points();
-    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTest ) );
+    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElement(), geopcFormTest ) );
     map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
     // mortar
     pc_formTest_ptrtype geopcFormTestMortar( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<FormType::test_space_type::is_mortar>()->points() ) );
     VLOG(2) << "pts mortar : " << __form.template testFiniteElement<true>()->points();
-    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTestMortar ) );
+    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElement(), geopcFormTestMortar ) );
     map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
     //-----------------------------------------------//
     pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() ) );
-    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrial ) );
+    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElement(), geopcFormTrial ) );
     map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
     //-----------------------------------------------//
     pc_formTrial_ptrtype geopcFormTrialMortar( new pc_formTrial_type( __form.gmTrial(), __form.template trialFiniteElement<FormType::trial_space_type::is_mortar>()->points() ) );
-    gmc_formTrial_ptrtype gmcFormTrialMortar( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrialMortar ) );
+    gmc_formTrial_ptrtype gmcFormTrialMortar( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElement(), geopcFormTrialMortar ) );
     map_gmc_formTrial_type mapgmcFormTrialMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrialMortar ) );
 
     focb_ptrtype formc( new form_context_type( __form,
@@ -4830,18 +4830,18 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     //-----------------------------------------------//
 
     pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(),  __form.testSpace()->fe()->points() ) );
-    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTest ) );
+    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElement(), geopcFormTest ) );
     map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
     pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() ) );
-    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrial ) );
+    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElement(), geopcFormTrial ) );
     map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
 
     // mortar
     pc_formTest_ptrtype geopcFormTestMortar( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<FormType::test_space_type::is_mortar/*true*/>()->points() ) );
-    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTestMortar ) );
+    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElement(), geopcFormTestMortar ) );
     map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
     pc_formTrial_ptrtype geopcFormTrialMortar( new pc_formTrial_type( __form.gmTrial(), __form.template trialFiniteElement<FormType::trial_space_type::is_mortar/*true*/>()->points() ) );
-    gmc_formTrial_ptrtype gmcFormTrialMortar( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrialMortar ) );
+    gmc_formTrial_ptrtype gmcFormTrialMortar( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElement(), geopcFormTrialMortar ) );
     map_gmc_formTrial_type mapgmcFormTrialMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrialMortar ) );
 
     //-----------------------------------------------//
@@ -5084,7 +5084,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     //-----------------------------------------------//
     // test form context
     pc_form_ptrtype geopcForm( new pc_form_type( __form.gm(), __form.testSpace()->fe()->points() ) );
-    gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcForm ) );
+    gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), *__form.testSpace()->mesh()->beginElement(), geopcForm ) );
     map_gmc_form_type mapgmcForm( fusion::make_pair<vf::detail::gmc<0> >( gmcForm ) );
 
     focb_ptrtype formc( new form_context_type( __form,
@@ -5101,7 +5101,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     {
         // mortar
         geopcFormMortar.reset( new pc_form_type( __form.gm(), __form.template testFiniteElement<has_mortar_test>()->points() ) );
-        gmcFormMortar.reset( new gmc_form_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormMortar ) );
+        gmcFormMortar.reset( new gmc_form_type( __form.gm(), *__form.testSpace()->mesh()->beginElement(), geopcFormMortar ) );
         map_gmc_form_type mapgmcFormMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormMortar ) );
 
         formcMortar.reset( new form_mortar_context_type( __form,

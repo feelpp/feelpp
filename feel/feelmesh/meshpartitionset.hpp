@@ -272,15 +272,19 @@ MeshPartitionSet<MeshType>::buildAllPartInOneProcess()
     // update active element containers + detect interprocess points
     for ( rank_type partId : M_localPartitionIds )
     {
-        auto elt_it = M_mesh->beginElementWithProcessId( partId );
-        auto elt_en = M_mesh->endElementWithProcessId( partId );
+        auto rangeElements = M_mesh->elementsWithProcessId( partId );
+        auto elt_it = std::get<0>( rangeElements );
+        auto elt_en = std::get<1>( rangeElements );
+        // auto elt_it = M_mesh->beginElementWithProcessId( partId );
+        // auto elt_en = M_mesh->endElementWithProcessId( partId );
         for ( ; elt_it != elt_en ; ++elt_it )
         {
-            M_containerActiveElements[partId].push_back(boost::cref(*elt_it));
+            auto const& elt = boost::unwrap_ref( *elt_it );
+            M_containerActiveElements[partId].push_back(boost::cref(elt));
 
             for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
             {
-                auto const& thepoint = elt_it->point( vLocId );
+                auto const& thepoint = elt.point( vLocId );
                 size_type ptPid = thepoint.processId();
                 if ( ptPid == invalid_rank_type_value ) // first time that we see this point
                     M_mesh->points().modify( M_mesh->pointIterator( thepoint.id() ), Feel::detail::UpdateProcessId( partId ) );
