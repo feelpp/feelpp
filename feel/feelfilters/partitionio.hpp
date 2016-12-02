@@ -1304,30 +1304,33 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
     }
 
     // update neighbor partion in active elements which touch interprocess boundary
-    auto elt_it = M_meshPartIn->beginElementWithProcessId( rank );
-    auto const elt_en = M_meshPartIn->endElementWithProcessId( rank );
+    auto rangeElements = M_meshPartIn->elementsWithProcessId();
+    auto elt_it = std::get<0>( rangeElements );
+    auto const elt_en = std::get<1>( rangeElements );
     for ( ; elt_it != elt_en ; ++elt_it )
     {
+        auto const& elt = boost::unwrap_ref( *elt_it );
         for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
         {
-            auto const& thepoint = elt_it->point( vLocId );
+            auto const& thepoint = elt.point( vLocId );
             size_type vId = thepoint.id();
             if ( thepoint.processId() == ghostPointPidDetection )
             {
                 auto const& neighIds = pointsToNeihborPart.find( vId )->second;
                 for ( auto const& neighId : neighIds )
-                    M_meshPartIn->elements().modify( elt_it, Feel::detail::UpdateNeighborPartition( neighId ) );
+                    M_meshPartIn->elements().modify( M_meshPartIn->elementIterator( elt.id() )/*elt_it*/, Feel::detail::UpdateNeighborPartition( neighId ) );
             }
         }
     }
 
     // update points processId in active elements
-    elt_it = M_meshPartIn->beginElementWithProcessId( rank );
+    elt_it = std::get<2>( rangeElements )->begin();
     for ( ; elt_it != elt_en ; ++elt_it )
     {
+        auto const& elt = boost::unwrap_ref( *elt_it );
         for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
         {
-            auto const& thepoint = elt_it->point( vLocId );
+            auto const& thepoint = elt.point( vLocId );
             size_type vId = thepoint.id();
             M_meshPartIn->points().modify( M_meshPartIn->pointIterator( vId ), Feel::detail::UpdateProcessId( rank ) );
         }
@@ -1409,16 +1412,18 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
 
     // build map which allow to identify element from point ids (only for elt which touch the interprocess part)
     std::map<std::set<size_type>,size_type> mapPointIdsToEltId;
-    auto elt_it = M_meshPartIn->beginElementWithProcessId( partId );
-    auto const elt_en = M_meshPartIn->endElementWithProcessId( partId );
+    auto rangeElements = M_meshPartIn->elementsWithProcessId( partId );
+    auto elt_it = std::get<0>( rangeElements );
+    auto const elt_en = std::get<1>( rangeElements );
     for ( ; elt_it != elt_en ; ++elt_it )
     {
-        if ( elt_it->numberOfNeighborPartitions() < 1 )
+        auto const& elt = boost::unwrap_ref( *elt_it );
+        if ( elt.numberOfNeighborPartitions() < 1 )
             continue;
         std::set<size_type> ptIds;
         for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
-            ptIds.insert( elt_it->point( vLocId ).id() );
-        mapPointIdsToEltId[ptIds] = elt_it->id();
+            ptIds.insert( elt.point( vLocId ).id() );
+        mapPointIdsToEltId[ptIds] = elt.id();
     }
     // treatment of recv request and prepare containers to re-send
     std::map<rank_type, std::vector<size_type> > dataToReSend;
