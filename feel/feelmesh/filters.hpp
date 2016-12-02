@@ -61,6 +61,15 @@ using elements_t =  boost::tuple<mpl::size_t<MESH_ELEMENTS>,
                                  typename MeshTraits<MeshType>::element_const_iterator>;
 
 template<typename MeshType>
+using elements_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+                                                  typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+                                                  typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+                                                  typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype>;
+
+template<typename MeshType>
+using elements_pid_t = elements_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
 using ext_elements_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
                                     typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
                                     typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
@@ -76,14 +85,11 @@ template<typename MeshType>
 using internalelements_t = boundaryelements_t<MeshType>;
 
 template<typename MeshType>
-using markedelements_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                                      typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
-                                      typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
-                                      typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype>;
+using markedelements_t = elements_reference_wrapper_t<MeshType>;
 template<typename MeshType>
-using marked2elements_t = markedelements_t<MeshType>;
+using marked2elements_t = elements_reference_wrapper_t<MeshType>;
 template<typename MeshType>
-using marked3elements_t = markedelements_t<MeshType>;
+using marked3elements_t = elements_reference_wrapper_t<MeshType>;
 
 
 template<typename MeshType>
@@ -255,7 +261,7 @@ allelements( MeshType const& mesh )
  * \return a pair of iterators to iterate over elements with pid \p flag
  */
 template<typename MeshType>
-elements_t<MeshType>
+elements_pid_t<MeshType>
 elements( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;

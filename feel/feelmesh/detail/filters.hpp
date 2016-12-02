@@ -63,19 +63,22 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::element_const_iterator,
-      typename MeshTraits<MeshType>::element_const_iterator>
-      elements( MeshType const& mesh, rank_type pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+elements( MeshType const& mesh, rank_type pid, mpl::bool_<false> )
 {
-
+    auto rangeElements = mesh.elementsWithProcessId( pid );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              mesh.beginElementWithProcessId( pid ),
-                              mesh.endElementWithProcessId( pid ) );
+                              std::get<0>( rangeElements ),
+                              std::get<1>( rangeElements ),
+                              std::get<2>( rangeElements ) );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::element_const_iterator,
-      typename MeshTraits<MeshType>::element_const_iterator>
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
       elements( MeshType const& mesh, rank_type pid, mpl::bool_<true> )
 {
     return elements( *mesh, pid, mpl::bool_<false>() );
