@@ -138,10 +138,11 @@ Mesh<Shape, T, Tag>::updateForUse()
 
         if ( this->worldComm().localSize()>1 )
         {
-            auto iv = this->beginGhostElement();
-            auto const en = this->endGhostElement();
+            auto rangeGhostElement = this->ghostElements();
+            auto iv = std::get<0>( rangeGhostElement );
+            auto const en = std::get<1>( rangeGhostElement );
             for ( ; iv != en; ++iv )
-                this->addNeighborSubdomain( iv->processId() );
+                this->addNeighborSubdomain( boost::unwrap_ref( *iv ).processId() );
 
             // update mesh entities with parallel data
             if ( false )
@@ -1275,13 +1276,15 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     std::set<size_type> ptsTouchInterProcess;
     if ( updateComponentFacesMinimal )
     {
-        auto ghostelt_it = this->beginGhostElement();
-        auto ghostelt_en = this->endGhostElement();
+        auto rangeGhostElement = this->ghostElements();
+        auto ghostelt_it = std::get<0>( rangeGhostElement );
+        auto const ghostelt_en = std::get<1>( rangeGhostElement );
         for ( ; ghostelt_it != ghostelt_en; ++ghostelt_it )
         {
+            auto const& ghostelt = boost::unwrap_ref( *ghostelt_it );
             for ( uint16_type vLocId = 0 ; vLocId < element_type::numVertices; ++vLocId )
             {
-                auto const& thept = ghostelt_it->point( vLocId );
+                auto const& thept = ghostelt.point( vLocId );
                 if ( thept.processId() != invalid_rank_type_value )
                     ptsTouchInterProcess.insert( thept.id() );
             }
@@ -2054,8 +2057,13 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
     } // loop over the elements
     LOG(INFO) << "[updateOnBoundary] We have " << nelements(boundaryelements(this))
               << " elements sharing a point, a edge or a face with the boundary in the database";
-    BOOST_FOREACH( auto e, this->boundaryElements( 0, 2, 0 ) )
+    // BOOST_FOREACH( auto const& e, this->boundaryElements( 0, 2, 0 ) )
+    auto rangebe = this->boundaryElements( 0, 2, 0 );
+    auto itbe = std::get<0>( rangebe );
+    auto enbe = std::get<1>( rangebe );
+    for( ; itbe != enbe ; ++itbe )
     {
+        auto const& e = boost::unwrap_ref( *itbe );
         VLOG(3) << "boundary element : " << e.id()
                 << " entity on boundary max dim  " << e.boundaryEntityDimension()
                 << " process id : " << e.processId();
@@ -2104,17 +2112,18 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
     std::vector<int> nbMsgToRecv( this->worldComm().localSize(), 0 );
     std::vector< std::map<int,int> > mapMsg( this->worldComm().localSize() );
 
-    auto iv = this->beginGhostElement();
-    auto en = this->endGhostElement();
+    auto rangeGhostElement = this->ghostElements();
+    auto iv = std::get<0>( rangeGhostElement );
+    auto const en = std::get<1>( rangeGhostElement );
     for ( ; iv != en; ++iv )
     {
-        element_type const& __element = *iv;
+        element_type const& __element = boost::unwrap_ref( *iv );
         const int IdProcessOfGhost = __element.processId();
         const size_type idInPartition = __element.idInOthersPartitions( IdProcessOfGhost );
 
-        this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectPointToElement() );
+        this->elements().modify( this->elementIterator( __element ) , typename super_elements::ElementGhostConnectPointToElement() );
         if ( nDim==3 )
-            this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectEdgeToElement() );
+            this->elements().modify( this->elementIterator( __element ) , typename super_elements::ElementGhostConnectEdgeToElement() );
 
         // send
         this->worldComm().localComm().send( IdProcessOfGhost , nbMsgToSend[IdProcessOfGhost], idInPartition );
@@ -2470,15 +2479,17 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     //------------------------------------------------------------------------------------------------//
     // compute size of container to send and update Point and Edge info for parallelism
     std::map< rank_type, int > nDataInVecToSend;
-    auto iv = this->beginGhostElement();
-    auto const en = this->endGhostElement();
+    auto rangeGhostElement = this->ghostElements();
+    auto iv = std::get<0>( rangeGhostElement );
+    auto const en = std::get<1>( rangeGhostElement );
     for ( ; iv != en; ++iv )
     {
-        const rank_type IdProcessOfGhost = iv->processId();
+        auto const& ghostelt = boost::unwrap_ref( *iv );
+        const rank_type IdProcessOfGhost = ghostelt.processId();
         // update info for parallelism
-        this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectPointToElement() );
+        this->elements().modify( this->elementIterator( ghostelt ) , typename super_elements::ElementGhostConnectPointToElement() );
         if ( nDim==3 )
-            this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectEdgeToElement() );
+            this->elements().modify( this->elementIterator( ghostelt ) , typename super_elements::ElementGhostConnectEdgeToElement() );
 
         // be sure that the counter start to 0
         if ( nDataInVecToSend.find(IdProcessOfGhost) == nDataInVecToSend.end() )
@@ -2501,7 +2512,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     // prepare container to send
     std::map< rank_type, std::map<int,size_type> > memoryMsgToSend;
     std::map< rank_type, int > nDataInVecToSendBis;
-    iv = this->beginGhostElement();
+    iv = std::get<2>( rangeGhostElement )->begin();
     for ( ; iv != en; ++iv )
     {
         element_type const& __element = *iv;

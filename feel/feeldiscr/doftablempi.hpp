@@ -1358,18 +1358,21 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
     if ( this->buildDofTableMPIExtended() )
     {
         boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
-        auto itGhostElt = mesh.beginGhostElement();
-        auto enGhostElt = mesh.endGhostElement();
+        auto rangeGhostElement = mesh.ghostElements();
+        auto itGhostElt = std::get<0>( rangeGhostElement );
+        auto enGhostElt = std::get<1>( rangeGhostElement );
         for ( ; itGhostElt != enGhostElt ; ++itGhostElt )
         {
-            for ( uint16_type f =0;f < itGhostElt->nTopologicalFaces(); ++f )
+            auto const& ghostelt = boost::unwrap_ref( *itGhostElt );
+
+            for ( uint16_type f =0;f < ghostelt.nTopologicalFaces(); ++f )
             {
 #if 1
                 bool allFaceVerticesAreInActiveMeshPart = true;
                 for ( uint16_type p=0;p<mesh_type::element_type::topological_face_type::numVertices;++p )
                 {
-                    //uint16_type ptIdInElt = itGhostElt->fToP( f, p );
-                    if ( itGhostElt->point( itGhostElt->fToP( f, p ) ).isGhostCell() )
+                    //uint16_type ptIdInElt = ghostelt.fToP( f, p );
+                    if ( ghostelt.point( ghostelt.fToP( f, p ) ).isGhostCell() )
                     {
                         allFaceVerticesAreInActiveMeshPart = false;
                         break;
@@ -1377,8 +1380,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                 }
                 if ( allFaceVerticesAreInActiveMeshPart )
                 {
-                    auto const& ghostElt = *itGhostElt;
-                    myelts->push_back(boost::cref(ghostElt));
+                    myelts->push_back(boost::cref(ghostelt));
                     break;
                 }
 #else
@@ -1386,7 +1388,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                 for ( uint16_type p=0;p<mesh_type::element_type::topological_face_type::numVertices;++p )
                 {
                     //uint16_type ptIdInElt = itGhostElt->fToP( f, p );
-                    if ( !itGhostElt->point( itGhostElt->fToP( f, p ) ).isGhostCell() )
+                    if ( !ghostelt.point( ghostelt.fToP( f, p ) ).isGhostCell() )
                     {
                         isConnectedToActivePartition = true;
                         break;
@@ -1394,8 +1396,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                 }
                 if ( isConnectedToActivePartition )
                 {
-                    auto const& ghostElt = *itGhostElt;
-                    myelts->push_back(boost::cref(ghostElt));
+                    myelts->push_back(boost::cref(ghostelt));
                     break;
                 }
 #endif
