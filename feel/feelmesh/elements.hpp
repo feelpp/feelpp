@@ -569,6 +569,25 @@ public:
     }
 
     /**
+     * \return the first iterator over the elements
+     * on processor \p p if exist else return endElement iterator
+     */
+    element_iterator
+    firstElementIteratorWithProcessId( rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
+            auto it = this->beginElement();
+            auto en = this->endElement();
+            for ( ; it!=en;++it )
+            {
+                auto const& elt = *it;
+                if ( elt.processId() != part )
+                    return it;
+            }
+            return en;
+        }
+
+    /**
      * get the elements container by id
      *
      *
