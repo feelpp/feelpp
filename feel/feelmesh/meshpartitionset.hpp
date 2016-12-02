@@ -69,10 +69,11 @@ public:
             M_containerMarkedEdges[partId].clear();
             M_containerMarkedPoints[partId].clear();
 
-            auto elt_it = M_mesh->beginElementWithProcessId( partId );
-            auto elt_en = M_mesh->endElementWithProcessId( partId );
+            auto rangeElements = M_mesh->elementsWithProcessId( partId );
+            auto elt_it = std::get<0>( rangeElements );
+            auto const elt_en = std::get<1>( rangeElements );
             for( ; elt_it != elt_en; ++ elt_it )
-                M_containerActiveElements[partId].push_back(boost::cref(*elt_it));
+                M_containerActiveElements[partId].push_back( boost::cref( boost::unwrap_ref( *elt_it ) ) );
             CHECK( M_containerActiveElements[partId].size() == M_statistic[partId][2] ) << "something is wrong in active element : "
                                                                                    << M_containerActiveElements[partId].size() << " vs "
                                                                                    << M_statistic[partId][2];
