@@ -547,40 +547,25 @@ public:
             }
             return std::make_tuple( myelements->begin(), myelements->end(), myelements );
         }
-
-    element_iterator beginElementWithProcessId( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<0>().lower_bound( boost::make_tuple( part ) );
-    }
-    element_const_iterator beginElementWithProcessId( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<0>().lower_bound( boost::make_tuple( part ) );
-    }
-    element_iterator endElementWithProcessId( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<0>().upper_bound( boost::make_tuple( part ) );
-    }
-    element_const_iterator endElementWithProcessId( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<0>().upper_bound( boost::make_tuple( part ) );
-    }
-
-    std::pair<element_const_iterator, element_const_iterator>
+    /**
+     * \return the range of iterator \c (begin,end) over the elements
+     * on processor \p p
+     */
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     elementsWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<0>().equal_range( boost::make_tuple( part ) );
-    }
-
-    std::pair<element_iterator, element_iterator>
-    elementsWithProcessId( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<0>().equal_range( boost::make_tuple( part ) );
+        elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+        auto it = this->beginElement();
+        auto en = this->endElement();
+        for ( ; it!=en;++it )
+        {
+            auto const& elt = *it;
+            if ( elt.processId() != part )
+                continue;
+            myelements->push_back(boost::cref(elt));
+        }
+        return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
 
     /**
