@@ -77,10 +77,11 @@ public:
             CHECK( M_containerActiveElements[partId].size() == M_statistic[partId][2] ) << "something is wrong in active element : "
                                                                                    << M_containerActiveElements[partId].size() << " vs "
                                                                                    << M_statistic[partId][2];
-            auto ghostelt_it = M_mesh->beginGhostElement();
-            auto ghostelt_en = M_mesh->endGhostElement();
+            auto rangeGhostElement = M_mesh->ghostElements();
+            auto ghostelt_it = std::get<0>( rangeGhostElement );
+            auto ghostelt_en = std::get<1>( rangeGhostElement );
             for( ; ghostelt_it != ghostelt_en; ++ghostelt_it )
-                M_containerGhostElements[partId].push_back(boost::cref(*ghostelt_it));
+                M_containerGhostElements[partId].push_back( boost::cref( boost::unwrap_ref( *ghostelt_it ) ) );
             CHECK( M_containerGhostElements[partId].size() == (M_statistic[partId][1]-M_statistic[partId][2]) ) << "something is wrong in active element : "
                                                                                                       << M_containerGhostElements[partId].size() << " vs "
                                                                                                       << (M_statistic[partId][1]-M_statistic[partId][2]);

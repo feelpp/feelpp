@@ -113,8 +113,9 @@ public:
                                                                       &element_type::processId>,
                                            multi_index::const_mem_fun<element_type,
                                                                       size_type,
-                                                                      &element_type::id> > >,
+                                                                      &element_type::id> > >
 #if 0
+            ,
             // sort by less<int> on marker
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
                                             multi_index::composite_key<element_type,
@@ -143,7 +144,6 @@ public:
                                                                        multi_index::const_mem_fun<element_type,
                                                                                                   rank_type,
                                                                                                   &element_type::processId> > >,
-#endif
 
             // sort by less<int> on boundary
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
@@ -163,6 +163,7 @@ public:
                                             multi_index::const_mem_fun<element_type,
                                                                        bool,
                                                                        &element_type::isGhostCell> >
+#endif
 
 
             > > elements_type;
@@ -175,14 +176,6 @@ public:
     typedef std::shared_ptr<elements_reference_wrapper_type> elements_reference_wrapper_ptrtype;
     typedef typename elements_reference_wrapper_type::iterator element_reference_wrapper_iterator;
     typedef typename elements_reference_wrapper_type::const_iterator element_reference_wrapper_const_iterator;
-
-    typedef typename elements_type::template index<Feel::detail::by_location>::type location_elements;
-    typedef typename location_elements::iterator location_element_iterator;
-    typedef typename location_elements::const_iterator location_element_const_iterator;
-
-    typedef typename elements_type::template index<Feel::detail::by_ghostcell>::type ghostcell_elements;
-    typedef typename ghostcell_elements::iterator ghostcell_element_iterator;
-    typedef typename ghostcell_elements::const_iterator ghostcell_element_const_iterator;
 
     typedef std::map<int, size_type> parts_map_type;
     typedef typename parts_map_type::const_iterator parts_const_iterator_type;
@@ -482,6 +475,30 @@ public:
     }
 
     /**
+     * get the elements container by id
+     *
+     *
+     * @return the element container by id
+     */
+    typename elements_type::template nth_index<0>::type &
+    elementsById()
+    {
+        return M_elements.template get<0>();
+    }
+
+    /**
+     * get the elements container by id
+     *
+     *
+     * @return the element container by id
+     */
+    typename elements_type::template nth_index<0>::type const&
+    elementsById() const
+    {
+        return M_elements.template get<0>();
+    }
+
+    /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker1 \p m on processor \p p
      */
@@ -588,56 +605,64 @@ public:
         }
 
     /**
-     * get the elements container by id
-     *
-     *
-     * @return the element container by id
-     */
-    typename elements_type::template nth_index<0>::type &
-    elementsById()
-    {
-        return M_elements.template get<0>();
-    }
-
-    /**
-     * get the elements container by id
-     *
-     *
-     * @return the element container by id
-     */
-    typename elements_type::template nth_index<0>::type const&
-    elementsById() const
-    {
-        return M_elements.template get<0>();
-    }
-
-    /**
      * \return the range of iterator \c (begin,end) over the boundary
-     *  element on processor \p p
+     *  element on processor \p p which share a subentity of minDim<= dim <= maxDim on boundary
      */
-    std::pair<location_element_const_iterator, location_element_const_iterator>
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     boundaryElements( uint16_type entity_min_dim, uint16_type entity_max_dim, rank_type p = invalid_rank_type_value  ) const
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        auto lower = M_elements.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( part, bool(ON_BOUNDARY), entity_min_dim ) );
-        auto upper = M_elements.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( part, bool(ON_BOUNDARY), entity_max_dim ) );
-        return std::make_pair( lower, upper );
-
+        elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+        auto it = this->beginElement();
+        auto en = this->endElement();
+        for ( ; it!=en;++it )
+        {
+            auto const& elt = *it;
+            if ( elt.processId() != part )
+                continue;
+            if ( !elt.isOnBoundary() )
+                continue;
+            if ( elt.boundaryEntityDimension() < entity_min_dim )
+                continue;
+            if ( elt.boundaryEntityDimension() > entity_max_dim )
+                continue;
+            myelements->push_back(boost::cref(elt));
+        }
+        return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
 
     /**
      * \return the range of iterator \c (begin,end) over the boundary
      *  element on processor \p p
      */
-    std::pair<location_element_const_iterator, location_element_const_iterator>
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     boundaryElements( rank_type p = invalid_rank_type_value  ) const
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
         return boundaryElements( 0, 2, part );
-        //auto lower = boost::make_tuple( this->worldCommElements().localRank(), bool(ON_BOUNDARY), 0);
-        //auto upper = boost::make_tuple( this->worldCommElements().localRank(), bool(ON_BOUNDARY), 2);
-        //return M_elements.template get<Feel::detail::by_location>().range( lower, upper );
+    }
 
+    /**
+     * \return the range of iterator \c (begin,end) over the internal
+     *  element on processor \p p
+     */
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    internalElements( rank_type p = invalid_rank_type_value  ) const
+    {
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
+        elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+        auto it = this->beginElement();
+        auto en = this->endElement();
+        for ( ; it!=en;++it )
+        {
+            auto const& elt = *it;
+            if ( elt.processId() != part )
+                continue;
+            if ( !elt.isInternal() )
+                continue;
+            myelements->push_back(boost::cref(elt));
+        }
+        return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
 
 
@@ -645,174 +670,21 @@ public:
      * \return the range of iterator \c (begin,end) over the internal
      *  element on processor \p p
      */
-    std::pair<location_element_const_iterator, location_element_const_iterator>
-    internalElements( rank_type p = invalid_rank_type_value  ) const
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    ghostElements() const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        auto lower = M_elements.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( part, bool(INTERNAL), 0 ) );
-        auto upper = M_elements.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( part, bool(INTERNAL), invalid_uint16_type_value ) );
-        return std::make_pair( lower, upper );
+        elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+        auto it = this->beginElement();
+        auto en = this->endElement();
+        for ( ; it!=en;++it )
+        {
+            auto const& elt = *it;
+            if ( !elt.isGhostCell() )
+                continue;
+            myelements->push_back(boost::cref(elt));
+        }
+        return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
-
-
-    /**
-     * get the elements container using the location view
-     *
-     *
-     * @return the element container using location view
-     */
-    location_elements &
-    elementsByLocation()
-    {
-        return M_elements.template get<Feel::detail::by_location>();
-    }
-
-    /**
-     * get the elements container using the location view
-     *
-     *
-     * @return the element container using location view
-     */
-    location_elements const&
-    elementsByLocation() const
-    {
-        return M_elements.template get<Feel::detail::by_location>();
-    }
-
-    /**
-     * get the begin() iterator on all the internal elements
-     *
-     * @return the begin() iterator on all the internal elements
-     */
-    location_element_iterator beginInternalElement( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( part, INTERNAL, invalid_uint16_type_value ) ).first;
-    }
-    /**
-     * get the end() iterator on all the internal elements
-     *
-     * @return the end() iterator on all the internal elements
-     */
-    location_element_iterator endInternalElement( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( part, INTERNAL, invalid_uint16_type_value ) ).second;
-    }
-
-    /**
-     * get the begin() iterator on all the internal elements
-     *
-     * @return the begin() iterator on all the internal elements
-     */
-    location_element_const_iterator beginInternalElement( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( part, INTERNAL, invalid_uint16_type_value ) ).first;
-    }
-
-    /**
-     * get the end() iterator on all the internal elements
-     *
-     * @return the end() iterator on all the internal elements
-     */
-    location_element_const_iterator endInternalElement( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( part, INTERNAL, invalid_uint16_type_value ) ).second;
-    }
-
-    /**
-     * get the begin() iterator on all the boundary elements
-     *
-     * @return the begin() iterator on all the boundary elements
-     */
-    location_element_iterator beginElementOnBoundary( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( part, ON_BOUNDARY, 0 ) );
-    }
-    /**
-     * get the end() iterator on all the boundary elements
-     *
-     * @return the end() iterator on all the boundary elements
-     */
-    location_element_iterator endElementOnBoundary( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( part, ON_BOUNDARY, 2 ) );
-    }
-
-    /**
-     * get the begin() iterator on all the boundary elements
-     *
-     * @return the begin() iterator on all the boundary elements
-     */
-    location_element_const_iterator beginElementOnBoundary( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( part, ON_BOUNDARY, 0 ) );
-    }
-
-    /**
-     * get the end() iterator on all the boundary elements
-     *
-     * @return the end() iterator on all the boundary elements
-     */
-    location_element_const_iterator endElementOnBoundary( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( part, ON_BOUNDARY, 2 ) );
-    }
-
-    /**
-     * get the begin() iterator on all ghost elements
-     *
-     * @return the begin() iterator on all ghost elements
-     */
-    ghostcell_element_iterator beginGhostElement()
-    {
-        //return M_elements.template get<Feel::detail::by_ghostcell>().equal_range(boost::make_tuple(true)).first;
-        return M_elements.template get<Feel::detail::by_ghostcell>().equal_range( true ).first;
-        //return M_elements.template get<Feel::detail::by_ghostcell>().begin();
-    }
-
-    /**
-     * get the end() iterator on all ghost elements
-     *
-     * @return the end() iterator on all ghost elements
-     */
-    ghostcell_element_iterator endGhostElement()
-    {
-        //return M_elements.template get<Feel::detail::by_ghostcell>().equal_range(boost::make_tuple(true)).second;
-        return M_elements.template get<Feel::detail::by_ghostcell>().equal_range( true ).second;
-        //return M_elements.template get<Feel::detail::by_ghostcell>().end();
-    }
-
-    /**
-     * get the begin() iterator on all ghost elements
-     *
-     * @return the begin() iterator on all ghost elements
-     */
-    ghostcell_element_const_iterator beginGhostElement() const
-    {
-        //return M_elements.template get<Feel::detail::by_ghostcell>().equal_range(boost::make_tuple(true)).first;
-        return M_elements.template get<Feel::detail::by_ghostcell>().equal_range( true ).first;
-        //return M_elements.template get<Feel::detail::by_ghostcell>().begin();
-    }
-
-    /**
-     * get the end() iterator on all ghost elements
-     *
-     * @return the end() iterator on all ghost elements
-     */
-    ghostcell_element_const_iterator endGhostElement() const
-    {
-        //return M_elements.template get<Feel::detail::by_ghostcell>().equal_range(boost::make_tuple(true)).second;
-        return M_elements.template get<Feel::detail::by_ghostcell>().equal_range( true ).second;
-        //return M_elements.template get<Feel::detail::by_ghostcell>().end();
-    }
-
 
 
     //@}

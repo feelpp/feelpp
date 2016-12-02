@@ -68,9 +68,6 @@ struct MeshTraits
     typedef typename mesh_type::element_reference_wrapper_iterator element_reference_wrapper_iterator;
     typedef typename mesh_type::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
 
-    typedef typename mesh_type::location_element_iterator location_element_iterator;
-    typedef typename mesh_type::location_element_const_iterator location_element_const_iterator;
-
     // face iterators
     typedef typename mesh_type::face_iterator face_iterator;
     typedef typename mesh_type::face_const_iterator face_const_iterator;
