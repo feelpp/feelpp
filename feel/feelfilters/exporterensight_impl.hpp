@@ -573,8 +573,10 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
         CHECK( m_field.size()/nComponents == __var->second.localSize()/__var->second.nComponents ) << "Invalid size : " << m_field.size() << "!=" << __var->second.localSize();
 
         //__field.clear();
-        typename mesh_type::element_const_iterator elt_it, elt_en;
-        boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( *__step->mesh() );
+        auto rangeElements = __step->mesh()->elementsWithProcessId();
+        auto elt_it = std::get<0>( rangeElements );
+        auto elt_en = std::get<1>( rangeElements );
+
         size_type e = 0;
 
         if ( !__var->second.areGlobalValuesUpdated() )
@@ -582,21 +584,22 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
 
         for ( ; elt_it != elt_en; ++elt_it )
         {
+            auto const& elt = boost::unwrap_ref( *elt_it );
             for ( uint16_type c = 0; c < nComponents; ++c )
             {
                 for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
                 {
-                    size_type ptid = mp.old2new[elt_it->point( p ).id()]-1;
+                    size_type ptid = mp.old2new[elt.point( p ).id()]-1;
                     size_type global_node_id = nComponents * ptid + c ;
 #if 0
-                    DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt_it->id()
+                    DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt.id()
                                                                  << " local pt:" << p
                                                                  << " mesh numPoints: " << __step->mesh()->numPoints();
                     //DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
 #endif
                     if ( c < __var->second.nComponents )
                     {
-                        size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->id(),p, c ) );
+                        size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt.id(),p, c ) );
 
                         m_field[global_node_id] = __var->second.globalValue( dof_id );
                     }
