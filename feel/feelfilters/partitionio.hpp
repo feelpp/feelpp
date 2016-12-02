@@ -1291,14 +1291,16 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
     // and store neigboor part at each point id
     rank_type ghostPointPidDetection = M_meshPartIn->worldComm().localSize();
     std::map<size_type,std::set<rank_type> > pointsToNeihborPart;
-    auto ghostelt_it = M_meshPartIn->beginGhostElement();
-    auto const ghostelt_en = M_meshPartIn->endGhostElement();
+    auto rangeGhostElement = M_meshPartIn->ghostElements();
+    auto ghostelt_it = std::get<0>( rangeGhostElement );
+    auto const ghostelt_en = std::get<1>( rangeGhostElement );
     for ( ; ghostelt_it != ghostelt_en ; ++ghostelt_it )
     {
+        auto const& ghostelt = boost::unwrap_ref( *ghostelt_it );
         for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
         {
-            size_type vId = ghostelt_it->point( vLocId ).id();
-            pointsToNeihborPart[vId].insert( ghostelt_it->processId() );
+            size_type vId = ghostelt.point( vLocId ).id();
+            pointsToNeihborPart[vId].insert( ghostelt.processId() );
             M_meshPartIn->points().modify( M_meshPartIn->pointIterator( vId ), Feel::detail::UpdateProcessId( ghostPointPidDetection ) );
         }
     }
@@ -1337,12 +1339,13 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
     }
 
     // reset points processId in ghost elements (which do not belong the active part)
-    ghostelt_it = M_meshPartIn->beginGhostElement();
+    ghostelt_it = std::get<2>( rangeGhostElement )->begin();
     for ( ; ghostelt_it != ghostelt_en ; ++ghostelt_it )
     {
+        auto const& ghostelt = boost::unwrap_ref( *ghostelt_it );
         for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
         {
-            auto const& thepoint = ghostelt_it->point( vLocId );
+            auto const& thepoint = ghostelt.point( vLocId );
             if ( thepoint.processId() == ghostPointPidDetection )
             {
                 size_type vId = thepoint.id();
@@ -1365,16 +1368,18 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     // prepare container to send  : ( pid -> (ptId1,PtId2,..),(ptId1,PtId2,..) )
     std::map< rank_type, std::vector< std::vector<size_type> > > dataToSend;
     std::map< rank_type, std::vector<size_type> > memoryMsgToSend;
-    auto ghostelt_it = M_meshPartIn->beginGhostElement();
-    auto const ghostelt_en = M_meshPartIn->endGhostElement();
+    auto rangeGhostElement = M_meshPartIn->ghostElements();
+    auto ghostelt_it = std::get<0>( rangeGhostElement );
+    auto const ghostelt_en = std::get<1>( rangeGhostElement );
     for ( ; ghostelt_it!=ghostelt_en ; ++ghostelt_it )
     {
-        const rank_type pid = ghostelt_it->processId();
+        auto const& ghostelt = boost::unwrap_ref( *ghostelt_it );
+        const rank_type pid = ghostelt.processId();
         std::vector<size_type> ptIdsInElt( mesh_type::element_type::numPoints );
         for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
-            ptIdsInElt[vLocId] = ghostelt_it->point( vLocId ).id();
+            ptIdsInElt[vLocId] = ghostelt.point( vLocId ).id();
         dataToSend[pid].push_back( ptIdsInElt );
-        memoryMsgToSend[pid].push_back( ghostelt_it->id() );
+        memoryMsgToSend[pid].push_back( ghostelt.id() );
     }
 
     // init mpi request
