@@ -5310,13 +5310,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::regionTree() const
         __rt->clear();
         BoundingBox<> __bb( M_mesh->gm()->isLinear() );
 
-        typedef typename mesh_type::element_iterator mesh_element_iterator;
-        mesh_element_iterator it = M_mesh->beginElementWithProcessId( M_mesh->comm().rank() );
-        mesh_element_iterator en = M_mesh->endElementWithProcessId( M_mesh->comm().rank() );
+        auto rangeElements = M_mesh->elementsWithProcessId();
+        auto it = std::get<0>( rangeElements );
+        auto en = std::get<1>( rangeElements );
 
         for ( size_type __i = 0; it != en; ++__i, ++it )
         {
-            __bb.make( it->G() );
+            auto const& elt = boost::unwrap_ref( *it );
+            __bb.make( elt.G() );
 
             for ( unsigned k=0; k < __bb.min.size(); ++k )
             {
@@ -5324,7 +5325,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::regionTree() const
                 __bb.max[k]+=EPS;
             }
 
-            __rt->addBox( __bb.min, __bb.max, it->id() );
+            __rt->addBox( __bb.min, __bb.max, elt.id() );
         }
 
         //__rt->dump();

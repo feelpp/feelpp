@@ -1213,8 +1213,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
 
     if (is_continuous)
     {
-        for ( auto const& activeElt : elements(mesh) )
+        for ( auto const& activeEltWrap : elements(mesh) )
         {
+            auto const& activeElt = boost::unwrap_ref( activeEltWrap );
             bool findActiveEltTouchInterProcess = false;
             for ( uint16_type n=0; n < activeElt.nVertices(); n++ )
             {
