@@ -22,12 +22,12 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file loadgmshmesh.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2013-12-24
+   \file loadmeshmesh.hpp
+   \author Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
+   \date 2016-11-30
  */
-#if !defined(FEELPP_LOADGMSHMESH_HPP)
-#define FEELPP_LOADGMSHMESH_HPP 1
+#if !defined(FEELPP_LOADMESHMESH_HPP)
+#define FEELPP_LOADMESHMESH_HPP 1
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/detail/mesh.hpp>
@@ -46,7 +46,7 @@ namespace Feel {
  */
 BOOST_PARAMETER_FUNCTION(
     ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
-    loadGMSHMesh,    // 2. function name
+    loadMESHMesh,    // 2. function name
 
     tag,           // 3. namespace of tag types
 
@@ -73,6 +73,8 @@ BOOST_PARAMETER_FUNCTION(
       )
                          )
 {
+    cout << "loadMESHmesh: no marker loaded so far. Not supported in mesh?? but makers are found in gmsh/visibility/Elementary \n";
+
     typedef typename Feel::detail::mesh<Args>::type _mesh_type;
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
@@ -94,19 +96,13 @@ BOOST_PARAMETER_FUNCTION(
     gmsh.setPartitioner( (GMSH_PARTITIONER)partitioner );
     gmsh.setMshFileByPartition( partition_file );
     gmsh.setVerbosity(verbose);
-
-    // refinement if option is enabled to a value greater or equal to 1
-    if ( refine )
-    {
-        filename_with_path = gmsh.refine( filename_with_path, refine );
-    }
-    else if ( rebuild_partitions )
-    {
-        gmsh.rebuildPartitionMsh(filename_with_path,rebuild_partitions_filename);
-        filename_with_path=rebuild_partitions_filename;
-    }
-
+    
     ImporterGmsh<_mesh_type> import( filename_with_path, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
+    GModel *m = new GModel();
+    m->readMESH(filename_with_path); // ??could the readXXX be passed as an argument??
+
+    import.setGModel(m);
+    import.setInMemory(true);
 
     // need to replace physical_region by elementary_region while reading
     if ( physical_are_elementary_regions )
@@ -129,11 +125,8 @@ BOOST_PARAMETER_FUNCTION(
         _mesh->components().reset();
     }
 
-    if ( straighten && _mesh_type::nOrder > 1 )
-        return straightenMesh( _mesh, worldcomm.subWorldComm() );
-
     return _mesh;
 }
 
 }
-#endif /* FEELPP_LOADGMSHMESH_HPP */
+#endif /* FEELPP_LOADMESHMESH_HPP */
