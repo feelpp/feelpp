@@ -198,7 +198,17 @@ public:
     point_type const& point( size_type i ) const
     {
         return *M_points.find( point_type( i ) );
-    };
+    }
+
+    point_iterator pointIterator( size_type i ) const
+    {
+        return  M_points.find( point_type( i ) );
+    }
+
+    bool hasPoint( size_type i ) const
+    {
+        return M_points.find( point_type( i ) ) != M_points.end();
+    }
 
     point_iterator beginPoint()
     {
@@ -216,7 +226,6 @@ public:
     {
         return M_points.end();
     }
-
 
     /**
      * \return the range of iterator \c (begin,end) over the points
@@ -238,6 +247,12 @@ public:
             return std::make_pair( M_points.begin(), M_points.end() );
         }
 
+    /**
+     * get iterator over internal marked points
+     *
+     *
+     * @return iterator over marked points
+     */
     std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
     pointsWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
         {
@@ -256,39 +271,6 @@ public:
             }
             return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
         }
-
-    point_iterator pointIterator( size_type i ) const
-    {
-        return  M_points.find( point_type( i ) );
-    }
-
-    bool hasPoint( size_type i ) const
-        {
-            return M_points.find( point_type( i ) ) != M_points.end();
-        }
-    /**
-     * get the points container by id
-     *
-     *
-     * @return the point container by id
-     */
-    typename points_type::template nth_index<0>::type &
-    pointsById()
-    {
-        return M_points.template get<0>();
-    }
-
-    /**
-     * get the points container by id
-     *
-     *
-     * @return the point container by id
-     */
-    typename points_type::template nth_index<0>::type const&
-    pointsById() const
-    {
-        return M_points.template get<0>();
-    }
 
     /**
      * get iterator over internal points

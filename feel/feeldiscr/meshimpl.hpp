@@ -4148,7 +4148,7 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
     double dmin=0.;
     node_type x_ref;
     auto mesh=this->mesh().lock();
-    size_type idEltFound = mesh->beginElementWithId(mesh->worldComm().localRank())->id();
+    size_type idEltFound = invalid_size_type_value;//mesh->beginElementWithId(mesh->worldComm().localRank())->id();
 
     std::list< std::pair<size_type, uint> > ListTri;
     searchInKdTree( p,ListTri );
@@ -4186,7 +4186,7 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
                 }
             else
                 {
-                    idEltFound = mesh->beginElementWithId(mesh->worldComm().localRank())->id();
+                    // idEltFound = invalid_size_type_value;//mesh->beginElementWithId(mesh->worldComm().localRank())->id();
                     isin = false;
                     //x_ref=?
                 }

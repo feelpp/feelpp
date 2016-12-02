@@ -106,6 +106,8 @@ public:
         multi_index::indexed_by<
             //multi_index::random_access<>,
             // sort by less<int> on id() + pid()
+        multi_index::ordered_unique<multi_index::identity<element_type> >
+#if 0
             multi_index::ordered_unique<
                 multi_index::composite_key<element_type,
                                            multi_index::const_mem_fun<element_type,
@@ -113,9 +115,8 @@ public:
                                                                       &element_type::processId>,
                                            multi_index::const_mem_fun<element_type,
                                                                       size_type,
-                                                                      &element_type::id> > >
-#if 0
-            ,
+                                                                      &element_type::id> > >,
+
             // sort by less<int> on marker
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
                                             multi_index::composite_key<element_type,
@@ -377,27 +378,31 @@ public:
 
     element_iterator elementIterator( size_type i ) const
     {
-        return  M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) );
+        // return  M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) );
+        return M_elements.find( element_type( i ) );
     };
 
     element_iterator elementIterator( size_type i, rank_type p ) const
     {
-        return  M_elements.template get<0>().find( boost::make_tuple( p, i ) );
+        // return  M_elements.template get<0>().find( boost::make_tuple( p, i ) );
+        return M_elements.find( element_type( i ) );
     };
 
     element_iterator elementIterator( element_type const& elt ) const
     {
-        return elementIterator( elt.id(), elt.processId() );
+        return elementIterator( elt.id() );//, elt.processId() );
     };
 
     element_type const& element( size_type i ) const
     {
-        return *M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) );
+        // return *M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) );
+        return *M_elements.find( element_type( i ) );
     };
 
     element_type const& element( size_type i, rank_type p ) const
     {
-        return *M_elements.template get<0>().find( boost::make_tuple( p, i ) );
+        // return *M_elements.template get<0>().find( boost::make_tuple( p, i ) );
+        return *M_elements.find( element_type( i ) );
     };
 
     /**
@@ -405,9 +410,10 @@ public:
      */
     bool hasElement( size_type i, rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<0>().find( boost::make_tuple( part, i ) ) !=
-               M_elements.template get<0>().end();
+        // const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
+        // return M_elements.template get<0>().find( boost::make_tuple( part, i ) ) !=
+        //        M_elements.template get<0>().end();
+        return M_elements.find( element_type( i ) ) != M_elements.end();
     }
 
     element_iterator beginElement()
@@ -455,47 +461,6 @@ public:
     elementsRange() const
     {
         return std::make_pair( M_elements.begin(), M_elements.end() );
-    }
-
-    element_iterator beginElementWithId( size_type m )
-    {
-        return M_elements.template get<0>().lower_bound( boost::make_tuple( this->worldCommElements().localRank(), m ) );
-    }
-    element_const_iterator beginElementWithId( size_type m ) const
-    {
-        return M_elements.template get<0>().lower_bound( boost::make_tuple( this->worldCommElements().localRank(), m ) );
-    }
-    element_iterator endElementWithId( size_type m )
-    {
-        return M_elements.template get<0>().upper_bound( boost::make_tuple( this->worldCommElements().localRank(), m ) );
-    }
-    element_const_iterator endElementWithId( size_type m ) const
-    {
-        return M_elements.template get<0>().upper_bound( boost::make_tuple( this->worldCommElements().localRank(), m ) );
-    }
-
-    /**
-     * get the elements container by id
-     *
-     *
-     * @return the element container by id
-     */
-    typename elements_type::template nth_index<0>::type &
-    elementsById()
-    {
-        return M_elements.template get<0>();
-    }
-
-    /**
-     * get the elements container by id
-     *
-     *
-     * @return the element container by id
-     */
-    typename elements_type::template nth_index<0>::type const&
-    elementsById() const
-    {
-        return M_elements.template get<0>();
     }
 
     /**
