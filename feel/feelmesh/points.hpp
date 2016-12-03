@@ -265,7 +265,7 @@ public:
                 auto const& point = *it;
                 if ( point.processId() != part )
                     continue;
-                if ( point.marker().value() != m )
+                if ( point.marker().isOff() || point.marker().value() != m )
                     continue;
                 mypoints->push_back(boost::cref(point));
             }

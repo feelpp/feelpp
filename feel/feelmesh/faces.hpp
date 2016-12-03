@@ -92,6 +92,7 @@ public:
                                                                   &face_type::id> > >,
 #endif
 
+#if 0
         // sort by less<int> on marker
         multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
                                         multi_index::composite_key<
@@ -123,6 +124,7 @@ public:
                                                                        rank_type,
                                                                        &face_type::processId>
                                             > >,
+#endif
         // sort by less<int> on processId
         multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
                                         multi_index::const_mem_fun<face_type,
@@ -162,15 +164,11 @@ public:
 
     typedef typename faces_type::iterator face_iterator;
     typedef typename faces_type::const_iterator face_const_iterator;
-    typedef typename faces_type::template index<Feel::detail::by_marker>::type marker_faces;
-    typedef typename faces_type::template index<Feel::detail::by_marker2>::type marker2_faces;
-    typedef typename faces_type::template index<Feel::detail::by_marker3>::type marker3_faces;
-    typedef typename marker_faces::iterator marker_face_iterator;
-    typedef typename marker_faces::const_iterator marker_face_const_iterator;
-    typedef typename marker2_faces::iterator marker2_face_iterator;
-    typedef typename marker2_faces::const_iterator marker2_face_const_iterator;
-    typedef typename marker3_faces::iterator marker3_face_iterator;
-    typedef typename marker3_faces::const_iterator marker3_face_const_iterator;
+
+    typedef std::vector<boost::reference_wrapper<face_type const> > faces_reference_wrapper_type;
+    typedef std::shared_ptr<faces_reference_wrapper_type> faces_reference_wrapper_ptrtype;
+    typedef typename faces_reference_wrapper_type::iterator face_reference_wrapper_iterator;
+    typedef typename faces_reference_wrapper_type::const_iterator face_reference_wrapper_const_iterator;
 
     typedef typename faces_type::template index<Feel::detail::by_location>::type location_faces;
     typedef typename location_faces::iterator location_face_iterator;
@@ -345,108 +343,6 @@ public:
     }
 
 
-    marker_face_iterator beginFaceWithMarker()
-    {
-        return M_faces.template get<Feel::detail::by_marker>().begin();
-    }
-    marker_face_const_iterator beginFaceWithMarker() const
-    {
-        return M_faces.template get<Feel::detail::by_marker>().begin();
-    }
-    marker_face_iterator endFaceWithMarker()
-    {
-        return M_faces.template get<Feel::detail::by_marker>().end();
-    }
-    marker_face_const_iterator endFaceWithMarker() const
-    {
-        return M_faces.template get<Feel::detail::by_marker>().end();
-    }
-
-    marker_face_iterator beginFaceWithMarker( size_type m )
-    {
-        return M_faces.template get<Feel::detail::by_marker>().lower_bound( Marker1( m ) );
-    }
-    marker_face_const_iterator beginFaceWithMarker( size_type m ) const
-    {
-        return M_faces.template get<Feel::detail::by_marker>().lower_bound( Marker1( m ) );
-    }
-    marker_face_iterator endFaceWithMarker( size_type m )
-    {
-        return M_faces.template get<Feel::detail::by_marker>().upper_bound( Marker1( m ) );
-    }
-    marker_face_const_iterator endFaceWithMarker( size_type m ) const
-    {
-        return M_faces.template get<Feel::detail::by_marker>().upper_bound( Marker1( m ) );
-    }
-
-    marker2_face_iterator beginFaceWithMarker2()
-    {
-        return M_faces.template get<Feel::detail::by_marker2>().begin();
-    }
-    marker2_face_const_iterator beginFaceWithMarker2() const
-    {
-        return M_faces.template get<Feel::detail::by_marker2>().begin();
-    }
-    marker2_face_iterator endFaceWithMarker2()
-    {
-        return M_faces.template get<Feel::detail::by_marker2>().end();
-    }
-    marker2_face_const_iterator endFaceWithMarker2() const
-    {
-        return M_faces.template get<Feel::detail::by_marker2>().end();
-    }
-
-    marker2_face_iterator beginFaceWithMarker2( size_type m )
-    {
-        return M_faces.template get<Feel::detail::by_marker2>().lower_bound( Marker2( m ) );
-    }
-    marker2_face_const_iterator beginFaceWithMarker2( size_type m ) const
-    {
-        return M_faces.template get<Feel::detail::by_marker2>().lower_bound( Marker2( m ) );
-    }
-    marker2_face_iterator endFaceWithMarker2( size_type m )
-    {
-        return M_faces.template get<Feel::detail::by_marker2>().upper_bound( Marker2( m ) );
-    }
-    marker2_face_const_iterator endFaceWithMarker2( size_type m ) const
-    {
-        return M_faces.template get<Feel::detail::by_marker2>().upper_bound( Marker2( m ) );
-    }
-
-    marker3_face_iterator beginFaceWithMarker3()
-    {
-        return M_faces.template get<Feel::detail::by_marker3>().begin();
-    }
-    marker3_face_const_iterator beginFaceWithMarker3() const
-    {
-        return M_faces.template get<Feel::detail::by_marker3>().begin();
-    }
-    marker3_face_iterator endFaceWithMarker3()
-    {
-        return M_faces.template get<Feel::detail::by_marker3>().end();
-    }
-    marker3_face_const_iterator endFaceWithMarker3() const
-    {
-        return M_faces.template get<Feel::detail::by_marker3>().end();
-    }
-
-    marker3_face_iterator beginFaceWithMarker3( size_type m )
-    {
-        return M_faces.template get<Feel::detail::by_marker3>().lower_bound( Marker3( m ) );
-    }
-    marker3_face_const_iterator beginFaceWithMarker3( size_type m ) const
-    {
-        return M_faces.template get<Feel::detail::by_marker3>().lower_bound( Marker3( m ) );
-    }
-    marker3_face_iterator endFaceWithMarker3( size_type m )
-    {
-        return M_faces.template get<Feel::detail::by_marker3>().upper_bound( Marker3( m ) );
-    }
-    marker3_face_const_iterator endFaceWithMarker3( size_type m ) const
-    {
-        return M_faces.template get<Feel::detail::by_marker3>().upper_bound( Marker3( m ) );
-    }
-
     face_iterator beginFaceWithId( size_type m )
     {
         return M_faces.lower_bound( face_type( m ) );
@@ -484,31 +380,78 @@ public:
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
         return M_faces.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
     }
+    /**
+     * \return the range of iterator \c (begin,end) over the faces
+     * with \c Marker1 \p m on processor \p p
+     */
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesWithMarker( size_type m = invalid_size_type_value, rank_type p = invalid_rank_type_value ) const
+        {
+            bool allMarkedFaces = (m == invalid_size_type_value);
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+            faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
+            auto it = this->beginFace();
+            auto en = this->endFace();
+            for ( ; it!=en;++it )
+            {
+                auto const& face = *it;
+                if ( face.processId() != part )
+                    continue;
+                if ( face.marker().isOff() || ( !allMarkedFaces && face.marker().value() != m ) )
+                    continue;
+                myfaces->push_back( boost::cref( face ) );
+            }
+            return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
+        }
 
     /**
      * \return the range of iterator \c (begin,end) over the faces
-     * with marker \p m on processor \p p
+     * with \c Marker2 \p m on processor \p p
      */
-    std::pair<marker_face_iterator, marker_face_iterator>
-    facesWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) );
-    }
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesWithMarker2( size_type m = invalid_size_type_value, rank_type p = invalid_rank_type_value ) const
+        {
+            bool allMarkedFaces = (m == invalid_size_type_value);
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+            faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
+            auto it = this->beginFace();
+            auto en = this->endFace();
+            for ( ; it!=en;++it )
+            {
+                auto const& face = *it;
+                if ( face.processId() != part )
+                    continue;
+                if ( face.marker2().isOff() || ( !allMarkedFaces && face.marker2().value() != m ) )
+                    continue;
+                myfaces->push_back( boost::cref( face ) );
+            }
+            return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
+        }
 
-    std::pair<marker2_face_iterator, marker2_face_iterator>
-    facesWithMarker2( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_marker2>().equal_range( boost::make_tuple( Marker2( m ), part ) );
-    }
+    /**
+     * \return the range of iterator \c (begin,end) over the faces
+     * with \c Marker3 \p m on processor \p p
+     */
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesWithMarker3( size_type m = invalid_size_type_value, rank_type p = invalid_rank_type_value ) const
+        {
+            bool allMarkedFaces = (m == invalid_size_type_value);
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+            faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
+            auto it = this->beginFace();
+            auto en = this->endFace();
+            for ( ; it!=en;++it )
+            {
+                auto const& face = *it;
+                if ( face.processId() != part )
+                    continue;
+                if ( face.marker3().isOff() || ( !allMarkedFaces && face.marker3().value() != m ) )
+                    continue;
+                myfaces->push_back( boost::cref( face ) );
+            }
+            return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
+        }
 
-    std::pair<marker3_face_iterator, marker3_face_iterator>
-    facesWithMarker3( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_marker3>().equal_range( boost::make_tuple( Marker3( m ), part ) );
-    }
 
 
     /**
@@ -570,7 +513,7 @@ public:
 #endif
 
     /**
-     * \return the range of iterator \c (begin,end) over the elements
+     * \return the range of iterator \c (begin,end) over the faces
      * on processor \p p
      */
     std::pair<pid_face_iterator, pid_face_iterator>
@@ -603,79 +546,6 @@ public:
     {
         return M_faces.template get<0>();
     }
-
-    /**
-     * get the faces container using the marker view
-     *
-     *
-     * @return the face container using marker view
-     */
-    marker_faces &
-    facesByMarker()
-    {
-        return M_faces.template get<Feel::detail::by_marker>();
-    }
-
-    /**
-     * get the faces container using the marker view
-     *
-     *
-     * @return the face container using marker view
-     */
-    marker_faces const&
-    facesByMarker() const
-    {
-        return M_faces.template get<Feel::detail::by_marker>();
-    }
-
-    /**
-     * get the faces container using the marker view
-     *
-     *
-     * @return the face container using marker view
-     */
-    marker2_faces &
-    facesByMarker2()
-    {
-        return M_faces.template get<Feel::detail::by_marker2>();
-    }
-
-    /**
-     * get the faces container using the marker view
-     *
-     *
-     * @return the face container using marker view
-     */
-    marker2_faces const&
-    facesByMarker2() const
-    {
-        return M_faces.template get<Feel::detail::by_marker2>();
-    }
-
-    /**
-     * get the faces container using the marker view
-     *
-     *
-     * @return the face container using marker view
-     */
-    marker3_faces &
-    facesByMarker3()
-    {
-        return M_faces.template get<Feel::detail::by_marker3>();
-    }
-
-    /**
-     * get the faces container using the marker view
-     *
-     *
-     * @return the face container using marker view
-     */
-    marker3_faces const&
-    facesByMarker3() const
-    {
-        return M_faces.template get<Feel::detail::by_marker3>();
-    }
-
 
     /**
      * get the faces container using the location view
@@ -817,12 +687,12 @@ public:
     }
 
     /**
-     * erase element at position \p position
+     * erase face at position \p position
      *
      * @param position \p position is a valid dereferenceable iterator of the index.
      *
-     * @return An iterator pointing to the element immediately
-     * following the one that was deleted, or \c end() if no such element
+     * @return An iterator pointing to the face immediately
+     * following the one that was deleted, or \c end() if no such face
      * exists.
      */
     face_iterator eraseFace( face_iterator position )
