@@ -1834,9 +1834,9 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
         std::vector<size_type> list_of_connected_faces;
         std::vector<size_type> dK, dK1;
         if ( F.isConnectedTo0() && !F.element0().isGhostCell() )
-            dK =  _M_X2->mesh()->meshToSubMesh( F.element0().facesId());
+            dK =  _M_X2->mesh()->meshToSubMesh( F.element0().facesId()).first;
         if ( F.isConnectedTo1() && !F.element1().isGhostCell() )
-            dK1 =  _M_X2->mesh()->meshToSubMesh( F.element1().facesId());
+            dK1 =  _M_X2->mesh()->meshToSubMesh( F.element1().facesId()).first;
 
         DVLOG(2) << "dK=" << dK;
         DVLOG(2) << "dK1=" << dK1;
