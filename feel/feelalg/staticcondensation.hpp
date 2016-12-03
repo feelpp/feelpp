@@ -743,7 +743,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
     int N3 = N2*e1.mesh()->numLocalTopologicalFaces();
     
     int N41 = N2*(e1.mesh()->numLocalTopologicalFaces()-1);
-    int N42 = e4.dof()->nLocalDof();
+    int N42 = e4[0].dof()->nLocalDof();
     int N4 = N41+N42;
     cout << "[staticcondensation] N=" << N << " N0=" << N0 << " N1=" << N1 << " N2=" << N2 << " N3=" << N3 << " ntf=" << e1.mesh()->numLocalTopologicalFaces()<< std::endl;
     local_matrix_t AK( N, N ),A00(N0,N0),A01(N0,N1),A10(N1,N0), A11(N1,N1), A20(N3,N0), A21(N3,N1), A22(N3,N3);
@@ -789,7 +789,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
                 }
             }
             else
-                dK_it = M_dK.emplace( K, ElementFaces( std::move(dK.first) ) ).first;
+                dK_it = M_dK.emplace( K, detail::ElementFaces( std::move(dK.first) ) ).first;
         }
 
         auto & dK = dK_it->second;
