@@ -2350,6 +2350,15 @@ public:
         local_interpolant_type element( std::vector<size_type> const& e ) const
             {
                 local_interpolant_type l( M_functionspace->basis()->localInterpolant(e.size()) ) ;
+                element( e, l );
+                return l;
+            }
+        //!
+        //! @return the components of the element associated to the list of elements in e
+        //! @note the vector of components is already allocated
+        //!
+        void element( std::vector<size_type> const& e, Eigen::Ref<local_interpolant_type> l ) const
+            {
                 int s = l.size()/e.size();
                 int n = 0;
                 std::for_each( e.begin(), e.end(), [&]( auto const& id ){
@@ -2361,8 +2370,24 @@ public:
                         }
                         ++n;
                     });
-                return l;
+            }
+        //!
+        //! @return the components of the element associated to the list of elements in e
+        //! @note the vector of components is already allocated
+        //!
+        void element( std::vector<size_type> const& e, local_interpolant_type& l ) const
+            {
+                int s = l.size()/e.size();
+                int n = 0;
+                std::for_each( e.begin(), e.end(), [&]( auto const& id ){
 
+                        for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
+                        {
+                            size_type index = ldof.second.index();
+                            l( n*s+ldof.first.localDof() ) = super::operator[]( index );
+                        }
+                        ++n;
+                    });
             }
         std::vector<int> dofs( std::vector<size_type> const& e ) const
             {
