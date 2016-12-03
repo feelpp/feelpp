@@ -136,19 +136,23 @@ using interprocessfaces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
 
 
 template<typename MeshType>
-using markedfaces_t = boost::tuple<mpl::size_t<MESH_FACES>,
-                                   typename MeshTraits<MeshType>::marker_face_const_iterator,
-                                   typename MeshTraits<MeshType>::marker_face_const_iterator>;
+using allfaces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
+                                 typename MeshTraits<MeshType>::face_const_iterator,
+                                 typename MeshTraits<MeshType>::face_const_iterator>;
 
 template<typename MeshType>
-using marked2faces_t = boost::tuple<mpl::size_t<MESH_FACES>,
-                                    typename MeshTraits<MeshType>::marker2_face_const_iterator,
-                                    typename MeshTraits<MeshType>::marker2_face_const_iterator>;
+using faces_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_FACES>,
+                                                  typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+                                                  typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+                                                  typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype>;
 
 template<typename MeshType>
-using marked3faces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
-                                     typename MeshTraits<MeshType>::marker3_face_const_iterator,
-                                     typename MeshTraits<MeshType>::marker3_face_const_iterator> ;
+using markedfaces_t = faces_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using marked2faces_t = faces_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using marked3faces_t = faces_reference_wrapper_t<MeshType>;
+
 
 template<typename MeshType>
 using edges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,

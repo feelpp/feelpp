@@ -479,7 +479,7 @@ public:
                 auto const& elt = *it;
                 if ( elt.processId() != part )
                     continue;
-                if ( elt.marker().value() != m )
+                if ( elt.marker().isOff() || elt.marker().value() != m )
                     continue;
                 myelements->push_back(boost::cref(elt));
             }
@@ -501,7 +501,7 @@ public:
                 auto const& elt = *it;
                 if ( elt.processId() != part )
                     continue;
-                if ( elt.marker2().value() != m )
+                if ( elt.marker2().isOff() || elt.marker2().value() != m )
                     continue;
                 myelements->push_back(boost::cref(elt));
             }
@@ -523,7 +523,7 @@ public:
                 auto const& elt = *it;
                 if ( elt.processId() != part )
                     continue;
-                if ( elt.marker3().value() != m )
+                if ( elt.marker3().isOff() || elt.marker3().value() != m )
                     continue;
                 myelements->push_back(boost::cref(elt));
             }

@@ -72,17 +72,13 @@ struct MeshTraits
     typedef typename mesh_type::face_iterator face_iterator;
     typedef typename mesh_type::face_const_iterator face_const_iterator;
 
+    typedef typename mesh_type::faces_reference_wrapper_type faces_reference_wrapper_type;
+    typedef typename mesh_type::faces_reference_wrapper_ptrtype faces_reference_wrapper_ptrtype;
+    typedef typename mesh_type::face_reference_wrapper_iterator face_reference_wrapper_iterator;
+    typedef typename mesh_type::face_reference_wrapper_const_iterator face_reference_wrapper_const_iterator;
+
     typedef typename mesh_type::pid_face_iterator pid_face_iterator;
     typedef typename mesh_type::pid_face_const_iterator pid_face_const_iterator;
-
-    typedef typename mesh_type::marker_face_iterator marker_face_iterator;
-    typedef typename mesh_type::marker_face_const_iterator marker_face_const_iterator;
-
-    typedef typename mesh_type::marker2_face_iterator marker2_face_iterator;
-    typedef typename mesh_type::marker2_face_const_iterator marker2_face_const_iterator;
-
-    typedef typename mesh_type::marker3_face_iterator marker3_face_iterator;
-    typedef typename mesh_type::marker3_face_const_iterator marker3_face_const_iterator;
 
     typedef typename mesh_type::location_face_iterator location_face_iterator;
     typedef typename mesh_type::location_face_const_iterator location_face_const_iterator;
