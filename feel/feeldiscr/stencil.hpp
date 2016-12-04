@@ -446,7 +446,8 @@ public:
     //!
     //! Specific function to compute the graph associated to the static condensation of the HDG method
     //!
-    graph_ptrtype computeGraphHDG( size_type hints );
+    graph_ptrtype computeGraphHDG( size_type hints, single_spaces_t );
+    graph_ptrtype computeGraphHDG( size_type hints, multiple_spaces_t ) { return graph_ptrtype{}; }
     graph_ptrtype computeGraphHDG( size_type hints, std::integral_constant<bool,false> );
     graph_ptrtype computeGraphHDG( size_type hints, std::integral_constant<bool,true> );
 
@@ -1102,7 +1103,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
     if ( graph.test( Pattern::HDG ) )
     {
         CHECK( _M_X1->mesh()->dimension() == _M_X1->mesh()->realDimension()-1 ) << "topological dimension must be d-1 if d is the real dimension of the problem";
-        return this->computeGraphHDG( hints );
+        return this->computeGraphHDG( hints, type_spaces_t(_M_X1, _M_X2) );
     }
     if ( _M_X1->template mesh<0>()->isRelatedTo( _M_X2->template mesh<0>() ) )
     {
@@ -1757,16 +1758,18 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
                                                                                  std::integral_constant<bool,true> )
 {
     //return computeGraphHDG( hints, std::is_same<X1,X2>() );
+    return graph_ptrtype{};
 }
 template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG( size_type hints,
                                                                                  std::integral_constant<bool,false> )
 {
+    return graph_ptrtype{};
 }
 template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG( size_type hints )
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG( size_type hints, single_spaces_t )
                                                                                  
 {
 
