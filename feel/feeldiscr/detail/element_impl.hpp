@@ -2634,13 +2634,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     // get [first,last) entity iterators over the range
     auto entity_it = r.first;
     auto entity_en = r.second;
-    DVLOG(3) << "entity " << entity_it->id() << " with marker "
-             << entity_it->marker() << " nb: " << std::distance(entity_it,entity_en);
     if ( entity_it == entity_en )
         return;
 
     auto gm = mesh->gm();
-    auto const& firstEntity = *entity_it;
+    auto const& firstEntity = boost::unwrap_ref( *entity_it );
+    DVLOG(3) << "entity " << firstEntity.id() << " with marker "
+             << firstEntity.marker() << " nb: " << std::distance(entity_it,entity_en);
     size_type eid = firstEntity.elements().begin()->first;
     size_type ptid_in_element = firstEntity.elements().begin()->second;
     auto const& elt = mesh->element( eid );
@@ -2655,8 +2655,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         auto const& curEntity = boost::unwrap_ref(*entity_it);
         auto entity_elt_info = curEntity.elements().begin();
         ptid_in_element = entity_elt_info->second;
-        DVLOG(3) << "entity " << entity_it->id() << " element " << entity_elt_info->first << " id in element "
-                 << ptid_in_element<< " with marker " << entity_it->marker();
+        DVLOG(3) << "entity " << curEntity.id() << " element " << entity_elt_info->first << " id in element "
+                 << ptid_in_element<< " with marker " << curEntity.marker();
         auto const& elt = mesh->element( entity_elt_info->first );
         geopc = gm->preCompute( __fe->edgePoints(ptid_in_element) );
         ctx->update( elt, geopc );
