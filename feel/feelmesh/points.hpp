@@ -248,6 +248,19 @@ public:
         }
 
     /**
+     * \return the range of iterator \c (begin,end) over the points
+     * with \c Id \p m
+     */
+    std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
+    pointsWithId( size_type m ) const
+        {
+            points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
+            if ( this->hasPoint( m ) )
+                mypoints->push_back( boost::cref( this->point( m ) ) );
+            return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
+        }
+
+    /**
      * get iterator over internal marked points
      *
      *

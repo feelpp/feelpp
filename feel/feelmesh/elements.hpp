@@ -465,6 +465,19 @@ public:
 
     /**
      * \return the range of iterator \c (begin,end) over the elements
+     * with \c Id \p m
+     */
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    elementsWithId( size_type m ) const
+        {
+            elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+            if ( this->hasElement( m ) )
+                myelements->push_back( boost::cref( this->element( m ) ) );
+            return std::make_tuple( myelements->begin(), myelements->end(), myelements );
+        }
+
+    /**
+     * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker1 \p m on processor \p p
      */
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>

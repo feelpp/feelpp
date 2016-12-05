@@ -133,9 +133,9 @@ public Edges<typename Shape::template shape<1>::type,
     typedef typename super_faces::face_iterator face_iterator;
     typedef typename super_faces::face_const_iterator face_const_iterator;
 
-    typedef typename super_faces::location_faces location_faces;
-    typedef typename super_faces::location_face_iterator location_face_iterator;
-    typedef typename super_faces::location_face_const_iterator location_face_const_iterator;
+    // typedef typename super_faces::location_faces location_faces;
+    typedef typename super_faces::face_reference_wrapper_iterator location_face_iterator;
+    typedef typename super_faces::face_reference_wrapper_const_iterator location_face_const_iterator;
 
 
     typedef Edges<typename Shape::template shape<1>::type,face_type> super_edges;
@@ -636,14 +636,16 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
     {
         // We want that the first edges be those on the boundary, in order to obey the paradigm for
         // a Mesh3D
-        location_face_iterator ifa = this->beginFaceOnBoundary();
-        location_face_iterator efa = this->endFaceOnBoundary();
+        auto rangeBoundaryFaces = this->facesOnBoundary();
+        auto ifa = std::get<0>( rangeBoundaryFaces );
+        auto efa = std::get<1>( rangeBoundaryFaces );
         for ( ; ifa!=efa; ++ifa )
         {
+            auto const& bface = boost::unwrap_ref( *ifa );
             for ( uint16_type j = 0; j < face_type::numEdges; j++ )
             {
-                i1 = ifa->point( face_type::eToP( j, 0 ) ).id();
-                i2 = ifa->point( face_type::eToP( j, 1 ) ).id();
+                i1 = bface.point( face_type::eToP( j, 0 ) ).id();
+                i2 = bface.point( face_type::eToP( j, 1 ) ).id();
                 std::set<size_type> s( { i1,i2 } );
 
                 boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, next_edge ) );
@@ -657,10 +659,10 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                     ++next_edge;
 
                     for ( uint16_type k = 0; k < 2 + face_type::nbPtsPerEdge; k++ )
-                        edg.setPoint( k, ifa->point( face_type::eToP( j, k ) ) );
+                        edg.setPoint( k, bface.point( face_type::eToP( j, k ) ) );
 
                     // TODO: should assocate a marker to the edge here ?
-                    //edg.addElement( ifa->ad_first() );
+                    //edg.addElement( bface.ad_first() );
                     //this->addEdge( edg );
                     eit = this->edges().insert( this->edges().end(), edg );
                 }
@@ -671,8 +673,8 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                         this->edges().modify( eit, []( edge_type& e ) { e.setOnBoundary( true, 0 ); } );
                 }
                 // set the process id from element (only active element)
-                if ( !ifa->isGhostCell() && eit->processId() != ifa->processId() )
-                    this->edges().modify( eit, Feel::detail::UpdateProcessId(ifa->processId()) );
+                if ( !bface.isGhostCell() && eit->processId() != bface.processId() )
+                    this->edges().modify( eit, Feel::detail::UpdateProcessId(bface.processId()) );
             }
         }
     }
@@ -901,15 +903,17 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 
     // We want that the first edges be those on the boundary, in order to obey the paradigm for
     // a Mesh3D
-    location_face_iterator ifa = this->beginFaceOnBoundary();
-    location_face_iterator efa = this->endFaceOnBoundary();
+    auto rangeBoundaryFaces = this->facesOnBoundary();
+    auto ifa = std::get<0>( rangeBoundaryFaces );
+    auto efa = std::get<1>( rangeBoundaryFaces );
     for ( ; ifa!=efa; ++ifa )
     {
+        auto const& bface = boost::unwrap_ref( *ifa );
         for ( uint16_type j = 0; j < face_type::numEdges; j++ )
         {
             // go to global
-            i1 = ifa->point( face_type::eToP( j, 0 ) ).id();
-            i2 = ifa->point( face_type::eToP( j, 1 ) ).id();
+            i1 = bface.point( face_type::eToP( j, 0 ) ).id();
+            i2 = bface.point( face_type::eToP( j, 1 ) ).id();
             std::set<size_type> s( { i1,i2 } );
 
             boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, nullptr ) );
@@ -927,7 +931,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 //edgePtr->setProcessId( invalid_rank_type_value );
 
                 for ( uint16_type k = 0; k < 2 + face_type::nbPtsPerEdge; k++ )
-                    edgePtr->setPoint( k, ifa->point( face_type::eToP( j, k ) ) );
+                    edgePtr->setPoint( k, bface.point( face_type::eToP( j, k ) ) );
 
                 _edgeit->second = edgePtr;
             }
@@ -938,8 +942,8 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             // set edge on boundary
             edgePtr->setOnBoundary( true, 0 );
             // set the process id from element (only active element)
-            if (!ifa->isGhostCell())
-                edgePtr->setProcessId( ifa->processId() );
+            if (!bface.isGhostCell())
+                edgePtr->setProcessId( bface.processId() );
         }
     }
     DVLOG(2) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";

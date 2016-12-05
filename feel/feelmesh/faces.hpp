@@ -80,7 +80,7 @@ public:
     multi_index::indexed_by<
     // sort by employee::operator<
 #if 1
-        multi_index::ordered_unique<multi_index::identity<face_type> >,
+        multi_index::ordered_unique<multi_index::identity<face_type> >
 #else
         multi_index::ordered_unique<
             multi_index::composite_key<face_type,
@@ -124,12 +124,12 @@ public:
                                                                        rank_type,
                                                                        &face_type::processId>
                                             > >,
-#endif
         // sort by less<int> on processId
         multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
                                         multi_index::const_mem_fun<face_type,
                                                                    rank_type,
                                                                    &face_type::processId> >,
+
 
 
         // sort by less<int> on boundary
@@ -158,7 +158,11 @@ public:
                                                                        rank_type,
                                                                        &face_type::processId>
                                             >
-                                        > >
+                                        >
+#endif
+        >
+
+
     > faces_type;
 
 
@@ -169,18 +173,6 @@ public:
     typedef std::shared_ptr<faces_reference_wrapper_type> faces_reference_wrapper_ptrtype;
     typedef typename faces_reference_wrapper_type::iterator face_reference_wrapper_iterator;
     typedef typename faces_reference_wrapper_type::const_iterator face_reference_wrapper_const_iterator;
-
-    typedef typename faces_type::template index<Feel::detail::by_location>::type location_faces;
-    typedef typename location_faces::iterator location_face_iterator;
-    typedef typename location_faces::const_iterator location_face_const_iterator;
-
-    typedef typename faces_type::template index<Feel::detail::by_pid>::type pid_faces;
-    typedef typename pid_faces::iterator pid_face_iterator;
-    typedef typename pid_faces::const_iterator pid_face_const_iterator;
-
-    typedef typename faces_type::template index<Feel::detail::by_interprocessdomain>::type interprocess_faces;
-    typedef typename interprocess_faces::iterator interprocess_face_iterator;
-    typedef typename interprocess_faces::const_iterator interprocess_face_const_iterator;
 
     //@}
 
@@ -342,44 +334,19 @@ public:
         return M_faces.end();
     }
 
+    /**
+     * \return the range of iterator \c (begin,end) over the faces
+     * with \c Id \p m
+     */
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesWithId( size_type m ) const
+        {
+            faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
+            if ( this->hasFace( m ) )
+                myfaces->push_back( boost::cref( this->face( m ) ) );
+            return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
+        }
 
-    face_iterator beginFaceWithId( size_type m )
-    {
-        return M_faces.lower_bound( face_type( m ) );
-    }
-    face_const_iterator beginFaceWithId( size_type m ) const
-    {
-        return M_faces.lower_bound( face_type( m ) );
-    }
-    face_iterator endFaceWithId( size_type m )
-    {
-        return M_faces.upper_bound( face_type( m ) );
-    }
-    face_const_iterator endFaceWithId( size_type m ) const
-    {
-        return M_faces.upper_bound( face_type( m ) );
-    }
-
-    pid_face_iterator beginFaceWithProcessId( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
-    }
-    pid_face_const_iterator beginFaceWithProcessId( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
-    }
-    pid_face_iterator endFaceWithProcessId( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
-    }
-    pid_face_const_iterator endFaceWithProcessId( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
-    }
     /**
      * \return the range of iterator \c (begin,end) over the faces
      * with \c Marker1 \p m on processor \p p
@@ -455,207 +422,122 @@ public:
 
 
     /**
-     * \return the range of iterator \c (begin,end) over the faces
-     * with marker \p m on processor \p p
-     */
-    std::pair<location_face_iterator, location_face_iterator>
-    facesOnBoundary() const
-    {
-        return M_faces.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( ON_BOUNDARY ) );
-    }
-
-    /**
      * \return the range of iterator \c (begin,end) over the boundary
      *  faces on processor \p p
      */
-    std::pair<location_face_iterator, location_face_iterator>
-    facesOnBoundary( rank_type p  ) const
-    {
-        return M_faces.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( ON_BOUNDARY, p ) );
-    }
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesOnBoundary( rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+            faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
+            auto it = this->beginFace();
+            auto en = this->endFace();
+            for ( ; it!=en;++it )
+            {
+                auto const& face = *it;
+                if ( face.processId() != part )
+                    continue;
+                if ( !face.isOnBoundary() )
+                    continue;
+                myfaces->push_back( boost::cref( face ) );
+            }
+            return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
+        }
 
     /**
      * \return the range of iterator \c (begin,end) over the internal faces
      * on processor \p p
      */
-    std::pair<location_face_iterator, location_face_iterator>
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     internalFaces( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( INTERNAL, part ) );
-    }
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+            faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
+            auto it = this->beginFace();
+            auto en = this->endFace();
+            for ( ; it!=en;++it )
+            {
+                auto const& face = *it;
+                if ( face.processId() != part )
+                    continue;
+                if ( !face.isInternal() )
+                    continue;
+                myfaces->push_back( boost::cref( face ) );
+            }
+            return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
+        }
 
     /**
      * \return the range of iterator \c (begin,end) over the inter-process domain faces
      * on processor \p p
      */
-    std::pair<interprocess_face_iterator, interprocess_face_iterator>
-    interProcessFaces( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part =  this->worldCommFaces().localRank();
-        if ( p != invalid_rank_type_value )
-            return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part, p ) );
-        else
-            return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part ) );
-    }
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    interProcessFaces( rank_type neighbor_pid = invalid_rank_type_value ) const
+        {
+            // const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+            bool allNeighbor = ( neighbor_pid == invalid_rank_type_value );
+            const rank_type part = this->worldCommFaces().localRank();
+            faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
+            auto it = this->beginFace();
+            auto en = this->endFace();
+            for ( ; it!=en;++it )
+            {
+                auto const& face = *it;
+                if ( !face.isInterProcessDomain() )
+                    continue;
+                if ( face.partition1() != part )
+                    continue;
+                if ( !allNeighbor && face.partition2() != neighbor_pid )
+                    continue;
+                myfaces->push_back( boost::cref( face ) );
+            }
+            return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
+        }
 
-#if 0
     /**
      * \return the range of iterator \c (begin,end) over the intra-process domain faces
      * on processor \p p
      */
-    std::pair<interprocess_face_iterator, interprocess_face_iterator>
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     intraProcessFaces( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( false, part ) );
-    }
-#endif
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+            faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
+            auto it = this->beginFace();
+            auto en = this->endFace();
+            for ( ; it!=en;++it )
+            {
+                auto const& face = *it;
+                if ( face.processId() != part )
+                    continue;
+                if ( !face.isIntraProcessDomain( part ) )
+                    continue;
+                myfaces->push_back( boost::cref( face ) );
+            }
+            return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
+        }
 
     /**
      * \return the range of iterator \c (begin,end) over the faces
      * on processor \p p
      */
-    std::pair<pid_face_iterator, pid_face_iterator>
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesWithProcessId( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_pid>().equal_range( part );
-    }
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+            faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
+            auto it = this->beginFace();
+            auto en = this->endFace();
+            for ( ; it!=en;++it )
+            {
+                auto const& face = *it;
+                if ( face.processId() != part )
+                    continue;
+                myfaces->push_back( boost::cref( face ) );
+            }
+            return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
+        }
 
-    /**
-     * get the faces container by id
-     *
-     *
-     * @return the face container by id
-     */
-    typename faces_type::template nth_index<0>::type &
-    facesById()
-    {
-        return M_faces.template get<0>();
-    }
-
-    /**
-     * get the faces container by id
-     *
-     *
-     * @return the face container by id
-     */
-    typename faces_type::template nth_index<0>::type const&
-    facesById() const
-    {
-        return M_faces.template get<0>();
-    }
-
-    /**
-     * get the faces container using the location view
-     *
-     *
-     * @return the face container using location view
-     */
-    location_faces &
-    facesByLocation()
-    {
-        return M_faces.template get<Feel::detail::by_location>();
-    }
-
-    /**
-     * get the faces container using the location view
-     *
-     *
-     * @return the face container using location view
-     */
-    location_faces const&
-    facesByLocation() const
-    {
-        return M_faces.template get<Feel::detail::by_location>();
-    }
-
-    /**
-     * get the begin() iterator on all the internal faces
-     *
-     * @return the begin() iterator on all the internal faces
-     */
-    location_face_iterator beginInternalFace( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, part ) );
-    }
-    /**
-     * get the end() iterator on all the internal faces
-     *
-     * @return the end() iterator on all the internal faces
-     */
-    location_face_iterator endInternalFace( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, part ) );
-    }
-
-    /**
-     * get the begin() iterator on all the internal faces
-     *
-     * @return the begin() iterator on all the internal faces
-     */
-    location_face_const_iterator beginInternalFace( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, part ) );
-    }
-
-    /**
-     * get the end() iterator on all the internal faces
-     *
-     * @return the end() iterator on all the internal faces
-     */
-    location_face_const_iterator endInternalFace( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, part ) );
-    }
-
-    /**
-     * get the begin() iterator on all the boundary faces
-     *
-     * @return the begin() iterator on all the boundary faces
-     */
-    location_face_iterator beginFaceOnBoundary( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( ON_BOUNDARY, part ) );
-    }
-    /**
-     * get the end() iterator on all the boundary faces
-     *
-     * @return the end() iterator on all the boundary faces
-     */
-    location_face_iterator endFaceOnBoundary( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( ON_BOUNDARY, part ) );
-    }
-
-    /**
-     * get the begin() iterator on all the boundary faces
-     *
-     * @return the begin() iterator on all the boundary faces
-     */
-    location_face_const_iterator beginFaceOnBoundary( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( ON_BOUNDARY, part ) );
-    }
-
-    /**
-     * get the end() iterator on all the boundary faces
-     *
-     * @return the end() iterator on all the boundary faces
-     */
-    location_face_const_iterator endFaceOnBoundary( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( ON_BOUNDARY, part ) );
-    }
 
     //@}
 
@@ -803,12 +685,10 @@ public:
     template<typename IteratorRange>
     void updateMarker2WithRangeFaces( IteratorRange const& range, flag_type flag )
     {
-        typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_range_type;
-        iterator_range_type it, en;
-        boost::tie( boost::tuples::ignore, it, en ) = range;
-
+        auto it = boost::get<1>( range );
+        auto en = boost::get<2>( range );
         for (  ; it != en; ++it )
-            M_faces.modify( this->faceIterator( it->id() ), [&flag]( face_type& e )
+            M_faces.modify( this->faceIterator( boost::unwrap_ref( *it ).id() ), [&flag]( face_type& e )
         {
             e.setMarker2( flag );
         } );
@@ -817,12 +697,10 @@ public:
     template<typename IteratorRange>
     void updateMarker3WithRangeFaces( IteratorRange const& range, flag_type flag )
     {
-        typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_range_type;
-        iterator_range_type it, en;
-        boost::tie( boost::tuples::ignore, it, en ) = range;
-
+        auto it = boost::get<1>( range );
+        auto en = boost::get<2>( range );
         for (  ; it != en; ++it )
-            M_faces.modify( this->faceIterator( it->id() ), [&flag]( face_type& e )
+            M_faces.modify( this->faceIterator( boost::unwrap_ref( *it ).id() ), [&flag]( face_type& e )
         {
             e.setMarker3( flag );
         } );
