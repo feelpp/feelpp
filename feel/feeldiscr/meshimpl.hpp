@@ -150,9 +150,12 @@ Mesh<Shape, T, Tag>::updateForUse()
             else
                 this->updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
 
-            auto ipfRange = this->interProcessFaces();
-            for ( auto itf = ipfRange.first, enf = ipfRange.second ; itf!=enf ; ++itf )
-                this->addFaceNeighborSubdomain( itf->partition2() );
+            // auto ipfRange = this->interProcessFaces();
+            auto rangeInterProcessFaces = this->interProcessFaces();
+            auto itf = std::get<0>( rangeInterProcessFaces );
+            auto enf = std::get<1>( rangeInterProcessFaces );
+            for ( ; itf!=enf ; ++itf )
+                this->addFaceNeighborSubdomain( boost::unwrap_ref( *itf ).partition2() );
         }
 
         if ( ( this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL ) ) &&
@@ -2082,10 +2085,11 @@ Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type>
 
                        for( auto it = range.template get<1>(), en = range.template get<2>(); it != en; ++it )
                        {
-                           if ( it->isOnBoundary() )
+                           auto const& face = boost::unwrap_ref( *it );
+                           if ( face.isOnBoundary() )
                            {
-                               DVLOG(3) << "removing face "  << it->id() << "\n";
-                               auto it2 = this->faces().template project<0>( it );
+                               DVLOG(3) << "removing face "  << face.id() << "\n";
+                               auto it2 = this->faceIterator( face ); //this->faces().template project<0>( it );
                                this->faces().modify( it2, []( face_type & f ) { f.setOnBoundary( false ); } );
 
 
@@ -2093,7 +2097,7 @@ Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type>
                                //f.setOnBoundary( false );
                                //this->faces().replace( it2, f );
                                CHECK( it2->isOnBoundary() ==false ) << " face should not be on the boundary anymore\n";
-                               CHECK( it->isOnBoundary() ==false ) << " face should not be on the boundary anymore\n";
+                               CHECK( face.isOnBoundary() ==false ) << " face should not be on the boundary anymore\n";
                            }
 
                        }
@@ -3184,19 +3188,20 @@ Mesh<Shape, T, Tag>::encode()
 
     for ( ; face_it != face_end; ++face_it )
     {
+        auto const& curface = boost::unwrap_ref( *face_it );
         std::vector<int> faces;
         faces.push_back( ordering_face.type() );
-        faces.push_back( 4 + face_it->numberOfPartitions() );
-        faces.push_back( face_it->marker().value() );
-        faces.push_back( face_it->marker2().value() );
-        faces.push_back( face_it->numberOfPartitions() );
-        faces.push_back( face_it->processId() );
-        for ( size_type i=0 ; i<face_it->numberOfNeighborPartitions(); ++i )
-            faces.push_back( -( face_it->neighborPartitionIds()[i] ) );
+        faces.push_back( 4 + curface.numberOfPartitions() );
+        faces.push_back( curface.marker().value() );
+        faces.push_back( curface.marker2().value() );
+        faces.push_back( curface.numberOfPartitions() );
+        faces.push_back( curface.processId() );
+        for ( size_type i=0 ; i<curface.numberOfNeighborPartitions(); ++i )
+            faces.push_back( -( curface.neighborPartitionIds()[i] ) );
         for ( uint16_type p=0; p<face_type::numPoints; ++p )
-            faces.push_back( face_it->point( ordering_face.fromGmshId( p ) ).id()+1 );
+            faces.push_back( curface.point( ordering_face.fromGmshId( p ) ).id()+1 );
 
-        M_enc_faces[face_it->id()] = faces;
+        M_enc_faces[curface.id()] = faces;
     } // faces
 
 
@@ -3313,8 +3318,8 @@ Mesh<Shape, T, Tag>::decode()
     }
     LOG(INFO) << "distance  elts: "<< std::distance( this->beginElement(), this->endElement() ) << "\n";
     LOG(INFO) << "distance faces: "<< std::distance( this->beginFace(), this->endFace() ) << "\n";
-    LOG(INFO) << "distance marker faces: "<< std::distance( this->beginFaceWithMarker(), this->endFaceWithMarker() ) << "\n";
-    LOG(INFO) << "distance marker2 faces: "<< std::distance( this->beginFaceWithMarker2(), this->endFaceWithMarker2() ) << "\n";
+    // LOG(INFO) << "distance marker faces: "<< std::distance( this->beginFaceWithMarker(), this->endFaceWithMarker() ) << "\n";
+    // LOG(INFO) << "distance marker2 faces: "<< std::distance( this->beginFaceWithMarker2(), this->endFaceWithMarker2() ) << "\n";
 
     //this->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     //this->updateForUse();
@@ -3565,27 +3570,31 @@ Mesh<Shape, T, Tag>::Localization::initBoundaryFaces()
     M_geoGlob_Elts.clear();
     M_kd_tree->clear()
 ;
-    typename self_type::location_face_iterator face_it;
-    typename self_type::location_face_iterator face_en;
-    boost::tie( boost::tuples::ignore, face_it, face_en ) = Feel::boundaryfaces( mesh );
+    // typename self_type::location_face_iterator face_it;
+    // typename self_type::location_face_iterator face_en;
+    // boost::tie( boost::tuples::ignore, face_it, face_en ) = Feel::boundaryfaces( mesh );
+    auto rangeBoundaryFaces = Feel::boundaryfaces( mesh );
+    auto face_it = boost::get<1>( rangeBoundaryFaces );
+    auto face_en = boost::get<2>( rangeBoundaryFaces );
     bool hasInitGic=false;
     for ( ; face_it != face_en; ++face_it )
     {
-        for ( int i=0; i<face_it->nPoints(); ++i )
+        auto const& face = boost::unwrap_ref( *face_it );
+        for ( int i=0; i<face.nPoints(); ++i )
         {
-            if ( face_it->isConnectedTo0() )
+            if ( face.isConnectedTo0() )
                 {
-                    if ( boost::get<1>( M_geoGlob_Elts[face_it->point( i ).id()] ).size()==0 )
+                    if ( boost::get<1>( M_geoGlob_Elts[face.point( i ).id()] ).size()==0 )
                         {
-                            boost::get<0>( M_geoGlob_Elts[face_it->point( i ).id()] ) = face_it->point( i ).node();
-                            M_kd_tree->addPoint( face_it->point( i ).node(),face_it->point( i ).id() );
+                            boost::get<0>( M_geoGlob_Elts[face.point( i ).id()] ) = face.point( i ).node();
+                            M_kd_tree->addPoint( face.point( i ).node(),face.point( i ).id() );
                         }
-                    boost::get<1>( M_geoGlob_Elts[face_it->point( i ).id()] ).push_back( face_it->element( 0 ).id() );
+                    boost::get<1>( M_geoGlob_Elts[face.point( i ).id()] ).push_back( face.element( 0 ).id() );
 
                     if ( !hasInitGic )
                     {
-                        M_gic.reset( new gmc_inverse_type( mesh->gm(), face_it->element( 0 ), mesh->worldComm().subWorldCommSeq() ) );
-                        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), face_it->element( 0 ), mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() ) );
+                        M_gic.reset( new gmc_inverse_type( mesh->gm(), face.element( 0 ), mesh->worldComm().subWorldCommSeq() ) );
+                        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), face.element( 0 ), mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() ) );
                         hasInitGic=true;
                     }
                 }

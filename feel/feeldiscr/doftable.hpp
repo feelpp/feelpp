@@ -2456,10 +2456,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
     //
     // Face dof
     //
-    auto __face_it = M.facesWithProcessId( M.worldComm().localRank() ).first;
-    auto __face_en = M.facesWithProcessId( M.worldComm().localRank() ).second;
-
-    const size_type nF = M.faces().size();
+    auto rangeFaces = M.facesWithProcessId( M.worldComm().localRank() );
+    auto __face_it = std::get<0>( rangeFaces );
+    auto __face_en = std::get<1>( rangeFaces );
+    // const size_type nF = M.faces().size();
+    const size_type nF = std::distance( __face_it, __face_en );
     int ntldof = nLocalDofOnFace();
 
     DVLOG(2) << "[buildBoundaryDofMap] nb faces : " << nF << "\n";
@@ -2467,26 +2468,27 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
     DofFromBoundary<self_type, fe_type> dfb( this, *M_fe );
     for ( size_type nf = 0; __face_it != __face_en; ++__face_it, ++nf )
     {
-        LOG_IF(WARNING, !__face_it->isConnectedTo0() )
-            << "face " << __face_it->id() << " not connected"
-            << " marker : " << __face_it->marker()
-            << " connectedTo0 : " << __face_it->isConnectedTo0()
-            << " connectedTo1 : " << __face_it->isConnectedTo1();
+        auto const& face = boost::unwrap_ref( *__face_it );
+        LOG_IF(WARNING, !face.isConnectedTo0() )
+            << "face " << face.id() << " not connected"
+            << " marker : " << face.marker()
+            << " connectedTo0 : " << face.isConnectedTo0()
+            << " connectedTo1 : " << face.isConnectedTo1();
 
-        if ( !__face_it->isConnectedTo0() ) continue;
+        if ( !face.isConnectedTo0() ) continue;
 
 #if !defined(NDEBUG)
 
-        if (  __face_it->isOnBoundary() )
-            DVLOG(4) << "[buildBoundaryDofMap] boundary global face id : " << __face_it->id()
-                     << " marker: " << __face_it->marker()<< "\n";
+        if (  face.isOnBoundary() )
+            DVLOG(4) << "[buildBoundaryDofMap] boundary global face id : " << face.id()
+                     << " marker: " << face.marker()<< "\n";
 
         else
-            DVLOG(4) << "[buildBoundaryDofMap] global face id : " << __face_it->id() << "\n";
+            DVLOG(4) << "[buildBoundaryDofMap] global face id : " << face.id() << "\n";
 
 #endif
         int ncdof = is_product ? nComponents : 1 ;
-        M_face_l2g[ __face_it->id()].resize( nDofF*ncdof );
+        M_face_l2g[ face.id()].resize( nDofF*ncdof );
         dfb.add( __face_it );
     }
 
@@ -2495,7 +2497,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
     __face_en = M.facesWithProcessId( M.worldComm().localRank() ).second;
     for ( ; __face_it != __face_en; ++__face_it )
         for ( int face_dof_id = 0; face_dof_id < int( ntldof ); ++face_dof_id )
-            FEELPP_ASSERT( boost::get<0>( M_face_l2g[__face_it->id()][face_dof_id] ) != invalid_size_type_value )( __face_it->id() )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
+            FEELPP_ASSERT( boost::get<0>( M_face_l2g[face.id()][face_dof_id] ) != invalid_size_type_value )( face.id() )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
 
 #endif
     if (Environment::isMasterRank() && FLAGS_v > 0)

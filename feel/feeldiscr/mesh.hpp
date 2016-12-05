@@ -407,8 +407,9 @@ public:
 
         auto rangeElements = this->elementsWithProcessId( currentRank );
         size_type ne = std::distance( std::get<0>( rangeElements ), std::get<1>( rangeElements ) );
-        size_type nf = std::distance( this->beginFaceWithProcessId(),
-                                      this->endFaceWithProcessId() );
+        auto rangeFaces = this->facesWithProcessId( currentRank );
+        size_type nf = std::distance( std::get<0>( rangeFaces ), std::get<1>( rangeFaces ) );
+
         size_type ned = std::distance( this->beginEdgeWithProcessId(),
                                        this->endEdgeWithProcessId() );
         auto rangePoints = this->pointsWithProcessId( currentRank );
@@ -500,8 +501,8 @@ public:
         rank_type currentRank = this->worldComm().localRank();
         auto rangeElements = this->elementsWithProcessId( currentRank );
         size_type ne = std::distance( std::get<0>( rangeElements ), std::get<1>( rangeElements ) );
-        size_type nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
-                                      this->endFaceWithProcessId( this->worldComm().rank() ) );
+        auto rangeFaces = this->facesWithProcessId( currentRank );
+        size_type nf = std::distance( std::get<0>( rangeFaces ), std::get<1>( rangeFaces ) );
         size_type ned = 0;
 
         auto rangePoints = this->pointsWithProcessId( currentRank );

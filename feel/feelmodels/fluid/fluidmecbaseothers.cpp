@@ -2216,7 +2216,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateForUse()
         auto __face_en = faceMarked.template get<2>();
         for( ; __face_it != __face_en; ++__face_it )
         {
-            auto const& face = *__face_it;
+            auto const& face = boost::unwrap_ref( *__face_it );
             for ( uint16_type l = 0; l < mesh_type::face_type::numVertices; ++l ) // only P1
                 //for ( uint16_type l = 0; l < this->functionSpaceVelocity()->dof()->nLocalDofOnFace(true); ++l )
             {
@@ -2285,7 +2285,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
         auto __face_en = faceMarked.template get<2>();
         for( ; __face_it != __face_en; ++__face_it )
         {
-            auto const& face = *__face_it;
+            auto const& face = boost::unwrap_ref( *__face_it );
             //for ( uint16_type l = 0; l < this->functionSpaceVelocity()->dof()->nLocalDofOnFace(true); ++l )
             for ( uint16_type l = 0; l < mesh_type::face_type::numVertices; ++l ) // only P1
             {

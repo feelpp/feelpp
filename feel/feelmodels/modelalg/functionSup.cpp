@@ -100,9 +100,9 @@ namespace Feel
             permutation_type __p( permutation_type::IDENTITY );
             __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
         }
-
-        uint16_type __face_id = __face_it->pos_first();
-        gmc_ptrtype __c( new gmc_type( __gm, __face_it->element(0), __geopc, __face_id ) );
+        auto const& initface = boost::unwrap_ref(*__face_it);
+        uint16_type __face_id = initface.pos_first();
+        gmc_ptrtype __c( new gmc_type( __gm, initface.element(0), __geopc, __face_id ) );
 
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
         t_expr_type LExpr( expr, mapgmc );
@@ -121,8 +121,9 @@ namespace Feel
             __face_en = lit->template get<2>();
             for ( ; __face_it != __face_en; ++__face_it )
             {
-                uint16_type __face_id = __face_it->pos_first();
-                __c->update( __face_it->element(0), __face_id );
+                auto const& curface = boost::unwrap_ref( *__face_it );
+                uint16_type __face_id = curface.pos_first();
+                __c->update( curface.element(0), __face_id );
                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                 LExpr.update( mapgmc );
 
@@ -131,7 +132,7 @@ namespace Feel
                     {
                         for ( uint16_type l = 0; l < nbFaceDof; ++l )
                         {
-                            size_type index = boost::get<0>(u.functionSpace()->dof()->faceLocalToGlobal( __face_it->id(), l, c1 ));
+                            size_type index = boost::get<0>(u.functionSpace()->dof()->faceLocalToGlobal( curface.id(), l, c1 ));
                             if ( dofdone[index] ) continue;
                             double __value=LExpr.evalq( c1, c2, l );
 #if 0

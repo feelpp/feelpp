@@ -728,6 +728,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
     for ( ; face_it != face_end; ++face_it )
     {
+        auto const& face = boost::unwrap_ref( *face_it );
         // elm-number elm-type number-of-tags < tag > ... node-number-list
         /*
         if(boption(_name="exporter.gmsh.merge") == true)
@@ -738,7 +739,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
         }
         else
         {
-            out<< indexEltStart + face_it->id()+1 <<" ";
+            out<< indexEltStart + face.id()+1 <<" ";
         }
         */
         out << ordering_face.type();
@@ -746,8 +747,8 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
         if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
         {
-            // out<<" 2 " << face_it->marker().value() << " " << face_it->marker2().value();
-            out<<" 3 " << face_it->marker().value() << " " << face_it->marker2().value() << " " << face_it->processId()+1;
+            // out<<" 2 " << face.marker().value() << " " << face.marker2().value();
+            out<<" 3 " << face.marker().value() << " " << face.marker2().value() << " " << face.processId()+1;
         }
 
         else if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.2" ) )
@@ -758,32 +759,32 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
                 nbTag += 1;
             }
             else
-                nbTag += face_it->numberOfPartitions();
+                nbTag += face.numberOfPartitions();
             out << " " << nbTag
-                << " " << face_it->marker().value()
-                << " " << face_it->marker2().value();
+                << " " << face.marker().value()
+                << " " << face.marker2().value();
 
 
             if ( boption(_name="partition.linear" ) )
             {
                 out << " " <<  1
-                    << " " << pids[face_it->element0().id()]+1;
+                    << " " << pids[face.element0().id()]+1;
             }
             else
             {
-                out << " " << face_it->numberOfPartitions()
-                    << " " << face_it->processId()+1;
-                for ( size_type i=0 ; i<face_it->numberOfNeighborPartitions(); ++i )
-                    out << " " << -( face_it->neighborPartitionIds()[i]+1 );
+                out << " " << face.numberOfPartitions()
+                    << " " << face.processId()+1;
+                for ( size_type i=0 ; i<face.numberOfNeighborPartitions(); ++i )
+                    out << " " << -( face.neighborPartitionIds()[i]+1 );
             }
         }
 
         // node-number-list
         for ( uint16_type p=0; p<face_type::numPoints; ++p )
         {
-            //DCHECK( mapPointsId.find(face_it->point( ordering_face.fromGmshId( p ) ).id()) != mapPointsId.end() ) << "invalid point id\n";
-            //out << " " << mapPointsId.find(face_it->point( ordering_face.fromGmshId( p ) ).id())->second;
-            out << " " << face_it->point( ordering_face.fromGmshId( p ) ).id()+1;
+            //DCHECK( mapPointsId.find(face.point( ordering_face.fromGmshId( p ) ).id()) != mapPointsId.end() ) << "invalid point id\n";
+            //out << " " << mapPointsId.find(face.point( ordering_face.fromGmshId( p ) ).id())->second;
+            out << " " << face.point( ordering_face.fromGmshId( p ) ).id()+1;
         }
 
         out<<"\n";
