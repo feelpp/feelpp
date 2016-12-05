@@ -70,6 +70,9 @@ template<typename MeshType>
 using elements_pid_t = elements_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
+using idelements_t = elements_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
 using ext_elements_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
                                     typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
                                     typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
@@ -116,24 +119,6 @@ using ext_entities_from_iterator_t = boost::tuple<filter_enum_t<IteratorType>,
                                                   boost::shared_ptr<std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> > >
                                                   >;
 
-template<typename MeshType>
-using idfaces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
-                                typename MeshTraits<MeshType>::face_const_iterator,
-                                typename MeshTraits<MeshType>::face_const_iterator>;
-
-template<typename MeshType>
-using boundaryfaces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
-                                      typename MeshTraits<MeshType>::location_face_const_iterator,
-                                      typename MeshTraits<MeshType>::location_face_const_iterator>;
-
-template<typename MeshType>
-using internalfaces_t = boundaryfaces_t<MeshType>;
-
-template<typename MeshType>
-using interprocessfaces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
-                                          typename MeshTraits<MeshType>::interprocess_face_const_iterator,
-                                          typename MeshTraits<MeshType>::interprocess_face_const_iterator>;
-
 
 template<typename MeshType>
 using allfaces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
@@ -145,6 +130,19 @@ using faces_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_FACES>,
                                                   typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
                                                   typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
                                                   typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype>;
+
+template<typename MeshType>
+using idfaces_t =  faces_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using faces_pid_t = faces_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using boundaryfaces_t = faces_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using internalfaces_t = faces_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using interprocessfaces_t =  faces_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
 using markedfaces_t = faces_reference_wrapper_t<MeshType>;
@@ -485,7 +483,7 @@ marked3elements( MeshType const& mesh, std::initializer_list<boost::any> const& 
  * \return a pair of iterators to iterate over elements with id \p flag
  */
 template<typename MeshType>
-allelements_t<MeshType>
+idelements_t<MeshType>
 idedelements( MeshType const& mesh, flag_type flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
@@ -504,7 +502,7 @@ idedelements( MeshType const& mesh, flag_type flag )
  * @return a pair of face iterators (begin,end)
  */
 template<typename MeshType>
-faces_t<MeshType>
+faces_pid_t<MeshType>
 faces( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
@@ -1044,6 +1042,40 @@ nelements( boost::tuple<MT,Iterator,Iterator,Container> const& its, bool global 
 
 }
 
+/**
+ * \ingroup MeshIterators
+ * \return the number of elements given element iterators constructed
+ * using custom range
+ * \param a list of mesh iterators
+ * \param global all reduce number of elements if set to true
+ *
+ * The following code prints in the logfile the number of elements in
+ * the mesh that are marked with marker1 equal to 1:
+ *
+ * \code
+ * LOG(INFO) << "number of elements = " << nelements( markedelements(mesh,{1,2,3}) ) << "\n";
+ * \endcode
+ *
+ */
+template<typename MT, typename Iterator,typename Container>
+size_type
+nelements( std::list<boost::tuple<MT,Iterator,Iterator,Container> > const& its, bool global = false )
+{
+    size_type d = 0;
+    std::for_each( its.begin(), its.end(),
+                   [&d]( boost::tuple<MT,Iterator,Iterator,Container> const& t )
+                   {
+                       d+=std::distance( boost::get<1>( t ), boost::get<2>( t ) );
+                   } );
+    size_type gd = d;
+    if ( global )
+        mpi::all_reduce(Environment::worldComm().globalComm(),
+                        d,
+                        gd,
+                        std::plus<size_type>());
+    return gd;
+}
+
 
 
 template<typename ElementType>
@@ -1070,19 +1102,21 @@ elements( MeshType const& mesh, EntityProcessType entity, mpl::bool_<false> )
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
         for ( auto const& elt : elements(mesh) )
         {
-            myelts->push_back(boost::cref(elt));
+            myelts->push_back( boost::cref( boost::unwrap_ref( elt ) ) );
         }
 
     if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
     {
         std::set<size_type> eltGhostDone;
 
-        auto face_it = mesh.interProcessFaces().first;
-        auto const face_en = mesh.interProcessFaces().second;
+        auto rangeInterProcessFaces = mesh.interProcessFaces();
+        auto face_it = std::get<0>( rangeInterProcessFaces );
+        auto const face_en = std::get<1>( rangeInterProcessFaces );
         for ( ; face_it!=face_en ; ++face_it )
         {
-            auto const& elt0 = face_it->element0();
-            auto const& elt1 = face_it->element1();
+            auto const& faceip = boost::unwrap_ref( *face_it );
+            auto const& elt0 = faceip.element0();
+            auto const& elt1 = faceip.element1();
             const bool elt0isGhost = elt0.isGhostCell();
             auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
 
@@ -1127,19 +1161,21 @@ boundaryelements( MeshType const& mesh, EntityProcessType entity )
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
         for ( auto const& elt : boundaryelements(mesh) )
         {
-            myelts->push_back(boost::cref(elt));
+            myelts->push_back( boost::cref( boost::unwrap_ref( elt ) ) );
         }
 
     if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
     {
         std::set<size_type> eltGhostDone;
 
-        auto face_it = mesh->interProcessFaces().first;
-        auto const face_en = mesh->interProcessFaces().second;
+        auto rangeInterProcessFaces = mesh->interProcessFaces();
+        auto face_it = std::get<0>( rangeInterProcessFaces );
+        auto const face_en = std::get<1>( rangeInterProcessFaces );
         for ( ; face_it!=face_en ; ++face_it )
         {
-            auto const& elt0 = face_it->element0();
-            auto const& elt1 = face_it->element1();
+            auto const& faceip = boost::unwrap_ref( *face_it );
+            auto const& elt0 = faceip.element0();
+            auto const& elt1 = faceip.element1();
             const bool elt0isGhost = elt0.isGhostCell();
             auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
 
@@ -1184,12 +1220,14 @@ elementsWithMarkedFaces( MeshType const& mesh, boost::any const& flag, EntityPro
     {
         std::set<size_type> eltGhostDone;
 
-        auto face_it = mesh->interProcessFaces().first;
-        auto const face_en = mesh->interProcessFaces().second;
+        auto rangeInterProcessFaces = mesh->interProcessFaces();
+        auto face_it = std::get<0>( rangeInterProcessFaces );
+        auto const face_en = std::get<1>( rangeInterProcessFaces );
         for ( ; face_it!=face_en ; ++face_it )
         {
-            auto const& elt0 = face_it->element0();
-            auto const& elt1 = face_it->element1();
+            auto const& faceip = boost::unwrap_ref( *face_it );
+            auto const& elt0 = faceip.element0();
+            auto const& elt1 = faceip.element1();
             const bool elt0isGhost = elt0.isGhostCell();
             auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
 
@@ -1232,12 +1270,14 @@ markedelements( MeshType const& mesh, boost::any const& flag, EntityProcessType 
     {
         std::set<size_type> eltGhostDone;
 
-        auto face_it = mesh->interProcessFaces().first;
-        auto const face_en = mesh->interProcessFaces().second;
+        auto rangeInterProcessFaces = mesh->interProcessFaces();
+        auto face_it = std::get<0>( rangeInterProcessFaces );
+        auto const face_en = std::get<1>( rangeInterProcessFaces );
         for ( ; face_it!=face_en ; ++face_it )
         {
-            auto const& elt0 = face_it->element0();
-            auto const& elt1 = face_it->element1();
+            auto const& faceip = boost::unwrap_ref( *face_it );
+            auto const& elt0 = faceip.element0();
+            auto const& elt1 = faceip.element1();
             const bool elt0isGhost = elt0.isGhostCell();
             auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
 
@@ -1270,19 +1310,21 @@ marked2elements( MeshType const& mesh, boost::any const& flag, EntityProcessType
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
         for ( auto const& elt : marked2elements(mesh,flag) )
         {
-            myelts->push_back(boost::cref(elt));
+            myelts->push_back( boost::cref( boost::unwrap_ref( elt ) ) );
         }
 
     if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
     {
         std::set<size_type> eltGhostDone;
 
-        auto face_it = mesh->interProcessFaces().first;
-        auto const face_en = mesh->interProcessFaces().second;
+        auto rangeInterProcessFaces = mesh->interProcessFaces();
+        auto face_it = std::get<0>( rangeInterProcessFaces );
+        auto const face_en = std::get<1>( rangeInterProcessFaces );
         for ( ; face_it!=face_en ; ++face_it )
         {
-            auto const& elt0 = face_it->element0();
-            auto const& elt1 = face_it->element1();
+            auto const& faceip = boost::unwrap_ref( *face_it );
+            auto const& elt0 = faceip.element0();
+            auto const& elt1 = faceip.element1();
             const bool elt0isGhost = elt0.isGhostCell();
             auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
 
@@ -1314,18 +1356,20 @@ boundaryfaces( MeshType const& mesh, EntityProcessType entity )
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
         for ( auto const& theface : boundaryfaces(mesh) )
         {
-            myelts->push_back(boost::cref(theface));
+            myelts->push_back( boost::cref( boost::unwrap_ref( theface ) ) );
         }
 
     if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
     {
         //std::set<size_type> faceGhostDone;
-        auto face_it = mesh->interProcessFaces().first;
-        auto const face_en = mesh->interProcessFaces().second;
+        auto rangeInterProcessFaces = mesh->interProcessFaces();
+        auto face_it = std::get<0>( rangeInterProcessFaces );
+        auto const face_en = std::get<1>( rangeInterProcessFaces );
         for ( ; face_it!=face_en ; ++face_it )
         {
-            auto const& elt0 = face_it->element0();
-            auto const& elt1 = face_it->element1();
+            auto const& faceip = boost::unwrap_ref( *face_it );
+            auto const& elt0 = faceip.element0();
+            auto const& elt1 = faceip.element1();
             const bool elt0isGhost = elt0.isGhostCell();
             auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
 
@@ -1361,12 +1405,14 @@ marked2faces( MeshType const& mesh, boost::any flag, EntityProcessType entity )
     if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
     {
         //std::set<size_type> faceGhostDone;
-        auto face_it = mesh->interProcessFaces().first;
-        auto const face_en = mesh->interProcessFaces().second;
+        auto rangeInterProcessFaces = mesh->interProcessFaces();
+        auto face_it = std::get<0>( rangeInterProcessFaces );
+        auto const face_en = std::get<1>( rangeInterProcessFaces );
         for ( ; face_it!=face_en ; ++face_it )
         {
-            auto const& elt0 = face_it->element0();
-            auto const& elt1 = face_it->element1();
+            auto const& faceip = boost::unwrap_ref( *face_it );
+            auto const& elt0 = faceip.element0();
+            auto const& elt1 = faceip.element1();
             const bool elt0isGhost = elt0.isGhostCell();
             auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
 
