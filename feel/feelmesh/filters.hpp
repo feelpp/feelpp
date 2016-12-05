@@ -616,9 +616,7 @@ markedfaces( MeshType const& mesh,
 
 
 template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-             typename MeshTraits<MeshType>::marker2_face_const_iterator,
-             typename MeshTraits<MeshType>::marker2_face_const_iterator>
+marked2faces_t<MeshType>
 marked2faces( MeshType const& mesh,
               flag_type __marker )
 {
@@ -627,16 +625,12 @@ marked2faces( MeshType const& mesh,
 }
 
 template<typename MeshType>
-std::list<boost::tuple<mpl::size_t<MESH_FACES>,
-                       typename MeshTraits<MeshType>::marker2_face_const_iterator,
-                       typename MeshTraits<MeshType>::marker2_face_const_iterator> >
+std::list<marked2faces_t<MeshType>>
 marked2faces( MeshType const& mesh,
               std::initializer_list<boost::any> __markers )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    std::list<boost::tuple<mpl::size_t<MESH_FACES>,
-                           typename MeshTraits<MeshType>::marker2_face_const_iterator,
-                           typename MeshTraits<MeshType>::marker2_face_const_iterator> > list_faces;
+    std::list<marked2faces_t<MeshType>> list_faces;
     for ( auto const& it : __markers )
     {
         flag_type theflag = mesh->markerId( it );
@@ -1502,7 +1496,7 @@ template<size_t S, class ITERATOR, class CONTAINER>
 WorldComm const&
 worldComm( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> const& range )
 {
-    return range.template get<1>()->mesh()->worldComm();
+    return boost::unwrap_ref( *range.template get<1>() ).mesh()->worldComm();
 }
 
 
