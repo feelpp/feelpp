@@ -576,7 +576,7 @@ public:
             for ( ; it!=en;++it )
             {
                 auto const& elt = *it;
-                if ( elt.processId() != part )
+                if ( elt.processId() == part )
                     return it;
             }
             return en;
