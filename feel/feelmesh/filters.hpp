@@ -1208,12 +1208,13 @@ elementsWithMarkedFaces( MeshType const& mesh, boost::any const& flag, EntityPro
 
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
     {
-        for ( auto const& elt : markedfaces(mesh,flag) )
+        for ( auto const& faceWrap : markedfaces(mesh,flag) )
         {
-            if ( elt.isConnectedTo0() )
-                myelts->push_back(boost::cref(elt.element0()));
-            if ( elt.isConnectedTo1() )
-                myelts->push_back(boost::cref(elt.element1()));
+            auto const& face = boost::unwrap_ref( faceWrap );
+            if ( face.isConnectedTo0() )
+                myelts->push_back( boost::cref( face.element0() ) );
+            if ( face.isConnectedTo1() )
+                myelts->push_back( boost::cref( face.element1() ) );
         }
     }
     if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
@@ -1399,7 +1400,7 @@ marked2faces( MeshType const& mesh, boost::any flag, EntityProcessType entity )
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
         for ( auto const& theface : marked2faces(mesh, theflag) )
         {
-            myelts->push_back(boost::cref(theface));
+            myelts->push_back( boost::cref( boost::unwrap_ref( theface ) ) );
         }
 
     if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )

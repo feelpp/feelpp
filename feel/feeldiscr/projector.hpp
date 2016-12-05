@@ -168,7 +168,7 @@ public :
         typedef typename vf::detail::clean_type<Args,tag::expr>::type _expr_type;
         typedef typename vf::detail::clean2_type<Args,tag::range,IntEltsDefault>::type _range_type;
         typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
-        static const uint16_type geoOrder = _element_iterator::value_type::nOrder;
+        static const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
 
         typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
         typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
@@ -224,7 +224,7 @@ public :
         typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad1)>::type >::type thequad1_type;
         typedef typename boost::remove_reference<typename boost::remove_const< decltype(range)>::type >::type therange_type;
         typedef typename boost::tuples::template element<1, therange_type>::type element_iterator;
-        static const uint16_type geoOrder = element_iterator::value_type::nOrder;
+        static const uint16_type geoOrder = boost::unwrap_reference<typename element_iterator::value_type>::type::nOrder;
         static const uint16_type nOrderImageSpace = dual_image_space_type::basis_type::nOrder;
         static const uint16_type quadOrderId = nOrderImageSpace*geoOrder;
         static const uint16_type quadOrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1)*geoOrder:0;
