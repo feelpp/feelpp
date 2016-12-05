@@ -2696,13 +2696,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     // get [first,last) point iterators over the range
     auto pt_it = r.first;
     auto pt_en = r.second;
-    DVLOG(3) << "point " << pt_it->id() << " with marker " << pt_it->marker() << " nb: " << std::distance(pt_it,pt_en);
-    google::FlushLogFiles(google::GLOG_INFO);
     if ( pt_it == pt_en )
         return;
 
     auto gm = mesh->gm();
-    auto const& firstPt = *pt_it;
+    auto const& firstPt = boost::unwrap_ref( *pt_it );
+    DVLOG(3) << "point " << firstPt.id() << " with marker " << firstPt.marker() << " nb: " << std::distance(pt_it,pt_en);
+    google::FlushLogFiles(google::GLOG_INFO);
+
     size_type eid = firstPt.elements().begin()->first;
     size_type ptid_in_element = firstPt.elements().begin()->second;
     auto const& elt = mesh->element( eid );
@@ -2717,8 +2718,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     auto IhLoc = __fe->vertexLocalInterpolant();
     for ( ; pt_it != pt_en; ++pt_it )
     {
-        DVLOG(3) << "point " << pt_it->id() << " with marker " << pt_it->marker();
         auto const& curPt = boost::unwrap_ref(*pt_it);
+        DVLOG(3) << "point " << curPt.id() << " with marker " << curPt.marker();
         auto pt_elt_info = curPt.elements().begin();
         ptid_in_element = pt_elt_info->second;
         auto const& elt = mesh->element( pt_elt_info->first );

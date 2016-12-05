@@ -357,14 +357,16 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
     size_type nDofNotPresent=0;
 
     // iteration on all interprocessfaces in order to send requests to the near proc
-    auto face_it = mesh.interProcessFaces().first;
-    auto const face_en = mesh.interProcessFaces().second;
+    auto rangeInterProcessFaces = mesh.interProcessFaces();
+    auto face_it = std::get<0>( rangeInterProcessFaces );
+    auto const face_en = std::get<1>( rangeInterProcessFaces );
     DVLOG(2) << "[buildGhostInterProcessDofMap] nb interprocess faces: " << std::distance( face_it, face_en ) << "\n";
     for ( ; face_it != face_en ; ++face_it )
     {
-        DVLOG(2) << "[buildGhostInterProcessDofMap] face id: " << face_it->id() << "\n";
-        auto const& elt0 = face_it->element0();
-        auto const& elt1 = face_it->element1();
+        auto const& faceip = boost::unwrap_ref( *face_it );
+        DVLOG(2) << "[buildGhostInterProcessDofMap] face id: " << faceip.id() << "\n";
+        auto const& elt0 = faceip.element0();
+        auto const& elt1 = faceip.element1();
         const bool elt0isGhost = elt0.isGhostCell();
         auto const& eltOnProc = (elt0isGhost)?elt1:elt0;
         auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
@@ -374,7 +376,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
         //------------------------------------------------------------------------------//
 
         const rank_type IdProcessOfGhostIP = eltOffProc.processId();
-        const size_type idFaceInPartitionIP = face_it->idInOthersPartitions( IdProcessOfGhostIP );
+        const size_type idFaceInPartitionIP = faceip.idInOthersPartitions( IdProcessOfGhostIP );
         rank_type IdProcessOfGhost = IdProcessOfGhostIP;
         size_type idFaceInPartition = idFaceInPartitionIP;
 
@@ -383,7 +385,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
         for ( uint16_type locDof = 0; locDof < nbFaceDof; ++locDof )
         {
             // check only component 0
-            const size_type theglobdoftest = faceLocalToGlobal( face_it->id(),locDof, 0 ).template get<0>();
+            const size_type theglobdoftest = faceLocalToGlobal( faceip.id(),locDof, 0 ).template get<0>();
             CHECK( theglobdoftest < this->M_n_localWithGhost_df[myRank] ) << "invalid globdof " << theglobdoftest << "\n";
             if ( dofdone[theglobdoftest] ) continue;
 
@@ -396,7 +398,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                                                        mpl::int_<fe_type::nDofPerVertex> >::type::value;
                 int pointGetLocDof = locDof / nDofPerVertexTemp;
 
-                boost::tie( IdProcessOfGhost, idFaceInPartition ) = Feel::detail::updateDofOnVertices<mesh_type>(mesh,*face_it, myRank, IdProcessOfGhost, idFaceInPartition, eltOnProc, pointGetLocDof,
+                boost::tie( IdProcessOfGhost, idFaceInPartition ) = Feel::detail::updateDofOnVertices<mesh_type>(mesh, faceip, myRank, IdProcessOfGhost, idFaceInPartition, eltOnProc, pointGetLocDof,
                                                                                                            procRecvData );
             }
             else if ( nDim == 3 && locDof < (face_type::numVertices*fe_type::nDofPerVertex + face_type::numEdges*fe_type::nDofPerEdge) )
@@ -407,7 +409,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                                                      mpl::int_<fe_type::nDofPerEdge> >::type::value;
                 int edgeGetLocDof = locDofInEgde / nDofPerEdgeTemp;
 
-                boost::tie( IdProcessOfGhost, idFaceInPartition ) = Feel::detail::updateDofOnEdges<mesh_type>(mesh,*face_it, myRank, IdProcessOfGhost, idFaceInPartition, eltOnProc, edgeGetLocDof,
+                boost::tie( IdProcessOfGhost, idFaceInPartition ) = Feel::detail::updateDofOnEdges<mesh_type>(mesh,faceip, myRank, IdProcessOfGhost, idFaceInPartition, eltOnProc, edgeGetLocDof,
                                                                                                         procRecvData);
             }
             else
@@ -422,7 +424,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                 for ( uint16_type c = 0; c < ncdof; ++c )
                 {
                     // add dof in subcontainer
-                    const size_type theglobdof = faceLocalToGlobal( face_it->id(),locDof,c ).template get<0>();
+                    const size_type theglobdof = faceLocalToGlobal( faceip.id(),locDof,c ).template get<0>();
                     dofIsGhost[theglobdof] = true;
                     compglobdofs[c]=theglobdof;
                     //listToSend[IdProcessOfGhost][idFaceInPartition].insert(boost::make_tuple(theglobdof,c));
@@ -1687,12 +1689,14 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
     boost::shared_ptr<cont_range_type> myGhostEltsExtended( new cont_range_type );
 
     std::set<size_type> dofdoneActive, dofdoneGhost;
-    auto face_it = mesh.interProcessFaces().first;
-    auto const face_en = mesh.interProcessFaces().second;
+    auto rangeInterProcessFaces = mesh.interProcessFaces();
+    auto face_it = std::get<0>( rangeInterProcessFaces );
+    auto const face_en = std::get<1>( rangeInterProcessFaces );
     for ( ; face_it!=face_en ; ++face_it )
     {
-        auto const& elt0 = face_it->element0();
-        auto const& elt1 = face_it->element1();
+        auto const& faceip = boost::unwrap_ref( *face_it );
+        auto const& elt0 = faceip.element0();
+        auto const& elt1 = faceip.element1();
         const bool elt0isGhost = elt0.isGhostCell();
         auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
         auto const& eltOnProc = (elt0isGhost)?elt1:elt0;
@@ -2067,12 +2071,14 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPointsExtend
     boost::shared_ptr<cont_range_type> myGhostEltsExtended( new cont_range_type );
 
     std::set<size_type> dofdoneActive, dofdoneGhost;
-    auto face_it = mesh.interProcessFaces().first;
-    auto const face_en = mesh.interProcessFaces().second;
+    auto rangeInterProcessFaces = mesh.interProcessFaces();
+    auto face_it = std::get<0>( rangeInterProcessFaces );
+    auto const face_en = std::get<1>( rangeInterProcessFaces );
     for ( ; face_it!=face_en ; ++face_it )
     {
-        auto const& elt0 = face_it->element0();
-        auto const& elt1 = face_it->element1();
+        auto const& faceip = boost::unwrap_ref( *face_it );
+        auto const& elt0 = faceip.element0();
+        auto const& elt1 = faceip.element1();
         const bool elt0isGhost = elt0.isGhostCell();
         auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
         auto const& eltOnProc = (elt0isGhost)?elt1:elt0;

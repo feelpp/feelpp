@@ -796,7 +796,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             pt_en = lit.template get<2>();
             for( ; pt_it != pt_en; ++pt_it )
             {
-                if ( pt_it->elements().size() )
+                if ( boost::unwrap_ref( *pt_it).elements().size() )
                 {
                     findAPtToInit=true;
                     break;
@@ -824,7 +824,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         {
             pt_it = lit.template get<1>();
             pt_en = lit.template get<2>();
-            DVLOG(2) << "point " << pt_it->id() << " with marker " << pt_it->marker() << " nb: " << std::distance(pt_it,pt_en);
+            DVLOG(2) << "point " << boost::unwrap_ref( *pt_it ).id() << " with marker " << boost::unwrap_ref( *pt_it ).marker() << " nb: " << std::distance(pt_it,pt_en);
             
             if ( pt_it == pt_en )
                 continue;

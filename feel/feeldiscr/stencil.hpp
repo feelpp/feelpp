@@ -617,9 +617,10 @@ public :
         typedef typename fusion::result_of::find<rangeiterator_extended_type,fusion::pair<mpl::int_<I>,mpl::int_<J> > >::type resultfindrange_it_type;
         typedef typename boost::is_same<resultfindrange_it_type, typename fusion::result_of::end<rangeiterator_extended_type>::type> hasnotfindrange_type;
 
-        typedef typename boost::tuple<mpl::size_t<MESH_FACES>,
-                                      typename MeshTraits<typename test_space_type::mesh_type>::location_face_const_iterator,
-                                      typename MeshTraits<typename test_space_type::mesh_type>::location_face_const_iterator> defaultrange_type;
+        // typedef typename boost::tuple<mpl::size_t<MESH_FACES>,
+        //                               typename MeshTraits<typename test_space_type::mesh_type>::location_face_const_iterator,
+        //                               typename MeshTraits<typename test_space_type::mesh_type>::location_face_const_iterator> defaultrange_type;
+        typedef faces_reference_wrapper_t<typename MeshTraits<typename test_space_type::mesh_type>::mesh_type> defaultrange_type;
 
         // fix compilation from boost 1.55
         // if not find in fusion map else there is a problem now with result_of::value_of
@@ -1616,9 +1617,10 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
             auto faceExtended_en = rangeExtended.template get<2>();
             for ( ; faceExtended_it != faceExtended_en ;++faceExtended_it )
             {
-                if ( !faceExtended_it->isConnectedTo0() || !faceExtended_it->isConnectedTo1() ) continue;
+                auto const& faceExtended = boost::unwrap_ref( *faceExtended_it );
+                if ( !faceExtended.isConnectedTo0() || !faceExtended.isConnectedTo1() ) continue;
 
-                if ( faceExtended_it->isInterProcessDomain() )
+                if ( faceExtended.isInterProcessDomain() )
                     CHECK( ( _M_X1->dof()->buildDofTableMPIExtended() &&
                              _M_X2->dof()->buildDofTableMPIExtended() )  )
                         << "Both spaces must have the extended dof table and none of them should be P0 Continuous to build the matrix stencil. Use block pattern construction instead!";
@@ -1628,8 +1630,8 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                         << "DofTableMPIExtended is not built!";
 #endif
 
-                auto const& elt0 = faceExtended_it->element0();
-                auto const& elt1 = faceExtended_it->element1();
+                auto const& elt0 = faceExtended.element0();
+                auto const& elt1 = faceExtended.element1();
 
                 const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize();
                 const uint16_type  n2_dof_on_element = _M_X2->dof()->getIndicesSize();

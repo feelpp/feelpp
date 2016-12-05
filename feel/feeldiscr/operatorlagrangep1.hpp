@@ -765,14 +765,16 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
         std::vector<int> nbMsgToSend( nProc , 0 );
         std::vector< std::map<int,size_type> > mapMsg( nProc );
 
-        auto iv = this->domainSpace()->mesh()->beginGhostElement();
-        auto const en = this->domainSpace()->mesh()->endGhostElement();
+        auto rangeGhostElements = this->domainSpace()->mesh()->ghostElements();
+        auto iv = std::get<0>( rangeGhostElements );
+        auto const en = std::get<1>( rangeGhostElements );
         for ( ; iv != en; ++iv )
         {
-            auto const procGhost = iv->processId();
-            auto const idEltOnGhost = iv->idInOthersPartitions(procGhost);
+            auto const& ghostelt = boost::unwrap_ref( *iv );
+            auto const procGhost = ghostelt.processId();
+            auto const idEltOnGhost = ghostelt.idInOthersPartitions(procGhost);
             M_mesh->worldComm().localComm().send(procGhost, nbMsgToSend[procGhost], idEltOnGhost);
-            mapMsg[procGhost].insert( std::make_pair( nbMsgToSend[procGhost],iv->id() ) );
+            mapMsg[procGhost].insert( std::make_pair( nbMsgToSend[procGhost],ghostelt.id() ) );
             ++nbMsgToSend[procGhost];
         }
 
@@ -976,8 +978,8 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
 #endif
     } // if ( parallelBuild )
 
-    DVLOG(2) << "dist ghost elt base " << std::distance( this->domainSpace()->mesh()->beginGhostElement(),this->domainSpace()->mesh()->endGhostElement() )
-             << " dist ghost elt new " << std::distance( M_mesh->beginGhostElement(),M_mesh->endGhostElement() ) << "\n";
+    // DVLOG(2) << "dist ghost elt base " << std::distance( this->domainSpace()->mesh()->beginGhostElement(),this->domainSpace()->mesh()->endGhostElement() )
+    //          << " dist ghost elt new " << std::distance( M_mesh->beginGhostElement(),M_mesh->endGhostElement() ) << "\n";
 
     DVLOG(2) << "[P1 Lagrange] Number of points in mesh: " << M_mesh->numPoints() << "\n";
 

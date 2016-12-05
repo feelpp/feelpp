@@ -232,9 +232,10 @@ public:
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
-    typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
-                         typename MeshTraits<mesh_type>::marker_face_const_iterator,
-                         typename MeshTraits<mesh_type>::marker_face_const_iterator> range_marked_face_type;
+    // typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
+    //                      typename MeshTraits<mesh_type>::marker_face_const_iterator,
+    //                      typename MeshTraits<mesh_type>::marker_face_const_iterator> range_marked_face_type;
+    typedef faces_reference_wrapper_t<mesh_type> range_marked_face_type;
     //___________________________________________________________________________________//
     // fluid inlet
     typedef typename basis_fluid_u_type::component_basis_type basis_fluidinlet_type;
