@@ -92,10 +92,10 @@ template<typename MeshType>
 using marked3elements_t = elements_reference_wrapper_t<MeshType>;
 
 
-template<typename MeshType>
-using faces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
-                              typename MeshTraits<MeshType>::pid_face_const_iterator,
-                              typename MeshTraits<MeshType>::pid_face_const_iterator>;
+// template<typename MeshType>
+// using faces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
+//                               typename MeshTraits<MeshType>::pid_face_const_iterator,
+//                               typename MeshTraits<MeshType>::pid_face_const_iterator>;
 
 template<typename MeshType>
 using ext_faces_t = boost::tuple<mpl::size_t<MESH_FACES>,
@@ -153,13 +153,17 @@ using marked3faces_t = faces_reference_wrapper_t<MeshType>;
 
 
 template<typename MeshType>
-using edges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,
-                              typename MeshTraits<MeshType>::edge_const_iterator,
-                              typename MeshTraits<MeshType>::edge_const_iterator>;
+using alledges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,
+                                 typename MeshTraits<MeshType>::edge_const_iterator,
+                                 typename MeshTraits<MeshType>::edge_const_iterator>;
 template<typename MeshType>
-using pid_edges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,
-                                  typename MeshTraits<MeshType>::pid_edge_const_iterator,
-                                  typename MeshTraits<MeshType>::pid_edge_const_iterator>;
+using edges_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_EDGES>,
+                                                  typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+                                                  typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+                                                  typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype>;
+
+template<typename MeshType>
+using pid_edges_t = edges_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
 using ext_edges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,
@@ -167,34 +171,31 @@ using ext_edges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,
                                   typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::edge_type const> >::const_iterator,
                                   boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::edge_type const> > >
                                   >;
+template<typename MeshType>
+using markededges_t = edges_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using boundaryedges_t = edges_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using internaledges_t = edges_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
-using markededges_t = boost::tuple<mpl::size_t<MESH_EDGES>,
-                                   typename MeshTraits<MeshType>::marker_edge_const_iterator,
-                                   typename MeshTraits<MeshType>::marker_edge_const_iterator>;
-
-template<typename MeshType>
-using boundaryedges_t = boost::tuple<mpl::size_t<MESH_EDGES>,
-                                     typename MeshTraits<MeshType>::location_edge_const_iterator,
-                                     typename MeshTraits<MeshType>::location_edge_const_iterator>;
-
-template<typename MeshType>
-using internaledges_t = boundaryedges_t<MeshType>;
-
-template<typename MeshType>
-using points_t =  boost::tuple<mpl::size_t<MESH_POINTS>,
+using allpoints_t =  boost::tuple<mpl::size_t<MESH_POINTS>,
                                typename MeshTraits<MeshType>::point_const_iterator,
                                typename MeshTraits<MeshType>::point_const_iterator>;
 
 template<typename MeshType>
-using markedpoints_t = boost::tuple<mpl::size_t<MESH_POINTS>,
+using points_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_POINTS>,
                                     typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
                                     typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
                                     typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype>;
 template<typename MeshType>
-using boundarypoints_t = markedpoints_t<MeshType>;
+using points_pid_t = points_reference_wrapper_t<MeshType>;
 template<typename MeshType>
-using internalpoints_t = boundarypoints_t<MeshType>;
+using markedpoints_t = points_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using boundarypoints_t = points_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using internalpoints_t = points_reference_wrapper_t<MeshType>;
 
 template<typename IteratorRangeT>
 using submeshrange_t = typename Feel::detail::submeshrangetype<IteratorRangeT>::type;
@@ -872,7 +873,7 @@ internaledges( MeshType const& mesh )
  * \warning this filter is not parallelized
  */
 template<typename MeshType>
-points_t<MeshType>
+points_pid_t<MeshType>
 points( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;

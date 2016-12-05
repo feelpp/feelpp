@@ -78,14 +78,13 @@ struct MeshTraits
     typedef typename mesh_type::face_reference_wrapper_const_iterator face_reference_wrapper_const_iterator;
 
     // edge iterators
-    typedef typename mesh_type::marker_edge_iterator marker_edge_iterator;
-    typedef typename mesh_type::marker_edge_const_iterator marker_edge_const_iterator;
+    typedef typename mesh_type::edge_iterator edge_iterator;
+    typedef typename mesh_type::edge_const_iterator edge_const_iterator;
 
-    typedef typename mesh_type::location_edge_iterator location_edge_iterator;
-    typedef typename mesh_type::location_edge_const_iterator location_edge_const_iterator;
-
-    typedef typename mesh_type::pid_edge_iterator pid_edge_iterator;
-    typedef typename mesh_type::pid_edge_const_iterator pid_edge_const_iterator;
+    typedef typename mesh_type::edges_reference_wrapper_type edges_reference_wrapper_type;
+    typedef typename mesh_type::edges_reference_wrapper_ptrtype edges_reference_wrapper_ptrtype;
+    typedef typename mesh_type::edge_reference_wrapper_iterator edge_reference_wrapper_iterator;
+    typedef typename mesh_type::edge_reference_wrapper_const_iterator edge_reference_wrapper_const_iterator;
 
     // point iterators
     typedef typename mesh_type::point_iterator point_iterator;
