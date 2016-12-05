@@ -119,9 +119,8 @@ Partitioner<MeshType>::singlePartition ( mesh_ptrtype mesh )
         mesh->faces().modify( mesh->faceIterator( boost::unwrap_ref( elt ).id()),
                               []( face_type & e) { e.setProcessId( 0 ); });
     for( auto const& elt : points(mesh) )
-        mesh->points().modify( mesh->pointIterator(elt.id()), 
+        mesh->points().modify( mesh->pointIterator( boost::unwrap_ref( elt ).id()),
                                []( point_type & e) { e.setProcessId( 0 ); });
-
 }
 
 

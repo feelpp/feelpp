@@ -409,9 +409,8 @@ public:
         size_type ne = std::distance( std::get<0>( rangeElements ), std::get<1>( rangeElements ) );
         auto rangeFaces = this->facesWithProcessId( currentRank );
         size_type nf = std::distance( std::get<0>( rangeFaces ), std::get<1>( rangeFaces ) );
-
-        size_type ned = std::distance( this->beginEdgeWithProcessId(),
-                                       this->endEdgeWithProcessId() );
+        auto rangeEdges = this->edgesWithProcessId( currentRank );
+        size_type ned = std::distance( std::get<0>( rangeEdges ), std::get<1>( rangeEdges ) );
         auto rangePoints = this->pointsWithProcessId( currentRank );
         size_type np = std::distance( std::get<0>( rangePoints ), std::get<1>(rangePoints) );
         size_type nv = this->numVertices();

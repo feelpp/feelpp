@@ -76,17 +76,19 @@ straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mp
 
     // search if there are some edges on boundary which are the interface of two ghost boundary faces
     // in this case this edges must not be straigthen
-    auto itedge = mesh->beginEdgeOnBoundary();
-    auto const enedge = mesh->endEdgeOnBoundary();
+    auto rangeBoundaryEdges = mesh->edgesOnBoundary();
+    auto itedge = std::get<0>( rangeBoundaryEdges );
+    auto const enedge = std::get<1>( rangeBoundaryEdges );
     for ( ; itedge!=enedge ; ++itedge )
     {
-        if ( itedge->numberOfProcGhost()==0 ) continue;
+        auto const& edge = boost::unwrap_ref( *itedge );
+        if ( edge.numberOfProcGhost()==0 ) continue;
 
-        auto const theedgeid = itedge->id();
+        auto const theedgeid = edge.id();
         std::set<size_type> ghostFaceIdFoundOnBoundary;
 
-        auto itprocghost=itedge->elementsGhost().begin();
-        auto const enprocghost=itedge->elementsGhost().end();
+        auto itprocghost=edge.elementsGhost().begin();
+        auto const enprocghost=edge.elementsGhost().end();
         for ( ; itprocghost!=enprocghost ; ++itprocghost)
         {
             auto iteltghost = itprocghost->second.begin();
