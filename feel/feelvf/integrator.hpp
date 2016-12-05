@@ -5221,26 +5221,28 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
         if ( it == en )
             continue;
 
-        auto gm = it->gm();
-        auto gm1 = it->gm1();
+        auto const& eltInit = boost::unwrap_ref( *it );
+        auto gm = eltInit.gm();
+        auto gm1 = eltInit.gm1();
 
         auto geopc = gm->preCompute( this->im().points() );
         auto geopc1 = gm1->preCompute( this->im().points() );
-        auto const& worldComm = const_cast<MeshBase*>( it->mesh() )->worldComm();
-        auto ctx = gm->template context<context|vm::JACOBIAN>( *it, geopc );
-        auto ctx1 = gm1->template context<context|vm::JACOBIAN>( *it, geopc );
+        auto const& worldComm = const_cast<MeshBase*>( eltInit.mesh() )->worldComm();
+        auto ctx = gm->template context<context|vm::JACOBIAN>( eltInit, geopc );
+        auto ctx1 = gm1->template context<context|vm::JACOBIAN>( eltInit, geopc );
         double x=100,y=101,z=102;
         auto expr_= expression()(vec(cst_ref(x),cst_ref(y), cst_ref(z)));
         auto expr_evaluator = expr_.evaluator( mapgmc(ctx) );
 
         for ( ; it != en; ++it )
         {
+            auto const& eltCur = boost::unwrap_ref( *it );
             switch ( M_gt )
             {
             default:
             case  GeomapStrategyType::GEOMAP_HO :
             {
-                ctx->update( *it );
+                ctx->update( eltCur );
                 expr_evaluator.update( mapgmc(ctx) );
                 M_im.update( *ctx );
 
@@ -5263,7 +5265,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
 
             case GeomapStrategyType::GEOMAP_O1:
             {
-                ctx1->update( *it );
+                ctx1->update( eltCur );
                 expr_evaluator.update( mapgmc(ctx) );
                 M_im.update( *ctx1 );
 
@@ -5288,9 +5290,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
             case GeomapStrategyType::GEOMAP_OPT:
             {
                 //DDLOG(INFO) << "geomap opt" << "\n";
-                if ( it->isOnBoundary() )
+                if ( eltCur.isOnBoundary() )
                 {
-                    ctx->update( *it );
+                    ctx->update( eltCur );
                     expr_evaluator.update( mapgmc(ctx) );
                     M_im.update( *ctx );
 
@@ -5313,7 +5315,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
 
                 else
                 {
-                    ctx1->update( *it );
+                    ctx1->update( eltCur );
                     expr_evaluator.update( mapgmc(ctx) );
                     M_im.update( *ctx1 );
 

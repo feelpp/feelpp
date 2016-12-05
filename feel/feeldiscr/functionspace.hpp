@@ -2526,9 +2526,10 @@ public:
 
             typename p0_space_type::element_type p0Element( P0h );
 
-            for ( auto elt_it = P0h->mesh()->beginElementWithProcessId(); elt_it != P0h->mesh()->endElementWithProcessId(); ++elt_it )
+            for ( auto const& rangeElt : elements( P0h->mesh() ) )
             {
-                size_type eid = elt_it->id();
+                auto const& meshElt = boost::unwrap_ref( rangeElt );
+                size_type eid = meshElt.id();
 
                 size_type dofp0 = boost::get<0>( P0h->dof()->localToGlobal( eid, 0, 0 ) );
                 std::vector<value_type> values ( functionspace_type::fe_type::nLocalDof );

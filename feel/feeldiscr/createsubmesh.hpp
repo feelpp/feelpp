@@ -332,7 +332,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
         auto const en = itList.template get<2>();
         for ( ; it != en; ++ it )
         {
-            element_type const& oldElem = *it;
+            element_type const& oldElem = boost::unwrap_ref( *it );
 #if !defined(NDEBUG)
             VLOG(2) << "create sub mesh element from "  << oldElem.id() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 #endif
@@ -520,7 +520,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
             auto const en = itList.template get<2>();
             for ( ; it != en; ++ it )
             {
-                face_type const& theface = *it;
+                face_type const& theface = boost::unwrap_ref( *it );
 
                 if ( theface.isConnectedTo1() )
                 {
@@ -558,7 +558,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
         for ( ; it != en; ++ it )
         {
             // create a new element
-            face_type const& oldElem = *it;
+            face_type const& oldElem = boost::unwrap_ref( *it );
             DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh]   + face : " << oldElem.id() << "\n";
 
             // check face to extract
