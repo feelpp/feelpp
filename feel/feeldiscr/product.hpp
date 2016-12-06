@@ -30,6 +30,7 @@
 #define FEELPP_FEELDISCR_PRODUCT_HPP 1
 
 #include <feel/feelalg/vectorblock.hpp>
+#include <boost/hana/ext/std/vector.hpp>
 
 #include <boost/fusion/view/joint_view.hpp>
 
@@ -38,18 +39,22 @@ namespace Feel {
 
 constexpr auto is_void = hana::integral(hana::metafunction<std::is_void>);
 
+struct product_space_tag {};
+
 template<typename T, bool same_mesh = false>
 class ProductSpace : public std::vector<boost::shared_ptr<decay_type<T>>>, ProductSpaceBase
 {
 public:
+    using feel_tag = product_space_tag;
+    
     using super =  std::vector<boost::shared_ptr<decay_type<T>>>;
     //using value_type = typename decay_type<decltype(super[0_c])>::value_type;
-    using value_type = double;
     using functionspace_type = ProductSpace<T,same_mesh>;
     using underlying_functionspace_type = decay_type<T>;
     using underlying_functionspace_ptrtype = boost::shared_ptr<underlying_functionspace_type>;
     using mesh_type = typename underlying_functionspace_type::mesh_type;
     using mesh_ptrtype = typename underlying_functionspace_type::mesh_ptrtype;
+    using value_type = typename underlying_functionspace_type::value_type;
     using worldcomm_type = WorldComm;
     
     /**
@@ -133,8 +138,12 @@ public:
     {
     public:
         using super = BlocksBaseVector<double>;
+        using value_type = typename underlying_functionspace_type::value_type;
         using underlying_element_type = typename underlying_functionspace_type::element_type;
         using underlying_element_ptrtype = typename underlying_functionspace_type::element_ptrtype;
+        using local_interpolant_type = typename underlying_element_type::local_interpolant_type;
+        using local_interpolants_type = typename underlying_element_type::local_interpolants_type;
+
         Element() = default;
         Element( Element const& ) = default;
         Element( Element && ) = default;
