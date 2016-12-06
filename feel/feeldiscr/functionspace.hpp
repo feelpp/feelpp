@@ -1933,6 +1933,10 @@ public:
                                   mpl::identity<boost::none_t>,
                                   mpl::identity<typename basis_0_type::local_interpolant_type> >::type::type local_interpolant_type;
 
+        typedef typename mpl::if_<mpl::bool_<is_modal>,
+                                  mpl::identity<boost::none_t>,
+                                  mpl::identity<typename basis_0_type::local_interpolants_type> >::type::type local_interpolants_type;
+
         typedef Element<T,Cont> this_type;
         template<int i>
         struct sub_element

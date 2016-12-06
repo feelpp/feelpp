@@ -44,19 +44,20 @@ namespace detail {
 class ElementFaces
 {
 public:
-    ElementFaces() : M_has_same_trace(true) {}
-    ElementFaces( bool t ) : M_has_same_trace(t) {}
+    ElementFaces() : M_has_same_trace(true), M_space_index(-1) {}
+    ElementFaces( bool t ) : M_has_same_trace(t), M_space_index(-1) {}
     ElementFaces( std::vector<size_type>& f1 )
-        : M_has_same_trace(true), M_f1(f1) {}
+        : M_has_same_trace(true), M_space_index(-1), M_f1(f1) {}
     ElementFaces( std::vector<size_type>&& f1 )
-        : M_has_same_trace(true), M_f1(f1) {}
-    ElementFaces( std::vector<size_type>& f1, std::vector<size_type>& f2 )
-        : M_has_same_trace(false), M_f1(f1), M_f2(f2) {}
-    ElementFaces( std::vector<size_type>&& f1, std::vector<size_type>&& f2 )
+        : M_has_same_trace(true), M_space_index(-1), M_f1(f1) {}
+    ElementFaces( std::vector<size_type>& f1, std::vector<size_type>& f2, int si )
+        : M_has_same_trace(false), M_space_index(si), M_f1(f1), M_f2(f2) {}
+    ElementFaces( std::vector<size_type>&& f1, std::vector<size_type>&& f2, int si )
         :
-        M_has_same_trace(false), M_f1(f1), M_f2(f2) {}
+        M_has_same_trace(false), M_space_index(si), M_f1(f1), M_f2(f2) {}
 
     bool hasSameTrace() const { return M_has_same_trace; }
+    int spaceIndex() const { return M_space_index; }
     
     //! @return list of faces of first type
     std::vector<size_type> const& faces1() const { return M_f1; }
@@ -64,7 +65,9 @@ public:
     std::vector<size_type> const& faces2() const { return M_f2; }
     
 private:
+    
     bool M_has_same_trace;
+    int M_space_index;
     std::vector<size_type> M_f1;
     std::vector<size_type> M_f2;
 };
@@ -80,15 +83,21 @@ public:
     using value_type = T;
 
     StaticCondensation() = default;
-    template<typename E1, typename E2, typename E3, typename M_ptrtype, typename V_ptrtype>
-    void condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1& e1, E2& e2, E3 & e3, M_ptrtype& S, V_ptrtype& V );
-    template<typename E1, typename E2, typename E3, typename E4, typename M_ptrtype, typename V_ptrtype>
-    void condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1& e1, E2& e2, E3 & e3, E4& e4, M_ptrtype& S, V_ptrtype& V );
+    template<typename E, typename M_ptrtype, typename V_ptrtype>
+    void condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
+                   std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 3>* = nullptr );
+    
+    template<typename E, typename M_ptrtype, typename V_ptrtype>
+    void condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
+                   std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 4>* = nullptr );
 
-    template<typename E1, typename E2, typename E3>
-    void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1& e1, E2& e2, E3 & e3 );
-    template<typename E1, typename E2, typename E3, typename E4>
-    void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1& e1, E2& e2, E3 & e3, E4& e4 );
+    template<typename E>
+    void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
+                     std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 3>* = nullptr );
+    
+    template<typename E>
+    void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
+                     std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 4>* = nullptr );
 
     void addLocalMatrix( int* rows, int nrows,
                          int* cols, int ncols,
@@ -354,8 +363,8 @@ private:
     std::unordered_map<int,local_matrix_t> M_AinvB;
     std::unordered_map<int,local_vector_t> M_AinvF;
 
-    using dK_iterator_type = std::unordered_map<int,detail::ElementFaces>::iterator;
-    std::unordered_map<int,detail::ElementFaces> M_dK;
+    using dK_iterator_type = std::unordered_map<int,Feel::detail::ElementFaces>::iterator;
+    std::unordered_map<int,Feel::detail::ElementFaces> M_dK;
     block_index_t M_block_rowcol;
     int M_block_row;
 };
@@ -555,12 +564,16 @@ extractBlock( F0K_t const& F0K, size_type K,
 }
 
 template<typename T>
-template<typename E1, typename E2, typename E3, typename M_ptrtype, typename V_ptrtype>
+template<typename E, typename M_ptrtype, typename V_ptrtype>
 void
-StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1 &e1, E2& e2, E3 & e3, M_ptrtype& S, V_ptrtype& V )
+StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
+                                 std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 3>* ) 
 {
     using Feel::cout;
 
+    auto& e1 = e(0_c);
+    auto& e2 = e(1_c);
+    auto& e3 = e(2_c);
     auto const& A00K = M_local_matrices[std::make_pair(0,0)];
     LOG(INFO) << "A00K.size=" << A00K.size();
     auto const& A10K = M_local_matrices[std::make_pair(1,0)];
@@ -635,7 +648,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         //std::cout << "AK=\n" << AK << std::endl;
         //std::cout << "AK-AK^T=\n" << (AK-AK.transpose()) << std::endl;
         // dK contains the set of faces ids in the submesh associated to the boundary of K
-        auto dK = M_dK.emplace(key.first, detail::ElementFaces(e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId()).first) );
+        auto dK = M_dK.emplace(key.first, Feel::detail::ElementFaces(e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId()).first) );
         
         int n = 0;
         std::for_each( dK.first->second.faces1().begin(), dK.first->second.faces1().end(), [&]( auto dKi )
@@ -699,12 +712,15 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
 }
 
 template<typename T>
-template<typename E1, typename E2, typename E3, typename E4, typename M_ptrtype, typename V_ptrtype>
+template<typename E, typename M_ptrtype, typename V_ptrtype>
 void
-StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1 &e1, E2& e2, E3 & e3, E4& e4, M_ptrtype& S, V_ptrtype& V )
+StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
+                                 std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 4>* ) 
 {
     using Feel::cout;
-
+    auto& e1 = e(0_c);
+    auto& e2 = e(1_c);
+    auto& e3 = e(2_c);
     auto const& A00K = M_local_matrices[std::make_pair(0,0)];
     //LOG(INFO) << "A00K.size=" << A00K.size();
     auto const& A10K = M_local_matrices[std::make_pair(1,0)];
@@ -743,7 +759,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
     int N3 = N2*e1.mesh()->numLocalTopologicalFaces();
     
     int N41 = N2*(e1.mesh()->numLocalTopologicalFaces()-1);
-    int N42 = e4[0].dof()->nLocalDof();
+    int N42 = e(3_c,0).dof()->nLocalDof();
     int N4 = N41+N42;
     cout << "[staticcondensation] N=" << N << " N0=" << N0 << " N1=" << N1 << " N2=" << N2 << " N3=" << N3 << " ntf=" << e1.mesh()->numLocalTopologicalFaces()<< std::endl;
     local_matrix_t AK( N, N ),A00(N0,N0),A01(N0,N1),A10(N1,N0), A11(N1,N1), A20(N3,N0), A21(N3,N1), A22(N3,N3);
@@ -777,19 +793,19 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
             
             if ( dK.second ) // there are missing
             {
-                for ( int i = 0; i < e4.functionSpace().numberOfSpaces(); ++i )
+                for ( int i = 0; i < e(3_c).functionSpace().numberOfSpaces(); ++i )
                 {
-                    dK1 = e4[i].mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
+                    dK1 = e(3_c,i).mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
                     if ( !dK1.first.empty() )
                     {
-                        dK_it = M_dK.emplace( K, detail::ElementFaces( std::move(dK.first), std::move(dK1.first) ) ).first;
                         index = i;
+                        dK_it = M_dK.emplace( K, Feel::detail::ElementFaces( std::move(dK.first), std::move(dK1.first), index ) ).first;
                         break;
                     }
                 }
             }
             else
-                dK_it = M_dK.emplace( K, detail::ElementFaces( std::move(dK.first) ) ).first;
+                dK_it = M_dK.emplace( K, Feel::detail::ElementFaces( std::move(dK.first) ) ).first;
         }
 
         auto & dK = dK_it->second;
@@ -978,7 +994,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
             toc("sc.condense.localassembly", FLAGS_v>0);
             tic();
             auto dofs1 = e3.dofs(dK.faces1());
-            auto dofs2 = e4[index].dofs(dK.faces2());
+            auto dofs2 = e(3_c,dK.spaceIndex()).dofs(dK.faces2());
             decltype(dofs1) dofs( dofs1.size()+dofs2.size() );
             std::copy(dofs1.begin(), dofs1.end(), dofs.begin() );
             std::copy(dofs2.begin(), dofs2.end(), dofs.begin()+dofs1.size() );
@@ -989,11 +1005,11 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
             local_vector_t DKF1( DKF.head( N41 ) );
             local_vector_t DKF2( DKF.tail( N42 ) );
             S(0_c,0_c).addMatrix( dofs1.data(), dofs1.size(), dofs1.data(), dofs1.size(), DK00.data(), invalid_size_type_value, invalid_size_type_value );
-            S(0_c,1_c,0,index).addMatrix( dofs1.data(), dofs1.size(), dofs2.data(), dofs2.size(), DK01.data(), invalid_size_type_value, invalid_size_type_value );
-            S(1_c,0_c,index,0).addMatrix( dofs2.data(), dofs2.size(), dofs1.data(), dofs1.size(), DK10.data(), invalid_size_type_value, invalid_size_type_value );
-            S(1_c,1_c,index,index).addMatrix( dofs2.data(), dofs2.size(), dofs2.data(), dofs2.size(), DK11.data(), invalid_size_type_value, invalid_size_type_value );
+            S(0_c,1_c,0,dK.spaceIndex()).addMatrix( dofs1.data(), dofs1.size(), dofs2.data(), dofs2.size(), DK01.data(), invalid_size_type_value, invalid_size_type_value );
+            S(1_c,0_c,dK.spaceIndex(),0).addMatrix( dofs2.data(), dofs2.size(), dofs1.data(), dofs1.size(), DK10.data(), invalid_size_type_value, invalid_size_type_value );
+            S(1_c,1_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs2.data(), dofs2.size(), dofs2.data(), dofs2.size(), DK11.data(), invalid_size_type_value, invalid_size_type_value );
             V(0_c).addVector( dofs1.data(), dofs1.size(), DKF1.data(), invalid_size_type_value, invalid_size_type_value );
-            V(1_c,index).addVector( dofs2.data(), dofs2.size(), DKF2.data(), invalid_size_type_value, invalid_size_type_value );
+            V(1_c,dK.spaceIndex()).addVector( dofs2.data(), dofs2.size(), DKF2.data(), invalid_size_type_value, invalid_size_type_value );
             toc("sc.condense.globalassembly", FLAGS_v>0);
 
         }
@@ -1002,19 +1018,22 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
 }
 
 template<typename T>
-template<typename E1, typename E2, typename E3>
+template<typename E>
 void
-StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1& e1, E2& e2, E3 & e3 )
+StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 3>* )  
 {
     using Feel::cout;
-
+    auto& e1 = e(0_c);
+    auto& e2 = e(1_c);
+    auto& e3 = e(2_c);
+    
     int N0 = e1.dof()->nRealLocalDof();
     int N1 = e2.dof()->nLocalDof();
     int N2 = e3.dof()->nLocalDof();
     int N3 = N2*e1.mesh()->numLocalTopologicalFaces();
     cout << "[staticcondensation::localSolve]  N0=" << N0 << " N1=" << N1 << std::endl;
     Eigen::VectorXd upK( N0 + N1 );
-    typename E3::local_interpolant_type pdK( N3, 1 );
+    typename std::decay_t<decltype(e3)>::local_interpolant_type pdK( N3 );
     for( auto const& e : M_AinvB )
     {
         auto K = e.first;
@@ -1033,28 +1052,30 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
 }
 
 template<typename T>
-template<typename E1, typename E2, typename E3, typename E4>
+template<typename E>
 void
-StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E1& e1, E2& e2, E3 & e3, E4& e4 )
+StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 4>*  )
 {
     using Feel::cout;
-
+    auto& e1 = e(0_c);
+    auto& e2 = e(1_c);
+    auto& e3 = e(2_c);
     int N0 = e1.dof()->nRealLocalDof();
     int N1 = e2.dof()->nLocalDof();
     cout << "[staticcondensation::localSolve]  N0=" << N0 << " N1=" << N1 << std::endl;
     int N2 = e3.dof()->nLocalDof();
-    int N4 = e4.front().dof()->nLocalDof();
+    int N4 = e(3_c,0).dof()->nLocalDof();
     int N3 = N2*e1.mesh()->numLocalTopologicalFaces();
     //! we suppose that there is only one face with a special trace 
     int N4d1 = N2*(e1.mesh()->numLocalTopologicalFaces()-1);
     int N4d2 = N4;
     Eigen::VectorXd upK( N0 + N1 );
-    typename E3::local_interpolant_type pdK( N4d1+N4d2, 1 );
+    typename std::decay_t<decltype(e(2_c))>::local_interpolant_type pdK( N4d1+N4d2 );
     
-    for( auto const& e : M_AinvB )
+    for( auto const& m : M_AinvB )
     {
-        auto K = e.first;
-        auto const& A = e.second;
+        auto K = m.first;
+        auto const& A = m.second;
         auto const& F = M_AinvF.at( K );
 
         auto & dK = M_dK[K];
@@ -1067,8 +1088,8 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         }
         else
         {
-            e3.element( dK.faces1(), pdK.head(N4d1) );
-            e4.element( dK.faces2(), pdK.tail(N4d2) );
+            e3.element( dK.faces1(), pdK.topLeftCorner(N4d1,1) );
+            e(3_c,dK.spaceIndex()).element( dK.faces2(), pdK.bottomLeftCorner(N4d2,1) );
             upK.noalias() = -A*pdK + F;
             e1.assignE( K, upK.head( N0 ) );
             e2.assignE( K, upK.tail( N1 ) );
