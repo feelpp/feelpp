@@ -2336,8 +2336,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     if ( it == en )
         return;
 
-    gm_context_ptrtype __c( new gm_context_type( this->functionSpace()->gm(),*it,__geopc ) );
-    gm1_context_ptrtype __c1( new gm1_context_type( this->mesh()->gm1(),*it,__geopc1 ) );
+    auto const& initElt = boost::unwrap_ref( *it );
+    gm_context_ptrtype __c( new gm_context_type( this->functionSpace()->gm(),initElt,__geopc ) );
+    gm1_context_ptrtype __c1( new gm1_context_type( this->mesh()->gm1(),initElt,__geopc1 ) );
 
     typedef typename t_expr_type::shape shape;
     static const bool is_rank_ok = ( shape::M == nComponents1 &&
@@ -2367,7 +2368,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         {
         case GeomapStrategyType::GEOMAP_HO:
         {
-            __c->update( *it );
+            __c->update( curElt );
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
             tensor_expr.update( mapgmc );
             __fe->interpolate( tensor_expr, IhLoc );
@@ -2376,7 +2377,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
         case GeomapStrategyType::GEOMAP_O1:
         {
-            __c1->update( *it );
+            __c1->update( curElt );
             map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
             tensor_expr1.update( mapgmc1 );
             __fe->interpolate( tensor_expr1, IhLoc );
@@ -2388,7 +2389,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             if ( curElt.isOnBoundary() )
             {
                 // HO if on boundary
-                __c->update( *it );
+                __c->update( curElt );
                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                 tensor_expr.update( mapgmc );
                 __fe->interpolate( tensor_expr, IhLoc );
@@ -2396,7 +2397,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
             else
             {
-                __c1->update( *it );
+                __c1->update( curElt );
                 map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                 tensor_expr1.update( mapgmc1 );
                 __fe->interpolate( tensor_expr1, IhLoc );

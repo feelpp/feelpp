@@ -2891,13 +2891,13 @@ Mesh<Shape, T, Tag>::check() const
     }
 
     // faces check
-    typedef typename super::location_face_const_iterator location_face_const_iterator;
-    location_face_const_iterator itf = this->beginFaceOnBoundary();
-    location_face_const_iterator ite = this->endFaceOnBoundary();
+    auto rangeBoundaryFaces = this->facesOnBoundary();
+    auto itf = std::get<0>( rangeBoundaryFaces );
+    auto ite = std::get<1>( rangeBoundaryFaces );
     std::map<int,int> nf;
     for ( ; itf != ite; ++ itf )
     {
-        face_type const& __face = *itf;
+        face_type const& __face = boost::unwrap_ref( *itf );
         DLOG_IF( WARNING, !__face.isConnectedTo0() && !__face.isConnectedTo1() ) << "face not connected to an element face:" << __face << "\n";
         if ( !__face.isConnectedTo0() && !__face.isConnectedTo1() )
         {
