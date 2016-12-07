@@ -52,6 +52,7 @@ private:
 #ifdef DEBUG_HELFRICHFORCEMODEL
     typedef boost::shared_ptr<Exporter<mesh_type, 1>> exporter_ptrtype;
     exporter_ptrtype M_exporter;
+    bool M_exporterInitDone;
 #endif
 };
 
@@ -69,6 +70,7 @@ HelfrichForceModel<LevelSetType>::loadParametersFromOptionsVm()
             _geo="static",
             _path=this->levelset()->exporterPath()
             );
+    M_exporterInitDone = false;
 #endif
 }
 
@@ -83,6 +85,18 @@ template<typename LevelSetType>
 void
 HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int impl )
 {
+#ifdef DEBUG_HELFRICHFORCEMODEL
+    if( !M_exporterInitDone )
+    {
+        if (this->levelset()->doRestart() && this->levelset()->restartPath().empty() )
+        {
+            Feel::cout << "Restarting inextensibility-force exporter...\n";
+            if ( M_exporter->doExport() ) M_exporter->restart(this->levelset()->timeInitial());
+        }
+        M_exporterInitDone = true;
+    }
+#endif
+
     switch (impl)
     {
         case 0:
