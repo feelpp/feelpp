@@ -60,6 +60,7 @@ private:
 #ifdef DEBUG_INEXTENSIBILITYFORCEMODEL
     typedef boost::shared_ptr<Exporter<mesh_type, 1>> exporter_ptrtype;
     exporter_ptrtype M_exporter;
+    bool M_exporterInitDone;
 #endif
 };
 
@@ -90,6 +91,7 @@ InextensibilityForceModel<LevelSetType>::loadParametersFromOptionsVm()
             _geo="static",
             _path=this->levelset()->exporterPath()
             );
+    M_exporterInitDone = false;
 #endif
 }
 
@@ -131,6 +133,18 @@ template<typename LevelSetType>
 void
 InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F )
 {
+#ifdef DEBUG_INEXTENSIBILITYFORCEMODEL
+    if( !M_exporterInitDone )
+    {
+        if (this->levelset()->doRestart() && this->levelset()->restartPath().empty() )
+        {
+            Feel::cout << "Restarting inextensibility-force exporter...\n";
+            if ( M_exporter->doExport() ) M_exporter->restart(this->levelset()->timeInitial());
+        }
+        M_exporterInitDone = true;
+    }
+#endif
+
     // Update ModGradPhi
     //auto gradPhi = this->levelset()->gradPhi();
     auto phi = this->levelset()->phi();
