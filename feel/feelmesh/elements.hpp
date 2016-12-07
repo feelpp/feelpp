@@ -106,7 +106,19 @@ public:
         multi_index::indexed_by<
             //multi_index::random_access<>,
             // sort by less<int> on id() + pid()
-        multi_index::ordered_unique<multi_index::identity<element_type> >
+#if 0
+            multi_index::ordered_unique<multi_index::identity<element_type> >
+#else
+            multi_index::ordered_unique<
+                multi_index::composite_key<element_type,
+                                           multi_index::const_mem_fun<element_type,
+                                                                      rank_type,
+                                                                      &element_type::processId>,
+                                           multi_index::const_mem_fun<element_type,
+                                                                      size_type,
+                                                                      &element_type::id> > >
+#endif
+
 #if 0
             multi_index::ordered_unique<
                 multi_index::composite_key<element_type,
@@ -378,31 +390,32 @@ public:
 
     element_iterator elementIterator( size_type i ) const
     {
-        // return  M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) );
-        return M_elements.find( element_type( i ) );
+        return  M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) );
+        // return M_elements.find( element_type( i ) );
     };
 
     element_iterator elementIterator( size_type i, rank_type p ) const
     {
-        // return  M_elements.template get<0>().find( boost::make_tuple( p, i ) );
-        return M_elements.find( element_type( i ) );
+        return  M_elements.template get<0>().find( boost::make_tuple( p, i ) );
+        // return M_elements.find( element_type( i ) );
     };
 
     element_iterator elementIterator( element_type const& elt ) const
     {
-        return elementIterator( elt.id() );//, elt.processId() );
+        // return elementIterator( elt.id() );//, elt.processId() );
+        return elementIterator( elt.id(), elt.processId() );
     };
 
     element_type const& element( size_type i ) const
     {
-        // return *M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) );
-        return *M_elements.find( element_type( i ) );
+        return *M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) );
+        // return *M_elements.find( element_type( i ) );
     };
 
     element_type const& element( size_type i, rank_type p ) const
     {
-        // return *M_elements.template get<0>().find( boost::make_tuple( p, i ) );
-        return *M_elements.find( element_type( i ) );
+        return *M_elements.template get<0>().find( boost::make_tuple( p, i ) );
+        // return *M_elements.find( element_type( i ) );
     };
 
     /**
@@ -410,10 +423,17 @@ public:
      */
     bool hasElement( size_type i, rank_type p = invalid_rank_type_value ) const
     {
-        // const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        // return M_elements.template get<0>().find( boost::make_tuple( part, i ) ) !=
-        //        M_elements.template get<0>().end();
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().find( boost::make_tuple( part, i ) ) !=
+               M_elements.template get<0>().end();
+#if 0
         return M_elements.find( element_type( i ) ) != M_elements.end();
+        if ( M_elements.find( element_type( i ) ) != M_elements.end() )
+            return false;
+        if ( this->element( i ).processId() != part )
+            return false;
+        return true;
+#endif
     }
 
     element_iterator beginElement()
