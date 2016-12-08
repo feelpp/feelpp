@@ -86,11 +86,12 @@ endif()
 
 set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
   -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/contrib/ginac/tools/cmake_install.cmake"
+  -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/mesh/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Libs -P "${CMAKE_BINARY_DIR}/cmake_install.cmake" 
   -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/cmake_install.cmake")
 
 add_custom_target(install-feelpp-lib
-  DEPENDS feelpp
+  DEPENDS feelpp feelpp_mesh_partitioner
   COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
 )
 
