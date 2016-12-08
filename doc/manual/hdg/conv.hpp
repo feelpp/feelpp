@@ -14,9 +14,9 @@ makeConvOptions()
         ( "cvg.refine-factor", po::value<double>()->default_value(2), "factor of refinement" )
         ( "cvg.p_exact", po::value<std::string>()->default_value( "0" ), "exact potential" )
         ( "cvg.cond", po::value<double>()->default_value( -1.), "conductivity" )
-        ( "cvg.compute_normal_error", po::value<bool>()->default_value( false ), "compute the error on normal" )
-        ( "cvg.normal_exact", po::value<std::string>()->default_value( "{x/2.,y/2.,0}:x:y:z" ), "exact normal on cvg.marker_normal" )
-        ( "cvg.marker_normal", po::value<std::string>()->default_value( "ext"), "marker on which compute the error on the normal" )
+        ( "cvg.normal-compute", po::value<bool>()->default_value( true ), "compute the error on normal" )
+        ( "cvg.normal-exact", po::value<double>()->default_value( 0 ), "exact value of int(u.n) on cvg.normal-marker" )
+        ( "cvg.normal-marker", po::value<std::string>()->default_value( "ext"), "marker on which compute the error on the normal" )
         ( "cvg.use-dirichlet", po::value<bool>()->default_value( true ), "use dirichlet conditions" )
         ( "cvg.bc-dirichlet", po::value<std::vector<std::string> >(), "list of markers for Dirichlet condition ")
         ( "cvg.use-neumann", po::value<bool>()->default_value( false ), "use neumann conditions" )
@@ -89,10 +89,10 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::ConvergenceTest()
     Feel::cout << "using p exact     : " << M_p_exact << std::endl;
     Feel::cout << "grad_p_exact      : " << grad<Dim,expr_order>(M_p_exact) << std::endl;
     Feel::cout << "laplacian(p_exact): " << laplacian(M_p_exact) << std::endl;
-    if( boption("cvg.compute_normal_error") )
+    if( boption("cvg.normal-compute") )
     {
-        Feel::cout << "normale           : " << soption("cvg.normal_exact") << std::endl;
-        Feel::cout << "compute normale on " << soption("cvg.marker_normal") << std::endl;
+        Feel::cout << "compute normale on " << soption("cvg.normal-marker") << std::endl;
+        Feel::cout << "int(u.n)          : " << doption("cvg.normal-exact") << std::endl;
     }
 
     if ( boption("cvg.use-dirichlet") )
@@ -189,16 +189,16 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::run()
     cvg_p.open( "convergence_p.dat", std::ios::out | std::ios::trunc);
     boost::format fmter("%1% %|14t|%2% %|28t|%3%\n");
     boost::format fmterOut;
-    if( boption("cvg.compute_normal_error") )
+    if( boption("cvg.normal-compute") )
         fmterOut = boost::format("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5% %|70t|%6%\n");
     else
         fmterOut = boost::format("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5%\n");
     cvg_u << fmter % "#h" % "nDof" % "l2err";
     cvg_p << fmter % "#h" % "nDof" % "l2err";
-    if( boption("cvg.compute_normal_error") )
+    if( boption("cvg.normal-compute") )
     {
-        cvg_n.open( "convergence_n.dat", std::ios::out | std::ios::trunc);
-        cvg_n << fmter % "#h" % "nDof" % "l2err";
+        cvg_n.open( "../../../../../convergence_n.dat", std::ios::out | std::ios::app);
+        cvg_n << fmter % "#P" % "G" % "err";
     }
 
     export_ptrtype e( export_type::New( "convergence") );
@@ -227,16 +227,20 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::run()
         double mean_p = mean( elements(M_mesh), idv(M_p))(0,0);
         double errP = normL2(_range=elements(M_mesh), _expr=idv(M_p)-cst(mean_p)-M_p_exact+cst(mean_p_exact), _quad=_Q<expr_order>());
 
-        if (boption("cvg.compute_normal_error") )
+        if (boption("cvg.normal-compute") )
         {
-            auto normal = expr<Dim,1,expr_order>(soption("cvg.normal_exact"));
-            auto un_exact = trans(u_exact)*normal;
-            double errN = normL2(_range=markedfaces(M_mesh, soption("cvg.marker_normal")),
-                                 _expr=inner(idv(M_u),N()) - un_exact,
-                                 _quad=_Q<expr_order>() );
+            double un_exact = doption("cvg.normal-exact");
+            double un_approx = integrate(_range=markedfaces(M_mesh, soption("cvg.normal-marker")),
+                                         _expr=inner(idv(M_u),N()),
+                                         _quad=_Q<expr_order>() ).evaluate()(0,0);
+            double errN = math::abs(un_exact - un_approx);
+            cout << std::setprecision(14) << "geo : un_exact=" << un_exact << " un_approx=" << un_approx << std::endl;
+            // double length = integrate(_range=markedfaces(M_mesh, soption("cvg.normal-marker")),
+            //                           _expr=expr(soption("functions.f")) ).evaluate()(0,0);
+            // double errN = math::abs(length - doption("cvg.normal-exact") );
             cout << fmterOut % "h" % "nDofU" % "errU" % "nDofP" % "errP" % "errN";
             cout << fmterOut % h % nDofU % errU % nDofP % errP % errN;
-            cvg_n << fmter % h % nDofU % errN;
+            cvg_n << fmter % Order % G_Order % errN;
         }
         else
         {
@@ -272,7 +276,7 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::run()
 
     cvg_u.close();
     cvg_p.close();
-    if( boption("cvg.compute_normal_error") )
+    if( boption("cvg.normal-compute") )
         cvg_n.close();
 }
 
