@@ -171,26 +171,10 @@ add_custom_target(install-feelpp-base
   DEPENDS 
   install-feelpp-lib 
   install-feelpp-models-common
-  install-feelpp_model_fluidmec2dP2P1G1
-  install-feelpp_model_fluidmec3dP2P1G1
-  install-feelpp_model_solidmec2dP2G1
-  install-feelpp_model_solidmec3dP2G1
-  feelpp_application_fluid_2d 
-  feelpp_application_fluid_3d
-  feelpp_application_solid_2d 
-  feelpp_application_solid_3d
-  feelpp_application_fsi_2d 
-  feelpp_application_fsi_3d
   quickstart
   COMMAND
       "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Geo
       -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
-      -P "${CMAKE_BINARY_DIR}/applications/models/fluid/cmake_install.cmake"
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
-      -P "${CMAKE_BINARY_DIR}/applications/models/solid/cmake_install.cmake"
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
-      -P "${CMAKE_BINARY_DIR}/applications/models/fsi/cmake_install.cmake"
       "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Quickstart
       -P "${CMAKE_BINARY_DIR}/quickstart/cmake_install.cmake"
 )
@@ -206,6 +190,7 @@ add_custom_target(install-feelpp
 # install feel++ applications
 add_custom_target(install-feelpp-apps
   DEPENDS
+  install-apps-models-base
   install-apps-models-thermodyn
   install-apps-models-fluid
   install-apps-models-solid
