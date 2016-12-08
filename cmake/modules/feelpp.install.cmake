@@ -190,7 +190,7 @@ add_custom_target(install-feelpp
 # install feel++ applications
 add_custom_target(install-feelpp-apps
   DEPENDS
-  install-apps-models-base
+  install-feelpp-base
   install-apps-models-thermodyn
   install-apps-models-fluid
   install-apps-models-solid
