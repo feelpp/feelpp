@@ -970,7 +970,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateNormal()
     this->log("LevelSet", "updateNormal", "start");
 
     auto phi = this->phi();
-    *M_levelsetNormal = M_projectorL2Vec->project( _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) );
+    //*M_levelsetNormal = M_projectorL2Vec->project( _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) );
+    *M_levelsetNormal = vf::project( 
+            _space=this->functionSpaceVectorial(),
+            _range=elements(this->mesh()),
+            _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) 
+            );
 
     M_doUpdateNormal = false;
 
