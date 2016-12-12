@@ -132,9 +132,9 @@ public:
     element_electricpotential_ptrtype const& fieldElectricPotentialPtr() const { return M_fieldElectricPotential; }
     element_electricpotential_type const& fieldElectricPotential() const { return *M_fieldElectricPotential; }
 
-    backend_ptrtype const& backend() const { return M_backend; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
+    backend_ptrtype const& backend() const { return M_backendMonolithic; }
+    BlocksBaseVector<double> const& blockVectorSolutionMonolithic() const { return M_blockVectorSolutionMonolithic; }
+    BlocksBaseVector<double> & blockVectorSolutionMonolithic() { return M_blockVectorSolutionMonolithic; }
 
     //___________________________________________________________________________________//
 
@@ -154,9 +154,12 @@ public:
 
     void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
-    void updateResidual( DataUpdateResidual & data ) const;
     void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
+    void updateBCWeakJacobian( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const;
+    void updateResidual( DataUpdateResidual & data ) const;
     void updateBCDirichletStrongResidual( vector_ptrtype& R ) const;
+    void updateBCWeakResidual( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const;
+    void updateSourceTermResidual( vector_ptrtype& R, bool buildCstPart ) const;
 
 
 
@@ -179,11 +182,14 @@ private :
     map_scalar_field<2> M_volumicForcesProperties;
 
     // algebraic data/tools
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    BlocksBaseVector<double> M_blockVectorSolution;
+    backend_ptrtype M_backendMonolithic;
+    model_algebraic_factory_ptrtype M_algebraicFactoryMonolithic;
+    BlocksBaseVector<double> M_blockVectorSolutionMonolithic;
     // start dof index fields in matrix (temperature,electric-potential,...)
     std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
+
+    backend_ptrtype M_backendElectricModel;
+    model_algebraic_factory_ptrtype M_algebraicFactoryElectricModel;
 
     // post-process
     export_ptrtype M_exporter;
