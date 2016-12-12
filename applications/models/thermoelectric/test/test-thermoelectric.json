@@ -1,18 +1,18 @@
 // -*- mode: javascript -*-
 {
-    "Name":"ThermoElectric",
-    "ShortName":"ThermoElectric",
-    "Model":"ThermoElectric-linear",//"ThermoElectric-nonlinear",//"ThermoElectric-linear",
+    "Name":"myThermoElectricName",
+    "ShortName":"myThermoElectricShortName",
+    "Model":"ThermoElectric-nonlinear",//"ThermoElectric-nonlinear" or "ThermoElectric-linear"
     "Materials":
     {
         //"Omega":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
         "Omega":
         {
             "name":"mymat",
-            "k11":"10",//[ W/(m*K) ]
-            "Cp":"1000.005", //[ J/(kg*K) ]
-            "rho":"1.205", //[ kg/(m^3) ]
-            "sigma":"1e5"
+            "k11":"370",//[ W/(m*K) ]
+            //"Cp":"1000.005", //[ J/(kg*K) ]
+            // "rho":"1.205", //[ kg/(m^3) ]
+            "sigma":"53e6"
         }
     },
     "BoundaryConditions":
@@ -48,7 +48,7 @@
                 },
                 "left":
                 {
-                    "expr":"10"
+                    "expr":"1"
                 }
             }
         }
