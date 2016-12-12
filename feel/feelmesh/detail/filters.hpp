@@ -250,9 +250,9 @@ boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
-markedfaces( MeshType const& mesh, uint16_type markerType, rank_type __pid, mpl::bool_<false> )
+markedfaces( MeshType const& mesh, uint16_type markerType, rank_type pid, mpl::bool_<false> )
 {
-    auto rangeMarkedFaces = mesh.facesWithMarkerByType( markerType, __pid );
+    auto rangeMarkedFaces = mesh.facesWithMarkerByType( markerType, pid );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               std::get<0>( rangeMarkedFaces ),
                               std::get<1>( rangeMarkedFaces ),
@@ -265,9 +265,9 @@ boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
-markedfaces( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type __pid, mpl::bool_<false> )
+markedfaces( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid, mpl::bool_<false> )
 {
-    auto rangeMarkedFaces = mesh.facesWithMarkerByType( markerType, markersFlag, __pid );
+    auto rangeMarkedFaces = mesh.facesWithMarkerByType( markerType, markersFlag, pid );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               std::get<0>( rangeMarkedFaces ),
                               std::get<1>( rangeMarkedFaces ),
@@ -388,9 +388,9 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
              typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype >
-markededges( MeshType const& mesh, flag_type __marker, rank_type __pid, mpl::bool_<false> )
+markededges( MeshType const& mesh, uint16_type markerType, rank_type pid, mpl::bool_<false> )
 {
-    auto rangeMarkedEdges = mesh.edgesWithMarker( __marker, __pid );
+    auto rangeMarkedEdges = mesh.edgesWithMarkerByType( markerType, pid );
     return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
                               std::get<0>( rangeMarkedEdges ),
                               std::get<1>( rangeMarkedEdges ),
@@ -401,10 +401,34 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
              typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype >
-markededges( MeshType const& mesh, flag_type __marker, rank_type __pid, mpl::bool_<true> )
+markededges( MeshType const& mesh, uint16_type markerType, rank_type pid, mpl::bool_<true> )
 {
-    return markededges( *mesh, __marker, __pid, mpl::bool_<false>() );
+    return markededges( *mesh, markerType, pid, mpl::bool_<false>() );
 }
+
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_EDGES>,
+             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype >
+markededges( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid, mpl::bool_<false> )
+{
+    auto rangeMarkedEdges = mesh.edgesWithMarkerByType( markerType, markersFlag, pid );
+    return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
+                              std::get<0>( rangeMarkedEdges ),
+                              std::get<1>( rangeMarkedEdges ),
+                              std::get<2>( rangeMarkedEdges ) );
+}
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_EDGES>,
+             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype >
+markededges( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid, mpl::bool_<true> )
+{
+    return markededges( *mesh, markerType, markersFlag, pid, mpl::bool_<false>() );
+}
+
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
              typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
@@ -499,9 +523,9 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
              typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
-markedpoints( MeshType const& mesh, size_type flag, mpl::bool_<false> )
+markedpoints( MeshType const& mesh, uint16_type markerType, rank_type pid, mpl::bool_<false> )
 {
-    auto rangePointsWithMarker = mesh.pointsWithMarker( flag );
+    auto rangePointsWithMarker = mesh.pointsWithMarkerByType( markerType, pid );
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
                               std::get<0>( rangePointsWithMarker ),
                               std::get<1>( rangePointsWithMarker ),
@@ -512,9 +536,31 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
              typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
-markedpoints( MeshType const& mesh, size_type flag, mpl::bool_<true> )
+markedpoints( MeshType const& mesh, uint16_type markerType, rank_type pid, mpl::bool_<true> )
 {
-    return markedpoints( *mesh, flag, mpl::bool_<false>() );
+    return markedpoints( *mesh, markerType, pid, mpl::bool_<false>() );
+}
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_POINTS>,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
+markedpoints( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid, mpl::bool_<false> )
+{
+    auto rangePointsWithMarker = mesh.pointsWithMarkerByType( markerType, markersFlag, pid );
+    return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
+                              std::get<0>( rangePointsWithMarker ),
+                              std::get<1>( rangePointsWithMarker ),
+                              std::get<2>( rangePointsWithMarker ) );
+}
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_POINTS>,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
+markedpoints( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid, mpl::bool_<true> )
+{
+    return markedpoints( *mesh, markerType, markersFlag, pid, mpl::bool_<false>() );
 }
 
 template<typename MeshType>
@@ -546,15 +592,6 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
              typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
-internalpoints( MeshType const& mesh, mpl::bool_<true> )
-{
-    return internalpoints( *mesh, mpl::bool_<false>() );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
-             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
-             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
 internalpoints( MeshType const& mesh, mpl::bool_<false> )
 {
     auto rangeInternalPoints = mesh.internalPoints();
@@ -562,6 +599,15 @@ internalpoints( MeshType const& mesh, mpl::bool_<false> )
                               std::get<0>( rangeInternalPoints ),
                               std::get<1>( rangeInternalPoints ),
                               std::get<2>( rangeInternalPoints ) );
+}
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_POINTS>,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
+internalpoints( MeshType const& mesh, mpl::bool_<true> )
+{
+    return internalpoints( *mesh, mpl::bool_<false>() );
 }
 
 } // detail

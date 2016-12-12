@@ -261,13 +261,10 @@ public:
         }
 
     /**
-     * get iterator over internal marked points
-     *
-     *
-     * @return iterator over marked points
+     * \return iterator over marked points
      */
     std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
-    pointsWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
+    pointsWithMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
             points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
@@ -278,12 +275,62 @@ public:
                 auto const& point = *it;
                 if ( point.processId() != part )
                     continue;
-                if ( point.marker().isOff() || point.marker().value() != m )
+                if ( !point.hasMarker( markerType ) )
+                    continue;
+                if ( point.marker().isOff() )
                     continue;
                 mypoints->push_back(boost::cref(point));
             }
             return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
         }
+
+    /**
+     * \return iterator over marked points
+     */
+    std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
+    pointsWithMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+            points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
+            auto it = this->beginPoint();
+            auto en = this->endPoint();
+            for ( ; it!=en;++it )
+            {
+                auto const& point = *it;
+                if ( point.processId() != part )
+                    continue;
+                if ( !point.hasMarker( markerType ) )
+                    continue;
+                if ( point.marker( markerType ).isOff() )
+                    continue;
+                if ( markerFlags.find( point.marker( markerType ).value() ) == markerFlags.end() )
+                    continue;
+                mypoints->push_back(boost::cref(point));
+            }
+            return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
+        }
+
+    /**
+     * \return iterator over marked points
+     */
+    std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
+    pointsWithMarkerByType( uint16_type markerType, flag_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            if ( m == invalid_flag_type_value )
+                return this->pointsWithMarkerByType( markerType, p );
+            else
+                return this->pointsWithMarkerByType( markerType, std::set<flag_type>( { m } ), p );
+        }
+
+    /**
+     * \return iterator over marked points
+     */
+    std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
+    pointsWithMarker( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
+        {
+            return this->pointsWithMarkerByType( 1, m, p );
+        }
+
 
     /**
      * get iterator over internal points

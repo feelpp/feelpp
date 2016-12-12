@@ -565,7 +565,7 @@ public:
      * with \c Marker1 \p m on processor \p p
      */
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
-    elementsWithMarker( flag_type m, rank_type p = invalid_rank_type_value ) const
+    elementsWithMarker( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
         {
             return this->elementsWithMarkerByType( 1, m, p );
         }

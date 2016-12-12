@@ -222,9 +222,8 @@ public:
      * with \c Marker1 \p m on processor \p p
      */
     std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
-    edgesWithMarker( size_type m = invalid_size_type_value, rank_type p = invalid_rank_type_value ) const
+    edgesWithMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
         {
-            bool allMarkedEdges = (m == invalid_size_type_value);
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
             edges_reference_wrapper_ptrtype myedges( new edges_reference_wrapper_type );
             auto it = this->beginEdge();
@@ -234,11 +233,62 @@ public:
                 auto const& edge = *it;
                 if ( edge.processId() != part )
                     continue;
-                if ( edge.marker().isOff() || ( !allMarkedEdges && edge.marker().value() != m ) )
+                if ( !edge.hasMarker( markerType ) )
+                    continue;
+                if ( edge.marker().isOff() )
                     continue;
                 myedges->push_back( boost::cref( edge ) );
             }
             return std::make_tuple( myedges->begin(), myedges->end(), myedges );
+        }
+    /**
+     * \return the range of iterator \c (begin,end) over the edges
+     * with \c Marker1 \p m on processor \p p
+     */
+    std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
+    edgesWithMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+            edges_reference_wrapper_ptrtype myedges( new edges_reference_wrapper_type );
+            auto it = this->beginEdge();
+            auto en = this->endEdge();
+            for ( ; it!=en;++it )
+            {
+                auto const& edge = *it;
+                if ( edge.processId() != part )
+                    continue;
+                if ( !edge.hasMarker( markerType ) )
+                    continue;
+                if ( edge.marker( markerType ).isOff() )
+                    continue;
+                if ( markerFlags.find( edge.marker( markerType ).value() ) == markerFlags.end() )
+                    continue;
+                myedges->push_back( boost::cref( edge ) );
+            }
+            return std::make_tuple( myedges->begin(), myedges->end(), myedges );
+        }
+
+    /**
+     * \return the range of iterator \c (begin,end) over the edges
+     * with \c Marker1 \p m on processor \p p
+     */
+    std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
+    edgesWithMarkerByType( uint16_type markerType, flag_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            if ( m == invalid_flag_type_value )
+                return this->edgesWithMarkerByType( markerType, p );
+            else
+                return this->edgesWithMarkerByType( markerType, std::set<flag_type>( { m } ), p );
+        }
+
+    /**
+     * \return the range of iterator \c (begin,end) over the edges
+     * with \c Marker1 \p m on processor \p p
+     */
+    std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
+    edgesWithMarker( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
+        {
+            return this->edgesWithMarkerByType( 1, m, p );
         }
 
     /**
