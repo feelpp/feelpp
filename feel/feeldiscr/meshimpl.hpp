@@ -72,16 +72,12 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateForUse()
 {
-    VLOG(2) << "component     MESH_RENUMBER: " <<  this->components().test( MESH_RENUMBER ) << "\n";
-    VLOG(2) << "component MESH_UPDATE_EDGES: " <<  this->components().test( MESH_UPDATE_EDGES ) << "\n";
-    VLOG(2) << "component MESH_UPDATE_FACES: " <<  this->components().test( MESH_UPDATE_FACES ) << "\n";
-    VLOG(2) << "component    MESH_PARTITION: " <<  this->components().test( MESH_PARTITION ) << "\n";
-
-    if ( this->numElements() == 0 )
-    {
-        VLOG(2) << "No elements in Mesh? (with process rank " << this->worldComm().rank() <<")\n";
-        if ( this->worldComm().localSize()==1 ) return;
-    }
+    VLOG(2) << "component                  MESH_RENUMBER: " <<  this->components().test( MESH_RENUMBER ) << "\n";
+    VLOG(2) << "component MESH_UPDATE_ELEMENTS_ADJACENCY: " <<  this->components().test( MESH_UPDATE_ELEMENTS_ADJACENCY ) << "\n";
+    VLOG(2) << "component              MESH_UPDATE_EDGES: " <<  this->components().test( MESH_UPDATE_EDGES ) << "\n";
+    VLOG(2) << "component              MESH_UPDATE_FACES: " <<  this->components().test( MESH_UPDATE_FACES ) << "\n";
+    VLOG(2) << "component                 MESH_PARTITION: " <<  this->components().test( MESH_PARTITION ) << "\n";
+    VLOG(2) << "component        MESH_NO_UPDATE_MEASURES: " <<  this->components().test( MESH_NO_UPDATE_MEASURES ) << "\n";
 
     boost::timer ti;
 
@@ -139,10 +135,10 @@ Mesh<Shape, T, Tag>::updateForUse()
         if ( this->worldComm().localSize()>1 )
         {
             auto rangeGhostElement = this->ghostElements();
-            auto iv = std::get<0>( rangeGhostElement );
-            auto const en = std::get<1>( rangeGhostElement );
-            for ( ; iv != en; ++iv )
-                this->addNeighborSubdomain( boost::unwrap_ref( *iv ).processId() );
+            auto itghost = std::get<0>( rangeGhostElement );
+            auto const enghost = std::get<1>( rangeGhostElement );
+            for ( ; itghost != enghost; ++itghost )
+                this->addNeighborSubdomain( boost::unwrap_ref( *itghost ).processId() );
 
             // update mesh entities with parallel data
             if ( false )
@@ -1839,7 +1835,8 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
                 e2e[std::make_pair(std::get<0>(f2eVal),std::get<1>(f2eVal))].push_back( std::make_tuple( eltId, eltPid, std::get<2>(f2eVal) ) );
                 e2e[std::make_pair(eltId,eltPid)].push_back( std::make_tuple( std::get<0>(f2eVal), std::get<1>(f2eVal), j ) );
                 // erase face desc in map (maybe improve other acces)
-                //_faces.erase( _faceit );
+                if ( nDim == nRealDim )
+                    _faces.erase( _faceit );
             }
         } // local face
     } // element loop

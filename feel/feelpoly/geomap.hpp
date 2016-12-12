@@ -1565,7 +1565,7 @@ class Context
      *
      * @return the marker2 of the element
      */
-    Marker2 marker2() const
+    Marker1 marker2() const
         {
             return M_e_marker2;
         }
@@ -1575,7 +1575,7 @@ class Context
      *
      * @return the marker3 of the element
      */
-    Marker2 marker3() const
+    Marker1 marker3() const
         {
             return M_e_marker3;
         }
@@ -2187,8 +2187,8 @@ private:
 
     size_type M_id;
     Marker1 M_e_marker;
-    Marker2 M_e_marker2;
-    Marker3 M_e_marker3;
+    Marker1 M_e_marker2;
+    Marker1 M_e_marker3;
     size_type M_elem_id_1;
     uint16_type M_pos_in_elem_id_1;
     size_type M_elem_id_2;
