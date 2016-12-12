@@ -113,6 +113,9 @@ add_custom_target(install-apps-models-thermodyn
   install-libs-models-thermodyn
   feelpp_application_thermodyn_2d
   feelpp_application_thermodyn_3d
+COMMAND
+  "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=testcases
+  -P "${CMAKE_BINARY_DIR}/applications/models/thermodyn/cmake_install.cmake"    
   COMMAND
       "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
       -P "${CMAKE_BINARY_DIR}/applications/models/thermodyn/cmake_install.cmake"
@@ -132,6 +135,9 @@ add_custom_target(install-apps-models-thermoelectric
   install-libs-models-thermoelectric
   feelpp_application_thermoelectric_2d
   feelpp_application_thermoelectric_3d
+    COMMAND
+      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=testcases
+      -P "${CMAKE_BINARY_DIR}/applications/models/thermoelectric/cmake_install.cmake"
   COMMAND
       "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
       -P "${CMAKE_BINARY_DIR}/applications/models/thermoelectric/cmake_install.cmake"
@@ -146,6 +152,9 @@ add_custom_target(install-apps-models-fluid
   install-feelpp_model_fluidmec3dP2P1G1
   feelpp_application_fluid_2d
   feelpp_application_fluid_3d
+  COMMAND
+  "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=testcases
+  -P "${CMAKE_BINARY_DIR}/applications/models/fluid/cmake_install.cmake"  
   COMMAND
       "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
       -P "${CMAKE_BINARY_DIR}/applications/models/fluid/cmake_install.cmake"
@@ -165,6 +174,9 @@ add_custom_target(install-apps-models-solid
   feelpp_application_stress_3d 
   feelpp_application_solenoid_3d
   COMMAND
+  "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=testcases
+  -P "${CMAKE_BINARY_DIR}/applications/models/solid/cmake_install.cmake"  
+  COMMAND
       "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
       -P "${CMAKE_BINARY_DIR}/applications/models/solid/cmake_install.cmake"
 )
@@ -179,6 +191,9 @@ add_custom_target(install-apps-models-fsi
   feelpp_application_fsi_2d 
   feelpp_application_fsi_3d 
   feelpp_application_fsi_3d_g2
+  COMMAND
+  "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=testcases
+  -P "${CMAKE_BINARY_DIR}/applications/models/fsi/cmake_install.cmake"  
   COMMAND
       "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
       -P "${CMAKE_BINARY_DIR}/applications/models/fsi/cmake_install.cmake"

@@ -63,7 +63,7 @@ macro(feelpp_add_testcase )
     # ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY}
     # COMMENT "Syncing testcase ${testcase} in ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}")
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
-      DESTINATION share/feel/testcases/${FEELPP_CASE_CATEGORY} )
+      DESTINATION share/feel/testcases/${FEELPP_CASE_CATEGORY} COMPONENT testcases)
     #add_dependencies(install-testcase ${target})
   endif()
 endmacro(feelpp_add_testcase)
