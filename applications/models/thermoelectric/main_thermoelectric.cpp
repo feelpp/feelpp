@@ -1,20 +1,15 @@
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4*/
 
 #include <feel/feelmodels/thermoelectric/thermoelectric.hpp>
 
-int main(int argc, char**argv )
+template <uint16_type OrderT>
+void
+runApplicationThermoElectric()
 {
     using namespace Feel;
-	po::options_description thermoelectricoptions( "application thermo-dynamics options" );
-    thermoelectricoptions.add( feelmodels_options("thermo-electric") );
-
-	Environment env( _argc=argc, _argv=argv,
-                     _desc=thermoelectricoptions,
-                     _about=about(_name="application_thermoelectric",
-                                  _author="Feel++ Consortium",
-                                  _email="feelpp-devel@feelpp.org"));
 
     typedef FeelModels::ThermoElectric< Simplex<FEELPP_DIM,1>,
-                                        Lagrange<1, Scalar,Continuous,PointSetFekete> > model_type;
+                                        Lagrange<OrderT, Scalar,Continuous,PointSetFekete> > model_type;
     boost::shared_ptr<model_type> thermoElectric( new model_type("thermo-electric") );
     thermoElectric->init();
     thermoElectric->printAndSaveInfo();
@@ -39,6 +34,33 @@ int main(int argc, char**argv )
             thermoElectric->exportResults();
         }
     }
+}
+
+int
+main( int argc, char** argv )
+{
+    using namespace Feel;
+    po::options_description thermoelectricoptions( "application thermo-electric options" );
+    thermoelectricoptions.add( feelmodels_options("thermo-electric") );
+    thermoelectricoptions.add_options()
+        ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P1,P2,P3 ")
+        ;
+
+	Environment env( _argc=argc, _argv=argv,
+                     _desc=thermoelectricoptions,
+                     _about=about(_name="application_thermoelectric",
+                                  _author="Feel++ Consortium",
+                                  _email="feelpp-devel@feelpp.org"));
+
+    std::string feapprox = soption(_name="fe-approximation");
+    if ( feapprox == "P1" )
+        runApplicationThermoElectric<1>();
+    else if ( feapprox == "P2" )
+        runApplicationThermoElectric<2>();
+    else if ( feapprox == "P3" )
+        runApplicationThermoElectric<3>();
+    else
+        CHECK( false ) << "invalid feapprox " << feapprox;
 
     return 0;
 }
