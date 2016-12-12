@@ -2,7 +2,8 @@
 
 #include <feel/feelmodels/thermoelectric/thermoelectric.hpp>
 
-template <uint16_type OrderT>
+
+template <Feel::uint16_type OrderT>
 void
 runApplicationThermoElectric()
 {
