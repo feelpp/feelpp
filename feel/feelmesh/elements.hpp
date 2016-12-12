@@ -498,10 +498,10 @@ public:
 
     /**
      * \return the range of iterator \c (begin,end) over the elements
-     * with \c Marker1 \p m on processor \p p
+     * with any \c Marker1 \p on processor \p p
      */
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
-    elementsWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
+    elementsWithMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
             elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
@@ -512,55 +512,80 @@ public:
                 auto const& elt = *it;
                 if ( elt.processId() != part )
                     continue;
-                if ( elt.marker().isOff() || elt.marker().value() != m )
+                if ( !elt.hasMarker( markerType ) )
+                    continue;
+                if ( elt.marker( markerType ).isOff() )
                     continue;
                 myelements->push_back(boost::cref(elt));
             }
             return std::make_tuple( myelements->begin(), myelements->end(), myelements );
+        }
+    /**
+     * \return the range of iterator \c (begin,end) over the elements
+     * with \c Marker1 \p markerFlags on processor \p p
+     */
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    elementsWithMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
+            elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+            auto it = this->beginElement();
+            auto en = this->endElement();
+            for ( ; it!=en;++it )
+            {
+                auto const& elt = *it;
+                if ( elt.processId() != part )
+                    continue;
+                if ( !elt.hasMarker( markerType ) )
+                    continue;
+                if ( elt.marker( markerType ).isOff() )
+                    continue;
+                if ( markerFlags.find( elt.marker( markerType ).value() ) == markerFlags.end() )
+                    continue;
+                myelements->push_back(boost::cref(elt));
+            }
+            return std::make_tuple( myelements->begin(), myelements->end(), myelements );
+        }
+    /**
+     * \return the range of iterator \c (begin,end) over the elements
+     * with \c Marker1 \p m on processor \p p
+     */
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    elementsWithMarkerByType( uint16_type markerType, flag_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            if ( m == invalid_flag_type_value )
+                return this->elementsWithMarkerByType( markerType, p );
+            else
+                return this->elementsWithMarkerByType( markerType, std::set<flag_type>( { m } ), p );
+
+        }
+
+    /**
+     * \return the range of iterator \c (begin,end) over the elements
+     * with \c Marker1 \p m on processor \p p
+     */
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    elementsWithMarker( flag_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            return this->elementsWithMarkerByType( 1, m, p );
         }
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker2 \p m on processor \p p
      */
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
-    elementsWithMarker2( size_type m, rank_type p = invalid_rank_type_value ) const
+    elementsWithMarker2( flag_type m, rank_type p = invalid_rank_type_value ) const
         {
-            const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-            elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
-            auto it = this->beginElement();
-            auto en = this->endElement();
-            for ( ; it!=en;++it )
-            {
-                auto const& elt = *it;
-                if ( elt.processId() != part )
-                    continue;
-                if ( elt.marker2().isOff() || elt.marker2().value() != m )
-                    continue;
-                myelements->push_back(boost::cref(elt));
-            }
-            return std::make_tuple( myelements->begin(), myelements->end(), myelements );
+            return this->elementsWithMarkerByType( 2, m, p );
         }
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker3 \p m on processor \p p
      */
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
-    elementsWithMarker3( size_type m, rank_type p = invalid_rank_type_value ) const
+    elementsWithMarker3( flag_type m, rank_type p = invalid_rank_type_value ) const
         {
-            const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-            elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
-            auto it = this->beginElement();
-            auto en = this->endElement();
-            for ( ; it!=en;++it )
-            {
-                auto const& elt = *it;
-                if ( elt.processId() != part )
-                    continue;
-                if ( elt.marker3().isOff() || elt.marker3().value() != m )
-                    continue;
-                myelements->push_back(boost::cref(elt));
-            }
-            return std::make_tuple( myelements->begin(), myelements->end(), myelements );
+            return this->elementsWithMarkerByType( 3, m, p );
         }
     /**
      * \return the range of iterator \c (begin,end) over the elements
@@ -709,67 +734,55 @@ public:
         if ( setid )
             f.setId( M_elements.size() );
         return *M_elements.insert( f ).first;
-        //M_elements.push_back( f );
-        //return M_elements.back();
+    }
 
+    template<typename ElementVecType>
+    void updateMarker( uint16_type markerType, ElementVecType const& evec )
+    {
+        EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        auto rangeElt = Feel::elements( evec.mesh(), entityProcess );
+        auto it = rangeElt.template get<1>();
+        auto en = rangeElt.template get<2>();
+
+        for ( ; it != en; ++it )
+            M_elements.modify( this->elementIterator( boost::unwrap_ref(*it).id(), boost::unwrap_ref(*it).processId() ), [&markerType,&evec]( element_type& e )
+                               {
+                                   e.setMarker( markerType, evec.localToGlobal( e.id(), 0, 0 ) );
+                               } );
     }
 
     template<typename ElementVecType>
     void updateMarker2( ElementVecType const& evec )
     {
-        EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-        auto rangeElt = Feel::elements( evec.mesh(), entityProcess );
-        auto it = rangeElt.template get<1>();
-        auto en = rangeElt.template get<2>();
-
-        for ( ; it != en; ++it )
-            M_elements.modify( this->elementIterator( boost::unwrap_ref(*it).id(), boost::unwrap_ref(*it).processId() ), [&evec]( element_type& e )
-        {
-            e.setMarker2(  evec.localToGlobal( e.id(), 0, 0 ) );
-        } );
+        this->updateMarker( 2, evec );
     }
 
     template<typename ElementVecType>
     void updateMarker3( ElementVecType const& evec )
     {
-        EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-        auto rangeElt = Feel::elements( evec.mesh(), entityProcess );
-        auto it = rangeElt.template get<1>();
-        auto en = rangeElt.template get<2>();
+        this->updateMarker( 2, evec );
+    }
 
-        for ( ; it != en; ++it )
-            M_elements.modify( this->elementIterator( boost::unwrap_ref(*it).id(), boost::unwrap_ref(*it).processId() ), [&evec]( element_type& e )
+    template<typename IteratorRange>
+    void updateMarkerWithRangeElements( uint16_type markerType, IteratorRange const& range, flag_type flag )
+    {
+        for ( auto const& elt : range )
+            M_elements.modify( this->elementIterator( boost::unwrap_ref( elt ) ), [&markerType,&flag]( element_type& e )
         {
-            e.setMarker3(  evec.localToGlobal( e.id(), 0, 0 ) );
+            e.setMarker( markerType,flag );
         } );
     }
 
     template<typename IteratorRange>
     void updateMarker2WithRangeElements( IteratorRange const& range, flag_type flag )
     {
-        typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_range_type;
-        iterator_range_type it, en;
-        boost::tie( boost::tuples::ignore, it, en ) = range;
-
-        for (  ; it != en; ++it )
-            M_elements.modify( this->elementIterator( it->id() ), [&flag]( element_type& e )
-        {
-            e.setMarker2( flag );
-        } );
+        this->updateMarkerWithRangeElements( 2,range,flag );
     }
 
     template<typename IteratorRange>
     void updateMarker3WithRangeElements( IteratorRange const& range, flag_type flag )
     {
-        typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_type;
-        iterator_type it, en;
-        boost::tie( boost::tuples::ignore, it, en ) = range;
-
-        for ( ; it != en; ++it )
-            M_elements.modify( this->elementIterator( it->id() ), [&flag]( element_type& e )
-        {
-            e.setMarker3( flag );
-        } );
+        this->updateMarkerWithRangeElements( 3,range,flag );
     }
 
 

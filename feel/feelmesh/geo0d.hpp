@@ -408,43 +408,77 @@ public:
         return *this;
     }
 
+    bool hasMarker( uint16_type k ) const
+    {
+        auto itFindMarker = M_markers.find( k );
+        if ( itFindMarker == M_markers.end() )
+            return false;
+        if ( itFindMarker->second.isOff() )
+            return false;
+        return true;
+    }
+    Marker1 const& marker( uint16_type k ) const
+    {
+        return M_markers.find( k )->second;
+    }
+    Marker1& marker( uint16_type k )
+    {
+        return M_markers[k];
+    }
+    void setMarker( uint16_type k, flag_type v )
+    {
+        M_markers[k].assign( v );
+    }
+
+    bool hasMarker() const
+    {
+        return this->hasMarker( 1 );
+    }
     Marker1 const& marker() const
     {
-        return M_marker1;
+        return M_markers.find( 1 )->second;
     }
     Marker1& marker()
     {
-        return M_marker1;
+        return M_markers[1];
     }
     void setMarker( flag_type v )
     {
-        return M_marker1.assign( v );
+        M_markers[1].assign( v );
     }
 
-    Marker2 const& marker2() const
+    bool hasMarker2() const
     {
-        return M_marker2;
+        return this->hasMarker( 2 );
     }
-    Marker2& marker2()
+    Marker1 const& marker2() const
     {
-        return M_marker2;
+        return M_markers.find( 2 )->second;
+    }
+    Marker1& marker2()
+    {
+        return M_markers[2];
     }
     void setMarker2( flag_type v )
     {
-        return M_marker2.assign( v );
+        M_markers[2].assign( v );
     }
 
-    Marker3 const& marker3() const
+    bool hasMarker3() const
     {
-        return M_marker3;
+        return this->hasMarker( 3 );
     }
-    Marker3& marker3()
+    Marker1 const& marker3() const
     {
-        return M_marker3;
+        return M_markers.find( 3 )->second;
+    }
+    Marker1& marker3()
+    {
+        return M_markers[3];
     }
     void setMarker3( flag_type v )
     {
-        return M_marker3.assign( v );
+        M_markers[3].assign( v );
     }
 
     /**
@@ -467,8 +501,8 @@ public:
     std::vector<int> tags() const
         {
             std::vector<int> thetags(3);
-            thetags[0] = M_marker1.value();
-            thetags[1] = M_marker2.value();
+            thetags[0] = (this->hasMarker(1))? this->marker(1).value() : 0;//M_marker1.value();
+            thetags[1] = (this->hasMarker(2))? this->marker(2).value() : 0;//M_marker2.value();
             thetags[2] = this->processId();
             return thetags;
         }
@@ -521,9 +555,7 @@ private:
             ar & boost::serialization::base_object<super2>( *this );
             //ar & M_is_vertex;
             //ar & M_is_parametric;
-            ar & M_marker1;
-            ar & M_marker2;
-            ar & M_marker3;
+            ar & M_markers;
             /*
             ar & M_gdim;
             ar & M_gtag;
@@ -543,9 +575,7 @@ private:
     MeshBase const* M_mesh;
 
 
-    Marker1 M_marker1;
-    Marker2 M_marker2;
-    Marker3 M_marker3;
+    std::map<uint16_type,Marker1> M_markers;
 
     int M_gdim;
     int M_gtag;
@@ -567,9 +597,6 @@ Geo0D<Dim, T>::Geo0D()
     M_master_id( 0 ),
     M_is_vertex( false ),
     M_is_parametric( false ),
-    M_marker1(),
-    M_marker2(),
-    M_marker3(),
     M_gdim( 0 ),
     M_gtag( 0 ),
     M_uv( 2 )
@@ -584,9 +611,6 @@ Geo0D<Dim, T>::Geo0D( size_type id, bool boundary, bool is_vertex )
     super2( Dim ),
     M_master_id( id ),
     M_is_vertex( is_vertex ),
-    M_marker1(),
-    M_marker2(),
-    M_marker3(),
     M_gdim( 0 ),
     M_gtag( 0 ),
     M_uv( 2 )
@@ -603,9 +627,6 @@ Geo0D<Dim, T>::Geo0D( size_type id, value_type x, value_type y, value_type z, bo
     M_master_id( id ),
     M_is_vertex( is_vertex ),
     M_is_parametric( false ),
-    M_marker1(),
-    M_marker2(),
-    M_marker3(),
     M_gdim( 0 ),
     M_gtag( 0 ),
     M_uv( 2 )
@@ -629,9 +650,6 @@ Geo0D<Dim, T>::Geo0D( size_type id, node_type const& __p, bool boundary, bool is
     M_master_id( id ),
     M_is_vertex( is_vertex ),
     M_is_parametric( false ),
-    M_marker1(),
-    M_marker2(),
-    M_marker3(),
     M_gdim( 0 ),
     M_gtag( 0 ),
     M_uv( 2 )

@@ -171,9 +171,6 @@ public:
         M_points( numPoints ),
         M_G( nRealDim, numPoints ),
         M_neighbors( 0 ),
-        M_marker1(),
-        M_marker2(),
-        M_marker3(),
         M_gm(),
         M_gm1()
     {
@@ -191,9 +188,6 @@ public:
         M_points( numPoints ),
         M_G( nRealDim, numPoints ),
         M_neighbors( 0 ),
-        M_marker1(),
-        M_marker2(),
-        M_marker3(),
         M_gm(),
         M_gm1()
     {
@@ -795,10 +789,9 @@ public:
      */
     void setTags( std::vector<int> const& tags )
     {
-        M_marker1.assign( tags[0] );
-
+        M_markers[1].assign( tags[0] );
         if ( tags.size() > 1 )
-            M_marker2.assign( tags[1] );
+            M_markers[2].assign( tags[1] );
 
         if ( tags.size() > 2 )
         {
@@ -819,43 +812,83 @@ public:
 
         }
     }
+
+
+    bool hasMarker( uint16_type k ) const
+    {
+        auto itFindMarker = M_markers.find( k );
+        if ( itFindMarker == M_markers.end() )
+            return false;
+        if ( itFindMarker->second.isOff() )
+            return false;
+        return true;
+    }
+    Marker1 const& marker( uint16_type k ) const
+    {
+        DCHECK( this->hasMarker( k ) ) << "no marker type " << k;
+        return M_markers.find( k )->second;
+    }
+    Marker1& marker( uint16_type k )
+    {
+        return M_markers[k];
+    }
+    void setMarker( uint16_type k, flag_type v )
+    {
+        M_markers[k].assign( v );
+    }
+
+    bool hasMarker() const
+    {
+        return this->hasMarker( 1 );
+    }
     Marker1 const& marker() const
     {
-        return M_marker1;
+        DCHECK( this->hasMarker( 1 ) ) << "no marker type 1";
+        return M_markers.find( 1 )->second;
     }
     Marker1& marker()
     {
-        return M_marker1;
+        return M_markers[1];
     }
     void setMarker( flag_type v )
     {
-        return M_marker1.assign( v );
+        M_markers[1].assign( v );
     }
 
-    Marker2 const& marker2() const
+    bool hasMarker2() const
     {
-        return M_marker2;
+        return this->hasMarker( 2 );
     }
-    Marker2& marker2()
+    Marker1 const& marker2() const
     {
-        return M_marker2;
+        DCHECK( this->hasMarker( 2 ) ) << "no marker type 2";
+        return M_markers.find( 2 )->second;
+    }
+    Marker1& marker2()
+    {
+        return M_markers[2];
     }
     void setMarker2( flag_type v )
     {
-        return M_marker2.assign( v );
+        M_markers[2].assign( v );
     }
 
-    Marker3 const& marker3() const
+    bool hasMarker3() const
     {
-        return M_marker3;
+        return this->hasMarker( 3 );
     }
-    Marker3& marker3()
+    Marker1 const& marker3() const
     {
-        return M_marker3;
+        DCHECK( this->hasMarker( 3 ) ) << "no marker type 3";
+        return M_markers.find( 3 )->second;
+    }
+    Marker1& marker3()
+    {
+        return M_markers[3];
     }
     void setMarker3( flag_type v )
     {
-        return M_marker3.assign( v );
+        M_markers[3].assign( v );
     }
 
     //! \return the number of point element neighbors
@@ -932,15 +965,8 @@ private:
             ar & M_G;
             DVLOG(2) << "  - measures...\n";
             ar & M_measures;
-            DVLOG(2) << "  - marker1...\n";
-            ar & M_marker1;
-            DVLOG(2) << "  - marker1: " << M_marker1.value() << "...\n";
-            DVLOG(2) << "  - marker2...\n";
-            ar & M_marker2;
-            DVLOG(2) << "  - marker2: " << M_marker2.value() << "...\n";
-            DVLOG(2) << "  - marker3...\n";
-            ar & M_marker3;
-            DVLOG(2) << "  - marker3: " << M_marker3.value() << "...\n";
+            DVLOG(2) << "  - markers...\n";
+            ar & M_markers;
         }
 
 private:
@@ -968,9 +994,7 @@ private:
     //! measure of the set of point element neighbors
     //value_type M_meas_pneighbors;
 
-    Marker1 M_marker1;
-    Marker2 M_marker2;
-    Marker3 M_marker3;
+    std::map<uint16_type,Marker1> M_markers;
 
     // mesh to which the geond element belongs to
     mutable MeshBase const* M_mesh;

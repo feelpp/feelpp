@@ -349,12 +349,11 @@ public:
 
     /**
      * \return the range of iterator \c (begin,end) over the faces
-     * with \c Marker1 \p m on processor \p p
+     * with any \c Marker1 \p on processor \p p
      */
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
-    facesWithMarker( size_type m = invalid_size_type_value, rank_type p = invalid_rank_type_value ) const
+    facesWithMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
         {
-            bool allMarkedFaces = (m == invalid_size_type_value);
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
             faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
             auto it = this->beginFace();
@@ -364,11 +363,61 @@ public:
                 auto const& face = *it;
                 if ( face.processId() != part )
                     continue;
-                if ( face.marker().isOff() || ( !allMarkedFaces && face.marker().value() != m ) )
+                if ( !face.hasMarker( markerType ) )
+                    continue;
+                if ( face.marker( markerType ).isOff() )
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
+        }
+    /**
+     * \return the range of iterator \c (begin,end) over the faces
+     * with \c Marker1 \p markerFlags on processor \p p
+     */
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesWithMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+            faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
+            auto it = this->beginFace();
+            auto en = this->endFace();
+            for ( ; it!=en;++it )
+            {
+                auto const& face = *it;
+                if ( face.processId() != part )
+                    continue;
+                if ( !face.hasMarker( markerType ) )
+                    continue;
+                if ( face.marker( markerType ).isOff() )
+                    continue;
+                if ( markerFlags.find( face.marker( markerType ).value() ) == markerFlags.end() )
+                    continue;
+                myfaces->push_back( boost::cref( face ) );
+            }
+            return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
+        }
+    /**
+     * \return the range of iterator \c (begin,end) over the faces
+     * with \c Marker1 \p m on processor \p p
+     */
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesWithMarkerByType( uint16_type markerType, flag_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            if ( m == invalid_flag_type_value )
+                return this->facesWithMarkerByType( markerType, p );
+            else
+                return this->facesWithMarkerByType( markerType, std::set<flag_type>( { m } ), p );
+        }
+
+    /**
+     * \return the range of iterator \c (begin,end) over the faces
+     * with \c Marker1 \p m on processor \p p
+     */
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesWithMarker( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
+        {
+            return this->facesWithMarkerByType( 1, m, p );
         }
 
     /**
@@ -376,23 +425,9 @@ public:
      * with \c Marker2 \p m on processor \p p
      */
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
-    facesWithMarker2( size_type m = invalid_size_type_value, rank_type p = invalid_rank_type_value ) const
+    facesWithMarker2( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
         {
-            bool allMarkedFaces = (m == invalid_size_type_value);
-            const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-            faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
-            auto it = this->beginFace();
-            auto en = this->endFace();
-            for ( ; it!=en;++it )
-            {
-                auto const& face = *it;
-                if ( face.processId() != part )
-                    continue;
-                if ( face.marker2().isOff() || ( !allMarkedFaces && face.marker2().value() != m ) )
-                    continue;
-                myfaces->push_back( boost::cref( face ) );
-            }
-            return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
+            return this->facesWithMarkerByType( 2, m, p );
         }
 
     /**
@@ -400,25 +435,10 @@ public:
      * with \c Marker3 \p m on processor \p p
      */
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
-    facesWithMarker3( size_type m = invalid_size_type_value, rank_type p = invalid_rank_type_value ) const
+    facesWithMarker3( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
         {
-            bool allMarkedFaces = (m == invalid_size_type_value);
-            const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-            faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
-            auto it = this->beginFace();
-            auto en = this->endFace();
-            for ( ; it!=en;++it )
-            {
-                auto const& face = *it;
-                if ( face.processId() != part )
-                    continue;
-                if ( face.marker3().isOff() || ( !allMarkedFaces && face.marker3().value() != m ) )
-                    continue;
-                myfaces->push_back( boost::cref( face ) );
-            }
-            return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
+            return this->facesWithMarkerByType( 3, m, p );
         }
-
 
 
     /**
@@ -585,41 +605,83 @@ public:
     /**
      * update the faces markers by setting them from the elements markers associated to the face
      */
-    void updateMarkersFromElements()
+    void updateMarkersFromElements( std::initializer_list<uint16_type> const& markersType )
     {
-        //pid_face_iterator it;
-        //pid_face_iterator en
-        //face_iterator it;
-        //face_iterator en;
-        //boost::tie( it, en ) = facesWithProcessId( this->worldCommFaces().localRank() );
-
         auto it = beginFace(), en = endFace();
-
         for (  ; it != en; ++it )
             M_faces.modify( it,
-                             []( face_type& e )
+                             [&markersType]( face_type& e )
         {
-            int tag2_0 = e.isConnectedTo0()?e.element0().marker2().value():-1;
-            int tag2_1 = e.isConnectedTo1()?e.element1().marker2().value():-1;
-            int tag3_0 = e.isConnectedTo0()?e.element0().marker3().value():-1;
-            int tag3_1 = e.isConnectedTo1()?e.element1().marker3().value():-1;
-
-            if ( ( tag2_0 != -1 && tag2_0 == tag2_1 ) || e.isOnBoundary() )
-                e.setMarker2( tag2_0 );
-            else if ( tag2_0 != -1 && tag2_1 != -1 )
-                e.setMarker2( std::max(tag2_0,tag2_1) );
-            else
-                e.setMarker2( 0 );
-
-            if ( ( tag3_0 != -1 && tag3_0 == tag3_1 ) || e.isOnBoundary() )
-                e.setMarker3( tag3_0 );
-            else if ( tag3_0 != -1 && tag3_1 != -1 )
-                e.setMarker3( std::max(tag3_0,tag3_1) );
-            else
-                e.setMarker3( 0 );
+            for ( uint16_type const& markerType : markersType )
+            {
+                if ( !e.isConnectedTo0() )
+                    continue;
+                if( !e.isConnectedTo1() )
+                {
+                    if ( !e.element0().hasMarker( markerType ) )
+                        continue;
+                    flag_type tag_0 = e.element0().marker( markerType ).value();
+                    e.setMarker( markerType, tag_0 );
+                }
+                else
+                {
+                    bool hasMarkerElt0 = e.element0().hasMarker( markerType );
+                    bool hasMarkerElt1 = e.element1().hasMarker( markerType );
+                    flag_type tag_0 = (hasMarkerElt0)? e.element0().marker( markerType ).value() : 0;
+                    flag_type tag_1 = (hasMarkerElt1)? e.element1().marker( markerType ).value() : 0;
+                    if ( hasMarkerElt0 && hasMarkerElt1 )
+                        e.setMarker( markerType, std::max(tag_0,tag_1) );
+                    else if ( hasMarkerElt0 && !hasMarkerElt1 )
+                        e.setMarker( markerType, tag_0 );
+                    else if ( !hasMarkerElt0 && hasMarkerElt1 )
+                        e.setMarker( markerType, tag_1 );
+                }
+            }
         } );
-
     }
+    /**
+     * update the faces markers by setting them from the elements markers associated to the face
+     */
+    void updateMarkersFromElements( uint16_type markerType )
+        {
+            this->updateMarkersFromElements( { markerType } );
+        }
+    /**
+     * update the faces markers by setting them from the elements markers associated to the face
+     */
+    void updateMarkersFromElements()
+    {
+        this->updateMarkersFromElements( { 2,3 } );
+    }
+
+    /**
+     * update faces marker 2 from a vector whose size is exactely the number of
+     * faces. This vector can be generated using a P0 discontinuous space
+     * associated to a mesh whose elements are the faces
+     */
+    template<typename ElementVecType>
+    void updateFacesMarker( uint16_type markerType, ElementVecType const& evec )
+    {
+        auto rangeElt = Feel::elements( evec.mesh() );
+        auto it = rangeElt.template get<1>();
+        auto en = rangeElt.template get<2>();
+        size_type id = 0;
+        auto update_marker = [&markerType,&evec,&id]( face_type& e )
+            {
+                auto dof_value = evec.localToGlobal( id, 0, 0 );
+                e.setMarker( markerType, dof_value );
+            };
+        for ( ; it != en; ++it )
+        {
+            id = boost::unwrap_ref(*it).id();
+            auto const& theface = face( evec.mesh()->subMeshToMesh( id ) );
+            auto fid = evec.mesh()->subMeshToMesh( id );
+            auto it = this->faceIterator( fid );
+            bool r = M_faces.modify( it, update_marker );
+            DLOG_IF(WARNING, r == false ) << "update marker2 failed for element id " << id << " face id " << fid;
+        }
+    }
+
 
     /**
      * update faces marker 2 from a vector whose size is exactely the number of
@@ -629,26 +691,7 @@ public:
     template<typename ElementVecType>
     void updateFacesMarker2( ElementVecType const& evec )
     {
-        auto rangeElt = Feel::elements( evec.mesh() );
-        auto it = rangeElt.template get<1>();
-        auto en = rangeElt.template get<2>();
-        size_type id = 0;
-        auto update_marker2 = [&evec,&id]( face_type& e )
-            {
-                auto dof_value = evec.localToGlobal( id, 0, 0 );
-                e.setMarker2( dof_value );
-            };
-        for ( ; it != en; ++it )
-        {
-            id = boost::unwrap_ref(*it).id();
-            auto const& theface = face( evec.mesh()->subMeshToMesh( id ) );
-            
-            auto fid = evec.mesh()->subMeshToMesh( id );
-            auto it = this->faceIterator( fid );
-            
-            bool r = M_faces.modify( it, update_marker2 );
-            DLOG_IF(WARNING, r == false ) << "update marker2 failed for element id " << id << " face id " << fid;
-        }
+        this->updateFacesMarker( 2, evec );
     }
     
     /**
@@ -659,51 +702,30 @@ public:
     template<typename ElementVecType>
     void updateFacesMarker3( ElementVecType const& evec )
     {
-        auto rangeElt = Feel::elements( evec.mesh() );
-        auto it = rangeElt.template get<1>();
-        auto en = rangeElt.template get<2>();
-        size_type id = 0;
-        auto update_marker = [&evec,&id]( face_type& e )
-            {
-                auto dof_value = evec.localToGlobal( id, 0, 0 );
-                e.setMarker3( dof_value );
-            };
-        for ( ; it != en; ++it )
-        {
-            id = boost::unwrap_ref(*it).id();
-            auto const& theface = face( evec.mesh()->subMeshToMesh( id ) );
-            
-            auto fid = evec.mesh()->subMeshToMesh( id );
-            auto it = this->faceIterator( fid );
-            
-            bool r = M_faces.modify( it, update_marker );
-            DLOG_IF(WARNING, r == false ) << "update marker3 failed for element id " << id << " face id " << fid;
-        }
+        this->updateFacesMarker( 3, evec );
     }
 
 
+    template<typename IteratorRange>
+    void updateMarkerWithRangeFaces( uint16_type markerType, IteratorRange const& range, flag_type flag )
+    {
+        auto it = boost::get<1>( range );
+        auto en = boost::get<2>( range );
+        for (  ; it != en; ++it )
+            M_faces.modify( this->faceIterator( boost::unwrap_ref( *it ).id() ), [&markerType,&flag]( face_type& e )
+        {
+            e.setMarker( markerType, flag );
+        } );
+    }
     template<typename IteratorRange>
     void updateMarker2WithRangeFaces( IteratorRange const& range, flag_type flag )
     {
-        auto it = boost::get<1>( range );
-        auto en = boost::get<2>( range );
-        for (  ; it != en; ++it )
-            M_faces.modify( this->faceIterator( boost::unwrap_ref( *it ).id() ), [&flag]( face_type& e )
-        {
-            e.setMarker2( flag );
-        } );
+        this->updateMarkerWithRangeFaces( 2, range, flag );
     }
-
     template<typename IteratorRange>
     void updateMarker3WithRangeFaces( IteratorRange const& range, flag_type flag )
     {
-        auto it = boost::get<1>( range );
-        auto en = boost::get<2>( range );
-        for (  ; it != en; ++it )
-            M_faces.modify( this->faceIterator( boost::unwrap_ref( *it ).id() ), [&flag]( face_type& e )
-        {
-            e.setMarker3( flag );
-        } );
+        this->updateMarkerWithRangeFaces( 3, range, flag );
     }
 
     void setWorldCommFaces( WorldComm const& _worldComm )
