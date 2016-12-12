@@ -117,6 +117,29 @@ add_custom_target(install-apps-models-thermodyn
       "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
       -P "${CMAKE_BINARY_DIR}/applications/models/thermodyn/cmake_install.cmake"
 )
+add_custom_target(install-libs-models-thermoelectric
+  DEPENDS 
+  install-feelpp-lib
+  install-feelpp-models-common
+  install-feelpp_model_thermoelectric2dP1G1
+  install-feelpp_model_thermoelectric3dP1G1
+  install-feelpp_model_thermoelectric2dP2G1
+  install-feelpp_model_thermoelectric3dP2G1
+  COMMAND
+      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
+      -P "${CMAKE_BINARY_DIR}/applications/models/thermoelectric/cmake_install.cmake"
+)
+
+add_custom_target(install-apps-models-thermoelectric
+  DEPENDS
+  install-libs-models-thermoelectric
+  feelpp_application_thermoelectric_2d
+  feelpp_application_thermoelectric_3d
+  COMMAND
+      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
+      -P "${CMAKE_BINARY_DIR}/applications/models/thermoelectric/cmake_install.cmake"
+)
+
 add_custom_target(install-apps-models-fluid
   DEPENDS 
   install-feelpp-lib
@@ -191,6 +214,7 @@ add_custom_target(install-feelpp
 add_custom_target(install-feelpp-apps
   DEPENDS
   install-feelpp-base
+  install-apps-models-thermoelectric
   install-apps-models-thermodyn
   install-apps-models-fluid
   install-apps-models-solid
