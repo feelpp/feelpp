@@ -1,0 +1,61 @@
+// -*- mode: javascript -*-
+{
+    "Name":"ThermoElectric",
+    "ShortName":"ThermoElectric",
+    "Model":"ThermoElectric-linear",//"ThermoElectric-nonlinear",//"ThermoElectric-linear",
+    "Materials":
+    {
+        //"Omega":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+        "Omega":
+        {
+            "name":"mymat",
+            "k11":"10",//[ W/(m*K) ]
+            "Cp":"1000.005", //[ J/(kg*K) ]
+            "rho":"1.205", //[ kg/(m^3) ]
+            "sigma":"1e5"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "temperature":
+        {
+            "Dirichlet":
+            {
+                "top":
+                {
+                    "expr":"10"
+                },
+                "bottom":
+                {
+                    "expr":"0"
+                }
+            },
+            "Neumann":
+            {
+                "cylinder":
+                {
+                    "expr":"0" 
+                }
+            }
+        },
+        "electric-potential":
+        {
+            "Dirichlet":
+            {
+                "right":
+                {
+                    "expr":"3"
+                },
+                "left":
+                {
+                    "expr":"10"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["temperature"]
+    }
+
+}
