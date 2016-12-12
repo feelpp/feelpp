@@ -110,7 +110,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    //TODO
+
 }
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -154,22 +154,13 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     myblockGraph(indexBlock,indexBlock) = stencil(_test=this->spaceElectricPotential(),
                                                   _trial=this->spaceElectricPotential() )->graph();
 
-#if 0
-    BlocksStencilPattern patCoupling1(1,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
+    BlocksStencilPattern patCoupling1(1,nBlockThermoDyn,size_type(Pattern::ZERO));
     patCoupling1(0,0) = size_type(Pattern::COUPLED);
-    myblockGraph(indexBlock+1,0) = stencil(_test=M_thermodynModel->spaceTemperature(),
-                                           _trial=this->functionSpace(),
+    myblockGraph(0,indexBlock) = stencil(_test=M_thermodynModel->spaceTemperature(),
+                                           _trial=this->spaceElectricPotential(),
                                            _pattern_block=patCoupling1,
                                            _diag_is_nonzero=false,_close=false)->graph();
-
-    BlocksStencilPattern patCoupling2(space_fluid_type::nSpaces,1,size_type(Pattern::ZERO));
-    patCoupling2(0,0) = size_type(Pattern::COUPLED);
-    myblockGraph(0,indexBlock+1) = stencil(_test=this->functionSpace(),
-                                           _trial=M_thermodynModel->spaceTemperature(),
-                                           _pattern_block=patCoupling2,
-                                           _diag_is_nonzero=false,_close=false)->graph();
     ++indexBlock;
-#endif
 
     myblockGraph.close();
 
@@ -187,7 +178,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     std::string theThermoElectricModel = this->modelProperties().model();
     bool doSolveOnlyElectricPotential = ( theThermoElectricModel == "ThermoElectric-linear" );
 
-    
     M_thermodynModel.reset( new thermodyn_model_type(prefixvm(this->prefix(),"thermo"), false, this->worldComm(),
                                                      this->subPrefix(), this->rootRepositoryWithoutNumProc() ) );
     M_thermodynModel->loadMesh( this->mesh() );
@@ -197,6 +187,11 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_thermodynModel->setRowStartInMatrix( 0 );
     M_thermodynModel->setColStartInMatrix( 0 );
     M_thermodynModel->setRowStartInVector( 0 );
+    if ( doSolveOnlyElectricPotential )
+    {
+        M_thermodynModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
+                                                                                                boost::ref( *this ), _1, _2 );
+    }
 
 
     // functionspace
@@ -210,7 +205,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
 
     // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
+    M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
 
     size_type currentStartIndex = 0;// velocity and pressure before
     M_startBlockIndexFieldsInMatrix["temperature"] = 0;
@@ -218,19 +213,18 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // vector solution
     int nBlock = this->nBlockMatrixGraph();
-    M_blockVectorSolution.resize( nBlock );
+    M_blockVectorSolutionMonolithic.resize( nBlock );
     int nBlockThermoDyn = M_thermodynModel->nBlockMatrixGraph();
     int indexBlock=0;
     for (int tk1=0;tk1<nBlockThermoDyn ;++tk1 )
-        M_blockVectorSolution(indexBlock+tk1) = M_thermodynModel->blockVectorSolution()(tk1);
+        M_blockVectorSolutionMonolithic(indexBlock+tk1) = M_thermodynModel->blockVectorSolution()(tk1);
     indexBlock+=nBlockThermoDyn;
-    M_blockVectorSolution(indexBlock) = this->fieldElectricPotentialPtr();
+    M_blockVectorSolutionMonolithic(indexBlock) = this->fieldElectricPotentialPtr();
 
     // init petsc vector associated to the block
-    M_blockVectorSolution.buildVector( this->backend() );
+    M_blockVectorSolutionMonolithic.buildVector( this->backend() );
 
 
-    
     // start or restart time step scheme and exporter
 #if 0
     if (!this->doRestart())
@@ -251,33 +245,30 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         // up current time
         this->updateTime( M_bdfTemperature->time() );
     }
-
 #endif
+
     // post-process
     this->initPostProcess();
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
     {
-        if ( false )//monolithic
+        if ( !doSolveOnlyElectricPotential )//monolithic
         {
             // matrix graph of non zero
             typename model_algebraic_factory_type::graph_ptrtype graph( new typename model_algebraic_factory_type::graph_type( this->buildBlockMatrixGraph() ) );
-
             // tool for assembly and solver
-            M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend(),
-                                                                        graph, graph->mapRow().indexSplit() ) );
+            M_algebraicFactoryMonolithic.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend(),
+                                                                                  graph, graph->mapRow().indexSplit() ) );
         }
-        if ( true ) // only
+        if ( doSolveOnlyElectricPotential ) // only
         {
-            // auto M_backend2 = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
-            // matrix graph of non zero
-            auto graph = this->buildBlockMatrixGraph()(1,1);
-            // auto graph = stencil(_test=this->spaceElectricPotential(),
-            //                      _trial=this->spaceElectricPotential() )->graph();
+            M_backendElectricModel = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"electric"), this->worldComm() );
+            auto graph = stencil(_test=this->spaceElectricPotential(),
+                                 _trial=this->spaceElectricPotential() )->graph();
             // tool for assembly and solver
-            M_algebraicFactory.reset( new model_algebraic_factory_type(this->shared_from_this(),this->backend(),
-                                                                       graph, graph->mapRow().indexSplit() ) );
+            M_algebraicFactoryElectricModel.reset( new model_algebraic_factory_type( this->shared_from_this(),M_backendElectricModel,
+                                                                                     graph, graph->mapRow().indexSplit() ) );
         }
     }
 
@@ -321,14 +312,15 @@ boost::shared_ptr<std::ostringstream>
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    *_ostr << M_thermodynModel->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
-           << "\n||----------Info : ThermoElectric---------------||"
+           << "\n||----------Info : Electric--------------------||"
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
-           << "\n   Prefix : " << this->prefix()
+           << "\n   Prefix : " << prefixvm(this->prefix(),"electric")
            << "\n   Root Repository : " << this->rootRepository();
     *_ostr << "\n   Physical Model"
            << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient");
@@ -344,14 +336,29 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n   Space ElectricPotential Discretization"
            << "\n     -- order         : " << nOrderPolyElectricPotential
            << "\n     -- number of dof : " << M_XhElectricPotential->nDof() << " (" << M_XhElectricPotential->nLocalDof() << ")";
-    if ( M_algebraicFactory )
-        *_ostr << M_algebraicFactory->getInfo()->str();
+    if ( M_algebraicFactoryElectricModel )
+        *_ostr << M_algebraicFactoryElectricModel->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n";
-
-    *_ostr << M_thermodynModel->getInfo()->str();
+    *_ostr << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||----------Info : ThermoElectric---------------||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n   Prefix : " << this->prefix()
+           << "\n   Root Repository : " << this->rootRepository();
+    *_ostr << "\n   Physical Model"
+           << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient");
+    if ( M_algebraicFactoryMonolithic )
+        *_ostr << M_algebraicFactoryMonolithic->getInfo()->str();
+    *_ostr << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n";
 
     return _ostr;
 }
@@ -421,30 +428,26 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
 {
     this->log("ThermoElectric","solve", "start");
     this->timerTool("Solve").start();
-    
+
     M_thermodynModel->updateParameterValues();
     this->updateParameterValues();
 
     std::string theThermoElectricModel = this->modelProperties().model();
     if ( theThermoElectricModel == "ThermoElectric-linear" )
     {
-        // auto mySolutionVectorLinear = M_backend()->newVector( this->spaceElectricPotential()
-        auto mySolutionVectorLinear = M_backend->toBackendVectorPtr( this->fieldElectricPotential() );
-        M_algebraicFactory->solve( "LinearSystem", mySolutionVectorLinear/*this->blockVectorSolution().vector()*/ );
+        auto mySolutionVectorLinear = M_backendElectricModel->toBackendVectorPtr( this->fieldElectricPotential() );
+        M_algebraicFactoryElectricModel->solve( "LinearSystem", mySolutionVectorLinear );
 
-        M_thermodynModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
-                                                                                                boost::ref( *this ), _1, _2 );
+        // M_thermodynModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
+        //                                                                                         boost::ref( *this ), _1, _2 );
         M_thermodynModel->solve();
     }
     else
     {
-        CHECK( false ) << "TODO";
-        // M_thermodynModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = nullptr;
-        //M_algebraicFactory->linearSolver(this->blockVectorSolution().vector());
-        M_algebraicFactory->solve( "LinearSystem", this->blockVectorSolution().vector() );
-        //M_algebraicFactory->solve( "Newton", this->blockVectorSolution().vector() );
-
-        M_blockVectorSolution.localize();
+        // if ( M_thermodynModel->algebraicFactory() )
+        //     M_thermodynModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = NULL;
+        M_algebraicFactoryMonolithic->solve( "Newton", this->blockVectorSolutionMonolithic().vector() );
+        M_blockVectorSolutionMonolithic.localize();
     }
 
     double tElapsed = this->timerTool("Solve").stop("solve");
@@ -513,18 +516,21 @@ THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPreAssemblyJouleLaw( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
 {
+    this->log("ThermoElectric","updateLinearPreAssemblyJouleLaw","start" );
+
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
     auto const& v = this->fieldElectricPotential();
     auto XhT = M_thermodynModel->spaceTemperature();
     auto const& t = M_thermodynModel->fieldTemperature();
-
     auto sigma = idv(M_electricProperties->fieldElectricConductivity());
     form1( _test=XhT,_vector=F,
-           _rowstart=M_thermodynModel->rowStartInMatrix() ) +=
+           _rowstart=M_thermodynModel->rowStartInVector() ) +=
         integrate( _range=elements(mesh),
                        _expr= sigma*inner(gradv(v),gradv(v))*id(t),
                        _geomap=this->geomap() );
+
+    this->log("ThermoElectric","updateLinearPreAssemblyJouleLaw","finish" );
 }
 
 
@@ -565,44 +571,45 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("ThermoElectric","updateJacobian", "start"+sc);
+    size_type startBlockIndexTemperature = M_startBlockIndexFieldsInMatrix.find( "temperature" )->second;
+    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
 
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
-    auto const& v = this->fieldElectricPotential();
+    // auto const& v = this->fieldElectricPotential();
+    auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
     auto XhT = M_thermodynModel->spaceTemperature();
     auto const& t = M_thermodynModel->fieldTemperature();
 
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
     auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
                                               _pattern=size_type(Pattern::COUPLED),
                                               _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
                                               _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
 
+    auto sigma = idv(M_electricProperties->fieldElectricConductivity());
     if ( buildCstPart )
     {
-        auto sigma = idv(M_electricProperties->fieldElectricConductivity());
         bilinearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
                        _expr= sigma*inner(gradt(v),grad(v)),
                        _geomap=this->geomap() );
     }
-
     if ( !buildNonCstPart )
     {
-#if 0
-        form2( _test=XhT,_trial=XhV,_matrix=A,
+        form2( _test=XhT,_trial=XhV,_matrix=J,
                _pattern=size_type(Pattern::COUPLED),
-               _rowstart=this->rowStartInMatrix(),
+               _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature,
                _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential  ) +=
             integrate( _range=elements(mesh),
-                       _expr= sigma*inner(gradt(v),gradt(v))*id( t ),
+                       _expr= -sigma*2*inner(gradt(v),gradv(v))*id( t ),
                        _geomap=this->geomap() );
-#endif
     }
 
     DataUpdateJacobian dataThermo( data );
     dataThermo.setDoBCStrongDirichlet( false );
     M_thermodynModel->updateJacobian( dataThermo );
+
+    this->updateBCWeakJacobian( v,J,buildCstPart );
 
     if ( buildNonCstPart && _doBCStrongDirichlet )
     {
@@ -615,7 +622,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const
 {
-#if 0
     if ( this->M_bcDirichlet.empty() ) return;
 
     this->log("ThermoElectric","updateBCStrongDirichletJacobian","start" );
@@ -637,15 +643,38 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletJacobian(sparse_matri
     }
 
     this->log("ThermoElectric","updateBCStrongDirichletJacobian","finish" );
+}
 
-#endif
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBCWeakJacobian( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const
+{
+    if ( this->M_bcRobin.empty() ) return;
+
+    if ( !buildCstPart )
+    {
+        auto XhV = this->spaceElectricPotential();
+        auto mesh = XhV->mesh();
+        size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+
+        auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
+                                                  _pattern=size_type(Pattern::COUPLED),
+                                                  _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
+                                                  _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
+        for( auto const& d : this->M_bcRobin )
+        {
+            bilinearForm_PatternCoupled +=
+                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                           _expr= expression1(d)*idt(v)*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
 }
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
-#if 0
     const vector_ptrtype& XVec = data.currentSolution();
     vector_ptrtype& R = data.residual();
     bool _BuildCstPart = data.buildCstPart();
@@ -658,13 +687,18 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("ThermoDynamics","updateResidual", "start"+sc);
 
+    size_type startBlockIndexTemperature = M_startBlockIndexFieldsInMatrix.find( "temperature" )->second;
+    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
-    auto const& v = this->fieldElectricPotential();
-    auto XhT = M_thermodynModel->spaceTemperature();
-    auto const& t = M_thermodynModel->fieldTemperature();
+    // auto const& v = this->fieldElectricPotential();
+    auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
 
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    auto XhT = M_thermodynModel->spaceTemperature();
+    // auto const& t = M_thermodynModel->fieldTemperature();
+    auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
+
     auto myLinearFormThermo = form1( _test=XhV, _vector=R,
                                      _rowstart=this->rowStartInVector() );
     auto myLinearFormElectric = form1( _test=XhV, _vector=R,
@@ -686,41 +720,114 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                        _geomap=this->geomap() );
     }
 
-    if ( !buildCstPart && _doBCStrongDirichlet /*&& this->hasMarkerDirichletBCelimination()*/ )
+    DataUpdateResidual dataThermo( data );
+    dataThermo.setDoBCStrongDirichlet( false );
+    M_thermodynModel->updateResidual( dataThermo );
+
+    this->updateSourceTermResidual( R,buildCstPart ) ;
+
+    this->updateBCWeakResidual( v,R,buildCstPart );
+
+    if ( !buildCstPart && _doBCStrongDirichlet &&
+         (this->hasMarkerDirichletBCelimination() || M_thermodynModel->hasMarkerDirichletBCelimination() ) )
     {
         R->close();
         this->updateBCDirichletStrongResidual( R );
         M_thermodynModel->updateBCDirichletStrongResidual( R );
     }
-
-#endif
 }
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual( vector_ptrtype& R ) const
 {
-#if 0
     if ( this->M_bcDirichlet.empty() ) return;
 
     this->log("ThermoDynamics","updateBCDirichletStrongResidual","start" );
 
     auto XhV = this->spaceElectricPotential();
-    auto const& v = this->fieldElectricPotential();
     auto mesh = XhV->mesh();
-
-    auto mesh = this->mesh();
-    auto u = this->spaceTemperature()->element( R,this->rowStartInVector() );
-
+    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    auto v = this->spaceElectricPotential()->element( R,this->rowStartInVector()+startBlockIndexElectricPotential );
     for( auto const& d : this->M_bcDirichlet )
     {
-        u.on(_range=markedfaces(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
+        v.on(_range=markedfaces(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
              _expr=cst(0.) );
     }
 
     this->log("ThermoDynamics","updateBCDirichletStrongResidual","finish" );
+}
 
-#endif
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBCWeakResidual( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const
+{
+    if ( this->M_bcNeumann.empty() && this->M_bcRobin.empty() ) return;
+
+    auto XhV = this->spaceElectricPotential();
+    auto mesh = XhV->mesh();
+    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+
+    auto myLinearForm = form1( _test=XhV, _vector=R,
+                               _rowstart=this->rowStartInVector()+startBlockIndexElectricPotential );
+    if ( buildCstPart )
+    {
+        for( auto const& d : this->M_bcNeumann )
+        {
+            myLinearForm +=
+                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
+                           _expr= -expression(d)*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
+    for( auto const& d : this->M_bcRobin )
+    {
+        if ( !buildCstPart )
+        {
+            myLinearForm +=
+                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                           _expr= expression1(d)*idv(v)*id(v),
+                           _geomap=this->geomap() );
+        }
+        if ( buildCstPart )
+        {
+            myLinearForm +=
+                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                           _expr= -expression1(d)*expression2(d)*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
+}
+
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateSourceTermResidual( vector_ptrtype& R, bool buildCstPart ) const
+{
+    if ( this->M_volumicForcesProperties.empty() ) return;
+
+    if ( buildCstPart )
+    {
+        auto XhV = this->spaceElectricPotential();
+        auto mesh = XhV->mesh();
+        size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+        auto myLinearForm = form1( _test=XhV, _vector=R,
+                                   _rowstart=this->rowStartInVector()+startBlockIndexElectricPotential );
+        auto const& v = this->fieldElectricPotential();
+
+        for( auto const& d : this->M_volumicForcesProperties )
+        {
+            if ( marker(d).empty() )
+                myLinearForm +=
+                    integrate( _range=elements(this->mesh()),
+                               _expr= -expression(d)*id(v),
+                               _geomap=this->geomap() );
+            else
+                myLinearForm +=
+                    integrate( _range=markedelements(this->mesh(),marker(d)),
+                               _expr= -expression(d)*id(v),
+                               _geomap=this->geomap() );
+        }
+    }
 }
 
 
