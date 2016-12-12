@@ -705,49 +705,6 @@ public:
         return M_facept->vertices();
     }
 
-    /**
-     * \return marker1() index
-     */
-    Marker1 const& marker() const
-    {
-        return super::marker();
-    }
-    /**
-     * \return marker1() index
-     */
-    Marker1& marker()
-    {
-        return super::marker();
-    }
-    /**
-     * \return marker2() index
-     */
-    Marker2 const& marker2() const
-    {
-        return super::marker2();
-    }
-    /**
-     * \return marker2() index
-     */
-    Marker2& marker2()
-    {
-        return super::marker2();
-    }
-    /**
-     * \return marker3() index
-     */
-    Marker3 const& marker3() const
-    {
-        return super::marker3();
-    }
-    /**
-     * \return marker3() index
-     */
-    Marker3& marker3()
-    {
-        return super::marker3();
-    }
-
 //private:
     geo0d_type* M_facept;
 
@@ -935,23 +892,6 @@ public:
     uint8_type map( uint8_type k_1 ) const
     {
         return M_map[ k_1 ];
-    }
-
-    Marker1 const& marker() const
-    {
-        return super::marker();
-    }
-    Marker1& marker()
-    {
-        return super::marker();
-    }
-    Marker2 const& marker2() const
-    {
-        return super::marker2();
-    }
-    Marker3 const& marker3() const
-    {
-        return super::marker3();
     }
 
     /**
@@ -1156,23 +1096,6 @@ public:
     size_type id() const
     {
         return super::id();
-    }
-
-    Marker1 const& marker() const
-    {
-        return super::marker();
-    }
-    Marker1& marker()
-    {
-        return super::marker();
-    }
-    Marker2 const& marker2() const
-    {
-        return super::marker2();
-    }
-    Marker3 const& marker3() const
-    {
-        return super::marker3();
     }
 
     bool isGhostFace() const
@@ -1510,23 +1433,6 @@ public:
     size_type id() const noexcept
     {
         return super::id();
-    }
-
-    Marker1 const& marker() const noexcept
-    {
-        return super::marker();
-    }
-    Marker1& marker() noexcept
-    {
-        return super::marker();
-    }
-    Marker2 const& marker2() const noexcept
-    {
-        return super::marker2();
-    }
-    Marker3 const& marker3() const noexcept
-    {
-        return super::marker3();
     }
 
     bool isGhostFace() const

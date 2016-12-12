@@ -591,7 +591,10 @@ public:
         }
 
     /// @return the marker id given the marker name \p marker
-    flag_type markerId( boost::any const& marker );
+    flag_type markerId( boost::any const& marker ) const;
+
+    /// @return the set of marker id given the marker name \p marker
+    std::set<flag_type> markersId( boost::any const& marker ) const;
 
     //@}
 
