@@ -33,3 +33,4 @@ endforeach()
 
 add_library(feelpp_model_thermoelectric SHARED libthermoelectric.cpp )
 target_link_libraries(feelpp_model_thermoelectric ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC})
+install(TARGETS feelpp_model_thermoelectric DESTINATION lib COMPONENT Lib)
