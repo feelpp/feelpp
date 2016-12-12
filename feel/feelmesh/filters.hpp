@@ -662,63 +662,80 @@ edges( MeshType const& mesh )
  */
 template<typename MeshType>
 markededges_t<MeshType>
-markededges( MeshType const& mesh,
-             flag_type __marker )
-{
-    return Feel::detail::markededges( mesh, __marker, rank( mesh ), is_ptr_or_shared_ptr<MeshType>() );
-}
-
-template<typename MeshType>
-markededges_t<MeshType>
-markededges( MeshType const& mesh,
-             std::string const& __marker,
-             typename std::enable_if<is_3d<MeshType>::value>::type* = nullptr )
-{
-    return Feel::detail::markededges( mesh,
-                                      mesh->markerName( __marker ),
-                                      rank( mesh ),
-                                      is_ptr_or_shared_ptr<MeshType>() );
-}
-
-/**
- * @return the range of faces of the \p mesh associated to \p __marker
- */
-template<typename MeshType>
-decltype(auto)
-    markededges( MeshType const& mesh,
-                 std::string const& __marker,
-                 typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
-{
-    return markedfaces( mesh, __marker );
-}
-
-
-template<typename MeshType>
-std::list<markededges_t<MeshType>>
-markededges( MeshType const& mesh,
-             std::list<std::string> const& __markers,
-             typename std::enable_if<is_3d<MeshType>::value>::type* = nullptr )
+markededgesByType( MeshType const& mesh, uint16_type markerType,
+                   typename std::enable_if<is_3d<MeshType>::value>::type* = nullptr )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    std::list<markededges_t<MeshType>> list_edges;
-    for ( auto const& it : __markers )
+    return Feel::detail::markededges( mesh, markerType, rank( mesh ), is_ptr_or_shared_ptr() );
+}
+template<typename MeshType>
+markedfaces_t<MeshType>
+markededgesByType( MeshType const& mesh, uint16_type markerType,
+                   typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
+{
+    return markedfacesByType( mesh,markerType );
+}
+template<typename MeshType>
+markededges_t<MeshType>
+markededgesByType( MeshType const& mesh, uint16_type markerType,
+                   boost::any const& __marker,
+                   typename std::enable_if<is_3d<MeshType>::value>::type* = nullptr )
+{
+    std::set<flag_type> markerFlagSet = mesh->markersId( __marker );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return Feel::detail::markededges( mesh, markerType, markerFlagSet, rank( mesh ), is_ptr_or_shared_ptr() );
+}
+template<typename MeshType>
+markedfaces_t<MeshType>
+markededgesByType( MeshType const& mesh, uint16_type markerType,
+                   boost::any const& markersFlag,
+                   typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
+{
+    return markedfacesByType( mesh,markerType,markersFlag );
+}
+template<typename MeshType>
+markededges_t<MeshType>
+markededgesByType( MeshType const& mesh, uint16_type markerType,
+                   std::initializer_list<boost::any> const& markersFlag,
+                   typename std::enable_if<is_3d<MeshType>::value>::type* = nullptr )
+{
+    std::set<flag_type> markerFlagSet;
+    for ( auto const& it : markersFlag )
     {
         flag_type theflag = mesh->markerId( it );
-        VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
-        list_edges.push_back( Feel::detail::markededges( mesh, theflag, rank( mesh ), is_ptr_or_shared_ptr() ) );
+        VLOG(2) << "[markededgesByType] flag: " << theflag << "\n";
+        markerFlagSet.insert( theflag );
     }
-    return list_edges;
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return Feel::detail::markededges( mesh, markerType, markerFlagSet, rank( mesh ), is_ptr_or_shared_ptr() );
 }
-/**
- * @return the range of faces of the \p mesh associated to \p __marker
- */
 template<typename MeshType>
-decltype(auto)
-    markededges( MeshType const& mesh,
-                 std::list<std::string> const& __markers,
-                 typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
+markedfaces_t<MeshType>
+markededgesByType( MeshType const& mesh, uint16_type markerType,
+                   std::initializer_list<boost::any> const& markersFlag,
+                   typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
 {
-    return markedfaces(mesh, __markers);
+    return markedfacesByType( mesh,markerType,markersFlag );
+}
+
+template<typename MeshType>
+decltype(auto) //markededges_t<MeshType>
+markededges( MeshType const& mesh )
+{
+    return markededgesByType( mesh, 1 );
+}
+
+template<typename MeshType>
+decltype(auto) //markededges_t<MeshType>
+markededges( MeshType const& mesh, boost::any const& markersFlag )
+{
+    return markededgesByType( mesh, 1, markersFlag );
+}
+template<typename MeshType>
+decltype(auto) //markededges_t<MeshType>
+markededges( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
+{
+    return markededgesByType( mesh, 1, markersFlag );
 }
 
 
@@ -764,40 +781,79 @@ points( MeshType const& mesh )
     return Feel::detail::points( mesh, is_ptr_or_shared_ptr() );
 }
 
+
+template<typename MeshType>
+markedpoints_t<MeshType>
+markedpointsByType( MeshType const& mesh, uint16_type markerType )
+{
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return Feel::detail::markedpoints( mesh, markerType, rank( mesh ), is_ptr_or_shared_ptr() );
+}
+
+template<typename MeshType>
+markedpoints_t<MeshType>
+markedpointsByType( MeshType const& mesh, uint16_type markerType,
+                   boost::any const& __marker )
+{
+    std::set<flag_type> markerFlagSet = mesh->markersId( __marker );
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return Feel::detail::markedpoints( mesh, markerType, markerFlagSet, rank( mesh ), is_ptr_or_shared_ptr() );
+}
+
+template<typename MeshType>
+markedpoints_t<MeshType>
+markedpointsByType( MeshType const& mesh, uint16_type markerType,
+                   std::initializer_list<boost::any> const& markersFlag )
+{
+    std::set<flag_type> markerFlagSet;
+    for ( auto const& it : markersFlag )
+    {
+        flag_type theflag = mesh->markerId( it );
+        VLOG(2) << "[markedpointsByType] flag: " << theflag << "\n";
+        markerFlagSet.insert( theflag );
+    }
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return Feel::detail::markedpoints( mesh, markerType, markerFlagSet, rank( mesh ), is_ptr_or_shared_ptr() );
+}
+
 /**
+ *
  * \ingroup MeshIterators
- * \return the range of iterators [begin,end] over the marked points with \p flag of the mesh
- * \warning this filter is not parallelized
+ * \return a pair of iterators to iterate over points of the
+ * mesh marked
+ *
+ * @param mesh a mesh data structure
+ * @param __pid process id
+ *
+ * @return a pair of iterators (begin,end) for the set of marked points
  */
 template<typename MeshType>
 markedpoints_t<MeshType>
-markedpoints( MeshType const& mesh, size_type flag )
+markedpoints( MeshType const& mesh )
 {
-    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return Feel::detail::markedpoints( mesh, flag, is_ptr_or_shared_ptr() );
+    return markedpointsByType( mesh, 1 );
 }
 
+/**
+ *
+ * \ingroup MeshIterators
+ *
+ * @param mesh a mesh data structure
+ * @param markersFlag a marker that identifies points
+ * \return the range of iterators [begin,end,container] over the marked points with \p flag of the mesh
+ *
+ */
 template<typename MeshType>
 markedpoints_t<MeshType>
-markedpoints( MeshType const& mesh, std::string const& flag )
+markedpoints( MeshType const& mesh, boost::any const& markersFlag )
 {
-    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return Feel::detail::markedpoints( mesh, mesh->markerName(flag), is_ptr_or_shared_ptr() );
+    return markedpointsByType( mesh, 1, markersFlag );
 }
-
 template<typename MeshType>
-std::list<markedpoints_t<MeshType>>
-markedpoints( MeshType const& mesh, std::list<std::string> const& __markers )
+markedpoints_t<MeshType>
+markedpoints( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
-    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    std::list<markedpoints_t<MeshType>> list_points;
-    for ( auto const& it : __markers )
-    {
-        flag_type theflag = mesh->markerId( it );
-        VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
-        list_points.push_back( Feel::detail::markedpoints( mesh, theflag/*, rank( mesh )*/, is_ptr_or_shared_ptr() ) );
-    }
-    return list_points;
+    return markedpointsByType( mesh, 1, markersFlag );
 }
 
 /**
