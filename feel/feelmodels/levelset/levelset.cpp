@@ -971,10 +971,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateNormal()
 
     auto phi = this->phi();
     //*M_levelsetNormal = M_projectorL2Vec->project( _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) );
+    auto gradPhi = this->gradPhi();
     *M_levelsetNormal = vf::project( 
             _space=this->functionSpaceVectorial(),
             _range=elements(this->mesh()),
-            _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) 
+            //_expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) 
+            _expr=idv(gradPhi) / sqrt(trans(idv(gradPhi)) * idv(gradPhi)) 
             );
 
     M_doUpdateNormal = false;
@@ -994,7 +996,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
     }
     else
     {
-        *M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
+        //*M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
+        *M_levelsetCurvature = vf::project( 
+                _space=this->functionSpace(),
+                _range=elements(this->mesh()),
+                _expr=divv(this->normal())
+                );
     }
 
     M_doUpdateCurvature = false;
