@@ -652,7 +652,7 @@ void PartitionIO<MeshType>::writeElements()
             {
                 auto const& theelt = boost::unwrap_ref(*elt_it);
                 //M_uintBuffer[currentBufferIndex++] = theelt.id();
-                M_uintBuffer[currentBufferIndex++] = theelt.marker().value();
+                M_uintBuffer[currentBufferIndex++] = (theelt.hasMarker())? theelt.marker().value() : 0;
                 for (size_type k = 0; k < element_type::numPoints; ++k)
                 {
                     M_uintBuffer[currentBufferIndex++] = theelt.point(k).id();
@@ -664,7 +664,7 @@ void PartitionIO<MeshType>::writeElements()
             {
                 auto const& theghostelt = boost::unwrap_ref(*ghostelt_it);
                 //M_uintBuffer[currentBufferIndex++] = theghostelt.id();
-                M_uintBuffer[currentBufferIndex++] = theghostelt.marker().value();
+                M_uintBuffer[currentBufferIndex++] = (theghostelt.hasMarker())? theghostelt.marker().value() : 0;
                 for (size_type k = 0; k < element_type::numPoints; ++k)
                 {
                     M_uintBuffer[currentBufferIndex++] = theghostelt.point(k).id();
@@ -742,8 +742,7 @@ void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet, rank_type p
     for( ; point_it != point_en; ++point_it )
     {
         auto const& thepoint = boost::unwrap_ref(*point_it);
-        //if ( point_it->marker().isOff() ) continue;
-        CHECK( thepoint.marker().isOn() ) << "not a marked point";
+        CHECK( thepoint.hasMarker() ) << "not a marked point";
         buffer[currentBufferIndex++] = thepoint.marker().value();
         buffer[currentBufferIndex++] = thepoint.id();
     }
@@ -757,8 +756,7 @@ void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet, rank_type p
     for( ; face_it != face_en; ++face_it )
     {
         auto const& theface = boost::unwrap_ref(*face_it);
-        //if ( face_it->marker().isOff() ) continue;
-        CHECK( theface.marker().isOn() ) << "not a marked face";
+        CHECK( theface.hasMarker() ) << "not a marked face";
         buffer[currentBufferIndex++] = theface.marker().value();
         for ( uint16_type vLocId = 0; vLocId < MeshPartType::mesh_type::face_type::numPoints ; ++vLocId )
         {
@@ -770,8 +768,7 @@ void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet, rank_type p
     for( ; point_it != point_en; ++point_it )
     {
         auto const& thepoint = boost::unwrap_ref(*point_it);
-        //if ( point_it->marker().isOff() ) continue;
-        CHECK( thepoint.marker().isOn() ) << "not a marked point";
+        CHECK( thepoint.hasMarker() ) << "not a marked point";
         buffer[currentBufferIndex++] = thepoint.marker().value();
         buffer[currentBufferIndex++] = thepoint.id();
     }
@@ -785,8 +782,7 @@ void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet, rank_type p
     for( ; face_it != face_en; ++face_it )
     {
         auto const& theface = boost::unwrap_ref(*face_it);
-        //if ( face_it->marker().isOff() ) continue;
-        CHECK( theface.marker().isOn() ) << "not a marked face";
+        CHECK( theface.hasMarker() ) << "not a marked face";
         buffer[currentBufferIndex++] = theface.marker().value();
         for ( uint16_type vLocId = 0; vLocId < MeshPartType::mesh_type::face_type::numPoints ; ++vLocId )
         {
@@ -798,8 +794,7 @@ void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet, rank_type p
     for( ; edge_it != edge_en; ++edge_it )
     {
         auto const& theedge = boost::unwrap_ref(*edge_it);
-        //if ( edge_it->marker().isOff() ) continue;
-        CHECK( theedge.marker().isOn() ) << "not a marked edge";
+        CHECK( theedge.hasMarker() ) << "not a marked edge";
         buffer[currentBufferIndex++] = theedge.marker().value();
         for ( uint16_type vLocId = 0; vLocId < MeshPartType::mesh_type::edge_type::numPoints ; ++vLocId )
         {
@@ -811,8 +806,7 @@ void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet, rank_type p
     for( ; point_it != point_en; ++point_it )
     {
         auto const& thepoint = boost::unwrap_ref(*point_it);
-        //if ( point_it->marker().isOff() ) continue;
-        CHECK( thepoint.marker().isOn() ) << "not a marked point";
+        CHECK( thepoint.hasMarker() ) << "not a marked point";
         buffer[currentBufferIndex++] = thepoint.marker().value();
         buffer[currentBufferIndex++] = thepoint.id();
     }
