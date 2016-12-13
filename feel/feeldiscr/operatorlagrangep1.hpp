@@ -570,9 +570,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
 
             element_type elt;
             elt.setId( elid );
-            elt.setMarker( curelt.marker().value() );
-            elt.setMarker2( curelt.marker2().value() );
-            elt.setMarker3( curelt.marker3().value() );
+            elt.setMarkers( curelt.markers() );
             elt.setProcessIdInPartition( curelt.pidInPartition() );
             elt.setProcessId(curelt.processId());
 
@@ -724,9 +722,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                     if ( nPtInRefFace[fId] == theFaceBase.nPoints() )
                     {
                         // update marker from ref
-                        newFace.setMarker( curelt.face( fId ).marker().value() );
-                        newFace.setMarker2( curelt.face( fId ).marker2().value() );
-                        newFace.setMarker3( curelt.face( fId ).marker3().value() );
+                        newFace.setMarkers( curelt.face( fId ).markers() );
                     }
                 }
 
@@ -896,9 +892,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                 for ( ;itelt!=enelt;++itelt )
                 {
                     element_type elt;
-                    elt.setMarker( myGhostEltBase.marker().value() );
-                    elt.setMarker2( myGhostEltBase.marker2().value() );
-                    elt.setMarker3( myGhostEltBase.marker3().value() );
+                    elt.setMarkers( myGhostEltBase.markers() );
                     elt.setProcessIdInPartition( myGhostEltBase.pidInPartition() );
 #if 0
                     elt.setNumberOfPartitions(2);

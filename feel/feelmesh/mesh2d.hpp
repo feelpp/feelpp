@@ -134,13 +134,6 @@ public:
     typedef typename edges_reference_wrapper_type::iterator edge_reference_wrapper_iterator;
     typedef typename edges_reference_wrapper_type::const_iterator edge_reference_wrapper_const_iterator;
 
-    // typedef typename super_edges::face_reference_wrapper_iterator marker_edge_iterator;
-    // typedef typename super_edges::face_reference_wrapper_const_iterator marker_edge_const_iterator;
-    // typedef typename super_edges::face_reference_wrapper_iterator location_edge_iterator;
-    // typedef typename super_edges::face_reference_wrapper_const_iterator location_edge_const_iterator;
-    // typedef typename super_edges::face_reference_wrapper_iterator pid_edge_iterator;
-    // typedef typename super_edges::face_reference_wrapper_const_iterator pid_edge_const_iterator;
-
     typedef Mesh2D<Shape> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 

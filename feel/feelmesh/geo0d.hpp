@@ -413,6 +413,10 @@ public:
     {
         return M_markers;
     }
+    void setMarkers( std::map<uint16_type,Marker1> const& markers )
+    {
+        M_markers = markers;
+    }
     bool hasMarker( uint16_type k ) const
     {
         auto itFindMarker = M_markers.find( k );

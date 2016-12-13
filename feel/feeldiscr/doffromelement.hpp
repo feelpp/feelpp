@@ -182,12 +182,14 @@ private:
 
         for ( uint16_type i = 0; i < element_type::numVertices; ++i )
         {
+            auto const& thepoint = __elt.point( i );
+            Marker1 pointMarker = thepoint.hasMarker()? thepoint.marker() : Marker1(0);
             for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc )
             {
                 //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
-                const size_type gDof = ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
+                const size_type gDof = ( thepoint.id() ) * fe_type::nDofPerVertex + l;
                 M_doftable->insertDof( ie, lc, i, std::make_tuple(  0, gDof ),
-                                 processor, next_free_dof, 1, false, global_shift, __elt.point( i ).marker() );
+                                       processor, next_free_dof, 1, false, global_shift, pointMarker );
             }
         }
 
