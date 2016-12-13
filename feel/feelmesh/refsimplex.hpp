@@ -29,6 +29,8 @@
 #ifndef __refsimplex_H
 #define __refsimplex_H 1
 
+#include <feel/feelmesh/marker.hpp>
+
 namespace Feel
 {
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
