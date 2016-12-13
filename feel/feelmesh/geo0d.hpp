@@ -408,6 +408,11 @@ public:
         return *this;
     }
 
+    std::map<uint16_type,Marker1> const&
+    markers() const
+    {
+        return M_markers;
+    }
     bool hasMarker( uint16_type k ) const
     {
         auto itFindMarker = M_markers.find( k );

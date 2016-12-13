@@ -696,9 +696,7 @@ class Context
         M_Ptangent( NDim, NDim ),
         M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
         M_id( __e.id() ),
-        M_e_marker( __e.marker() ),
-        M_e_marker2( __e.marker2() ),
-        M_e_marker3( __e.marker3() ),
+        M_e_markers( __e.markers() ),
         M_elem_id_1( invalid_size_type_value ),// __e.ad_first() ),
         M_pos_in_elem_id_1( invalid_uint16_type_value ),  //__e.pos_first() ),
         M_elem_id_2( invalid_size_type_value ),  //__e.ad_second() ),
@@ -766,9 +764,7 @@ class Context
         M_Ptangent( NDim, NDim ),
         M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
         M_id( __e.id() ),
-        M_e_marker( __e.marker() ),
-        M_e_marker2( __e.marker2() ),
-        M_e_marker3( __e.marker3() ),
+        M_e_markers( __e.markers() ),
         M_elem_id_1( invalid_size_type_value ),// __e.ad_first() ),
         M_pos_in_elem_id_1( invalid_uint16_type_value ),  //__e.pos_first() ),
         M_elem_id_2( invalid_size_type_value ),  //__e.ad_second() ),
@@ -854,9 +850,7 @@ class Context
         M_Ptangent( p->M_Ptangent ),
         M_B3( p->M_B3 ),
         M_id( p->M_id ),
-        M_e_marker( p->M_e_marker ),
-        M_e_marker2( p->M_e_marker2 ),
-        M_e_marker3( p->M_e_marker3 ),
+        M_e_markers( p->markers() ),
         M_elem_id_1( invalid_size_type_value ),// M_element.ad_first() ),
         M_pos_in_elem_id_1( invalid_uint16_type_value ),  //M_element.pos_first() ),
         M_elem_id_2( invalid_size_type_value ),  //M_element.ad_second() ),
@@ -917,9 +911,7 @@ class Context
             //M_G = __e.G();
             M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
             M_id = __e.id();
-            M_e_marker = __e.marker();
-            M_e_marker2 = __e.marker2();
-            M_e_marker3 = __e.marker3();
+            M_e_markers =  __e.markers();
             M_xrefq = M_pc->nodes();
 
             FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
@@ -986,9 +978,7 @@ class Context
             //M_G = __e.G();
             M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
             M_id = __e.id();
-            M_e_marker = __e.marker();
-            M_e_marker2 = __e.marker2();
-            M_e_marker3 = __e.marker3();
+            M_e_markers =  __e.markers();
             M_xrefq = M_pc->nodes();
 
             FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
@@ -1084,9 +1074,7 @@ class Context
             //M_element_c = boost::shared_ptr<element_type const>(&__e);
             M_element = boost::addressof( __e );
             M_id = __e.id();
-            M_e_marker = __e.marker();
-            M_e_marker2 = __e.marker2();
-            M_e_marker3 = __e.marker3();
+            M_e_markers =  __e.markers();
             M_face_id = invalid_uint16_type_value;
             M_xrefq = M_pc->nodes();
 
@@ -1555,9 +1543,26 @@ class Context
      *
      * @return the marker of the element
      */
+    Marker1 marker( uint16_type k ) const
+        {
+            auto itFindMarker = M_e_markers.find( k );
+            if ( itFindMarker!= M_e_markers.end() )
+                return itFindMarker->second;
+            else
+                return Marker1();
+        }
+    /**
+     * get the marker of the element
+     *
+     * @return the marker of the element
+     */
     Marker1 marker() const
         {
-            return M_e_marker;
+            auto itFindMarker = M_e_markers.find( 1 );
+            if ( itFindMarker!= M_e_markers.end() )
+                return itFindMarker->second;
+            else
+                return Marker1();
         }
 
     /**
@@ -1567,7 +1572,11 @@ class Context
      */
     Marker1 marker2() const
         {
-            return M_e_marker2;
+            auto itFindMarker = M_e_markers.find( 2 );
+            if ( itFindMarker!= M_e_markers.end() )
+                return itFindMarker->second;
+            else
+                return Marker1();
         }
 
     /**
@@ -1577,7 +1586,11 @@ class Context
      */
     Marker1 marker3() const
         {
-            return M_e_marker3;
+            auto itFindMarker = M_e_markers.find( 3 );
+            if ( itFindMarker!= M_e_markers.end() )
+                return itFindMarker->second;
+            else
+                return Marker1();
         }
 
     /**
@@ -2122,9 +2135,7 @@ private:
                 ar & BOOST_SERIALIZATION_NVP( M_Ptangent );
                 ar & BOOST_SERIALIZATION_NVP( M_B3 );//
                 ar & BOOST_SERIALIZATION_NVP( M_id );
-                ar & BOOST_SERIALIZATION_NVP( M_e_marker );
-                ar & BOOST_SERIALIZATION_NVP( M_e_marker2 );
-                ar & BOOST_SERIALIZATION_NVP( M_e_marker3 );
+                ar & BOOST_SERIALIZATION_NVP( M_e_markers );
                 ar & BOOST_SERIALIZATION_NVP( M_elem_id_1 );
                 ar & BOOST_SERIALIZATION_NVP( M_pos_in_elem_id_1 );
                 ar & BOOST_SERIALIZATION_NVP( M_elem_id_2 );
@@ -2186,9 +2197,7 @@ private:
     boost::multi_array<value_type,4> M_B3;
 
     size_type M_id;
-    Marker1 M_e_marker;
-    Marker1 M_e_marker2;
-    Marker1 M_e_marker3;
+    std::map<uint16_type,Marker1> M_e_markers;
     size_type M_elem_id_1;
     uint16_type M_pos_in_elem_id_1;
     size_type M_elem_id_2;
