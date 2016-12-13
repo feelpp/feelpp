@@ -126,15 +126,15 @@ add_custom_target(install-libs-models-thermoelectric
   install-feelpp-models-common
   feelpp_model_thermoelectric
   COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
-      -P "${CMAKE_BINARY_DIR}/applications/models/thermoelectric/cmake_install.cmake"
+  "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Lib
+      -P "${CMAKE_BINARY_DIR}/feel/feelmodels/thermoelectric/cmake_install.cmake"
 )
 
 add_custom_target(install-apps-models-thermoelectric
   DEPENDS
   install-feelpp-lib
   install-feelpp-models-common
-  feelpp_model_thermoelectric
+  install-libs-models-thermoelectric
   feelpp_application_thermoelectric_2d
   feelpp_application_thermoelectric_3d
     COMMAND
