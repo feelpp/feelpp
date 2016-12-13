@@ -748,7 +748,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
         if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
         {
             // out<<" 2 " << face.marker().value() << " " << face.marker2().value();
-            out<<" 3 " << face.marker().value() << " " << face.marker2().value() << " " << face.processId()+1;
+            out<<" 3 " << flag_type( (face.hasMarker())? face.marker().value() : 0) << " " << flag_type((face.hasMarker2())? face.marker2().value() : 0) << " " << face.processId()+1;
         }
 
         else if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.2" ) )
@@ -761,8 +761,8 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
             else
                 nbTag += face.numberOfPartitions();
             out << " " << nbTag
-                << " " << face.marker().value()
-                << " " << face.marker2().value();
+                << " " << flag_type( (face.hasMarker())? face.marker().value() : 0 )
+                << " " << flag_type( (face.hasMarker2())?face.marker2().value() : 0 );
 
 
             if ( boption(_name="partition.linear" ) )
@@ -812,7 +812,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
         if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
         {
             //out<<" 2 " << elt.marker().value() << " " << elt.marker2().value();
-            out<<" 3 " << elt.marker().value() << " " << elt.marker2().value() << " " << elt.processId()+1;
+            out<<" 3 " << flag_type( (elt.hasMarker())? elt.marker().value() : 0 ) << " " << flag_type( (elt.hasMarker2())? elt.marker2().value() : 0 ) << " " << elt.processId()+1;
         }
 
         else if ( FEELPP_GMSH_FORMAT_VERSION== std::string( "2.2" ) )
@@ -831,8 +831,8 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
             else
                 nbTag+=elt.numberOfPartitions();
             out << " " << nbTag
-                << " " << elt.marker().value()
-                << " " << elt.marker2().value();
+                << " " << flag_type( (elt.hasMarker())? elt.marker().value() : 0 )
+                << " " << flag_type( (elt.hasMarker2())? elt.marker2().value() : 0 );
 
             if ( boption(_name="partition.linear" ) )
             {
@@ -1412,14 +1412,14 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
 
     if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
     {
-        out<<" 3 " << elt.marker().value() << " " << elt.marker2().value() << " " << elt.processId()+1;
+        out<<" 3 " << flag_type( (elt.hasMarker())? elt.marker().value() : 0 ) << " " << flag_type( (elt.hasMarker2())? elt.marker2().value() : 0 ) << " " << elt.processId()+1;
     }
     else if ( FEELPP_GMSH_FORMAT_VERSION== std::string( "2.2" ) )
     {
         uint16_type nbTag = 3 + elt.numberOfPartitions();
         out << " " << nbTag
-            << " " << elt.marker().value()
-            << " " << elt.marker2().value()
+            << " " << flag_type( (elt.hasMarker())? elt.marker().value() : 0 )
+            << " " << flag_type( (elt.hasMarker2())? elt.marker2().value() : 0 )
             << " " << elt.numberOfPartitions()
             << " " << elt.processId()+1;
 
