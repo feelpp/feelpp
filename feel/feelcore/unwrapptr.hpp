@@ -45,6 +45,20 @@ unwrap_ptr( C const& c, mpl::bool_<false> )
     return c;
 }
 
+template<typename C>
+Feel::remove_shared_ptr_type<C> &
+unwrap_ptr( C & c, mpl::bool_<true> )
+{
+    return *c;
+}
+
+template<typename C>
+Feel::remove_shared_ptr_type<C> const&
+unwrap_ptr( C & c, mpl::bool_<false> )
+{
+    return c;
+}
+
 } // detail
 
 /**
@@ -55,6 +69,20 @@ Feel::remove_shared_ptr_type<C> const&
 unwrap_ptr( C const& c )
 {
     return Feel::detail::unwrap_ptr( c, is_ptr_or_shared_ptr<C>() );
+}
+
+template<typename C>
+Feel::remove_shared_ptr_type<C> &
+unwrap_ptr( C & c )
+{
+    return Feel::detail::unwrap_ptr( c, is_ptr_or_shared_ptr<C>() );
+}
+
+template<typename C>
+Feel::remove_shared_ptr_type<C> &
+unwrap_ptr( C * c )
+{
+    return *c;
 }
 
 
