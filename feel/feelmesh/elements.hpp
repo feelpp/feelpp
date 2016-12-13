@@ -760,7 +760,7 @@ public:
     template<typename ElementVecType>
     void updateMarker3( ElementVecType const& evec )
     {
-        this->updateMarker( 2, evec );
+        this->updateMarker( 3, evec );
     }
 
     template<typename IteratorRange>
@@ -771,6 +771,12 @@ public:
         {
             e.setMarker( markerType,flag );
         } );
+    }
+
+    template<typename IteratorRange>
+    void updateMarkerWithRangeElements( IteratorRange const& range, flag_type flag )
+    {
+        this->updateMarkerWithRangeElements( 1,range,flag );
     }
 
     template<typename IteratorRange>
@@ -788,34 +794,35 @@ public:
 
     /**
      * update the elements markers by setting them from the face markers associated to the elements
-     * warning the marker2 and marker3 must be > 0. if 2 several markers are find in elt, the element take
-     * the last find as marker
+     * if 2 several markers are find in elt, the element take the last find as marker
      */
+    void updateMarkersFromFaces( std::initializer_list<uint16_type> const& markersType )
+    {
+        auto it = beginElement(), en = endElement();
+        for ( ; it != en; ++it )
+        {
+            M_elements.modify( it,
+                               [&markersType]( element_type& e )
+                               {
+                                   std::map<uint16_type,flag_type> newEltMarkers;
+                                   for (uint16_type f=0;f<e.numTopologicalFaces; ++f)
+                                   {
+                                       auto const& theface = e.face(f);
+                                       for ( uint16_type const& markerType : markersType )
+                                       {
+                                           if ( theface.hasMarker( markerType ) )
+                                               newEltMarkers[ markerType ] = theface.maker( markerType ).value();
+                                       }
+                                   }
+                                   for ( auto const& newMark : newEltMarkers )
+                                       e.setMarker( newMark.first, newMark.second );
+                               } );
+        }
+    }
     void updateMarkersFromFaces()
     {
-
-        auto it = beginElement(), en = endElement();
-
-        for (  ; it != en; ++it )
-            M_elements.modify( it,
-                             []( element_type& e )
-        {
-            int newtag2=0, newtag3=0;
-            for (uint16_type f=0;f<e.numTopologicalFaces; ++f)
-                {
-                    int tag2 = e.face(f).marker2().value();
-                    int tag3 = e.face(f).marker3().value();
-                    if (tag2>0) newtag2=tag2;
-                    if (tag3>0) newtag3=tag3;
-                }
-
-            if (newtag2>0) e.setMarker2( newtag2 );
-            if (newtag3>0) e.setMarker3( newtag3 );
-
-        } );
-
+        this->updateMarkersFromFaces( { 2,3 } );
     }
-
 
 
     void setWorldCommElements( WorldComm const& _worldComm )

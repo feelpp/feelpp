@@ -1712,7 +1712,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         for ( uint16_type c = 0; c < ncdof; ++c )
             if ( !this->isElementDone( fit->id(), c ) )
             {
-                em.push_back( boost::make_tuple( fit->id(), c, fit->marker().value() ) );
+                em.push_back( boost::make_tuple( fit->id(), c, (fit->hasMarker())? fit->marker().value() : 0 ) );
             }
     }
 
@@ -1968,6 +1968,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
             //bool found_periodic_face_in_element = false;
             for ( ; it != en; ++it )
             {
+                if ( !( *it )->hasMarker() ) continue;
                 if ( ( *it )->marker().value() == M_periodicity.tag2() ||
                      ( *it )->marker().value() == M_periodicity.tag1() )
                 {
@@ -1998,7 +1999,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
         element_type const& __elt = *it_periodic->template get<0>();
         face_type const& __face = *it_periodic->template get<1>();
 
-        if ( __face.marker().value() == M_periodicity.tag1() )
+        if ( __face.hasMarker() && __face.marker().value() == M_periodicity.tag1() )
         {
             dfp.add(  __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
         }
@@ -2013,7 +2014,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
         element_type const& __elt = *it_periodic->template get<0>();
         face_type const& __face = *it_periodic->template get<1>();
 
-        if ( __face.marker().value() == M_periodicity.tag2() )
+        if ( __face.hasMarker() && __face.marker().value() == M_periodicity.tag2() )
         {
             dfp.add(  __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
         }
@@ -2471,7 +2472,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
         auto const& face = boost::unwrap_ref( *__face_it );
         LOG_IF(WARNING, !face.isConnectedTo0() )
             << "face " << face.id() << " not connected"
-            << " marker : " << face.marker()
+            << " hasMarker : " << face.hasMarker()
             << " connectedTo0 : " << face.isConnectedTo0()
             << " connectedTo1 : " << face.isConnectedTo1();
 
@@ -2481,7 +2482,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
 
         if (  face.isOnBoundary() )
             DVLOG(4) << "[buildBoundaryDofMap] boundary global face id : " << face.id()
-                     << " marker: " << face.marker()<< "\n";
+                     << " hasMarker: " << face.hasMarker()<< "\n";
 
         else
             DVLOG(4) << "[buildBoundaryDofMap] global face id : " << face.id() << "\n";
@@ -2863,10 +2864,10 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoin
                         // these tests are problem specific x=0 and x=translation
 #if 0
 
-                        if ( __face.marker().value() == M_periodicity.tag1() )
+                        if ( __face.hasMarker() && __face.marker().value() == M_periodicity.tag1() )
                             FEELPP_ASSERT( math::abs( __c->xReal( lid )[0] ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1" );
 
-                        if ( __face.marker().value() == M_periodicity.tag2() )
+                        if ( __face.hasMarker() && __face.marker().value() == M_periodicity.tag2() )
                             FEELPP_ASSERT( math::abs( __c->xReal( lid )[0] - M_periodicity.translation()[0] ) < 1e-10 )
                                 ( __c->xReal( lid ) )( M_periodicity.translation() ).warn( "[periodic] invalid p[eriodic point tag1" );
 
@@ -2893,10 +2894,10 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoin
                         // these tests are problem specific x=0 and x=translation
 #if 0
 
-                        if ( __face.marker().value() == M_periodicity.tag1() )
+                        if ( __face.hasMarker() && __face.marker().value() == M_periodicity.tag1() )
                             FEELPP_ASSERT( math::abs( __c->xReal( lid )[1] +1 ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1" );
 
-                        if ( __face.marker().value() == M_periodicity.tag2() )
+                        if ( __face.hasMarker() && __face.marker().value() == M_periodicity.tag2() )
                             FEELPP_ASSERT( math::abs( __c->xReal( lid )[1] - ( M_periodicity.translation()[1]-1 ) ) < 1e-10 )
                                 ( __c->xReal( lid ) )( M_periodicity.translation() ).warn( "[periodic] invalid p[eriodic point tag1" );
 

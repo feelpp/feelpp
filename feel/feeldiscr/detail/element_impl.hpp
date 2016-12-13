@@ -2554,7 +2554,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     {
         face_type const& curFace = boost::unwrap_ref(*__face_it);
         FEELPP_ASSERT( curFace.isOnBoundary() && !curFace.isConnectedTo1() )
-        ( curFace.marker() )
+        ( curFace.hasMarker() )
         ( curFace.isOnBoundary() )
         ( curFace.ad_first() )
         ( curFace.pos_first() )
@@ -2564,7 +2564,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         DVLOG(2) << "[projector] FACE_ID = " << curFace.id()
                       << " element id= " << curFace.ad_first()
                       << " pos in elt= " << curFace.pos_first()
-                      << " marker: " << curFace.marker() << "\n";
+                      << " hasMarker: " << curFace.hasMarker() << "\n";
         DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << curFace.G() << "\n";
 
         uint16_type __face_id = curFace.pos_first();
@@ -2640,8 +2640,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
     auto gm = mesh->gm();
     auto const& firstEntity = boost::unwrap_ref( *entity_it );
-    DVLOG(3) << "entity " << firstEntity.id() << " with marker "
-             << firstEntity.marker() << " nb: " << std::distance(entity_it,entity_en);
+    DVLOG(3) << "entity " << firstEntity.id() << " with hasMarker "
+             << firstEntity.hasMarker() << " nb: " << std::distance(entity_it,entity_en);
     size_type eid = firstEntity.elements().begin()->first;
     size_type ptid_in_element = firstEntity.elements().begin()->second;
     auto const& elt = mesh->element( eid );
@@ -2657,7 +2657,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         auto entity_elt_info = curEntity.elements().begin();
         ptid_in_element = entity_elt_info->second;
         DVLOG(3) << "entity " << curEntity.id() << " element " << entity_elt_info->first << " id in element "
-                 << ptid_in_element<< " with marker " << curEntity.marker();
+                 << ptid_in_element<< " with hasMarker " << curEntity.hasMarker();
         auto const& elt = mesh->element( entity_elt_info->first );
         geopc = gm->preCompute( __fe->edgePoints(ptid_in_element) );
         ctx->update( elt, geopc );
@@ -2702,7 +2702,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
     auto gm = mesh->gm();
     auto const& firstPt = boost::unwrap_ref( *pt_it );
-    DVLOG(3) << "point " << firstPt.id() << " with marker " << firstPt.marker() << " nb: " << std::distance(pt_it,pt_en);
+    DVLOG(3) << "point " << firstPt.id() << " with hasMarker " << firstPt.hasMarker() << " nb: " << std::distance(pt_it,pt_en);
     google::FlushLogFiles(google::GLOG_INFO);
 
     size_type eid = firstPt.elements().begin()->first;
@@ -2720,7 +2720,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     for ( ; pt_it != pt_en; ++pt_it )
     {
         auto const& curPt = boost::unwrap_ref(*pt_it);
-        DVLOG(3) << "point " << curPt.id() << " with marker " << curPt.marker();
+        DVLOG(3) << "point " << curPt.id() << " with hasMarker " << curPt.hasMarker();
         auto pt_elt_info = curPt.elements().begin();
         ptid_in_element = pt_elt_info->second;
         auto const& elt = mesh->element( pt_elt_info->first );

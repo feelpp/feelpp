@@ -614,7 +614,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 eit = this->edges().erase( eit );
             }
 #if 0
-            FEELPP_ASSERT( edgeinserted )( i1 )( i2 )(j)( this->edge( j ).id() )( _edgeit->second )( this->edge( j ).marker() )
+            FEELPP_ASSERT( edgeinserted )( i1 )( i2 )(j)( this->edge( j ).id() )( _edgeit->second )( this->edge( j ).hasMarker() )
                 ( this->edge( _edgeit->second ).point( 0 ).node() )( this->edge( _edgeit->second ).point( 1 ).node() )
                 ( this->edge( j ).point( 0 ).node() )( this->edge( j ).point( 1 ).node() ).error( "Two identical Edges stored in EdgeList" );
             FEELPP_ASSERT( _edgeit->second == this->edge( j ).id() )( _edgeit->second )( this->edge( j ).id() ).error( "Edges in EdgeList have inconsistent id" );
@@ -737,7 +737,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             else
             {
                 eit =  this->edgeIterator( edgeId );
-                if ( updateComponentAddElements || eit->marker().isOn() )
+                if ( updateComponentAddElements || eit->hasMarker() )
                 {
                     //DLOG_IF(INFO, eit->marker().isOn()) << "found edge " << eit->id() << " with marker:" << eit->marker() << ", adding element id : " << vid <<  "  local edge id " << j;
                     this->edges().modify( eit, [vid,j] ( edge_type& e ) { e.addElement( vid, j ); } );
@@ -887,10 +887,10 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             else
             {
                 edge_type* edgePtr =  _edgeit->second;
-                if ( eit->marker() != edgePtr->marker() )
-                {
-                    edgePtr->setMarker2( eit->marker().value() );
-                }
+                // if ( eit->marker() != edgePtr->marker() )
+                // {
+                //     edgePtr->setMarker2( eit->marker().value() );
+                // }
                 eit = this->edges().erase( eit );
             }
         }
@@ -1004,7 +1004,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             {
                 edgePtr = _edgeit->second;
 
-                if ( updateComponentAddElements/*this->components().test( MESH_ADD_ELEMENTS_INFO )*/ || edgePtr->marker().isOn() )
+                if ( updateComponentAddElements/*this->components().test( MESH_ADD_ELEMENTS_INFO )*/ || edgePtr->hasMarker() )
                     edgePtr->addElement( vid, j );
             }
 

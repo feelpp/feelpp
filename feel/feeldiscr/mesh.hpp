@@ -2093,9 +2093,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
         new_elem.setId ( n_new_elem );
         new_element_numbers[old_elem.id()]= n_new_elem;
         // set element markers
-        new_elem.setMarker( old_elem.marker().value() );
-        new_elem.setMarker2( old_elem.marker2().value() );
-        new_elem.setMarker3( old_elem.marker3().value() );
+        new_elem.setMarkers( old_elem.markers() );
         // partitioning update
         new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
         new_elem.setProcessId(old_elem.processId());
@@ -2163,9 +2161,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
                 // set id of face
                 new_face.setId( n_new_faces );
                 // set face markers
-                new_face.setMarker( old_face.marker().value() );
-                new_face.setMarker2( old_face.marker2().value() );
-                new_face.setMarker2( old_face.marker3().value() );
+                new_face.setMarkers( old_face.markers() );
                 // partitioning update
                 new_face.setProcessIdInPartition( old_face.pidInPartition() );
                 new_face.setProcessId(old_face.processId());
@@ -2215,7 +2211,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
     for ( ; face_it!=face_en ; ++face_it )
     {
         auto const& old_face = *face_it;
-        if ( old_face.marker().isOff() ) continue;
+        if ( old_face.hasMarker() ) continue;
 
         typename P1_mesh_type::face_type new_face;
         // is on boundary
@@ -2223,9 +2219,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
         // set id of face
         new_face.setId( n_new_faces );
         // set face markers
-        new_face.setMarker( old_face.marker().value() );
-        new_face.setMarker2( old_face.marker2().value() );
-        new_face.setMarker2( old_face.marker3().value() );
+        new_face.setMarkers( old_face.markers() );
         // partitioning update
         new_face.setProcessIdInPartition( old_face.pidInPartition() );
         new_face.setProcessId(old_face.processId());
