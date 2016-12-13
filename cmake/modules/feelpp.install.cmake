@@ -99,13 +99,10 @@ add_custom_target(install-libs-models-thermodyn
   DEPENDS 
   install-feelpp-lib
   install-feelpp-models-common
-  install-feelpp_model_thermodyn2dP1G1
-  install-feelpp_model_thermodyn3dP1G1
-  install-feelpp_model_thermodyn2dP2G1
-  install-feelpp_model_thermodyn3dP2G1
+  feelpp_model_thermodynamics
   COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
-      -P "${CMAKE_BINARY_DIR}/applications/models/thermodyn/cmake_install.cmake"
+      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Lib
+      -P "${CMAKE_BINARY_DIR}/feel/feelmodels/thermodyn/cmake_install.cmake"
 )
 
 add_custom_target(install-apps-models-thermodyn
