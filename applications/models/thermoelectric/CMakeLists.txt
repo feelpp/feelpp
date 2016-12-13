@@ -11,3 +11,7 @@ feelpp_add_application( application_thermoelectric_3d SRCS main_thermoelectric.c
   )
 
 feelpp_add_testcase(test PREFIX thermoelectric CATEGORY thermoelectric)
+
+install(TARGETS feelpp_application_thermoelectric_2d feelpp_application_thermoelectric_3d 
+  RUNTIME DESTINATION bin/ 
+  COMPONENT ModelApplications)
