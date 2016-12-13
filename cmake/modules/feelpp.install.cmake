@@ -132,7 +132,9 @@ add_custom_target(install-libs-models-thermoelectric
 
 add_custom_target(install-apps-models-thermoelectric
   DEPENDS
-  install-libs-models-thermoelectric
+  install-feelpp-lib
+  install-feelpp-models-common
+  feelpp_model_thermoelectric
   feelpp_application_thermoelectric_2d
   feelpp_application_thermoelectric_3d
     COMMAND
