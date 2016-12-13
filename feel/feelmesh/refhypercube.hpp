@@ -445,7 +445,11 @@ public:
     {
         return 0;
     }
-    size_type marker() const
+    std::map<uint16_type,Marker1> markers() const
+    {
+        return std::map<uint16_type,Marker1>();
+    }
+    flag_type marker() const
     {
         return 0;
     }

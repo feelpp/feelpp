@@ -196,7 +196,7 @@ Mesh<Shape, T, Tag>::updateForUse()
                                              {
                                                  for ( int i = 0; i < e.numPoints; ++i )
                                                  {
-                                                     if ( e.point( i ).marker().isOn() )
+                                                     if ( e.point( i ).hasMarker() )
                                                      {
                                                          e.point( i ).addElement( e.id(), i );
 #if 0
@@ -214,7 +214,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             //auto& mpts = this->pointsRange();
             for( auto p_it = this->beginPoint(), p_en=this->endPoint(); p_it != p_en; ++p_it )
             {
-                if ( p_it->marker() > 0 )
+                if ( p_it->hasMarker() )
                 {
                     if (!p_it->elements().size())
                     {
@@ -536,13 +536,13 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<2> )
     std::for_each( this->beginFace(), this->endFace(),
                    [this]( face_type const& f )
                    {
-                       if ( f.marker().isOff() )
+                       if ( !f.hasMarker() )
                            return;
 
                        // update points
                        for( int i = 0; i < face_type::numPoints; ++i )
                        {
-                           if ( f.point( i ).marker().isOff() )
+                           if ( !f.point( i ).hasMarker() )
                            {
                                // inherit marker from edge
                                this->points().modify( this->points().iterator_to( f.point(i) ),
@@ -564,12 +564,12 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
     std::for_each( this->beginEdge(), this->endEdge(),
                    [this]( edge_type const& e )
                    {
-                       if ( e.marker().isOff() )
+                       if ( !e.hasMarker() )
                            return;
 
                        for( int i = 0; i < edge_type::numPoints; ++i )
                        {
-                           if ( e.point( i ).marker().isOff() )
+                           if ( !e.point( i ).hasMarker() )
                            {
                                // inherit marker from edge
                                this->points().modify( this->points().iterator_to( e.point(i) ),
@@ -585,13 +585,13 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
     std::for_each( this->beginFace(), this->endFace(),
                    [this]( face_type const& f )
                    {
-                       if ( f.marker().isOff() )
+                       if ( !f.hasMarker() )
                            return;
 
                        // update points
                        for( int i = 0; i < face_type::numPoints; ++i )
                        {
-                           if ( f.point( i ).marker().isOff() )
+                           if ( !f.point( i ).hasMarker() )
                            {
                                // inherit marker from edge
                                this->points().modify( this->points().iterator_to( f.point(i) ),
@@ -605,7 +605,7 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
                        // update edges
                        for( int i = 0; i < face_type::numEdges; ++i )
                        {
-                           if ( f.edge( i ).marker().isOff() )
+                           if ( !f.edge( i ).hasMarker() )
                            {
                                // inherit marker from edge
                                this->edges().modify( this->edges().iterator_to( f.edge(i) ),
@@ -769,8 +769,7 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
             elt != this->endFace(); ++elt )
     {
         face_type __face = *elt;
-        DVLOG(2) << "face id: " << __face.id()
-                 << " marker: " << __face.marker() << "\n";
+        DVLOG(2) << "face id: " << __face.id() << "\n";
 
         // renumber the nodes of the face
         for ( int i = 0; i < __face.nPoints(); ++i )
@@ -825,8 +824,7 @@ Mesh<Shape, T, Tag>::renumber( std::vector<size_type> const& node_map, mpl::int_
     {
         edge_type __edge = *elt;
 
-        DVLOG(2) << "edge id: " << __edge.id()
-                 << " marker: " << __edge.marker() << "\n";
+        DVLOG(2) << "edge id: " << __edge.id() << "\n";
 
         // renumber the nodes of the face
         for ( int i = 0; i < __edge.nPoints(); ++i )
@@ -970,7 +968,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 ( __other->id() )
                 ( theid ).error( "faces should have different ids " );
 
-                if ( __it->marker() != __other->marker() )
+                if ( __it->hasMarker() && ( !__other->hasMarker() || __it->marker() != __other->marker() ) )
                 {
                     this->faces().modify( __other, [__it]( face_type& f ) { f.setMarker2( __it->marker().value() ); } );
                 }
@@ -1085,7 +1083,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 DVLOG(2) << "process id: " << __fit->processId() << "\n";
                 DVLOG(2) << "id: " << __fit->id() << "\n";
                 DVLOG(2) << "bdy: " << __fit->isOnBoundary() << "\n";
-                DVLOG(2) << "marker: " << __fit->marker() << "\n";
+                if ( __fit->hasMarker() )
+                    DVLOG(2) << "marker: " << __fit->marker() << "\n";
                 DVLOG(2) << "ad_first: " << __fit->ad_first() << "\n";
                 DVLOG(2) << "pos_first: " << __fit->pos_first() << "\n";
                 DVLOG(2) << "proc_first: " << __fit->proc_first() << "\n";
@@ -1166,7 +1165,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     DVLOG(2) << "id: " << __fit->id() << "\n";
                     DVLOG(2) << "process id: " << __fit->processId() << "\n";
                     DVLOG(2) << "bdy: " << __fit->isOnBoundary() << "\n";
-                    DVLOG(2) << "marker: " << __fit->marker() << "\n";
+                    if ( __fit->hasMarker() )
+                        DVLOG(2) << "marker: " << __fit->marker() << "\n";
                     DVLOG(2) << "ad_first: " << __fit->ad_first() << "\n";
                     DVLOG(2) << "pos_first: " << __fit->pos_first() << "\n";
                     DVLOG(2) << "proc_first: " << __fit->proc_first() << "\n";
@@ -1196,7 +1196,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     DVLOG(2) << "id: " << __fit->id() << "\n";
                     DVLOG(2) << "process id: " << __fit->processId() << "\n";
                     DVLOG(2) << "bdy: " << __fit->isOnBoundary() << "\n";
-                    DVLOG(2) << "marker: " << __fit->marker() << "\n";
+                    if ( __fit->hasMarker() )
+                        DVLOG(2) << "marker: " << __fit->marker() << "\n";
                     DVLOG(2) << "ad_first: " << __fit->ad_first() << "\n";
                     DVLOG(2) << "pos_first: " << __fit->pos_first() << "\n";
                     DVLOG(2) << "proc_first: " << __fit->proc_first() << "\n";
@@ -1233,8 +1234,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
         if ( !f_it->isConnectedTo0() )
         {
-            DLOG(INFO) << "removing face id : " << f_it->id()
-                       << " marker : " << f_it->marker();
+            DLOG(INFO) << "removing face id : " << f_it->id();
             // remove all faces that are not connected to any elements
             f_it = this->faces().erase( f_it );
             //++f_it;
@@ -1323,10 +1323,10 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             if ( faceinserted == false )
             {
                 face_type* facePtr =  _faceit->second;
-                if ( __it->marker() != facePtr->marker() )
-                {
-                    facePtr->setMarker2( __it->marker().value() );
-                }
+                // if ( __it->hasMarker() && ( !facePtr->hasMarker() || ( __it->marker() != facePtr->marker() ) ) )
+                // {
+                //     facePtr->setMarker( __it->marker().value() );
+                // }
                 __it = this->eraseFace( __it );
             }
             else
@@ -1434,7 +1434,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 DVLOG(2) << "process id: " << facePtr->processId() << "\n";
                 DVLOG(2) << "id: " << facePtr->id() << "\n";
                 DVLOG(2) << "bdy: " << facePtr->isOnBoundary() << "\n";
-                DVLOG(2) << "marker: " << facePtr->marker() << "\n";
+                if ( facePtr->hasMarker() )
+                    DVLOG(2) << "marker: " << facePtr->marker() << "\n";
                 DVLOG(2) << "ad_first: " << facePtr->ad_first() << "\n";
                 DVLOG(2) << "pos_first: " << facePtr->pos_first() << "\n";
                 DVLOG(2) << "proc_first: " << facePtr->proc_first() << "\n";
@@ -1510,7 +1511,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     DVLOG(2) << "id: " << facePtr->id() << "\n";
                     DVLOG(2) << "process id: " << facePtr->processId() << "\n";
                     DVLOG(2) << "bdy: " << facePtr->isOnBoundary() << "\n";
-                    DVLOG(2) << "marker: " << facePtr->marker() << "\n";
+                    if ( facePtr->hasMarker() )
+                        DVLOG(2) << "marker: " << facePtr->marker() << "\n";
                     DVLOG(2) << "ad_first: " << facePtr->ad_first() << "\n";
                     DVLOG(2) << "pos_first: " << facePtr->pos_first() << "\n";
                     DVLOG(2) << "proc_first: " << facePtr->proc_first() << "\n";
@@ -1534,7 +1536,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                         //                                                ( facePtr->element0().processId() != currentPid && eltPid == currentPid ) );
                         bool isFaceOnGhostElt = ( facePtr->element0().processId() != currentPid ) || ( eltPid != currentPid );
                         bool isFaceConnectedToInterProcess = false;
-                        bool removeThisFace = cface.marker().isOff() && !isFaceOnGhostElt;
+                        bool removeThisFace = !cface.hasMarker() && !isFaceOnGhostElt;
                         if ( removeThisFace && numPartition > 1 )
                         {
                             for ( uint16_type vLocId = 0 ; vLocId < face_type::numVertices; ++vLocId )
@@ -1572,7 +1574,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     DVLOG(2) << "id: " << facePtr->id() << "\n";
                     DVLOG(2) << "process id: " << facePtr->processId() << "\n";
                     DVLOG(2) << "bdy: " << facePtr->isOnBoundary() << "\n";
-                    DVLOG(2) << "marker: " << facePtr->marker() << "\n";
+                    if ( facePtr->hasMarker() )
+                        DVLOG(2) << "marker: " << facePtr->marker() << "\n";
                     DVLOG(2) << "ad_first: " << facePtr->ad_first() << "\n";
                     DVLOG(2) << "pos_first: " << facePtr->pos_first() << "\n";
                     DVLOG(2) << "proc_first: " << facePtr->proc_first() << "\n";
@@ -1626,8 +1629,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             // cleanup the face data structure :
             if ( !f_it->isConnectedTo0() )
             {
-                DLOG(INFO) << "removing face id : " << f_it->id()
-                           << " marker : " << f_it->marker();
+                DLOG(INFO) << "removing face id : " << f_it->id();
                 // remove all faces that are not connected to any elements
                 f_it = this->faces().erase( f_it );
                 //++f_it;
@@ -1659,8 +1661,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             // cleanup the face data structure :
             if ( !f_it->isConnectedTo0() )
             {
-                DLOG(INFO) << "removing face id : " << f_it->id()
-                           << " marker : " << f_it->marker();
+                DLOG(INFO) << "removing face id : " << f_it->id();
                 // remove all faces that are not connected to any elements
                 f_it = this->faces().erase( f_it );
             }
@@ -2898,9 +2899,9 @@ Mesh<Shape, T, Tag>::check() const
         DLOG_IF( WARNING, !__face.isConnectedTo0() && !__face.isConnectedTo1() ) << "face not connected to an element face:" << __face << "\n";
         if ( !__face.isConnectedTo0() && !__face.isConnectedTo1() )
         {
-            auto it = nf.find( (int)__face.marker().value() );
+            auto it = nf.find( (int)__face.id() );
             if (  it == nf.end() )
-                nf[(int)__face.marker().value()] = 1;
+                nf[(int)__face.id()] = 1;
             else
                 it->second += 1;
         }
@@ -2914,7 +2915,7 @@ Mesh<Shape, T, Tag>::check() const
     auto ent = nf.end();
     for(; itt != ent; ++itt )
     {
-        LOG(INFO ) << "face with marker " << itt->first << " not attached " << itt->second << "\n";
+        LOG(INFO ) << "face with id " << itt->first << " not attached " << itt->second << "\n";
     }
 #endif
 }
@@ -3189,8 +3190,8 @@ Mesh<Shape, T, Tag>::encode()
         std::vector<int> faces;
         faces.push_back( ordering_face.type() );
         faces.push_back( 4 + curface.numberOfPartitions() );
-        faces.push_back( curface.marker().value() );
-        faces.push_back( curface.marker2().value() );
+        faces.push_back( curface.hasMarker()? curface.marker().value() : 0 );
+        faces.push_back( curface.hasMarker2()? curface.marker2().value() : 0 );
         faces.push_back( curface.numberOfPartitions() );
         faces.push_back( curface.processId() );
         for ( size_type i=0 ; i<curface.numberOfNeighborPartitions(); ++i )
@@ -3211,8 +3212,8 @@ Mesh<Shape, T, Tag>::encode()
         std::vector<int> elts;
         elts.push_back( ordering.type() );
         elts.push_back( 4 + curelt.numberOfPartitions() );
-        elts.push_back( curelt.marker().value() );
-        elts.push_back( curelt.marker2().value() );
+        elts.push_back( curelt.hasMarker()? curelt.marker().value() : 0 );
+        elts.push_back( curelt.hasMarker2()? curelt.marker2().value() : 0 );
         elts.push_back( curelt.numberOfPartitions() );
         elts.push_back( curelt.processId() );
         for ( size_type i=0 ; i<curelt.numberOfNeighborPartitions(); ++i )

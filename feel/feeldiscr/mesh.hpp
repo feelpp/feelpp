@@ -420,9 +420,9 @@ public:
         size_type nedall = this->numEdges();
         size_type npall = this->numPoints();
 
-        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(), []( face_type const& theface ) { return theface.marker().isOn(); } );
-        size_type nedmarkedall = std::count_if( this->beginEdge(),this->endEdge(), []( edge_type const& theedge ) { return theedge.marker().isOn(); } );
-        size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( point_type const& thepoint ) { return thepoint.marker().isOn(); } );
+        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(), []( face_type const& theface ) { return theface.hasMarker(); } );
+        size_type nedmarkedall = std::count_if( this->beginEdge(),this->endEdge(), []( edge_type const& theedge ) { return theedge.hasMarker(); } );
+        size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( point_type const& thepoint ) { return thepoint.hasMarker(); } );
 
 
         M_statElements.resize( nProc,std::make_tuple(0,0) );
@@ -513,11 +513,11 @@ public:
         size_type nedall = 0;
         size_type npall = this->numPoints();
 
-        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),[]( face_type const& theface ) { return theface.marker().isOn(); } );
+        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),[]( face_type const& theface ) { return theface.hasMarker(); } );
         //size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),
         //                                       [this]( face_type const& theface ) { return theface.marker().isOn() && this->hasFaceMarker( this->markerName( theface.marker().value() ) ) ; } );
         size_type nedmarkedall = 0;
-        size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( point_type const& thepoint ) { return thepoint.marker().isOn(); } );
+        size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( point_type const& thepoint ) { return thepoint.hasMarker(); } );
 
 
         M_statElements.resize( nProc,std::make_tuple(0,0) );

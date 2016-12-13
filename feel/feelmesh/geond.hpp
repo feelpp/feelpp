@@ -258,7 +258,7 @@ public:
             bool pt_with_marker = false;
             for ( int i = 0; i < numPoints; ++i )
             {
-                pt_with_marker = this->point( i ).marker().isOn();
+                pt_with_marker = this->point( i ).hasMarker();
                 if ( pt_with_marker )
                     break;
             }
@@ -814,6 +814,11 @@ public:
     }
 
 
+    std::map<uint16_type,Marker1> const&
+    markers() const
+    {
+        return M_markers;
+    }
     bool hasMarker( uint16_type k ) const
     {
         auto itFindMarker = M_markers.find( k );
