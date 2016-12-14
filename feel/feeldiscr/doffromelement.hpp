@@ -34,6 +34,7 @@
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feeldiscr/dof.hpp>
 
+#include <feel/feelmesh/marker.hpp>
 
 namespace Feel
 {
@@ -224,11 +225,12 @@ private:
 
         size_type ie = __elt.id();
         uint16_type lc = local_shift;
+        Marker1 eltMarker = __elt.hasMarker()? __elt.marker() : Marker1(0);
 
         for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerEdge + l;
-            M_doftable->insertDof( ie, lc, l, std::make_tuple(  1, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            M_doftable->insertDof( ie, lc, l, std::make_tuple(  1, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
         }
 
         // update shifts
@@ -254,6 +256,8 @@ private:
 
         for ( uint16_type i = 0; i < element_type::numEdges; ++i )
         {
+            Marker1 edgeMarker = __elt.edge( i ).hasMarker()? __elt.edge( i ).marker() : Marker1(0);
+
             for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
             {
                 size_type gDof = __elt.edge( i ).id() * fe_type::nDofPerEdge;
@@ -292,7 +296,7 @@ private:
                 else
                     FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
+                M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, edgeMarker );
             }
         }
 
@@ -319,6 +323,7 @@ private:
 
         for ( uint16_type i = 0; i < element_type::numEdges; ++i )
         {
+            Marker1 edgeMarker = __elt.edge( i ).hasMarker()? __elt.edge( i ).marker() : Marker1(0);
             for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
             {
                 size_type gDof = __elt.edge( i ).id() * fe_type::nDofPerEdge;
@@ -355,7 +360,7 @@ private:
                 else
                     FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
+                M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, edgeMarker );
             }
         }
 
@@ -387,11 +392,12 @@ private:
 
         size_type ie = __elt.id();
         uint16_type lc = local_shift;
+        Marker1 eltMarker =  __elt.hasMarker()? __elt.marker() : Marker1(0);
 
         for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerFace + l;
-            M_doftable->insertDof( ie, lc, l, std::make_tuple(  2, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            M_doftable->insertDof( ie, lc, l, std::make_tuple(  2, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
         }
 
         // update shifts
@@ -417,6 +423,7 @@ private:
         for ( uint16_type i = 0; i < element_type::numFaces; ++i )
         {
             face_permutation_type permutation = __elt.facePermutation( i );
+            Marker1 faceMarker =  __elt.face( i ).hasMarker()? __elt.face( i ).marker() : Marker1(0);
 
             FEELPP_ASSERT( permutation != face_permutation_type( 0 ) ).error ( "invalid face permutation" );
 
@@ -497,7 +504,7 @@ private:
                     }
                 }
 
-                M_doftable->insertDof( ie, lc, i, std::make_tuple(  2, gDof ), processor, next_free_dof, sign, false, global_shift,__elt.face( i ).marker() );
+                M_doftable->insertDof( ie, lc, i, std::make_tuple(  2, gDof ), processor, next_free_dof, sign, false, global_shift, faceMarker );
 
             }
         }
@@ -526,11 +533,12 @@ private:
 
         size_type ie = __elt.id();
         uint16_type lc = local_shift;
+        Marker1 eltMarker =  __elt.hasMarker()? __elt.marker() : Marker1(0);
 
         for ( uint16_type l = 0; l < fe_type::nDofPerVolume; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerVolume + l;
-            M_doftable->insertDof( ie, lc, l, std::make_tuple(  3, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            M_doftable->insertDof( ie, lc, l, std::make_tuple(  3, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
         }
 
         // update shifts

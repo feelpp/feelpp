@@ -656,7 +656,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         {
             edge_it = lit.template get<1>();
             edge_en = lit.template get<2>();
-            DVLOG(2) << "edge " << edge_it->id() << " with marker " << edge_it->marker() << " nb: " << std::distance(edge_it,edge_en);
+            DVLOG(2) << "edge nb: " << std::distance(edge_it,edge_en);
             for ( ;
                   edge_it != edge_en;//this->endElement();
                   ++edge_it )
