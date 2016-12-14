@@ -859,10 +859,22 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
     // derivative of Heaviside function
     auto eps0 = this->thicknessInterface();
     auto gradPhi = this->gradPhi();
-    auto gradPhiX = this->projectorL2()->project(idv(gradPhi->comp(Component::X)));
-    auto gradPhiY = this->projectorL2()->project(idv(gradPhi->comp(Component::Y)));
+    auto gradPhiX = vf::project(
+            _space=this->functionSpace(),
+            _range=elements(this->mesh()),
+            _expr=idv(gradPhi->comp(Component::X))
+            );
+    auto gradPhiY = vf::project(
+            _space=this->functionSpace(),
+            _range=elements(this->mesh()),
+            _expr=idv(gradPhi->comp(Component::Y))
+            );
 #if FEELPP_DIM == 3
-    auto gradPhiZ = this->projectorL2()->project(idv(gradPhi->comp(Component::Z)));
+    auto gradPhiZ = vf::project(
+            _space=this->functionSpace(),
+            _range=elements(this->mesh()),
+            _expr=idv(gradPhi->comp(Component::Z))
+            );
 #endif
     //auto gradPhiNorm1 = this->projectorL2()->project(
             //vf::abs(idv(gradPhi->comp(Component::X))) + vf::abs(idv(gradPhi->comp(Component::Y)))
@@ -872,11 +884,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
     auto eps_elt = vf::project(
             _space=this->functionSpace(),
             _range=elements(this->mesh()),
-            //_expr=(idv(gradPhiNorm1)
-            _expr=(abs(idv(gradPhiX))+abs(idv(gradPhiY))
-            //_expr=norm2(idv(gradPhi))
+            _expr=(vf::abs(idv(gradPhiX))+vf::abs(idv(gradPhiY))
 #if FEELPP_DIM == 3
-            + abs(idv(gradPhiZ))
+            + vf::abs(idv(gradPhiZ))
 #endif
             )*cst(eps0)/idv(this->modGradPhi())
             );
