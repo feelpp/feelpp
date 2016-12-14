@@ -65,13 +65,13 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::ThermoElectric( std::string const& prefix,
 
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"ThermoElectric.info") );
     //-----------------------------------------------------------------------------//
-    // load info from .bc file
+    // load config (from json)
     this->loadConfigBCFile();
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
     //-----------------------------------------------------------------------------//
-    // build mesh, space, exporter,...
+    // build mesh
     if ( buildMesh )
         this->createMesh();
     //-----------------------------------------------------------------------------//
@@ -84,6 +84,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 {
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
+    this->clearMarkerRobinBC();
 
     this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "Dirichlet" );
     for( auto const& d : this->M_bcDirichlet )
@@ -96,7 +97,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     for( auto const& d : this->M_bcRobin )
         this->addMarkerRobinBC( marker(d) );
 
-    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
+    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "VolumicForces" );
 }
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -197,6 +198,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // functionspace
     M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
+    M_XhElectricField = space_electricfield_type::New(_mesh=M_mesh, _worldscomm=this->worldsComm() );
+    M_fieldElectricField.reset( new element_electricfield_type(M_XhElectricField,"E"));
 
     // physical properties
     M_XhScalarP0 = space_scalar_P0_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
@@ -284,6 +287,17 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("ThermoElectric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
+    M_postProcessFieldExported.clear();
+    if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
+        for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
+        {
+            if ( o == "temperature" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::Temperature );
+            if ( o == "electric-potential" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::ElectricPotential );
+            if ( o == "electric-field" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::ElectricField );
+            if ( o == "pid" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::Pid );
+        }
+
+
     std::string geoExportType="static";//change_coords_only, change, static
     M_exporter = exporter( _mesh=this->mesh(),
                            _name="Export",
@@ -342,6 +356,20 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n";
+
+    std::string myexporterType = M_exporter->type();
+    int myexporterFreq = M_exporter->freq();
+    std::string doExport_str;
+    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::Temperature ) )
+        doExport_str=(doExport_str.empty())?"temperature":doExport_str+" - temperature";
+    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::ElectricPotential ) )
+        doExport_str=(doExport_str.empty())?"electric-potential":doExport_str+" - electric-potential";
+    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::ElectricField ) )
+        doExport_str=(doExport_str.empty())?"electric-field":doExport_str+" - electric-field";
+    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::Pid ) )
+        doExport_str=(doExport_str.empty())?"pid":doExport_str+" - pid";
+
+
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -353,6 +381,14 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Root Repository : " << this->rootRepository();
     *_ostr << "\n   Physical Model"
            << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient");
+    *_ostr << "\n   Exporter"
+           << "\n     -- type            : " << myexporterType
+           << "\n     -- freq save       : " << myexporterFreq
+           << "\n     -- fields exported : " << doExport_str
+           << "\n   Processors"
+           << "\n     -- number of proc : " << this->worldComm().globalSize()
+           << "\n     -- current rank : " << this->worldComm().globalRank();
+
     if ( M_algebraicFactoryMonolithic )
         *_ostr << M_algebraicFactoryMonolithic->getInfo()->str();
     *_ostr << "\n||==============================================||"
@@ -376,18 +412,31 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
     bool hasFieldToExport = false;
 
-    if ( true )
+    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::Temperature ) &&
+         M_thermodynModel->mesh()->isSameMesh( this->mesh() ) )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
+                                       M_thermodynModel->fieldTemperature() );
+        hasFieldToExport = true;
+    }
+    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::ElectricPotential ) )
     {
         M_exporter->step( time )->add( prefixvm(this->prefix(),"electric-potential"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-potential")),
                                        this->fieldElectricPotential() );
         hasFieldToExport = true;
     }
-    if ( M_thermodynModel->mesh()->isSameMesh( this->mesh() ) )
+    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::ElectricField ) )
     {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
-                                       M_thermodynModel->fieldTemperature() );
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"electric-fields"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-fields")),
+                                       *M_fieldElectricField );
+        hasFieldToExport = true;
+    }
+    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::Pid ) )
+    {
+        M_exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
         hasFieldToExport = true;
     }
 
@@ -404,6 +453,20 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
         this->timerTool("PostProcessing").save();
     }
     this->log("ThermoElectric","exportResults", "finish");
+}
+
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
+{
+    std::string M_computeElectricFieldProjType = "nodal";
+    /*if ( M_computeElectricFieldProjType == "L2" )
+     *M_fieldElectricFieldContinuous = M_l2proj->operator()( -trans(gradv(this->fieldElectricPotential() ) ) );
+     else*/ if ( M_computeElectricFieldProjType == "nodal" )
+        M_fieldElectricField->on(_range=elements(M_fieldElectricField->functionSpace()->mesh()),
+                                 _expr=-trans(gradv( this->fieldElectricPotential() ) ) );
+    else
+        CHECK( false ) << "invalid M_computeElectricFieldProjType " << M_computeElectricFieldProjType << "\n";
 }
 
 
@@ -449,6 +512,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
         M_algebraicFactoryMonolithic->solve( "Newton", this->blockVectorSolutionMonolithic().vector() );
         M_blockVectorSolutionMonolithic.localize();
     }
+
+    this->updateElectricField();
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
@@ -594,7 +659,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                        _expr= sigma*inner(gradt(v),grad(v)),
                        _geomap=this->geomap() );
     }
-    if ( !buildNonCstPart )
+    if ( !buildCstPart )
     {
         form2( _test=XhT,_trial=XhV,_matrix=J,
                _pattern=size_type(Pattern::COUPLED),
@@ -664,7 +729,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBCWeakJacobian( element_electricpotent
         for( auto const& d : this->M_bcRobin )
         {
             bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= expression1(d)*idt(v)*id(v),
                            _geomap=this->geomap() );
         }
@@ -685,7 +750,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     bool buildCstPart = _BuildCstPart;
 
     std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("ThermoDynamics","updateResidual", "start"+sc);
+    this->log("ThermoElectric","updateResidual", "start"+sc);
 
     size_type startBlockIndexTemperature = M_startBlockIndexFieldsInMatrix.find( "temperature" )->second;
     size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
@@ -743,7 +808,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual( vector_ptrt
 {
     if ( this->M_bcDirichlet.empty() ) return;
 
-    this->log("ThermoDynamics","updateBCDirichletStrongResidual","start" );
+    this->log("ThermoElectric","updateBCDirichletStrongResidual","start" );
 
     auto XhV = this->spaceElectricPotential();
     auto mesh = XhV->mesh();
@@ -755,7 +820,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual( vector_ptrt
              _expr=cst(0.) );
     }
 
-    this->log("ThermoDynamics","updateBCDirichletStrongResidual","finish" );
+    this->log("ThermoElectric","updateBCDirichletStrongResidual","finish" );
 }
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -775,7 +840,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBCWeakResidual( element_electricpotent
         for( auto const& d : this->M_bcNeumann )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
+                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
                            _expr= -expression(d)*id(v),
                            _geomap=this->geomap() );
         }
@@ -785,14 +850,14 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBCWeakResidual( element_electricpotent
         if ( !buildCstPart )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= expression1(d)*idv(v)*id(v),
                            _geomap=this->geomap() );
         }
         if ( buildCstPart )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= -expression1(d)*expression2(d)*id(v),
                            _geomap=this->geomap() );
         }
@@ -914,7 +979,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype&
         for( auto const& d : this->M_bcNeumann )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
+                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
                            _expr= expression(d)*id(v),
                            _geomap=this->geomap() );
         }
@@ -926,11 +991,11 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype&
         for( auto const& d : this->M_bcRobin )
         {
             bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= expression1(d)*idt(v)*id(v),
                            _geomap=this->geomap() );
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= expression1(d)*expression2(d)*id(v),
                            _geomap=this->geomap() );
         }
