@@ -35,7 +35,7 @@ makeMixedPoissonOptions( std::string prefix = "mixedpoisson" )
 {
     po::options_description mpOptions( "Mixed Poisson HDG options");
     mpOptions.add_options()
-        ( prefixvm( prefix, "gmsh.submesh").c_str(), po::value<std::string>()->default_value( "" ), "submesh extraction" )
+        ( "gmsh.submesh", po::value<std::string>()->default_value( "" ), "submesh extraction" )
         ( prefixvm( prefix, "tau_constant").c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( prefixvm( prefix, "tau_order").c_str(), po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( prefixvm( prefix, "picard.itol").c_str(), po::value<double>()->default_value( 1e-4 ), "tolerance" )
