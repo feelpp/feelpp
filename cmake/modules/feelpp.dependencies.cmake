@@ -440,7 +440,7 @@ if ( FEELPP_ENABLE_HDF5 )
     SET(HDF_VERSION_REF "${HDF5_VERSION}")
 
     IF (NOT HDF_VERSION_MAJOR_REF EQUAL 1 OR NOT HDF_VERSION_MINOR_REF EQUAL 8)
-      MESSAGE(FATAL_ERROR "[feelpp] HDF5 version is ${HDF_VERSION_REF}. Only 1.8.x versions are supported.")
+      MESSAGE(STATUS "[feelpp] HDF5 version is ${HDF_VERSION_REF}")
     ENDIF()
     
   else()
