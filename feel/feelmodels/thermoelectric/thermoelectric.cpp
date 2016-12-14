@@ -620,7 +620,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                        _expr= sigma*inner(gradt(v),grad(v)),
                        _geomap=this->geomap() );
     }
-    if ( !buildNonCstPart )
+    if ( !buildCstPart )
     {
         form2( _test=XhT,_trial=XhV,_matrix=J,
                _pattern=size_type(Pattern::COUPLED),
