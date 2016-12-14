@@ -39,6 +39,11 @@ namespace Feel
 namespace FeelModels
 {
 
+enum class ThermoElectricPostProcessFieldExported
+{
+    Temperature = 0, ElectricPotential, ElectricField, Pid
+};
+
 template< typename ConvexType, typename BasisTemperatureType>
 class ThermoElectric : public ModelNumerical,
                        public MarkerManagementDirichletBC,
@@ -108,7 +113,7 @@ public:
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ThermoDynamicsMesh.path"); }
     boost::shared_ptr<std::ostringstream> getInfo() const;
 
-    // load config files
+    // load config
     void loadConfigBCFile();
     void loadConfigMeshFile( std::string const& geofilename );
     void loadParameterFromOptionsVm();
@@ -125,6 +130,7 @@ public:
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
     void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
+    bool hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
 
     void updateParameterValues();
 
@@ -207,6 +213,8 @@ private :
 
     // post-process
     export_ptrtype M_exporter;
+    std::set<ThermoElectricPostProcessFieldExported> M_postProcessFieldExported;
+    std::set<std::string> M_postProcessUserFieldExported;
 
 
 };
