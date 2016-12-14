@@ -55,7 +55,7 @@
     },
     "PostProcess":
     {
-        "Fields":["temperature"]
+        "Fields":["temperature", "electric-potential","electric-field","pid"]
     }
 
 }
