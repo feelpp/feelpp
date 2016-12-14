@@ -35,12 +35,12 @@ int main(int argc, char *argv[])
     auto mesh = loadMesh( _mesh=new mp_type::mesh_type );
     decltype( IPtr( _domainSpace=Pdh<FEELPP_ORDER>(mesh), _imageSpace=Pdh<FEELPP_ORDER>(mesh) ) ) Idh ;
     decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<FEELPP_ORDER>(mesh) ) ) Idhv;
-    if ( soption( "mixedpoisson.gmsh.submesh" ).empty() )
+    if ( soption( "gmsh.submesh" ).empty() )
         MP -> init(mesh);
     else
     {
-        Feel::cout << "Using submesh: " << soption("mixedpoisson.gmsh.submesh") << std::endl;
-		auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("mixedpoisson.gmsh.submesh")), Environment::worldComm() );
+        Feel::cout << "Using submesh: " << soption("gmsh.submesh") << std::endl;
+		auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
         Idh = IPtr( _domainSpace=Pdh<FEELPP_ORDER>(cmesh), _imageSpace=Pdh<FEELPP_ORDER>(mesh) );
         Idhv = IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(cmesh), _imageSpace=Pdhv<FEELPP_ORDER>(mesh) );
         MP -> init( cmesh, mesh );
@@ -48,16 +48,19 @@ int main(int argc, char *argv[])
 
     if ( MP -> isStationary() )
     {
+		MP->assembleAll();
         MP->solve();
         MP->exportResults( mesh, Idh, Idhv );
     }
     else
     {
+		MP->assembleCstPart();
         for ( ; !MP->timeStepBase()->isFinished() ; MP->updateTimeStep() )
         {
             Feel::cout << "============================================================\n";
             Feel::cout << "time simulation: " << MP->time() << "s \n";
             Feel::cout << "============================================================\n";
+			MP->assembleNonCstPart();
             MP->solve();
             MP->exportResults( mesh, Idh, Idhv );
         }
