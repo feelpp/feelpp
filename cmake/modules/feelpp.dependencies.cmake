@@ -406,13 +406,9 @@ if ( FEELPP_ENABLE_HDF5 )
     else()
         MESSAGE(STATUS "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
     endif()
-  else()
-    MESSAGE(STATUS "[feelpp] no HDF5 found")
-  endif()
 
   # check HDF5 version
   if(NOT HDF5_VERSION)
-    MESSAGE(STATUS "Cannot find HDF5_VERSION - maybe cmake is too old")
     set( HDF5_VERSION "" )
     foreach( _dir IN LISTS HDF5_INCLUDE_DIRS )
       foreach(_hdr "${_dir}/H5pubconf.h" "${_dir}/H5pubconf-64.h" "${_dir}/H5pubconf-32.h")
@@ -437,7 +433,7 @@ if ( FEELPP_ENABLE_HDF5 )
   endif(NOT HDF5_VERSION)
 
   STRING (REGEX MATCHALL "[0-9]+" _versionComponents "${HDF5_VERSION}")
-  MESSAGE(STATUS "HDF5_VERSION=${HDF5_VERSION}")
+  # MESSAGE(STATUS "HDF5_VERSION=${HDF5_VERSION}")
   LIST(GET _versionComponents 0 HDF_VERSION_MAJOR_REF)
   LIST(GET _versionComponents 1 HDF_VERSION_MINOR_REF)
   LIST(GET _versionComponents 2 HDF_VERSION_RELEASE_REF)
@@ -446,6 +442,10 @@ if ( FEELPP_ENABLE_HDF5 )
   IF (NOT HDF_VERSION_MAJOR_REF EQUAL 1 OR NOT HDF_VERSION_MINOR_REF EQUAL 8)
      MESSAGE(FATAL_ERROR "HDF5 version is ${HDF_VERSION_REF}. Only 1.8.x versions are supported.")
   ENDIF()
+    
+  else()
+    MESSAGE(STATUS "[feelpp] no HDF5 found")
+  endif()
   
 endif(FEELPP_ENABLE_HDF5)
 
