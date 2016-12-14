@@ -84,6 +84,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 {
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
+    this->clearMarkerRobinBC();
 
     this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "Dirichlet" );
     for( auto const& d : this->M_bcDirichlet )
@@ -96,7 +97,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     for( auto const& d : this->M_bcRobin )
         this->addMarkerRobinBC( marker(d) );
 
-    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
+    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "VolumicForces" );
 }
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -197,6 +198,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // functionspace
     M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
+    M_XhElectricField = space_electricfield_type::New(_mesh=M_mesh, _worldscomm=this->worldsComm() );
+    M_fieldElectricField.reset( new element_electricfield_type(M_XhElectricField,"E"));
 
     // physical properties
     M_XhScalarP0 = space_scalar_P0_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
@@ -390,6 +393,13 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
                                        M_thermodynModel->fieldTemperature() );
         hasFieldToExport = true;
     }
+    if ( true )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"electric-fields"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-fields")),
+                                       *M_fieldElectricField );
+        hasFieldToExport = true;
+    }
 
     if ( hasFieldToExport )
         M_exporter->save();
@@ -404,6 +414,20 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
         this->timerTool("PostProcessing").save();
     }
     this->log("ThermoElectric","exportResults", "finish");
+}
+
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
+{
+    std::string M_computeElectricFieldProjType = "nodal";
+    /*if ( M_computeElectricFieldProjType == "L2" )
+     *M_fieldElectricFieldContinuous = M_l2proj->operator()( -trans(gradv(this->fieldElectricPotential() ) ) );
+     else*/ if ( M_computeElectricFieldProjType == "nodal" )
+        M_fieldElectricField->on(_range=elements(M_fieldElectricField->functionSpace()->mesh()),
+                                 _expr=-trans(gradv( this->fieldElectricPotential() ) ) );
+    else
+        CHECK( false ) << "invalid M_computeElectricFieldProjType " << M_computeElectricFieldProjType << "\n";
 }
 
 
@@ -449,6 +473,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
         M_algebraicFactoryMonolithic->solve( "Newton", this->blockVectorSolutionMonolithic().vector() );
         M_blockVectorSolutionMonolithic.localize();
     }
+
+    this->updateElectricField();
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
@@ -664,7 +690,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBCWeakJacobian( element_electricpotent
         for( auto const& d : this->M_bcRobin )
         {
             bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= expression1(d)*idt(v)*id(v),
                            _geomap=this->geomap() );
         }
@@ -775,7 +801,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBCWeakResidual( element_electricpotent
         for( auto const& d : this->M_bcNeumann )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
+                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
                            _expr= -expression(d)*id(v),
                            _geomap=this->geomap() );
         }
@@ -785,14 +811,14 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBCWeakResidual( element_electricpotent
         if ( !buildCstPart )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= expression1(d)*idv(v)*id(v),
                            _geomap=this->geomap() );
         }
         if ( buildCstPart )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= -expression1(d)*expression2(d)*id(v),
                            _geomap=this->geomap() );
         }
@@ -914,7 +940,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype&
         for( auto const& d : this->M_bcNeumann )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
+                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
                            _expr= expression(d)*id(v),
                            _geomap=this->geomap() );
         }
@@ -926,11 +952,11 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype&
         for( auto const& d : this->M_bcRobin )
         {
             bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= expression1(d)*idt(v)*id(v),
                            _geomap=this->geomap() );
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= expression1(d)*expression2(d)*id(v),
                            _geomap=this->geomap() );
         }
