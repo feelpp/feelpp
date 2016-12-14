@@ -61,15 +61,22 @@ public:
     static const uint16_type nOrderGeo = convex_type::nOrder;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef mesh_type mesh_electric_type;
 
+    // function space electric-potential
     typedef BasisTemperatureType basis_electricpotential_type;
     static const uint16_type nOrderPolyElectricPotential = basis_electricpotential_type::nOrder;
-    // function space electricpotential
     typedef FunctionSpace<mesh_type, bases<basis_electricpotential_type> > space_electricpotential_type;
     typedef boost::shared_ptr<space_electricpotential_type> space_electricpotential_ptrtype;
     typedef typename space_electricpotential_type::element_type element_electricpotential_type;
     typedef boost::shared_ptr<element_electricpotential_type> element_electricpotential_ptrtype;
     typedef typename space_electricpotential_type::element_external_storage_type element_electricpotential_external_storage_type;
+    // function space electric-field
+    typedef Lagrange<nOrderPolyElectricPotential, Vectorial,Discontinuous/*Continuous*/,PointSetFekete> basis_electricfield_type;
+    typedef FunctionSpace<mesh_electric_type, bases<basis_electricfield_type> > space_electricfield_type;
+    typedef boost::shared_ptr<space_electricfield_type> space_electricfield_ptrtype;
+    typedef typename space_electricfield_type::element_type element_electricfield_type;
+    typedef boost::shared_ptr<element_electricfield_type> element_electricfield_ptrtype;
 
     // mechanical properties desc
     typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_type;
@@ -132,6 +139,10 @@ public:
     element_electricpotential_ptrtype const& fieldElectricPotentialPtr() const { return M_fieldElectricPotential; }
     element_electricpotential_type const& fieldElectricPotential() const { return *M_fieldElectricPotential; }
 
+    space_electricfield_ptrtype const& spaceElectricField() const { return M_XhElectricField; }
+    element_electricfield_ptrtype const& fieldElectricFieldPtr() const { return M_fieldElectricField; }
+    element_electricfield_type const& fieldElectricField() const { return *M_fieldElectricField; }
+
     backend_ptrtype const& backend() const { return M_backendMonolithic; }
     BlocksBaseVector<double> const& blockVectorSolutionMonolithic() const { return M_blockVectorSolutionMonolithic; }
     BlocksBaseVector<double> & blockVectorSolutionMonolithic() { return M_blockVectorSolutionMonolithic; }
@@ -161,7 +172,8 @@ public:
     void updateBCWeakResidual( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const;
     void updateSourceTermResidual( vector_ptrtype& R, bool buildCstPart ) const;
 
-
+    //___________________________________________________________________________________//
+    void updateElectricField();
 
 private :
     thermodyn_model_ptrtype M_thermodynModel;
@@ -172,6 +184,8 @@ private :
 
     space_electricpotential_ptrtype M_XhElectricPotential;
     element_electricpotential_ptrtype M_fieldElectricPotential;
+    space_electricfield_ptrtype M_XhElectricField;
+    element_electricfield_ptrtype M_fieldElectricField;
     // physical parameter
     space_scalar_P0_ptrtype M_XhScalarP0;
     electricproperties_ptrtype M_electricProperties;
