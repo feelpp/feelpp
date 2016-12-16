@@ -398,6 +398,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     {
         M_thicknessInterface = 1.5 * this->mesh()->hAverage();
     }
+    M_useAdaptiveThicknessInterface = boption(prefixvm(this->prefix(),"use-adaptive-thickness"));
 
     M_heaviside.reset( new element_levelset_type(this->functionSpace(), "Heaviside") );
     M_dirac.reset( new element_levelset_type(this->functionSpace(), "Dirac") );
@@ -858,38 +859,43 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
 
     // derivative of Heaviside function
     auto eps0 = this->thicknessInterface();
-    auto gradPhi = this->gradPhi();
-    auto gradPhiX = vf::project(
-            _space=this->functionSpace(),
-            _range=elements(this->mesh()),
-            _expr=idv(gradPhi->comp(Component::X))
-            );
-    auto gradPhiY = vf::project(
-            _space=this->functionSpace(),
-            _range=elements(this->mesh()),
-            _expr=idv(gradPhi->comp(Component::Y))
-            );
+    auto eps_elt = this->functionSpace()->element();
+
+    if( M_useAdaptiveThicknessInterface )
+    {
+        auto gradPhi = this->gradPhi();
+        auto gradPhiX = vf::project(
+                _space=this->functionSpace(),
+                _range=elements(this->mesh()),
+                _expr=idv(gradPhi->comp(Component::X))
+                );
+        auto gradPhiY = vf::project(
+                _space=this->functionSpace(),
+                _range=elements(this->mesh()),
+                _expr=idv(gradPhi->comp(Component::Y))
+                );
 #if FEELPP_DIM == 3
-    auto gradPhiZ = vf::project(
-            _space=this->functionSpace(),
-            _range=elements(this->mesh()),
-            _expr=idv(gradPhi->comp(Component::Z))
-            );
+        auto gradPhiZ = vf::project(
+                _space=this->functionSpace(),
+                _range=elements(this->mesh()),
+                _expr=idv(gradPhi->comp(Component::Z))
+                );
 #endif
-    //auto gradPhiNorm1 = this->projectorL2()->project(
-            //vf::abs(idv(gradPhi->comp(Component::X))) + vf::abs(idv(gradPhi->comp(Component::Y)))
-            //);
-    //auto gradPhiX = gradPhi->comp(Component::X);
-    //auto gradPhiY = gradPhi->comp(Component::Y);
-    auto eps_elt = vf::project(
-            _space=this->functionSpace(),
-            _range=elements(this->mesh()),
-            _expr=(vf::abs(idv(gradPhiX))+vf::abs(idv(gradPhiY))
+        eps_elt = vf::project(
+                _space=this->functionSpace(),
+                _range=elements(this->mesh()),
+                _expr=(vf::abs(idv(gradPhiX))+vf::abs(idv(gradPhiY))
 #if FEELPP_DIM == 3
-            + vf::abs(idv(gradPhiZ))
+                    + vf::abs(idv(gradPhiZ))
 #endif
-            )*cst(eps0)/idv(this->modGradPhi())
-            );
+                    )*cst(eps0)/idv(this->modGradPhi())
+                );
+    }
+    else
+    {
+        eps_elt.setConstant(eps0); 
+    }
+
     auto eps = idv(eps_elt);
 
     if (M_useRegularPhi)
