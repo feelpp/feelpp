@@ -567,6 +567,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
     M_up = U(0_c);
     M_pp = U(1_c);
 
+
  
 }
 
@@ -626,6 +627,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 								_expr=(trans(id(w))*divt(sigma)));
 
     // ( d^2u/dt^2, w)_Omega  [only if it is not stationary]
+	
     if ( !this->isStationary() ) {
 		auto dt = this->timeStep();
     	for( auto const& pairMat : M_modelProperties->materials() )
@@ -638,6 +640,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
             	                         _expr = rho*inner(idt(u),id(w))/(dt*dt) );
 		}
     }
+	
 
     // begin dp: here we need to put the projection of u on the faces
     bbf( 1_c, 1_c) += integrate(_range=internalfaces(M_mesh),_expr=-tau_constant *
@@ -811,7 +814,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
             }
         }
     }
-
+	
     // (u_old,w)_Omega
     if ( !this->isStationary() )
     {
@@ -827,7 +830,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
         	blf(1_c) += integrate(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr= rho*inner( 2*idv(u)-idv(u1) ,id(w))/(dt*dt) );
 		}
     }
-
+	
 } // end assembleF
 
 
