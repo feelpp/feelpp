@@ -73,7 +73,7 @@ void runTest0()
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh;
-    std::string filename = soption(_name="medfile");
+    std::string filename = soption(_name="gmsh.filename");
     Feel::cout << "Loading " << filename << std::endl;
 
     if ( !filename.empty() )
