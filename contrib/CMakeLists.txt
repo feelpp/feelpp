@@ -1,4 +1,4 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+###  CMakeLists.txt; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 05 May 2015
@@ -22,6 +22,7 @@
 #
 #
 
+add_subdirectory(glog)
 add_subdirectory(metis)
 add_subdirectory(parmetis)
 
