@@ -7,11 +7,11 @@ Summary: A C++ application logging library
 Version: %VERSION
 Release: %rel
 Group: Development/Libraries
-URL: http://code.google.com/p/google-glog
+URL: http://github.com/google/glog
 License: BSD
 Vendor: Google
 Packager: Google Inc. <opensource@google.com>
-Source: http://%{NAME}.googlecode.com/files/%{NAME}-%{VERSION}.tar.gz
+Source: https://github.com/google/glog/archive/v%{VERSION}.tar.gz
 Distribution: Redhat 7 and above.
 Buildroot: %{_tmppath}/%{name}-root
 Prefix: %prefix
@@ -59,14 +59,14 @@ rm -rf $RPM_BUILD_ROOT
 %docdir %{prefix}/share/doc/%{NAME}-%{VERSION}
 %{prefix}/share/doc/%{NAME}-%{VERSION}/*
 
-%{prefix}/lib/libglog.so.0
-%{prefix}/lib/libglog.so.0.0.0
+%{prefix}/lib/libfeelpp_glog.so.0
+%{prefix}/lib/libfeelpp_glog.so.0.0.0
 
 %files devel
 %defattr(-,root,root)
 
 %{prefix}/include/glog
-%{prefix}/lib/libglog.a
-%{prefix}/lib/libglog.la
-%{prefix}/lib/libglog.so
-%{prefix}/lib/pkgconfig/libglog.pc
+%{prefix}/lib/libfeelpp_glog.a
+%{prefix}/lib/libfeelpp_glog.la
+%{prefix}/lib/libfeelpp_glog.so
+%{prefix}/lib/pkgconfig/libfeelpp_glog.pc

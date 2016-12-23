@@ -1,5 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 
+AUTOMAKE_OPTIONS=subdir-objects
+
 # Make sure that when we re-make ./configure, we get the macros we need
 ACLOCAL_AMFLAGS = -I m4
 
@@ -48,10 +50,11 @@ dist_doc_DATA = AUTHORS COPYING ChangeLog INSTALL NEWS README README.windows \
 ## The libraries (.so's) you want to install
 lib_LTLIBRARIES =
 
-# The libraries libglog depends on.
+# The libraries libfeelpp_glog depends on.
 COMMON_LIBS = $(PTHREAD_LIBS) $(GFLAGS_LIBS) $(UNWIND_LIBS)
 # Compile switches for our unittest.
-TEST_CFLAGS = $(GTEST_CFLAGS) $(GMOCK_CFLAGS) $(GFLAGS_CFLAGS) $(AM_CXXFLAGS)
+TEST_CFLAGS = $(GTEST_CFLAGS) $(GMOCK_CFLAGS) $(GFLAGS_CFLAGS) \
+              $(MINGW_CFLAGS) $(AM_CXXFLAGS)
 # Libraries for our unittest.
 TEST_LIBS = $(GTEST_LIBS) $(GMOCK_LIBS) $(GFLAGS_LIBS)
 
@@ -195,15 +198,16 @@ libfeelpp_glog_la_SOURCES = $(gloginclude_HEADERS) \
                        src/base/commandlineflags.h src/googletest.h
 nodist_libfeelpp_glog_la_SOURCES = $(nodist_gloginclude_HEADERS)
 
-libfeelpp_glog_la_CXXFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_CFLAGS) $(AM_CXXFLAGS) -DNDEBUG
+libfeelpp_glog_la_CXXFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_CFLAGS) $(MINGW_CFLAGS) \
+                      $(AM_CXXFLAGS) -DNDEBUG
 libfeelpp_glog_la_LDFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_LDFLAGS)
 libfeelpp_glog_la_LIBADD = $(COMMON_LIBS)
 
 ## The location of the windows project file for each binary we make
 WINDOWS_PROJECTS = google-glog.sln
-WINDOWS_PROJECTS += vsprojects/libglog/libglog.vcproj
+WINDOWS_PROJECTS += vsprojects/libfeelpp_glog/libfeelpp_glog.vcproj
 WINDOWS_PROJECTS += vsprojects/logging_unittest/logging_unittest.vcproj
-WINDOWS_PROJECTS += vsprojects/libglog_static/libglog_static.vcproj
+WINDOWS_PROJECTS += vsprojects/libfeelpp_glog_static/libfeelpp_glog_static.vcproj
 WINDOWS_PROJECTS += vsprojects/logging_unittest_static/logging_unittest_static.vcproj
 
 ## ^^^^ END OF RULES TO MAKE THE LIBRARIES, BINARIES, AND UNITTESTS
@@ -242,4 +246,4 @@ CLEANFILES = core demangle.dm demangle.nm signalhandler.out* \
 
 # Add pkgconfig file
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libglog.pc
+pkgconfig_DATA = libfeelpp_glog.pc
