@@ -4,15 +4,19 @@ git:
 
 matrix:
   include:
-      - env: BUILD="ubuntu-14.04,clang-3.6" DOCKERFILE="Dockerfile.dockerhub" TARGET_IMAGE="feelpp/develop:ubuntu-14.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS=""  CXXFLAGS="-O1 -DNDEBUG"
+      - env: BUILD="ubuntu-14.04,clang-3.6" DOCKERFILE="Dockerfile-14.04" TARGET_IMAGE="feelpp/develop:14.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS=""  
         sudo: required
         services:
             - docker
-      - env: BUILD="ubuntu-14.04,ckang-3.6" DOCKERFILE="Dockerfile.minimal" TARGET_IMAGE="feelpp/develop:minimal" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MINIMAL_BUILD=ON"  CXXFLAGS="-O1 -DNDEBUG"
+      - env: BUILD="ubuntu-14.04,clang-3.6" DOCKERFILE="Dockerfile.minimal" TARGET_IMAGE="feelpp/develop:minimal" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MINIMAL_BUILD=ON"  
         sudo: required
         services:
             - docker
-      - env: BUILD="ubuntu-16.10,clang-3.9" DOCKERFILE="Dockerfile-16.10" TARGET_IMAGE="feelpp/develop:latest" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O1 -DNDEBUG"
+      - env: BUILD="ubuntu-16.04,clang-3.8" DOCKERFILE="Dockerfile-16.04" TARGET_IMAGE="feelpp/develop:16.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" 
+        sudo: required
+        services:
+            - docker
+      - env: BUILD="ubuntu-16.10,clang-3.9" DOCKERFILE="Dockerfile-16.10" TARGET_IMAGE="feelpp/develop:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" 
         sudo: required
         services:
             - docker
@@ -24,9 +28,11 @@ before_install:
 - sudo apt-get update
 - sudo apt-get install -y -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker-engine
 - git clone --depth=1 https://github.com/feelpp/docker
-- cd docker/dockerfiles/develop && docker build -f ${DOCKERFILE} -t ${TARGET_IMAGE} --build-arg=BRANCH=${TARGET_BRANCH} --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}" --build-arg=CXXFLAGS="${CXXFLAGS}" .
+- cd docker/dockerfiles/develop && docker build -f ${DOCKERFILE} -t ${TARGET_IMAGE} --build-arg=BRANCH=${TARGET_BRANCH} --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}" .
+- docker images
 
 install:
+- docker images
 - docker run feelpp/develop:latest true
 
 script:
