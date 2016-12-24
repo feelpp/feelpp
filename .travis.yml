@@ -4,7 +4,7 @@ git:
 
 matrix:
   include:
-      - env: BUILD="ubuntu-14.04,clang-3.6" DOCKERFILE="Dockerfile-14.04" TARGET_IMAGE="feelpp/develop:14.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS=""  CXXFLAGS="-O2 -DNDEBUG"
+      - env: BUILD="ubuntu-14.04,clang-3.6" DOCKERFILE="Dockerfile-14.04" TARGET_IMAGE="feelpp/develop:14.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O2 -DNDEBUG"
         sudo: required
         services:
             - docker
