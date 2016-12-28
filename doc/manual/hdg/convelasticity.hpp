@@ -99,15 +99,6 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::ConvergenceElasticityTest(
 	*/
 }
 
-// assemble the matrices with the exact solutions
-// using options u_exact, lambda, mu and bc-<type>
-template<int Dim, int Order, int G_Order, int E_Order>
-void
-ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::assembleExact()
-{
-    M_model->assemble();
-    M_model->assembleF();
-}
 
 template<int Dim, int Order, int G_Order, int E_Order>
 void
@@ -121,7 +112,7 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
     auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
 	auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
 */
-    
+/*   
 	std::ofstream cvg_sigma, cvg_u;
 	cvg_sigma.open( "convergence_sigma.dat", std::ios::out | std::ios::trunc);
     cvg_u.open( "convergence_u.dat", std::ios::out | std::ios::trunc);
@@ -129,29 +120,31 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
     boost::format fmterOut("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5%\n");
     cvg_sigma << fmter % "#h" % "nDof" % "l2err";
     cvg_u << fmter % "#h" % "nDof" % "l2err";
-	
+*/	
 
     export_ptrtype e( export_type::New( "convergence") );
 
     for ( int i = 0; i < ioption("cvg.refine-nb"); i++)
     {
         M_mesh = loadMesh( _mesh=new mesh_type, _h=h);
-        M_model -> init(M_mesh);
+        M_model -> init(M_mesh); // inside here assembleSTD
 
+/*
         auto nDofSigma = M_model->fluxSpace()->nDof();
         auto nDofU = M_model->potentialSpace()->nDof();
         auto sigma_ex = M_model->fluxSpace()->element();
         auto u_ex = M_model->potentialSpace()->element();
         auto u_ex_mean = M_model->potentialSpace()->element();
         auto u_mean = M_model->potentialSpace()->element();
-
-        this->assembleExact();
-        M_model->solve();
-
-        M_sigma = M_model->fluxField();
-        M_u = M_model->potentialField();
+*/
+        
+		M_model->solve();	// inside here assembleF
 		
 		M_model->exportResults(M_mesh);
+
+        // M_sigma = M_model->fluxField();
+        // M_u = M_model->potentialField();
+
 
 /*
         double errSigma = normL2(_range=elements(M_mesh), _expr=idv(M_sigma)-sigma_exact, _quad=_Q<expr_order>());
@@ -170,17 +163,54 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
         u_ex.on( elements(M_mesh), M_u_exact);
         u_ex_mean.on( elements(M_mesh), M_u_exact-cst(mean_u_exact));
         u_mean.on( elements(M_mesh), idv(M_u)-cst(mean_u));
-
+*/
         e->step(i)->setMesh(M_mesh);
+/*
         e->step(i)->add("sigma", M_sigma);
         e->step(i)->add("u", M_u);
         e->step(i)->add("u_mean", u_mean);
         e->step(i)->add("sigma_ex", sigma_ex);
         e->step(i)->add("u_ex", u_ex);
-        e->save();
 */
+        e->save();
+
         h /= doption("cvg.refine-factor");
     }
+
+	Feel::cout << __LINE__ << std::endl;
+
+#if 1
+	// COMPUTE THE ERROR IN 2D FOR A CURVED LINE TO VERIFY GEOMETRICAL ORDER 
+
+	Feel::cout << __LINE__ << std::endl;
+    auto itField = M_model->modelProperties().boundaryConditions().find("GeometricalTest");
+	Feel::cout << __LINE__ << std::endl;
+    if ( itField != M_model->modelProperties().boundaryConditions().end() )
+    {
+	Feel::cout << __LINE__ << std::endl;
+	    auto mapField = itField -> second;
+	Feel::cout << __LINE__ << std::endl;
+        auto itType = mapField.find( "force_F" );
+	Feel::cout << __LINE__ << std::endl;
+        if (itType != mapField.end() )
+        {
+			for (auto const& exAtMarker : itType->second )
+            {
+				auto forceF = expr<Dim,1> (exAtMarker.expression() );
+	Feel::cout << __LINE__ << std::endl;
+				auto curveError = forceF; //curvedForce - forceF);
+	Feel::cout << __LINE__ << std::endl;
+				auto curvedForce = integrate(_range=markedfaces(M_mesh,exAtMarker.marker()), _expr = id(M_model->fluxField()) * N() );
+				
+				Feel::cout << "Error for geometrical order:\t" << curveError << std::endl;	
+			}
+	Feel::cout << __LINE__ << std::endl;
+		}
+	Feel::cout << __LINE__ << std::endl;
+	}
+	Feel::cout << __LINE__ << std::endl;
+	
+#endif
 /*
     cvg_sigma.close();
     cvg_u.close();

@@ -399,7 +399,7 @@ Hdg<Dim, OrderP>::convergence()
 
         tic();
         auto U=ps.element();
-        a.solve( _solution=U, _rhs=rhs );
+        a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
         toc("solve",true);
 
         cout << "[Hdg] solve done" << std::endl;

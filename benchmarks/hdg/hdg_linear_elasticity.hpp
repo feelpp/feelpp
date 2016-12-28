@@ -448,7 +448,7 @@ Hdg<Dim, OrderP, OrderG>::convergence()
         // hdg_sol.localize(U);
         auto U = ps.element();
         auto Ue = ps.element();
-        a.solve( _solution=U, _rhs=rhs, _rebuild=true);
+        a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=boption("sc.condense"));
         toc("solve",true);
         cout << "[Hdg] solve done" << std::endl;
 

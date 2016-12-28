@@ -1,8 +1,8 @@
 #ifndef _MIXEDPOISSONELASTICITY_HPP
 #define _MIXEDPOISSONELASTICITY_HPP
 
-#include <mixedpoisson2.hpp>
-#include <mixedelasticity.hpp>
+#include "mixedpoisson2.hpp"
+#include "mixedelasticity.hpp"
 
 namespace Feel
 {
@@ -31,16 +31,16 @@ makeMixedPoissonElasticityLibOptions( std::string prefix = "mixedpoissonelastici
 }
 
 
-template <int Dim, int Order>
+template <int Dim, int Order,int G_Order=1, int E_Order=4>
 class MixedPoissonElasticity
 {
  public:
 	typedef double 						value_type;
-	typedef MixedPoisson<Dim,Order,1> 	mp_type;
-	typedef MixedElasticity<Dim,Order> 	me_type;
+	typedef MixedPoisson<Dim,Order,G_Order,E_Order> 	mp_type;
+	typedef MixedElasticity<Dim,Order,G_Order,E_Order> 	me_type;
 	typedef boost::shared_ptr<mp_type>  mp_ptrtype;
 	typedef boost::shared_ptr<me_type>  me_ptrtype;
-	typedef MixedPoissonElasticity<Dim,Order> 	self_type;
+	typedef MixedPoissonElasticity<Dim,Order,G_Order,E_Order> 	self_type;
 	typedef boost::shared_ptr<self_type> 		self_ptrtype;
 	typedef typename mp_type::convex_type 		convex_type;
 	typedef typename mp_type::mesh_type			mesh_type;
@@ -120,9 +120,9 @@ class MixedPoissonElasticity
 }; // end class declaration
 
 
-template <int Dim, int Order>
+template <int Dim, int Order,int G_Order, int E_Order>
 void
-MixedPoissonElasticity<Dim,Order>::assembleF_Poisson()
+MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Poisson()
 {
 	auto ps = M_PoissonModel->getPS();
 	auto F = M_PoissonModel->getF();
@@ -137,9 +137,9 @@ MixedPoissonElasticity<Dim,Order>::assembleF_Poisson()
 
 }
 
-template <int Dim, int Order>
+template <int Dim, int Order,int G_Order, int E_Order>
 void
-MixedPoissonElasticity<Dim,Order>::assembleF_Elasticity()
+MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Elasticity()
 {
 	 
 	auto ps = product( M_ElasticityModel->fluxSpace(), M_ElasticityModel->potentialSpace(), M_ElasticityModel->traceSpace() );
@@ -157,14 +157,23 @@ MixedPoissonElasticity<Dim,Order>::assembleF_Elasticity()
 
 }
 
-template <int Dim, int Order>
-void MixedPoissonElasticity<Dim,Order>::run( mesh_ptrtype mesh, 
+template <int Dim, int Order,int G_Order, int E_Order>
+void 
+MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::run( mesh_ptrtype mesh, 
 	op_interp_ptrtypeEL Idh_el, opv_interp_ptrtypeEL Idhv_el,
 	op_interp_ptrtypePOI Idh_poi, opv_interp_ptrtypePOI Idhv_poi  )
 {
+	if (M_PoissonModel->isStationary() || M_ElasticityModel->isStationary() )
+	{
+		Feel::cout << std::endl << "ERROR: this model has to be unsteady." << std::endl << std::endl;
+		return;
+	}
+
 	auto t_init = M_PoissonModel->timeStepBDF()->timeInitial();
 	auto dt = M_PoissonModel->timeStepBDF()->timeStep();
 	auto t_fin = M_PoissonModel->timeStepBDF()->timeFinal();	
+	
+	M_PoissonModel->assembleCstPart();
 	
 	for (; !M_PoissonModel->timeStepBase()->isFinished() && !M_ElasticityModel->timeStepBase()->isFinished() ; M_PoissonModel->updateTimeStep() )
 	{
@@ -175,15 +184,16 @@ void MixedPoissonElasticity<Dim,Order>::run( mesh_ptrtype mesh,
 		// Elasticity problem
 		this->assembleF_Elasticity();
 		M_ElasticityModel->solve();	
-		// M_ElasticityModel->exportResults( mesh, Idh_el, Idhv_el );
+		M_ElasticityModel->exportResults( mesh, Idh_el, Idhv_el );
 
 		// Poisson problem
+		M_PoissonModel->assembleNonCstPart();
 		this->assembleF_Poisson();
 		M_PoissonModel->solve();	
-		// M_PoissonModel->exportResults( mesh, Idh_poi, Idhv_poi );
+		M_PoissonModel->exportResults( mesh, Idh_poi, Idhv_poi );
 
 		// Exporter
-		this->exportResults( mesh, Idh_el, Idhv_el, Idh_poi, Idhv_poi );
+		// this->exportResults( mesh, Idh_el, Idhv_el, Idh_poi, Idhv_poi );
 
 		// update
 		M_ElasticityModel->updateTimeStep();
@@ -192,9 +202,9 @@ void MixedPoissonElasticity<Dim,Order>::run( mesh_ptrtype mesh,
 }
 
 // EXPORTER
-template <int Dim, int Order>
+template <int Dim, int Order,int G_Order, int E_Order>
 void
-MixedPoissonElasticity<Dim, Order>::initExporter( mesh_ptrtype meshVisu )
+MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::initExporter( mesh_ptrtype meshVisu )
 {
 	std::string geoExportType="static"; //change_coords_only, change, static
 	M_exporter = exporter ( _mesh=meshVisu?meshVisu:this->mesh(),
@@ -204,9 +214,9 @@ MixedPoissonElasticity<Dim, Order>::initExporter( mesh_ptrtype meshVisu )
 
 }
 
-template <int Dim, int Order>
+template <int Dim, int Order,int G_Order, int E_Order>
 void 
-MixedPoissonElasticity<Dim,Order>::exportResults ( double time, mesh_ptrtype mesh,  
+MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::exportResults ( double time, mesh_ptrtype mesh,  
 					op_interp_ptrtypeEL Idh_el, opv_interp_ptrtypeEL Idhv_el,
 					op_interp_ptrtypePOI Idh_poi, opv_interp_ptrtypePOI Idhv_poi )
 {
