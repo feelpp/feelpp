@@ -137,8 +137,10 @@ BOOST_PARAMETER_FUNCTION(
             import.setElementRegionAsPhysicalRegion( physical_are_elementary_regions );
         }
         import.setRespectPartition( respect_partition );
+#if defined( FEELPP_HAS_GMSH_H )
         import.setGModel( desc->gModel() );
         import.setInMemory( in_memory );
+#endif
         _mesh->accept( import );
 
         if ( update )

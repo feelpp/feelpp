@@ -29,7 +29,7 @@ FIND_PACKAGE(GFLAGS)
 
 # if the glog source directory exists then we use it even if an elligible
 # version of glog is available on the system
-if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog )
+if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog-toto )
   # If we didn't find glog in the system, we check in contrib
   if (NOT GLOG_INCLUDE_DIR )
     # try to find glog headers, if not found then install glog from contrib into
@@ -58,7 +58,7 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog )
       else()
         if ( APPLE )
             execute_process(
-            COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  
+            COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
             #      OUTPUT_QUIET
             OUTPUT_FILE "glog-configure"
@@ -111,24 +111,24 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog )
     NO_DEFAULT_PATH
     )
 
-else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog )
+else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog-toto )
 
-  FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
-    $ENV{FEELPP_DIR}/include
-    $ENV{FEELPP_DIR}/include/feel
-    NO_DEFAULT_PATH )
-  # Look for glog in the system
-  # try installed version
-  FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
-    /usr/include/feel
-    /usr/local/include/feel
-    /opt/local/include/feel
-    NO_DEFAULT_PATH )
-  message(STATUS "Glog system: ${GLOG_INCLUDE_DIR}")
-  FIND_LIBRARY(GLOG_LIBRARY  NAMES feelpp_glog PATHS     $ENV{FEELPP_DIR}/lib NO_DEFAULT_PATH  )
-  FIND_LIBRARY(GLOG_LIBRARY  NAMES feelpp_glog   )
+  # FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
+  #   $ENV{FEELPP_DIR}/include
+  #   $ENV{FEELPP_DIR}/include/feel
+  #   NO_DEFAULT_PATH )
+  # # Look for glog in the system
+  # # try installed version
+  # FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
+  #   /usr/include/feel
+  #   /usr/local/include/feel
+  #   /opt/local/include/feel
+  #   NO_DEFAULT_PATH )
+  # message(STATUS "Glog system: ${GLOG_INCLUDE_DIR}")
+  # FIND_LIBRARY(GLOG_LIBRARY  NAMES feelpp_glog PATHS     $ENV{FEELPP_DIR}/lib NO_DEFAULT_PATH  )
+  # FIND_LIBRARY(GLOG_LIBRARY  NAMES feelpp_glog   )
 
-endif( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog )
+endif( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog-toto )
 
 
 set(GLOG_LIBRARIES ${GLOG_LIBRARY})
