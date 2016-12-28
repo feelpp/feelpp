@@ -45,12 +45,13 @@ class Inverse : public InverseImpl<XprType,typename internal::traits<XprType>::S
 public:
   typedef typename XprType::StorageIndex StorageIndex;
   typedef typename XprType::PlainObject                       PlainObject;
+  typedef typename XprType::Scalar                            Scalar;
   typedef typename internal::ref_selector<XprType>::type      XprTypeNested;
   typedef typename internal::remove_all<XprTypeNested>::type  XprTypeNestedCleaned;
   typedef typename internal::ref_selector<Inverse>::type Nested;
   typedef typename internal::remove_all<XprType>::type NestedExpression;
   
-  explicit Inverse(const XprType &xpr)
+  explicit EIGEN_DEVICE_FUNC Inverse(const XprType &xpr)
     : m_xpr(xpr)
   {}
 

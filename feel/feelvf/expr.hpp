@@ -488,10 +488,10 @@ public:
         {
             M_tensor_expr.update( geom, face );
         }
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            M_tensor_expr.updateContext( ctx );
+            M_tensor_expr.updateContext( ctx... );
         }
 
 

@@ -25,7 +25,22 @@
 #ifndef FEELPP_DETAIL_GINACBUILDLIBRARY_HPP
 #define FEELPP_DETAIL_GINACBUILDLIBRARY_HPP 1
 
+#include <feel/feelcore/feelmacros.hpp>
+
+#if defined(__clang__)
+#if FEELPP_CLANG_AT_LEAST(3,9)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundefined-var-template"
+#endif
+#endif
+
 #include <ginac/ginac.h>
+
+#if defined(__clang__)
+#if FEELPP_CLANG_AT_LEAST(3,9)
+#pragma clang diagnostic pop
+#endif
+#endif
 
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/worldcomm.hpp>

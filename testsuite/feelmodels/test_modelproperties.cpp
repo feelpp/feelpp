@@ -76,4 +76,16 @@ int main( int argc, char** argv )
         cout << "\t" << xhiPair << std::endl;
         cout << "\t" << xhiMap << std::endl;
     }
+
+    auto param = model_props.parameters();
+    for ( auto const& pp : param )
+    {
+        auto p = pp.second;
+        Feel::cout << p.name() << std::endl
+                   << "\tvalue : " << p.value() << std::endl
+                   << "\tmin   : " << p.min() << std::endl
+                   << "\tmax   : " << p.max() << std::endl;
+        if ( p.hasExpression() )
+            Feel::cout << "\texpr  : " << p.expression() << std::endl;
+    }
 }

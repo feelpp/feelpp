@@ -234,15 +234,10 @@ struct EigenMetaKernelEval<Evaluator, Index, true> {
 template <typename Evaluator, typename Index>
 __global__ void
 __launch_bounds__(1024)
-EigenMetaKernel(Evaluator memcopied_eval, Index size) {
+EigenMetaKernel(Evaluator eval, Index size) {
 
   const Index first_index = blockIdx.x * blockDim.x + threadIdx.x;
   const Index step_size = blockDim.x * gridDim.x;
-
-  // Cuda memcopies the kernel arguments. That's fine for POD, but for more
-  // complex types such as evaluators we should really conform to the C++
-  // standard and call a proper copy constructor.
-  Evaluator eval(memcopied_eval);
 
   const bool vectorizable = Evaluator::PacketAccess & Evaluator::IsAligned;
   EigenMetaKernelEval<Evaluator, Index, vectorizable>::run(eval, first_index, size, step_size);
@@ -271,6 +266,20 @@ inline void TensorExecutor<Expression, GpuDevice, Vectorizable>::run(
 
 #endif  // __CUDACC__
 #endif  // EIGEN_USE_GPU
+
+// SYCL Executor policy
+#ifdef EIGEN_USE_SYCL
+
+template <typename Expression, bool Vectorizable>
+class TensorExecutor<Expression, SyclDevice, Vectorizable> {
+public:
+  static inline void run(const Expression &expr, const SyclDevice &device) {
+    // call TensorSYCL module
+    TensorSycl::run(expr, device);
+  }
+};
+
+#endif
 
 } // end namespace internal
 

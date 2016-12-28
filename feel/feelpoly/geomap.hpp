@@ -662,13 +662,13 @@ class Context
 
     Context( gm_ptrtype __gm,
              element_type const& __e,
-             precompute_ptrtype const& __pc )
+             precompute_ptrtype const& __pc = precompute_ptrtype() )
         :
         M_gm( __gm ),
         M_element( boost::addressof( __e ) ),
         M_pc( __pc ),
         M_pc_faces(),
-        M_npoints( M_pc->nPoints() ),
+        M_npoints( (M_pc)? M_pc->nPoints() : 0 ),
 
         //M_xref( PDim ),
         //M_xreal( NDim ),
@@ -725,7 +725,8 @@ class Context
                 M_Bt.resize( nPoints() );
             }
 
-            update( __e );
+            if ( M_pc )
+                update( __e );
         }
 
     Context( gm_ptrtype __gm,
@@ -2089,6 +2090,56 @@ private:
     Context();
 
 
+        friend class boost::serialization::access;
+
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & BOOST_SERIALIZATION_NVP( M_npoints );
+                ar & BOOST_SERIALIZATION_NVP( M_J );
+                ar & BOOST_SERIALIZATION_NVP( M_G );
+                ar & BOOST_SERIALIZATION_NVP( M_n );
+                ar & BOOST_SERIALIZATION_NVP( M_n_real );
+                ar & BOOST_SERIALIZATION_NVP( M_un_real );
+                ar & BOOST_SERIALIZATION_NVP( M_n_norm );
+                ar & BOOST_SERIALIZATION_NVP( M_t_real );
+                ar & BOOST_SERIALIZATION_NVP( M_ut_real );
+                ar & BOOST_SERIALIZATION_NVP( M_t_norm );
+                ar & BOOST_SERIALIZATION_NVP( M_xrefq );
+                ar & BOOST_SERIALIZATION_NVP( M_xrealq );
+                ar & BOOST_SERIALIZATION_NVP( M_n_realq );
+                ar & BOOST_SERIALIZATION_NVP( M_un_realq );
+                ar & BOOST_SERIALIZATION_NVP( M_n_normq );
+                ar & BOOST_SERIALIZATION_NVP( M_t_realq );
+                ar & BOOST_SERIALIZATION_NVP( M_ut_realq );
+                ar & BOOST_SERIALIZATION_NVP( M_t_normq );
+                ar & BOOST_SERIALIZATION_NVP( M_g_linear );
+                ar & BOOST_SERIALIZATION_NVP( M_g );
+                ar & BOOST_SERIALIZATION_NVP( M_K );
+                ar & BOOST_SERIALIZATION_NVP( M_CS );
+                ar & BOOST_SERIALIZATION_NVP( M_CSi );
+                ar & BOOST_SERIALIZATION_NVP( M_B );
+                ar & BOOST_SERIALIZATION_NVP( M_Ptangent );
+                ar & BOOST_SERIALIZATION_NVP( M_B3 );//
+                ar & BOOST_SERIALIZATION_NVP( M_id );
+                ar & BOOST_SERIALIZATION_NVP( M_e_marker );
+                ar & BOOST_SERIALIZATION_NVP( M_e_marker2 );
+                ar & BOOST_SERIALIZATION_NVP( M_e_marker3 );
+                ar & BOOST_SERIALIZATION_NVP( M_elem_id_1 );
+                ar & BOOST_SERIALIZATION_NVP( M_pos_in_elem_id_1 );
+                ar & BOOST_SERIALIZATION_NVP( M_elem_id_2 );
+                ar & BOOST_SERIALIZATION_NVP( M_pos_in_elem_id_2 );
+                ar & BOOST_SERIALIZATION_NVP( M_face_id );
+                ar & BOOST_SERIALIZATION_NVP( M_h );
+                ar & BOOST_SERIALIZATION_NVP( M_h_min );
+                ar & BOOST_SERIALIZATION_NVP( M_h_face );
+                ar & BOOST_SERIALIZATION_NVP( M_meas );
+                ar & BOOST_SERIALIZATION_NVP( M_measface );
+                ar & BOOST_SERIALIZATION_NVP( M_Jt );
+                ar & BOOST_SERIALIZATION_NVP( M_Bt );
+                ar & BOOST_SERIALIZATION_NVP( M_perm );
+            }
+
 private:
 
     gm_ptrtype M_gm;
@@ -2248,7 +2299,7 @@ class Inverse
         //M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, worldComm ) )
         M_nlsolver( SolverNonLinear<double>::build( "petsc","", worldComm ) )
 #else
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM, worldComm ) )
+        M_nlsolver( SolverNonLinear<double>::build( "eigen_dense", "", worldComm ) )
 #endif
 {
     this->init();
@@ -2271,7 +2322,7 @@ class Inverse
         //M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC,worldComm) )
         M_nlsolver( SolverNonLinear<double>::build( "petsc","", worldComm ) )
 #else
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM,worldComm ) )
+        M_nlsolver( SolverNonLinear<double>::build( "eigen_dense", "", worldComm ) )
 #endif
 {
     this->init();
