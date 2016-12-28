@@ -259,6 +259,7 @@ Hdg<Dim, OrderP>::convergence()
 
         LOG(INFO)<< "number elemnts:" << mesh->numGlobalElements() << std::endl;
         LOG(INFO) << "number local elemnts:" << mesh->numElements() << std::endl;
+        LOG(INFO) << "number local active elements:" << nelements(elements(mesh),false) << std::endl;
         size_type nFaceInParallelMesh = nelements(faces(mesh),true) - nelements(interprocessfaces(mesh),true)/2;
         //CHECK( nelements(elements(face_mesh),true) == nFaceInParallelMesh  ) << "something wrong with face mesh" << nelements(elements(face_mesh),true) << " " << nFaceInParallelMesh;
         auto Xh = Pdh<0>(face_mesh);
