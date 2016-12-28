@@ -98,6 +98,16 @@ template<typename MatrixType> void product_extra(const MatrixType& m)
   // regression test
   MatrixType tmp = m1 * m1.adjoint() * s1;
   VERIFY_IS_APPROX(tmp, m1 * m1.adjoint() * s1);
+
+  // regression test for bug 1343, assignment to arrays
+  Array<Scalar,Dynamic,1> a1 = m1 * vc2;
+  VERIFY_IS_APPROX(a1.matrix(),m1*vc2);
+  Array<Scalar,Dynamic,1> a2 = s1 * (m1 * vc2);
+  VERIFY_IS_APPROX(a2.matrix(),s1*m1*vc2);
+  Array<Scalar,1,Dynamic> a3 = v1 * m1;
+  VERIFY_IS_APPROX(a3.matrix(),v1*m1);
+  Array<Scalar,Dynamic,Dynamic> a4 = m1 * m2.adjoint();
+  VERIFY_IS_APPROX(a4.matrix(),m1*m2.adjoint());
 }
 
 // Regression test for bug reported at http://forum.kde.org/viewtopic.php?f=74&t=96947
@@ -256,7 +266,49 @@ Index compute_block_size()
   return ret;
 }
 
+template<typename>
+void aliasing_with_resize()
+{
+  Index m = internal::random<Index>(10,50);
+  Index n = internal::random<Index>(10,50);
+  MatrixXd A, B, C(m,n), D(m,m);
+  VectorXd a, b, c(n);
+  C.setRandom();
+  D.setRandom();
+  c.setRandom();
+  double s = internal::random<double>(1,10);
 
+  A = C;
+  B = A * A.transpose();
+  A = A * A.transpose();
+  VERIFY_IS_APPROX(A,B);
+
+  A = C;
+  B = (A * A.transpose())/s;
+  A = (A * A.transpose())/s;
+  VERIFY_IS_APPROX(A,B);
+
+  A = C;
+  B = (A * A.transpose()) + D;
+  A = (A * A.transpose()) + D;
+  VERIFY_IS_APPROX(A,B);
+
+  A = C;
+  B = D + (A * A.transpose());
+  A = D + (A * A.transpose());
+  VERIFY_IS_APPROX(A,B);
+
+  A = C;
+  B = s * (A * A.transpose());
+  A = s * (A * A.transpose());
+  VERIFY_IS_APPROX(A,B);
+
+  A = C;
+  a = c;
+  b = (A * a)/s;
+  a = (A * a)/s;
+  VERIFY_IS_APPROX(a,b);
+}
 
 template<int>
 void bug_1308()
@@ -318,5 +370,6 @@ void test_product_extra()
   CALL_SUBTEST_7( compute_block_size<float>() );
   CALL_SUBTEST_7( compute_block_size<double>() );
   CALL_SUBTEST_7( compute_block_size<std::complex<double> >() );
+  CALL_SUBTEST_8( aliasing_with_resize<void>() );
 
 }

@@ -219,12 +219,6 @@ class Mesh2D
         return super_elements::element_type::numLocalEdges;
     }
 
-    //! @return the number of local topological faces
-    uint16_type numLocalTopologicalFaces() const
-    {
-        return this->beginElement()->nTopologicalFaces();
-    }
-
     /**
  * \return the number of vertices in an element
  */
@@ -241,17 +235,17 @@ class Mesh2D
         return this->faces().size();
     }
 
-    //!
-    //! \return the number of edges
-    //!
+    /**
+ * \return the number of edges
+ */
     size_type numEdges() const
     {
         return this->faces().size();
     }
 
     /**
-     * \return the number of points
-     */
+ * \return the number of points
+ */
     size_type numPoints() const
     {
         return this->points().size();
@@ -260,13 +254,13 @@ class Mesh2D
     //@}
 
     /** @name  Mutators
-     */
+ */
     //@{
 
     //@}
 
     /** @name  Methods
-     */
+ */
     //@{
 
     face_iterator beginEdge() { return this->beginFace(); }
@@ -282,9 +276,9 @@ class Mesh2D
     }
 
     /**
-     * clear out all data from the mesh, \p isEmpty() should return
-     * \p true after a \p clear()
-     */
+ * clear out all data from the mesh, \p isEmpty() should return
+ * \p true after a \p clear()
+ */
     virtual void clear()
     {
         VLOG( 1 ) << "Deleting Mesh2D...\n";
@@ -300,9 +294,9 @@ class Mesh2D
 
   protected:
     /**
-     * dummy  implementation
-     * \see Mesh
-     */
+ * dummy  implementation
+ * \see Mesh
+ */
     void renumber()
     {
         FEELPP_ASSERT( 0 )
@@ -310,8 +304,9 @@ class Mesh2D
     }
 
     /**
-     * update permutation of entities of co-dimension 1
-     */
+ * update permutation of entities of co-dimension 1
+ */
+
     void updateEntitiesCoDimensionOnePermutation()
     {
         //updateEntitiesCoDimensionOnePermutation( mpl::bool_<Shape::nDim==Shape::nRealDim>() );
@@ -354,7 +349,7 @@ class Mesh2D
   private:
     friend class boost::serialization::access;
     template <class Archive>
-    void serialize( Archive& ar, const unsigned int version )
+    FEELPP_NO_EXPORT void serialize( Archive& ar, const unsigned int version )
     {
         ar& boost::serialization::base_object<super>( *this );
         DVLOG( 2 ) << "Serializing points\n";

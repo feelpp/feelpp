@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -321,17 +322,19 @@ class Mesh1D
 
   private:
     friend class boost::serialization::access;
-    template <class Archive>
-    void serialize( Archive& ar, const unsigned int version )
-    {
-        ar& boost::serialization::base_object<super>( *this );
-        DVLOG( 2 ) << "Serializing points\n";
-        ar& boost::serialization::base_object<super_points>( *this );
-        DVLOG( 2 ) << "Serializing faces\n";
-        ar& boost::serialization::base_object<super_faces>( *this );
-        DVLOG( 2 ) << "Serializing elements\n";
-        ar& boost::serialization::base_object<super_elements>( *this );
-    }
+
+    template<class Archive>
+    FEELPP_NO_EXPORT void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & boost::serialization::base_object<super>( *this );
+            DVLOG(2) << "Serializing points\n";
+            ar & boost::serialization::base_object<super_points>( *this );
+            DVLOG(2) << "Serializing faces\n";
+            ar & boost::serialization::base_object<super_faces>( *this );
+            DVLOG(2) << "Serializing elements\n";
+            ar & boost::serialization::base_object<super_elements>( *this );
+        }
+
 };
 
 } // Feel

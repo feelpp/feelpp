@@ -436,9 +436,6 @@ private:
     static vector_matrix_type
     derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
     {
-        FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).warn( "invalid points" );
-        // VLOG(1) << "Expansion::derivate<1>] number of points " << __pts().size2() << "\n";
-
         vector_matrix_type D( 1 );
         D[0].resize( nOrder+1, __pts().size2() );
         D[0] = JacobiBatchDerivation<nOrder,value_type>( 0.0, 0.0, ublas::row( __pts(),0 ) );
@@ -725,7 +722,7 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( 
 {
     matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
 
-    FEELPP_ASSERT( __pts.size1() == 3 )( __pts.size1() ).error( "invalid space dimension" );
+    DCHECK( __pts.size1() == 3 ) << "invalid space dimension for point set, should be 3, it is currently " << __pts.size1();
 
     details::etas<TETRAHEDRON, value_type> etas( __pts );
     ublas::vector<value_type> eta1s = ublas::row( etas(), 0 );

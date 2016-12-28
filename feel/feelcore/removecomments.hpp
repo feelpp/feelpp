@@ -25,13 +25,14 @@
 #define FEELPP_REMOVECOMMENTS_HPP 1
 
 #include <string>
+#include <feel/feelcore/feelmacros.hpp>
 
 namespace Feel {
 
 /**
  * remove c and c++ comments from string \p str_with_comments if any
  */
-std::string removeComments( std::string str_with_comments );
+FEELPP_EXPORT std::string removeComments( std::string str_with_comments );
 
 }
 #endif

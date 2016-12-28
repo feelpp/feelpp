@@ -530,6 +530,21 @@ std::string
 MarkerManagementRobinBC::getInfoRobinBC() const
 {
     std::ostringstream _ostr;
+
+    for ( auto const& markerBase : M_containerMarkers )
+    {
+        _ostr << "\n       -- Robin : " << markerBase.first;
+        if ( markerBase.second.size() == 1 && markerBase.second.front() == markerBase.first ) continue;
+        _ostr << " -> (";
+        int cptMark = 0;
+        for ( auto itMark = markerBase.second.begin(), enMark = markerBase.second.end() ; itMark!=enMark ; ++itMark,++cptMark )
+        {
+            if ( cptMark > 0) _ostr << " , ";
+            _ostr << *itMark;
+        }
+        _ostr << ")";
+    }
+
     return _ostr.str();
 }
 

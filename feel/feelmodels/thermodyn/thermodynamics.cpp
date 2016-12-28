@@ -71,6 +71,7 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 {
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
+    this->clearMarkerRobinBC();
 
     this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Dirichlet" );
     for( auto const& d : this->M_bcDirichlet )
@@ -190,11 +191,11 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype&
         for( auto const& d : this->M_bcRobin )
         {
             bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= expression1(d)*idt(v)*id(v),
                            _geomap=this->geomap() );
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= expression1(d)*expression2(d)*id(v),
                            _geomap=this->geomap() );
         }

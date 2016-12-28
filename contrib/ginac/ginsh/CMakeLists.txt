@@ -61,5 +61,5 @@ if (READLINE_FOUND)
 endif()
 
 add_executable(ginsh ${ginsh_SOURCES} ${ginsh_HEADERS})
-target_link_libraries(ginsh ginac ${ginsh_extra_libs} ${LIBDL_LIBRARIES})
+target_link_libraries(ginsh feelpp_ginac ${ginsh_extra_libs} ${LIBDL_LIBRARIES})
 install(TARGETS ginsh RUNTIME DESTINATION "${BIN_INSTALL_DIR}")

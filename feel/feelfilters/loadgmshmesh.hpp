@@ -87,13 +87,13 @@ BOOST_PARAMETER_FUNCTION(
         std::for_each( plist.begin(), plist.end(), [&ostr]( std::string s ) { ostr << " - " << s << "\n"; } );
         CHECK( !filename_with_path.empty() ) << "File " << filename << " cannot be found in the following paths list:\n " << ostr.str();
     }
-
+#if defined( FEELPP_HAS_GMSH_H )
     Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
     gmsh.setRefinementLevels( refine );
     gmsh.setNumberOfPartitions( partitions );
     gmsh.setPartitioner( (GMSH_PARTITIONER)partitioner );
     gmsh.setMshFileByPartition( partition_file );
-
+    gmsh.setVerbosity(verbose);
 
     // refinement if option is enabled to a value greater or equal to 1
     if ( refine )
@@ -105,7 +105,9 @@ BOOST_PARAMETER_FUNCTION(
         gmsh.rebuildPartitionMsh(filename_with_path,rebuild_partitions_filename);
         filename_with_path=rebuild_partitions_filename;
     }
-
+#else
+    LOG(WARNING) << "Gmsh support not available: refine and repartition operations are not supported.";
+#endif
     ImporterGmsh<_mesh_type> import( filename_with_path, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
 
     // need to replace physical_region by elementary_region while reading
