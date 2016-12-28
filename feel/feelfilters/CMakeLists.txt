@@ -34,7 +34,7 @@ if(FEELPP_HAS_GMSH_H AND FEELPP_HAS_GMSH_LIBRARY)
 endif()
 
 SET(SRC
-  unitsegment.cpp unitsquare.cpp unitcube.cpp
+  importergmsh.cpp gmshenums.cpp unitsegment.cpp unitsquare.cpp unitcube.cpp
   #exporterfactorysimplex.cpp exporterfactoryhypercube.cpp
   ${FEELFILTERS_GMSH_SRCS}
   ${FEELFILTERS_INST_SRCS}

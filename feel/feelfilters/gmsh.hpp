@@ -8,7 +8,7 @@
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
   Copyright (C) 2010-2014 Feel++ Consortium
-  
+
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -338,11 +338,13 @@ public:
             return M_refine_levels;
         }
 
+#if defined( FELPP_HAS_GMSH_H )
     /**
      * @brief get the Gmsh GModel data structure
      * @return the Gmsh GModel data structure
      */
     GModel* gModel() const { return M_gmodel; }
+#endif
 
     //@}
 
@@ -391,9 +393,11 @@ public:
      */
     void setVerbosity( int val )
         {
+#if defined( FEELPP_HAS_GMSH_H )
             // Feel::cout << "Get GMSH Verbosity : " << Msg::GetVerbosity() << std::endl;
             // Feel::cout << "Set GMSH Verbosity to " << val << std::endl;
             Msg::SetVerbosity( val );
+#endif
         }
 
     /**
