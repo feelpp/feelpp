@@ -642,7 +642,9 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
             int id = it->first.second;
             int topodim = it->first.first;
             std::vector<int> data = {id, topodim};
-            mesh->addMarkerName( it->second.c_str(), id, topodim );
+            std::string marker = it->second.c_str();
+            boost::trim(marker); // get rid of eventual trailing spaces
+            mesh->addMarkerName( marker, id, topodim );
         }
     }
 
