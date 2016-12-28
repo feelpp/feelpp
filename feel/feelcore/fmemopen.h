@@ -49,7 +49,7 @@ extern "C" {
  *         If a failure occurred NULL will be returned.
  * @ingroup NimbusMemoryMappping
  */
-FILE *fmemopen(void *buf, size_t size, const char *mode);
+FEELPP_NO_EXPORT FILE *fmemopen(void *buf, size_t size, const char *mode);
 
 #ifdef __cplusplus
 }

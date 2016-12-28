@@ -35,7 +35,7 @@ namespace vf{
  * @see
  */
 template<typename ExprT,int Order=2>
-class GinacExVF : public Feel::vf::GiNaCBase
+class FEELPP_EXPORT GinacExVF : public Feel::vf::GiNaCBase
 {
 public:
 

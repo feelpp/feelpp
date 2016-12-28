@@ -69,6 +69,7 @@ void SwapBytes(char *array, int size, int n);
 
 namespace Feel
 {
+#pragma GCC visibility push(hidden)
 namespace detail
 {
 class GMSHPoint
@@ -256,7 +257,8 @@ struct GMSHElement
 
 
 };
-}
+} // detail
+#pragma GCC visibility pop
 /**
  * \class ImporterGmsh
  * \brief gmsh importer class
@@ -455,36 +457,36 @@ public:
 protected:
 
 private:
-    void readFromMemory( mesh_type* mesh );
-    void readFromFile( mesh_type* mesh );
+    FEELPP_NO_EXPORT void readFromMemory( mesh_type* mesh );
+    FEELPP_NO_EXPORT void readFromFile( mesh_type* mesh );
 
-    void addVertices( mesh_type* mesh, Feel::detail::GMSHElement const& elt,
-                      std::map<int, Feel::detail::GMSHPoint > const& gmshpts );
+    FEELPP_NO_EXPORT void addVertices( mesh_type* mesh, Feel::detail::GMSHElement const& elt,
+                                       std::map<int, Feel::detail::GMSHPoint > const& gmshpts );
 
-    void addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
-    void addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<1> );
-    void addPoint( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<2> );
-    void addPoint( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<3> );
+    FEELPP_NO_EXPORT void addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
+    FEELPP_NO_EXPORT void addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<1> );
+    FEELPP_NO_EXPORT void addPoint( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<2> );
+    FEELPP_NO_EXPORT void addPoint( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<3> );
 
-    void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
-    void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<1> );
-    void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<2> );
-    void addEdge( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<3> );
+    FEELPP_NO_EXPORT void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
+    FEELPP_NO_EXPORT void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<1> );
+    FEELPP_NO_EXPORT void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<2> );
+    FEELPP_NO_EXPORT void addEdge( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<3> );
 
-    void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
-    void addFace( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<1> );
-    void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<2> );
-    void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<3> );
+    FEELPP_NO_EXPORT void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
+    FEELPP_NO_EXPORT void addFace( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<1> );
+    FEELPP_NO_EXPORT void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<2> );
+    FEELPP_NO_EXPORT void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<3> );
 
-    void addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
-    void addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/ , mpl::int_<1> );
-    void addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/ , mpl::int_<2> );
-    void addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & /*__idGmshToFeel*/, mpl::int_<3> );
+    FEELPP_NO_EXPORT void addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
+    FEELPP_NO_EXPORT void addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/ , mpl::int_<1> );
+    FEELPP_NO_EXPORT void addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/ , mpl::int_<2> );
+    FEELPP_NO_EXPORT void addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & /*__idGmshToFeel*/, mpl::int_<3> );
 
-    void updateGhostCellInfoByUsingBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
+    FEELPP_NO_EXPORT void updateGhostCellInfoByUsingBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
                                                  std::vector<int> const& nbMsgToRecv );
 
-    void updateGhostCellInfoByUsingNonBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
+    FEELPP_NO_EXPORT void updateGhostCellInfoByUsingNonBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
                                                     std::vector<int> const& nbMsgToRecv );
 
 
