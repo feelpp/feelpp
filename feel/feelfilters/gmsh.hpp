@@ -338,7 +338,7 @@ public:
             return M_refine_levels;
         }
 
-#if defined( FELPP_HAS_GMSH_H )
+#if defined( FEELPP_HAS_GMSH_H )
     /**
      * @brief get the Gmsh GModel data structure
      * @return the Gmsh GModel data structure
