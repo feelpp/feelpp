@@ -32,6 +32,7 @@
 #include <boost/fusion/sequence.hpp>
 #include <boost/fusion/support/pair.hpp>
 
+#pragma GCC visibility push(default)
 namespace Feel {
 
 //namespace blas = boost::numeric::bindings::blas;
@@ -120,5 +121,8 @@ template<typename FecT> using map2_gmc_type = fusion::map<fusion::pair<vf::detai
 
 } 
 
+
 }
+
+#pragma GCC visibility pop
 #endif /* FEELPP_DETAIL_GMC_HPP */

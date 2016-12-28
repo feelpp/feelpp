@@ -40,29 +40,32 @@ macro(feelpp_add_testcase )
     ARGS -av
     ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
     ${CMAKE_CURRENT_BINARY_DIR}/
-    COMMENT "Syncing testcase ${testcase} in ${CMAKE_CURRENT_BINARY_DIR} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}")
+    COMMENT "Syncing testcase ${testcase} in ${CMAKE_CURRENT_BINARY_DIR} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}"
+    )
   #execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${testcase} ${CMAKE_CURRENT_BINARY_DIR} )
   #file(COPY ${testcase} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
   #get_filename_component( relpath ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME} DIRECTORY BASE_DIR ${FEELPP_SOURCE_DIR})
   #message(STATUS "testcase ${FEELPP_CASE_NAME} -> ${relpath} ")
   if ( FEELPP_CASE_CATEGORY )
-    if (NOT EXISTS ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY})
-      execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/feel/)
-      execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/)
-      execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY})
-    endif()
-    
+    #if (NOT EXISTS ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY})
+    #  execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/feel/)
+    #  execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/)
+    #  execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY})
+    #endif()
+
     #INSTALL(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME} DESTINATION share/feel/applications/${CATEGORY} COMPONENT install-testcase)
-    ADD_CUSTOM_COMMAND(
-    TARGET ${target}
-    POST_BUILD
-    COMMAND rsync
-    ARGS -av
-    ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
-    ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY}
-    COMMENT "Syncing testcase ${testcase} in ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}")
-    add_dependencies(install-testcase ${target})
-endif()
+    # ADD_CUSTOM_COMMAND(
+    # TARGET ${target}
+    # POST_BUILD
+    # COMMAND rsync
+    # ARGS -av
+    # ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
+    # ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY}
+    # COMMENT "Syncing testcase ${testcase} in ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}")
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
+      DESTINATION share/feel/testcases/${FEELPP_CASE_CATEGORY} COMPONENT testcases)
+    #add_dependencies(install-testcase ${target})
+  endif()
 endmacro(feelpp_add_testcase)
 
 
@@ -189,8 +192,9 @@ macro(feelpp_add_application)
   if ( FEELPP_APP_GEO )
     foreach(  geo ${FEELPP_APP_GEO} )
       # extract geo filename  to be copied in binary dir
-      get_filename_component( GEO_NAME ${geo} NAME )
-      configure_file( ${geo} ${GEO_NAME} )
+      #get_filename_component( GEO_NAME ${geo} NAME )
+      #configure_file( ${geo} ${GEO_NAME} )
+      file(COPY ${geo} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
       INSTALL(FILES "${geo}"  DESTINATION share/feel/geo)
     endforeach()
   endif(FEELPP_APP_GEO)
@@ -198,8 +202,9 @@ macro(feelpp_add_application)
   if ( FEELPP_APP_MESH )
     foreach(  mesh ${FEELPP_APP_MESH} )
       # extract mesh filename  to be copied in binary dir
-      get_filename_component( MESH_NAME ${mesh} NAME )
-      configure_file( ${mesh} ${MESH_NAME} )
+      #get_filename_component( MESH_NAME ${mesh} NAME )
+      #configure_file( ${mesh} ${MESH_NAME} )
+      file(COPY ${mesh} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
       INSTALL(FILES "${mesh}"  DESTINATION share/feel/mesh)
     endforeach()
   endif(FEELPP_APP_MESH)
@@ -246,7 +251,7 @@ endmacro()
 
 macro(feelpp_add_test)
   PARSE_ARGUMENTS(FEELPP_TEST
-    "SRCS;LINK_LIBRARIES;CFG;GEO;LABEL;DEFS;DEPS;TIMEOUT;CLI"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;TIMEOUT;CLI"
     "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;NO_FEELPP_LIBRARY"
     ${ARGN}
     )
@@ -260,16 +265,16 @@ macro(feelpp_add_test)
   if ( NOT FEELPP_TEST_SRCS )
     set(filename test_${FEELPP_TEST_NAME}.cpp)
     if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
-      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
+      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} MESH ${FEELPP_TEST_MESH}  DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
     else()
-      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
     endif()
     #add_executable(${targetname} ${filename})
   else()
      if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
-       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
+       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
      else()
-       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
      endif()
     #add_executable(${targetname} ${FEELPP_TEST_SRCS})
   endif()

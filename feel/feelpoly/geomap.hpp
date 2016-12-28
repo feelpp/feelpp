@@ -2299,7 +2299,7 @@ class Inverse
         //M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, worldComm ) )
         M_nlsolver( SolverNonLinear<double>::build( "petsc","", worldComm ) )
 #else
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM, worldComm ) )
+        M_nlsolver( SolverNonLinear<double>::build( "eigen_dense", "", worldComm ) )
 #endif
 {
     this->init();
@@ -2322,7 +2322,7 @@ class Inverse
         //M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC,worldComm) )
         M_nlsolver( SolverNonLinear<double>::build( "petsc","", worldComm ) )
 #else
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM,worldComm ) )
+        M_nlsolver( SolverNonLinear<double>::build( "eigen_dense", "", worldComm ) )
 #endif
 {
     this->init();

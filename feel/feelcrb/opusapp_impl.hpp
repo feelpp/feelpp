@@ -451,8 +451,6 @@ OpusApp<ModelType,RM,Model>::run()
         }
     }
 
-    auto e = exporter( _mesh= model->functionSpace()->mesh()  );
-
     printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
 
     int crb_error_type = ioption(_name="crb.error-type");
@@ -634,6 +632,13 @@ OpusApp<ModelType,RM,Model>::run()
     int nb_levels = ioption( _name="ser.nb-levels" );
     for( int ser_level=0; ser_level < nb_levels; ++ser_level )
     {
+        std::string exporterName;
+        if( nb_levels <= 1 )
+            exporterName = Environment::about().appName();
+        else
+            exporterName = Environment::about().appName() + "-l" + std::to_string(ser_level);
+        auto e = exporter( _mesh= model->functionSpace()->mesh(), _name=exporterName );
+
         crb = crbs[ser_level];
         curpar=0;
 
@@ -801,6 +806,7 @@ OpusApp<ModelType,RM,Model>::run()
                     if( solve_dual_problem )
                         u_crb_dual = crb->expansion( uNdu[0] , N , WNdu );
 
+
                     std::ostringstream u_crb_str;
                     u_crb_str << "u_crb(" << mu_str.str() << ")";
                     u_crb.setName( u_crb_str.str()  );
@@ -811,7 +817,11 @@ OpusApp<ModelType,RM,Model>::run()
                         {
                             model->adaptMesh( mu );
                         }
-                        std::string exportName = u_crb.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                        std::string exportName;
+                        if( nb_levels <= 1 )
+                            exportName = u_crb.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                        else
+                            exportName = u_crb.name().substr(0,exportNameSize) + "-l" + std::to_string(ser_level) + "-" + std::to_string(curpar);
                         e->add( exportName, u_crb );
                     }
 
@@ -878,8 +888,12 @@ OpusApp<ModelType,RM,Model>::run()
 
                         if( export_solution )
                         {
+                            std::string exportName;
                             LOG(INFO) << "export u_fem \n";
-                            std::string exportName = u_fem.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                            if( nb_levels <= 1 )
+                                exportName = u_fem.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                            else
+                                exportName = u_fem.name().substr(0,exportNameSize) + "-l" + std::to_string(ser_level) + "-" + std::to_string(curpar);
                             e->add( exportName, u_fem );
                         }
 
@@ -903,7 +917,11 @@ OpusApp<ModelType,RM,Model>::run()
                         u_error.setName( u_error_str.str()  );
                         if( export_solution )
                         {
-                            std::string exportName = u_error.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                            std::string exportName;
+                            if( nb_levels <= 1 )
+                                exportName = u_error.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                            else
+                                exportName = u_error.name().substr(0,exportNameSize) + "-l" + std::to_string(ser_level) + "-" + std::to_string(curpar);
                             e->add( exportName, u_error );
                         }
 
@@ -1800,8 +1818,13 @@ OpusApp<ModelType,RM,Model>::run()
                 }
                 u(i)=output;
             }
+            std::string exportName;
+            if( nb_levels <= 1 )
+                exportName = "response surface-" + std::to_string(curpar);
+            else
+                exportName = "response surface-l" + std::to_string(ser_level) + "-" + std::to_string(curpar);
             auto exp = exporter( _mesh=mesh );
-            exp->add( "response surface", u );
+            exp->add(exportName, u );
             exp->save();
 
             /* Export geo file */
@@ -1833,6 +1856,7 @@ OpusApp<ModelType,RM,Model>::run()
         }
 
         //model->computationalTimeEimStatistics();
+        
         if( export_solution )
             e->save();
 
@@ -1841,7 +1865,7 @@ OpusApp<ModelType,RM,Model>::run()
         if (boption(_name="eim.cvg-study") && M_mode==CRBModelMode::CRB)
             this->doTheEimConvergenceStat( Sampling->size() );
 
-    if (boption(_name="crb.cvg-study") && compute_fem && M_mode==CRBModelMode::CRB )
+        if (boption(_name="crb.cvg-study") && compute_fem && M_mode==CRBModelMode::CRB )
         this->doTheCrbConvergenceStat( Sampling->size() );
 
     if (boption(_name="crb.scm.cvg-study") && M_mode==CRBModelMode::SCM )
@@ -1952,7 +1976,7 @@ OpusApp<ModelType,RM,Model>::run()
         }
 
     }//end of compute-stat SCM
-    }
+    }//end of ser_level loop
 
 }
 

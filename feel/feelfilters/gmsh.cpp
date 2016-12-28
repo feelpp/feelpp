@@ -92,7 +92,6 @@ namespace Feel
 {
 namespace fs = boost::filesystem;
 
-const char* FEELPP_GMSH_FORMAT_VERSION = "2.2";
 #if defined(HAVE_METIS)
 const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT = GMSH_PARTITIONER_METIS;
 #else

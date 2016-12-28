@@ -189,6 +189,7 @@ po::options_description
 gmsh_options( std::string const& prefix )
 {
     po::options_description _options( "Gmsh " + prefix + " options" );
+#if defined( FEELPP_HAS_GMSH_H )
     _options.add_options()
     // gmsh options
         ( prefixvm( prefix,"gmsh.filename" ).c_str(), Feel::po::value<std::string>()->default_value( "untitled.geo" ), "Gmsh filename" )
@@ -238,14 +239,16 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.randFactor" ).c_str(), Feel::po::value<double>()->default_value( -1 ), "Mesh.RandomFactor. -1 stand for default value" )
 
         ( prefixvm( prefix,"partition.linear" ).c_str(), Feel::po::value<bool>()->default_value( false ), "linear partitioning if true (false otherwise)" );
-
+#endif
     return _options;
+
 
 }
 po::options_description
 gmsh_domain_options( std::string const& prefix )
 {
     po::options_description _options( "Gmsh Domain " + prefix + " options" );
+#if defined( FEELPP_HAS_GMSH_H )
     _options.add_options()
     // solver options
         ( prefixvm( prefix,"gmsh.domain.shape" ).c_str(), Feel::po::value<std::string>()->default_value( "hypercube" ), "Domain shape" )
@@ -269,10 +272,11 @@ gmsh_domain_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.domain.nz" ).c_str(), Feel::po::value<double>()->default_value( 2 ), "number of subdivison in in z-direction" )
         ;
 
-
+#endif // FEELPP_HAS_GMSH_H
     return _options;
 
 }
+
 
 po::options_description
 on_options( std::string const& prefix )

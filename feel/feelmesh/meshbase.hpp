@@ -499,7 +499,31 @@ public:
             return invalid_size_type_value;
         }
 
-
+    //!
+    //! @return true if the list strings are all  mesh marker
+    //!
+    bool hasAllMarkers( std::initializer_list<std::string> l )
+        {
+            bool f = true;
+            for (auto n : l )
+            {
+                if ( !this->hasMarker( n ) )
+                    f = false;
+            }
+            return f;
+        }
+    //!
+    //! @return true if any of the list string contain a mesh marker
+    //!
+    bool hasAnyMarker( std::initializer_list<std::string> l )
+        {
+            for (auto n : l )
+            {
+                if ( this->hasMarker( n ) )
+                    return true;
+            }
+            return false;
+        }
     /**
      * @return true if \p marker exists, false otherwise
      */
