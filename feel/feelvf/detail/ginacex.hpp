@@ -273,10 +273,11 @@ public:
             }
         }
 
-    template<typename CTX>
-    void updateContext( CTX const& ctx )
+    template<typename ... CTX>
+    void updateContext( CTX const& ... ctx )
         {
-            update( ctx->gmContext() );
+            boost::fusion::vector<CTX...> ctxvec( ctx... );
+            update( boost::fusion::at_c<0>( ctxvec )->gmContext() );
         }
 
     value_type

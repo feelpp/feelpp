@@ -592,11 +592,18 @@ public:
     //@{
 
 
-    typedef Eigen::MatrixXd local_interpolant_type;
+    typedef Eigen::VectorXd local_interpolant_type;
     local_interpolant_type
     localInterpolant( int n = 1 ) const
         {
-            return local_interpolant_type::Zero( n*nLocalDof, 1 );
+            return local_interpolant_type::Zero( n*nLocalDof );
+        }
+
+    typedef Eigen::MatrixXd local_interpolants_type;
+    local_interpolants_type
+    localInterpolants( int p, int n = 1 ) const
+        {
+            return local_interpolants_type::Zero( n*nLocalDof, p );
         }
 
     template<typename ExprType>
@@ -661,7 +668,7 @@ public:
 
     template<typename ExprType>
     void
-    interpolateBasisFunction( ExprType& expr, local_interpolant_type& Ihloc ) const
+    interpolateBasisFunction( ExprType& expr, local_interpolants_type& Ihloc ) const
     {
         using shape = typename std::decay_t<ExprType>::shape;
         using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;

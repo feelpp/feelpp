@@ -487,11 +487,25 @@ public:
     /** @name  Methods
      */
     //@{
-    typedef Eigen::MatrixXd local_interpolant_type;
+
+    //!
+    //! build interpolant object on \p n finite elements
+    //!
+    using  local_interpolant_type = Eigen::VectorXd;
     local_interpolant_type
-    localInterpolant( int n = 1, int p = 1 ) const
+    localInterpolant( int n = 1 ) const
         {
-            return local_interpolant_type::Zero( n*nComponents*nLocalDof, p );
+            return local_interpolant_type::Zero( n*nComponents*nLocalDof );
+        }
+
+    //!
+    //! build \p p  interpolants object on \p n finite elements
+    //!
+    using  local_interpolants_type = Eigen::MatrixXd;
+    local_interpolants_type
+    localInterpolants( int p, int n = 1 ) const
+        {
+            return local_interpolants_type::Zero( n*nComponents*nLocalDof, p );
         }
 
     template<typename ExprType>
@@ -631,7 +645,7 @@ public:
         }
     template<typename ExprType>
     void
-    interpolateBasisFunction( ExprType&& expr, local_interpolant_type & Ihloc ) const
+    interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc ) const
     {
         using shape = typename std::decay_t<ExprType>::shape;
         /*

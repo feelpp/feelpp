@@ -17,7 +17,7 @@ endmacro(feelpp_list_subdirs)
 
 macro(feelpp_add_testcase )
   PARSE_ARGUMENTS(FEELPP_CASE
-    "NAME;PREFIX;DEPS"
+    "NAME;PREFIX;DEPS;CATEGORY"
     ""
     ${ARGN}
     )
@@ -43,6 +43,26 @@ macro(feelpp_add_testcase )
     COMMENT "Syncing testcase ${testcase} in ${CMAKE_CURRENT_BINARY_DIR} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}")
   #execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${testcase} ${CMAKE_CURRENT_BINARY_DIR} )
   #file(COPY ${testcase} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+  #get_filename_component( relpath ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME} DIRECTORY BASE_DIR ${FEELPP_SOURCE_DIR})
+  #message(STATUS "testcase ${FEELPP_CASE_NAME} -> ${relpath} ")
+  if ( FEELPP_CASE_CATEGORY )
+    if (NOT EXISTS ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY})
+      execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/feel/)
+      execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/)
+      execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY})
+    endif()
+    
+    #INSTALL(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME} DESTINATION share/feel/applications/${CATEGORY} COMPONENT install-testcase)
+    ADD_CUSTOM_COMMAND(
+    TARGET ${target}
+    POST_BUILD
+    COMMAND rsync
+    ARGS -av
+    ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
+    ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY}
+    COMMENT "Syncing testcase ${testcase} in ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}")
+    add_dependencies(install-testcase ${target})
+endif()
 endmacro(feelpp_add_testcase)
 
 

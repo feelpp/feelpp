@@ -78,6 +78,7 @@ int main(int argc, char *argv[])
         }
      }
 
+    ME->geometricTest();
 
     return 0;
 }

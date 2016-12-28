@@ -20,3 +20,6 @@ Physical Surface("ext") = {outV[3]};
 Physical Surface("out") = {outV[4]};
 Physical Surface("int") = {outV[5]};
 Physical Volume("omega") = {outV[1]};
+
+Mesh.ElementOrder = 2;
+

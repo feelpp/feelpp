@@ -6,7 +6,7 @@ trainset-eim-size=40
 #for example :
 #mshfile = ....msh
 
-[benchmarkgrepl1]
+[benchmarkgrepl-nonlinear-elliptic1]
 run.mode=2
 run.sampling.size=10
 export-solution=false
@@ -34,6 +34,7 @@ show-mu-selection=true
 show-offline-error=true
 
 [crb]
+results-repo-name=BenchmarkGreplNonLinear
 #use-predefined-WNmu=true
 #use-predefined-test-sampling=true
 dimension-max=5
@@ -52,12 +53,12 @@ print-error-during-rb-construction=false
 cvg-study=false
 show-residual=false
 load-elements-database=true
+use-aitken=1
+max-fixedpoint-iterations=50
+
 [crb.check]
-gs=0
 rb=0
 residual=false
-residual-transient-problems=false
-results-repo-name=BnchmarkGrepl
 
 #parameter for scm
 [crb.scm]

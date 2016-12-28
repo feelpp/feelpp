@@ -104,8 +104,8 @@ public:
     typedef truth_model_type model_type;
     typedef boost::shared_ptr<truth_model_type> truth_model_ptrtype;
 
-    typedef ParameterSpace<TruthModelType::ParameterSpaceDimension> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef typename TruthModelType::parameterspace_type parameterspace_type;
+    typedef typename TruthModelType::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
     typedef typename parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef typename parameterspace_type::sampling_type sampling_type;

@@ -45,6 +45,11 @@ public :
         M_ps(ps),
         M_matrix(backend()->newBlockMatrix(_block=csrGraphBlocks(M_ps)))
         {}
+    BlockBilinearForm(product_space_t&& ps, size_type pattern )
+        :
+        M_ps(ps),
+        M_matrix(backend()->newBlockMatrix(_block=csrGraphBlocks(M_ps, pattern)))
+        {}
     BlockBilinearForm(product_space_t&& ps, sparse_matrix_ptrtype m)
         :
         M_ps(ps),
@@ -125,6 +130,25 @@ public :
         {
             M_matrix->zero();
         }
+    void syncLocalMatrix()
+        {
+            int s = M_ps.numberOfSpaces();
+            int n = 0;
+            auto cp = hana::cartesian_product( hana::make_tuple( M_ps, M_ps ) );
+            int nstatic = hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(hana::back(M_ps))>>{},
+                                    [s] (auto&& x ) { return s-hana::back(std::forward<decltype(x)>(x))->numberOfSpaces()+1; },
+                                    [s] (auto&& x ) { return s; } )( M_ps );
+            hana::for_each( cp, [&]( auto const& e )
+                            {
+                                int r = n/nstatic;
+                                int c = n%nstatic;
+                                auto test_space = e[0_c];
+                                auto trial_space = e[1_c];
+                                DVLOG( 1 ) << "syncLocalMatrix("<< r << ","<< c <<")dim "<< test_space->mesh()->dimension()<<" , " << trial_space->mesh()->dimension() <<"\n";
+                                M_matrix->block(r,c)->sc()->syncLocalMatrix( test_space,trial_space );
+                                ++n;
+                            });
+        }
     sparse_matrix_ptrtype matrixPtr() const { return M_matrix; }
     sparse_matrix_ptrtype matrixPtr() { return M_matrix; }
     using pre_solve_type = typename Backend<value_type>::pre_solve_type;
@@ -136,6 +160,7 @@ public :
                                        ( in_out( solution ),* )
                                        ( rhs, * ) )
                                      ( optional
+                                       ( condense,           ( bool ), false )
                                        ( name,           ( std::string ), "" )
                                        ( kind,           ( std::string ), soption(_prefix=name,_name="backend") )
                                        ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
@@ -143,11 +168,34 @@ public :
                                        ( post, (post_solve_type), post_solve_type() )
                                        ) )
         {
-            auto& e3 = solution(2_c);
-            auto& e2 = solution(1_c);
-            auto& e1 = solution(0_c);
-
-#if 0
+            
+            if ( condense &&  hana::Foldable<PS>::value )
+                return solveImplCondense( M_ps, solution, rhs, name, kind, rebuild, pre, post );
+            return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
+                
+        }
+    template <typename PS_t, typename Solution_t, typename Rhs_t>
+    typename Backend<double>::solve_return_type
+    solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
+                       bool rebuild, pre_solve_type pre, post_solve_type post,
+                       std::enable_if_t<std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+        {
+            return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
+        }
+    template <typename PS_t, typename Solution_t, typename Rhs_t>
+    typename Backend<double>::solve_return_type
+    solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
+                       bool rebuild, pre_solve_type pre, post_solve_type post,
+                       std::enable_if_t< hana::Foldable<PS_t>::value &&
+                                         !std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+        {
+            return solveImplCondense( ps, solution, rhs, name, kind, rebuild, pre, post,hana::integral_constant<int,decltype(hana::size( M_ps ))::value>() );
+        }
+    template <typename Solution_t, typename Rhs_t>
+    typename Backend<double>::solve_return_type
+    solveImpl( Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
+               bool rebuild, pre_solve_type pre, post_solve_type post )
+        {
             auto U = backend()->newBlockVector(_block=solution, _copy_values=false);
             tic();
             auto r1 = backend( _name=name, _kind=kind, _rebuild=rebuild,
@@ -157,10 +205,37 @@ public :
                                                                              _pre=pre,
                                                                              _post=post
                                                                              );
-            toc("monolithic",FLAGS_v>0);
+            toc("blockform.monolithic",FLAGS_v>0);
 
             solution.localize(U);
-#endif
+            return r1;
+        }
+    template <typename PS_t, typename Solution_t, typename Rhs_t>
+    typename Backend<double>::solve_return_type
+    solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
+                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,1>,
+                       std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+        {
+            return typename Backend<double>::solve_return_type{};
+        }
+    template <typename PS_t, typename Solution_t, typename Rhs_t> 
+    typename Backend<double>::solve_return_type
+    solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
+                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,2>,
+                       std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+        {
+            return typename Backend<double>::solve_return_type{};
+        }
+    template <typename PS_t, typename Solution_t, typename Rhs_t>
+    typename Backend<double>::solve_return_type
+    solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
+                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,3>,
+                       std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+        {
+            auto& e3 = solution(2_c);
+            auto& e2 = solution(1_c);
+            auto& e1 = solution(0_c);
+
             auto sc = this->matrixPtr()->sc();
 #if 0
             this->matrixPtr()->printMatlab("A.m");
@@ -179,8 +254,9 @@ public :
 
             //e3.printMatlab("phat.m");
             tic();
-            sc->condense ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c), S, V );
-            toc("sc.condense", FLAGS_v>0);
+            this->syncLocalMatrix();
+            sc->condense ( rhs.vectorPtr()->sc(), solution, S, V );
+            toc("blockform.sc.condense", FLAGS_v>0);
             S.close();V.close();
             cout << " . Condensation done" << std::endl;
             tic();
@@ -188,7 +264,7 @@ public :
             auto r = backend(_name="sc",_rebuild=rebuild)->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
             //auto r = backend(_name="sc",_rebuild=rebuild)->solve( _matrix=S, _rhs=V, _solution=e3);
             cout << " . Solve done" << std::endl;
-            toc("sc.solve", FLAGS_v>0);
+            toc("blockform.sc.solve", FLAGS_v>0);
 
 #if 0
             S.matrixPtr()->printMatlab("S.m");
@@ -199,12 +275,73 @@ public :
 #endif
             tic();
             cout << " . starting local Solve" << std::endl;
-            sc->localSolve ( rhs.vectorPtr()->sc(), solution(0_c), solution(1_c), solution(2_c) );
+            sc->localSolve ( rhs.vectorPtr()->sc(), solution);
             cout << " . local Solve done" << std::endl;
-            toc("sc.localsolve",FLAGS_v>0);
+            toc("blockform.sc.localsolve",FLAGS_v>0);
 #if 0
             e1.printMatlab("u1.m");
             e2.printMatlab("p1.m");
+#endif
+
+            return r;
+        }
+
+    //!
+    //! solve using static condensation in the case of 2 trace spaces
+    //!
+    template <typename PS_t, typename Solution_t, typename Rhs_t>
+    typename Backend<double>::solve_return_type
+    solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
+                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,4>,
+                       std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+        {
+            auto& e4 = solution(3_c);
+            auto& e3 = solution(2_c);
+            auto& e2 = solution(1_c);
+            auto& e1 = solution(0_c);
+
+            auto sc = this->matrixPtr()->sc();
+#if 0
+            this->matrixPtr()->printMatlab("A.m");
+            rhs.vectorPtr()->printMatlab("F.m");
+#endif
+
+            auto Th = product2( M_ps[3_c], M_ps[2_c] );
+            auto S = blockform2(Th, Pattern::HDG);
+            auto V = blockform1(Th);
+            MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
+            auto U = Th.element();
+            //e3.printMatlab("phat.m");
+            tic();
+            this->syncLocalMatrix();
+            sc->condense ( rhs.vectorPtr()->sc(), solution, S, V );
+            toc("blockform.sc.condense", FLAGS_v>0);
+            S.close();V.close();
+            cout << " . Condensation done" << std::endl;
+            tic();
+            cout << " . starting Solve" << std::endl;
+            auto r = S.solve( _solution=U, _rhs=V, _name="sc",_rebuild=rebuild, _condense=true );
+            cout << " . Solve done" << std::endl;
+            toc("blockform.sc.solve", FLAGS_v>0);
+
+            solution(2_c)=U(0_c);
+            for( int i = 0; i < Th[1_c]->numberOfSpaces(); ++i )
+                solution(3_c,i)=U(1_c,i);
+#if 0
+            S.matrixPtr()->printMatlab("S.m");
+            V.vectorPtr()->printMatlab("g.m");
+            e3.printMatlab("phat1.m");
+            e1.printMatlab("u.m");
+            e2.printMatlab("p.m");
+#endif
+            tic();
+            cout << " . starting local Solve" << std::endl;
+            sc->localSolve ( rhs.vectorPtr()->sc(), solution );
+            cout << " . local Solve done" << std::endl;
+            toc("blockform.sc.localsolve",FLAGS_v>0);
+#if 0
+            e1.printMatlab("u1.m");
+            e2.printMatlab("p1.m"); 
 #endif
 
             return r;
@@ -215,9 +352,9 @@ public :
 
 template<typename PS>
 BlockBilinearForm<PS>
-blockform2( PS&& ps )
+blockform2( PS&& ps, size_type pattern = Pattern::COUPLED )
 {
-    return BlockBilinearForm<PS>( std::forward<PS>(ps) );
+    return BlockBilinearForm<PS>( std::forward<PS>(ps), pattern );
 }
 template<typename PS>
 BlockBilinearForm<PS>

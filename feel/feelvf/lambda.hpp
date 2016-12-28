@@ -208,8 +208,8 @@ public:
         void update( Geo_t const&, uint16_type )
         {
         }
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
         }
 
