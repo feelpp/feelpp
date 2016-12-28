@@ -49,6 +49,11 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
     if ( exprDesc.empty() && !filename.empty() )
         keyExprManager = filename;
 
+    /* add the filename to the key used to store the ginac function */
+    /* So we are able to remove previous references when the user */
+    /* uses the same filename multiples times */
+    keyExprManager = keyExprManager + " @ " + filename;
+
     bool hasLinked = ( GinacExprManager::instance().find( keyExprManager/*exprDesc*//*filename*/ ) != GinacExprManager::instance().end() )? true : false;
     if ( hasLinked )
     {
@@ -78,6 +83,21 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
             if ( !filename.empty() && fs::path(filename).is_absolute() && !fs::exists(fs::path(filename).parent_path()) )
                 fs::create_directories( fs::path(filename).parent_path() );
             DVLOG(2) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
+
+            /* Check if we already have a key with the same filename */
+            for(auto it = GinacExprManager::instance().begin() ; it != GinacExprManager::instance().end() ; it++)
+            {
+                std::string key = it->first;
+                if(key.size() >= filename.size() && (key.substr(key.size() - filename.size(), filename.size()) == filename))
+                {
+                    /* If the filename we want to use is already used by an other expression */
+                    /* we use ginac unlink to release the expression and avoid problem when loading the new epxression */
+                    /* and we remove the expression from the local map */
+                   GiNaC::unlink_ex(filenameWithSuffix);
+                   GinacExprManager::instance().erase(it);
+                   break;
+                }
+            }
             GiNaC::compile_ex(exprs, syml, *cfun, filename);
 
             hasLinked=true;
