@@ -13,6 +13,19 @@
 
 #include "../../../Eigen/Core"
 
+#if defined(EIGEN_USE_SYCL)
+#undef min
+#undef max
+#undef isnan
+#undef isinf
+#undef isfinite
+#include <SYCL/sycl.hpp>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <utility>
+#endif
+
 #include <Eigen/src/Core/util/DisableStupidWarnings.h>
 
 #include "../SpecialFunctions"
@@ -40,8 +53,10 @@ typedef __int32 int32_t;
 typedef unsigned __int32 uint32_t;
 typedef __int64 int64_t;
 typedef unsigned __int64 uint64_t;
+#include <windows.h>
 #else
 #include <stdint.h>
+#include <unistd.h>
 #endif
 
 #if __cplusplus > 199711 || EIGEN_COMP_MSVC >= 1900
@@ -54,6 +69,10 @@ typedef unsigned __int64 uint64_t;
 #include <mach/mach_time.h>
 #else
 #include <time.h>
+#endif
+
+#if defined(EIGEN_USE_LIBXSMM)
+#include "libxsmm.h"
 #endif
 
 #ifdef EIGEN_USE_THREADS
@@ -77,6 +96,7 @@ typedef unsigned __int64 uint64_t;
 #include "src/Tensor/TensorDeviceDefault.h"
 #include "src/Tensor/TensorDeviceThreadPool.h"
 #include "src/Tensor/TensorDeviceCuda.h"
+#include "src/Tensor/TensorDeviceSycl.h"
 #include "src/Tensor/TensorIndexList.h"
 #include "src/Tensor/TensorDimensionList.h"
 #include "src/Tensor/TensorDimensions.h"
@@ -122,6 +142,7 @@ typedef unsigned __int64 uint64_t;
 #include "src/Tensor/TensorAssign.h"
 #include "src/Tensor/TensorScan.h"
 
+#include "src/Tensor/TensorSycl.h"
 #include "src/Tensor/TensorExecutor.h"
 #include "src/Tensor/TensorDevice.h"
 

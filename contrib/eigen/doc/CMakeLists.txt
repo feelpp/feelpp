@@ -98,7 +98,7 @@ add_custom_target(
 add_dependencies(doc-eigen-prerequisites all_snippets all_examples)
 add_dependencies(doc-unsupported-prerequisites unsupported_snippets unsupported_examples)
 
-add_custom_target(doc-eigen ALL
+add_custom_target(doc ALL
   COMMAND doxygen
   COMMAND doxygen Doxyfile-unsupported
   COMMAND ${CMAKE_COMMAND} -E copy ${Eigen_BINARY_DIR}/doc/html/group__TopicUnalignedArrayAssert.html ${Eigen_BINARY_DIR}/doc/html/TopicUnalignedArrayAssert.html
@@ -109,4 +109,4 @@ add_custom_target(doc-eigen ALL
   COMMAND ${CMAKE_COMMAND} -E rename eigen-doc html
   WORKING_DIRECTORY ${Eigen_BINARY_DIR}/doc)
 
-add_dependencies(doc-eigen doc-eigen-prerequisites doc-unsupported-prerequisites)
+add_dependencies(doc doc-eigen-prerequisites doc-unsupported-prerequisites)
