@@ -41,7 +41,7 @@ namespace Feel {
  * cout << "Hello World from process " << Environment::rank()  << std::endl;
  * @encode
  */
-class MasterStream
+class FEELPP_EXPORT MasterStream
 {
 public:
     /**
