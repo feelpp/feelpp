@@ -1,3 +1,9 @@
 steps:
- - name: ':feelpp: hello'
-   command: echo "Hello!"
+ - name: ':feelpp: configure and build with default compiler'
+   command: "tools/scripts/buildkite/install-feelpp-lib.sh"
+
+ - name: ':feelpp: configure and build with clang 3.9'
+   command: "tools/scripts/buildkite/install-feelpp-lib.sh"
+   env:
+     CXX: clang++-3.9
+     CC: clang-3.9
