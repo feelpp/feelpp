@@ -48,7 +48,7 @@ namespace Feel
 
   @author Christophe Prud'homme
 */
-class RegionTree
+class FEELPP_EXPORT RegionTree
 {
 public:
 

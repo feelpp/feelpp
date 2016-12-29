@@ -605,7 +605,7 @@ public:
                 }
         };
         template<typename FunctionType>
-        void add_( std::vector<std::string> const& __n, FunctionType const& func, mpl::bool_<true> )
+        FEELPP_NO_EXPORT void add_( std::vector<std::string> const& __n, FunctionType const& func, mpl::bool_<true> )
         {
             std::vector<std::string> s = __n;
             FEELPP_ASSERT( s.size() == FunctionType::functionspace_type::nSpaces );
@@ -613,7 +613,7 @@ public:
             fusion::for_each( subelements(func,s), AddFunctionProduct<step_type>( *this ) );
         }
         template<typename FunctionType>
-        void add_( std::string const& __n, FunctionType const& func, mpl::bool_<true> )
+        FEELPP_NO_EXPORT void add_( std::string const& __n, FunctionType const& func, mpl::bool_<true> )
         {
             std::vector<std::string> s;
             // s.push_back(__n);
@@ -628,7 +628,7 @@ public:
             fusion::for_each( subelements(func,s), AddFunctionProduct<step_type>( *this ) );
         }
         template<typename FunctionType>
-        void add_( std::string const& __n, FunctionType const& func, mpl::bool_<false> )
+        FEELPP_NO_EXPORT void add_( std::string const& __n, FunctionType const& func, mpl::bool_<false> )
         {
             typedef typename mpl::or_<is_shared_ptr<FunctionType>, boost::is_pointer<FunctionType> >::type is_ptr_or_shared_ptr;
             add( __n,func,is_ptr_or_shared_ptr() );
@@ -641,31 +641,31 @@ public:
         }
 
         template<typename FunctionType>
-        void add( std::string const& __n, FunctionType const& func, mpl::bool_<true> )
+        FEELPP_NO_EXPORT void add( std::string const& __n, FunctionType const& func, mpl::bool_<true> )
         {
             add( __n,*func, mpl::bool_<false>() );
         }
         template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<true> )
+        FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<true> )
         {
             add( __n,__fname,*func, mpl::bool_<false>() );
         }
 
         template<typename FunctionType>
-        void add( std::string const& __n, FunctionType const& func, mpl::bool_<false> )
+        FEELPP_NO_EXPORT void add( std::string const& __n, FunctionType const& func, mpl::bool_<false> )
         {
             constexpr bool nodal = (FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally)&& (!FunctionType::is_hcurl_conforming) && (!FunctionType::is_hdiv_conforming);
             add( __n, __n, func, mpl::bool_<false>(), mpl::bool_<nodal>() );
         }
         template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false> )
+        FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false> )
         {
             constexpr bool nodal = (FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally)&& (!FunctionType::is_hcurl_conforming) && (!FunctionType::is_hdiv_conforming);
             add( __n, __fname, func, mpl::bool_<false>(), mpl::bool_<nodal>() );
         }
         template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
-                  typename std::enable_if<FunctionType::is_scalar>::type* = nullptr)
+        FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
+                                   typename std::enable_if<FunctionType::is_scalar>::type* = nullptr)
         {
             bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
             boost::timer t;
@@ -732,8 +732,8 @@ public:
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
         }
         template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
-                  typename std::enable_if<FunctionType::is_vectorial>::type* = nullptr)
+        FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
+                                   typename std::enable_if<FunctionType::is_vectorial>::type* = nullptr)
             {
                 bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                 boost::timer t;
@@ -820,8 +820,8 @@ public:
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
             }
         template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
-                  typename std::enable_if<FunctionType::is_tensor2>::type* = nullptr)
+        FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
+                                   typename std::enable_if<FunctionType::is_tensor2>::type* = nullptr)
             {
                 bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                 boost::timer t;
@@ -909,8 +909,8 @@ public:
             }
 
         template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
-                  typename std::enable_if<FunctionType::is_tensor2symm>::type* = nullptr)
+        FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
+                                   typename std::enable_if<FunctionType::is_tensor2symm>::type* = nullptr)
             {
                 bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                 boost::timer t;
@@ -998,8 +998,8 @@ public:
             }
 
         template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
-                  typename std::enable_if<FunctionType::is_scalar>::type* = nullptr )
+        FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
+                                   typename std::enable_if<FunctionType::is_scalar>::type* = nullptr )
             {
                 if ( !func.worldComm().isActive() ) return;
 
@@ -1041,8 +1041,8 @@ public:
             }
 
         template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
-                  typename std::enable_if<FunctionType::is_vectorial>::type* = nullptr )
+        FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
+                                   typename std::enable_if<FunctionType::is_vectorial>::type* = nullptr )
             {
                 bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
@@ -1109,8 +1109,8 @@ public:
             }
 
         template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
-                  typename std::enable_if<FunctionType::is_tensor2>::type* = nullptr )
+        FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
+                                   typename std::enable_if<FunctionType::is_tensor2>::type* = nullptr )
             {
                 bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
@@ -1307,7 +1307,7 @@ public:
         /**
            only TimeSet can use the default constructor
         */
-        Step();
+        FEELPP_NO_EXPORT Step();
 
         /**
            construct a step with index \c index at a specified time \c time
@@ -1316,13 +1316,13 @@ public:
            \param index index of the step
            * \param state the state of the step
            */
-        Step( TimeSet* ts, Real time, size_type index, size_type __state = STEP_NEW|STEP_OVERWRITE );
+        FEELPP_NO_EXPORT Step( TimeSet* ts, Real time, size_type index, size_type __state = STEP_NEW|STEP_OVERWRITE );
 
 
         /**
            only TimeSet can use the copy constructor
         */
-        Step( Step const & );
+        FEELPP_NO_EXPORT Step( Step const & );
 
 
 
@@ -1332,11 +1332,11 @@ public:
          */
         //@{
 
-        Step& operator=( Step const& );
+        FEELPP_NO_EXPORT Step& operator=( Step const& );
 
         //@}
 
-        void updateScalarP0( std::vector<WorldComm> const& worldsComm )
+        FEELPP_NO_EXPORT void updateScalarP0( std::vector<WorldComm> const& worldsComm )
         {
             if ( !M_ts->M_scalar_p0 )
             {
@@ -1370,7 +1370,7 @@ public:
         friend class boost::serialization::access;
 
         template<class Archive>
-        void save( Archive & ar, const unsigned int /*version*/ ) const
+        FEELPP_NO_EXPORT void save( Archive & ar, const unsigned int /*version*/ ) const
         {
             size_type s;
 
@@ -1489,7 +1489,7 @@ public:
         }
 
         template<class Archive>
-        void load( Archive & ar, const unsigned int /*version*/ )
+        FEELPP_NO_EXPORT void load( Archive & ar, const unsigned int /*version*/ )
         {
 
             // loading
@@ -1713,7 +1713,7 @@ public:
         }
 
         template<class Archive>
-        void serialize( Archive & ar, const unsigned int file_version )
+        FEELPP_NO_EXPORT void serialize( Archive & ar, const unsigned int file_version )
         {
             boost::serialization::split_member( ar, *this, file_version );
         }
@@ -1722,7 +1722,7 @@ public:
          * execute the steps needed to have a coherent state
          * @param state new state to execute
          */
-        void executeState( size_type state );
+        FEELPP_NO_EXPORT void executeState( size_type state );
 
     private:
 
@@ -2091,7 +2091,7 @@ private:
     friend class boost::serialization::access;
 
     template<class Archive>
-    void serialize( Archive & ar, const unsigned int /*version*/ )
+    FEELPP_NO_EXPORT void serialize( Archive & ar, const unsigned int /*version*/ )
     {
         ar & boost::serialization::make_nvp( "name", M_name );
         ar & boost::serialization::make_nvp( "index", M_index );
@@ -2195,10 +2195,10 @@ private:
     }
 
     //! cleanup steps states
-    void cleanup();
+    FEELPP_NO_EXPORT void cleanup();
 
     //! delete all time next this __time (after a restart by exemple)
-    void resetPreviousTime( Real __time );
+    FEELPP_NO_EXPORT void resetPreviousTime( Real __time );
 
 public:
     void setMesh( mesh_ptrtype m ) { M_mesh = m; }
