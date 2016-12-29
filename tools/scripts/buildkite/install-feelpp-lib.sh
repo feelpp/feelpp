@@ -15,8 +15,8 @@ set -e
 echo '--- tests'
 export PATH=/usr/bin:/bin/:$PATH
 
-echo 'CXX=$CXX'
-echo 'CC=$CC'
+echo "CXX=$CXX"
+echo "CC=$CC"
 
 echo '--- build directory'
 if [ -d build ]; then rm -rf build; fi
