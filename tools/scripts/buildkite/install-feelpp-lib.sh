@@ -10,7 +10,14 @@ set -e
 # export PYTHONPATH=${FEELPP_DEP_INSTALL_PREFIX}/lib/python2.7/site-packages:/usr/lib/paraview/site-packages:$PYTHONPATH
 # export MANPATH=${FEELPP_DEP_INSTALL_PREFIX}/share/man:$MANPATH
 
+
+
+echo '--- tests'
 export PATH=/usr/bin:/bin/:$PATH
+
+echo 'CXX=$CXX'
+echo 'CC=$CC'
+
 echo '--- build directory'
 if [ -d build ]; then rm -rf build; fi
 mkdir -p build
