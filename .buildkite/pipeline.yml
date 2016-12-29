@@ -1,3 +1,14 @@
 steps:
  - name: ':feelpp: hello from buildkite'
    command: echo "Hello world!"
+ - name: ':feelpp: build directory'
+   command: mkdir build && cd build
+ - wait
+ - name: ':feelpp: configure'
+   command: ../configure -r
+   env:
+     CXX=clang++-3.9
+     CC=clang-3.9
+ - wait
+ - name: ':feelpp: make install-feelpp-lib'
+   command: make install-feelpp-lib
