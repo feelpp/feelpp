@@ -631,6 +631,8 @@ Environment::~Environment()
 
         stopLogging();
         generateSummary( S_about.appName(), "end", true );
+        // make sure everybody is here
+        Environment::worldComm().barrier();
         if ( Environment::isMasterRank() && S_vm.count("rm") )
         {
             cout << tc::red << "Removing all files (--rm)  in " << appRepository() << "..." << tc::reset << std::endl;
