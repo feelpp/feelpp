@@ -633,8 +633,8 @@ Environment::~Environment()
         generateSummary( S_about.appName(), "end", true );
         if ( Environment::isMasterRank() && S_vm.count("rm") )
         {
-            cout << "Removing all files in " << appRepository() << "..." << std::endl;
-            fs::remove_all( fs::path( appRepository() ) );
+            cout << tc::red << "Removing all files (--rm)  in " << appRepository() << "..." << tc::reset << std::endl;
+            fs::remove_all( S_appdir );
         }
         
     }
@@ -1573,12 +1573,16 @@ Environment::exprRepository()
 std::string
 Environment::logsRepository()
 {
+    if ( !fs::exists( S_appdir / "logs" ) )
+        fs::create_directory( S_appdir / "logs" );
     return (S_appdir / "logs").string();
 }
 
 std::string
 Environment::exportsRepository()
 {
+    if ( !fs::exists( S_appdir / "exports" ) )
+        fs::create_directory( S_appdir / "exports" );
     return (S_appdir / "exports").string();
 }
 
@@ -1712,9 +1716,7 @@ Environment::setLogs( std::string const& prefix )
 void
 Environment::startLogging( std::string decorate )
 {
-    S_scratchdir = fs::current_path() / "logs"; //scratchdir();
-
-    fs::path a0 = std::string( S_argv[0] );
+    fs::path a0 = logsRepository();
     const int Nproc = 200;
 
     if ( S_worldcomm->size() > Nproc )
@@ -1722,17 +1724,17 @@ Environment::startLogging( std::string decorate )
         std::string smin = boost::lexical_cast<std::string>( Nproc*std::floor( S_worldcomm->rank()/Nproc ) );
         std::string smax = boost::lexical_cast<std::string>( Nproc*std::ceil( double( S_worldcomm->rank()+1 )/Nproc )-1 );
         std::string replog = smin + "-" + smax;
-        S_scratchdir/= replog;
+        a0 /= replog;
     }
 
     // only one processor every Nproc creates the corresponding log directory
     if ( S_worldcomm->rank() % Nproc == 0 )
     {
-        if ( !fs::exists( S_scratchdir ) )
-            fs::create_directories( S_scratchdir );
+        if ( !fs::exists( a0 ) )
+            fs::create_directories( a0 );
     }
 
-    FLAGS_log_dir=S_scratchdir.string();
+    FLAGS_log_dir=a0.string();
 
     google::AllowCommandLineReparsing();
     google::ParseCommandLineFlags( &S_argc, &S_argv, false );
@@ -1770,8 +1772,8 @@ Environment::stopLogging( bool remove )
         if ( (remove || Environment::vm().count( "rmlogs" ))  &&
              S_worldcomm->isMasterRank() )
         {
-            std::cout  << "removing " << fs::current_path() / "logs" << std::endl;
-            fs::remove_all( fs::current_path() / "logs" );
+            std::cout  << tc::red << "Removing log files (--rmlogs) in " << Environment::logsRepository() << tc::reset << std::endl;
+            fs::remove_all( Environment::logsRepository() );
         }
     }
 }
@@ -2239,6 +2241,7 @@ std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemConfigRepository().get<0>(),
                                                Environment::systemGeoRepository().get<0>()
                                              };
+fs::path Environment::S_appdir = fs::current_path();
 fs::path Environment::S_scratchdir;
 fs::path Environment::S_cfgdir;
 
