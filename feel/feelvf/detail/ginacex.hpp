@@ -36,7 +36,7 @@ namespace vf
  * @see
  */
 template<int Order = 2>
-class GinacEx : public Feel::vf::GiNaCBase
+class FEELPP_EXPORT GinacEx : public Feel::vf::GiNaCBase
 {
 public:
 
@@ -346,7 +346,7 @@ private:
     std::string M_exprDesc;
 };
 template<int Order>
-std::ostream&
+FEELPP_EXPORT std::ostream&
 operator<<( std::ostream& os, GinacEx<Order> const& e )
 {
     os << e.expression();
@@ -354,13 +354,13 @@ operator<<( std::ostream& os, GinacEx<Order> const& e )
 }
 
 template<int Order>
-std::string
+FEELPP_EXPORT std::string
 str( GinacEx<Order> && e )
 {
     return str( std::forward<GinacEx<Order>>(e).expression() );
 }
 template<int Order>
-std::string
+FEELPP_EXPORT std::string
 str( GinacEx<Order> const& e )
 {
     return str( e.expression() );

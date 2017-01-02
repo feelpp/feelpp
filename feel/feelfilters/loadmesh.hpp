@@ -29,15 +29,20 @@
 #if !defined(FEELPP_LOADMESH_HPP)
 #define FEELPP_LOADMESH_HPP 1
 
-#ifdef FEELPP_HAS_GMSH
+
 
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
+#if 0
 #include <feel/feelfilters/loadMESHmesh.hpp>
 #include <feel/feelfilters/loadMEDmesh.hpp>
-#include <feel/feelfilters/importeracusimrawmesh.hpp>
+#endif
+#if defined(FEELPP_HAS_GMSH_H)
 #include <feel/feelfilters/geo.hpp>
 #include <feel/feelfilters/domain.hpp>
+#endif
+#include <feel/feelfilters/importeracusimrawmesh.hpp>
+
 
 namespace Feel {
 
@@ -111,7 +116,7 @@ BOOST_PARAMETER_FUNCTION(
             mesh_name.extension() != ".arm" )
         << "Invalid filename " << filenameExpand << " it should have either the .geo. .json or .msh extension\n";
 
-
+#if defined(FEELPP_HAS_GMSH_H)
     if ( mesh_name.extension() == ".geo" )
     {
 #if defined(FEELPP_HAS_HDF5)
@@ -137,12 +142,13 @@ BOOST_PARAMETER_FUNCTION(
             if ( !desc )
                 std::cout << "[loadMesh] Use default geo desc: " << mesh_name.string() << " " << h << " " << depends << "\n";
         }
+        auto thedesc = (!desc) ? geo( _filename=mesh_name.string(),
+                                      _h=h,
+                                      _depends=depends,
+                                      _worldcomm=worldcomm  ) : desc;
         auto m = createGMSHMesh(
             _mesh=mesh,
-            _desc= (!desc) ? geo( _filename=mesh_name.string(),
-                                  _h=h,
-                                  _depends=depends,
-                                  _worldcomm=worldcomm  ) : desc ,
+            _desc= thedesc ,
             _h=h,
             _scale=scale,
             _straighten=straighten,
@@ -166,8 +172,13 @@ BOOST_PARAMETER_FUNCTION(
 #endif
         return m;
     }
+#else
+    LOG(WARNING) << "Gmsh support not available: loading a .geo is not supported.";
+#endif
+    if ( ( mesh_name.extension() == ".msh"  ) ||
+         ( mesh_name.extension() == ".mesh"  ) ||
+         ( mesh_name.extension() == ".med"  ) )
 
-    if ( mesh_name.extension() == ".msh"  )
     {
         if ( worldcomm.isMasterRank() )
             std::cout << "[loadMesh] Loading mesh in format msh: " << fs::system_complete(mesh_name) << "\n";
@@ -193,6 +204,7 @@ BOOST_PARAMETER_FUNCTION(
 #endif
         return m;
     }
+#if 0
     if ( mesh_name.extension() == ".mesh"  )
     {
         Feel::cout << "[loadMesh] Loading mesh in format mesh: " << fs::system_complete(mesh_name) << std::endl;
@@ -243,6 +255,9 @@ BOOST_PARAMETER_FUNCTION(
         Feel::cout << "[loadMesh] Loading mesh in format med: not available as HDF5 is not supported" << std::endl;
 #endif
     }
+
+#endif // 0 -
+
 #if defined(FEELPP_HAS_HDF5)
     if ( mesh_name.extension() == ".json"  )
     {
@@ -277,11 +292,11 @@ BOOST_PARAMETER_FUNCTION(
 #endif
         return m;
     }
-
+#if defined( FEELPP_HAS_GMSH_H )
     mesh_name = soption(_name="gmsh.domain.shape");
     if ( worldcomm.isMasterRank() )
         std::cout << "[loadMesh] no file name or unrecognized extension provided\n"
-                  << "[loadMesh] automatically generating amesh from gmsh.domain.shape in format geo+msh: " 
+                  << "[loadMesh] automatically generating amesh from gmsh.domain.shape in format geo+msh: "
                   << mesh_name << ".geo\n";
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
     auto m = createGMSHMesh(_mesh=mesh,
@@ -305,6 +320,10 @@ BOOST_PARAMETER_FUNCTION(
         m->saveHDF5( fs::path(filenameExpand).stem().string()+".json" );
 #endif
     return m;
+#else
+    LOG(WARNING) << "Gmsh support not available. No mesh file provided, return an empty mesh.";
+    return boost::make_shared<_mesh_type>();
+#endif
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif

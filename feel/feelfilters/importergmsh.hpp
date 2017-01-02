@@ -7,7 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2007,2008 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2009-2014 Feel++ Consortium
+  Copyright (C) 2009-2017 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -28,9 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-11-16
  */
-
-#ifndef __ImporterGmsh_H
-#define __ImporterGmsh_H 1
+#ifndef FEELPP_IMPORTERGMSH_HPP
+#define FEELPP_IMPORTERGMSH_HPP 1
 
 #include <iostream>
 #include <fstream>
@@ -65,10 +64,12 @@
 
 
 // from Gmsh
+int getInfoMSH(const int typeMSH, const char **const name);
 void SwapBytes(char *array, int size, int n);
 
 namespace Feel
 {
+#pragma GCC visibility push(hidden)
 namespace detail
 {
 class GMSHPoint
@@ -93,16 +94,10 @@ public:
         gdim( 0 ),
         gtag( 0 )
         {}
-    GMSHPoint(GMSHPoint const& p )
-        :
-        x( p.x ),
-        uv( p.uv ),
-        id ( p.id ),
-        onbdy( p.onbdy ),
-        parametric( p.parametric ),
-        gdim( p.gdim ),
-        gtag( p.gtag )
-        {}
+    GMSHPoint(GMSHPoint const& p ) = default;
+    GMSHPoint(GMSHPoint && p ) = default;
+    GMSHPoint& operator=( GMSHPoint const& ) = default;
+    GMSHPoint& operator=( GMSHPoint && ) = default;
 };
 struct GMSHElement
 {
@@ -156,6 +151,7 @@ struct GMSHElement
         {
             setPartition(worldcommrank,worldcommsize);
         }
+#if defined( FEELPP_HAS_GMSH_H )
     template<typename T>
     GMSHElement( T* ele, int n, int elementary, int physical )
         :
@@ -188,6 +184,7 @@ struct GMSHElement
           std::cout << "\n";
 #endif
         }
+#endif // FEELPP_HAS_GMSH_H
     void setPartition(rank_type worldcommrank, rank_type worldcommsize)
         {
             // maybe proc id not start to 0
@@ -219,23 +216,10 @@ struct GMSHElement
             }
         }
 
-   GMSHElement( GMSHElement const& g )
-    :
-        num( g.num ),
-        type( g.type ),
-        physical( g.physical ),
-        elementary( g.elementary ),
-        numPartitions( g.numPartitions ),
-        partition( g.partition ),
-        ghosts( g.ghosts ),
-        is_on_processor( g.is_on_processor ),
-        is_ghost( g.is_ghost ),
-        ghost_partition_id( g.ghost_partition_id ),
-        parent( g.parent ),
-        dom1( g.dom1 ), dom2( g.dom2 ),
-        numVertices( g.numVertices ),
-        indices( g.indices )
-        {}
+    GMSHElement( GMSHElement const& g ) = default;
+    GMSHElement( GMSHElement && g ) = default;
+    GMSHElement& operator=( GMSHElement const& ) = default;
+    GMSHElement& operator=( GMSHElement && ) = default;
 
     bool isOnProcessor() const { return is_on_processor; }
     bool isGhost() const { return is_ghost; }
@@ -273,7 +257,8 @@ struct GMSHElement
 
 
 };
-}
+} // detail
+#pragma GCC visibility pop
 /**
  * \class ImporterGmsh
  * \brief gmsh importer class
@@ -424,7 +409,7 @@ public:
     {
         M_scale = scale;
     }
-    
+
     void setVersion( std::string const& version )
     {
         M_version = version;
@@ -472,43 +457,43 @@ public:
 protected:
 
 private:
-    void readFromMemory( mesh_type* mesh );
-    void readFromFile( mesh_type* mesh );
+    FEELPP_NO_EXPORT void readFromMemory( mesh_type* mesh );
+    FEELPP_NO_EXPORT void readFromFile( mesh_type* mesh );
 
-    void addVertices( mesh_type* mesh, Feel::detail::GMSHElement const& elt,
-                      std::map<int, Feel::detail::GMSHPoint > const& gmshpts );
+    FEELPP_NO_EXPORT void addVertices( mesh_type* mesh, Feel::detail::GMSHElement const& elt,
+                                       std::map<int, Feel::detail::GMSHPoint > const& gmshpts );
 
-    void addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
-    void addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<1> );
-    void addPoint( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<2> );
-    void addPoint( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<3> );
+    FEELPP_NO_EXPORT void addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
+    FEELPP_NO_EXPORT void addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<1> );
+    FEELPP_NO_EXPORT void addPoint( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<2> );
+    FEELPP_NO_EXPORT void addPoint( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<3> );
 
-    void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
-    void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<1> );
-    void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<2> );
-    void addEdge( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<3> );
+    FEELPP_NO_EXPORT void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
+    FEELPP_NO_EXPORT void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<1> );
+    FEELPP_NO_EXPORT void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<2> );
+    FEELPP_NO_EXPORT void addEdge( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<3> );
 
-    void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
-    void addFace( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<1> );
-    void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<2> );
-    void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<3> );
+    FEELPP_NO_EXPORT void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
+    FEELPP_NO_EXPORT void addFace( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<1> );
+    FEELPP_NO_EXPORT void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<2> );
+    FEELPP_NO_EXPORT void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<3> );
 
-    void addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
-    void addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/ , mpl::int_<1> );
-    void addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/ , mpl::int_<2> );
-    void addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & /*__idGmshToFeel*/, mpl::int_<3> );
+    FEELPP_NO_EXPORT void addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
+    FEELPP_NO_EXPORT void addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/ , mpl::int_<1> );
+    FEELPP_NO_EXPORT void addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/ , mpl::int_<2> );
+    FEELPP_NO_EXPORT void addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & /*__idGmshToFeel*/, mpl::int_<3> );
 
-    void updateGhostCellInfoByUsingBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
+    FEELPP_NO_EXPORT void updateGhostCellInfoByUsingBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
                                                  std::vector<int> const& nbMsgToRecv );
 
-    void updateGhostCellInfoByUsingNonBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
+    FEELPP_NO_EXPORT void updateGhostCellInfoByUsingNonBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
                                                     std::vector<int> const& nbMsgToRecv );
 
 
 private:
 
     std::string M_version;
-    
+
     bool M_in_memory;
     std::map<int,int> M_n_vertices;
     //std::vector<int> M_n_b_vertices;
@@ -520,8 +505,9 @@ private:
     double M_scale;
     //std::map<int,int> itoii;
     //std::vector<int> ptseen;
+#if defined( FEELPP_HAS_GMSH_H )
     GModel* M_gmodel;
-
+#endif
 };
 
 
@@ -606,10 +592,16 @@ void
 ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 {
     DVLOG(2) << "visit("  << mesh_type::nDim << "D ) starts\n";
+
+#if defined( FEELPP_HAS_GMSH_H )
     if ( ( M_gmodel != 0 ) && ( M_in_memory == true ) )
         readFromMemory( mesh );
     else
         readFromFile( mesh );
+#else
+    LOG(WARNING) << "Gmsh is not available. Cannot read from memory Gmsh directly. Use file instead.";
+    readFromFile( mesh );
+#endif
 
     mesh->setNumVertices( std::accumulate( M_n_vertices.begin(), M_n_vertices.end(), 0,
                                            []( int lhs, std::pair<int,int> const& rhs )
@@ -623,6 +615,7 @@ template<typename MeshType>
 void
 ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
 {
+#if defined( FEELPP_HAS_GMSH_H )
     tic();
     LOG(INFO) << "Reading Msh from memory ";
     // get the number of vertices and index the vertices in a continuous
@@ -743,6 +736,9 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
     }
     LOG(INFO) << "Reading Msh from memory done";
     toc("read msh from memory");
+#else
+    LOG(WARNING) << "Gmsh library not available, cannot read mesh in memory ";
+#endif
 }
 template<typename MeshType>
 void
@@ -997,7 +993,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
               if(j == 0) physical = tag;
               else if(j == 1) elementary = tag;
               else if(version < 2.2 && j == 2) partition = tag;
-              else if(version >= 2.2 && j == 2 && numTags > 3) numPartitions = tag;
+              else if(version >= 2.2 && j == 2 && numTags > 3) { numPartitions = tag; ghosts.reserve( numPartitions-1 ); }
               else if(version >= 2.2 && j == 3) partition = tag-1;
               else if(j >= 4 && j < 4 + numPartitions - 1) ghosts.push_back((-tag)-1);
               else if(j == 3 + numPartitions && (numTags == 4 + numPartitions))
@@ -1007,10 +1003,9 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
                   __is >> dom2;
               }
           }
+          const char* ename;
+          numVertices = getInfoMSH(type,&ename);
 
-          CHECK(type != MSH_POLYG_ && type != MSH_POLYH_ && type != MSH_POLYG_B)
-              << "GMSH Element type " << type << " not supported by Feel++\n";
-          numVertices = MElement::getInfoMSH(type);
           CHECK(numVertices!=0) << "Unknown number of vertices for element type " << type << "\n";
 
           std::vector<int> indices(numVertices);
@@ -1064,8 +1059,9 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
             int numElems = header[1];
             int numTags = header[2];
             char const* name;
-            CHECK( type < MSH_NUM_TYPE ) << "Invalid GMSH element type " << type << "\n";
-            int numVertices = MElement::getInfoMSH(type,&name);
+
+            int numVertices = getInfoMSH(type,&name);
+
             CHECK( numVertices > 0 ) << "Unsupported element type " << name << "\n";
 
             unsigned int n = 1 + numTags + numVertices;
@@ -1084,6 +1080,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
                 int physical = (numTags > 0) ? data[1] : 0;
                 int elementary = (numTags > 1) ? data[2] : 0;
                 rank_type numPartitions = (version >= 2.2 && numTags > 3) ? data[3] : 1;
+                ghosts.reserve( numPartitions-1 );
                 rank_type partition = (version < 2.2 && numTags > 2) ? data[3]-1 :
                     (version >= 2.2 && numTags > 3) ? data[4]-1 : theCurrentPartitionId;
                 if(numPartitions > 1)
@@ -1134,13 +1131,14 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         CHECK( numElementsPartial == numElements ) << "Invalid number of elements read from GMSH, read " << numElementsPartial << " element but expected " << numElements << "\n";
     } // binary
 
+#if defined( FEELPP_HAS_GMSH_H )
     for ( auto const& it : __gt )
     {
         const char* name;
-        MElement::getInfoMSH( it.first, &name );
+        getInfoMSH( it.first, &name );
         LOG(INFO) << "Read " << it.second << " " << name << " elements\n";
     }
-
+#endif
     if ( binary )
         __is >> __buf;
 
