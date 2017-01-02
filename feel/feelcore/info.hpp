@@ -27,6 +27,7 @@
 #ifndef FEELPP_INFO_HPP
 #define FEELPP_INFO_HPP 1
 
+#include <feel/feelcore/feelmacros.hpp>
 
 /**
  * Namespace for general FEEL functions.
@@ -39,7 +40,7 @@ namespace Feel
  * \author Christophe Prud'homme
  *
  */
-class Info
+class FEELPP_EXPORT Info
 {
 public:
     Info() = delete;

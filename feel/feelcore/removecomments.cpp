@@ -41,7 +41,7 @@
 
 namespace Feel 
 {
-
+#pragma GCC visibility push(hidden)
 namespace spirit = boost::spirit;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -114,8 +114,9 @@ struct strip_comments_grammar : spirit::qi::grammar<Iterator>
 
     spirit::qi::rule<Iterator> start;
 };
+#pragma GCC visibility pop
 
-std::string
+FEELPP_EXPORT std::string
 removeComments( std::string str )
 {
     using namespace spirit;

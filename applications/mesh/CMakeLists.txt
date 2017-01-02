@@ -23,6 +23,8 @@
 #
 
 INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
+
+if(NOT FEELPP_MINIMAL_BUILD)
 feelpp_add_application( mesh3d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 CONVEX=Simplex)
 feelpp_add_application( mesh2d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 CONVEX=Simplex) # LINK_LIBRARIES metis)
 feelpp_add_application( mesh1d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=1 CONVEX=Simplex)
@@ -30,9 +32,12 @@ feelpp_add_application( mesh3d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELP
 feelpp_add_application( mesh2d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 CONVEX=Hypercube)
 feelpp_add_application( mesh1d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=1 CONVEX=Hypercube)
 
+
+
 feelpp_add_application( mesh_partitioner SRCS mesh_partitioner.cpp INCLUDE_IN_ALL )
-install(TARGETS feelpp_mesh_partitioner 
-        RUNTIME DESTINATION bin/ 
+install(TARGETS feelpp_mesh_partitioner
+        RUNTIME DESTINATION bin/
         COMPONENT Bin)
 
 feelpp_add_application( mesh_submesh SRCS submesh.cpp INCLUDE_IN_ALL )
+endif(NOT FEELPP_MINIMAL_BUILD)

@@ -33,6 +33,7 @@
 
 namespace Feel
 {
+#pragma GCC visibility push(hidden)
 /// \cond DETAIL
 namespace details
 {
@@ -402,6 +403,6 @@ const int16_type tetra<Order>::__f2e_orientation[12] =
 
 } // details
 /// \endcond
-
+#pragma GCC visibility pop
 }
 #endif /* __SimplexOrdering_H */

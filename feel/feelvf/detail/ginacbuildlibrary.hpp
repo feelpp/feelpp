@@ -58,21 +58,21 @@ namespace detail
  * - Genereate library (compilation+link) if necessary
  * - Store in Singleton GiNaC::FUNCP_CUBA
  */
-void
+FEELPP_EXPORT void
 ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::string const& exprDesc, std::string const& filename,WorldComm const& world,
                    boost::shared_ptr<GiNaC::FUNCP_CUBA> & cfun );
 
 /**
  * @brief get a filename for ginac lib define by use a singleton counter
  */
-std::string
+FEELPP_EXPORT std::string
 ginacGetDefaultFileName( std::string const& exprDesc, std::string const& dirLibExpr = "" );
 
 
 } // namespace detail
 } // namespace vf
 
-class GinacExprManagerImpl :
+class FEELPP_NO_EXPORT GinacExprManagerImpl :
         public std::map<std::string, boost::shared_ptr<GiNaC::FUNCP_CUBA> > ,
         public boost::noncopyable
 {
@@ -84,7 +84,7 @@ public:
 
 typedef Feel::Singleton<GinacExprManagerImpl> GinacExprManager;
 
-struct GinacExprManagerDeleterImpl
+struct FEELPP_NO_EXPORT  GinacExprManagerDeleterImpl
 {
     void operator()() const
         {
@@ -96,7 +96,7 @@ struct GinacExprManagerDeleterImpl
 typedef Feel::Singleton<GinacExprManagerDeleterImpl> GinacExprManagerDeleter;
 
 
-class GinacExprManagerDefaultFileNameImpl :
+class FEELPP_NO_EXPORT  GinacExprManagerDefaultFileNameImpl :
         public std::map<std::string, std::string >,
         public boost::noncopyable
 {
@@ -108,7 +108,7 @@ public:
 
 typedef Feel::Singleton<GinacExprManagerDefaultFileNameImpl> GinacExprManagerDefaultFileName;
 
-struct GinacExprManagerDefaultFileNameDeleterImpl
+struct FEELPP_NO_EXPORT GinacExprManagerDefaultFileNameDeleterImpl
 {
     void operator()() const
         {
