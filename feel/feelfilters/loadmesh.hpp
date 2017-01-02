@@ -219,7 +219,7 @@ BOOST_PARAMETER_FUNCTION(
     }
     if ( mesh_name.extension() == ".med"  )
     {
-#if defined(FEEPP_HAS_GMSH_HAS_MED) && defined(FEELPP_HAS_HDF5)
+#if defined(FEEPP_HAS_GMSH_HAS_MED)
         Feel::cout << "[loadMesh] Loading mesh in format med: " << fs::system_complete(mesh_name) << std::endl;
         auto m = loadMEDMesh( _mesh=mesh,
                                _filename=mesh_name.string(),
@@ -312,6 +312,6 @@ BOOST_PARAMETER_FUNCTION(
 
 } // Feel namespace
 
-#endif
+#endif /* FEELPP_HAS_GMSH */
 
 #endif /* FEELPP_LOADMESH_HPP */
