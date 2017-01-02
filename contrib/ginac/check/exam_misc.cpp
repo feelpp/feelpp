@@ -3,7 +3,7 @@
  */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -96,7 +96,7 @@ static unsigned exam_sqrfree()
 	ex e1, e2;
 	
 	e1 = (1+x)*pow((2+x),2)*pow((3+x),3)*pow((4+x),4);
-	e2 = sqrfree(expand(e1),lst(x));
+	e2 = sqrfree(expand(e1),lst{x});
 	if (e1 != e2) {
 		clog << "sqrfree(expand(" << e1 << ")) erroneously returned "
 		     << e2 << endl;
@@ -110,19 +110,19 @@ static unsigned exam_sqrfree()
 		     << e2 << endl;
 		++result;
 	}
-	e2 = sqrfree(expand(e1),lst(x));
+	e2 = sqrfree(expand(e1),lst{x});
 	if (e1 != e2) {
 		clog << "sqrfree(expand(" << e1 << "),[x]) erroneously returned "
 		     << e2 << endl;
 		++result;
 	}
-	e2 = sqrfree(expand(e1),lst(y));
+	e2 = sqrfree(expand(e1),lst{y});
 	if (e1 != e2) {
 		clog << "sqrfree(expand(" << e1 << "),[y]) erroneously returned "
 		     << e2 << endl;
 		++result;
 	}
-	e2 = sqrfree(expand(e1),lst(x,y));
+	e2 = sqrfree(expand(e1),lst{x,y});
 	if (e1 != e2) {
 		clog << "sqrfree(expand(" << e1 << "),[x,y]) erroneously returned "
 		     << e2 << endl;
@@ -164,7 +164,7 @@ static unsigned exam_operator_semantics()
 		++result;
 	}
 	
-	// Prefix/postfix increment/decrement behaviour:
+	// Prefix/postfix increment/decrement behavior:
 	e1 = 7; e2 = 4;
 	i1 = 7; i2 = 4;
 	e1 = (--e2 = 2)++;
@@ -220,7 +220,7 @@ static unsigned exam_subs()
 	}
 
 	// And this used to fail in GiNaC 1.5.8 because it first substituted
-	// exp(x) -> exp(log(x)) -> x, and then substitued again x -> log(x)
+	// exp(x) -> exp(log(x)) -> x, and then substituted again x -> log(x)
 	e1 = exp(x);
 	e2 = e1.subs(x == log(x));
 	if (!e2.is_equal(x)) {

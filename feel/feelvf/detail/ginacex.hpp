@@ -36,7 +36,7 @@ namespace vf
  * @see
  */
 template<int Order = 2>
-class GinacEx : public Feel::vf::GiNaCBase
+class FEELPP_EXPORT GinacEx : public Feel::vf::GiNaCBase
 {
 public:
 
@@ -107,7 +107,7 @@ public:
             M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::current_path()/filenameExpanded).string();
 
             DVLOG(2) << "Ginac constructor with expression_type \n";
-            GiNaC::lst exprs(fun);
+            GiNaC::lst exprs({fun});
             GiNaC::lst syml;
             std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
 
@@ -273,10 +273,11 @@ public:
             }
         }
 
-    template<typename CTX>
-    void updateContext( CTX const& ctx )
+    template<typename ... CTX>
+    void updateContext( CTX const& ... ctx )
         {
-            update( ctx->gmContext() );
+            boost::fusion::vector<CTX...> ctxvec( ctx... );
+            update( boost::fusion::at_c<0>( ctxvec )->gmContext() );
         }
 
     value_type
@@ -345,7 +346,7 @@ private:
     std::string M_exprDesc;
 };
 template<int Order>
-std::ostream&
+FEELPP_EXPORT std::ostream&
 operator<<( std::ostream& os, GinacEx<Order> const& e )
 {
     os << e.expression();
@@ -353,13 +354,13 @@ operator<<( std::ostream& os, GinacEx<Order> const& e )
 }
 
 template<int Order>
-std::string
+FEELPP_EXPORT std::string
 str( GinacEx<Order> && e )
 {
     return str( std::forward<GinacEx<Order>>(e).expression() );
 }
 template<int Order>
-std::string
+FEELPP_EXPORT std::string
 str( GinacEx<Order> const& e )
 {
     return str( e.expression() );

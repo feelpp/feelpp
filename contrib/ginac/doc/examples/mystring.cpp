@@ -14,7 +14,7 @@ class mystring : public basic
 	GINAC_DECLARE_REGISTERED_CLASS(mystring, basic)
 public:
 	mystring(const string &s);
-	ex eval(int level) const;
+	ex eval(int level) const override;
 private:
 	string str;
 

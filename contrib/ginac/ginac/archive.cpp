@@ -3,7 +3,7 @@
  *  Archiving of GiNaC expressions. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include "tostring.h"
 #include "version.h"
 
 #include <iostream>
@@ -55,7 +54,7 @@ archive_node_id archive::add_node(const archive_node &n)
 {
 	// Look if expression is known to be in some node already.
 	if (n.has_ex()) {
-		mapit i = exprtable.find(n.get_ex());
+		auto i = exprtable.find(n.get_ex());
 		if (i != exprtable.end())
 			return i->second;
 		nodes.push_back(n);
@@ -84,7 +83,7 @@ ex archive::unarchive_ex(const lst &sym_lst, const char *name) const
 	// Find root node
 	std::string name_string = name;
 	archive_atom id = atomize(name_string);
-	std::vector<archived_ex>::const_iterator i = exprs.begin(), iend = exprs.end();
+	auto i = exprs.begin(), iend = exprs.end();
 	while (i != iend) {
 		if (i->name == id)
 			goto found;
@@ -268,11 +267,11 @@ std::istream &operator>>(std::istream &is, archive &ar)
 	is.get(c1); is.get(c2); is.get(c3); is.get(c4);
 	if (c1 != 'G' || c2 != 'A' || c3 != 'R' || c4 != 'C')
 		throw (std::runtime_error("not a GiNaC archive (signature not found)"));
-	static const unsigned max_version = GINACLIB_ARCHIVE_VERSION;
-	static const unsigned min_version = GINACLIB_ARCHIVE_VERSION - GINACLIB_ARCHIVE_AGE;
+	constexpr unsigned max_version = GINACLIB_ARCHIVE_VERSION;
+	constexpr unsigned min_version = GINACLIB_ARCHIVE_VERSION - GINACLIB_ARCHIVE_AGE;
 	unsigned version = read_unsigned(is);
 	if ((version > max_version) || (version < min_version))
-		throw (std::runtime_error("archive version " + ToString(version) + " cannot be read by this GiNaC library (which supports versions " + ToString(min_version) + " thru " + ToString(max_version)));
+		throw (std::runtime_error("archive version " + std::to_string(version) + " cannot be read by this GiNaC library (which supports versions " + std::to_string(min_version) + " thru " + std::to_string(max_version)));
 
 	// Read atoms
 	unsigned num_atoms = read_unsigned(is);
@@ -320,7 +319,7 @@ archive_atom archive::atomize(const std::string &s) const
 const std::string &archive::unatomize(archive_atom id) const
 {
 	if (id >= atoms.size())
-		throw (std::range_error("archive::unatomizee(): atom ID out of range"));
+		throw (std::range_error("archive::unatomize(): atom ID out of range"));
 
 	return atoms[id];
 }
@@ -361,7 +360,7 @@ archive_node::archive_node_cit
 		archive_node::find_first(const std::string &name) const
 {	
 	archive_atom name_atom = a.atomize(name);
-	for (archive_node_cit i=props.begin(); i!=props.end(); ++i)
+	for (auto i=props.begin(); i!=props.end(); ++i)
 		if (i->name == name_atom)
 			return i;
 	return props.end();;
@@ -371,7 +370,7 @@ archive_node::archive_node_cit
 		archive_node::find_last(const std::string &name) const
 {
 	archive_atom name_atom = a.atomize(name);
-	for (archive_node_cit i=props.end(); i!=props.begin();) {
+	for (auto i=props.end(); i!=props.begin();) {
 		--i;
 		if (i->name == name_atom)
 			return i;
@@ -405,7 +404,7 @@ void archive_node::add_ex(const std::string &name, const ex &value)
 bool archive_node::find_bool(const std::string &name, bool &ret, unsigned index) const
 {
 	archive_atom name_atom = a.atomize(name);
-	archive_node_cit i = props.begin(), iend = props.end();
+	auto i = props.begin(), iend = props.end();
 	unsigned found_index = 0;
 	while (i != iend) {
 		if (i->type == PTYPE_BOOL && i->name == name_atom) {
@@ -423,7 +422,7 @@ bool archive_node::find_bool(const std::string &name, bool &ret, unsigned index)
 bool archive_node::find_unsigned(const std::string &name, unsigned &ret, unsigned index) const
 {
 	archive_atom name_atom = a.atomize(name);
-	archive_node_cit i = props.begin(), iend = props.end();
+	auto i = props.begin(), iend = props.end();
 	unsigned found_index = 0;
 	while (i != iend) {
 		if (i->type == PTYPE_UNSIGNED && i->name == name_atom) {
@@ -441,7 +440,7 @@ bool archive_node::find_unsigned(const std::string &name, unsigned &ret, unsigne
 bool archive_node::find_string(const std::string &name, std::string &ret, unsigned index) const
 {
 	archive_atom name_atom = a.atomize(name);
-	archive_node_cit i = props.begin(), iend = props.end();
+	auto i = props.begin(), iend = props.end();
 	unsigned found_index = 0;
 	while (i != iend) {
 		if (i->type == PTYPE_STRING && i->name == name_atom) {
@@ -465,7 +464,7 @@ void archive_node::find_ex_by_loc(archive_node_cit loc, ex &ret, lst &sym_lst)
 bool archive_node::find_ex(const std::string &name, ex &ret, lst &sym_lst, unsigned index) const
 {
 	archive_atom name_atom = a.atomize(name);
-	archive_node_cit i = props.begin(), iend = props.end();
+	auto i = props.begin(), iend = props.end();
 	unsigned found_index = 0;
 	while (i != iend) {
 		if (i->type == PTYPE_NODE && i->name == name_atom) {
@@ -483,7 +482,7 @@ bool archive_node::find_ex(const std::string &name, ex &ret, lst &sym_lst, unsig
 const archive_node &archive_node::find_ex_node(const std::string &name, unsigned index) const
 {
 	archive_atom name_atom = a.atomize(name);
-	archive_node_cit i = props.begin(), iend = props.end();
+	auto i = props.begin(), iend = props.end();
 	unsigned found_index = 0;
 	while (i != iend) {
 		if (i->type == PTYPE_NODE && i->name == name_atom) {
@@ -500,12 +499,12 @@ const archive_node &archive_node::find_ex_node(const std::string &name, unsigned
 void archive_node::get_properties(propinfovector &v) const
 {
 	v.clear();
-	archive_node_cit i = props.begin(), iend = props.end();
+	auto i = props.begin(), iend = props.end();
 	while (i != iend) {
 		property_type type = i->type;
 		std::string name = a.unatomize(i->name);
 
-		propinfovector::iterator a = v.begin(), aend = v.end();
+		auto a = v.begin(), aend = v.end();
 		bool found = false;
 		while (a != aend) {
 			if (a->type == type && a->name == name) {
@@ -551,7 +550,7 @@ ex archive_node::unarchive(lst &sym_lst) const
 }
 
 int unarchive_table_t::usecount = 0;
-unarchive_map_t* unarchive_table_t::unarch_map = 0;
+unarchive_map_t* unarchive_table_t::unarch_map = nullptr;
 
 unarchive_table_t::unarchive_table_t()
 {
@@ -626,7 +625,7 @@ void archive::printraw(std::ostream &os) const
 	// Dump expressions
 	os << "Expressions:\n";
 	{
-		std::vector<archived_ex>::const_iterator i = exprs.begin(), iend = exprs.end();
+		auto i = exprs.begin(), iend = exprs.end();
 		unsigned index = 0;
 		while (i != iend) {
 			os << " " << index << " \"" << unatomize(i->name) << "\" root node " << i->root << std::endl;
@@ -638,7 +637,7 @@ void archive::printraw(std::ostream &os) const
 	// Dump nodes
 	os << "Nodes:\n";
 	{
-		std::vector<archive_node>::const_iterator i = nodes.begin(), iend = nodes.end();
+		auto i = nodes.begin(), iend = nodes.end();
 		archive_node_id id = 0;
 		while (i != iend) {
 			os << " " << id << " ";
@@ -658,7 +657,7 @@ void archive_node::printraw(std::ostream &os) const
 		os << "\n";
 
 	// Dump properties
-	archive_node_cit i = props.begin(), iend = props.end();
+	auto i = props.begin(), iend = props.end();
 	while (i != iend) {
 		os << "  ";
 		switch (i->type) {
@@ -671,14 +670,6 @@ void archive_node::printraw(std::ostream &os) const
 		os << " \"" << a.unatomize(i->name) << "\" " << i->value << std::endl;
 		i++;
 	}
-}
-
-/** Create a dummy archive.  The intention is to fill archive_node's default
- *  ctor, which is currently a Cint-requirement. */
-archive* archive_node::dummy_ar_creator()
-{
-	static archive* some_ar = new archive;
-	return some_ar;
 }
 
 

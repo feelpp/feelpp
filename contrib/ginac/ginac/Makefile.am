@@ -9,7 +9,7 @@ libginac_la_SOURCES = add.cpp archive.cpp basic.cpp clifford.cpp color.cpp \
   operators.cpp power.cpp registrar.cpp relational.cpp remember.cpp \
   pseries.cpp print.cpp symbol.cpp symmetry.cpp tensor.cpp \
   utils.cpp wildcard.cpp \
-  remember.h tostring.h utils.h crc32.h hash_seed.h compiler.h \
+  remember.h utils.h crc32.h hash_seed.h \
   parser/parse_binop_rhs.cpp \
   parser/parser.cpp \
   parser/parse_context.cpp \
@@ -21,7 +21,9 @@ libginac_la_SOURCES = add.cpp archive.cpp basic.cpp clifford.cpp color.cpp \
 polynomial/mod_gcd.cpp \
 polynomial/cra_garner.cpp \
 polynomial/gcd_euclid.h \
+polynomial/remainder.cpp \
 polynomial/remainder.h \
+polynomial/normalize.cpp \
 polynomial/normalize.h \
 polynomial/upoly.h \
 polynomial/ring_traits.h \
@@ -56,6 +58,7 @@ polynomial/smod_helpers.h \
 polynomial/debug.h
 
 libginac_la_LDFLAGS = -version-info $(LT_VERSION_INFO)
+libginac_la_CPPFLAGS = -DLIBEXECDIR='"$(libexecdir)/"'
 libginac_la_LIBADD = $(DL_LIBS)
 ginacincludedir = $(includedir)/ginac
 ginacinclude_HEADERS = ginac.h add.h archive.h assertion.h basic.h class_info.h \
@@ -63,13 +66,14 @@ ginacinclude_HEADERS = ginac.h add.h archive.h assertion.h basic.h class_info.h 
   exprseq.h fail.h factor.h fderivative.h flags.h function.h hash_map.h idx.h indexed.h \
   inifcns.h integral.h lst.h matrix.h mul.h ncmul.h normal.h numeric.h operators.h \
   power.h print.h pseries.h ptr.h registrar.h relational.h structure.h \
-  symbol.h symmetry.h tensor.h version.h wildcard.h \
+  symbol.h symmetry.h tensor.h version.h wildcard.h compiler.h \
   parser/parser.h \
   parser/parse_context.h
 
-EXTRA_DIST = version.h.in function.hppy function.cppy
+EXTRA_DIST = function.py function.hppy function.cppy CMakeLists.txt
 
 BUILT_SOURCES = function.cpp function.h
+EXTRA_DIST += function.cpp function.h
 
 $(srcdir)/function.cpp: function.cppy function.py
 	$(PYTHON) $(srcdir)/function.py -o $@ $<

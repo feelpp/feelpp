@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 maxargs = 14
-methods = "eval evalf conjugate real_part imag_part derivative power series print".split()
+methods = "eval evalf conjugate real_part imag_part expand derivative expl_derivative power series info print".split()
 
 import sys, os, optparse
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))

@@ -1,7 +1,7 @@
 PREREQUISITES
 =============
 
-1. A decent ANSI-compliant C++ compiler. GCC (version >= 4.4) is recommended.
+1. A decent ISO C++-11 compiler. GCC (version >= 4.9) is recommended.
 2. CLN library (http://www.ginac.de/CLN), version >= 1.2.2
 3. CMake, version >= 2.8 (version 2.6.x might work too).
 4. Python, version >= 2.6
@@ -22,7 +22,7 @@ To install from a source distribution:
 
 1) Unpack the tarball
 
- $ tar xaf GiNaC-x.y.z.tar.bz2
+ $ tar xaf ginac-x.y.z.tar.bz2
 
 2) Create a build directory
 
@@ -31,7 +31,7 @@ To install from a source distribution:
 3) Run CMake to generate Makefile's
 
  $ cd ginac_build
- $ cmake ../GiNaC-x.y.z
+ $ cmake ../ginac-x.y.z
 
 4) Actually build GiNaC
 

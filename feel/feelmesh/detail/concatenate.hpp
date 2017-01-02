@@ -27,6 +27,8 @@
 namespace Feel
 {
 
+#pragma GCC visibility push(hidden)
+
 namespace detail
 {
 
@@ -53,9 +55,6 @@ concatenate_entities( boost::shared_ptr<ContainerType>& elts, IteratorType it, A
     concatenate_entities( elts, args... );
 }
 
-template<typename IteratorType, typename ...Args>
-using concatenate_impl_t = ext_entities_from_iterator_t<IteratorType>;
-
 
 template<typename IteratorType, typename ...Args>
 ext_entities_from_iterator_t<IteratorType>
@@ -75,6 +74,6 @@ concatenate_impl( IteratorType it, Args... args )
 }
 
 } // detail
-
+#pragma GCC visibility pop
 }
 #endif

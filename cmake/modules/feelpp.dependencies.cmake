@@ -6,10 +6,10 @@
 
 # define the feel++ c++ standard level, it used to be hardcoded, this way we can
 # have builds to test the different standard flavors
-if (NOT DEFINED FEELPP_STD_CPP ) 
+if (NOT DEFINED FEELPP_STD_CPP )
   set(FEELPP_STD_CPP "14") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 1z")
 endif()
-if (NOT DEFINED FEELPP_STDLIB_CPP AND NOT APPLE) 
+if (NOT DEFINED FEELPP_STDLIB_CPP AND NOT APPLE)
   set(FEELPP_STDLIB_CPP "stdc++") # DOC STRING "define feel++ standard c++ library (default libstdc++), values can be : libc++ libstdc++")
 elseif( NOT DEFINED FEELPP_STDLIB_CPP )
   set(FEELPP_STDLIB_CPP "c++") # DOC STRING "define feel++ standard c++ library (default libstdc++), values can be : libc++ libstdc++")
@@ -70,7 +70,7 @@ IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
       else()
         message(ERROR "[feelpp] ${CXXABI_H}")
       endif()
-      
+
     ENDIF()
   endif()
 ENDIF()
@@ -79,6 +79,8 @@ ENDIF()
 IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "XL") )
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qlanglvl=extc1x" )
 endif()
+
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden") # -fvisibility=hidden" )
 
 # Sometimes relinking libraries in contrib does not work becaus of bad paths
 # A discussion has been opened on the bugtracker of CMake: https://cmake.org/Bug/print_bug_page.php?bug_id=13934
@@ -344,12 +346,12 @@ endif()
 
 #
 # Intel MKL
-# 
+#
 OPTION( FEELPP_ENABLE_MKL "Enable the Intel MKL library" OFF )
 if ( FEELPP_ENABLE_MKL )
   find_package(MKL)
   if ( MKL_FOUND )
-    
+
     message(STATUS "[feelpp] MKL Includes: ${MKL_INCLUDE_DIRS}")
     message(STATUS "[feelpp] MKL Libraries: ${MKL_LIBRARIES}")
     set(FEELPP_HAS_MKL 1)
@@ -383,7 +385,7 @@ if ( FEELPP_ENABLE_MKL )
 endif(FEELPP_ENABLE_MKL)
 
 # HDF5
-# On debian, 
+# On debian,
 # - do not install hdf5-helpers, otherwise it will pick the serial version by default
 # - install only the libhdf5-openmpi-dev package
 
@@ -394,8 +396,8 @@ else()
 endif()
 
 if ( FEELPP_ENABLE_HDF5 )
-  find_package(HDF5)
-  if( HDF5_FOUND ) 
+  find_package(HDF5 COMPONENTS C)
+  if( HDF5_FOUND )
     if( HDF5_IS_PARALLEL )
         message(STATUS "[feelpp] HDF5 - Headers ${HDF5_INCLUDE_DIRS}" )
         message(STATUS "[feelpp] HDF5 - Libraries ${HDF5_LIBRARIES}" )
@@ -406,9 +408,47 @@ if ( FEELPP_ENABLE_HDF5 )
     else()
         MESSAGE(STATUS "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
     endif()
+
+    # check HDF5 version
+    if(NOT HDF5_VERSION)
+      set( HDF5_VERSION "" )
+      foreach( _dir IN LISTS HDF5_INCLUDE_DIRS )
+        foreach(_hdr "${_dir}/H5pubconf.h" "${_dir}/H5pubconf-64.h" "${_dir}/H5pubconf-32.h")
+          if( EXISTS "${_hdr}" )
+    	    #MESSAGE(STATUS "_hdr=${_hdr}")
+            file( STRINGS "${_hdr}"
+                HDF5_VERSION_DEFINE
+                REGEX "^[ \t]*#[ \t]*define[ \t]+H5_VERSION[ \t]+" )
+	        #MESSAGE(STATUS "HDF5_VERSION_DEFINE=${HDF5_VERSION_DEFINE}")
+            if( "${HDF5_VERSION_DEFINE}" MATCHES
+                "H5_VERSION[ \t]+\"([0-9]+\\.[0-9]+\\.[0-9]+)(-patch([0-9]+))?\"" )
+	          set( HDF5_VERSION "${CMAKE_MATCH_1}" )
+              if( CMAKE_MATCH_3 )
+                set( HDF5_VERSION ${HDF5_VERSION}.${CMAKE_MATCH_3})
+              endif()
+            endif()
+	        #MESSAGE(STATUS "HDF5_VERSION=${HDF5_VERSION}")
+            unset(HDF5_VERSION_DEFINE)
+          endif()
+        endforeach()
+      endforeach()
+    endif(NOT HDF5_VERSION)
+
+    STRING (REGEX MATCHALL "[0-9]+" _versionComponents "${HDF5_VERSION}")
+    # MESSAGE(STATUS "HDF5_VERSION=${HDF5_VERSION}")
+    LIST(GET _versionComponents 0 HDF_VERSION_MAJOR_REF)
+    LIST(GET _versionComponents 1 HDF_VERSION_MINOR_REF)
+    LIST(GET _versionComponents 2 HDF_VERSION_RELEASE_REF)
+    SET(HDF_VERSION_REF "${HDF5_VERSION}")
+
+    IF (NOT HDF_VERSION_MAJOR_REF EQUAL 1 OR NOT HDF_VERSION_MINOR_REF EQUAL 8)
+      MESSAGE(STATUS "[feelpp] HDF5 version is ${HDF_VERSION_REF}")
+    ENDIF()
+
   else()
     MESSAGE(STATUS "[feelpp] no HDF5 found")
   endif()
+
 endif(FEELPP_ENABLE_HDF5)
 
 
@@ -465,11 +505,11 @@ if(Boost_FOUND)
       add_definitions(-DBOOST_PP_VARIADICS=0)
       message(STATUS "[feelpp] added -DBOOST_PP_VARIADICS=0" )
     ENDIF()
-    IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "59")
-      add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE=1)
-      message(STATUS "[feelpp] added -DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE=1" )
-    endif()
   ENDIF()
+  IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "59")
+    add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE=1)
+    message(STATUS "[feelpp] added -DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE=1" )
+  endif()
 else()
   message(STATUS "[feelpp] Please check your boost version - Should be at least ${BOOST_MIN_VERSION}")
 endif()
@@ -549,10 +589,27 @@ if ( FEELPP_ENABLE_NT2 )
   SET(FEELPP_LIBRARIES nt2  ${FEELPP_LIBRARIES}  )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NT2" )
   message(STATUS "[feelpp] nt2 is enabled" )
-  
+
 endif( FEELPP_ENABLE_NT2 )
 
 if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
+
+  # Gflags
+  set(GFLAGS_IS_SUBPROJECT TRUE)
+  set(GFLAGS_NAMESPACE "google;gflags")
+  INCLUDE_DIRECTORIES(${FEELPP_BINARY_DIR}/contrib/gflags/include ${FEELPP_BINARY_DIR}/contrib/gflags/include/gflags)
+  add_subdirectory(contrib/gflags)
+  SET(FEELPP_LIBRARIES feelpp_gflags ${FEELPP_LIBRARIES})
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} contrib/GFlags" )
+  # for GLog
+  set(gflags_LIBRARIES feelpp_gflags)
+  set(gflags_FOUND 1)
+
+  # GLog
+  INCLUDE_DIRECTORIES(${FEELPP_BINARY_DIR}/contrib/glog/ ${FEELPP_SOURCE_DIR}/contrib/glog/src)
+  add_subdirectory(contrib/glog)
+  SET(FEELPP_LIBRARIES feelpp_glog ${FEELPP_LIBRARIES})
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} contrib/GLog" )
 
   #
   # cln and ginac
@@ -567,7 +624,7 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   #SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
   SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
   set(DL_LIBS ${CMAKE_DL_LIBS})
-  
+
 endif()
 
 if(FEELPP_MINIMAL_BUILD)
@@ -636,6 +693,12 @@ endif()
 #
 if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
   FIND_PACKAGE(Eigen3)
+  MESSAGE(STATUS "Eigen3 system found:")
+  MESSAGE("EIGEN_INCLUDE_DIR=${EIGEN_INCLUDE_DIR}")
+  MESSAGE("EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
+  MESSAGE(STATUS "Adding unsupported headers to EIGEN3_INCLUDE_DIR:")
+  set( EIGEN3_INCLUDE_DIR ${EIGEN3_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR}/unsupported)
+  MESSAGE("EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
 endif()
 if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
@@ -719,42 +782,42 @@ if ( FEELPP_ENABLE_DDT )
 endif( FEELPP_ENABLE_DDT )
 
 # google gflags
-find_package(GFLAGS REQUIRED)
+#find_package(GFLAGS REQUIRED)
 
-INCLUDE_DIRECTORIES( ${GFLAGS_INCLUDE_DIR} )
+#INCLUDE_DIRECTORIES( ${GFLAGS_INCLUDE_DIR} )
 
-set(_paths "")
-set(_names "")
-feelpp_split_libs(${GFLAGS_LIBRARIES} _names _paths)
-SET(FEELPP_LIBRARIES ${_names} ${FEELPP_LIBRARIES})
-link_directories(${_paths})
-unset(_paths)
-unset(_names)
+# set(_paths "")
+# set(_names "")
+# feelpp_split_libs(${GFLAGS_LIBRARIES} _names _paths)
+# SET(FEELPP_LIBRARIES ${_names} ${FEELPP_LIBRARIES})
+# link_directories(${_paths})
+# unset(_paths)
+# unset(_names)
 
-if ( ${GFLAGS_INCLUDE_DIR} MATCHES "/contrib/" )
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GFLAGS/Contrib" )
-else()
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GFLAGS/System" )
-endif()
+# if ( ${GFLAGS_INCLUDE_DIR} MATCHES "/contrib/" )
+#   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GFLAGS/Contrib" )
+# else()
+#   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GFLAGS/System" )
+# endif()
 
-# google glog
-find_package(GLOG REQUIRED)
+# # google glog
+# find_package(GLOG REQUIRED)
 
-INCLUDE_DIRECTORIES( ${GLOG_INCLUDE_DIR} )
+# INCLUDE_DIRECTORIES( ${GLOG_INCLUDE_DIR} )
 
-set(_paths "")
-set(_names "")
-feelpp_split_libs(${GLOG_LIBRARIES} _names _paths)
-SET(FEELPP_LIBRARIES ${_names} ${FEELPP_LIBRARIES})
-link_directories(${_paths})
-unset(_paths)
-unset(_names)
+# set(_paths "")
+# set(_names "")
+# feelpp_split_libs(${GLOG_LIBRARIES} _names _paths)
+# SET(FEELPP_LIBRARIES ${_names} ${FEELPP_LIBRARIES})
+# link_directories(${_paths})
+# unset(_paths)
+# unset(_names)
 
-if ( ${GLOG_INCLUDE_DIR} MATCHES "/contrib/" )
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLOG/Contrib" )
-else()
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLOG/System" )
-endif()
+# if ( ${GLOG_INCLUDE_DIR} MATCHES "/contrib/" )
+#   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLOG/Contrib" )
+# else()
+#   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLOG/System" )
+# endif()
 
 
 # xml
@@ -831,7 +894,7 @@ if(FEELPP_ENABLE_PARMETIS)
     $ENV{PETSC_DIR}/lib
     $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     )
-  
+
   IF( PARMETIS_LIBRARY )
     message(STATUS "[feelpp] Parmetis: ${PARMETIS_LIBRARY}" )
     SET(FEELPP_LIBRARIES ${PARMETIS_LIBRARY} ${FEELPP_LIBRARIES})
@@ -877,7 +940,7 @@ if ( NOT GFORTRAN_LIBRARY )
     /opt/local/lib
     /usr/lib/gcc/x86_64-linux-gnu/
     PATH_SUFFIXES
-    gcc5 gcc49 gcc48 gcc47 gcc46 gcc45 gcc44 4.7 4.6 4.5 4.4
+    gcc6 gcc5 gcc49 gcc48 gcc47 gcc46 gcc45 gcc44 4.7 4.6 4.5 4.4
     )
 endif()
 
@@ -936,7 +999,7 @@ if(FEELPP_ENABLE_AMD)
     $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     $ENV{SUITESPARSE_DIR}/lib
     )
-  
+
   IF ( AMD_LIBRARY )
     SET(FEELPP_LIBRARIES  ${AMD_LIBRARY} ${FEELPP_LIBRARIES})
   endif()
@@ -1147,7 +1210,7 @@ if ( FEELPP_ENABLE_VTK )
     # #  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{PARAVIEW_DIR}/Modules/")
     # # endif()
     # MESSAGE("CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
-    
+
     # First try to find ParaView
     # FIND_PACKAGE(ParaView QUIET
     #    COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
@@ -1181,7 +1244,7 @@ if ( FEELPP_ENABLE_VTK )
           set(FEELPP_VTK_INSITU_ENABLED 1)
           message(STATUS "In-situ visualisation enabled (vtkPVCatalyst, vtkPVPythonCatalyst).")
         ENDIF()
-        
+
         # Mark VTK and ParaView as available
         set(FEELPP_HAS_VTK 1)
         set(FEELPP_HAS_PARAVIEW 1)
@@ -1197,7 +1260,7 @@ if ( FEELPP_ENABLE_VTK )
         # MESSAGE("ParaView_LIBRARIES=${ParaView_LIBRARIES}")
         # MESSAGE("VTK_INCLUDE_DIRS=${VTK_INCLUDE_DIRS}")
         # MESSAGE("VTK_LIBRARIES=${VTK_LIBRARIES}")
-        
+
         INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
         INCLUDE_DIRECTORIES(${ParaView_INCLUDE_DIRS})
         INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
@@ -1241,7 +1304,7 @@ if ( FEELPP_ENABLE_VTK )
                     message(WARNING "MPI support for VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}.${VTK_BUILD_VERSION} is not activated. VTK parallel export will be disabled.")
                 endif()
                 unset(__test_vtk_parallel)
-            endif() 
+            endif()
 
             #if ( NOT FEELPP_ENABLE_OPENGL )
                 #SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
@@ -1269,7 +1332,7 @@ if ( FEELPP_ENABLE_VTK )
 		    #       )
 		    #     message (STATUS "Distribution: ${DIST_NAME} ${DIST_CODENAME}")
 	        #   endif ()
-              
+
             #   set(DebianDistros  jessie stretch sid)
             #   if (DIST_NAME STREQUAL "Debian")
             #     list (FIND DebianDistros  ${DIST_CODENAME} _index)
@@ -1277,9 +1340,9 @@ if ( FEELPP_ENABLE_VTK )
             #       find_package(Qt5Widgets REQUIRED)
             #       MESSAGE(STATUS "add ${Qt5Widgets_LIBRARIES} to FEELPP_LIBRARIES")
             #     endif()
-            #   endif()  
+            #   endif()
             # endif()
-            
+
             SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
             SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} VTK" )
         endif()
@@ -1287,7 +1350,7 @@ if ( FEELPP_ENABLE_VTK )
 
     # If VTK was not found
     if(NOT ParaView_FOUND AND NOT VTK_FOUND)
-        message(STATUS "Neither ParaView nor VTK were found. VTK exporter and In-situ processing not enabled") 
+        message(STATUS "Neither ParaView nor VTK were found. VTK exporter and In-situ processing not enabled")
     endif()
 endif( FEELPP_ENABLE_VTK )
 
@@ -1333,6 +1396,29 @@ endif( FEELPP_ENABLE_OCTAVE)
 #
 
 if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_GSL "Enable GSL Support" OFF )
+else()
+    option( FEELPP_ENABLE_GSL "Enable GSL Support" ON )
+endif()
+
+if( FEELPP_ENABLE_GSL )
+  FIND_PACKAGE(GSL)
+  if ( GSL_FOUND )
+    ADD_DEFINITIONS( -DFEELPP_HAS_GSL=1 )
+    SET(FEELPP_LIBRARIES ${GSL_LIBRARIES} ${FEELPP_LIBRARIES})
+    INCLUDE_DIRECTORIES(${GSL_INCLUDE_DIRS})
+    SET(FEELPP_HAS_GSL 1)
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GSL(${GSL_VERSION})" )
+    message(STATUS "[feelpp] gsl ${GSL_VERSION} enabled" )
+  endif()
+
+endif(FEELPP_ENABLE_GSL)
+
+#
+# Gmsh
+#
+
+if(FEELPP_MINIMAL_BUILD)
     option( FEELPP_ENABLE_GMSH "Enable Gmsh Support" OFF )
 else()
     option( FEELPP_ENABLE_GMSH "Enable Gmsh Support" ON )
@@ -1359,6 +1445,10 @@ if( FEELPP_ENABLE_GMSH )
   endif()
   if ( GMSH_FOUND )
     ADD_DEFINITIONS( -DFEELPP_HAS_GMSH=1 -D_FEELPP_HAS_GMSH_ -DGMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
+    if ( FEELPP_HAS_GMSH_ADAPT_H )
+      # message(STATUS "Add -DFEELPP_HAS_GMSH_ADAPT_H option")
+      ADD_DEFINITIONS( -DFEELPP_HAS_GMSH_ADAPT_H )
+    endif()
     if ( GL2PS_LIBRARY )
       if ( GL_LIBRARY AND FEELPP_ENABLE_OPENGL )
         SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${GL2PS_LIBRARY} ${GL_LIBRARY} ${FEELPP_LIBRARIES})
@@ -1445,7 +1535,7 @@ get_property( FEELPP_DEPS_LINK_DIR DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY LINK_D
 # From the variables FEELPP_DEPS_INCLUDE_DIR and FEELPP_DEPS_LINK_DIR, We remove every path that references
 # the build directory or the git clone. Those variables are meant for building external modules that
 # depend on Feel++, we cannot reference the original build directory or git clone, as they might not be present
-# on the server we build the module, e.g. if we install Feel++ with the tarball, we don't have those directories 
+# on the server we build the module, e.g. if we install Feel++ with the tarball, we don't have those directories
 # (ex: travis-ci)
 set(_FEELPP_DEPS_INCLUDE_DIR_NEW "")
 feelpp_clean_variable("${FEELPP_DEPS_INCLUDE_DIR}" _FEELPP_DEPS_INCLUDE_DIR_NEW )

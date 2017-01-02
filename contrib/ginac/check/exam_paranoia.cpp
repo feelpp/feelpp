@@ -1,12 +1,12 @@
 /** @file exam_paranoia.cpp
  *
  *  This set of tests checks for some of GiNaC's oopses which showed up during
- *  development.  Things were evaluated wrongly and so.  Such a sick behaviour
+ *  development.  Things were evaluated wrongly and so.  Such a sick behavior
  *  shouldn't occur any more.  But we are paranoic and we want to exclude these
  *  these oopses for good, so we run those stupid tests... */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -73,23 +73,10 @@ static unsigned exam_paranoia2()
 	f = e*y;
 	g = f - e*y;
 
-	// After .expand(), g should be zero:
-	if (!g.expand().is_zero()) {
-		clog << "e = (x + z*x); f = e*y; expand(f - e*y) erroneously returned "
-		     << g.expand() << endl;
-		++result;
-	}
 	// After .eval(), g should be zero:
-	if (!g.eval().is_zero()) {
-		clog << "e = (x + z*x); f = e*y; eval(f - e*y) erroneously returned "
-		     << g.eval() << endl;
-		++result;
-	}
-	// This actually worked already back in April 1999.
-	// But we are *very* paranoic!
-	if (!g.expand().eval().is_zero()) {
-		clog << "e = (x + z*x); f = e*y; eval(expand(f - e*y)) erroneously returned "
-		     << g.expand().eval() << endl;
+	if (!g.is_zero()) {
+		clog << "e = (x + z*x); f = e*y; g = (f - e*y) erroneously returned g == "
+		     << g << endl;
 		++result;
 	}
 
@@ -113,16 +100,6 @@ static unsigned exam_paranoia3()
 		     << f << endl;
 		++result;
 	}
-	if (!f.eval().is_equal(y)) {
-		clog << "e = x*y - y; eval(e.subs(x == 2)) erroneously returned "
-		     << f.eval() << endl;
-		++result;
-	}
-	if (!f.expand().is_equal(y)) {
-		clog << "e = x*y - y; expand(e.subs(x == 2)) erroneously returned "
-		     << f.expand() << endl;
-		++result;
-	}
 
 	return result;
 }
@@ -141,11 +118,6 @@ static unsigned exam_paranoia4()
 	if (!g.is_zero()) {
 		clog << "e = pow(x,2) + x + 1; f = pow(x,2) + x + 1; g = e-f; g erroneously returned "
 		     << g << endl;
-		++result;
-	}
-	if (!g.is_zero()) {
-		clog << "e = pow(x,2) + x + 1; f = pow(x,2) + x + 1; g = e-f; g.eval() erroneously returned "
-		     << g.eval() << endl;
 		++result;
 	}
 
@@ -264,7 +236,7 @@ static unsigned exam_paranoia10()
 	ex r;
 	
 	try {
-		r = pow(b,e).eval();
+		r = pow(b, e);
 		if (!(r-2*sqrt(ex(2))).is_zero()) {
 			clog << "2^(3/2) erroneously returned " << r << " instead of 2*sqrt(2)" << endl;
 			++result;
@@ -468,16 +440,26 @@ static unsigned exam_paranoia17()
 }
 
 // Bug in add::eval() could result in numeric terms not being collected into
-// the overall coefficient. Fixed on Sep 22, 2010
+// the overall coefficient. Fixed first on Sep 22, 2010 and again on Dec 17 2015
 static unsigned exam_paranoia18()
 {
+	unsigned result = 0;
+
 	ex sqrt2 = sqrt(ex(2));
-	ex e = 1+2*(sqrt2+1)*(sqrt2-1);
-	if ( e.real_part() != 3 ) {
+	ex e1 = 1 + 2*(sqrt2+1)*(sqrt2-1);
+	if (e1.real_part() != 3) {
 		clog << "real_part(1+2*(sqrt(2)+1)*(sqrt(2)-1)) failed to evaluate to 3\n";
-		return 1;
+		++result;
 	}
-	return 0;
+
+	ex sqrt3 = sqrt(ex(3));
+	ex e2 = 2 + 2*(sqrt2+1)*(sqrt2-1) - 2*(sqrt3+1)*(sqrt3-1);
+	if (e2.real_part() != 0) {
+		clog << "real_part(2+2*(sqrt(2)+1)*(sqrt(2)-1)-3*(sqrt(3)+1)*(sqrt(3)-1)) failed to evaluate to 0\n";
+		++result;
+	}
+
+	return result;
 }
 
 // Bug in mul::conjugate when factors are evaluated at branch cuts, reported as
@@ -494,11 +476,11 @@ static unsigned exam_paranoia19()
 	return 0;
 }
 
-// Bug in expairseq::is_polynomial (fixed 2011-05-20).
+// Bugs in is_polynomial (fixed 2011-05-20 and 2014-07-26).
 static unsigned exam_paranoia20()
 {
 	unsigned result = 0;
-	symbol x("x");
+	symbol x("x"), y("y");
 	ex e1 = sqrt(x*x+1)*sqrt(x+1);
 	if (e1.is_polynomial(x)) {
 		clog << "sqrt(x*x+1)*sqrt(x+1) is wrongly reported to be a polynomial in x\n";
@@ -509,6 +491,135 @@ static unsigned exam_paranoia20()
 		clog << "sqrt(Pi)*x is wrongly reported to be no polynomial in x\n";
 		++result;
 	}
+	ex e3 = sqrt(x);
+	if (!e3.is_polynomial(y)) {
+		clog << "sqrt(x) is wrongly reported to be no polynomial in y\n";
+		++result;
+	}
+	ex e4 = (1+y)/(2+x);
+	if (e4.is_polynomial(x)) {
+		clog << "(1+y)/(2+x) is wrongly reported to be a polynomial in x\n";
+		++result;
+	}
+	return result;
+}
+
+static unsigned is_polynomial_false_positive()
+{
+	unsigned result = 0;
+	symbol x("x"), n("n");
+	exvector nonpoly_exprs;
+	nonpoly_exprs.push_back(1/(1-x));
+	nonpoly_exprs.push_back(1/(x+1));
+	nonpoly_exprs.push_back(-1/(x-1));
+	nonpoly_exprs.push_back(1/(1-x*x));
+	nonpoly_exprs.push_back(1/(1-pow(x,n)));
+	nonpoly_exprs.push_back(x-1/(x-1));
+	for (exvector::const_iterator ep = nonpoly_exprs.begin();
+	     ep != nonpoly_exprs.end(); ++ep) {
+		if (ep->is_polynomial(x)) {
+			clog << "(" << *ep << ").is_polynomial(" << x << ") "
+			        "erroneously returned true" << endl;
+			++result;
+		}
+	}
+	return result;
+}
+
+// Bug in power::expand reported by Isuru Fernando (fixed 2015-05-07).
+static unsigned exam_paranoia21()
+{
+	symbol x("x");
+	ex e = pow(x + sqrt(ex(2))*x, 2).expand();
+	if (e.nops() != 2) {
+		clog << "(x+sqrt(2)*x)^2 was wrongly expanded to " << e << "\n";
+		return 1;
+	}
+	return 0;
+}
+
+// Bug in power::expand (fixed 2015-07-18).
+static unsigned exam_paranoia22()
+{
+	symbol x("x"), y("y");
+	ex e = pow(sqrt(1+x)+y*sqrt(1+x), 2).expand();
+	if (e.nops() != 6) {
+		clog << "(sqrt(1+x)+y*sqrt(1+x))^2 was wrongly expanded to " << e << "\n";
+		return 1;
+	}
+	return 0;
+}
+
+// Bug in expairseq::evalchildren().
+static unsigned exam_paranoia23()
+{
+	unsigned result = 0;
+	symbol x("x");
+
+	epvector v1;
+	v1.push_back(expair(1, 1));
+	v1.push_back(expair(2*x, -1));
+	ex e1 = add(v1);  // Should be e==1-2*x,
+	if (!e1.is_equal(1-2*x)) {
+		clog << "Failure constructing " << e1 << " from add.\n";
+		++result;
+	}
+
+	epvector v2;
+	v2.push_back(expair(x, 1));
+	v2.push_back(expair(1,-1));
+	ex e2 = mul(v2);  // Should be e==x;
+	if (!e2.is_equal(x)) {
+		clog << "Failure constructing " << e2 << " from mul.\n";
+		++result;
+	}
+
+	return result;
+}
+
+// Bug in sqrfree_yun (fixed 2016-02-02).
+static unsigned exam_paranoia24()
+{
+	unsigned result = 0;
+	symbol x("x");
+	ex e;
+
+	e = (x-1)*(x+1) - x*x + 1;  // an unexpanded 0...
+	try {
+		ex f = sqrfree(e);
+		if (!f.is_zero()) {
+			clog << "sqrfree(" << e << ") returns " << f << " instead of 0\n";
+			++result;
+		}
+	} catch (const exception &err) {
+		clog << "sqrfree(" << e << ") throws " << err.what() << endl;
+		++result;
+	}
+
+	e = pow(x-1,3) - expand(pow(x-1,3));  // ...still after differentiating...
+	try {
+		ex f = sqrfree(e);
+		if (!f.is_zero()) {
+			clog << "sqrfree(" << e << ") returns " << f << " instead of 0\n";
+			++result;
+		}
+	} catch (const exception &err) {
+		clog << "sqrfree(" << e << ") throws " << err.what() << endl;
+		++result;
+	}
+
+	e = pow(x-1,4) - expand(pow(x-1,4));  // ...and after differentiating twice.
+	try {
+		ex f = sqrfree(e);
+		if (!f.is_zero()) {
+			clog << "sqrfree(" << e << ") returns " << f << " instead of 0\n";
+			++result;
+		}
+	} catch (const exception &err) {
+		clog << "sqrfree(" << e << ") throws " << err.what() << endl;
+		++result;
+	}
+
 	return result;
 }
 
@@ -538,6 +649,11 @@ unsigned exam_paranoia()
 	result += exam_paranoia18();  cout << '.' << flush;
 	result += exam_paranoia19();  cout << '.' << flush;
 	result += exam_paranoia20();  cout << '.' << flush;
+	result += is_polynomial_false_positive(); cout << '.' << flush;
+	result += exam_paranoia21();  cout << '.' << flush;
+	result += exam_paranoia22();  cout << '.' << flush;
+	result += exam_paranoia23();  cout << '.' << flush;
+	result += exam_paranoia24();  cout << '.' << flush;
 	
 	return result;
 }
