@@ -37,7 +37,7 @@ namespace Feel
 {
 namespace details
 {
-struct SecondBasedTimer
+struct FEELPP_NO_EXPORT SecondBasedTimer
 {
     static void print( std::string const& msg, const std::pair<double,int>& val )
     {
