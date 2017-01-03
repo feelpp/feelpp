@@ -738,7 +738,7 @@ class Context
         M_element( boost::addressof( __e ) ),
         M_pc(),
         M_pc_faces( __pc ),
-        M_npoints( __pc[__f][__e.permutation( __f )]->nPoints() ),
+        M_npoints( __pc.size()?__pc[__f][__e.permutation( __f )]->nPoints():0 ),
 
         //M_xref( PDim ),
         //M_xreal( NDim ),
@@ -794,8 +794,8 @@ class Context
                 M_Jt.resize( nPoints() );
                 M_Bt.resize( nPoints() );
             }
-
-            update( __e, __f );
+            if ( __pc.size() )
+                update( __e, __f );
         }
 
     // context for geomap at vertices
@@ -805,7 +805,7 @@ class Context
              uint16_type __f,
              mpl::int_<0>)
         :
-        Context( __gm, __e, _pc )
+        Context( __gm, __e, __pc )
         {
 
             if ( is_linear )
@@ -914,6 +914,7 @@ class Context
             M_perm = __e.permutation( M_face_id );
 
             M_pc = M_pc_faces[__f][M_perm];
+            
             //M_G = __e.G();
             M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
             M_id = __e.id();
@@ -921,10 +922,7 @@ class Context
             M_e_marker2 = __e.marker2();
             M_e_marker3 = __e.marker3();
             M_xrefq = M_pc->nodes();
-
-            FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
-            FEELPP_ASSERT( M_pc ).error( "invalid precompute data structure" );
-
+            
             if ( vm::has_measure<context>::value )
             {
                 M_h = __e.h();
