@@ -360,48 +360,50 @@ Mesh<Shape, T, Tag>::updateMeasures()
 
     element_iterator iv,  en;
     boost::tie( iv, en ) = this->elementsRange();
-    for ( ; iv != en; ++iv )
+
+    if ( iv != en )
     {
-        if ( updateMeasureWithPc )
+        auto ctx = M_gm->template context<vm::JACOBIAN>( *iv, pc );
+        auto ctxf = M_gm->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *iv,pcf,0 );
+        auto ctx1 = M_gm1->template context<vm::JACOBIAN>( *iv, pc1 );
+        auto ctxf1 = M_gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *iv,pcf1,0 );
+        for ( ; iv != en; ++iv )
         {
-            if ( meshIsStraightened && !iv->isOnBoundary() )
+            if ( updateMeasureWithPc )
             {
-                this->elements().modify( iv,
-                                         [=,&pc1,&thequad1,&pcf1]( element_type& e )
-                                         {
-                                             e.updateWithPc1(pc1, boost::ref( pcf1), thequad );
-                                         } );
+                if ( meshIsStraightened && !iv->isOnBoundary() )
+                {
+                    ctx1->update( *iv );
+                    iv->updateWithCtx1( thequad1, ctx1, ctxf1 );
+                }
+                else
+                {
+                    ctx->update( *iv );
+                    iv->updateWithCtx( thequad, ctx, ctxf );
+                }
             }
-            else
-            {
-                this->elements().modify( iv,
-                                         [=,&pc,&thequad,&pcf]( element_type& e )
-                                         {
-                                             e.updateWithPc(pc, boost::ref( pcf), thequad );
-                                         } );
-            }
-        }
 
-        // only compute meas for active element (no ghost)
-        if ( !iv->isGhostCell() )
-            M_local_meas += iv->measure();
+            // only compute meas for active element (no ghost)
+            if ( !iv->isGhostCell() )
+                M_local_meas += iv->measure();
 #if 0
-        auto _faces = iv->faces();
+            auto _faces = iv->faces();
 
-        if ( nDim == 1 )
-            M_local_measbdy = 0;
-        else
-            for ( ; _faces.first != _faces.second; ++_faces.first )
-                if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
-                    M_local_measbdy += ( *_faces.first )->measure();
+            if ( nDim == 1 )
+                M_local_measbdy = 0;
+            else
+                for ( ; _faces.first != _faces.second; ++_faces.first )
+                    if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
+                        M_local_measbdy += ( *_faces.first )->measure();
 #else
-        if ( nDim == 1 || nDim != nRealDim )
-            M_local_measbdy = 0;
-        else
-            for ( int f = 0; f < iv->numTopologicalFaces; ++f )
-                M_local_measbdy += iv->faceMeasure( f );
+            if ( nDim == 1 || nDim != nRealDim )
+                M_local_measbdy = 0;
+            else
+                for ( int f = 0; f < iv->numTopologicalFaces; ++f )
+                    M_local_measbdy += iv->faceMeasure( f );
 #endif
-    }
+        } // for element loop
+    } // if ()
 #if BOOST_VERSION >= 105500
     std::vector<value_type> gmeas{ M_local_meas, M_local_measbdy };
     mpi::all_reduce(this->worldComm(), mpi::inplace(gmeas.data()), 2, std::plus<value_type>());
@@ -914,8 +916,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     rank_type currentPid = this->worldComm().localRank();
     rank_type numPartition = this->worldComm().localSize();
 
-    boost::unordered_map<std::set<size_type>, face_type* > _faces;
-    typename boost::unordered_map<std::set<size_type>, face_type* >::iterator _faceit;
+    boost::unordered_map<std::vector<size_type>, face_type* > _faces;
+
+    // stores local vertex ids of the faces to identify them
+    std::vector<size_type> lids(face_type::numVertices);
+    
+    typename boost::unordered_map<std::vector<size_type>, face_type* >::iterator _faceit;
     std::vector<face_type* > _facesOrderedWithId;
     size_type next_face = 0;
 
@@ -956,15 +962,14 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
         LOG(INFO) << "We have " << std::distance( __it, __en ) << " faces in the database";
         for ( ; __it!=__en; )
         {
-            std::set<size_type> s;
-
             for ( int f = 0; f < face_type::numVertices; ++f )
             {
-                s.insert( __it->point( f ).id() );
+                lids[f]= __it->point( f ).id();
             }
-
+            std::sort( lids.begin(), lids.end() );
+            
             bool faceinserted = false;
-            boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( s, nullptr/*next_face*/ ) );
+            boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( lids, nullptr/*next_face*/ ) );
 
             DVLOG_IF(2,faceinserted) << "added face with id " << __it->id () << "\n";
             DVLOG_IF(2,!faceinserted) << "not added face with id " << __it->id ()
@@ -1017,6 +1022,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
     for ( ; iv != en; ++iv )
     {
+        tic();
         element_type const& __element = *iv;
         const size_type __element_id = __element.id();
         const rank_type eltPid = __element.processId();
@@ -1029,19 +1035,22 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             DVLOG(2) << "------------------------------------------------------------\n";
             DVLOG(2) << "Element id: " << iv->id() << " local face id: " << j << "\n";
 #endif
-            std::set<size_type> s;
             for ( int f = 0; f < face_type::numVertices; ++f )
             {
                 uint16_type pt_localid = ( nDim==1 )?j:/*iv->*/element_type::fToP( j, f );
-                s.insert( iv->point( pt_localid ).id() );
+                lids[f]= iv->point( pt_localid ).id();
 #if !defined( NDEBUG )
                 VLOG(3) << "add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
                         << " global id " << iv->point( pt_localid ).id() << "\n";
 #endif
             }
+            std::sort(lids.begin(), lids.end());
 
             bool faceinserted = false;
-            boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( s, nullptr/*next_face*/ ) );
+            //boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( lids, nullptr/*next_face*/ ) );
+            boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
+                                                                  std::forward_as_tuple(lids),
+                                                                  std::forward_as_tuple(nullptr) );
 
 #if !defined( NDEBUG )
             DVLOG(2) << "------------------------------------------------------------\n";
@@ -1245,28 +1254,32 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             }
 
         } // face loop
+        toc("Mesh.updateEntitiesCoDimensionOne.add_faces_from_elements",FLAGS_v>0);
     } // element loop
 
     DVLOG(2) << "[Mesh::updateFaces] finish elements loop";
 
     _faces.clear();
-    boost::unordered_map<std::set<size_type>, face_type* >().swap( _faces );
+    boost::unordered_map<std::vector<size_type>, face_type* >().swap( _faces );
 
+    tic();
     // update multi-index faces container
     for ( face_type* facePtr : _facesOrderedWithId )
     {
         if ( facePtr )
         {
             //this->faces().insert( this->faces().end(),std::move(*facePtr) );
-            this->faces().insert( this->faces().end(),*facePtr );
-            delete facePtr;
+            this->faces().insert( this->faces().end(),std::move(*facePtr) );
+            facePtr =  nullptr; 
         }
     }
+    toc("Mesh.updateEntitiesCoDimensionOne.insert_faces_in_multiindex", FLAGS_v>0);
     _facesOrderedWithId.clear();
     std::vector<face_type*>().swap(_facesOrderedWithId);
 
     DVLOG(2) << "[Mesh::updateFaces] finish container faces insertion";
 
+    tic();
     if ( !updateComponentFacesMinimal )
     {
         face_iterator f_it = this->beginFace();
@@ -1343,6 +1356,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             }
         }
     }
+    toc("Mesh.updateEntitiesCoDimensionOne.update_faces",FLAGS_v>0);
 
     LOG(INFO) << "We have now " << nelements(boundaryfaces(this)) << " faces on the boundary in the database";
     VLOG(1) << "[Mesh::updateEntitiesCoDimensionOne] element/face connectivity : " << ti.elapsed() << "\n";
