@@ -1018,7 +1018,7 @@ private:
     /**
      * save mesh in hdf5
      */
-    void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+    FEELPP_NO_EXPORT void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 #endif
 public:
     /**
@@ -1216,9 +1216,9 @@ public:
         }
 private:
 
-    void propagateMarkers( mpl::int_<1> ) {}
-    void propagateMarkers( mpl::int_<2> );
-    void propagateMarkers( mpl::int_<3> );
+    FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<1> ) {}
+    FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<2> );
+    FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<3> );
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -1618,25 +1618,25 @@ public:
         /*---------------------------------------------------------------
          *initializes the kd tree and the map between node and list elements(all elements)
          */
-        void init();
+        FEELPP_NO_EXPORT void init();
 
         /*---------------------------------------------------------------
          *initializes the kd tree and the map between node and list elements(only on boundary)
          */
-        void initBoundaryFaces();
+        FEELPP_NO_EXPORT void initBoundaryFaces();
 
         /*---------------------------------------------------------------
          *search near elt in kd tree and get a sorted list
          */
-        void searchInKdTree( const node_type & p,
-                             std::list< std::pair<size_type, uint> > & listTri );
-
+        FEELPP_NO_EXPORT void searchInKdTree( const node_type & p,
+                                              std::list< std::pair<size_type, uint> > & listTri );
+        
         /*---------------------------------------------------------------
          * computed barycenter
          */
-        node_type computeBarycenter(mpl::int_<1> /**/) const;
-        node_type computeBarycenter(mpl::int_<2> /**/) const;
-        node_type computeBarycenter(mpl::int_<3> /**/) const;
+        FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<1> /**/) const;
+        FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<2> /**/) const;
+        FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<3> /**/) const;
 
     private:
 
@@ -1721,43 +1721,43 @@ private:
     /**
      * \sa renumber()
      */
-    void renumber( mpl::bool_<false> ) {}
+    FEELPP_NO_EXPORT void renumber( mpl::bool_<false> ) {}
 
     /**
      * \sa renumber()
      */
-    void renumber( mpl::bool_<true> );
+    FEELPP_NO_EXPORT void renumber( mpl::bool_<true> );
 
     /**
      * modify edges on boundary in 3D
      */
-    void modifyEdgesOnBoundary( face_iterator& face, mpl::bool_<true> );
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_iterator& face, mpl::bool_<true> );
 
     /**
      * modify edges on boundary in 2D or 1D
      */
-    void modifyEdgesOnBoundary( face_iterator& face, mpl::bool_<false> );
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_iterator& face, mpl::bool_<false> );
 
     /**
      * modify element that may touch the boundary through one of its edge in 1D or 2D
      */
-    bool modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<false> );
+    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<false> );
 
     /**
      * modify element that may touch the boundary through one of its edge in 3D
      */
-    bool modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<true> );
+    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<true> );
 
     /**
      * update entities on boundary (point, edge, face and element)
      */
-    void updateOnBoundary();
+    FEELPP_NO_EXPORT void updateOnBoundary();
 
     /**
      * fix duplication of point in connection1 with 3d mesh at order 3 and 4
      */
-    void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::true_ );
-    void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::false_ );
+    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::true_ );
+    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::false_ );
 
 private:
 

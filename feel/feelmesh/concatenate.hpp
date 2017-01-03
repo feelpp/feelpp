@@ -32,6 +32,10 @@
 
 namespace Feel {
 
+template<typename IteratorType, typename ...Args>
+using concatenate_t = ext_entities_from_iterator_t<IteratorType>;
+
+
 /**
  * this function takes a set of iterators over geometrical entities of the same
  * type (e.g. faces, volumes, edges, points) and generate a data structure that
@@ -46,7 +50,7 @@ namespace Feel {
  * \endcode
  */
 template<typename IteratorType, typename... Args>
-Feel::detail::concatenate_impl_t<IteratorType>
+FEELPP_EXPORT Feel::concatenate_t<IteratorType>
 concatenate( IteratorType&& it, Args&&... args )
 {
     return Feel::detail::concatenate_impl( std::forward<IteratorType>(it), std::forward<Args>(args)... );

@@ -32,7 +32,7 @@ namespace vf {
  * Handle Ginac matrix expression
  */
 template<int M=1, int N=1, int Order = 2>
-class GinacMatrix : public Feel::vf::GiNaCBase
+class FEELPP_EXPORT GinacMatrix : public Feel::vf::GiNaCBase
 {
 public:
 
@@ -402,7 +402,7 @@ private:
 }; // GinacMatrix
 
 template<int M,int N,int Order>
-std::ostream&
+FEELPP_EXPORT std::ostream&
 operator<<( std::ostream& os, GinacMatrix<M,N,Order> const& e )
 {
     os << e.expression();
@@ -410,14 +410,14 @@ operator<<( std::ostream& os, GinacMatrix<M,N,Order> const& e )
 }
 
 template<int M, int N, int Order>
-std::string
+FEELPP_EXPORT std::string
 str( GinacMatrix<M,N,Order> && e )
 {
     return str( std::forward<GinacMatrix<M,N,Order>>(e).expression() );
 }
 
 template<int M, int N, int Order>
-std::string
+FEELPP_EXPORT std::string
 str( GinacMatrix<M,N,Order> const& e )
 {
     return str( e.expression() );

@@ -61,6 +61,7 @@ struct default_packet_traits
     HasSqrt   = 0,
     HasRsqrt  = 0,
     HasExp    = 0,
+    HasExpm1  = 0,
     HasLog    = 0,
     HasLog1p  = 0,
     HasLog10  = 0,
@@ -329,7 +330,7 @@ template<typename Packet> EIGEN_DEVICE_FUNC inline typename unpacket_traits<Pack
   */
 template<typename Packet> EIGEN_DEVICE_FUNC inline
 typename conditional<(unpacket_traits<Packet>::size%8)==0,typename unpacket_traits<Packet>::half,Packet>::type
-predux4(const Packet& a)
+predux_downto4(const Packet& a)
 { return a; }
 
 /** \internal \returns the product of the elements of \a a*/
@@ -400,6 +401,10 @@ Packet ptanh(const Packet& a) { using std::tanh; return tanh(a); }
 /** \internal \returns the exp of \a a (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet pexp(const Packet& a) { using std::exp; return exp(a); }
+
+/** \internal \returns the expm1 of \a a (coeff-wise) */
+template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+Packet pexpm1(const Packet& a) { return numext::expm1(a); }
 
 /** \internal \returns the log of \a a (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
@@ -556,6 +561,34 @@ template <size_t N> struct Selector {
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
 pblend(const Selector<unpacket_traits<Packet>::size>& ifPacket, const Packet& thenPacket, const Packet& elsePacket) {
   return ifPacket.select[0] ? thenPacket : elsePacket;
+}
+
+/** \internal \returns \a a with the first coefficient replaced by the scalar b */
+template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
+pinsertfirst(const Packet& a, typename unpacket_traits<Packet>::type b)
+{
+  // Default implementation based on pblend.
+  // It must be specialized for higher performance.
+  Selector<unpacket_traits<Packet>::size> mask;
+  mask.select[0] = true;
+  // This for loop should be optimized away by the compiler.
+  for(Index i=1; i<unpacket_traits<Packet>::size; ++i)
+    mask.select[i] = false;
+  return pblend(mask, pset1<Packet>(b), a);
+}
+
+/** \internal \returns \a a with the last coefficient replaced by the scalar b */
+template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
+pinsertlast(const Packet& a, typename unpacket_traits<Packet>::type b)
+{
+  // Default implementation based on pblend.
+  // It must be specialized for higher performance.
+  Selector<unpacket_traits<Packet>::size> mask;
+  // This for loop should be optimized away by the compiler.
+  for(Index i=0; i<unpacket_traits<Packet>::size-1; ++i)
+    mask.select[i] = false;
+  mask.select[unpacket_traits<Packet>::size-1] = true;
+  return pblend(mask, pset1<Packet>(b), a);
 }
 
 } // end namespace internal

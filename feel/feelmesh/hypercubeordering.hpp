@@ -33,7 +33,7 @@
 
 namespace Feel
 {
-
+#pragma GCC visibility push(hidden)
 /// \cond DETAIL
 namespace details
 {
@@ -357,6 +357,6 @@ const int16_type hexa<Order>::__f2e_permutation[24] =
 /// \endcond
 
 
-
+#pragma GCC visibility pop
 }
 #endif /* __HyperCubeOrdering_H */

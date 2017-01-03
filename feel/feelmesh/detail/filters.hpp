@@ -28,7 +28,7 @@
 
 namespace Feel {
 
-
+#pragma GCC visibility push(hidden)
 /// \cond detail
 namespace detail
 {
@@ -387,6 +387,7 @@ internalpoints( MeshType const& mesh )
 
 } // detail
 /// \endcond
+#pragma GCC visibility pop
 
 }
 #endif

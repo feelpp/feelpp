@@ -148,13 +148,61 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       lib  )
   ENDIF()
 
+  # should detect instead if MED is supported by Gmsh
+  OPTION( FEELPP_ENABLE_Med "Enable the MED library" OFF )
+  OPTION( FEELPP_ENABLE_OpenCascade "Enable the OCC library" OFF )
+  IF(GMSH_EXECUTABLE)
+    execute_process(COMMAND ${GMSH_EXECUTABLE} -info
+      OUTPUT_FILE "gmsh-info.log"
+      ERROR_FILE "gmsh-config.err")
+    execute_process(COMMAND grep "Build options" gmsh-config.err
+      OUTPUT_VARIABLE GMSH_BUILDOPTS)
+    #MESSAGE(STATUS "GMSH_BUILDOPTS=${GMSH_BUILDOPTS}")
+    STRING(REPLACE "Build options    : " "" GMSH_EXTERNAL_LIBS_STRING ${GMSH_BUILDOPTS})
+    string(REPLACE " " ";" GMSH_EXTERNAL_LIBS ${GMSH_EXTERNAL_LIBS_STRING})
+    #MESSAGE(STATUS "GMSH_EXTERNAL_LIBS=${GMSH_EXTERNAL_LIBS}")
+
+    set (EXTERNAL_LIBS Med OpenCascade)
+    foreach(_l ${EXTERNAL_LIBS})
+      list (FIND GMSH_EXTERNAL_LIBS ${_l} _index)
+      if (${_index} GREATER -1)
+        MESSAGE(STATUS "Gmsh has ${_l} support")
+        set(FEELPP_ENABLE_${_l} ON)
+      ENDIF()
+    endforeach()
+  ELSE(GMSH_EXECUTABLE)
+    MESSAGE(STATUS "gmsh executable has not been detected. Support for Med and OpenCascade set to OFF")
+  ENDIF(GMSH_EXECUTABLE)
+
+  set(GMSH_EXTERNAL_LIBRARIES "")
+  IF ( FEELPP_ENABLE_MED )
+    find_library(MED_LIB med)
+    if(MED_LIB)
+      MESSAGE(WARNING "[Feelpp] Add support for MED library from Gmsh (requires HDF5)")
+      list(APPEND GMSH_EXTERNAL_LIBRARIES ${MED_LIB})
+    endif(MED_LIB)
+    find_library(MEDC_LIB medC)
+    if(MEDC_LIB)
+      list(APPEND GMSH_EXTERNAL_LIBRARIES ${MEDC_LIB})
+    endif(MEDC_LIB)
+    if (MED_LIB AND MEDC_LIB)
+      # check if HDF5 version is compatible
+      IF (NOT HDF_VERSION_MAJOR_REF EQUAL 1 OR NOT HDF_VERSION_MINOR_REF EQUAL 8)
+        MESSAGE(STATUS "[feelpp] HDF5 version is ${HDF_VERSION_REF}. Only 1.8.x versions are compatible with med support.")
+      ELSE()
+        ADD_DEFINITIONS( -DFEEPP_HAS_GMSH_HAS_MED )
+      ENDIF()
+    endif(MED_LIB AND MEDC_LIB)
+  endif(FEELPP_ENABLE_MED)
+  MESSAGE(STATUS "[Gmsh] GMSH_EXTERNAL_LIBRARIES ${GMSH_EXTERNAL_LIBRARIES}")
+  
   if(GMSH_INCLUDE_PATH)
       set(GMSH_INCLUDE_DIR ${GMSH_INCLUDE_PATH})
   endif(GMSH_INCLUDE_PATH)
 
   set(GMSH_LIBRARIES "")
   if(GMSH_LIBRARY)
-    set(GMSH_LIBRARIES ${GMSH_LIBRARIES} ${GMSH_LIBRARY})
+    set(GMSH_LIBRARIES ${GMSH_LIBRARIES} ${GMSH_LIBRARY} ${GMSH_EXTERNAL_LIBRARIES})
 endif()
 
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (GMSH DEFAULT_MSG

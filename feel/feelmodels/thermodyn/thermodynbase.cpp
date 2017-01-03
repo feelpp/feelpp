@@ -1018,14 +1018,14 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBCRobinResidual( element_temperatu
         if ( !buildCstPart )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= expression1(d)*idv(u)*id(v),
                            _geomap=this->geomap() );
         }
         if ( buildCstPart )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= -expression1(d)*expression2(d)*id(v),
                            _geomap=this->geomap() );
         }
@@ -1106,7 +1106,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBCRobinJacobian( sparse_matrix_ptr
         for( auto const& d : this->M_bcRobin )
         {
             bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(this->mesh(),marker(d) ),
+                integrate( _range=markedfaces(mesh,this->markerRobinBC( marker(d) ) ),
                            _expr= expression1(d)*idt(v)*id(v),
                            _geomap=this->geomap() );
         }
