@@ -883,6 +883,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
 
     Eigen::Vector3d x;
     Eigen::Vector2d uv;
+    tic();
     for ( uint __i = 0; __i < __n; ++__i )
     {
         int id = 0;
@@ -932,6 +933,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         // so that they are contiguous
         //itoii[idpts[__i]] = __i;
     }
+    toc("ImporterGmsh::readFromFile read points", FLAGS_v > 0 );
     //ptseen.resize( __n );
     //std::fill( ptseen.begin(), ptseen.end(), -1 );
     // eat  '\n' in binary mode otherwise the next binary read will get screwd
@@ -971,6 +973,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
 
     if ( !binary )
     {
+        tic();
         for(int i = 0; i < numElements; i++)
         {
           int num, type, physical = 0, elementary = 0, parent = 0;
@@ -1044,6 +1047,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
 
 
         }  // element description loop
+        toc("ImporterGmsh::readFromFile read and store GMSHElement", FLAGS_v > 0 );
     } // !binary
     else // binary case
     {
@@ -1192,6 +1196,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
     node_type coords( mesh_type::nRealDim );
     //M_n_b_vertices.resize( __n );
     //M_n_b_vertices.assign( __n, 0 );
+    tic();
     for ( auto const& it_gmshElt : __et )
     // add the element to the mesh
     {
@@ -1297,7 +1302,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         }
 
     } // loop over geometric entities in gmsh file (can be elements or faces)
-
+    toc( "ImporterGmsh::readFromFile store elements in Mesh", FLAGS_v > 0 );
     // treat periodic entities if any
     for ( auto const& eit : periodic_entities )
     {
