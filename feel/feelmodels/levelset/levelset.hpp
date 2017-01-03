@@ -532,6 +532,7 @@ private:
     // ModGradPhi advection
     bool M_useGradientAugmented;
     bool M_reinitGradientAugmented;
+    bool M_reinitStretchAugmented;
     modgradphi_advection_ptrtype M_modGradPhiAdvection;
 
     //--------------------------------------------------------------------//
