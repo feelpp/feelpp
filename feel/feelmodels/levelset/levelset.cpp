@@ -655,6 +655,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_reinitGradientAugmented = boption( _name="reinit-gradient-augmented", _prefix=this->prefix() );
 
     M_useStretchAugmented = boption( _name="use-stretch-augmented", _prefix=this->prefix() );
+    M_reinitStretchAugmented = boption( _name="reinit-stretch-augmented", _prefix=this->prefix() );
 
     //M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
 }
@@ -1482,7 +1483,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
         auto sol = M_modGradPhiAdvection->fieldSolutionPtr();
         sol->setConstant(1.);
     }
-    if( M_useStretchAugmented && M_reinitGradientAugmented )
+    if( M_useStretchAugmented && M_reinitStretchAugmented )
     {
         auto R = this->interfaceRectangularFunction();
         auto sol = M_stretchAdvection->fieldSolutionPtr();
