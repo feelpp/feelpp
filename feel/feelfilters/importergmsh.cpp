@@ -67,7 +67,32 @@ const auto reader_cgns = GmshReaderFactory::instance().emplace( ".cgns",
                                                                     return std::make_pair( status, m );
                                                                 });
 
+
+#if defined( FEELPP_HAS_GMSH_H )
+namespace detail
+{
+bool isOnProcessor( std::vector<rank_type> ghosts, rank_type partition, rank_type worldcommrank, rank_type worldcommsize)
+{
+    // maybe proc id does not start at 0
+    std::for_each( ghosts.begin(), ghosts.end(), [&worldcommsize]( rank_type& g ) { g = (g % worldcommsize); } );
+    
+    if ( worldcommsize == 1 )
+        return true;
+
+    if ( worldcommrank == partition )
+        return true;
+    
+    // is the element a ghost cell
+    // look into ghosts if 'partition' is present
+    auto it = std::find( ghosts.begin(), ghosts.end(), worldcommrank );
+    if ( it != ghosts.end() )
+        return true;
+    return false;
 }
+}
+#endif
+}
+
 #if !defined( FEELPP_HAS_GMSH_H)
 // From Gmsh - Common/StringUtils.h
 void SwapBytes(char *array, int size, int n)
