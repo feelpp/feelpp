@@ -180,6 +180,7 @@ BOOST_PARAMETER_FUNCTION(
     {
         if ( worldcomm.isMasterRank() )
             std::cout << "[loadMesh] Loading mesh in format msh: " << fs::system_complete(mesh_name) << "\n";
+        tic();
         auto m = loadGMSHMesh( _mesh=mesh,
                                _filename=mesh_name.string(),
                                _straighten=straighten,
@@ -196,9 +197,12 @@ BOOST_PARAMETER_FUNCTION(
                                _partition_file=partition_file,
                                _verbose=verbose
                                );
+        toc("loadMesh.loadGMSHMesh", FLAGS_v>0);
 #if defined(FEELPP_HAS_HDF5)
+        tic();
         if ( savehdf5 )
             m->saveHDF5( mesh_name.stem().string()+".json" );
+        toc("loadMesh.saveHDF5", FLAGS_v>0);
 #endif
         return m;
     }
