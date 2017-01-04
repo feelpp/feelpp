@@ -169,7 +169,6 @@ public:
         :
         super( 0 ),
         M_points( numPoints ),
-        M_G( nRealDim, numPoints ),
         M_neighbors( 0 ),
         M_gm(),
         M_gm1()
@@ -186,7 +185,6 @@ public:
         :
         super( id ),
         M_points( numPoints ),
-        M_G( nRealDim, numPoints ),
         M_neighbors( 0 ),
         M_gm(),
         M_gm1()
@@ -322,7 +320,7 @@ public:
      */
     node_type barycenter() const
     {
-        auto M = glas::average( M_G );
+        auto M = glas::average( this->G() );
         return ublas::column( M, 0 );
     }
 
@@ -332,7 +330,6 @@ public:
     node_type faceBarycenter( uint16_type f ) const
     {
         constexpr int nPtsInFace = GEOSHAPE::topological_face_type::numPoints;
-        em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
 
         node_type n( nRealDim );
         em_node_type en( n.data().begin(), n.size() );
@@ -341,9 +338,12 @@ public:
         {
             // get pt id in element  from local pt id  in face
             int ptid = this->fToP( f, p );
-            en += G.col(ptid);
+            auto const& node = this->point( ptid ).node();
+            em_node_type emnode( const_cast<double*>( node.data().begin() ), node.size() );
+            en += emnode;
         }
-        return en / nPtsInFace;
+        en /= nPtsInFace;
+        return n;
     }
 
     /**
@@ -473,9 +473,14 @@ public:
      *
      * \return the matrix of geometric nodes
      */
-    matrix_node_type const& G() const
+    matrix_node_type G() const
     {
-        return M_G;
+        matrix_node_type G( nRealDim, numPoints );
+        for ( uint16_type i=0;i<numPoints;++i )
+            ublas::column( G, i ) = M_points[i]->node();
+
+        return G;
+
     }
 
     /**
@@ -489,21 +494,13 @@ public:
     //matrix_node_type  vertices() const { return ublas::subrange( M_G, 0, nRealDim, 0, numVertices ); }
     matrix_node_type  vertices() const
     {
-        return ublas::subrange( M_G, 0, nRealDim, 0, numVertices );
+        matrix_node_type G( nRealDim, numVertices );
+            for ( uint16_type i=0;i<numVertices;++i )
+                ublas::column( G, i ) = M_points[i]->node();
+        return G;
+        // return ublas::subrange( M_G, 0, nRealDim, 0, numVertices );
     }
 
-    /**
-     * matrix of geometric nodes
-     * retrieve the matrix of geometric nodes (Dim x NumPoints) the
-     * matrix is column oriented, the column i contains the coordinate
-     * of the i-th geometric node of the element
-     *
-     * \return the matrix of geometric nodes
-     */
-    matrix_node_type & G()
-    {
-        return M_G;
-    }
 
     point_iterator beginPoint()
     {
@@ -530,13 +527,14 @@ public:
      */
     double h() const
     {
-        em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
+        em_matrix_col_type G( const_cast<double*>(this->G().data().begin()), this->G().size1(), this->G().size2() );
         double res = 0.;
         for ( uint16_type __e = 0; __e < numLocalEdges; ++__e )
         {
             int col1 = this->eToP( __e, 0 );
             int col2 = this->eToP( __e, 1 );
             double r = (G.col(col1)-G.col(col2)).norm();
+
             res = ( res > r )?res:r;
         }
         return res;
@@ -547,7 +545,7 @@ public:
      */
     double hMin() const
     {
-        em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
+        em_matrix_col_type G( const_cast<double*>(this->G().data().begin()), this->G().size1(), this->G().size2() );
 
         double res = 1e10;
         for ( uint16_type __e = 0; __e < numLocalEdges; ++__e )
@@ -572,7 +570,7 @@ public:
             return 1;
 
         constexpr int nEdges = GEOSHAPE::topological_face_type::numEdges;
-        em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
+        em_matrix_col_type G( const_cast<double*>(this->G().data().begin()), this->G().size1(), this->G().size2() );
 
         double res = 0.;
         for ( uint16_type e =  0;  e < nEdges; ++e )
@@ -591,8 +589,11 @@ public:
     {
         int col1 = this->eToP( f, 0 );
         int col2 = this->eToP( f, 1 );
-        em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
-        return (G.col(col1)-G.col(col2)).norm();
+        auto const& node1 = this->point( col1 ).node();
+        em_node_type emnode1( const_cast<double*>( node1.data().begin() ), node1.size() );
+        auto const& node2 = this->point( col2 ).node();
+        em_node_type emnode2( const_cast<double*>( node2.data().begin() ), node2.size() );
+        return ( emnode1 - emnode2 ).norm();
     }
 
     struct tt
@@ -768,18 +769,20 @@ public:
         return ( sgn > 0 ) ? 1 : 0;
     }
 
+    FEELPP_DEPRECATED
     void setPointCoordG( int i, ublas::vector<double> const& u )
     {
-        ublas::column( M_G, i ) = u;
+        // ublas::column( M_G, i ) = u;
     }
     void applyDisplacement( int i, ublas::vector<double> const& u )
     {
-        ublas::column( M_G, i ) += u;
+        // ublas::column( M_G, i ) += u;
         ( *M_points[ i ] ) += u;
     }
+    FEELPP_DEPRECATED
     void applyDisplacementG( int i, ublas::vector<double> const& u )
     {
-        ublas::column( M_G, i ) += u;
+        // ublas::column( M_G, i ) += u;
     }
     /**
      * set the tags associated to the points
@@ -970,8 +973,8 @@ private:
             ar & boost::serialization::base_object<super>( *this );
             DVLOG(2) << "  - points...\n";
             ar & M_points;
-            DVLOG(2) << "  - G...\n";
-            ar & M_G;
+            // DVLOG(2) << "  - G...\n";
+            // ar & M_G;
             DVLOG(2) << "  - measures...\n";
             ar & M_measures;
             DVLOG(2) << "  - markers...\n";
@@ -982,9 +985,6 @@ private:
     /** geometric nodes of the element */
     std::vector<point_type*> M_points;
 
-    /**< matrix of the geometric nodes */
-    matrix_node_type M_G;
-
     enum GEOND_MEASURES
     {
         MEAS_ELEMENT          = 0,
@@ -993,9 +993,6 @@ private:
     };
 
     std::map<GEOND_MEASURES,std::vector<value_type> > M_measures;
-
-    //double M_measure;
-    //std::vector<double> M_measurefaces;
 
     //! store neighbor element id
     std::vector<std::pair<size_type,rank_type> > M_neighbors;
@@ -1025,9 +1022,9 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPoint( uint16_type const i, point_type con
     M_points[ i ] = const_cast<point_type *>( &p );
     //VLOG(1) << "[setPoint] üpdate point index " << i << " with "<< M_points[i]->id() << "\n";
     FEELPP_ASSERT( const_cast<point_type *>( &p ) != 0 ).error( "invalid Geo0D<>" );
-    DCHECK( M_G.size1() == M_points[i]->node().size()) << "Invalid dimension " << M_G.size1() << "  vs "  << M_points[i]->node().size()
-                                                       << " n=" << M_points[i]->node();
-    ublas::column( M_G, i ) = M_points[i]->node();
+    // DCHECK( M_G.size1() == M_points[i]->node().size()) << "Invalid dimension " << M_G.size1() << "  vs "  << M_points[i]->node().size()
+    //                                                    << " n=" << M_points[i]->node();
+    // ublas::column( M_G, i ) = M_points[i]->node();
 }
 
 
@@ -1040,7 +1037,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::showMe( bool verbose, std::ostream & out ) co
     out << " Number of Vertices = " << numVertices << std::endl;
     out << "   Number of Points = " << numPoints << std::endl;
     out << "                 id = " << this->id() << std::endl;
-    out << "                  G = " << M_G << "\n";
+    out << "                  G = " << this->G()/*M_G*/ << "\n";
 
     for ( int i = 0; i < numVertices; i++ )
     {
@@ -1060,7 +1057,7 @@ void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::swapPoints( const uint16_type & pt1, con
     M_points[ pt2 ] = tmp;
 
     // swap also the entries in G
-    ublas::column( M_G, pt1 ).swap( ublas::column( M_G, pt2 ) );
+    // ublas::column( M_G, pt1 ).swap( ublas::column( M_G, pt2 ) );
 }
 
 
@@ -1077,7 +1074,7 @@ void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::exchangePoints( const uint16_type otn[ n
     for ( unsigned int i = 0; i < numPoints; ++i )
     {
         M_points[ i ] = tmp[ otn[ i ] ];
-        ublas::column( M_G, i ) = M_points[i]->node();
+        // ublas::column( M_G, i ) = M_points[i]->node();
     }
 }
 
