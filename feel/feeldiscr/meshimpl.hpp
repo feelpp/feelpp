@@ -31,6 +31,7 @@
 #define FEELPP_MESHIMPL_HPP 1
 
 #include <unordered_set>
+#include <unordered_map>
 #include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <feel/feeltiming/tic.hpp>
 
@@ -1251,6 +1252,17 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     ti.restart();
 }
 #else
+
+namespace detail
+{
+struct HashFaceConnection
+{
+    size_t operator()(const std::set<size_type>& v) const
+        {
+            return boost::hash_range( v.begin(),v.end() );
+        }
+};
+}
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
@@ -1262,10 +1274,15 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     rank_type currentPid = this->worldComm().localRank();
     rank_type numPartition = this->worldComm().localSize();
 
-    boost::unordered_map<std::set<size_type>, face_type* > _faces;
-    typename boost::unordered_map<std::set<size_type>, face_type* >::iterator _faceit;
+    // typedef boost::unordered_map<std::set<size_type>, face_type* > pointstoface_container_type;
+    typedef std::unordered_map<std::set<size_type>, face_type*, Feel::detail::HashFaceConnection > pointstoface_container_type;
+    typename pointstoface_container_type::iterator _faceit;
     std::vector<face_type* > _facesOrderedWithId;
     size_type next_face = 0;
+
+    element_iterator iv,  en;
+    boost::tie( iv, en ) = this->elementsRange();
+    pointstoface_container_type _faces( std::distance(iv,en)*this->numLocalFaces() );
 
     // other data used if updateComponentFacesMinimal is true for build adjacency elements info
     std::vector< std::tuple<size_type,rank_type,uint16_type> > f2e;
@@ -1362,9 +1379,21 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
     VLOG(2) << "[Mesh::updateFaces] numLocalFaces : " << this->numLocalFaces() << "\n";
     VLOG(2) << "[Mesh::updateFaces] face_type::numVertices : " << face_type::numVertices << "\n";
-    element_iterator iv,  en;
-    boost::tie( iv, en ) = this->elementsRange();
 
+    std::vector<uint16_type> myfToP( face_type::numVertices*this->numLocalFaces() );
+    for ( uint16_type j = 0; j < this->numLocalFaces(); j++ )
+    {
+        for ( int f = 0; f < face_type::numVertices; ++f )
+            myfToP[j*face_type::numVertices+f] = ( nDim==1 )?j:/*iv->*/element_type::fToP( j, f );
+    }
+
+    // std::vector< std::set<size_type> > pointsFromFace( this->numLocalFaces() );
+    // std::array<size_type,element_type::numVertices> pointIdInElt;
+    Eigen::Matrix<uint32_type,element_type::numVertices,1> pointIdInElt;
+    for ( uint16_type f = 0; f < element_type::numVertices; ++f )
+        pointIdInElt[f] = iv->point( f ).id();
+
+    std::set<size_type> s;
     for ( ; iv != en; ++iv )
     {
         element_type const& __element = *iv;
@@ -1372,21 +1401,25 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
         const rank_type eltPid = __element.processId();
         auto eltPtr = boost::addressof( __element );
 
-        //MakeBareEntity<element_type,nDim> baremaker( __element );
-        for ( uint16_type/*size_type*/ j = 0; j < this->numLocalFaces(); j++ )
+        for ( uint16_type f = 0; f < element_type::numVertices; ++f )
+            pointIdInElt[f] = __element.point( f ).id();
+
+        for ( uint16_type j = 0; j < this->numLocalFaces(); j++ )
         {
 #if !defined( NDEBUG )
             DVLOG(2) << "------------------------------------------------------------\n";
             DVLOG(2) << "Element id: " << iv->id() << " local face id: " << j << "\n";
 #endif
-            std::set<size_type> s;
-            for ( int f = 0; f < face_type::numVertices; ++f )
+            // std::set<size_type> s;
+            s.clear();
+            for ( uint16_type f = 0; f < face_type::numVertices; ++f )
             {
-                uint16_type pt_localid = ( nDim==1 )?j:/*iv->*/element_type::fToP( j, f );
-                s.insert( iv->point( pt_localid ).id() );
+                // uint16_type pt_localid = ( nDim==1 )?j:/*iv->*/element_type::fToP( j, f );
+                // s.insert( iv->point( myfToP[j*face_type::numVertices+f] ).id() );
+                s.insert( pointIdInElt[ myfToP[j*face_type::numVertices+f] ] );
 #if !defined( NDEBUG )
                 VLOG(3) << "add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
-                        << " global id " << iv->point( pt_localid ).id() << "\n";
+                        << " global id " << myfToP[j*face_type::numVertices+f]/*iv->point( pt_localid ).id()*/ << "\n";
 #endif
             }
 
@@ -1410,7 +1443,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 facePtr->setId( next_face++ );
                 //face.disconnect();
                 // set the connection with the element
-                facePtr->setConnection0( boost::make_tuple( eltPtr, __element_id, j, eltPid ) );
+                facePtr->setConnection0( boost::make_tuple( eltPtr, j ) );
                 facePtr->setOnBoundary( true, face_type::nDim );
                 // set the process id from element
                 facePtr->setProcessId( __element.processId() );
@@ -1496,7 +1529,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                              << " face: " << j << " id: " << facePtr->id() << "\n";
 #endif
 
-                    facePtr->setConnection0( boost::make_tuple( eltPtr, __element_id, j, eltPid ) );
+                    facePtr->setConnection0( boost::make_tuple( eltPtr, j ) );
                     facePtr->setProcessId( eltPid );
                     facePtr->setOnBoundary( true, face_type::nDim );
 
@@ -1559,7 +1592,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                         }
                     }
 
-                    facePtr->setConnection1( boost::make_tuple( eltPtr, __element_id, j, eltPid ) );
+                    facePtr->setConnection1( boost::make_tuple( eltPtr, j ) );
                     facePtr->setOnBoundary( false );
                     // force processId equal to M_comm.rank() if face on interprocessfaces
                     if ( facePtr->processId() != currentPid )
@@ -1601,9 +1634,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     } // element loop
 
     DVLOG(2) << "[Mesh::updateFaces] finish elements loop";
-
     _faces.clear();
-    boost::unordered_map<std::set<size_type>, face_type* >().swap( _faces );
+    pointstoface_container_type().swap( _faces );
 
     // update multi-index faces container
     for ( face_type* facePtr : _facesOrderedWithId )
@@ -1697,7 +1729,6 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
     LOG(INFO) << "We have now " << nelements(boundaryfaces(this)) << " faces on the boundary in the database";
     VLOG(1) << "[Mesh::updateEntitiesCoDimensionOne] element/face connectivity : " << ti.elapsed() << "\n";
-    ti.restart();
 }
 
 #endif
