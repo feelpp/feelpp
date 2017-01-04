@@ -110,6 +110,8 @@ BOOST_PARAMETER_FUNCTION(
 #endif
     ImporterGmsh<_mesh_type> import( filename_with_path, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
     fs::path p_fname( filename_with_path );
+
+#if defined (FEELPP_HAS_GMSH_H)
     if ( p_fname.extension() == ".med" ||
          p_fname.extension() == ".bdf" ||
          p_fname.extension() == ".cgns" ||
@@ -128,7 +130,8 @@ BOOST_PARAMETER_FUNCTION(
         using namespace std::string_literals;
         toc("loadGMSHMesh.reader"s+p_fname.extension().string(), FLAGS_v>0);
     }
-
+#endif // FEELPP_HAS_GMSH_H
+    
     // need to replace physical_region by elementary_region while reading
     if ( physical_are_elementary_regions )
     {
