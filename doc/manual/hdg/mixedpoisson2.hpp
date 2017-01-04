@@ -581,13 +581,13 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
                                  _expr=-(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
 
     // (1/delta_t p, w)_Omega  [only if it is not stationary]
-    /*
+    
 	if ( !this->isStationary() ) {
-		Feel::cout << __LINE__ << std::endl;
+		
         bbf( 1_c, 1_c ) += integrate(_quad=_Q<expr_order>(), _range=elements(M_mesh),
-                                     _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
+                                     _expr = (idt(p)/this->timeStep() * id(w)) );
     }
-	*/
+	
 
     // <-tau phat, w>_Gamma\Gamma_I
     bbf( 1_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=internalfaces(M_mesh),
@@ -696,11 +696,13 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRHS()
 {
     M_F->zero();
 
-	Feel::cout << __LINE__ << std::endl;
     // (p_old,w)_Omega
-    /*if ( !this->isStationary() )
-        this->assemblePotentialRHS( idv(this->timeStepBDF()->polyDeriv()), "");
-	*/
+    if ( !this->isStationary() )
+	{
+		auto bdf_poly = M_bdf_mixedpoisson->polyDeriv();
+        this->assemblePotentialRHS( -idv(bdf_poly) , "");
+	}
+
     auto itField = modelProperties().boundaryConditions().find( "potential");
     if ( itField != modelProperties().boundaryConditions().end() )
     {
@@ -712,8 +714,8 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRHS()
             {
                 std::string marker = exAtMarker.marker();
                 auto g = expr<expr_order>(exAtMarker.expression());
-                //if ( !this->isStationary() )
-                //    g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+                if ( !this->isStationary() )
+                    g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 this->assemblePotentialRHS(g, marker);
             }
         }
@@ -760,10 +762,8 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assemblePotentialRHS( Expr<Expr
     auto blf = blockform1( *M_ps, M_F );
     auto w = M_Wh->element();
 
-	Feel::cout << __LINE__ << std::endl;
     if ( marker.empty() )
 	{
-		Feel::cout << __LINE__ << std::endl;
         blf(1_c) += integrate(_quad=_Q<expr_order>(),  _range=elements(M_mesh),
                               _expr=-inner(expr,id(w)) );
     }
@@ -891,7 +891,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsBoundaryCond()
                 }
             }
         }
-		/*
+		/*	
         itType = mapField.find( "Robin" );
         if ( itType != mapField.end() )
         {
@@ -911,6 +911,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsBoundaryCond()
             }
         }
 		*/
+		
     }
 
     for ( int i = 0; i < M_IBCList.size(); i++ )
@@ -1367,8 +1368,8 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                             if (exAtMarker.isExpression() )
                             {
                                 auto p_exact = expr(exAtMarker.expression() );
-                                //if ( !this->isStationary() )
-                                //    p_exact.setParameterValues( { {"t", time } } );
+                                if ( !this->isStationary() )
+                                    p_exact.setParameterValues( { {"t", time } } );
                                 double K = 1;
                                 for( auto const& pairMat : modelProperties().materials() )
                                 {
