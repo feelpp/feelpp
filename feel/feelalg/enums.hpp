@@ -89,6 +89,11 @@ enum BackendType
     BACKEND_EIGEN,
     BACKEND_EIGEN_DENSE
 };
+#if FEELPP_HAS_PETSC
+const BackendType BACKEND_DEFAULT=BACKEND_PETSC;
+#else
+const BackendType BACKEND_DEFAULT=BACKEND_EIGEN;
+#endif
 
 /**
  * Defines an \p enum for iterative solver types
