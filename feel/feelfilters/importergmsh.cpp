@@ -25,7 +25,7 @@
 
 namespace Feel
 {
-
+#if defined(FEELPP_HAS_GMSH_H)
 // EDF MED format
 const auto med = GmshReaderFactory::instance().emplace( ".med",
                                                         []( std::string fname )
@@ -68,7 +68,7 @@ const auto reader_cgns = GmshReaderFactory::instance().emplace( ".cgns",
                                                                 });
 
 
-#if defined( FEELPP_HAS_GMSH_H )
+
 namespace detail
 {
 bool isOnProcessor( std::vector<rank_type> ghosts, rank_type partition, rank_type worldcommrank, rank_type worldcommsize)
@@ -89,9 +89,10 @@ bool isOnProcessor( std::vector<rank_type> ghosts, rank_type partition, rank_typ
         return true;
     return false;
 }
-}
-#endif
-}
+
+} // detail
+} // Feel
+#endif // FEELPP_HAS_GMSH_H
 
 #if !defined( FEELPP_HAS_GMSH_H)
 // From Gmsh - Common/StringUtils.h
@@ -259,5 +260,5 @@ int getInfoMSH(const int typeMSH, const char **const name)
         if(name) *name = "Unknown";
         return 0;
     }
-#endif
+#endif // FEELPP_HAS_GMSH_H
 }
