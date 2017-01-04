@@ -241,14 +241,14 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
                 //std::cout << "Pt: " << thedof << " Moved Elem " << curElt.id() << " G=" << curElt.G() << "\n";
             }
 
-            else
-            {
-                imesh->elements().modify( imesh->elementIterator( curElt ), //it_elt,
-                                          lambda::bind( &element_type::applyDisplacementG,
-                                                        lambda::_1,
-                                                        l,
-                                                        val ) );
-            }
+            // else
+            // {
+            //     imesh->elements().modify( imesh->elementIterator( curElt ), //it_elt,
+            //                               lambda::bind( &element_type::applyDisplacementG,
+            //                                             lambda::_1,
+            //                                             l,
+            //                                             val ) );
+            // }
         }
 
         // update internal data point of faces attached on this elt
