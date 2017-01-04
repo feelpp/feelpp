@@ -163,11 +163,9 @@ test2dTo2d()
     u1 = vf::project( _space=Xh1,
                       _range=elements( mesh ),
                       _expr=exprProj );
-    auto s1 = integrate( _range=elements( mesh ),
-                         _expr=inner( idv( u1 ) , idv( u1 ),mpl::int_<InnerProperties::IS_SAME>() ) ).evaluate()( 0,0 );
 
     auto mybackend = backend(_rebuild=true);
-#if 0
+
     auto opI = opInterpolation( _domainSpace=Xh1,
                                 _imageSpace=Xh2,
                                 _backend=mybackend );
@@ -190,7 +188,7 @@ test2dTo2d()
                           _expr=inner( idv( u1 )-idv( u2a ) , idv( u1 )-idv( u2a ), mpl::int_<InnerProperties::IS_SAME>() ) ).evaluate()( 0,0 );
     BOOST_CHECK_SMALL( s2a,1e-8 );
     BOOST_TEST_MESSAGE( "s2a=" << s2a );
-#endif
+
     if ( OrderGeo == 1 )
     {
     //-----------------------------------------------------
@@ -200,24 +198,13 @@ test2dTo2d()
                                  _imageSpace=XhNed );
     auto uNed = XhNed->element();
     opINed->apply( u1,uNed );
-    std::cout << "uNed.l2Norm() = " << uNed.l2Norm() << "\n";
-    std::ofstream fichier((boost::format("mytest_%1%p.txt")%Environment::worldComm().rank()).str().c_str(), ios::out | ios::trunc);  //déclaration du flux et ouverture du fichier
-
-     if(fichier)  // si l'ouverture a réussi
-     {
-         // instructions
-         for (int k=0;k<XhNed->nLocalDofWithGhost();++k)
-             fichier << k << " " << uNed(k) << "\n";
-         fichier.close();  // on referme le fichier
-     }
-     std::cout << "OnProc["<<Environment::worldComm().rank()<<"] nelements(elements( mesh )) = "<<nelements(elements( mesh ))<<"\n";
     auto sNed = integrate( _range=elements( mesh ),
                            _expr=inner( idv( uNed ) , idv( uNed ), mpl::int_<InnerProperties::IS_SAME>() ) ).evaluate()( 0,0 );
     BOOST_CHECK_SMALL( std::abs(s1-sNed),1e-2 );
     BOOST_TEST_MESSAGE( "sNed=" << sNed << "(vs s1=" << s1 << ")" );
     auto opINed2=opInterpolation( _domainSpace=XhNed,
                                   _imageSpace=Xh1 );
-    // uNed.on(_range=elements(mesh),_expr=vec(-sin(Py()),-sin(Px()) ) );
+    uNed.on(_range=elements(mesh),_expr=vec(-sin(Py()),-sin(Px()) ) );
     auto u1Ned = Xh1->element();
     opINed2->apply( uNed, u1Ned );
     double sNed2 = integrate( _range=elements( mesh ),
@@ -245,18 +232,8 @@ test2dTo2d()
                               _expr=inner( idv( u1RT ) , idv( u1RT ), mpl::int_<InnerProperties::IS_SAME>() ) ).evaluate()( 0,0 );
     //BOOST_CHECK_SMALL( std::abs(sRT-sRT2),1e-3 );
     BOOST_TEST_MESSAGE( "sRT2=" << sRT << "(vs sRT=" << sRT << ")" );
-
-
-    auto myExport = exporter( _mesh=mesh,_name="myExport" );
-    myExport->addRegions();
-    myExport->add("u1",u1);
-    myExport->add("uNed",uNed);
-    myExport->add("u1Ned",u1Ned);
-    myExport->add("uRT",uRT);
-    myExport->save();
-
     }
-#if 0
+
     //-------------------------------------------------------//
     //case 2 : with interpolation tool
     //-------------------------------------------------------//
@@ -295,7 +272,7 @@ test2dTo2d()
                          _expr=inner( idv( u2bisbis )-idv( u2bisproj ), idv( u2bisbis )-idv( u2bisproj ), mpl::int_<InnerProperties::IS_SAME>() ) ).evaluate()( 0,0 );
     BOOST_CHECK_SMALL( s4,1e-8 );
     BOOST_TEST_MESSAGE( "s4=" << s4 );
-#endif
+
 } // test2dTo2d
 
 template <uint16_type OrderGeo>
@@ -580,70 +557,70 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_2d_geo1 )
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo1 done" );
 }
 
-// BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_2d_geo2 )
-// {
-//     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo2" );
-//     using namespace test_operatorinterpolation;
+BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_2d_geo2 )
+{
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo2" );
+    using namespace test_operatorinterpolation;
 
-//     Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/2d2dgeo2" )
-//                                    % Environment::about().appName() );
+    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/2d2dgeo2" )
+                                   % Environment::about().appName() );
 
-//     test_operatorinterpolation::test2dTo2d<2>();
-//     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo2 done" );
-// }
+    test_operatorinterpolation::test2dTo2d<2>();
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo2 done" );
+}
 
-// BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_1d_geo1 )
-// {
-//     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo1" );
-//     using namespace test_operatorinterpolation;
+BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_1d_geo1 )
+{
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo1" );
+    using namespace test_operatorinterpolation;
 
-//     Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/2d1dgeo1" )
-//                                    % Environment::about().appName() );
+    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/2d1dgeo1" )
+                                   % Environment::about().appName() );
 
-//     //test_operatorinterpolation::test2dTo2d<3>(test_app);
-//     test_operatorinterpolation::test2dTo1d<1>();
-//     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo1 done" );
-// }
+    //test_operatorinterpolation::test2dTo2d<3>(test_app);
+    test_operatorinterpolation::test2dTo1d<1>();
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo1 done" );
+}
 
-// BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_1d_geo2 )
-// {
-//     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo2" );
-//     using namespace test_operatorinterpolation;
+BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_1d_geo2 )
+{
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo2" );
+    using namespace test_operatorinterpolation;
 
-//     Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/2d1dgeo2" )
-//                                    % Environment::about().appName() );
+    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/2d1dgeo2" )
+                                   % Environment::about().appName() );
 
-//     test_operatorinterpolation::test2dTo1d<2>();
-//     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo2 done" );
-// }
+    test_operatorinterpolation::test2dTo1d<2>();
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo2 done" );
+}
 
-// BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_smd )
-// {
-//     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_smd" );
-//     using namespace test_operatorinterpolation;
+BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_smd )
+{
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_smd" );
+    using namespace test_operatorinterpolation;
 
-//     Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/3d3dgeo1smd" )
-//                                    % Environment::about().appName() );
+    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/3d3dgeo1smd" )
+                                   % Environment::about().appName() );
 
-//     //test_operatorinterpolation::testSMD<2,1>();
-//     test_operatorinterpolation::testSMD<3,1>();
-//     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_smd done" );
-// }
+    //test_operatorinterpolation::testSMD<2,1>();
+    test_operatorinterpolation::testSMD<3,1>();
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_smd done" );
+}
 
-// #if defined(FEELPP_HAS_VTK)
-// BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_oplagp1_geo1 )
-// {
-//     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_oplagp1_geo1" );
-//     using namespace test_operatorinterpolation;
+#if defined(FEELPP_HAS_VTK)
+BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_oplagp1_geo1 )
+{
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_oplagp1_geo1" );
+    using namespace test_operatorinterpolation;
 
-//     Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/oplagp1geo1" )
-//                                    % Environment::about().appName() );
+    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/oplagp1geo1" )
+                                   % Environment::about().appName() );
 
 
-//     test_operatorinterpolation::test2dOpLagrangeP1<1>();
-//     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_oplagp1_geo1 done" );
-// }
-// #endif // FEELPP_HAS_VTK
+    test_operatorinterpolation::test2dOpLagrangeP1<1>();
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_oplagp1_geo1 done" );
+}
+#endif // FEELPP_HAS_VTK
 
 BOOST_AUTO_TEST_SUITE_END()
 
