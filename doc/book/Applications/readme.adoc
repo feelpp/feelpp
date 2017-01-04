@@ -1,6 +1,0 @@
-# Applications
-
-- link:Mesh/readme.adoc[Mesh]
-* link:Mesh/Partitioning/readme.adoc[Partitioning]
-* link:Mesh/Reading/readme.adoc[Reading]
-- link:Models/readme.adoc[Models]
