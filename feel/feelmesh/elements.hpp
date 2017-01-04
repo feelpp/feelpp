@@ -811,7 +811,7 @@ public:
                                        for ( uint16_type const& markerType : markersType )
                                        {
                                            if ( theface.hasMarker( markerType ) )
-                                               newEltMarkers[ markerType ] = theface.maker( markerType ).value();
+                                               newEltMarkers[ markerType ] = theface.marker( markerType ).value();
                                        }
                                    }
                                    for ( auto const& newMark : newEltMarkers )
