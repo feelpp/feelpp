@@ -97,18 +97,18 @@ public:
         typedef ElementType type;
     };
     typedef ElementType entity_type;
-    typedef boost::tuple<ElementType const*, size_type, uint16_type, rank_type> element_connectivity_type;
+    typedef boost::tuple<ElementType const*, uint16_type> element_connectivity_type;
 
     SubFaceOf()
         :
-        M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value ),
-        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value )
+        M_element0( 0, invalid_uint16_type_value ),
+        M_element1( 0, invalid_uint16_type_value )
     {}
 
     SubFaceOf( element_connectivity_type const& connect0 )
         :
         M_element0( connect0 ),
-        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value )
+        M_element1( 0, invalid_uint16_type_value )
     {}
     SubFaceOf( element_connectivity_type const& connect0,
                element_connectivity_type const& connect1 )
@@ -125,8 +125,8 @@ public:
     }
     SubFaceOf( SubFaceOfNone const& /*sf*/ )
         :
-        M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value ),
-        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value )
+        M_element0( 0, invalid_uint16_type_value ),
+        M_element1( 0, invalid_uint16_type_value )
     {
     }
     virtual ~SubFaceOf() {}
@@ -163,25 +163,25 @@ public:
     {
         return *boost::get<0>( M_element1 );
     }
-    size_type idElement0() const { return boost::get<1>( M_element0 ); }
-    uint16_type idInElement0() const { return boost::get<2>( M_element0 ); }
-    rank_type pidElement0() const { return boost::get<3>( M_element0 ); }
+    size_type idElement0() const { return this->element0().id(); }
+    uint16_type idInElement0() const { return boost::get<1>( M_element0 ); }
+    rank_type pidElement0() const { return this->element0().processId(); }
 
-    size_type idElement1() const { return boost::get<1>( M_element1 ); }
-    uint16_type idInElement1() const { return boost::get<2>( M_element1 ); }
-    rank_type pidElement1() const { return boost::get<3>( M_element1 ); }
-    
+    size_type idElement1() const { return this->element1().id(); }
+    uint16_type idInElement1() const { return boost::get<1>( M_element1 ); }
+    rank_type pidElement1() const { return this->element1().processId(); }
+
     size_type ad_first() const
     {
-        return boost::get<1>( M_element0 );
+        return this->element0().id();
     }
     uint16_type pos_first() const
     {
-        return boost::get<2>( M_element0 );
+        return boost::get<1>( M_element0 );
     }
     rank_type proc_first() const
     {
-        return boost::get<3>( M_element0 );
+        return this->element0().processId();
     }
     rank_type partition1( rank_type p ) const
     {
@@ -190,15 +190,15 @@ public:
 
     size_type ad_second() const
     {
-        return boost::get<1>( M_element1 );
+        return this->element1().id();
     }
     uint16_type pos_second() const
     {
-        return boost::get<2>( M_element1 );
+        return boost::get<1>( M_element1 );
     }
     rank_type proc_second() const
     {
-        return boost::get<3>( M_element1 );
+        return this->element1().processId();
     }
     rank_type partition2( size_type p ) const
     {
@@ -237,53 +237,50 @@ public:
 
     bool isConnectedTo0() const
     {
-        return ( boost::get<1>( M_element0 ) != invalid_size_type_value &&
-                 boost::get<2>( M_element0 ) != invalid_uint16_type_value &&
-                 boost::get<3>( M_element0 ) != invalid_rank_type_value );
+        return ( boost::get<0>( M_element0 ) != 0 );
     }
     bool isConnectedTo1() const
     {
-        return ( boost::get<1>( M_element1 ) != invalid_size_type_value &&
-                 boost::get<2>( M_element1 ) != invalid_uint16_type_value &&
-                 boost::get<3>( M_element1 ) != invalid_rank_type_value );
+        return ( boost::get<0>( M_element1 ) != 0 );
     }
 
     bool
     isGhostFace( rank_type p ) const
     {
-        return ( ( boost::get<3>( M_element1 ) != invalid_rank_type_value ) &&
-                 ( ( ( boost::get<3>( M_element0 ) == p ) && ( boost::get<3>( M_element1 ) < p ) ) ||
-                   ( ( boost::get<3>( M_element0 ) < p ) && ( boost::get<3>( M_element1 ) == p ) ) ) );
+        return ( this->isConnectedTo0() && this->isConnectedTo1() &&
+                 ( ( ( this->pidElement0() == p ) && ( this->pidElement1() < p ) ) ||
+                   ( ( this->pidElement0() < p ) && ( this->pidElement1() == p ) ) ) );
     }
 
     bool
     isInterProcessDomain( rank_type p ) const
     {
-        return ( ( boost::get<3>( M_element1 ) != invalid_rank_type_value ) &&
-                 ( ( boost::get<3>( M_element0 ) == p ) || ( boost::get<3>( M_element1 ) == p ) ) &&
-                 ( boost::get<3>( M_element0 ) != boost::get<3>( M_element1 ) ) );
+        return ( this->isConnectedTo0() && this->isConnectedTo1() &&
+                 ( ( this->pidElement0() == p ) || ( this->pidElement1() == p ) ) &&
+                 ( this->pidElement0() != this->pidElement1() ) );
     }
     bool
     isIntraProcessDomain( rank_type p ) const
     {
-        return ( ( boost::get<3>( M_element0 ) == p ) &&
-                 ( boost::get<3>( M_element1 ) == p ) );
+        bool hasConnect0 = this->isConnectedTo0();
+        bool hasConnect1 = this->isConnectedTo1();
+        if ( hasConnect0 && hasConnect1 )
+            return ( ( this->pidElement0() == p ) && ( this->pidElement1() == p ) );
+        else if ( hasConnect0 && !hasConnect1 )
+            return ( this->pidElement0() == p );
+        else if ( !hasConnect0 && hasConnect1 )
+            return ( this->pidElement1() == p );
+        return false;
     }
 
     void disconnect0()
     {
-        M_element0 = boost::make_tuple( ( ElementType const* )0,
-                                        invalid_size_type_value,
-                                        invalid_uint16_type_value,
-                                        invalid_rank_type_value );
+        M_element0 = boost::make_tuple( ( ElementType const* )0, invalid_uint16_type_value );
     }
 
     void disconnect1()
     {
-        M_element1 = boost::make_tuple( ( ElementType const* )0,
-                                        invalid_size_type_value,
-                                        invalid_uint16_type_value,
-                                        invalid_rank_type_value );
+        M_element1 = boost::make_tuple( ( ElementType const* )0, invalid_uint16_type_value );
     }
 
     void disconnect()
@@ -313,17 +310,10 @@ private:
     void serialize( Archive & ar, const unsigned int version )
         {
 #if 1
-            //ar & M_element0.template get<0>();
             ar & M_element0.template get<1>();
-            ar & M_element0.template get<2>();
-            ar & M_element0.template get<3>();
             M_element0.template get<0>() = 0;
 
-
-            //ar & M_element1.template get<0>();
             ar & M_element1.template get<1>();
-            ar & M_element1.template get<2>();
-            ar & M_element1.template get<3>();
             M_element1.template get<0>() = 0;
 #endif
         }
