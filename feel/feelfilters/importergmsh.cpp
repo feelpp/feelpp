@@ -23,9 +23,9 @@
  */
 #include <feel/feelfilters/importergmsh.hpp>
 
+#if defined(FEELPP_HAS_GMSH_H)
 namespace Feel
 {
-#if defined(FEELPP_HAS_GMSH_H)
 // EDF MED format
 const auto med = GmshReaderFactory::instance().emplace( ".med",
                                                         []( std::string fname )
