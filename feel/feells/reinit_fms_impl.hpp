@@ -74,23 +74,31 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
                   size_type index = M_functionspace->dof()->localToGlobal(elt, j, 0).index();
 
                   if (M_functionspace->dof()->dofGlobalProcessIsGhost( index ))
+                  {
                     M_ghostClusterToProc[ processorToCluster( index ) ] = index;
+                  }
 
                     indices[j] = index;
                     for ( uint16_type c = 0; c < Dim; ++c )
+                    {
                       M_coords[index][c] = M_functionspace->dof()->dofPoint( index ).template get<0>()[c];
+                    }
                 }
             for ( uint16_type j = 0; j < ndofv;++j )
+            {
                 for ( uint16_type k = j+1; k < ndofv;++k )
                     {
                       M_neighbors[indices[j]].insert( indices[k] );
                       M_neighbors[indices[k]].insert( indices[j] );
                     }
+            }
         }
 
     // periodic tables if necessary
     if ( M_periodicity.isPeriodic() )
+    {
         createPeriodicCorrespondanceTable();
+    }
 
 }
 

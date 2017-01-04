@@ -381,6 +381,7 @@ curl( ex const& f, std::vector<symbol> const& l )
 		}
 	}
 	CHECK(0) << "Invalid expression " << f << " cannot compute its curl\n";
+    return matrix{};
 }
 
 matrix
@@ -388,6 +389,7 @@ curl( matrix const& f, std::vector<symbol> const& l )
 {
 	LOG(INFO) << "matrix version\n";
     CHECK(0) << "not implemented yet\n";
+    return matrix{};
 }
 
 matrix
