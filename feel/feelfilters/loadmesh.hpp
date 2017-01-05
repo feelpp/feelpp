@@ -108,6 +108,9 @@ BOOST_PARAMETER_FUNCTION(
             mesh_name.extension() != ".geo" &&
             mesh_name.extension() != ".json" &&
             mesh_name.extension() != ".msh" &&
+            mesh_name.extension() != ".bdf" &&
+            mesh_name.extension() != ".cgns" &&
+            mesh_name.extension() != ".p3d" &&
             mesh_name.extension() != ".mesh" &&
             mesh_name.extension() != ".med" &&
             mesh_name.extension() != ".arm" )
@@ -174,12 +177,15 @@ BOOST_PARAMETER_FUNCTION(
 #endif
     
     if ( ( mesh_name.extension() == ".msh"  ) ||
+         ( mesh_name.extension() == ".bdf"  ) ||
+         ( mesh_name.extension() == ".cgns"  ) ||
+         ( mesh_name.extension() == ".p3d"  ) ||
          ( mesh_name.extension() == ".mesh"  ) ||
          ( mesh_name.extension() == ".med"  ) )
 
     {
         if ( worldcomm.isMasterRank() )
-            std::cout << "[loadMesh] Loading mesh in format msh: " << fs::system_complete(mesh_name) << "\n";
+            std::cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << "\n";
         auto m = loadGMSHMesh( _mesh=mesh,
                                _filename=mesh_name.string(),
                                _straighten=straighten,
@@ -196,9 +202,13 @@ BOOST_PARAMETER_FUNCTION(
                                _partition_file=partition_file,
                                _verbose=verbose
                                );
+        if ( worldcomm.isMasterRank() )
+            std::cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << " done\n";
 #if defined(FEELPP_HAS_HDF5)
         if ( savehdf5 )
             m->saveHDF5( mesh_name.stem().string()+".json" );
+        if ( worldcomm.isMasterRank() )
+            std::cout << "[loadMesh] Saving HDF5 mesh: " << fs::system_complete(mesh_name.stem().string()+".json") << std::endl;
 #endif
         return m;
     }
