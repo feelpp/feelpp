@@ -9,8 +9,18 @@ Feel++ TestSuite
 Wed Jan 4 09:01:32 2017 +0100 (commmit d204f6503b4483e455249067fbf6e7b3ac604ba7)
 
 ### Environment
-```module load latest.testing.profile```  
-```module load tools/CMake/3.5.2```
+Loaded Modulefiles:  
+```gcc/4.9.0```  
+```openmpi/1.10```  
+```boost/1.59```  
+```petsc/3.6.3```  
+```slepc/3.6.3```  
+```gmsh/2.10.1```  
+```hdf5/1.8.15-patch1```  
+```VTK/5.10.1```  
+```ParaView/5.0.1```  
+```fftw/3.3.4```  
+```CMake/3.5.2```  
 
 ### CMake options
 ```
