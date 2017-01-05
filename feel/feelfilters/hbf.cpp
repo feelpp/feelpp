@@ -24,7 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <fstream>
 #include <iostream>
 #include <feel/feelcore/environment.hpp>
-#include <fftw3.h>
+//#include <fftw3.h>
 #include "hbf.hpp"
 
 
