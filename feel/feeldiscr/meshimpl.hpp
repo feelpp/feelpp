@@ -1390,8 +1390,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     // std::vector< std::set<size_type> > pointsFromFace( this->numLocalFaces() );
     // std::array<size_type,element_type::numVertices> pointIdInElt;
     Eigen::Matrix<uint32_type,element_type::numVertices,1> pointIdInElt;
-    for ( uint16_type f = 0; f < element_type::numVertices; ++f )
-        pointIdInElt[f] = iv->point( f ).id();
+    // for ( uint16_type f = 0; f < element_type::numVertices; ++f )
+    //     pointIdInElt[f] = iv->point( f ).id();
 
     std::set<size_type> s;
     for ( ; iv != en; ++iv )
