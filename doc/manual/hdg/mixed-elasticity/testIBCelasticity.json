@@ -4,10 +4,9 @@
     "Model":"hdg",
     "Materials":
     {
-        "omega":
+        "cylinder":
         {
-            "name":"copper",
-			"rho":"1",
+            "name":"steel",
             "lambda":"1",
 	    	"mu":"1"
         }
@@ -18,16 +17,23 @@
         {
             "SourceTerm":
             {
-                "omega":
+                "cylinder":
                 {
-					"expr":"{8,0,0}"
+					"expr":"{0,0,0}"
+                }
+            },
+            "Integral":
+            {
+                "top":
+                {
+                    "expr":"{0,0,0}:x:y:z"
                 }
             },
             "Neumann":
             {
-                "out":
+                "lateral":
                 {
-                     "expr":"{1+6*x,2*y,0, 2*y,1+2*x,0, 0,0,3+2*x}:x:y:z"
+                    "expr":"{0,0,0}:x:y:z"
                 }
             }
 		},
@@ -35,17 +41,9 @@
 		{
 	    	"Dirichlet":
 	    	{
-        		"top":
-                {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-                },
         		"bottom":
                 {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
-                },
-        		"in":
-                {
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+		     		"expr":"{1,0,0}:x:y:z" 
                 }
  	    	}
     	},
@@ -53,9 +51,9 @@
 		{
 			"u_exact":
 			{
-				"omega":
+				"cylinder":
 				{
-		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+		     		"expr":"{1,0,0}:x:y:z" 
 				}
 			}
 		}

@@ -14,7 +14,7 @@
     },
     "BoundaryConditions":
     {
-        "strain":
+        "stress":
         {
             "SourceTerm":
             {
@@ -77,7 +77,7 @@
      },
     "PostProcess":
     {
-        "Fields":["strain","displacement"]
+        "Fields":["stress","displacement"]
     }
 }
 
