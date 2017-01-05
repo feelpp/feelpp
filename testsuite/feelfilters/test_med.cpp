@@ -30,13 +30,13 @@
 #define USE_BOOST_TEST 1
 //#undef USE_BOOST_TEST
 #if defined(USE_BOOST_TEST)
-#define BOOST_TEST_MODULE test_med
+#define BOOST_TEST_MODULE med
 #include <testsuite/testsuite.hpp>
 #endif
 
 #include <string>
 
-#include <feel/feelfilters/loadMEDmesh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 
 using namespace Feel;
 
@@ -46,7 +46,7 @@ makeOptions()
 {
     Feel::po::options_description medoptions("Med options");
     medoptions.add_options()
-        ("medfile", Feel::po::value<std::string>()->default_value( "HR_New_GMSH.med" ), "name of the input MED file")
+        ("medfile", Feel::po::value<std::string>()->default_value( "test_med.med" ), "name of the input MED file")
         ;
     return medoptions.add( Feel::feel_options() );
 }
@@ -78,23 +78,26 @@ void runTest0()
 
     if ( !filename.empty() )
     {
-        mesh = loadMEDMesh( _mesh=new mesh_type,
-                                _filename=filename,
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+        mesh = loadMesh( _mesh=new mesh_type,
+			 _filename=filename,
+			 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 
-        Feel::cout << "Number of vertices in mesh : " << mesh->numVertices() << "\n";
-        Feel::cout << "Number of faces in mesh : " << mesh->numFaces() << "\n";
-        Feel::cout << "Number of edges in mesh : " << mesh->numEdges() << "\n";
-        Feel::cout << "Number of elts in mesh : " << mesh->numElements() << std::endl;
-
-        Feel::cout << "Markers:" << std::endl;
-        for (auto marker:  mesh->markerNames() )
-        {
-            auto name = marker.first;
-            auto data = marker.second;
-            Feel::cout << "\t" << name << " dim=" << data[1] << " (" << name.size() << ")\n";
-        }
-        Feel::cout << std::endl;
+	if ( Environment::isMasterRank() )
+	  {
+	    std::cout << "Number of vertices in mesh : " << mesh->numVertices() << std::endl;
+	    std::cout << "Number of faces in mesh : " << mesh->numFaces() << std::endl;
+	    std::cout << "Number of edges in mesh : " << mesh->numEdges() << std::endl;
+	    std::cout << "Number of elts in mesh : " << mesh->numElements() << std::endl;
+	  }
+	
+        // Feel::cout << "Markers:" << std::endl;
+        // for (auto marker:  mesh->markerNames() )
+        // {
+        //     auto name = marker.first;
+        //     auto data = marker.second;
+        //     Feel::cout << "\t" << name << " dim=" << data[1] << " (" << name.size() << ")\n";
+        // }
+        // Feel::cout << std::endl;
     }
 }
 

@@ -30,7 +30,7 @@ if (EXISTS $ENV{HOME})
 
   message(STATUS "Copying geo/msh files to $ENV{HOME}/feel/geo")
 
-  foreach(exp "medit/*.geo" "medit/*.mesh" "gmsh/*.geo" "gmsh/*.stl" "gmsh/feelpp/feel.geo" )
+  foreach(exp "med/*.med" "medit/*.geo" "medit/*.mesh" "gmsh/*.geo" "gmsh/*.stl" "gmsh/feelpp/feel.geo" )
     FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/${exp}")
     foreach(file ${files})
       get_filename_component(filename ${file} NAME )
@@ -55,7 +55,7 @@ if (DEFINED ENV{FEELPP_WORKDIR})
 
   message(STATUS "Copying geo/msh files to FEELPP_WORKDIR=$ENV{FEELPP_WORKDIR}/geo")
 
-  foreach(exp "medit/*.geo" "medit/*.mesh" "gmsh/*.geo" "gmsh/*.stl" "gmsh/feelpp/feel.geo" )
+  foreach(exp "med/*.geo" "med/*.med" "medit/*.geo" "medit/*.mesh" "gmsh/*.geo" "gmsh/*.stl" "gmsh/feelpp/feel.geo" )
     FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/${exp}")
     foreach(file ${files})
       get_filename_component(filename ${file} NAME )
