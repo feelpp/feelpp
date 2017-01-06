@@ -1334,6 +1334,12 @@ public:
     //@}
 
 protected:
+    /**
+     * generate the super sampling M_Xi depending of the options
+     **/
+    void generateSuperSampling();
+    bool buildSampling();
+
     crb_elements_db_type M_elements_database;
 
     boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
@@ -2242,46 +2248,7 @@ CRB<TruthModelType>::offline()
         M_coeff_pr_ini_online.resize(0);
         M_coeff_du_ini_online.resize(0);
 
-        LOG(INFO) << "[CRB::offline] compute random sampling\n";
-
-        int total_proc = this->worldComm().globalSize();
-        std::string sampling_mode = soption("crb.sampling-mode");
-        bool all_proc_same_sampling=boption("crb.all-procs-have-same-sampling");
-        int sampling_size = ioption("crb.sampling-size");
-
-        std::string file_name;
-        if( all_proc_same_sampling )
-            file_name = ( boost::format("M_Xi_%1%_"+sampling_mode )% sampling_size ).str();
-        else
-            file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%") % sampling_size %proc_number %total_proc ).str();
-
-        std::ifstream file ( file_name );
-        if( ! file )
-        {
-            if( sampling_mode == "random" )
-                M_Xi->randomize( sampling_size , all_proc_same_sampling, "", false );
-            else if( sampling_mode == "log-random" )
-                M_Xi->randomize( sampling_size , all_proc_same_sampling, "", true );
-            else if( sampling_mode == "log-equidistribute" )
-                M_Xi->logEquidistribute( sampling_size , all_proc_same_sampling );
-            else if( sampling_mode == "equidistribute" )
-                M_Xi->equidistribute( sampling_size , all_proc_same_sampling  );
-            else
-                throw std::logic_error( "[CRB::offline] ERROR invalid option crb.sampling-mode, please select between log-random, log-equidistribute or equidistribute" );
-
-            if ( all_proc_same_sampling )
-                this->worldComm().barrier();
-            if ( !all_proc_same_sampling || this->worldComm().isMasterRank() )
-                M_Xi->writeOnFile(file_name);
-        }
-        else
-        {
-            M_Xi->clear();
-            M_Xi->readFromFile(file_name);
-        }
-
-        M_WNmu->setSuperSampling( M_Xi );
-
+        this->generateSuperSampling();
 
         if( this->worldComm().isMasterRank() )
             std::cout<<"[CRB offline] M_error_type = "<<M_error_type<<std::endl;
@@ -2412,33 +2379,7 @@ CRB<TruthModelType>::offline()
 
     //bool reuse_prec = boption(_name="crb.reuse-prec") ;
 
-    bool use_predefined_WNmu = boption(_name="crb.use-predefined-WNmu") ;
-
-    int N_log_equi = ioption(_name="crb.use-logEquidistributed-WNmu") ;
-    int N_equi = ioption(_name="crb.use-equidistributed-WNmu") ;
-
-    if( N_log_equi > 0 || N_equi > 0 )
-        use_predefined_WNmu = true;
-
-    if ( use_predefined_WNmu )
-    {
-        std::string file_name = ( boost::format("SamplingWNmu") ).str();
-        std::ifstream file ( file_name );
-        if( ! file )
-        {
-            throw std::logic_error( "[CRB::offline] ERROR the file SamplingWNmu doesn't exist so it's impossible to known which parameters you want to use to build the database" );
-        }
-        else
-        {
-            M_WNmu->clear();
-            int sampling_size = M_WNmu->readFromFile(file_name);
-            M_iter_max = sampling_size;
-        }
-        mu = M_WNmu->at( M_N ); // first element
-
-        if( this->worldComm().isMasterRank() )
-            std::cout<<"[CRB::offline] read WNmu ( sampling size : "<<M_iter_max<<" )"<<std::endl;
-    }
+    bool use_predefined_WNmu = buildSampling();
 
     LOG(INFO) << "[CRB::offline] strategy "<< M_error_type <<"\n";
     if( this->worldComm().isMasterRank() ) std::cout << "[CRB::offline] strategy "<< M_error_type <<std::endl;
@@ -11194,6 +11135,121 @@ CRB<TruthModelType>::rebuildDB()
     return rebuild;
 }
 #endif
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::generateSuperSampling()
+{
+    LOG(INFO) << "[CRB::offline] compute super sampling\n";
+
+    int proc_number = worldComm().globalRank();
+    int total_proc = worldComm().globalSize();
+    bool all_proc_same_sampling = boption( "crb.all-procs-have-same-sampling" );
+    int sampling_size = ioption("crb.sampling-size");
+    std::string sampling_mode = soption("crb.sampling-mode");
+
+    std::string file_name;
+    if( all_proc_same_sampling )
+        file_name = ( boost::format("M_Xi_%1%_"+sampling_mode )% sampling_size ).str();
+    else
+        file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%") % sampling_size %proc_number %total_proc ).str();
+
+    std::ifstream file ( file_name );
+
+    if ( !file )
+    {
+        std::string supersamplingname =(boost::format("Dmu-%1%-generated-by-master-proc") %sampling_size ).str();
+        if( sampling_mode == "random" )
+            this->M_Xi->randomize( sampling_size , all_proc_same_sampling, "", false );
+        else if( sampling_mode == "log-random" )
+            this->M_Xi->randomize( sampling_size , all_proc_same_sampling , supersamplingname );
+        else if( sampling_mode == "log-equidistribute" )
+            this->M_Xi->logEquidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
+        else if( sampling_mode == "equidistribute" )
+            this->M_Xi->equidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
+        else
+            throw std::logic_error( "[CRBSaddlePoint::offline] ERROR invalid option crb.sampling-mode, please select between log-random, log-equidistribute or equidistribute" );
+
+        if ( all_proc_same_sampling )
+            this->worldComm().barrier();
+        if ( !all_proc_same_sampling || this->worldComm().isMasterRank() )
+            M_Xi->writeOnFile(file_name);
+    }
+    else
+    {
+        this->M_Xi->clear();
+        this->M_Xi->readFromFile(file_name);
+    }
+
+    this->M_WNmu->setSuperSampling( this->M_Xi );
+} //generateSuperSampling()
+
+template<typename TruthModelType>
+bool
+CRB<TruthModelType>::buildSampling()
+{
+    bool use_predefined_WNmu = boption("crb.use-predefined-WNmu");
+    int N_log_equi = ioption("crb.use-logEquidistributed-WNmu");
+    int N_equi = ioption("crb.use-equidistributed-WNmu");
+    int N_random = ioption( "crb.use-random-WNmu" );
+
+    std::string file_name = ( boost::format("SamplingWNmu") ).str();
+    std::ifstream file ( file_name );
+    this->M_WNmu->clear();
+
+    if ( use_predefined_WNmu ) // In this case we want to read the sampling
+    {
+        if( ! file ) // The user forgot to give the sampling file
+            throw std::logic_error( "[CRB::offline] ERROR the file SamplingWNmu doesn't exist so it's impossible to known which parameters you want to use to build the database" );
+        else
+        {
+            int sampling_size = this->M_WNmu->readFromFile(file_name);
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Read WNmu ( sampling size : "
+                         << sampling_size <<" )"<<std::endl;
+            LOG( INFO )<<"[CRB::offline] Read WNmu ( sampling size : "
+                       << sampling_size <<" )";
+        }
+    }
+    else if ( this->M_error_type==CRB_NO_RESIDUAL )// We generate the sampling with choosen strategy
+    {
+        if ( N_log_equi>0 )
+        {
+            this->M_WNmu->logEquidistribute( N_log_equi , true );
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
+                         <<N_log_equi<<" )"<<std::endl;
+            LOG( INFO )<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
+                       <<N_log_equi<<" )";
+        }
+        else if ( N_equi>0 )
+        {
+            this->M_WNmu->equidistribute( N_equi , true );
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
+                         <<N_equi<<" )"<<std::endl;
+            LOG( INFO )<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
+                       <<N_equi<<" )";
+        }
+        else if ( N_random>0 )
+        {
+            this->M_WNmu->randomize( N_random , true );
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Randomize WNmu ( sampling size : "
+                         <<N_random<<" )"<<std::endl;
+            LOG( INFO )<<"[CRB::offline] Randomize WNmu ( sampling size : "
+                       <<N_random<<" )";
+        }
+        else // In this case we don't know what sampling to use
+            throw std::logic_error( "[CRB::offline] ERROR : You have to choose an appropriate strategy for the offline sampling : random, equi, logequi or predefined" );
+
+        this->M_WNmu->writeOnFile(file_name);
+        use_predefined_WNmu=true;
+    } //build sampling
+
+    return use_predefined_WNmu;
+} //buildSampling()
+
 
 template<typename TruthModelType>
 bool
