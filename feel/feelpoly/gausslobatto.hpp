@@ -44,6 +44,7 @@
 
 #include <feel/feelpoly/jacobi.hpp>
 #include <feel/feelpoly/quadpoint.hpp>
+#include <feel/feelpoly/expansions.hpp>
 #include <feel/feelpoly/pointsetinterpolation.hpp>
 #include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelalg/glas.hpp>
@@ -97,7 +98,7 @@ public :
     {
         ublas::vector<T> px( Npoints );
 
-        details::gausslobattojacobi<Npoints, T, ublas::vector<T>, ublas::vector<T> >( this->M_w, px );
+        Feel::details::gausslobattojacobi<Npoints, T, ublas::vector<T>, ublas::vector<T> >( this->M_w, px );
         ublas::row( this->M_points, 0 ) = px;
     }
 
@@ -135,15 +136,15 @@ public :
         // build rules in x and y direction
         weights_type wx( DegreeX );
         weights_type px( DegreeX );
-        details::gausslobattojacobi<DegreeX,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        Feel::details::gausslobattojacobi<DegreeX,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 
         weights_type wy( DegreeY );
         weights_type py( DegreeY );
-        details::left_gaussradaujacobi<DegreeY,T, ublas::vector<T>, ublas::vector<T> >( wy, py, 1.0, 0.0 );
+        Feel::details::left_gaussradaujacobi<DegreeY,T, ublas::vector<T>, ublas::vector<T> >( wy, py, 1.0, 0.0 );
 
         // coordinate in cartesian space
         node_type eta( 2 );
-        details::xi<TRIANGLE, value_type> to_xi;
+        Feel::details::xi<TRIANGLE, value_type> to_xi;
 
         for ( int i = 0,  k = 0; i < DegreeX; ++i )
         {
@@ -200,19 +201,19 @@ public :
         // build rules in x and y direction
         weights_type wx( DegreeX );
         weights_type px( DegreeX );
-        details::gausslobattojacobi<DegreeX,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        Feel::details::gausslobattojacobi<DegreeX,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 
         weights_type wy( DegreeY );
         weights_type py( DegreeY );
-        details::left_gaussradaujacobi<DegreeY,T, ublas::vector<T>, ublas::vector<T> >( wy, py, 1.0, 0.0 );
+        Feel::details::left_gaussradaujacobi<DegreeY,T, ublas::vector<T>, ublas::vector<T> >( wy, py, 1.0, 0.0 );
 
         weights_type wz( DegreeZ );
         weights_type pz( DegreeZ );
-        details::left_gaussradaujacobi<DegreeZ,T, ublas::vector<T>, ublas::vector<T> >( wz, pz, 2.0, 0.0 );
+        Feel::details::left_gaussradaujacobi<DegreeZ,T, ublas::vector<T>, ublas::vector<T> >( wz, pz, 2.0, 0.0 );
 
         // coordinate in cartesian space
         node_type eta( 3 );
-        details::xi<TETRAHEDRON, value_type> to_xi;
+        Feel::details::xi<TETRAHEDRON, value_type> to_xi;
 
         for ( int i = 0,  k = 0; i < DegreeX; ++i )
         {
@@ -274,7 +275,7 @@ public :
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gausslobattojacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        Feel::details::gausslobattojacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 
         for ( int i = 0,  k = 0; i < Degree; ++i )
         {
@@ -324,7 +325,7 @@ public :
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gausslobattojacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        Feel::details::gausslobattojacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 
         for ( int i = 0,  k = 0; i < Degree; ++i )
         {
@@ -463,7 +464,7 @@ private:
         vector_type wx( Order+1 );
         vector_type px( Order+1 );
 
-        details::gausslobattojacobi<Order+1, T, vector_type, vector_type >( wx, px );
+        Feel::details::gausslobattojacobi<Order+1, T, vector_type, vector_type >( wx, px );
 
         ublas::vector_range<vector_type> inner_pts ( px, ublas::range( 1, px.size()-1 ) );
 
