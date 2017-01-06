@@ -210,20 +210,7 @@ CRBSaddlePoint<TruthModelType>::save( Archive & ar, const unsigned int version )
 
     LOG(INFO) <<"[CRBSaddlepoint::save] version : "<<version<<std::endl;
 
-    ar & BOOST_SERIALIZATION_NVP( this->M_output_index );
-    ar & BOOST_SERIALIZATION_NVP( this->M_N );
-    ar & BOOST_SERIALIZATION_NVP( this->M_rbconv );
-    ar & BOOST_SERIALIZATION_NVP( this->M_error_type );
-    ar & BOOST_SERIALIZATION_NVP( this->M_Xi );
-    ar & BOOST_SERIALIZATION_NVP( this->M_WNmu );
-    ar & BOOST_SERIALIZATION_NVP( this->M_Aqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_Fqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_Lqm_pr );
 
-    ar & BOOST_SERIALIZATION_NVP( this->M_current_mu );
-    ar & BOOST_SERIALIZATION_NVP( this->M_no_residual_index );
-
-    ar & BOOST_SERIALIZATION_NVP( this->M_maxerror );
 } //save( ... )
 
 
@@ -237,71 +224,21 @@ CRBSaddlePoint<TruthModelType>::load( Archive & ar, const unsigned int version )
 
     LOG(INFO) <<"[CRBSaddlePoint::load] version"<< version <<std::endl;
 
-    ar & BOOST_SERIALIZATION_NVP( this->M_output_index );
-    ar & BOOST_SERIALIZATION_NVP( this->M_N );
-    ar & BOOST_SERIALIZATION_NVP( this->M_rbconv );
-    ar & BOOST_SERIALIZATION_NVP( this->M_error_type );
-    ar & BOOST_SERIALIZATION_NVP( this->M_Xi );
-    ar & BOOST_SERIALIZATION_NVP( this->M_WNmu );
-    ar & BOOST_SERIALIZATION_NVP( this->M_Aqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_Fqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_Lqm_pr );
 
-
-    ar & BOOST_SERIALIZATION_NVP( this->M_current_mu );
-    ar & BOOST_SERIALIZATION_NVP( this->M_no_residual_index );
-
-    ar & BOOST_SERIALIZATION_NVP( this->M_maxerror );
 } // load( ... )
 
 template<typename TruthModelType>
 void
 CRBSaddlePoint<TruthModelType>::saveDB()
 {
-    super::saveDB();
 
-    fs::ofstream ofs( M_crbdb.dbLocalPath() / M_crbdb.dbFilename() );
-
-    if ( ofs )
-    {
-        boost::archive::text_oarchive oa( ofs );
-        // write class instance to archive
-        oa << *this;
-        // archive and stream closed when destructors are called
-    }
 } //saveDB()
 
 template<typename TruthModelType>
 bool
 CRBSaddlePoint<TruthModelType>::loadDB()
 {
-    /*
-    if ( this->rebuildDB() )
-        return false;
 
-    super_crb::loadDB();
-
-    fs::path db = M_crbdb.lookForDB();
-
-    if ( db.empty() )
-        return false;
-
-    if ( !fs::exists( db ) )
-        return false;
-
-    //std::cout << "Loading " << db << "...\n";
-    fs::ifstream ifs( db );
-
-    if ( ifs )
-    {
-        boost::archive::text_iarchive ia( ifs );
-        // write class instance to archive
-        ia >> *this;
-        //std::cout << "Loading " << db << " done...\n";
-        // archive and stream closed when destructors are called
-        return true;
-    }
-    */
     return false;
 } // loadDB()
 
