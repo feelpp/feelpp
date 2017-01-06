@@ -1339,6 +1339,7 @@ protected:
      **/
     void generateSuperSampling();
     bool buildSampling();
+    virtual void addBasis( element_type& u, element_type& udu );
 
     crb_elements_db_type M_elements_database;
 
@@ -1568,8 +1569,6 @@ protected:
 
 po::options_description crbOptions( std::string const& prefix = "" );
 po::options_description crbSEROptions( std::string const& prefix = "" );
-
-
 
 
 template<typename TruthModelType>
@@ -2483,7 +2482,6 @@ CRB<TruthModelType>::offline()
                 timer2.restart();
             }
         }//steady
-
         else
         {
             timer2.restart();
@@ -2518,14 +2516,8 @@ CRB<TruthModelType>::offline()
         timer3.restart();
         if ( M_model->isSteady() )
         {
-            M_model->rBFunctionSpace()->addPrimalBasisElement( u );
-            tpr=timer2.elapsed();
-            timer2.restart();
-            M_model->rBFunctionSpace()->addDualBasisElement( udu );
-            tdu=timer2.elapsed();
-            time=timer3.elapsed();
-            //M_WN.push_back( u );
-            //M_WNdu.push_back( udu );
+            this->addBasis( u, udu );
+
         }//end of steady case
 
         else
@@ -2731,9 +2723,6 @@ CRB<TruthModelType>::offline()
         {
             if ( M_model->isSteady() )
             {
-                std::cout<<"-- time to add the primal basis : "<<tpr<<" s"<<std::endl;
-                std::cout<<"-- time to add the dual basis : "<<tdu<<" s"<<std::endl;
-                std::cout<<"-- time to add primal and dual basis : "<<time<<" s"<<std::endl;
             }
             else
             {
@@ -11250,6 +11239,17 @@ CRB<TruthModelType>::buildSampling()
     return use_predefined_WNmu;
 } //buildSampling()
 
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::addBasis( element_type& u, element_type& udu )
+{
+    tic();
+    M_model->rBFunctionSpace()->addPrimalBasisElement( u );
+    toc("Add Primal Basis Function");
+    tic();
+    M_model->rBFunctionSpace()->addDualBasisElement( udu );
+    toc("Add Dual Basis Function");
+}
 
 template<typename TruthModelType>
 bool
