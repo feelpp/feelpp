@@ -5,7 +5,7 @@ git:
 
 matrix:
   include:
-      - env: BUILD="ubuntu-14.04,clang-3.6" DOCKERFILE="Dockerfile-14.04" TARGET_IMAGE="feelpp/develop:14.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O2 -DNDEBUG"
+      - env: BUILD="ubuntu-14.04,clang-3.6" DOCKERFILE="Dockerfile-14.04" TARGET_IMAGE="feelpp/develop:14.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O2 -DNDEBUG" CXX="clang++-3.6" CC="clang-3.6"
         sudo: required
         services:
             - docker
@@ -13,7 +13,7 @@ matrix:
         sudo: required
         services:
             - docker
-      - env: BUILD="ubuntu-16.04,clang-3.8" DOCKERFILE="Dockerfile-16.04" TARGET_IMAGE="feelpp/develop:16.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O2 -DNDEBUG"
+      - env: BUILD="ubuntu-16.04,clang-3.8" DOCKERFILE="Dockerfile-16.04" TARGET_IMAGE="feelpp/develop:16.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O2 -DNDEBUG" CXX="clang++-3.8" CC="clang-3.8"
         sudo: required
         services:
             - docker
@@ -26,7 +26,7 @@ matrix:
         services:
             - docker      
   allow_failures:
-  - env: BUILD="ubuntu-16.04,clang-3.8" DOCKERFILE="Dockerfile-16.04" TARGET_IMAGE="feelpp/develop:16.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O2 -DNDEBUG"
+  - env: BUILD="ubuntu-16.04,clang-3.8" DOCKERFILE="Dockerfile-16.04" TARGET_IMAGE="feelpp/develop:16.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O2 -DNDEBUG" CXX="clang++-3.8" CC="clang-3.8"
   - env: BUILD="ubuntu-16.10,gcc-6.2" DOCKERFILE="Dockerfile-16.10" TARGET_IMAGE="feelpp/develop:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O2 -DNDEBUG" CXX="g++" CC="gcc"
 
 before_install:
