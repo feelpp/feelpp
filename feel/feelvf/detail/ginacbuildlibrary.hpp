@@ -26,6 +26,7 @@
 #define FEELPP_DETAIL_GINACBUILDLIBRARY_HPP 1
 
 #include <feel/feelcore/feelmacros.hpp>
+#include <feel/feelcore/environment.hpp>
 
 #if defined(__clang__)
 #if FEELPP_CLANG_AT_LEAST(3,9)
@@ -66,7 +67,7 @@ ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::string 
  * @brief get a filename for ginac lib define by use a singleton counter
  */
 FEELPP_EXPORT std::string
-ginacGetDefaultFileName( std::string const& exprDesc, std::string const& dirLibExpr = "" );
+ginacGetDefaultFileName( std::string const& exprDesc, std::string const& dirLibExpr = Environment::exprRepository() );
 
 
 } // namespace detail
