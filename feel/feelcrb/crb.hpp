@@ -1339,7 +1339,7 @@ protected:
      **/
     void generateSuperSampling();
     bool buildSampling();
-    virtual void addBasis( element_type& u, element_type& udu );
+    virtual void addBasis( element_type& u, element_type& udu, parameter_type& mu );
 
     crb_elements_db_type M_elements_database;
 
@@ -2516,8 +2516,7 @@ CRB<TruthModelType>::offline()
         timer3.restart();
         if ( M_model->isSteady() )
         {
-            this->addBasis( u, udu );
-
+            this->addBasis( u, udu, mu );
         }//end of steady case
 
         else
@@ -11241,7 +11240,7 @@ CRB<TruthModelType>::buildSampling()
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::addBasis( element_type& u, element_type& udu )
+CRB<TruthModelType>::addBasis( element_type& u, element_type& udu, parameter_type& mu )
 {
     tic();
     M_model->rBFunctionSpace()->addPrimalBasisElement( u );
