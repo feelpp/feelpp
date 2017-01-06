@@ -110,6 +110,8 @@ BOOST_PARAMETER_FUNCTION(
 #endif
     ImporterGmsh<_mesh_type> import( filename_with_path, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
     fs::path p_fname( filename_with_path );
+
+#if defined (FEELPP_HAS_GMSH_H)
     if ( p_fname.extension() == ".med" ||
          p_fname.extension() == ".bdf" ||
          p_fname.extension() == ".cgns" ||
@@ -117,6 +119,7 @@ BOOST_PARAMETER_FUNCTION(
          p_fname.extension() == ".mesh"
          )
     {
+        tic();
         auto m = GmshReaderFactory::instance().at(p_fname.extension().string())( filename_with_path );
         if(m.first > 1)
         {
@@ -124,8 +127,11 @@ BOOST_PARAMETER_FUNCTION(
         }
         import.setGModel(m.second );
         import.setInMemory(true);
+        using namespace std::string_literals;
+        toc("loadGMSHMesh.reader"s+p_fname.extension().string(), FLAGS_v>0);
     }
-
+#endif // FEELPP_HAS_GMSH_H
+    
     // need to replace physical_region by elementary_region while reading
     if ( physical_are_elementary_regions )
     {
@@ -133,8 +139,11 @@ BOOST_PARAMETER_FUNCTION(
     }
     import.setScaling( scale );
     import.setRespectPartition( respect_partition );
+    tic();
     _mesh->accept( import );
+    toc("loadGMSHMesh.readmesh", FLAGS_v>0);
 
+    tic();
     if ( update )
     {
         _mesh->components().reset();
@@ -146,6 +155,7 @@ BOOST_PARAMETER_FUNCTION(
     {
         _mesh->components().reset();
     }
+    toc("loadGMSHMesh.update", FLAGS_v>0);
 
     if ( straighten && _mesh_type::nOrder > 1 )
         return straightenMesh( _mesh, worldcomm.subWorldComm() );
