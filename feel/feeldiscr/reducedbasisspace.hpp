@@ -449,8 +449,7 @@ public :
         {
             space_element_type e = M_feSpace->element();
             e = *vec;
-
-            M_primal_rb_basis.push_back( e );
+            this->addPrimalBasisElement( e );
         }
 
     space_element_type& primalBasisElement( int index )
@@ -469,6 +468,13 @@ public :
         {
             this->addDualBasisElement( *e );
         }
+    void addDualBasisElement( vector_ptrtype const & vec )
+        {
+            space_element_type e = M_feSpace->element();
+            e = *vec;
+            this->addDualBasisElement( e );
+        }
+
 
     space_element_type& dualBasisElement( int index )
         {
