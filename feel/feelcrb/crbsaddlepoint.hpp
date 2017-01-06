@@ -163,6 +163,35 @@ public:
         super( name, model )
         {}
 
+    void addBasis( element_type& U, element_type& Udu, parameter_type& mu )
+    {
+        auto u = U.template elementPtr<0>();
+        auto p = U.template elementPtr<1>();
+        auto udu = Udu.template elementPtr<0>();
+        auto pdu = Udu.template elementPtr<1>();
+        auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
+        auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
+
+        tic();
+        XN0->addPrimalBasisElement( u );
+        XN0->addDualBasisElement( udu );
+        toc("Add Basis Function 0");
+        tic();
+        XN1->addPrimalBasisElement( p );
+        XN1->addDualBasisElement( pdu );
+        toc("Add Basis Function 1");
+
+        if ( boption("crb.saddlepoint.add-supremizer") )
+        {
+            tic();
+            auto us = this->M_model->supremizer( mu, p );
+            XN0->addPrimalBasisElement( us );
+            XN0->addDualBasisElement( us );
+            toc("Supremizer computation");
+        }
+
+
+    }
 
     //@{ /// Database
     void saveDB();
