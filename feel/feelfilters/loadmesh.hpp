@@ -288,6 +288,4 @@ BOOST_PARAMETER_FUNCTION(
 
 } // Feel namespace
 
-#endif /* FEELPP_HAS_GMSH */
-
 #endif /* FEELPP_LOADMESH_HPP */
