@@ -109,6 +109,22 @@ BOOST_PARAMETER_FUNCTION(
     LOG(WARNING) << "Gmsh support not available: refine and repartition operations are not supported.";
 #endif
     ImporterGmsh<_mesh_type> import( filename_with_path, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
+    fs::path p_fname( filename_with_path );
+    if ( p_fname.extension() == ".med" ||
+         p_fname.extension() == ".bdf" ||
+         p_fname.extension() == ".cgns" ||
+         p_fname.extension() == ".p3d" ||
+         p_fname.extension() == ".mesh"
+         )
+    {
+        auto m = GmshReaderFactory::instance().at(p_fname.extension().string())( filename_with_path );
+        if(m.first > 1)
+        {
+            throw std::logic_error( "read  failed: " + filename_with_path );
+        }
+        import.setGModel(m.second );
+        import.setInMemory(true);
+    }
 
     // need to replace physical_region by elementary_region while reading
     if ( physical_are_elementary_regions )

@@ -2027,6 +2027,12 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
 }
 
 
+// Gmsh reader factory
+#if defined( FEELPP_HAS_GMSH_H )
+using GmshReaderFactory = Feel::Singleton< std::map< std::string, std::function<std::pair<int,GModel*>(std::string)> > >;
+#endif
+
+
 } // Feel
 
 
