@@ -82,12 +82,15 @@ generic_options()
           " <log level> overrides any value given by --v." )
         ( "feelinfo", "prints feel libraries information" )
         ( "nochdir", "Don't change repository directory even though it is called" )
+        ( "rmlogs", "remove logs after execution" )
+        ( "rm", "remove application repository after execution" )
         ( "directory", po::value<std::string>(), "change directory to specified one" )
         ( "npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
         ( "fail-on-unknown-option", po::value<bool>()->default_value(false), "exit feel++ application if unknown option found" )
         ( "show-preconditioner-options", "show on the fly the preconditioner options used" )
         ( "serialization-library", po::value<std::string>()->default_value("boost"), "Library used for serialization" )
         ( "display-stats", po::value<bool>()->default_value(false), "display statistics (timers, iterations counts...)" )
+        ( "subdir.expr", po::value<std::string>()->default_value("exprs"), "subdirectory for expressions" )
         ;
     return generic;
 }
