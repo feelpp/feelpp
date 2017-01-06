@@ -9,7 +9,7 @@ matrix:
         sudo: required
         services:
             - docker
-      - env: BUILD="ubuntu-16.10,clang-3.9" DOCKERFILE="Dockerfile-16.10" TARGET_IMAGE="feelpp/develop:16.10-minimal" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MINIMAL_BUILD=ON"  CXXFLAGS="-O2 -DNDEBUG"
+      - env: BUILD="ubuntu-16.10,clang-3.9" DOCKERFILE="Dockerfile-16.10" TARGET_IMAGE="feelpp/develop:16.10-minimal" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MINIMAL_BUILD=ON"  CXXFLAGS="-O2 -DNDEBUG" CXX="clang++-3.9" CC="clang-3.9"
         sudo: required
         services:
             - docker
@@ -17,17 +17,17 @@ matrix:
         sudo: required
         services:
             - docker
-      - env: BUILD="ubuntu-16.10,clang-3.9" DOCKERFILE="Dockerfile-16.10" TARGET_IMAGE="feelpp/develop:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O2 -DNDEBUG"
+      - env: BUILD="ubuntu-16.10,clang-3.9" DOCKERFILE="Dockerfile-16.10" TARGET_IMAGE="feelpp/develop:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O2 -DNDEBUG" CXX="clang++-3.9" CC="clang-3.9"
         sudo: required
         services:
             - docker
-      - env: BUILD="ubuntu-16.10,gcc-6.2" DOCKERFILE="Dockerfile-16.10" TARGET_IMAGE="feelpp/develop:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O2 -DNDEBUG" CXX="g++" CC="gcc"
+      - env: BUILD="ubuntu-16.10,gcc-6.2" DOCKERFILE="Dockerfile-16.10" TARGET_IMAGE="feelpp/develop:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O2 -DNDEBUG" CXX="g++" CC="gcc"
         sudo: required
         services:
             - docker      
   allow_failures:
   - env: BUILD="ubuntu-16.04,clang-3.8" DOCKERFILE="Dockerfile-16.04" TARGET_IMAGE="feelpp/develop:16.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O2 -DNDEBUG"
-  - env: BUILD="ubuntu-16.10,gcc-6.2" DOCKERFILE="Dockerfile-16.10" TARGET_IMAGE="feelpp/develop:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O2 -DNDEBUG" CXX="g++" CC="gcc"
+  - env: BUILD="ubuntu-16.10,gcc-6.2" DOCKERFILE="Dockerfile-16.10" TARGET_IMAGE="feelpp/develop:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O2 -DNDEBUG" CXX="g++" CC="gcc"
 
 before_install:
 - echo $TRAVIS_OS_NAME
