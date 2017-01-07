@@ -151,47 +151,23 @@ public:
     typedef boost::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
     //@}
 
-
+    typedef std::vector< std::vector< std::vector< std::vector< matrixN_type >>>> blockmatrixN_type;
+    typedef std::vector< std::vector< std::vector< vectorN_type >>> blockvectorN_type;
 
 
     CRBSaddlePoint( std::string const& name = "defaultname_crb",
                     WorldComm const& worldComm = Environment::worldComm() ) :
-        super( name, worldComm )
+        super( name, worldComm ),
+        M_N0(0),
+        M_N1(0)
         {}
 
     CRBSaddlePoint( std::string const& name, truth_model_ptrtype const & model ) :
-        super( name, model )
+        super( name, model ),
+        M_N0(0),
+        M_N1(0)
         {}
 
-    void addBasis( element_type& U, element_type& Udu, parameter_type& mu )
-    {
-        auto u = U.template elementPtr<0>();
-        auto p = U.template elementPtr<1>();
-        auto udu = Udu.template elementPtr<0>();
-        auto pdu = Udu.template elementPtr<1>();
-        auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
-        auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
-
-        tic();
-        XN0->addPrimalBasisElement( u );
-        XN0->addDualBasisElement( udu );
-        toc("Add Basis Function 0");
-        tic();
-        XN1->addPrimalBasisElement( p );
-        XN1->addDualBasisElement( pdu );
-        toc("Add Basis Function 1");
-
-        if ( boption("crb.saddlepoint.add-supremizer") )
-        {
-            tic();
-            auto us = this->M_model->supremizer( mu, p );
-            XN0->addPrimalBasisElement( us );
-            XN0->addDualBasisElement( us );
-            toc("Supremizer computation");
-        }
-
-
-    }
 
     //@{ /// Database
     void saveDB();
@@ -199,9 +175,23 @@ public:
     //@}
 
 private :
-    void generateSampling();
+    void addBasis( element_type& U, element_type& Udu, parameter_type& mu );
+    void orthonormalizeBasis( int number_of_added_elements );
+    template <typename WNType>
+    double orthonormalize( size_type N, WNType& wn, int Nm, int n_space );
+    template <typename WNType>
+    double checkOrthonormality( int N, const WNType& wn, int n_space ) const;
 
     CRBDB M_crbdb;
+
+
+
+    int M_N0, M_N1;
+
+    blockmatrixN_type M_blockAqm_pr;
+    blockvectorN_type M_blockFqm_pr;
+    blockvectorN_type M_blockLqm_pr;
+
 
 
     friend class boost::serialization::access;
@@ -216,17 +206,160 @@ private :
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
+
 }; // class CRBSaddlePoint
-
-
 
 
 template<typename TruthModelType>
 void
-CRBSaddlePoint<TruthModelType>::generateSampling()
+CRBSaddlePoint<TruthModelType>::addBasis( element_type& U, element_type& Udu, parameter_type& mu )
 {
+    auto u = U.template elementPtr<0>();
+    auto p = U.template elementPtr<1>();
+    auto udu = Udu.template elementPtr<0>();
+    auto pdu = Udu.template elementPtr<1>();
+    auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
+    auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
+
+    tic();
+    XN0->addPrimalBasisElement( u );
+    XN0->addDualBasisElement( udu );
+    M_N0++;
+    toc("Add Basis Function 0");
+    tic();
+    XN1->addPrimalBasisElement( p );
+    XN1->addDualBasisElement( pdu );
+    M_N1++;
+    toc("Add Basis Function 1");
+
+    if ( boption("crb.saddlepoint.add-supremizer") )
+    {
+        tic();
+        auto us = this->M_model->supremizer( mu, p );
+        XN0->addPrimalBasisElement( us );
+        XN0->addDualBasisElement( us );
+        M_N0++;
+        toc("Supremizer computation");
+    }
 
 
+}
+
+template<typename TruthModelType>
+void
+CRBSaddlePoint<TruthModelType>::orthonormalizeBasis( int number_of_added_elements )
+{
+    auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
+    auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
+
+    double norm_max = doption(_name="crb.orthonormality-tol");
+    int max_iter = ioption(_name="crb.orthonormality-max-iter");
+
+    if( boption("crb.saddlepoint.orthonormalize0") )
+    {
+        tic();
+        double norm = norm_max+1;
+        int iter=0;
+        double old = 10;
+        int n_added = ( boption("crb.saddlepoint.add-supremizer") ) ? 2:1;
+        while( norm >= norm_max && iter < max_iter)
+        {
+            norm = this->orthonormalize( M_N0, XN0->primalRB(), n_added, 0 );
+            iter++;
+            //if the norm doesn't change
+            if( math::abs(old-norm) < norm_max )
+                norm=0;
+            old=norm;
+        }
+        XN0->updatePrimalBasisForUse();
+        toc("RB Space Orthnormalization #0");
+    }
+    if( boption("crb.saddlepoint.orthonormalize1") )
+    {
+        tic();
+        double norm = norm_max+1;
+        int iter=0;
+        double old = 10;
+        while( norm >= norm_max && iter < max_iter )
+        {
+            norm = this->orthonormalize( M_N1, XN1->primalRB(), 1, 1 );
+            iter++;
+            if( math::abs(old-norm) < norm_max )
+                norm=0;
+            old=norm;
+        }
+        XN1->updatePrimalBasisForUse();
+        toc("RB Space Orthnormalization #1");
+    }
+
+}
+
+template<typename TruthModelType>
+template<typename WNType>
+double
+CRBSaddlePoint<TruthModelType>::orthonormalize( size_type N, WNType& wn, int Nm, int n_space )
+{
+    int proc_number = this->worldComm().globalRank();
+    if( proc_number == 0 ) std::cout << "  -- orthonormalization (Gram-Schmidt)\n";
+    DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for N = " << N << "\n";
+    DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for WN = " << wn.size() << "\n";
+    DVLOG(2) << "[CRB::orthonormalize] starting ...\n";
+
+    for ( size_type i =N-Nm; i < N; ++i )
+    {
+        for ( size_type j = 0; j < i; ++j )
+        {
+            value_type __rij_pr = this->M_model->scalarProduct(  wn[i], wn[ j ], n_space );
+            wn[i].add( -__rij_pr, wn[j] );
+        }
+    }
+
+    // normalize
+    for ( size_type i =N-Nm; i < N; ++i )
+    {
+        value_type __rii_pr = math::sqrt( this->M_model->scalarProduct(  wn[i], wn[i], n_space ) );
+        wn[i].scale( 1./__rii_pr );
+    }
+
+    DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
+    DVLOG(2) << "[CRB::orthonormalize] copying back results in basis\n";
+
+    return this->checkOrthonormality( N , wn, n_space );
+}
+
+
+template <typename TruthModelType>
+template <typename WNType>
+double
+CRBSaddlePoint<TruthModelType>::checkOrthonormality ( int N, const WNType& wn, int n_space ) const
+{
+    if ( wn.size()==0 )
+    {
+        throw std::logic_error( "[CRB::checkOrthonormality] ERROR : size of wn is zero" );
+    }
+
+
+    matrixN_type A, I;
+    A.setZero( N, N );
+    I.setIdentity( N, N );
+
+    for ( int i = 0; i < N; ++i )
+    {
+        for ( int j = 0; j < N; ++j )
+        {
+            A( i, j ) = this->M_model->scalarProduct(  wn[i], wn[j], n_space );
+        }
+    }
+
+    A -= I;
+    DVLOG(2) << "orthonormalization: " << A.norm() << "\n";
+    if ( this->worldComm().isMasterRank() )
+    {
+        LOG( INFO ) << "    o check : " << A.norm() << " (should be 0)";
+    }
+    //FEELPP_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
+
+    return A.norm();
 }
 
 
