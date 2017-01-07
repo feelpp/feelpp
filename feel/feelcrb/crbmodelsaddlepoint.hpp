@@ -109,12 +109,15 @@ public :
     subelement_type<0> supremizer( parameter_type const& mu, vector_ptrtype const& vec )
     {
         auto Xh0 = this->functionSpace()->template functionSpace<0>();
+        auto Xh1 = this->functionSpace()->template functionSpace<1>();
         auto us = Xh0->element();
 
         vector_ptrtype rhs = this->M_backend_l2_vec[0]->newVector( Xh0 );
         rhs->zero();
 
-        sparse_matrix_ptrtype A01 = offlineMergeForSupremizer(mu);
+        sparse_matrix_ptrtype A01 = this->M_backend_l2_vec[0]->newMatrix( _test=Xh0, _trial=Xh1 );
+        A01 = offlineMergeForSupremizer(mu);
+        std::cout << "matrix : "<< A01->size1() << "x" << A01->size2() << ", vecteur :" << vec->size() << std::endl;
         rhs->addVector( vec, A01 );
         this->M_backend_l2_vec[0]->solve( _matrix=this->M_inner_product_matrix_vec[0],
                                           _rhs=rhs, _solution=us );
@@ -126,7 +129,25 @@ public :
         sparse_matrix_ptrtype A;
         boost::tie( boost::tuples::ignore, A, boost::tuples::ignore ) = this->update(mu);
 
-        return A->createSubMatrix( M_Xh0_indices, M_Xh1_indices );
+        auto A01 = A->createSubMatrix( M_Xh0_indices, M_Xh1_indices );
+        A01->close();
+        return A01;
+    }
+
+    using super::scalarProduct;
+    /**
+     * returns the scalar product of the vector x and vector y
+     */
+    double scalarProduct( vector_type const& X, vector_type const& Y, int n_space )
+    {
+        return M_inner_product_matrix_vec[n_space]->energy( X, Y );
+    }
+    /**
+     * returns the scalar product of the vector x and vector y
+     */
+    double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y, int n_space )
+    {
+        return M_inner_product_matrix_vec[n_space]->energy( X, Y );
     }
 
 

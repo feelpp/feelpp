@@ -1340,6 +1340,7 @@ protected:
     void generateSuperSampling();
     bool buildSampling();
     virtual void addBasis( element_type& u, element_type& udu, parameter_type& mu );
+    virtual void orthonormalizeBasis( int number_of_added_elements );
 
     crb_elements_db_type M_elements_database;
 
@@ -2742,70 +2743,7 @@ CRB<TruthModelType>::offline()
 
         M_N+=number_of_added_elements;
 
-        bool POD_WN = boption(_name="crb.apply-POD-to-WN") ;
-        if(  POD_WN &&  ! M_model->isSteady() )
-        {
-            pod_ptrtype POD = pod_ptrtype( new pod_type() );
-            POD->setModel( M_model );
-            mode_set_type ModeSet;
-            POD->setNm( M_N );
-            bool use_solutions=false;
-            bool is_primal=true;
-            POD->pod( ModeSet, is_primal, M_model->rBFunctionSpace()->primalRB() , use_solutions );
-            M_model->rBFunctionSpace()->setPrimalBasis( ModeSet );
-            if( M_solve_dual_problem )
-            {
-                ModeSet.clear();
-                POD->pod( ModeSet, false,  M_model->rBFunctionSpace()->dualRB() , use_solutions );
-                M_model->rBFunctionSpace()->setDualBasis( ModeSet );
-            }
-        }
-        else
-        {
-            double norm_max = doption(_name="crb.orthonormality-tol");
-            int max_iter = ioption(_name="crb.orthonormality-max-iter");
-            if ( M_orthonormalize_primal )
-            {
-                timer2.restart();
-                double norm = norm_max+1;
-                int iter=0;
-                double old = 10;
-                while( norm >= norm_max && iter < max_iter)
-                {
-                    norm = orthonormalize( M_N, M_model->rBFunctionSpace()->primalRB(), number_of_added_elements );
-                    iter++;
-                    //if the norm doesn't change
-                    if( math::abs(old-norm) < norm_max )
-                        norm=0;
-                    old=norm;
-                }
-                M_model->rBFunctionSpace()->updatePrimalBasisForUse();
-                tpr=timer2.elapsed();
-            }
-            if ( M_orthonormalize_dual && M_solve_dual_problem )
-            {
-                timer2.restart();
-                double norm = norm_max+1;
-                int iter=0;
-                double old = 10;
-                while( norm >= norm_max && iter < max_iter )
-                {
-                    norm = orthonormalize( M_N, M_model->rBFunctionSpace()->dualRB() , number_of_added_elements );
-                    iter++;
-                    if( math::abs(old-norm) < norm_max )
-                        norm=0;
-                    old=norm;
-                }
-                M_model->rBFunctionSpace()->updateDualBasisForUse();
-                tdu=timer2.elapsed();
-            }
-        }//orthonormalization
-
-        if( this->worldComm().isMasterRank() )
-        {
-            std::cout<<"-- primal orthonormalization : "<<tpr<<" s"<<std::endl;
-            std::cout<<"-- dual orthonormalization : "<<tdu<<" s"<<std::endl;
-        }
+        this->orthonormalizeBasis( number_of_added_elements );
 
         timer3.restart();
 
@@ -2898,8 +2836,7 @@ CRB<TruthModelType>::offline()
                 }//loop over m (>= mMaxF - cobuild_eim_freq)
             }//loop over q
 
-    }//end of "if ! use_newton"
-
+        }//end of "if ! use_newton"
 
         if( M_use_newton )
         {
@@ -11249,6 +11186,75 @@ CRB<TruthModelType>::addBasis( element_type& u, element_type& udu, parameter_typ
     M_model->rBFunctionSpace()->addDualBasisElement( udu );
     toc("Add Dual Basis Function");
 }
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::orthonormalizeBasis( int number_of_added_elements )
+{
+    bool POD_WN = boption(_name="crb.apply-POD-to-WN") ;
+    if(  POD_WN &&  ! M_model->isSteady() )
+    {
+        pod_ptrtype POD = pod_ptrtype( new pod_type() );
+        POD->setModel( M_model );
+        mode_set_type ModeSet;
+        POD->setNm( M_N );
+        bool use_solutions=false;
+        bool is_primal=true;
+        POD->pod( ModeSet, is_primal, M_model->rBFunctionSpace()->primalRB() , use_solutions );
+        M_model->rBFunctionSpace()->setPrimalBasis( ModeSet );
+        if( M_solve_dual_problem )
+        {
+            ModeSet.clear();
+            POD->pod( ModeSet, false,  M_model->rBFunctionSpace()->dualRB() , use_solutions );
+            M_model->rBFunctionSpace()->setDualBasis( ModeSet );
+        }
+    }
+    else
+    {
+        double norm_max = doption(_name="crb.orthonormality-tol");
+        int max_iter = ioption(_name="crb.orthonormality-max-iter");
+        if ( M_orthonormalize_primal )
+        {
+            tic();
+            double norm = norm_max+1;
+            int iter=0;
+            double old = 10;
+            while( norm >= norm_max && iter < max_iter)
+            {
+                norm = orthonormalize( M_N, M_model->rBFunctionSpace()->primalRB(), number_of_added_elements );
+                iter++;
+                //if the norm doesn't change
+                if( math::abs(old-norm) < norm_max )
+                    norm=0;
+                old=norm;
+            }
+            M_model->rBFunctionSpace()->updatePrimalBasisForUse();
+            toc("Primal Orthonormalization");
+        }
+        if ( M_orthonormalize_dual && M_solve_dual_problem )
+        {
+            tic();
+            double norm = norm_max+1;
+            int iter=0;
+            double old = 10;
+            while( norm >= norm_max && iter < max_iter )
+            {
+                norm = orthonormalize( M_N, M_model->rBFunctionSpace()->dualRB() , number_of_added_elements );
+                iter++;
+                if( math::abs(old-norm) < norm_max )
+                    norm=0;
+                old=norm;
+            }
+            M_model->rBFunctionSpace()->updateDualBasisForUse();
+            toc("Dual Orthonormalization");
+        }
+    }//orthonormalization
+}
+
+
+
+
+
 
 template<typename TruthModelType>
 bool
