@@ -794,6 +794,7 @@ public:
      * \param wn : tuple composed of a vector of wn_type and a vector of string (used to name basis)
      */
     void exportBasisFunctions( const export_vector_wn_type& wn )const ;
+    virtual void exportBasisFunctions(){}
 
     /**
      * Returns the lower bound of the output
@@ -896,8 +897,8 @@ public:
      * \param K : number of time step ( default value, must be >0 if used )
      * \param computeOutput : if true compute quantity of interest (output)
      */
-    matrix_info_tuple fixedPointPrimal( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
-                                        std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false, bool computeOutput=true ) const;
+    virtual matrix_info_tuple fixedPointPrimal( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
+                                                std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false, bool computeOutput=true ) const;
 
     /*
      * Dump data array into a file
@@ -1052,7 +1053,7 @@ public:
     /**
      * \brief update size of Affine Decomposition (needed by co-build since size of eim decomposition can change)
      */
-    void updateAffineDecompositionSize();
+    virtual void updateAffineDecompositionSize();
 
     /**
      * \brief Retuns maximum value of the relative error
@@ -2324,8 +2325,7 @@ CRB<TruthModelType>::offline()
 
         bool restart = false;
         int wnmu_nb_elements=M_WNmu->nbElements();
-        if( Nrestart > 1 && Nrestart < wnmu_nb_elements )
-            restart = true;
+        restart = ( Nrestart > 1 && Nrestart < wnmu_nb_elements );
 
         if( restart )
         {
@@ -2411,6 +2411,8 @@ CRB<TruthModelType>::offline()
         // if( proc_number == this->worldComm().masterRank() )
         //     std::cout << "[crb - SER] M_N = " << M_N << ", N_old = " << Nold << ", M_iter_max = " << M_iter_max << std::endl;
     }
+    else if ( use_predefined_WNmu )
+        M_iter_max = this->M_WNmu->size();
     else
         M_iter_max = user_max;
 
@@ -2873,6 +2875,9 @@ CRB<TruthModelType>::offline()
 
     if( this->worldComm().isMasterRank() )
         std::cout<<"number of elements in the reduced basis : "<<M_N<<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
+
+    if (boption("crb.visualize-basis"))
+        this->exportBasisFunctions();
 
     if( M_maxerror <= M_tolerance || M_N >= user_max  )
     {
