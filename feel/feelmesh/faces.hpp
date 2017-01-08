@@ -572,21 +572,80 @@ public:
      */
     //@{
 
-    /**
-     * @brief add a new face in the mesh
-     * @param f a new point
-     * @return the new point from the list
-     */
+    //!
+    //! @brief add a new face in the mesh
+    //!  @param f a new point
+    //! @return the new point from the list
+    //! 
     std::pair<face_iterator,bool> addFace( face_type& f )
     {
         std::pair<face_iterator,bool> ret =  M_faces.insert( f );
-        LOG_IF(WARNING, ret.second == false )
+        DLOG_IF(WARNING, ret.second == false )
             << "addFace failed, face not added to container : "
             << ret.first->id() << " face id:"
             << f.id();
         
         return ret;
     }
+    //!
+    //! @brief move a new face into the mesh
+    //! @param f a new point
+    //! @return the new point from the list
+    //! 
+    std::pair<face_iterator,bool> addFace( face_type&& f )
+        {
+            std::pair<face_iterator,bool> ret =  M_faces.insert( f );
+            DLOG_IF(WARNING, ret.second == false )
+                << "addFace failed, face not added to container : "
+                << ret.first->id() << " face id:"
+                << f.id();
+        
+            return ret;
+        }
+    //!
+    //! @brief copy a new face into the mesh
+    //! @param f a new point
+    //! @param pos position hint where to move
+    //! @return the new point from the list
+    //!
+    face_iterator addFace( face_iterator pos, face_type& f )
+        {
+            return M_faces.insert( pos, f );
+        }
+    //!
+    //! @brief move a new face into the mesh
+    //! @param f a new point
+    //! @param pos position hint where to move
+    //! @return the new point from the list
+    //!
+    face_iterator addFace( face_iterator pos, face_type&& f )
+        {
+            return M_faces.insert( pos, f );
+        }
+
+    //!
+    //! @brief move a new face into the mesh
+    //! @param f a new point
+    //! @param pos position hint where to move
+    //! @return the new point from the list
+    //!
+    template<typename... Args>
+    face_iterator emplaceFace( face_iterator pos, Args&&... f )
+        {
+            return M_faces.emplace_hint( pos, f... );
+        }
+
+    //!
+    //! @brief move a new face into the mesh
+    //! @param f a new point
+    //! @param pos position hint where to move
+    //! @return the new point from the list
+    //!
+    template<typename... Args>
+    face_iterator emplaceFace( Args&&... f )
+        {
+            return M_faces.emplace( f... );
+        }
 
     /**
      * erase face at position \p position
