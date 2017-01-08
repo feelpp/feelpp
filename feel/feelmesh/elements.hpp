@@ -736,7 +736,6 @@ public:
         return *M_elements.insert( M_elements.end(), f );
         //M_elements.push_back( f );
         //return M_elements.back();
-
     }
     //!
     //! move an element into the mesh

@@ -196,12 +196,9 @@ public:
         :
         super( std::move(e) ),
         M_points( std::move( e.M_points ) ),
-        M_G( std::move( e.M_G ) ),
         M_neighbors( std::move( e.M_neighbors ) ),
-        M_marker1( std::move( e.M_marker1 ) ),
-        M_marker2( std::move( e.M_marker2 ) ),
-        M_marker3( std::move( e.M_marker3 ) ),
-        M_mesh( std::move( e.M_mesh ) ),        
+        M_markers( std::move( e.M_markers ) ),
+        M_mesh( std::move( e.M_mesh ) ),
         M_gm( std::move( e.M_gm ) ),
         M_gm1( std::move( e.M_gm1 ) )
         {
@@ -213,11 +210,8 @@ public:
         {
             super::operator=( std::move(e) );
             M_points = std::move( e.M_points );
-            M_G = std::move( e.M_G );
             M_neighbors = std::move( e.M_neighbors );
-            M_marker1 = std::move( e.M_marker1 );
-            M_marker2 = std::move( e.M_marker2 );
-            M_marker3 = std::move( e.M_marker3 );
+            M_markers = std::move( e.M_markers );
             M_mesh = std::move( e.M_mesh );
             M_gm = std::move( e.M_gm );
             M_gm1 = std::move( e.M_gm1 );
