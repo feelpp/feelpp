@@ -730,56 +730,57 @@ class GeoMap
                 update( __e );
         }
 
-        Context( gm_ptrtype __gm,
-                 element_type const& __e,
-                 std::vector<std::map<permutation_type, precompute_ptrtype>>& __pc,
-                 uint16_type __f )
-            : M_gm( __gm ),
-              M_element( boost::addressof( __e ) ),
-              M_pc(),
-              M_pc_faces( __pc ),
-              M_npoints( __pc[__f][__e.permutation( __f )]->nPoints() ),
+    Context( gm_ptrtype __gm,
+             element_type const& __e,
+             std::vector<std::map<permutation_type, precompute_ptrtype> > & __pc,
+             uint16_type __f )
+        :
+        M_gm( __gm ),
+        M_element( boost::addressof( __e ) ),
+        M_pc(),
+        M_pc_faces( __pc ),
+        M_npoints( __pc.size()?__pc[__f][__e.permutation( __f )]->nPoints():0 ),
 
-              //M_xref( PDim ),
-              //M_xreal( NDim ),
-              //M_x0( NDim ),
-              M_J( 0 ),
-              M_G( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ),
-              M_n( M_gm->referenceConvex().normals() ),
-              M_n_real( NDim ),
-              M_un_real( NDim ),
-              M_n_norm( 0 ),
-              M_t_real( NDim ),
-              M_ut_real( NDim ),
-              M_t_norm( 0 ),
-              M_xrefq( PDim, nPoints() ),
-              M_xrealq( NDim, nPoints() ),
-              M_n_realq( NDim, nPoints() ),
-              M_un_realq( NDim, nPoints() ),
-              M_n_normq( nPoints() ),
+        //M_xref( PDim ),
+        //M_xreal( NDim ),
+        //M_x0( NDim ),
+        M_J( 0 ),
+        M_G( ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G() ),
+        M_n( M_gm->referenceConvex().normals() ),
+        M_n_real( NDim ),
+        M_un_real( NDim ),
+        M_n_norm( 0 ),
+        M_t_real( NDim ),
+        M_ut_real( NDim ),
+        M_t_norm( 0 ),
+        M_xrefq( PDim, nPoints() ),
+        M_xrealq( NDim, nPoints() ),
+        M_n_realq( NDim, nPoints() ),
+        M_un_realq( NDim, nPoints() ),
+        M_n_normq( nPoints() ),
 
-              M_g( M_G.size2(), PDim ),
-              M_K( NDim, PDim ),
-              M_CS( PDim, PDim ),
-              M_CSi( PDim, PDim ),
-              M_B( NDim, PDim ),
-              M_Ptangent( NDim, NDim ),
-              M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
-              M_id( __e.id() ),
-              M_e_markers( __e.markers() ),
-              M_elem_id_1( invalid_size_type_value ),          // __e.ad_first() ),
-              M_pos_in_elem_id_1( invalid_uint16_type_value ), //__e.pos_first() ),
-              M_elem_id_2( invalid_size_type_value ),          //__e.ad_second() ),
-              M_pos_in_elem_id_2( invalid_uint16_type_value ), //__e.pos_second() ),
-              M_face_id( __f ),
-              M_h( 0 ),
-              M_h_min( 0 ),
-              M_h_face( 0 ),
-              M_meas( 0 ),
-              M_measface( 0 ),
-              M_Jt(),
-              M_Bt(),
-              M_perm()
+        M_g( M_G.size2(), PDim ),
+        M_K( NDim, PDim ),
+        M_CS( PDim, PDim ),
+        M_CSi( PDim, PDim ),
+        M_B( NDim, PDim ),
+        M_Ptangent( NDim, NDim ),
+        M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
+        M_id( __e.id() ),
+        M_e_markers( __e.markers() ),
+        M_elem_id_1( invalid_size_type_value ),// __e.ad_first() ),
+        M_pos_in_elem_id_1( invalid_uint16_type_value ),  //__e.pos_first() ),
+        M_elem_id_2( invalid_size_type_value ),  //__e.ad_second() ),
+        M_pos_in_elem_id_2( invalid_uint16_type_value ),  //__e.pos_second() ),
+        M_face_id( __f ),
+        M_h( 0 ),
+        M_h_min( 0 ),
+        M_h_face( 0 ),
+        M_meas( 0 ),
+        M_measface( 0 ),
+        M_Jt(),
+        M_Bt(),
+        M_perm( )
         {
 
             if ( is_linear )
@@ -792,17 +793,18 @@ class GeoMap
                 M_Jt.resize( nPoints() );
                 M_Bt.resize( nPoints() );
             }
-
-            update( __e, __f );
+            if ( __pc.size() )
+                update( __e, __f );
         }
 
-        // context for geomap at vertices
-        Context( gm_ptrtype __gm,
-                 element_type const& __e,
-                 precompute_ptrtype& __pc,
-                 uint16_type __f,
-                 mpl::int_<0> )
-            : Context( __gm, __e, _pc )
+    // context for geomap at vertices
+    Context( gm_ptrtype __gm,
+             element_type const& __e,
+             precompute_ptrtype & __pc,
+             uint16_type __f,
+             mpl::int_<0>)
+        :
+        Context( __gm, __e, __pc )
         {
 
             if ( is_linear )
@@ -908,17 +910,12 @@ class GeoMap
             M_perm = __e.permutation( M_face_id );
 
             M_pc = M_pc_faces[__f][M_perm];
+            
             //M_G = __e.G();
             M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
             M_id = __e.id();
             M_e_markers = __e.markers();
             M_xrefq = M_pc->nodes();
-
-            FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )
-            ( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
-            FEELPP_ASSERT( M_pc )
-                .error( "invalid precompute data structure" );
-
             if ( vm::has_measure<context>::value )
             {
                 M_h = __e.h();
