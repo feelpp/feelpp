@@ -1341,6 +1341,8 @@ protected:
     bool buildSampling();
     virtual void addBasis( element_type& u, element_type& udu, parameter_type& mu );
     virtual void orthonormalizeBasis( int number_of_added_elements );
+    virtual void buildRbMatrix( int number_of_added_elements, parameter_type& mu, element_ptrtype dual_initial_field );
+    virtual void saveRB();
 
     crb_elements_db_type M_elements_database;
 
@@ -2157,7 +2159,6 @@ CRB<TruthModelType>::loadSCMDB()
     }
 }
 
-
 template<typename TruthModelType>
 typename CRB<TruthModelType>::convergence_type
 CRB<TruthModelType>::offline()
@@ -2415,6 +2416,7 @@ CRB<TruthModelType>::offline()
 
     while ( M_maxerror > M_tolerance && M_N < M_iter_max  )
     {
+        tic();
         M_mode_number=1;
 
         std::string pslogname = (boost::format("N-%1%") %M_N ).str();
@@ -2431,7 +2433,7 @@ CRB<TruthModelType>::offline()
             std::cout << M_current_mu( size-1 ) << " ]" <<std::endl;
         }
 
-        boost::mpi::timer timer, timer2, timer3;
+        boost::mpi::timer timer2, timer3;
         LOG(INFO) <<"========================================"<<"\n";
 
         if ( M_error_type == CRB_NO_RESIDUAL )
@@ -2745,374 +2747,8 @@ CRB<TruthModelType>::offline()
 
         this->orthonormalizeBasis( number_of_added_elements );
 
-        timer3.restart();
 
-        // we only compute the last line and last column of reduced matrices (last added elements)
-        int number_of_elements_to_update = number_of_added_elements;
-        // in the case of cobuild, we have to update all since affine decomposition has changed
-        if( ioption(_name="ser.rb-frequency") != 0 && !M_rebuild)
-            number_of_elements_to_update = M_N;
-        // In case of SER use + error estimation, we compute \hat{A}, \hat{F} (resp. \hat{R}) to compute norm of residual (Riesz)
-        int ser_error_estimation = M_SER_errorEstimation;
-
-        if( ! M_use_newton )
-        {
-            LOG(INFO) << "[CRB::offline] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
-
-            M_hAqm.resize( M_model->Qa() );
-            for  (size_type q = 0; q < M_model->Qa(); ++q )
-            {
-                M_hAqm[q].resize( M_model->mMaxA(q) );
-                for( size_type m = 0; m < M_model->mMaxA(q); ++m )
-                {
-                    M_Aqm_pr[q][m].conservativeResize( M_N, M_N );
-                    M_Aqm_du[q][m].conservativeResize( M_N, M_N );
-                    M_Aqm_pr_du[q][m].conservativeResize( M_N, M_N );
-
-                    for ( size_type i = M_N - number_of_elements_to_update; i < M_N; i++ )
-                    {
-                        for ( size_type j = 0; j < M_N; ++j )
-                        {
-                            M_Aqm_pr[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->primalBasisElement(j), M_model->rBFunctionSpace()->primalBasisElement(i) );//energy
-                            M_Aqm_du[q][m]( i, j ) = M_model->Aqm( q , m , M_model->rBFunctionSpace()->dualBasisElement(i), M_model->rBFunctionSpace()->dualBasisElement(j), true );
-                            M_Aqm_pr_du[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->primalBasisElement(j), M_model->rBFunctionSpace()->dualBasisElement(i) );
-                        }
-                    }
-
-                    for ( size_type j=M_N - number_of_elements_to_update; j < M_N; j++ )
-                    {
-                        for ( size_type i = 0; i < M_N; ++i )
-                        {
-                            M_Aqm_pr[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->primalBasisElement(j), M_model->rBFunctionSpace()->primalBasisElement(i) );
-                            M_Aqm_du[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->dualBasisElement(i), M_model->rBFunctionSpace()->dualBasisElement(j) , true );
-                            M_Aqm_pr_du[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->primalBasisElement(j), M_model->rBFunctionSpace()->dualBasisElement(i) );
-                        }
-                    }
-
-                    if( ser_error_estimation )
-                    {
-                        M_hAqm[q][m].resize( M_N );
-                        auto Aqm_xi_n = backend()->newVector( M_model->functionSpace() );
-                        auto xi_n = backend()->newVector( M_model->functionSpace() );
-                        for( int n=0; n < M_N; n++ )
-                        {
-                            M_hAqm[q][m][n] = backend()->newVector( M_model->functionSpace() );
-                            *xi_n = M_model->rBFunctionSpace()->primalBasisElement(n);
-                            auto Aqm = M_model->Aqm(q,m);
-                            Aqm->multVector( xi_n, Aqm_xi_n );
-                            M_model->l2solve( M_hAqm[q][m][n], Aqm_xi_n );
-                        }
-                    }
-                }//loop over m
-            }//loop over q
-
-            LOG(INFO) << "[CRB::offline] compute Mq_pr, Mq_du, Mq_pr_du" << "\n";
-
-            LOG(INFO) << "[CRB::offline] compute Fq_pr, Fq_du" << "\n";
-            M_hFqm.resize( M_model->Ql( 0 ) );
-            for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
-            {
-                M_hFqm[q].resize( M_model->mMaxF( 0, q ) );
-                for( size_type m = 0; m < M_model->mMaxF( 0, q ); ++m )
-                {
-                    M_Fqm_pr[q][m].conservativeResize( M_N );
-                    M_Fqm_du[q][m].conservativeResize( M_N );
-                    for ( size_type l = 1; l <= number_of_elements_to_update; ++l )
-                    {
-                        int index = M_N-l;
-                        for( int idx = 0; idx<=index; idx++ )
-                        {
-                            M_Fqm_pr[q][m]( idx ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->primalBasisElement(idx) );
-                            M_Fqm_du[q][m]( idx ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->dualBasisElement(idx) );
-                        }
-                    }
-                    if( ser_error_estimation )
-                    {
-                        M_hFqm[q][m] = backend()->newVector( M_model->functionSpace() );
-                        auto fqm = M_model->Fqm(0, q, m);
-                        M_model->l2solve( M_hFqm[q][m], fqm );
-                    }
-
-                }//loop over m (>= mMaxF - cobuild_eim_freq)
-            }//loop over q
-
-        }//end of "if ! use_newton"
-
-        if( M_use_newton )
-        {
-            LOG(INFO) << "[CRB::offline] compute Jq_pr " << "\n";
-
-            for  (size_type q = 0; q < M_model->Qa(); ++q )
-            {
-                for( size_type m = 0; m < M_model->mMaxA(q); ++m )
-                {
-                    M_Jqm_pr[q][m].conservativeResize( M_N, M_N );
-
-                    for ( size_type i = M_N - number_of_elements_to_update; i < M_N; i++ )
-                    {
-                        for ( size_type j = 0; j < M_N; ++j )
-                        {
-                            M_Jqm_pr[q][m]( i, j ) = M_model->Jqm(q , m ,
-                                                                  M_model->rBFunctionSpace()->primalBasisElement(j),
-                                                                  M_model->rBFunctionSpace()->primalBasisElement(i) );
-                            if (i!=j)
-                                M_Jqm_pr[q][m]( j, i ) = M_model->Jqm(q , m ,
-                                                                      M_model->rBFunctionSpace()->primalBasisElement(i),
-                                                                      M_model->rBFunctionSpace()->primalBasisElement(j) );
-                        }
-                    }
-                }//loop over m
-            }//loop over q
-
-            if( ser_error_estimation )
-            {
-                auto RF_A = M_model->RF_Aqm();
-                M_hAqm.resize( RF_A.size() );
-                for(int q = 0; q < RF_A.size(); ++q )
-                {
-                    M_hAqm[q].resize( RF_A[q].size() );
-                    for(int m = 0; m < RF_A[q].size(); ++m )
-                    {
-                        M_hAqm[q][m].resize( M_N );
-                        auto Aqm_xi_n = backend()->newVector( M_model->functionSpace() );
-                        auto xi_n = backend()->newVector( M_model->functionSpace() );
-                        for( int n=0; n < M_N; n++ )
-                        {
-                            M_hAqm[q][m][n] = backend()->newVector( M_model->functionSpace() );
-                            *xi_n = M_model->rBFunctionSpace()->primalBasisElement(n);
-                            auto Aqm = RF_A[q][m];
-                            Aqm->multVector( xi_n, Aqm_xi_n );
-                            M_model->l2solve( M_hAqm[q][m][n], Aqm_xi_n );
-                        }
-                    }//m
-                }//q
-            }
-
-            LOG(INFO) << "[CRB::offline] compute Rq_pr" << "\n";
-
-            for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
-            {
-                for( size_type m = 0; m < M_model->mMaxF( 0, q ); ++m )
-                {
-                    M_Rqm_pr[q][m].conservativeResize( M_N );
-
-                    for ( size_type l = 1; l <= number_of_elements_to_update; ++l )
-                    {
-                        int index = M_N-l;
-                        //M_Rqm_pr[q][m]( index ) = inner_product( *M_Rqm[0][q][m] , M_model->rBFunctionSpace()->primalBasisElement(index) );
-                        M_Rqm_pr[q][m]( index ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->primalBasisElement(index) );
-                    }
-                }//loop over m
-            }//loop over q
-
-            if( ser_error_estimation )
-            {
-                auto RF_F = M_model->RF_Fqm();
-                M_hFqm.resize( RF_F.size() );
-                for(int q = 0; q < RF_F.size(); ++q )
-                {
-                    M_hFqm[q].resize( RF_F[q].size() );
-                    for(int m = 0; m < RF_F[q].size(); ++m )
-                    {
-                        M_hFqm[q][m] = backend()->newVector( M_model->functionSpace() );
-                        auto fqm = RF_F[q][m];
-                        M_model->l2solve( M_hFqm[q][m], fqm );
-                    }//m
-                }//q
-            }
-
-        }//end if use_newton case
-
-
-        if( ! model_is_linear )
-        {
-            int q_max = M_model->QInitialGuess();
-            for ( size_type q = 0; q < q_max; ++q )
-            {
-                int m_max =M_model->mMaxInitialGuess(q);
-                for( size_type m = 0; m < m_max; ++m )
-                {
-                    M_InitialGuessV_pr[q][m].conservativeResize( M_N );
-                    for ( size_type l = 1; l <= number_of_elements_to_update; ++l )
-                    {
-                        int index = M_N-l;
-                        for( int idx = 0; idx<=index; idx++ )
-                            M_InitialGuessV_pr[q][m]( idx ) = M_model->InitialGuessVqm( q, m, M_model->rBFunctionSpace()->primalBasisElement(idx) );
-                    }
-                }
-            }
-        }
-
-
-        for ( size_type q = 0; q < M_model->Qm(); ++q )
-        {
-            for( size_type m = 0; m < M_model->mMaxM(q); ++m )
-            {
-                M_Mqm_pr[q][m].conservativeResize( M_N, M_N );
-                M_Mqm_du[q][m].conservativeResize( M_N, M_N );
-                M_Mqm_pr_du[q][m].conservativeResize( M_N, M_N );
-
-                for ( size_type i=M_N - number_of_elements_to_update; i < M_N; i++ )
-                {
-                    for ( size_type j = 0; j < M_N; ++j )
-                    {
-                        M_Mqm_pr[q][m]( i, j ) = M_model->Mqm(q, m,
-                                                              M_model->rBFunctionSpace()->primalBasisElement(i),
-                                                              M_model->rBFunctionSpace()->primalBasisElement(j) );
-                        M_Mqm_du[q][m]( i, j ) = M_model->Mqm(q, m,
-                                                              M_model->rBFunctionSpace()->dualBasisElement(i),
-                                                              M_model->rBFunctionSpace()->dualBasisElement(j), true );
-                        M_Mqm_pr_du[q][m]( i, j ) = M_model->Mqm( q, m,
-                                                                  M_model->rBFunctionSpace()->dualBasisElement(i),
-                                                                  M_model->rBFunctionSpace()->primalBasisElement(j) );
-                    }
-                }
-                for ( size_type j = M_N - number_of_elements_to_update; j < M_N ; j++ )
-                {
-                    for ( size_type i = 0; i < M_N; ++i )
-                    {
-                        M_Mqm_pr[q][m]( i, j ) = M_model->Mqm(q, m,
-                                                              M_model->rBFunctionSpace()->primalBasisElement(i),
-                                                              M_model->rBFunctionSpace()->primalBasisElement(j) );
-                        M_Mqm_du[q][m]( i, j ) = M_model->Mqm(q, m,
-                                                              M_model->rBFunctionSpace()->dualBasisElement(i),
-                                                              M_model->rBFunctionSpace()->dualBasisElement(j), true );
-                        M_Mqm_pr_du[q][m]( i, j ) = M_model->Mqm(q, m,
-                                                                 M_model->rBFunctionSpace()->dualBasisElement(i),
-                                                                 M_model->rBFunctionSpace()->primalBasisElement(j) );
-                    }
-                }
-            }//loop over m
-        }//loop over q
-
-        LOG(INFO) << "[CRB::offline] compute Lq_pr, Lq_du" << "\n";
-
-        for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
-        {
-            for( size_type m = 0; m < M_model->mMaxF( M_output_index, q ); ++m )
-            {
-                M_Lqm_pr[q][m].conservativeResize( M_N );
-                M_Lqm_du[q][m].conservativeResize( M_N );
-
-                for ( size_type l = 1; l <= number_of_elements_to_update; ++l )
-                {
-                    int index = M_N-l;
-                    M_Lqm_pr[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_model->rBFunctionSpace()->primalBasisElement(index) );
-                    M_Lqm_du[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_model->rBFunctionSpace()->dualBasisElement(index) );
-                }
-            }//loop over m
-        }//loop over q
-
-        LOG(INFO) << "compute coefficients needed for the initialization of unknown in the online step\n";
-
-        if ( model_type::is_time_dependent || !M_model->isSteady() )
-        {
-            element_ptrtype primal_initial_field ( new element_type ( M_model->functionSpace() ) );
-            M_model->initializationField( primal_initial_field, mu ); //fill initial_field
-            M_coeff_pr_ini_online.conservativeResize( M_N );
-            if ( M_orthonormalize_primal )
-            {
-                for ( size_type elem=M_N - number_of_elements_to_update; elem<M_N; elem++ )
-                {
-                    //primal
-                    double k =  M_model->scalarProduct( *primal_initial_field, M_model->rBFunctionSpace()->primalBasisElement(elem) );
-                    M_coeff_pr_ini_online(elem)= k ;
-                }
-            }
-
-            else if ( !M_orthonormalize_primal )
-            {
-                matrixN_type MN ( ( int )M_N, ( int )M_N ) ;
-                vectorN_type FN ( ( int )M_N );
-
-                //primal
-                for ( size_type i=0; i<M_N; i++ )
-                {
-                    for ( size_type j=0; j<i; j++ )
-                    {
-                        MN( i,j ) = M_model->scalarProduct( M_model->rBFunctionSpace()->primalBasisElement(j),
-                                                            M_model->rBFunctionSpace()->primalBasisElement(i) );
-                        MN( j,i ) = MN( i,j );
-                    }
-
-                    MN( i,i ) = M_model->scalarProduct( M_model->rBFunctionSpace()->primalBasisElement(i),
-                                                        M_model->rBFunctionSpace()->primalBasisElement(i) );
-                    FN( i ) = M_model->scalarProduct( *primal_initial_field, M_model->rBFunctionSpace()->primalBasisElement(i) );
-                }
-
-                vectorN_type projectionN ( ( int ) M_N );
-                projectionN = MN.lu().solve( FN );
-
-                for ( size_type i=M_N - number_of_elements_to_update; i<M_N; i++ )
-                {
-                    M_coeff_pr_ini_online(i)= projectionN( i ) ;
-                }
-            }
-
-            if ( M_solve_dual_problem )
-            {
-                M_coeff_du_ini_online.conservativeResize( M_N );
-
-                if ( M_orthonormalize_dual )
-                {
-                    for ( size_type elem=M_N - number_of_elements_to_update; elem<M_N; elem++ )
-                    {
-                        double k =  M_model->scalarProduct( *dual_initial_field, M_model->rBFunctionSpace()->dualBasisElement(elem) );
-                        M_coeff_du_ini_online(elem)= k ;
-                    }
-                }
-                else if ( !M_orthonormalize_dual )
-                {
-                    matrixN_type MNdu ( ( int )M_N, ( int )M_N ) ;
-                    vectorN_type FNdu ( ( int )M_N );
-
-                    //dual
-                    for ( size_type i=0; i<M_N; i++ )
-                    {
-                        for ( size_type j=0; j<i; j++ )
-                        {
-                            MNdu( i,j ) = M_model->scalarProduct( M_model->rBFunctionSpace()->dualBasisElement(j),
-                                                                  M_model->rBFunctionSpace()->dualBasisElement(i) );
-                            MNdu( j,i ) = MNdu( i,j );
-                        }
-
-                        MNdu( i,i ) = M_model->scalarProduct( M_model->rBFunctionSpace()->dualBasisElement(i),
-                                                              M_model->rBFunctionSpace()->dualBasisElement(i) );
-                        FNdu( i ) = M_model->scalarProduct( *dual_initial_field, M_model->rBFunctionSpace()->dualBasisElement(i) );
-                    }
-
-                    vectorN_type projectionN ( ( int ) M_N );
-                    projectionN = MNdu.lu().solve( FNdu );
-
-                    for ( size_type i=M_N - number_of_elements_to_update; i<M_N; i++ )
-                    {
-                        M_coeff_du_ini_online(i)= projectionN( i ) ;
-                    }
-                }
-            }
-        }
-
-        if ( true )
-        {
-            M_algebraicInnerProductPrimal.conservativeResize( M_N, M_N );
-            for ( size_type i=M_N - number_of_elements_to_update; i<M_N; i++ )
-            {
-                for ( size_type j=0; j<M_N; j++ )
-                {
-                    M_algebraicInnerProductPrimal(i,j) = inner_product( M_model->rBFunctionSpace()->primalBasisElement(i),
-                                                                        M_model->rBFunctionSpace()->primalBasisElement(j) );
-                    if ( i!=j )
-                        M_algebraicInnerProductPrimal(j,i) = M_algebraicInnerProductPrimal(i,j);
-                }
-            }
-        }
-
-
-        time=timer3.elapsed();
-        if( this->worldComm().isMasterRank() )
-        {
-            std::cout<<" -- projection on reduced basis space : "<<time<<" s"<<std::endl;
-        }
+        this->buildRbMatrix( number_of_added_elements, mu, dual_initial_field );
 
         if( M_useAccurateApee )
         {
@@ -3215,9 +2851,7 @@ CRB<TruthModelType>::offline()
         }
 
         M_rbconv.insert( convergence( M_N, boost::make_tuple(M_maxerror,delta_pr,delta_du) ) );
-
         //mu = M_Xi->at( M_N );//M_WNmu_complement->min().template get<0>();
-
 
         if ( ioption(_name="crb.check.rb") == 1 )
         {
@@ -3226,22 +2860,14 @@ CRB<TruthModelType>::offline()
             std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n";
         }
 
-
-        timer2.restart();
         //save DB after adding an element
+        tic();
         this->saveDB();
-        // M_elements_database.setWn( boost::make_tuple( M_WN , M_WNdu ) );
-        M_elements_database.setWn( boost::make_tuple( M_model->rBFunctionSpace()->primalRB() , M_model->rBFunctionSpace()->dualRB() ) );
-        M_elements_database.saveDB();
-        tpr=timer2.elapsed();
+        this->saveRB();
+        toc("Saving the Database");
 
-        time=timer.elapsed();
-        if( this->worldComm().isMasterRank() )
-        {
-            std::cout<<"saving in the database : "<<tpr<<" s"<<std::endl;
-            std::cout << "total time: " << time <<" s"<< std::endl;
-            std::cout << "============================================================\n";
-        }
+        toc("Total Time");
+        Feel::cout << "============================================================\n";
         LOG(INFO) <<"========================================"<<"\n";
     }
 
@@ -11252,7 +10878,381 @@ CRB<TruthModelType>::orthonormalizeBasis( int number_of_added_elements )
 }
 
 
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::buildRbMatrix( int number_of_added_elements, parameter_type& mu, element_ptrtype dual_initial_field )
+{
+    tic();
+    // we only compute the last line and last column of reduced matrices (last added elements)
+    int number_of_elements_to_update = number_of_added_elements;
+    // in the case of cobuild, we have to update all since affine decomposition has changed
+    if( ioption(_name="ser.rb-frequency") != 0 && !M_rebuild)
+        number_of_elements_to_update = M_N;
+    // In case of SER use + error estimation, we compute \hat{A}, \hat{F} (resp. \hat{R}) to compute norm of residual (Riesz)
+    int ser_error_estimation = M_SER_errorEstimation;
 
+    if( ! M_use_newton )
+    {
+        LOG(INFO) << "[CRB::offline] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
+
+        M_hAqm.resize( M_model->Qa() );
+        for  (size_type q = 0; q < M_model->Qa(); ++q )
+        {
+            M_hAqm[q].resize( M_model->mMaxA(q) );
+            for( size_type m = 0; m < M_model->mMaxA(q); ++m )
+            {
+                M_Aqm_pr[q][m].conservativeResize( M_N, M_N );
+                M_Aqm_du[q][m].conservativeResize( M_N, M_N );
+                M_Aqm_pr_du[q][m].conservativeResize( M_N, M_N );
+
+                for ( size_type i = M_N - number_of_elements_to_update; i < M_N; i++ )
+                {
+                    for ( size_type j = 0; j < M_N; ++j )
+                    {
+                        M_Aqm_pr[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->primalBasisElement(j), M_model->rBFunctionSpace()->primalBasisElement(i) );//energy
+                        M_Aqm_du[q][m]( i, j ) = M_model->Aqm( q , m , M_model->rBFunctionSpace()->dualBasisElement(i), M_model->rBFunctionSpace()->dualBasisElement(j), true );
+                        M_Aqm_pr_du[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->primalBasisElement(j), M_model->rBFunctionSpace()->dualBasisElement(i) );
+                    }
+                }
+
+                for ( size_type j=M_N - number_of_elements_to_update; j < M_N; j++ )
+                {
+                    for ( size_type i = 0; i < M_N; ++i )
+                    {
+                        M_Aqm_pr[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->primalBasisElement(j), M_model->rBFunctionSpace()->primalBasisElement(i) );
+                        M_Aqm_du[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->dualBasisElement(i), M_model->rBFunctionSpace()->dualBasisElement(j) , true );
+                        M_Aqm_pr_du[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->primalBasisElement(j), M_model->rBFunctionSpace()->dualBasisElement(i) );
+                    }
+                }
+
+                if( ser_error_estimation )
+                {
+                    M_hAqm[q][m].resize( M_N );
+                    auto Aqm_xi_n = backend()->newVector( M_model->functionSpace() );
+                    auto xi_n = backend()->newVector( M_model->functionSpace() );
+                    for( int n=0; n < M_N; n++ )
+                    {
+                        M_hAqm[q][m][n] = backend()->newVector( M_model->functionSpace() );
+                        *xi_n = M_model->rBFunctionSpace()->primalBasisElement(n);
+                        auto Aqm = M_model->Aqm(q,m);
+                        Aqm->multVector( xi_n, Aqm_xi_n );
+                        M_model->l2solve( M_hAqm[q][m][n], Aqm_xi_n );
+                    }
+                }
+            }//loop over m
+        }//loop over q
+
+        LOG(INFO) << "[CRB::offline] compute Mq_pr, Mq_du, Mq_pr_du" << "\n";
+
+        LOG(INFO) << "[CRB::offline] compute Fq_pr, Fq_du" << "\n";
+        M_hFqm.resize( M_model->Ql( 0 ) );
+        for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+        {
+            M_hFqm[q].resize( M_model->mMaxF( 0, q ) );
+            for( size_type m = 0; m < M_model->mMaxF( 0, q ); ++m )
+            {
+                M_Fqm_pr[q][m].conservativeResize( M_N );
+                M_Fqm_du[q][m].conservativeResize( M_N );
+                for ( size_type l = 1; l <= number_of_elements_to_update; ++l )
+                {
+                    int index = M_N-l;
+                    for( int idx = 0; idx<=index; idx++ )
+                    {
+                        M_Fqm_pr[q][m]( idx ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->primalBasisElement(idx) );
+                        M_Fqm_du[q][m]( idx ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->dualBasisElement(idx) );
+                    }
+                }
+                if( ser_error_estimation )
+                {
+                    M_hFqm[q][m] = backend()->newVector( M_model->functionSpace() );
+                    auto fqm = M_model->Fqm(0, q, m);
+                    M_model->l2solve( M_hFqm[q][m], fqm );
+                }
+
+            }//loop over m (>= mMaxF - cobuild_eim_freq)
+        }//loop over q
+
+    }//end of "if ! use_newton"
+
+    if( M_use_newton )
+    {
+        LOG(INFO) << "[CRB::offline] compute Jq_pr " << "\n";
+
+        for  (size_type q = 0; q < M_model->Qa(); ++q )
+        {
+            for( size_type m = 0; m < M_model->mMaxA(q); ++m )
+            {
+                M_Jqm_pr[q][m].conservativeResize( M_N, M_N );
+
+                for ( size_type i = M_N - number_of_elements_to_update; i < M_N; i++ )
+                {
+                    for ( size_type j = 0; j < M_N; ++j )
+                    {
+                        M_Jqm_pr[q][m]( i, j ) = M_model->Jqm(q , m ,
+                                                              M_model->rBFunctionSpace()->primalBasisElement(j),
+                                                              M_model->rBFunctionSpace()->primalBasisElement(i) );
+                        if (i!=j)
+                            M_Jqm_pr[q][m]( j, i ) = M_model->Jqm(q , m ,
+                                                                  M_model->rBFunctionSpace()->primalBasisElement(i),
+                                                                  M_model->rBFunctionSpace()->primalBasisElement(j) );
+                    }
+                }
+            }//loop over m
+        }//loop over q
+
+        if( ser_error_estimation )
+        {
+            auto RF_A = M_model->RF_Aqm();
+            M_hAqm.resize( RF_A.size() );
+            for(int q = 0; q < RF_A.size(); ++q )
+            {
+                M_hAqm[q].resize( RF_A[q].size() );
+                for(int m = 0; m < RF_A[q].size(); ++m )
+                {
+                    M_hAqm[q][m].resize( M_N );
+                    auto Aqm_xi_n = backend()->newVector( M_model->functionSpace() );
+                    auto xi_n = backend()->newVector( M_model->functionSpace() );
+                    for( int n=0; n < M_N; n++ )
+                    {
+                        M_hAqm[q][m][n] = backend()->newVector( M_model->functionSpace() );
+                        *xi_n = M_model->rBFunctionSpace()->primalBasisElement(n);
+                        auto Aqm = RF_A[q][m];
+                        Aqm->multVector( xi_n, Aqm_xi_n );
+                        M_model->l2solve( M_hAqm[q][m][n], Aqm_xi_n );
+                    }
+                }//m
+            }//q
+        }
+
+        LOG(INFO) << "[CRB::offline] compute Rq_pr" << "\n";
+
+        for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+        {
+            for( size_type m = 0; m < M_model->mMaxF( 0, q ); ++m )
+            {
+                M_Rqm_pr[q][m].conservativeResize( M_N );
+
+                for ( size_type l = 1; l <= number_of_elements_to_update; ++l )
+                {
+                    int index = M_N-l;
+                    //M_Rqm_pr[q][m]( index ) = inner_product( *M_Rqm[0][q][m] , M_model->rBFunctionSpace()->primalBasisElement(index) );
+                    M_Rqm_pr[q][m]( index ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->primalBasisElement(index) );
+                }
+            }//loop over m
+        }//loop over q
+
+        if( ser_error_estimation )
+        {
+            auto RF_F = M_model->RF_Fqm();
+            M_hFqm.resize( RF_F.size() );
+            for(int q = 0; q < RF_F.size(); ++q )
+            {
+                M_hFqm[q].resize( RF_F[q].size() );
+                for(int m = 0; m < RF_F[q].size(); ++m )
+                {
+                    M_hFqm[q][m] = backend()->newVector( M_model->functionSpace() );
+                    auto fqm = RF_F[q][m];
+                    M_model->l2solve( M_hFqm[q][m], fqm );
+                }//m
+            }//q
+        }
+
+    }//end if use_newton case
+
+
+    if( !M_model->isLinear() )
+    {
+        int q_max = M_model->QInitialGuess();
+        for ( size_type q = 0; q < q_max; ++q )
+        {
+            int m_max =M_model->mMaxInitialGuess(q);
+            for( size_type m = 0; m < m_max; ++m )
+            {
+                M_InitialGuessV_pr[q][m].conservativeResize( M_N );
+                for ( size_type l = 1; l <= number_of_elements_to_update; ++l )
+                {
+                    int index = M_N-l;
+                    for( int idx = 0; idx<=index; idx++ )
+                        M_InitialGuessV_pr[q][m]( idx ) = M_model->InitialGuessVqm( q, m, M_model->rBFunctionSpace()->primalBasisElement(idx) );
+                }
+            }
+        }
+    }
+
+
+    for ( size_type q = 0; q < M_model->Qm(); ++q )
+    {
+        for( size_type m = 0; m < M_model->mMaxM(q); ++m )
+        {
+            M_Mqm_pr[q][m].conservativeResize( M_N, M_N );
+            M_Mqm_du[q][m].conservativeResize( M_N, M_N );
+            M_Mqm_pr_du[q][m].conservativeResize( M_N, M_N );
+
+            for ( size_type i=M_N - number_of_elements_to_update; i < M_N; i++ )
+            {
+                for ( size_type j = 0; j < M_N; ++j )
+                {
+                    M_Mqm_pr[q][m]( i, j ) = M_model->Mqm(q, m,
+                                                          M_model->rBFunctionSpace()->primalBasisElement(i),
+                                                          M_model->rBFunctionSpace()->primalBasisElement(j) );
+                    M_Mqm_du[q][m]( i, j ) = M_model->Mqm(q, m,
+                                                          M_model->rBFunctionSpace()->dualBasisElement(i),
+                                                          M_model->rBFunctionSpace()->dualBasisElement(j), true );
+                    M_Mqm_pr_du[q][m]( i, j ) = M_model->Mqm( q, m,
+                                                              M_model->rBFunctionSpace()->dualBasisElement(i),
+                                                              M_model->rBFunctionSpace()->primalBasisElement(j) );
+                }
+            }
+            for ( size_type j = M_N - number_of_elements_to_update; j < M_N ; j++ )
+            {
+                for ( size_type i = 0; i < M_N; ++i )
+                {
+                    M_Mqm_pr[q][m]( i, j ) = M_model->Mqm(q, m,
+                                                          M_model->rBFunctionSpace()->primalBasisElement(i),
+                                                          M_model->rBFunctionSpace()->primalBasisElement(j) );
+                    M_Mqm_du[q][m]( i, j ) = M_model->Mqm(q, m,
+                                                          M_model->rBFunctionSpace()->dualBasisElement(i),
+                                                          M_model->rBFunctionSpace()->dualBasisElement(j), true );
+                    M_Mqm_pr_du[q][m]( i, j ) = M_model->Mqm(q, m,
+                                                             M_model->rBFunctionSpace()->dualBasisElement(i),
+                                                             M_model->rBFunctionSpace()->primalBasisElement(j) );
+                }
+            }
+        }//loop over m
+    }//loop over q
+
+    LOG(INFO) << "[CRB::offline] compute Lq_pr, Lq_du" << "\n";
+
+    for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
+    {
+        for( size_type m = 0; m < M_model->mMaxF( M_output_index, q ); ++m )
+        {
+            M_Lqm_pr[q][m].conservativeResize( M_N );
+            M_Lqm_du[q][m].conservativeResize( M_N );
+
+            for ( size_type l = 1; l <= number_of_elements_to_update; ++l )
+            {
+                int index = M_N-l;
+                M_Lqm_pr[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_model->rBFunctionSpace()->primalBasisElement(index) );
+                M_Lqm_du[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_model->rBFunctionSpace()->dualBasisElement(index) );
+            }
+        }//loop over m
+    }//loop over q
+
+    LOG(INFO) << "compute coefficients needed for the initialization of unknown in the online step\n";
+        if ( model_type::is_time_dependent || !M_model->isSteady() )
+        {
+            element_ptrtype primal_initial_field ( new element_type ( M_model->functionSpace() ) );
+            M_model->initializationField( primal_initial_field, mu ); //fill initial_field
+            M_coeff_pr_ini_online.conservativeResize( M_N );
+            if ( M_orthonormalize_primal )
+            {
+                for ( size_type elem=M_N - number_of_elements_to_update; elem<M_N; elem++ )
+                {
+                    //primal
+                    double k =  M_model->scalarProduct( *primal_initial_field, M_model->rBFunctionSpace()->primalBasisElement(elem) );
+                    M_coeff_pr_ini_online(elem)= k ;
+                }
+            }
+
+            else if ( !M_orthonormalize_primal )
+            {
+                matrixN_type MN ( ( int )M_N, ( int )M_N ) ;
+                vectorN_type FN ( ( int )M_N );
+
+                //primal
+                for ( size_type i=0; i<M_N; i++ )
+                {
+                    for ( size_type j=0; j<i; j++ )
+                    {
+                        MN( i,j ) = M_model->scalarProduct( M_model->rBFunctionSpace()->primalBasisElement(j),
+                                                            M_model->rBFunctionSpace()->primalBasisElement(i) );
+                        MN( j,i ) = MN( i,j );
+                    }
+
+                    MN( i,i ) = M_model->scalarProduct( M_model->rBFunctionSpace()->primalBasisElement(i),
+                                                        M_model->rBFunctionSpace()->primalBasisElement(i) );
+                    FN( i ) = M_model->scalarProduct( *primal_initial_field, M_model->rBFunctionSpace()->primalBasisElement(i) );
+                }
+
+                vectorN_type projectionN ( ( int ) M_N );
+                projectionN = MN.lu().solve( FN );
+
+                for ( size_type i=M_N - number_of_elements_to_update; i<M_N; i++ )
+                {
+                    M_coeff_pr_ini_online(i)= projectionN( i ) ;
+                }
+            }
+
+            if ( M_solve_dual_problem )
+            {
+                M_coeff_du_ini_online.conservativeResize( M_N );
+
+                if ( M_orthonormalize_dual )
+                {
+                    for ( size_type elem=M_N - number_of_elements_to_update; elem<M_N; elem++ )
+                    {
+                        double k =  M_model->scalarProduct( *dual_initial_field, M_model->rBFunctionSpace()->dualBasisElement(elem) );
+                        M_coeff_du_ini_online(elem)= k ;
+                    }
+                }
+                else if ( !M_orthonormalize_dual )
+                {
+                    matrixN_type MNdu ( ( int )M_N, ( int )M_N ) ;
+                    vectorN_type FNdu ( ( int )M_N );
+
+                    //dual
+                    for ( size_type i=0; i<M_N; i++ )
+                    {
+                        for ( size_type j=0; j<i; j++ )
+                        {
+                            MNdu( i,j ) = M_model->scalarProduct( M_model->rBFunctionSpace()->dualBasisElement(j),
+                                                                  M_model->rBFunctionSpace()->dualBasisElement(i) );
+                            MNdu( j,i ) = MNdu( i,j );
+                        }
+
+                        MNdu( i,i ) = M_model->scalarProduct( M_model->rBFunctionSpace()->dualBasisElement(i),
+                                                              M_model->rBFunctionSpace()->dualBasisElement(i) );
+                        FNdu( i ) = M_model->scalarProduct( *dual_initial_field, M_model->rBFunctionSpace()->dualBasisElement(i) );
+                    }
+
+                    vectorN_type projectionN ( ( int ) M_N );
+                    projectionN = MNdu.lu().solve( FNdu );
+
+                    for ( size_type i=M_N - number_of_elements_to_update; i<M_N; i++ )
+                    {
+                        M_coeff_du_ini_online(i)= projectionN( i ) ;
+                    }
+                }
+            }
+        }
+
+        if ( true )
+        {
+            M_algebraicInnerProductPrimal.conservativeResize( M_N, M_N );
+            for ( size_type i=M_N - number_of_elements_to_update; i<M_N; i++ )
+            {
+                for ( size_type j=0; j<M_N; j++ )
+                {
+                    M_algebraicInnerProductPrimal(i,j) = inner_product( M_model->rBFunctionSpace()->primalBasisElement(i),
+                                                                        M_model->rBFunctionSpace()->primalBasisElement(j) );
+                    if ( i!=j )
+                        M_algebraicInnerProductPrimal(j,i) = M_algebraicInnerProductPrimal(i,j);
+                }
+            }
+        }
+
+    toc("Projection on reduced basis space");
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::saveRB()
+{
+    M_elements_database.setWn( boost::make_tuple( M_model->rBFunctionSpace()->primalRB() , M_model->rBFunctionSpace()->dualRB() ) );
+
+    M_elements_database.saveDB();
+}
 
 
 
