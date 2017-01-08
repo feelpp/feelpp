@@ -251,6 +251,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
             // }
         }
 
+#if 0
         // update internal data point of faces attached on this elt
         for ( size_type j = 0; j < imesh->numLocalFaces(); j++ )
         {
@@ -274,6 +275,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
         }
 
         // Todo : edges
+#endif
     }
 
     //imesh->updateForUse();

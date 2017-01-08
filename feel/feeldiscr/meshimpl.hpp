@@ -913,6 +913,10 @@ struct HashFaceConnection
         {
             return boost::hash_range( v.begin(),v.end() );
         }
+    size_t operator()(const std::vector<size_type>& v) const
+        {
+            return boost::hash_range( v.begin(),v.end() );
+        }
 };
 }
 
@@ -928,7 +932,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     rank_type numPartition = this->worldComm().localSize();
 
     // typedef boost::unordered_map<std::set<size_type>, face_type* > pointstoface_container_type;
-    typedef std::unordered_map<std::set<size_type>, face_type*, Feel::detail::HashFaceConnection > pointstoface_container_type;
+    typedef std::unordered_map<std::vector/*set*/<size_type>, face_type*, Feel::detail::HashFaceConnection > pointstoface_container_type;
     typename pointstoface_container_type::iterator _faceit;
         // stores local vertex ids of the faces to identify them
     std::vector<size_type> lids(face_type::numVertices);
