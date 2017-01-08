@@ -151,11 +151,14 @@ public :
     }
 
 
+
 protected :
     std::vector<sparse_matrix_ptrtype> M_inner_product_matrix_vec;
     std::vector< backend_ptrtype > M_backend_l2_vec;
     std::vector<size_type> M_Xh0_indices;
     std::vector<size_type> M_Xh1_indices;
+
+
 
 }; // class CRBModelSaddlepoint
 
