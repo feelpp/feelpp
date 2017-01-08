@@ -181,6 +181,8 @@ private :
     double orthonormalize( size_type N, WNType& wn, int Nm, int n_space );
     template <typename WNType>
     double checkOrthonormality( int N, const WNType& wn, int n_space ) const;
+    void buildRbMatrix( int number_of_added_elements, parameter_type& mu, element_ptrtype dual_initial_field );
+    void saveRB();
 
     CRBDB M_crbdb;
 
@@ -221,27 +223,26 @@ CRBSaddlePoint<TruthModelType>::addBasis( element_type& U, element_type& Udu, pa
     auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
     auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
 
-    tic();
-    XN0->addPrimalBasisElement( u );
-    XN0->addDualBasisElement( udu );
-    M_N0++;
-    toc("Add Basis Function 0");
-    tic();
-    XN1->addPrimalBasisElement( p );
-    XN1->addDualBasisElement( pdu );
-    M_N1++;
-    toc("Add Basis Function 1");
+     tic();
+     XN0->addPrimalBasisElement( u );
+     XN0->addDualBasisElement( udu );
+     M_N0++;
+     toc("Add Basis Function 0");
+     tic();
+     XN1->addPrimalBasisElement( p );
+     XN1->addDualBasisElement( pdu );
+     M_N1++;
+     toc("Add Basis Function 1");
 
-    if ( boption("crb.saddlepoint.add-supremizer") )
-    {
-        tic();
-        auto us = this->M_model->supremizer( mu, p );
-        XN0->addPrimalBasisElement( us );
-        XN0->addDualBasisElement( us );
-        M_N0++;
-        toc("Supremizer computation");
-    }
-
+     if ( boption("crb.saddlepoint.add-supremizer") )
+     {
+         tic();
+         auto us = this->M_model->supremizer( mu, p );
+         XN0->addPrimalBasisElement( us );
+         XN0->addDualBasisElement( us );
+         M_N0++;
+         toc("Supremizer computation");
+     }
 
 }
 
@@ -251,6 +252,7 @@ CRBSaddlePoint<TruthModelType>::orthonormalizeBasis( int number_of_added_element
 {
     auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
     auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
+
 
     double norm_max = doption(_name="crb.orthonormality-tol");
     int max_iter = ioption(_name="crb.orthonormality-max-iter");
@@ -300,7 +302,10 @@ double
 CRBSaddlePoint<TruthModelType>::orthonormalize( size_type N, WNType& wn, int Nm, int n_space )
 {
     int proc_number = this->worldComm().globalRank();
-    if( proc_number == 0 ) std::cout << "  -- orthonormalization (Gram-Schmidt)\n";
+    Feel::cout << "  -- orthonormalization (Gram-Schmidt)\n";
+    Feel::cout << "[CRB::orthonormalize] orthonormalize basis for N = " << N << "\n";
+    Feel::cout << "[CRB::orthonormalize] orthonormalize basis for WN = " << wn.size() << "\n";
+    Feel::cout << "[CRB::orthonormalize] starting ...\n";
     DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for N = " << N << "\n";
     DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for WN = " << wn.size() << "\n";
     DVLOG(2) << "[CRB::orthonormalize] starting ...\n";
@@ -360,6 +365,25 @@ CRBSaddlePoint<TruthModelType>::checkOrthonormality ( int N, const WNType& wn, i
     //FEELPP_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
 
     return A.norm();
+}
+
+template<typename TruthModelType>
+void
+CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, parameter_type& mu, element_ptrtype dual_initial_field )
+{
+    tic();
+
+
+
+    toc("Reduced Matrices Built");
+}
+
+
+template<typename TruthModelType>
+void
+CRBSaddlePoint<TruthModelType>::saveRB()
+{
+
 }
 
 
