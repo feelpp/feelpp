@@ -26,7 +26,7 @@ matrix:
         services:
             - docker      
   allow_failures:
-  - env: BUILD="ubuntu-16.10,gcc-6.2" DOCKERFILE="Dockerfile-16.10" TARGET_IMAGE="feelpp/develop:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O2 -DNDEBUG" FEELPP_CXX="g++" FEELPP_CC="gcc"
+  - env: BUILD="ubuntu-16.10,gcc-6.2" DOCKERFILE="Dockerfile-16.10" TARGET_IMAGE="feelpp/develop:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O1 -DNDEBUG" FEELPP_CXX="g++" FEELPP_CC="gcc"
 
 before_install:
 - echo $TRAVIS_OS_NAME
