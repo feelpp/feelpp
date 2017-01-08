@@ -174,6 +174,10 @@ public:
     bool loadDB();
     //@}
 
+    element_type expansion( parameter_type const& mu , int N=-1, int time_index=-1);
+    element_type expansion( vectorN_type const& u , int const N, bool dual ) const;
+    element_type expansionSaddlePoint( vectorN_type const& U_coeff, int const N, bool dual ) const;
+
 private :
     void addBasis( element_type& U, element_type& Udu, parameter_type& mu );
     void orthonormalizeBasis( int number_of_added_elements );
@@ -706,6 +710,69 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
     if( print_rb_matrix && !this->M_offline_step )
         this->printRBMatrix( A,mu );
     return matrix_info;
+}
+
+template<typename TruthModelType>
+typename CRBSaddlePoint<TruthModelType>::element_type
+CRBSaddlePoint<TruthModelType>::expansion( parameter_type const& mu , int N , int time_index )
+{
+    int Nwn;
+
+    if( N > 0 )
+        Nwn = N;
+    else
+        Nwn = this->M_N;
+
+    std::vector<vectorN_type> uN;
+    std::vector<vectorN_type> uNdu;
+    std::vector<vectorN_type> uNold;
+    std::vector<vectorN_type> uNduold;
+
+    auto o = this->lb( Nwn, mu, uN, uNdu , uNold, uNduold );
+    int size = uN.size();
+
+
+    return expansionSaddlePoint( uN[size-1], Nwn, false );
+}
+
+template<typename TruthModelType>
+typename CRBSaddlePoint<TruthModelType>::element_type
+CRBSaddlePoint<TruthModelType>::expansion( vectorN_type const& u , int const N, bool dual ) const
+{
+    return expansionSaddlePoint( u, N, dual );
+}
+
+template<typename TruthModelType>
+typename CRBSaddlePoint<TruthModelType>::element_type
+CRBSaddlePoint<TruthModelType>::expansionSaddlePoint( vectorN_type const& U_coeff, int const N, bool dual ) const
+{
+    auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
+    auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
+    auto WN0 = dual ? XN0->dualRB() : XN0->primalRB();
+    auto WN1 = dual ? XN1->dualRB() : XN1->primalRB();
+
+    int Nwn = N>0 ? N:this->M_N;
+
+    int N0 = boption("crb.saddlepoint.add-supremizer") ? 2*Nwn:Nwn;
+    int N1 = Nwn;
+
+    CHECK( Nwn <= WN0.size() )<< "invalid expansion size\n";
+    CHECK( N0+N1 <= U_coeff.size() )<< "invalid expansion size, Nwn="
+                                    << N0+N1
+                                    << ", U_coeff.size="<<U_coeff.size()<<std::endl;
+    CHECK( U_coeff.size() == N0 + N1 )
+        << "invalide size of U_coeff, vector can't be cut\n";
+
+    vectorN_type u_coeff = U_coeff.head( N0 );
+    vectorN_type p_coeff = U_coeff.tail( N1 );
+
+    element_type U = this->M_model->functionSpace()->element();
+    auto u = U.template element<0>();
+    auto p = U.template element<1>();
+
+    u = Feel::expansion( WN0, u_coeff, N0 ).container();
+    p = Feel::expansion( WN1, p_coeff, N1 ).container();
+    return U;
 }
 
 template<typename TruthModelType>

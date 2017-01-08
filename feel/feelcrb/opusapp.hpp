@@ -388,7 +388,7 @@ public:
             auto solutions = o.template get<2>();
             auto uN = solutions.template get<0>();
             auto WN = crb->wn();
-            auto u_crb = crb->expansion( uN[uN.size()-1], N, WN );
+            auto u_crb = crb->expansion( uN[uN.size()-1], N, false );
             return u_crb;
         }
 
