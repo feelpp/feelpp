@@ -5,35 +5,35 @@ git:
 
 matrix:
   include:
-      - env: BUILD=":ubuntu: 16.10,clang-3.9" FEELPP_CXX="clang++-3.9" FEELPP_CC="clang-3.9" TARGET_IMAGE="ubuntu:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O2 -DNDEBUG"
+      - env: BUILD="ubuntu 16.10,clang-3.9" FEELPP_CXX="clang++-3.9" FEELPP_CC="clang-3.9" TARGET_IMAGE="ubuntu:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O2 -DNDEBUG"
         sudo: required
         services:
             - docker
-      - env: BUILD=":ubuntu: 16.10,gcc-6.2" FEELPP_CXX="g++" FEELPP_CC="gcc" TARGET_IMAGE="ubuntu:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O1 -DNDEBUG"
+      - env: BUILD="ubuntu 16.10,gcc-6.2" FEELPP_CXX="g++" FEELPP_CC="gcc" TARGET_IMAGE="ubuntu:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O1 -DNDEBUG"
         sudo: required
         services:
             - docker
-      - env: BUILD=":debian: testing,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O1 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+      - env: BUILD="debian testing,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O1 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
         sudo: required
         services:
             - docker
-      - env: BUILD=":debian: testing,clang-3.9" FEELPP_CXX="clang++-3.9" FEELPP_CC="clang-3.9" CXXFLAGS="-O2 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+      - env: BUILD="debian testing,clang-3.9" FEELPP_CXX="clang++-3.9" FEELPP_CC="clang-3.9" CXXFLAGS="-O2 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
         sudo: required
         services:
             - docker
-      - env: BUILD=":debian: sid,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O1 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+      - env: BUILD="debian sid,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O1 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
         sudo: required
         services:
             - docker
-      - env: BUILD=":debian: sid,clang-4.0" FEELPP_CXX="clang++-4.0" FEELPP_CC="clang-4.0" CXXFLAGS="-O2 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+      - env: BUILD="debian sid,clang-4.0" FEELPP_CXX="clang++-4.0" FEELPP_CC="clang-4.0" CXXFLAGS="-O2 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
         sudo: required
         services:
             - docker
   allow_failures:
-  - env: BUILD=":ubuntu: 16.10,gcc-6.2" FEELPP_CXX="g++" FEELPP_CC="gcc" TARGET_IMAGE="ubuntu:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O1 -DNDEBUG"
-  - env: BUILD=":debian: testing,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O1 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
-  - env: BUILD=":debian: sid,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O1 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
-  - env: BUILD=":debian: sid,clang-4.0" FEELPP_CXX="clang++-4.0" FEELPP_CC="clang-4.0" CXXFLAGS="-O2 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+  - env: BUILD="ubuntu 16.10,gcc-6.2" FEELPP_CXX="g++" FEELPP_CC="gcc" TARGET_IMAGE="ubuntu:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O1 -DNDEBUG"
+  - env: BUILD="debian testing,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O1 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+  - env: BUILD="debian sid,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O1 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+  - env: BUILD="debian sid,clang-4.0" FEELPP_CXX="clang++-4.0" FEELPP_CC="clang-4.0" CXXFLAGS="-O2 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
 
 before_install:
 - echo $TRAVIS_OS_NAME
