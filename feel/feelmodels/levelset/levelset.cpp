@@ -1291,7 +1291,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
     if( M_useGradientAugmented )
     {
         // Solve modGradPhi
-        auto modGradPhi = M_modGradPhiAdvection->fieldSolutionPtr();
+        //auto modGradPhi = M_modGradPhiAdvection->fieldSolutionPtr();
         auto u = this->fieldAdvectionVelocityPtr();
         auto NxN = idv(this->N()) * trans(idv(this->N()));
         auto Du = sym( gradv(u) );
@@ -1307,7 +1307,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
     if( M_useStretchAugmented )
     {
         // Solve stretch modGradPhi
-        auto modGradPhi = M_stretchAdvection->fieldSolutionPtr();
+        //auto modGradPhi = M_stretchAdvection->fieldSolutionPtr();
         auto u = this->fieldAdvectionVelocityPtr();
         auto NxN = idv(this->N()) * trans(idv(this->N()));
         auto Du = sym( gradv(u) );
