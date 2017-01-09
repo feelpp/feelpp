@@ -1052,7 +1052,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     // for ( uint16_type f = 0; f < element_type::numVertices; ++f )
     //     pointIdInElt[f] = iv->point( f ).id();
 
-    std::set<size_type> s;
+    // std::set<size_type> s;
     tic();
     for ( ; iv != en; ++iv )
     {
