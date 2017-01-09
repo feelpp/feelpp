@@ -90,13 +90,13 @@ ADVECTION_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 
     //this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "advection", "Dirichlet" );
     this->M_bcDirichlet = detail::getBCFields<nDim, is_vectorial>( 
-            this->modelProperties().boundaryConditions(), "advection", "Dirichlet");
+            this->modelProperties().boundaryConditions(), this->prefix(), "Dirichlet");
     for( auto const& d : this->M_bcDirichlet )
         this->addMarkerDirichletBC("elimination", marker(d) );
 
     //this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "advection", "Neumann" );
     this->M_bcNeumann = detail::getBCFields<nDim, is_vectorial>(
-            this->modelProperties().boundaryConditions(), "advection", "Neumann"
+            this->modelProperties().boundaryConditions(), this->prefix(), "Neumann"
             );
     for( auto const& d : this->M_bcNeumann )
         this->addMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d));
@@ -107,7 +107,7 @@ ADVECTION_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 
     //M_sources = this->modelProperties().boundaryConditions().template getScalarFields( "advection", "Sources" );
     M_sources = detail::getBCFields<nDim, is_vectorial>(
-            this->modelProperties().boundaryConditions(), "advection", "Sources"
+            this->modelProperties().boundaryConditions(), this->prefix(), "Sources"
             );
 }
 
