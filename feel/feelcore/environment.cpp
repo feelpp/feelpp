@@ -345,7 +345,7 @@ Environment::initPetsc( int * argc, char *** argv )
         i_initialized = true;
 
         int ierr;
-        if( (argc > 0) && ( argv != nullptr ) )
+        if( (*argc > 0) && ( argv != nullptr ) )
         {
 #if defined( FEELPP_HAS_SLEPC )
             ierr = SlepcInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
