@@ -16,7 +16,7 @@ set -e
 #sudo apt-get install -y -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker-engine
 
 echo '--- get feelpp/docker'
-git clone --depth=1 https://github.com/feelpp/docker
+if [ ! -d docker]; then git clone --depth=1 https://github.com/feelpp/docker; fi
 
 echo '--- building feelpp-libs'
 cd docker/dockerfiles/feelpp-libs && bash mkimg.sh -f ${TARGET} --jobs=${JOBS} --branch=${BUILDKITE_BRANCH} --cxx="${CXX}" --cc="${CC}" --
