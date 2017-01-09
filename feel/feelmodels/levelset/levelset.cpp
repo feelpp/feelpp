@@ -737,8 +737,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     for( std::string const& bcMarker: this->modelProperties().boundaryConditions().markers( this->prefix(), "inflow" ) )
     {
         if( std::find(M_bcMarkersInflow.begin(), M_bcMarkersInflow.end(), bcMarker) == M_bcMarkersInflow.end() )
-        {
             M_bcMarkersInflow.push_back( bcMarker );
+
+        if( M_useGradientAugmented )
+        {
+            M_modGradPhiAdvection->addMarkerInflowBC( bcMarker );
+        }
+        if( M_useStretchAugmented )
+        {
+            M_stretchAdvection->addMarkerInflowBC( bcMarker );
         }
     }
 }
@@ -1917,7 +1924,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
             M_markerCrossedElements->assign(it_elt->id(), 0, 0, 0);
     }
 }
-
 
 } // FeelModels
 } // Feel
