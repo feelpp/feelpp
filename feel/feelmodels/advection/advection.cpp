@@ -87,6 +87,7 @@ ADVECTION_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 {
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
+    M_bcInflowMarkers.clear();
 
     //this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "advection", "Dirichlet" );
     this->M_bcDirichlet = detail::getBCFields<nDim, is_vectorial>( 
@@ -104,6 +105,10 @@ ADVECTION_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     //this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "advection", "Robin" );
     //for( auto const& d : this->M_bcRobin )
         //this->addMarkerRobinBC( marker(d) );
+
+    for( std::string const& bcMarker: this->modelProperties().boundaryConditions().markers( this->prefix(), "inflow" ) )
+        if( std::find(M_bcInflowMarkers.begin(), M_bcInflowMarkers.end(), bcMarker) == M_bcInflowMarkers.end() )
+            M_bcInflowMarkers.push_back( bcMarker );
 
     //M_sources = this->modelProperties().boundaryConditions().template getScalarFields( "advection", "Sources" );
     M_sources = detail::getBCFields<nDim, is_vectorial>(
@@ -137,7 +142,7 @@ ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTION_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
 {
-    if ( this->M_bcDirichlet.empty() ) return;
+    if ( this->M_bcDirichlet.empty() && this->M_bcInflowMarkers.empty() ) return;
 
     this->log("Advection","updateBCStrongDirichletLinearPDE","start" );
 
@@ -149,11 +154,37 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_pt
                                               _rowstart=this->rowStartInMatrix(),
                                               _colstart=this->colStartInMatrix() );
 
+    // Dirichlet bc
     for( auto const& d : this->M_bcDirichlet )
     {
         bilinearForm_PatternCoupled +=
             on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
                 _element=u,_rhs=F,_expr=expression(d) );
+    }
+
+    // Inflow bc
+    if( !this->isStationary() )
+    {
+        for( auto const& bcMarker: this->M_bcInflowMarkers )
+        {
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(mesh, bcMarker),
+                        _element=u,
+                        _rhs=F,
+                        _expr=(
+                            // Transient part
+                            idv(this->timeStepBDF()->polyDeriv())
+                            // Advection part
+                            - gradv(u)*idv(this->fieldAdvectionVelocity())
+                            // Diffusion part
+                            + (this->hasDiffusion()) * idv(this->diffusionReactionModel()->fieldDiffusionCoeff())*laplacianv(u)
+                            // Reaction part
+                            - (this->hasReaction()) * idv(this->diffusionReactionModel()->fieldReactionCoeff())*idv(u)
+                            // Source part
+                            + (this->hasSourceAdded() || this->hasSourceTerm()) * idv(*this->M_fieldSource)
+                            )/(this->timeStepBDF()->polyDerivCoefficient(0))
+                  );
+        }
     }
 
     this->log("Advection","updateBCStrongDirichletLinearPDE","finish" );
@@ -216,6 +247,14 @@ bool
 ADVECTION_CLASS_TEMPLATE_TYPE::hasSourceTerm() const
 {
     return !this->M_sources.empty(); 
+}
+
+ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTION_CLASS_TEMPLATE_TYPE::addMarkerInflowBC( std::string const& markerName )
+{
+    if( std::find(M_bcInflowMarkers.begin(), M_bcInflowMarkers.end(), markerName) == M_bcInflowMarkers.end() )
+        M_bcInflowMarkers.push_back( markerName );
 }
 
 namespace detail {

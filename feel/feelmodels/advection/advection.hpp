@@ -93,13 +93,19 @@ public:
     void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
     void updateSourceTermLinearPDE(element_advection_ptrtype& fieldSource, bool buildCstPart) const;
 
+    //--------------------------------------------------------------------//
     bool hasSourceTerm() const;
+
+    //--------------------------------------------------------------------//
+    // BC management
+    void addMarkerInflowBC( std::string const& markerName );
 
 protected:
     // Boundary conditions
     bc_map_field_type M_bcDirichlet;
     bc_map_field_type M_bcNeumann;
     //map_scalar_fields<2> M_bcRobin;
+    std::list<std::string> M_bcInflowMarkers;
 
     bc_map_field_type M_sources;
 
