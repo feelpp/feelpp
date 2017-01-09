@@ -11,9 +11,9 @@ set -e
 # export MANPATH=${FEELPP_DEP_INSTALL_PREFIX}/share/man:$MANPATH
 
 
-echo '--- get docker'
-sudo apt-get update
-sudo apt-get install -y -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker-engine
+#echo '--- get docker'
+#sudo apt-get update
+#sudo apt-get install -y -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker-engine
 
 echo '--- get feelpp/docker'
 git clone --depth=1 https://github.com/feelpp/docker
