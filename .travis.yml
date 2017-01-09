@@ -29,7 +29,7 @@ matrix:
         sudo: required
         services:
             - docker
-      - env: BUILD="debian-testing,clang-4.0" FEELPP_CXX="clang++-4.0" FEELPP_CC="clang-4.0" CXXFLAGS="-O2 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" 
+      - env: BUILD="debian-testing,clang-3.9" FEELPP_CXX="clang++-3.9" FEELPP_CC="clang-3.9" CXXFLAGS="-O2 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" 
         sudo: required
         services:
             - docker
