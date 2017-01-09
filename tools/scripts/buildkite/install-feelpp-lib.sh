@@ -19,5 +19,5 @@ echo '--- get feelpp/docker'
 if [ ! -d docker]; then git clone --depth=1 https://github.com/feelpp/docker; fi
 
 echo '--- building feelpp-libs'
-cd docker/dockerfiles/feelpp-libs && bash mkimg.sh -f ${TARGET} --jobs=${JOBS} --branch=${BUILDKITE_BRANCH} --cxx="${CXX}" --cc="${CC}" --
+cd docker/dockerfiles/feelpp-libs && bash -c "mkimg.sh -f ${TARGET} --jobs=${JOBS} --branch=${BUILDKITE_BRANCH} --cxx=\"${CXX}\" --cc=\"${CC}\" --"
 
