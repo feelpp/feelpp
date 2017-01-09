@@ -38,8 +38,22 @@ int main(int argc, char *argv[])
     
     decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<FEELPP_ORDER>(mesh) ) ) Idh ;
     decltype( IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(mesh), _imageSpace=Pdhms<FEELPP_ORDER>(mesh) ) ) Idhv;
-    ME -> init (mesh);
-	/*
+
+
+    if ( soption( "gmsh.submesh" ).empty() )
+        ME -> init(mesh);
+    else
+    {
+        Feel::cout << "Using submesh: " << soption("gmsh.submesh") << std::endl;
+        auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
+        Idh = IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(cmesh), _imageSpace=Pdhv<FEELPP_ORDER>(mesh) );
+        Idhv = IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(cmesh), _imageSpace=Pdhms<FEELPP_ORDER>(mesh) );
+        ME -> init( cmesh, mesh );
+    }
+
+
+
+/*	
 	if ( soption("gmsh.submesh").empty() )
 	{
 		ME -> init(mesh);
@@ -59,7 +73,7 @@ int main(int argc, char *argv[])
     	Idhv = IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(cmesh), _imageSpace=Pdhms<FEELPP_ORDER>(mesh) );
     	ME -> init( cmesh, mesh );
 	}
-	*/ 
+*/	 
     
 	if ( ME -> isStationary() )
     {
@@ -78,7 +92,12 @@ int main(int argc, char *argv[])
         }
      }
 
+#if 0
+
     ME->geometricTest();
+
+#endif
+
 
     return 0;
 }
