@@ -1053,9 +1053,9 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     //     pointIdInElt[f] = iv->point( f ).id();
 
     std::set<size_type> s;
+    tic();
     for ( ; iv != en; ++iv )
     {
-        tic();
         element_type const& __element = *iv;
         const size_type __element_id = __element.id();
         const rank_type eltPid = __element.processId();
@@ -1294,9 +1294,9 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             }
 
         } // face loop
-        toc("Mesh.updateEntitiesCoDimensionOne.add_faces_from_elements",FLAGS_v>0);
     } // element loop
 
+    toc("Mesh.updateEntitiesCoDimensionOne.add_faces_from_elements",FLAGS_v>0);
     DVLOG(2) << "[Mesh::updateFaces] finish elements loop";
     _faces.clear();
     pointstoface_container_type().swap( _faces );
