@@ -1,10 +1,10 @@
 h = 0.1;
 
 Point(1) = {0, 0, 0, h};
-Point(7) = {0.4, 0, 0, h};
-Point(8) = {-0.4, 0, 0, h};
-Point(9) = {0, 0.4, 0, h};
-Point(10) = {0, -0.4, 0, h};
+Point(7) = {1, 0, 0, h};
+Point(8) = {-1, 0, 0, h};
+Point(9) = {0, 1, 0, h};
+Point(10) = {0, -1, 0, h};
 Circle(5) = {8, 1, 9};
 Circle(6) = {9, 1, 7};
 Circle(7) = {7, 1, 10};
@@ -15,7 +15,7 @@ Plane Surface(12) = {10};
 
 
 Plane Surface(13) = {10};
-Extrude {0, 0, 3} {
+Extrude {0, 0, 5} {
   Surface{12};
 }
 
