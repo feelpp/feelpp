@@ -11,22 +11,13 @@ set -e
 # export MANPATH=${FEELPP_DEP_INSTALL_PREFIX}/share/man:$MANPATH
 
 
+echo '--- get docker'
+sudo apt-get update
+sudo apt-get install -y -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker-engine
 
-echo '--- tests'
-export PATH=/usr/bin:/bin/:$PATH
+echo '--- get feelpp/docker'
+git clone --depth=1 https://github.com/feelpp/docker
 
-echo "CXX=$CXX"
-echo "CC=$CC"
+echo '--- building feelpp-libs'
+cd docker/dockerfiles/feelpp-libs && bash mkimg.sh -f ${TARGET} --jobs=${JOBS} --branch=${BUILDKITE_BRANCH} --cxx="${CXX}" --cc="${CC}" --
 
-echo '--- build directory'
-if [ -d build ]; then rm -rf build; fi
-mkdir -p build
-cd build
-
-echo '--- configure -r'
-#../configure -r  --cmakeflags="-DFEELPP_ENABLE_VTK_INSITU=ON -DCMAKE_INSTALL_PREFIX=${FEELPP_HOME}"
-echo "INSTALL_PREFIX=$INSTALL_PREFIX"
-../configure -r
-
-echo '--- make feelpp library'
-make -j10 install-feelpp-lib
