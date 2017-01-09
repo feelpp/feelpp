@@ -1,26 +1,26 @@
 steps:
- - name: ':feelpp: :debian/sid: :gcc:6.3'
+ - name: ':debian: sid,gcc-6.3'
    command: "tools/scripts/buildkite/install-feelpp-lib.sh"
    env:
      JOBS: 10
      TARGET: debian:sid     
- - name: ':feelpp: :debian/sid: :clang:4.0'
+ - name: ':debian: sid,clang-4.0'
    command: "tools/scripts/buildkite/install-feelpp-lib.sh"
    env:
      JOBS: 10   
      CXX: clang++-4.0
      CC: clang-4.0
      TARGET: debian:sid
- - name: ':feelpp: :ubuntu:16.10: :gcc:6.2'
+ - name: ':ubuntu: 16.10,gcc-6.2'
    command: "tools/scripts/buildkite/install-feelpp-lib.sh"
    env:
      JOBS: 10
      TARGET: ubuntu:16.10
- - name: ':feelpp: :ubuntu:16.10: :clang:3.9'
+ - name: ':ubuntu: 16.10,clang:3.9'
    command: "tools/scripts/buildkite/install-feelpp-lib.sh"
    env:
      JOBS: 10   
      CXX: clang++-3.9
      CC: clang-3.9
      TARGET: ubuntu:16.10
-
+ 
