@@ -56,15 +56,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     mesh_adapt.reset( new mesh_adaptation_type ( backend_mesh_adapt ));
 #endif*/
 
-    __iter=0;
-
-/*#if defined (LEVELSET_CONSERVATIVE_ADVECTION)
-    if (M_discrMethod==CN_CONSERVATIVE)
-    {
-        phic = M_spaceLSCorr->elementPtr();
-    }
-#endif*/
-
     //-----------------------------------------------------------------------------//
     // Print infos
     this->levelsetInfos(true);
@@ -626,14 +617,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
     super_type::loadParametersFromOptionsVm();
 
-    //M_enableReinit = boption(prefixvm(this->prefix(),"enable-reinit"));
-    //M_reinitEvery = ioption(prefixvm(this->prefix(),"reinit-every"));
-    //M_useMarker2AsMarkerDoneFmm = boption(prefixvm(this->prefix(),"fm-use-markerdirac"));
-    //hj_max_iter = ioption(prefixvm(this->prefix(),"hj-max-iter"));
-    //hj_dtau = doption(prefixvm(this->prefix(),"hj-dtau"));
-    //hj_tol = doption(prefixvm(this->prefix(),"hj-tol"));
-    //impose_inflow = ioption(prefixvm(this->prefix(),"impose-inflow"));
-    //stabStrategy = ioption(prefixvm(this->prefix(),"stabilization-strategy"));
     M_useRegularPhi = boption(_name=prefixvm(this->prefix(),"use-regularized-phi"));
     M_useHeavisideDiracNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
 
@@ -1454,9 +1437,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
 
     else if ( M_reinitMethod == LevelSetReinitMethod::HJ )
     {
-        //ch.restart();
         //*phi = *explicitHJ(max_iter, dtau, tol);
-        //LOG(INFO)<<"reinit done in "<<ch.elapsed()<<" s\n";
+        // TODO
     } // Hamilton-Jacobi
 
     //*phi = M_reinitializer->run( *phi );
