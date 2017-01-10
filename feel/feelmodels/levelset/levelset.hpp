@@ -258,6 +258,8 @@ public:
     void createReinitialization();
     void createOthers();
 
+    boost::shared_ptr<std::ostringstream> getInfo() const;
+
     //--------------------------------------------------------------------//
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
     space_levelset_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceLevelSetVec; }
@@ -378,12 +380,6 @@ public:
         this->setInitialValue(expr, M_reinitInitialValue );
     }
 
-    /* update the submesh and subspaces*/
-    //void updateSubMeshSubSpace(element_markers_ptrtype marker);
-    //void updateSubMeshSubSpace();
-
-    std::string levelsetInfos( bool show = false );
-
     //--------------------------------------------------------------------//
     // Export results
     bool hasPostProcessMeasureExported( LevelSetMeasuresExported const& measure) const;
@@ -472,7 +468,6 @@ private:
 
     //--------------------------------------------------------------------//
     // Spaces
-    //space_levelset_ptrtype M_spaceLevelSet;
     space_levelset_vectorial_ptrtype M_spaceLevelSetVec;
     space_markers_ptrtype M_spaceMarkers;
 
@@ -564,12 +559,6 @@ private:
     bool M_reinitInitialValue;
 
     //LevelSetTimeDiscretization M_discrMethod;
-
-
-    // -------------- variables -----------
-    boost::timer ch;
-    std::ofstream statReinitFile;
-    int __iter;
 
 }; //class LevelSet
 
