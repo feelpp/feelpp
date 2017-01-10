@@ -429,6 +429,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
 
         M_stretchAdvection->getExporter()->setDoExport( boption( _name="do_export_stretch-advection", _prefix=this->prefix() ) );
     }
+    for( std::string const& bcMarker: this->M_bcMarkersInflow )
+    {
+        if( M_useGradientAugmented )
+            M_modGradPhiAdvection->addMarkerInflowBC( bcMarker );
+        if( M_useStretchAugmented )
+            M_stretchAdvection->addMarkerInflowBC( bcMarker );
+    }
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -738,15 +745,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     {
         if( std::find(M_bcMarkersInflow.begin(), M_bcMarkersInflow.end(), bcMarker) == M_bcMarkersInflow.end() )
             M_bcMarkersInflow.push_back( bcMarker );
-
-        if( M_useGradientAugmented )
-        {
-            M_modGradPhiAdvection->addMarkerInflowBC( bcMarker );
-        }
-        if( M_useStretchAugmented )
-        {
-            M_stretchAdvection->addMarkerInflowBC( bcMarker );
-        }
     }
 }
 
