@@ -205,6 +205,78 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+boost::shared_ptr<std::ostringstream>
+MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
+{
+    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    *_ostr << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||--------------Info : MultiFluid---------------||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n   Prefix           : " << this->prefix()
+           << "\n   Root Repository  : " << this->rootRepository()
+           << "\n   Number of fluids : " << M_nFluids;
+
+    *_ostr << "\n   Fluids Parameters";
+    *_ostr << "\n     -- fluid 0 (outer fluid)"
+           << "\n       * rho : " << this->M_fluidDensityViscosityModel->cstRho()
+           << "\n       * mu  : " << this->M_fluidDensityViscosityModel->cstMu()
+           << "\n       * nu  : " << this->M_fluidDensityViscosityModel->cstNu();
+    *_ostr << this->M_fluidDensityViscosityModel->getInfo()->str();
+    for( uint16_type i = 0; i < M_levelsetDensityViscosityModels.size(); ++i )
+    {
+    *_ostr << "\n     -- fluid " << i+1
+           << "\n       * rho : " << this->M_levelsetDensityViscosityModels[i]->cstRho()
+           << "\n       * mu  : " << this->M_levelsetDensityViscosityModels[i]->cstMu()
+           << "\n       * nu  : " << this->M_levelsetDensityViscosityModels[i]->cstNu();
+    *_ostr << this->M_levelsetDensityViscosityModels[i]->getInfo()->str();
+    }
+
+    *_ostr << "\n   Level Sets Parameters";
+    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    {
+    *_ostr << "\n     -- level set " << i
+           << "\n       * reinit every : " << this->M_levelsetReinitEvery[i];
+    }
+
+    *_ostr << "\n   Forces Parameters"
+           << "\n     -- has surface tension  : " << std::boolalpha << this->M_enableSurfaceTension;
+    if( this->M_enableSurfaceTension )
+    {
+        for( uint16_type i = 0; i < M_surfaceTensionCoeff.size1(); ++i )
+            for( uint16_type j = i+1; j < M_surfaceTensionCoeff.size2(); ++j )
+    *_ostr << "\n       * surface tension (" << i << "," << j << ") : " << this->M_surfaceTensionCoeff(i,j);
+    }
+    *_ostr << "\n     -- has interface forces : " << std::boolalpha << this->M_hasInterfaceForcesModel;
+    if( this->M_hasInterfaceForcesModel )
+    {
+        for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+        {
+    *_ostr << "\n     -- level set " << i;
+            for( uint16_type n = 0; n < M_levelsetInterfaceForcesModels[i].size(); ++n )
+    *_ostr << "\n       * force model : " << this->M_levelsetInterfaceForcesModels[i][n]->getInfo()->str();
+        }
+    }
+
+    *_ostr << "\n";
+    *_ostr << M_fluid->getInfo()->str();
+    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    {
+    *_ostr << M_levelsets[i]->getInfo()->str();
+    }
+
+    *_ostr << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n\n";
+
+    return _ostr;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 bool
 MULTIFLUID_CLASS_TEMPLATE_TYPE::hasInterfaceForces() const
 {
