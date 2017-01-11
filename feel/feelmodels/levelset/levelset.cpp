@@ -1583,30 +1583,30 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n||==============================================||"
            << "\n||---------------Info : LevelSet----------------||"
            << "\n||==============================================||"
-           << "\n   Prefix : " << this->prefix()
+           << "\n   Prefix          : " << this->prefix()
            << "\n   Root Repository : " << this->rootRepository()
-           << "\n   Dim : " << nDim
-           << "\n   Order : " << Order
-           << "\n   Periodicity : " << M_periodicity.isPeriodic()
+           << "\n   Dim             : " << nDim
+           << "\n   Order           : " << Order
+           << "\n   Periodicity     : " << M_periodicity.isPeriodic()
 
            << "\n   Level Set Parameters"
-           << "\n     -- thickness interface (use adaptive) : " << this->thicknessInterface() << " (" << std::boolalpha << this->M_useAdaptiveThicknessInterface << ")"
+           << "\n     -- thickness interface (use adaptive)  : " << this->thicknessInterface() << " (" << std::boolalpha << this->M_useAdaptiveThicknessInterface << ")"
            << "\n     -- use regular phi (phi / |grad(phi)|) : " << std::boolalpha << this->M_useRegularPhi
-           << "\n     -- Heaviside/Dirac projection method : " << hdProjectionMethod
-           << "\n     -- reinit initial value : " << std::boolalpha << this->M_reinitInitialValue
-           << "\n     -- smooth curvature : " << std::boolalpha << this->M_doSmoothCurvature
-           << "\n     -- use gradient augmented : " << std::boolalpha << this->M_useGradientAugmented
-           << "\n     -- use stretch augmented : " << std::boolalpha << this->M_useStretchAugmented
+           << "\n     -- Heaviside/Dirac projection method   : " << hdProjectionMethod
+           << "\n     -- reinit initial value                : " << std::boolalpha << this->M_reinitInitialValue
+           << "\n     -- smooth curvature                    : " << std::boolalpha << this->M_doSmoothCurvature
+           << "\n     -- use gradient augmented              : " << std::boolalpha << this->M_useGradientAugmented
+           << "\n     -- use stretch augmented               : " << std::boolalpha << this->M_useStretchAugmented
 
            << "\n   Reinitialization Parameters"
-           << "\n     -- reinitialization method : " << reinitMethod;
+           << "\n     -- reinitialization method         : " << reinitMethod;
     if( this->M_useGradientAugmented )
     *_ostr << "\n     -- reinitialize gradient augmented : " << std::boolalpha << this->M_reinitGradientAugmented;
     if( this->M_useGradientAugmented )
-    *_ostr << "\n     -- reinitialize stretch augmented : " << std::boolalpha << this->M_reinitStretchAugmented;
+    *_ostr << "\n     -- reinitialize stretch augmented  : " << std::boolalpha << this->M_reinitStretchAugmented;
 
     *_ostr << "\n   Smoothers Parameters"
-           << "\n     -- scalar smoother : " << scalarSmootherParameters
+           << "\n     -- scalar smoother    : " << scalarSmootherParameters
            << "\n     -- vectorial smoother : " << vectorialSmootherParameters;
 
     *_ostr << "\n   Space Discretization";
@@ -1640,15 +1640,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
 
            << "\n   Processors"
            << "\n     -- number of proc environment : " << Environment::worldComm().globalSize()
-           << "\n     -- environment rank : " << Environment::worldComm().rank()
-           << "\n     -- global rank : " << this->worldComm().globalRank()
-           << "\n     -- local rank : " << this->worldComm().localRank()
+           << "\n     -- environment rank           : " << Environment::worldComm().rank()
+           << "\n     -- global rank                : " << this->worldComm().globalRank()
+           << "\n     -- local rank                 : " << this->worldComm().localRank()
 
            << "\n   Numerical Solver"
            << "\n     -- solver : " << this->solverName();
 
-    //if ( this->M_algebraicFactory )
-    //*_ostr << M_algebraicFactory->getInfo()->str();
+    if ( this->algebraicFactory() )
+    *_ostr << this->algebraicFactory()->getInfo()->str();
     //if (enable_reinit)
     //{
         //if (reinitmethod == "hj")
