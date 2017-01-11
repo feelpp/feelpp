@@ -305,8 +305,8 @@ public:
 
     projector_levelset_ptrtype const& projectorL2() const { return M_projectorL2; }
     projector_levelset_vectorial_ptrtype const& projectorL2Vectorial() const { return M_projectorL2Vec; }
-    projector_levelset_ptrtype const& smoother();
-    projector_levelset_vectorial_ptrtype const& smootherVectorial();
+    projector_levelset_ptrtype const& smoother() const;
+    projector_levelset_vectorial_ptrtype const& smootherVectorial() const;
 
     void updateInterfaceQuantities();
 
@@ -485,8 +485,8 @@ private:
     // Projectors
     projector_levelset_ptrtype M_projectorL2;
     projector_levelset_vectorial_ptrtype M_projectorL2Vec;
-    projector_levelset_ptrtype M_smoother;
-    projector_levelset_vectorial_ptrtype M_smootherVectorial;
+    mutable projector_levelset_ptrtype M_smoother;
+    mutable projector_levelset_vectorial_ptrtype M_smootherVectorial;
     //--------------------------------------------------------------------//
     // Levelset data
     mutable element_levelset_vectorial_ptrtype M_levelsetGradPhi;
@@ -547,7 +547,6 @@ private:
     bool M_useRegularPhi;
     bool M_useHeavisideDiracNodalProj;
 
-    double k_correction;
     //--------------------------------------------------------------------//
     // Reinitialization
     LevelSetReinitMethod M_reinitMethod;
