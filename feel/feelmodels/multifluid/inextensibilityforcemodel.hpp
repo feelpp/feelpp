@@ -33,12 +33,12 @@ public:
 
     //--------------------------------------------------------------------//
     // Construction
-    InextensibilityForceModel()
-    {
-    }
+    InextensibilityForceModel() {}
     InextensibilityForceModel( InextensibilityForceModel const& i ) = default;
 
     void build( std::string const& prefix, levelset_ptrtype const& ls );
+
+    boost::shared_ptr<std::ostringstream> getInfo() const;
 
     void loadParametersFromOptionsVm();
 
@@ -71,6 +71,18 @@ InextensibilityForceModel<LevelSetType>::build( std::string const& prefix, level
     super_type::build( prefix, ls );
 
     M_levelsetModGradPhi.reset( new element_levelset_type(this->levelset()->functionSpace(), "ModGradPhi") );
+}
+
+template<typename LevelSetType>
+boost::shared_ptr<std::ostringstream> 
+InextensibilityForceModel<LevelSetType>::getInfo() const
+{
+    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    *_ostr << "Inextensibility force ("
+           << "coeff = " << this->M_inextensibilityForceCoefficient
+           << ")";
+
+    return _ostr;
 }
 
 template<typename LevelSetType>
