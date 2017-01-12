@@ -1,0 +1,162 @@
+Compiling Feel++ from sources
+=============================
+:toc:
+:toc-placement: macro
+:toclevels: 2
+
+toc::[]
+
+== Quick start
+
+[source,bash]
+----
+# Get Feel++ sources, either via git of packages
+# Go into the source directory
+# Create a build directory and go into it
+
+# Generate the makefile
+# If you do not have administration rights, you must specify the installation
+# path with -DCMAKE_INSTALL_PREFIX=..., when using CMake
+cmake .. -DCMAKE_C_COMPILER=/usr/bin/clang-3.6 -DCMAKE_CXX_COMPILER=/usr/bin/clang++-3.6
+
+# Compile and install the library
+# You need to use sudo, if you didn't specify the CMAKE_INSTALL_PREFIX option
+make install-feelpp-lib
+
+# Compile the library and an example
+make -j 4 feelpp_qs_laplacian
+
+# execute one example
+./quickstart/feelpp_qs_laplacian
+----
+
+== General information
+
+Feel{plus}{plus} uses http://www.cmake.org[`CMake`] as its build system. Check that CMake is using `gcc4.9` (or a higher version) or `clang++` as C{plus}{plus} compiler. You can set the compiler with following option :
+```
+-DCMAKE_CXX_COMPILER=<path>/g++-4.9
+``` 
+where the `path` depends on your OS. By default, it should be `/usr/bin` or `/opt/local/bin`, but you can also change it with the command `ccmake` and press `t` for advanced options). +
+Using CMake, Feel++ can be built either in source and out of source. There are different build type:
+
+* minsizerel: minimal size release
+
+* release: release
+
+* debug: debug
+
+* none (default)
+
+In order to compile and install Feel\++ on Linux systems (other than Mac OS X, if you have Mac OS X, please go to link:mac.adoc[Mac]), you have to install several dependencies before. Those libraries and programs are necessary for the compilation and installation of the Feel++ libraries.
+
+This is the list of all the libraries you must have installed on your computer, and the `*-dev` packages for some of them.
+
+Required packages:
+
+* g\++ >= 4.9 or clang >= 3.4 for C++14 compatibility ,
+
+* MPI: openmpi (preferred) or mpich,
+
+* Boost >= 1.55,
+
+* Petsc >= 3.2,
+
+* CMake >= 2.8.7,
+
+* Gmsh >= 2.8.3 (can be found at http://www.geuz.org/gmsh[http://www.geuz.org/gmsh]),
+
+* Libxml2.
+
+> **Warning** if you use clang (>= 3.4) and the standard C\++ library from GCC, you have to use at least the version from g++ 4.9.
+
+Optional packages:
+
+* Superlu;
+
+* Suitesparse (umfpack);
+
+* Metis: scotch with the metis interface (preferred), metis (non-free);
+
+* Google perftools;
+
+* Paraview: This is not stricly required to run Feel\++ programs, but it is useful for visualization and Feel++ allows you to directly interface with it (Can be found at http://www.paraview.org[http://www.paraview.org]);
+
+* Python (2.5 or later) for the validation tools.
+
+Note that all these packages are available under Debian GNU/Linux and Ubuntu. Once you have installed those dependencies, you can go to link:#Compiling[Compiling].
+
+== Compiling 
+
+> **Warning** It is not allowed to build the library in the source directory.
+
+It is recommended  to have a directory (e.g. `FEEL`) in which you have
+both the sources and build directories.
+
+[source,sh]
+----
+ls FEEL
+feel/ # Sources
+feel.opt/ # Build directory
+----
+
+In this case, `feel` is the top directory where the source have been downloaded, using git or tarballs.
+
+`CMake` is used as it:
+
+[source,sh]
+----
+ cd FEEL/feel.opt
+ cmake ../feel -DCMAKE_CXX_COMPILER=/usr/bin/clang++-3.6 -DCMAKE_C_COMPILER=/usr/bin/clang-3.6 -DCMAKE_BUILD_TYPE=RelWithDebInfo
+----
+
+You can customize the build type in any way.
+Please have a look at:
+
+[source,sh]
+----
+ FEEL/feel/CMakeLists.txt
+----
+
+// <ndlr>: Where is the list ?
+// or at the `List of Cmake Options` section.
+
+## Per-system specific configuration
+
+If you need to set specific CMake variables to fit an exotic system (e.g. supercomputer), you can create a machine file fitting this system. + 
+To do so, simply create a file named `feelpp.machines.<name>.cmake` in the `cmake/machines` directory, where `<name>` is the machine name returned by the execution of `uname -n`. The file will automatically be recognized and loaded, when you will be compiling Feel++ on this system.  
+
+## Compilation
+
+Once CMake has done its work, you are now able to compile the library with:
+
+[source,bash]
+----
+  make
+----
+
+You can speed up the compilation process, if you have a multicore processor. To do so, you can specify the number of parallel jobs `make` will be allowed to spawn by using the `-j` flag:
+
+[source,bash]
+----
+  make -j <nbjobs>
+----
+
+> **Note** From now on, all commands should be typed in
+  build directory (e.g `feel.opt`) or its subdirectories.
+
+## Unit tests
+
+Feel++ comes with built-in unit tests to ensure that the library is working correctly. You can launch basic tests based on the quickstart application by typing:
+
+[source,bash]
+----
+  make check
+----
+
+Or you can execute the whole testsuite, by typing the following
+command: (This might take a while)
+
+[source,bash]
+----
+  make check-full
+----

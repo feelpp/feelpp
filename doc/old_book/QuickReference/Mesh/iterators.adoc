@@ -1,0 +1,143 @@
+= Mesh iterators 
+:toc:
+:toc-placement: macro
+:toclevels: 2
+
+toc::[]
+
+Feel++ mesh data structure allows to iterate over its entities: elements, faces, edges and points.
+
+The following table describes free-functions that allow to define mesh region over which to operate. MeshType denote the type of mesh passed to the free functions in the table.
+
+> **Note:** MeshType can be a pointer, a shared_pointer or a reference to a mesh type.
+
+For example :
+
+----
+auto mesh = loadMesh( _mesh=Mesh<Simplex<2>>);
+auto r1 = elements(mesh); // OK
+auto r2 = elements(*mesh); // OK
+----
+
+|===
+|Type|Function|Description
+|elements_t\<MeshType\>|`elements(mesh)`|All the elements of a mesh
+|markedelements_t\<MeshType\>|`markedelements(mesh, id)`|All the elements marked by marked id 
+| boundaryelements_t\<MeshType\>| `boundaryelements(mesh)` |All the elements of the mesh which share a face with the boundary of the mesh.
+| internalelements_t\<MeshType\>| `internalelements(mesh)` |All the elements of the mesh which share a face with the boundary of the mesh.
+|pid_faces_t\<MeshType\>| `faces(mesh)` |All the faces of the mesh.
+|markedfaces_t\<MeshType\>| `markedfaces(mesh)` |All the faces of the mesh which are marked.
+|boundaryfaces_t\<MeshType\>| `boundaryfaces(mesh)` |All elements that own a topological dimension one below the mesh. For example, if you mesh is a 2D one, `boundaryfaces(mesh)`  will return all the lines (because of dimension $$2-1=1$$). These elements which have one dimension less, are corresponding to the boundary faces.
+|internalfaces_t\<MeshType\>| `internalelements(mesh)` |All the elements of the mesh which are stricly within the domain that is to say they do not share a face with the boundary.
+| edges_t\<MeshType\>| `edges(mesh)` | All the edges of the mesh.
+| boundaryedges_t\<MeshType\> | `boundaryedges(mesh)` |All boundary edges of the mesh.
+| points_t\<MeshType\>| `points(mesh)` | All the points of the mesh.
+| markedpoints_t\<MeshType\>| `markedpoints(mesh,id)` | All the points marked id of  mesh.
+| boundarypoints_t\<MeshType\> | `boundarypoints(mesh)` |All boundary points of the mesh.
+| internalpoints_t\<MeshType\> | `internalpoints(mesh)` |All internal points of the mesh(not on the boundary)
+|===
+
+Here are some examples on how to use these functionSpace
+
+[source,cpp]
+----
+auto mesh = ...;
+
+auto r1 = elements(mesh);
+// iterate over the set of elements local to the process(no ghost cell selected, see next section)
+for ( auto const&  e : r2 )
+{ ... }
+
+auto r2 = markedelements(mesh,"iron");
+// iterate over the set of elements marked iron in the mesh
+for ( auto const&  e : r2 )
+{ ... }
+
+auto r3 = boundaryfaces(mesh);
+// iterate over the set of faces on the boundary of the mesh
+for ( auto const&  e : r3 )
+{ ... }
+
+auto r4 = markededges(mesh,"line");
+// iterate over the set of edges marked "line" in the mesh
+for ( auto const&  e : r4 )
+{ ... }
+----
+
+== Extended set of entities
+
+Feel++ allows also to select an extended sets of entities from the mesh, you can extract entities which belongs to the local process but also ghost entities which satisfy the same property as the local ones. Actually you can select both or one one of them thanks to the enum data structure entity_process_t which provides the following options
+
+|===
+| entity_process_t | Description 
+| `LOCAL_ONLY` | only local entities 
+| `GHOST_ONLY` | only ghost entities 
+| `ALL`  | both local and ghost entities 
+|===
+
+|===
+|Type|Function|Description
+|ext_elements_t\<MeshType\>|`elements(mesh,entity_process_t)`|all the elements of mesh associated to entity_process_t.
+|ext_elements_t\<MeshType\>|`markedelements(mesh, id, entity_process_t)`|all the elements marked id of mesh associated to entity_process_t.
+|ext_faces_t\<MeshType\>|`faces(mesh,entity_process_t)`|all the faces of mesh associated to entity_process_t.
+|ext_faces_t\<MeshType\>|`markedfaces(mesh, id, entity_process_t)`|all the faces marked id of mesh associated to entity_process_t.
+|ext_edges_t\<MeshType\>|`edges(mesh,entity_process_t)`|all the edges of mesh associated to entity_process_t.
+|ext_edges_t\<MeshType\>|`markededges(mesh, id, entity_process_t)`|all the edges marked id of mesh associated to entity_process_t.
+|===
+
+> **Note:** The type of the object returned for an entity is always the same, for elements it is ext_elements_t\<MeshType\> whether the elements are marked or not. The reason is that in fact we have to create a temporary data structure embedded in the range object that stores a reference to the elements which are selected.
+
+Here is how to select both local and ghost elements from a Mesh
+
+[source,cpp]
+----
+auto mesh =...;
+auto r = elements(mesh,entity_process_t::ALL);
+for (auto const& e : r )
+{
+  // do something on the local and ghost element
+  ...
+  // do something special on ghost cells
+  if ( e.isGhostCell() )
+  {...}
+}
+----
+
+== Helper function on entities set
+
+Feel++ provides some helper functions to apply on set of entities. We denote by range_t the type of the entities set.
+
+|===
+| Type | Function | Description 
+| size_type | nelements(range_t,bool) | returns the local number of elements in entities set range_t of bool is false, other the global number which requires communication (default: global number) 
+| WorldComm | worldComm(range_t) | returns the WorldComm associated to the entities set 
+|===
+
+== Create a new range
+
+A range can be also build directly by the user. This customized range is stored in a std container which contains the c{plus}+ references of entity object. We use boost::reference_wrapper for take c++ references and avoid copy of mesh data. All entities enumerated in the range must have same type (elements,faces,edges,points). Below we have an example which select all active elements in mesh for the current partition (i.e. identical to elements(mesh)). 
+
+[source,cpp]
+----
+auto mesh = ...;
+// define reference entity type
+typedef boost::reference_wrapper<typename mesh_type::element_type const> element_ref_type;
+// store entities in a vector
+typedef std::vector<element_ref_type> cont_range_type;
+boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+for (auto const& elt : elements(mesh) )
+{
+    myelts->push_back(boost::cref(elt));
+}
+// generate a range object usable in feel++
+auto myrange = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                  myelts->begin(),myelts->end(),myelts );
+
+----
+
+Next, this range can be used in feel++ language.
+
+[source,cpp]
+----
+double eval = integrate(_range=myrange,_expr=cst(1.)).evaluate()(0,0);
+----

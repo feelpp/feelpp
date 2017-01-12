@@ -1,0 +1,44 @@
+## Project
+It is also possible to make projections with the library using the keywords project() or on()
+
+**Interface:**
+
+[source,cpp]
+----
+  project( _range, _space, _expr, _geomap );
+----
+
+Required parameters:
+
+* `_space`: the space in which lives the projected expression, it should be a nodal function space
+
+* `_expr`: the expression to project
+
+Optional parameters:
+
+* `_range`: the domain for the projection. 
+   - Default = all elements from `space->mesh()`
+
+* `_geomap`: type of geometric mapping. 
+   - Default = `GEOMAP_OPT`
+
+*Example:*
+
+From `doc/manual/laplacian/laplacian.cpp`
+
+[source,cpp]
+----
+  element_type e( Xh, "e" );
+  e = project( _space = Xh,
+               _range = elements( mesh ),
+               _expr = g );
+----
+
+From `doc/manual/heatns/convection_run.cpp`
+
+[source,cpp]
+----
+tn = project( _space = Xh->functionSpace<2>(),
+              _range = elements( mesh ),
+              _expr = constant( 300 ) );
+----

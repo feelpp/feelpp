@@ -1,0 +1,180 @@
+= Eigen Problem
+:toc:
+:toc-placement: macro
+:toclevels: 2
+
+toc::[]
+
+To solve standard and generalized eigenvalue problems, Feel++ interfaces http://slepc.upv.es[SLEPc]. SLEPc is a library which extends PETSc to provide the functionality necessary for the solution of eigenvalue problems. It comes with many strategies for both standard and generalized problems, Hermitian or not.
+
+We want to find $$(\lambda_i,x_i)$$ such that $$Ax = \lambda x$$. To do that, most eigensolvers project the problem onto a low-dimensional subspace, this is called a Rayleigh-Ritz projection. +
+Let $$V_j=[v_1,v_2,...,v_j]$$ be an orthogonal basis of this subspace, then the projected problem reads:
+Find $$(\theta_i,s_i)$$ for $$i=1,...,j$$ such that $$B_j s_i=\theta_i s_i$$ where $$B_j=V_j^T A V_j$$.
+
+Then the approximate eigenpairs $$(\lambda_i,x_i)$$ of the original problem are obtained as:
+$$\lambda_i=\theta_i$$ and $$x_i=V_j s_i$$.
+
+The eigensolvers differ from each other in the way the subspace is built.
+
+== Code
+
+In Feel++, there is two functions that can be used to solve this type of problems, `eigs` and `veigs`.
+
+Here is an example of how to use `veigs`.
+
+[source,cpp]
+----
+auto Vh = Pch<Order>( mesh );
+auto a = form2( _test=Vh, _trial=Vh );
+// fill a
+auto b = form2( _test=Vh, _trial=Vh );
+// fill b
+auto eigenmodes = veigs( _formA=a, _formB=b );
+----
+
+where `eigenmodes` is a `std::vector<std::pair<value_type, element_type> >` with `value_type` the type of the eigenvalue, and `element_type` the type of the eigenvector, a function of the space `Vh`.
+
+The `eigs` function does not take the bilinear forms but two matrices. Also, the solver used, the type of the problem, the position of the spectrum and the spectral transformation are not read from the options.
+
+[source,cpp]
+----
+auto Vh = Pch<Order>( mesh );
+auto a = form2( _test=Vh, _trial=Vh );
+// fill a
+auto matA = a.matrixPtr();
+auto b = form2( _test=Vh, _trial=Vh );
+// fill b
+auto matB = b.matrixPtr();
+auto eigenmodes = eigs( _matrixA=aHat,
+                        _matrixB=bHat,
+                        _solver=(EigenSolverType)EigenMap[soption("solvereigen.solver")],
+                        _problem=(EigenProblemType)EigenMap[soption("solvereigen.problem")],
+                        _transform=(SpectralTransformType)EigenMap[soption("solvereigen.transform")],
+                        _spectrum=(PositionOfSpectrum)EigenMap[soption("solvereigen.spectrum")]
+                         );
+auto femodes = std::vector<decltype(Vh->element())>( eigenmodes.size(), Vh->element() );
+int i = 0;
+for( auto const& mode : modes )
+    femodes[i++] = *mode.second.get<2>();
+----
+
+where `eigenmodes` is a `std::map<real_type, eigenmodes_type>` with `real_type` of the magnitude of the eigenvalue. And `eigenmodes_type` is a `boost::tuple<real_type, real_type, vector_ptrtype>` with the first `real_type` representing the real part of the eigenvalue, the second `real_type` the imaginary part and the `vector_ptrtype` is a vector but not an element of a functionspace.
+
+The two functions take a parameter `_nev` that tel how many eigenpair to compute. This can be set from the command line option `--solvereigen.nev`. +
+Another important parameter is `_ncv` which is the size of the subspace, `j` above. This parameter should always be greater than `nev`. SLEPc recommends to set it to `max(nev+15, 2*nev)`. This can be set from the command line option `--solvereigen.ncv`.
+
+== Problem type
+
+The standard formulation reads :
+
+Find $$\lambda\in \mathbb{R}$$ such that $$Ax = \lambda x$$
+
+where $$\lambda$$ is an eigenvalue and $$x$$ an eigenvector.
+
+But in the case of the finite element method, we will deal with the generalized form :
+
+Find $$\lambda\in\mathbb{R}$$ such that $$Ax = \lambda Bx$$
+
+A standard problem is Hermitian if the matrix $$A$$ is Hermitian ($$A=A^*$$). +
+A generalized problem is Hermitian if the matrices $$A$$ and $$B$$ are Hermitian and if $$B$$ is positive definite. +
+If the problem is Hermitian, then the eigenvalues are real.
+A special case of the generalized problem is when the matrices are not Hermitian but $$B$$ is positive definite.
+
+The type of the problem can be specified using the EigenProblemType, or at run time with the command line option `--solvereigen.problem` and the following value :
+
+.Table of problem type
+[options="header"]
+|===
+| Problem type | EigenProblemType | command line key
+|Standard Hermitian | HEP | "hep"
+|Standard non-Hermitian | NHEP | "nhep"
+|Generalized Hermitian | GHEP | "ghep"
+|Generalized non-Hermitian | GNHEP | "gnhep"
+|Positive definite Generalized non-Hermitian | PGNHEP | "pgnhep"
+|===
+
+== Position of spectrum
+
+You can choose which eigenpairs will be computed. The user can set it programmatically with `PositionOfSpectrum` or at run time with the command line option `--solvereigen.spectrum` and the following value :
+
+.Table of position of spectrum
+[options="header"]
+|===
+|Position of spectrum | PositionOfSpectrum | command line key
+|Largest magnitude | LARGEST_MAGNITUDE | "largest_magnitude"
+|Smallest magnitude | SMALLEST_MAGNITUDE | "smallest_magnitude"
+|Largest real | LARGEST_REAL | "largest_real"
+|Smallest real | SMALLEST_REAL | "smallest_real"
+|Largest imaginary | LARGEST_IMAGINARY | "largest_imaginary"
+|Smallest imaginary | SMALLEST_IMAGINARY | "smallest_imaginary"
+|===
+
+== Spectral transformation
+
+It is observed that the algorithms used to solve the eigenvalue problems find solutions at the extremities of the spectrum. To improve the convergence, one need to compute the eigenpairs of a transformed operator. Those spectral transformations allow to compute solutions that are not on the boundary of the spectrum.
+
+There are 3 types of spectral transformation:
+
+Shift:: $$A-\sigma I$$ or $$B^{-1}A-\sigma I$$
+Shift and invert:: $$(A-\sigma I)^{-1}$$ or $$(A-\sigma B)^{-1}B$$
+Cayley:: $$(A-\sigma I)^{-1}(A+\nu I)$$ or $$(A-\sigma B)^{-1}(A+\nu B)$$
+
+By default, shift and invert is used. You can change it with `--solvereigen.transform`.
+
+.Table of spectral transformation
+[options="header"]
+|===
+| Spectral transformation | SpectralTransformationType | command line key
+| Shift | SHIFT | shift
+| Shift and invert | SINVERT | shift_invert
+| Cayley | CAYLEY | cayley
+|===
+
+== Eigensolvers
+
+The details of the implementation of the different solvers can be found in the http://slepc.upv.es/documentation/manual.htm[SLEPc Technical Reports].
+
+The default solver is Krylov-Schur, but can be modified using `EigenSolverType` or the option `--solvereigen.solver`.
+
+.Table of eigensolver
+[options="header"]
+|===
+| Solver | EigenSolverType | command line key
+| Power | POWER | power
+| Lapack | LAPACK | lapack
+| Subspace | SUBSPACE | subspace
+| Arnoldi | Arnoldi | arnoldi
+| Lanczos | LANCZOS | lanczos
+| Krylov-Schur | KRYLOVSCHUR | krylovschur
+| Arpack | ARPACK | arpack
+|===
+
+Be careful that all solvers can not compute all the problem types and positions of the spectrum. The possibilities are summarize in the following table.
+
+.Supported problem type for the eigensolvers
+[options="header"]
+|===
+| Solver | Position of spectrum | Problem type
+| Power | Largest magnitude | any
+| Lapack | any | any
+| Subspace | Largest magnitude | any
+| Arnoldi | any | any
+| Lanczos | any | standard and generalized Hermitian
+| Krylov-Schur | any | any
+| Arpack | any | any
+|===
+
+== Special cases of spectrum
+
+=== Computing a large portion of the spectrum
+
+In the case where you want compute a large number of eigenpairs, the rule for `ncv` implies a huge amount of memory to be used. To improve the performance, you can set the `mpd` parameter, which will limit the dimension of the projected problem.
+
+You can set it via the command line with `--solvereigen.mpd <mpd>`.
+
+=== Computing all the eigenpairs in an interval
+
+If you want to compute all the eigenpairs in a given interval, you need to use the option `--solvereigen.interval-a` to set the beginning of the interval and `--solvereigen.interval-b` to set the end.
+
+In this case, be aware that the problem need to be generalized and hermitian. The solver will be set to Krylov-Schur and the transformation to shift and invert. Beside, you'll need to use a linear solver that will compute the inertia of the matrix, this is set to Cholesky, with mumps if you can use it. +
+For now, this method is only implemented in the `eigs` function.
