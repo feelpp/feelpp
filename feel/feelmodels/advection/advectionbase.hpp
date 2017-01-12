@@ -3,7 +3,7 @@
  This file is part of the Feel library
 
  Author(s): Thibaut Metivet <thibaut.metivet@univ-grenoble-alpes.fr>
- Date: 2016-09-20
+ Date: 2016-05-04
 
  Copyright (C) 2016 Université Joseph Fourier (Grenoble I)
 
@@ -24,7 +24,7 @@
 /**
  \file advectionbase.hpp
  \author Thibaut Metivet <thibaut.metivet@univ-grenoble-alpes.fr>
- \date 2016-09-20
+ \date 2016-05-04
  */
 
 #ifndef _ADVECTIONBASE_HPP
@@ -46,7 +46,11 @@ namespace FeelModels {
 
 enum class AdvectionStabMethod { NONE=0, GALS, CIP, SUPG, SGS };
 
-template< typename ConvexType, typename BasisAdvectionType, typename BasisDiffusionReactionType >
+template< 
+    typename ConvexType, typename BasisAdvectionType, 
+    typename PeriodicityType = NoPeriodicity,
+    typename BasisDiffusionReactionType = BasisAdvectionType
+        >
 class AdvectionBase : 
     public ModelNumerical,
     public MarkerManagementDirichletBC,
@@ -56,7 +60,7 @@ class AdvectionBase :
 public :
     typedef ModelNumerical super_type;
 
-    typedef AdvectionBase< ConvexType, BasisAdvectionType, BasisDiffusionReactionType > self_type;
+    typedef AdvectionBase< ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType > self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     //--------------------------------------------------------------------//
@@ -72,8 +76,10 @@ public :
     // Space advection
     typedef BasisAdvectionType basis_advection_type;
     static const uint16_type nOrder = basis_advection_type::nOrder;
+
+    typedef PeriodicityType periodicity_type;
     
-    typedef FunctionSpace< mesh_type, bases<basis_advection_type> > space_advection_type;
+    typedef FunctionSpace< mesh_type, bases<basis_advection_type>, Periodicity<periodicity_type> > space_advection_type;
     typedef boost::shared_ptr<space_advection_type> space_advection_ptrtype;
     
     typedef typename space_advection_type::element_type element_advection_type;
@@ -81,6 +87,8 @@ public :
 
     typedef typename space_advection_type::value_type value_type;
     typedef typename space_advection_type::periodicity_type periodicity_advection_type;
+
+    static constexpr bool is_vectorial = space_advection_type::basis_type::is_vectorial;
 
     //--------------------------------------------------------------------//
     // Space advection velocity
@@ -147,21 +155,23 @@ public :
 
     AdvectionBase( self_type const& A ) = default;
 
+    void build();
+    void build( mesh_ptrtype const& mesh );
+    void build( space_advection_ptrtype const& space );
+
     //--------------------------------------------------------------------//
     // Initialization
-    void build();
     void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app );
+    //void initFromMesh( 
+            //mesh_ptrtype const& mesh,
+            //bool buildModelAlgebraicFactory, 
+            //model_algebraic_factory_type::appli_ptrtype const& app );
 
-    virtual void loadParametersFromOptionsVm();
-    virtual void loadConfigBCFile() =0;
+    //--------------------------------------------------------------------//
+    // Periodicity
+    void setPeriodicity( periodicity_type const& p );
+    periodicity_type const& periodicity() const { return M_periodicity; }
 
-    void createMesh();
-    void createFunctionSpaces();
-    void createAlgebraicData();
-    void createTimeDiscretization();
-    void createExporters();
-    void createOthers();
-    
     //--------------------------------------------------------------------//
     // Model and solver
     std::string const& modelName() const { return M_modelName; }
@@ -174,7 +184,7 @@ public :
     void setSolverName( std::string const& type );
 
     //--------------------------------------------------------------------//
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"AdvectionMesh.path"); }
+    virtual std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"AdvectionMesh.path"); }
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
 
@@ -188,6 +198,7 @@ public :
     element_advection_type const& fieldSolution() const { return *M_fieldSolution; }
 
     element_advection_velocity_type const& fieldAdvectionVelocity() const { return *M_fieldAdvectionVelocity; }
+    element_advection_velocity_ptrtype const& fieldAdvectionVelocityPtr() const { return M_fieldAdvectionVelocity; }
 
     //--------------------------------------------------------------------//
     // Algebraic data
@@ -206,8 +217,8 @@ public :
     boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
     boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
     void updateTimeStepBDF();
-    void initTimeStep();
     void updateTimeStep() { this->updateTimeStepBDF(); }
+    void initTimeStep();
 
     //--------------------------------------------------------------------//
     // Stabilization
@@ -220,7 +231,8 @@ public :
     // Linear PDE
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilization(sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart) const;
-    virtual void updateSourceTermLinearPDE(element_advection_ptrtype& fieldSource, bool buildCstPart) const =0;
+    virtual void updateSourceTermLinearPDE(element_advection_ptrtype& fieldSource, bool buildCstPart) const {}
+    virtual bool hasSourceTerm() const =0;
     virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const =0;
     virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const =0;
     
@@ -235,7 +247,6 @@ public :
     template<typename ExprT>
     void updateSourceAdded(vf::Expr<ExprT> const& expr);
     bool hasSourceAdded() const { return M_hasSourceAdded; }
-    virtual bool hasSourceTerm() const =0;
     //--------------------------------------------------------------------//
     // Diffusion-reaction parameters update
     diffusionreaction_model_ptrtype & diffusionReactionModel() { return M_diffusionReactionModel; }
@@ -258,20 +269,42 @@ public :
     template<typename ExprT>
     void updateReactionCoeff(vf::Expr<ExprT> const& expr)
     {
-        this->diffusionReactionCoeff()->updateReactionCoeff(expr);
+        this->diffusionReactionModel()->updateReactionCoeff(expr);
     }
 
     //--------------------------------------------------------------------//
     // Solve
     virtual void solve();
 
+    //--------------------------------------------------------------------//
     // Export results
-    void exportMeasures( double time );
+    void initPostProcess();
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
+    void exportMeasures( double time );
 
+    exporter_ptrtype getExporter() { return M_exporter; }
+
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
 protected:
+    virtual void loadParametersFromOptionsVm();
 
+    void createMesh();
+    void createFunctionSpaces();
+    void createAlgebraicData();
+    void createTimeDiscretization();
+    void createExporters();
+    void createOthers();
+
+    virtual void exportResultsImpl( double time );
+    virtual void exportMeasuresImpl( double time );
+
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
+    //--------------------------------------------------------------------//
+    bool M_isBuilt;
     bool M_isUpdatedForUse;
     //--------------------------------------------------------------------//
     // Model and solver
@@ -280,6 +313,8 @@ protected:
     //--------------------------------------------------------------------//
     // Mesh
     mesh_ptrtype M_mesh;
+    // Periodicity
+    periodicity_type M_periodicity;
     // Advection space
     space_advection_ptrtype M_Xh;
     // Time discretization
@@ -309,6 +344,8 @@ protected:
     exporter_ptrtype M_exporter;
     bool M_doExportAll;
     bool M_doExportAdvectionVelocity;
+    bool M_doExportDiffusionCoefficient;
+    bool M_doExportReactionCoefficient;
     bool M_doExportSourceField;
     //--------------------------------------------------------------------//
     // Stabilization
@@ -318,6 +355,42 @@ protected:
     double M_gamma1;
     
 };//AdvectionBase
+
+//----------------------------------------------------------------------------//
+// Advection velocity update
+template< 
+    typename ConvexType, typename BasisAdvectionType, 
+    typename PeriodicityType,
+    typename BasisDiffusionReactionType
+        >
+template<typename ExprT>
+void
+AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType>::updateAdvectionVelocity(
+        vf::Expr<ExprT> const& v_expr)
+{
+    M_exprAdvectionVelocity.reset(); // remove symbolic expr
+    M_fieldAdvectionVelocity->on(_range=elements(this->mesh()), _expr=v_expr );
+}
+
+//----------------------------------------------------------------------------//
+// Source update
+template< 
+    typename ConvexType, typename BasisAdvectionType, 
+    typename PeriodicityType,
+    typename BasisDiffusionReactionType
+        >
+template<typename ExprT>
+void 
+AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType>::updateSourceAdded(
+        vf::Expr<ExprT> const& f_expr)
+{
+    if (!M_fieldSource)
+    {
+        M_fieldSource.reset( new element_advection_type(M_Xh, "SourceAdded") );
+    }
+    M_fieldSource->on(_range=elements( this->mesh() ), _expr=f_expr );
+    M_hasSourceAdded=true;
+}
 
 } // namespace FeelModels
 } // namespace Feel

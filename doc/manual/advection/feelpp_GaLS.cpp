@@ -10,7 +10,7 @@ int main( int argc, char* argv[] )
 				 _email="feelpp-devel@feelpp.org") );
 
   auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
-  auto Vh = Pch<3>( mesh );
+  auto Vh = Pch<1>( mesh );
   auto u = Vh->element();
   auto v = Vh->element();
   //# endmarker2 #
@@ -45,6 +45,9 @@ int main( int argc, char* argv[] )
   //# marker4 #
   auto e = exporter( _mesh=mesh );
   e->add( "u", u );
+  auto f_elt = Vh->element();
+  f_elt.on(_range=elements(mesh),_expr=f);
+  e->add( "f", f_elt );
   e->save();
   return 0;
   //# endmarker4 # 
