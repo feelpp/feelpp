@@ -1,0 +1,14 @@
+= Troubleshooting
+
+==== My code runs slower on a server dedicated to computing than on my laptop with the same number of processes. What is the problem ?
+
+You might experience drops in performance when scaling to a larger computer, for example from a laptop. The most common way to solve this is to export the following variable:
+
+   export OMP_NUM_THREADS=1
+
+This is due to an underlying library using the maximum number of available threads to execute a code. This causes drops in performance. When declaring the previous variable, you will only allow one thread per process, thus restoring expected performance.
+
+Other factors that might harm performance:
+
+* Slower hard drives
+* Slower CPUs / Hyperthreading

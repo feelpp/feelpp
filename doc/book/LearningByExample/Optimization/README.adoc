@@ -1,0 +1,7 @@
+Optimization problems
+=====================
+
+This section presents some mathematical optimization problems.
+The following examples source codes are located in "doc/manual/opt/".
+
+- link:laplacian_nlopt.adoc[laplacian_nlopt] (link:https://github.com/feelpp/feelpp/blob/develop/doc/manual/opt/laplacian_nlopt.cpp[source code])

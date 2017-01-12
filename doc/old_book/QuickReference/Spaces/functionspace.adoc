@@ -1,0 +1,95 @@
+Function Spaces
+===============
+:toc:
+:toc-placement: macro
+:toclevels: 2
+
+toc::[]
+
+
+Function spaces support is provided by the `FunctionSpace` class
+
+The `FunctionSpace` class
+
+ -  constructs the table of degrees of freedom which maps local (elementwise) degrees of freedom to the global ones with respect to the geometrical entities,
+
+ -  embeds the definition of the elements of the function space allowing for a tight coupling between the elements and their function spaces,
+ 
+ -  stores an interpolation data structure (e.g. region tree) for rapid localisation of point sets (determining in which element they reside).
+ 
+|===
+| C++ Function    | C++ Type | Function Space <<1>>  
+|`Pch<N>(mesh)`   | `Pch_type<MeshType,N>`  | $$P^N_{c,h}$$ 
+|`Pchv<N>(mesh)`  | `Pchv_type<MeshType,N>` | $$[P^N_{c,h}]^d$$
+|`Pdh<N>(mesh)`   | `Pdh_type<MeshType,N>`  | $$P^N_{d,h}$$ 
+|`Pdhv<N>(mesh)`  | `Pdhv_type<MeshType,N>` | $$[P^N_{d,h}]^d$$
+|`THch<N>(mesh)`  | `THch_type<MeshType,N>` | $$[P^{N+1}_{c,h}]^d \times P^N_{c,h}$$
+|`Dh<N>(mesh)`    | `Dh_type<MeshType,N>`   | $$\mathbb{R}\mathbb{T}_h$$
+|`Ned1h<N>(mesh)` | `Ned1h_type<MeshType,N>`| $$\mathbb{N}_h$$
+|===
+
+[[[1]]]: see link:notations.adoc[Notations] for the function spaces definitions.
+
+Here are some examples how to define function spaces with Lagrange basis functions.
+
+[source,cpp]
+----
+#include <feel/feeldiscr/pch.hpp>
+
+// Mesh with triangles
+using MeshType = Mesh<Simplex<2>>;
+// Space spanned by P3 Lagrange finite element
+FunctionSpace<MeshType,bases<Lagrange<3>>> Xh;
+// is equivalent to (they are the same type)
+Pch_type<MeshType,3> Xh;
+
+// using the auto keyword
+MeshType mesh = loadMesh( _mesh=new MeshType );
+auto Xh = Pch<3>( mesh );
+// is equivalent to 
+auto Xh = FunctionSpace<MeshType,bases<Lagrange<3>>>::New( mesh );
+auto Xh = Pch_type<MeshType,3>::New( mesh );
+----
+
+== Functions
+
+> **Note:** One important feature in `FunctionSpace`  is that it embeds the definition of element which allows for the strict definition of an `Element` of a `FunctionSpace`  and thus ensures the correctness of the code.  
+
+An element has its representation as a vector, also in the case of product of multiple spaces.
+
+[source,cpp]
+----
+#include <feel/feeldiscr/pch.hpp>
+
+// Mesh with triangles
+using MeshType = Mesh<Simplex<2>>;
+auto mesh = loadMesh( _mesh=new MeshType );
+
+// define P3 Lagrange finite element space
+auto P3ch = Pch<3>(mesh);
+
+// definie an element from P3ch, initialized to 0
+auto u = P3ch.element();
+// definie an element from P3ch, initialized to x^2+y^2
+auto v = P3ch.element(Px()*Px()+Py()*Py());
+----
+
+== Components
+
+[source,cpp]
+----
+FunctionSpace<Mesh<Simplex<2> >,
+ bases<Lagrange<2,Vectorial>, Lagrange<1,Scalar>,
+       Lagrange<1,Scalar> > > P2P1P1;
+auto U = P2P1P1.element();
+// Views: changing a view changes U and vice versa
+// view on element associated to P2
+auto u = U.element<0>();
+// extract view of first component
+auto ux = u.comp(X);
+// view on element associated to 1st P1
+auto p = U.element<1>();
+// view on element associated to 2nd P1
+auto q = U.element<2>();
+----
+

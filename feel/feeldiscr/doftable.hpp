@@ -2503,13 +2503,9 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel ) const
 {
-    boost::timer tim;
-
+    tic();
     generateDofPoints( M, buildMinimalParallel, mpl::bool_<is_mortar>() );
-
-    if ( Environment::isMasterRank() && FLAGS_v > 0)
-        std::cout << " - DofTable::generateDofPoints done in " << tim.elapsed() << "\n";
-
+    toc("DofTable::generateDofPoints",FLAGS_v > 0); 
 }
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
