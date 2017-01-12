@@ -66,7 +66,7 @@ using namespace cln;
  * Chebyshev polynomial coefficient matrix as far as is required for
  * the Lanczos approximation.
  */
-void calc_chebyshev(vector<vector<cl_I> >& C, const size_t size)
+void calc_chebyshev(vector<vector<cl_I>>& C, const size_t size)
 {	
 	C.reserve(size);
 	for (size_t i=0; i<size; ++i)
@@ -85,7 +85,7 @@ void calc_chebyshev(vector<vector<cl_I> >& C, const size_t size)
 /*
  * The coefficients p_n(g) that occur in the Lanczos approximation.
  */
-const cl_F p(const size_t k, const cl_F& g, const vector<vector<cln::cl_I> >& C)
+const cl_F p(const size_t k, const cl_F& g, const vector<vector<cln::cl_I>>& C)
 {	
 	const float_format_t prec = float_format(g);
 	const cl_F sqrtPi = sqrt(pi(prec));
@@ -110,7 +110,7 @@ const cl_F p(const size_t k, const cl_F& g, const vector<vector<cln::cl_I> >& C)
 void calc_lanczos_coeffs(vector<cl_F>& lanc, const cln::cl_F& g)
 {	
 	const size_t n = lanc.size();
-	vector<vector<cln::cl_I> > C;
+	vector<vector<cln::cl_I>> C;
 	calc_chebyshev(C, 2*n+2);
 	
 	// \Pi_{i=1}^n (z-i+1)/(z+i) = \Pi_{i=1}^n (1 - (2i-1)/(z+i))
@@ -118,7 +118,7 @@ void calc_lanczos_coeffs(vector<cl_F>& lanc, const cln::cl_F& g)
 	// Q[1/(z+1),...1/(z+n)] of degree 1. To store coefficients of this
 	// polynomial we use vector<cl_I>, so the set of such polynomials is
 	// stored as
-	vector<vector<cln::cl_I> > fractions(n);
+	vector<vector<cln::cl_I>> fractions(n);
 	
 	// xi = 1/(z+i)
 	fractions[0] = vector<cl_I>(1);

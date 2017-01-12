@@ -55,7 +55,7 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see RegionTree
  */
-class KDTree
+class FEELPP_EXPORT KDTree
 {
 public:
 

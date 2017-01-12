@@ -314,21 +314,46 @@ struct initialize_expression_g
     const Geo_t& M_geom;
 };
 
-template<typename CTX>
+template<int ...>
+struct myseq { };
+
+template<int N, int ...S>
+struct mygens : mygens<N-1, N-1, S...> { };
+
+template<int ...S>
+struct mygens<0, S...>
+{
+    typedef myseq<S...> type;
+};
+
+template<typename ... CTX>
 struct update_context
 {
-    update_context( CTX const& ctx )
+    update_context( CTX const& ... ctx )
         :
-        M_ctx( ctx )
+        M_ctx( ctx... )
     {}
 
     template <typename ExprT>
     void operator()( ExprT& expr ) const
     {
-        expr.updateContext( M_ctx );
+        preApply( expr, typename mygens<sizeof...(CTX)>::type() );
     }
 
-    const CTX & M_ctx;
+    template<typename ExprT, int ...S>
+    void preApply(ExprT& expr, myseq<S...>) const
+    {
+        apply(expr,std::get<S>(M_ctx) ...);
+    }
+
+    template <typename ExprT, typename ... CTX2>
+    void apply( ExprT& expr, CTX2 const& ... ctx ) const
+    {
+        expr.updateContext( ctx... );
+    }
+
+    std::tuple<CTX...> M_ctx;
+
 };
 
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
@@ -779,10 +804,10 @@ public:
         {
             fusion::for_each( M_expr,vf::detail::update_expression_face_g<Geo_t>( geom, face ) );
         }
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            fusion::for_each( M_expr,vf::detail::update_context<CTX>( ctx ) );
+            fusion::for_each( M_expr,vf::detail::update_context<CTX...>( ctx... ) );
         }
 
         value_type
@@ -1056,10 +1081,10 @@ public:
         {
             fusion::for_each( M_expr,vf::detail::update_expression_face_g<Geo_t>( geom, face ) );
         }
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            fusion::for_each( M_expr,vf::detail::update_context<CTX>( ctx ) );
+            fusion::for_each( M_expr,vf::detail::update_context<CTX...>( ctx... ) );
         }
 
         value_type

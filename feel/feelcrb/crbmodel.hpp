@@ -45,6 +45,7 @@
 
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcore/pslogger.hpp>
+#include <feel/feelalg/aitken.hpp>
 
 
 namespace Feel
@@ -79,7 +80,6 @@ public:
      */
     //@{
 
-    static const uint16_type ParameterSpaceDimension = ModelType::ParameterSpaceDimension;
     static const bool is_time_dependent = ModelType::is_time_dependent;
     static const bool is_linear = ModelType::is_linear;
 
@@ -212,24 +212,7 @@ public:
      */
     //@{
 
-    CRBModel()
-        :
-        M_Aqm(),
-        M_Mqm(),
-        M_Fqm(),
-        M_mode( CRBModelMode::PFEM ),
-        M_is_initialized( false ),
-        M_model( new model_type() ),
-        M_backend( backend() ),
-        M_alreadyCountAffineDecompositionTerms( false ),
-        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
-        M_numberOfTimeStep( 1 ),
-        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
-    {
-        this->init();
-    }
-
-    CRBModel( po::variables_map const& vm, CRBModelMode mode = CRBModelMode::PFEM  )
+    CRBModel( CRBModelMode mode = CRBModelMode::PFEM, int level=0, bool doInit = true )
         :
         M_Aqm(),
         M_InitialGuessV(),
@@ -243,40 +226,20 @@ public:
         M_backend_primal( backend( _name="backend-primal") ),
         M_backend_dual( backend( _name="backend-dual") ),
         M_backend_l2( backend( _name="backend-l2") ),
+        M_fixedpointUseAitken( boption(_name="crb.use-aitken") ),
         M_alreadyCountAffineDecompositionTerms( false ),
         M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
         M_numberOfTimeStep( 1 ),
+        M_has_eim( false ),
         M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
-        this->init();
+        if ( level != 0 )
+            M_model->setModelName( M_model->modelName() + "-" + std::to_string(level) );
+        if ( doInit )
+            this->init();
     }
 
-    /**
-     * \param model the model to be used
-     */
-    CRBModel( model_ptrtype & model )
-        :
-        M_Aqm(),
-        M_InitialGuessV(),
-        M_InitialGuessVector(),
-        M_Mqm(),
-        M_Fqm(),
-        M_model( model ),
-        M_is_initialized( false ),
-        M_mode( CRBModelMode::PFEM ),
-        M_backend( backend(_name="backend") ),
-        M_backend_primal( backend( _name="backend-primal") ),
-        M_backend_dual( backend( _name="backend-dual") ),
-        M_backend_l2( backend( _name="backend-l2") ),
-        M_alreadyCountAffineDecompositionTerms( false ),
-        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
-        M_numberOfTimeStep( 1 ),
-        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
-    {
-        this->init();
-    }
-
-    CRBModel( model_ptrtype & model , CRBModelMode mode )
+    CRBModel( model_ptrtype const& model , CRBModelMode mode = CRBModelMode::PFEM, bool doInit = true )
         :
         M_Aqm(),
         M_InitialGuessV(),
@@ -293,9 +256,11 @@ public:
         M_alreadyCountAffineDecompositionTerms( false ),
         M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
         M_numberOfTimeStep( 1 ),
+        M_has_eim( false ),
         M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
-        this->init();
+        if ( doInit )
+            this->init();
     }
 
     /**
@@ -335,12 +300,16 @@ public:
 
         M_has_eim=false;
 
-        M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
-                                                 _backend= M_backend_primal,
-                                                 _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
-                                                 _worldcomm=M_backend_primal->comm(),
-                                                 _prefix=M_backend_primal->prefix() ,
-                                                 _rebuild=M_useSER);
+        if( boption(_name="crb.use-primal-pc") )
+        {
+            M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                                     _backend= M_backend_primal,
+                                                     _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                                     _worldcomm=M_backend_primal->comm(),
+                                                     _prefix=M_backend_primal->prefix() ,
+                                                     _rebuild=M_useSER);
+        }
+
         M_preconditioner_dual = preconditioner(_pc=(PreconditionerType) M_backend_dual->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                                _backend= M_backend_dual,
                                                _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_dual->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
@@ -467,6 +436,16 @@ public:
     {
         return Environment::vm();
     }
+
+    /**
+     * \return model
+     */
+    model_ptrtype const& model() const { return M_model; }
+
+    /**
+     * \return model
+     */
+    model_ptrtype & model() { return M_model; }
 
     /**
      * create a new matrix
@@ -840,6 +819,49 @@ public:
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
 
+    betaqm_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
+    {
+        return computeBetaQm( urb , mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms);
+    }
+    betaqm_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu , mpl::bool_<true>, double time=0 , bool only_time_dependent_terms=false )
+    {
+        return M_model->computeBetaQm( urb, mu, time , only_time_dependent_terms );
+    }
+    betaqm_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu , mpl::bool_<false>, double time=0 , bool only_time_dependent_terms=false )
+    {
+        beta_vector_type betaAqm, betaMqm ;
+        std::vector<beta_vector_type>  betaFqm;
+        boost::tuple<
+            beta_vector_type,
+            std::vector<beta_vector_type> >
+            steady_beta;
+
+        steady_beta = M_model->computeBetaQm( urb, mu );
+        betaAqm = steady_beta.template get<0>();
+        betaFqm = steady_beta.template get<1>();
+
+        int nspace = functionspace_type::nSpaces;
+        if ( M_model->constructOperatorCompositeM() )
+        {
+            betaMqm.resize( nspace );
+            for(int q=0; q<nspace; q++)
+            {
+                betaMqm[q].resize(1);
+                betaMqm[q][0] = 1 ;
+            }
+        }
+        else
+        {
+            betaMqm.resize( 1 );
+            betaMqm[0].resize(1);
+            betaMqm[0][0] = 1 ;
+        }
+
+
+        return boost::make_tuple( betaMqm, betaAqm, betaFqm );
+    }
+
+
     betaqm_type computePicardBetaQm( parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
     {
         return computePicardBetaQm( mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms );
@@ -961,6 +983,21 @@ public:
         return offline_merge;
 
     }
+    offline_merge_type update( parameter_type const& mu, vectorN_type const& urb, double time=0 , bool only_time_dependent_terms=false )
+    {
+#if !defined(NDEBUG)
+        mu.check();
+#endif
+        auto all_beta = this->computeBetaQm( urb, mu , time , only_time_dependent_terms );
+        offline_merge_type offline_merge;
+        if( boption(_name="crb.stock-matrices") )
+            offline_merge = offlineMerge( all_beta , only_time_dependent_terms );
+        else
+            offline_merge = offlineMergeOnFly( all_beta, only_time_dependent_terms );
+
+        return offline_merge;
+
+    }
 
     element_type solveFemMonolithicFormulation( parameter_type const& mu );
     element_type solveFemDualMonolithicFormulation( parameter_type const& mu );
@@ -977,6 +1014,149 @@ public:
 
 
     /**
+     * \brief update model description in property_tree
+     * \param ptree to update
+     */
+    void updatePropertyTree( boost::property_tree::ptree & ptree ) const
+    {
+        M_model->updatePropertyTree( ptree );
+
+        boost::property_tree::ptree ptree_mMaxA;
+        for (int k=0;k<M_mMaxA.size();++k )
+        {
+            boost::property_tree::ptree ptree_mMaxA_value;
+            ptree_mMaxA_value.put( "",M_mMaxA[k] );
+            ptree_mMaxA.push_back( std::make_pair("", ptree_mMaxA_value) );
+        }
+        boost::property_tree::ptree ptree_mMaxM;
+        for (int k=0;k<M_mMaxM.size();++k )
+        {
+            boost::property_tree::ptree ptree_mMaxM_value;
+            ptree_mMaxM_value.put( "",M_mMaxM[k] );
+            ptree_mMaxM.push_back( std::make_pair("", ptree_mMaxM_value) );
+        }
+        boost::property_tree::ptree ptree_mMaxF;
+        for (int k=0;k<M_mMaxF.size();++k )
+        {
+            boost::property_tree::ptree ptree_mMaxFsub;
+            for (int k2=0;k2<M_mMaxF[k].size();++k2 )
+            {
+                boost::property_tree::ptree ptree_mMaxFsub_value;
+                ptree_mMaxFsub_value.put( "",M_mMaxF[k][k2] );
+                ptree_mMaxFsub.push_back( std::make_pair("", ptree_mMaxFsub_value) );
+            }
+            ptree_mMaxF.push_back( std::make_pair("", ptree_mMaxFsub) );
+        }
+        boost::property_tree::ptree ptree_mMaxLinearDecompositionA;
+        for (int k=0;k<M_mMaxLinearDecompositionA.size();++k )
+        {
+            boost::property_tree::ptree ptree_mMaxLinearDecompositionA_value;
+            ptree_mMaxLinearDecompositionA_value.put( "",M_mMaxLinearDecompositionA[k] );
+            ptree_mMaxLinearDecompositionA.push_back( std::make_pair("", ptree_mMaxLinearDecompositionA_value) );
+        }
+
+        boost::property_tree::ptree ptreeAffineDecomposition;
+        ptreeAffineDecomposition.add_child( "mMaxA", ptree_mMaxA );
+        ptreeAffineDecomposition.add_child( "mMaxM", ptree_mMaxM );
+        ptreeAffineDecomposition.add_child( "mMaxF", ptree_mMaxF );
+        ptreeAffineDecomposition.add_child( "mMaxLinearDecompositionA", ptree_mMaxLinearDecompositionA );
+
+        boost::property_tree::ptree ptreeCrbModel;
+        ptree.add_child( "affine-decomposition", ptreeAffineDecomposition );
+    }
+
+    /**
+     * \brief copy additional files in a directory (can be usefull in online loading)
+     * \param dirDataBase : directory copy
+     */
+    void copyAdditionalModelFiles( std::string const& dir )
+        {
+            if ( !M_model )
+                return;
+
+            if ( !M_model->additionalModelFiles().empty() )
+            {
+                for ( auto const& inputFilenamePair : M_model->additionalModelFiles() )
+                {
+                    std::string const& inputFilename = inputFilenamePair.second;
+                    fs::path inputPath = inputFilename;
+                    fs::path relativeDbPath = fs::path(inputFilename).filename();
+                    fs::path copyPath = fs::path(dir)/relativeDbPath;
+                    boost::system::error_code ec;
+                    if ( M_model->worldComm().isMasterRank() )
+                        fs::copy_file( inputPath, copyPath, fs::copy_option::overwrite_if_exists, ec );
+                    // replace entry with copy path
+                    M_model->addModelFile( inputFilenamePair.first, relativeDbPath.string() );
+                }
+                M_model->worldComm().barrier();
+            }
+        }
+
+    /**
+     * \brief load CrbModel from json
+     * \param input json filename
+     */
+    void loadJson( std::string const& filename, std::string const& childname = "" )
+        {
+            if ( !fs::exists( filename ) )
+            {
+                LOG(INFO) << "Could not find " << filename << std::endl;
+                return;
+            }
+
+            auto json_str_wo_comments = removeComments(readFromFile(filename));
+            //LOG(INFO) << "json file without comment:" << json_str_wo_comments;
+
+            boost::property_tree::ptree ptree;
+            std::istringstream istr( json_str_wo_comments );
+            boost::property_tree::read_json( istr, ptree );
+            if ( childname.empty() )
+                this->setup( ptree );
+            else
+            {
+                auto const& ptreeChild = ptree.get_child( childname );
+                this->setup( ptreeChild );
+            }
+
+        }
+
+    void setup( boost::property_tree::ptree const& ptree )
+        {
+            //auto const& ptreeCrbModel = ptree.get_child( "crbmodel" );
+            auto const& ptreeAffineDecomposition = /*ptreeCrbModel*/ptree.get_child( "affine-decomposition" );
+
+            M_mMaxA.clear();
+            for ( auto const& item : ptreeAffineDecomposition.get_child("mMaxA") )
+                M_mMaxA.push_back( item.second.template get_value<int>() );
+            M_Qa=M_mMaxA.size();
+
+            M_mMaxM.clear();
+            for ( auto const& item : ptreeAffineDecomposition.get_child("mMaxM") )
+                M_mMaxM.push_back( item.second.template get_value<int>() );
+            M_Qm=M_mMaxM.size();
+
+            M_mMaxF.clear();
+            M_Ql.clear();
+            for ( auto const& item : ptreeAffineDecomposition.get_child("mMaxF") )
+            {
+                std::vector<int> sizeloaded;
+                for ( auto const& item2 : item.second.get_child("") )
+                    sizeloaded.push_back( item2.second.template get_value<int>() );
+                M_mMaxF.push_back( sizeloaded );
+                M_Ql.push_back( sizeloaded.size() );
+            }
+            M_Nl = M_mMaxF.size();
+
+            M_mMaxLinearDecompositionA.clear();
+            for ( auto const& item : ptreeAffineDecomposition.get_child("mMaxLinearDecompositionA") )
+                M_mMaxLinearDecompositionA.push_back( item.second.template get_value<int>() );
+            M_QLinearDecompositionA = M_mMaxLinearDecompositionA.size();
+
+            M_alreadyCountAffineDecompositionTerms = true;
+            M_is_initialized=true;
+        }
+
+    /**
      * initialize the model
      */
     void initModel()
@@ -990,6 +1170,11 @@ public:
     bool isInitialized()
     {
         return M_model->isInitialized();
+    }
+
+    void updateRbSpaceContextEim()
+    {
+        M_model->updateRbSpaceContextEim();
     }
 
     /**
@@ -2242,6 +2427,23 @@ public:
         }
     }
 
+    value_type Jqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
+    {
+        if( boption(_name="crb.stock-matrices") )
+        {
+            //in this case matrices have already been stocked
+            if ( M_Jqm.empty() )
+                return M_Aqm[q][m]->energy( xi_j, xi_i, transpose );
+            else
+                return M_Jqm[q][m]->energy( xi_j, xi_i, transpose );
+        }
+        else
+        {
+            CHECK( false ) << "TODO : Jqm operatorComposite";
+            return 0;
+        }
+    }
+
     element_ptrtype InitialGuessQm( uint16_type q, int m ) const
     {
         return M_InitialGuessV[q][m];
@@ -2427,7 +2629,7 @@ public:
     preconditioner_ptrtype preconditionerPrimal()  { return M_preconditioner_primal; }
     preconditioner_ptrtype preconditionerDual()  { return M_preconditioner_dual; }
     preconditioner_ptrtype preconditionerL2()  { return M_preconditioner_l2; }
-    
+
     /**
      * solve the model for a given parameter \p mu
      */
@@ -2642,6 +2844,7 @@ private:
     preconditioner_ptrtype M_preconditioner_primal;
     preconditioner_ptrtype M_preconditioner_dual;
     preconditioner_ptrtype M_preconditioner_l2;
+    bool M_fixedpointUseAitken;
 
     //number of terms in affine decomposition
     int M_Qa; //A
@@ -3241,8 +3444,15 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
             A->addMatrix( bdf_coeff, M );
             Rhs->addVector( *vec_bdf_poly, *M );
         }
-        M_preconditioner_primal->setMatrix( A );
-        M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
+        if( boption(_name="crb.use-primal-pc") )
+        {
+            M_preconditioner_primal->setMatrix( A );
+            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
+        }
+        else
+        {
+            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs, _rebuild=true);
+        }
         mybdf->shiftRight(u);
     }
 
@@ -3322,8 +3532,15 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
                 F[0]->addVector( *vec_bdf_poly, *M );
             }
             uold=u;
-            M_preconditioner_primal->setMatrix( A );
-            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+            if( boption(_name="crb.use-primal-pc") )
+            {
+                M_preconditioner_primal->setMatrix( A );
+                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+            }
+            else
+            {
+                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
+            }
 
             mybdf->shiftRight(u);
 
@@ -3343,16 +3560,90 @@ template<typename TruthModelType>
 typename CRBModel<TruthModelType>::element_type
 CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu )
 {
-    auto Xh= this->functionSpace();
-    bdf_ptrtype mybdf;
-    mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
-    sparse_matrix_ptrtype A;
-    sparse_matrix_ptrtype M;
-    std::vector<vector_ptrtype> F;
-    element_ptrtype InitialGuess = Xh->elementPtr();
+    auto Xh = this->functionSpace();
     auto u = Xh->element("u");
     auto uold = Xh->element("u_old");
+
+    sparse_matrix_ptrtype A;
+    std::vector<vector_ptrtype> F;
+
+    int max_fixedpoint_iterations = ioption(_name="crb.max-fixedpoint-iterations");
+    double increment_fixedpoint_tol = doption(_name="crb.increment-fixedpoint-tol");
+
+    double norm=0;
+    int iter=0;
+
+
+    if ( this->isSteady() )
+    {
+        if ( is_linear )
+        {
+            boost::tie(boost::tuples::ignore, A, F) = this->update( mu );
+            if( boption(_name="crb.use-primal-pc") )
+            {
+                M_preconditioner_primal->setMatrix( A );
+                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+            }
+            else
+            {
+                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
+            }
+        }
+        else
+        {
+            u = *this->assembleInitialGuess( mu );
+
+            bool useAitkenRelaxation = M_fixedpointUseAitken;
+            auto residual = Xh->element();
+            auto aitkenRelax = aitken( _space=Xh );
+            aitkenRelax.initialize( residual, u );
+            aitkenRelax.restart();
+            bool fixPointIsFinished = false;
+            do {
+                uold = u;
+
+                boost::tie(boost::tuples::ignore, A, F) = this->update( mu , u );
+
+                if( boption(_name="crb.use-primal-pc") )
+                {
+                    M_preconditioner_primal->setMatrix( A );
+                    M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+                }
+                else
+                {
+                    M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
+                }
+                Feel::cout << "[OFFLINE] iteration " << iter << ", increment_norm = " <<  norm << "\n";
+
+                if ( !useAitkenRelaxation )
+                {
+                    norm = this->computeNormL2( uold , u );
+                    fixPointIsFinished = norm < increment_fixedpoint_tol || iter>=max_fixedpoint_iterations;
+                }
+                else
+                {
+                    residual = u-uold;
+                    aitkenRelax.apply2(_newElt=u,_residual=residual, _currentElt=u );
+                    aitkenRelax.printInfo();
+                    ++aitkenRelax;
+                    if ( aitkenRelax.isFinished() )
+                        fixPointIsFinished=true;
+                }
+
+                iter++;
+            } while( !fixPointIsFinished );//norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
+
+        }
+        return u;
+    }
+
+
+
+    bdf_ptrtype mybdf;
+    mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
+    sparse_matrix_ptrtype M;
     vector_ptrtype Rhs( M_backend->newVector( Xh ) );
+    element_ptrtype initialGuess = Xh->elementPtr();
 
     double time_initial;
     double time_step;
@@ -3364,31 +3655,27 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
         time_step = 1e30;
         time_final = 1e30;
         //we want to have the initial guess given by function update
-        InitialGuess = this->assembleInitialGuess( mu ) ;
+        initialGuess = this->assembleInitialGuess( mu ) ;
     }
     else
     {
         time_initial=this->timeInitial();
         time_step=this->timeStep();
         time_final=this->timeFinal();
-        this->initializationField( InitialGuess, mu );
+        this->initializationField( initialGuess, mu );
     }
 
     mybdf->setTimeInitial( time_initial );
     mybdf->setTimeStep( time_step );
     mybdf->setTimeFinal( time_final );
 
-    u=*InitialGuess;
-    double norm=0;
-    int iter=0;
+    u=*initialGuess;
 
     double bdf_coeff ;
     auto vec_bdf_poly = M_backend->newVector( Xh );
 
-    int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
-    double increment_fixedpoint_tol  = this->vm()["crb.increment-fixedpoint-tol"].template as<double>();
 
-    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*initialGuess); !mybdf->isFinished(); mybdf->next() )
     {
         iter=0;
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
@@ -3407,8 +3694,15 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                 Rhs->addVector( *vec_bdf_poly, *M );
             }
             uold = u;
-            M_preconditioner_primal->setMatrix( A );
-            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
+            if( boption(_name="crb.use-primal-pc") )
+            {
+                M_preconditioner_primal->setMatrix( A );
+                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
+            }
+            else
+            {
+                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs);
+            }
 
             if( is_linear )
                 norm = 0;
@@ -3430,18 +3724,25 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionNewton( parameter_type
 
     // auto initialguess = this->functionSpace()->elementPtr();
     // initialguess = this->assembleInitialGuess( mu ) ;
+    auto initialguess = this->assembleInitialGuess( mu ) ;
 
 
     boost::tie( boost::tuples::ignore , M_Jqm, M_Rqm ) = this->computeAffineDecomposition();
 
-    backend()->nlSolver()->jacobian = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateJacobian,
+    M_backend_primal->nlSolver()->jacobian = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateJacobian,
                                                           boost::ref( *this ), _1, _2, mu );
-    backend()->nlSolver()->residual = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateResidual,
+    M_backend_primal->nlSolver()->residual = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateResidual,
                                                           boost::ref( *this ), _1, _2, mu );
-    backend()->nlSolver()->setType( TRUST_REGION );
+    //M_backend_primal->nlSolver()->setType( TRUST_REGION );
 
     auto solution = this->functionSpace()->element();
-    backend()->nlSolve(_jacobian=J, _solution=solution, _residual=R);
+    if( boption(_name="crb.use-primal-pc") )
+    {
+        M_preconditioner_primal->setMatrix( J );
+        M_backend_primal->nlSolve(_jacobian=J, _solution=solution, _residual=R,_prec=M_preconditioner_primal);
+    }
+    else
+        M_backend_primal->nlSolve(_jacobian=J, _solution=solution, _residual=R);
     return solution;
 }
 
@@ -3575,7 +3876,10 @@ CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type cons
         auto bdf_poly = mybdf->polyDeriv();
         *vec_bdf_poly = bdf_poly;
 
-        boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+        if ( is_linear )
+            boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+        else
+            boost::tie(M, A, F) = this->computeMonolithicFormulationU( mu , udu );
 
         if( ! isSteady() )
         {
@@ -3614,15 +3918,81 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     int output_index = ioption(_name="crb.output-index");
 
     auto Xh= this->functionSpace();
+    auto udu = Xh->element();
+    auto uold = Xh->element();
+    sparse_matrix_ptrtype A, Adu;
+    std::vector<vector_ptrtype> F;
+    vector_ptrtype Rhs = M_backend_dual->newVector( Xh );
+
+    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
+    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
+
+    double norm=0;
+    int iter=0;
+
+    if ( this->isSteady() )
+    {
+        if ( is_linear )
+        {
+            boost::tie(boost::tuples::ignore, A, F) = this->update( mu , 0 );
+
+            *Rhs = *F[output_index];
+            Rhs->scale( -1 );
+
+            if( boption("crb.use-symmetric-matrix") )
+                Adu = A;
+            else
+                A->transpose( Adu );
+
+            //uold = udu;
+            M_preconditioner_dual->setMatrix( Adu );
+            M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual);
+        }
+        else
+        {
+            Adu = M_backend_dual->newMatrix(_test=Xh,_trial=Xh);
+            bool useAitkenRelaxation = M_fixedpointUseAitken;
+            auto residual = Xh->element();
+            auto aitkenRelax = aitken( _space=Xh );
+            aitkenRelax.initialize( residual, udu );
+            aitkenRelax.restart();
+            bool fixPointIsFinished = false;
+            do {
+                uold = udu;
+
+                boost::tie(boost::tuples::ignore, A, F) = this->update( mu , udu );
+                //Adu = A;
+                A->transpose( Adu );
+                *Rhs = *F[output_index];
+                Rhs->scale( -1 );
+
+                M_preconditioner_dual->setMatrix( Adu );
+                M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual );
+
+                if ( !useAitkenRelaxation )
+                {
+                    norm = this->computeNormL2( uold , udu );
+                    fixPointIsFinished = norm < increment_fixedpoint_tol || iter>=max_fixedpoint_iterations;
+                }
+                else
+                {
+                    residual = udu-uold;
+                    aitkenRelax.apply2(_newElt=udu,_residual=residual, _currentElt=udu );
+                    aitkenRelax.printInfo();
+                    ++aitkenRelax;
+                    if ( aitkenRelax.isFinished() )
+                        fixPointIsFinished=true;
+                }
+
+                iter++;
+            } while( !fixPointIsFinished );//norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
+        }
+        return udu;
+    }
 
     bdf_ptrtype mybdf;
     mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
-    sparse_matrix_ptrtype A,Adu;
     sparse_matrix_ptrtype M;
-    std::vector<vector_ptrtype> F;
-    auto udu = Xh->element();
-    auto uold = Xh->element();
-    vector_ptrtype Rhs( M_backend->newVector( Xh ) );
     auto dual_initial_field = Xh->elementPtr();
 
     double time_initial;
@@ -3647,9 +4017,6 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     mybdf->setTimeStep( time_step );
     mybdf->setTimeFinal( time_final );
 
-    double norm=0;
-    int iter=0;
-
     double bdf_coeff ;
     auto vec_bdf_poly = M_backend->newVector( Xh );
 
@@ -3665,8 +4032,6 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     }
 
 
-    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
-    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
     for( mybdf->start(udu); !mybdf->isFinished(); mybdf->next() )
     {
         iter=0;

@@ -199,7 +199,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element()
     M_ct( ComponentType::NO_COMPONENT ),
     M_ct2( ComponentType::NO_COMPONENT ),
     M_containersOffProcess( boost::none )
-{}
+{
+    this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
+}
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
@@ -344,8 +346,15 @@ struct InitializeElement
         typedef typename T::first_type key_type;
         typedef typename T::second_type::element_type myelt_type;
         std::string name = (boost::format("%1%_%2%")%M_element->name() %key_type::value).str();
-        if( !x.second )
-            x = std::make_pair(key_type(), boost::shared_ptr<myelt_type>( new myelt_type( M_element->template elementImpl<key_type::value>( name ) ) ) );
+
+        if( M_element->functionSpace() )
+        {
+            // build view if not built or built with an empty space
+            if ( !x.second || ( !x.second->functionSpace() ) )
+                x = std::make_pair(key_type(), boost::shared_ptr<myelt_type>( new myelt_type( M_element->template elementImpl<key_type::value>( name ) ) ) );
+        }
+        else if ( !x.second )
+            x = std::make_pair(key_type(), boost::shared_ptr<myelt_type>( new myelt_type() ) );
     }
     ElementType * M_element;
 };
@@ -355,8 +364,6 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::initSubElementView( mpl::true_ )
 {
-    if ( !M_functionspace )
-        return;
     fusion::for_each( M_elements,
                       Feel::detail::InitializeElement<Element<Y,Cont>>(this) );
 }
@@ -2545,14 +2552,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     for ( ; __face_it != __face_en; ++__face_it )
     {
         face_type const& curFace = boost::unwrap_ref(*__face_it);
-        FEELPP_ASSERT( curFace.isOnBoundary() && !curFace.isConnectedTo1() )
-        ( curFace.marker() )
-        ( curFace.isOnBoundary() )
-        ( curFace.ad_first() )
-        ( curFace.pos_first() )
-        ( curFace.ad_second() )
-        ( curFace.pos_second() )
-        ( curFace.id() ).warn( "inconsistent data face" );
+        DLOG_IF( WARNING, curFace.isOnBoundary() && !curFace.isConnectedTo1() )
+            << "Inconsistent data face : " 
+            << " marker : " <<  curFace.marker()
+            << " isOnBoundary : " << curFace.isOnBoundary()
+            << " ad_first : " << curFace.ad_first()
+            << " pos_first : " <<  curFace.pos_first()
+            << " ad_second : " << curFace.ad_second()
+            << " pos_second : " <<  curFace.pos_second()
+            << " id : " << curFace.id();
         DVLOG(2) << "[projector] FACE_ID = " << curFace.id()
                       << " element id= " << curFace.ad_first()
                       << " pos in elt= " << curFace.pos_first()
@@ -2730,5 +2738,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
 
 }
+
 
 #endif

@@ -171,6 +171,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
         // Check if each communicator has created its ensight .case file.
         if( w.localRank() == 0 )
             BOOST_CHECK( caseFileExist );
+        worldColored.globalComm().barrier();
 
     }
 }

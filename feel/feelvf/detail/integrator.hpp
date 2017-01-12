@@ -53,6 +53,7 @@
 #include <hwloc.h>
 #endif //defined(FEELPP_HAS_HARTS)
 
+#pragma GCC visibility push(default)
 namespace Feel
 {
 namespace vf
@@ -455,6 +456,6 @@ namespace parallel
 } // integrator
 } // vf
 } // Feel
-
+#pragma GCC visibility pop
 
 #endif //FEELPP_DETAIL_INTEGRATOR_HPP

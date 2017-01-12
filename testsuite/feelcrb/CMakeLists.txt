@@ -31,3 +31,5 @@ feelpp_add_test( rbspace )
 feelpp_add_test( rbspacevector )
 
 feelpp_add_test( db CFG test_db.cfg GEO test_db.geo )
+
+feelpp_add_test( parameterspace )

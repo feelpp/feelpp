@@ -1,7 +1,7 @@
 #!/bin/sh
 
 set +x
-VERSION=1_61_0
+VERSION=1_62_0
 VERSION2=`echo "$VERSION" | tr _ .`
 basedir=${1:-$HOME}
 NPROCS=${2:-4}
@@ -21,7 +21,7 @@ if [ ! -d "$basedir/software/install/boost-${VERSION}" ]; then
     echo "using mpi ;" >> user-config.jam
     echo "" >> user-config.jam
     ./bootstrap.sh
-    ./bjam -j$NPROCS install \
+    ./bjam cxxflags="-std=c++14"  -j$NPROCS install \
            --layout=tagged \
            --prefix=$basedir/software/install/boost-${VERSION} \
            --user-config=user-config.jam \

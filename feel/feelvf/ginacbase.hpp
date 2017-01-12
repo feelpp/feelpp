@@ -66,9 +66,9 @@ public:
             }
 
             for ( auto const& is : M_indexSymbolXYZ )
-                LOG(INFO) << "index symbol relation  " << is.first << " and " << is.second << "\n";
+                VLOG(1) << "index symbol relation:  " << is.first << " -> " << is.second << "\n";
             for ( auto const& is : M_indexSymbolN )
-                LOG(INFO) << "index symbol relation  " << is.first << " and " << is.second << "\n";
+                VLOG(1) << "index symbol relation:  " << is.first << " -> " << is.second << "\n";
 
             this->setParameterFromOption();
         }
@@ -119,7 +119,7 @@ public:
                     {
                         value_type v = option( _name=s.get_name() ).as<double>();
                         m.insert( std::make_pair( s.get_name(), v ) );
-                        LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
+                        VLOG(1) << "symbol " << s.get_name() << " found in option with value " << v;
                     }
                     catch(...)
                     {}

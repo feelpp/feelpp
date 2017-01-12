@@ -13,7 +13,9 @@
 #define EIGEN_DEFAULT_DENSE_INDEX_TYPE int
 #define EIGEN_USE_GPU
 
-
+#if defined __CUDACC_VER__ && __CUDACC_VER__ >= 70500
+#include <cuda_fp16.h>
+#endif
 #include "main.h"
 #include <unsupported/Eigen/CXX11/Tensor>
 
@@ -53,7 +55,7 @@ void test_cuda_cumsum(int m_size, int k_size, int n_size)
   t_result = t_input.cumsum(1);
 
   cudaMemcpy(t_result_gpu.data(), d_t_result, t_result_bytes, cudaMemcpyDeviceToHost);
-  for (size_t i = 0; i < t_result.size(); i++) {
+  for (DenseIndex i = 0; i < t_result.size(); i++) {
     if (fabs(t_result(i) - t_result_gpu(i)) < 1e-4f) {
       continue;
     }

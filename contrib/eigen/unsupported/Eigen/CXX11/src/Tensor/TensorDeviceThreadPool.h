@@ -12,17 +12,6 @@
 
 namespace Eigen {
 
-// Use the SimpleThreadPool by default. We'll switch to the new non blocking
-// thread pool later.
-#ifndef EIGEN_USE_SIMPLE_THREAD_POOL
-template <typename Env> using ThreadPoolTempl = NonBlockingThreadPoolTempl<Env>;
-typedef NonBlockingThreadPool ThreadPool;
-#else
-template <typename Env> using ThreadPoolTempl = SimpleThreadPoolTempl<Env>;
-typedef SimpleThreadPool ThreadPool;
-#endif
-
-
 // Barrier is an object that allows one or more threads to wait until
 // Notify has been called a specified number of times.
 class Barrier {
@@ -151,9 +140,7 @@ struct ThreadPoolDevice {
   template <class Function, class... Args>
   EIGEN_STRONG_INLINE Notification* enqueue(Function&& f, Args&&... args) const {
     Notification* n = new Notification();
-    std::function<void()> func =
-      std::bind(&FunctionWrapperWithNotification<Function, Args...>::run, n, f, args...);
-    pool_->Schedule(func);
+    pool_->Schedule(std::bind(&FunctionWrapperWithNotification<Function, Args...>::run, n, f, args...));
     return n;
   }
 
@@ -161,15 +148,13 @@ struct ThreadPoolDevice {
   EIGEN_STRONG_INLINE void enqueue_with_barrier(Barrier* b,
                                                 Function&& f,
                                                 Args&&... args) const {
-    std::function<void()> func = std::bind(
-        &FunctionWrapperWithBarrier<Function, Args...>::run, b, f, args...);
-    pool_->Schedule(func);
+    pool_->Schedule(std::bind(
+        &FunctionWrapperWithBarrier<Function, Args...>::run, b, f, args...));
   }
 
   template <class Function, class... Args>
   EIGEN_STRONG_INLINE void enqueueNoNotification(Function&& f, Args&&... args) const {
-    std::function<void()> func = std::bind(f, args...);
-    pool_->Schedule(func);
+    pool_->Schedule(std::bind(f, args...));
   }
 
   // Returns a logical thread index between 0 and pool_->NumThreads() - 1 if
@@ -260,7 +245,7 @@ struct ThreadPoolDevice {
       // Split into halves and submit to the pool.
       Index mid = first + divup((last - first) / 2, block_size) * block_size;
       pool_->Schedule([=, &handleRange]() { handleRange(mid, last); });
-      pool_->Schedule([=, &handleRange]() { handleRange(first, mid); });
+      handleRange(first, mid);
     };
     handleRange(0, n);
     barrier.Wait();

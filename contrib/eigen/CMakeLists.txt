@@ -1,4 +1,4 @@
-project(Eigen)
+project(Eigen3)
 
 cmake_minimum_required(VERSION 2.8.5)
 
@@ -7,6 +7,11 @@ cmake_minimum_required(VERSION 2.8.5)
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
+
+# Alias Eigen_*_DIR to Eigen3_*_DIR:
+
+set(Eigen_SOURCE_DIR ${Eigen3_SOURCE_DIR})
+set(Eigen_BINARY_DIR ${Eigen3_BINARY_DIR})
 
 # guard against bad build-type strings
 
@@ -93,9 +98,11 @@ else()
 endif()
 
 option(EIGEN_BUILD_BTL "Build benchmark suite" OFF)
-if(NOT WIN32)
+
+# Disable pkgconfig only for native Windows builds
+if(NOT WIN32 OR NOT CMAKE_HOST_SYSTEM_NAME MATCHES Windows)
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" ON)
-endif(NOT WIN32)
+endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -126,7 +133,6 @@ if(NOT MSVC)
   if(COMPILER_SUPPORT_WERROR)
     set(CMAKE_REQUIRED_FLAGS "-Werror")
   endif()
-  
   ei_add_cxx_compiler_flag("-pedantic")
   ei_add_cxx_compiler_flag("-Wall")
   ei_add_cxx_compiler_flag("-Wextra")
@@ -222,6 +228,12 @@ if(NOT MSVC)
   if(EIGEN_TEST_FMA AND NOT EIGEN_TEST_NEON)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfma")
     message(STATUS "Enabling FMA in tests/examples")
+  endif()
+
+  option(EIGEN_TEST_AVX512 "Enable/Disable AVX512 in tests/examples" OFF)
+  if(EIGEN_TEST_AVX512)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx512f -fabi-version=6 -DEIGEN_ENABLE_AVX512")
+    message(STATUS "Enabling AVX512 in tests/examples")
   endif()
 
   option(EIGEN_TEST_F16C "Enable/Disable F16C in tests/examples" OFF)
@@ -368,7 +380,7 @@ else()
       )
 endif()
 set(CMAKEPACKAGE_INSTALL_DIR
-    "${CMAKE_INSTALL_LIBDIR}/cmake/eigen3"
+    "${CMAKE_INSTALL_DATADIR}/feel/eigen3/cmake"
     CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen3Config.cmake is installed"
     )
 set(PKGCONFIG_INSTALL_DIR
@@ -398,15 +410,15 @@ if(EIGEN_BUILD_PKGCONFIG)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/eigen3.pc
         DESTINATION ${PKGCONFIG_INSTALL_DIR}
         )
-endif(EIGEN_BUILD_PKGCONFIG)
+endif()
 
 add_subdirectory(Eigen)
 
-add_subdirectory(doc EXCLUDE_FROM_ALL)
+# add_subdirectory(doc EXCLUDE_FROM_ALL)
 
 # include(EigenConfigureTesting)
 
-# # fixme, not sure this line is still needed:
+# fixme, not sure this line is still needed:
 # enable_testing() # must be called from the root CMakeLists, see man page
 
 
@@ -424,15 +436,21 @@ add_subdirectory(doc EXCLUDE_FROM_ALL)
 #   add_subdirectory(lapack EXCLUDE_FROM_ALL)
 # endif()
 
-add_subdirectory(unsupported)
+# add SYCL
+option(EIGEN_TEST_SYCL "Add Sycl support." OFF)
+if(EIGEN_TEST_SYCL)
+  set (CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules" "cmake/Modules/" "${CMAKE_MODULE_PATH}")
+  include(FindComputeCpp)
+endif()
 
+add_subdirectory(unsupported)
 
 # add_subdirectory(demos EXCLUDE_FROM_ALL)
 
-# # must be after test and unsupported, for configuring buildtests.in
+# must be after test and unsupported, for configuring buildtests.in
 # add_subdirectory(scripts EXCLUDE_FROM_ALL)
 
-# # TODO: consider also replacing EIGEN_BUILD_BTL by a custom target "make btl"?
+# TODO: consider also replacing EIGEN_BUILD_BTL by a custom target "make btl"?
 # if(EIGEN_BUILD_BTL)
 #   add_subdirectory(bench/btl EXCLUDE_FROM_ALL)
 # endif(EIGEN_BUILD_BTL)
@@ -445,9 +463,9 @@ add_subdirectory(unsupported)
 
 # ei_testing_print_summary()
 
-# message(STATUS "")
-# message(STATUS "Configured Eigen ${EIGEN_VERSION_NUMBER}")
-# message(STATUS "")
+message(STATUS "")
+message(STATUS "[feelpp/Eigen3] Configured Eigen ${EIGEN_VERSION_NUMBER}")
+message(STATUS "")
 
 # option(EIGEN_FAILTEST "Enable failtests." OFF)
 # if(EIGEN_FAILTEST)
@@ -489,18 +507,89 @@ set ( EIGEN_VERSION_MINOR  ${EIGEN_MAJOR_VERSION} )
 set ( EIGEN_VERSION_PATCH  ${EIGEN_MINOR_VERSION} )
 set ( EIGEN_DEFINITIONS "")
 set ( EIGEN_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/${INCLUDE_INSTALL_DIR}" )
-set ( EIGEN_INCLUDE_DIRS ${EIGEN_INCLUDE_DIR} )
 set ( EIGEN_ROOT_DIR ${CMAKE_INSTALL_PREFIX} )
 
-configure_file ( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Eigen3Config.cmake.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/Eigen3Config.cmake
-                 @ONLY ESCAPE_QUOTES
-               )
+# Interface libraries require at least CMake 3.0
+if (NOT CMAKE_VERSION VERSION_LESS 3.0)
+  include (CMakePackageConfigHelpers)
 
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseEigen3.cmake
-                ${CMAKE_CURRENT_BINARY_DIR}/Eigen3Config.cmake
-          DESTINATION ${CMAKEPACKAGE_INSTALL_DIR}
-        )
+  # Imported target support
+  add_library (eigen INTERFACE)
+
+  target_compile_definitions (eigen INTERFACE ${EIGEN_DEFINITIONS})
+  target_include_directories (eigen INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}>
+  )
+
+  # Export as title case Eigen
+  set_target_properties (eigen PROPERTIES EXPORT_NAME Eigen)
+
+  install (TARGETS eigen EXPORT Eigen3Targets)
+
+  configure_package_config_file (
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Eigen3Config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Eigen3Config.cmake
+    PATH_VARS EIGEN_INCLUDE_DIR EIGEN_ROOT_DIR
+    INSTALL_DESTINATION ${CMAKEPACKAGE_INSTALL_DIR}
+    NO_CHECK_REQUIRED_COMPONENTS_MACRO # Eigen does not provide components
+  )
+  # Remove CMAKE_SIZEOF_VOID_P from Eigen3ConfigVersion.cmake since Eigen does
+  # not depend on architecture specific settings or libraries. More
+  # specifically, an Eigen3Config.cmake generated from a 64 bit target can be
+  # used for 32 bit targets as well (and vice versa).
+  set (_Eigen3_CMAKE_SIZEOF_VOID_P ${CMAKE_SIZEOF_VOID_P})
+  unset (CMAKE_SIZEOF_VOID_P)
+  write_basic_package_version_file (Eigen3ConfigVersion.cmake
+    VERSION ${EIGEN_VERSION_NUMBER} COMPATIBILITY SameMajorVersion)
+  set (CMAKE_SIZEOF_VOID_P ${_Eigen3_CMAKE_SIZEOF_VOID_P})
+
+  # The Eigen target will be located in the Eigen3 namespace. Other CMake
+  # targets can refer to it using Eigen3::Eigen.
+  export (TARGETS eigen NAMESPACE Eigen3:: FILE Eigen3Targets.cmake)
+  # Export Eigen3 package to CMake registry such that it can be easily found by
+  # CMake even if it has not been installed to a standard directory.
+  export (PACKAGE Eigen3)
+
+  install (EXPORT Eigen3Targets NAMESPACE Eigen3:: DESTINATION
+    ${CMAKEPACKAGE_INSTALL_DIR})
+  install (FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/Eigen3Config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/Eigen3ConfigVersion.cmake
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseEigen3.cmake
+    DESTINATION ${CMAKEPACKAGE_INSTALL_DIR})
+else (NOT CMAKE_VERSION VERSION_LESS 3.0)
+  # Fallback to legacy Eigen3Config.cmake without the imported target
+  
+  # If CMakePackageConfigHelpers module is available (CMake >= 2.8.8)
+  # create a relocatable Config file, otherwise leave the hardcoded paths       
+  include(CMakePackageConfigHelpers OPTIONAL RESULT_VARIABLE CPCH_PATH)
+  
+  if(CPCH_PATH)
+    configure_package_config_file (
+      ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Eigen3ConfigLegacy.cmake.in
+      ${CMAKE_CURRENT_BINARY_DIR}/Eigen3Config.cmake
+      PATH_VARS EIGEN_INCLUDE_DIR EIGEN_ROOT_DIR
+      INSTALL_DESTINATION ${CMAKEPACKAGE_INSTALL_DIR}
+      NO_CHECK_REQUIRED_COMPONENTS_MACRO # Eigen does not provide components
+    )
+  else() 
+    # The PACKAGE_* variables are defined by the configure_package_config_file
+    # but without it we define them manually to the hardcoded paths
+    set(PACKAGE_INIT "")
+    set(PACKAGE_EIGEN_INCLUDE_DIR ${EIGEN_INCLUDE_DIR})
+    set(PACKAGE_EIGEN_ROOT_DIR ${EIGEN_ROOT_DIR})
+    configure_file ( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Eigen3ConfigLegacy.cmake.in
+                     ${CMAKE_CURRENT_BINARY_DIR}/Eigen3Config.cmake
+                     @ONLY ESCAPE_QUOTES
+                   )
+  endif()
+
+  install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseEigen3.cmake
+                  ${CMAKE_CURRENT_BINARY_DIR}/Eigen3Config.cmake
+            DESTINATION ${CMAKEPACKAGE_INSTALL_DIR}
+          )
+endif (NOT CMAKE_VERSION VERSION_LESS 3.0)
 
 # Add uninstall target
 add_custom_target ( uninstall-eigen

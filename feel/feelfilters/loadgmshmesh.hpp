@@ -87,13 +87,13 @@ BOOST_PARAMETER_FUNCTION(
         std::for_each( plist.begin(), plist.end(), [&ostr]( std::string s ) { ostr << " - " << s << "\n"; } );
         CHECK( !filename_with_path.empty() ) << "File " << filename << " cannot be found in the following paths list:\n " << ostr.str();
     }
-
+#if defined( FEELPP_HAS_GMSH_H )
     Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
     gmsh.setRefinementLevels( refine );
     gmsh.setNumberOfPartitions( partitions );
     gmsh.setPartitioner( (GMSH_PARTITIONER)partitioner );
     gmsh.setMshFileByPartition( partition_file );
-
+    gmsh.setVerbosity(verbose);
 
     // refinement if option is enabled to a value greater or equal to 1
     if ( refine )
@@ -105,9 +105,33 @@ BOOST_PARAMETER_FUNCTION(
         gmsh.rebuildPartitionMsh(filename_with_path,rebuild_partitions_filename);
         filename_with_path=rebuild_partitions_filename;
     }
-
+#else
+    LOG(WARNING) << "Gmsh support not available: refine and repartition operations are not supported.";
+#endif
     ImporterGmsh<_mesh_type> import( filename_with_path, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
+    fs::path p_fname( filename_with_path );
 
+#if defined (FEELPP_HAS_GMSH_H)
+    if ( p_fname.extension() == ".med" ||
+         p_fname.extension() == ".bdf" ||
+         p_fname.extension() == ".cgns" ||
+         p_fname.extension() == ".p3d" ||
+         p_fname.extension() == ".mesh"
+         )
+    {
+        tic();
+        auto m = GmshReaderFactory::instance().at(p_fname.extension().string())( filename_with_path );
+        if(m.first > 1)
+        {
+            throw std::logic_error( "read  failed: " + filename_with_path );
+        }
+        import.setGModel(m.second );
+        import.setInMemory(true);
+        using namespace std::string_literals;
+        toc("loadGMSHMesh.reader"s+p_fname.extension().string(), FLAGS_v>0);
+    }
+#endif // FEELPP_HAS_GMSH_H
+    
     // need to replace physical_region by elementary_region while reading
     if ( physical_are_elementary_regions )
     {
@@ -115,8 +139,11 @@ BOOST_PARAMETER_FUNCTION(
     }
     import.setScaling( scale );
     import.setRespectPartition( respect_partition );
+    tic();
     _mesh->accept( import );
+    toc("loadGMSHMesh.readmesh", FLAGS_v>0);
 
+    tic();
     if ( update )
     {
         _mesh->components().reset();
@@ -128,6 +155,7 @@ BOOST_PARAMETER_FUNCTION(
     {
         _mesh->components().reset();
     }
+    toc("loadGMSHMesh.update", FLAGS_v>0);
 
     if ( straighten && _mesh_type::nOrder > 1 )
         return straightenMesh( _mesh, worldcomm.subWorldComm() );

@@ -3,7 +3,7 @@
  *  Function to find primitive part of a multivariate polynomial. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ void primpart_content(ex& pp, ex& c, ex e, const exvector& vars,
 
 	// Start from the leading coefficient (which is stored as a last
 	// element of the terms array)
-	ex_collect_t::reverse_iterator i = ec.rbegin();
+	auto i = ec.rbegin();
 	ex g = i->second;
 	// there are at least two terms, so it's safe to...
 	++i;

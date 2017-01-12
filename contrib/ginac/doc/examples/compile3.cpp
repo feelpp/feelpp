@@ -27,6 +27,9 @@ int main()
 		cout << "Building new 'compile3_testprg.so'." << endl;
 		symbol a, b;
 		ex expr = a*b;
+
+		// Optionally, compile with custom compiler flags:
+		// setenv("CXXFLAGS", "-O3 -fomit-frame-pointer -ffast-math", 1);
 		compile_ex(expr, a, b, fp, "compile3_testprg");
 	}
 

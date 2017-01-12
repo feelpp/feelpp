@@ -3,7 +3,7 @@
  *  Implementation of polynomial division in Z/Zp. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -101,7 +101,7 @@ bool divide_in_z_p(const ex &a, const ex &b, ex &q, const exvector& vars, const 
 		if (p != 0)
 			r = r.smod(numeric(p));
 		if (r.is_zero()) {
-			q = (new add(v))->setflag(status_flags::dynallocated);
+			q = dynallocate<add>(v);
 			return true;
 		}
 		rdeg = r.degree(x);

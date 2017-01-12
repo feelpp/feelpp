@@ -3,7 +3,7 @@
  *  Interface to GiNaC's color (SU(3) Lie algebra) objects. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -46,19 +46,19 @@ public:
 	color(const ex & b, const ex & i1, unsigned char rl = 0);
 
 	// internal constructors
-	color(unsigned char rl, const exvector & v, bool discardable = false);
-	color(unsigned char rl, boost::shared_ptr<exvector> vp);
-	void archive(archive_node& n) const;
-	void read_archive(const archive_node& n, lst& sym_lst);
+	color(unsigned char rl, const exvector & v);
+	color(unsigned char rl, exvector && v);
+	void archive(archive_node& n) const override;
+	void read_archive(const archive_node& n, lst& sym_lst) override;
 
 	// functions overriding virtual functions from base classes
 protected:
-	ex eval_ncmul(const exvector & v) const;
-	bool match_same_type(const basic & other) const;
-	ex thiscontainer(const exvector & v) const;
-	ex thiscontainer(boost::shared_ptr<exvector> vp) const;
-	unsigned return_type() const { return return_types::noncommutative; }
-	return_type_t return_type_tinfo() const;
+	ex eval_ncmul(const exvector & v) const override;
+	bool match_same_type(const basic & other) const override;
+	ex thiscontainer(const exvector & v) const override;
+	ex thiscontainer(exvector && v) const override;
+	unsigned return_type() const override { return return_types::noncommutative; }
+	return_type_t return_type_tinfo() const override;
 
 	// non-virtual functions in this class
 public:
@@ -68,7 +68,7 @@ public:
 private:
 	unsigned char representation_label; /**< Representation label to distinguish independent color matrices coming from separated fermion lines */
 };
-GINAC_DECLARE_UNARCHIVER(color);
+GINAC_DECLARE_UNARCHIVER(color); 
 
 
 /** This class represents the su(3) unity element. */
@@ -90,7 +90,7 @@ class su3t : public tensor
 
 	// functions overriding virtual functions from base classes
 public:
-	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const;
+	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const override;
 
 	// non-virtual functions in this class
 protected:
@@ -107,12 +107,13 @@ class su3f : public tensor
 
 	// functions overriding virtual functions from base classes
 public:
-	ex eval_indexed(const basic & i) const;
-	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const;
+	ex eval_indexed(const basic & i) const override;
+	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const override;
+protected:
+	unsigned return_type() const override { return return_types::commutative; }
 
 	// non-virtual functions in this class
 protected:
-	unsigned return_type() const { return return_types::commutative; }
 	void do_print(const print_context & c, unsigned level) const;
 	void do_print_latex(const print_latex & c, unsigned level) const;
 };
@@ -125,12 +126,13 @@ class su3d : public tensor
 
 	// functions overriding virtual functions from base classes
 public:
-	ex eval_indexed(const basic & i) const;
-	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const;
+	ex eval_indexed(const basic & i) const override;
+	bool contract_with(exvector::iterator self, exvector::iterator other, exvector & v) const override;
+protected:
+	unsigned return_type() const override { return return_types::commutative; }
 
 	// non-virtual functions in this class
 protected:
-	unsigned return_type() const { return return_types::commutative; }
 	void do_print(const print_context & c, unsigned level) const;
 	void do_print_latex(const print_latex & c, unsigned level) const;
 };

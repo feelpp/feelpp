@@ -412,7 +412,7 @@ struct svd_precondition_2x2_block_to_be_real<MatrixType, QRPreconditioner, true>
     }
 
     // update largest diagonal entry
-    maxDiagEntry = numext::maxi(maxDiagEntry,numext::maxi(abs(work_matrix.coeff(p,p)), abs(work_matrix.coeff(q,q))));
+    maxDiagEntry = numext::maxi<RealScalar>(maxDiagEntry,numext::maxi<RealScalar>(abs(work_matrix.coeff(p,p)), abs(work_matrix.coeff(q,q))));
     // and check whether the 2x2 block is already diagonal
     RealScalar threshold = numext::maxi<RealScalar>(considerAsZero, precision * maxDiagEntry);
     return abs(work_matrix.coeff(p,q))>threshold || abs(work_matrix.coeff(q,p)) > threshold;
@@ -665,10 +665,8 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
   // only worsening the precision of U and V as we accumulate more rotations
   const RealScalar precision = RealScalar(2) * NumTraits<Scalar>::epsilon();
 
-  // limit for very small denormal numbers to be considered zero in order to avoid infinite loops (see bug 286)
-  // FIXME What about considerering any denormal numbers as zero, using:
-  // const RealScalar considerAsZero = (std::numeric_limits<RealScalar>::min)();
-  const RealScalar considerAsZero = RealScalar(2) * std::numeric_limits<RealScalar>::denorm_min();
+  // limit for denormal numbers to be considered zero in order to avoid infinite loops (see bug 286)
+  const RealScalar considerAsZero = (std::numeric_limits<RealScalar>::min)();
 
   // Scaling factor to reduce over/under-flows
   RealScalar scale = matrix.cwiseAbs().maxCoeff();
@@ -727,7 +725,7 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
             if(computeV()) m_matrixV.applyOnTheRight(p,q,j_right);
 
             // keep track of the largest diagonal coefficient
-            maxDiagEntry = numext::maxi<RealScalar>(maxDiagEntry,numext::maxi(abs(m_workMatrix.coeff(p,p)), abs(m_workMatrix.coeff(q,q))));
+            maxDiagEntry = numext::maxi<RealScalar>(maxDiagEntry,numext::maxi<RealScalar>(abs(m_workMatrix.coeff(p,p)), abs(m_workMatrix.coeff(q,q))));
           }
         }
       }
@@ -783,7 +781,6 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
   return *this;
 }
 
-#ifndef __CUDACC__
 /** \svd_module
   *
   * \return the singular value decomposition of \c *this computed by two-sided
@@ -797,7 +794,6 @@ MatrixBase<Derived>::jacobiSvd(unsigned int computationOptions) const
 {
   return JacobiSVD<PlainObject>(*this, computationOptions);
 }
-#endif // __CUDACC__
 
 } // end namespace Eigen
 

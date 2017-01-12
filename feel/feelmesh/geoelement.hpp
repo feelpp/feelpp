@@ -59,6 +59,9 @@ public:
 
     SubFaceOfNone() {}
     SubFaceOfNone( SubFaceOfNone const& ) {}
+    SubFaceOfNone( SubFaceOfNone && ) = default;
+    SubFaceOfNone& operator=( SubFaceOfNone const& ) = default;
+    SubFaceOfNone& operator=( SubFaceOfNone && ) = default;
 
     virtual ~SubFaceOfNone() {}
 
@@ -123,6 +126,12 @@ public:
         M_element1( sf.M_element1 )
     {
     }
+    SubFaceOf( SubFaceOf && sf )
+        :
+        M_element0( std::move( sf.M_element0 ) ),
+        M_element1( std::move( sf.M_element1 ) )
+        {
+        }
     SubFaceOf( SubFaceOfNone const& /*sf*/ )
         :
         M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value ),
@@ -142,6 +151,13 @@ public:
 
         return *this;
     }
+    SubFaceOf& operator=( SubFaceOf && sf )
+        {
+            M_element0 = std::move(sf.M_element0);
+            M_element1 = std::move(sf.M_element1);
+            ///std::cout << "move assigned SubFaceOf\n";
+            return *this;
+        }
     SubFaceOf& operator=( SubFaceOfNone const& /*sf*/ )
     {
         return *this;
@@ -827,15 +843,26 @@ public:
         :
         super( id ),
         super2(),
-        M_vertices( numLocalVertices, nullptr )
+        M_vertices()
         //M_vertex_permutation( numLocalVertices )
     {
+        M_vertices.fill( nullptr );
     }
     /**
      * copy consttructor
      */
     GeoElement1D( GeoElement1D const& g ) = default;
-    GeoElement1D( GeoElement1D && g ) = default;
+    GeoElement1D( GeoElement1D && g )
+        :
+        super( std::move(g) ),
+        super2( std::move(g) ),
+        M_map( std::move( g.M_map ) ),
+        M_vertices( std::move( g.M_vertices ) )
+        {
+            //std::cout << "GeoElement1D move ctor\n";
+        }
+           
+        
 
     /**
      * destructor
@@ -847,7 +874,15 @@ public:
      * copy operator
      */
     GeoElement1D& operator=( GeoElement1D const& g ) = default;
-    GeoElement1D& operator=( GeoElement1D && g ) = default;
+    GeoElement1D& operator=( GeoElement1D && g )
+        {
+            super::operator=( std::move(g) );
+            super2::operator=( std::move(g) );
+            M_map = std::move( g.M_map );
+            M_vertices = std::move( g.M_vertices );
+            //std::cout << "GeoElement1D move op\n";
+            return *this;
+        }
 
 
     //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
@@ -987,8 +1022,8 @@ public:
         return M_vertices[i];
     }
 
-    typedef typename ublas::bounded_array<point_type*, numLocalVertices>::iterator face_iterator;
-    typedef typename ublas::bounded_array<point_type*, numLocalVertices>::const_iterator face_const_iterator;
+    typedef typename std::array<point_type*, numLocalVertices>::iterator face_iterator;
+    typedef typename std::array<point_type*, numLocalVertices>::const_iterator face_const_iterator;
 
     /**
      * \return the iterator pair (begin,end) of faces
@@ -1035,7 +1070,7 @@ private:
 private:
 
     std::vector<uint8_type> M_map;
-    ublas::bounded_array<point_type*, numLocalVertices> M_vertices;
+    std::array<point_type*, numLocalVertices> M_vertices;
     //ublas::bounded_array<vertex_permutation_type, numLocalVertices> M_vertex_permutation;
 
 };
@@ -1394,8 +1429,10 @@ private:
         {
             DVLOG(2) << "Serializing Geoelement2D id: " << this->id() << "...\n";
             ar & boost::serialization::base_object<super>( *this );
+#if 0
             ar & boost::serialization::base_object<super2>( *this );
             ar & M_edges;
+#endif
         }
 
 
