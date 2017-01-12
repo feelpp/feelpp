@@ -20,6 +20,7 @@ runApplicationMultiFluid()
     MFModel->build();
 
     MFModel->init();
+    MFModel->printAndSaveInfo();
     if( !MFModel->doRestart() )
         MFModel->exportResults(0);
 

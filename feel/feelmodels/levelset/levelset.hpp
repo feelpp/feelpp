@@ -258,6 +258,8 @@ public:
     void createReinitialization();
     void createOthers();
 
+    boost::shared_ptr<std::ostringstream> getInfo() const;
+
     //--------------------------------------------------------------------//
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
     space_levelset_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceLevelSetVec; }
@@ -303,8 +305,8 @@ public:
 
     projector_levelset_ptrtype const& projectorL2() const { return M_projectorL2; }
     projector_levelset_vectorial_ptrtype const& projectorL2Vectorial() const { return M_projectorL2Vec; }
-    projector_levelset_ptrtype const& smoother();
-    projector_levelset_vectorial_ptrtype const& smootherVectorial();
+    projector_levelset_ptrtype const& smoother() const;
+    projector_levelset_vectorial_ptrtype const& smootherVectorial() const;
 
     void updateInterfaceQuantities();
 
@@ -377,12 +379,6 @@ public:
     {
         this->setInitialValue(expr, M_reinitInitialValue );
     }
-
-    /* update the submesh and subspaces*/
-    //void updateSubMeshSubSpace(element_markers_ptrtype marker);
-    //void updateSubMeshSubSpace();
-
-    std::string levelsetInfos( bool show = false );
 
     //--------------------------------------------------------------------//
     // Export results
@@ -472,7 +468,6 @@ private:
 
     //--------------------------------------------------------------------//
     // Spaces
-    //space_levelset_ptrtype M_spaceLevelSet;
     space_levelset_vectorial_ptrtype M_spaceLevelSetVec;
     space_markers_ptrtype M_spaceMarkers;
 
@@ -490,8 +485,8 @@ private:
     // Projectors
     projector_levelset_ptrtype M_projectorL2;
     projector_levelset_vectorial_ptrtype M_projectorL2Vec;
-    projector_levelset_ptrtype M_smoother;
-    projector_levelset_vectorial_ptrtype M_smootherVectorial;
+    mutable projector_levelset_ptrtype M_smoother;
+    mutable projector_levelset_vectorial_ptrtype M_smootherVectorial;
     //--------------------------------------------------------------------//
     // Levelset data
     mutable element_levelset_vectorial_ptrtype M_levelsetGradPhi;
@@ -552,7 +547,6 @@ private:
     bool M_useRegularPhi;
     bool M_useHeavisideDiracNodalProj;
 
-    double k_correction;
     //--------------------------------------------------------------------//
     // Reinitialization
     LevelSetReinitMethod M_reinitMethod;
@@ -564,12 +558,6 @@ private:
     bool M_reinitInitialValue;
 
     //LevelSetTimeDiscretization M_discrMethod;
-
-
-    // -------------- variables -----------
-    boost::timer ch;
-    std::ofstream statReinitFile;
-    int __iter;
 
 }; //class LevelSet
 

@@ -33,6 +33,8 @@ public:
     HelfrichForceModel() = default;
     HelfrichForceModel( HelfrichForceModel const& i ) = default;
 
+    boost::shared_ptr<std::ostringstream> getInfo() const;
+
     void loadParametersFromOptionsVm();
     //--------------------------------------------------------------------//
     double bendingModulus() const { return M_helfrichBendingModulus; }
@@ -55,6 +57,18 @@ private:
     bool M_exporterInitDone;
 #endif
 };
+
+template<typename LevelSetType>
+boost::shared_ptr<std::ostringstream> 
+HelfrichForceModel<LevelSetType>::getInfo() const
+{
+    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    *_ostr << "Helfrich force ("
+           << "bending modulus = " << this->M_helfrichBendingModulus
+           << ")";
+
+    return _ostr;
+}
 
 template<typename LevelSetType>
 void

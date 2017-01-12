@@ -84,6 +84,8 @@ public:
 
     virtual void loadParametersFromOptionsVm();
 
+    boost::shared_ptr<std::ostringstream> getInfo() const;
+
     //--------------------------------------------------------------------//
     // Function spaces
     space_levelset_ptrtype const& functionSpaceLevelset() const { return M_globalLevelset->functionSpace(); }
