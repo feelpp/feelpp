@@ -84,26 +84,37 @@ public :
         auto Xh0 = this->functionSpace()->template functionSpace<0>();
         auto Xh1 = this->functionSpace()->template functionSpace<1>();
 
-        M_Xh0_indices.resize( Xh0->nLocalDofWithGhost() );
-        M_Xh1_indices.resize( Xh1->nLocalDofWithGhost() );
-        std::iota( M_Xh0_indices.begin(), M_Xh0_indices.end(), 0 );
-        std::iota( M_Xh1_indices.begin(), M_Xh1_indices.end(), Xh0->nLocalDofWithGhost() );
+        if ( this->M_inner_product_matrix_vec.size()==0 )
+            this->M_inner_product_matrix_vec.resize(2);
 
-        this->M_inner_product_matrix_vec.resize(2);
-        auto u = Xh0->element();
-        this->M_inner_product_matrix_vec[0] = backend()->newMatrix( _test=Xh0, _trial=Xh0 );
-        form2( _trial=Xh0, _test=Xh0, _matrix=this->M_inner_product_matrix_vec[0] )
-            = integrate( elements(Xh0->mesh()),
-                         inner( idt(u), id(u) )
-                         +inner( gradt(u), grad(u) ) );
-        this->M_inner_product_matrix_vec[0]->close();
+        if ( !this->M_inner_product_matrix_vec[0] )
+        {
+            double nu = doption("nu");
+            double gamma = doption("penal_bc");
+            auto u = Xh0->element();
+            this->M_inner_product_matrix_vec[0] = backend()->newMatrix( _test=Xh0, _trial=Xh0 );
+            auto m2 = form2( _trial=Xh0, _test=Xh0, _matrix=this->M_inner_product_matrix_vec[0] );
+            m2 = integrate( elements(Xh0->mesh()), inner( gradt(u), grad(u) ) );
+            m2 += integrate( markedfaces(Xh0->mesh(), "inlet"),
+                             - trans(nu*grad(u)*N())*idt(u)
+                             - trans(nu*gradt(u)*N())*id(u)
+                             +gamma/hFace()*inner( idt(u), id(u) ) );
+            m2 += integrate( markedfaces(Xh0->mesh(), "wall"),
+                             - trans(nu*grad(u)*N())*idt(u)
+                             - trans(nu*gradt(u)*N())*id(u)
+                             +gamma/hFace()*inner( idt(u), id(u) ) );
+            this->M_inner_product_matrix_vec[0]->close();
+        }
 
-        auto p = Xh1->element();
-        this->M_inner_product_matrix_vec[1] = backend()->newMatrix( _test=Xh1, _trial=Xh1 );
-        form2( _test=Xh1, _trial=Xh1, _matrix=this->M_inner_product_matrix_vec[1] )
-            =integrate( elements(Xh1->mesh()),
-                        inner( idt(p), id(p) ) );
-        this->M_inner_product_matrix_vec[1]->close();
+        if ( !this->M_inner_product_matrix_vec[1] )
+        {
+            auto p = Xh1->element();
+            this->M_inner_product_matrix_vec[1] = backend()->newMatrix( _test=Xh1, _trial=Xh1 );
+            form2( _test=Xh1, _trial=Xh1, _matrix=this->M_inner_product_matrix_vec[1] )
+                =integrate( elements(Xh1->mesh()),
+                            inner( idt(p), id(p) ) );
+            this->M_inner_product_matrix_vec[1]->close();
+        }
     }
 
     subelement_type<0> supremizer( parameter_type const& mu, vector_ptrtype const& vec )
@@ -117,7 +128,7 @@ public :
 
         sparse_matrix_ptrtype A01 = this->M_backend_l2_vec[0]->newMatrix( _test=Xh0, _trial=Xh1 );
         A01 = offlineMergeForSupremizer(mu);
-        std::cout << "matrix : "<< A01->size1() << "x" << A01->size2() << ", vecteur :" << vec->size() << std::endl;
+
         rhs->addVector( vec, A01 );
         this->M_backend_l2_vec[0]->solve( _matrix=this->M_inner_product_matrix_vec[0],
                                           _rhs=rhs, _solution=us );
@@ -129,10 +140,32 @@ public :
         sparse_matrix_ptrtype A;
         boost::tie( boost::tuples::ignore, A, boost::tuples::ignore ) = this->update(mu);
 
-        auto A01 = A->createSubMatrix( M_Xh0_indices, M_Xh1_indices );
+        auto const& Xh0_indices = A->mapRow().dofIdToContainerId( 0 );
+        auto const& Xh1_indices = A->mapRow().dofIdToContainerId( 1 );
+        auto A01 = A->createSubMatrix( Xh0_indices, Xh1_indices );
         A01->close();
         return A01;
     }
+
+    template<typename EType1, typename EType2>
+    value_type AqmBlock( uint16_type q, uint16_type m,
+                         EType1 const& xi_i, EType2 const& xi_j,
+                         uint16_type nSpace1, uint16_type nSpace2,
+                         bool transpose = false ) const
+    {
+        auto A = this->M_Aqm[q][m];
+        auto const& Xh1_indices = A->mapRow().dofIdToContainerId( nSpace1 );
+        auto const& Xh2_indices = A->mapRow().dofIdToContainerId( nSpace2 );
+
+        auto ABlock = A->createSubMatrix( Xh1_indices, Xh2_indices );
+        ABlock->close();
+
+        if ( ABlock->linftyNorm()<1e-15 )
+            return 0;
+        else
+            return ABlock->energy( xi_i, xi_j, transpose );
+    }
+
 
     using super::scalarProduct;
     /**
@@ -155,8 +188,6 @@ public :
 protected :
     std::vector<sparse_matrix_ptrtype> M_inner_product_matrix_vec;
     std::vector< backend_ptrtype > M_backend_l2_vec;
-    std::vector<size_type> M_Xh0_indices;
-    std::vector<size_type> M_Xh1_indices;
 
 
 
