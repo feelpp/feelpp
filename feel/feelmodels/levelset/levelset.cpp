@@ -55,19 +55,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     auto backend_mesh_adapt = backend_type::build(Environment::vm(), "mesh-adapt-backend");
     mesh_adapt.reset( new mesh_adaptation_type ( backend_mesh_adapt ));
 #endif*/
-
-    __iter=0;
-
-/*#if defined (LEVELSET_CONSERVATIVE_ADVECTION)
-    if (M_discrMethod==CN_CONSERVATIVE)
-    {
-        phic = M_spaceLSCorr->elementPtr();
-    }
-#endif*/
-
-    //-----------------------------------------------------------------------------//
-    // Print infos
-    this->levelsetInfos(true);
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -626,14 +613,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
     super_type::loadParametersFromOptionsVm();
 
-    //M_enableReinit = boption(prefixvm(this->prefix(),"enable-reinit"));
-    //M_reinitEvery = ioption(prefixvm(this->prefix(),"reinit-every"));
-    //M_useMarker2AsMarkerDoneFmm = boption(prefixvm(this->prefix(),"fm-use-markerdirac"));
-    //hj_max_iter = ioption(prefixvm(this->prefix(),"hj-max-iter"));
-    //hj_dtau = doption(prefixvm(this->prefix(),"hj-dtau"));
-    //hj_tol = doption(prefixvm(this->prefix(),"hj-tol"));
-    //impose_inflow = ioption(prefixvm(this->prefix(),"impose-inflow"));
-    //stabStrategy = ioption(prefixvm(this->prefix(),"stabilization-strategy"));
     M_useRegularPhi = boption(_name=prefixvm(this->prefix(),"use-regularized-phi"));
     M_useHeavisideDiracNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
 
@@ -1036,7 +1015,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
 //----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_levelset_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::smoother()
+LEVELSET_CLASS_TEMPLATE_TYPE::smoother() const
 {
     if( !M_smoother )
         M_smoother = projector( 
@@ -1050,7 +1029,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smoother()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_levelset_vectorial_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::smootherVectorial()
+LEVELSET_CLASS_TEMPLATE_TYPE::smootherVectorial() const
 {
     if( !M_smootherVectorial )
         M_smootherVectorial = projector( 
@@ -1374,10 +1353,6 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
 {
-    //updateDirac();
-    //updateHeaviside();
-    //updateNormal();
-    //updateCurvature();
     M_doUpdateDirac = true;
     M_doUpdateHeaviside = true;
     M_doUpdateNormal = true;
@@ -1454,9 +1429,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
 
     else if ( M_reinitMethod == LevelSetReinitMethod::HJ )
     {
-        //ch.restart();
         //*phi = *explicitHJ(max_iter, dtau, tol);
-        //LOG(INFO)<<"reinit done in "<<ch.elapsed()<<" s\n";
+        // TODO
     } // Hamilton-Jacobi
 
     //*phi = M_reinitializer->run( *phi );
@@ -1565,36 +1539,118 @@ LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_type const& phiv,
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-std::string
-LEVELSET_CLASS_TEMPLATE_TYPE::levelsetInfos( bool show )
+boost::shared_ptr<std::ostringstream>
+LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
 {
-    /* print some info when creating levelset instance */
-    std::ostringstream infos;
-    infos<< "\n||==============================================||"
-         << "\n||----------Info :   LEVELSET    ---------------||"
-         << "\n||==============================================||"
-         << "\n   Prefix : " << this->prefix()
-         << "\n   Dim : " << nDim
-         << "\n   Order : " << Order
-         << "\n   Periodicity : " << M_periodicity.isPeriodic()
-         << "\n   Nb proc : " << this->worldComm().globalSize()
-         << "\n\n  Level set parameters :"
-         << "\n     -- thickness interface : " << this->thicknessInterface()
-         << "\n     -- use regular phi (phi / |grad(phi)|) " << this->M_useRegularPhi
-#if defined (LEVELSET_CONSERVATIVE_ADVECTION)
-         << "\n levelset built with conservative advection mode : "<<LEVELSET_CONSERVATIVE_ADVECTION
-#else
-         << "\n levelset built without conservative advection mode"
-#endif
-         << "\n     -- stabilization of advection : "<< soption( _name="advec-stab-method", _prefix=this->prefix() )
-         //<< "\n     -- impose dirichlet at inflow : " << impose_inflow
-         << "\n\n  Reinitialization parameters :"
-         //<< "\n     -- enable reinitialization : "<<enable_reinit
-         ;
+    std::string advectionStabilization = soption( _name="advec-stab-method", _prefix=this->prefix() );
+
+    std::string hdProjectionMethod = (this->M_useHeavisideDiracNodalProj)? "nodal": "L2";
+
+    std::string reinitMethod;
+    std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );
+    if( reinitmethod == "fm" )
+        reinitMethod = "Fast-Marching";
+    else if( reinitmethod == "hj" )
+        reinitMethod = "Hamilton-Jacobi";
+
+    std::string scalarSmootherParameters;
+    double scalarSmootherCoeff = this->smoother()->epsilon() * Order / this->mesh()->hAverage();
+    scalarSmootherParameters = "coeff (h*c/order) = " 
+        + std::to_string(this->smoother()->epsilon())
+        + " (" + std::to_string(this->mesh()->hAverage()) + " * " + std::to_string(scalarSmootherCoeff) + " / " + std::to_string(Order) + ")"
+        ;
+    std::string vectorialSmootherParameters;
+    double vectorialSmootherCoeff = this->smootherVectorial()->epsilon() * Order / this->mesh()->hAverage();
+    vectorialSmootherParameters = "coeff (h*c/order) = " 
+        + std::to_string(this->smootherVectorial()->epsilon())
+        + " (" + std::to_string(this->mesh()->hAverage()) + " * " + std::to_string(vectorialSmootherCoeff) + " / " + std::to_string(Order) + ")"
+        ;
+
+    std::string restartMode = (this->doRestart())? "ON": "OFF";
+
+    std::string exporterType = this->M_exporter->type();
+    std::string hovisuMode = "OFF";
+    int exporterFreq = this->M_exporter->freq();
+    std::string exportedFields;
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::GradPhi ) )
+        exportedFields = (exportedFields.empty())? "GradPhi": exportedFields+" - GradPhi";
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::ModGradPhi ) )
+        exportedFields = (exportedFields.empty())? "ModGradPhi": exportedFields+" - ModGradPhi";
+    if ( this->M_useStretchAugmented )
+        exportedFields = (exportedFields.empty())? "Stretch": exportedFields+" - Stretch";
+
+    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    *_ostr << "\n||==============================================||"
+           << "\n||---------------Info : LevelSet----------------||"
+           << "\n||==============================================||"
+           << "\n   Prefix          : " << this->prefix()
+           << "\n   Root Repository : " << this->rootRepository()
+           << "\n   Dim             : " << nDim
+           << "\n   Order           : " << Order
+           << "\n   Periodicity     : " << M_periodicity.isPeriodic()
+
+           << "\n   Level Set Parameters"
+           << "\n     -- thickness interface (use adaptive)  : " << this->thicknessInterface() << " (" << std::boolalpha << this->M_useAdaptiveThicknessInterface << ")"
+           << "\n     -- use regular phi (phi / |grad(phi)|) : " << std::boolalpha << this->M_useRegularPhi
+           << "\n     -- Heaviside/Dirac projection method   : " << hdProjectionMethod
+           << "\n     -- reinit initial value                : " << std::boolalpha << this->M_reinitInitialValue
+           << "\n     -- smooth curvature                    : " << std::boolalpha << this->M_doSmoothCurvature
+           << "\n     -- use gradient augmented              : " << std::boolalpha << this->M_useGradientAugmented
+           << "\n     -- use stretch augmented               : " << std::boolalpha << this->M_useStretchAugmented
+
+           << "\n   Reinitialization Parameters"
+           << "\n     -- reinitialization method         : " << reinitMethod;
+    if( this->M_useGradientAugmented )
+    *_ostr << "\n     -- reinitialize gradient augmented : " << std::boolalpha << this->M_reinitGradientAugmented;
+    if( this->M_useGradientAugmented )
+    *_ostr << "\n     -- reinitialize stretch augmented  : " << std::boolalpha << this->M_reinitStretchAugmented;
+
+    *_ostr << "\n   Smoothers Parameters"
+           << "\n     -- scalar smoother    : " << scalarSmootherParameters
+           << "\n     -- vectorial smoother : " << vectorialSmootherParameters;
+
+    *_ostr << "\n   Space Discretization";
+    if( this->hasGeofileStr() )
+    *_ostr << "\n     -- geo file name   : " << this->geofileStr();
+    *_ostr << "\n     -- mesh file name  : " << this->mshfileStr()
+           << "\n     -- nb elt in mesh  : " << this->mesh()->numGlobalElements()//numElements()
+         //<< "\n     -- nb elt in mesh  : " << this->mesh()->numElements()
+         //<< "\n     -- nb face in mesh : " << this->mesh()->numFaces()
+           << "\n     -- geometry order  : " << nOrderGeo
+           << "\n     -- level set order : " << Order
+           << "\n     -- nb dof          : " << this->functionSpace()->nDof() << " (" << this->functionSpace()->nLocalDof() << ")"
+           << "\n     -- stabilization   : " << advectionStabilization;
+
+    *_ostr << "\n   Time Discretization"
+           << "\n     -- initial time : " << this->timeStepBase()->timeInitial()
+           << "\n     -- final time   : " << this->timeStepBase()->timeFinal()
+           << "\n     -- time step    : " << this->timeStepBase()->timeStep()
+           << "\n     -- order        : " << this->timeStepBDF()->timeOrder()
+           << "\n     -- restart mode : " << restartMode
+           << "\n     -- save on disk : " << std::boolalpha << this->timeStepBase()->saveInFile();
+    if ( this->timeStepBase()->saveFreq() )
+    *_ostr << "\n     -- freq save : " << this->timeStepBase()->saveFreq()
+           << "\n     -- file format save : " << this->timeStepBase()->fileFormat();
+
+    *_ostr << "\n   Exporter"
+           << "\n     -- type            : " << exporterType
+           << "\n     -- high order visu : " << hovisuMode
+           << "\n     -- freq save       : " << exporterFreq
+           << "\n     -- fields exported : " << exportedFields
+
+           << "\n   Processors"
+           << "\n     -- number of proc environment : " << Environment::worldComm().globalSize()
+           << "\n     -- environment rank           : " << Environment::worldComm().rank()
+           << "\n     -- global rank                : " << this->worldComm().globalRank()
+           << "\n     -- local rank                 : " << this->worldComm().localRank()
+
+           << "\n   Numerical Solver"
+           << "\n     -- solver : " << this->solverName();
+
+    if ( this->algebraicFactory() )
+    *_ostr << this->algebraicFactory()->getInfo()->str();
     //if (enable_reinit)
     //{
-        const std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );
-        infos << "\n     -- reinitialization method : " << reinitmethod;
         //if (reinitmethod == "hj")
         //{
             //infos << "\n      * hj maximum iteration per reinit : " << hj_max_iter
@@ -1614,10 +1670,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::levelsetInfos( bool show )
           //<< "\n     -- scalar P0 space ndof : "<< this->functionSpaceMarkers()->nDof()
           //<<"\n||==============================================||\n\n";
 
-    if (show)
-        LOG(INFO)<<infos.str();
+    *_ostr << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n\n";
 
-    return infos.str();
+    return _ostr;
 }
 
 //----------------------------------------------------------------------------//

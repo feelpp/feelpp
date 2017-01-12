@@ -34,6 +34,8 @@ public:
 
     virtual void build( std::string const& prefix, levelset_ptrtype const& ls );
 
+    virtual boost::shared_ptr<std::ostringstream> getInfo() const;
+
     //--------------------------------------------------------------------//
     std::string const& prefix() const { return M_prefix; }
     levelset_ptrtype const& levelset() const { return M_levelset; }
@@ -63,6 +65,14 @@ InterfaceForcesModel<LevelSetType>::build(
     M_prefix = prefix;
     M_levelset = ls;
     this->loadParametersFromOptionsVm();
+}
+
+template<typename LevelSetType>
+boost::shared_ptr<std::ostringstream>
+InterfaceForcesModel<LevelSetType>::getInfo() const
+{
+    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    return _ostr;
 }
 
 template<typename LevelSetType>
