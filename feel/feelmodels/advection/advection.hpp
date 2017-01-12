@@ -3,7 +3,7 @@
  This file is part of the Feel library
 
  Author(s): Thibaut Metivet <thibaut.metivet@univ-grenoble-alpes.fr>
- Date: 2016-09-20
+ Date: 2016-05-04
 
  Copyright (C) 2016 Université Joseph Fourier (Grenoble I)
 
@@ -24,7 +24,7 @@
 /**
  \file advection.hpp
  \author Thibaut Metivet <thibaut.metivet@univ-grenoble-alpes.fr>
- \date 2016-09-20
+ \date 2016-05-04
  */
 
 #ifndef _ADVECTION_HPP
@@ -37,20 +37,35 @@ namespace FeelModels {
 
 template< 
     typename ConvexType, typename BasisAdvectionType, 
-    typename BasisDiffusionReactionType = Lagrange<0, Scalar, Discontinuous>
+    typename PeriodicityType = NoPeriodicity,
+    typename BasisDiffusionReactionType = BasisAdvectionType
         >
 class Advection
-    : public AdvectionBase<ConvexType, BasisAdvectionType, BasisDiffusionReactionType>
-    , public boost::enable_shared_from_this< Advection<ConvexType, BasisAdvectionType, BasisDiffusionReactionType> >
+    : public AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType>
+    , public boost::enable_shared_from_this< Advection<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType> >
 {
 public:
-    typedef AdvectionBase<ConvexType, BasisAdvectionType, BasisDiffusionReactionType> super_type;
+    typedef AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType> super_type;
 
-    typedef Advection<ConvexType, BasisAdvectionType, BasisDiffusionReactionType> self_type;
+    typedef Advection<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
+    typedef typename super_type::space_advection_type space_advection_type;
     typedef typename super_type::space_advection_ptrtype space_advection_ptrtype;
+    typedef typename super_type::element_advection_type element_advection_type;
     typedef typename super_type::element_advection_ptrtype element_advection_ptrtype;
+
+    static const uint16_type nDim = super_type::nDim;
+    static constexpr bool is_vectorial = super_type::is_vectorial;
+
+    //--------------------------------------------------------------------//
+    typedef map_scalar_field<2> map_scalar_field_type;
+    typedef map_vector_field<super_type::nDim, 1, 2> map_vector_field_type;
+    typedef typename mpl::if_< 
+        mpl::bool_<is_vectorial>,
+            map_vector_field_type,
+            map_scalar_field_type
+        >::type bc_map_field_type;
 
     //--------------------------------------------------------------------//
     // Constructor
@@ -68,22 +83,34 @@ public:
     //--------------------------------------------------------------------//
     // Initialization
     void init( bool buildModelAlgebraicFactory = true );
-    void loadConfigBCFile();
+    virtual void loadConfigBCFile();
+    //--------------------------------------------------------------------//
+    // Solve
+    void solve();
     //--------------------------------------------------------------------//
     // BC and source term assembly
     void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
     void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
     void updateSourceTermLinearPDE(element_advection_ptrtype& fieldSource, bool buildCstPart) const;
 
+    //--------------------------------------------------------------------//
     bool hasSourceTerm() const;
+
+    //--------------------------------------------------------------------//
+    // BC management
+    void addMarkerInflowBC( std::string const& markerName );
 
 protected:
     // Boundary conditions
-    map_scalar_field<2> M_bcDirichlet;
-    map_scalar_field<2> M_bcNeumann;
-    map_scalar_fields<2> M_bcRobin;
+    bc_map_field_type M_bcDirichlet;
+    bc_map_field_type M_bcNeumann;
+    //map_scalar_fields<2> M_bcRobin;
+    std::list<std::string> M_bcInflowMarkers;
 
-    map_scalar_field<2> M_sources;
+    bc_map_field_type M_sources;
+
+private:
+    void loadPeriodicityFromOptionsVm();
 
 };
     
