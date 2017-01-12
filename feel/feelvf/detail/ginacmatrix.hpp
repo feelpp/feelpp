@@ -91,7 +91,7 @@ public:
 
     GinacMatrix() : super() {}
     explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc,
-                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
+                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr=Environment::exprRepository() )
         :
         super( syms ),
         M_fun( fun.evalm() ),
@@ -100,7 +100,7 @@ public:
         M_exprDesc( exprDesc )
         {
             std::string filenameExpanded = Environment::expand( filename );
-            M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::current_path()/filenameExpanded).string();
+            M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::path(Environment::exprRepository())/filenameExpanded).string();
 
             DVLOG(2) << "Ginac matrix matrix constructor with expression_type \n";
             GiNaC::lst exprs;
@@ -119,7 +119,7 @@ public:
             Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
         }
     explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc,
-                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
+                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr=Environment::exprRepository() )
         :
         super(syms),
         M_fun(fun.evalm()),
@@ -128,7 +128,7 @@ public:
         M_exprDesc( exprDesc )
         {
             std::string filenameExpanded = Environment::expand( filename );
-            M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::current_path()/filenameExpanded).string();
+            M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::path(Environment::exprRepository())/filenameExpanded).string();
 
             DVLOG(2) << "Ginac matrix ex constructor with expression_type \n";
             GiNaC::lst exprs;

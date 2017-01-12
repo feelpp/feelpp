@@ -62,6 +62,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( format )
     BOOST_PARAMETER_NAME( argc )
     BOOST_PARAMETER_NAME( argv )
+    BOOST_PARAMETER_NAME( remove )
 
     BOOST_PARAMETER_NAME( verbose )
     BOOST_PARAMETER_NAME( threading )

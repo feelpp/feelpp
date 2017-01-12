@@ -82,12 +82,15 @@ generic_options()
           " <log level> overrides any value given by --v." )
         ( "feelinfo", "prints feel libraries information" )
         ( "nochdir", "Don't change repository directory even though it is called" )
+        ( "rmlogs", "remove logs after execution" )
+        ( "rm", "remove application repository after execution" )
         ( "directory", po::value<std::string>(), "change directory to specified one" )
         ( "npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
         ( "fail-on-unknown-option", po::value<bool>()->default_value(false), "exit feel++ application if unknown option found" )
         ( "show-preconditioner-options", "show on the fly the preconditioner options used" )
         ( "serialization-library", po::value<std::string>()->default_value("boost"), "Library used for serialization" )
         ( "display-stats", po::value<bool>()->default_value(false), "display statistics (timers, iterations counts...)" )
+        ( "subdir.expr", po::value<std::string>()->default_value("exprs"), "subdirectory for expressions" )
         ;
     return generic;
 }
@@ -633,6 +636,26 @@ crbOptions( std::string const& prefix )
 
     return crboptions;
 }
+
+    Feel::po::options_description
+    crbSaddlePointOptions( std::string const& prefix )
+{
+    Feel::po::options_description crboptions( "CRB Options" );
+    crboptions.add_options()
+        ( "crb.saddlepoint.transpose",Feel::po::value<bool>()->default_value( true ), "automatically fill the null blocks with transposed if true. ex A01=A10 if true and A01=zero")
+        ( "crb.saddlepoint.add-false-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis, false version")
+        ( "crb.saddlepoint.add-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis")
+        ( "crb.saddlepoint.orthonormalize0",Feel::po::value<int>()->default_value( 0 ), "orthonormalize reduce basis for rbspace #0")
+        ( "crb.saddlepoint.orthonormalize1",Feel::po::value<int>()->default_value( 0 ), "orthonormalize reduce basis for rbspace #1")
+        ( "crb.saddlepoint.test-residual",Feel::po::value<bool>()->default_value( 0 ), "test residual evaluation")
+        ;
+
+    crboptions.add( backend_options("backend-Xh0") );
+    crboptions.add( backend_options("backend-Xh1") );
+
+    return crboptions;
+}
+
 
 Feel::po::options_description
 podOptions( std::string const& prefix )
