@@ -2412,7 +2412,11 @@ CRB<TruthModelType>::offline()
         //     std::cout << "[crb - SER] M_N = " << M_N << ", N_old = " << Nold << ", M_iter_max = " << M_iter_max << std::endl;
     }
     else if ( use_predefined_WNmu )
+    {
+        mu = M_WNmu->at(M_N);
+        M_current_mu =mu;
         M_iter_max = this->M_WNmu->size();
+    }
     else
         M_iter_max = user_max;
 
