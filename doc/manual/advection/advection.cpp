@@ -401,8 +401,8 @@ main( int argc, char** argv )
     /* change parameters below */
     const int nDim = 2;
     const int nOrder = 2;
-    //typedef Continuous MyContinuity;
-    typedef Discontinuous MyContinuity;
+    typedef Continuous MyContinuity;
+    //typedef Discontinuous MyContinuity;
     typedef Feel::Advection<nDim, nOrder, MyContinuity, Simplex> advection_type;
 
     /* define and run application */
