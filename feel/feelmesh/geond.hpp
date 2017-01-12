@@ -200,10 +200,38 @@ public:
     }
 
     GeoND( GeoND const& e ) = default;
-    GeoND( GeoND && e ) = default;
+    GeoND( GeoND && e )
+        :
+        super( std::move(e) ),
+        M_points( std::move( e.M_points ) ),
+        M_G( std::move( e.M_G ) ),
+        M_neighbors( std::move( e.M_neighbors ) ),
+        M_marker1( std::move( e.M_marker1 ) ),
+        M_marker2( std::move( e.M_marker2 ) ),
+        M_marker3( std::move( e.M_marker3 ) ),
+        M_mesh( std::move( e.M_mesh ) ),        
+        M_gm( std::move( e.M_gm ) ),
+        M_gm1( std::move( e.M_gm1 ) )
+        {
+            //std::cout << "GeoND move ctor\n";
+        }
 
     GeoND& operator=( GeoND const& ) = default;
-    GeoND& operator=( GeoND && ) = default;
+    GeoND& operator=( GeoND && e )
+        {
+            super::operator=( std::move(e) );
+            M_points = std::move( e.M_points );
+            M_G = std::move( e.M_G );
+            M_neighbors = std::move( e.M_neighbors );
+            M_marker1 = std::move( e.M_marker1 );
+            M_marker2 = std::move( e.M_marker2 );
+            M_marker3 = std::move( e.M_marker3 );
+            M_mesh = std::move( e.M_mesh );
+            M_gm = std::move( e.M_gm );
+            M_gm1 = std::move( e.M_gm1 );
+            //std::cout << "GeoND move assign\n";
+            return *this;
+        }
 
     /**
      * destructor, make it virtual for derived classes
@@ -899,10 +927,18 @@ public:
     void updateWithPc( typename gm_type::precompute_ptrtype const& pc,
                        typename gm_type::faces_precompute_type & pcf,
                        quad_meas_type const& thequad );
+    template<typename CtxType, typename CtxFaceType>
+    void updateWithCtx( quad_meas_type const& thequad,
+                       boost::shared_ptr<CtxType>& ctx,
+                       boost::shared_ptr<CtxFaceType>& ctxf ) const;
 
     void updateWithPc1( typename gm1_type::precompute_ptrtype const& pc,
                         typename gm1_type::faces_precompute_type & pcf,
-                        quad_meas1_type const& thequad );
+                        quad_meas1_type const& thequad ) ;
+    template<typename CtxType, typename CtxFaceType>
+    void updateWithCtx1( quad_meas1_type const& thequad,
+                        boost::shared_ptr<CtxType>& ctx,
+                        boost::shared_ptr<CtxFaceType>& ctxf ) const;
 private:
 
     template<typename GmType, typename QuadType>
@@ -915,6 +951,13 @@ private:
     void updateMeasureFaceImpl( boost::shared_ptr<GmType> gm, typename GmType::faces_precompute_type & pcf,
                                 QuadType const& thequad, mpl::bool_<false> );
 
+    
+    template<typename QuadType, typename CtxType>
+    void updateMeasureImpl( QuadType const& thequad, boost::shared_ptr<CtxType>& ) const;
+    template<typename QuadType, typename CtxType>
+    void updateMeasureFaceImpl( QuadType const& thequad, boost::shared_ptr<CtxType>&, mpl::bool_<true> ) const;
+    template<typename QuadType, typename CtxType>
+    void updateMeasureFaceImpl( QuadType const& thequad, boost::shared_ptr<CtxType>&, mpl::bool_<false> ) const;
 private:
 
 private:
@@ -930,6 +973,8 @@ private:
             ar & M_points;
             DVLOG(2) << "  - G...\n";
             ar & M_G;
+            DVLOG(2) << "  - measures...\n";
+            ar & M_measures;
             DVLOG(2) << "  - marker1...\n";
             ar & M_marker1;
             DVLOG(2) << "  - marker1: " << M_marker1.value() << "...\n";
@@ -955,7 +1000,7 @@ private:
         MEAS_NEIGHBORS_ELEMENT= 2
     };
 
-    std::map<GEOND_MEASURES,std::vector<value_type> > M_measures;
+    mutable std::map<GEOND_MEASURES,std::vector<value_type> > M_measures;
 
     //double M_measure;
     //std::vector<double> M_measurefaces;
@@ -1084,6 +1129,28 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc1( typename gm1_type::precompute_
 }
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
+template<typename CtxType, typename CtxFaceType>
+void
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithCtx( quad_meas_type const& thequad,
+                                                  boost::shared_ptr<CtxType>& ctx,
+                                                  boost::shared_ptr<CtxFaceType>& ctxf ) const
+{
+    updateMeasureImpl( thequad, ctx );
+    updateMeasureFaceImpl( thequad, ctxf, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
+}
+
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
+template<typename CtxType, typename CtxFaceType>
+void
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithCtx1( quad_meas1_type const& thequad,
+                                                  boost::shared_ptr<CtxType>& ctx,
+                                                  boost::shared_ptr<CtxFaceType>& ctxf ) const
+                                                  
+{
+    updateMeasureImpl( thequad, ctx );
+    updateMeasureFaceImpl( thequad, ctxf, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
+}
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 template<typename GmType, typename QuadType>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureImpl( boost::shared_ptr<GmType> gm,
@@ -1097,6 +1164,23 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureImpl( boost::shared_ptr<GmType> 
     }
 
     auto ctx = gm->template context<vm::JACOBIAN>( *this, pc );
+    double meas = 0.;
+    for ( int q=0 ; q < thequad.nPoints() ; ++q )
+        meas += thequad.weight(q)*ctx->J( q );
+    M_measures[GEOND_MEASURES::MEAS_ELEMENT][0] = meas;
+}
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
+template<typename QuadType, typename CtxType>
+void
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureImpl( QuadType const& thequad,
+                                                      boost::shared_ptr<CtxType>& ctx ) const
+{
+    if ( M_measures.find( GEOND_MEASURES::MEAS_ELEMENT ) == M_measures.end() )
+    {
+        M_measures[GEOND_MEASURES::MEAS_ELEMENT].reserve( 1 );
+        M_measures[GEOND_MEASURES::MEAS_ELEMENT].resize( 1 );
+    }
+
     double meas = 0.;
     for ( int q=0 ; q < thequad.nPoints() ; ++q )
         meas += thequad.weight(q)*ctx->J( q );
@@ -1130,12 +1214,52 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( boost::shared_ptr<GmTy
 }
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
+template<typename QuadType, typename CtxType>
+void
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( QuadType const& thequad,
+                                                          boost::shared_ptr<CtxType>& ctx,
+                                                          mpl::bool_<true> ) const
+{
+    if ( M_measures.find( GEOND_MEASURES::MEAS_FACES ) == M_measures.end() )
+    {
+        // must be resize before ctx because used into
+        M_measures[GEOND_MEASURES::MEAS_FACES].reserve( numTopologicalFaces );
+        M_measures[GEOND_MEASURES::MEAS_FACES].resize( numTopologicalFaces );
+    }
+
+    for ( int f = 0; f < numTopologicalFaces; ++f )
+    {
+        ctx->update( dynamic_cast<typename CtxType::element_type const&>(*this), f );
+        double meas = 0.;
+        for ( int q=0 ; q < thequad.nPointsOnFace( f ) ; ++q )
+            meas += thequad.weight(f,q)*ctx->J( q )*ctx->normalNorm( q );
+        M_measures[GEOND_MEASURES::MEAS_FACES][f] = meas;
+    }
+}
+
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 template<typename GmType, typename QuadType>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( boost::shared_ptr<GmType> gm,
                                                           typename GmType::faces_precompute_type& pcf,
                                                           QuadType const& thequad,
-                                                          mpl::bool_<false> )
+                                                          mpl::bool_<false> ) 
+{
+    // need because M_measurefaces is used in Geomap::Context
+    if ( M_measures.find( GEOND_MEASURES::MEAS_FACES ) == M_measures.end() )
+    {
+        M_measures[GEOND_MEASURES::MEAS_FACES].reserve( numTopologicalFaces );
+        M_measures[GEOND_MEASURES::MEAS_FACES].resize( numTopologicalFaces );
+    }
+
+}
+
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
+template<typename QuadType, typename CtxType>
+void
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( QuadType const& thequad,
+                                                          boost::shared_ptr<CtxType>& ctx,
+                                                          mpl::bool_<false> ) const
 {
     // need because M_measurefaces is used in Geomap::Context
     if ( M_measures.find( GEOND_MEASURES::MEAS_FACES ) == M_measures.end() )

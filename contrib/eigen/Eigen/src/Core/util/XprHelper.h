@@ -24,16 +24,6 @@
 
 namespace Eigen {
 
-typedef EIGEN_DEFAULT_DENSE_INDEX_TYPE DenseIndex;
-
-/**
- * \brief The Index type as used for the API.
- * \details To change this, \c \#define the preprocessor symbol \c EIGEN_DEFAULT_DENSE_INDEX_TYPE.
- * \sa \blank \ref TopicPreprocessorDirectives, StorageIndex.
- */
-
-typedef EIGEN_DEFAULT_DENSE_INDEX_TYPE Index;
-
 namespace internal {
 
 template<typename IndexDest, typename IndexSrc>
@@ -201,7 +191,7 @@ struct find_best_packet
 #if EIGEN_MAX_STATIC_ALIGN_BYTES>0
 template<int ArrayBytes, int AlignmentBytes,
          bool Match     =  bool((ArrayBytes%AlignmentBytes)==0),
-         bool TryHalf   =  bool(AlignmentBytes>EIGEN_MIN_ALIGN_BYTES) >
+         bool TryHalf   =  bool(EIGEN_MIN_ALIGN_BYTES<AlignmentBytes) >
 struct compute_default_alignment_helper
 {
   enum { value = 0 };
@@ -455,15 +445,11 @@ template<typename T, int n, typename PlainObject = typename plain_object_eval<T>
                                                   //      Another solution could be to count the number of temps?
     NAsInteger = n == Dynamic ? HugeCost : n,
     CostEval   = (NAsInteger+1) * ScalarReadCost + CoeffReadCost,
-    CostNoEval = NAsInteger * CoeffReadCost
+    CostNoEval = NAsInteger * CoeffReadCost,
+    Evaluate = (int(evaluator<T>::Flags) & EvalBeforeNestingBit) || (int(CostEval) < int(CostNoEval))
   };
 
-  typedef typename conditional<
-        ( (int(evaluator<T>::Flags) & EvalBeforeNestingBit) ||
-          (int(CostEval) < int(CostNoEval)) ),
-        PlainObject,
-        typename ref_selector<T>::type
-  >::type type;
+  typedef typename conditional<Evaluate, PlainObject, typename ref_selector<T>::type>::type type;
 };
 
 template<typename T>
@@ -545,6 +531,15 @@ template <typename A, typename Functor>                   struct cwise_promote_s
 template <typename B, typename Functor>                   struct cwise_promote_storage_type<Dense,B,Functor>                                  { typedef Dense  ret; };
 template <typename Functor>                               struct cwise_promote_storage_type<Sparse,Dense,Functor>                             { typedef Sparse ret; };
 template <typename Functor>                               struct cwise_promote_storage_type<Dense,Sparse,Functor>                             { typedef Sparse ret; };
+
+template <typename LhsKind, typename RhsKind, int LhsOrder, int RhsOrder> struct cwise_promote_storage_order {
+  enum { value = LhsOrder };
+};
+
+template <typename LhsKind, int LhsOrder, int RhsOrder>   struct cwise_promote_storage_order<LhsKind,Sparse,LhsOrder,RhsOrder>                { enum { value = RhsOrder }; };
+template <typename RhsKind, int LhsOrder, int RhsOrder>   struct cwise_promote_storage_order<Sparse,RhsKind,LhsOrder,RhsOrder>                { enum { value = LhsOrder }; };
+template <int Order>                                      struct cwise_promote_storage_order<Sparse,Sparse,Order,Order>                       { enum { value = Order }; };
+
 
 /** \internal Specify the "storage kind" of multiplying an expression of kind A with kind B.
   * The template parameter ProductTag permits to specialize the resulting storage kind wrt to
@@ -674,6 +669,28 @@ bool is_same_dense(const T1 &, const T2 &, typename enable_if<!(has_direct_acces
   return false;
 }
 
+// Internal helper defining the cost of a scalar division for the type T.
+// The default heuristic can be specialized for each scalar type and architecture.
+template<typename T,bool Vectorized=false,typename EnableIf = void>
+struct scalar_div_cost {
+  enum { value = 8*NumTraits<T>::MulCost };
+};
+
+template<typename T,bool Vectorized>
+struct scalar_div_cost<std::complex<T>, Vectorized> {
+  enum { value = 2*scalar_div_cost<T>::value
+               + 6*NumTraits<T>::MulCost
+               + 3*NumTraits<T>::AddCost
+  };
+};
+
+
+template<bool Vectorized>
+struct scalar_div_cost<signed long,Vectorized,typename conditional<sizeof(long)==8,void,false_type>::type> { enum { value = 24 }; };
+template<bool Vectorized>
+struct scalar_div_cost<unsigned long,Vectorized,typename conditional<sizeof(long)==8,void,false_type>::type> { enum { value = 21 }; };
+
+
 #ifdef EIGEN_DEBUG_ASSIGN
 std::string demangle_traversal(int t)
 {
@@ -717,7 +734,7 @@ std::string demangle_flags(int f)
   * This class permits to control the scalar return type of any binary operation performed on two different scalar types through (partial) template specializations.
   *
   * For instance, let \c U1, \c U2 and \c U3 be three user defined scalar types for which most operations between instances of \c U1 and \c U2 returns an \c U3.
-  * You can let Eigen knows that by defining:
+  * You can let %Eigen knows that by defining:
     \code
     template<typename BinaryOp>
     struct ScalarBinaryOpTraits<U1,U2,BinaryOp> { typedef U3 ReturnType;  };
@@ -735,6 +752,14 @@ std::string demangle_flags(int f)
     struct ScalarBinaryOpTraits<U1,U2,internal::scalar_sum_op<U1,U2> > { typedef U1 ReturnType; };
     \endcode
   *
+  * By default, the following generic combinations are supported:
+  <table class="manual">
+  <tr><th>ScalarA</th><th>ScalarB</th><th>BinaryOp</th><th>ReturnType</th><th>Note</th></tr>
+  <tr            ><td>\c T </td><td>\c T </td><td>\c * </td><td>\c T </td><td></td></tr>
+  <tr class="alt"><td>\c NumTraits<T>::Real </td><td>\c T </td><td>\c * </td><td>\c T </td><td>Only if \c NumTraits<T>::IsComplex </td></tr>
+  <tr            ><td>\c T </td><td>\c NumTraits<T>::Real </td><td>\c * </td><td>\c T </td><td>Only if \c NumTraits<T>::IsComplex </td></tr>
+  </table>
+  *
   * \sa CwiseBinaryOp
   */
 template<typename ScalarA, typename ScalarB, typename BinaryOp=internal::scalar_product_op<ScalarA,ScalarB> >
@@ -747,6 +772,17 @@ struct ScalarBinaryOpTraits
 
 template<typename T, typename BinaryOp>
 struct ScalarBinaryOpTraits<T,T,BinaryOp>
+{
+  typedef T ReturnType;
+};
+
+template <typename T, typename BinaryOp>
+struct ScalarBinaryOpTraits<T, typename NumTraits<typename internal::enable_if<NumTraits<T>::IsComplex,T>::type>::Real, BinaryOp>
+{
+  typedef T ReturnType;
+};
+template <typename T, typename BinaryOp>
+struct ScalarBinaryOpTraits<typename NumTraits<typename internal::enable_if<NumTraits<T>::IsComplex,T>::type>::Real, T, BinaryOp>
 {
   typedef T ReturnType;
 };
@@ -770,18 +806,6 @@ template<typename BinaryOp>
 struct ScalarBinaryOpTraits<void,void,BinaryOp>
 {
   typedef void ReturnType;
-};
-
-template<typename T, typename BinaryOp>
-struct ScalarBinaryOpTraits<T,std::complex<T>,BinaryOp>
-{
-  typedef std::complex<T> ReturnType;
-};
-
-template<typename T, typename BinaryOp>
-struct ScalarBinaryOpTraits<std::complex<T>, T,BinaryOp>
-{
-  typedef std::complex<T> ReturnType;
 };
 
 // We require Lhs and Rhs to have "compatible" scalar types.

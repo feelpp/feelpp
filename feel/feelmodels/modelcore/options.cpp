@@ -335,6 +335,28 @@ thermoDynamics_options(std::string const& prefix)
         ;
     return thermoDynamicsOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
+Feel::po::options_description
+electricity_options(std::string const& prefix)
+{
+    Feel::po::options_description electricityOptions("Thermo Dynamics options");
+    electricityOptions.add_options()
+        (prefixvm(prefix,"electric-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "electric-conductivity")
+        ;
+    return electricityOptions.add( modelnumerical_options( prefix ) );
+}
+Feel::po::options_description
+thermoElectric_options(std::string const& prefix)
+{
+    Feel::po::options_description thermoElectricOptions("Thermo Dynamics options");
+    thermoElectricOptions.add_options()
+        // (prefixvm(prefix,"electric.electric-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "electric-conductivity")
+        (prefixvm(prefix,"do_export_all").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_all")
+        ;
+    thermoElectricOptions.add( thermoDynamics_options( prefixvm(prefix,"thermo") ) );
+    thermoElectricOptions.add( electricity_options( prefixvm(prefix,"electric") ) );
+    return thermoElectricOptions.add( modelnumerical_options( prefix ) );
+}
+
 
 Feel::po::options_description
 advection_options(std::string const& prefix)
@@ -538,7 +560,8 @@ feelmodels_options(std::string type)
         FSIoptions.add(levelset_options("levelset"));
     else if (type == "multifluid")
         FSIoptions.add(multifluid_options("multifluid"));
-
+    else if (type == "thermo-electric")
+        FSIoptions.add(thermoElectric_options("thermo-electric"));
     else
         CHECK( false ) << "invalid type : " << type << " -> must be fluid,solid,thermo-dynamics,fsi";
 

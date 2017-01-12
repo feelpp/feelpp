@@ -80,6 +80,15 @@ if( FEELPP_NAME_LOGIN AND EXISTS /bglocal )
   endif()
 endif()
 
+STRING(REGEX MATCH "occigen*" FEELPP_NAME_LOGIN ${FEELPP_MACHINE_NAME} )
+if( FEELPP_NAME_LOGIN )
+  message(STATUS "Using Occigen config")
+  if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.occigen.cmake )
+      message( STATUS "[Feel++] Configuration found for : Occigen (CINES)" )
+      include( feelpp.machines.occigen )
+  endif()
+endif()
+
 
 if( FEELPP_ENABLE_HOMEBREW AND EXISTS /usr/local/bin/brew )
   if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.homebrew.cmake )

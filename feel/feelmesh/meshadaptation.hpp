@@ -224,7 +224,7 @@ namespace Feel
                 return ml;
             }
 
-        static metric_list_type makeMetricList( p1_element_type metric, std::string metric_name )
+        static metric_list_type makeMetricList( p1_element_type& metric, std::string metric_name )
             {
                 metric_list_type ml;
                 ml.push_back( std::make_pair(std::vector< p1_element_type >( {metric} ), metric_name ) );
@@ -326,6 +326,7 @@ namespace Feel
 
         // Update the mesh
         LOG(INFO) << "load the new mesh...\n";
+        cout << "load the new mesh " << newMeshName << " ...\n";
         mesh_ptrtype newMesh = mesh_type::New();
         newMesh = loadGMSHMesh( _mesh = new mesh_type,
                                 _filename = newMeshName,
@@ -675,12 +676,12 @@ namespace Feel
 
         const std::string globalPosFileName( (boost::format("%1%.pos") %metricBaseName).str() );
 
-        ofstream globalPosFile( globalPosFileName );
+        std::ofstream globalPosFile( globalPosFileName );
         globalPosFile << "View \" background mesh \" { \n";
 
         for (auto const& f : posFiles )
         {
-            ifstream inputPosFile( f );
+            std::ifstream inputPosFile( f );
             std::string line;
             // first line passed
             std::getline( inputPosFile, line );
@@ -711,8 +712,9 @@ namespace Feel
     {
         // Find name of the geofile (without extension), from the complete path
         size_t geoNameBegin = geofile.find_last_of("/");
-        size_t extensionBegin = geofile.find(".geo") - 1;
+        size_t extensionBegin = geofile.find_last_of(".") - 1;
         std::string geofileName = geofile.substr( geoNameBegin+1, extensionBegin - geoNameBegin);
+        Feel::cout << "[meshadaptation] buildAdaptedMesh: geofileName=" << geofileName << std::endl;
 
         std::string prefix = (boost::format( "./%1%" ) % geofileName ).str();
         std::string mshFormat = "msh";
@@ -794,6 +796,7 @@ namespace Feel
 
                 // Initializing
                 GmshInitialize(argcGmsh, argvGmsh);
+                Msg::SetVerbosity( ioption("gmsh.verbosity") );
 
                 GmshSetOption("Mesh", "Algorithm", 5.);
                 ::GModel *newGmshModel = new GModel();
@@ -805,6 +808,7 @@ namespace Feel
                 for (unsigned int i = 0; i < CTX::instance()->files.size(); i++)
                     {
                         LOG(INFO) << "[MeshAdaptation] loaded files : " << CTX::instance()->files[i] << "\n";
+                        Feel::cout << "[MeshAdaptation] loaded files : " << CTX::instance()->files[i] << std::endl;
                         MergeFile(CTX::instance()->files[i]);
                     }
 
@@ -823,6 +827,7 @@ namespace Feel
                             }
 
                         LOG(INFO) << "[MeshAdaptation] PostView : " << v->getData()->getFileName() << "\n";
+                        Feel::cout << "[MeshAdaptation] PostView : " << v->getData()->getFileName() << std::endl;
 
                         /// Add new PView as post processing file
                         int id = myFieldManager->newId();
@@ -855,17 +860,28 @@ namespace Feel
                 f = myFieldManager->get(myFieldManager->getBackgroundField());
 
                 /// Algo for remeshing
-                CTX::instance()->mesh.algo2d = ALGO_2D_BAMG;
-                if (Dim == 3)
-                    CTX::instance()->mesh.algo3d = ALGO_3D_MMG3D;
-
+                if (aniso)
+                {
+                    CTX::instance()->mesh.algo2d = ALGO_2D_BAMG;
+                    if (Dim == 3)
+                        CTX::instance()->mesh.algo3d = ALGO_3D_MMG3D;
+                }
+                else
+                {
+                    CTX::instance()->mesh.algo2d = ALGO_2D_MESHADAPT;
+                    if (Dim == 3)
+                        CTX::instance()->mesh.algo3d = ALGO_3D_DELAUNAY;
+                }
                 newGmshModel->deleteMesh(); //Delete current mesh
                 newGmshModel->mesh(Dim);
 
                 LOG(INFO) << "[MeshAdaptation] New mesh built : " << newMeshName << "\n";
+                Feel::cout << "[MeshAdaptation] New mesh built : " << newMeshName << std::endl;
                 newGmshModel->writeMSH(newMeshName);
                 LOG(INFO) << "[MeshAdaptation] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
                 LOG(INFO) << "[MeshAdaptation] elements : " << newGmshModel->getNumMeshElements() << "\n";
+                Feel::cout << "[MeshAdaptation] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
+                Feel::cout << "[MeshAdaptation] elements : " << newGmshModel->getNumMeshElements() << std::endl;
 
                 //// Delete list of loaded files
                 //CTX::instance()->files.erase(CTX::instance()->files.begin(), CTX::instance()->files.end());

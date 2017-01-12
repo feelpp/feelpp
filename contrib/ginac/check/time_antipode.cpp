@@ -16,7 +16,7 @@
  */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ using namespace GiNaC;
 using namespace std;
 
 // whether to run this beast or not:
-static const bool do_test = true;
+constexpr bool do_test = true;
 
 // regularization parameter:
 static const symbol x("x");
@@ -105,9 +105,9 @@ protected:
 class Sigma : public vertex {
 public:
 	Sigma(ijpair ij = ijpair(0,0)) : vertex(ij) { }
-	vertex* copy() const { return new Sigma(*this); }
-	ijpair get_increment() const { return ijpair(indices.first+indices.second+1, 0); }
-	const ex evaluate(const symbol &x, const unsigned grad) const;
+	vertex* copy() const override { return new Sigma(*this); }
+	ijpair get_increment() const override { return ijpair(indices.first+indices.second+1, 0); }
+	const ex evaluate(const symbol &x, const unsigned grad) const override;
 private:
 };
 
@@ -133,13 +133,13 @@ const ex Sigma::evaluate(const symbol &x, const unsigned grad) const
 }
 
 
-/** Class of vertices of type Sigma_flipped, sitting in the upper fermionline of Vacuum; no consequences for Gamma. */
+/** Class of vertices of type Sigma_flipped, sitting in the upper fermion line of Vacuum; no consequences for Gamma. */
 class Sigma_flipped : public Sigma {
 public:
 	Sigma_flipped(ijpair ij = ijpair(0,0)) : Sigma(ij) { }
-	vertex* copy() const { return new Sigma_flipped(*this); }
-	ijpair get_increment() const { return ijpair(0, indices.first+indices.second+1); }
-	const ex evaluate(const symbol &x, const unsigned grad) const { return Sigma::evaluate(x, grad); }
+	vertex* copy() const override { return new Sigma_flipped(*this); }
+	ijpair get_increment() const override { return ijpair(0, indices.first+indices.second+1); }
+	const ex evaluate(const symbol &x, const unsigned grad) const override { return Sigma::evaluate(x, grad); }
 private:
 };
 
@@ -150,9 +150,9 @@ private:
 class Gamma : public vertex {
 public:
 	Gamma(ijpair ij = ijpair(0,0)) : vertex(ij) { }
-	vertex* copy() const { return new Gamma(*this); }
-  	ijpair get_increment() const { return ijpair(indices.first+indices.second+1, 0); }
-	const ex evaluate(const symbol &x, const unsigned grad) const;
+	vertex* copy() const override { return new Gamma(*this); }
+	ijpair get_increment() const override { return ijpair(indices.first+indices.second+1, 0); }
+	const ex evaluate(const symbol &x, const unsigned grad) const override;
 private:
 };
 
@@ -184,9 +184,9 @@ const ex Gamma::evaluate(const symbol &x, const unsigned grad) const
 class Vacuum : public vertex {
 public:
 	Vacuum(ijpair ij = ijpair(0,0)) : vertex(ij) { }
-	vertex* copy() const { return new Vacuum(*this); }
-	ijpair get_increment() const { return ijpair(0, indices.first+indices.second+1); }
-	const ex evaluate(const symbol &x, const unsigned grad) const;
+	vertex* copy() const override { return new Vacuum(*this); }
+	ijpair get_increment() const override { return ijpair(0, indices.first+indices.second+1); }
+	const ex evaluate(const symbol &x, const unsigned grad) const override;
 private:
 };
 
@@ -450,7 +450,7 @@ static const node tree6(unsigned cuts=0)
 static unsigned test_tree(const node tree_generator(unsigned))
 {
 	const int edges = tree_generator(0).total_edges();
-   	const int vertices = edges+1;
+	const int vertices = edges+1;
 	
 	// fill a vector of all possible 2^edges combinations of cuts...
 	vector<node> counter;

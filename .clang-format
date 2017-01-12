@@ -1,6 +1,7 @@
 BasedOnStyle: LLVM
 
 BreakBeforeBraces: Allman
+AlignTrailingComments: true
 IndentWidth: 4
 UseTab: Never
 AlignAfterOpenBracket: Align
@@ -12,6 +13,5 @@ AllowShortIfStatementsOnASingleLine: true
 NamespaceIndentation: None
 ColumnLimit: 0
 ReflowComments: true
-AlignTrailingComments: true
 SpacesInParentheses: true
 

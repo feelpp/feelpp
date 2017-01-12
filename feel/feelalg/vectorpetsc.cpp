@@ -1879,7 +1879,9 @@ VectorPetscMPI<T>::localSize() const
 template <typename T>
 VectorPetscMPIRange<T>::VectorPetscMPIRange( datamap_ptrtype const& dm )
     :
-    super_type( dm, false )
+    super_type( dm, false ),
+    M_destroyVecGhostOnExit( true ),
+    M_destroyVecScatterGhostOnExit( true )
 {
     const PetscScalar* arrayActive = NULL;
     const PetscScalar* arrayGhost = NULL;
@@ -1889,7 +1891,9 @@ VectorPetscMPIRange<T>::VectorPetscMPIRange( datamap_ptrtype const& dm )
 template<typename T>
 VectorPetscMPIRange<T>::VectorPetscMPIRange( Vec v, datamap_ptrtype const& dm, bool duplicate )
     :
-    super_type( dm, false )
+    super_type( dm, false ),
+    M_destroyVecGhostOnExit( true ),
+    M_destroyVecScatterGhostOnExit( true )
 {
 
     this->M_destroy_vec_on_exit = duplicate;
@@ -1964,6 +1968,60 @@ VectorPetscMPIRange<T>::VectorPetscMPIRange( Vec v, datamap_ptrtype const& dm, b
 }
 
 template<typename T>
+VectorPetscMPIRange<T>::VectorPetscMPIRange( Vec v, Vec vGhost, datamap_ptrtype const& dm, bool duplicate )
+    :
+    super_type( dm, false ),
+    M_destroyVecGhostOnExit( true ),
+    M_destroyVecScatterGhostOnExit( true )
+{
+    this->M_destroy_vec_on_exit = duplicate;
+
+    int ierr = 0;
+    if ( duplicate )
+    {
+        ierr = VecDuplicate( v, &this->M_vec );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecCopy( v, this->M_vec );
+        CHKERRABORT( this->comm(),ierr );
+
+        ierr = VecDuplicate( vGhost, &this->M_vecGhost );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecCopy( vGhost, this->M_vecGhost );
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else
+    {
+        this->M_vec = v;
+        this->M_vecGhost = vGhost;
+        M_destroyVecGhostOnExit = false;
+    }
+
+    this->initVecScatterGhost();
+
+    this->setInitialized( true );
+    this->localize();
+    this->setIsClosed( true );
+}
+
+template<typename T>
+VectorPetscMPIRange<T>::VectorPetscMPIRange( Vec v, Vec vGhost, VecScatter vecScatterGhost, datamap_ptrtype const& dm )
+    :
+    super_type( dm, false )
+{
+    this->M_destroy_vec_on_exit = false;
+    this->M_destroyVecGhostOnExit = false;
+    this->M_destroyVecScatterGhostOnExit = false;
+
+    this->M_vec = v;
+    this->M_vecGhost = vGhost;
+    this->M_vecScatterGhost = vecScatterGhost;
+
+    this->setInitialized( true );
+    this->localize();
+    this->setIsClosed( true );
+}
+
+template<typename T>
 void
 VectorPetscMPIRange<T>::init( datamap_ptrtype const& dm )
 {
@@ -2002,6 +2060,28 @@ VectorPetscMPIRange<T>::initRangeView( const PetscScalar arrayActive[], const Pe
         ierr = VecCreateSeq( PETSC_COMM_SELF, petsc_n_localGhost, &M_vecGhost );
     CHKERRABORT( this->comm(),ierr );
 
+    this->initVecScatterGhost();
+
+    ierr = VecSetFromOptions( this->vec() );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecSetFromOptions( M_vecGhost );
+    CHKERRABORT( this->comm(),ierr );
+
+    this->setInitialized( true );
+    this->setIsClosed( true );
+}
+
+template <typename T>
+void
+VectorPetscMPIRange<T>::initVecScatterGhost()
+{
+
+    M_destroyVecScatterGhostOnExit = false;
+
+
+    int ierr=0;
+    PetscInt petsc_n_localWithoutGhost=static_cast<PetscInt>( this->map().nLocalDofWithoutGhost() );
+    PetscInt petsc_n_localGhost=static_cast<PetscInt>( this->map().nLocalGhosts() );
     // localToGlobalMapping
     IS is;
     ISLocalToGlobalMapping isLocToGlobMap;
@@ -2067,38 +2147,39 @@ VectorPetscMPIRange<T>::initRangeView( const PetscScalar arrayActive[], const Pe
 #endif
 
     delete[] idx;
-
-    ierr = VecSetFromOptions( this->vec() );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = VecSetFromOptions( M_vecGhost );
-    CHKERRABORT( this->comm(),ierr );
-
-
-    this->setInitialized( true );
-    this->setIsClosed( true );
 }
-
-
 template <typename T>
 void
 VectorPetscMPIRange<T>::clear()
 {
+    super_type::clear();
+
     if ( !this->isInitialized() )
         return;
 
-    super_type::clear();
     int ierr=0;
+
+    if ( M_destroyVecGhostOnExit )
+    {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = VecDestroy( &M_vecGhost );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = VecScatterDestroy( &M_vecScatterGhost );
-    CHKERRABORT( this->comm(),ierr );
+        ierr = VecDestroy( &M_vecGhost );
+        CHKERRABORT( this->comm(),ierr );
 #else
-    ierr = VecDestroy( M_vecGhost );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = VecScatterDestroy( M_vecScatterGhost );
-    CHKERRABORT( this->comm(),ierr );
+        ierr = VecDestroy( M_vecGhost );
+        CHKERRABORT( this->comm(),ierr );
 #endif
+    }
+
+    if ( M_destroyVecScatterGhostOnExit )
+    {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+        ierr = VecScatterDestroy( &M_vecScatterGhost );
+        CHKERRABORT( this->comm(),ierr );
+#else
+        ierr = VecScatterDestroy( M_vecScatterGhost );
+        CHKERRABORT( this->comm(),ierr );
+#endif
+    }
 }
 
 template <typename T>
