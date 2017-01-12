@@ -1,0 +1,356 @@
+= Fluid Mechanics Models
+:toc:
+:toc-placement: macro
+:toclevels: 2
+
+toc::[]
+
+== Models 
+
+{% include "/QuickReference/Models/Fluid/NavierStokes.adoc" %}
+
+
+== JSON file
+
+Let's describe how a json file is build.
+
+=== Properties
+
+
+.Table of Models for `model` option
+|===
+| Model | Name 
+
+| Navier-Stokes|`Navier-Stokes`
+| Stokes|`Stokes`
+
+|===
+
+
+=== Materials
+
+[source,json]
+.Materials section
+----
+"Materials":
+{
+    "marker":
+    {
+        "name":"fluid",
+        "rho":"1.0e3",
+        "mu":"1.0"
+    }
+}
+----
+
+where `rho` the density in $$kg\cdot m^{-3}$$ and `mu` the dynamic viscosity in $$kg\cdot (m \cdot s)^{-1}$$ .
+
+=== Boundary Conditions
+
+Boundary conditions and volumic forces are set in the json files
+[source,json]
+.Example for boundary conditions
+----
+"BoundaryConditions":
+{
+    "field":
+    {
+        "<condition type>":
+        {
+            "marker":
+            {
+                "expr": "value"
+            }
+        }
+    }
+}
+----
+where all component of vectorial field can be access with `<field>_x` for the $$x$$ component where `<field>` is the name of the vectorial field. +
+The condition types are explain in the two following tables.
+
+.Boundary conditions
+|===
+| Name | Options | Type 
+
+| Dirichlet 
+| faces, edges and component-wise
+| "Dirichlet"
+
+| Neumann 
+| scalar, vectorial
+| "Neumann_scalar" or "Neumann_vectorial"
+
+|===
+
+
+=== Post Process
+
+[source,json]
+----
+"PostProcess":
+{
+    "Fields":["field1","field2",...],
+    "Measures":
+    {
+        "<measure type>":
+        {
+            "label":
+            {
+                "<range type>":"value",
+                "fields":["field1","field3"]
+            }
+        }
+    }
+}
+----
+
+The fields allowed to be exported in the `Fields` section are:
+
+- displacement
+- velocity
+- acceleration
+- stress or normal-stress
+- pressure
+- material-properties
+- pid
+- fsi
+- Von-Mises
+- Tresca
+- principal-stresses
+- all
+
+.Measure type and range type associated
+|===
+|Measure type | Range type | example
+
+|Points | coords | "{0,0,0}"
+|Maximum | markers | "marker1"
+|Minimum | markers | "marker1"
+|volume_variation* | - | "volume_variation":""
+|===
+
+*volume_variation does not take a set of point or of range, it is a volumic measure.
+
+The fields on which one can do measures:
+
+- volume_variation
+- displacement
+- velocity
+- acceleration
+- pressure
+- principal-stress-0
+- principal-stress-1
+- principal-stress-2
+- sigma_xx, sigma_xy, ...
+
+== Action
+
+Let's finish with a simple example in order to show how this works and how to use them. We will interest us to a fluid flow into a cavity in 3D.
+
+=== Feel++ code
+
+First at all, we define our model type with 
+
+----
+typedef FeelModels::FluidMechanics< Simplex<FEELPP_DIM,1>,
+                                    Lagrange<OrderVelocity,Vectorial,Continuous,PointSetFekete>,
+                                    Lagrange<OrderPressure,Scalar,Continuous,PointSetFekete> > model_type;
+----
+
+We choose here a $$\mathbb{P}_2$$ space for the velocity order and $$\mathbb{P}_1$$ space for the pressure order. This definition allows us to create our fluid model object FM like this
+ 
+----
+auto FM = model_type::New("fluid");
+----
+
+The method `New` retrieve all data from the configuration and json files, as well build a mesh if need.
+
+With this object, we can initialize our model parameters, such as velocity or boundaries conditions. Data on our model and on the numeric solver are then save and print on the terminal. This is made by 
+
+----
+FM->init();
+FM->printAndSaveInfo();
+----
+
+Now that our model is completed, we can solve the associated problem. To begin the resolution
+
+----
+FM->isStationary()
+----
+
+determine if our model is stationary or not.
+
+If it is, then we need to solve our system only one time and export the obtained results.
+
+----
+FM->solve();
+FM->exportResults();
+----
+
+If it's not, our model is time reliant, and a loop on time is necessary. Our model is then solve and the results are export at each time step.
+
+----
+ for ( ; !FM->timeStepBase()->isFinished(); FM->updateTimeStep() )
+        {
+            FM->solve();
+            FM->exportResults();
+        }
+----
+
+==== Code
+
+[source,cpp]
+----
+{% include "/QuickReference/Models/Examples/fluid_model.cpp" %}
+----
+
+
+=== Configuration file
+
+The config file is used to define options, linked to our case, we would have the possibility to change at will. It can be, for example, files paths as follows
+
+----
+[fluid]
+geofile=$cfgdir/cavity3d.geo
+filename=$cfgdir/cavity3d.json
+
+[exporter]
+directory=applications/models/fluid/cavity3d/$fluid_tag
+----
+
+It can also be resolution dependent parameters such as mesh elements size, methods used  to define our problem and solvers.
+
+----
+[fluid]
+solver=Oseen #Picard,Newton
+
+linearsystem-cst-update=false
+jacobian-linear-update=false
+
+snes-monitor=true
+snes-maxit=100
+snes-maxit-reuse=100
+snes-ksp-maxit=1000
+snes-ksp-maxit-reuse=100
+
+pc-type=lu #gasm,lu,fieldsplit,ilu
+----
+In this case, we use Oseen to define our problem, we set the update of linear system constant and jacobian linear as "no update", we discretize values associated to SNES ( Scalable Nonlinear Equations Solvers ), and finally we choose LU as the preconditioner method.
+
+==== Code
+
+[source,cfg]
+----
+{% include "/QuickReference/Models/Examples/cavity3d.cfg" %}
+----
+
+=== Json file
+
+First at all, we define some general information like the name ( and short name ) and the model we would like to use
+
+[source,json]
+----
+"Name": "Fluid Mechanics",
+"ShortName":"Fluid",
+"Model":"Navier-Stokes",
+----
+
+Then we define the link:#_material[material properties]. In our case, the fluid, define  by rho` its density in $$kg\cdot m^{-3}$$ and `mu` its dynamic viscosity in $$kg\cdot (m \cdot s)^{-1}$$, is the only material we have to define.
+
+[source,json]
+----
+"Materials":
+    {
+        "Fluid":{
+            "name":"myFluidMat",
+            "rho":"1.0",
+            "mu":"0.01"
+        }
+    },
+----
+
+The link:#_boundary_conditions[boundary conditions] are the next aspect we define. Here, we impose on the velocity $$u_f$$ Dirichlet conditions at two specific places : `lid` and `wall`.
+
+[source,json]
+----
+"BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "lid":
+                {
+                    "expr":"{ 1,0,0}:x:y:z"
+                },
+                "wall":
+                {
+                    "expr":"{0,0,0}"
+                }
+            }
+        }
+    }
+----
+
+The link:#_post_process[post process] aspect is the last one to define. We choose the fields we want to export ( velocity, pressure and pid ). Furthermore, we want to measure forces on `wall` and the pressure at point $$A$$.
+
+[source,json]
+----
+"PostProcess":
+    {
+        "Fields":["velocity","pressure","pid"],
+        "Measures":
+        {
+            "Forces":"wall",
+            "Points":
+            {
+                "pointA":
+                {
+                    "coord":"{0.5,0.5,0.5}",
+                    "fields":"pressure"
+                }
+            }
+        }
+    }
+}
+----
+
+==== Code
+
+[source,json]
+----
+//{% include "/QuickReference/Models/Examples/cavity3d.json" %}
+----
+
+=== Compilation/Execution
+
+Once you've a build dir, you just have to realise the command `make` at 
+
+--------------------
+{buildir}/applications/models/fluid
+--------------------
+
+This will generate executables named `feelpp_application_fluid_*`. To execute it, you need to give the path of the cfg file associated to your case, with `--config-file`.
+
+For example
+
+----
+./feelpp_application_fluid_3d --config-file={sourcedir}/applications/models/fluid/cavity/cavity3d.cfg
+----
+
+is how to execute the case ahead.
+
+The result files are then stored by default in 
+
+----
+ feel/applications/models/fluid/{case_name}/
+   {velocity_space}{pression_space}{Geometric_order}/{processor_used}
+----
+
+If we return once again at our example, the result files are in 
+
+----
+ feel/applications/models/fluid/cavity3d/P2P1G1/np_1
+----
+
+
