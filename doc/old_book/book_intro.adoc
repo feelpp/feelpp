@@ -1,0 +1,10 @@
+Book Introduction
+=================
+
+* link:book.adoc[Content of this book]
+
+* link:credits.adoc[Credits]
+
+* link:consortium.adoc[Consortium]
+
+* link:sponsors.adoc[Sponsors]

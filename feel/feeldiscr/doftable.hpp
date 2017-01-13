@@ -1672,32 +1672,40 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 {
+    tic();
+    tic();
     M_mesh = boost::addressof( M );
-
+    toc("DofTable::adress", FLAGS_v>0);
+    tic();
     VLOG(2) << "[Dof::build] initDofMap\n";
     this->initDofMap( M );
 
     VLOG(2) << "[Dof::build] start building dof map\n";
     size_type start_next_free_dof = 0;
     VLOG(2) << "[Dof::build] start_next_free_dof = " << start_next_free_dof << "\n";
-
+    toc("DofTable::init", FLAGS_v>0);
+    tic();
     if ( is_periodic )
     {
         VLOG(2) << "[build] call buildPeriodicDofMap()\n";
         start_next_free_dof = this->buildPeriodicDofMap( M );
         VLOG(2) << "[Dof::build] start_next_free_dof(after periodic) = " << start_next_free_dof << "\n";
     }
-
+    toc("DofTable::buildPeriodicDof", FLAGS_v>0);
+    tic();
     if ( is_discontinuous_locally )
     {
         VLOG(2) << "[build] call buildLocallyDiscontinuousDofMap()\n";
         start_next_free_dof = this->buildLocallyDiscontinuousDofMap( M, start_next_free_dof );
         VLOG(2) << "[Dof::build] start_next_free_dof(after local discontinuities) = " << start_next_free_dof << "\n";
     }
-
+    toc("DofTable::buildLocalDiscon", FLAGS_v>0);
+    tic();
     VLOG(2) << "[build] call buildDofMap()\n";
     this->buildDofMap( M, start_next_free_dof );
     //std::cout << "[build] callFINISH buildDofMap() with god rank " << this->worldComm().godRank() <<"\n";
+    toc("DofTable::call buildDofMap", FLAGS_v>0);
+    tic();
 
 #if !defined(NDEBUG)
     VLOG(2) << "[build] check that all elements dof were assigned()\n";
@@ -1714,8 +1722,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
             {
                 em.push_back( boost::make_tuple( fit->id(), c, fit->marker().value() ) );
             }
-    }
-
+    } 
     if ( !em.empty() )
     {
         VLOG(2) << "[build] some element dof were not assigned\n";
@@ -1735,13 +1742,14 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 #endif // NDEBUG
     VLOG(2) << "[Dof::build] n_dof = " << this->nLocalDofWithGhost() << "\n";
 
+    toc("DofTable::checki dof element assignement",FLAGS_v>0);
     if ( !is_mortar )
     {
         VLOG(2) << "[build] call buildBoundaryDofMap()\n";
         this->buildBoundaryDofMap( M );
     }
-
-
+    
+    tic( ); 
     // multi process
     if ( this->worldComm().localSize()>1 )
     {
@@ -1807,9 +1815,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                 }
             }
         }
-    }
+    } 
     else
     {
+    toc("DofTable::multi process", FLAGS_v>0);
+    tic();
         // in sequential : identity map
         const size_type s = this->M_n_localWithGhost_df[this->comm().rank()];
         this->M_mapGlobalProcessToGlobalCluster.resize( s );
@@ -1819,7 +1829,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                    0 );
     }
 
-
+    toc("DofTable::sequential map"), FLAGS_v>0;
+    tic();
     // reordoring of global process id in doftable (active dofs before and ghost dofs after)
     if ( this->worldComm().localSize()>1 )
     {
@@ -1879,7 +1890,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     }
 
     this->initDofIdToContainerIdIdentity( 0,this->nLocalDofWithGhost() );
-
+    toc("DofTable::reordering global id in doftable", FLAGS_v>0);
+    tic();
     EntityProcessType entityProcess = (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
     for ( auto const& eltRange : elements( M,entityProcess) )
     {
@@ -1914,7 +1926,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                 }
             }
     }
-
+    toc("DofTable::build - locglob indices", FLAGS_v>0);
 
     this->buildIndexSplit();
 
@@ -1922,7 +1934,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     if ( is_product && nComponents > 1 )
         this->buildIndexSplitWithComponents( nRealComponents );
 
-    VLOG(2) << "[Dof::build] done building the map\n";
+    toc("DofTable::build", FLAGS_v > 0);
 }
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
@@ -2440,7 +2452,7 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( mesh_type& M )
 {
-    boost::timer tim;
+    tic();
     size_type nDofF = nLocalDofOnFace(true);
     M_n_dof_per_face_on_bdy = nDofF;
     DVLOG(2) << "vertex dof : " <<  face_type::numVertices * fe_type::nDofPerVertex << "\n";
@@ -2495,20 +2507,17 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
             FEELPP_ASSERT( boost::get<0>( M_face_l2g[__face_it->id()][face_dof_id] ) != invalid_size_type_value )( __face_it->id() )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
 
 #endif
-    if (Environment::isMasterRank() && FLAGS_v > 0)
-        std::cout << " . DofTable::buildBoundaryDofMap done in " << tim.elapsed() << "s\n";
+    
+    toc( "DofTable::buildBoundaryDofMap", FLAGS_v > 0 );
 }    // updateBoundaryDof
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel ) const
 {
-    boost::timer tim;
-
+    tic();
     generateDofPoints( M, buildMinimalParallel, mpl::bool_<is_mortar>() );
-
-    if ( Environment::isMasterRank() && FLAGS_v > 0)
-        std::cout << " - DofTable::generateDofPoints done in " << tim.elapsed() << "\n";
+    toc("DofTable::generateDofPoints",FLAGS_v > 0); 
 
 }
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>

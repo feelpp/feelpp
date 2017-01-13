@@ -1,0 +1,46 @@
+= Saving and loading functions on disk
+:toc:
+:toc-placement: macro
+:toclevels: 2
+
+toc::[]
+
+== Saving functions on disk
+
+To save a function on disk to use it later, for example in another application, you can use the `save` function.
+
+The saved file will be named after the name registered for the variable in the constructor (default : `u`).
+
+[source,cpp]
+----
+auto Vh = Pch<1>( mesh );
+auto u = Vh->element("v"); 
+// do something with u
+...
+// save /path/to/save/v.h5
+u.save( _path="/path/to/save", _type="hdf5" ); 
+----
+
+The `path` parameter creates a directory at this path to store all the degrees of liberty of this function. +
+The `type` parameter can be `binary`, `text` or `hdf5` . The first two will create one file per processor, whereas "hdf5" will creates only one file.
+
+== Loading functions from disk
+
+> **Warning** To load a function, the mesh need to be exactly the same as the one used when saving it.
+
+[source,cpp]
+----
+auto Vh = Pch<1>( mesh );
+auto u = Vh->element("v");
+// load /path/to/load/v.h5
+u.load( _path="/path/to/load/", _type="hdf5" ); 
+----
+
+The `path` and `type` parameters need to be the same as the one used to save the function.
+
+== Extended parallel doftable
+
+In some cases, when we use parallel data, informations from other interfaces of partitions are need. To manage this, we can add ghost degree of freedom on ghost elements at these locations. However, we have to know if data have extended parallel doftable to load and use it.
+
+In order to pass above this restriction, the two function `load` and `save` has been updated to use hdf5 format. With this format, extended parallel doftable or not, the function will work without any issues. More than that, we can load elements with extended parallel doftable and resave it without it, and vice versa.
+This last feature isn't available with other formats than hdf5.

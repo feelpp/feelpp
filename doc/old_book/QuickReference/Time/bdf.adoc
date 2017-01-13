@@ -1,0 +1,29 @@
+= Backward Differentiation Formula
+
+== General approach
+The backward differentiation formula, also abridged BDF, is a set of implicit methods used with ordinary differential equation ( ODE ) for numerical integration. For example, the initial value problem :
+
+$$
+y' = f(t,y), \quad y(t_0) = y_0.
+$$
+
+can be solved with BDF.
+
+For a given time and function, these methods try to approximate the derivative of this functions, using old computed times data.
+
+The methods, components of BDF, are split by their order value. We have then BDF1, BDF2,..., and so on.The general formula can be written as
+
+$$
+\sum_{k=0}^s a_k y_{n+k} = h \beta f(t_{n+s}, y_{n+s}) 
+$$where s is the order, $$h$$ is the step size and $$t_n = t_0 + nh$$. $$a_k$$ and $$\beta$$ are dependent from order $$s$$, and can be easily found into literature. Here is the two first formula :
+
+$$BDF1:  y_{n+1} - y_n = h f(t_{n+1}, y_{n+1})$$
+( This is the backward Euler method )
+
+$$BDF2:  y_{n+2} - \tfrac43 y_{n+1} + \tfrac13 y_n = \tfrac23 h f(t_{n+2}, y_{n+2})$$
+
+== In Feel++
+
+BDF is a subclass derivative from Time-Stepping ( or TS ). It implements, as his name says, backward differentiation formulas up to order $$s\leq 4$$ . As a subclass, BDF share input parameters, which can be set via `ts.{asterisk}`, but have also its own parameters ( such as the order ), define by `bdf.{asterisk}`.
+
+If different time steppers are used simultaneously, you can customize them by adding a prefix like `bdf_options(“myfluid”)`. For example, link:../Models/Fluid/README.adoc[FluidMechanics] offers an interface to this type of case.

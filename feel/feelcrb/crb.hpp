@@ -2856,6 +2856,7 @@ CRB<TruthModelType>::offline()
             }
         }
 
+
         M_rbconv.insert( convergence( M_N, boost::make_tuple(M_maxerror,delta_pr,delta_du) ) );
         //mu = M_Xi->at( M_N );//M_WNmu_complement->min().template get<0>();
 
@@ -10967,11 +10968,8 @@ CRB<TruthModelType>::buildRbMatrix( int number_of_added_elements, parameter_type
                 for ( size_type l = 1; l <= number_of_elements_to_update; ++l )
                 {
                     int index = M_N-l;
-                    for( int idx = 0; idx<=index; idx++ )
-                    {
-                        M_Fqm_pr[q][m]( idx ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->primalBasisElement(idx) );
-                        M_Fqm_du[q][m]( idx ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->dualBasisElement(idx) );
-                    }
+                    M_Fqm_pr[q][m]( index ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->primalBasisElement( index ) );
+                    M_Fqm_du[q][m]( index ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->dualBasisElement( index ) );
                 }
                 if( ser_error_estimation )
                 {
@@ -10979,7 +10977,6 @@ CRB<TruthModelType>::buildRbMatrix( int number_of_added_elements, parameter_type
                     auto fqm = M_model->Fqm(0, q, m);
                     M_model->l2solve( M_hFqm[q][m], fqm );
                 }
-
             }//loop over m (>= mMaxF - cobuild_eim_freq)
         }//loop over q
 
