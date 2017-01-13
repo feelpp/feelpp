@@ -63,13 +63,15 @@ public :
     using subelement_type = typename subspace_type<T>::element_type;
 
     CRBModelSaddlePoint( CRBModelMode mode = CRBModelMode::PFEM, int level=0, bool doInit = true ) :
-        super ( mode, level, doInit )
+        super ( mode, level, doInit ),
+        M_block_initialized( false )
     {
         this->initModelSaddlePoint();
     }
 
     CRBModelSaddlePoint( model_ptrtype const& model , CRBModelMode mode = CRBModelMode::PFEM, bool doInit = true ) :
-        super ( model, mode, doInit )
+        super ( model, mode, doInit ),
+        M_block_initialized( false )
     {
         this->initModelSaddlePoint();
     }
@@ -153,32 +155,84 @@ public :
                          uint16_type nSpace1, uint16_type nSpace2,
                          bool transpose = false ) const
     {
-        auto A = this->M_Aqm[q][m];
-        auto const& Xh1_indices = A->mapRow().dofIdToContainerId( nSpace1 );
-        auto const& Xh2_indices = A->mapRow().dofIdToContainerId( nSpace2 );
-
-        auto ABlock = A->createSubMatrix( Xh1_indices, Xh2_indices );
-        ABlock->close();
-
-        if ( ABlock->linftyNorm()<1e-12 )
+        auto A = this->M_Aqm_block[nSpace1][nSpace2][q][m];
+        if ( A->linftyNorm()<1e-12 )
             return 0;
         else
-            return ABlock->energy( xi_i, xi_j, transpose );
+            return A->energy( xi_i, xi_j, transpose );
     }
 
     template <typename EType>
     value_type FqmBlock( uint16_type l, uint16_type q, uint16_type m,
                          EType const& xi, uint16_type nSpace )
     {
-        auto F = this->M_Fqm[l][q][m];
-        auto const& Xh_indices = F->map().dofIdToContainerId( nSpace );
-        auto FBlock = F->createSubVector( Xh_indices );
-        if ( FBlock->linftyNorm()<1e-12 )
+        auto F = this->M_Fqm_block[l][nSpace][q][m];
+        if ( F->linftyNorm()<1e-12 )
             return 0;
         else
-            return inner_product( *FBlock, xi );
+            return inner_product( *F, xi );
     }
 
+    void initBlockMatrix()
+    {
+        if ( !M_block_initialized )
+        {
+            M_block_initialized=true;
+            M_Aqm_block.resize( 2 );
+
+            for ( size_type r=0; r<2; r++ )
+            {
+                M_Aqm_block[r].resize( 2 );
+                for ( size_type c=0; c<2; c++ )
+                {
+                    M_Aqm_block[r][c].resize( this->Qa() );
+                    for ( size_type q=0; q<this->Qa(); q++ )
+                    {
+                        int mMax = this->mMaxA(q);
+                        M_Aqm_block[r][c][q].resize( mMax );
+                        for ( size_type m=0; m<mMax; m++ )
+                        {
+                            auto A = this->M_Aqm[q][m];
+                            auto const& i_row = A->mapRow().dofIdToContainerId( r );
+                            auto const& i_col = A->mapCol().dofIdToContainerId( c );
+                            M_Aqm_block[r][c][q][m] = A->createSubMatrix( i_row, i_col );
+                        }
+                    }
+                }
+            }
+
+            int n_output = this->M_Fqm.size();
+            M_Fqm_block.resize( n_output );
+
+            for ( size_type l=0; l<n_output; l++ )
+            {
+                M_Fqm_block[l].resize( 2 );
+                for ( size_type r=0; r<2; r++ )
+                {
+                    int qMax = this->Ql(l);
+                    M_Fqm_block[l][r].resize( qMax );
+                    for ( size_type q=0; q<qMax; q++ )
+                    {
+                        int mMax = this->mMaxF( l, q );
+                        M_Fqm_block[l][r][q].resize( mMax );
+                        for ( size_type m=0; m<mMax; m++ )
+                        {
+                            auto V = this->M_Fqm[l][q][m];
+                            auto const& i_row = V->map().dofIdToContainerId(r);
+                            M_Fqm_block[l][r][q][m] = V->createSubVector( i_row );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void clearBlockMatix()
+    {
+        M_Aqm_block.clear();
+        M_Fqm_block.clear();
+        M_block_initialized = false;
+    }
 
     using super::scalarProduct;
     /**
@@ -202,7 +256,9 @@ protected :
     std::vector<sparse_matrix_ptrtype> M_inner_product_matrix_vec;
     std::vector< backend_ptrtype > M_backend_l2_vec;
 
-
+    std::vector< std::vector< std::vector< std::vector<sparse_matrix_ptrtype>>>> M_Aqm_block;
+    std::vector< std::vector< std::vector< std::vector<vector_ptrtype>>>> M_Fqm_block, M_Lqm_block;
+    bool M_block_initialized;
 
 }; // class CRBModelSaddlepoint
 

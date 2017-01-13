@@ -384,8 +384,6 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
     auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
     auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
 
-
-
     element_type Ur = this->M_model->functionSpace()->element();
     element_type Uc = this->M_model->functionSpace()->element();
     auto ur = Ur.template element<0>();
@@ -401,10 +399,8 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
     int number_of_elements_to_update0 = boption("crb.saddlepoint.add-supremizer") ? 2*number_of_elements_to_update : number_of_elements_to_update;
     // In case of SER use + error estimation, we compute \hat{A}, \hat{F} (resp. \hat{R}) to compute norm of residual (Riesz)
     int ser_error_estimation = this->M_SER_errorEstimation;
-
-    auto mesh = this->M_model->functionSpace()->mesh();
-    double nu= 1e-3;
-    double gamma = doption("penal_bc");
+    if ( ioption("crb.saddlepoint.version")==2 )
+        this->M_model->initBlockMatrix();
 
     // update Aqm block matrices
     for ( size_type q=0; q<this->M_model->Qa(); q++ )
@@ -486,7 +482,7 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
             for ( size_type j=M_N0-number_of_elements_to_update0; j<M_N0; j++ )
             {
                 //update last column of matrix 00
-                for ( size_type i=0; i<M_N0; i++)
+                for ( size_type i=0; i<M_N0-number_of_elements_to_update0; i++)
                 {
                     if ( ioption("crb.saddlepoint.version")==1 )
                     {
@@ -497,14 +493,11 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
                         M_blockAqm_pr[0][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
                     }
                     else if ( ioption("crb.saddlepoint.version")==2 )
-                        M_blockAqm_pr[0][0][q][m](i,j) = this->M_model->AqmBlock( q, m,
-                                                                                  XN0->primalBasisElement(i),
-                                                                                  XN0->primalBasisElement(j),
-                                                                                  0,0 );
+                        M_blockAqm_pr[0][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->primalBasisElement(i), XN0->primalBasisElement(j), 0,0 );
                 }
 
                 //update last column of matrix 10
-                for ( size_type i=0; i<M_N1; i++ )
+                for ( size_type i=0; i<M_N1-number_of_elements_to_update; i++ )
                 {
                     if ( ioption("crb.saddlepoint.version")==1 )
                     {
@@ -522,7 +515,7 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
             for ( size_type j=M_N1-number_of_elements_to_update; j<M_N1; j++ )
             {
                 //update last column of matrix 01
-                for ( size_type i=0; i<M_N0; i++ )
+                for ( size_type i=0; i<M_N0-number_of_elements_to_update0; i++ )
                 {
                     if ( ioption("crb.saddlepoint.version")==1 )
                     {
@@ -537,7 +530,7 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
                 }
 
                 //update last column of matrix 11
-                for ( size_type i=0; i<M_N1; i++ )
+                for ( size_type i=0; i<M_N1-number_of_elements_to_update; i++ )
                 {
                     if ( ioption("crb.saddlepoint.version")==1 )
                     {
@@ -555,7 +548,7 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
         }
     }
 
-
+    // update Fqm block vectors
     for ( size_type q=0; q<this->M_model->Ql(0); q++ )
     {
         for ( size_type m=0; m<this->M_model->mMaxF(0, q); m++ )
@@ -593,6 +586,7 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
         }
     }
 
+    // update Lqm block vectors
     for ( size_type q=0; q<this->M_model->Ql(this->M_output_index); q++ )
     {
         for ( size_type m=0; m<this->M_model->mMaxF(this->M_output_index, q); m++ )
@@ -629,6 +623,10 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
             }
         }
     }
+
+    if ( ioption("crb.saddlepoint.version")==2 )
+        this->M_model->clearBlockMatix();
+
     toc("Reduced Matrices Built");
 }
 
