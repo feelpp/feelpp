@@ -1,0 +1,28 @@
+= Introduction
+
+We now turn to the next crucial mathematical ingredient: the function space, whose definition depends on $$\Omega_h$$ - or more precisely its partitioning $$\mathcal{T}_h$$ - and the choice of basis function. Function spaces in Feel{plus}+ follow the same definition and Feel++ provides support for continuous and discontinuous Galerkin methods and in particular approximations in $$L^2$$, $$H^1$$-conforming and $$H^1$$-nonconforming, $$H^2$$, $$H(\mathrm{div})$$ and $$H(\mathrm{curl})$$[^1].
+
+We introduce the following spaces
+
+$$
+\begin{aligned}
+    \mathbb{W}_h &= \{v_h \in L^2(\Omega_h): \ \forall K \in \mathcal{T}_h, v_h|_K    \in \mathbb{P}_K\},\\
+    \mathbb{V}_h &= \mathbb{W}_h \cap C^0(\Omega_h)= \{ v_h \in \mathbb{W}_h: \ \forall F \in    \mathcal{F}^i_h\ [ v_h ]_F = 0\}\\
+    \mathbb{H}_h &= \mathbb{W}_h \cap C^1(\Omega_h)= \{ v_h \in \mathbb{W}_h: \ \forall F \in    \mathcal{F}^i_h\ [ v_h ]_F = [ \nabla v_h ]_F = 0\}\\
+    \mathbb{C}\mathbb{R}_h &= \{ v_h \in L^2(\Omega_h):\ \forall K \in \mathcal{T}_h, v_h|_K \in    \mathbb{P}_1; \forall F \in \mathcal{F}^i_h\ \int_F [ v_h ] = 0 \}\\
+    \mathbb{R}{a}\mathbb{T}{u}_h &= \{ v_h \in L^2(\Omega_h):\ \forall K \in \mathcal{T}_h, v_h|_K \in    \mathrm{Span}\{1,x,y,x^2-y^2\}; \forall F \in \mathcal{F}^i_h\ \int_F [ v_h ] = 0 \}\\
+    \mathbb{R}\mathbb{T}_h &= \{\mathbf{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in    \mathbb{R}\mathbb{T}_k; \forall F \in \mathcal{F}^i_h\ [{\mathbf{v}_h \cdot \mathrm{n}}]_F = 0 \}\\
+    \mathbb{N}_h &= \{\mathbf{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in    \mathbb{N}_k; \forall F \in \mathcal{F}^i_h\ [{\mathbf{v}_h \times \mathrm{n}}]_F = 0 \}
+  \end{aligned}
+$$
+
+where $$\mathbb{R}\mathbb{T}_k$$ and $$\mathbb{N}_k$$ are respectively the Raviart-Thomas and N&eacute;d&eacute;lec finite
+elements of degree $$k$$.
+
+
+The Legrendre and Dubiner basis yield implicitely discontinuous
+approximations, the Legendre and Dubiner boundary adapted basis,
+see~\cite MR1696933, are designed to handle continuous approximations whereas the Lagrange basis can yield either discontinuous or continuous (default behavior) approximations.  $$\mathbb{R}\mathbb{T}_h$$ and $$\mathbb{N}_h$$ are implicitely spaces of vectorial functions $$\mathbf{f}$$ such that $$\mathbf{f}: \Omega_h \subset \mathbb{R}^d \mapsto
+\mathbb{R}^d$$. As to the other basis functions, i.e. Lagrange, Legrendre, Dubiner, etc., they are parametrized by their values namely `Scalar`, `Vectorial` or `Matricial.`   
+
+> **Note:**  Products of function spaces must be supported. This is very powerful to describe complex multiphysics problems when coupled with operators, functionals and forms described in the next section. Extracting subspaces or component spaces are part of the interface.

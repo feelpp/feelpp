@@ -63,7 +63,7 @@ namespace FeelModels
 {
 enum class FluidMechanicsPostProcessFieldExported
 {
-    Velocity = 0, Pressure, Displacement, Pid, Vorticity, NormalStress, WallShearStress, Viscosity, ALEMesh
+    Velocity = 0, Pressure, Displacement, Pid, Vorticity, NormalStress, WallShearStress, Density, Viscosity, ALEMesh
 };
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity=false>
@@ -1209,4 +1209,5 @@ FLUIDMECHANICSBASE_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMesh
 
 
 #endif /* FEELPP_FLUIDMECHANICSBASE_HPP */
+
 

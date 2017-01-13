@@ -1,0 +1,16 @@
+== Compressible Saint-Venant-Kirchhoff model
+
+Saint-Venant-Kirchhoff model can be used to modelize hyperelastic struture, by 
+
+$$
+\boldsymbol{\Sigma}_s=\lambda_s tr( \boldsymbol{E}_s)\boldsymbol{I} + 2\mu_s\boldsymbol{E}_s
+$$
+
+
+=== Variables, symbols and units
+|===
+| Notation | Quantity | Unit 
+|$$\lambda_s$$|first Lamé coefficients|$$N/m^2$$
+|$$\mu_s$$|second Lamé coefficients|$$N/m^2$$
+|$$\boldsymbol{E}_s$$|Green Lagrangian tensor|
+|===

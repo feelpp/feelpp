@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 
 #include <feel/feelmodels/fluid/fluidmecbase.hpp>
 
@@ -95,7 +96,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype __mesh )
     this->log("FluidMechanics","loadMesh", "start");
     //-----------------------------------------------------------------------------//
     // create or reload mesh
-    if (this->doRestart()) this->createMesh();
+    if (this->doRestart() && !__mesh) this->createMesh();
     else M_mesh = __mesh;
     //-----------------------------------------------------------------------------//
     // functionSpaces and elements
@@ -157,6 +158,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_wallshearstress").c_str()) )
         if ( boption(_name="do_export_wallshearstress",_prefix=this->prefix()) )
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::WallShearStress );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_density").c_str()) )
+        if ( boption(_name="do_export_density",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Density );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_viscosity").c_str()) )
         if ( boption(_name="do_export_viscosity",_prefix=this->prefix()) )
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
@@ -173,6 +177,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Vorticity );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::NormalStress );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::WallShearStress );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Density );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );

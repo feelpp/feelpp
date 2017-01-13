@@ -58,7 +58,12 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
     else
     {
         std::string filenameDescExpr = filename + ".desc";
-        std::string filenameWithSuffix = filename + ".so";
+        std::string filenameWithSuffix =  filename + ".so";
+        if ( !fs::path(filename).is_absolute() )
+        {
+            filenameDescExpr = Environment::exprRepository() + filename + ".desc";
+            filenameWithSuffix =  Environment::exprRepository() + filename + ".so";
+        }
 
         bool doRebuildGinacLib = true;
         // load .desc file and compare if both expr are identical
@@ -76,10 +81,24 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
         // master rank check if the lib exist and compile this one if not done
         if ( ( world.isMasterRank() && doRebuildGinacLib ) || filename.empty() )
         {
-            if ( !filename.empty() && fs::path( filename ).is_absolute() && !fs::exists( fs::path( filename ).parent_path() ) )
-                fs::create_directories( fs::path( filename ).parent_path() );
-            DVLOG( 2 ) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
-            GiNaC::compile_ex( exprs, syml, *cfun, filename );
+            if ( !filename.empty() && fs::path( filename ).is_absolute() )
+            {
+                if ( !fs::exists( fs::path( filename ).parent_path() ) )
+                    fs::create_directories( fs::path( filename ).parent_path() );
+                DVLOG( 2 ) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
+                GiNaC::compile_ex( exprs, syml, *cfun, filename );
+            }
+            else if ( !filename.empty() )
+            {
+                DVLOG( 2 ) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
+                GiNaC::compile_ex( exprs, syml, *cfun, Environment::exprRepository() + "/" + filename );
+            }
+            else
+            {
+                DVLOG( 2 ) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
+                GiNaC::compile_ex( exprs, syml, *cfun, filename );
+            }
+                     
 
             hasLinked = true;
             if ( !filename.empty() )
@@ -118,14 +137,14 @@ ginacGetDefaultFileName( std::string const& exprDesc, std::string const& dirLibE
     {
         std::string defaultFileNameUsed = ( boost::format( "ginacExprDefaultFileName%1%" ) % GinacExprManagerDefaultFileName::instance().size() ).str();
         if ( dirLibExpr.empty() )
-            res = ( fs::current_path() / defaultFileNameUsed ).string();
+            res = Environment::exprRepository() + "/" + defaultFileNameUsed;
         else
         {
             fs::path fsdir = fs::path( dirLibExpr );
             if ( fsdir.is_absolute() )
                 res = ( fsdir / defaultFileNameUsed ).string();
             else
-                res = ( fs::current_path() / fsdir / defaultFileNameUsed ).string();
+                res = (fs::path(Environment::exprRepository()) / fsdir / defaultFileNameUsed ).string();
         }
         GinacExprManagerDefaultFileName::instance().operator[]( exprDesc ) = res;
     }

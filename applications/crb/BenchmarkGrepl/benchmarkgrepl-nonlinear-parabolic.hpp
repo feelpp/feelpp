@@ -338,7 +338,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::initModel()
 
     auto Pset = this->Dmu->sampling();
     //specify how many elements we take in each direction
-    std::vector<int> N(this->Dmu->dimension());
+    std::vector<size_type> N(this->Dmu->dimension());
     int Ne = ioption(_name="trainset-eim-size");
     std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
 
@@ -481,7 +481,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
     // Evolution
     form2(_test=Xh, _trial=Xh, _matrix=this->M_Aqm[0][0]) = 
       integrate(_range=elements(mesh), 
-        _expr=inner(inner(vec(cst(-doption("peclet")),cst(0),cst(0)),trans(gradt(u))),id(u)))
+                _expr=inner(inner(vec(cst(-doption("peclet")),cst(0),cst(0)),trans(gradt(u))),id(u)))
       +
         integrate( _range=markedfaces( mesh, "Dirichlet" ), 
                    _expr=doption("gamma")*idt( u )*id( u )/hFace() // Penalisation 

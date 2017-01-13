@@ -1,0 +1,20 @@
+= Feel++ File Formats 
+:toc:
+:toc-placement: macro
+:toclevels: 2
+
+toc::[]
+
+== Introduction
+
+Feel++ supports various file formats as inputs and outputs.
+
+|===
+| Format  | Description | Mode | Type 
+| `gmsh`  |  Gmsh mesh file format | Read/Write | Ascii/Binary
+| `acumesh` | Acusim mesh file format | Read | Ascii
+| `json+hdf5` | Feel++ parallel file format | Read/Write | Metadata & Binary
+| `ensightgold` | Ensight  Gold case format | Write | Binary
+| `xdmf` | XML/HDF5 file format | Write
+| `VTK`   | VTK file format | Write
+|===
