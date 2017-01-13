@@ -89,27 +89,24 @@ public :
         if ( this->M_inner_product_matrix_vec.size()==0 )
             this->M_inner_product_matrix_vec.resize(2);
 
-        if ( !this->M_inner_product_matrix_vec[0] )
+        auto M = this->energyMatrix();
+        if ( M )
         {
-            double nu = doption("nu");
-            double gamma = doption("penal_bc");
+            Feel::cout << "Using energy matrix as inner product matrix ! (SP)\n";
+            M_inner_product_matrix_vec[0] = M->createSubMatrix( M->mapRow().dofIdToContainerId(0),
+                                                                M->mapCol().dofIdToContainerId(0) );
+            M_inner_product_matrix_vec[1] = M->createSubMatrix( M->mapRow().dofIdToContainerId(1),
+                                                                M->mapCol().dofIdToContainerId(1) );
+        }
+        else
+        {
             auto u = Xh0->element();
             this->M_inner_product_matrix_vec[0] = backend()->newMatrix( _test=Xh0, _trial=Xh0 );
             auto m2 = form2( _trial=Xh0, _test=Xh0, _matrix=this->M_inner_product_matrix_vec[0] );
             m2 = integrate( elements(Xh0->mesh()), inner( gradt(u), grad(u) ) );
-            m2 += integrate( markedfaces(Xh0->mesh(), "inlet"),
-                             - trans(nu*grad(u)*N())*idt(u)
-                             - trans(nu*gradt(u)*N())*id(u)
-                             +gamma/hFace()*inner( idt(u), id(u) ) );
-            m2 += integrate( markedfaces(Xh0->mesh(), "wall"),
-                             - trans(nu*grad(u)*N())*idt(u)
-                             - trans(nu*gradt(u)*N())*id(u)
-                             +gamma/hFace()*inner( idt(u), id(u) ) );
-            this->M_inner_product_matrix_vec[0]->close();
-        }
 
-        if ( !this->M_inner_product_matrix_vec[1] )
-        {
+            this->M_inner_product_matrix_vec[0]->close();
+
             auto p = Xh1->element();
             this->M_inner_product_matrix_vec[1] = backend()->newMatrix( _test=Xh1, _trial=Xh1 );
             form2( _test=Xh1, _trial=Xh1, _matrix=this->M_inner_product_matrix_vec[1] )
