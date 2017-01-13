@@ -160,10 +160,23 @@ public :
         auto ABlock = A->createSubMatrix( Xh1_indices, Xh2_indices );
         ABlock->close();
 
-        if ( ABlock->linftyNorm()<1e-15 )
+        if ( ABlock->linftyNorm()<1e-12 )
             return 0;
         else
             return ABlock->energy( xi_i, xi_j, transpose );
+    }
+
+    template <typename EType>
+    value_type FqmBlock( uint16_type l, uint16_type q, uint16_type m,
+                         EType const& xi, uint16_type nSpace )
+    {
+        auto F = this->M_Fqm[l][q][m];
+        auto const& Xh_indices = F->map().dofIdToContainerId( nSpace );
+        auto FBlock = F->createSubVector( Xh_indices );
+        if ( FBlock->linftyNorm()<1e-12 )
+            return 0;
+        else
+            return inner_product( *FBlock, xi );
     }
 
 
