@@ -421,33 +421,31 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
                 //update last row of matrix 00
                 for ( size_type j=0; j<M_N0; j++ )
                 {
-                    ur = XN0->primalBasisElement(i);
-                    pr.zero();
-                    uc = XN0->primalBasisElement(j);
-                    pc.zero();
                     if ( ioption("crb.saddlepoint.version")==1 )
+                    {
+                        ur = XN0->primalBasisElement(i);
+                        pr.zero();
+                        uc = XN0->primalBasisElement(j);
+                        pc.zero();
                         M_blockAqm_pr[0][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
+                    }
                     else if ( ioption("crb.saddlepoint.version")==2 )
-                        M_blockAqm_pr[0][0][q][m](i,j) = this->M_model->AqmBlock( q, m,
-                                                                         XN0->primalBasisElement(i),
-                                                                         XN0->primalBasisElement(j),
-                                                                         0,0 );
+                        M_blockAqm_pr[0][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->primalBasisElement(i), XN0->primalBasisElement(j), 0,0 );
                 }
 
                 //update last row of matrix 01
                 for ( size_type j=0; j<M_N1; j++ )
                 {
-                    ur=XN0->primalBasisElement(i);
-                    pr.zero();
-                    uc.zero();
-                    pc=XN1->primalBasisElement(j);
                     if ( ioption("crb.saddlepoint.version")==1 )
+                    {
+                        ur=XN0->primalBasisElement(i);
+                        pr.zero();
+                        uc.zero();
+                        pc=XN1->primalBasisElement(j);
                         M_blockAqm_pr[0][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
+                    }
                     else if ( ioption("crb.saddlepoint.version")==2 )
-                        M_blockAqm_pr[0][1][q][m](i,j) = this->M_model->AqmBlock( q, m,
-                                                                                  XN0->primalBasisElement(i),
-                                                                                  XN1->primalBasisElement(j),
-                                                                                  0,1 );
+                        M_blockAqm_pr[0][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->primalBasisElement(i), XN1->primalBasisElement(j), 0,1 );
                 }
 
             }
@@ -457,33 +455,31 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
                 //update last row of matrix 10
                 for ( size_type j=0; j<M_N0; j++ )
                 {
-                    ur.zero();
-                    pr = XN1->primalBasisElement(i);
-                    uc = XN0->primalBasisElement(j);
-                    pc.zero();
                     if ( ioption("crb.saddlepoint.version")==1 )
+                    {
+                        ur.zero();
+                        pr = XN1->primalBasisElement(i);
+                        uc = XN0->primalBasisElement(j);
+                        pc.zero();
                         M_blockAqm_pr[1][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
+                    }
                     else if ( ioption("crb.saddlepoint.version")==2 )
-                        M_blockAqm_pr[1][0][q][m](i,j) = this->M_model->AqmBlock( q, m,
-                                                                                  XN1->primalBasisElement(i),
-                                                                                  XN0->primalBasisElement(j),
-                                                                                  1,0 );
+                        M_blockAqm_pr[1][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->primalBasisElement(i), XN0->primalBasisElement(j), 1,0 );
                 }
 
                 // update last row of matrix 11
                 for ( size_type j=0; j<M_N1; j++ )
                 {
-                    ur.zero();
-                    pr = XN1->primalBasisElement(i);
-                    uc.zero();
-                    pc = XN1->primalBasisElement(j);
                     if ( ioption("crb.saddlepoint.version")==1 )
+                    {
+                        ur.zero();
+                        pr = XN1->primalBasisElement(i);
+                        uc.zero();
+                        pc = XN1->primalBasisElement(j);
                         M_blockAqm_pr[1][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
+                    }
                     else if ( ioption("crb.saddlepoint.version")==2 )
-                        M_blockAqm_pr[1][1][q][m](i,j) = this->M_model->AqmBlock( q, m,
-                                                                                  XN1->primalBasisElement(i),
-                                                                                  XN1->primalBasisElement(j),
-                                                                                  1,1);
+                        M_blockAqm_pr[1][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->primalBasisElement(i), XN1->primalBasisElement(j), 1,1);
                 }
             }
 
@@ -492,13 +488,14 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
                 //update last column of matrix 00
                 for ( size_type i=0; i<M_N0; i++)
                 {
-                    ur=XN0->primalBasisElement(i);
-                    pr.zero();
-                    uc=XN0->primalBasisElement(j);
-                    pr.zero();
-
                     if ( ioption("crb.saddlepoint.version")==1 )
+                    {
+                        ur=XN0->primalBasisElement(i);
+                        pr.zero();
+                        uc=XN0->primalBasisElement(j);
+                        pr.zero();
                         M_blockAqm_pr[0][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
+                    }
                     else if ( ioption("crb.saddlepoint.version")==2 )
                         M_blockAqm_pr[0][0][q][m](i,j) = this->M_model->AqmBlock( q, m,
                                                                                   XN0->primalBasisElement(i),
@@ -509,17 +506,16 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
                 //update last column of matrix 10
                 for ( size_type i=0; i<M_N1; i++ )
                 {
-                    ur.zero();
-                    pr=XN1->primalBasisElement(i);
-                    uc=XN0->primalBasisElement(j);
-                    pc.zero();
                     if ( ioption("crb.saddlepoint.version")==1 )
+                    {
+                        ur.zero();
+                        pr=XN1->primalBasisElement(i);
+                        uc=XN0->primalBasisElement(j);
+                        pc.zero();
                         M_blockAqm_pr[1][0][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
+                    }
                     else if ( ioption("crb.saddlepoint.version")==2 )
-                        M_blockAqm_pr[1][0][q][m](i,j) = this->M_model->AqmBlock( q, m,
-                                                                                  XN1->primalBasisElement(i),
-                                                                                  XN0->primalBasisElement(j),
-                                                                                  1,0 );
+                        M_blockAqm_pr[1][0][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->primalBasisElement(i), XN0->primalBasisElement(j), 1,0 );
                 }
             }
 
@@ -528,33 +524,31 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
                 //update last column of matrix 01
                 for ( size_type i=0; i<M_N0; i++ )
                 {
-                    ur=XN0->primalBasisElement(i);
-                    pr.zero();
-                    uc.zero();
-                    pc=XN1->primalBasisElement(j);
                     if ( ioption("crb.saddlepoint.version")==1 )
+                    {
+                        ur=XN0->primalBasisElement(i);
+                        pr.zero();
+                        uc.zero();
+                        pc=XN1->primalBasisElement(j);
                         M_blockAqm_pr[0][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
+                    }
                     else if ( ioption("crb.saddlepoint.version")==2 )
-                        M_blockAqm_pr[0][1][q][m](i,j) = this->M_model->AqmBlock( q, m,
-                                                                                  XN0->primalBasisElement(i),
-                                                                                  XN1->primalBasisElement(j),
-                                                                                  0,1 );
+                        M_blockAqm_pr[0][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN0->primalBasisElement(i), XN1->primalBasisElement(j), 0,1 );
                 }
 
                 //update last column of matrix 11
                 for ( size_type i=0; i<M_N1; i++ )
                 {
-                    ur.zero();
-                    pr=XN1->primalBasisElement(i);
-                    uc.zero();
-                    pc=XN1->primalBasisElement(j);
                     if ( ioption("crb.saddlepoint.version")==1 )
+                    {
+                        ur.zero();
+                        pr=XN1->primalBasisElement(i);
+                        uc.zero();
+                        pc=XN1->primalBasisElement(j);
                         M_blockAqm_pr[1][1][q][m](i,j) = this->M_model->Aqm( q, m, Uc, Ur );
+                    }
                     else if ( ioption("crb.saddlepoint.version")==2 )
-                        M_blockAqm_pr[1][1][q][m](i,j) = this->M_model->AqmBlock( q, m,
-                                                                                  XN1->primalBasisElement(i),
-                                                                                  XN1->primalBasisElement(j),
-                                                                                  1,1 );
+                        M_blockAqm_pr[1][1][q][m](i,j) = this->M_model->AqmBlock( q, m, XN1->primalBasisElement(i), XN1->primalBasisElement(j), 1,1 );
                 }
 
             }
@@ -572,17 +566,29 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
             // update block 0
             for ( size_type l=M_N0-number_of_elements_to_update0; l<M_N0; l++ )
             {
-                ur=XN0->primalBasisElement(l);
-                pr.zero();
-                M_blockFqm_pr[0][q][m](l) = this->M_model->Fqm( 0, q, m, Ur );
+                if ( ioption("crb.saddlepoint.version")==1 )
+                {
+                    ur=XN0->primalBasisElement(l);
+                    pr.zero();
+                    M_blockFqm_pr[0][q][m](l) = this->M_model->Fqm( 0, q, m, Ur );
+                }
+                else if ( ioption("crb.saddlepoint.version")==2 )
+                    M_blockFqm_pr[0][q][m](l) = this->M_model->FqmBlock( 0, q, m,
+                                                                         XN0->primalBasisElement(l), 0 );
             }
 
             // udpate block 1
             for ( size_type l=M_N1-number_of_elements_to_update; l<M_N1; l++ )
             {
-                ur.zero();
-                pr=XN1->primalBasisElement(l);
-                M_blockFqm_pr[1][q][m](l) = this->M_model->Fqm( 0, q, m, Ur );
+                if ( ioption("crb.saddlepoint.version")==1 )
+                {
+                    ur.zero();
+                    pr=XN1->primalBasisElement(l);
+                    M_blockFqm_pr[1][q][m](l) = this->M_model->Fqm( 0, q, m, Ur );
+                }
+                else if ( ioption("crb.saddlepoint.version")==2 )
+                    M_blockFqm_pr[1][q][m](l) = this->M_model->FqmBlock( 0, q, m,
+                                                                         XN1->primalBasisElement(l), 1 );
             }
         }
     }
@@ -597,17 +603,29 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
             // update block 0
             for ( size_type l=M_N0-number_of_elements_to_update0; l<M_N0; l++ )
             {
-                ur=XN0->primalBasisElement(l);
-                pr.zero();
-                M_blockLqm_pr[0][q][m](l) = this->M_model->Fqm( this->M_output_index, q, m, Ur );
+                if ( ioption("crb.saddlepoint.version")==1 )
+                {
+                    ur=XN0->primalBasisElement(l);
+                    pr.zero();
+                    M_blockLqm_pr[0][q][m](l) = this->M_model->Fqm( this->M_output_index, q, m, Ur );
+                }
+                else if ( ioption("crb.saddlepoint.version")==2 )
+                    M_blockLqm_pr[0][q][m](l) = this->M_model->FqmBlock( this->M_output_index, q, m,
+                                                                         XN0->primalBasisElement(l), 0 );
             }
 
             // udpate block 1
             for ( size_type l=M_N1-number_of_elements_to_update; l<M_N1; l++ )
             {
-                ur.zero();
-                pr=XN1->primalBasisElement(l);
-                M_blockLqm_pr[1][q][m](l) = this->M_model->Fqm( this->M_output_index, q, m, Ur );
+                if ( ioption("crb.saddlepoint.version")==1 )
+                {
+                    ur.zero();
+                    pr=XN1->primalBasisElement(l);
+                    M_blockLqm_pr[1][q][m](l) = this->M_model->Fqm( this->M_output_index, q, m, Ur );
+                }
+                else if ( ioption("crb.saddlepoint.version")==2 )
+                    M_blockLqm_pr[1][q][m](l) = this->M_model->FqmBlock( this->M_output_index, q, m,
+                                                                         XN1->primalBasisElement(l), 1 );
             }
         }
     }
@@ -735,6 +753,8 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
             F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
         }
     }
+    Feel::cout << A << std::endl;
+    Feel::cout << F << std::endl;
 
    uN[0] = A.lu().solve( F );
 
