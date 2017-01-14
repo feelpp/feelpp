@@ -1,5 +1,6 @@
 #! /bin/bash
 
+brew tap homebrew/homebrew-science
 brew update
 brew install openmpi boost petsc slepc gmsh
 mkdir build
