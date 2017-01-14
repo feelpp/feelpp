@@ -43,12 +43,9 @@ matrix:
         osx_image: xcode8.2
 
   allow_failures:
-  - os: linux
-    env: BUILD="ubuntu 16.10,gcc-6.2" FEELPP_CXX="g++" FEELPP_CC="gcc" TARGET_IMAGE="ubuntu:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O0 -DNDEBUG"
-  - os: linux
-    env: BUILD="debian testing,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
-  - os: linux
-    env: BUILD="debian sid,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+  - env: BUILD="ubuntu 16.10,gcc-6.2" FEELPP_CXX="g++" FEELPP_CC="gcc" TARGET_IMAGE="ubuntu:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O0 -DNDEBUG"
+  - env: BUILD="debian testing,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+  - env: BUILD="debian sid,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
   - os: osx
 
 before_install:
@@ -56,6 +53,7 @@ before_install:
 - echo $HOME
 - echo "building ${TRAVIS_BRANCH}..."
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then tools/scripts/travis/build-osx.sh   ; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker --version   ; fi
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then tools/scripts/travis/build-docker.sh   ; fi
 
 install:
