@@ -313,6 +313,8 @@ include( feelpp.macros )
 
 # Find feel++ dependencies 
 include( feelpp.dependencies )
+add_custom_target(contrib)
+add_subdirectory(contrib)
 
 # Load documented project for Doxygen
 # it assumes that a project is valid if :
