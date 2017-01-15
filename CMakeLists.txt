@@ -424,7 +424,10 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEELPP_ENABLE_RESEARCH )
 endif()
 
 include(feelpp.module.quickstart)
-
+if ( FEELPP_HAS_QUICKSTART )
+  add_custom_target(quickstart)
+  add_subdirectory(quickstart)
+endif()
 
 ################################################################################
 # generate configuration header
