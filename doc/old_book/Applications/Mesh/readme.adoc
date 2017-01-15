@@ -1,7 +1,0 @@
-# Mesh
-
-As the title suggest, this section will be dedicate to mesh applications. It is composed by 
-
-- link:Partitioner/readme.adoc[A mesh partitioner] 
-
-- link:Reader/readme.adoc[A partitioned mesh reader ] 

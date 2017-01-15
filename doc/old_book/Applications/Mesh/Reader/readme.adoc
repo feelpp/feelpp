@@ -1,7 +1,0 @@
-# Reading
-
-When we have partitoned a mesh with `feelpp_mesh_partitioner`, we would naturally like to read the output file in order to extract data and work on. That's the purpose of https://github.com/feelpp/feelpp/blob/develop/applications/mesh/mesh.cpp[`mesh.cpp`].
-
-## Code
-
-From the file given by the option `mesh.filename`, the programm can extract the data and load the associated mesh into our execution. With this, we can give a json file, obtained from `feelpp_mesh_partitioner` and it will retrieve the parts of the original mesh.
