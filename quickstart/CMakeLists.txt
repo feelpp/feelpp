@@ -1,9 +1,9 @@
-###  TEMPLATE.txt.tpl; coding: utf-8 ---
+###  CMakeLists.txt; coding: utf-8 --- 
 
-#  Author(s): Alexandre Ancel <alexandre.ancel@cemosis.fr>
-#       Date: 2014-12-18
+#  Author(s):<christophe.prudhomme@feelpp.org>
+#       Date: 06 Feb 2015
 #
-#  Copyright (C) 2014-2015 Feel++ Consortium
+#  Copyright (C) 2015-2017 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,16 +22,13 @@
 #
 #
 
-#
-# quickstart
-#
 
-if ( FEELPP_ENABLE_QUICKSTART )
-  if ( EXISTS ${CMAKE_SOURCE_DIR}/quickstart/CMakeLists.txt )
-    SET(FEELPP_HAS_QUICKSTART 1)
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Quickstart" )
-    ADD_DEFINITIONS( -DFEELPP_HAS_QUICKSTART )
-  else()
-    MESSAGE(WARNING "[feelpp] Quickstart was not found on your system. Either install it or set FEELPP_ENABLE_QUICKSTART to OFF.")
-  endif() 
-endif()
+feelpp_add_application( qs_laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL CFG qs_laplacian_2d.cfg DEFS FEELPP_DIM=2 )
+feelpp_add_application( qs_laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL CFG qs_laplacian_3d.cfg DEFS FEELPP_DIM=3 )
+
+install(TARGETS feelpp_qs_laplacian_2d feelpp_qs_laplacian_3d 
+        RUNTIME DESTINATION bin 
+        COMPONENT Quickstart)
+
+add_dependencies(quickstart feelpp_qs_laplacian_2d feelpp_qs_laplacian_3d )
+
