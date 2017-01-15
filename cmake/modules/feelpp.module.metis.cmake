@@ -43,6 +43,6 @@ if ( FEELPP_ENABLE_METIS )
     
     SET(FEELPP_LIBRARIES feelpp_metis ${FEELPP_LIBRARIES})
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Metis/Contrib" )
-    add_subdirectory(contrib/metis)
+    #add_subdirectory(contrib/metis)
   endif()
 endif()

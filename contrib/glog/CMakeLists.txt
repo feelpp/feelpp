@@ -464,18 +464,19 @@ endif (UNIX OR (APPLE AND HAVE_DLADDR))
 
 # Unit testing
 
-if (BUILD_TESTING)
+if (0) # BUILD_TESTING)
   add_executable (logging_unittest
     src/logging_unittest.cc
   )
 
-  target_link_libraries (logging_unittest PRIVATE glog)
-
+  target_link_libraries (logging_unittest PRIVATE feelpp_glog)
+  target_include_directories(logging_unittest PUBLIC BEFORE $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/contrib/glog> )
+  
   add_executable (stl_logging_unittest
     src/stl_logging_unittest.cc
   )
 
-  target_link_libraries (stl_logging_unittest PRIVATE glog)
+  target_link_libraries (stl_logging_unittest PRIVATE feelpp_glog)
 
   if (HAVE_NO_DEPRECATED)
     set_property (TARGET stl_logging_unittest APPEND PROPERTY COMPILE_OPTIONS
@@ -507,35 +508,36 @@ if (BUILD_TESTING)
       src/symbolize_unittest.cc
     )
 
-    target_link_libraries (symbolize_unittest PRIVATE glog)
+  target_link_libraries (symbolize_unittest PRIVATE feelpp_glog)
+  target_include_directories(symbolize_unittest PUBLIC BEFORE $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/contrib/glog> )
   endif (HAVE_SYMBOLIZE)
 
   add_executable (demangle_unittest
     src/demangle_unittest.cc
   )
 
-  target_link_libraries (demangle_unittest PRIVATE glog)
+  target_link_libraries (demangle_unittest PRIVATE feelpp_glog)
 
   if (HAVE_STACKTRACE)
     add_executable (stacktrace_unittest
       src/stacktrace_unittest.cc
     )
 
-    target_link_libraries (stacktrace_unittest PRIVATE glog)
+    target_link_libraries (stacktrace_unittest PRIVATE feelpp_glog)
   endif (HAVE_STACKTRACE)
 
   add_executable (utilities_unittest
     src/utilities_unittest.cc
   )
 
-  target_link_libraries (utilities_unittest PRIVATE glog)
+  target_link_libraries (utilities_unittest PRIVATE feelpp_glog)
 
   if (HAVE_STACKTRACE AND HAVE_SYMBOLIZE)
     add_executable (signalhandler_unittest
       src/signalhandler_unittest.cc
     )
 
-    target_link_libraries (signalhandler_unittest PRIVATE glog)
+    target_link_libraries (signalhandler_unittest PRIVATE feelpp_glog)
   endif (HAVE_STACKTRACE AND HAVE_SYMBOLIZE)
 
   add_test (NAME demangle COMMAND demangle_unittest)
@@ -554,12 +556,12 @@ if (BUILD_TESTING)
   if (TARGET symbolize_unittest)
     add_test (NAME symbolize COMMAND symbolize_unittest)
   endif (TARGET symbolize_unittest)
-endif (BUILD_TESTING)
+endif (0) #BUILD_TESTING)
 
 install (TARGETS feelpp_glog
   #EXPORT glog-targets
   RUNTIME DESTINATION bin
-  PUBLIC_HEADER DESTINATION include/glog
+  PUBLIC_HEADER DESTINATION include/feel/glog
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
 
