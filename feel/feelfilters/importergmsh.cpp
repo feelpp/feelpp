@@ -23,6 +23,88 @@
  */
 #include <feel/feelfilters/importergmsh.hpp>
 
+#if defined(FEELPP_HAS_GMSH_H)
+namespace Feel
+{
+// EDF MED format
+const auto med = GmshReaderFactory::instance().emplace( ".med",
+                                                        []( std::string fname )
+                                                        {
+                                                            GModel *m = new GModel();
+                                                            int status = 1;
+#ifdef FEELPP_HAS_GMSH_HAS_MED
+                                                            status = GModel::readMED(fname);
+                                                            m = GModel::current();
+#else
+                                                            throw std::logic_error("Gmsh MED support is not available. Cannot load MED file");
+#endif
+                                                            return std::make_pair( status, m );
+                                                        });
+// Medit inria format
+const auto mesh = GmshReaderFactory::instance().emplace( ".mesh",
+                                                         []( std::string fname )
+                                                         {
+                                                             GModel *m = new GModel();
+                                                             int status = m->readMESH(fname);
+                                                             return std::make_pair( status, m );
+                                                         });
+// Nastran Bulk Data File format
+const auto reader_bdf = GmshReaderFactory::instance().emplace( ".bdf",
+                                                               []( std::string fname )
+                                                               {
+                                                                   GModel *m = new GModel();
+                                                                   int status = m->readBDF(fname);
+                                                                   return std::make_pair( status, m );
+                                                               });
+// Plot3D files
+const auto reader_p3d = GmshReaderFactory::instance().emplace( ".p3d",
+                                                               []( std::string fname )
+                                                               {
+                                                                   GModel *m = new GModel();
+                                                                   int status = m->readP3D(fname);
+                                                                   return std::make_pair( status, m );
+                                                               });
+// CFD General Notation System files
+const auto reader_cgns = GmshReaderFactory::instance().emplace( ".cgns",
+                                                                []( std::string fname )
+                                                                {
+                                                                    GModel *m = new GModel();
+                                                                    int status = 1;
+#ifdef FEELPP_HAS_GMSH_HAS_CGNS
+                                                                    status = m->readCGNS(fname);
+#else
+                                                                    throw std::logic_error("Gmsh CGNS(HDF) support is not available. Cannot load CGNS file");
+#endif
+                                                                    return std::make_pair( status, m );
+                                                                });
+
+
+
+namespace detail
+{
+bool isOnProcessor( std::vector<rank_type> ghosts, rank_type partition, rank_type worldcommrank, rank_type worldcommsize)
+{
+    // maybe proc id does not start at 0
+    std::for_each( ghosts.begin(), ghosts.end(), [&worldcommsize]( rank_type& g ) { g = (g % worldcommsize); } );
+    
+    if ( worldcommsize == 1 )
+        return true;
+
+    if ( worldcommrank == partition )
+        return true;
+    
+    // is the element a ghost cell
+    // look into ghosts if 'partition' is present
+    auto it = std::find( ghosts.begin(), ghosts.end(), worldcommrank );
+    if ( it != ghosts.end() )
+        return true;
+    return false;
+}
+
+} // detail
+} // Feel
+#endif // FEELPP_HAS_GMSH_H
+
 #if !defined( FEELPP_HAS_GMSH_H)
 // From Gmsh - Common/StringUtils.h
 void SwapBytes(char *array, int size, int n)
@@ -189,5 +271,5 @@ int getInfoMSH(const int typeMSH, const char **const name)
         if(name) *name = "Unknown";
         return 0;
     }
-#endif
+#endif // FEELPP_HAS_GMSH_H
 }
