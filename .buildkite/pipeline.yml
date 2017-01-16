@@ -15,14 +15,14 @@ steps:
    command: tools/scripts/buildkite/install-feelpp-lib.sh
    env:
      JOBS: 20
-     TARGET: ubuntu:16.20
+     TARGET: ubuntu:16.10
  - name: ':ubuntu: 16.20,clang:3.9'
    command: tools/scripts/buildkite/install-feelpp-lib.sh
    env:
      JOBS: 20
      CXX: clang++-3.9
      CC: clang-3.9
-     TARGET: ubuntu:16.20
+     TARGET: ubuntu:16.10
  - wait
  - command: tools/scripts/buildkite/release.sh
    name: "Push images to :docker: Hub :rocket:"
