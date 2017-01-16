@@ -11,8 +11,9 @@ tools/scripts/buildkite/list.sh | while read line ; do
   docker push "feelpp/feelpp-libs:$image"
 
   for aliastag in ${extratags[@]} ; do
-    echo "--- Pushing feelpp/feelpp-libs:$aliastag"
-    docker push "feelpp/feelpp-libes:$aliastag"
+      echo "--- Pushing feelpp/feelpp-libs:$aliastag"
+      docker tag "feelpp/feelpp-libs:$image" "feelpp/feelpp-libs:$aliastag"
+      docker push "feelpp/feelpp-libs:$aliastag"
   done
 done
 
