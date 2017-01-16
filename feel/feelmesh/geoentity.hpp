@@ -145,9 +145,41 @@ public:
     {}
 
     GeoEntity( GeoEntity const& __me ) = default;
-    GeoEntity( GeoEntity && __me ) = default;
+    GeoEntity( GeoEntity && __me )
+        :
+        super( std::move( __me ) ),
+        M_id( std::move( __me.M_id ) ),
+        M_entity( std::move( __me.M_entity ) ),
+        M_geometry( std::move( __me.M_geometry ) ),
+        M_shape( std::move( __me.M_shape ) ),
+        M_boundaryEntityDimension( std::move( __me.M_boundaryEntityDimension ) ),
+        M_pid( std::move( __me.M_pid ) ),
+        M_pidInPartition( std::move( __me.M_pidInPartition ) ),
+        M_neighor_pids( std::move( __me.M_neighor_pids ) ),
+        M_idInOtherPartitions( std::move( __me.M_idInOtherPartitions ) ),
+        M_elist( std::move( __me.M_elist ) ),
+        M_elistGhost( std::move( __me.M_elistGhost ) )
+        {
+            //std::cout << "GeoEntity moved ctor\n";
+        }
     GeoEntity& operator=( GeoEntity const& __me ) = default;
-    GeoEntity& operator=( GeoEntity && __me ) = default;
+    GeoEntity& operator=( GeoEntity && __me )
+        {
+            super::operator=( std::move( __me ) );
+            M_id= std::move( __me.M_id );
+            M_entity= std::move( __me.M_entity );
+            M_geometry= std::move( __me.M_geometry );
+            M_shape= std::move( __me.M_shape );
+            M_boundaryEntityDimension= std::move( __me.M_boundaryEntityDimension );
+            M_pid= std::move( __me.M_pid );
+            M_pidInPartition= std::move( __me.M_pidInPartition );
+            M_neighor_pids= std::move( __me.M_neighor_pids );
+            M_idInOtherPartitions= std::move( __me.M_idInOtherPartitions );
+            M_elist= std::move( __me.M_elist );
+            M_elistGhost= std::move( __me.M_elistGhost );
+            //std::cout << "GeoEntity moved assign\n";
+            return *this;
+        }
 
     virtual ~GeoEntity()
     {}

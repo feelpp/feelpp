@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+*/
 
 #include <feel/feelmodels/advection/advectionbase.hpp>
 
@@ -31,6 +32,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionBase(
         std::string const& rootRepository )
 :
     super_type( prefix, worldComm, subPrefix, rootRepository ),
+    M_isBuilt(false),
     M_isUpdatedForUse(false),
     M_diffusionReactionModel( new diffusionreaction_model_type( prefix ) ),
     M_gamma1(std::pow(nOrder, -3.5))
@@ -63,19 +65,74 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build()
     // Exporters
     this->createExporters();
 
+    M_isBuilt = true;
+
     this->log("Advection","build", "finish");
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh)
+{
+    this->log("Advection","build(mesh)", "start");
+    
+    // Mesh
+    M_mesh = mesh;
+    // Function spaces
+    this->createFunctionSpaces();
+    // Algebraic data
+    this->createAlgebraicData();
+    // Bdf time scheme
+    this->createTimeDiscretization();
+    // Physical parameters
+    this->createOthers();
+    // Exporters
+    this->createExporters();
+
+    M_isBuilt = true;
+
+    this->log("Advection","build(mesh)", "finish");
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build( space_advection_ptrtype const& space)
+{
+    this->log("Advection","build(space)", "start");
+    
+    // Mesh
+    M_mesh = space->mesh();
+    // Function spaces
+    if( this->stabilizationMethod() == AdvectionStabMethod::CIP )
+    {
+        CHECK(space->extendedDofTable()) << "CIP stabilization can only be used with extended dof table built.";
+    }
+    M_Xh = space;
+    // Algebraic data
+    this->createAlgebraicData();
+    // Bdf time scheme
+    this->createTimeDiscretization();
+    // Physical parameters
+    this->createOthers();
+    // Exporters
+    this->createExporters();
+
+    M_isBuilt = true;
+
+    this->log("Advection","build(space)", "finish");
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app )
 {
-    if ( M_isUpdatedForUse ) return;
+    //if ( M_isUpdatedForUse ) return;
 
     this->log("Advection","init", "start" );
     this->timerTool("Constructor").start();
 
-    this->build();
+    if( !M_isBuilt )
+        this->build();
 
     // Vector solution
     M_blockVectorSolution.resize(1);
@@ -84,6 +141,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
 
     // Time step
     this->initTimeStep();
+    // Post-process
+    this->initPostProcess();
     
     // Algebraic factory
     if( buildModelAlgebraicFactory )
@@ -101,6 +160,45 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
     this->log("Advection","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
 }
 
+//ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+//void
+//ADVECTIONBASE_CLASS_TEMPLATE_TYPE::initFromMesh(
+        //mesh_ptrtype const& mesh,
+        //bool buildModelAlgebraicFactory, 
+        //model_algebraic_factory_type::appli_ptrtype const& app )
+//{
+    ////if ( M_isUpdatedForUse ) return;
+
+    //this->log("Advection","initFromMesh", "start" );
+    //this->timerTool("Constructor").start();
+
+    //if( !M_isBuilt )
+        //this->build( mesh );
+
+    //// Vector solution
+    //M_blockVectorSolution.resize(1);
+    //M_blockVectorSolution(0) = this->fieldSolutionPtr();
+    //M_blockVectorSolution.buildVector( this->backend() );
+
+    //// Time step
+    //this->initTimeStep();
+    
+    //// Algebraic factory
+    //if( buildModelAlgebraicFactory )
+    //{
+        //// matrix sparsity graph
+        //auto graph = this->buildMatrixGraph();
+        
+        //M_algebraicFactory.reset( new model_algebraic_factory_type( app, this->backend(), graph, graph->mapRow().indexSplit() ) );
+    //}
+
+    //M_isUpdatedForUse = true;
+
+    //double tElapsedInit = this->timerTool("Constructor").stop("init");
+    //if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
+    //this->log("Advection","initFromMesh",(boost::format("finish in %1% s")%tElapsedInit).str() );
+//}
+
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
@@ -109,12 +207,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     
     M_hasSourceAdded = false;
 
-    // Model and solver 
-    std::string advection_model = this->modelProperties().model();
-    if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
-        advection_model = soption(_name="model",_prefix=this->prefix());
-    this->setModelName( advection_model );
-
+    // Solver
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
         this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
 
@@ -126,6 +219,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     M_doExportAll = boption(_name="export-all",_prefix=this->prefix());
     M_doExportAdvectionVelocity = boption(_name="export-advection-velocity",_prefix=this->prefix());
+    M_doExportDiffusionCoefficient = boption(_name="export-diffusion", _prefix=this->prefix());
+    M_doExportReactionCoefficient = boption(_name="export-reaction", _prefix=this->prefix());
     M_doExportSourceField = boption(_name="export-source", _prefix=this->prefix());
     
     this->log("Advection","loadParametersFromOptionsVm", "finish");
@@ -152,32 +247,19 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     this->log("Advection","createFunctionSpaces","start");
     this->timerTool("Constructor").start();
     
-    // Advection 
+    // Create advection function space
     std::vector<bool> extendedDT( space_advection_type::nSpaces, false );
     if( this->stabilizationMethod() == AdvectionStabMethod::CIP )
     {
         this->log("Advection","createFunctionSpaces", "use buildDofTableMPIExtended on advection" );
         extendedDT[0] = true;
     }
-    M_Xh = space_advection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(), _extended_doftable=extendedDT );
-    M_fieldSolution.reset( new element_advection_type(M_Xh, "phi") );
-
-    // Advection velocity 
-    M_XhAdvectionVelocity = space_advection_velocity_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
-    M_fieldAdvectionVelocity.reset( new element_advection_velocity_type(M_XhAdvectionVelocity, "AdvectionVelocity") );
-    
-    // Load the field velocity convection from a math expr
-    if ( Environment::vm().count(prefixvm(this->prefix(),"advection-velocity").c_str()) )
-    {
-        std::string pathGinacExpr = this->directoryLibSymbExpr() + "/advection-velocity";
-        M_exprAdvectionVelocity = expr<nDim,1>( soption(_prefix=this->prefix(),_name="advection-velocity"),
-                                                                 this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
-        //this->updateFieldVelocityConvection();
-        M_fieldAdvectionVelocity->on( _range=elements(this->mesh()), _expr=*M_exprAdvectionVelocity );
-    }
-
-    // Source term
-    M_fieldSource.reset( new element_advection_type(M_Xh, "SourceAdded") );
+    M_Xh = space_advection_type::New( 
+            _mesh=M_mesh, 
+            _worldscomm=this->worldsComm(), 
+            _extended_doftable=extendedDT,
+            _periodicity=this->periodicity()
+            );
 
     double tElapsed = this->timerTool("Constructor").stop("create");
     this->log("Advection","createFunctionSpaces", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -211,7 +293,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretization()
     M_bdf = bdf( _vm=Environment::vm(), _space=M_Xh,
                        _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"phi"+suffixName)),
                        _prefix=this->prefix(),
-                       // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
+                       // don't use the advection.bdf {initial,final,step}time but the general bdf info, the order will be from advection.bdf
                        _initial_time=this->timeInitial(),
                        _final_time=this->timeFinal(),
                        _time_step=this->timeStep(),
@@ -231,7 +313,35 @@ ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createOthers()
 {
+    M_fieldSolution.reset( new element_advection_type(M_Xh, "phi") );
+
+    // Advection velocity 
+    M_XhAdvectionVelocity = space_advection_velocity_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+    M_fieldAdvectionVelocity.reset( new element_advection_velocity_type(M_XhAdvectionVelocity, "AdvectionVelocity") );
+    
+    // Load the field velocity convection from a math expr
+    if ( Environment::vm().count(prefixvm(this->prefix(),"advection-velocity").c_str()) )
+    {
+        std::string pathGinacExpr = this->directoryLibSymbExpr() + "/advection-velocity";
+        M_exprAdvectionVelocity = expr<nDim,1>( soption(_prefix=this->prefix(),_name="advection-velocity"),
+                                                                 this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
+        //this->updateFieldVelocityConvection();
+        M_fieldAdvectionVelocity->on( _range=elements(this->mesh()), _expr=*M_exprAdvectionVelocity );
+    }
+
+    // Source term
+    M_fieldSource.reset( new element_advection_type(M_Xh, "SourceAdded") );
+    // Diffusion-reaction model
     M_diffusionReactionModel->initFromMesh( this->mesh(), this->useExtendedDofTable() );
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::setPeriodicity( periodicity_type const& p )
+{
+    if( M_isUpdatedForUse )
+       LOG(WARNING) << "Setting periodicity after initialization ! You need to init() again !";
+    M_periodicity = p;
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -272,6 +382,11 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
         M_modelName = "Advection-Diffusion";
         M_solverName = "LinearSystem";
     }
+    else if ( type == "Advection-Reaction" )
+    {
+        M_modelName = "Advection-Reaction";
+        M_solverName = "LinearSystem";
+    }
     else if ( type == "Advection-Diffusion-Reaction" )
     {
         M_modelName = "Advection-Diffusion-Reaction";
@@ -292,7 +407,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 bool
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::hasReaction() const
 {
-    return (this->modelName() == "Advection-Diffusion-Reaction");
+    return (this->modelName() == "Advection-Reaction" || this->modelName() == "Advection-Diffusion-Reaction");
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -492,7 +607,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         
         bilinearForm += integrate(
                 _range=elements(mesh),
-                _expr=(gradt(phi)*idv(advection_velocity))*id(psi),
+                _expr=inner((gradt(phi)*idv(advection_velocity)), id(psi)),
                 _geomap=this->geomap()
                 );
 
@@ -526,7 +641,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         
         bilinearForm += integrate(
                 _range=elements(mesh),
-                _expr=-idv(R)*idt(phi)*id(psi),
+                _expr=idv(R)*inner(idt(phi), id(psi)),
                 _geomap=this->geomap()
                 );
 
@@ -543,7 +658,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         {
             bilinearForm += integrate( 
                     _range=elements(mesh),
-                    _expr=M_bdf->polyDerivCoefficient(0)*idt(phi)*id(psi),
+                    _expr=M_bdf->polyDerivCoefficient(0)*inner(idt(phi),id(psi)),
                     _geomap=this->geomap() 
                     );
         }
@@ -551,7 +666,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         {
             linearForm += integrate(
                     _range=elements(mesh),
-                    _expr=idv(M_bdf->polyDeriv())*id(psi),
+                    _expr=inner(idv(M_bdf->polyDeriv()),id(psi)),
                     _geomap=this->geomap() 
                     );
         }
@@ -574,7 +689,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
 
         linearForm += integrate( 
                 _range=elements(mesh),
-                _expr= idv(*M_fieldSource)*id(psi),
+                _expr= inner(idv(*M_fieldSource),id(psi)),
                 _geomap=this->geomap() 
                 );
 
@@ -646,23 +761,23 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 auto L_op = grad(psi) * beta // advection term
                     + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*id(psi) // transient term
-                    + (this->hasReaction()) * (-idv(R))*id(psi) // reaction term
+                    + (this->hasReaction()) * (idv(R))*id(psi) // reaction term
                     + (this->hasDiffusion() && nOrder >= 2) * (-idv(D))*laplacian(psi) // diffusion term
                     ;
                 auto L_opt = gradt(phi) * beta // advection term
                     + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*idt(phi) // transient term
-                    + (this->hasReaction()) * (-idv(R))*idt(phi) // reaction term
+                    + (this->hasReaction()) * (idv(R))*idt(phi) // reaction term
                     + (this->hasDiffusion() && nOrder >= 2 ) * (-idv(D))*laplaciant(phi) // diffusion term
                     ;
 
                 bilinearForm += integrate(
                         _range=elements(mesh),
-                        _expr=coeff * L_op * L_opt,
+                        _expr=coeff * inner(L_op, L_opt),
                         _geomap=this->geomap() );
 
                 linearForm += integrate(
                         _range=elements(mesh),
-                        _expr=coeff*L_op*f,
+                        _expr=coeff * inner(L_op, f),
                         _geomap=this->geomap() );
 
                 break ;
@@ -677,17 +792,19 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 auto L_opt = gradt(phi) * beta // advection term
                     + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*idt(phi) // transient term
-                    + (this->hasReaction()) * (-idv(R))*idt(phi) // reaction term
+                    + (this->hasReaction()) * (idv(R))*idt(phi) // reaction term
                     + (this->hasDiffusion() && nOrder >= 2 ) * (-idv(D))*laplaciant(phi) // diffusion term
                     ;
 
                 bilinearForm += integrate(
                         _range=elements(M_mesh),
-                        _expr=coeff * L_op * L_opt );
+                        _expr=coeff * inner(L_op, L_opt) 
+                        );
 
                 linearForm += integrate(
                         _range=elements(M_mesh),
-                        _expr=coeff*L_op*f );
+                        _expr=coeff * inner(L_op, f) 
+                        );
 
                 break;
             } //SUPG
@@ -701,22 +818,24 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
                 
                 auto L_op = grad(psi) * beta // advection term
                     - (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*id(psi) // transient term
-                    - (this->hasReaction()) * (-idv(R))*id(psi) // reaction term
+                    - (this->hasReaction()) * (idv(R))*id(psi) // reaction term
                     - (this->hasDiffusion() && nOrder >= 2) * (-idv(D))*laplacian(psi) // diffusion term
                     ;
                 auto L_opt = gradt(phi) * beta // advection term
                     + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*idt(phi) // transient term
-                    + (this->hasReaction()) * (-idv(R))*idt(phi) // reaction term
+                    + (this->hasReaction()) * (idv(R))*idt(phi) // reaction term
                     + (this->hasDiffusion() && nOrder >= 2 ) * (-idv(D))*laplaciant(phi) // diffusion term
                     ;
 
                 bilinearForm += integrate(
                         _range=elements(M_mesh),
-                        _expr=coeff * L_op * L_opt );
+                        _expr=coeff * inner(L_op, L_opt)
+                        );
 
                 linearForm += integrate(
                         _range=elements(M_mesh),
-                        _expr=coeff*L_op*f );
+                        _expr=coeff * inner(L_op, f)
+                        );
 
                 break;
             } //SGS
@@ -727,7 +846,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 bilinearForm_PatternExtended += integrate(
                         _range=internalfaces(M_mesh),
-                        _expr=coeff * jumpt(gradt(phi)) * jump(grad(phi)) );
+                        _expr=coeff * inner(jumpt(gradt(phi)), jump(grad(phi)))
+                        );
 
                 break;
             } //CIP
@@ -743,35 +863,6 @@ ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F ) const
 {
-}
-
-//----------------------------------------------------------------------------//
-//----------------------------------------------------------------------------//
-//----------------------------------------------------------------------------//
-// Advection velocity update
-ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
-template<typename ExprT>
-void
-ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr)
-{
-    M_exprAdvectionVelocity.reset(); // remove symbolic expr
-    M_fieldAdvectionVelocity->on(_range=elements(this->mesh()), _expr=v_expr );
-}
-//----------------------------------------------------------------------------//
-//----------------------------------------------------------------------------//
-//----------------------------------------------------------------------------//
-// Source update
-ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
-template<typename ExprT>
-void 
-ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateSourceAdded(vf::Expr<ExprT> const& f_expr)
-{
-    if (!M_fieldSource)
-    {
-        M_fieldSource.reset( new element_advection_type(M_Xh, "SourceAdded") );
-    }
-    M_fieldSource->on(_range=elements( this->mesh() ), _expr=f_expr );
-    M_hasSourceAdded=true;
 }
 
 //----------------------------------------------------------------------------//
@@ -800,13 +891,38 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::solve()
 // Export results
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
+{
+    if (this->doRestart() && this->restartPath().empty() )
+    {
+        if ( M_exporter->doExport() ) M_exporter->restart(this->timeInitial());
+    }
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
+{
+    this->exportMeasuresImpl( time );
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
 {
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
+{
+    this->exportResultsImpl( time );
+    this->exportMeasures( time );
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 {
     if ( !M_exporter->doExport() ) return;
 
@@ -818,9 +934,21 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
                                    this->fieldSolution() );
     if ( ( M_doExportAdvectionVelocity || M_doExportAll ) )
     {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"advection-velocity"),
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"advection_velocity"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"advection_velocity")),
                                        this->fieldAdvectionVelocity() );
+    }
+    if ( ( M_doExportDiffusionCoefficient || M_doExportAll ) )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"diffusion_coeff"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"diffusion_coeff")),
+                                       this->diffusionReactionModel()->fieldDiffusionCoeff() );
+    }
+    if ( ( M_doExportReactionCoefficient || M_doExportAll ) )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"reaction_coeff"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"reaction_coeff")),
+                                       this->diffusionReactionModel()->fieldReactionCoeff() );
     }
     if ( ( M_doExportSourceField || M_doExportAll ) )
     {
@@ -829,8 +957,6 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
                                        *M_fieldSource );
     }
     M_exporter->save();
-
-    this->exportMeasures( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )

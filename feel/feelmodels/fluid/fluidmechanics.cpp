@@ -301,6 +301,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
             if ( o == "vorticity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Vorticity );
             if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::NormalStress );
             if ( o == "wall-shear-stress" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::WallShearStress );
+            if ( o == "density" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Density );
             if ( o == "viscosity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
             if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );
 
@@ -641,7 +642,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInitialNewtonSolutionBCDirichlet(vecto
     {
         auto const& listMarkerPoints = std::get<2>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
         if ( !listMarkerPoints.empty() )
-            u.on(_range=markedfaces(mesh,listMarkerPoints ),
+            u.on(_range=markedpoints(mesh,listMarkerPoints ),
                  _expr=expression(d) );
     }
     for ( auto const& bcDirComp : M_bcDirichletComponents )
@@ -651,7 +652,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInitialNewtonSolutionBCDirichlet(vecto
         {
             auto const& listMarkerPoints = std::get<2>(  mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) )->second );
             if ( !listMarkerPoints.empty() )
-                u[comp].on(_range=markedfaces(mesh,listMarkerPoints ),
+                u[comp].on(_range=markedpoints(mesh,listMarkerPoints ),
                            _expr=expression(d) );
         }
     }
@@ -755,7 +756,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matr
         auto const& listMarkerPoints = std::get<2>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
         if ( !listMarkerPoints.empty() )
             bilinearForm +=
-                on( _range=markedfaces( mesh, listMarkerPoints ),
+                on( _range=markedpoints( mesh, listMarkerPoints ),
                     _element=u,
                     _rhs=F, _expr=expression(d) );
     }
@@ -767,7 +768,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matr
             auto const& listMarkerPoints = std::get<2>(  mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) )->second );
             if ( !listMarkerPoints.empty() )
                 bilinearFormComp +=
-                    on( _range=markedfaces( mesh, listMarkerPoints ),
+                    on( _range=markedpoints( mesh, listMarkerPoints ),
                         _element=this->M_Solution->template element<0>()[comp], //u[comp],
                         _rhs=F, _expr=expression(d) );
         }

@@ -79,18 +79,18 @@ namespace Feel
  *
  * \author JB Wahl
  */
-
+po::options_description crbSaddlePointOptions( std::string const& prefix="" );
 
 template<typename TruthModelType>
 class CRBSaddlePoint :
         public CRB<TruthModelType>
 {
-    typedef CRB<TruthModelType> super_crb;
+    typedef CRB<TruthModelType> super;
 
 public:
     //@{ // Truth Model
     typedef TruthModelType model_type;
-    typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef boost::shared_ptr<model_type> truth_model_ptrtype;
     typedef typename model_type::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -152,92 +152,17 @@ public:
     //@}
 
 
-    /// Default constructor
-    CRBSaddlePoint()
-        :
-        super_crb(),
-        M_crbdb()
+
+
+    CRBSaddlePoint( std::string const& name = "defaultname_crb",
+                    WorldComm const& worldComm = Environment::worldComm() ) :
+        super( name, worldComm )
         {}
 
-
-    /// constructor from command line options
-    CRBSaddlePoint( std::string  name,
-                    po::variables_map const& vm,
-                    model_ptrtype const & model )
-        :
-        super_crb( name, vm , model ),
-        M_crbdb( ( boost::format( "%1%" )
-                   % ioption("crb.error-type") ).str(),
-                 name,
-                 ( boost::format( "%1%-%2%-%3%-saddlepoint" )
-                   % name
-                   % ioption("crb.output-index")
-                   % ioption("crb.error-type") ).str(),
-                 vm )
-        {
-            this->setTruthModel( model );
-            if ( M_crbdb.loadDB() )
-                LOG(INFO) << "Database " << M_crbdb.lookForDB()
-                          << " available and loaded\n";
-
-            // this will be in the offline step
-            // (it's only when we enrich or create the database that we want to
-            // have access to elements of the RB)
-            /*this->M_elements_database.setMN( this->M_N );
-            if( this->M_elements_database.loadDB() )
-            {
-                LOG(INFO) << "database for basis functions "
-                          << this->M_elements_database.lookForDB() << " available and loaded\n";
-                auto basis_functions = this->M_elements_database.wn();
-                this->M_model->rBFunctionSpace()->setBasis( basis_functions );
-            }
-            else
-                LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
-             */
-        }
-
-
-    //! copy constructor
-    CRBSaddlePoint( CRBSaddlePoint const & o )
-        :
-        super_crb( o ),
-        M_crbdb( o )
+    CRBSaddlePoint( std::string const& name, truth_model_ptrtype const & model ) :
+        super( name, model )
         {}
 
-    //! destructor
-    ~CRBSaddlePoint()
-        {}
-
-
-
-    /// \name Accessors
-    //@{
-    WorldComm const& worldComm() const { return Environment::worldComm() ; }
-    //@}
-
-
-    /**
-     * Returns the lower bound of the output
-     *
-     * \param mu \f$ \mu\f$ the parameter at which to evaluate the output
-     * \param N the size of the reduced basis space to use
-     * \param uN primal solution
-     *
-     *\return compute online the lower bound
-     *\and also condition number of matrix A
-     */
-    boost::tuple<std::vector<double>,matrix_info_tuple>
-    lb( size_type N, parameter_type const& mu,
-        std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu ,
-        std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,
-        bool print_rb_matrix=false, int K=0 ) const;
-
-    /**
-     * Offline computation
-     *
-     * \return the convergence history (max error)
-     */
-    convergence_type offline();
 
     //@{ /// Database
     void saveDB();
@@ -248,15 +173,6 @@ private :
     void generateSampling();
 
     CRBDB M_crbdb;
-
-    std::vector< std::vector<matrixN_type> > M_A11qm_pr;
-    std::vector< std::vector<matrixN_type> > M_A12qm_pr;
-
-    std::vector < std::vector<vectorN_type> > M_F1qm_pr;
-    std::vector < std::vector<vectorN_type> > M_F2qm_pr;
-
-    std::vector < std::vector<vectorN_type> > M_L1qm_pr;
-    std::vector < std::vector<vectorN_type> > M_L2qm_pr;
 
 
     friend class boost::serialization::access;
@@ -274,72 +190,6 @@ private :
 }; // class CRBSaddlePoint
 
 
-template<typename TruthModelType>
-typename CRBSaddlePoint<TruthModelType>::convergence_type
-CRBSaddlePoint<TruthModelType>::offline()
-{
-    bool rebuild_database = boption( "crb.rebuild-database" );
-    boost::timer ti;
-    parameter_type mu ( this->M_Dmu );
-    double delta_pr = 0;
-    double delta_du = 0;
-    size_type index;
-
-    if ( Environment::isMasterRank() )
-        std::cout << "Offline CRBSaddlePoint starts, this may take a while until Database is computed.." << std::endl;
-    LOG(INFO) << "[CRBSaddlePoint::offline] Starting offline for output " << this->M_output_index << std::endl;
-    LOG(INFO) << "[CRBSaddlePoint::offline] initialize underlying finite element model\n";
-
-    if ( rebuild_database || this->M_N==0 )
-    {
-        ti.restart();
-        // Generate sampling depending of the "crb.sampling-mode" option
-        generateSampling();
-
-        LOG(INFO) << " -- sampling init done in " << ti.elapsed() << "s";
-        ti.restart();
-
-        LOG( INFO )<<"[CRBTrilinear offline] M_error_type = "<<this->M_error_type;
-
-        // empty sets
-        this->M_WNmu->clear();
-        if( this->M_error_type == CRB_NO_RESIDUAL )
-            mu = this->M_Dmu->element();
-        else
-        {
-            // start with M_C = { arg min mu, mu \in Xi }
-            boost::tie( mu, index ) = this->M_Xi->min();
-        }
-
-        this->M_N=0;
-        this->M_maxerror = 1e10;
-
-        LOG(INFO) << "[CRBSaddlePoint::offline] allocate reduced basis data structures\n";
-
-
-
-    } // if rebuild_database
-
-    return this->M_rbconv;
-} // offline()
-
-
-template<typename TruthModelType>
-typename boost::tuple<std::vector<double>,
-                      typename CRBSaddlePoint<TruthModelType>::matrix_info_tuple >
-CRBSaddlePoint<TruthModelType>::lb( size_type N, parameter_type const& mu,
-                                  std::vector< vectorN_type >& uN,
-                                  std::vector< vectorN_type >& uNdu,
-                                  std::vector<vectorN_type> & uNold,
-                                  std::vector<vectorN_type> & uNduold,
-                                  bool print_rb_matrix, int K ) const
-{
-    std::vector<double>output_vector(1);
-    auto matrix_info = boost::make_tuple( 0., 0. );
-
-    return boost::make_tuple( output_vector, matrix_info);
-
-} // lb()
 
 
 template<typename TruthModelType>
@@ -347,43 +197,7 @@ void
 CRBSaddlePoint<TruthModelType>::generateSampling()
 {
 
-    int proc_number = worldComm().globalRank();
-    int total_proc = worldComm().globalSize();
-    bool all_proc_same_sampling = boption( "crb.all-procs-have-same-sampling" );
-    int sampling_size = ioption("crb.sampling-size");
-    std::string sampling_mode = soption("crb.sampling-mode");
-    std::string file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%")
-                              %sampling_size
-                              %proc_number
-                              %total_proc ).str();
 
-    if ( all_proc_same_sampling )
-        file_name += "-all_proc_same_sampling";
-
-    std::ifstream file ( file_name );
-
-    if ( !file )
-    {
-        std::string supersamplingname =(boost::format("Dmu-%1%-generated-by-master-proc") %sampling_size ).str();
-
-        if( sampling_mode == "log-random" )
-            this->M_Xi->randomize( sampling_size , all_proc_same_sampling , supersamplingname );
-        else if( sampling_mode == "log-equidistribute" )
-            this->M_Xi->logEquidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
-        else if( sampling_mode == "equidistribute" )
-            this->M_Xi->equidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
-        else
-            throw std::logic_error( "[CRBTrilinear::offline] ERROR invalid option crb.sampling-mode, please select between log-random, log-equidistribute or equidistribute" );
-
-        this->M_Xi->writeOnFile(file_name);
-    }
-    else
-    {
-        this->M_Xi->clear();
-        this->M_Xi->readFromFile(file_name);
-    }
-
-    this->M_WNmu->setSuperSampling( this->M_Xi );
 }
 
 
@@ -405,13 +219,6 @@ CRBSaddlePoint<TruthModelType>::save( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( this->M_Aqm_pr );
     ar & BOOST_SERIALIZATION_NVP( this->M_Fqm_pr );
     ar & BOOST_SERIALIZATION_NVP( this->M_Lqm_pr );
-
-    ar & BOOST_SERIALIZATION_NVP( this->M_A11qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_A12qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_F1qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_F2qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_L1qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_L2qm_pr );
 
     ar & BOOST_SERIALIZATION_NVP( this->M_current_mu );
     ar & BOOST_SERIALIZATION_NVP( this->M_no_residual_index );
@@ -440,12 +247,6 @@ CRBSaddlePoint<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( this->M_Fqm_pr );
     ar & BOOST_SERIALIZATION_NVP( this->M_Lqm_pr );
 
-    ar & BOOST_SERIALIZATION_NVP( this->M_A11qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_A12qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_F1qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_F2qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_L1qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_L2qm_pr );
 
     ar & BOOST_SERIALIZATION_NVP( this->M_current_mu );
     ar & BOOST_SERIALIZATION_NVP( this->M_no_residual_index );
@@ -457,7 +258,7 @@ template<typename TruthModelType>
 void
 CRBSaddlePoint<TruthModelType>::saveDB()
 {
-    super_crb::saveDB();
+    super::saveDB();
 
     fs::ofstream ofs( M_crbdb.dbLocalPath() / M_crbdb.dbFilename() );
 
@@ -474,7 +275,7 @@ template<typename TruthModelType>
 bool
 CRBSaddlePoint<TruthModelType>::loadDB()
 {
-
+    /*
     if ( this->rebuildDB() )
         return false;
 
@@ -500,7 +301,7 @@ CRBSaddlePoint<TruthModelType>::loadDB()
         // archive and stream closed when destructors are called
         return true;
     }
-
+    */
     return false;
 } // loadDB()
 
