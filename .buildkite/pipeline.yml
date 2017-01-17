@@ -1,11 +1,11 @@
 steps:
-  - name: ':debian: testing,clang-3.9'
-    command: tools/scripts/buildkite/install-feelpp-lib.sh
-    env:
-      CXX: clang++-3.9
-      CC: clang-3.9
-      JOBS: 20
-      TARGET: debian:testing
+ - name: ':debian: testing,clang-3.9'
+   command: tools/scripts/buildkite/install-feelpp-lib.sh
+   env:
+     CXX: clang++-3.9
+     CC: clang-3.9
+     JOBS: 20
+     TARGET: debian:testing
  # - name: ':debian: sid,clang-4.0'
  #   command: tools/scripts/buildkite/install-feelpp-lib.sh
  #   env:
