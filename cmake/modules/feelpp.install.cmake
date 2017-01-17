@@ -91,7 +91,7 @@ set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
 
 if ( FEELPP_MINIMAL_BUILD )
   add_custom_target(install-feelpp-lib
-    DEPENDS feelpp
+    DEPENDS feelpp feelpp_gflags feelpp_glog feelpp_metis feelpp_ginac
     COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
     )
 else()
