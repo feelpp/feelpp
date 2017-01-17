@@ -14,10 +14,14 @@
             "value":"0.005"
         }
     },
-    // "Materials":
-    // {
-    //     "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
-    // },
+    "Materials":
+    {
+        "Fluid":{
+            "name":"myFluidMat",
+            "rho":"1",
+            "mu":"0.035"
+        }
+    },
     "BoundaryConditions":
     {
         "velocity":

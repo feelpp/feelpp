@@ -26,11 +26,6 @@
 
 //#include <fftw3.h>
 #include <Eigen/Core>
-#include <boost/bimap.hpp>
-#include <boost/bimap/support/lambda.hpp>
-#include <boost/bimap/set_of.hpp>
-#include <boost/bimap/multiset_of.hpp>
-#include <boost/bimap/set_of.hpp>
 
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeltiming/tic.hpp>
