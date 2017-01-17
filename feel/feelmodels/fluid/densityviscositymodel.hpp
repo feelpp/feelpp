@@ -77,7 +77,10 @@ public :
     double cstRho( std::string const& marker = "" ) const { return this->cstDensity(marker); }
     double cstDensity( std::string const& marker = "" ) const
     {
-        std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
+        std::string markerUsed = ( marker.empty() )?
+            ( ( this->markers().empty() )? self_type::defaultMaterialName() : *this->markers().begin() ) :
+            marker;
+        // std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
         auto itFindMarker = M_cstDensity.find( markerUsed );
         CHECK( itFindMarker != M_cstDensity.end() ) << "invalid marker not registered " << markerUsed;
         return itFindMarker->second;
@@ -96,7 +99,10 @@ public :
     double cstNu( std::string const& marker = "" ) const { return this->cstCinematicViscosity(marker); }
     double cstCinematicViscosity( std::string const& marker = "" ) const
     {
-        std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
+        std::string markerUsed = ( marker.empty() )?
+            ( ( this->markers().empty() )? self_type::defaultMaterialName() : *this->markers().begin() ) :
+            marker;
+        // std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
         auto itFindMarker = M_cstCinematicViscosity.find( markerUsed );
         CHECK( itFindMarker != M_cstCinematicViscosity.end() ) << "invalid marker not registered " << markerUsed;
         return itFindMarker->second;
@@ -169,6 +175,23 @@ public :
             this->setCstDensity( mat.rho(),matmarker );
         }
     }
+
+    boost::shared_ptr<std::ostringstream>
+    getInfoMaterialParameters() const
+        {
+            boost::shared_ptr<std::ostringstream> ostr( new std::ostringstream() );
+            *ostr << "\n   Materials parameters";
+            std::set<std::string> matmarkerset = this->markers();
+            if (  matmarkerset.empty() ) matmarkerset.insert(std::string(""));
+            *ostr << "\n     -- number of materials : " << matmarkerset.size();
+            for ( std::string const& matmarker : matmarkerset)
+            {
+                std::string matmarkertag = matmarker.empty()? std::string("") : (boost::format("[%1%] ")%matmarker).str();
+                *ostr << "\n     -- " << matmarkertag << "rho : " << this->cstRho(matmarker);
+                *ostr << this->getInfo( matmarker )->str();
+            }
+            return ostr;
+        }
 
 
 private :
