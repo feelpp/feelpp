@@ -1,9 +1,11 @@
 steps:
- # - name: ':debian: testing,gcc-6.3'
- #   command: tools/scripts/buildkite/install-feelpp-lib.sh
- #   env:
- #     JOBS: 20
- #     TARGET: debian:testing
+  - name: ':debian: testing,clang-3.9'
+    command: tools/scripts/buildkite/install-feelpp-lib.sh
+    env:
+      CXX: clang++-3.9
+      CC: clang-3.9
+      JOBS: 20
+      TARGET: debian:testing
  # - name: ':debian: sid,clang-4.0'
  #   command: tools/scripts/buildkite/install-feelpp-lib.sh
  #   env:
@@ -17,6 +19,15 @@ steps:
  #     JOBS: 20
  #     TARGET: ubuntu:16.10
  # - wait
+ - wait
+ - name: ':debian: testing,clang-3.9'
+   command: tools/scripts/buildkite/install-feelpp-base.sh
+   env:
+     CXX: clang++-3.9
+     CC: clang-3.9
+     JOBS: 20
+     TARGET: debian:testing
+ - wait
  - command: tools/scripts/buildkite/release.sh
    name: "Push images to :docker: Hub :rocket:"
    branches: develop
