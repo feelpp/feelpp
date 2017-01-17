@@ -116,7 +116,9 @@ public :
     double cstMu( std::string const& marker = "" ) const { return this->cstDynamicViscosity( marker); }
     double cstDynamicViscosity( std::string const& marker = "" ) const
     {
-        std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
+        std::string markerUsed = ( marker.empty() )?
+            ( ( this->markers().empty() )? self_type::defaultMaterialName() : *this->markers().begin() ) :
+            marker;
         auto itFindMarker = M_cstDynamicViscosity.find( markerUsed );
         CHECK( itFindMarker != M_cstDynamicViscosity.end() ) << "invalid marker not registered " << markerUsed;
         return itFindMarker->second;
@@ -195,11 +197,52 @@ public :
 
 
     boost::shared_ptr<std::ostringstream>
-    getInfo() const
+    getInfo( std::string const& matmarker ) const
     {
         boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+
+        std::string matmarkertag = matmarker.empty()? std::string("") : (boost::format("[%1%] ")%matmarker).str();
+        *_ostr << "\n     -- " << matmarkertag << "viscosity law : " << this->dynamicViscosityLaw();
+
         if ( this->dynamicViscosityLaw() ==  "newtonian" )
         {
+            *_ostr << "\n        + " << matmarkertag << "mu : " << this->cstMu(matmarker);
+        }
+        else if ( this->dynamicViscosityLaw() == "power_law" )
+        {
+            *_ostr << "\n        + " << matmarkertag << "n : " << this->powerLaw_n()
+                  << "\n        + " << matmarkertag << "k : " << this->powerLaw_k();
+        }
+        else if ( this->dynamicViscosityLaw() == "walburn-schneck_law" )
+        {
+            *_ostr << "\n        + " << matmarkertag << "C1 : " << this->walburnSchneck_C1()
+                  << "\n        + " << matmarkertag << "C2 : " << this->walburnSchneck_C2()
+                  << "\n        + " << matmarkertag << "C3 : " << this->walburnSchneck_C3()
+                  << "\n        + " << matmarkertag << "C4 : " << this->walburnSchneck_C4()
+                  << "\n        + " << matmarkertag << "hematocrit : " << nonNewtonianHematocrit()
+                  << "\n        + " << matmarkertag << "TPMA : " << this->nonNewtonianTPMA();
+        }
+        else if ( this->dynamicViscosityLaw() == "carreau_law")
+        {
+            *_ostr << "\n        + " << matmarkertag << "lambda : " << this->carreau_lambda()
+                  << "\n        + " << matmarkertag << "n : " << this->carreau_n()
+                  << "\n        + " << matmarkertag << "mu_0 : " << this->mu_0()
+                  << "\n        + " << matmarkertag << "mu_inf : " << this->mu_inf();
+        }
+        else if (  this->dynamicViscosityLaw() == "carreau-yasuda_law")
+        {
+            *_ostr << "\n        + " << matmarkertag << "lambda : " << this->carreauYasuda_lambda()
+                  << "\n        + " << matmarkertag << "n : " << this->carreauYasuda_n()
+                  << "\n        + " << matmarkertag << "a : " << this->carreauYasuda_a()
+                  << "\n        + " << matmarkertag << "mu_0 : " << this->mu_0()
+                  << "\n        + " << matmarkertag << "mu_inf : " << this->mu_inf();
+        }
+
+#if 0
+        if ( this->dynamicViscosityLaw() ==  "newtonian" )
+        {
+            *_ostr << "\n   Newtonian"
+                   << "\n     -- mu   : " << this->cstMu();
         }
         else if ( this->dynamicViscosityLaw() == "power_law" )
         {
@@ -234,7 +277,7 @@ public :
                    << "\n     -- mu_0    : " << this->mu_0()
                    << "\n     -- mu_inf  : " << this->mu_inf();
         }
-
+#endif
         return _ostr;
     }
 
