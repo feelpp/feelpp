@@ -119,11 +119,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- time mode : " << StateTemporal
            << "\n     -- ale mode  : " << ALEmode
            << "\n     -- gravity  : " << std::boolalpha << M_useGravityForce;
-    *_ostr << "\n   Physical Parameters"
-           << "\n     -- rho : " << this->densityViscosityModel()->cstRho()
-           << "\n     -- mu  : " << this->densityViscosityModel()->cstMu()
-           << "\n     -- nu  : " << this->densityViscosityModel()->cstNu();
-    *_ostr << this->densityViscosityModel()->getInfo()->str();
+    *_ostr << this->densityViscosityModel()->getInfoMaterialParameters()->str();
+    // *_ostr << "\n   Physical Parameters"
+    //        << "\n     -- rho : " << this->densityViscosityModel()->cstRho()
+    //        << "\n     -- mu  : " << this->densityViscosityModel()->cstMu()
+    //        << "\n     -- nu  : " << this->densityViscosityModel()->cstNu();
+    // *_ostr << this->densityViscosityModel()->getInfo()->str();
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
            << this->getInfoNeumannBC()
