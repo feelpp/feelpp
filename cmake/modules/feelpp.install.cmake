@@ -91,12 +91,12 @@ set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
 
 if ( FEELPP_MINIMAL_BUILD )
   add_custom_target(install-feelpp-lib
-    DEPENDS feelpp feelpp_gflags_shared feelpp_gflags_nothreads_shared feelpp_glog feelpp_metis feelpp_ginac
+    DEPENDS contrib feelpp 
     COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
     )
 else()
   add_custom_target(install-feelpp-lib
-    DEPENDS feelpp feelpp_mesh_partitioner
+    DEPENDS contrib feelpp feelpp_mesh_partitioner
     COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
     )
 endif()
