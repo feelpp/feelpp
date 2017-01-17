@@ -205,20 +205,21 @@ add_custom_target(install-apps-models-fsi
       -P "${CMAKE_BINARY_DIR}/applications/models/fsi/cmake_install.cmake"
 )
 
-#
-# this target installs the libraries, header files, cmake files and sample applications
-#
-add_custom_target(install-feelpp-base
-  DEPENDS
-  install-feelpp-lib
-  install-feelpp-models-common
-  quickstart
-  COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Geo
-      -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Quickstart
-      -P "${CMAKE_BINARY_DIR}/quickstart/cmake_install.cmake"
-)
+if ( NOT TARGET install-feelpp-base )
+  #
+  # this target installs the libraries, header files, cmake files and sample applications
+  #
+  add_custom_target(install-feelpp-base
+    DEPENDS
+    install-feelpp-lib
+    install-quickstart
+    COMMAND
+    "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Geo
+    -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
+    "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Quickstart
+    -P "${CMAKE_BINARY_DIR}/quickstart/cmake_install.cmake"
+    )
+endif()
 
 #
 # Generic install target for feel++
