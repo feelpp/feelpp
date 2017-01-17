@@ -19,7 +19,7 @@ Extrude {0, 0, 5} {
   Surface{12};
 }
 
-Physical Volume("cylinder") = {1};
+Physical Volume("omega") = {1};
 Physical Surface("lateral") = {34, 30, 26, 22};
 Physical Surface("top") = {35};
 Physical Surface("bottom") = {12};
