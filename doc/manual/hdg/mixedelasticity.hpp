@@ -25,6 +25,7 @@
 #include <feel/feelpoly/raviartthomas.hpp>
 #include <feel/feeldiscr/pdhm.hpp>
 #include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/projector.hpp>
 
 // #define USE_SAME_MATH 1
 
@@ -647,19 +648,19 @@ void MixedElasticity<Dim, Order, G_Order, E_Order>::assembleMatrixIBC( int i , s
                                         _expr= inner(idt(sigma)*N(),id(nu)) );
             // trans(idt(sigma)*N())*id(nu) );
     
-    /*
-
+    
+/*
     // <tau u, m>_Gamma_I
     bbf( 3_c, 1_c, i, 1 ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=tau_constant * pow(idv(H),M_tau_order)* inner(idt(u),id(nu)) ),
+                                        _expr=-tau_constant * pow(idv(H),M_tau_order)* inner(idt(u),id(nu)) ),
                 //trans(idt(u)) ) * id(nu) );
 
     // -<lambda2, m>_Gamma_I
     bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=-tau_constant * pow(idv(H),M_tau_order) * inner(idt(uI),id(nu)) );
+                                        _expr= tau_constant * pow(idv(H),M_tau_order) * inner(idt(uI),id(nu)) );
                 // *trans(id(nu))) *idt(uI) );
-    */
-
+    
+*/
 
 }
 
@@ -1119,8 +1120,29 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
             if ( field == "stress" )
             {
                 LOG(INFO) << "exporting stress at time " << time;
-		 		M_exporter->step(time)->add(prefixvm(M_prefix, "stress"), Idhv?(*Idhv)( M_up):M_up );
-                if (M_integralCondition)
+		
+                // Exporting the stress component by component
+                auto Sh = Pch<Order> (M_mesh);
+                auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
+                auto SXX = l2p -> project (_expr = idv (M_up.comp(Component::X, Component::X)) );
+                auto SYY = l2p -> project (_expr = idv (M_up.comp(Component::Y, Component::Y)) );
+                auto SZZ = l2p -> project (_expr = idv (M_up.comp(Component::Z, Component::Z)) );
+
+                auto SXY = l2p -> project (_expr = idv (M_up.comp(Component::X, Component::Y)) );
+                auto SYZ = l2p -> project (_expr = idv (M_up.comp(Component::Y, Component::Z)) );
+                auto SXZ = l2p -> project (_expr = idv (M_up.comp(Component::X, Component::Z)) );
+
+                M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXX"), SXX );
+                M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYY"), SYY );
+                M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaZZ"), SZZ );
+                M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXY"), SXY );
+                M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYZ"), SYZ );
+                M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXZ"), SXZ );
+         		M_exporter->step(time)->add(prefixvm(M_prefix, "stress"), Idhv?(*Idhv)( M_up):M_up );
+         
+
+
+               if (M_integralCondition)
                 {
 
                     for( auto exAtMarker : this->M_IBCList)
@@ -1146,11 +1168,38 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                 }
 
             }
+            /*else if ( field == "integral" )
+            { 
+                        std::vector<double> force_integral(Dim);
+                        auto marker = "top";
+                        auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+                                            _expr=trans(idv(M_up))*N());
+                    
+                        std::string stringForce = "integralForce_";
+                        Feel::cout << "Force computed: " << std::endl;
+                        for( auto i=0;i < Dim;i++ )
+                        {
+                            auto stringForce_help = stringForce + static_cast<std::ostringstream*>( &(std::ostringstream() << i) )->str();
+                            force_integral[i] = j_integral.evaluate()(i,0);
+                            Feel::cout << force_integral[i] << std::endl;
+                            M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
+                        }
+            }*/
             else if ( field == "displacement" )
         	{
             	LOG(INFO) << "exporting displacement at time " << time;
                 M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"),Idh?(*Idh)( M_pp):M_pp ) ;    	
-		
+                // Projecting on L2 space for continuity.
+                auto Sh = Pch<Order> (M_mesh);
+                auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
+                auto UX = l2p -> project (_expr = idv (M_pp[Component::X]) );
+                auto UY = l2p -> project (_expr = idv (M_pp[Component::Y]) );
+                auto UZ = l2p -> project (_expr = idv (M_pp[Component::Z]) );
+                
+                M_exporter->step(time)->add(prefixvm(M_prefix, "UX"),UX ) ;    	
+                M_exporter->step(time)->add(prefixvm(M_prefix, "UY"),UY ) ;    	
+                M_exporter->step(time)->add(prefixvm(M_prefix, "UZ"),UZ ) ;    	
+	
 				auto itField = M_modelProperties->boundaryConditions().find("ExactSolution");
  				if ( itField != M_modelProperties->boundaryConditions().end() )
  				{
