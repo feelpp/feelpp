@@ -102,7 +102,7 @@ endif()
 # setting rpath on installed binaries.
 
 # rpath for making binaries/libraries relocatable
-set(_ginac_rpath_reloc "$ORIGIN/../lib")
+#set(_ginac_rpath_reloc "$ORIGIN/../lib")
 set(_wl_rpath "${CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG}")
 
 # rpath for the pkg-config meta-data.
