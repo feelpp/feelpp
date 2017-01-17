@@ -21,10 +21,33 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+cmake_minimum_required(VERSION 2.8)
+
+project(quickstart)
+
+if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+  find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feel/cmake/modules /usr/share/feel/cmake/modules /usr/local/share/feel/cmake/modules )
+  if(NOT FEELPP_FOUND)
+      message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+  endif()
+endif()
+
+enable_testing()
+
+if ( NOT TARGET check )
+  add_custom_target(check)
+endif()
+
+if ( NOT EXISTS quickstart )
+  add_custom_target(quickstart)
+endif()
 
 
-feelpp_add_application( qs_laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL CFG qs_laplacian_2d.cfg DEFS FEELPP_DIM=2 )
-feelpp_add_application( qs_laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL CFG qs_laplacian_3d.cfg DEFS FEELPP_DIM=3 )
+feelpp_add_application( qs_laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 )
+feelpp_add_application( qs_laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 )
+feelpp_add_testcase( feelpp2d PREFIX qs CATEGORY quickstart )
+feelpp_add_testcase( circle PREFIX qs CATEGORY quickstart)
+feelpp_add_testcase( feelpp3d PREFIX qs CATEGORY quickstart)
 
 install(TARGETS feelpp_qs_laplacian_2d feelpp_qs_laplacian_3d 
         RUNTIME DESTINATION bin 
@@ -32,3 +55,13 @@ install(TARGETS feelpp_qs_laplacian_2d feelpp_qs_laplacian_3d
 
 add_dependencies(quickstart feelpp_qs_laplacian_2d feelpp_qs_laplacian_3d )
 
+add_custom_target(install-quickstart
+  DEPENDS
+  quickstart
+  COMMAND
+  "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=testcases
+  -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake"
+  "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Quickstart
+  -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake"
+  )
+      
