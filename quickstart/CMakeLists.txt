@@ -38,7 +38,7 @@ if ( NOT TARGET check )
   add_custom_target(check)
 endif()
 
-if ( NOT EXISTS quickstart )
+if ( NOT TARGET quickstart )
   add_custom_target(quickstart)
 endif()
 
@@ -65,7 +65,7 @@ add_custom_target(install-quickstart
   -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake"
   )
 
-if ( NOT EXISTS install-feelpp-base )
+if ( NOT TARGET install-feelpp-base )
   add_custom_target( install-feelpp-base DEPENDS install-quickstart)
 endif()
 
