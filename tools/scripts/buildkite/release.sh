@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -euo pipefail
-
+docker login --username=${DOCKER_LOGIN} --password="${DOCKER_PASSWORD}"
 tools/scripts/buildkite/list.sh | while read line ; do
   tokens=($line)
   image=${tokens[0]}
