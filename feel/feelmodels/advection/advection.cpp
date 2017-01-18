@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 
 #include <feel/feelmodels/advection/advection.hpp>
 
@@ -19,6 +20,8 @@ ADVECTION_CLASS_TEMPLATE_TYPE::Advection(
     //-----------------------------------------------------------------------------//
     // load info from .bc file
     this->loadConfigBCFile();
+    // get periodicity from options (if needed)
+    this->loadPeriodicityFromOptionsVm();
     //-----------------------------------------------------------------------------//
     // build mesh, space, exporter,...
     //if ( buildMesh ) this->build();
@@ -41,8 +44,42 @@ ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTION_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
+    //-----------------------------------------------------------------------------//
+    // Set model from options
+    std::string advection_model = this->modelProperties().model();
+    if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
+        advection_model = soption(_name="model",_prefix=this->prefix());
+    if( !advection_model.empty() )
+        this->setModelName( advection_model );
+    // Init super_type
     super_type::init( buildModelAlgebraicFactory, this->shared_from_this() );
 }
+
+namespace detail {
+
+template<int Dim, bool isVectorial, 
+        typename = typename std::enable_if<!isVectorial>::type
+        >
+map_scalar_field<2> getBCFields( 
+        BoundaryConditions const& bc, 
+        std::string const& field, std::string const& type
+        )
+{
+    return bc.getScalarFields( std::string(field), std::string(type) );
+}
+
+template<int Dim, bool isVectorial, 
+        typename = typename std::enable_if<isVectorial>::type
+        >
+map_vector_field<Dim, 1, 2> getBCFields( 
+        BoundaryConditions const& bc, 
+        std::string const& field, std::string const& type
+        )
+{
+    return bc.getVectorFields<Dim>( std::string(field), std::string(type) );
+}
+
+} // namespace detail
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -50,11 +87,18 @@ ADVECTION_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 {
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
+    M_bcInflowMarkers.clear();
 
-    this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "advection", "Dirichlet" );
+    //this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "advection", "Dirichlet" );
+    this->M_bcDirichlet = detail::getBCFields<nDim, is_vectorial>( 
+            this->modelProperties().boundaryConditions(), this->prefix(), "Dirichlet");
     for( auto const& d : this->M_bcDirichlet )
         this->addMarkerDirichletBC("elimination", marker(d) );
-    this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "advection", "Neumann" );
+
+    //this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "advection", "Neumann" );
+    this->M_bcNeumann = detail::getBCFields<nDim, is_vectorial>(
+            this->modelProperties().boundaryConditions(), this->prefix(), "Neumann"
+            );
     for( auto const& d : this->M_bcNeumann )
         this->addMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d));
 
@@ -62,21 +106,43 @@ ADVECTION_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     //for( auto const& d : this->M_bcRobin )
         //this->addMarkerRobinBC( marker(d) );
 
-    M_sources = this->modelProperties().boundaryConditions().template getScalarFields( "advection", "Sources" );
+    for( std::string const& bcMarker: this->modelProperties().boundaryConditions().markers( this->prefix(), "inflow" ) )
+        if( std::find(M_bcInflowMarkers.begin(), M_bcInflowMarkers.end(), bcMarker) == M_bcInflowMarkers.end() )
+            M_bcInflowMarkers.push_back( bcMarker );
+
+    //M_sources = this->modelProperties().boundaryConditions().template getScalarFields( "advection", "Sources" );
+    M_sources = detail::getBCFields<nDim, is_vectorial>(
+            this->modelProperties().boundaryConditions(), this->prefix(), "Sources"
+            );
+}
+
+ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTION_CLASS_TEMPLATE_TYPE::solve()
+{
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+
+    M_bcDirichlet.setParameterValues( paramValues );
+    M_bcNeumann.setParameterValues( paramValues );
+    //M_bcRobin.setParameterValues( paramValues );
+    M_sources.setParameterValues( paramValues );
+
+    super_type::solve(); 
 }
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTION_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const
 {
-
+// TODO
 }
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTION_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
 {
-    if ( this->M_bcDirichlet.empty() ) return;
+    if ( this->M_bcDirichlet.empty() && this->M_bcInflowMarkers.empty() ) return;
 
     this->log("Advection","updateBCStrongDirichletLinearPDE","start" );
 
@@ -88,11 +154,37 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_pt
                                               _rowstart=this->rowStartInMatrix(),
                                               _colstart=this->colStartInMatrix() );
 
+    // Dirichlet bc
     for( auto const& d : this->M_bcDirichlet )
     {
         bilinearForm_PatternCoupled +=
             on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
                 _element=u,_rhs=F,_expr=expression(d) );
+    }
+
+    // Inflow bc
+    if( !this->isStationary() )
+    {
+        for( auto const& bcMarker: this->M_bcInflowMarkers )
+        {
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(mesh, bcMarker),
+                        _element=u,
+                        _rhs=F,
+                        _expr=(
+                            // Transient part
+                            idv(this->timeStepBDF()->polyDeriv())
+                            // Advection part
+                            - gradv(u)*idv(this->fieldAdvectionVelocity())
+                            // Diffusion part
+                            + (this->hasDiffusion()) * idv(this->diffusionReactionModel()->fieldDiffusionCoeff())*laplacianv(u)
+                            // Reaction part
+                            - (this->hasReaction()) * idv(this->diffusionReactionModel()->fieldReactionCoeff())*idv(u)
+                            // Source part
+                            + (this->hasSourceAdded() || this->hasSourceTerm()) * idv(*this->M_fieldSource)
+                            )/(this->timeStepBDF()->polyDerivCoefficient(0))
+                  );
+        }
     }
 
     this->log("Advection","updateBCStrongDirichletLinearPDE","finish" );
@@ -155,6 +247,47 @@ bool
 ADVECTION_CLASS_TEMPLATE_TYPE::hasSourceTerm() const
 {
     return !this->M_sources.empty(); 
+}
+
+ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTION_CLASS_TEMPLATE_TYPE::addMarkerInflowBC( std::string const& markerName )
+{
+    if( std::find(M_bcInflowMarkers.begin(), M_bcInflowMarkers.end(), markerName) == M_bcInflowMarkers.end() )
+        M_bcInflowMarkers.push_back( markerName );
+}
+
+namespace detail {
+
+template<typename AdvT> 
+void
+loadPeriodicityFromOptionsVm(AdvT &, mpl::false_)
+{}
+
+template<typename AdvT>
+void
+loadPeriodicityFromOptionsVm(AdvT & adv, mpl::true_)
+{
+    node_type translat( AdvT::nDim );
+    translat[0] = doption(_name="periodicity.translate-x",_prefix=adv.prefix());
+    if ( AdvT::nDim >=2 )
+        translat[1] = doption(_name="periodicity.translate-y",_prefix=adv.prefix());
+    if ( AdvT::nDim == 3 )
+        translat[2]= doption(_name="periodicity.translate-z",_prefix=adv.prefix());
+    std::string marker1 = soption(_name="periodicity.marker1",_prefix=adv.prefix());
+    std::string marker2 = soption(_name="periodicity.marker2",_prefix=adv.prefix());
+    auto theperiodicity = Periodic<>( adv.mesh()->markerName(marker1),adv.mesh()->markerName(marker2), translat );
+
+    adv.setPeriodicity( theperiodicity );
+}
+
+}
+
+ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTION_CLASS_TEMPLATE_TYPE::loadPeriodicityFromOptionsVm()
+{
+    detail::loadPeriodicityFromOptionsVm( *this, mpl::bool_<PeriodicityType::is_periodic>() );
 }
 
 } // namespace FeelModels

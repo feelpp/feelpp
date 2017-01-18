@@ -43,6 +43,7 @@ add_subdirectory( solid )
 add_subdirectory( fsi )
 add_subdirectory( hdg )
 add_subdirectory( advection )
+add_subdirectory( levelset )
+add_subdirectory( multifluid )
 add_subdirectory( thermoelectric )
-
 

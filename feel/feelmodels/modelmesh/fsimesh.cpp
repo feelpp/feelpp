@@ -98,7 +98,7 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
     CHECK( !this->mshPathFSI().empty() ) << "mshPathFSI must be specified";
     fs::path meshesdirectories = this->mshPathFSI().parent_path();
 
-#if 1
+#if 0
     // go in output path directory for launch loadMesh
     fs::path curPath=fs::current_path();
     bool hasChangedRep=false;
@@ -117,6 +117,26 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
     {
         if ( !fs::exists( meshesdirectories ) ) fs::create_directories( meshesdirectories );
 
+
+
+#if 1
+        auto/*gmsh_ptrtype*/ geodesc = geo( _filename=this->geoPathFSI().string(),
+                                            _prefix=this->prefix(),
+                                            _worldcomm=this->worldComm().subWorldCommSeq() );
+        // allow to have a geo and msh file with a filename equal to prefix
+        geodesc->setPrefix(this->mshPathFSI().stem().string());//this->prefix());
+        auto meshFSI = createGMSHMesh(_mesh=new mesh_type(this->worldComm().subWorldCommSeq()),
+                                      _desc=geodesc,
+                                      _prefix=this->prefix(),
+                                      _worldcomm=this->worldComm().subWorldCommSeq(),
+                                      _h=this->meshSize(),
+                                      _straighten=false,
+                                      _partitions=1/*this->worldComm().subWorldCommSeq().localSize()*/,
+                                      _rebuild_partitions=false,
+                                      _update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES),
+                                      _directory=meshesdirectories.string() );
+
+#else
         // copy geofile
         std::string nameMeshFile = this->mshPathFSI().stem().string() + ".geo";
         fs::path geoPathFSIcopy = meshesdirectories / fs::path(nameMeshFile);
@@ -135,13 +155,13 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
                                  _rebuild_partitions=false,
                                  _update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES)
                                  );
+#endif
         std::cout << "[FSIMesh] : build fsi mesh finish\n";
         CHECK( fs::exists( this->mshPathFSI() ) ) << "mesh file not exist : " << this->mshPathFSI();
-
         this->buildSubMesh( meshFSI );
     }
 
-#if 1
+#if 0
         // go back to previous repository
         if ( hasChangedRep )
             Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false,
