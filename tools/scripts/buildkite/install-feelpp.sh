@@ -30,7 +30,7 @@ extratags_from_target() {
 echo '--- clone/pull feelpp/docker'
 if [ -d docker ]; then (cd docker; git pull) else git clone --depth=1 https://github.com/feelpp/docker; fi
 
-tag=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')-$(`tag_from_target $TARGET`)
+tag=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')-$(tag_from_target $TARGET)
 echo "--- Building feelpp-${component}:${tag}"
 
 
