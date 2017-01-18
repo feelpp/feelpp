@@ -20,8 +20,16 @@ steps:
  #     TARGET: ubuntu:16.10
  # - wait
  - wait
- - name: ':debian: testing,clang-3.9 :hammer: feelpp-base'
+ - name: ':debian: testing,clang-3.9  feelpp-base :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh base
+   env:
+     CXX: clang++-3.9
+     CC: clang-3.9
+     JOBS: 20
+     TARGET: debian:testing
+ - wait
+ - name: ':debian: testing,clang-3.9 feelpp-toolboxes :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh toolboxes
    env:
      CXX: clang++-3.9
      CC: clang-3.9
