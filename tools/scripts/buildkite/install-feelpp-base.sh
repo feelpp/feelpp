@@ -38,7 +38,8 @@ docker build \
        --build-arg=BRANCH=${BUILDKITE_BRANCH}\
        --build-arg=CXX="${CXX}"\
        --build-arg=CC="${CC}" \
-       -f docker/feelpp-base
+       --no-cache=true \
+       docker/feelpp-base
 
 extratags=`extratags_from_target $TARGET`
 # add extra tags
