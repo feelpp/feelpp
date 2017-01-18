@@ -74,21 +74,27 @@ namespace FeelModels
 
         double cstYoungModulus( std::string const& marker = "" ) const  // E
         {
-            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
+            std::string markerUsed = ( marker.empty() )?
+                ( ( this->markers().empty() )? self_type::defaultMaterialName() : *this->markers().begin() ) :
+                marker;
             auto itFindMarker = M_cstYoungModulus.find( markerUsed );
             CHECK( itFindMarker != M_cstYoungModulus.end() ) << "invalid marker not registered " << markerUsed;
             return itFindMarker->second;
         }
         double cstCoeffPoisson( std::string const& marker = "" ) const // nu
         {
-            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
+            std::string markerUsed = ( marker.empty() )?
+                ( ( this->markers().empty() )? self_type::defaultMaterialName() : *this->markers().begin() ) :
+                marker;
             auto itFindMarker = M_cstCoeffPoisson.find( markerUsed );
             CHECK( itFindMarker != M_cstCoeffPoisson.end() ) << "invalid marker not registered " << markerUsed;
             return itFindMarker->second;
         }
         double cstRho( std::string const& marker = "" ) const
         {
-            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
+            std::string markerUsed = ( marker.empty() )?
+                ( ( this->markers().empty() )? self_type::defaultMaterialName() : *this->markers().begin() ) :
+                marker;
             auto itFindMarker = M_cstRho.find( markerUsed );
             CHECK( itFindMarker != M_cstRho.end() ) << "invalid marker not registered " << markerUsed;
             return itFindMarker->second;

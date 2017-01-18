@@ -598,24 +598,23 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   set(GFLAGS_IS_SUBPROJECT TRUE)
   set(GFLAGS_NAMESPACE "google;gflags")
   INCLUDE_DIRECTORIES(${FEELPP_BINARY_DIR}/contrib/gflags/include ${FEELPP_BINARY_DIR}/contrib/gflags/include/gflags)
-  add_subdirectory(contrib/gflags)
   SET(FEELPP_LIBRARIES feelpp_gflags ${FEELPP_LIBRARIES})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} contrib/GFlags" )
+  set(FEELPP_HAS_GFLAGS 1)
   # for GLog
   set(gflags_LIBRARIES feelpp_gflags)
   set(gflags_FOUND 1)
 
   # GLog
   INCLUDE_DIRECTORIES(${FEELPP_BINARY_DIR}/contrib/glog/ ${FEELPP_SOURCE_DIR}/contrib/glog/src)
-  add_subdirectory(contrib/glog)
   SET(FEELPP_LIBRARIES feelpp_glog ${FEELPP_LIBRARIES})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} contrib/GLog" )
-
+  set(FEELPP_HAS_GLOG 1)
+  
   #
   # cln and ginac
   #
   find_package(CLN)
-  add_subdirectory(contrib/ginac)
 
   add_definitions(-DIN_GINAC -DHAVE_LIBDL)
   link_directories(${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
@@ -624,7 +623,7 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   #SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
   SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
   set(DL_LIBS ${CMAKE_DL_LIBS})
-
+  set(FEELPP_HAS_GINAC 1)
 endif()
 
 if(FEELPP_MINIMAL_BUILD)
@@ -702,10 +701,10 @@ if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
 endif()
 if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
-  set(EIGEN_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/feel)
-  add_subdirectory(contrib/eigen)
+  set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/feel)
+  
   set( EIGEN3_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/eigen ${FEELPP_SOURCE_DIR}/contrib/eigen/unsupported
-      ${EIGEN_INCLUDE_INSTALL_DIR} ${EIGEN_INCLUDE_INSTALL_DIR}/unsupported)
+      ${INCLUDE_INSTALL_DIR} ${INCLUDE_INSTALL_DIR}/unsupported)
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/Contrib" )
 elseif( EIGEN3_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/System" )
@@ -717,7 +716,9 @@ else()
     )
 endif()
 INCLUDE_DIRECTORIES( ${EIGEN3_INCLUDE_DIR} )
+SET(FEELPP_HAS_EIGEN3 1)
 message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
+
 
 #FIND_PACKAGE(Eigen2 REQUIRED)
 #INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )

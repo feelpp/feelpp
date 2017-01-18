@@ -22,7 +22,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 
 add_subdirectory(python)

@@ -178,6 +178,11 @@ public:
         return M_order_cur;
     }
 
+    void setTimeOrder( int order )
+    {
+        M_order_cur = order;
+    }
+
     //! return the order in time
     int bdfOrder() const
     {
