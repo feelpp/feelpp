@@ -59,10 +59,9 @@ add_custom_target(install-quickstart
   DEPENDS
   quickstart
   COMMAND
-  "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=testcases
-  -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake"
-  "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Quickstart
-  -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake"
+  "${CMAKE_COMMAND}"
+  -DCMAKE_INSTALL_COMPONENT=testcases  -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake"
+  -DCMAKE_INSTALL_COMPONENT=Quickstart -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake"
   )
 
 if ( NOT TARGET install-feelpp-base )
