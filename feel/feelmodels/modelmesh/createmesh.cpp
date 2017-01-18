@@ -135,14 +135,14 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
             std::string mshfile = path + "/" + model.prefix() + ".msh";
             model.setMshfileStr(mshfile);
 
-            fs::path curPath=fs::current_path();
-            bool hasChangedRep=false;
-            if ( curPath != fs::path(model.rootRepository()) )
-            {
-                model.log("createMeshModel","", "change repository (temporary) for build mesh from geo : "+ model.rootRepository() );
-                bool hasChangedRep=true;
-                Environment::changeRepository( _directory=boost::format(model.rootRepository()), _subdir=false );
-            }
+            // fs::path curPath=fs::current_path();
+            // bool hasChangedRep=false;
+            // if ( curPath != fs::path(model.rootRepository()) )
+            // {
+            //     model.log("createMeshModel","", "change repository (temporary) for build mesh from geo : "+ model.rootRepository() );
+            //     bool hasChangedRep=true;
+            //     Environment::changeRepository( _directory=boost::format(model.rootRepository()), _subdir=false );
+            // }
 
             gmsh_ptrtype geodesc = geo( _filename=model.geofileStr(),
                                         _prefix=model.prefix(),
@@ -151,11 +151,12 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
             geodesc->setPrefix(model.prefix());
             mesh = createGMSHMesh(_mesh=new mesh_type,_desc=geodesc,
                                   _prefix=model.prefix(),_worldcomm=model.worldComm(),
-                                  _partitions=model.worldComm().localSize() );
+                                  _partitions=model.worldComm().localSize(),
+                                  _directory=model.rootRepository() );
 
-            // go back to previous repository
-            if ( hasChangedRep )
-                Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
+            // // go back to previous repository
+            // if ( hasChangedRep )
+            //     Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
         }
 #if 0
         else
