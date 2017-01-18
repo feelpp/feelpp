@@ -1,10 +1,11 @@
 
 feelpp_add_application( application_advection_2d SRCS main_adv.cpp
   LINK_LIBRARIES
-  feelpp_model_advection2dP1G1Fekete
-  feelpp_model_advection2dP2G1Fekete
-  feelpp_model_advection2dP1VecG1Fekete
-  feelpp_model_advection2dP2VecG1Fekete
+  feelpp_model_advection
+  # feelpp_model_advection2dP1G1Fekete
+  # feelpp_model_advection2dP2G1Fekete
+  # feelpp_model_advection2dP1VecG1Fekete
+  # feelpp_model_advection2dP2VecG1Fekete
   DEFS FEELPP_DIM=2
 )
 
