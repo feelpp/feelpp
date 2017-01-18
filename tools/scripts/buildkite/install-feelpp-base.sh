@@ -28,17 +28,18 @@ extratags_from_target() {
 echo '--- clone/pull feelpp/docker'
 if [ -d docker ]; then (cd docker; git pull) else git clone --depth=1 https://github.com/feelpp/docker; fi
 
-echo '--- building feelpp-base'
 tag=`tag_from_target $TARGET`
+echo '--- building feelpp-base:${tag}'
 
-cd docker/feelpp-base \
-    && docker build \
-              --tag=feelpp/feelpp-base:${tag} \
-              --build-arg=BUILD_JOBS=${JOBS}\
-              --build-arg=BRANCH=${BUILDKITE_BRANCH}\
-              --build-arg=CXX="${CXX}"\
-              --build-arg=CC="${CC}" \
-              . 
+
+docker build \
+       --tag=feelpp/feelpp-base:${tag} \
+       --build-arg=BUILD_JOBS=${JOBS}\
+       --build-arg=BRANCH=${BUILDKITE_BRANCH}\
+       --build-arg=CXX="${CXX}"\
+       --build-arg=CC="${CC}" \
+       -f docker/feelpp-base
+
 extratags=`extratags_from_target $TARGET`
 # add extra tags
 for tagalias in ${extratags[@]}; do
