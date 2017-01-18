@@ -40,9 +40,9 @@ option(FEELPP_MODELS_ENABLE_THERMOELECTRIC "Enable/Disable ThermoElectric" ON)
 option(FEELPP_MODELS_ENABLE_FLUIDMECHANICS "Enable/Disable FluidMechanics" ON)
 option(FEELPP_MODELS_ENABLE_SOLIDMECHANICS "Enable/Disable SolidMechanics" ON)
 option(FEELPP_MODELS_ENABLE_FSI "Enable/Disable FSI" ON)
-option(FEELPP_MODELS_ENABLE_ADVECTION "Enable/Disable Advection" ON)
+option(FEELPP_MODELS_ENABLE_ADVECTION "Enable/Disable Advection" OFF)
 option(FEELPP_MODELS_ENABLE_LEVELSET "Enable/Disable LevelSet" ON)
-option(FEELPP_MODELS_ENABLE_MULTIFLUID "Enable/Disable MultiFluid" ON)
+option(FEELPP_MODELS_ENABLE_MULTIFLUID "Enable/Disable MultiFluid" OFF)
 
 
 add_subdirectory(modelcore)
