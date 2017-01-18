@@ -30,7 +30,7 @@ extratags_from_target() {
 echo '--- clone/pull feelpp/docker'
 if [ -d docker ]; then (cd docker; git pull) else git clone --depth=1 https://github.com/feelpp/docker; fi
 
-tag=`tag_from_target $TARGET`
+tag=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')-$(`tag_from_target $TARGET`)
 echo "--- Building feelpp-${component}:${tag}"
 
 
@@ -43,14 +43,15 @@ docker build \
        --no-cache=true \
        docker/feelpp-${component}
 
-echo "--- Tagging feelpp-${component}:${tag}"
-extratags=`extratags_from_target $TARGET`
-# add extra tags
-for tagalias in ${extratags[@]}; do
-    echo "Tagging feelpp/feelpp-${component}:$tag as feelpp/feelpp-${component}:$tagalias"
-    docker tag "feelpp/feelpp-${component}:$tag" "feelpp/feelpp-${component}:$tagalias"
-done
-
+if [ "${BUILDKITE_BRANCH}" = "develop" ]; then
+    echo "--- Tagging feelpp-${component}:${tag}"
+    extratags=`extratags_from_target $TARGET`
+    # add extra tags
+    for tagalias in ${extratags[@]}; do
+        echo "Tagging feelpp/feelpp-${component}:$tag as feelpp/feelpp-${component}:$tagalias"
+        docker tag "feelpp/feelpp-${component}:$tag" "feelpp/feelpp-${component}:$tagalias"
+    done
+fi
     
 
 
