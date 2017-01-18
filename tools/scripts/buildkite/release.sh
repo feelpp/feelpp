@@ -2,26 +2,48 @@
 
 set -euo pipefail
 
-docker login --username="${DOCKER_LOGIN}" --password="${DOCKER_PASSWORD}"
+#if [ ! -z "$DOCKER_LOGIN" -a ! -z "$DOCKER_PASSWORD"]; then
+#    docker login --username="${DOCKER_LOGIN}" --password="${DOCKER_PASSWORD}";
+#fi
 
 CONTAINERS=${*:-libs}
 
-for container in ${CONTAINERS}; do
-    echo "--- Pushing Container feelpp/feelpp-${container}"
-    tools/scripts/buildkite/list.sh | while read line ; do
+tag_from_target() {
+    splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
+    fromos=${splitfrom[0]}
+    fromtag=${splitfrom[1]}
+
+    tools/scripts/buildkite/list.sh | grep "${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         image=${tokens[0]}
+        printf "%s" "$image" 
+    done
+}
+extratags_from_target() {
+    splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
+    fromos=${splitfrom[0]}
+    fromtag=${splitfrom[1]}
+
+    tools/scripts/buildkite/list.sh | grep "${fromos}-${fromtag}"  | while read line ; do
+        tokens=($line)
         extratags=${tokens[@]:5}
+        printf "%s" "${extratags}" 
+    done
+}
 
-        echo "--- Pushing feelpp/feelpp-${container}:$image"
-        docker push "feelpp/feelpp-${container}:$image"
+for container in ${CONTAINERS}; do
+    echo "--- Pushing Container feelpp/feelpp-${container}"
 
-        for aliastag in ${extratags[@]} ; do
-            echo "--- Pushing feelpp/feelpp-${container}:$aliastag"
-            docker tag "feelpp/feelpp-${container}:$image" "feelpp/feelpp-${container}:$aliastag"
-            docker push "feelpp/feelpp-${container}:$aliastag"
-        done
+    tag=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
+        
+    echo "--- Pushing feelpp/feelpp-${container}:$tag"
+    docker push "feelpp/feelpp-${container}:$tag"
+
+    for aliastag in ${extratags[@]} ; do
+        echo "--- Pushing feelpp/feelpp-${container}:$aliastag"
+        docker tag "feelpp/feelpp-${container}:$tag" "feelpp/feelpp-${container}:$aliastag"
+        docker push "feelpp/feelpp-${container}:$aliastag"
     done
 done
 
-echo -e "\033[33;32m--- All images released!\033[0m"
+echo -e "\033[33;32m--- All tags released!\033[0m"
