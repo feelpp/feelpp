@@ -21,12 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-SET( SRC
-  modelproperties.cpp modelparameters.cpp modelmaterials.cpp modelpostprocess.cpp modelfunctions.cpp
-  )
-
-file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp solid/*.hpp fluid/*.hpp )
-feel_append_src(feelmodels "${SRC};${HDR}")
 
 add_subdirectory(solid_oldversion)
 
