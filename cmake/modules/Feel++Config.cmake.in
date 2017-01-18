@@ -120,6 +120,10 @@ endif()
 set(FEELPP_LIBRARY "feelpp")
 set(FEELPP_LIBRARIES "@FEELPP_LIBRARIES@")
 
+# Feel++ mesh configuration
+set(FEELPP_MESH_MAX_ORDER "@FEELPP_MESH_MAX_ORDER@")
+set(FEELPP_INSTANTIATION_ORDER_MAX "@FEELPP_INSTANTIATION_ORDER_MAX@")
+
 # Add info about with what Feel++ has been built
 set(FEELPP_HAS_ANN "@FEELPP_HAS_ANN_H@")
 set(FEELPP_HAS_GMSH "@FEELPP_HAS_GMSH@")
