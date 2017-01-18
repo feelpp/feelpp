@@ -2,6 +2,8 @@
 
 set -eo pipefail
 
+component=${1:-base}
+
 tag_from_target() {
     splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
     fromos=${splitfrom[0]}
@@ -29,13 +31,25 @@ echo '--- clone/pull feelpp/docker'
 if [ -d docker ]; then (cd docker; git pull) else git clone --depth=1 https://github.com/feelpp/docker; fi
 
 tag=`tag_from_target $TARGET`
-echo '--- building feelpp-libs:${tag}'
-(cd docker/feelpp-libs && bash mkimg.sh -f ${TARGET} --jobs ${JOBS} --branch ${BUILDKITE_BRANCH} --cxx "${CXX}" --cc "${CC}")
+echo '--- building feelpp-${component}:${tag}'
+
+
+docker build \
+       --tag=feelpp/feelpp-${component}:${tag} \
+       --build-arg=BUILD_JOBS=${JOBS}\
+       --build-arg=BRANCH=${BUILDKITE_BRANCH}\
+       --build-arg=CXX="${CXX}"\
+       --build-arg=CC="${CC}" \
+       --no-cache=true \
+       docker/feelpp-${component}
 
 extratags=`extratags_from_target $TARGET`
 # add extra tags
 for tagalias in ${extratags[@]}; do
-    echo "Tagging feelpp/feelpp-libs:$tag as feelpp/feelpp-libs:$tagalias"
-    docker tag "feelpp/feelpp-libs:$tag" "feelpp/feelpp-libs:$tagalias"
+    echo "Tagging feelpp/feelpp-${component}:$tag as feelpp/feelpp-${component}:$tagalias"
+    docker tag "feelpp/feelpp-${component}:$tag" "feelpp/feelpp-${component}:$tagalias"
 done
+
+    
+
 
