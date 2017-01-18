@@ -31,7 +31,7 @@ echo '--- clone/pull feelpp/docker'
 if [ -d docker ]; then (cd docker; git pull) else git clone --depth=1 https://github.com/feelpp/docker; fi
 
 tag=`tag_from_target $TARGET`
-echo '--- building feelpp-${component}:${tag}'
+echo "--- Building feelpp-${component}:${tag}"
 
 
 docker build \
@@ -43,6 +43,7 @@ docker build \
        --no-cache=true \
        docker/feelpp-${component}
 
+echo "--- Tagging feelpp-${component}:${tag}"
 extratags=`extratags_from_target $TARGET`
 # add extra tags
 for tagalias in ${extratags[@]}; do
