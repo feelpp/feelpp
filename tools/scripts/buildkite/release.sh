@@ -39,11 +39,14 @@ for container in ${CONTAINERS}; do
     echo "--- Pushing feelpp/feelpp-${container}:$tag"
     docker push "feelpp/feelpp-${container}:$tag"
 
-    for aliastag in ${extratags[@]} ; do
-        echo "--- Pushing feelpp/feelpp-${container}:$aliastag"
-        docker tag "feelpp/feelpp-${container}:$tag" "feelpp/feelpp-${container}:$aliastag"
-        docker push "feelpp/feelpp-${container}:$aliastag"
-    done
+    if [ "${BUILDKITE_BRANCH}" = "develop" ]; then
+        extratags=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(extratags_from_target $TARGET))
+        for aliastag in ${extratags[@]} ; do
+            echo "--- Pushing feelpp/feelpp-${container}:$aliastag"
+            docker tag "feelpp/feelpp-${container}:$tag" "feelpp/feelpp-${container}:$aliastag"
+            docker push "feelpp/feelpp-${container}:$aliastag"
+        done
+    fi
 done
 
 echo -e "\033[33;32m--- All tags released!\033[0m"
