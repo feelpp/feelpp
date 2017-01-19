@@ -294,7 +294,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::interfaceRectangularFunction( element_levelset_ptr
 {
     //auto phi = idv(this->phi());
     auto phi = idv(p);
-    double epsilon = this->thicknessInterface();
+    double epsilon = M_thicknessInterfaceRectangularFunction;
     double epsilon_rect = 2.*epsilon;
     double epsilon_delta = (epsilon_rect - epsilon)/2.;
     double epsilon_zero = epsilon + epsilon_delta;
@@ -378,14 +378,16 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
 {
     if( Environment::vm().count( prefixvm(this->prefix(),"thickness-interface").c_str() ) )
-    {
         M_thicknessInterface = doption(prefixvm(this->prefix(),"thickness-interface"));
-    }
     else
-    {
         M_thicknessInterface = 1.5 * this->mesh()->hAverage();
-    }
+
     M_useAdaptiveThicknessInterface = boption(prefixvm(this->prefix(),"use-adaptive-thickness"));
+
+    if( Environment::vm().count( prefixvm(this->prefix(),"thickness-interface-rectangular-function").c_str() ) )
+        M_thicknessInterfaceRectangularFunction = doption(prefixvm(this->prefix(),"thickness-interface-rectangular-function")); 
+    else
+        M_thicknessInterfaceRectangularFunction = M_thicknessInterface;
 
     M_heaviside.reset( new element_levelset_type(this->functionSpace(), "Heaviside") );
     M_dirac.reset( new element_levelset_type(this->functionSpace(), "Dirac") );
