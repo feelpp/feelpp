@@ -6,7 +6,7 @@ set -euo pipefail
 #    docker login --username="${DOCKER_LOGIN}" --password="${DOCKER_PASSWORD}";
 #fi
 
-CONTAINERS=${*:-libs}
+CONTAINERS=${*:-feelpp-libs}
 
 tag_from_target() {
     splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
@@ -32,19 +32,19 @@ extratags_from_target() {
 }
 
 for container in ${CONTAINERS}; do
-    echo "--- Pushing Container feelpp/feelpp-${container}"
+    echo "--- Pushing Container feelpp/${container}"
 
     tag=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
         
-    echo "--- Pushing feelpp/feelpp-${container}:$tag"
-    docker push "feelpp/feelpp-${container}:$tag"
+    echo "--- Pushing feelpp/${container}:$tag"
+    docker push "feelpp/${container}:$tag"
 
     if [ "${BUILDKITE_BRANCH}" = "develop" ]; then
         extratags=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(extratags_from_target $TARGET))
         for aliastag in ${extratags[@]} ; do
-            echo "--- Pushing feelpp/feelpp-${container}:$aliastag"
-            docker tag "feelpp/feelpp-${container}:$tag" "feelpp/feelpp-${container}:$aliastag"
-            docker push "feelpp/feelpp-${container}:$aliastag"
+            echo "--- Pushing feelpp/${container}:$aliastag"
+            docker tag "feelpp/${container}:$tag" "feelpp/${container}:$aliastag"
+            docker push "feelpp/${container}:$aliastag"
         done
     fi
 done
