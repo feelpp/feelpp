@@ -1,45 +1,46 @@
 
-feelpp_add_application( application_solid_2d SRCS main_sm.cpp
+feelpp_add_application( solid_2d SRCS main_sm.cpp
   LINK_LIBRARIES
   feelpp_model_solidmec2dP1G1
   feelpp_model_solidmec2dP2G1
   DEFS FEELPP_DIM=2
+  INSTALL
  )
 
-feelpp_add_application( application_solid_3d SRCS main_sm.cpp
+feelpp_add_application( solid_3d SRCS main_sm.cpp
   LINK_LIBRARIES
   feelpp_model_solidmec3dP1G1
   feelpp_model_solidmec3dP2G1
   DEFS FEELPP_DIM=3
+  INSTALL
  )
 
-feelpp_add_application( application_stress_2d SRCS stress.cpp
+feelpp_add_application( stress_2d SRCS stress.cpp
   LINK_LIBRARIES
   feelpp_model_solidmec2dP1G1
   feelpp_model_solidmec2dP2G1
   DEFS FEELPP_DIM=2
+  INSTALL
  )
 
-feelpp_add_application( application_stress_3d SRCS stress.cpp
+feelpp_add_application( stress_3d SRCS stress.cpp
   LINK_LIBRARIES
   feelpp_model_solidmec3dP1G1
   feelpp_model_solidmec3dP2G1
   DEFS FEELPP_DIM=3
+  INSTALL
  )
 
-feelpp_add_application( application_solenoid_3d SRCS stress.cpp
+feelpp_add_application( solenoid_3d SRCS stress.cpp
   LINK_LIBRARIES
   feelpp_model_solidmec3dP1G1
   feelpp_model_solidmec3dP2G1
   DEFS FEELPP_DIM=3 ELASTICITY_ANA
+  INSTALL
  )
 
 
 #feelpp_add_application( application_solid SRCS main_sm.cpp LINK_LIBRARIES feelpp_model_solidmechanics )
-
-install(TARGETS feelpp_application_solid_2d feelpp_application_solid_3d feelpp_application_stress_2d feelpp_application_stress_3d feelpp_application_solenoid_3d
-        RUNTIME DESTINATION bin/ 
-        COMPONENT ModelApplications)
 
 feelpp_add_testcase(NAFEMS-LE1 CATEGORY solid)
 feelpp_add_testcase(NAFEMS-LE10 CATEGORY solid)
