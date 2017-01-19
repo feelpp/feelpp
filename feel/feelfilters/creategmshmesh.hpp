@@ -86,6 +86,7 @@ BOOST_PARAMETER_FUNCTION(
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( partitioner,   *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
       ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity") )
+      ( directory,(std::string), "" )
         )
     )
 {
@@ -112,7 +113,7 @@ BOOST_PARAMETER_FUNCTION(
 
         std::string fname;
         bool generated_or_modified;
-        boost::tie( fname, generated_or_modified ) = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
+        boost::tie( fname, generated_or_modified ) = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes, true, directory );
 
         // refinement if option is enabled to a value greater or equal to 1
         // do not refine if the mesh/geo file was previously generated or modified
