@@ -543,6 +543,7 @@ private:
     //--------------------------------------------------------------------//
     // Parameters
     double M_thicknessInterface;
+    double M_thicknessInterfaceRectangularFunction;
     bool M_useAdaptiveThicknessInterface;
     bool M_useRegularPhi;
     bool M_useHeavisideDiracNodalProj;
