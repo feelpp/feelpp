@@ -436,6 +436,8 @@ if ( FEELPP_HAS_TOOLBOXES )
   add_subdirectory(toolboxes)
 endif()
 
+add_subdirectory(tools)
+
 ################################################################################
 # generate configuration header
 ################################################################################

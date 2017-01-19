@@ -25,7 +25,7 @@
 #
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-project( feel-applications )
+project( applications )
 add_subdirectory( mesh )
 add_subdirectory( polyvis )
 add_subdirectory( check )
