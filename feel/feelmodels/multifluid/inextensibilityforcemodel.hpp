@@ -204,6 +204,12 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
     //auto Ep = this->levelset()->smoother()->project(
             //_expr=max(idv(EpRaw), 0.)
             //);
+    auto EpRaw = this->levelset()->stretch();
+    auto Ep = vf::project(
+            _space=this->levelset()->functionSpace(),
+            _range=elements(this->levelset()->mesh()),
+            _expr=max(idv(EpRaw), 0)
+            );
     //auto EpN = this->levelset()->projectorL2Vectorial()->project(
             //_expr=idv(Ep)*idv(N)
             //);
