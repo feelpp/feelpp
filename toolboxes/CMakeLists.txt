@@ -27,6 +27,9 @@ if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 AND ${CMAKE_MINOR_VERSION} GREATER 3 )
   cmake_policy(SET CMP0064 OLD)
 endif()
 
+project(toolboxes)
+set(PROJECT_SHORTNAME "toolbox")
+
 # with this it is possible to compile applications/models from an installed
 # version of feel++. This is useful also for staged compilation for docker
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
