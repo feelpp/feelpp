@@ -86,7 +86,7 @@ tag_from_target() {
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    ${ARCH} | grep "${BRANCH}-${fromos}-${fromtag}"  | while read line ; do
+    ${ARCH} | grep "${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         image=${tokens[0]}
         printf "%s" "$image" 
@@ -97,7 +97,7 @@ extratags_from_target() {
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    ${ARCH} | grep "${BRANCH}-${fromos}-${fromtag}"  | while read line ; do
+    ${ARCH} | grep "${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         extratags=${tokens[@]:5}
         printf "%s" "${extratags}" 
