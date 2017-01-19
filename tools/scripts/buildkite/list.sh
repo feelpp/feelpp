@@ -25,7 +25,7 @@ DISTROS=(
 )
 
 FEELPP_VERSIONS=(
-    #master
+    master
     develop
 )
 
