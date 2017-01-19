@@ -36,6 +36,8 @@ steps:
      JOBS: 20
      TARGET: ubuntu:16.10
  - wait
- - command: tools/scripts/buildkite/release.sh
+ - command: tools/scripts/buildkite/release.sh feelpp-libs feelpp-base feelpp-toolboxes
    name: "Push images to :docker: Hub :rocket:"
    branches: develop
+   env:
+     TARGET: ubuntu:16.10
