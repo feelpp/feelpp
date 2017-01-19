@@ -1,0 +1,142 @@
+#!/bin/bash
+
+set -eo pipefail
+
+PROJECT_NAME=""
+GIT_URL=""
+TARGET="debian:testing"
+BRANCH=master
+FEELPP_BRANCH=develop
+FEELPP_DIR=@FEELPP_DIR@
+if [ -z ${FEELPP_DIR} ]; then
+    ARCH=tools/scripts/buildkite/list.sh
+else
+    ARCH=${FEELPP_DIR}/share/feel/scripts/list.sh
+fi
+build="$(basename "$0")"
+cxx=g++
+cc=gcc
+jobs=20
+cxxflags=""
+cmakeflags=""
+version=1.0
+nocache=true
+travis=false
+
+usage() {
+    echo >&2 "usage: $build [-p project_name] [-u git_url]"
+    echo >&2 "              [-t|--target target host os]"
+    echo >&2 "              [-b|--branch project git branch]"
+    echo >&2 "              [--feelpp_branch Feel++ git branch]"
+    echo >&2 "              [-j|--jobs number of make parallel jobs] "
+    echo >&2 "              [--cxx c++ compiler, default: g++]"
+    echo >&2 "              [--cc c compiler, default: gcc]"
+    echo >&2 "              [--cxxflags c++ flags]"
+    echo >&2 "              [--no-cache true|false]"
+    echo >&2 "              [--travis true|false, default=false]"
+    echo >&2 "   ie: $build -f debian:sid  -c clang++ "
+    exit 1
+}
+
+fromos=
+fromtag=
+
+tag=
+while [ -n "$1" ]; do
+    case "$1" in
+        -p) PROJECT_NAME="$2" ; shift 2 ;;
+        -u) GIT_URL="$2" ; shift 2 ;;
+        -t|--target) TARGET="$2" ; shift 2 ;;
+        -b|--branch) BRANCH="$2" ; shift 2 ;;
+        --feelpp_branch) FEELPP_BRANCH="$2" ; shift 2 ;;
+        -j|--jobs) jobs="$2" ; shift 2 ;;
+        -c|--cmakeflags) cmakeflags="$2" ; shift 2 ;;
+        --cxx) cxx="$2" ; shift 2 ;;
+        --cc) cc="$2" ; shift 2 ;;
+        --cxxflags) cxxflags="$2" ; shift 2 ;;
+        --no-cache) nocache="$2" ; shift 2 ;;
+        --travis) travis="$2" ; shift 2 ;;
+        -v|--version) version="$2" ; shift 2 ;;
+        -h|--help) usage ;;
+        --) shift ; break ;;
+    esac
+done
+
+if [ -z $PROJECT_NAME ]; then
+    echo "project name must be given"
+    usage
+fi
+if [ -z $GIT_URL ]; then
+    GIT_URL="https://github.com/feelpp/${PROJECT_NAME}.git"
+fi
+
+splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
+fromos=${splitfrom[0]}
+fromtag=${splitfrom[1]}
+
+# Combines a dockerfile template with a generated FROM line
+dockerfile_from() {
+    local dockerfile="$1"
+    local from="$2"
+    printf 'FROM %s\n%s' "$from" "$(<$dockerfile)"
+}
+
+tag_from_target() {
+    splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
+    fromos=${splitfrom[0]}
+    fromtag=${splitfrom[1]}
+
+    ${ARCH} | grep "${fromos}-${fromtag}"  | while read line ; do
+        tokens=($line)
+        image=${tokens[0]}
+        printf "%s" "$image" 
+    done
+}
+extratags_from_target() {
+    splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
+    fromos=${splitfrom[0]}
+    fromtag=${splitfrom[1]}
+
+    ${ARCH} | grep "${fromos}-${fromtag}"  | while read line ; do
+        tokens=($line)
+        extratags=${tokens[@]:5}
+        printf "%s" "${extratags}" 
+    done
+}
+
+tag=$(echo "${BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
+echo $tag
+basetag=$(echo "${FEELPP_BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
+echo $basetag
+echo "--- Building ${PROJECT_NAME}:${tag}"
+
+mkdir -p docker
+dockerfile_from "@PROJECT_SOURCE_DIR@/docker/project/Dockerfile.template" "feelpp/feelpp-base:${basetag}" > docker/project/dockerfile.tmp
+
+docker build \
+       --tag=feelpp/${PROJECT_NAME}:${tag} \
+       --build-arg=PROJECT_NAME=${PROJECT_NAME} \
+       --build-arg=BUILD_JOBS=${JOBS}\
+       --build-arg=BRANCH=${BRANCH}\
+       --build-arg=GIT_URL=${GIT_URL}\
+       --build-arg=CXX="${cxx}"\
+       --build-arg=CC="${cc}" \
+       --no-cache=true \
+       -f docker/project/dockerfile.tmp \
+       docker/project
+
+
+if [ "${BRANCH}" = "master" -o "${BRANCH}" = "develop" ]; then
+    echo "--- Tagging ${PROJECT_NAME}:${tag}"
+    extratags=`extratags_from_target $TARGET`
+    # add extra tags
+    for tagalias in ${extratags[@]}; do
+        echo "Tagging feelpp/${PROJECT_NAME}:$tag as feelpp/${PROJECT_NAME}:$tagalias"
+        docker tag "feelpp/${PROJECT_NAME}:$tag" "feelpp/${PROJECT_NAME}:$tagalias"
+    done
+fi
+    
+
+
+
+
