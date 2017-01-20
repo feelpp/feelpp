@@ -26,7 +26,9 @@ project(crb)
 # with this it is possible to compile applications/crb from an installed
 # version of feel++. This is useful also for staged compilation for docker
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+  cmake_minimum_required(VERSION 2.8)
   find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feel/cmake/modules /usr/share/feel/cmake/modules /usr/local/share/feel/cmake/modules )
+  message(STATUS "[feelpp] module path: ${CMAKE_MODULE_PATH}")
   if(NOT FEELPP_FOUND)
     message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
   endif()
