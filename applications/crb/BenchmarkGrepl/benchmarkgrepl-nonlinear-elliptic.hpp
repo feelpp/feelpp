@@ -43,7 +43,7 @@
 
 #include <feel/feelcrb/modelcrbbase.hpp>
 
-#include <applications/crb/BenchmarkGrepl/benchmarkgrepl-options.hpp>
+#include <BenchmarkGrepl/benchmarkgrepl-options.hpp>
 
 namespace Feel
 {
