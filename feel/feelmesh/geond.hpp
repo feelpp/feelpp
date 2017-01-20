@@ -150,6 +150,8 @@ public:
             mpl::identity<edge_permutation_type>,
             mpl::identity<face_permutation_type> >::type>::type::type permutation_type;
 
+    static constexpr uint16_type meas_quad_order = (nOrder-1)*nDim;
+    
     template<int GeoOrder>
     struct GetImMeasure
     {
@@ -898,7 +900,7 @@ public:
     /**
      * @return a quadrature to compute the measure of the element
      */
-    static quad_meas_type imMeasure() { return quad_meas_type( (nOrder-1)*nDim ); }
+    static quad_meas_type imMeasure() { return quad_meas_type( meas_quad_order ); }
     
     /**
      * @return a quadrature to compute the measure of the order 1 approximation
@@ -1067,7 +1069,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update()
     if ( !M_gm1.use_count() )
         M_gm1 = gm1_ptrtype( new gm1_type );
 
-    quad_meas_type thequad;
+    quad_meas_type thequad( meas_quad_order );
     auto pc = M_gm->preCompute( M_gm, thequad.points() );
     auto pcf =  M_gm->preComputeOnFaces( M_gm, thequad.allfpoints() );
 
