@@ -431,6 +431,7 @@ if ( FEELPP_HAS_QUICKSTART )
   add_subdirectory(quickstart)
 endif()
 
+include(feelpp.module.toolboxes)
 if ( FEELPP_HAS_TOOLBOXES )
   add_custom_target(toolboxes)
   add_subdirectory(toolboxes)
