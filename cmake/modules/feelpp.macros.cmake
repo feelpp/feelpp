@@ -73,14 +73,34 @@ endmacro(feelpp_add_testcase)
 macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
-    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT"
-    "NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT;NO_FEELPP_LIBRARY"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT;PROJECT;EXEC"
+    "NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT;NO_FEELPP_LIBRARY;INSTALL"
     ${ARGN}
     )
   CAR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
 
-  set(execname feelpp_${FEELPP_APP_NAME})
-
+  if ( FEELPP_APP_PROJECT )
+    set(execname feelpp_${FEELPP_APP_PROJECT}_${FEELPP_APP_NAME})
+  else( FEELPP_APP_PROJECT )
+    if ( PROJECT_NAME AND
+        ( NOT PROJECT_NAME STREQUAL "Feel++" )
+        )
+      
+      if ( PROJECT_SHORTNAME )
+        #message(STATUS "project: ${PROJECT_NAME} shortname: ${PROJECT_SHORTNAME}")
+        set(execname feelpp_${PROJECT_SHORTNAME}_${FEELPP_APP_NAME})
+      else()
+        #message(STATUS "project: ${PROJECT_NAME} ")
+        set(execname feelpp_${PROJECT_NAME}_${FEELPP_APP_NAME})
+      endif()
+    else()
+      set(execname feelpp_${FEELPP_APP_NAME})
+    endif()
+  endif( FEELPP_APP_PROJECT )
+  if  (FEELPP_APP_EXEC )
+    set( ${FEELPP_APP_EXEC} ${execname} )
+  endif()
+  
   if ( FEELPP_ENABLE_VERBOSE_CMAKE )
     MESSAGE("*** Arguments for Feel++ application ${FEELPP_APP_NAME}")
     MESSAGE("    Sources: ${FEELPP_APP_SRCS}")
@@ -120,7 +140,11 @@ macro(feelpp_add_application)
     add_precompiled_header( ${execname} ${FEELPP_APP_SRCS} "feel/feel.hpp")
   endif()
 
-  #INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
+  # install rule if INSTALL if target is marked to be installed
+  if ( FEELPP_APP_INSTALL )
+    install(TARGETS ${execname} RUNTIME DESTINATION bin COMPONENT Bin)
+  endif()
+  
   if ( NOT FEELPP_APP_NO_TEST )
     IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
       add_test(NAME ${execname}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS} )
@@ -484,3 +508,11 @@ function(feelpp_split_libs libs libnames libpaths)
     set(${libnames} ${_names} PARENT_SCOPE)
     set(${libpaths} ${_paths} PARENT_SCOPE)
 endfunction(feelpp_split_libs)
+
+macro(feel_append_src DIRNAME FILES)
+  foreach(FILE ${FILES})
+    list(APPEND LIST ${DIRNAME}/${FILE})
+  endforeach(FILE)
+  set(FEELPP_SRCS ${FEELPP_SRCS};${LIST} PARENT_SCOPE)
+  set(FEELPP_DIRS ${FEELPP_DIRS};${DIRNAME} PARENT_SCOPE)
+endmacro(feel_append_src)
