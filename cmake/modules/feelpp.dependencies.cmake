@@ -598,7 +598,9 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   set(GFLAGS_IS_SUBPROJECT TRUE)
   set(GFLAGS_NAMESPACE "google;gflags")
   INCLUDE_DIRECTORIES(${FEELPP_BINARY_DIR}/contrib/gflags/include ${FEELPP_BINARY_DIR}/contrib/gflags/include/gflags)
-  SET(FEELPP_LIBRARIES feelpp_gflags ${FEELPP_LIBRARIES})
+  # gflags is added by glog and currently there is a conflict between the
+  #threaded and not threaded version, -> comment out next line
+  # SET(FEELPP_LIBRARIES feelpp_gflags ${FEELPP_LIBRARIES})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} contrib/GFlags" )
   set(FEELPP_HAS_GFLAGS 1)
   # for GLog

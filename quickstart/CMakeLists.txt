@@ -24,6 +24,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 project(quickstart)
+set(PROJECT_SHORTNAME "qs")
 
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feel/cmake/modules /usr/share/feel/cmake/modules /usr/local/share/feel/cmake/modules )
@@ -43,17 +44,18 @@ if ( NOT TARGET quickstart )
 endif()
 
 
-feelpp_add_application( qs_laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 )
-feelpp_add_application( qs_laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 )
-feelpp_add_testcase( feelpp2d PREFIX qs CATEGORY quickstart )
-feelpp_add_testcase( circle PREFIX qs CATEGORY quickstart)
-feelpp_add_testcase( feelpp3d PREFIX qs CATEGORY quickstart)
+feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_2D)
+feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D)
+feelpp_add_testcase( laplacian PREFIX qs CATEGORY quickstart )
+feelpp_add_testcase( stokes PREFIX qs CATEGORY quickstart )
+feelpp_add_application( stokes_2d SRCS qs_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_STOKES_2D)
 
-install(TARGETS feelpp_qs_laplacian_2d feelpp_qs_laplacian_3d 
+
+install(TARGETS ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D} ${QS_STOKES_2D}
         RUNTIME DESTINATION bin 
         COMPONENT Quickstart)
 
-add_dependencies(quickstart feelpp_qs_laplacian_2d feelpp_qs_laplacian_3d )
+add_dependencies(quickstart ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D} ${QS_STOKES_2D} )
 
 add_custom_target(install-quickstart
   DEPENDS
