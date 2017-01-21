@@ -31,6 +31,7 @@
 
 namespace Feel
 {
+#pragma GCC visibility push(hidden)
 /// \cond DETAIL
 namespace details
 {
@@ -124,5 +125,6 @@ struct line
 template<uint16_type Order> const uint16_type  line<Order>::__e2p[11] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 }
 /// \endcond
+#pragma GCC visibility pop
 }
 #endif /* __LineOrdering_H */

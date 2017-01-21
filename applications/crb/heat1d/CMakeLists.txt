@@ -24,7 +24,7 @@
 
 #crb_add_executable(heat1dpfem heat1dpfem.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1dpfem.cfg )
 #crb_add_executable(heat1dpfem heat1dpfem.cpp LINK_LIBRARIES feel++_crb_crb CFG heat1dpfem.cfg )
-crb_add_executable(heat1dscm heat1dscm.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1dscm.cfg )
+#crb_add_executable(heat1dscm heat1dscm.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1dscm.cfg )
 #crb_add_executable(heat1dcrb heat1dcrb.cpp LINK_LIBRARIES feel++_crb_crb ${FEELPP_LIBRARIES} CFG heat1dcrb.cfg )
 
 #add_subdirectory(python)

@@ -72,6 +72,17 @@ endif()
 
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  CHECK_CXX_COMPILER_FLAG( "-Wno-ignored-attributes" HAS_NO_IGNORED_ATTRIBUTES )
+  if ( HAS_NO_IGNORED_ATTRIBUTES )
+    set(FEELPP_FLAGS "${FEELPP_FLAGS} -Wno-ignored-attributes ")
+  endif()
+
+  CHECK_CXX_COMPILER_FLAG( "-Wno-unused-result" HAS_NO_UNUSED_RESULT )
+  if ( HAS_NO_UNUSED_RESULT )
+    set(FEELPP_FLAGS "${FEELPP_FLAGS} -Wno-unused-result ")
+  endif()
+  
+  
    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
       CHECK_CXX_COMPILER_FLAG( "-Wno-deprecated-register" HAS_NO_DEPRECATED_REGISTER )
    endif()

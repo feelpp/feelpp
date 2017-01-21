@@ -149,6 +149,10 @@ public:
         void update( Geo_t const& /*geom*/, uint16_type /*face*/ )
         {
         }
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
+        {
+        }
 
         FEELPP_STRONG_INLINE value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
