@@ -141,8 +141,11 @@ public:
     //@{
 
     //! Default empty constructor
-    PartitionIO() {}
-
+    PartitionIO() = default;
+    PartitionIO (const PartitionIO&) = delete;
+    PartitionIO& operator= (const PartitionIO&) = delete;
+    
+    
     //! Constructor
     /*!
      * Non-empty constructor
@@ -202,9 +205,7 @@ public:
 protected:
 
 private:
-    // Copy constructor and assignment operator are disabled
-    PartitionIO (const PartitionIO&);
-    PartitionIO& operator= (const PartitionIO&);
+    
 
     //! Private Methods
     //@{
@@ -212,27 +213,27 @@ private:
     /**
      * write meta data
      */
-    void writeMetaData( mesh_ptrtype mesh );
+    FEELPP_NO_EXPORT void writeMetaData( mesh_ptrtype mesh );
 
     /**
      * read meta data
      */
-    void readMetaData( mesh_ptrtype mesh );
+    FEELPP_NO_EXPORT void readMetaData( mesh_ptrtype mesh );
 
     // Methods for writing
-    void writeStats();
-    void writePoints();
-    void writeElements();
-    void writeGhostElements();
-    void writeMarkedSubEntities();
+    FEELPP_NO_EXPORT void writeStats();
+    FEELPP_NO_EXPORT void writePoints();
+    FEELPP_NO_EXPORT void writeElements();
+    FEELPP_NO_EXPORT void writeGhostElements();
+    FEELPP_NO_EXPORT void writeMarkedSubEntities();
     // Methods for reading
-    void readStats();
-    void readPoints();
-    void readElements( std::map<rank_type,std::vector<size_type>> & mapGhostHdf5IdToFeelId );
-    void readGhostElements( std::map<rank_type,std::vector<size_type>> const& mapGhostHdf5IdToFeelId );
-    void readMarkedSubEntities();
-    void prepareUpdateForUseStep1();
-    void prepareUpdateForUseStep2();
+    FEELPP_NO_EXPORT void readStats();
+    FEELPP_NO_EXPORT void readPoints();
+    FEELPP_NO_EXPORT void readElements( std::map<rank_type,std::vector<size_type>> & mapGhostHdf5IdToFeelId );
+    FEELPP_NO_EXPORT void readGhostElements( std::map<rank_type,std::vector<size_type>> const& mapGhostHdf5IdToFeelId );
+    FEELPP_NO_EXPORT void readMarkedSubEntities();
+    FEELPP_NO_EXPORT void prepareUpdateForUseStep1();
+    FEELPP_NO_EXPORT void prepareUpdateForUseStep2();
 
     //@}
 

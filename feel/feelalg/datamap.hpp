@@ -44,7 +44,7 @@ class DataMap;
 /**
  *
  */
-class IndexSplit : public std::vector<std::vector<size_type> >
+class FEELPP_EXPORT IndexSplit : public std::vector<std::vector<size_type> >
 {
     typedef IndexSplit self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
@@ -130,7 +130,7 @@ private :
  *  @author Christophe Prud'homme
  *  @see
  */
-class DataMap
+class FEELPP_EXPORT DataMap
 {
 
 public:

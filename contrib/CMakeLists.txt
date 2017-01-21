@@ -1,4 +1,4 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+###  CMakeLists.txt; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 05 May 2015
@@ -22,7 +22,39 @@
 #
 #
 
-add_subdirectory(metis)
-add_subdirectory(parmetis)
 
-add_subdirectory(ipopt)
+
+if ( FEELPP_HAS_GFLAGS )
+  add_subdirectory(gflags)
+  add_dependencies(contrib feelpp_gflags feelpp_gflags_shared feelpp_gflags_nothreads_shared)
+endif()
+
+if ( FEELPP_HAS_GLOG )
+  add_subdirectory(glog)
+  add_dependencies(contrib feelpp_glog)
+endif()
+
+if ( FEELPP_HAS_METIS )
+  add_subdirectory(metis)
+  #add_subdirectory(parmetis)
+  add_dependencies(contrib feelpp_metis)
+endif()
+
+if ( FEELPP_HAS_EIGEN3 )
+  add_subdirectory(eigen)
+endif()
+
+if ( FEELPP_HAS_GINAC )
+  add_subdirectory(ginac)
+  add_dependencies(contrib feelpp_ginac ginsh)
+endif()
+
+if ( FEELPP_HAS_NLOPT )
+  add_subdirectory(nlopt)
+  add_dependencies(contrib feelpp_nlopt)
+endif()
+
+if ( FEELPP_HAS_IPOPT )
+  add_subdirectory(ipopt)
+  add_dependencies(contrib feelpp_ipopt)
+endif()

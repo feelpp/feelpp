@@ -41,7 +41,7 @@ namespace Feel
 {
 
 
-class WorldComm : public boost::mpi::communicator, public boost::enable_shared_from_this<WorldComm>
+class FEELPP_EXPORT WorldComm : public boost::mpi::communicator, public boost::enable_shared_from_this<WorldComm>
 {
 
     typedef boost::mpi::communicator super;
@@ -237,7 +237,7 @@ public:
 
 private :
 
-    void initSubWorldCommSeq();
+    FEELPP_NO_EXPORT void initSubWorldCommSeq();
 
 private :
 

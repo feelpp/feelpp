@@ -30,6 +30,7 @@
 #ifndef FEELPP_GAUSS_HPP
 #define FEELPP_GAUSS_HPP 1
 
+
 #include <feel/feelpoly/pointsetinterpolation.hpp>
 #include <feel/feelpoly/pointsetquadrature.hpp>
 

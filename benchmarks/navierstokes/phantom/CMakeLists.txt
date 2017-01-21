@@ -25,4 +25,4 @@
 
 feelpp_add_application( ns_phantom_3d_P2P1 SRCS ns_phantom.cpp display_flowrates.cpp INCLUDE_IN_ALL CFG mean_uIn_80_1.dat phantom.cfg phantom_cst.cfg phantom.bc phantom_cst.bc DEFS FEELPP_DIM=3 FEELPP_ORDER_P=1)
 
-install(TARGETS feelpp_ns_phantom_3d_P2P1 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_ns_phantom_3d_P2P1 DESTINATION bin/ COMPONENT Bin )

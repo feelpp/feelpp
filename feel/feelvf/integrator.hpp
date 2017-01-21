@@ -1725,11 +1725,27 @@ buildGmcWithRelationDifferentMeshType2( boost::shared_ptr<SpaceType> const& spac
     typedef typename gmc_type::gm_type::precompute_type geopc_type;
     typedef typename gmc_type::gm_type::precompute_ptrtype geopc_ptrtype;
 
-    auto const& eltInit = space->mesh()->element( idElt );
-
     geopc_ptrtype geopc( boost::make_shared<geopc_type>( gm, im.points() ) );
-
-    return boost::make_shared<gmc_type>( gm, eltInit, geopc );
+    if ( space->mesh()->hasElement( idElt ) ) // test if is an active element
+    {
+        auto const& eltInit = space->mesh()->element( idElt );
+        return boost::make_shared<gmc_type>( gm, eltInit, geopc );
+    }
+    else // maybe a ghost, else error
+    {
+        rank_type ghostProcId = invalid_rank_type_value;
+        for ( rank_type p : space->mesh()->neighborSubdomains() )
+        {
+            if ( space->mesh()->hasElement( idElt, p ) )
+            {
+                ghostProcId = p;
+                break;
+            }
+        }
+        CHECK( ghostProcId != invalid_rank_type_value ) << "element id " << idElt << "not found";
+        auto const& eltInit = space->mesh()->element( idElt,ghostProcId );
+        return boost::make_shared<gmc_type>( gm, eltInit, geopc );
+    }
 }
 
 template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
@@ -1759,7 +1775,29 @@ updateGmcWithRelationDifferentMeshType2( FaceType const& theface, boost::shared_
 {
     typedef typename QuadMapped<ImType>::permutation_type permutation_type;
 
+#if 0
     auto const& theelt = space->mesh()->element( idElt );
+#else
+     // find process of element
+    rank_type ghostProcId = invalid_rank_type_value;
+    if ( space->mesh()->hasElement( idElt ) )
+    {
+        ghostProcId = space->mesh()->element( idElt ).processId();
+    }
+    else
+    {
+        for ( rank_type p : space->mesh()->neighborSubdomains() )
+        {
+            if ( space->mesh()->hasElement( idElt, p ) )
+            {
+                ghostProcId = p;
+                break;
+            }
+        }
+    }
+    CHECK( ghostProcId != invalid_rank_type_value ) << "element id " << idElt << "not found";
+    auto const& theelt = space->mesh()->element( idElt,ghostProcId );
+#endif
     gmc->update(theelt);
     bool found = gmcExpr->updateFromNeighborMatchingFace( theface.element0(), theface.idInElement0(), gmc );
     CHECK(found) << "the permutation of quad point was not found\n";
@@ -1774,7 +1812,29 @@ updateGmcWithRelationDifferentMeshType21( FaceType const& theface, boost::shared
 {
     typedef typename QuadMapped<ImType>::permutation_type permutation_type;
 
+#if 0
     auto const& theelt = space->mesh()->element( idElt );
+#else
+     // find process of element
+    rank_type ghostProcId = invalid_rank_type_value;
+    if ( space->mesh()->hasElement( idElt ) )
+    {
+        ghostProcId = space->mesh()->element( idElt ).processId();
+    }
+    else
+    {
+        for ( rank_type p : space->mesh()->neighborSubdomains() )
+        {
+            if ( space->mesh()->hasElement( idElt, p ) )
+            {
+                ghostProcId = p;
+                break;
+            }
+        }
+    }
+    CHECK( ghostProcId != invalid_rank_type_value ) << "element id " << idElt << "not found";
+    auto const& theelt = space->mesh()->element( idElt,ghostProcId );
+#endif
     gmc->update(theelt);
     bool found = gmcExpr->updateFromNeighborMatchingFace( theface.element1(), theface.idInElement1(), gmc );
     //bool found = gmcExpr->updateFromNeighborMatchingFace( theface.element0(), theface.idInElement0(), gmc );
