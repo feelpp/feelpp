@@ -197,9 +197,9 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
     //auto Ep = *M_levelsetModGradPhi;
     //Ep.add (-1.);
     //auto Ep = this->levelset()->stretch();
-    auto Ep = this->levelset()->smoother()->project(
-            _expr=idv(this->levelset()->stretch())
-            );
+    //auto Ep = this->levelset()->smoother()->project(
+            //_expr=idv(this->levelset()->stretch())
+            //);
     //auto EpRaw = this->levelset()->stretch();
     //auto Ep = this->levelset()->smoother()->project(
             //_expr=max(idv(EpRaw), 0.)
