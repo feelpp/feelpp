@@ -37,6 +37,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
+#include <feel/feelalg/backend.hpp>
 
 /**/
 #include <opusdata.hpp>
@@ -95,6 +96,7 @@ public:
 #endif
 
     typedef temp_functionspace_type space_type;
+    typedef typename space_type::element_type element_type;
 
     static const bool is_time_dependent = true;
     static const bool is_linear = true;
@@ -102,13 +104,14 @@ public:
 };
 
 template<int OrderU=2, int OrderP=OrderU-1, int OrderT=OrderP>
-class OpusModelRB : public OpusModelBase, public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<OrderU,OrderP,OrderT> >,
+class OpusModelRB : public OpusModelBase,
+                    public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<OrderU,OrderP,OrderT>, TimeDependent >,
                     public boost::enable_shared_from_this< OpusModelRB<OrderU,OrderP,OrderT> >
 {
     typedef OpusModelBase super;
 public:
 
-    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition<OrderU,OrderP,OrderT> > super_type;
+    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition<OrderU,OrderP,OrderT>, TimeDependent> super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -181,16 +184,11 @@ public:
     //typedef Periodic<1,2,value_type> periodic_type;
     typedef Periodic<> periodic_type;
 
-
     typedef temp_basis_type basis_type;
 
-#if defined( OPUS_WITH_THERMAL_DISCONTINUITY )
-    typedef FunctionSpace<mesh_type, temp_basis_type, discontinuity_type,  Periodicity<Periodic<> > > temp_functionspace_type;
-    typedef ReducedBasisSpace< model_type, mesh_type, temp_basis_type, discontinuity_type,  Periodicity<Periodic<> > > temp_rbfunctionspace_type;
-#else
-    typedef FunctionSpace<mesh_type, temp_basis_type, Periodicity<Periodic<> > > temp_functionspace_type;
-    typedef ReducedBasisSpace< model_type, mesh_type, temp_basis_type, Periodicity<Periodic<> > > temp_rbfunctionspace_type;
-#endif
+    typedef typename FunctionSpaceDefinition<OrderU,OrderP,OrderT>::temp_functionspace_type temp_functionspace_type;
+    typedef ReducedBasisSpace<super_type> temp_rbfunctionspace_type;
+
     typedef boost::shared_ptr<temp_functionspace_type> temp_functionspace_ptrtype;
     typedef boost::shared_ptr<temp_rbfunctionspace_type> temp_rbfunctionspace_ptrtype;
     typedef typename temp_functionspace_type::element_type temp_element_type;
@@ -221,9 +219,6 @@ public:
     typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
     typedef typename p0_space_type::element_type p0_element_type;
     typedef boost::shared_ptr<p0_element_type> p0_element_ptrtype;
-
-    //typedef Feel::OpusModelThermalRB<temp_functionspace_type> thermal_operator_type;
-    //typedef boost::shared_ptr<thermal_operator_type> thermal_operator_ptrtype;
 
     /* velocity */
     typedef bases<Lagrange<OrderU, Vectorial> > velocity_basis_type;
@@ -266,15 +261,11 @@ public:
     typedef Bdf<temp_functionspace_type>  temp_bdf_type;
     typedef boost::shared_ptr<temp_bdf_type> temp_bdf_ptrtype;
 
+    using super_type::computeBetaQm;
+    typedef typename super_type::beta_vector_type beta_vector_type;
+    typedef boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> > beta_type;
+    typedef typename super_type::affine_decomposition_type affine_decomposition_type;
 
-    typedef std::vector< std::vector< double > > beta_vector_type;
-    typedef boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> > beta_vectors_type;
-
-    typedef boost::tuple<
-        std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<std::vector<vector_ptrtype> > >
-        > affine_decomposition_type;
     //@}
 
     /** @name Constructors, destructor
@@ -365,11 +356,13 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    beta_vectors_type
-    computeBetaQm( parameter_type const& mu , double time=0 );
+    //beta_vectors_type
+    beta_type
+    computeBetaQm( parameter_type const& mu , double time=0, bool only_terms_time_dependent=false);
 
-    beta_vectors_type
-    computeBetaQm( element_type const &T,parameter_type const& mu , double time=0 );
+    //beta_vectors_type
+    beta_type
+    computeBetaQm( element_type const &T,parameter_type const& mu , double time=0, bool only_terms_time_dependent=false);
 
     /**
      * \brief return the coefficient vector
@@ -616,8 +609,8 @@ private:
 private:
 
 
-    backend_ptrtype backend;
-    backend_ptrtype backendM;
+    backend_ptrtype M_backend;
+    backend_ptrtype M_backendM;
 
     double M_meshSize;
 
@@ -650,7 +643,6 @@ private:
     temp_functionspace_ptrtype M_Th;
     temp_rbfunctionspace_ptrtype M_RbTh;
     grad_temp_functionspace_ptrtype M_grad_Th;
-    //thermal_operator_ptrtype M_thermal;
     element_ptrtype pT,pV;
 
     boost::shared_ptr<export_type> M_exporter;
