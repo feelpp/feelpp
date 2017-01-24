@@ -91,3 +91,5 @@ TODO         text svneol=native#text/plain
 *.tpp        text svneol=native#text/plain
 *.jam        text svneol=native#text/plain
 *.java       text svneol=native#text/plain
+toolboxes/**/*.msh filter=lfs diff=lfs merge=lfs -text
+
