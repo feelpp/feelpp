@@ -40,7 +40,7 @@ feelpp_add_application( fluid_3d SRCS main_fm.cpp
   INSTALL
 )
 
-feelpp_add_testcase(cavity CATEGORY fluid)
+feelpp_add_testcase(lid-driven-cavity CATEGORY fluid)
 feelpp_add_testcase(TurekHron CATEGORY fluid)
 feelpp_add_testcase(TurekHronExt3d CATEGORY fluid)
 
