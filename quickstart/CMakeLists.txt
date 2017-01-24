@@ -44,18 +44,15 @@ if ( NOT TARGET quickstart )
 endif()
 
 
-feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_2D)
-feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D)
+feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_2D INSTALL TEST)
+feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D INSTALL TEST)
 feelpp_add_testcase( laplacian PREFIX qs CATEGORY quickstart )
+
+feelpp_add_application( stokes_2d SRCS qs_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_STOKES_2D INSTALL TEST)
 feelpp_add_testcase( stokes PREFIX qs CATEGORY quickstart )
-feelpp_add_application( stokes_2d SRCS qs_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_STOKES_2D)
-
-
-install(TARGETS ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D} ${QS_STOKES_2D}
-        RUNTIME DESTINATION bin 
-        COMPONENT Quickstart)
 
 add_dependencies(quickstart ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D} ${QS_STOKES_2D} )
+add_dependencies(check ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D} ${QS_STOKES_2D} )
 
 add_custom_target(install-quickstart
   DEPENDS
