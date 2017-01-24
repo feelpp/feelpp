@@ -1,7 +1,7 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 18 Jan 2017
+#       Date: 24 Jan 2017
 #
 #  Copyright (C) 2017 Feel++ Consortium
 #
@@ -22,28 +22,4 @@
 #
 #
 
-
-feelpp_add_application( fluid_2d SRCS main_fm.cpp
-  LINK_LIBRARIES
-  feelpp_model_fluidmec2dP2P1G1
-  #feelpp_model_fluidmec2dP1P1G1
-  #feelpp_model_fluidmec2dP2P1cG1DVP0c
-  #feelpp_model_fluidmec2dP1P1cG1DVP0c
-  DEFS FEELPP_DIM=2
-  INSTALL
-)
-
-feelpp_add_application( fluid_3d SRCS main_fm.cpp
-  LINK_LIBRARIES
-  feelpp_model_fluidmec3dP2P1G1
-  DEFS FEELPP_DIM=3
-  INSTALL
-)
-
-feelpp_add_testcase(lid-driven-cavity CATEGORY CFD)
-feelpp_add_testcase(TurekHron CATEGORY CFD)
-feelpp_add_testcase(TurekHronExt3d CATEGORY CFD)
-feelpp_add_testcase(backwardfacingstep CATEGORY CFD)
-
-#feelpp_add_application( application_fm_2d SRCS main_fm.cpp LINK_LIBRARIES feelpp_model_fluidmechanics )
-
+feelpp_add_testcase(NaturalConvection CATEGORY HeatFluid)
