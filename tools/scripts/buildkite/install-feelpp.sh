@@ -4,7 +4,7 @@ set -eo pipefail
 
 component=${1:-base}
 
-COMPONENTS=(base toolboxes)
+COMPONENTS=(base toolboxes crb) 
 
 # Combines a dockerfile template with a generated FROM line
 dockerfile_from() {
