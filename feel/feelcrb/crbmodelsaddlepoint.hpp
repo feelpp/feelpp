@@ -116,6 +116,12 @@ public :
         }
     }
 
+    void l2solveSP( vector_ptrtype& u, vector_ptrtype const& f, int n_space )
+    {
+        M_backend_l2_vec[n_space]->solve( _matrix=M_inner_product_matrix_vec[n_space],
+                                          _solution=u, _rhs=f );
+    }
+
     subelement_type<0> supremizer( parameter_type const& mu, vector_ptrtype const& vec )
     {
         auto Xh0 = this->functionSpace()->template functionSpace<0>();
@@ -157,6 +163,17 @@ public :
             return 0;
         else
             return A->energy( xi_i, xi_j, transpose );
+    }
+
+    std::vector< std::vector< sparse_matrix_ptrtype >>
+    AqmBlock( uint16_type n_space1, uint16_type n_space2 )
+    {
+        return this->M_Aqm_block[n_space1][n_space2];
+    }
+    std::vector< std::vector< vector_ptrtype >>
+    FqmBlock( uint16_type l, uint16_type n_space )
+    {
+        return this->M_Fqm_block[l][n_space];
     }
 
     template <typename EType>

@@ -1059,7 +1059,7 @@ public:
      * \brief Retuns maximum value of the relative error
      * \param N number of elements in the reduced basis <=> M_N
      */
-    max_error_type maxErrorBounds( size_type N ) const;
+    virtual max_error_type maxErrorBounds( size_type N ) const;
 
     /**
      * evaluate online the residual
@@ -1082,7 +1082,7 @@ public:
     /**
      * generate offline the residual
      */
-    void offlineResidual( int Ncur , int number_of_added_elements=1 );
+    virtual void offlineResidual( int Ncur , int number_of_added_elements=1 );
     void offlineResidual( int Ncur, mpl::bool_<true> ,int number_of_added_elements=1 );
     void offlineResidual( int Ncur, mpl::bool_<false> , int number_of_added_elements=1 );
     void offlineResidualV0( int Ncur, mpl::bool_<false> , int number_of_added_elements=1 );
