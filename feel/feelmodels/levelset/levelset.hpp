@@ -176,6 +176,9 @@ public:
     // ModGradPhi advection
     typedef Advection<ConvexType, Lagrange<Order, Scalar>, PeriodicityType> modgradphi_advection_type;
     typedef boost::shared_ptr<modgradphi_advection_type> modgradphi_advection_ptrtype;
+    // Stretch advection
+    typedef Advection<ConvexType, Lagrange<Order, Scalar>, PeriodicityType> stretch_advection_type;
+    typedef boost::shared_ptr<stretch_advection_type> stretch_advection_ptrtype;
 
     //--------------------------------------------------------------------//
     // Exporter
@@ -533,7 +536,7 @@ private:
     //--------------------------------------------------------------------//
     // Stretch advection
     bool M_useStretchAugmented;
-    modgradphi_advection_ptrtype M_stretchAdvection;
+    stretch_advection_ptrtype M_stretchAdvection;
     mutable element_levelset_ptrtype M_levelsetStretch;
 
     //--------------------------------------------------------------------//

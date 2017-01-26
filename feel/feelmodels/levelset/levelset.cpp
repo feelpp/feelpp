@@ -408,7 +408,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     }
     if( M_useStretchAugmented )
     {
-        M_stretchAdvection = modgradphi_advection_type::New(
+        M_stretchAdvection = stretch_advection_type::New(
                 prefixvm(this->prefix(), "stretch-advection"),
                 this->worldComm()
                 );
