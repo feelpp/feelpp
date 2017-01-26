@@ -1,8 +1,8 @@
 h = 0.1;
-xmin = 0;
-xmax = 1;
-ymin = 0;
-ymax = 1;
+xmin = -0.5;
+xmax = 0.5;
+ymin = -0.5;
+ymax = 0.5;
 Point(1) = {xmin,ymin,0.0,h};
 Point(2) = {xmax,ymin,0.0,h};
 Point(3) = {xmax,ymax,0.0,h};
