@@ -292,6 +292,12 @@ public:
      * Real part.
      */
     virtual real_type max () const = 0;
+    virtual real_type maxWithIndex( int* index=NULL ) const;
+
+    /**
+     * Replaces every element in a vector with its absolute value
+     */
+    virtual void abs();
 
     /**
      * retrieve the max component as well as the index of the max component
