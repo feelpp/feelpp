@@ -50,16 +50,16 @@ FILE(GLOB files "${CMAKE_BINARY_DIR}/contrib/cln/lib/lib*" "${CMAKE_BINARY_DIR}/
 INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Libs)
 
 # install gflags headers
-FILE(GLOB files "${CMAKE_BINARY_DIR}/contrib/gflags/include/gflags/*.h")
-INSTALL(FILES ${files} DESTINATION include/feel/gflags COMPONENT Devel)
-FILE(GLOB files "${CMAKE_BINARY_DIR}/contrib/gflags/lib/lib*" "${CMAKE_BINARY_DIR}/contrib/gflags/lib64/lib*")
-INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Libs)
+# FILE(GLOB files "${CMAKE_BINARY_DIR}/contrib/gflags/include/gflags/*.h")
+# INSTALL(FILES ${files} DESTINATION include/feel/gflags COMPONENT Devel)
+# FILE(GLOB files "${CMAKE_BINARY_DIR}/contrib/gflags/lib/lib*" "${CMAKE_BINARY_DIR}/contrib/gflags/lib64/lib*")
+# INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Libs)
 
 # install glog headers
-FILE(GLOB files "${CMAKE_BINARY_DIR}/contrib/glog/include/glog/*.h")
-INSTALL(FILES ${files} DESTINATION include/feel/glog COMPONENT Devel)
-FILE(GLOB files "${CMAKE_BINARY_DIR}/contrib/glog/lib/lib*" "${CMAKE_BINARY_DIR}/contrib/glog/lib64/lib*")
-INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Libs)
+# FILE(GLOB files "${CMAKE_BINARY_DIR}/contrib/glog/include/glog/*.h")
+# INSTALL(FILES ${files} DESTINATION include/feel/glog COMPONENT Devel)
+# FILE(GLOB files "${CMAKE_BINARY_DIR}/contrib/glog/lib/lib*" "${CMAKE_BINARY_DIR}/contrib/glog/lib64/lib*")
+# INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Libs)
 
 # install cereal headers
 if(FEELPP_HAS_CEREAL)

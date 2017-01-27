@@ -631,6 +631,13 @@ public:
      * Real part.
      */
     real_type max() const;
+    real_type maxWithIndex( int* index=NULL ) const;
+
+
+    /**
+     * Replaces every element in a vector with its absolute value
+     */
+    void abs();
 
     /**
      * @return the \f$l_1\f$-norm of the vector, i.e.

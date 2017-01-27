@@ -44,24 +44,24 @@ feelpp_add_application( unsteady_fda_2D_P2P1G2 SRCS unsteady_fda.cpp display_flo
 feelpp_add_application( unsteady_fda_2D_P3P2G2 SRCS unsteady_fda.cpp display_flowrates.cpp INCLUDE_IN_ALL CFG fda_2d.cfg fda_2d.bc DEFS FEELPP_DIM=2 FEELPP_ORDER_P=2 FEELPP_ORDER_GEO=2)
 
 
-install(TARGETS feelpp_unsteady_fda_3D_P2P1G1 DESTINATION bin/ COMPONENT Bin )
-install(TARGETS feelpp_unsteady_fda_3D_P3P2G1 DESTINATION bin/ COMPONENT Bin )
-install(TARGETS feelpp_unsteady_fda_2D_P2P1G1 DESTINATION bin/ COMPONENT Bin )
-install(TARGETS feelpp_unsteady_fda_2D_P3P2G1 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_unsteady_fda_3D_P2P1G1 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_unsteady_fda_3D_P3P2G1 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_unsteady_fda_2D_P2P1G1 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_unsteady_fda_2D_P3P2G1 DESTINATION bin/ COMPONENT Bin )
 
-install(TARGETS feelpp_unsteady_fda_3D_P2P1G2 DESTINATION bin/ COMPONENT Bin )
-install(TARGETS feelpp_unsteady_fda_3D_P3P2G2 DESTINATION bin/ COMPONENT Bin )
-install(TARGETS feelpp_unsteady_fda_2D_P2P1G2 DESTINATION bin/ COMPONENT Bin )
-install(TARGETS feelpp_unsteady_fda_2D_P3P2G2 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_unsteady_fda_3D_P2P1G2 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_unsteady_fda_3D_P3P2G2 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_unsteady_fda_2D_P2P1G2 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_unsteady_fda_2D_P3P2G2 DESTINATION bin/ COMPONENT Bin )
 
 
-install(TARGETS feelpp_steady_ns_2d_P2P1 DESTINATION bin/ COMPONENT Bin )
-install(TARGETS feelpp_steady_ns_2d_P3P2 DESTINATION bin/ COMPONENT Bin )
-install(TARGETS feelpp_steady_ns_2d_P4P3 DESTINATION bin/ COMPONENT Bin )
-install(TARGETS feelpp_steady_ns_3d_P2P1 DESTINATION bin/ COMPONENT Bin )
-install(TARGETS feelpp_steady_ns_3d_P3P2 DESTINATION bin/ COMPONENT Bin )
-install(TARGETS feelpp_steady_ns_3d_P4P3 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_steady_ns_2d_P2P1 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_steady_ns_2d_P3P2 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_steady_ns_2d_P4P3 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_steady_ns_3d_P2P1 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_steady_ns_3d_P3P2 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_benchmarks_steady_ns_3d_P4P3 DESTINATION bin/ COMPONENT Bin )
 
-# feelpp_add_testcase( TurekHronExt3d )
+# feelpp_benchmarks_add_testcase( TurekHronExt3d )
 
 ##add_subdirectory(qslapla)
