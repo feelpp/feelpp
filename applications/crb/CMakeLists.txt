@@ -39,8 +39,8 @@ set(FEELPP_CRB_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(FEELPP_CRB_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 include(UseCRB)
 
-include_directories(${FEELPP_CRB_SOURCE_DIR}/crb)
-include_directories(${FEELPP_CRB_BINARY_DIR}/crb)
+include_directories(${FEELPP_CRB_SOURCE_DIR})
+include_directories(${FEELPP_CRB_BINARY_DIR})
 
 OPTION(FEELPP_ENABLE_CRB_EADS "enable EADS testcase" OFF)
 OPTION(FEELPP_ENABLE_CRB_HEAT1D "enable HEAT1D testcase" ON)
