@@ -154,6 +154,7 @@ public:
     typedef std::vector< std::vector< std::vector< std::vector< matrixN_type >>>> blockmatrixN_type;
     typedef std::vector< std::vector< std::vector< vectorN_type >>> blockvectorN_type;
     typedef typename super::max_error_type max_error_type;
+    typedef typename super::error_estimation_type error_estimation_type;
 
     CRBSaddlePoint( std::string const& name = "defaultname_crb",
                     WorldComm const& worldComm = Environment::worldComm() ) :
@@ -186,6 +187,20 @@ public:
     void offlineResidual( int Ncur, int number_of_added_elements=1 );
 
     max_error_type maxErrorBounds( size_type N ) const;
+
+    error_estimation_type delta( size_type N, parameter_type const& mu, std::vector< vectorN_type > const& uN, std::vector< vectorN_type > const& uNdu, std::vector<vectorN_type> const& uNold, std::vector<vectorN_type> const& uNduold, int k=0 ) const
+    {
+        std::vector< std::vector<double> > primal_residual_coeffs;
+        std::vector< std::vector<double> > dual_residual_coeffs;
+        std::vector<double> output_upper_bound;
+        double delta_pr=0;
+        double delta_du=0;
+        primal_residual_coeffs.resize(1);
+
+        output_upper_bound.resize(1);
+        output_upper_bound[0]=-1;
+        return boost::make_tuple( output_upper_bound ,primal_residual_coeffs,dual_residual_coeffs,delta_pr,delta_du );
+    }
 
 private :
     void addBasis( element_type& U, element_type& Udu, parameter_type& mu );
@@ -790,8 +805,6 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
     int N0 = boption("crb.saddlepoint.add-supremizer") ? 2*N:N;
     int N1 = N;
 
-    Feel::cout << "fixed point, N0xN1=" << N0 <<", "<<N1 <<std::endl;
-
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm;
 
@@ -869,7 +882,7 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
         condition_number = this->computeConditioning( A );
         determinant = A.determinant();
     }
-    Feel::cout << "determinant =" <<determinant<<std::endl;
+
     auto matrix_info = boost::make_tuple(condition_number,determinant);
 
     if( print_rb_matrix && !this->M_offline_step )
@@ -951,66 +964,96 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
         {
             for ( int m1=0; m1<this->M_model->mMaxA(q1); m1++ )
             {
-                Lhs0[q1][m1]->multVector( X0, W );
-                W->scale(-1.);
-                this->M_model->l2solveSP( Z1, W, Row );
-
+                double norm1 = Lhs0[q1][m1]->linftyNorm();
+                if ( norm1>1e-12 )
+                {
+                    Lhs0[q1][m1]->multVector( X0, W );
+                    W->scale(-1.);
+                    this->M_model->l2solveSP( Z1, W, Row );
+                }
                 // RHS LOOP
                 for ( int q2=0; q2<QRhs; q2++ )
                 {
                     for ( int m2=0; m2<this->M_model->mMaxF(0,q2); m2++ )
                     {
                         M_R_Lhs0Rhs[Row][q1][m1][q2][m2].conservativeResize(N0);
-                        this->M_model->l2solveSP( Z2, Fqm[q2][m2], Row );
-                        M_R_Lhs0Rhs[Row][q1][m1][q2][m2]( i ) = 2.0*this->M_model->scalarProduct( Z1, Z2, Row );
+                        if ( Fqm[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12)
+                        {
+                            this->M_model->l2solveSP( Z2, Fqm[q2][m2], Row );
+                            M_R_Lhs0Rhs[Row][q1][m1][q2][m2]( i ) =
+                                2.0*this->M_model->scalarProduct( Z1, Z2, Row );
+                        }
+                        else
+                            M_R_Lhs0Rhs[Row][q1][m1][q2][m2]( i ) = 0;
                     } // m2 loop Rhs
                 } // q2 loop Rhs
 
                 // LHS0 LOOP ON J
                 for ( int j=0; j<N0; j++ )
                 {
-                    *Y0 = XN0->primalBasisElement(j);
-                    if ( optimize )
-                    {
-                        for ( int q2=0; q2<q1; q2++ )
+                        *Y0 = XN0->primalBasisElement(j);
+                        if ( optimize )
                         {
-                            for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                            for ( int q2=0; q2<q1; q2++ )
                             {
-                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2].conservativeResize( N0, N0 );
-                                M_R_Lhs0Lhs0[Row][q2][m2][q1][m1].conservativeResize( N0, N0 );
-                                Lhs0[q2][m2]->multVector( Y0, W );
-                                W->scale( -1. );
+                                for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                                {
+                                    M_R_Lhs0Lhs0[Row][q1][m1][q2][m2].conservativeResize( N0, N0 );
+                                    M_R_Lhs0Lhs0[Row][q2][m2][q1][m1].conservativeResize( N0, N0 );
+                                    if ( Lhs0[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
+                                    {
+                                        Lhs0[q2][m2]->multVector( Y0, W );
+                                        W->scale( -1. );
+                                        this->M_model->l2solveSP( Z2, W, Row );
+                                        double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                                        M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = prod;
+                                        M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = prod;
+                                    }
+                                    else
+                                    {
+                                        M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = 0;
+                                        M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = 0;
+                                    }
+                                } // m2 loop Lhs0
+                            } // q2 loop Lhs0
+
+                            M_R_Lhs0Lhs0[Row][q1][m1][q1][m1].conservativeResize( N0, N0 );
+                            if ( norm1>1e-12 )
+                            {
+                                Lhs0[q1][m1]->multVector( Y0, W );
+                                W->scale(-1.);
                                 this->M_model->l2solveSP( Z2, W, Row );
                                 double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = prod;
-                                M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = prod;
-                            } // m2 loop Lhs0
-                        } // q2 loop Lhs0
-
-                        M_R_Lhs0Lhs0[Row][q1][m1][q1][m1].conservativeResize( N0, N0 );
-                        Lhs0[q1][m1]->multVector( Y0, W );
-                        W->scale(-1.);
-                        this->M_model->l2solveSP( Z2, W, Row );
-                        double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                        M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( i, j ) = prod;
-                        M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( j, i ) = prod;
-                    } //optimize
-                    else
-                    {
-                        for ( int q2=0; q2<QLhs; q2++ )
-                        {
-                            for( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                                M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( i, j ) = prod;
+                                M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( j, i ) = prod;
+                            }
+                            else
                             {
-                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2].conservativeResize( N0, N0 );
-                                Lhs0[q2][m2]->multVector( Y0, W );
-                                W->scale( -1. );
-                                this->M_model->l2solveSP( Z2, W, Row );
-                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j )
-                                    = this->M_model->scalarProduct( Z1, Z2, Row );
-                            } // m2 loop Lhs0
-                        } // q2 loop Lhs0
-                    } // !optimize
-                } // j loop Lhs0
+                                M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( i, j ) = 0;
+                                M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( j, i ) = 0;
+                            }
+                        } //optimize
+                        else
+                        {
+                            for ( int q2=0; q2<QLhs; q2++ )
+                            {
+                                for( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                                {
+                                    M_R_Lhs0Lhs0[Row][q1][m1][q2][m2].conservativeResize( N0, N0 );
+                                    if ( Lhs0[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
+                                    {
+                                        Lhs0[q2][m2]->multVector( Y0, W );
+                                        W->scale( -1. );
+                                        this->M_model->l2solveSP( Z2, W, Row );
+                                        M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j )
+                                            = this->M_model->scalarProduct( Z1, Z2, Row );
+                                    }
+                                    else
+                                        M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = 0;
+                                } // m2 loop Lhs0
+                            } // q2 loop Lhs0
+                        } // !optimize
+                    } // j loop Lhs0
 
                 // LHS1 LOOP ON J
                 for ( int j=0; j<N1; j++ )
@@ -1021,11 +1064,17 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                         for( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                         {
                             M_R_Lhs0Lhs1[Row][q1][m1][q2][m2].conservativeResize( N0, N1 );
-                            Lhs1[q2][m2]->multVector( Y1, W );
-                            W->scale( -1. );
-                            this->M_model->l2solveSP( Z2, W, Row );
-                            M_R_Lhs0Lhs1[Row][q1][m1][q2][m2]( i, j )
-                                = 2.0*this->M_model->scalarProduct( Z1, Z2, Row );
+                            if ( Lhs1[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
+                            {
+                                Lhs1[q2][m2]->multVector( Y1, W );
+                                W->scale( -1. );
+                                this->M_model->l2solveSP( Z2, W, Row );
+                                M_R_Lhs0Lhs1[Row][q1][m1][q2][m2]( i, j )
+                                    = 2.0*this->M_model->scalarProduct( Z1, Z2, Row );
+                            }
+                            else
+                                M_R_Lhs0Lhs1[Row][q1][m1][q2][m2]( i, j ) = 0;
+
                         } // m2 loop Lhs1
                     } // q2 loop Lhs1
                 } // j loop Lhs1
@@ -1042,10 +1091,13 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
         {
             for ( int m1=0; m1<this->M_model->mMaxA(q1); m1++ )
             {
-                Lhs0[q1][m1]->multVector( X0, W );
-                W->scale(-1.);
-                this->M_model->l2solveSP( Z1, W, Row );
-
+                double norm1 = Lhs0[q1][m1]->linftyNorm();
+                if ( norm1>1e-12 )
+                {
+                    Lhs0[q1][m1]->multVector( X0, W );
+                    W->scale(-1.);
+                    this->M_model->l2solveSP( Z1, W, Row );
+                }
                 // LHS0 LOOP ON I
                 for ( int i=0; i<N0; i++ )
                 {
@@ -1056,12 +1108,20 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                         {
                             for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                             {
-                                Lhs0[q2][m2]->multVector( Y0, W );
-                                W->scale( -1. );
-                                this->M_model->l2solveSP( Z2, W, Row );
-                                double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = prod;
-                                M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = prod;
+                                if ( Lhs0[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
+                                {
+                                    Lhs0[q2][m2]->multVector( Y0, W );
+                                    W->scale( -1. );
+                                    this->M_model->l2solveSP( Z2, W, Row );
+                                    double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                                    M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = prod;
+                                    M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = prod;
+                                }
+                                else
+                                {
+                                    M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = 0;
+                                    M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = 0;
+                                }
                             } // m2 loop Lhs0
                         } // q2 loop Lhs0
                     } //optimize
@@ -1071,11 +1131,16 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                         {
                             for( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                             {
-                                Lhs0[q2][m2]->multVector( Y0, W );
-                                W->scale( -1. );
-                                this->M_model->l2solveSP( Z2, W, Row );
-                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j )
-                                    = this->M_model->scalarProduct( Z1, Z2, Row );
+                                if ( Lhs0[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
+                                {
+                                    Lhs0[q2][m2]->multVector( Y0, W );
+                                    W->scale( -1. );
+                                    this->M_model->l2solveSP( Z2, W, Row );
+                                    M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j )
+                                        = this->M_model->scalarProduct( Z1, Z2, Row );
+                                }
+                                else
+                                    M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = 0;
                             } // m2 loop Lhs0
                         } // q2 loop Lhs0
                     } // !optimize
@@ -1093,9 +1158,13 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
         {
             for ( int m1=0; m1<this->M_model->mMaxA(q1); m1++ )
             {
-                Lhs1[q1][m1]->multVector( X1, W );
-                W->scale(-1.);
-                this->M_model->l2solveSP( Z1, W, Row );
+                double norm1 = Lhs1[q1][m1]->linftyNorm();
+                if ( norm1>1e-12 )
+                {
+                    Lhs1[q1][m1]->multVector( X1, W );
+                    W->scale(-1.);
+                    this->M_model->l2solveSP( Z1, W, Row );
+                }
 
                 // RHS LOOP
                 for ( int q2=0; q2<QRhs; q2++ )
@@ -1103,8 +1172,13 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                     for ( int m2=0; m2<this->M_model->mMaxF(0,q2); m2++ )
                     {
                         M_R_Lhs1Rhs[Row][q1][m1][q2][m2].conservativeResize(N1);
-                        this->M_model->l2solveSP( Z2, Fqm[q2][m2], Row );
-                        M_R_Lhs1Rhs[Row][q1][m1][q2][m2]( i ) = 2.0*this->M_model->scalarProduct( Z1, Z2, Row );
+                        if ( Fqm[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
+                        {
+                            this->M_model->l2solveSP( Z2, Fqm[q2][m2], Row );
+                            M_R_Lhs1Rhs[Row][q1][m1][q2][m2]( i ) = 2.0*this->M_model->scalarProduct( Z1, Z2, Row );
+                        }
+                        else
+                            M_R_Lhs1Rhs[Row][q1][m1][q2][m2]( i ) = 0;
                     } // m2 loop Rhs
                 } // q2 loop Rhs
 
@@ -1120,22 +1194,37 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                             {
                                 M_R_Lhs1Lhs1[Row][q1][m1][q2][m2].conservativeResize( N1, N1 );
                                 M_R_Lhs1Lhs1[Row][q2][m2][q1][m1].conservativeResize( N1, N1 );
-                                Lhs1[q2][m2]->multVector( Y1, W );
-                                W->scale( -1. );
-                                this->M_model->l2solveSP( Z2, W, Row );
-                                double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = prod;
-                                M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = prod;
+                                if ( Lhs1[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
+                                {
+                                    Lhs1[q2][m2]->multVector( Y1, W );
+                                    W->scale( -1. );
+                                    this->M_model->l2solveSP( Z2, W, Row );
+                                    double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = prod;
+                                    M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = prod;
+                                }
+                                else
+                                {
+                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = 0;
+                                    M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = 0;
+                                }
                             } // m2 loop Lhs0
                         } // q2 loop Lhs0
-
                         M_R_Lhs1Lhs1[Row][q1][m1][q1][m1].conservativeResize( N1, N1 );
-                        Lhs1[q1][m1]->multVector( Y1, W );
-                        W->scale(-1.);
-                        this->M_model->l2solveSP( Z2, W, Row );
-                        double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = prod;
-                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = prod;
+                        if ( norm1>1e-12 )
+                        {
+                            Lhs1[q1][m1]->multVector( Y1, W );
+                            W->scale(-1.);
+                            this->M_model->l2solveSP( Z2, W, Row );
+                            double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = prod;
+                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = prod;
+                        }
+                        else
+                        {
+                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = 0;
+                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = 0;
+                        }
                     } //optimize
                     else
                     {
@@ -1144,11 +1233,16 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                             for( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                             {
                                 M_R_Lhs1Lhs1[Row][q1][m1][q2][m2].conservativeResize( N1, N1 );
-                                Lhs1[q2][m2]->multVector( Y1, W );
-                                W->scale( -1. );
-                                this->M_model->l2solveSP( Z2, W, Row );
-                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j )
-                                    = this->M_model->scalarProduct( Z1, Z2, Row );
+                                if ( Lhs1[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
+                                {
+                                    Lhs1[q2][m2]->multVector( Y1, W );
+                                    W->scale( -1. );
+                                    this->M_model->l2solveSP( Z2, W, Row );
+                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j )
+                                        = this->M_model->scalarProduct( Z1, Z2, Row );
+                                }
+                                else
+                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = 0;
                             } // m2 loop Lhs1
                         } // q2 loop Lhs1
                     } // !optimize
@@ -1167,9 +1261,13 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
         {
             for ( int m1=0; m1<this->M_model->mMaxA(q1); m1++ )
             {
-                Lhs1[q1][m1]->multVector( X1, W );
-                W->scale(-1.);
-                this->M_model->l2solveSP( Z1, W, Row );
+                double norm1 = Lhs1[q1][m1]->linftyNorm();
+                if ( norm1>1e-12 )
+                {
+                    Lhs1[q1][m1]->multVector( X1, W );
+                    W->scale(-1.);
+                    this->M_model->l2solveSP( Z1, W, Row );
+                }
 
                 // LHS0 LOOP ON I
                 for ( int i=0; i<N0; i++ )
@@ -1179,11 +1277,16 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                     {
                         for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                         {
-                            Lhs0[q2][m2]->multVector( Y0, W );
-                            W->scale(-1.);
-                            this->M_model->l2solveSP( Z2, W, Row );
-                            M_R_Lhs0Lhs1[Row][q2][m2][q1][m1]( i, j )
-                                = 2.0*this->M_model->scalarProduct( Z1, Z2, Row );
+                            if ( Lhs0[q2][m2]->linftyNorm()>1e-12  && norm1>1e-12 )
+                            {
+                                Lhs0[q2][m2]->multVector( Y0, W );
+                                W->scale(-1.);
+                                this->M_model->l2solveSP( Z2, W, Row );
+                                M_R_Lhs0Lhs1[Row][q2][m2][q1][m1]( i, j )
+                                    = 2.0*this->M_model->scalarProduct( Z1, Z2, Row );
+                            }
+                            else
+                                M_R_Lhs0Lhs1[Row][q2][m2][q1][m1]( i, j ) = 0;
                         }
                     } // q1 loop Lhs0
                 } // i loop Lhs0
@@ -1198,22 +1301,38 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                         {
                             for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                             {
-                                Lhs1[q2][m2]->multVector( Y1, W );
-                                W->scale( -1. );
-                                this->M_model->l2solveSP( Z2, W, Row );
-                                double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = prod;
-                                M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = prod;
+                                if ( Lhs1[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
+                                {
+                                    Lhs1[q2][m2]->multVector( Y1, W );
+                                    W->scale( -1. );
+                                    this->M_model->l2solveSP( Z2, W, Row );
+                                    double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = prod;
+                                    M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = prod;
+                                }
+                                else
+                                {
+                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = 0;
+                                    M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = 0;
+                                }
                             } // m2 loop Lhs1
                         } // q2 loop Lhs1
 
                         M_R_Lhs1Lhs1[Row][q1][m1][q1][m1].conservativeResize( N1, N1 );
-                        Lhs1[q1][m1]->multVector( Y1, W );
-                        W->scale(-1.);
-                        this->M_model->l2solveSP( Z2, W, Row );
-                        double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = prod;
-                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = prod;
+                        if ( norm1>1e-12 )
+                        {
+                            Lhs1[q1][m1]->multVector( Y1, W );
+                            W->scale(-1.);
+                            this->M_model->l2solveSP( Z2, W, Row );
+                            double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = prod;
+                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = prod;
+                        }
+                        else
+                        {
+                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = 0;
+                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = 0;
+                        }
                     } //optimize
                     else
                     {
@@ -1221,11 +1340,16 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                         {
                             for( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                             {
-                                Lhs1[q2][m2]->multVector( Y1, W );
-                                W->scale( -1. );
-                                this->M_model->l2solveSP( Z2, W, Row );
-                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j )
-                                    = this->M_model->scalarProduct( Z1, Z2, Row );
+                                if ( Lhs1[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
+                                {
+                                    Lhs1[q2][m2]->multVector( Y1, W );
+                                    W->scale( -1. );
+                                    this->M_model->l2solveSP( Z2, W, Row );
+                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j )
+                                        = this->M_model->scalarProduct( Z1, Z2, Row );
+                                }
+                                else
+                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = 0;
                             } // m2 loop Lhs1
                         } // q2 loop Lhs1
                     } // !optimize
@@ -1374,6 +1498,9 @@ CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const
 
         } // m1 loop lhs1
     } // q1 loop lhs1
+
+
+
 
     double delta = math:: abs( RhsRhs + Lhs0Rhs + Lhs0Lhs0 + Lhs0Lhs1 + Lhs1Rhs + Lhs1Lhs1 );
     return delta;
