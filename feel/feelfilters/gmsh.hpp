@@ -648,6 +648,9 @@ public:
      * \param forceRebuild if true, rebuild the mesh even if geofile is unchanged
      *        if false, rebuild only if geo file has changed.
      *        Useful if generateGeo has been called outside or if gmsh lybrary has changed.
+     * \param parametric :
+     * \param modifGeo : if true variable in geofile can be modified
+     * \param outputDirectory : output directory of geo and msh file. If empty then it s generated on current path.
      * \return the name of the mesh file generate by \c gmsh (with the \c .msh extension)
      */
     boost::tuple<std::string,bool>
@@ -655,7 +658,8 @@ public:
               std::string const& geo,
               bool const forceRebuild = false,
               bool const parametric = false,
-              bool const modifGeo = true ) const;
+              bool const modifGeo = true,
+              std::string const& outputDirectory = "" ) const;
 
     /**
      * refine the mesh uniformly by splitting
@@ -710,11 +714,11 @@ protected:
      *         Note: if you use it alone, generate will call this routine again, hence generate needs to know
      *         whether to regenerate the mesh or not
      */
-    bool generateGeo( std::string const& name, std::string const& geo,bool const modifGeo=true ) const;
+    bool generateGeo( std::string const& name, std::string const& geo,bool const modifGeo=true, std::string const& outputFilename = "" ) const;
 
 private:
 
-    void generate( std::string const& __name, uint16_type dim, bool parametric = false ) const;
+    void generate( std::string const& __name, uint16_type dim, bool parametric = false, std::string const& outputFilename = "" ) const;
 
     std::string  prefix( std::string const& __name, uint16_type dim ) const;
 

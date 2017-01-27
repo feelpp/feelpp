@@ -293,7 +293,13 @@ public:
      */
 
     betaqm_type
-    computeBetaQm( element_type const& T, parameter_type const& mu , double time , bool only_terms_time_dependent=false )
+    computeBetaQm( element_type const& T, parameter_type const& mu, double time , bool only_terms_time_dependent=false )
+    {
+        return computeBetaQm( mu, time, only_terms_time_dependent );
+    }
+
+    betaqm_type
+    computeBetaQm( vectorN_type const& urb, parameter_type const& mu, double time , bool only_terms_time_dependent=false  )
     {
         return computeBetaQm( mu, time, only_terms_time_dependent );
     }

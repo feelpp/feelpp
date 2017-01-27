@@ -107,6 +107,7 @@ OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" 
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
+OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" ON)
 
 # enable PCH only for GCC as for now
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -313,6 +314,8 @@ include( feelpp.macros )
 
 # Find feel++ dependencies 
 include( feelpp.dependencies )
+add_custom_target(contrib)
+add_subdirectory(contrib)
 
 # Load documented project for Doxygen
 # it assumes that a project is valid if :
@@ -360,6 +363,7 @@ endif()
 ADD_SUBDIRECTORY ( feel )
 
 IF( FEELPP_MINIMAL_CONFIGURATION )
+  set( FEELPP_ENABLE_TOOLBOXES OFF )
   set( FEELPP_ENABLE_BENCHMARKS OFF )
   set( FEELPP_ENABLE_TESTS OFF )
   set( FEELPP_ENABLE_RESEARCH OFF )
@@ -422,7 +426,18 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEELPP_ENABLE_RESEARCH )
 endif()
 
 include(feelpp.module.quickstart)
+if ( FEELPP_HAS_QUICKSTART )
+  add_custom_target(quickstart)
+  add_subdirectory(quickstart)
+endif()
 
+include(feelpp.module.toolboxes)
+if ( FEELPP_HAS_TOOLBOXES )
+  add_custom_target(toolboxes)
+  add_subdirectory(toolboxes)
+endif()
+
+add_subdirectory(tools)
 
 ################################################################################
 # generate configuration header
