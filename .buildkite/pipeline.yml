@@ -45,5 +45,7 @@ steps:
  - command: tools/scripts/buildkite/release.sh feelpp-libs feelpp-base feelpp-toolboxes
    name: "Push images to :docker: Hub :rocket:"
    branches: develop
+   agents:
+     os: ubuntu-16.04
    env:
      TARGET: ubuntu:16.10
