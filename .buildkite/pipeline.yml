@@ -4,7 +4,6 @@ steps:
    env:
      CXX: clang++-3.9
      CC: clang-3.9
-     JOBS: 20
      TARGET: ubuntu:16.10
  # - name: ':ubuntu: sid,clang-4.0'
  #   command: tools/scripts/buildkite/install-feelpp-lib.sh
@@ -25,7 +24,6 @@ steps:
    env:
      CXX: clang++-3.9
      CC: clang-3.9
-     JOBS: 20
      TARGET: ubuntu:16.10
  - wait
  - name: ':ubuntu: 16.10,clang-3.9 feelpp-toolboxes :hammer:'
@@ -33,17 +31,15 @@ steps:
    env:
      CXX: clang++-3.9
      CC: clang-3.9
-     JOBS: 20
      TARGET: ubuntu:16.10
  - name: ':ubuntu: 16.10,clang-3.9 feelpp-crb :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh crb
    env:
      CXX: clang++-3.9
      CC: clang-3.9
-     JOBS: 20
      TARGET: ubuntu:16.10
  - wait
- - command: tools/scripts/buildkite/release.sh feelpp-libs feelpp-base feelpp-toolboxes
+ - command: tools/scripts/buildkite/release.sh feelpp-libs feelpp-base feelpp-toolboxes feelpp-crb
    name: "Push images to :docker: Hub :rocket:"
    branches: develop
    env:
