@@ -1,6 +1,8 @@
 steps:
  - name: ':debian: testing,clang-3.9'
    command: tools/scripts/buildkite/install-feelpp-lib.sh
+   agents:
+     osxx: true
    env:
      CXX: clang++-3.9
      CC: clang-3.9
@@ -22,6 +24,8 @@ steps:
  - wait
  - name: ':debian: testing,clang-3.9  feelpp-base :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh base
+   agents:
+     osxx: true
    env:
      CXX: clang++-3.9
      CC: clang-3.9
@@ -30,6 +34,8 @@ steps:
  - wait
  - name: ':debian: testing,clang-3.9 feelpp-toolboxes :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh toolboxes
+   agents:
+     osxx: true
    env:
      CXX: clang++-3.9
      CC: clang-3.9

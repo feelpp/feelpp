@@ -3,8 +3,9 @@
 set -euo pipefail
 
 #if [ ! -z "$DOCKER_LOGIN" -a ! -z "$DOCKER_PASSWORD"]; then
-#    docker login --username="${DOCKER_LOGIN}" --password="${DOCKER_PASSWORD}";
-#fi
+if [ ! -z ${DOCKER_LOGIN+x} -a ! -z ${DOCKER_PASSWORD+x}   ]; then
+    docker login --username="${DOCKER_LOGIN}" --password="${DOCKER_PASSWORD}";
+fi
 
 CONTAINERS=${*:-feelpp-libs}
 
