@@ -29,17 +29,20 @@
 */
 #include <feel/feelcore/environment.hpp>
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wundefined-var-template"
-#endif
+// #if defined(__clang__)
+// #if FEELPP_CLANG_AT_LEAST(4,0)
+// #pragma clang diagnostic push
+// #pragma clang diagnostic ignored "-Wundefined-var-template"
+// #endif
+// #endif
 
 #include <ginac/ginac.h>
 
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
-
+// #if defined(__clang__)
+// #if FEELPP_CLANG_AT_LEAST(4,0)
+// #pragma clang diagnostic pop
+// #endif
+// #endif
 
 #include <boost/foreach.hpp>
 #include <boost/range/algorithm/for_each.hpp>
