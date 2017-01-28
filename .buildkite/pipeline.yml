@@ -1,41 +1,48 @@
 steps:
- # - name: ':debian: testing,clang-3.9'
+ - name: ':ubuntu: 16.10,clang-3.9'
+   command: tools/scripts/buildkite/install-feelpp-lib.sh
+   env:
+     CXX: clang++-3.9
+     CC: clang-3.9
+     JOBS: 20
+     TARGET: ubuntu:16.10
+ # - name: ':ubuntu: sid,clang-4.0'
  #   command: tools/scripts/buildkite/install-feelpp-lib.sh
  #   env:
- #     CXX: clang++-3.9
- #     CC: clang-3.9
  #     JOBS: 20
- #     TARGET: ubuntu:16.10
- # # - name: ':debian: sid,clang-4.0'
- # #   command: tools/scripts/buildkite/install-feelpp-lib.sh
- # #   env:
- # #     JOBS: 20
- # #     CXX: clang++-4.0
- # #     CC: clang-4.0
- # #     TARGET: debian:sid
- # # - name: ':ubuntu: 16.10,gcc-6.2'
- # #   command: tools/scripts/buildkite/install-feelpp-lib.sh
- # #   env:
- # #     JOBS: 20
- # #     TARGET: ubuntu:16.10
- # # - wait
- # - wait
- # - name: ':debian: testing,clang-3.9  feelpp-base :hammer:'
- #   command: tools/scripts/buildkite/install-feelpp.sh base
+ #     CXX: clang++-4.0
+ #     CC: clang-4.0
+ #     TARGET: ubuntu:sid
+ # - name: ':ubuntu: 16.10,gcc-6.2'
+ #   command: tools/scripts/buildkite/install-feelpp-lib.sh
  #   env:
- #     CXX: clang++-3.9
- #     CC: clang-3.9
  #     JOBS: 20
  #     TARGET: ubuntu:16.10
  # - wait
- # - name: ':debian: testing,clang-3.9 feelpp-toolboxes :hammer:'
- #   command: tools/scripts/buildkite/install-feelpp.sh toolboxes
- #   env:
- #     CXX: clang++-3.9
- #     CC: clang-3.9
- #     JOBS: 20
- #     TARGET: ubuntu:16.10
- # - wait
+ - wait
+ - name: ':ubuntu: 16.10,clang-3.9  feelpp-base :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh base
+   env:
+     CXX: clang++-3.9
+     CC: clang-3.9
+     JOBS: 20
+     TARGET: ubuntu:16.10
+ - wait
+ - name: ':ubuntu: 16.10,clang-3.9 feelpp-toolboxes :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh toolboxes
+   env:
+     CXX: clang++-3.9
+     CC: clang-3.9
+     JOBS: 20
+     TARGET: ubuntu:16.10
+ - name: ':ubuntu: 16.10,clang-3.9 feelpp-crb :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh crb
+   env:
+     CXX: clang++-3.9
+     CC: clang-3.9
+     JOBS: 20
+     TARGET: ubuntu:16.10
+ - wait
  - command: tools/scripts/buildkite/release.sh feelpp-libs feelpp-base feelpp-toolboxes
    name: "Push images to :docker: Hub :rocket:"
    branches: develop
