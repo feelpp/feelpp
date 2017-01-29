@@ -47,6 +47,7 @@
 #include <feel/feelcore/pslogger.hpp>
 #include <feel/feelalg/aitken.hpp>
 
+#include <feel/feelfilters/gmsh.hpp>
 
 namespace Feel
 {

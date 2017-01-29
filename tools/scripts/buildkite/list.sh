@@ -52,10 +52,6 @@ for feelpp_version in ${FEELPP_VERSIONS[*]} ; do
       $(image_name "$feelpp_version" "$distro") $(docker_major_version $os_version)
 
     if [[ $os_version == $LATEST_DEBIAN ]] ; then
-      # We also want to give the debian distro the official
-      # buildkite/agent:[latest,edge,beta] tags
-      printf " %s" $(sed -e 's/develop/latest/g' <<< $feelpp_version)
-
       printf " %s" $(image_name "$feelpp_version" "$distro")
 
       #printf " %s" $(image_name "$feelpp_version" "$distro")
@@ -77,7 +73,13 @@ for feelpp_version in ${FEELPP_VERSIONS[*]} ; do
       $(image_name "$feelpp_version" "$distro") $(docker_major_version $os_version)
 
     if [[ $os_version == $LATEST_UBUNTU ]] ; then
-      printf " %s" $(image_name "$feelpp_version" "$distro")
+        # We also want to give the ubuntu distro the official
+        # feelpp/<container>:[latest,edge,beta] tags
+
+        printf " %s" $(sed -e 's/develop/latest/g' <<< $feelpp_version)
+
+
+        printf " %s" $(image_name "$feelpp_version" "$distro")
     fi
 
     echo #newline
