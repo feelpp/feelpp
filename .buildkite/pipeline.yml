@@ -39,8 +39,8 @@ steps:
      CC: clang-3.9
      TARGET: ubuntu:16.10
  - wait
- - command: tools/scripts/buildkite/release.sh feelpp-libs feelpp-base feelpp-toolboxes feelpp-crb
-   name: "Push images to :docker: Hub :rocket:"
+ - command: tools/scripts/buildkite/release.sh --latest true --branch develop -- feelpp-libs feelpp-base feelpp-toolboxes feelpp-crb
+   name: ":docker: push images to the hub :rocket:"
    branches: develop
    env:
      TARGET: ubuntu:16.10
