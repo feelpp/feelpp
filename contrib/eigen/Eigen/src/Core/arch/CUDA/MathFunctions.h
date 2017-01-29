@@ -32,6 +32,18 @@ double2 plog<double2>(const double2& a)
 }
 
 template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+float4 plog1p<float4>(const float4& a)
+{
+  return make_float4(log1pf(a.x), log1pf(a.y), log1pf(a.z), log1pf(a.w));
+}
+
+template<>  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+double2 plog1p<double2>(const double2& a)
+{
+  return make_double2(log1p(a.x), log1p(a.y));
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
 float4 pexp<float4>(const float4& a)
 {
   return make_float4(expf(a.x), expf(a.y), expf(a.z), expf(a.w));
@@ -42,6 +54,18 @@ double2 pexp<double2>(const double2& a)
 {
   using ::exp;
   return make_double2(exp(a.x), exp(a.y));
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+float4 pexpm1<float4>(const float4& a)
+{
+  return make_float4(expm1f(a.x), expm1f(a.y), expm1f(a.z), expm1f(a.w));
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+double2 pexpm1<double2>(const double2& a)
+{
+  return make_double2(expm1(a.x), expm1(a.y));
 }
 
 template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE

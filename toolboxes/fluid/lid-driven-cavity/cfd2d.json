@@ -1,0 +1,36 @@
+// -*- mode: javascript -*-
+{
+    "Name": "Fluid Mechanics",
+    "ShortName":"Fluid",
+    "Model":"Navier-Stokes",
+    "Materials":
+    {
+        "Fluid":{
+            "name":"myFluidMat",
+            "rho":"1",
+            "mu":"1e-5"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "moving-wall":
+                {
+                    "expr":"{ 1,0}"
+                },
+                "noslip-wall":
+                {
+                    "expr":"{0,0}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["velocity","pressure","pid"]
+    }
+
+}

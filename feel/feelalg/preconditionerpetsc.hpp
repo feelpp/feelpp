@@ -223,7 +223,7 @@ getOptionIfAvalaible( std::string const& name, std::string const& prefix, std::s
                       po::variables_map vm = Environment::vm() )
 {
     bool hasOption=false;
-    T res;
+    T res{};
     std::string optctx = (sub.empty())? "": sub+"-";
     if ( vm.count( prefixvm(prefix,optctx+name) ) )
     {

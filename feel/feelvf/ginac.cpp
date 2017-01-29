@@ -29,7 +29,21 @@
 */
 #include <feel/feelcore/environment.hpp>
 
+// #if defined(__clang__)
+// #if FEELPP_CLANG_AT_LEAST(4,0)
+// #pragma clang diagnostic push
+// #pragma clang diagnostic ignored "-Wundefined-var-template"
+// #endif
+// #endif
+
 #include <ginac/ginac.h>
+
+// #if defined(__clang__)
+// #if FEELPP_CLANG_AT_LEAST(4,0)
+// #pragma clang diagnostic pop
+// #endif
+// #endif
+
 #include <boost/foreach.hpp>
 #include <boost/range/algorithm/for_each.hpp>
 
@@ -47,21 +61,26 @@ std::string str( ex const& f )
     ostr << f;
     return ostr.str();
 }
+std::string strsymbol( std::vector<symbol> const& f )
+{
+    std::ostringstream ostr;
+    ostr << "(";
+    for(int i =0; i < f.size();++i)
+    {
+        ostr << f[i].get_name();
+        if ( i < f.size()-1 )
+            ostr << ",";
+    }
+    ostr << ")";
+    return ostr.str();
+}
 
 ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>() )
 {
     using namespace Feel;
-    LOG(INFO) << "Parsing " << str << " using GiNaC";
-
-    LOG(INFO) << "Number of symbols " << syms.size() << "\n";
-
-    for(int i =0; i < syms.size();++i)
-        LOG(INFO) <<" - symbol : "  << syms[i].get_name();
-
-    LOG(INFO) << "Number of params " << params.size() << "\n";
-
-    for(int i =0; i < params.size();++i)
-        LOG(INFO) <<" - param : "  << params[i].get_name();
+    LOG(INFO) << "Parsing " << str << " using GiNaC with " << syms.size() << " symbols";
+    LOG(INFO) <<" . symbols : "  << strsymbol(syms);
+    LOG(INFO) <<" . parameters : "  << strsymbol(params);
 
     using GiNaC::symbol;
     using GiNaC::symtab;
@@ -84,16 +103,14 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
     boost::for_each( syms, [&table, &total_syms]( symbol const& param )
                      {
                          total_syms.push_back(symbol(param));
-                         LOG(INFO) << "adding param: " << param << std::endl;
                          table[param.get_name()] = param;
                      } );
 
-    LOG(INFO) <<"Inserting params and in symbol table";
+    LOG(INFO) <<"Inserting params and in symbol table: " << strsymbol(total_syms);
 
     boost::for_each( params, [&table, &total_syms]( symbol const& param )
                      {
                          total_syms.push_back(symbol(param));
-                         LOG(INFO) << "adding param: " << param << std::endl;
                          table[param.get_name()] = param;
                      } );
 
@@ -130,7 +147,6 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
         std::cerr << "Exception of unknown type!\n";
     }
 
-    LOG(INFO) << "parsed expression :" << e << "\n";
     return e;
 }
 
@@ -162,13 +178,10 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
                    [&syms] ( std::string const& sym ) { syms.push_back( symbol(sym) ); } );
 
 
-    LOG(INFO) << "Number of symbols " << syms.size() << "\n";
-    for(int i =0; i < syms.size();++i)
-        LOG(INFO) <<" - symbol : "  << syms[i].get_name();
-
-    LOG(INFO) << "Number of params " << params.size() << "\n";
-    for(int i =0; i < params.size();++i)
-        LOG(INFO) <<" - param : "  << params[i].get_name();
+    LOG(INFO) << " . Number of symbols " << syms.size() << "\n";
+    LOG(INFO) << " . symbols : "  << strsymbol(syms);
+    LOG(INFO) << " . Number of params " << params.size() << "\n";
+    LOG(INFO) << " . symbols : "  << strsymbol(params);
 
     symtab table;
     LOG(INFO) <<"Inserting symbols in symbol table";
@@ -188,23 +201,23 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
     boost::for_each( syms, [&table, &total_syms]( symbol const& param )
                      {
                          total_syms.push_back(symbol(param));
-                         LOG(INFO) << "adding param: " << param << std::endl;
                          table[param.get_name()] = param;
                      } );
 
-    LOG(INFO) <<"Inserting params and in symbol table";
+    LOG(INFO) <<"Inserting params and in symbol table : " << strsymbol(total_syms);
 
     boost::for_each( params, [&table, &total_syms]( symbol const& param )
                      {
                          total_syms.push_back(symbol(param));
-                         LOG(INFO) << "adding param: " << param << std::endl;
                          table[param.get_name()] = param;
                      } );
-
+#if 0
     for ( auto it=table.begin(),en=table.end() ; it!=en ; ++it )
         LOG(INFO) <<" - table : "  << it->first << "\t" << it->second;
-
-
+#else
+    LOG(INFO) << " . table : " << table;
+#endif
+    
     LOG(INFO) <<"Defining parser";
     parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
 
@@ -370,6 +383,7 @@ curl( ex const& f, std::vector<symbol> const& l )
 		}
 	}
 	CHECK(0) << "Invalid expression " << f << " cannot compute its curl\n";
+    return matrix{};
 }
 
 matrix
@@ -377,6 +391,7 @@ curl( matrix const& f, std::vector<symbol> const& l )
 {
 	LOG(INFO) << "matrix version\n";
     CHECK(0) << "not implemented yet\n";
+    return matrix{};
 }
 
 matrix
@@ -474,12 +489,12 @@ matrix diff(matrix const& f, symbol const& l, const int n)
 
 ex substitute(ex const &f, symbol const& s, const double val )
 {
-    return f.subs(GiNaC::lst(s), GiNaC::lst(GiNaC::numeric(val)));
+    return f.subs({s}, {GiNaC::numeric(val)});
 }
 
 ex substitute(ex const &f, symbol const& s, ex const& g )
 {
-    return f.subs(GiNaC::lst(s), GiNaC::lst(GiNaC::ex(g)));
+    return f.subs({s}, {GiNaC::ex(g)});
 }
 
 matrix substitute(matrix const &f, symbol const& s, const double val )
@@ -489,7 +504,7 @@ matrix substitute(matrix const &f, symbol const& s, const double val )
     for(int i=0; i<f.rows(); ++i)
     {
         for(int j=0; j<f.cols(); ++j)
-            ff.set(i, j, f(i,j).subs(GiNaC::lst(s), GiNaC::lst(GiNaC::numeric(val))) );
+            ff.set(i, j, f(i,j).subs({s}, {GiNaC::numeric(val)}) );
     }
     return ff;
 }
@@ -501,7 +516,7 @@ matrix substitute(matrix const &f, symbol const& s, ex const& g )
     for(int i=0; i<f.rows(); ++i)
     {
         for(int j=0; j<f.cols(); ++j)
-            ff.set(i, j, f(i,j).subs(GiNaC::lst(s), GiNaC::lst(GiNaC::ex(g))) );
+            ff.set(i, j, f(i,j).subs({s}, {GiNaC::ex(g)}) );
     }
     return ff;
 }

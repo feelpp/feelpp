@@ -59,86 +59,86 @@ BOOST_AUTO_TEST_SUITE( testfit_suite )
 
 BOOST_AUTO_TEST_CASE( test_main_fit )
 {
-  Feel::Environment::changeRepository( boost::format( "testsuite/feelfit/%1%/" )
-      % Feel::Environment::about().appName()
-      );
-  auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
-  auto Xh = Pch<1>(mesh);
-  auto T = Xh->element(); // the temperature (say)
-  auto K = Xh->element(); // K(T) - the dependant of the temperature conductivity
-  auto Kd= Xh->element(); // K'(T)
-  auto T_K = Xh->element(); // T_ = true 
-  auto T_Kd= Xh->element(); // 
-  auto D_K = Xh->element(); // D_ = difference
-  auto D_Kd= Xh->element(); // 
-  T.on(_range=elements(mesh), _expr=Px());
-  T_K.on(_range=elements(mesh),_expr=(5*Px()+sin(Px())));
-  T_Kd.on(_range=elements(mesh),_expr=(5+cos(Px())));
+    Feel::Environment::changeRepository( boost::format( "testsuite/feelfit/%1%/" )
+                                         % Feel::Environment::about().appName()
+                                         );
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto Xh = Pch<1>(mesh);
+    auto T = Xh->element(); // the temperature (say)
+    auto K = Xh->element(); // K(T) - the dependant of the temperature conductivity
+    auto Kd= Xh->element(); // K'(T)
+    auto T_K = Xh->element(); // T_ = true 
+    auto T_Kd= Xh->element(); // 
+    auto D_K = Xh->element(); // D_ = difference
+    auto D_Kd= Xh->element(); // 
+    T.on(_range=elements(mesh), _expr=Px());
+    T_K.on(_range=elements(mesh),_expr=(5*Px()+sin(Px())));
+    T_Kd.on(_range=elements(mesh),_expr=(5+cos(Px())));
 
 #if 0
-  auto e = exporter(_mesh = mesh );
+    auto e = exporter(_mesh = mesh );
 #endif
-  // Generates the datafile
-  // we assume an unitsquare as mesh
-  std::ofstream datafile(Environment::expand(soption("fit.datafile")));
-  for(double t = -1; t < 2; t+=0.32)
-    datafile << t << "\t" << f(t) << "\n";
-  datafile.close();
+    // Generates the datafile
+    // we assume an unitsquare as mesh
+    std::ofstream datafile(Environment::expand(soption("fit.datafile")));
+    for(double t = -1; t < 2; t+=0.32)
+        datafile << t << "\t" << f(t) << "\n";
+    datafile.close();
 
 
-  for(int i = 0; i < 4; i++)  
-  {
-    BOOST_TEST_MESSAGE( boost::format("test %1%")% i );
-    // evaluate K(T) with the interpolation from the datafile
-    K.on(_range=elements(mesh), _expr=fit(idv(T),Environment::expand(soption("fit.datafile")),i));
-    Kd.on(_range=elements(mesh), _expr=fitDiff(idv(T),Environment::expand(soption("fit.datafile")), i) );
-
-    D_K.on(_range=elements(mesh),_expr=vf::abs(idv(K)-idv(T_K)));
-    D_Kd.on(_range=elements(mesh),_expr=vf::abs(idv(Kd)-idv(T_Kd)));
-
-    auto max_K = D_K.max();
-    auto max_Kd= D_Kd.max();
-#if 0
-    e->step(i)->add("T",T);
-    e->step(i)->add("K",K);
-    e->step(i)->add("Kd",Kd);
-    e->step(i)->add("T_K",T_K);
-    e->step(i)->add("T_Kd",T_Kd);
-    e->step(i)->add("D_K",D_K);
-    e->step(i)->add("D_Kd",D_Kd);
-    e->save();
-#endif
-    /// Note : the error has nothing to do with the mesh size but the step on the datafile
-    switch(i)
+    for(int i = 0; i < 4; i++)  
     {
-        case 0: //P0 interpolation
-            {
-                BOOST_CHECK_SMALL(max_K, 0.95);
-                BOOST_CHECK_SMALL(max_Kd, 6.0001); // the derivative is null
-                break;
-            }
-        case 1: // P1 interpolation
-            {
-                BOOST_CHECK_SMALL(max_K, 0.01);
-                BOOST_CHECK_SMALL(max_Kd, 0.15); 
-                break;
-            }
-        case 2: // CSpline interpolation
-            {
-                BOOST_CHECK_SMALL(max_K, 0.01);
-                BOOST_CHECK_SMALL(max_Kd, 0.15); 
-                break;
-            }
-        case 3: // Akima interpolation
-            {
-                BOOST_CHECK_SMALL(max_K, 0.016);
-                BOOST_CHECK_SMALL(max_Kd, 0.03); 
-                break;
-            }
-    }
+        BOOST_TEST_MESSAGE( boost::format("test %1%")% i );
+        // evaluate K(T) with the interpolation from the datafile
+        K.on(_range=elements(mesh), _expr=fit(idv(T),Environment::expand(soption("fit.datafile")),i));
+        Kd.on(_range=elements(mesh), _expr=fitDiff(idv(T),Environment::expand(soption("fit.datafile")), i) );
 
-    BOOST_TEST_MESSAGE( boost::format("test %1% done")% i );
-  }
+        D_K.on(_range=elements(mesh),_expr=vf::abs(idv(K)-idv(T_K)));
+        D_Kd.on(_range=elements(mesh),_expr=vf::abs(idv(Kd)-idv(T_Kd)));
+
+        auto max_K = D_K.max();
+        auto max_Kd= D_Kd.max();
+#if 0
+        e->step(i)->add("T",T);
+        e->step(i)->add("K",K);
+        e->step(i)->add("Kd",Kd);
+        e->step(i)->add("T_K",T_K);
+        e->step(i)->add("T_Kd",T_Kd);
+        e->step(i)->add("D_K",D_K);
+        e->step(i)->add("D_Kd",D_Kd);
+        e->save();
+#endif
+        /// Note : the error has nothing to do with the mesh size but the step on the datafile
+        switch(i)
+        {
+        case 0: //P0 interpolation
+        {
+            BOOST_CHECK_SMALL(max_K, 0.95);
+            BOOST_CHECK_SMALL(max_Kd, 6.0001); // the derivative is null
+            break;
+        }
+        case 1: // P1 interpolation
+        {
+            BOOST_CHECK_SMALL(max_K, 0.01);
+            BOOST_CHECK_SMALL(max_Kd, 0.15); 
+            break;
+        }
+        case 2: // CSpline interpolation
+        {
+            BOOST_CHECK_SMALL(max_K, 0.01);
+            BOOST_CHECK_SMALL(max_Kd, 0.15); 
+            break;
+        }
+        case 3: // Akima interpolation
+        {
+            BOOST_CHECK_SMALL(max_K, 0.016);
+            BOOST_CHECK_SMALL(max_Kd, 0.03); 
+            break;
+        }
+        }
+
+        BOOST_TEST_MESSAGE( boost::format("test %1% done")% i );
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

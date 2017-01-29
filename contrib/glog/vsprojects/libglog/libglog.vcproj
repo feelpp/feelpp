@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="libglog"
+	Name="libfeelpp_glog"
 	ProjectGUID="{34BD04BD-BC1D-4BFC-AAFC-ED02D9E960F1}"
-	RootNamespace="libglog"
+	RootNamespace="libfeelpp_glog"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>

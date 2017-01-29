@@ -33,8 +33,6 @@
 #include <eads.hpp>
 #include <opusdata.hpp>
 
-
-
 namespace Feel
 {
 AboutData
@@ -103,10 +101,13 @@ Feel::po::options_description makeEadsOptions()
 
 #endif
     return options.add( backend_options( "backend.crb.fem" ) )
-           .add( backend_options( "backend.crb.norm" ) )
-           //.add( Feel::bdf_options() )
-           .add( Feel::OpusData::makeOptions() )
-           .add( Feel::feel_options() );
+        .add( backend_options( "backend.crb.norm" ) )
+        .add(backend_options("backend-primal"))
+        .add(backend_options("backend-dual"))
+        .add(backend_options("backend-l2"))
+        .add(bdf_options("Eads"))
+        .add( Feel::OpusData::makeOptions() )
+        .add( Feel::feel_options() );
 }
 
 }

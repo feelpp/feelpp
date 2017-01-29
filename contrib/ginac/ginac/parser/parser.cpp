@@ -3,7 +3,7 @@
  *  Implementation of GiNaC's parser. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,13 +27,8 @@
 #include "mul.h"
 #include "constant.h"
 #include "function.h"
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
-#ifdef HAVE_STDINT_H
-#include <stdint.h> // for uintptr_t
-#endif
+#include <cstdint> // for uintptr_t
 #include <sstream>
 #include <stdexcept>
 
@@ -98,7 +93,7 @@ ex parser::parse_identifier_expr()
 	// Eat the ')'.
 	get_next_tok();
 	prototype the_prototype = make_pair(name, args.size());
-	prototype_table::const_iterator reader = funcs.find(the_prototype);
+	auto reader = funcs.find(the_prototype);
 	if (reader == funcs.end()) {
 		Parse_error_("no function \"" << name << "\" with " <<
 			     args.size() << " arguments");
@@ -163,7 +158,7 @@ ex parser::parse_unary_expr()
 	// -(a) 
 	// +a
 	// +(a)
-	// Delegete the work to parse_binop_rhs(), otherwise we end up
+	// Delegate the work to parse_binop_rhs(), otherwise we end up
 	// duplicating it here. 
 	ex lhs = _ex0; // silly trick
 	ex e = parse_binop_rhs(0, lhs);

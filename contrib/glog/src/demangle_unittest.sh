@@ -41,7 +41,7 @@ die () {
 }
 
 BINDIR=".libs"
-LIBGLOG="$BINDIR/libglog.so"
+LIBGLOG="$BINDIR/libfeelpp_glog.so"
 
 DEMANGLER="$BINDIR/demangle_unittest"
 

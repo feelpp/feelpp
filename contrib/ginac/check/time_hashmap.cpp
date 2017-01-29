@@ -3,7 +3,7 @@
  *  Timings for exhashmap<> operations. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -82,10 +82,10 @@ unsigned time_hashmap()
 	for (vector<unsigned>::const_iterator i = sizes.begin(); i != sizes.end(); ++i) {
 		double time_insert, time_find, time_erase;
 
-		run_timing< exhashmap<ex> >(*i, time_insert, time_find, time_erase);
+		run_timing<exhashmap<ex>>(*i, time_insert, time_find, time_erase);
 
 // If you like, you can compare it with this:
-//		run_timing< std::map<ex, ex, ex_is_less> >(*i, time_insert, time_find, time_erase);
+//		run_timing<std::map<ex, ex, ex_is_less>>(*i, time_insert, time_find, time_erase);
 
 		times_insert.push_back(time_insert);
 		times_find.push_back(time_find);

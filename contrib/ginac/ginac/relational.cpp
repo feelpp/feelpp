@@ -3,7 +3,7 @@
  *  Implementation of relations between expressions */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -171,20 +171,9 @@ ex relational::map(map_function & f) const
 
 	if (!are_ex_trivially_equal(lh, mapped_lh)
 	 || !are_ex_trivially_equal(rh, mapped_rh))
-		return (new relational(mapped_lh, mapped_rh, o))->setflag(status_flags::dynallocated);
+		return dynallocate<relational>(mapped_lh, mapped_rh, o);
 	else
 		return *this;
-}
-
-ex relational::eval(int level) const
-{
-	if (level==1)
-		return this->hold();
-	
-	if (level == -max_recursion_level)
-		throw(std::runtime_error("max recursion level reached"));
-	
-	return (new relational(lh.eval(level-1),rh.eval(level-1),o))->setflag(status_flags::dynallocated | status_flags::evaluated);
 }
 
 ex relational::subs(const exmap & m, unsigned options) const
@@ -251,7 +240,7 @@ unsigned relational::return_type() const
 	GINAC_ASSERT(lh.return_type()==rh.return_type());
 	return lh.return_type();
 }
-   
+
 return_type_t relational::return_type_tinfo() const
 {
 	GINAC_ASSERT(lh.return_type_tinfo()==rh.return_type_tinfo());
@@ -281,7 +270,7 @@ unsigned relational::calchash() const
 			break;
 		case greater:
 		case greater_or_equal:
-	   		v ^= lhash;
+			v ^= lhash;
 			lhash = rhash;
 			break;
 	}
@@ -301,17 +290,7 @@ unsigned relational::calchash() const
 // new virtual functions which can be overridden by derived classes
 //////////
 
-/** Left hand side of relational. */
-ex relational::lhs() const
-{
-	return lh;
-}
-
-/** Right hand side of relational. */
-ex relational::rhs() const
-{
-	return rh;    
-}
+// none
 
 //////////
 // non-virtual functions in this class
@@ -319,10 +298,10 @@ ex relational::rhs() const
 
 relational::safe_bool relational::make_safe_bool(bool cond) const
 {
-	return cond? &safe_bool_helper::nonnull : 0;
+	return cond? &safe_bool_helper::nonnull : nullptr;
 }
 
-/** Cast the relational into a boolean, mainly for evaluation within an
+/** Cast the relational into a Boolean, mainly for evaluation within an
  *  if-statement.  Note that (a<b) == false does not imply (a>=b) == true in
  *  the general symbolic case.  A false result means the comparison is either
  *  false or undecidable (except of course for !=, where true means either

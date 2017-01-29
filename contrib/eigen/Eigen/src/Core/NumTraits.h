@@ -71,7 +71,7 @@ struct default_digits10_impl<T,false,true> // Integer
   *     and to \c 0 otherwise.
   * \li Enum values ReadCost, AddCost and MulCost representing a rough estimate of the number of CPU cycles needed
   *     to by move / add / mul instructions respectively, assuming the data is already stored in CPU registers.
-  *     Stay vague here. No need to do architecture-specific stuff.
+  *     Stay vague here. No need to do architecture-specific stuff. If you don't know what this means, just use \c Eigen::HugeCost.
   * \li An enum value \a IsSigned. It is equal to \c 1 if \a T is a signed type and to 0 if \a T is unsigned.
   * \li An enum value \a RequireInitialization. It is equal to \c 1 if the constructor of the numeric type \a T must
   *     be called, and to 0 if it is safe not to call it. Default is 0 if \a T is an arithmetic type, and 1 otherwise.
@@ -96,23 +96,6 @@ template<typename T> struct GenericNumTraits
     AddCost = 1,
     MulCost = 1
   };
-
-  // Division is messy but important, because it is expensive and throughput
-  // varies significantly. The following numbers are based on min division
-  // throughput on Haswell.
-  template<bool Vectorized>
-  struct Div {
-    enum {
-#ifdef EIGEN_VECTORIZE_AVX
-      AVX = true,
-#else
-      AVX = false,
-#endif
-      Cost = IsInteger ? (sizeof(T) == 8 ? (IsSigned ? 24 : 21) : (IsSigned ? 8 : 9)):
-          Vectorized ? (sizeof(T) == 8 ? (AVX ? 16 : 8) : (AVX ? 14 : 7)) : 8
-    };
-  };
-
 
   typedef T Real;
   typedef typename internal::conditional<
@@ -254,6 +237,9 @@ private:
   static inline std::string infinity();
   static inline std::string quiet_NaN();
 };
+
+// Empty specialization for void to allow template specialization based on NumTraits<T>::Real with T==void and SFINAE.
+template<> struct NumTraits<void> {};
 
 } // end namespace Eigen
 

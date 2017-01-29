@@ -68,9 +68,9 @@ set(snippets_targets "")
 add_definitions("-DEIGEN_MAKING_DOCS")
 add_custom_target(all_examples)
 
-add_subdirectory(examples)
-add_subdirectory(special_examples)
-add_subdirectory(snippets)
+# add_subdirectory(examples)
+# add_subdirectory(special_examples)
+# add_subdirectory(snippets)
 
 add_custom_target(
   doc-eigen-prerequisites
@@ -98,6 +98,7 @@ add_custom_target(
 add_dependencies(doc-eigen-prerequisites all_snippets all_examples)
 add_dependencies(doc-unsupported-prerequisites unsupported_snippets unsupported_examples)
 
+if ( DOXYGEN_FOUND )
 add_custom_target(doc-eigen ALL
   COMMAND doxygen
   COMMAND doxygen Doxyfile-unsupported
@@ -110,3 +111,4 @@ add_custom_target(doc-eigen ALL
   WORKING_DIRECTORY ${Eigen_BINARY_DIR}/doc)
 
 add_dependencies(doc-eigen doc-eigen-prerequisites doc-unsupported-prerequisites)
+endif()

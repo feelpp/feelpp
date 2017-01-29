@@ -3,7 +3,7 @@
  *  Implementation of GiNaC's special tensors. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -576,7 +576,7 @@ bool tensepsilon::contract_with(exvector::iterator self, exvector::iterator othe
 
 ex delta_tensor(const ex & i1, const ex & i2)
 {
-	static ex delta = (new tensdelta)->setflag(status_flags::dynallocated);
+	static ex delta = dynallocate<tensdelta>();
 
 	if (!is_a<idx>(i1) || !is_a<idx>(i2))
 		throw(std::invalid_argument("indices of delta tensor must be of type idx"));
@@ -586,7 +586,7 @@ ex delta_tensor(const ex & i1, const ex & i2)
 
 ex metric_tensor(const ex & i1, const ex & i2)
 {
-	static ex metric = (new tensmetric)->setflag(status_flags::dynallocated);
+	static ex metric = dynallocate<tensmetric>();
 
 	if (!is_a<varidx>(i1) || !is_a<varidx>(i2))
 		throw(std::invalid_argument("indices of metric tensor must be of type varidx"));
@@ -596,8 +596,8 @@ ex metric_tensor(const ex & i1, const ex & i2)
 
 ex lorentz_g(const ex & i1, const ex & i2, bool pos_sig)
 {
-	static ex metric_neg = (new minkmetric(false))->setflag(status_flags::dynallocated);
-	static ex metric_pos = (new minkmetric(true))->setflag(status_flags::dynallocated);
+	static ex metric_neg = dynallocate<minkmetric>(false);
+	static ex metric_pos = dynallocate<minkmetric>(true);
 
 	if (!is_a<varidx>(i1) || !is_a<varidx>(i2))
 		throw(std::invalid_argument("indices of metric tensor must be of type varidx"));
@@ -607,7 +607,7 @@ ex lorentz_g(const ex & i1, const ex & i2, bool pos_sig)
 
 ex spinor_metric(const ex & i1, const ex & i2)
 {
-	static ex metric = (new spinmetric)->setflag(status_flags::dynallocated);
+	static ex metric = dynallocate<spinmetric>();
 
 	if (!is_a<spinidx>(i1) || !is_a<spinidx>(i2))
 		throw(std::invalid_argument("indices of spinor metric must be of type spinidx"));
@@ -619,7 +619,7 @@ ex spinor_metric(const ex & i1, const ex & i2)
 
 ex epsilon_tensor(const ex & i1, const ex & i2)
 {
-	static ex epsilon = (new tensepsilon)->setflag(status_flags::dynallocated);
+	static ex epsilon = dynallocate<tensepsilon>();
 
 	if (!is_a<idx>(i1) || !is_a<idx>(i2))
 		throw(std::invalid_argument("indices of epsilon tensor must be of type idx"));
@@ -638,7 +638,7 @@ ex epsilon_tensor(const ex & i1, const ex & i2)
 
 ex epsilon_tensor(const ex & i1, const ex & i2, const ex & i3)
 {
-	static ex epsilon = (new tensepsilon)->setflag(status_flags::dynallocated);
+	static ex epsilon = dynallocate<tensepsilon>();
 
 	if (!is_a<idx>(i1) || !is_a<idx>(i2) || !is_a<idx>(i3))
 		throw(std::invalid_argument("indices of epsilon tensor must be of type idx"));
@@ -657,8 +657,8 @@ ex epsilon_tensor(const ex & i1, const ex & i2, const ex & i3)
 
 ex lorentz_eps(const ex & i1, const ex & i2, const ex & i3, const ex & i4, bool pos_sig)
 {
-	static ex epsilon_neg = (new tensepsilon(true, false))->setflag(status_flags::dynallocated);
-	static ex epsilon_pos = (new tensepsilon(true, true))->setflag(status_flags::dynallocated);
+	static ex epsilon_neg = dynallocate<tensepsilon>(true, false);
+	static ex epsilon_pos = dynallocate<tensepsilon>(true, true);
 
 	if (!is_a<varidx>(i1) || !is_a<varidx>(i2) || !is_a<varidx>(i3) || !is_a<varidx>(i4))
 		throw(std::invalid_argument("indices of Lorentz epsilon tensor must be of type varidx"));

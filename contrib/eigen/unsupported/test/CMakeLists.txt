@@ -1,6 +1,6 @@
 # generate split test header file only if it does not yet exist
 # in order to prevent a rebuild everytime cmake is configured
-if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/split_test_helper.h)  
+if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/split_test_helper.h)
   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/split_test_helper.h "")
   foreach(i RANGE 1 999)
     file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/split_test_helper.h
@@ -16,11 +16,22 @@ endif()
 set_property(GLOBAL PROPERTY EIGEN_CURRENT_SUBPROJECT "Unsupported")
 add_custom_target(BuildUnsupported)
 
-include_directories(../../test ../../unsupported ../../Eigen 
+include_directories(../../test ../../unsupported ../../Eigen
                     ${CMAKE_CURRENT_BINARY_DIR}/../../test)
 
 find_package (Threads)
-                    
+
+find_package(Xsmm)
+if(XSMM_FOUND)
+  add_definitions("-DEIGEN_USE_LIBXSMM")
+  include_directories(${XSMM_INCLUDES})
+  link_directories(${XSMM_LIBRARIES})
+  set(EXTERNAL_LIBS ${EXTERNAL_LIBS} xsmm)
+  ei_add_property(EIGEN_TESTED_BACKENDS  "Xsmm, ")
+else(XSMM_FOUND)
+  ei_add_property(EIGEN_MISSING_BACKENDS  "Xsmm, ")
+endif(XSMM_FOUND)
+
 find_package(GoogleHash)
 if(GOOGLEHASH_FOUND)
   add_definitions("-DEIGEN_GOOGLEHASH_SUPPORT")
@@ -58,6 +69,8 @@ ei_add_test(matrix_square_root)
 ei_add_test(alignedvector3)
 
 ei_add_test(FFT)
+
+ei_add_test(EulerAngles)
 
 find_package(MPFR 2.3.0)
 find_package(GMP)
@@ -132,12 +145,25 @@ ei_add_test(cxx11_tensor_roundings)
 ei_add_test(cxx11_tensor_layout_swap)
 ei_add_test(cxx11_tensor_io)
 if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-  # This test requires __uint128_t which is only available on 64bit systems 
+  # This test requires __uint128_t which is only available on 64bit systems
   ei_add_test(cxx11_tensor_uint128)
 endif()
 endif()
 
 if(EIGEN_TEST_CXX11)
+  if(EIGEN_TEST_SYCL)
+    ei_add_test_sycl(cxx11_tensor_sycl "-std=c++11")
+    ei_add_test_sycl(cxx11_tensor_forced_eval_sycl "-std=c++11")
+    ei_add_test_sycl(cxx11_tensor_broadcast_sycl "-std=c++11")
+    ei_add_test_sycl(cxx11_tensor_device_sycl "-std=c++11")
+    ei_add_test_sycl(cxx11_tensor_reduction_sycl "-std=c++11")
+    ei_add_test_sycl(cxx11_tensor_morphing_sycl "-std=c++11")
+    ei_add_test_sycl(cxx11_tensor_shuffling_sycl "-std=c++11")
+    ei_add_test_sycl(cxx11_tensor_padding_sycl "-std=c++11")
+    ei_add_test_sycl(cxx11_tensor_builtins_sycl "-std=c++11")
+    ei_add_test_sycl(cxx11_tensor_contract_sycl "-std=c++11")
+    ei_add_test_sycl(cxx11_tensor_concatenation_sycl "-std=c++11")
+  endif(EIGEN_TEST_SYCL)
   # It should be safe to always run these tests as there is some fallback code for
   # older compiler that don't support cxx11.
   set(CMAKE_CXX_STANDARD 11)
@@ -201,7 +227,7 @@ if(CUDA_FOUND AND EIGEN_TEST_CUDA)
   message(STATUS "Flags used to compile cuda code: " ${CMAKE_CXX_FLAGS})
 
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(CUDA_NVCC_FLAGS "-ccbin /usr/bin/clang" CACHE STRING "nvcc flags" FORCE)
+    set(CUDA_NVCC_FLAGS "-ccbin ${CMAKE_C_COMPILER}" CACHE STRING "nvcc flags" FORCE)
   endif()
   if(EIGEN_TEST_CUDA_CLANG)
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 --cuda-gpu-arch=sm_${EIGEN_CUDA_COMPUTE_ARCH}")
@@ -223,20 +249,26 @@ if(CUDA_FOUND AND EIGEN_TEST_CUDA)
   cuda_include_directories("${CMAKE_CURRENT_BINARY_DIR}" "${CUDA_TOOLKIT_ROOT_DIR}/include")
   set(EIGEN_ADD_TEST_FILENAME_EXTENSION "cu")
 
-  ei_add_test(cxx11_tensor_device)
-  ei_add_test(cxx11_tensor_cuda)
-  ei_add_test(cxx11_tensor_contract_cuda)
+  ei_add_test(cxx11_tensor_complex_cuda)
+  ei_add_test(cxx11_tensor_complex_cwise_ops_cuda)
   ei_add_test(cxx11_tensor_reduction_cuda)
   ei_add_test(cxx11_tensor_argmax_cuda)
   ei_add_test(cxx11_tensor_cast_float16_cuda)
   ei_add_test(cxx11_tensor_scan_cuda)
+
+  # Contractions require arch 3.0 or higher
+  if (${EIGEN_CUDA_COMPUTE_ARCH} GREATER 29)
+    ei_add_test(cxx11_tensor_device)
+    ei_add_test(cxx11_tensor_cuda)
+    ei_add_test(cxx11_tensor_contract_cuda)
+    ei_add_test(cxx11_tensor_of_float16_cuda)
+  endif()
 
   # The random number generation code requires arch 3.5 or greater.
   if (${EIGEN_CUDA_COMPUTE_ARCH} GREATER 34)
     ei_add_test(cxx11_tensor_random_cuda)
   endif()
 
-  ei_add_test(cxx11_tensor_of_float16_cuda)
 
   unset(EIGEN_ADD_TEST_FILENAME_EXTENSION)
 endif()
