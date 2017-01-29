@@ -2,8 +2,7 @@
 
 set -euo pipefail
 
-#if [ ! -z "$DOCKER_LOGIN" -a ! -z "$DOCKER_PASSWORD"]; then
-if [ ! -z ${DOCKER_LOGIN+x} -a ! -z ${DOCKER_PASSWORD+x}   ]; then
+if [ -v DOCKER_PASSWORD -a -v DOCKER_LOGIN ]; then
     docker login --username="${DOCKER_LOGIN}" --password="${DOCKER_PASSWORD}";
 fi
 
