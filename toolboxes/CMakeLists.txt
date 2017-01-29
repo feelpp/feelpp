@@ -55,7 +55,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 if(1)#FEELPP_HAS_GMSH)
   add_subdirectory( feel/feelmodels )
-  add_subdirectory( thermodyn )
   add_subdirectory( fluid )
   add_subdirectory( solid )
   add_subdirectory( fsi )
@@ -63,5 +62,10 @@ if(1)#FEELPP_HAS_GMSH)
   #add_subdirectory( advection )
   #add_subdirectory( levelset )
   #add_subdirectory( multifluid )
+
+
+  # Heat Toolbox
+  add_subdirectory( thermodyn )
+  add_subdirectory( heatfluid )
   add_subdirectory( thermoelectric )
 endif()

@@ -40,9 +40,10 @@ feelpp_add_application( fluid_3d SRCS main_fm.cpp
   INSTALL
 )
 
-feelpp_add_testcase(cavity CATEGORY fluid)
-feelpp_add_testcase(TurekHron CATEGORY fluid)
-feelpp_add_testcase(TurekHronExt3d CATEGORY fluid)
+feelpp_add_testcase(lid-driven-cavity CATEGORY CFD)
+feelpp_add_testcase(TurekHron CATEGORY CFD)
+feelpp_add_testcase(TurekHronExt3d CATEGORY CFD)
+feelpp_add_testcase(backwardfacingstep CATEGORY CFD)
 
 #feelpp_add_application( application_fm_2d SRCS main_fm.cpp LINK_LIBRARIES feelpp_model_fluidmechanics )
 

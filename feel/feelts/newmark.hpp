@@ -401,6 +401,11 @@ Newmark<SpaceType>::initialize( element_type const& u0 )
 
     std::for_each( M_previousUnknown.begin(), M_previousUnknown.end(), *boost::lambda::_1 = u0 );
 
+    // compute first derivative poly of rhs
+    this->computePolyFirstDeriv();
+    // compute second derivative poly of rhs
+    this->computePolySecondDeriv();
+
     this->saveCurrent();
 }
 

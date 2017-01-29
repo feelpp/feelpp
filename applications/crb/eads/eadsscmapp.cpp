@@ -86,9 +86,10 @@ void EadsSCMApp::init()
                               );
 
 #endif
-    M_opusmodel = opusmodel_ptrtype( new opusmodel_type( this->vm() ) );
-    M_scm = scm_ptrtype( new scm_type( this->about().appName(), this->vm() ) );
-    M_scm->setTruthModel( M_opusmodel );
+    //M_opusmodel = opusmodel_ptrtype( new opusmodel_type( this->vm() ) );
+    M_opusmodel = opusmodel_ptrtype( new opusmodel_type() );
+    //M_scm = scm_ptrtype( new scm_type( this->about().appName(), this->vm() ) );
+    M_scm = scm_ptrtype( new scm_type( this->about().appName(), M_opusmodel ) );
 
 
 

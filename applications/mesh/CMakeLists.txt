@@ -34,10 +34,7 @@ feelpp_add_application( mesh1d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELP
 
 
 
-feelpp_add_application( partitioner SRCS mesh_partitioner.cpp mesh_partitioner_simplex.cpp mesh_partitioner_hypercube.cpp INCLUDE_IN_ALL PROJECT mesh)
-install(TARGETS feelpp_mesh_partitioner
-        RUNTIME DESTINATION bin/
-        COMPONENT Bin)
+feelpp_add_application( partitioner SRCS mesh_partitioner.cpp mesh_partitioner_simplex.cpp mesh_partitioner_hypercube.cpp INCLUDE_IN_ALL PROJECT mesh INSTALL)
 
-feelpp_add_application( submesh SRCS submesh.cpp INCLUDE_IN_ALL PROJECT mesh)
+feelpp_add_application( submesh SRCS submesh.cpp INCLUDE_IN_ALL PROJECT mesh )
 endif(NOT FEELPP_MINIMAL_BUILD)
