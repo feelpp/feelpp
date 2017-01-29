@@ -16,7 +16,6 @@ steps:
  #     TARGET: ubuntu:sid
  - name: ':mac: using homebrew :beer:'
    command: tools/scripts/buildkite/build-osx.sh
-   async: true
    agents:
      osx: true
  - wait
