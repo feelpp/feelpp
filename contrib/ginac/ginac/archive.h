@@ -3,7 +3,7 @@
  *  Archiving of GiNaC expressions. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -83,7 +83,6 @@ public:
 	};
 	typedef std::vector<property>::const_iterator archive_node_cit;
 
-	archive_node() : a(*dummy_ar_creator()), has_expression(false) {} // hack for cint which always requires a default constructor
 	archive_node(archive &ar) : a(ar), has_expression(false) {}
 	archive_node(archive &ar, const ex &expr);
 
@@ -143,8 +142,6 @@ public:
 	void printraw(std::ostream &os) const;
 
 private:
-	static archive* dummy_ar_creator();
-
 	/** Reference to the archive to which this node belongs. */
 	archive &a;
 
@@ -329,7 +326,6 @@ private:
 	mutable std::map<std::string, archive_atom> inverse_atoms;
 
 	/** Map of stored expressions to nodes for faster archiving */
-	typedef std::map<ex, archive_node_id, ex_is_less>::iterator mapit;
 	mutable std::map<ex, archive_node_id, ex_is_less> exprtable;
 };
 

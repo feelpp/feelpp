@@ -29,13 +29,17 @@
 #if !defined(FEELPP_LOADMESH_HPP)
 #define FEELPP_LOADMESH_HPP 1
 
-#ifdef FEELPP_HAS_GMSH
+
 
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
-#include <feel/feelfilters/importeracusimrawmesh.hpp>
+
+#if defined(FEELPP_HAS_GMSH_H)
 #include <feel/feelfilters/geo.hpp>
 #include <feel/feelfilters/domain.hpp>
+#endif
+#include <feel/feelfilters/importeracusimrawmesh.hpp>
+
 
 namespace Feel {
 
@@ -84,6 +88,8 @@ BOOST_PARAMETER_FUNCTION(
       )
                          )
 {
+    using Feel::cout;
+    
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunsequenced"
@@ -99,14 +105,20 @@ BOOST_PARAMETER_FUNCTION(
     int proc_rank = worldcomm.globalRank();
     //Environment::isMasterRank()
 
+    // add mesh format supported by gmsh: unv (i-deas), mesh(inria), bdf(nastran), actran, p3d, cgns, med
     LOG_IF( WARNING,
             mesh_name.extension() != ".geo" &&
             mesh_name.extension() != ".json" &&
             mesh_name.extension() != ".msh" &&
+            mesh_name.extension() != ".bdf" &&
+            mesh_name.extension() != ".cgns" &&
+            mesh_name.extension() != ".p3d" &&
+            mesh_name.extension() != ".mesh" &&
+            mesh_name.extension() != ".med" &&
             mesh_name.extension() != ".arm" )
         << "Invalid filename " << filenameExpand << " it should have either the .geo. .json or .msh extension\n";
 
-
+#if defined(FEELPP_HAS_GMSH_H)
     if ( mesh_name.extension() == ".geo" )
     {
 #if defined(FEELPP_HAS_HDF5)
@@ -115,8 +127,7 @@ BOOST_PARAMETER_FUNCTION(
             auto json_fname = mesh_name.stem().string()+".json";
             if( fs::exists(json_fname) )
             {
-                if ( worldcomm.isMasterRank() )
-                    std::cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(json_fname) << "\n";
+                cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(json_fname) << "\n";
                 LOG(INFO) << " Loading mesh in format json+h5: " << json_fname;
                 CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
                 _mesh_ptrtype m( mesh );
@@ -126,18 +137,18 @@ BOOST_PARAMETER_FUNCTION(
             }
         }
 #endif
-        if ( worldcomm.isMasterRank() )
-        {
-            std::cout << "[loadMesh] Loading mesh in format geo+msh: " << fs::system_complete(mesh_name) << "\n";
-            if ( !desc )
-                std::cout << "[loadMesh] Use default geo desc: " << mesh_name.string() << " " << h << " " << depends << "\n";
-        }
+
+        cout << "[loadMesh] Loading mesh in format geo+msh: " << fs::system_complete(mesh_name) << "\n";
+        if ( !desc )
+            cout << "[loadMesh] Use default geo desc: " << mesh_name.string() << " " << h << " " << depends << "\n";
+
+        auto thedesc = (!desc) ? geo( _filename=mesh_name.string(),
+                                      _h=h,
+                                      _depends=depends,
+                                      _worldcomm=worldcomm  ) : desc;
         auto m = createGMSHMesh(
             _mesh=mesh,
-            _desc= (!desc) ? geo( _filename=mesh_name.string(),
-                                  _h=h,
-                                  _depends=depends,
-                                  _worldcomm=worldcomm  ) : desc ,
+            _desc= thedesc ,
             _h=h,
             _scale=scale,
             _straighten=straighten,
@@ -161,11 +172,21 @@ BOOST_PARAMETER_FUNCTION(
 #endif
         return m;
     }
+#else
+    LOG(WARNING) << "Gmsh support not available: loading a .geo is not supported.";
+#endif
+    
+    if ( ( mesh_name.extension() == ".msh"  ) ||
+         ( mesh_name.extension() == ".bdf"  ) ||
+         ( mesh_name.extension() == ".cgns"  ) ||
+         ( mesh_name.extension() == ".p3d"  ) ||
+         ( mesh_name.extension() == ".mesh"  ) ||
+         ( mesh_name.extension() == ".med"  ) )
 
-    if ( mesh_name.extension() == ".msh"  )
     {
-        if ( worldcomm.isMasterRank() )
-            std::cout << "[loadMesh] Loading mesh in format msh: " << fs::system_complete(mesh_name) << "\n";
+        cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << "\n";
+        
+        tic();
         auto m = loadGMSHMesh( _mesh=mesh,
                                _filename=mesh_name.string(),
                                _straighten=straighten,
@@ -182,17 +203,24 @@ BOOST_PARAMETER_FUNCTION(
                                _partition_file=partition_file,
                                _verbose=verbose
                                );
+
+        toc("loadMesh.loadGMSHMesh", FLAGS_v>0);
+        cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << " done\n";
+
 #if defined(FEELPP_HAS_HDF5)
+        tic();
         if ( savehdf5 )
             m->saveHDF5( mesh_name.stem().string()+".json" );
+        toc("loadMesh.saveHDF5", FLAGS_v>0);
+        cout << "[loadMesh] Saving HDF5 mesh: " << fs::system_complete(mesh_name.stem().string()+".json") << std::endl;
 #endif
         return m;
     }
+
 #if defined(FEELPP_HAS_HDF5)
     if ( mesh_name.extension() == ".json"  )
     {
-        if ( worldcomm.isMasterRank() )
-            std::cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(mesh_name) << "\n";
+        cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(mesh_name) << "\n";
         LOG(INFO) << " Loading mesh in json+h5 format " << fs::system_complete(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         _mesh_ptrtype m( mesh );
@@ -205,8 +233,7 @@ BOOST_PARAMETER_FUNCTION(
     // Acusim Raw Mesh
     if ( mesh_name.extension() == ".arm"  )
     {
-        if ( worldcomm.isMasterRank() )
-            std::cout << "[loadMesh] Loading mesh in format arm(acusolve)h5: " << fs::system_complete(mesh_name) << "\n";
+        cout << "[loadMesh] Loading mesh in format arm(acusolve)h5: " << fs::system_complete(mesh_name) << "\n";
         LOG(INFO) << " Loading mesh in arm(acusolve) format " << fs::system_complete(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         _mesh_ptrtype m( mesh );
@@ -222,12 +249,12 @@ BOOST_PARAMETER_FUNCTION(
 #endif
         return m;
     }
-
+#if defined( FEELPP_HAS_GMSH_H )
     mesh_name = soption(_name="gmsh.domain.shape");
-    if ( worldcomm.isMasterRank() )
-        std::cout << "[loadMesh] no file name or unrecognized extension provided\n"
-                  << "[loadMesh] automatically generating amesh from gmsh.domain.shape in format geo+msh: " 
-                  << mesh_name << ".geo\n";
+
+    cout << "[loadMesh] no file name or unrecognized extension provided\n"
+         << "[loadMesh] automatically generating amesh from gmsh.domain.shape in format geo+msh: "
+         << mesh_name << ".geo\n";
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
     auto m = createGMSHMesh(_mesh=mesh,
                             _desc=domain( _name=mesh_name.string(), _h=h, _worldcomm=worldcomm ),
@@ -250,13 +277,15 @@ BOOST_PARAMETER_FUNCTION(
         m->saveHDF5( fs::path(filenameExpand).stem().string()+".json" );
 #endif
     return m;
+#else
+    LOG(WARNING) << "Gmsh support not available. No mesh file provided, return an empty mesh.";
+    return boost::make_shared<_mesh_type>();
+#endif
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
 } // loadMesh
 
 } // Feel namespace
-
-#endif
 
 #endif /* FEELPP_LOADMESH_HPP */

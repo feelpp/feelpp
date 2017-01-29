@@ -32,7 +32,7 @@ namespace Feel {
  * helper function that read a file \p filename and store its contents into a \c
  * std::string
  */
-std::string readFromFile( std::string const& filename );
+FEELPP_EXPORT std::string readFromFile( std::string const& filename );
 
 
 }

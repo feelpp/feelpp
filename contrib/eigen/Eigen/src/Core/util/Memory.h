@@ -275,6 +275,7 @@ template<typename T> EIGEN_DEVICE_FUNC inline T* construct_elements_of_array(T *
     destruct_elements_of_array(ptr, i);
     EIGEN_THROW;
   }
+  return NULL;
 }
 
 /*****************************************************************************
@@ -305,6 +306,7 @@ template<typename T> EIGEN_DEVICE_FUNC inline T* aligned_new(size_t size)
     aligned_free(result);
     EIGEN_THROW;
   }
+  return result;
 }
 
 template<typename T, bool Align> EIGEN_DEVICE_FUNC inline T* conditional_aligned_new(size_t size)
@@ -320,6 +322,7 @@ template<typename T, bool Align> EIGEN_DEVICE_FUNC inline T* conditional_aligned
     conditional_aligned_free<Align>(result);
     EIGEN_THROW;
   }
+  return result;
 }
 
 /** \internal Deletes objects constructed with aligned_new
@@ -520,7 +523,7 @@ template<typename T> struct smart_memmove_helper<T,true> {
 template<typename T> struct smart_memmove_helper<T,false> {
   static inline void run(const T* start, const T* end, T* target)
   { 
-    if (uintptr_t(target) < uintptr_t(start))
+    if (UIntPtr(target) < UIntPtr(start))
     {
       std::copy(start, end, target);
     }

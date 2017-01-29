@@ -4,7 +4,7 @@
  */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -91,7 +91,7 @@ static ex upoly_to_ex(const upoly& p, const symbol& x)
 	exvector tv(p.size());
 	for (std::size_t i = 0; i < p.size(); ++i)
 		tv[i] = pow(x, i)*numeric(p[i]);
-	return (new add(tv))->setflag(status_flags::dynallocated);
+	return dynallocate<add>(tv);
 }
 
 static upoly make_random_upoly(const std::size_t deg)
