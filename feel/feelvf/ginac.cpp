@@ -28,24 +28,7 @@
    \date 2012-10-24
 */
 #include <feel/feelcore/environment.hpp>
-
-// #if defined(__clang__)
-// #if FEELPP_CLANG_AT_LEAST(4,0)
-// #pragma clang diagnostic push
-// #pragma clang diagnostic ignored "-Wundefined-var-template"
-// #endif
-// #endif
-
-#include <ginac/ginac.h>
-
-// #if defined(__clang__)
-// #if FEELPP_CLANG_AT_LEAST(4,0)
-// #pragma clang diagnostic pop
-// #endif
-// #endif
-
-#include <boost/foreach.hpp>
-#include <boost/range/algorithm/for_each.hpp>
+#include <feel/feelvf/ginac.hpp>
 
 namespace GiNaC
 {
@@ -75,7 +58,7 @@ std::string strsymbol( std::vector<symbol> const& f )
     return ostr.str();
 }
 
-ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>() )
+ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params )
 {
     using namespace Feel;
     LOG(INFO) << "Parsing " << str << " using GiNaC with " << syms.size() << " symbols";
