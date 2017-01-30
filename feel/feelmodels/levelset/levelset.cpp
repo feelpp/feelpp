@@ -528,7 +528,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::modGradPhi() const
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_stretch_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::stretch() const
 {
     if( !M_levelsetStretch )
@@ -545,16 +545,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::stretch() const
 
     M_levelsetStretch->add(-1.);
 
-    if( !M_levelsetStretchP0 )
-        M_levelsetStretchP0.reset( new element_markers_type(this->functionSpaceMarkers(), "StretchP0") );
-    *M_levelsetStretchP0 = vf::project(
-            _space=this->functionSpaceMarkers(),
-            _range=elements(this->mesh()),
-            _expr=idv(M_levelsetStretch)
-            );
-
-    //return M_levelsetStretch;
-    return M_levelsetStretchP0;
+    return M_levelsetStretch;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
