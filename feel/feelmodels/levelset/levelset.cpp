@@ -528,11 +528,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::modGradPhi() const
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::stretch() const
 {
     if( !M_levelsetStretch )
-        M_levelsetStretch.reset( new element_levelset_type(this->functionSpace(), "Stretch") );
+        M_levelsetStretch.reset( new element_stretch_type(this->M_stretchAdvection->functionSpace(), "Stretch") );
 
     if( M_useStretchAugmented )
     {
@@ -545,7 +545,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::stretch() const
 
     M_levelsetStretch->add(-1.);
 
-    return M_levelsetStretch;
+    if( !M_levelsetStretchP0 )
+        M_levelsetStretchP0.reset( new element_markers_type(this->functionSpaceMarkers(), "StretchP0") );
+    *M_levelsetStretchP0 = vf::project(
+            _space=this->functionSpaceMarkers(),
+            _range=elements(this->mesh()),
+            _expr=idv(M_levelsetStretch)
+            );
+
+    //return M_levelsetStretch;
+    return M_levelsetStretchP0;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1300,6 +1309,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
         M_stretchAdvection->updateAdvectionVelocity( idv(u) );
         //M_stretchAdvection->updateReactionCoeff( inner(NxN, Du) );
         auto NxNDu = this->smoother()->project( inner(NxN, Du) );
+        //auto NxNDu = vf::project( 
+                //_space=M_stretchAdvection->functionSpace(),
+                //_range=elements(M_stretchAdvection->mesh()),
+                //_expr=inner(NxN, Du) 
+                //);
         M_stretchAdvection->updateReactionCoeff( idv(NxNDu) );
         //M_stretchAdvection->updateSourceAdded(
                 //- idv(modGradPhi) * inner( NxN, Du)
