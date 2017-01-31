@@ -87,7 +87,6 @@ class MeshStructured: public Mesh<Hypercube<2>>
    int M_l_ny; // local Y number of elements
    int M_s_x; // local first x index (0 for first element)
    int M_s_y; // local first y index (0 for first element)
-
    double M_pixelsize;
     // std::map<int,boost::tuple<int,rank_type> > mapGhostElt;
     // std::vector<rank_type> ghosts;
