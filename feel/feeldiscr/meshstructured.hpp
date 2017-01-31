@@ -28,6 +28,8 @@
 
 namespace Feel {
 
+template <typename T>
+using holo3_image = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> ;
 //! Structured mesh class
 //!
 //! A structured mesh is such that points and elements can
@@ -56,6 +58,7 @@ class MeshStructured: public Mesh<Hypercube<2>>
     //!
     //!
     MeshStructured( int nx, int ny, double pixelsize, WorldComm const& );
+    MeshStructured( int nx, int ny,holo3_image<float> cx,holo3_image<float> cy, WorldComm const& );
 
     void updateGhostCellInfoByUsingNonBlockingComm(
         std::map<int,int> const& idStructuredMeshToFeelMesh,
@@ -77,6 +80,8 @@ class MeshStructured: public Mesh<Hypercube<2>>
   private:
    size_type M_nx; // Global X number of elements
    size_type M_ny; // Global Y number of elements
+   holo3_image<float> M_cx;
+   holo3_image<float> M_cy;
     int M_l_nx; // local X number of elements (ghost excluded!)
     int M_l_ny; // local Y number of elements
     int M_s_x; // local first x index (0 for first element)
