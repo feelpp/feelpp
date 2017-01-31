@@ -1848,7 +1848,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                    0 );
     }
 
-    toc("DofTable::sequential map"), FLAGS_v>0;
+    toc("DofTable::sequential map", FLAGS_v>0);
     tic();
     // reordoring of global process id in doftable (active dofs before and ghost dofs after)
     if ( this->worldComm().localSize()>1 )

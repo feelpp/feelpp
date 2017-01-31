@@ -33,7 +33,7 @@ namespace Feel
 
 BoundaryConditions::BoundaryConditions( WorldComm const& world )
     :
-    BoundaryConditions( "" )
+    M_worldComm( world )
 {}
 
 BoundaryConditions::BoundaryConditions( std::string const& p, WorldComm const& world )
@@ -43,22 +43,14 @@ BoundaryConditions::BoundaryConditions( std::string const& p, WorldComm const& w
     M_prefix( p )
 {
     fs::path bc( Environment::expand( soption("bc-file") ) );
-    
+
     if ( fs::exists( bc ) )
     {
-        if ( Environment::isMasterRank() )
-        {
-            std::cout << "[boundaryCondition] Loading Boundary Condition file :\"" << bc.string() << "\"\n";
-        }    
         LOG(INFO) << "Loading Boundary Condition file " << bc.string();
         load( bc.string() );
     }
     else
     {
-        if ( Environment::isMasterRank() )
-        {
-            std::cout << "[boundaryCondition] Loading Boundary Condition file :\"" << bc.string() << "\"\n";
-        }    
         LOG(WARNING) << "Boundary condition file " << bc.string() << " does not exist";
     }
 }

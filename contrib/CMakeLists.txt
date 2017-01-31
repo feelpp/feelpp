@@ -26,7 +26,7 @@
 
 if ( FEELPP_HAS_GFLAGS )
   add_subdirectory(gflags)
-  add_dependencies(contrib feelpp_gflags)
+  add_dependencies(contrib feelpp_gflags feelpp_gflags_shared feelpp_gflags_nothreads_shared)
 endif()
 
 if ( FEELPP_HAS_GLOG )
@@ -46,7 +46,7 @@ endif()
 
 if ( FEELPP_HAS_GINAC )
   add_subdirectory(ginac)
-  add_dependencies(contrib feelpp_ginac)
+  add_dependencies(contrib feelpp_ginac ginsh)
 endif()
 
 if ( FEELPP_HAS_NLOPT )
