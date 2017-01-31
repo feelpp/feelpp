@@ -80,8 +80,8 @@ class MeshStructured: public Mesh<Hypercube<2>>
   private:
    size_type M_nx; // Global X number of elements
    size_type M_ny; // Global Y number of elements
-   holo3_image<float> M_cx;
-   holo3_image<float> M_cy;
+   holo3_image<float> M_cx; // X-coordinates for nodes
+   holo3_image<float> M_cy; // Y-coordinates for nodes
     int M_l_nx; // local X number of elements (ghost excluded!)
     int M_l_ny; // local Y number of elements
     int M_s_x; // local first x index (0 for first element)
