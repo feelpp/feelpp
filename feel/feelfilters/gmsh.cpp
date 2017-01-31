@@ -342,7 +342,7 @@ Gmsh::retrieveGeoParameters( std::string const& __geo ) const
 }
 
 bool
-Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool const modifGeo ) const
+Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool const modifGeo, std::string const& outputFilename ) const
 {
     std::string _geo = __geo;
 
@@ -393,7 +393,10 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
     if ( M_in_memory == false )
     {
         std::ostringstream __geoname;
-        __geoname << __name << ".geo";
+        if ( outputFilename.empty() )
+            __geoname << __name << ".geo";
+        else
+            __geoname << outputFilename;
         fs::path __path( __geoname.str() );
         geochanged = false;
 
@@ -437,23 +440,29 @@ Gmsh::generate( std::string const& name ) const
 }
 
 boost::tuple<std::string,bool>
-Gmsh::generate( std::string const& __name, std::string const& __geo, bool const __forceRebuild, bool const parametric,bool const modifGeo ) const
+Gmsh::generate( std::string const& __name, std::string const& __geo, bool const __forceRebuild, bool const parametric,bool const modifGeo, std::string const& outputDirectory ) const
 {
     std::string fname;
     bool generated = false;
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
-
-
         LOG(INFO) << "Generate mesh on processor " <<  this->worldComm().globalRank() << "/" << this->worldComm().globalSize() << "\n";
-        bool geochanged = generateGeo( __name,__geo,modifGeo );
-        std::ostringstream __geoname;
-        __geoname << __name << ".geo";
+        if ( !outputDirectory.empty() && !fs::exists( fs::path(outputDirectory) ) )
+            fs::create_directories( fs::path(outputDirectory) );
 
+        std::ostringstream __geoname;
+        if ( outputDirectory.empty() )
+            __geoname << __name << ".geo";
+        else
+            __geoname << (fs::path(outputDirectory)/fs::path( __name + ".geo")).string();
+        bool geochanged = generateGeo( __name,__geo, modifGeo, __geoname.str() );
 
         // generate mesh
         std::ostringstream __meshname;
-        __meshname << __name << ".msh";
+        if ( outputDirectory.empty() )
+            __meshname << __name << ".msh";
+        else
+            __meshname << (fs::path(outputDirectory)/fs::path( __name + ".msh")).string();
         LOG( INFO ) << "Mesh file " << __meshname.str() << " generated from geometry " << __geoname.str();
         LOG( INFO ) << " - does mesh file name exists : " << (fs::exists( __meshname.str() )?"true":"false") << "\n";
         fs::path __meshpath( __meshname.str() );
@@ -462,7 +471,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
         {
             LOG( INFO ) << "Generating " << __meshname.str() << "...\n";
 
-            generate( __geoname.str(), this->dimension(), parametric );
+            generate( __geoname.str(), this->dimension(), parametric, __meshname.str() );
 
             LOG( INFO ) << "Generating " << __meshname.str() << " done.\n";
             generated = true;
@@ -577,7 +586,7 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 #endif
 }
 void
-Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  ) const
+Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, std::string const& outputFilename  ) const
 {
 #if FEELPP_HAS_GMSH
 #if !defined(FEELPP_HAS_GMSH_LIBRARY)
@@ -654,9 +663,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 
         M_gmodel = new GModel;
         M_gmodel->setName( _name );
-#if !defined( __APPLE__ )
-        M_gmodel->setFileName( _name );
-#endif
+        // M_gmodel->setFileName( _name );
         if ( M_in_memory )
             ParseGeoFromMemory( M_gmodel, _name, geo().second );
         else
@@ -679,7 +686,10 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         {
             CTX::instance()->mesh.binary = M_format;
             LOG(INFO) << "Writing GMSH file " << _name+".msh" << " in " << (M_format?"binary":"ascii") << " format\n";
-            M_gmodel->writeMSH( _name+".msh", 2.2, CTX::instance()->mesh.binary );
+            if ( outputFilename.empty() )
+                M_gmodel->writeMSH( _name+".msh", 2.2, CTX::instance()->mesh.binary );
+            else
+                M_gmodel->writeMSH( outputFilename, 2.2, CTX::instance()->mesh.binary );
         }
 
     }

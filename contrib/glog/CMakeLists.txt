@@ -421,7 +421,7 @@ set_target_properties (feelpp_glog PROPERTIES PUBLIC_HEADER "${GLOG_PUBLIC_H}")
 target_include_directories (feelpp_glog BEFORE PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
-  "$<INSTALL_INTERFACE:include>"
+  "$<INSTALL_INTERFACE:include/feel/glog>"
   PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 

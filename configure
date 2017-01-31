@@ -19,6 +19,7 @@ Options:
      --cxxflags                      override cxxflags
      --cmakeflags                    add extra cmake flags
      --prefix=PATH                   define install path
+     --root=PATH                     define root path
  -v, --verbose                       enable verbose output
  -h, --help                          help page
      --<package>-dir=PACKAGE_PATH    define <package> install directory
@@ -78,6 +79,10 @@ while [ -n "$1" ]; do
        PROJECT_INSTALL_PREFIX=`echo $1 | sed "s,^--prefix=\(.*\),\1,"`
        export PROJECT_INSTALL_PREFIX
        ;;
+   --root=*)
+       PROJECTSRCROOT=`echo $1 | sed "s,^--root=\(.*\),\1,"`
+       export PROJECTSRCROOT
+       ;;   
    --mpi-dir=*)
        MPI_ROOT=`echo $1 | sed "s,^--mpi-dir=\(.*\),\1,"`
        export MPI_ROOT
