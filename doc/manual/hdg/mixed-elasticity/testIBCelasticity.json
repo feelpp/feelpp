@@ -4,11 +4,11 @@
     "Model":"hdg",
     "Materials":
     {
-        "cylinder":
+        "omega":
         {
             "name":"steel",
-            "lambda":"1",
-	    	"mu":"1"
+            "lambda":"1",   // 1.15
+	    	"mu":"1"        // 0.77
         }
     },
     "BoundaryConditions":
@@ -17,7 +17,7 @@
         {
             "SourceTerm":
             {
-                "cylinder":
+                "omega":
                 {
 					"expr":"{0,0,0}"
                 }
@@ -26,15 +26,19 @@
             {
                 "top":
                 {
-                    "expr":"{0,0,0}:x:y:z"
+                    "expr":"{0,0,0*Pi}:x:y:z"      // "expr":"{0,0, 0.1*Pi}:x:y:z"
                 }
             },
             "Neumann":
             {
                 "lateral":
                 {
-                    "expr":"{0,0,0}:x:y:z"
-                }
+                    "expr":"{0,0,0, 0,0,0, 0,0,0}:x:y:z"          
+                }/*,
+                "top":
+                {
+                    "expr":"{0,0,0, 0,0,0, 0,0,0}:x:y:z"          // "expr":"{0,0,0, 0,0,0, 0,0,0.1}:x:y:z"
+                }*/
             }
 		},
 		"displacement":
@@ -43,7 +47,7 @@
 	    	{
         		"bottom":
                 {
-		     		"expr":"{1,0,0}:x:y:z" 
+		     		"expr":"{1,0,0}:x:y:z"      // "expr":"{0,0,0}:x:y:z" 
                 }
  	    	}
     	},
@@ -51,7 +55,7 @@
 		{
 			"u_exact":
 			{
-				"cylinder":
+				"omega":
 				{
 		     		"expr":"{1,0,0}:x:y:z" 
 				}
