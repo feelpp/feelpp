@@ -25,12 +25,15 @@ OPTION( FEELPP_ENABLE_ACUSIM "Enable ACUSIM (libraries to read acusim files )" O
 
 if ( FEELPP_ENABLE_ACUSIM )
 
-    FIND_PATH(ACUSIM_DIR acusim.h
-      PATHS /apps/users/hw-13.0.213/altair/acusolve/linux64
+  #FIND_PATH(ACUSIM_DIR acusim.h
+  FIND_PATH(ACUSIM_DIR include/acusim.h
+      PATHS
+      /apps/users/hw-13.0.213/altair/acusolve/linux64
+      /data/software/licensed/Altair/altair/acusolve/linux64
       # directories to look for altair headers
       # --> a remplir <chemoin vers altair development files> 
-      PATH_SUFFIXES
-      include
+      #PATH_SUFFIXES
+      #include
       NO_DEFAULT_PATH)
 
     message(STATUS "[feelpp] acusim dir : ${ACUSIM_DIR}")
