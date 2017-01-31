@@ -51,7 +51,6 @@
 #include<fstream>
 #include <math.h>
 //#include <nrutil.h>
-#include "/calcul/acusolve/avp/Yoann_/FEELpp/feelpp/research/po/lib/nrutil.h"
 #endif
 
 namespace pt = boost::property_tree;
@@ -67,7 +66,32 @@ empty_ptree()
     static pt::ptree t;
     return t;
 }
+
+std::string
+markerNameFromAcusimName( std::string const& acusimName, std::string const& elementTypeName, std::string const& sepChar = " " )
+{
+    boost::char_separator<char> sep( sepChar.c_str() );
+    boost::tokenizer< boost::char_separator<char> > kvlist(acusimName, sep);
+    std::vector<std::string> acusimNameSplitted;
+    for( const auto& ikvl : kvlist )
+        acusimNameSplitted.push_back( ikvl );
+    //std::cout << "ikvl " <<ikvl << "\n";
+
+    int nNameSplitted = acusimNameSplitted.size();
+    for ( int k=0;k<nNameSplitted;k=k+2 )
+    {
+        if ( (k+1) < nNameSplitted )
+        {
+            if ( acusimNameSplitted[k+1] == elementTypeName )
+                return acusimNameSplitted[k];
+        }
+    }
+
+    std::string markerName;
+    return markerName;
 }
+
+} // namespace detail
 
 /**
  * Reader for Acusim Raw Mesh Format from Acusim (C) Altair
@@ -393,7 +417,8 @@ void ImporterAcusimRawMesh<MeshType>::readMeshAcusolveAPI( mesh_type* mesh ) con
 {
 #if defined( FEELPP_HAS_ACUSIM )
 	AdbHd	adbHd;
-	adbHd	= adbNew( "Marche_GDR", "ACUSIM.DIR", "/calcul/BIG_CALCUL/ACUSOLVE/Yoann/feelpp_test/test_install_PO/marche_GDR/", 0 );
+	//adbHd	= adbNew( "Marche_GDR", "ACUSIM.DIR", "/calcul/BIG_CALCUL/ACUSOLVE/Yoann/feelpp_test/test_install_PO/marche_GDR/", 0 );
+	adbHd	= adbNew( (char*)"test", (char*)"ACUSIM.DIR", (char*)"/home/u2/chabannes/po_smallmesh/DATA_PO/", 0 );
 	CHECK( adbHd != NULL ) << "Error opening the data base " << adbGetError();
 
     // init database loading
@@ -403,16 +428,16 @@ void ImporterAcusimRawMesh<MeshType>::readMeshAcusolveAPI( mesh_type* mesh ) con
     // load mesh points
     //-------------------------------------------------------------//
 	int nNodes =0;
-	success = adbGetInt0  ( adbHd, "nNodes",&nNodes);
+	success = adbGetInt0  ( adbHd, (char*)"nNodes",&nNodes);
 
 	CHECK( success ) << "fail to get nNodes\n";
 	double crd[nNodes*3];
 	std::cout << "PO : load nNodes " << nNodes << "\n";
-    success = adbGetReals0 ( adbHd,"crd", crd, 3 ,nNodes);
+    success = adbGetReals0 ( adbHd,(char*)"crd", crd, 3 ,nNodes);
 
 	int usrIds[nNodes];
 	//usrIds = (int*) malloc(nNodes*sizeof(int));
-    success = adbGetInts0( adbHd,"usrIds", usrIds, nNodes , 1);
+    success = adbGetInts0( adbHd,(char*)"usrIds", usrIds, nNodes , 1);
 
 	// add points in mesh
 	node_type coords( 3 );
@@ -441,30 +466,31 @@ void ImporterAcusimRawMesh<MeshType>::readMeshAcusolveAPI( mesh_type* mesh ) con
 
     // get number of group of element
     int nElms = 0;
-    success = adbGetInt0(adbHd,"nElms",&nElms);
-
+    success = adbGetInt0(adbHd,(char*)"nElms",&nElms);
+    std::cout << "number of domain element " << nElms << "\n";
+    int numberOfDomain = nElms; // seems necessary, to understand!!!
     int nElmElems = 0 , nElmElemNodes = 0;
-    for (int j=0;j<nElms;++j)
+    for (int j=0;j<numberOfDomain/*nElms*/;++j)
     {
-        char elmName;
-        success = adbGetStr1(adbHd,"elmName", &elmName,j);
+        char elmName[1024] ;
+        success = adbGetStr1(adbHd,(char*)"elmName", elmName,j);
         std::cout << "  Load element group "<< j << " with name : " << elmName << "\n";
-        success = adbGetInt1(adbHd,"nElmElems",&nElmElems,j);
+        success = adbGetInt1(adbHd,(char*)"nElmElems",&nElmElems,j);
         std::cout << "  number of element : " << nElmElems << "\n";
-        success = adbGetInt1(adbHd,"nElmElemNodes",&nElmElemNodes,j);
+        success = adbGetInt1(adbHd,(char*)"nElmElemNodes",&nElmElemNodes,j);
         std::cout << "  number of point in element : " << nElmElemNodes << "\n";
         CHECK( nElmElemNodes == element_type::numPoints ) << "number of point in element wrong " << nElmElemNodes <<" vs " << element_type::numPoints;
 
         // add marker
-        std::string marker( &elmName );
+        std::string marker = Feel::detail::markerNameFromAcusimName( std::string(elmName), "tet4" );
+        std::cout << "  marker element : " << marker << "\n";
         mesh->addMarkerName( marker, markerId, mesh_type::nDim );
         e.setMarker( markerId );
-        e.setMarker2( markerId );
+        //e.setMarker2( markerId );
 
         // load element connectivity
-        int elmCnn[nElmElems*nElmElemNodes];
-        success = adbGetInts1(adbHd,"&elmCnn",elmCnn,j,nElmElemNodes,nElmElems);
-
+        int * elmCnn = new int[nElmElems*nElmElemNodes];
+        success = adbGetInts1(adbHd,(char*)"elmCnn",elmCnn,j,nElmElemNodes,nElmElems);
         // add elements in mesh
         for( int i=0;i<nElmElems;++i )
         {
@@ -475,9 +501,9 @@ void ImporterAcusimRawMesh<MeshType>::readMeshAcusolveAPI( mesh_type* mesh ) con
             }
             mesh->addElement( e, true );
         }
+        delete [] elmCnn;
         ++markerId;
     }
-
 
 
     //-------------------------------------------------------------//
@@ -492,30 +518,31 @@ void ImporterAcusimRawMesh<MeshType>::readMeshAcusolveAPI( mesh_type* mesh ) con
 
     // get number of group of element
 	int nOsfs = 0;
-	success = adbGetInt0(adbHd,"nOsfs",&nOsfs);
-
+	success = adbGetInt0(adbHd,(char*)"nOsfs",&nOsfs);
+    std::cout << "number of domain face " << nOsfs << "\n";
+    int numberOfDomainFace = nOsfs; // seems necessary, to understand!!!
     int nOsfSrfs = 0, nOsfSrfNodes = 0;
-	for( int j=0;j<nOsfs;++j )
+	for( int j=0;j<numberOfDomainFace/*nOsfs*/;++j )
 	{
-        char osfName;
-        success = adbGetStr1(adbHd,"osfName",&osfName,j);
+        char osfName[1024] ;
+        success = adbGetStr1(adbHd,(char*)"osfName",/*&*/osfName,j);
         std::cout << "  Load face group "<< j << " with name : " << osfName << "\n";
-        success = adbGetInt1(adbHd,"nOsfSrfs",&nOsfSrfs,j);
+        success = adbGetInt1(adbHd,(char*)"nOsfSrfs",&nOsfSrfs,j);
         std::cout << "  number of face : " << nOsfSrfs << "\n";
-        success = adbGetInt1(adbHd,"nOsfSrfNodes",&nOsfSrfNodes,j);
+        success = adbGetInt1(adbHd,(char*)"nOsfSrfNodes",&nOsfSrfNodes,j);
         std::cout << "  number of point in face : " << nOsfSrfNodes << "\n";
         CHECK( nOsfSrfNodes == face_type::numPoints ) << "number of point in element wrong " << nOsfSrfNodes <<" vs " << face_type::numPoints;
 
+        std::string marker = Feel::detail::markerNameFromAcusimName( std::string(osfName), "tria3" );
+        std::cout << "  marker face : " << marker << "\n";
+
         // add marker
-        //std::string marker = osfName;
-        std::string marker( &osfName );
         mesh->addMarkerName( marker, markerId, mesh_type::nDim - 1 );
         f.setMarker( markerId );
-        f.setMarker2( markerId );
 
         // load face connectivity
-        int osfSrfCnn[nOsfSrfNodes*nOsfSrfs];
-        success = adbGetInts1(adbHd,"osfSrfCnn",osfSrfCnn,j,nOsfSrfNodes,nOsfSrfs);
+        int * osfSrfCnn = new int[nOsfSrfNodes*nOsfSrfs];
+        success = adbGetInts1(adbHd,(char*)"osfSrfCnn",osfSrfCnn,j,nOsfSrfNodes,nOsfSrfs);
 
         // add faces in mesh
         for( int i=0;i<nOsfSrfs;++i)
@@ -528,10 +555,15 @@ void ImporterAcusimRawMesh<MeshType>::readMeshAcusolveAPI( mesh_type* mesh ) con
             }
             mesh->addFace( f );
         }
+        delete [] osfSrfCnn;
         ++markerId;
-
-
 	}
+
+
+    success = adbCloseRun( adbHd );
+
+    adbFree( adbHd );
+    //std::cout << "FINISH ACUSIMREAD\n";
 #endif
 }
 
