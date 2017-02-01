@@ -1,4 +1,4 @@
-#include "mixedelasticity.hpp"
+#include "../feel/feelmodels/hdg/mixedelasticity.hpp"
 
 using namespace Feel;
 
