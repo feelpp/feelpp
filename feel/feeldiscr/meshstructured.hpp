@@ -57,8 +57,9 @@ class MeshStructured: public Mesh<Hypercube<2>>
     //!
     //!
     //!
-    MeshStructured( int nx, int ny, double pixelsize, WorldComm const& );
-    MeshStructured( int nx, int ny,holo3_image<float> cx,holo3_image<float> cy, WorldComm const& );
+    //MeshStructured( int nx, int ny, double pixelsize, WorldComm const& );
+    MeshStructured( int nx, int ny, double pixelsize, holo3_image<float> cx, holo3_image<float> cy, WorldComm const&, bool withCoord );
+    //MeshStructured( int nx, int ny,holo3_image<float> cx,holo3_image<float> cy, WorldComm const& );
 
     void updateGhostCellInfoByUsingNonBlockingComm(
         std::map<int,int> const& idStructuredMeshToFeelMesh,

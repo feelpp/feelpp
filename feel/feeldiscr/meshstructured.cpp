@@ -26,11 +26,13 @@
 
 namespace Feel {
 
-MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm const& wc = Environment::worldComm() )
+MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<float> cx, holo3_image<float> cy, WorldComm const& wc = Environment::worldComm(), bool withCoord = false )
     :
     super( wc ),
     M_nx( nx ),
     M_ny( ny ),
+    M_cx( cx ),
+    M_cy( cy ),
     M_pixelsize( pixelsize )
 {
     VLOG(1) << "nx x ny = " << nx << " x " << ny << "\t" << nx*ny << std::endl;
@@ -76,171 +78,16 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
         for( int i = 0 ; i < M_nx; ++i )
         {
             int ptid = (M_ny)*i+j;
-            coords[0]=M_pixelsize*j;
-            coords[1]=M_pixelsize*i;
-            point_type pt( ptid,coords );
-            pt.setProcessId( partId );
-            pt.setProcessIdInPartition( partId );
-            this->addPoint( pt );
-        }
-    }
-
-    // ghost points (not belong to active partition)
-    std::vector<size_type> ghostPointColDesc;
-    if ( partId > 0 )
-        ghostPointColDesc.push_back( startColPtId[partId]-1 );
-    if ( partId < (nProc-1) )
-        ghostPointColDesc.push_back( startColPtId[partId]+nPtByCol[partId] );
-    for ( int j : ghostPointColDesc )
-    {
-        for( int i = 0 ; i < M_nx; ++i )
-        {
-            int ptid = (M_ny)*i+j;
-            coords[0]=M_pixelsize*j;
-            coords[1]=M_pixelsize*i;
-            point_type pt( ptid,coords );
-            pt.setProcessId( invalid_rank_type_value );
-            pt.setProcessIdInPartition( partId  );
-            this->addPoint( pt );
-        }
-    }
-
-    // active elements
-    size_type startColPtIdForElt = startColPtId[partId];
-    size_type stopColPtIdForElt = startColPtId[partId]+(nPtByCol[partId]-1);
-    for( int j = startColPtIdForElt ; j < stopColPtIdForElt; ++j )
-    {
-        rank_type neighborProcessId = invalid_rank_type_value;
-        if ( partId > 0 )
-            if ( j == startColPtIdForElt )
-                neighborProcessId=partId-1;
-        if ( partId < (nProc-1) )
-            if ( j == (stopColPtIdForElt-1) )
-                neighborProcessId=partId+1;
-
-        for( int i = 0 ; i < M_nx-1; ++i )
-        {
-            size_type eid = (M_ny-1)*i+j; // StructuredMesh Id
-            element_type e;
-            e.setProcessIdInPartition( partId );
-            e.setProcessId( partId );
-            size_type ptid[4] = { (M_ny)*(i+1)+j,   // 0
-                                  (M_ny)*(i+1)+j+1, // 1
-                                  (M_ny)*i+j+1,     // 2
-                                  (M_ny)*i+j     }; // 3
-
-            for( uint16_type k = 0; k < 4; ++k )
-                e.setPoint( k, this->point( ptid[k]  ) );
-            if ( neighborProcessId != invalid_rank_type_value )
-                e.addNeighborPartitionId( neighborProcessId );
-
-            auto const& eltInserted = this->addElement( e, true ); // e.id() is defined by Feel++
-            idStructuredMeshToFeelMesh.insert( std::make_pair(eid,eltInserted.id()));
-        }
-    }
-
-    // ghost elements (touch active partition with a point)
-    std::vector<std::pair<size_type,rank_type> > ghostEltColDesc;
-    if ( partId > 0 )
-        ghostEltColDesc.push_back( std::make_pair( startColPtId[partId]-1, partId-1) );
-    if ( partId < (nProc-1) )
-        ghostEltColDesc.push_back( std::make_pair( startColPtId[partId]+nPtByCol[partId]-1, partId+1) );
-    for ( auto const& ghostEltCol : ghostEltColDesc )
-    {
-        int j = ghostEltCol.first;
-        rank_type partIdGhost = ghostEltCol.second;
-        for( int i = 0 ; i < M_nx-1; ++i )
-        {
-            size_type eid = (M_ny-1)*i+j; // StructuredMesh Id
-            element_type e;
-            e.setProcessIdInPartition( partId );
-            e.setProcessId( partIdGhost );
-
-            size_type ptid[4] = { (M_ny)*(i+1)+j,   // 0
-                                  (M_ny)*(i+1)+j+1, // 1
-                                  (M_ny)*i+j+1,     // 2
-                                  (M_ny)*i+j     }; // 3
-
-            for( uint16_type k = 0; k < 4; ++k )
+            if ( withCoord )
             {
-                CHECK( this->hasPoint( ptid[k] ) ) << "mesh doesnt have this point id : " << ptid[k];
-                e.setPoint( k, this->point( ptid[k]  ) );
-            }
-
-            auto const& eltInserted = this->addElement( e, true ); // e.id() is defined by Feel++
-
-            idStructuredMeshToFeelMesh.insert( std::make_pair(eid,eltInserted.id()));
-            mapGhostElt.insert( std::make_pair( eid,boost::make_tuple( idStructuredMeshToFeelMesh[eid], partIdGhost ) ) );
-        }
-    }
-
-    std::vector<int> nbMsgToRecv(nProc,0);
-    // ghost elts on left
-    if ( partId > 0 )
-        nbMsgToRecv[partId-1] = 1;
-    // ghost elts on right
-    if ( partId < (nProc-1) )
-        nbMsgToRecv[partId+1] = 1;
-
-    this->updateGhostCellInfoByUsingNonBlockingComm( idStructuredMeshToFeelMesh,mapGhostElt,nbMsgToRecv );
-
-}
-
-
-
-MeshStructured::MeshStructured( int nx, int ny, holo3_image<float> cx, holo3_image<float> cy, WorldComm const& wc = Environment::worldComm() )
-    :
-    super( wc ),
-    M_nx( nx ),
-    M_ny( ny ),
-    M_cx( cx ),
-    M_cy( cy )
-{
-    VLOG(1) << "nx x ny = " << nx << " x " << ny << "\t" << nx*ny << std::endl;
-
-    rank_type nProc = wc.localSize();
-    rank_type partId = wc.localRank();
-
-    // compute parallel distribution with column scheme partitioning
-    size_type nTotalPointsByCol = M_ny + (nProc-1);
-    size_type nPtByColByProc = ( M_ny + (nProc-1))/nProc;
-    if ( nTotalPointsByCol <= nPtByColByProc*(nProc-1) )
-        --nPtByColByProc;
-    std::vector<size_type> nPtByCol(nProc,nPtByColByProc);
-    if ( nPtByColByProc*nProc < nTotalPointsByCol )
-    {
-        size_type nPointToDistribute = nTotalPointsByCol - nPtByColByProc*nProc;
-        for ( size_type k=0;k<nPointToDistribute;++k )
-        {
-            if ( k < nProc )
-                ++nPtByCol[nProc-1-k];
-        }
-    }
-    std::vector<size_type> startColPtId(nProc,0);
-    for (rank_type p=1;p<nProc;++p )
-        startColPtId[p]=startColPtId[p-1]+(nPtByCol[p-1]-1);
-
-#if 0
-    if ( this->worldComm().isMasterRank() )
-    {
-        std::cout<< "startColPtId : ";
-        for (int p=0;p<nProc;++p )
-            std::cout << " " << startColPtId[p] << "(" << nPtByCol[p] << ") ";
-        std::cout<< "\n";
-    }
-#endif
-    std::map<int,boost::tuple<int,rank_type> > mapGhostElt;
-    std::map<int,int> idStructuredMeshToFeelMesh;
-    node_type coords( 2 );
-
-    // active points
-    for( int j = startColPtId[partId] ; j < startColPtId[partId]+nPtByCol[partId]; ++j )
-    {
-        for( int i = 0 ; i < M_nx; ++i )
-        {
-            int ptid = (M_ny)*i+j;
             coords[0]=M_cy(j,i);
             coords[1]=M_cx(j,i);
+            }
+            else
+            {
+            coords[0]=M_pixelsize*j;
+            coords[1]=M_pixelsize*i;
+            }
             point_type pt( ptid,coords );
             pt.setProcessId( partId );
             pt.setProcessIdInPartition( partId );
@@ -259,8 +106,16 @@ MeshStructured::MeshStructured( int nx, int ny, holo3_image<float> cx, holo3_ima
         for( int i = 0 ; i < M_nx; ++i )
         {
             int ptid = (M_ny)*i+j;
+            if ( withCoord )
+            {
             coords[0]=M_cy(j,i);
             coords[1]=M_cx(j,i);
+            }
+            else
+            {
+            coords[0]=M_pixelsize*j;
+            coords[1]=M_pixelsize*i;
+            }
             point_type pt( ptid,coords );
             pt.setProcessId( invalid_rank_type_value );
             pt.setProcessIdInPartition( partId  );
