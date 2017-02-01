@@ -41,55 +41,55 @@ feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_I
 #   endforeach()
 #endforeach()
 
-foreach(D RANGE 1 3 1)
- foreach(P  RANGE 0 4 1) #3 
-    feelpp_add_application( mixed-poisson2-model_${D}DP${P}
-    SRCS mixedpoisson2_main.cpp mixedpoisson2.hpp
-    LINK_LIBRARIES feelpp_modelcore
-    DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P})
-  endforeach()
-endforeach()
+# foreach(D RANGE 1 3 1)
+#  foreach(P  RANGE 0 4 1) #3 
+#     feelpp_add_application( mixed-poisson2-model_${D}DP${P}
+#     SRCS mixedpoisson2_main.cpp mixedpoisson2.hpp
+#     LINK_LIBRARIES feelpp_modelcore
+#     DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P})
+#   endforeach()
+# endforeach()
 
-foreach(D RANGE 1 3 1)
-  foreach(P RANGE 0 4 1) #3
-    foreach(N RANGE 1 2 1)
-      foreach(E RANGE 2 4 1)
-        feelpp_add_application( conv_${D}DP${P}G${N}E${E}
-                                SRCS conv_main.cpp
-                                DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_EXP_ORDER=${E}
-                                INCLUDE_IN_ALL
-                                LINK_LIBRARIES feelpp_modelcore )
-      endforeach()
-    endforeach() 
-  endforeach()
-endforeach()
+# foreach(D RANGE 1 3 1)
+#   foreach(P RANGE 0 4 1) #3
+#     foreach(N RANGE 1 2 1)
+#       foreach(E RANGE 2 4 1)
+#         feelpp_add_application( conv_${D}DP${P}G${N}E${E}
+#                                 SRCS conv_main.cpp
+#                                 DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_EXP_ORDER=${E}
+#                                 INCLUDE_IN_ALL
+#                                 LINK_LIBRARIES feelpp_modelcore )
+#       endforeach()
+#     endforeach() 
+#   endforeach()
+# endforeach()
 
 
-foreach(D 3)
-  foreach(P  RANGE 0 4 0) #3 
-	foreach (N RANGE 1 2 1)
-	  feelpp_add_application( mixed-elasticity-model_${D}DP${P}_G${N} 
-							SRCS mixedelasticity_main.cpp mixedelasticity.hpp 
-							DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N}
-							INCLUDE_IN_ALL
-							LINK_LIBRARIES feelpp_modelcore )
-	endforeach()
-  endforeach()
-endforeach()
+# foreach(D 3)
+#   foreach(P  RANGE 0 4 0) #3 
+# 	foreach (N RANGE 1 2 1)
+# 	  feelpp_add_application( mixed-elasticity-model_${D}DP${P}_G${N} 
+# 							SRCS mixedelasticity_main.cpp mixedelasticity.hpp 
+# 							DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N}
+# 							INCLUDE_IN_ALL
+# 							LINK_LIBRARIES feelpp_modelcore )
+# 	endforeach()
+#   endforeach()
+# endforeach()
 
-foreach(D 3)
-  foreach(P RANGE 0 4 0) #3
-    foreach(N RANGE 1 2 1)
-      foreach(E 4)
-        feelpp_add_application( elasticity_conv_${D}DP${P}G${N}E${E}
-                                SRCS convelasticity_main.cpp
-                                DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_EXP_ORDER=${E}
-                                INCLUDE_IN_ALL
-                                LINK_LIBRARIES feelpp_modelcore )
-      endforeach()
-    endforeach() 
-  endforeach()
-endforeach()
+# foreach(D 3)
+#   foreach(P RANGE 0 4 0) #3
+#     foreach(N RANGE 1 2 1)
+#       foreach(E 4)
+#         feelpp_add_application( elasticity_conv_${D}DP${P}G${N}E${E}
+#                                 SRCS convelasticity_main.cpp
+#                                 DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_EXP_ORDER=${E}
+#                                 INCLUDE_IN_ALL
+#                                 LINK_LIBRARIES feelpp_modelcore )
+#       endforeach()
+#     endforeach() 
+#   endforeach()
+# endforeach()
 
 
 feelpp_add_application( mixed-stokes SRCS mixedstokes.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=1)

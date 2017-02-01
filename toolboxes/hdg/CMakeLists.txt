@@ -23,3 +23,24 @@
 #
 
 #feelpp_add_application( hdg_darcy main.cpp )
+
+foreach(D RANGE 1 3 1)
+    foreach(P RANGE 0 4 1) #3 
+        feelpp_add_application( mixed-poisson2-model_${D}DP${P}
+                                SRCS mixedpoisson2_main.cpp
+                                LINK_LIBRARIES feelpp_modelcore
+                                DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P})
+  endforeach()
+endforeach()
+
+foreach(D 3)
+  foreach(P  RANGE 0 4 0) #3 
+	foreach (N RANGE 1 2 1)
+	  feelpp_add_application( mixed-elasticity-model_${D}DP${P}_G${N} 
+							SRCS mixedelasticity_main.cpp 
+							DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N}
+							INCLUDE_IN_ALL
+							LINK_LIBRARIES feelpp_modelcore )
+	endforeach()
+  endforeach()
+endforeach()
