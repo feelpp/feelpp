@@ -1297,17 +1297,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
         auto u = this->fieldAdvectionVelocityPtr();
         auto NxN = idv(this->N()) * trans(idv(this->N()));
         auto Du = sym( gradv(u) );
-        //M_stretchAdvection->updateAdvectionVelocity( idv(u) );
-        auto u_smoothed = this->smootherVectorial()->project( idv(u) );
-        M_stretchAdvection->updateAdvectionVelocity( idv(u_smoothed) );
-        //M_stretchAdvection->updateReactionCoeff( inner(NxN, Du) );
-        auto NxNDu = this->smoother()->project( inner(NxN, Du) );
+        M_stretchAdvection->updateAdvectionVelocity( idv(u) );
+        M_stretchAdvection->updateReactionCoeff( inner(NxN, Du) );
+        //auto NxNDu = this->smoother()->project( inner(NxN, Du) );
         //auto NxNDu = vf::project( 
                 //_space=M_stretchAdvection->functionSpace(),
                 //_range=elements(M_stretchAdvection->mesh()),
                 //_expr=inner(NxN, Du) 
                 //);
-        M_stretchAdvection->updateReactionCoeff( idv(NxNDu) );
+        //M_stretchAdvection->updateReactionCoeff( idv(NxNDu) );
         //M_stretchAdvection->updateSourceAdded(
                 //- idv(modGradPhi) * inner( NxN, Du)
                 //);
