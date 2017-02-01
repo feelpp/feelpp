@@ -139,6 +139,13 @@ public:
 #endif
 
     //--------------------------------------------------------------------//
+    // Stretch and shear types
+    typedef element_levelset_type element_stretch_type;
+    typedef element_levelset_ptrtype element_stretch_ptrtype;
+    typedef element_levelset_type element_shear_type;
+    typedef element_levelset_ptrtype element_shear_ptrtype;
+
+    //--------------------------------------------------------------------//
     // Projectors
     typedef Projector<space_levelset_type, space_levelset_type> projector_levelset_type;
     typedef boost::shared_ptr<projector_levelset_type> projector_levelset_ptrtype;
