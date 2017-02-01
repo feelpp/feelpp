@@ -67,6 +67,7 @@ empty_ptree()
     return t;
 }
 
+inline
 std::string
 markerNameFromAcusimName( std::string const& acusimName, std::string const& elementTypeName, std::string const& sepChar = " " )
 {
