@@ -466,11 +466,26 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::initModel()
             }
             cout << std::endl;
         }
-	 
+        
         itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
         {
             cout << "Neumann:";
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                if ( M_mesh->hasFaceMarker(marker) )
+                    cout << " " << marker;
+                else
+                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+            }
+            cout << std::endl;
+        }
+	 
+        itType = mapField.find( "Neumann_exact" );
+        if ( itType != mapField.end() )
+        {
+            cout << "Neumann computed from displacement:";
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
@@ -958,7 +973,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 					    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
 		    }
 	    }
-	    itType = mapField.find( "Neumann_scalar" );
+	    itType = mapField.find( "Neumann_exact" );
 	    if ( itType != mapField.end() )
 	    {
 		    for ( auto const& exAtMarker : (*itType).second )
@@ -1015,31 +1030,42 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
             for ( auto const& exAtMarker : (*itType).second )
             {
 				auto marker = exAtMarker.marker();
-                auto g = expr<Dim,Dim,expr_order> (exAtMarker.expression());
+                auto g = expr<Dim,1,expr_order> (exAtMarker.expression());
 				if ( !this->isStationary() )
                     g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
 			cout << "Neumann condition on " << marker << ": " << g << std::endl;
 			blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
-									_expr=trans(id(m))*(g*N()));
-		}
-	}	
-	itType = mapField.find("Neumann_scalar");
-	if ( itType != mapField.end() )
-	{
-		for ( auto const& exAtMarker : (*itType).second )
-		{
-			auto marker = exAtMarker.marker();
-			auto g = expr<expr_order>(exAtMarker.expression());
-			if ( !this->isStationary() )
-                    g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
-                // auto g = expr<Dim,Dim> ( scalar*eye<Dim,Dim>() );
-				cout << "Neumann scalar condition on " << marker << ": " << g << std::endl;
-				blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
-									    _expr=trans(id(m))*(eye<Dim,Dim>()*g*N()));
+									_expr=trans(id(m))* g );
             }
-		}
-    } 
+		}	
+	    
+        itType = mapField.find("Neumann_exact");
+	    if ( itType != mapField.end() )
+	    {
+		    for ( auto const& exAtMarker : (*itType).second )
+		    {
+			    auto marker = exAtMarker.marker();
+			    auto g = expr<Dim,1, expr_order>(exAtMarker.expression());
+			    if ( !this->isStationary() )
+                    g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
+                 
+			    for( auto const& pairMat : M_modelProperties->materials() )
+			    {
+				    auto gradu_exact = grad( g );
+				    auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
+			        auto material = pairMat.second;
+				    auto lambda = expr(material.getScalar("lambda"));
+				    auto mu = expr(material.getScalar("mu"));
+				    auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
 
+	    			cout << "Neumann condition computed from displacement on " << marker << std::endl;
+		    		blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+			    						    _expr=trans(id(m)) * sigma_exact *N() );
+                }
+            }
+	    }
+    } 
+    
     itField = M_modelProperties->boundaryConditions().find("displacement");
     if (itField != M_modelProperties->boundaryConditions().end() )
     {
@@ -1129,7 +1155,7 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                 M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXY"), SXY );
                 M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYZ"), SYZ );
                 M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXZ"), SXZ );
-         		M_exporter->step(time)->add(prefixvm(M_prefix, "stress"), Idhv?(*Idhv)( M_up):M_up );
+         		// M_exporter->step(time)->add(prefixvm(M_prefix, "stress"), Idhv?(*Idhv)( M_up):M_up );
          
 
 
@@ -1227,8 +1253,26 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
 									auto mu = expr(material.getScalar("mu"));
 									auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
 
-									auto export_sigmaEX = project( _space=M_Vh, _range=elements(M_mesh), _expr=sigma_exact); 
-									M_exporter->add(prefixvm(M_prefix, "sigma_exact"), Idhv?(*Idhv)( export_sigmaEX): export_sigmaEX );
+									// EXPORT SIGMA EXACT
+                                    auto export_sigmaEX = project( _space=M_Vh, _range=elements(M_mesh), _expr=sigma_exact); 
+				
+                                    auto Sh = Pch<Order> (M_mesh);
+                                    auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
+                                    auto SXX = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::X, Component::X)) );
+                                    auto SYY = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::Y, Component::Y)) );
+                                    auto SZZ = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::Z, Component::Z)) );
+
+                                    auto SXY = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::X, Component::Y)) );
+                                    auto SYZ = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::Y, Component::Z)) );
+                                    auto SXZ = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::X, Component::Z)) );
+
+                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXX"), SXX );
+                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactYY"), SYY );
+                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactZZ"), SZZ );
+                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXY"), SXY );
+                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactYZ"), SYZ );
+                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXZ"), SXZ );
+                					// M_exporter->add(prefixvm(M_prefix, "sigma_exact"), Idhv?(*Idhv)( export_sigmaEX): export_sigmaEX );
 
 									auto l2err_sigma = normL2( _range=elements(M_mesh), _expr=sigma_exact - idv(M_up) );
 									auto l2norm_sigmaex = normL2( _range=elements(M_mesh), _expr=sigma_exact );
