@@ -46,7 +46,7 @@ makeMixedElasticityOptions( std::string prefix = "mixedelasticity" )
         ( "mu", po::value<std::string>()->default_value( "1" ), "mu" )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ( prefixvm( prefix,"tau_constant").c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
-        ( prefixvm( prefix,"tau_order").c_str(), po::value<int>()->default_value( -1 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
+        ( prefixvm( prefix,"tau_order").c_str(), po::value<int>()->default_value( 1 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")           
         ;
     mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
@@ -599,7 +599,7 @@ void MixedElasticity<Dim, Order, G_Order, E_Order>::assembleMatrixIBC( int i , s
 
     auto bbf = blockform2( *M_ps, M_A_cst);
 
-    auto sigma = M_Vh->element( "sigma" );
+    auto v = M_Vh->element( "v" );
     auto u = M_Wh->element( "u" );
     auto w = M_Wh->element( "w" );
     auto nu = M_Ch->element( "nu" );
@@ -634,33 +634,24 @@ void MixedElasticity<Dim, Order, G_Order, E_Order>::assembleMatrixIBC( int i , s
 
     
     // <lambda, v.n>_Gamma_I
-    bbf( 0_c, 3_c, 0, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=inner(id(sigma)*N(),idt(uI)) );
-
-    // <lambda, tau w>_Gamma_I
-    bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=-tau_constant * pow(idv(H),M_tau_order)*inner(id(w),idt(uI)) );
-            // trans(id(w)) ) * idt(nu) );
+    bbf( 0_c, 3_c, 0, i) += integrate( _range=markedfaces(M_mesh, marker), _expr=-trans(idt(uI))*(id(v)*N()) );
     
+    // <lambda, tau w>_Gamma_I
+    bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(M_mesh,marker), _expr= tau_constant * trans(idt(uI)) * pow(idv(H),M_tau_order)*id(w) );
     
     // <sigma.n, m>_Gamma_I
-    bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), 
-                                        _expr= inner(idt(sigma)*N(),id(nu)) );
-            // trans(idt(sigma)*N())*id(nu) );
-    
-    
-/*
+    bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), _expr= inner(idt(v)*N(),id(nu)) );
+     
+
     // <tau u, m>_Gamma_I
     bbf( 3_c, 1_c, i, 1 ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=-tau_constant * pow(idv(H),M_tau_order)* inner(idt(u),id(nu)) ),
-                //trans(idt(u)) ) * id(nu) );
+                                        _expr= tau_constant * pow(idv(H),M_tau_order)* inner(idt(u),id(nu)) ),
 
     // -<lambda2, m>_Gamma_I
     bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr= tau_constant * pow(idv(H),M_tau_order) * inner(idt(uI),id(nu)) );
-                // *trans(id(nu))) *idt(uI) );
+                                        _expr=-tau_constant * pow(idv(H),M_tau_order) * inner(idt(uI),id(nu)) );
     
-*/
+
 
 }
 
