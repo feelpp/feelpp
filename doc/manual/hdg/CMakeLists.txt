@@ -72,10 +72,6 @@ feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_I
 feelpp_add_application( mixed-stokes SRCS mixedstokes.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=1)
 
 feelpp_add_testcase(quarter-turn)
-feelpp_add_testcase(bitter)
-feelpp_add_testcase(cylinder)
-feelpp_add_testcase(testDarcy)
-feelpp_add_testcase(mixed-poisson)
 feelpp_add_testcase(lamina-cribrosa)
 feelpp_add_testcase(mixed-elasticity)
 feelpp_add_testcase(kovasznay)
