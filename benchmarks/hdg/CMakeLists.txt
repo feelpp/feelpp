@@ -95,3 +95,5 @@ foreach(D RANGE 1 3 1)
     endforeach() 
   endforeach()
 endforeach()
+
+feelpp_add_testcase(cvg-tests)

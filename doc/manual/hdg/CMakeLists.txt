@@ -41,29 +41,6 @@ feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_I
 #   endforeach()
 #endforeach()
 
-# foreach(D RANGE 1 3 1)
-#  foreach(P  RANGE 0 4 1) #3 
-#     feelpp_add_application( mixed-poisson2-model_${D}DP${P}
-#     SRCS mixedpoisson2_main.cpp mixedpoisson2.hpp
-#     LINK_LIBRARIES feelpp_modelcore
-#     DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P})
-#   endforeach()
-# endforeach()
-
-# foreach(D RANGE 1 3 1)
-#   foreach(P RANGE 0 4 1) #3
-#     foreach(N RANGE 1 2 1)
-#       foreach(E RANGE 2 4 1)
-#         feelpp_add_application( conv_${D}DP${P}G${N}E${E}
-#                                 SRCS conv_main.cpp
-#                                 DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_EXP_ORDER=${E}
-#                                 INCLUDE_IN_ALL
-#                                 LINK_LIBRARIES feelpp_modelcore )
-#       endforeach()
-#     endforeach() 
-#   endforeach()
-# endforeach()
-
 
 # foreach(D 3)
 #   foreach(P  RANGE 0 4 0) #3 
@@ -102,5 +79,4 @@ feelpp_add_testcase(mixed-poisson)
 feelpp_add_testcase(lamina-cribrosa)
 feelpp_add_testcase(mixed-elasticity)
 feelpp_add_testcase(kovasznay)
-feelpp_add_testcase(cvg-tests)
 feelpp_add_testcase(cvg-el-tests)
