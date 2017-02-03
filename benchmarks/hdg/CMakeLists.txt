@@ -23,6 +23,7 @@
 #
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_SOURCE_DIR}/toolboxes)
 
 # Laplacian
 foreach( dim 2 3)
@@ -80,3 +81,17 @@ foreach( dim 2 3)
   endforeach() # order
 endforeach() # dim
 # endforeach() # geom
+
+foreach(D RANGE 1 3 1)
+  foreach(P RANGE 0 4 1) #3
+    foreach(N RANGE 1 2 1)
+      foreach(E RANGE 2 4 1)
+        feelpp_add_application( conv_${D}DP${P}G${N}E${E}
+                                SRCS conv_main.cpp conv.hpp
+                                DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_EXP_ORDER=${E}
+                                # INCLUDE_IN_ALL
+                                LINK_LIBRARIES feelpp_modelcore )
+      endforeach()
+    endforeach() 
+  endforeach()
+endforeach()

@@ -1,4 +1,4 @@
-#include "mixedpoisson2.hpp"
+#include "feel/feelmodels/hdg/mixedpoisson2.hpp"
 
 namespace Feel {
 
@@ -136,7 +136,7 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::assembleExact()
     {
         if( M_mesh->hasFaceMarker(marker))
         {
-            M_model->assembleDirichlet(M_p_exact, marker);
+            M_model->assembleRhsDirichlet(M_p_exact, marker);
             Feel::cout << "add Dirichlet on " << marker << std::endl;
         }
         else
@@ -148,7 +148,7 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::assembleExact()
     {
         if( M_mesh->hasFaceMarker(marker))
         {
-            M_model->assembleNeumann( -cond*grad_p_exact*N(), marker);
+            M_model->assembleRhsNeumann( -cond*grad_p_exact*N(), marker);
             Feel::cout << "add Neumann on " << marker << std::endl;
         }
         else
@@ -163,7 +163,7 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::assembleExact()
         {
             double intjn = integrate(_range=markedfaces(M_mesh,marker), _expr=inner(u_exact,N())).evaluate()(0,0);
             // double intjn = -std::log(2)/(2.*boost::math::constants::pi<double>());
-            M_model->assembleIBC(i++, marker, intjn);
+            M_model->assembleRhsIBC(i++, marker, intjn);
             Feel::cout << "add ibc on " << marker << " with value of " << intjn << std::endl;
         }
         else
