@@ -251,6 +251,11 @@ private:
     void setSlepcDimensions();
 
     /**
+     * set the preconditionner solver package
+     */
+    void setSlepcPCSolverPackage();
+
+    /**
      * Eigenproblem solver context
      */
     EPS M_eps;

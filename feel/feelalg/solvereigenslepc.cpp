@@ -389,6 +389,9 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
     ierr = EPSSetFromOptions ( M_eps );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
+    if( boption("solvereigen.pc-package-mumps") )
+        setSlepcPCSolverPackage();
+
     // Solve the eigenproblem.
     ierr = EPSSolve ( M_eps );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
@@ -800,31 +803,41 @@ SolverEigenSlepc<T>:: setSlepcDimensions()
 
         ierr = PCSetType(pc,PCCHOLESKY);
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
-
-        if( boption("solvereigen.pc-package-mumps") )
-        {
-#ifdef USE_COMPLEX_NUMBERS
-            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Spectrum slicing with MUMPS is not available for complex scalars");
-#endif
-            // EPSKrylovSchurSetDetectZeros(eps,PETSC_TRUE);  /* enforce zero detection */
-            ierr = PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);
-            CHKERRABORT( PETSC_COMM_WORLD,ierr );
-            /*
-             Add several MUMPS options (currently there is no better way of setting this in program):
-             '-mat_mumps_icntl_13 1': turn off ScaLAPACK for matrix inertia
-             '-mat_mumps_icntl_24 1': detect null pivots in factorization (for the case that a shift is equal to an eigenvalue)
-             '-mat_mumps_cntl_3 <tol>': a tolerance used for null pivot detection (must be larger than machine epsilon)
-
-             Note: depending on the interval, it may be necessary also to increase the workspace:
-             '-mat_mumps_icntl_14 <percentage>': increase workspace with a percentage (50, 100 or more)
-             */
-#if PETSC_VERSION_LESS_THAN(3,7,0)
-            PetscOptionsInsertString("-mat_mumps_icntl_13 1");
-#else
-            PetscOptionsInsertString(NULL,"-mat_mumps_icntl_13 1");
-#endif
-        }
     }
+}
+
+template <typename T>
+void
+SolverEigenSlepc<T>::setSlepcPCSolverPackage()
+{
+    int ierr = 0;
+    ST st;
+    ierr = EPSGetST ( M_eps, &st );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    KSP ksp;
+    ierr = STGetKSP(st,&ksp);
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    PC pc;
+    ierr = KSPGetPC(ksp,&pc);
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+    // EPSKrylovSchurSetDetectZeros(eps,PETSC_TRUE);  /* enforce zero detection */
+    ierr = PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    /*
+     Add several MUMPS options (currently there is no better way of setting this in program):
+     '-mat_mumps_icntl_13 1': turn off ScaLAPACK for matrix inertia
+     '-mat_mumps_icntl_24 1': detect null pivots in factorization (for the case that a shift is equal to an eigenvalue)
+     '-mat_mumps_cntl_3 <tol>': a tolerance used for null pivot detection (must be larger than machine epsilon)
+
+     Note: depending on the interval, it may be necessary also to increase the workspace:
+     '-mat_mumps_icntl_14 <percentage>': increase workspace with a percentage (50, 100 or more)
+     */
+    // #if PETSC_VERSION_LESS_THAN(3,7,0)
+    //         PetscOptionsInsertString("-mat_mumps_icntl_13 1");
+    // #else
+    //         PetscOptionsInsertString(NULL,"-mat_mumps_icntl_13 1");
+    // #endif
 }
 
 template <typename T>
