@@ -29,6 +29,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/feelslepc.hpp>
 #include <feel/feelalg/solvereigenslepc.hpp>
+#include <feel/feelalg/functionspetsc.hpp>
 
 namespace Feel
 {
@@ -376,6 +377,7 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
     setSlepcPositionOfSpectrum();
     setSlepcSpectralTransform();
     setSlepcDimensions();
+    setSlepcEPSTarget();
 
     // Set the tolerance and maximum iterations.
     ierr = EPSSetTolerances ( M_eps, this->tolerance(), this->maxIterations() );
@@ -389,8 +391,7 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
     ierr = EPSSetFromOptions ( M_eps );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
-    if( boption("solvereigen.pc-package-mumps") )
-        setSlepcPCSolverPackage();
+    setSlepcPCSolverPackage();
 
     // Solve the eigenproblem.
     ierr = EPSSolve ( M_eps );
@@ -822,8 +823,10 @@ SolverEigenSlepc<T>::setSlepcPCSolverPackage()
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     // EPSKrylovSchurSetDetectZeros(eps,PETSC_TRUE);  /* enforce zero detection */
-    ierr = PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    MatSolverPackageType matsp = matSolverPackageConvertStrToEnum(soption("solvereigen.st-pc-factor-mat-solver-package-type"));
+    Feel::PetscPCFactorSetMatSolverPackage( pc, matsp);
+    // ierr = PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);
+    // CHKERRABORT( PETSC_COMM_WORLD,ierr );
     /*
      Add several MUMPS options (currently there is no better way of setting this in program):
      '-mat_mumps_icntl_13 1': turn off ScaLAPACK for matrix inertia
@@ -838,6 +841,19 @@ SolverEigenSlepc<T>::setSlepcPCSolverPackage()
     // #else
     //         PetscOptionsInsertString(NULL,"-mat_mumps_icntl_13 1");
     // #endif
+}
+
+template <typename T>
+void
+SolverEigenSlepc<T>::setSlepcEPSTarget()
+{
+    double target = doption("solvereigen.eps-target");
+    if ( !isnan( target) )
+    {
+        int ierr = 0;
+        ierr = EPSSetTarget( M_eps, target);
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    }
 }
 
 template <typename T>
