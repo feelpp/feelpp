@@ -44,7 +44,7 @@ Here are the latest releases of Feel++
 
 == Documentation
 
- * develop branch : link:http://doc.feelpp.org[Feel++ Online Reference Manual]
+ * develop branch : link:http://book.feelpp.org[Feel++ Book]
 
 == Features
 
