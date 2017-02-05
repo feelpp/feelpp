@@ -18,7 +18,7 @@ image:https://badges.gitter.im/Join%20Chat.svg["Join the chat at", https://gitte
 | image:https://travis-ci.org/feelpp/feelpp.svg?branch=develop["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
 | Buildkite Ubuntu 16.10 
 |  
-| image:https://badge.buildkite.com/d7458430a2dad5ee7747a259681a82bc4ad7c6eabfa1632232.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp-ubuntu-16-dot-10"] 
+| image:https://badge.buildkite.com/d7458430a2dad5ee7747a259681a82bc4ad7c6eabfa1632232.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"] 
 |===
 
 == Introduction
