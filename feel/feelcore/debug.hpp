@@ -31,7 +31,9 @@
 
 #include <feel/feelcore/feelmacros.hpp>
 
-
+#if defined( FEELPP_DOXYGEN_INVOKED )
+// disable this document in doxygen
+#else
 namespace Feel
 {
 class DebugStream;
@@ -86,6 +88,10 @@ private:
 #endif
 } // end namespace detail
 
+//!
+//! @ingroup Core
+//! @deprecated
+//!
 class DebugStream
 {
 public:
@@ -345,5 +351,6 @@ Feel::DebugStream& perror( Feel::DebugStream& s );
 Feel::DebugStream& endl( Feel::DebugStream& s );
 Feel::DebugStream& flush( Feel::DebugStream& );
 
+#endif // FEELPP_DOXYGEN_INVOKED
 
 #endif /* __Debug_H */
