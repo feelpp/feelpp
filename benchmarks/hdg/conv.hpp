@@ -136,6 +136,7 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::assembleExact()
     {
         if( M_mesh->hasFaceMarker(marker))
         {
+            M_model->assembleDirichlet(marker);
             M_model->assembleRhsDirichlet(M_p_exact, marker);
             Feel::cout << "add Dirichlet on " << marker << std::endl;
         }
@@ -148,6 +149,7 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::assembleExact()
     {
         if( M_mesh->hasFaceMarker(marker))
         {
+            M_model->assembleNeumann( marker);
             M_model->assembleRhsNeumann( -cond*grad_p_exact*N(), marker);
             Feel::cout << "add Neumann on " << marker << std::endl;
         }
