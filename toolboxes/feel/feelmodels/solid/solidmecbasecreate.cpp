@@ -935,6 +935,13 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initTimeStep()
     {
         if (this->isStandardModel())
         {
+            if ( Environment::vm().count(prefixvm(this->prefix(),"time-initial.displacement.files.directory").c_str()) )
+            {
+                std::string initialDispFilename = Environment::expand( soption( _name="time-initial.displacement.files.directory",_prefix=this->prefix() ) );
+                std::string saveType = soption( _name="time-initial.displacement.files.format",_prefix=this->prefix() );
+                M_fieldDisplacement->load(_path=initialDispFilename, _type=saveType );
+            }
+
             // start time step
             M_timeStepNewmark->start(*M_fieldDisplacement);
             if ( M_useDisplacementPressureFormulation ) M_savetsPressure->start( M_XhPressure );

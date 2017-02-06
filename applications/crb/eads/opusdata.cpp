@@ -87,8 +87,8 @@ OpusData::makeOptions()
     ;
 
     return opusoptions
-           .add( makeComponentOptions() )
-           .add( bdf_options( "temperature" ) );
+        .add( makeComponentOptions() )
+        .add( feel_options( "temperature" ) );
 }
 
 OpusData::OpusData( int d )

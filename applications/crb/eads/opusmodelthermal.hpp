@@ -181,7 +181,7 @@ OpusModelThermal<SpaceType>::OpusModelThermal( po::variables_map const& _vm,
     M_c( vm["thermal.c"].template as<double>() ),
     M_stab( vm["thermal.stab"].template as<bool>() ),
 
-    M_backend( backend_type::build( vm, "thermal" ) ),
+    M_backend( backend(_name="thermal") ),
     M_D(),
     M_Dt(),
     M_M(),
@@ -259,33 +259,32 @@ OpusModelThermal<SpaceType>::update( double time,
         auto N_IC_PCB = vec( constant( -1. ),constant( 0. ) );
         LOG(INFO) << "[add discontinuous interface at boundary " << M_Xh->mesh()->markerName( "Gamma_IC1_PCB" ) << "\n";
 
-        form2( M_Xh, M_Xh, M_D ) += integrate( _range=markedfaces( M_Xh->mesh(), "Gamma_IC1_PCB" ),
-                                               _expr=M_c*( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ) );
+        form2( _test=M_Xh, _trial=M_Xh, _matrix=M_D ) += integrate( _range=markedfaces( M_Xh->mesh(), "Gamma_IC1_PCB" ),
+                                                                    _expr=M_c*( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ) );
         LOG(INFO) << "[add discontinuous interface at boundary " << M_Xh->mesh()->markerName( "Gamma_IC2_PCB" ) << "\n";
-        form2( M_Xh, M_Xh, M_D ) += integrate( _range=markedfaces( M_Xh->mesh(), "Gamma_IC2_PCB" ),
-                                               _expr=M_c*( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ) );
+        form2( _test=M_Xh, _trial=M_Xh, _matrix=M_D ) += integrate( _range=markedfaces( M_Xh->mesh(), "Gamma_IC2_PCB" ),
+                                                                    _expr=M_c*( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ) );
 #endif
 
 #if 1
 
         if ( M_stab )
-            form2( M_Xh, M_Xh, M_D ) +=
-                integrate( internalfaces( M_Xh->mesh() ),
+            form2( _test=M_Xh, _trial=M_Xh, _matrix=M_D ) +=
+                integrate( _range=internalfaces( M_Xh->mesh() ),
                            //markedfaces(M_Xh->mesh(), M_Xh->mesh()->markerName( "AIR4" )),
                            //val(this->gammaTemp()*(vf::pow(hFace(),2.0)/constant(std::pow(Order,3.5)))*
                            //     //sqrt(trans(conv_coeff)*conv_coeff))*
                            //     (abs(trans(N())*conv_coeff)))*
-                           0.*
-                           ( jumpt( gradt( u ) ) * jump( grad( w ) ) )
-                           ,_Q<2*Order>() );
+                           _expr=0.*( jumpt( gradt( u ) ) * jump( grad( w ) ) )
+                           ,_quad=_Q<2*Order>() );
 
 #endif
         BOOST_FOREACH( std::string marker, markers )
         {
             LOG(INFO) << "[add weakbc boundary terms velocity] boundary " << marker << " id : "
-                  << M_Xh->mesh()->markerName( marker ) << "\n";
+                      << M_Xh->mesh()->markerName( marker ) << "\n";
             form2( _test=M_Xh, _trial=M_Xh, _matrix=M_D ) +=
-                integrate( markedfaces( M_Xh->mesh(),marker ),
+                integrate( _range=markedfaces( M_Xh->mesh(),marker ),
                            _expr=( diff_coeff )*( -gradt( u )*N()*id( w )
                                                   -grad( w )*N()*idt( u )
                                                   +this->data()->gammaBc()*idt( u )*id( w )/hFace() ) );
@@ -293,9 +292,9 @@ OpusModelThermal<SpaceType>::update( double time,
         }
         M_D->close();
 
-        form2( M_Xh, M_Xh, M_M, _init=do_init ) =
-            integrate( elements( M_Xh->mesh() ),
-                       idt( u )*id( w ) + gradt( u )*trans( grad( w ) ),_Q<2*Order>() );
+        form2( _test=M_Xh, _trial=M_Xh, _matrix=M_M, _init=do_init ) =
+            integrate( _range=elements( M_Xh->mesh() ),
+                       _expr=idt( u )*id( w ) + gradt( u )*trans( grad( w ) ),_quad=_Q<2*Order>() );
         M_M->close();
     }
 
@@ -303,16 +302,16 @@ OpusModelThermal<SpaceType>::update( double time,
 
     if ( ( math::exp( -time/3 ) > 1e-14 ) || this->data()->isSteady() )
     {
-        form2( M_Xh, M_Xh, M_Dt, _init=do_init, _pattern=pattern );
+        form2( _test=M_Xh, _trial=M_Xh, _matrix=M_Dt, _init=do_init, _pattern=pattern );
         {
             boost::timer ti;
             // add convection
             std::vector<std::string> air_regions = boost::assign::list_of( "AIR4" )( "AIR123" );
             BOOST_FOREACH( auto region, air_regions )
             {
-                form2( M_Xh, M_Xh, M_Dt, _pattern=pattern )+=
-                    integrate( markedelements( M_Xh->mesh(),region ),
-                               ( gradt( u )*( conv_coeff ) )*id( w ) );
+                form2( _test=M_Xh, _trial=M_Xh, _matrix=M_Dt, _pattern=pattern )+=
+                    integrate( _range=markedelements( M_Xh->mesh(),region ),
+                               _expr=( gradt( u )*( conv_coeff ) )*id( w ) );
                 LOG(INFO) << "[conv terms] region:" << region << " assembly time= " << ti.elapsed() << "\n";
                 ti.restart();
 
@@ -324,14 +323,14 @@ OpusModelThermal<SpaceType>::update( double time,
         LOG(INFO) << "[add discontinuous interface at boundary "
               << M_Xh->mesh()->markerName( "Gamma_IC1_PCB" ) << "\n";
 
-        form2( M_Xh, M_Xh, M_Dt ) +=
-            integrate( markedfaces( M_Xh->mesh(), M_Xh->mesh()->markerName( "Gamma_IC1_PCB" ) ),
-                       0.*( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ),_Q<2*( Order )>() );
+        form2( _test=M_Xh, _trial=M_Xh, _matrix=M_Dt ) +=
+            integrate( _range=markedfaces( M_Xh->mesh(), M_Xh->mesh()->markerName( "Gamma_IC1_PCB" ) ),
+                       _expr=0.*( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ), _quad=_Q<2*( Order )>() );
         LOG(INFO) << "[add discontinuous interface at boundary "
               << M_Xh->mesh()->markerName( "Gamma_IC2_PCB" ) << "\n";
-        form2( M_Xh, M_Xh, M_Dt ) +=
-            integrate( markedfaces( M_Xh->mesh(), M_Xh->mesh()->markerName( "Gamma_IC2_PCB" ) ),
-                       0.*( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ), _Q<2*( Order )>() );
+        form2( _test=M_Xh, _trial=M_Xh, _matrix=M_Dt ) +=
+            integrate( _range=markedfaces( M_Xh->mesh(), M_Xh->mesh()->markerName( "Gamma_IC2_PCB" ) ),
+                       _expr=0.*( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ), _quad=_Q<2*( Order )>() );
 #endif
 
         // add stabilisation
@@ -352,13 +351,13 @@ OpusModelThermal<SpaceType>::update( double time,
             //ProfilerStart( "faces_integration_profile" );
 #endif
 
-            form2( M_Xh, M_Xh, M_Dt ) +=
+            form2( _test=M_Xh, _trial=M_Xh, _matrix=M_Dt ) +=
                 integrate( // markedfaces(M_Xh->mesh(), M_Xh->mesh()->markerName( "AIR4" )),
-                    internalfaces( M_Xh->mesh() ),
-                    val( this->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( Order,3.5 ) ) )*
+                    _range=internalfaces( M_Xh->mesh() ),
+                    _expr=val( this->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( Order,3.5 ) ) )*
                          ( abs( trans( N() )*conv_coeff ) ) )*
-                    ( jumpt( gradt( u ) ) * jump( grad( w ) ) )
-                    ,_Q<2*( Order )>() );
+                    ( jumpt( gradt( u ) ) * jump( grad( w ) ) ),
+                    _quad=_Q<2*( Order )>() );
 #if defined(FEELPP_HAS_GOOGLE_PROFILER_H )
             //ProfilerStop();
 #endif
@@ -373,7 +372,7 @@ OpusModelThermal<SpaceType>::update( double time,
 
 #endif
     // right hand side
-    form1( M_Xh, M_F, _init=do_init ) = integrate( _range=elements( M_Xh->mesh() ), _expr=( rhs_coeff )*id( w ) );
+    form1( _test=M_Xh, _vector=M_F, _init=do_init ) = integrate( _range=elements( M_Xh->mesh() ), _expr=( rhs_coeff )*id( w ) );
     BOOST_FOREACH( std::string marker, markers )
     {
         LOG(INFO) << "[add weakbc boundary terms velocity] boundary "

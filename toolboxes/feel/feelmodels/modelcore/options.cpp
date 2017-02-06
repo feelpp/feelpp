@@ -245,6 +245,8 @@ solidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "struct solver")
         (prefixvm(prefix,"time-schema").c_str(), Feel::po::value< std::string >()->default_value("Newmark"), "time integration schema : Newmark, Generalized-Alpha")
         (prefixvm(prefix,"time-rho").c_str(), Feel::po::value< double >()->default_value(0.8), " Generalized-Alpha parameter")
+        (prefixvm(prefix,"time-initial.displacement.files.directory").c_str(), Feel::po::value<std::string>(), "initial displacemen")
+        (prefixvm(prefix,"time-initial.displacement.files.format").c_str(), Feel::po::value<std::string>()->default_value( "hdf5" ), "intial displacement file format")
 
         (prefixvm(prefix,"1dreduced-geofile").c_str(), Feel::po::value< std::string >(), "input geo file 1dreduced")
         (prefixvm(prefix,"1dreduced-thickness").c_str(), Feel::po::value< double >()->default_value(0.1), "1dreduced-thickness")

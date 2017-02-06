@@ -46,10 +46,23 @@
 int
 main( int argc, char** argv )
 {
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeEadsSCMOptions()
+                     .add(crbOptions())
+                     .add(eimOptions())
+                     .add(crbSEROptions())
+                     .add(podOptions()),
+                     _about=makeEadsAbout( "eadsscm" ));
 
-    Feel::EadsSCMApp app( argc, argv,
-                          Feel::makeEadsAbout( "eadsscm" ),
-                          Feel::makeEadsSCMOptions() );
+    EadsSCMApp app( argc, argv,
+                    makeEadsAbout( "eadsscm" ),
+                    makeEadsSCMOptions()
+                    .add(crbOptions())
+                    .add(eimOptions())
+                    .add(crbSEROptions())
+                    .add(podOptions())
+                    );
 
     app.run();
 

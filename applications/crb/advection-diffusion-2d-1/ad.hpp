@@ -294,7 +294,13 @@ public:
      */
 
     betaqm_type
-    computeBetaQm(element_type const& T,  parameter_type const& mu )
+    computeBetaQm( element_type const& T,  parameter_type const& mu )
+    {
+        return computeBetaQm( mu );
+    }
+
+    betaqm_type
+    computeBetaQm( vectorN_type const& urb, parameter_type const& mu )
     {
         return computeBetaQm( mu );
     }
