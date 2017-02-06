@@ -1,26 +1,29 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
-
-   This file is part of the Feel++ library
-
-   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-Date: 11 Apr 2015
-
-Copyright (C) 2015 Feel++ Consortium
-
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 2.1 of the License, or (at your option) any later version.
-
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with this library; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! This file provides the implement of the model post-processing desciption
+//!
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @author Vincent Chabannes <vincent.chabannes@feelpp.org>
+//! @date 11 Apr 2015
+//! @copyright 2015-2017 Feel++ Consortium
+//!
 #include <iostream>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -185,37 +188,29 @@ ModelPostprocess::setup()
     auto fields = M_p.get_child_optional("Fields");
     if ( fields )
     {
-        
         for (auto i : as_vector<std::string>(M_p, "Fields"))
         {
             this->operator[]("Fields").push_back( i );
             LOG(INFO) << "add to postprocess field  " << i;
         }
-        
     }
     auto forces = M_p.get_child_optional("Force");
     if ( forces )
     {
-        
         for (auto i : as_vector<std::string>(M_p, "Force"))
         {
             this->operator[]("Force").push_back( i );
             LOG(INFO) << "add to postprocess force  " << i;
-            
         }
-        
     }
     auto stresses = M_p.get_child_optional("Stresses");
     if ( stresses )
     {
-        
         for (auto i : as_vector<std::string>(M_p, "Stresses"))
         {
             this->operator[]("Stresses").push_back( i );
             LOG(INFO) << "add to postprocess stresses  " << i;
-            
         }
-        
     }
 
     auto measures = M_p.get_child_optional("Measures");
@@ -224,52 +219,52 @@ ModelPostprocess::setup()
         auto evalPointsFile = measures->get_child_optional("File");
         if ( evalPointsFile )
         {
-          // store fields name
-          std::vector<std::string> fieldList = as_vector<std::string>( M_p, "Measures.Fields" );
-          if ( fieldList.empty() )
-          {
-              std::string fieldUnique = M_p.get<std::string>( "fields" );
-              if ( !fieldUnique.empty() )
-                  fieldList = { fieldUnique };
-          }
-
-          std::string file = M_p.get<std::string>("Measures.File"); 
-          std::ifstream in(Environment::expand(file));
-          if(in.good())
-          {
-            double d = 0.;
-            int comp = 0;
-            std::string lineData;
-            /*
-             * for each point
-             * - new ModelPostProcessPointPosition
-             * - add coord & name to it
-             */
-            while(getline(in, lineData)) 
+            // store fields name
+            std::vector<std::string> fieldList = as_vector<std::string>( M_p, "Measures.Fields" );
+            if ( fieldList.empty() )
             {
-              ModelPostprocessPointPosition myPpPtPos( M_worldComm );
-              ModelPointPosition::coord_value_type coordData = ModelPointPosition::coord_value_type::Zero(3,1);
-              d = 0.;
-              comp = 0;
-              std::stringstream lineStream(lineData);
-              while(lineStream >> d) // Read Point
-              {
-                coordData(comp) = d;
-                comp++;
-              }
-            myPpPtPos.pointPosition().setValue( coordData );
-            myPpPtPos.pointPosition().setName( "Dummy" );
-            for( std::string const& field : fieldList )
-                myPpPtPos.addFields( field );
-            M_measuresPoint.push_back( myPpPtPos );
+                std::string fieldUnique = M_p.get<std::string>( "fields" );
+                if ( !fieldUnique.empty() )
+                    fieldList = { fieldUnique };
             }
-           if ( !M_measuresPoint.empty() )
-               this->operator[]("Measures").push_back( "Points" );
-          } // good
-          else
-          {
-            LOG(ERROR) << "Unable to open " << Environment::expand(file) << "\n";
-          }
+
+            std::string file = M_p.get<std::string>("Measures.File"); 
+            std::ifstream in(Environment::expand(file));
+            if(in.good())
+            {
+                double d = 0.;
+                int comp = 0;
+                std::string lineData;
+                /*
+                 * for each point
+                 * - new ModelPostProcessPointPosition
+                 * - add coord & name to it
+                 */
+                while(getline(in, lineData)) 
+                {
+                    ModelPostprocessPointPosition myPpPtPos( M_worldComm );
+                    ModelPointPosition::coord_value_type coordData = ModelPointPosition::coord_value_type::Zero(3,1);
+                    d = 0.;
+                    comp = 0;
+                    std::stringstream lineStream(lineData);
+                    while(lineStream >> d) // Read Point
+                    {
+                        coordData(comp) = d;
+                        comp++;
+                    }
+                    myPpPtPos.pointPosition().setValue( coordData );
+                    myPpPtPos.pointPosition().setName( "Dummy" );
+                    for( std::string const& field : fieldList )
+                        myPpPtPos.addFields( field );
+                    M_measuresPoint.push_back( myPpPtPos );
+                }
+                if ( !M_measuresPoint.empty() )
+                    this->operator[]("Measures").push_back( "Points" );
+            } // good
+            else
+            {
+                LOG(ERROR) << "Unable to open " << Environment::expand(file) << "\n";
+            }
         }
         auto evalPoints = measures->get_child_optional("Points");
         if ( evalPoints )
