@@ -83,9 +83,9 @@ BOOST_AUTO_TEST_CASE( test_0 )
         int color = world.rank() % Npcomm;
 
         // create map which color the world
-        std::vector<int> mapColorWorld( Np );
-        for (rank_type p = 0 ; p < Np; ++p)
-            mapColorWorld[p] = p % Npcomm;
+        std::vector<int> mapColorWorld;
+        for( int rank : irange( 0, world.size() ) )
+            mapColorWorld.push_back( rank % Npcomm );
         // build a global world comm colored
         // this worldcomm can have a global mpi comm (on world) : worldColored.globalComm()
         // this worldcomm can have a local mpi comm (mpi group with color) : worldColored.localComm()
