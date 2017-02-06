@@ -11,4 +11,5 @@ feelpp_add_application( thermodyn_3d SRCS main_td.cpp
   INSTALL
   )
 
-feelpp_add_testcase(thermo2d CATEGORY thermodyn )
+feelpp_add_testcase(thermo2d CATEGORY HeatTransfer )
+feelpp_add_testcase(Building CATEGORY HeatTransfer )

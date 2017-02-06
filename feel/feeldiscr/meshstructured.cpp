@@ -26,12 +26,13 @@
 
 namespace Feel {
 
-
-MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm const& wc = Environment::worldComm() )
+MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<float> cx, holo3_image<float> cy, WorldComm const& wc = Environment::worldComm(), bool withCoord = false )
     :
     super( wc ),
     M_nx( nx ),
     M_ny( ny ),
+    M_cx( cx ),
+    M_cy( cy ),
     M_pixelsize( pixelsize )
 {
     VLOG(1) << "nx x ny = " << nx << " x " << ny << "\t" << nx*ny << std::endl;
@@ -77,8 +78,16 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
         for( int i = 0 ; i < M_nx; ++i )
         {
             int ptid = (M_ny)*i+j;
+            if ( withCoord )
+            {
+            coords[0]=M_cy(j,i);
+            coords[1]=M_cx(j,i);
+            }
+            else
+            {
             coords[0]=M_pixelsize*j;
             coords[1]=M_pixelsize*i;
+            }
             point_type pt( ptid,coords );
             pt.setProcessId( partId );
             pt.setProcessIdInPartition( partId );
@@ -97,8 +106,16 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
         for( int i = 0 ; i < M_nx; ++i )
         {
             int ptid = (M_ny)*i+j;
+            if ( withCoord )
+            {
+            coords[0]=M_cy(j,i);
+            coords[1]=M_cx(j,i);
+            }
+            else
+            {
             coords[0]=M_pixelsize*j;
             coords[1]=M_pixelsize*i;
+            }
             point_type pt( ptid,coords );
             pt.setProcessId( invalid_rank_type_value );
             pt.setProcessIdInPartition( partId  );
@@ -186,6 +203,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, WorldComm cons
     this->updateGhostCellInfoByUsingNonBlockingComm( idStructuredMeshToFeelMesh,mapGhostElt,nbMsgToRecv );
 
 }
+
 
 
 

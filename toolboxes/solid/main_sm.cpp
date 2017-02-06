@@ -95,11 +95,23 @@ runApplicationSolid()
                 }
             }
         }
+        bool saveSolution = boption(_name="save-solution");
+        if ( saveSolution )
+        {
+            std::string saveType = soption(_name="save-solution.file-format");
+            SM->fieldDisplacement().save(_path=(fs::path( SM->rootRepository() )/fs::path( "solution.displacement" )).string(),
+                                         _type=saveType );
+            if ( SM->useDisplacementPressureFormulation() )
+                SM->fieldPressure().save(_path=(fs::path( SM->rootRepository() )/fs::path( "solution.pressure" )).string(),
+                                         _type=saveType );
+        }
     }
     else
     {
         SM->init();
         SM->printAndSaveInfo();
+        if ( !SM->doRestart() )
+            SM->exportResults(SM->timeInitial());
 
         for ( ; !SM->timeStepBase()->isFinished(); SM->updateTimeStep() )
         {
@@ -126,6 +138,12 @@ main( int argc, char** argv )
     solidmecoptions.add( feelmodels_options("solid") );
     solidmecoptions.add_options()
         ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P1,P2 ")
+        ("save-solution", Feel::po::value<bool>()->default_value(true), "save-solution")
+#ifdef FEELPP_HAS_HDF5
+        ("save-solution.file-format", Feel::po::value<std::string>()->default_value("hdf5"), "save-solution.file-format")
+#else
+        ("save-solution.file-format", Feel::po::value<std::string>()->default_value("binary"), "save-solution.file-format")
+#endif
         ("solve-quasi-static", Feel::po::value<bool>()->default_value(false), "solve-quasi-static ")
         ("solve-quasi-static.variable-initial", Feel::po::value<double>()->default_value(0.0), "solve-quasi-static.variable-initial")
         ("solve-quasi-static.variable-step", Feel::po::value<double>()->default_value(0.1), "solve-quasi-static.variable-step")

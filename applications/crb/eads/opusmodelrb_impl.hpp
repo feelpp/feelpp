@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-12-10
  */
-#if !defined(OPUSMODELRB_IMPL_HPP_)
+#ifndef OPUSMODELRB_IMPL_HPP
 #define OPUSMODELRB_IMPL_HPP_ 1
 
 #include <feel/feel.hpp>
@@ -61,8 +61,8 @@ OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB( po::variables_map const& vm )
     :
     //super( 2, vm ),
     super( vm ),
-    backend( backend_type::build( vm, "backend.crb.fem" ) ),
-    backendM( backend_type::build( vm, "backend.crb.norm" ) ),
+    M_backend( backend(_name="backend.crb.fem") ),
+    M_backendM( backend(_name="backend.crb.norm") ),
     M_meshSize( vm["hsize"].template as<double>() ),
     M_is_steady( vm["steady"].template as<bool>() ),
     M_is_initialized( false ),
@@ -82,8 +82,8 @@ template<int OrderU, int OrderP, int OrderT>
 OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB(  )
     :
     super(),
-    backend(),
-    backendM(),
+    M_backend( backend(_name="backend.crb.fem") ),
+    M_backendM( backend(_name="backend.crb.norm") ),
     M_meshSize( 1 ),
     M_is_steady( true ),
     M_is_initialized( false ),
@@ -95,9 +95,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB(  )
     M_Dmu( new parameterspace_type )
 
 {
-    LOG(INFO) << "[default] constructor, build backend" << "\n";
-    backend = backend_type::build( BACKEND_PETSC );
-    backendM = backend_type::build( BACKEND_PETSC );
     LOG(INFO) << "[default] constructor, build backend done" << "\n";
     initParametrization();
     LOG(INFO) << "[default] init done" << "\n";
@@ -196,13 +193,15 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     period[1]=0;
     LOG(INFO) << "   - period built\n";
 
-    //M_Th = temp_functionspace_type::New( _mesh=M_mesh,
-    //                                     _periodicity=Periodic<1,2,value_type>( period ) );
     M_Th = temp_functionspace_type::New( _mesh=M_mesh,
                                          _periodicity=periodicity(Periodic<>( 1, 2 , period ) ) );
-    M_RbTh = temp_rbfunctionspace_type::New(_model=this->shared_from_this(),
-                                            _mesh=M_mesh,
-                                            _periodicity=periodicity(Periodic<>( 1, 2 , period ) ) );
+    this->setFunctionSpaces( M_Th );
+
+    // M_RbTh = temp_rbfunctionspace_type::New(_model=this->shared_from_this(),
+    //                                         _mesh=M_mesh,
+    //                                         _periodicity=periodicity(Periodic<>( 1, 2 , period ) ) );
+
+
     LOG(INFO) << "   - Th built\n";
     //M_grad_Th = grad_temp_functionspace_type::New( _mesh=M_mesh );
     //LOG(INFO) << "grad Th built\n";
@@ -250,8 +249,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
                       +chi( emarker() == M_Th->mesh()->markerName( "IC2" ) )*this->data()->component( "IC2" ).Q() );
     LOG(INFO) << "   - [OpusModel::OpusModel] P0 functions allocated\n";
 
-
-
     double e_AIR = this->data()->component( "AIR" ).e();
 
     double e_PCB = this->data()->component( "PCB" ).e();
@@ -284,12 +281,13 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     M_Aqm.resize( Qa() );
     for(int i=0; i< Qa(); i++)
         M_Aqm[i].resize(1);
-    M_Aqm[0][0] = backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
-    //form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[0] );
+    //M_Aqm[0][0] = M_backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
 
-    for ( int q = 1; q < Qa(); ++q )
+    //for ( int q = 1; q < Qa(); ++q )
+    for ( int q = 0; q < Qa(); ++q )
     {
-        M_Aqm[q][0] = backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
+        //M_Aqm[q][0] = M_backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
+        M_Aqm[q][0] = M_backend->newMatrix( _test=M_Th, _trial=M_Th );
     }
 
     // mass matrix
@@ -298,7 +296,8 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     for ( int q = 0; q < Qm(); ++q )
     {
         M_Mqm[q].resize( 1 );
-        M_Mqm[q][0] = backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
+        //M_Mqm[q][0] = M_backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
+        M_Mqm[q][0] = M_backend->newMatrix( _test=M_Th, _trial=M_Th );
     }
 
     // outputs
@@ -311,33 +310,32 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
         for ( int q = 0; q < Ql( l ); ++q )
         {
             M_L[l][q].resize( 1 );
-            M_L[l][q][0] = backend->newVector( M_Th );
+            M_L[l][q][0] = M_backend->newVector( M_Th );
         }
     }
 
-
-    D = backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
+    //D = M_backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
+    D = M_backend->newMatrix( _test=M_Th, _trial=M_Th );
     L.resize( Nl() );
 
     for ( int l = 0; l < Nl(); ++l )
     {
-        L[l] = backend->newVector( M_Th );
+        L[l] = M_backend->newVector( M_Th );
     }
 
-    //Mass = backend->newMatrix( M_Th, M_Th );
+    //Mass = M_backend->newMatrix( M_Th, M_Th );
 
-    M_temp_bdf = bdf( _space=M_Th, _vm=this->vm(), _name="temperature" , _prefix="temperature" );
+    M_temp_bdf = bdf( _space=M_Th, _name="temperature" , _prefix="temperature" );
 
     using namespace Feel::vf;
 
-    element_ptrtype bdf_poly ( new element_type ( M_Th ) );
+    //element_ptrtype bdf_poly ( new element_type ( M_Th ) );
 
     element_type u( M_Th, "u" );
     element_type v( M_Th, "v" );
     element_type w( M_Th, "w" );
 
     LOG(INFO) << "   - Number of dof " << M_Th->nLocalDof() << "\n";
-
     M_T0 = 300;
 
     std::vector<std::string> markers;
@@ -350,71 +348,71 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     //
     // output 0
 
-    form1( M_Th, M_L[0][0][0], _init=true ) =
-        integrate( markedelements( M_mesh,"IC1" ),
-                   id( v ) );
-    form1( M_Th, M_L[0][0][0] ) +=
-        integrate( markedelements( M_mesh,"IC2" ),
-                   id( v ) );
+    form1( _test=M_Th, _vector=M_L[0][0][0], _init=true ) =
+        integrate( _range=markedelements( M_mesh,"IC1" ),
+                   _expr=id( v ) );
+    form1( _test=M_Th, _vector=M_L[0][0][0] ) +=
+        integrate( _range=markedelements( M_mesh,"IC2" ),
+                   _expr=id( v ) );
     M_L[0][0][0]->close();
-    form1( M_Th, M_L[0][1][0], _init=true ) =
-        integrate( markedfaces( M_mesh,"Gamma_4_AIR1" ),
-                   constant( M_T0 )*idv( *k )*( -grad( w )*N()+
+    form1( _test=M_Th, _vector=M_L[0][1][0], _init=true ) =
+        integrate( _range=markedfaces( M_mesh,"Gamma_4_AIR1" ),
+                   _expr=cst( M_T0 )*idv( *k )*( -grad( w )*N()+
                            this->data()->gammaBc()*id( w )/hFace() )
                  );
-    form1( M_Th, M_L[0][1][0] ) +=
-        integrate( markedfaces( M_mesh,"Gamma_4_PCB" ),
-                   constant( M_T0 )*idv( *k )*( -grad( w )*N()+this->data()->gammaBc()*id( w )/hFace() )
+    form1( _test=M_Th, _vector=M_L[0][1][0] ) +=
+        integrate( _range=markedfaces( M_mesh,"Gamma_4_PCB" ),
+                   _expr=cst( M_T0 )*idv( *k )*( -grad( w )*N()+this->data()->gammaBc()*id( w )/hFace() )
                  );
     M_L[0][1][0]->close();
 
     // grad terms in dirichlet condition on AIR4
     // x normal derivative term
-    form1( M_Th, M_L[0][2][0], _init=true ) =
-        integrate( markedfaces( M_mesh,"Gamma_4_AIR4" ),
-                   -constant( M_T0 )* k_AIR*dx( w )*Nx() );
+    form1( _test=M_Th, _vector=M_L[0][2][0], _init=true ) =
+        integrate( _range=markedfaces( M_mesh,"Gamma_4_AIR4" ),
+                   _expr=-cst( M_T0 )* k_AIR*dx( w )*Nx() );
     M_L[0][2][0]->close();
     // y normal derivative term
-    form1( M_Th, M_L[0][3][0], _init=true ) =
-        integrate( markedfaces( M_mesh,"Gamma_4_AIR4" ),
-                   -constant( M_T0 )* k_AIR*dy( w )*Ny() );
+    form1( _test=M_Th, _vector=M_L[0][3][0], _init=true ) =
+        integrate( _range=markedfaces( M_mesh,"Gamma_4_AIR4" ),
+                   _expr=-cst( M_T0 )* k_AIR*dy( w )*Ny() );
     M_L[0][3][0]->close();
     // penalisation term in dirichlet constant on AIR4
-    form1( M_Th, M_L[0][4][0], _init=true ) =
-        integrate( markedfaces( M_mesh,"Gamma_4_AIR4" ),
-                   M_T0*k_AIR*this->data()->gammaBc()*id( w )/hFace() );
+    form1( _test=M_Th, _vector=M_L[0][4][0], _init=true ) =
+        integrate( _range=markedfaces( M_mesh,"Gamma_4_AIR4" ),
+                   _expr=M_T0*k_AIR*this->data()->gammaBc()*id( w )/hFace() );
     M_L[0][4][0]->close();
     LOG(INFO) << "   - rhs 0 done\n";
 
     // output 1
-    form1( M_Th, M_L[1][0][0], _init=true ) =
-        integrate( markedelements( M_mesh,"IC2" ),
-                   id( v )/surf
+    form1( _test=M_Th, _vector=M_L[1][0][0], _init=true ) =
+        integrate( _range=markedelements( M_mesh,"IC2" ),
+                   _expr=id( v )/surf
                  );
     M_L[1][0][0]->close();
     LOG(INFO) << "   - rhs 1 done\n";
     // output 2
     // term associated with AIR3 : mult by 1/ea
-    form1( M_Th, M_L[2][0][0], _init=true ) =
-        integrate( markedfaces( M_mesh,"Gamma_3_AIR3" ),
-                   id( v ) );
+    form1( _test=M_Th, _vector=M_L[2][0][0], _init=true ) =
+        integrate( _range=markedfaces( M_mesh,"Gamma_3_AIR3" ),
+                   _expr=id( v ) );
     M_L[2][0][0]->close();
     // term associated with AIR4 : mult J44/ea
-    form1( M_Th, M_L[2][1][0], _init=true ) =
-        integrate( markedfaces( M_mesh,"Gamma_3_AIR4" ),
-                   id( v )
+    form1( _test=M_Th, _vector=M_L[2][1][0], _init=true ) =
+        integrate( _range=markedfaces( M_mesh,"Gamma_3_AIR4" ),
+                   _expr=id( v )
                  );
     M_L[2][1][0]->close();
     LOG(INFO) << "   - rhs 2 done\n";
 
-    form1( M_Th, M_L[3][0][0], _init=true ) =
-        integrate( markedfaces( M_mesh,"Gamma_3_AIR3" ),
-                   id( v ) );
+    form1( _test=M_Th, _vector=M_L[3][0][0], _init=true ) =
+        integrate( _range=markedfaces( M_mesh,"Gamma_3_AIR3" ),
+                   _expr=id( v ) );
     M_L[3][0][0]->close();
     // term associated with AIR4 : mult J44/ea
-    form1( M_Th, M_L[3][1][0], _init=true ) =
-        integrate( markedfaces( M_mesh,"Gamma_3_AIR4" ),
-                   id( v )
+    form1( _test=M_Th, _vector=M_L[3][1][0], _init=true ) =
+        integrate( _range=markedfaces( M_mesh,"Gamma_3_AIR4" ),
+                   _expr=id( v )
                  );
     M_L[3][1][0]->close();
     LOG(INFO) << "   - rhs 3 done\n";
@@ -424,10 +422,10 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     //
     //size_type pattern = Pattern::COUPLED | Pattern::EXTENDED;
     // matrix to merge all Aq
-    form2( M_Th, M_Th, D, _init=true, _pattern=pattern ) =
-        integrate( elements( M_mesh ), 0*idt( u )*id( v ) )+
-        integrate( markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
-                   this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*
+    form2( _test=M_Th, _trial=M_Th, _matrix=D, _init=true, _pattern=pattern ) =
+        integrate( _range=elements( M_mesh ), _expr=0*idt( u )*id( v ) )+
+        integrate( _range=markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
+                   _expr=this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*
                    0.*( leftfacet( dyt( u )*Ny() ) * leftface( dy( w )*Ny() )+
                         rightfacet( dyt( u )*Ny() ) * rightface( dy( w )*Ny() )+
                         leftfacet( dyt( u )*Ny() ) * rightface( dy( w )*Ny() )+
@@ -437,95 +435,95 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
 
     int AqIndex = 0;
     //test diffusion coeff
-    double surfpcb = integrate( markedelements( M_mesh,"PCB" ),constant( 1.0 ) ).evaluate()( 0, 0 );
+    double surfpcb = integrate( _range=markedelements( M_mesh,"PCB" ),_expr=cst( 1.0 ) ).evaluate()( 0, 0 );
     LOG(INFO) << "   - k_PCB " << this->data()->component( "PCB" ).k() << " " <<
-          integrate( markedelements( M_mesh,"PCB" ),idv( *k ) ).evaluate()( 0, 0 )/surfpcb << "\n";
+          integrate( _range=markedelements( M_mesh,"PCB" ),_expr=idv( *k ) ).evaluate()( 0, 0 )/surfpcb << "\n";
 
     //
     // Conduction terms
     //
     // PCB + AIR123
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedelements( M_mesh,"PCB" ),
-                   idv( *k )*( gradt( u )*trans( grad( v ) ) ) );
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0] ) +=
-        integrate( markedelements( M_mesh,"AIR123" ),
-                   idv( *k )*( gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedelements( M_mesh,"PCB" ),
+                   _expr=idv( *k )*( gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0] ) +=
+        integrate( _range=markedelements( M_mesh,"AIR123" ),
+                   _expr=idv( *k )*( gradt( u )*trans( grad( v ) ) ) );
     // boundary conditions (diffusion terms)
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0] ) +=
-        integrate( markedfaces( M_mesh,"Gamma_4_AIR1" ),
-                   idv( *k )*( -gradt( u )*N()*id( w )
-                               -grad( w )*N()*idt( u )
-                               +this->data()->gammaBc()*idt( u )*id( w )/hFace() ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0] ) +=
+        integrate( _range=markedfaces( M_mesh,"Gamma_4_AIR1" ),
+                   _expr=idv( *k )*( -gradt( u )*N()*id( w )
+                                     -grad( w )*N()*idt( u )
+                                     +this->data()->gammaBc()*idt( u )*id( w )/hFace() ) );
 
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0] ) +=
-        integrate( markedfaces( M_mesh,"Gamma_4_PCB" ),
-                   idv( *k )*( -gradt( u )*N()*id( w )
-                               -grad( w )*N()*idt( u )
-                               +this->data()->gammaBc()*idt( u )*id( w )/hFace() ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0] ) +=
+        integrate( _range=markedfaces( M_mesh,"Gamma_4_PCB" ),
+                   _expr=idv( *k )*( -gradt( u )*N()*id( w )
+                                     -grad( w )*N()*idt( u )
+                                     +this->data()->gammaBc()*idt( u )*id( w )/hFace() ) );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
     // boundary condition for AIR4 (depends on ea and D)
     // x normal derivative term
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_mesh,"Gamma_4_AIR4" ),
-                   k_AIR*( -dxt( u )*Nx()*id( w ) -dx( w )*Nx()*idt( u ) ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_mesh,"Gamma_4_AIR4" ),
+                   _expr=k_AIR*( -dxt( u )*Nx()*id( w ) -dx( w )*Nx()*idt( u ) ) );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
     // y normal derivative term
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_mesh,"Gamma_4_AIR4" ),
-                   k_AIR*( -dyt( u )*Ny()*id( w ) -dy( w )*Ny()*idt( u ) ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_mesh,"Gamma_4_AIR4" ),
+                   _expr=k_AIR*( -dyt( u )*Ny()*id( w ) -dy( w )*Ny()*idt( u ) ) );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
     // penalisation term
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_mesh,"Gamma_4_AIR4" ),
-                   k_AIR*this->data()->gammaBc()*idt( u )*id( w )/hFace() );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_mesh,"Gamma_4_AIR4" ),
+                   _expr=k_AIR*this->data()->gammaBc()*idt( u )*id( w )/hFace() );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
     //
     // IC{1,2} terms
     //
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedelements( M_mesh,"IC1" ),
-                   ( gradt( u )*trans( grad( v ) ) ) );
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0] ) +=
-        integrate( markedelements( M_mesh,"IC2" ),
-                   ( gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedelements( M_mesh,"IC1" ),
+                   _expr=( gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0] ) +=
+        integrate( _range=markedelements( M_mesh,"IC2" ),
+                   _expr=( gradt( u )*trans( grad( v ) ) ) );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
 
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedelements( M_mesh,"AIR4" ),
-                   k_AIR*dxt( u )*trans( dx( w ) ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedelements( M_mesh,"AIR4" ),
+                   _expr=k_AIR*dxt( u )*trans( dx( w ) ) );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedelements( M_mesh,"AIR4" ),
-                   k_AIR*dyt( u )*trans( dy( w ) ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedelements( M_mesh,"AIR4" ),
+                   _expr=k_AIR*dyt( u )*trans( dy( w ) ) );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
     //
     // Convection terms : only y derivative since v=(0,vy) and take vy = 1
     //
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedelements( M_mesh,"AIR4" ),
-                   idv( *rhoC )*dyt( u )*id( w ) );
+    form2( _test=M_Th,_trial= M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedelements( M_mesh,"AIR4" ),
+                   _expr=idv( *rhoC )*dyt( u )*id( w ) );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedelements( M_mesh,"AIR4" ),
-                   Px()*idv( *rhoC )*dyt( u )*id( w ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedelements( M_mesh,"AIR4" ),
+                   _expr=Px()*idv( *rhoC )*dyt( u )*id( w ) );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedelements( M_mesh,"AIR4" ),
-                   Px()*Px()*idv( *rhoC )*dyt( u )*id( w ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedelements( M_mesh,"AIR4" ),
+                   _expr=Px()*Px()*idv( *rhoC )*dyt( u )*id( w ) );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
@@ -539,23 +537,23 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     //integrate( markedfaces(M_mesh,"Gamma_4_AIR1"),
     //idv(*rhoC)*(trans(N())*(conv_coeff))*id(w)*idt(u) );
 #if 0
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_mesh,"Gamma_4_AIR4" ),
-                   idv( *rhoC )*( Ny()*id( w )*idt( u ) ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_mesh,"Gamma_4_AIR4" ),
+                   _expr=idv( *rhoC )*( Ny()*id( w )*idt( u ) ) );
     //idv(*rhoC)*(trans(N())*(conv_coeff))*id(w)*idt(u) );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_mesh,"Gamma_4_AIR4" ),
-                   Px()*idv( *rhoC )*( Ny()*id( w )*idt( u ) ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_mesh,"Gamma_4_AIR4" ),
+                   _expr=Px()*idv( *rhoC )*( Ny()*id( w )*idt( u ) ) );
     //idv(*rhoC)*(trans(N())*(conv_coeff))*id(w)*idt(u) );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_mesh,"Gamma_4_AIR4" ),
-                   Px()*Px()*idv( *rhoC )*( Ny()*id( w )*idt( u ) ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_mesh,"Gamma_4_AIR4" ),
+                   _expr=Px()*Px()*idv( *rhoC )*( Ny()*id( w )*idt( u ) ) );
     //idv(*rhoC)*(trans(N())*(conv_coeff))*id(w)*idt(u) );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
@@ -566,96 +564,95 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     AUTO( N_IC_PCB,vec( constant( -1. ),constant( 0. ) ) );
     LOG(INFO) << "[add discontinuous interface at boundary " << M_Th->mesh()->markerName( "Gamma_IC1_PCB" ) << "\n";
 
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_mesh, "Gamma_IC1_PCB" ),
-                   ( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_mesh, "Gamma_IC1_PCB" ),
+                   _expr=( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ) );
     LOG(INFO) << "[add discontinuous interface at boundary " << M_Th->mesh()->markerName( "Gamma_IC2_PCB" ) << "\n";
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0] ) +=
-        integrate( markedfaces( M_mesh, "Gamma_IC2_PCB" ),
-                   ( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ) );
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0] ) +=
+        integrate( _range=markedfaces( M_mesh, "Gamma_IC2_PCB" ),
+                   _expr=( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ) );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
-
 
     // stabilisation terms : AIR4 (in AIR123 velocity is zero)
     // coefficient is Jinv44(1,1) for x terms
     // coefficient is Jinv44(2,2)=1 for y terms
 
     // x terms
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
-                   this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( vf::abs( Ny() ) )*
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
+                   _expr=this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( vf::abs( Ny() ) )*
                    ( leftfacet( dxt( u )*Nx() ) * leftface( dx( w )*Nx() ) +
                      rightfacet( dxt( u )*Nx() ) * rightface( dx( w )*Nx() )+
                      leftfacet( dxt( u )*Nx() ) * rightface( dx( w )*Nx() )+
                      rightfacet( dxt( u )*Nx() ) * leftface( dx( w )*Nx() ) )
-                 );
+                   );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
-                   this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( Px()*vf::abs( Ny() ) )*
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
+                   _expr=this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( Px()*vf::abs( Ny() ) )*
                    ( leftfacet( dxt( u )*Nx() ) * leftface( dx( w )*Nx() ) +
                      rightfacet( dxt( u )*Nx() ) * rightface( dx( w )*Nx() )+
                      leftfacet( dxt( u )*Nx() ) * rightface( dx( w )*Nx() )+
                      rightfacet( dxt( u )*Nx() ) * leftface( dx( w )*Nx() ) )
-                 );
+                   );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
-                   this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( Px()*Px()*vf::abs( Ny() ) )*
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
+                   _expr=this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( Px()*Px()*vf::abs( Ny() ) )*
                    ( leftfacet( dxt( u )*Nx() ) * leftface( dx( w )*Nx() ) +
                      rightfacet( dxt( u )*Nx() ) * rightface( dx( w )*Nx() )+
                      leftfacet( dxt( u )*Nx() ) * rightface( dx( w )*Nx() )+
                      rightfacet( dxt( u )*Nx() ) * leftface( dx( w )*Nx() ) )
-                 );
+                   );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
 
     // y terms
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
-                   this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( vf::abs( Ny() ) )*
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
+                   _expr=this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( vf::abs( Ny() ) )*
                    ( leftfacet( dyt( u )*Ny() ) * leftface( dy( w )*Ny() )+
                      rightfacet( dyt( u )*Ny() ) * rightface( dy( w )*Ny() )+
                      leftfacet( dyt( u )*Ny() ) * rightface( dy( w )*Ny() )+
                      rightfacet( dyt( u )*Ny() ) * leftface( dy( w )*Ny() ) )
 
-                 );
+                   );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
-                   this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( Px()*vf::abs( Ny() ) )*
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
+                   _expr=this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( Px()*vf::abs( Ny() ) )*
                    ( leftfacet( dyt( u )*Ny() ) * leftface( dy( w )*Ny() )+
                      rightfacet( dyt( u )*Ny() ) * rightface( dy( w )*Ny() )+
                      leftfacet( dyt( u )*Ny() ) * rightface( dy( w )*Ny() )+
                      rightfacet( dyt( u )*Ny() ) * leftface( dy( w )*Ny() ) )
 
-                 );
+                   );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
-                   this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( Px()*Px()*vf::abs( Ny() ) )*
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
+                   _expr=this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( Px()*Px()*vf::abs( Ny() ) )*
                    ( leftfacet( dyt( u )*Ny() ) * leftface( dy( w )*Ny() )+
                      rightfacet( dyt( u )*Ny() ) * rightface( dy( w )*Ny() )+
                      leftfacet( dyt( u )*Ny() ) * rightface( dy( w )*Ny() )+
                      rightfacet( dyt( u )*Ny() ) * leftface( dy( w )*Ny() ) )
 
-                 );
+                   );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
     // xy terms
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
-                   this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( vf::abs( Ny() ) )*
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
+                   _expr=this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( vf::abs( Ny() ) )*
                    ( leftfacet( dxt( u )*Nx() ) * leftface( dy( w )*Ny() )+
                      leftfacet( dyt( u )*Ny() ) * leftface( dx( w )*Nx() )+
                      leftfacet( dxt( u )*Nx() ) * rightface( dy( w )*Ny() )+
@@ -666,13 +663,13 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
                      rightfacet( dyt( u )*Ny() ) * leftface( dx( w )*Nx() )+
                      rightfacet( dxt( u )*Nx() ) * rightface( dy( w )*Ny() )+
                      rightfacet( dyt( u )*Ny() ) * rightface( dx( w )*Nx() ) )
-                 );
+                   );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
-                   this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( Px()*vf::abs( Ny() ) )*
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
+                   _expr=this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( Px()*vf::abs( Ny() ) )*
                    ( leftfacet( dxt( u )*Nx() ) * leftface( dy( w )*Ny() )+
                      leftfacet( dyt( u )*Ny() ) * leftface( dx( w )*Nx() )+
                      leftfacet( dxt( u )*Nx() ) * rightface( dy( w )*Ny() )+
@@ -683,12 +680,12 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
                      rightfacet( dyt( u )*Ny() ) * leftface( dx( w )*Nx() )+
                      rightfacet( dxt( u )*Nx() ) * rightface( dy( w )*Ny() )+
                      rightfacet( dyt( u )*Ny() ) * rightface( dx( w )*Nx() ) )
-                 );
+                   );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
-    form2( M_Th, M_Th, M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
-        integrate( markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
-                   this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( Px()*Px()*vf::abs( Ny() ) )*
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[AqIndex][0], _init=true, _pattern=pattern ) =
+        integrate( _range=markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
+                   _expr=this->data()->gammaTemp()*( vf::pow( hFace(),2.0 )/constant( std::pow( OrderT,3.5 ) ) )*leftfacev( Px()*Px()*vf::abs( Ny() ) )*
                    ( leftfacet( dxt( u )*Nx() ) * leftface( dy( w )*Ny() )+
                      leftfacet( dyt( u )*Ny() ) * leftface( dx( w )*Nx() )+
                      leftfacet( dxt( u )*Nx() ) * rightface( dy( w )*Ny() )+
@@ -699,23 +696,22 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
                      rightfacet( dyt( u )*Ny() ) * leftface( dx( w )*Nx() )+
                      rightfacet( dxt( u )*Nx() ) * rightface( dy( w )*Ny() )+
                      rightfacet( dyt( u )*Ny() ) * rightface( dx( w )*Nx() ) )
-                 );
+                   );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
-
 
     //mas matrix
     //form2( M_Th, M_Th, Mass, _init=true, _pattern=pattern );
 
 
-    form2( M_Th, M_Th, M_Mqm[0][0], _init=true, _pattern=pattern ) =
-        integrate ( markedelements( M_mesh,"PCB" ) ,    idv( rhoC )*idt( u )*id( w ) ) +
-        integrate ( markedelements( M_mesh,"IC1" ) ,    idv( rhoC )*idt( u )*id( w ) ) +
-        integrate ( markedelements( M_mesh,"IC2" ) ,    idv( rhoC )*idt( u )*id( w ) ) +
-        integrate ( markedelements( M_mesh,"AIR123" ) , idv( rhoC )*idt( u )*id( w ) ) ;
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Mqm[0][0], _init=true, _pattern=pattern ) =
+        integrate ( _range=markedelements( M_mesh,"PCB" ) ,    _expr=idv( rhoC )*idt( u )*id( w ) ) +
+        integrate ( _range=markedelements( M_mesh,"IC1" ) ,    _expr=idv( rhoC )*idt( u )*id( w ) ) +
+        integrate ( _range=markedelements( M_mesh,"IC2" ) ,    _expr=idv( rhoC )*idt( u )*id( w ) ) +
+        integrate ( _range=markedelements( M_mesh,"AIR123" ) , _expr=idv( rhoC )*idt( u )*id( w ) ) ;
 
-    form2( M_Th, M_Th, M_Mqm[1][0], _init=true, _pattern=pattern ) =
-        integrate ( markedelements( M_mesh,"AIR4" ) , idv( rhoC )*idt( u )*id( w ) ) ;
+    form2( _test=M_Th, _trial=M_Th, _matrix=M_Mqm[1][0], _init=true, _pattern=pattern ) =
+        integrate ( _range=markedelements( M_mesh,"AIR4" ) , _expr=idv( rhoC )*idt( u )*id( w ) ) ;
 
     M_Mqm[0][0]->close();
     M_Mqm[1][0]->close();
@@ -723,26 +719,23 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     //
     // H_1 scalar product
     //
-    M = backendM->newMatrix( M_Th, M_Th );
+    M = M_backendM->newMatrix( M_Th, M_Th );
 
-    form2( M_Th, M_Th, M, _init=true ) =
-        integrate( elements( M_mesh ),
-                   id( u )*idt( v )
+    form2( _test=M_Th, _trial=M_Th, _matrix=M, _init=true ) =
+        integrate( _range=elements( M_mesh ),
+                   _expr=id( u )*idt( v )
                    +grad( u )*trans( gradt( u ) )
                  );
     M->close();
 
-
-
-
     //
     // L_2 scalar product
     //
-    Mpod = backendM->newMatrix( M_Th, M_Th );
+    Mpod = M_backendM->newMatrix( M_Th, M_Th );
 
-    form2( M_Th, M_Th, Mpod, _init=true ) =
-        integrate( elements( M_mesh ),
-                   id( u )*idt( v )
+    form2( _test=M_Th, _trial=M_Th, _matrix=Mpod, _init=true ) =
+        integrate( _range=elements( M_mesh ),
+                   _expr=id( u )*idt( v )
                  );
     Mpod->close();
 
@@ -832,15 +825,17 @@ OpusModelRB<OrderU,OrderP,OrderT>::mMaxF( int output_index, int q)
 
 
 template<int OrderU, int OrderP, int OrderT>
-typename OpusModelRB<OrderU,OrderP,OrderT>::beta_vectors_type
-OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( element_type const&  T, parameter_type const& mu, double time , bool only_terms_time_dependent=false )
+//typename OpusModelRB<OrderU,OrderP,OrderT>::beta_vectors_type
+typename OpusModelRB<OrderU,OrderP,OrderT>::beta_type
+OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( element_type const&  T, parameter_type const& mu, double time , bool only_terms_time_dependent)
 {
     return computeBetaQm( mu , time , only_terms_time_dependent );
 }
 
 template<int OrderU, int OrderP, int OrderT>
-typename OpusModelRB<OrderU,OrderP,OrderT>::beta_vectors_type
-OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( parameter_type const& mu, double time , bool only_terms_time_dependent=false )
+//typename OpusModelRB<OrderU,OrderP,OrderT>::beta_vectors_type
+typename OpusModelRB<OrderU,OrderP,OrderT>::beta_type
+OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( parameter_type const& mu, double time , bool only_terms_time_dependent)
 {
     //LOG(INFO) << "[OpusModelRB::computeBetaQm] mu = " << mu << "\n";
     double kIC = mu( 0 );
@@ -885,7 +880,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( parameter_type const& mu, doub
                              -D*( conv1+conv2*Px()+conv3*Px()*Px() )*Ny()*detJ44 ).evaluate()( 0, 0 );
 #endif
     //LOG(INFO) << "Dnum= " << Dnum << "\n";
-
     int AqIndex = 0;
     M_betaAqm.resize( Qa() );
     for(int i=0; i<this->Qa(); i++)
@@ -926,7 +920,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( parameter_type const& mu, doub
     M_betaL[ 0 ][ 2 ][ 0 ] = Jinv44xx*detJ44; // ea : dx Nx term dirichlet
     M_betaL[ 0 ][ 3 ][ 0 ] = Jinv44yy*detJ44; // ea : dy Ny term dirichlet
     M_betaL[ 0 ][ 4 ][ 0 ] = detJ44; // ea : penalisation term dirichlet
-
     //LOG(INFO) << "BetaL[0] = " << M_betaL[0] << "\n";
 
     // l =1
@@ -951,7 +944,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( parameter_type const& mu, doub
     M_betaL[ 3 ][ 1 ][ 0 ]= detJ44;
     //LOG(INFO) << "BetaL[3] = " << M_betaL[3] << "\n";
 
-
     M_betaMqm.resize( Qm() );
     for(int i=0; i<Qm(); i++)
         M_betaMqm[i].resize( 1 );
@@ -964,11 +956,12 @@ OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( parameter_type const& mu, doub
 template<int OrderU, int OrderP, int OrderT>
 OpusModelRB<OrderU,OrderP,OrderT>::~OpusModelRB()
 {}
+#if 0 // Already defined in crb model
 template<int OrderU, int OrderP, int OrderT>
 typename OpusModelRB<OrderU,OrderP,OrderT>::sparse_matrix_ptrtype
 OpusModelRB<OrderU,OrderP,OrderT>::newMatrix() const
 {
-    auto Dnew = backend->newMatrix( M_Th, M_Th );
+    auto Dnew = M_backend->newMatrix( M_Th, M_Th );
     *Dnew  = *D;
     Dnew->zero();
     return Dnew;
@@ -977,9 +970,9 @@ template<int OrderU, int OrderP, int OrderT>
 typename OpusModelRB<OrderU,OrderP,OrderT>::vector_ptrtype
 OpusModelRB<OrderU,OrderP,OrderT>::newVector() const
 {
-    return backend->newVector( M_Th );
+    return M_backend->newVector( M_Th );
 }
-
+#endif
 template<int OrderU, int OrderP, int OrderT>
 void
 OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu , double time )
@@ -1046,7 +1039,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu , double tim
 
 
     //mass matrix contribution
-    auto vec_bdf_poly = backend->newVector( M_Th );
+    auto vec_bdf_poly = M_backend->newVector( M_Th );
 
     for ( size_type q = 0; q < Qm(); ++q )
     {
@@ -1106,10 +1099,11 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
         M_temp_bdf->setSteady();
     }
 
-    M_temp_bdf->start();
+    //M_temp_bdf->start();
     M_bdf_coeff = M_temp_bdf->polyDerivCoefficient( 0 );
 
-    for ( M_temp_bdf->start(); !M_temp_bdf->isFinished(); M_temp_bdf->next() )
+    //for ( M_temp_bdf->start(); !M_temp_bdf->isFinished(); M_temp_bdf->next() )
+    for ( M_temp_bdf->start(*T); !M_temp_bdf->isFinished(); M_temp_bdf->next() )
     {
         *M_bdf_poly = M_temp_bdf->polyDeriv();
         this->update( mu , M_temp_bdf->time() );
@@ -1117,10 +1111,10 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
         LOG(INFO) << "[solve(mu)] update(mu) done in " << ti.elapsed() << "s\n";
         ti.restart();
         LOG(INFO) << "[solve(mu)] start solve\n";
-        backend->solve( _matrix=D,  _solution=*T, _rhs=L[0] );
+        M_backend->solve( _matrix=D,  _solution=*T, _rhs=L[0] );
 
 #if(0)
-        auto ret = backend->solve( _matrix=D,  _solution=*T, _rhs=L[0], _reuse_prec=( M_temp_bdf->iteration() >=2 ) );
+        auto ret = M_backend->solve( _matrix=D,  _solution=*T, _rhs=L[0], _reuse_prec=( M_temp_bdf->iteration() >=2 ) );
 
         if ( !ret.template get<0>() )
         {
@@ -1159,17 +1153,18 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
         M_temp_bdf->setSteady();
     }
 
-    M_temp_bdf->start();
+    //M_temp_bdf->start();
     M_bdf_coeff = M_temp_bdf->polyDerivCoefficient( 0 );
 
-    for ( M_temp_bdf->start(); !M_temp_bdf->isFinished(); M_temp_bdf->next() )
+    //for ( M_temp_bdf->start(); !M_temp_bdf->isFinished(); M_temp_bdf->next() )
+    for ( M_temp_bdf->start(*T); !M_temp_bdf->isFinished(); M_temp_bdf->next() )
     {
         *M_bdf_poly = M_temp_bdf->polyDeriv();
         this->update( mu , M_temp_bdf->time() );
 
         if ( transpose )
         {
-            auto ret = backend->solve( _matrix=D->transpose(),  _solution=*T, _rhs=rhs , _reuse_prec=( M_temp_bdf->iteration() >=2 ) );
+            auto ret = M_backend->solve( _matrix=D->transpose(),  _solution=*T, _rhs=rhs , _reuse_prec=( M_temp_bdf->iteration() >=2 ) );
 
             if ( !ret.template get<0>() )
             {
@@ -1180,7 +1175,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
 
         else
         {
-            auto ret = backend->solve( _matrix=D,  _solution=*T, _rhs=rhs , _reuse_prec=( M_temp_bdf->iteration() >=2 ) );
+            auto ret = M_backend->solve( _matrix=D,  _solution=*T, _rhs=rhs , _reuse_prec=( M_temp_bdf->iteration() >=2 ) );
 
             if ( !ret.template get<0>() )
             {
@@ -1204,9 +1199,9 @@ void
 OpusModelRB<OrderU,OrderP,OrderT>::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //LOG(INFO) << "l2solve(u,f)\n";
-    //backendM->solve( _matrix=M,  _solution=u, _rhs=f, _prec=M );
-    //backendM = backend_type::build( BACKEND_PETSC );
-    backendM->solve( _matrix=M, _solution=u, _rhs=f );
+    //M_backendM->solve( _matrix=M,  _solution=u, _rhs=f, _prec=M );
+    //M_backendM = backend_type::build( BACKEND_PETSC );
+    M_backendM->solve( _matrix=M, _solution=u, _rhs=f );
     //LOG(INFO) << "l2solve(u,f) done\n";
 }
 
@@ -1265,7 +1260,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::output( int output_index, parameter_type cons
         *pT = u;
     }
 
-    vector_ptrtype U( backend->newVector( M_Th ) );
+    vector_ptrtype U( M_backend->newVector( M_Th ) );
     *U = *pT;
     LOG(INFO) << "S1 = " << inner_product( *L[1], *U ) << "\n S2 = " << inner_product( *L[2], *U ) << "\n";
     return inner_product( L[output_index], U );
@@ -1327,7 +1322,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::run( const double * X, unsigned long N, doubl
     this->solve( mu, pT );
     LOG(INFO) << "[OpusModelRB::run] solve done\n";
 
-    vector_ptrtype U( backend->newVector( M_Th ) );
+    vector_ptrtype U( M_backend->newVector( M_Th ) );
     *U = *pT;
     Y[0] = inner_product( *L[1], *U );
     Y[1] = inner_product( *L[2], *U );
