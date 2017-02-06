@@ -44,7 +44,7 @@ class DataMap;
 /**
  *
  */
-class IndexSplit : public std::vector<std::vector<size_type> >
+class FEELPP_EXPORT IndexSplit : public std::vector<std::vector<size_type> >
 {
     typedef IndexSplit self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
@@ -130,12 +130,15 @@ private :
  *  @author Christophe Prud'homme
  *  @see
  */
-class DataMap
+class FEELPP_EXPORT DataMap
 {
 
 public:
     typedef IndexSplit indexsplit_type;
     typedef boost::shared_ptr<indexsplit_type> indexsplit_ptrtype;
+
+    typedef Eigen::Matrix<int, Eigen::Dynamic, 1>  localglobal_indices_type;
+    typedef std::vector<localglobal_indices_type,Eigen::aligned_allocator<localglobal_indices_type> > vector_indices_type;
 
     /** @name Typedefs
      */
@@ -162,6 +165,11 @@ public:
      * \param lastdof array of size n_processors containing the last index on each processor
      */
     DataMap( size_type n, std::vector<int> const& firstdof, std::vector<int> const& lastdof );
+
+    /**
+     *
+     */
+    DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, WorldComm const& _worldComm );
 
     DataMap( DataMap const & dm ) = default;
     DataMap( DataMap&& dm ) = default;
@@ -204,6 +212,14 @@ public:
     size_type nLocalDofWithoutGhost() const
     {
         return nLocalDofWithoutGhost(this->worldComm().rank());
+    }
+
+    /**
+     * @return the number of local ghosts
+     */
+    size_type nLocalGhosts() const
+    {
+        return nLocalDofWithGhost()-nLocalDofWithoutGhost();
     }
 
     /**
@@ -432,21 +448,22 @@ public:
     //! Puts list of global elements on this processor size_typeo the user-provided array.
     std::vector<size_type> const& myGlobalElements() const;
 
+    //! processor numbering to world numbering
     std::vector<size_type> const& mapGlobalProcessToGlobalCluster() const
     {
         return M_mapGlobalProcessToGlobalCluster;
     }
-    std::vector<size_type> const& mapGlobalClusterToGlobalProcess() const
-    {
-        return M_mapGlobalClusterToGlobalProcess;
-    }
+
+    //! processor numbering to world numbering
     size_type mapGlobalProcessToGlobalCluster( size_type i ) const
     {
         return M_mapGlobalProcessToGlobalCluster[i];
     }
+
+    FEELPP_DEPRECATED
     size_type mapGlobalClusterToGlobalProcess( size_type i ) const
     {
-        return M_mapGlobalClusterToGlobalProcess[i];
+        return i;
     }
 
     void setNDof( size_type ndof );
@@ -459,11 +476,8 @@ public:
     void setLastDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld=true );
 
     void setMapGlobalProcessToGlobalCluster( std::vector<size_type> const& map );
-    void setMapGlobalClusterToGlobalProcess( std::vector<size_type> const& map );
     void setMapGlobalProcessToGlobalCluster( size_type i, size_type j );
-    void setMapGlobalClusterToGlobalProcess( size_type i, size_type j );
     void resizeMapGlobalProcessToGlobalCluster( size_type n );
-    void resizeMapGlobalClusterToGlobalProcess( size_type n );
 
     void updateDataInWorld();
 
@@ -489,24 +503,79 @@ public:
         return M_closed;
     }
 
-    void showMeMapGlobalProcessToGlobalCluster( bool showAll=false, std::ostream& __out = std::cout ) const;
+    /**
+     * print some information
+     * showAll : print more (can be large)
+     */
+    void showMe( bool showAll=false, std::ostream& __out = std::cout ) const;
 
     /**
-     * \return the communicator
+     * \return the mpi communicator
      */
-    //mpi::communicator const& comm() const { return M_comm; }
     WorldComm const& worldComm() const
     {
         return M_worldComm;
     }
-    // warning (vincent!!)
+    /**
+     * \return the mpi communicator
+     */
     WorldComm const& comm() const
     {
         return M_worldComm;
     }
 
+    /**
+     * \return the number of mapping (from functionspace id to container id with global process numbering)
+     */
+    int numberOfDofIdToContainerId() const { return M_dofIdToContainerId.size(); }
+    /**
+     * \return the mapping index which contains this global process id in container view
+     */
+    int databaseIndexFromContainerId( size_type gpdof ) const
+        {
+            size_type currentStartId = 0;
+            for ( int tag=0;tag<this->numberOfDofIdToContainerId();++tag )
+            {
+                size_type nGpDof = this->dofIdToContainerId( tag ).size();
+                if ( gpdof >= currentStartId && gpdof < ( currentStartId + nGpDof ) )
+                    return tag;
+                currentStartId+=nGpDof;
+            }
+            return 0;
+        }
+    /**
+     * initialize the number of dofIdToContainerId mapping
+     */
+    void initNumberOfDofIdToContainerId( int nTag ) { M_dofIdToContainerId.resize(nTag); }
+    /**
+     * initialize the number of dof id in the mapping
+     */
+    void initDofIdToContainerId( int tag, int nDof ) { M_dofIdToContainerId[tag].resize(nDof,invalid_size_type_value); }
+    /**
+     * initialize a mapping as identity
+     */
+    void initDofIdToContainerIdIdentity( int tag, int nDof )
+        {
+            M_dofIdToContainerId[tag].resize(nDof);
+            std::iota( M_dofIdToContainerId[tag].begin(),M_dofIdToContainerId[tag].end(),0 );
+        }
+    /**
+     * \return a reference of dofIdToContainerId mapping (from functionspace id to container id with global process numbering)
+     */
+    std::vector<size_type>& dofIdToContainerIdRef( int tag ) { return M_dofIdToContainerId[tag]; }
 
+    /**
+     * \return the dofIdToContainerId mapping (from functionspace id to container id with global process numbering)
+     */
+    std::vector<size_type> const& dofIdToContainerId( int tag ) const { return M_dofIdToContainerId[tag]; }
+    /**
+     * \return global process index in container from dof id
+     */
+    size_type dofIdToContainerId( int tag,size_type gpdof ) const { return M_dofIdToContainerId[tag][gpdof]; }
 
+    /**
+     * \return the indexsplit description
+     */
     indexsplit_ptrtype const& indexSplit() const { return M_indexSplit; }
     void setIndexSplit( indexsplit_ptrtype const& is ) { M_indexSplit = is; }
     void buildIndexSplit();
@@ -530,6 +599,11 @@ public:
     /** @name  Methods
      */
     //@{
+
+    /**
+     * \return true if this object is compatible with datamap dm
+     */
+    bool isCompatible( DataMap const& dm ) const;
 
     void close() const;
 
@@ -591,16 +665,10 @@ protected:
     // ??
     mutable std::vector<size_type> M_myglobalelements;
 
-
     /**
      * Map between Global Process To Global Cluster.
      */
     std::vector<size_type> M_mapGlobalProcessToGlobalCluster;
-
-    /**
-     * Map between Global Cluster To Global Process.
-     */
-    std::vector<size_type> M_mapGlobalClusterToGlobalProcess;
 
     /**
      *The processors who neighbor the current processor
@@ -622,10 +690,16 @@ protected:
      */
     indexsplit_ptrtype M_indexSplit, M_indexSplitWithComponents;
 
-
+    //! dof global process id (space def) to container global process id (identity with non composite space)
+    std::vector<std::vector<size_type> > M_dofIdToContainerId;
 private:
 
 };
+
+using datamap_t = DataMap;
+
+using datamap_ptrtype = boost::shared_ptr<datamap_t>;
+using datamap_ptr_t = datamap_ptrtype;
 
 } // Feel
 #endif /* __DataMap_H */

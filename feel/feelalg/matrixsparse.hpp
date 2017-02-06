@@ -119,7 +119,12 @@ public:
      */
     MatrixSparse( WorldComm const& worldComm=Environment::worldComm() );
 
-    MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
+
+    MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
+        :
+        MatrixSparse( dmRow, dmCol, dmRow->worldComm() )
+        {}
 
     /**
      * Destructor. Free all memory, but do not release the memory of
@@ -247,6 +252,11 @@ public:
         M_graph = graph;
     }
 
+    //!
+    //! @return the number of allocated non-zero entries
+    //!
+    virtual std::size_t nnz() const = 0;
+    
     /**
      * set matrix properties, @see MatrixProperties
      */
@@ -511,8 +521,8 @@ public:
      * Multiplies the matrix with \p arg and stores the result in \p
      * dest.
      */
-    void multVector ( const Vector<T>& arg,
-                      Vector<T>& dest ) const;
+    virtual void multVector ( const Vector<T>& arg, Vector<T>& dest,
+                              bool transpose = false ) const;
 
     /**
      * Multiplies the matrix with \p arg and stores the result in \p
@@ -530,6 +540,35 @@ public:
     void multAddVector ( const Vector<T>& arg,
                          Vector<T>& dest ) const;
 
+    /**
+     * set diagonal entries from vector vecDiag
+     */
+    virtual void setDiagonal( Vector<T> const& vecDiag )
+        {
+            CHECK( false ) << "Not Implemented in base class!";
+        }
+    /**
+     * set diagonal entries from vector vecDiag
+     */
+    void setDiagonal( boost::shared_ptr<Vector<T> > const& vecDiag )
+        {
+            this->setDiagonal( *vecDiag );
+        }
+
+    /**
+     * add diagonal entries from vector vecDiag
+     */
+    virtual void addDiagonal( Vector<T> const& vecDiag )
+        {
+            CHECK( false ) << "Not Implemented in base class!";
+        }
+    /**
+     * add diagonal entries from vector vecDiag
+     */
+    void addDiagonal( boost::shared_ptr<Vector<T> > const& vecDiag )
+        {
+            this->addDiagonal( *vecDiag );
+        }
 
     /**
      * Return the value of the entry \p (i,j).  This may be an
@@ -565,6 +604,15 @@ public:
     }
 
     /**
+     * Return copy vector of the diagonal part of the matrix.
+     */
+    virtual boost::shared_ptr<Vector<T> > diagonal() const
+    {
+        CHECK( false ) << "Not Implemented in base class!";
+        return boost::shared_ptr<Vector<T>>();
+    }
+
+    /**
      * Returns the transpose of a matrix
      *
      * \param Mt the matrix transposed
@@ -574,8 +622,9 @@ public:
     /**
      * \return the transpose of the matrix
      */
-    boost::shared_ptr<MatrixSparse<T> > transpose( size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
+    virtual boost::shared_ptr<MatrixSparse<T> > transpose( size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
     {
+        CHECK( false ) << "Not Implemented in base class!";
         boost::shared_ptr<MatrixSparse<T> > Mt;
         transpose( *Mt, options );
         return Mt;
@@ -654,10 +703,22 @@ public:
     virtual real_type linftyNorm () const = 0;
 
     /**
-     * see if Sparse matrix has been closed
-     * and fully assembled yet
+     * @returns true if the matrix is closed (ready for
+     * computation), false otherwise.
      */
-    virtual bool closed() const = 0;
+    virtual bool closed() const
+    {
+        return M_is_closed;
+    }
+
+    /**
+     * @ set false if the matrix is in assembly state and need to be closed
+     * for some next used (global operation) , false otherwise.
+     */
+    void setIsClosed( bool b ) const
+    {
+        M_is_closed = b;
+    }
 
     /**
      * Print the contents of the matrix to the screen
@@ -774,7 +835,7 @@ public:
     /**
      * update a block matrix
      */
-    virtual void  updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vector<size_type> start_i, std::vector<size_type> start_j ) = 0;
+    virtual void updateBlockMat( boost::shared_ptr<MatrixSparse<T> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j ) = 0;
 
 
     /**
@@ -784,29 +845,7 @@ public:
     {
         M_is_initialized = _init;
     }
-#if 0
-    template<typename DomainSpace, typename ImageSpace>
-    void updateIndexSplit( DomainSpace const& dm, ImageSpace const& im )
-    {
-        auto nSpace = DomainSpace::element_type::nSpaces;
 
-        if ( nSpace>1 )
-        {
-            //std::cout << "\n Debug : nSpace " << nSpace << "\n";
-            std::vector < std::vector<int> > is( nSpace );
-            uint cptSpaces=0;
-            uint start=0;
-            auto result = boost::make_tuple( cptSpaces,start );
-
-            std::vector < std::vector<int> > indexSplit( nSpace );
-            //detail::computeNDofForEachSpace cndof(nSpace);
-            detail::computeNDofForEachSpace cndof( indexSplit );
-            boost::fusion::fold( dm->functionSpaces(), result,  cndof );
-
-            this->setIndexSplit( indexSplit );
-        }
-    }
-#endif
     virtual void sqrt( MatrixSparse<value_type>& _m ) const;
 
     void sqrt( boost::shared_ptr<MatrixSparse<value_type> >& _m ) const
@@ -814,12 +853,39 @@ public:
         sqrt(*_m);
     }
 
-    virtual void matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res );
+    /**
+     * Multiply this by a Sparse matrix \p In,
+     * stores the result in \p Res:
+     * \f$ Res = \texttt{this}*In \f$.
+     */
+    virtual void matMatMult( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res ) const;
 
+    /**
+     * Creates the matrix product C = P^T * A * P with A the current matrix
+     */
+    virtual void PtAP( MatrixSparse<value_type> const& P, MatrixSparse<value_type> & C ) const
+        {
+            CHECK( false ) << "Not Implemented in base class!";
+        }
+
+    /**
+     * Creates the matrix product C = P * A * P^T with A the current matrix
+     */
+    virtual void PAPt( MatrixSparse<value_type> const& P, MatrixSparse<value_type> & C ) const
+        {
+            CHECK( false ) << "Not Implemented in base class!";
+        }
+
+    /**
+     *
+     */
     virtual void matInverse ( MatrixSparse<value_type> &Inv );
 
+    /**
+     *
+     */
     virtual void applyInverseSqrt( Vector<value_type>& vec_in, Vector<value_type>& vec_out );
-    
+
     /**
      * Get informations (filling, nnz, ...)
      * Implemented in MatrixPetsc
@@ -852,7 +918,6 @@ protected:
         }
 
     //! mpi communicator
-    //mpi::communicator M_comm;
     WorldComm M_worldComm;
 
     /**
@@ -861,16 +926,23 @@ protected:
      */
     bool M_is_initialized;
 
+    /**
+     * Flag to see if the Numeric
+     * assemble routines have been called yet
+     */
+    mutable bool M_is_closed;
+
+    //! non zero entries representation
     graph_ptrtype M_graph;
 
+    //! matrix properties
     Context M_mprop;
 
     indexsplit_ptrtype M_indexSplit;
 
-    /**
-     * data distribution map of the vector over the processors
-     */
+    //! row data distribution in matrix
     datamap_ptrtype M_mapRow;
+    //! col data distribution in matrix
     datamap_ptrtype M_mapCol;
 
 
@@ -888,6 +960,7 @@ inline
 MatrixSparse<T>::MatrixSparse( WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
     M_is_initialized( false ),
+    M_is_closed( false ),
     M_mprop( NON_HERMITIAN )
 {}
 
@@ -896,6 +969,7 @@ inline
 MatrixSparse<T>::MatrixSparse ( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
     M_is_initialized( false ),
+    M_is_closed( false ),
     M_mprop( NON_HERMITIAN ),
     M_mapRow( dmRow ),
     M_mapCol( dmCol )
@@ -924,8 +998,8 @@ void MatrixSparse<T>::print( std::ostream& os ) const
 }
 
 template <typename T>
-void MatrixSparse<T>::multVector ( const Vector<T>& arg,
-                                   Vector<T>& dest ) const
+void MatrixSparse<T>::multVector ( const Vector<T>& arg, Vector<T>& dest,
+                                   bool transpose ) const
 {
     dest.zero();
     this->multAddVector( arg,dest );
@@ -1006,7 +1080,7 @@ void MatrixSparse<T>::sqrt( MatrixSparse<value_type>& _m ) const
 }
 
 template <typename T>
-void MatrixSparse<T>::matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res )
+void MatrixSparse<T>::matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res ) const
 {
     std::cerr << "Error! This function is not yet implemented in the base class!"
               << std::endl;

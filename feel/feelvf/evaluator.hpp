@@ -44,6 +44,26 @@ enum EvaluatorType
 };
 namespace details
 {
+template<typename ElementT, typename NodeT>
+class EvaluatorData: public boost::tuple<ElementT,NodeT>
+{
+public:
+    using super = boost::tuple<ElementT,NodeT>;
+    using element_type = ElementT;
+    using node_type = NodeT;
+
+    EvaluatorData( element_type e, node_type n ) :
+        super( e, n )
+        {}
+
+    //! access to element i
+    typename element_type::Scalar operator()( int i ) const { return this->template get<0>()(i); }
+
+    //! return the elements
+    element_type const& data() const { return this->template get<0>(); }
+
+    node_type const& nodes() const { return this->template get<1>(); }
+};
 /**
  * \class Evaluator
  * \brief work class to evaluate expressions at sets of points
@@ -77,9 +97,11 @@ public:
                               mpl::identity<typename Pset::template apply<mesh_element_type::nRealDim, value_type, Simplex>::type >,
                               mpl::identity<typename Pset::template apply<mesh_element_type::nRealDim, value_type, Hypercube>::type >
                               >::type::type pointset_type;
-    typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> element_type;
-    typedef Eigen::Matrix<value_type,mesh_element_type::nRealDim,Eigen::Dynamic> node_type;
-    typedef boost::tuple<element_type,node_type> eval_element_type;
+    typedef Eigen::Tensor<value_type,4> element_type;
+    using node_type = Eigen::Tensor<value_type,3>;
+    //typedef Eigen::Matrix<value_type,mesh_element_type::nRealDim,Eigen::Dynamic> node_type;
+    using eval_element_type = EvaluatorData<element_type,node_type>;
+
     //@}
 
     /** @name Constructors, destructor
@@ -202,8 +224,9 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
     boost::tie( boost::tuples::ignore, it, en ) = M_range;
 
     int npoints = M_pset.points().size2();
-    element_type __v( M_pset.points().size2()*std::distance( it, en )*shape::M );
-    node_type __p( mesh_element_type::nDim, M_pset.points().size2()*std::distance( it, en ) );
+    element_type __v( std::distance( it, en ), npoints, shape::M, shape::N );
+    node_type __p( std::distance(it,en), npoints, mesh_element_type::nRealDim );
+    //node_type __p( std::distance( it, en ), npoints );
     __v.setZero();
     __p.setZero();
 
@@ -211,7 +234,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
     // return if no elements
     if ( it == en )
-        return boost::make_tuple( __v, __p );
+        return eval_element_type( __v, __p );
 
     //
     // Precompute some data in the reference element for
@@ -248,12 +271,15 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
             {
                 for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
                 {
-                    __p(c1, e*npoints+p) = __c->xReal(p)[c1];
+                    __p(e,p,c1) = __c->xReal(p)[c1];
                 }
 
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                 {
-                    __v( e*npoints*shape::M+shape::M*p+c1) = tensor_expr.evalq( c1, 0, p );
+                    for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+                    {
+                        __v(e, p, c1, c2 ) = tensor_expr.evalq( c1, c2, p );
+                    }
                 }
             }
         }
@@ -269,11 +295,14 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
             {
                 for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
                 {
-                    __p(c1, e*npoints+p) = __c1->xReal(p)[c1];
+                    __p(e,p,c1) = __c1->xReal(p)[c1];
                 }
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                 {
-                    __v( e*npoints*shape::M+shape::M*p+c1) = tensor_expr1.evalq( c1, 0, p );
+                    for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+                    {
+                        __v( e, p, c1, c2 ) = tensor_expr1.evalq( c1, c2, p );
+                    }
                 }
             }
         }
@@ -292,11 +321,15 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
                 {
                     for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
                     {
-                        __p(c1, e*npoints+p) = __c->xReal(p)[c1];
+                        __p(e,p,c1) = __c->xReal(p)[c1];
                     }
+
                     for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                     {
-                        __v( e*npoints*shape::M+shape::M*p+c1) = tensor_expr.evalq( c1, 0, p );
+                        for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+                        {
+                            __v( e, p, c1, c2 ) = tensor_expr.evalq( c1, c2, p );
+                        }
                     }
                 }
             }
@@ -312,11 +345,15 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
                 {
                     for ( uint16_type c1 = 0; c1 < mesh_element_type::nDim; ++c1 )
                     {
-                        __p(c1, e*npoints+p) = __c1->xReal(p)[c1];
+                        __p(e,p,c1) = __c1->xReal(p)[c1];
                     }
+
                     for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                     {
-                        __v( e*npoints*shape::M+shape::M*p+c1) = tensor_expr1.evalq( c1, 0, p );
+                        for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+                        {
+                            __v( e, p, c1, c2 ) = tensor_expr1.evalq( c1, c2, p );
+                        }
                     }
                 }
             }
@@ -324,7 +361,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
         break;
         }
     }
-    return boost::make_tuple( __v, __p );
+    return eval_element_type( __v, __p );
 }
 
 template<EvaluatorType iDim, typename Iterator, typename Pset, typename ExprT>
@@ -374,15 +411,18 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     boost::tie( boost::tuples::ignore, __face_it, __face_en ) = M_range;
 
     int npoints = M_pset.fpoints(0,1).size2();
-    element_type __v( M_pset.fpoints(0,1).size2()*std::distance( __face_it, __face_en )*shape::M );
-    node_type __p( mesh_element_type::nRealDim, M_pset.fpoints(0,1).size2()*std::distance( __face_it, __face_en ) );
+    //element_type __v( M_pset.fpoints(0,1).size2()*std::distance( __face_it, __face_en )*shape::M );
+    element_type __v( std::distance( __face_it, __face_en ), npoints, shape::M, shape::N );
+    //node_type __p( mesh_element_type::nRealDim, M_pset.fpoints(0,1).size2()*std::distance( __face_it, __face_en ) );
+    node_type __p( std::distance( __face_it, __face_en ), npoints, mesh_element_type::nRealDim );
+
     __v.setZero();
     __p.setZero();
     VLOG(2) << "pset: " << M_pset.fpoints(0,1);
     VLOG(2) << "Checking trivial result...";
 
     if ( __face_it == __face_en )
-        return boost::make_tuple( __v, __p );
+        return eval_element_type( __v, __p );
 
     gm_ptrtype __gm( new gm_type );
     gm1_ptrtype __gm1( new gm1_type );
@@ -467,12 +507,15 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
             {
                 for ( uint16_type c1 = 0; c1 < mesh_element_type::nRealDim; ++c1 )
                 {
-                    __p(c1, e*npoints+p) = __c->xReal(p)[c1];
+                    __p(e,p,c1) = __c->xReal(p)[c1];
                 }
 
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                 {
-                    __v( e*npoints*shape::M+shape::M*p+c1) = expr.evalq( c1, 0, p );
+                    for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+                    {
+                        __v( e,p,c1,c2) = expr.evalq( c1, c2, p );
+                    }
                 }
             }
         }
@@ -492,12 +535,15 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
             {
                 for ( uint16_type c1 = 0; c1 < mesh_element_type::nRealDim; ++c1 )
                 {
-                    __p(c1, e*npoints+p) = __c1->xReal(p)[c1];
+                    __p(e,p,c1) = __c1->xReal(p)[c1];
                 }
 
                 for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                 {
-                    __v( e*npoints*shape::M+shape::M*p+c1) = expr1.evalq( c1, 0, p );
+                    for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+                    {
+                        __v( e,p,c1,c2) = expr1.evalq( c1, c2, p );
+                    }
                 }
 
             }
@@ -508,7 +554,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     } // face_it
 
 
-    return boost::make_tuple( __v, __p );
+    return eval_element_type( __v, __p );
 }
 }
 /// \endcond
@@ -576,6 +622,30 @@ BOOST_PARAMETER_FUNCTION(
     LOG(INFO) << "evaluate expression done." << std::endl;
 }
 
+template<typename Dimensions>
+std::array<int,2> indices2Array( const int& index, const Dimensions& dimensions, const int options )
+{
+    std::array<int,2> out;
+
+    if ( options&Eigen::RowMajor )
+    {
+        div_t res = std::div( index, (int) (dimensions[3]*dimensions[2]*dimensions[1]) );
+        out[0] = res.quot;
+        res = std::div( res.rem, (int) (dimensions[3]*dimensions[2]) );
+        out[1] = res.quot;
+    }
+    else
+    {
+        div_t res = std::div( index, (int) (dimensions[0]*dimensions[1]*dimensions[2]) );
+        res = std::div( res.rem, (int) (dimensions[0]*dimensions[1]) );
+        res = std::div( res.rem, (int) dimensions[0] );
+        out[1] = res.quot;
+        out[0] = res.rem;
+    }
+
+    return out;
+}
+
 /**
  * \brief data returned by normLinf
  */
@@ -583,7 +653,13 @@ template<int Dim>
 struct normLinfData : public boost::tuple<double, Eigen::Matrix<double, Dim,1> >
 {
     typedef boost::tuple<double, Eigen::Matrix<double, Dim,1> > super;
+
     normLinfData( double v, Eigen::Matrix<double, Dim,1> const& x  ) : super( v, x ) {}
+    normLinfData() = default;
+    normLinfData( normLinfData const&  ) = default;
+    normLinfData( normLinfData &&  ) = default;
+    normLinfData& operator=( normLinfData const&  ) = default;
+    normLinfData& operator=( normLinfData &&  ) = default;
 
     /**
      * \return the maximum absolute value
@@ -600,6 +676,15 @@ struct normLinfData : public boost::tuple<double, Eigen::Matrix<double, Dim,1> >
      */
     Eigen::Matrix<double, Dim,1> const& arg() const { return this->template get<1>(); }
 
+    /**
+     * Serialization for minmaxData
+     */
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+        {
+            ar & this->template get<0>();
+            ar & this->template get<1>();
+        }
 };
 /**
  *
@@ -628,51 +713,79 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
+    typedef typename detail::clean_type<Args,tag::expr>::type _expr_type;
+    typedef typename detail::clean_type<Args,tag::pset>::type _pset_type;
+    typedef typename detail::clean_type<Args,tag::range>::type _range_type;
+    typedef typename details::Evaluator<EVAL_NODAL, _range_type, _pset_type, Expr<_expr_type>>::eval_element_type eval_element_type;
+    typedef typename eval_element_type::element_type element_type;
 
     int proc_number = worldcomm.globalRank();
+    int world_size = worldcomm.size();
+    constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
+
 
     LOG(INFO) << "evaluate expression..." << std::endl;
 
     auto e = evaluate_impl( range, pset, expr, geomap );
-    int index;
-    double maxe = e.template get<0>().array().abs().maxCoeff(&index);
 
-    Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,1> n = e.template get<1>().col(index);
-    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is maximal: "<< index << " coord = \n"<<n<<"\n";
+    int index = 0;
+    double maxe = 1e-30;
+    Eigen::Matrix<double, nRealDim,1> n;
 
-    int world_size = worldcomm.size();
-    std::vector<double> maxe_world( world_size );
+    if ( e.data().size() )
+    {
+        Eigen::Tensor<Eigen::DenseIndex, 0> arg_max =  e.data().abs().argmax() ;
+        index = arg_max(0);
+        maxe = std::abs( e.data()(index) );
+    }
+
+    if ( e.nodes().size() )
+    {
+        auto dimensions = e.data().dimensions();
+        auto ids = indices2Array( index, dimensions, element_type::Options );
+
+        int elem_id=ids[0];
+        int pt_id=ids[1];
+
+        for (int i=0; i<nRealDim; i++ )
+            n[i]=e.nodes()( elem_id, pt_id ,i );
+    }
+
+    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.data().size() << ") is maximal: "<< index << " coord = \n"<< n <<"\n";
+
+    std::vector<normLinfData<nRealDim>> D_world( world_size );
+    normLinfData<nRealDim> D( maxe, n );
+
     mpi::all_gather( worldcomm.globalComm(),
-                     maxe,
-                     maxe_world );
+                     D,
+                     D_world );
 
-    std::vector< Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,1> > n_world( world_size );
-    mpi::all_gather( worldcomm.globalComm(),
-                     n,
-                     n_world );
+    auto it_max = std::max_element( D_world.begin() , D_world.end(),
+                                    []( auto const& d1, auto const& d2 )
+                                    { return d1.value() < d2.value(); } );
 
-    auto it_max = std::max_element( maxe_world.begin() , maxe_world.end() );
-    int position = it_max - maxe_world.begin();
-    LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<*it_max<<" at position "<<position<<" with coord : \n "<<n<<"\n";
+    int position = it_max - D_world.begin();
+    LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<it_max->value()<<" at position "<<position<<" with coord : \n "<<it_max->arg()<<"\n";
 
     // some extra check
     if (VLOG_IS_ON(2))
     {
         int index2=0;
         double maxe2 = 0;
-        for( int i = 0; i < e.template get<0>().size(); ++i )
+        for( int i = 0; i < e.data().size(); ++i )
         {
-            if ( math::abs(e.template get<0>()(i)) > maxe2 )
+            if ( math::abs(e.data()(i) ) > maxe2 )
             {
-                maxe2 = math::abs(e.template get<0>()(i));
+                maxe2 = math::abs(e.data()(i));
                 index2 = i;
             }
         }
         LOG_ASSERT( index2 == index ) << " index2 = " << index2 <<  " and index  = " << index << "\n";
     }
+
     LOG(INFO) << "evaluate expression done." << std::endl;
-    Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,1> x = n_world[position];
-    return normLinfData<vf::detail::evaluate<Args>::nRealDim> (*it_max, x);
+    return normLinfData<nRealDim>( it_max->value(), it_max->arg() );
+
 }
 
 
@@ -684,6 +797,12 @@ struct minmaxData : public boost::tuple<double,double, Eigen::Matrix<double, Dim
 {
     typedef boost::tuple<double,double, Eigen::Matrix<double, Dim,2> > super;
     minmaxData( super const& s ) : super( s ) {}
+    minmaxData() = default;
+    minmaxData( minmaxData const& ) = default;
+    minmaxData( minmaxData && ) = default;
+    minmaxData& operator=( minmaxData const& ) = default;
+    minmaxData& operator=( minmaxData && ) = default;
+
     /**
      * \return the minimum absolute value
      */
@@ -704,6 +823,22 @@ struct minmaxData : public boost::tuple<double,double, Eigen::Matrix<double, Dim
      * \return the point at which the expression is maximal
      */
     Eigen::Matrix<double, Dim,1> argmax() const { return this->template get<2>().col(1); }
+
+    /**
+     * coordinates of the points where  min and max are attained
+     */
+    Eigen::Matrix<double, Dim,1> const& coords() const { return this->template get<2>(); }
+
+    /**
+     * Serialization for minmaxData
+     */
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+        {
+            ar & this->template get<0>();
+            ar & this->template get<1>();
+            ar & this->template get<2>();
+        }
 
 };
 
@@ -735,46 +870,126 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
+    typedef typename detail::clean_type<Args,tag::expr>::type _expr_type;
+    typedef typename detail::clean_type<Args,tag::pset>::type _pset_type;
+    typedef typename detail::clean_type<Args,tag::range>::type _range_type;
+    typedef typename details::Evaluator<EVAL_NODAL, _range_type, _pset_type, Expr<_expr_type>>::eval_element_type eval_element_type;
+    typedef typename eval_element_type::element_type element_type;
 
+    constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
     int proc_number = worldcomm.globalRank();
 
     LOG(INFO) << "evaluate minmax(expression)..." << std::endl;
-
     auto e = evaluate_impl( range, pset, expr, geomap );
-    int indexmin;
-    int indexmax;
-    double mine = e.template get<0>().array().minCoeff(&indexmin);
-    double maxe = e.template get<0>().array().maxCoeff(&indexmax);
 
-    Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,2> n;
-    n.col(0) = e.template get<1>().col(indexmin);
-    n.col(1) = e.template get<1>().col(indexmax);
-    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is minimal: "<< indexmin << " coord = \n"<<n.col(0)<<"\n";
-    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is maximal: "<< indexmax << " coord = \n"<<n.col(1)<<"\n";
+    int indexmin = 0;
+    int indexmax = 0;
+    double mine = 1e-30;
+    double maxe = 1e-30;
+
+    if ( e.data().size() )
+    {
+        Eigen::Tensor<Eigen::DenseIndex, 0> arg_max = e.data().argmax() ;
+        Eigen::Tensor<Eigen::DenseIndex, 0> arg_min = e.data().argmin() ;
+
+        indexmin = arg_min(0);
+        indexmax = arg_max(0);
+        mine = e.data()(indexmin);
+        maxe = e.data()(indexmax);
+    }
+
+    Eigen::Matrix<double, nRealDim,2> n = Eigen::Matrix<double, nRealDim,2>::Zero();
+
+    if ( e.nodes().size() )
+    {
+        auto dimensions = e.data().dimensions();
+        const int options = element_type::Options;
+
+        auto ids = indices2Array( indexmin, dimensions, options );
+        int elem_id=ids[0];
+        int pt_id=ids[1];
+        for (int i=0; i<nRealDim; i++ )
+            n(i,0)=e.nodes()( elem_id, pt_id ,i );
+
+        ids = indices2Array( indexmax, dimensions, options );
+        elem_id=ids[0];
+        pt_id=ids[1];
+        for (int i=0; i<nRealDim; i++ )
+            n(i,1)=e.nodes()( elem_id, pt_id ,i );
+    }
+
+    LOG(INFO) << "proc "<<proc_number <<" index at which function (size: " << e.data().size() << ") is minimal: " << indexmin << " coord = \n"<<n.col(0)<<"\n";
+    LOG(INFO) << "proc "<<proc_number <<" index at which function (size: " << e.data().size() << ") is maximal: " << indexmax << " coord = \n"<<n.col(1)<<"\n";
 
     int world_size = worldcomm.size();
-    std::vector<double> mine_world( world_size );
-    std::vector<double> maxe_world( world_size );
-    mpi::all_gather( worldcomm.globalComm(),mine,mine_world );
-    mpi::all_gather( worldcomm.globalComm(),maxe,maxe_world );
+    minmaxData<nRealDim> D( boost::make_tuple( mine, maxe, n) );
+    std::vector<minmaxData<nRealDim>> D_world( world_size );
+    mpi::all_gather( worldcomm.globalComm(), D, D_world );
 
-    std::vector< Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,2> > n_world( world_size );
-    mpi::all_gather( worldcomm.globalComm(),n,n_world );
+    auto it_min = std::min_element( D_world.begin() , D_world.end(),
+                                    []( auto const& d1, auto const& d2 )
+                                    { return d1.min() < d2.min(); } );
+    int positionmin = it_min - D_world.begin();
+    LOG(INFO)<<"proc "<<proc_number<<" : global min = "<<it_min->min()<<" at position "<<positionmin<<" with coord : \n "<< it_min->argmin()<<"\n";
 
-    auto it_min = std::min_element( mine_world.begin() , mine_world.end() );
-    int positionmin = it_min - mine_world.begin();
-    LOG(INFO)<<"proc "<<proc_number<<" : global min = "<<*it_min<<" at position "<<positionmin<<" with coord : \n "<<n_world[positionmin]<<"\n";
-    auto it_max = std::max_element( maxe_world.begin() , maxe_world.end() );
-    int positionmax = it_max - maxe_world.begin();
-    LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<*it_max<<" at position "<<positionmax<<" with coord : \n "<<n_world[positionmax]<<"\n";
+    auto it_max = std::max_element( D_world.begin() , D_world.end(),
+                                    []( auto const& d1, auto const& d2 )
+                                    { return d1.max() < d2.max(); } );
+    int positionmax = it_max - D_world.begin();
+    LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<it_max->max()<<" at position "<<positionmax<<" with coord : \n "<< it_max->argmax()<<"\n";
 
-    Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,2> coords;
-    coords.col(0) = n_world[positionmin].col(0);
-    coords.col(1) = n_world[positionmax].col(1);
+    Eigen::Matrix<double, nRealDim,2> coords;
+    coords.col(0) = it_min->argmin();
+    coords.col(1) = it_max->argmax();
 
     LOG(INFO) << "evaluate minmax(expression) done." << std::endl;
 
-    return minmaxData<vf::detail::evaluate<Args>::nRealDim> (boost::make_tuple( *it_min, *it_max, coords ));
+    return minmaxData<nRealDim> (boost::make_tuple( it_min->min(), it_max->max(), coords ));
+}
+
+/// \cond DETAIL
+namespace detail{
+template <typename Args>
+struct maxPerCellData
+{
+    typedef typename clean_type<Args,tag::expr>::type _expr_type;
+    typedef typename _expr_type::value_type value_type;
+
+    typedef Eigen::Tensor<value_type,3> element_type;
+}; // maxpercelldata
+
+} //detail
+
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename vf::detail::maxPerCellData<Args>::element_type ), // return type
+    maxPerCell,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    ( required
+      ( range, *  )
+      ( pset, * )
+      ( expr, * )
+      ) // 4. one required parameter, and
+
+    ( optional
+      ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
+      )
+)
+{
+    typedef typename detail::clean_type<Args,tag::expr>::type _expr_type;
+    typedef typename _expr_type::value_type value_type;
+
+    auto e = evaluate_impl( range, pset, expr, geomap );
+    std::array<std::ptrdiff_t,1> reduction_axis;
+    reduction_axis[0] = 2;
+
+    Eigen::Tensor<value_type,4> data = e.data();
+
+    Eigen::Tensor<value_type,3> reduced_data = data.maximum( reduction_axis );
+
+    return reduced_data;
 }
 
 } // vf

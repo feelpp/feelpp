@@ -19,6 +19,13 @@ set(FEELPP_INSTALL_DIR @CMAKE_INSTALL_PREFIX@)
 set(FEELPP_CONFIG_FILE ${CMAKE_CURRENT_LIST_FILE})
 message(STATUS "[Feel++] Using config file: ${FEELPP_CONFIG_FILE}")
 
+get_filename_component(_CONFIG_DIR ${FEELPP_CONFIG_FILE} PATH)
+get_filename_component(TOP_INSTALL_DIR ${_CONFIG_DIR}/../../../../ ABSOLUTE)
+message(STATUS "[Feel++] Current installation directory: ${TOP_INSTALL_DIR}")
+set(FEELPP_DIR ${TOP_INSTALL_DIR})
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR})
+
 if(FEELPP_AUTOLOAD)
     message(STATUS "[Feel++] Information: FEELPP_AUTOLOAD variable is set. This means that the Feel++Config.cmake file will automatically set your environment to use Feel++.")
     message(STATUS "[Feel++] Information: If you want to configure your environment manually, please set it to 0 and refer to the Feel++Config.cmake file.") 
@@ -58,15 +65,50 @@ endif()
 ## Compute paths
 set(FEELPP_INCLUDE_DIR "@FEELPP_INCLUDE_DIR@")
 set(FEELPP_DEPS_INCLUDE_DIR "@FEELPP_DEPS_INCLUDE_DIR@")
+set(FEELPP_DEPS_LINK_DIR "@FEELPP_DEPS_LINK_DIR@")
+
+set(DEPENDENCIES_OK "1")
+message(STATUS "[Feel++] Performing dependency checks ...")
+# Check headers
+foreach(_dep_include ${FEELPP_DEPS_INCLUDE_DIR})
+    # message("${_dep_include}")
+    if(NOT EXISTS ${_dep_include})
+        set(DEPENDENCIES_OK "0")
+        break()
+    endif()
+endforeach()
+
+if(DEPENDENCIES_OK)
+    # Check libs
+    foreach(_dep_link ${FEELPP_DEPS_LINK_DIR})
+        # message("${_dep_link}")
+        if(NOT EXISTS ${_dep_link})
+            set(DEPENDENCIES_OK "0")
+            break()
+        endif()
+    endforeach()
+endif()
+
+if(DEPENDENCIES_OK)
+    message(STATUS "[Feel++] Dependencies: OK")
+else()
+    message(STATUS "[Feel++] There is an issue with dependency checking. This can happen when you installed Feel++ via a tarball.")
+    message(STATUS "[Feel++] We will discard the original dependencies of Feel++ and perform a new dependency check.")
+    #include(feelpp.dependencies)
+endif()
+
 if(FEELPP_AUTOLOAD)
-    include_directories(${FEELPP_INCLUDE_DIR})
     # Add a relative path to the include dir 
     # (if Feel++ is packaged in a tarball, it might not be installed where it was first installed when compiled)
-    include_directories(../../../include)
+    include_directories(${TOP_INSTALL_DIR}/include)
+    # Required for contrib headers
+    include_directories(${TOP_INSTALL_DIR}/include/feel)
+    include_directories(${TOP_INSTALL_DIR}/include/feel/ginac)
+    include_directories(${TOP_INSTALL_DIR}/include/feel/unsupported)
     include_directories(${FEELPP_DEPS_INCLUDE_DIR})
 endif()  
-set(FEELPP_DEPS_LINK_DIR "@FEELPP_DEPS_LINK_DIR@")
 if(FEELPP_AUTOLOAD)
+    link_directories(${TOP_INSTALL_DIR}/lib)
     link_directories(${FEELPP_DEPS_LINK_DIR})
 endif()  
  
@@ -79,12 +121,42 @@ endif()
 set(FEELPP_LIBRARY "feelpp")
 set(FEELPP_LIBRARIES "@FEELPP_LIBRARIES@")
 
+# Feel++ mesh configuration
+set(FEELPP_MESH_MAX_ORDER "@FEELPP_MESH_MAX_ORDER@")
+set(FEELPP_INSTANTIATION_ORDER_MAX "@FEELPP_INSTANTIATION_ORDER_MAX@")
+
 # Add info about with what Feel++ has been built
 set(FEELPP_HAS_ANN "@FEELPP_HAS_ANN_H@")
+set(FEELPP_HAS_GMSH "@FEELPP_HAS_GMSH@")
 set(FEELPP_HAS_HDF5 "@FEELPP_HAS_HDF5@")
+set(FEELPP_HAS_PARAVIEW "@FEELPP_HAS_PARAVIEW@")
+if(FEELPP_HAS_PARAVIEW)
+    # It is necessary to find ParaView again because:
+    # - ParaView/VTK only exposes logical targets in *_LIBRARIES variables
+    # - So we must find the libraries associated to those targets 
+    find_package(ParaView REQUIRED)
+    include(${PARAVIEW_USE_FILE})
+endif()
+set(FEELPP_HAS_PETSC "@FEELPP_HAS_PETSC@")
+set(FEELPP_HAS_SLEPC "@FEELPP_HAS_SLEPC@")
 set(FEELPP_HAS_VTK "@FEELPP_HAS_VTK@")
+if(FEELPP_HAS_VTK AND NOT FEELPP_HAS_PARAVIEW)
+    # Similar fix to ParaView for transforming logical target to actual libraries
+    find_package(VTK REQUIRED)
+    include(${VTK_USE_FILE})
+endif()
 set(FEELPP_VTK_INSITU_ENABLED "@FEELPP_VTK_INSITU_ENABLED@")
+set(FEELPP_HAS_PARAVIEW "@FEELPP_HAS_PARAVIEW@")
+if(FEELPP_HAS_PARAVIEW)
+    # It is necessary to find ParaView again because:
+    # - ParaView/VTK only exposes logical targets in *_LIBRARIES variables
+    # - So we must find the libraries associated to those targets 
+    find_package(ParaView REQUIRED)
+    include(${PARAVIEW_USE_FILE})
+endif()
+set(FEELPP_HAS_PETSC "@FEELPP_HAS_PETSC@")
+set(FEELPP_HAS_SLEPC "@FEELPP_HAS_SLEPC@")
+set(FEELPP_HAS_VTK "@FEELPP_HAS_VTK@")
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/modules)
 include(feelpp.macros)
 

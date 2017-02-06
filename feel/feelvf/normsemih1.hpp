@@ -38,6 +38,7 @@ BOOST_PARAMETER_FUNCTION(
     ) // 4. one required parameter, and
 
     ( optional
+      ( parallel,   ( bool ), true )
       ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
       ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
@@ -51,7 +52,7 @@ BOOST_PARAMETER_FUNCTION(
 {
     double a = integrate( _range=range, _expr=trace(grad_expr*trans(grad_expr)), _quad=quad, _geomap=geomap,
                           _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                          _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
+                          _partitioner=partitioner, _verbose=verbose ).evaluate(parallel)( 0, 0 );
     return math::sqrt( a );
 }
 

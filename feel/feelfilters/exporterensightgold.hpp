@@ -207,42 +207,52 @@ private:
     /**
      * init the ensight exporter
      */
-    void init();
+    FEELPP_NO_EXPORT void init();
 
     /**
        write the '' file for ensight
     */
-    void writeSoSFile() const;
+    FEELPP_NO_EXPORT void writeSoSFile() const;
 
+    /**
+     * write case file variables
+     */
+    template<typename Iterator, typename TSt>
+    void writeCaseFileVariables( Iterator it, Iterator end,
+                                 std::string const& loc,
+                                 std::string const& type,
+                                 std::string const& ext,
+                                 TSt const& __ts,
+                                 std::ostream& __out ) const;
     /**
        write the 'case' file for ensight
     */
-    void writeCaseFile() const;
+    FEELPP_NO_EXPORT void writeCaseFile() const;
 
     /**
        updates the markers to be written by he exporters
     */
-    void computeMarkersToWrite(mesh_ptrtype mesh) const;
+    FEELPP_NO_EXPORT void computeMarkersToWrite(mesh_ptrtype mesh) const;
 
     /**
        write the 'geo' file for ensight
     */
-    void writeGeoFiles() const;
-    void writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh) const;
-    void writeGeoHeader(MPI_File fh) const;
-    void writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<size_type> > & m) const;
-    void writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, size_type markerid) const;
+    FEELPP_NO_EXPORT void writeGeoFiles() const;
+    FEELPP_NO_EXPORT void writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh) const;
+    FEELPP_NO_EXPORT void writeGeoHeader(MPI_File fh) const;
+    FEELPP_NO_EXPORT void writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<size_type> > & m) const;
+    FEELPP_NO_EXPORT void writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, size_type markerid) const;
 
     /**
        write the variables file for ensight
     */
-    void writeVariableFiles() const;
+    FEELPP_NO_EXPORT void writeVariableFiles() const;
 
     template<typename Iterator>
-    void saveNodal( typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const;
+    FEELPP_NO_EXPORT void saveNodal( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const;
 
     template<typename Iterator>
-    void saveElement( typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __evar, Iterator __evaren ) const;
+    FEELPP_NO_EXPORT void saveElement( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __evar, Iterator __evaren ) const;
 
 private:
 

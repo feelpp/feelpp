@@ -32,6 +32,7 @@
 #include <feel/feelmodels/modelparameters.hpp>
 #include <feel/feelmodels/modelmaterials.hpp>
 #include <feel/feelmodels/modelpostprocess.hpp>
+#include <feel/feelmodels/modelfunctions.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
 
 
@@ -49,6 +50,9 @@ public:
 
     WorldComm const& worldComm() const { return M_worldComm; }
 
+    pt::ptree const& pTree() const { return M_p; }
+    pt::ptree & pTree() { return M_p; }
+
     std::string const& name() const {  return M_name; }
     void setName( std::string const& t) { M_name = t; }
     std::string shortName() const {  return M_shortname; }
@@ -63,6 +67,7 @@ public:
     ModelParameters const& parameters() const {  return M_params; }
     ModelMaterials const& materials() const {  return M_mat; }
     BoundaryConditions const& boundaryConditions() const { return M_bc; }
+    BoundaryConditions const& initialConditions() const { return M_ic; }
 
     ModelParameters & parameters()  {  return M_params; }
     ModelMaterials & materials() {  return M_mat; }
@@ -70,6 +75,9 @@ public:
 
     ModelPostprocess& postProcess() { return M_postproc; }
     ModelPostprocess const& postProcess() const { return M_postproc; }
+
+    ModelFunctions & functions() { return M_functions; }
+    ModelFunctions const& functions() const { return M_functions; }
 
     std::string getEntry(std::string &s);
 
@@ -95,7 +103,9 @@ private:
     ModelParameters M_params;
     ModelMaterials M_mat;
     BoundaryConditions M_bc;
+    BoundaryConditions M_ic; // Initial conditions
     ModelPostprocess M_postproc;
+    ModelFunctions M_functions;
 };
 
 

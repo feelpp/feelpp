@@ -55,7 +55,7 @@ int main(int argc, char**argv )
             auto u = Vh->element();
             auto v = Vh->element();
 
-            auto syms = symbols<3>();
+            auto syms = symbols<2>();
             auto g = option(_name="functions.g").as<std::string>();
             auto laplacian_g = laplacian( g, syms  );
 

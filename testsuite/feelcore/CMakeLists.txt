@@ -2,7 +2,7 @@ set_directory_properties(PROPERTIES LABEL testcore )
 IF ( TBB_FOUND )
   SET( OTESTS tbb )
 ENDIF()
-foreach(TEST traits singleton factory debug context simget ${OTESTS} env removecomments )
+foreach(TEST traits singleton factory debug context simget ${OTESTS} env removecomments feelio)
 
   feelpp_add_test( ${TEST} )
 
@@ -17,11 +17,15 @@ add_test(NAME test_boostmpi COMMAND mpirun -np 2 test_boostmpi --log_level=messa
 
 
 # test scatter/gather: identified a bug in PETSc up to 3.5.1
+if(FEELPP_HAS_PETSC)
 feelpp_add_test(gatherscatter_boostmpi_petsc_datatype SRCS test_gatherscatter.cpp DEFS USE_BOOST_MPI=1 USE_PETSC=1 USE_DATATYPE=1)
+endif()
 # the next one fails for now
 #feelpp_add_test(gatherscatter_boostmpi_petsc SRCS test_gatherscatter.cpp DEFS USE_BOOST_MPI=1 USE_PETSC=1)
 feelpp_add_test(gatherscatter_boostmpi  SRCS test_gatherscatter.cpp DEFS USE_BOOST_MPI=1)
+if(FEELPP_HAS_PETSC)
 feelpp_add_test(gatherscatter_mpi_petsc_datatype  SRCS test_gatherscatter.cpp DEFS USE_PETSC=1 USE_DATATYPE=1)
+endif()
 # the next one fails
 #feelpp_add_test(gatherscatter_mpi_petsc  SRCS test_gatherscatter.cpp DEFS USE_PETSC=1)
 feelpp_add_test(gatherscatter_mpi  SRCS test_gatherscatter.cpp )

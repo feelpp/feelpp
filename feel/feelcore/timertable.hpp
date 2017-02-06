@@ -37,7 +37,7 @@
 #include <boost/accumulators/statistics/variance.hpp>
 #include <boost/accumulators/statistics/min.hpp>
 #include <boost/accumulators/statistics/max.hpp>
-
+#include <boost/algorithm/string/trim_all.hpp>
 namespace Feel {
 
 class TimerData : public std::vector<double>
@@ -77,7 +77,8 @@ public:
         {
             std::ostringstream os;
             using namespace boost::accumulators;
-           
+            using namespace std::string_literals;
+            
             os << std::setw( M_max_len ) <<std::left << "Timer" << " " 
                << std::setw(7) << std::right << "Count" << " "
                << std::setw(9+2) << std::right << "Total(s)" << " "
@@ -131,6 +132,23 @@ public:
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << min(acc) << " "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << mean(acc) << " "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << sqrt(variance(acc)) << "\n";
+
+                std::string n = boost::trim_fill_copy( boost::trim_fill_copy_if( T.second.name, "_", boost::is_any_of(":")), "_" );
+                
+                try {
+                    Environment::summary().put( "application.timers."s+n+".name", T.second.name );
+                    Environment::summary().put( "application.timers."s+n+".count", boost::accumulators::count(acc) );
+                    Environment::summary().put( "application.timers."s+n+".total", sum(acc) );
+                    Environment::summary().put( "application.timers."s+n+".max", max(acc) );
+                    Environment::summary().put( "application.timers."s+n+".min", min(acc) );
+                    Environment::summary().put( "application.timers."s+n+".mean", mean(acc) );
+                    Environment::summary().put( "application.timers."s+n+".stddev", sqrt(variance(acc)) );
+                }
+                catch( pt::ptree_bad_data d )
+                {
+                    std::cout << "d: " << d.what() << std::endl;
+                }
+                
             }
             os << std::resetiosflags(os.flags());
             if ( display )

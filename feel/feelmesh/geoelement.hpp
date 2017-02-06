@@ -54,11 +54,14 @@ public:
 
     boost::none_t element( uint16_type /* e */ ) const
     {
-        return boost::none_t();
+        return boost::none;
     }
 
     SubFaceOfNone() {}
     SubFaceOfNone( SubFaceOfNone const& ) {}
+    SubFaceOfNone( SubFaceOfNone && ) = default;
+    SubFaceOfNone& operator=( SubFaceOfNone const& ) = default;
+    SubFaceOfNone& operator=( SubFaceOfNone && ) = default;
 
     virtual ~SubFaceOfNone() {}
 
@@ -123,6 +126,12 @@ public:
         M_element1( sf.M_element1 )
     {
     }
+    SubFaceOf( SubFaceOf && sf )
+        :
+        M_element0( std::move( sf.M_element0 ) ),
+        M_element1( std::move( sf.M_element1 ) )
+        {
+        }
     SubFaceOf( SubFaceOfNone const& /*sf*/ )
         :
         M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value ),
@@ -142,6 +151,13 @@ public:
 
         return *this;
     }
+    SubFaceOf& operator=( SubFaceOf && sf )
+        {
+            M_element0 = std::move(sf.M_element0);
+            M_element1 = std::move(sf.M_element1);
+            ///std::cout << "move assigned SubFaceOf\n";
+            return *this;
+        }
     SubFaceOf& operator=( SubFaceOfNone const& /*sf*/ )
     {
         return *this;
@@ -827,15 +843,26 @@ public:
         :
         super( id ),
         super2(),
-        M_vertices( numLocalVertices, 0 ),
-        M_vertex_permutation( numLocalVertices )
+        M_vertices()
+        //M_vertex_permutation( numLocalVertices )
     {
+        M_vertices.fill( nullptr );
     }
     /**
      * copy consttructor
      */
     GeoElement1D( GeoElement1D const& g ) = default;
-    GeoElement1D( GeoElement1D && g ) = default;
+    GeoElement1D( GeoElement1D && g )
+        :
+        super( std::move(g) ),
+        super2( std::move(g) ),
+        M_map( std::move( g.M_map ) ),
+        M_vertices( std::move( g.M_vertices ) )
+        {
+            //std::cout << "GeoElement1D move ctor\n";
+        }
+           
+        
 
     /**
      * destructor
@@ -847,7 +874,15 @@ public:
      * copy operator
      */
     GeoElement1D& operator=( GeoElement1D const& g ) = default;
-    GeoElement1D& operator=( GeoElement1D && g ) = default;
+    GeoElement1D& operator=( GeoElement1D && g )
+        {
+            super::operator=( std::move(g) );
+            super2::operator=( std::move(g) );
+            M_map = std::move( g.M_map );
+            M_vertices = std::move( g.M_vertices );
+            //std::cout << "GeoElement1D move op\n";
+            return *this;
+        }
 
 
     //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
@@ -987,8 +1022,8 @@ public:
         return M_vertices[i];
     }
 
-    typedef typename ublas::bounded_array<point_type*, numLocalVertices>::iterator face_iterator;
-    typedef typename ublas::bounded_array<point_type*, numLocalVertices>::const_iterator face_const_iterator;
+    typedef typename std::array<point_type*, numLocalVertices>::iterator face_iterator;
+    typedef typename std::array<point_type*, numLocalVertices>::const_iterator face_const_iterator;
 
     /**
      * \return the iterator pair (begin,end) of faces
@@ -1011,10 +1046,12 @@ public:
     /**
      * \sa edgePermutation(), permutation()
      */
-    vertex_permutation_type facePermutation( uint16_type i ) const
+    vertex_permutation_type facePermutation( uint16_type /*i*/ ) const
     {
-        FEELPP_ASSERT( i < numLocalVertices )( i )( numLocalVertices ).error( "invalid local vertex index" );
-        return M_vertex_permutation[i];
+        return edge_permutation_type();
+
+        //FEELPP_ASSERT( i < numLocalVertices )( i )( numLocalVertices ).error( "invalid local vertex index" );
+        //return M_vertex_permutation[i];
     }
 
 private:
@@ -1033,8 +1070,8 @@ private:
 private:
 
     std::vector<uint8_type> M_map;
-    ublas::bounded_array<point_type*, numLocalVertices> M_vertices;
-    ublas::bounded_array<vertex_permutation_type, numLocalVertices> M_vertex_permutation;
+    std::array<point_type*, numLocalVertices> M_vertices;
+    //ublas::bounded_array<vertex_permutation_type, numLocalVertices> M_vertex_permutation;
 
 };
 template<uint16_type Dim,
@@ -1236,7 +1273,23 @@ public:
     }
 
 
+    /**
+     * \return true if element have an edge connected
+     */
+    bool hasEdge( uint16_type i ) const
+    {
+        if ( i >= numLocalEdges )
+            return false;
+        return M_edges[i] != nullptr;
+    }
 
+    /**
+     * \return true if element have a face connected
+     */
+    bool hasFace( uint16_type i ) const
+    {
+        return this->hasEdge( i );
+    }
 
     /**
      * \sa face()
@@ -1280,8 +1333,6 @@ public:
     edge_type const* facePtr( uint16_type i ) const
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
-        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
-
         return M_edges[i];
     }
 
@@ -1378,8 +1429,10 @@ private:
         {
             DVLOG(2) << "Serializing Geoelement2D id: " << this->id() << "...\n";
             ar & boost::serialization::base_object<super>( *this );
+#if 0
             ar & boost::serialization::base_object<super2>( *this );
             ar & M_edges;
+#endif
         }
 
 
@@ -1454,13 +1507,12 @@ public:
         super( id ),
         super2(),
         M_edges( numLocalEdges, nullptr ),
-        M_faces( numLocalFaces ),
+        M_faces( numLocalFaces, nullptr ),
         M_edge_permutation( numLocalEdges, edge_permutation_type( edge_permutation_type::IDENTITY ) ),
-        M_face_permutation( numLocalFaces )
+        M_face_permutation( numLocalFaces, face_permutation_type( face_permutation_type::IDENTITY ) )
     {
-        std::fill( M_faces.begin(), M_faces.end(), ( face_type* )0 );
-
-        std::fill( M_face_permutation.begin(), M_face_permutation.end(), face_permutation_type( face_permutation_type::IDENTITY ) );
+        //std::fill( M_faces.begin(), M_faces.end(), ( face_type* )0 );
+        //std::fill( M_face_permutation.begin(), M_face_permutation.end(), face_permutation_type( face_permutation_type::IDENTITY ) );
     }
 
     /**
@@ -1592,6 +1644,28 @@ public:
         return invalid_uint16_type_value;
     }
 
+
+    /**
+     * \return true if GeoElement3D is connected to an edge
+     */
+    bool hasEdge( uint16_type i ) const
+    {
+        if ( i >= numLocalEdges )
+            return false;
+        return M_edges[i] != nullptr;
+    }
+
+    /**
+     * \return true if GeoElement3D is connected to a face
+     */
+    bool hasFace( uint16_type i ) const
+    {
+        if ( i >= numLocalFaces )
+            return false;
+        return M_faces[i] != nullptr;
+    }
+
+
     edge_type const& edge( uint16_type i ) const
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
@@ -1611,7 +1685,7 @@ public:
     edge_type const* edgePtr( uint16_type i ) const
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
-        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+        //DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
 
         return M_edges[i];
     }
@@ -1745,5 +1819,18 @@ const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::numLocalEdges;
 template <uint16_type Dim, typename GEOSHAPE, typename T>
 const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::nDim;
 
+template<typename EltType>
+bool
+hasFaceWithMarker( EltType const& e, boost::any const& flag )
+{
+    flag_type theflag = e.mesh()->markerId( flag );
+    for( auto const& f : e.faces() )
+    {
+        if ( f.marker().value() == theflag )
+            return true;
+    }
+    return false;
+}
+    
 } // Feel
 #endif

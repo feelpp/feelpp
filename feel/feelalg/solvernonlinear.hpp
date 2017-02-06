@@ -116,6 +116,9 @@ public:
                                    map_dense_vector_type& R,
                                    map_dense_matrix_type& J )> map_dense_matvec_function_type;
 
+    using pre_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
+    using post_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
+
     class NLSolveData : public boost::tuple<bool,size_type,value_type>
     {
         typedef boost::tuple<bool,size_type,value_type> super_type;
@@ -426,6 +429,37 @@ public:
     {
         M_nbItMax=n;
     }
+
+    /**
+     * \return the pre solve function
+     */
+    pre_solve_type preSolve() { return M_pre_solve; }
+
+    /**
+     * set the pre solve function
+     */
+    void setPreSolve( pre_solve_type pre ) { M_pre_solve = pre; }
+
+    /**
+     * call the pre solve function with \p x as the rhs and \p y as the solution
+     */
+    void preSolve(vector_ptrtype x, vector_ptrtype y) { return M_pre_solve(x,y); }
+
+    /**
+     * \return the post solve function
+     */
+    post_solve_type postSolve() { return M_post_solve; }
+
+    /**
+     * set the post solve function
+     */
+    void setPostSolve( post_solve_type post ) { M_post_solve = post; }
+    
+    /**
+     * call the post solve function with \p x as the rhs and \p y as the solution
+     */
+    void postSolve(vector_ptrtype x, vector_ptrtype y) { return M_post_solve(x,y); }
+    
     //@}
 
 
@@ -663,6 +697,15 @@ protected:
      */
     size_type M_maxitKSP;
 
+    /**
+     * pre solve function
+     */
+    pre_solve_type M_pre_solve;
+
+    /**
+     * post solve function
+     */
+    post_solve_type M_post_solve;
 
 };
 

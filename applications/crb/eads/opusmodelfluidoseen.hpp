@@ -184,7 +184,7 @@ OpusModelFluidOseen<SpaceType>::OpusModelFluidOseen( po::variables_map const& vm
     M_time( 100 ),
     M_flow_rate( vm["fluid.flow-rate"].as<double>()  ),
     M_current_flow_rate( vm["fluid.flow-rate"].as<double>()  ),
-    M_backend( backend_type::build( vm, "fluid" ) ),
+    M_backend( backend(_name="fluid" ) ),
     M_Xh( Xh ),
     M_D(),
     M_F()

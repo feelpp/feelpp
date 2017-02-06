@@ -762,7 +762,7 @@ public:
                                   const size_type proc_id = 0 ) const;
 
 
-    value_type dot( Vector<T> const& __v )
+    value_type dot( Vector<T> const& __v ) const
     {
         throw std::logic_error( "[vetor eigen] ERROR dot function not yet implemented" );
         return 0;

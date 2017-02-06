@@ -318,6 +318,12 @@ public:
     Exporter<MeshType,N>* setPrefix( std::string const& __prefix )
     {
         M_prefix = __prefix;
+
+        if(M_ts_set.size() > 0)
+        {
+            M_ts_set.back()->setName( M_prefix );
+        }
+
         return this;
     }
 
@@ -390,9 +396,28 @@ public:
             M_ts_set.back()->setMesh( mesh );
             //this->step( 0 )->setMesh( mesh );
         }
+
+    /**
+     * export a scalar quantity \p u with name \p name
+     * \param name name of the scalar quantity
+     * \param u scalar quantity to be exported
+     * \param cst true if the scalar is constant over time, false otherwise
+     */
+    template<typename T>
+    void
+    add( std::string const& name, T const& u, bool cst = false,
+         typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr )
+        {
+            this->step( 0 )->add( name, u, cst );
+        }
+
+    /**
+     * export field \p u with name \p name
+     */
     template<typename F>
     void
-    add( std::string const& name, F const& u )
+    add( std::string const& name, F const& u,
+         typename std::enable_if<is_functionspace_element_v<F>>::type* = nullptr )
         {
             this->step( 0 )->add( name, u );
         }
@@ -402,6 +427,10 @@ public:
         {
             this->step( 0 )->addRegions( "" );
         }
+
+    /**
+     * @return the step shared_ptr at time \p time
+     */
     step_ptrtype step( double time )
     {
         if ( this->cptOfSave() % this->freq()  )
@@ -533,6 +562,7 @@ struct compute_exporter_return
 
 };
 }
+using namespace std::string_literals;
 BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>::ptrtype ),
                           exporter,                                       // 2. name of the function template
                           tag,                                        // 3. namespace of tag types
@@ -544,7 +574,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
                             ( geo,   *, soption(_name="exporter.geometry") )
-                            ( path, *( boost::is_convertible<mpl::_,std::string> ), soption("exporter.format")+"/"+name )
+                            ( path, *( boost::is_convertible<mpl::_,std::string> ), Environment::exportsRepository()+"/"+soption("exporter.format")+"/"+name )
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;

@@ -3,7 +3,7 @@
  *  Interface to polynomials with integer and modular coefficients. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -169,7 +169,7 @@ template<typename T> bool divide(T& p, const typename T::value_type& c)
 
 // Convert Z[x] -> Z/p[x]
 
-static void
+static inline void
 make_umodpoly(umodpoly& up, const upoly& p, const cln::cl_modint_ring& R)
 {
 	for (std::size_t i = p.size(); i-- != 0; )

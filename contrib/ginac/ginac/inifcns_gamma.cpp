@@ -4,7 +4,7 @@
  *  some related stuff. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -130,7 +130,7 @@ REGISTER_FUNCTION(lgamma, eval_func(lgamma_eval).
                           derivative_func(lgamma_deriv).
                           series_func(lgamma_series).
                           conjugate_func(lgamma_conjugate).
-                          latex_name("\\log \\Gamma"));
+                          latex_name("\\log \\Gamma"))
 
 
 //////////
@@ -235,7 +235,7 @@ REGISTER_FUNCTION(tgamma, eval_func(tgamma_eval).
                           derivative_func(tgamma_deriv).
                           series_func(tgamma_series).
                           conjugate_func(tgamma_conjugate).
-                          latex_name("\\Gamma"));
+                          latex_name("\\Gamma"))
 
 
 //////////
@@ -353,7 +353,7 @@ REGISTER_FUNCTION(beta, eval_func(beta_eval).
                         derivative_func(beta_deriv).
                         series_func(beta_series).
                         latex_name("\\mathrm{B}").
-                        set_symmetry(sy_symm(0, 1)));
+                        set_symmetry(sy_symm(0, 1)))
 
 
 //////////

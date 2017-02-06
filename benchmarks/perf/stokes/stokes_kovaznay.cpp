@@ -617,6 +617,6 @@ main( int argc, char** argv )
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
 
-    Feel::Stokes_Kovaznay<4,4> Stokes_Kovaznay;
+    Feel::Stokes_Kovaznay<2,2> Stokes_Kovaznay;
     Stokes_Kovaznay.run();
 }

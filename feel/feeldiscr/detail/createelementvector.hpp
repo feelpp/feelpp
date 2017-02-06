@@ -27,7 +27,7 @@
 namespace Feel { namespace detail {
 
 template<typename ElementType>
-struct CreateElementVector
+struct FEELPP_NO_EXPORT CreateElementVector
 {
 public:
     template<typename Sig>
@@ -68,15 +68,15 @@ public:
 
             FEELPP_ASSERT( M_names.size() == s  )
                 ( M_names.size() )( s ).error( "incompatible number of function names and functions");
-            elt.setName( M_names[index::value] );
+            elt.setName( sanitize(M_names[index::value]) );
         }
         else if  ( ( M_names.size() == 1 )  && s > 1 )
         {
-            elt.setName( (boost::format( "%1%-%2%" ) % M_names[0] % index::value ).str() );
+            elt.setName( (boost::format( "%1%-%2%" ) % sanitize(M_names[0]) % index::value ).str() );
         }
         else
         {
-            elt.setName( (boost::format( "%1%-%2%" ) % M_e.name() % index::value ).str() );
+            elt.setName( (boost::format( "%1%-%2%" ) % sanitize(M_e.name()) % index::value ).str() );
         }
         return boost::fusion::as_vector( boost::fusion::push_back( lhs, elt ) );
     }
@@ -84,4 +84,6 @@ public:
 
 
 } } // Feel / detail
+
+
 #endif // FEELPP_CREATE_ELEMENT_VECTOR_HPP

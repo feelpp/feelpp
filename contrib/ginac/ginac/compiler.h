@@ -3,7 +3,7 @@
  *  Definition of optimizing macros. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,9 +26,11 @@
 #ifdef __GNUC__
 #define unlikely(cond) __builtin_expect((cond), 0)
 #define likely(cond) __builtin_expect((cond), 1)
+#define attribute_deprecated __attribute__ ((deprecated))
 #else
 #define unlikely(cond) (cond)
 #define likely(cond) (cond)
+#define attribute_deprecated
 #endif
 
 #ifdef _MSC_VER

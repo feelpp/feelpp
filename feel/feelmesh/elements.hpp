@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2007,2008,2009,2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -61,7 +62,8 @@ namespace detail
     void
     updateElementGhostConnectEdgeToElement( EltType& e, int i, mpl::int_<3> /**/)
     {
-        e.edge( i ).addElementGhost( e.processId(),e.id() );
+        if ( e.edgePtr(i) )
+            e.edge( i ).addElementGhost( e.processId(),e.id() );
     }
 }
 
@@ -922,22 +924,68 @@ public:
      */
     //@{
 
-    /**
-     * add a new element in the mesh
-     * @param f a new point
-     * @return the new point from the list
-     */
+    //!
+    //! add a new element in the mesh
+    //! @param f a new point
+    //! @return the new point from the list
+    //!
     element_type const& addElement( element_type& f, bool setid = true )
     {
         M_parts[f.marker().value()]++;
         if ( setid )
             f.setId( M_elements.size() );
-        return *M_elements.insert( f ).first;
+        return *M_elements.insert( M_elements.end(), f );
         //M_elements.push_back( f );
         //return M_elements.back();
 
     }
+    //!
+    //! move an element into the mesh
+    //! @param f a new point
+    //! @return the new point from the list
+    //!
+    element_type const& addElement( element_type&& f )
+        {
+            M_parts[f.marker().value()]++;
+            return *M_elements.insert( f );
+        }
+    //!
+    //! add a new element in the mesh
+    //! @param f a new point
+    //! @param pos provide an hint for the position to insert
+    //! @return the new point from the list
+    //!
+    element_type const& addElement( element_iterator pos, element_type& f, bool setid = true )
+        {
+            M_parts[f.marker().value()]++;
+            if ( setid )
+                f.setId( M_elements.size() );
+            return *M_elements.insert( pos, f );
+            //M_elements.push_back( f );
+            //return M_elements.back();
 
+        }
+    //!
+    //! move a new element into the mesh
+    //! @param f a new point
+    //! @param pos provide an hint for the position to insert
+    //! @return the new point from the list
+    //!
+    element_type const& addElement( element_iterator pos, element_type&& f )
+        {
+            M_parts[f.marker().value()]++;
+            return *M_elements.insert( pos, f );
+            //M_elements.push_back( f );
+            //return M_elements.back();
+
+        }
+
+    template<typename... Args>
+    element_iterator emplaceHintElement( element_iterator position, Args&&... args)
+    {
+        return M_elements.emplace_hint( position, args... );
+    }
+    
     template<typename ElementVecType>
     void updateMarker2( ElementVecType const& evec )
     {

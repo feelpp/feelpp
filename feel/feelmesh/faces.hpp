@@ -800,17 +800,80 @@ public:
      */
     //@{
 
-    /**
-     * add a new face in the mesh
-     * @param f a new point
-     * @return the new point from the list
-     */
+    //!
+    //! @brief add a new face in the mesh
+    //!  @param f a new point
+    //! @return the new point from the list
+    //! 
     std::pair<face_iterator,bool> addFace( face_type& f )
     {
         std::pair<face_iterator,bool> ret =  M_faces.insert( f );
-        FEELPP_ASSERT( ret.second )( ret.second )( ret.first->id() )( f.id() ).warn( "face not added to container" );
+        DLOG_IF(WARNING, ret.second == false )
+            << "addFace failed, face not added to container : "
+            << ret.first->id() << " face id:"
+            << f.id();
+        
         return ret;
     }
+    //!
+    //! @brief move a new face into the mesh
+    //! @param f a new point
+    //! @return the new point from the list
+    //! 
+    std::pair<face_iterator,bool> addFace( face_type&& f )
+        {
+            std::pair<face_iterator,bool> ret =  M_faces.insert( f );
+            DLOG_IF(WARNING, ret.second == false )
+                << "addFace failed, face not added to container : "
+                << ret.first->id() << " face id:"
+                << f.id();
+        
+            return ret;
+        }
+    //!
+    //! @brief copy a new face into the mesh
+    //! @param f a new point
+    //! @param pos position hint where to move
+    //! @return the new point from the list
+    //!
+    face_iterator addFace( face_iterator pos, face_type& f )
+        {
+            return M_faces.insert( pos, f );
+        }
+    //!
+    //! @brief move a new face into the mesh
+    //! @param f a new point
+    //! @param pos position hint where to move
+    //! @return the new point from the list
+    //!
+    face_iterator addFace( face_iterator pos, face_type&& f )
+        {
+            return M_faces.insert( pos, f );
+        }
+
+    //!
+    //! @brief move a new face into the mesh
+    //! @param f a new point
+    //! @param pos position hint where to move
+    //! @return the new point from the list
+    //!
+    template<typename... Args>
+    face_iterator emplaceFace( face_iterator pos, Args&&... f )
+        {
+            return M_faces.emplace_hint( pos, f... );
+        }
+
+    //!
+    //! @brief move a new face into the mesh
+    //! @param f a new point
+    //! @param pos position hint where to move
+    //! @return the new point from the list
+    //!
+    template<typename... Args>
+    face_iterator emplaceFace( Args&&... f )
+        {
+            return M_faces.emplace( f... );
+        }
 
     /**
      * erase element at position \p position
@@ -863,6 +926,66 @@ public:
                 e.setMarker3( 0 );
         } );
 
+    }
+
+    /**
+     * update faces marker 2 from a vector whose size is exactely the number of
+     * faces. This vector can be generated using a P0 discontinuous space
+     * associated to a mesh whose elements are the faces
+     */
+    template<typename ElementVecType>
+    void updateFacesMarker2( ElementVecType const& evec )
+    {
+        auto rangeElt = Feel::elements( evec.mesh() );
+        auto it = rangeElt.template get<1>();
+        auto en = rangeElt.template get<2>();
+        size_type id = 0;
+        auto update_marker2 = [&evec,&id]( face_type& e )
+            {
+                auto dof_value = evec.localToGlobal( id, 0, 0 );
+                e.setMarker2( dof_value );
+            };
+        for ( ; it != en; ++it )
+        {
+            id = boost::unwrap_ref(*it).id();
+            auto const& theface = face( evec.mesh()->subMeshToMesh( id ) );
+            
+            auto fid = evec.mesh()->subMeshToMesh( id );
+            auto it = this->faceIterator( fid );
+            
+            bool r = M_faces.modify( it, update_marker2 );
+            DLOG_IF(WARNING, r == false ) << "update marker2 failed for element id " << id << " face id " << fid;
+        }
+    }
+    
+    /**
+     * update faces marker 3 from a vector whose size is exactely the number of
+     * faces. This vector can be generated using a P0 discontinuous space
+     * associated to a mesh whose elements are the faces
+     */
+    template<typename ElementVecType>
+    void updateFacesMarker3( ElementVecType const& evec )
+    {
+        auto rangeElt = Feel::elements( evec.mesh() );
+        auto it = rangeElt.template get<1>();
+        auto en = rangeElt.template get<2>();
+        size_type id = 0;
+        auto update_marker = [&evec,&id]( face_type& e )
+            {
+                auto dof_value = evec.localToGlobal( id, 0, 0 );
+                e.setMarker3( dof_value );
+            };
+        for ( ; it != en; ++it )
+        {
+            id = boost::unwrap_ref(*it).id();
+            auto const& theface = face( evec.mesh()->subMeshToMesh( id ) );
+            
+            auto fid = evec.mesh()->subMeshToMesh( id );
+            auto it = this->faceIterator( fid );
+            
+            bool r = M_faces.modify( it, update_marker );
+            DLOG_IF(WARNING, r == false ) << "update marker3 failed for element id " << id << " face id " << fid;
+        }
     }
 
 

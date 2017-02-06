@@ -6,6 +6,7 @@
        Date: 2007-05-30
 
   Copyright (C) 2007, 2009 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -41,6 +42,49 @@ extern "C"
 namespace Feel
 {
 
+PetscErrorCode feel_petsc_post_solve(KSP ksp,Vec x,Vec y,void* ctx)
+{
+    BackendPetsc<double> * b = static_cast<BackendPetsc<double>*> ( ctx );
+    LOG(INFO) << "call feel_petsc_post_solve";
+    
+    if ( b->postSolve() )
+    {
+        vector_ptrtype vx( vec( x, b->dataMap() ) );
+        vector_ptrtype vy( vec( y, b->dataMap() ) );
+        b->postSolve( vx, vy );
+    }
+    else
+    {
+        LOG(WARNING) << "call feel_petsc_post_solve without post solve function, we duplicate the input into the output";
+        auto e = VecDuplicate(x, &y);
+        CHKERRABORT( b->comm().globalComm(), e );
+        e = VecCopy(x, y);
+        CHKERRABORT( b->comm().globalComm(), e );
+    }
+    LOG(INFO) << "call feel_petsc_post_solve done";
+    return 0;
+}
+PetscErrorCode feel_petsc_pre_solve(KSP ksp,Vec x,Vec y,void* ctx)
+{
+    BackendPetsc<double> * b = static_cast<BackendPetsc<double>*> ( ctx );
+    
+    if ( b->preSolve() )
+    {
+        vector_ptrtype vx( vec( x, b->dataMap() ) );
+        vector_ptrtype vy( vec( y, b->dataMap() ) );
+        b->preSolve( vx, vy );
+    }
+    else
+    {
+        LOG(WARNING) << "call feel_petsc_pre_solve without pre solve function, we duplicate the input into the output";
+        auto e = VecDuplicate(x, &y);
+        CHKERRABORT( b->comm().globalComm(), e );
+        e = VecCopy( x, y );
+        CHKERRABORT( b->comm().globalComm(), e );
+    }
+    LOG(INFO) << "call feel_petsc_pre_solve";
+    return 0;
+}
 
 template<typename T>
 BackendPetsc<T>::~BackendPetsc()
@@ -58,6 +102,114 @@ BackendPetsc<T>::clear()
     LOG(INFO) << "Deleting backend petsc";
 
     super::clear();
+
+}
+
+template<typename T>
+typename BackendPetsc<T>::vector_ptrtype
+BackendPetsc<T>::toBackendVectorPtr( vector_type const& v  )
+{
+    typedef VectorUblas<T> vector_ublas_type;
+    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
+    typedef typename vector_ublas_type::slice::type vector_ublas_slice_type;
+
+    vector_ublas_type * vecUblas = const_cast<vector_ublas_type *>( dynamic_cast<vector_ublas_type const*>( &v ) );
+    if ( vecUblas )
+    {
+        //std::cout << "Convert Ublas vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblas ) );
+        return _newvec;
+    }
+    //vector_ublas_range_type * vecUblasRange = dynamic_cast<vector_ublas_range_type*>( &v );
+    vector_ublas_range_type * vecUblasRange = const_cast<vector_ublas_range_type *>( dynamic_cast<vector_ublas_range_type const*>( &v ) );
+    if ( vecUblasRange )
+    {
+        //std::cout << "Convert Ublas range vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasRange ) );
+        return _newvec;
+    }
+#if 0
+    vector_ublas_slice_type * vecUblasSlice = dynamic_cast<vector_ublas_slice_type*>( &v );
+    if ( vecUblasSlice )
+    {
+        //std::cout << "Convert Ublas slice vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasSlice ) );
+        return _newvec;
+    }
+#endif
+    petsc_vector_type * vecPetsc = const_cast<petsc_vector_type *>( dynamic_cast<petsc_vector_type const*>( &v ) );
+    if ( vecPetsc )
+    {
+        typedef VectorPetscMPIRange<value_type> petscMPIRange_vector_type;
+        petscMPIRange_vector_type * vecPetscMPIRange = const_cast<petscMPIRange_vector_type *>( dynamic_cast<petscMPIRange_vector_type const*>( &v ) );
+        if ( vecPetscMPIRange )
+        {
+            vector_ptrtype _newvec( boost::make_shared<petscMPIRange_vector_type>( vecPetscMPIRange->vec(), vecPetscMPIRange->vecGhost(),
+                                                                                   vecPetscMPIRange->vecScatterGhost(), vecPetsc->mapPtr() ) );
+            return _newvec;
+        }
+        petscMPI_vector_type * vecPetscMPI = const_cast<petscMPI_vector_type *>( dynamic_cast<petscMPI_vector_type const*>( &v ) );
+        if ( vecPetscMPI )
+        {
+            vector_ptrtype _newvec( boost::make_shared<petscMPI_vector_type>( vecPetsc->vec(), vecPetsc->mapPtr() ) );
+            return _newvec;
+        }
+        vector_ptrtype _newvecPetsc( boost::make_shared<petsc_vector_type>( vecPetsc->vec(), vecPetsc->mapPtr() ) );
+        return _newvecPetsc;
+    }
+    //std::cout << "DefaultConvert vector\n";
+    return super::toBackendVectorPtr( v );
+}
+
+template<typename T>
+typename BackendPetsc<T>::vector_ptrtype
+BackendPetsc<T>::toBackendVectorPtr( vector_ptrtype const& v )
+{
+    if ( this->comm().globalSize()>1 )
+    {
+        petscMPI_vector_ptrtype vecPetsc = boost::dynamic_pointer_cast< petscMPI_vector_type >( v );
+        //if ( vecPetsc ) std::cout << "Convert PetscMPI vector\n";
+        if ( vecPetsc )
+            return v;
+
+    }
+    else
+    {
+        petsc_vector_ptrtype vecPetsc = boost::dynamic_pointer_cast< petsc_vector_type >( v );
+        //if ( vecPetsc ) std::cout << "Convert Petsc vector\n";
+        if ( vecPetsc )
+            return v;
+    }
+
+    typedef VectorUblas<T> vector_ublas_type;
+    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
+    typedef typename vector_ublas_type::slice::type vector_ublas_slice_type;
+    boost::shared_ptr<vector_ublas_type> vecUblas = boost::dynamic_pointer_cast< vector_ublas_type >( v );
+    if ( vecUblas )
+    {
+        //std::cout << "Convert Ublas vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblas ) );
+        return _newvec;
+    }
+    boost::shared_ptr<vector_ublas_range_type> vecUblasRange = boost::dynamic_pointer_cast< vector_ublas_range_type >( v );
+    if ( vecUblasRange )
+    {
+        //std::cout << "Convert Ublas range vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasRange ) );
+        return _newvec;
+    }
+#if 0
+    boost::shared_ptr<vector_ublas_slice_type> vecUblasSlice = boost::dynamic_pointer_cast< vector_ublas_slice_type >( v );
+    if ( vecUblasSlice )
+    {
+        //std::cout << "Convert Ublas slice vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasSlice ) );
+        return _newvec;
+    }
+#endif
+
+    //std::cout << "DefaultConvert vector\n";
+    return super::toBackendVectorPtr( v );
 
 }
 
@@ -85,6 +237,20 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
     M_solver_petsc.setMatSolverPackageType( this->matSolverPackageEnumType() );
     M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
     M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
+
+    if ( this->preSolve() )
+    {
+        int e;
+        e = KSPSetPreSolve( M_solver_petsc.ksp(), feel_petsc_pre_solve, this );
+        CHKERRABORT( this->comm().globalComm(), e);
+    }
+    
+    if ( this->postSolve() )
+    {
+        int e;
+        e = KSPSetPostSolve( M_solver_petsc.ksp(), feel_petsc_post_solve, this );
+        CHKERRABORT( this->comm().globalComm(), e);
+    }
 
     auto res = M_solver_petsc.solve( *A, *B, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
     DVLOG(2) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
@@ -121,6 +287,19 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
     M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
     M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
 
+    if ( this->preSolve() )
+    {
+        int e;
+        e = KSPSetPreSolve( M_solver_petsc.ksp(), feel_petsc_pre_solve, this );
+        CHKERRABORT( this->comm().globalComm(), e);
+    }
+    
+    if ( this->postSolve() )
+    {
+        int e;
+        e = KSPSetPostSolve( M_solver_petsc.ksp(), feel_petsc_post_solve, this );
+        CHKERRABORT( this->comm().globalComm(), e);
+    }
     auto res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations(), false );
     DVLOG(2) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
     DVLOG(2) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
@@ -137,15 +316,8 @@ BackendPetsc<T>::PtAP( sparse_matrix_ptrtype const& A_,
                        sparse_matrix_ptrtype const& P_,
                        sparse_matrix_ptrtype & C_ ) const
 {
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
-    MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( A_.get() );
-    MatrixPetsc<T> const* P = dynamic_cast<MatrixPetsc<T> const*> ( P_.get() );
-    MatrixPetsc<T>* C = dynamic_cast<MatrixPetsc<T>*> ( C_.get() );
-    
-    return MatPtAP( A->mat(), P->mat(), MAT_INITIAL_MATRIX, 1.0, &C->mat() );
-#else
-    return -1;
-#endif
+    A_->PtAP( *P_, *C_ );
+    return 1;
 }
 
 
@@ -155,15 +327,17 @@ BackendPetsc<T>::PAPt( sparse_matrix_ptrtype const& A_,
                        sparse_matrix_ptrtype const& P_,
                        sparse_matrix_ptrtype & C_ ) const
 {
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
-    MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( A_.get() );
-    MatrixPetsc<T> const* P = dynamic_cast<MatrixPetsc<T> const*> ( P_.get() );
-    MatrixPetsc<T>* C = dynamic_cast<MatrixPetsc<T>*> ( C_.get() );
-    
-    return MatRARt( A->mat(), P->mat(), MAT_INITIAL_MATRIX, 1.0, &C->mat() );
-#else
-    return -1;
-#endif
+    A_->PAPt( *P_, *C_ );
+    return 1;
+}
+
+template <typename T>
+void
+BackendPetsc<T>::prod( sparse_matrix_type const& A,
+                       vector_type const& x,
+                       vector_type& b, bool transpose ) const
+{
+    A.multVector( x, b, transpose );
 }
 
 template <typename T>
@@ -171,9 +345,8 @@ int
 BackendPetsc<T>::diag( sparse_matrix_type const& A_,
                        vector_type& d_ ) const
 {
-    MatrixPetsc<T> const& A = dynamic_cast<MatrixPetsc<T>const &> ( A_ );
-    VectorPetsc<T> & d = dynamic_cast<VectorPetsc<T>&> ( d_);
-    return MatGetDiagonal(A.mat(),d.vec());
+    A_.diagonal( d_ );
+    return 1;
 }
 
 template <typename T>
@@ -181,9 +354,8 @@ int
 BackendPetsc<T>::diag( vector_type const & d_,
                        sparse_matrix_type& A_ ) const
 {
-    MatrixPetsc<T> & A = dynamic_cast<MatrixPetsc<T> &> ( A_ );
-    VectorPetsc<T> const& d = dynamic_cast<VectorPetsc<T> const&> ( d_ );
-    return MatDiagonalSet(A.mat(),d.vec(),ADD_VALUES);
+    A_.setDiagonal( d_ );
+    return 1;
 }
 
 /**

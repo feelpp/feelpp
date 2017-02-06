@@ -13,13 +13,17 @@ foreach(file ${metis_sources})
 endforeach()
 
 # Build libmetis.
-add_library(metis ${METIS_LIBRARY_TYPE} ${GKlib_sources} ${metis_sources})
-if(UNIX)
-  target_link_libraries(metis m)
+add_library(feelpp_metis ${METIS_LIBRARY_TYPE} ${GKlib_sources} ${metis_sources})
+#if(UNIX)
+#  target_link_libraries(feelpp_metis m)
+#endif()
+if ("${METIS_LIBRARY_TYPE}" STREQUAL "SHARED" )
+  set_property(TARGET feelpp_metis PROPERTY MACOSX_RPATH ON)
 endif()
 
+
 if(METIS_INSTALL)
-  install(TARGETS metis
+  install(TARGETS feelpp_metis
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION lib
     ARCHIVE DESTINATION lib)

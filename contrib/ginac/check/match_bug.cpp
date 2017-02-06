@@ -4,7 +4,7 @@
  *  http://www.ginac.de/pipermail/ginac-devel/2006-April/000942.html */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ using namespace GiNaC;
 /*
  * basic::match(lst&) used to have an obscure side effect: repl_lst
  * could be modified even if the match failed! Although this "feature"
- * was documented it happend to be very confusing *even for GiNaC
+ * was documented it happened to be very confusing *even for GiNaC
  * developers*, see 
  * http://www.ginac.de/pipermail/ginac-devel/2006-April/000942.html
  *
@@ -73,11 +73,55 @@ static void match_false_negative()
 			<< pattern);
 }
 
+/*
+ * expairseq::match() should not have any side effects if the match failed.
+ */
+static void expairseq_failed_match_no_side_effect(int count)
+{
+	for (int i = 0; i < count; ++i) {
+		exmap repls;
+		symbol t("t"), A("A");
+		ex e = pow(t, 2)*exp(t*A);
+		ex pattern = pow(t, wild(0))*exp(wild(1))*A;
+		bool matched = e.match(pattern, repls);
+		cbug_on(matched, "unexpected match: " << e << " vs " << pattern);
+		cbug_on(repls.size(), "failed match has side effects");
+	}
+}
+
+/*
+ * exp(a)*sin(x) + exp(b)*sin(y) used to fail to match
+ * exp(a)*sin($0) + exp(b)*sin($1). The failure was not deterministic.
+ *
+ * The first attempted submatch is sin(y)*exp(b) with sin($0)*exp(a).
+ * It fails but $0 == y gets assigned due to a spurious side effect.
+ * Next submatch is sin(x)*exp(a) with sin($0)*exp(a) (the same pattern
+ * as in the first submatch). This one fails because of (incorrect)
+ * $0 == y assignment.
+ *
+ * Note: due to the unstable term ordering the sequence of submatches
+ * might be different and the match might succeed (as it should), hence
+ * we repeat the test several times.
+ */
+static void expairseq_match_false_negative(int count)
+{
+	for (int i = 0; i < count; ++i) {
+		symbol a("a"), b("b"), x("x"), y("y");
+		ex e = exp(a)*sin(x) + exp(b)*sin(y);
+		ex pattern = exp(a)*sin(wild(0)) + exp(b)*sin(wild(1));
+		cbug_on(!e.match(pattern), "match failed: " << e << "did not"
+			"match " << pattern);
+	}
+}
+
 int main(int argc, char** argv)
 {
+	const int repetitions = 100;
 	std::cout << "checking for historical bugs in match()... " << std::flush;
 	failed_match_have_side_effects();
 	match_false_negative();
+	expairseq_failed_match_no_side_effect(repetitions);
+	expairseq_match_false_negative(repetitions);
 	std::cout << "not found. ";
 	return 0;
 }

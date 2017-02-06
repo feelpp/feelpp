@@ -1220,10 +1220,11 @@ public :
           ( partitions,   *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
           ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
           ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
-          ( worldcomm,      *, Environment::worldComm() )
+          ( worldcomm,       (WorldComm), mesh->worldComm() )
           ( hmin,     ( double ), 0 )
           ( hmax,     ( double ), 1e22 )
           ( optimize3d_netgen, *( boost::is_integral<mpl::_> ), true )
+          ( update,          *( boost::is_integral<mpl::_> ), MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
         ) //optional
     )
     {
@@ -1272,8 +1273,17 @@ public :
 
             ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
             _mesh->accept( import );
-            _mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-            _mesh->updateForUse();
+
+            if ( update )
+            {
+                _mesh->components().reset();
+                _mesh->components().set( update );
+                _mesh->updateForUse();
+            }
+            else
+            {
+                _mesh->components().reset();
+            }
 
             if ( straighten && _mesh_type::nOrder > 1 )
                 return straightenMesh( _mesh, worldcomm.subWorldComm(), false, false );

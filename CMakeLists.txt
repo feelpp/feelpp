@@ -38,6 +38,13 @@ if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
 	#message(STATUS "[feelpp] use NEW policy CMP0046" )
 	#cmake_policy(SET CMP0046 NEW)
 endif()
+# CMake 3.5.2 warns about this policy introduced in 3.1
+# Use the old behavior for now to suppress warnings
+# for more info : cmake --help-policy CMP0053
+if ( ${CMAKE_VERSION} VERSION_GREATER 3.1 )
+    message(STATUS "[feelpp] use old policy CMP0053" )
+    cmake_policy(SET CMP0053 OLD)
+endif()
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
@@ -100,6 +107,7 @@ OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" 
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
+OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" ON)
 
 # enable PCH only for GCC as for now
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -110,9 +118,10 @@ endif()
 OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
 # default TimeOut for Feel++ testsuite 
-SET(FEELPP_DEFAULT_TEST_TIMEOUT "60")
+SET(FEELPP_DEFAULT_TEST_TIMEOUT "300")
 OPTION(FEELPP_ENABLE_DOXYGEN "enable Feel++ doxygen documentation generation" OFF)
 OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
+OPTION(FEELPP_MINIMAL_BUILD "Enable Feel++ minimal build" OFF)
 
 OPTION(FEELPP_USE_GMSH_PACKAGE "Use system installed package" ON)
 
@@ -127,7 +136,7 @@ SET(FEELPP_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
 
 if ( NOT DEFINED FEELPP_INSTANTIATION_ORDER_MAX)
   # max order to instantiate
-  set(FEELPP_INSTANTIATION_ORDER_MAX 5)
+  set(FEELPP_INSTANTIATION_ORDER_MAX 3)
 endif()
 
 
@@ -301,21 +310,24 @@ MESSAGE(STATUS "[feelpp] SIZE_FLOAT=${SIZE_FLOAT}")
 MESSAGE(STATUS "[feelpp] SIZE_DOUBLE=${SIZE_DOUBLE}")
 MESSAGE(STATUS "[feelpp] SIZE_LONG_DOUBLE=${SIZE_LONG_DOUBLE}")
 
+include( feelpp.macros )
+
 # Find feel++ dependencies 
 include( feelpp.dependencies )
-
-include( feelpp.macros )
+add_custom_target(contrib)
+add_subdirectory(contrib)
 
 # Load documented project for Doxygen
 # it assumes that a project is valid if :
-#   there is README.md file in the directory
+#   there is README.{md,adoc} file in the directory
 #   that the directory path include "research"
 # for each detected project it creates an FEELPP_ENABLE_RESEARCH_${PROJECT} and FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION
 # option which are set to OFF by default
 MESSAGE(STATUS "[feelpp] Feel++ projects :")
 feelpp_list_subdir(projects ${CMAKE_CURRENT_SOURCE_DIR}/research)
 foreach(project ${projects})
-  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md )
+  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md OR 
+      EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.adoc  )
     string(TOUPPER ${project} PROJECT)
     if ( ${PROJECT} STREQUAL "EYE2BRAIN" OR ${PROJECT} STREQUAL "HYDROMORPHO" OR ${PROJECT} STREQUAL "SIVIBIRPP"  )
       option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
@@ -351,6 +363,7 @@ endif()
 ADD_SUBDIRECTORY ( feel )
 
 IF( FEELPP_MINIMAL_CONFIGURATION )
+  set( FEELPP_ENABLE_TOOLBOXES OFF )
   set( FEELPP_ENABLE_BENCHMARKS OFF )
   set( FEELPP_ENABLE_TESTS OFF )
   set( FEELPP_ENABLE_RESEARCH OFF )
@@ -377,6 +390,11 @@ INCLUDE(CTest)
 ENABLE_TESTING()
 
 add_custom_target(check)
+add_custom_target(install-testcase
+  COMMAND ${CMAKE_COMMAND}
+  -D COMPONENT=install-testcase
+  -P cmake_install.cmake
+  )
 
 add_custom_target(check-full COMMAND "ctest")
 IF(FEELPP_ENABLE_TESTS )
@@ -408,7 +426,18 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEELPP_ENABLE_RESEARCH )
 endif()
 
 include(feelpp.module.quickstart)
+if ( FEELPP_HAS_QUICKSTART )
+  add_custom_target(quickstart)
+  add_subdirectory(quickstart)
+endif()
 
+include(feelpp.module.toolboxes)
+if ( FEELPP_HAS_TOOLBOXES )
+  add_custom_target(toolboxes)
+  add_subdirectory(toolboxes)
+endif()
+
+add_subdirectory(tools)
 
 ################################################################################
 # generate configuration header
@@ -440,5 +469,5 @@ include(feelpp.directive)
 # The add_subdirectory is way too soon to get those values
 set(config_file "cmake/modules/Feel++Config.cmake")
 configure_file( ${config_file}.in ${config_file} @ONLY)
-INSTALL(FILES ${CMAKE_BINARY_DIR}/${config_file} DESTINATION share/feel/cmake COMPONENT Devel)
+INSTALL(FILES ${CMAKE_BINARY_DIR}/${config_file} DESTINATION share/feel/cmake/modules COMPONENT Devel)
 

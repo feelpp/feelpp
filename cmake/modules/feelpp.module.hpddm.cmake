@@ -29,7 +29,7 @@ OPTION( FEELPP_ENABLE_HPDDM "Enable HPDDM" ON )
 
 if ( FEELPP_ENABLE_HPDDM )
   if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/hpddm )
-    if ( GIT_FOUND )
+    if ( GIT_FOUND  AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
       execute_process(
         COMMAND git submodule update --init --recursive contrib/hpddm
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -51,7 +51,7 @@ if ( FEELPP_ENABLE_HPDDM )
 
   endif()
 
-  FIND_PATH(HPDDM_INCLUDE_DIR HPDDM.hpp HINTS ${FEELPP_SOURCE_DIR}/contrib $ENV{HPDDM_DIR} ${HPDDM_INCLUDE_DIR} PATH_SUFFIXES hpddm/include)
+  FIND_PATH(HPDDM_INCLUDE_DIR HPDDM.hpp HINTS ${FEELPP_SOURCE_DIR}/contrib $ENV{HPDDM_DIR} PATH_SUFFIXES hpddm/include)
   if( HPDDM_INCLUDE_DIR )
     INCLUDE_DIRECTORIES( ${HPDDM_INCLUDE_DIR} )
     SET(FEELPP_HAS_HPDDM 1)

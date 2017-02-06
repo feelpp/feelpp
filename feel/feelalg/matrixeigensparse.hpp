@@ -95,6 +95,8 @@ public:
 
     MatrixEigenSparse( size_type r, size_type c, WorldComm const& worldComm=Environment::worldComm() );
 
+    MatrixEigenSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
+
     MatrixEigenSparse( MatrixEigenSparse const & m );
 
     ~MatrixEigenSparse();
@@ -147,7 +149,7 @@ public:
      */
     size_type nnz() const
     {
-        return M_mat.rows()*M_mat.cols();
+        return M_mat.nonZeros();
     }
 
     /**
@@ -181,16 +183,6 @@ public:
      * optimized matrix into a read optimized matrix
      */
     void close () const;
-
-
-    /**
-     * see if Eigen matrix has been closed
-     * and fully assembled yet
-     */
-    bool closed() const
-    {
-        return M_is_closed;
-    }
 
 
     /**
@@ -410,7 +402,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
 
     //@}
 
@@ -421,7 +413,6 @@ protected:
 private:
 
     bool M_is_initialized;
-    mutable bool M_is_closed;
 
     /**
      * the eigen sparse matrix data structure

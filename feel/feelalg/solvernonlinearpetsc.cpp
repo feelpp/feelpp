@@ -57,6 +57,52 @@ extern "C"
     typedef int PetscInt;
 #endif
 
+    PetscErrorCode feel_petsc_post_nlsolve(KSP ksp,Vec x,Vec y,void* ctx)
+    {
+        Feel::SolverNonLinearPetsc<double>* b =
+            static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
+        LOG(INFO) << "call feel_petsc_post_nlsolve";
+    
+        if ( b->postSolve() )
+        {
+            Feel::vector_ptrtype vx( vec( x, b->mapRowPtr() ) );
+            Feel::vector_ptrtype vy( vec( y, b->mapRowPtr() ) );
+            b->postSolve( vx, vy );
+        }
+        else
+        {
+            LOG(WARNING) << "call feel_petsc_post_nlsolve without post solve function, we duplicate the input into the output";
+            auto e = VecDuplicate(x, &y);
+            CHKERRABORT( b->worldComm().globalComm(), e );
+            e = VecCopy(x, y);
+            CHKERRABORT( b->worldComm().globalComm(), e );
+        }
+        LOG(INFO) << "call feel_petsc_post_nlsolve done";
+        return 0;
+    }
+    PetscErrorCode feel_petsc_pre_nlsolve(KSP ksp,Vec x,Vec y,void* ctx)
+    {
+        Feel::SolverNonLinearPetsc<double>* b =
+            static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
+        
+        if ( b->preSolve() )
+        {
+            Feel::vector_ptrtype vx( vec( x, b->mapRowPtr() ) );
+            Feel::vector_ptrtype vy( vec( y, b->mapRowPtr() ) );
+            b->preSolve( vx, vy );
+        }
+        else
+        {
+            LOG(WARNING) << "call feel_petsc_pre_nlsolve without pre solve function, we duplicate the input into the output";
+            auto e = VecDuplicate(x, &y);
+            CHKERRABORT( b->worldComm().globalComm(), e );
+            e = VecCopy( x, y );
+            CHKERRABORT( b->worldComm().globalComm(), e );
+        }
+        LOG(INFO) << "call feel_petsc_pre_nlsolve";
+        return 0;
+    }
+
     //-------------------------------------------------------------------
     // this function is called by PETSc at the end of each nonlinear step
     PetscErrorCode
@@ -64,48 +110,47 @@ extern "C"
     {
         Feel::SolverNonLinearPetsc<double>* solver =
             static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
+        if ( !solver ) return 1;
 
+        if ( solver->worldComm().isMasterRank() )
+            std::cout << " " << its  << " " << solver->prefix() << " SNES Function norm " << std::scientific << fnorm << "\n";
 
-        //int ierr=0;
-        //if (its > 0)
-        std::ostringstream ostr;
-
-        ostr << "[SolverNonLinearPetsc] NL step " << its
-             << std::scientific
-             << ", |residual|_2 = " << fnorm;
-        //LOG(INFO) << ostr.str() << "\n";
-        //std::cout << ostr.str() << "\n";
-#if 1
-        KSP            ksp;         /* linear solver context */
-        SNESGetKSP( snes,&ksp );
-        PetscInt lits;
-        int ierr = KSPGetIterationNumber ( ksp, &lits );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
-
-        PetscReal final_resid;
-        // Get the norm of the final residual to return to the user.
-        ierr = KSPGetResidualNorm ( ksp, &final_resid );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
-        ///LOG(INFO) << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
-        //std::cout << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
-#endif
-        KSPConvergedReason reason;
-        KSPGetConvergedReason( ksp,&reason );
-        if ( reason> 0 )
+        if ( its>0 && solver->showKSPConvergedReason() )
         {
-            if ( solver->showKSPConvergedReason() && solver->worldComm().globalRank() == solver->worldComm().masterRank() && its>0 )
-                std::cout<< "  Linear solve converged due to " << Feel::PetscConvertKSPReasonToString(reason)
-                         << " iterations " << lits << std::endl;
-        }
-        else
-        {
-            if ( solver->showKSPConvergedReason() && solver->worldComm().globalRank() == solver->worldComm().masterRank() && its>0 )
-                std::cout<< "  Linear solve did not converge due to " << Feel::PetscConvertKSPReasonToString(reason)
-                         << " iterations " << lits << std::endl;
+            KSP            ksp;         /* linear solver context */
+            SNESGetKSP( snes,&ksp );
+            PetscInt lits;
+            int ierr = KSPGetIterationNumber ( ksp, &lits );
+            CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+            PetscReal final_resid;
+            // Get the norm of the final residual to return to the user.
+            ierr = KSPGetResidualNorm ( ksp, &final_resid );
+            CHKERRABORT( PETSC_COMM_WORLD,ierr );
+            ///LOG(INFO) << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
+            //std::cout << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
+
+            KSPConvergedReason reason;
+            KSPGetConvergedReason( ksp,&reason );
+            if ( solver->worldComm().isMasterRank() )
+            {
+                if ( reason> 0 )
+                    std::cout<< "  Linear solve converged due to " << Feel::PetscConvertKSPReasonToString(reason)
+                             << " iterations " << lits << std::endl;
+                else
+                    std::cout<< "  Linear solve did not converge due to " << Feel::PetscConvertKSPReasonToString(reason)
+                             << " iterations " << lits << std::endl;
+            }
         }
 
-
-        //return ierr;
+        return 0;
+    }
+    PetscErrorCode __feel_petsc_snes_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm,void* ctx)
+    {
+        Feel::SolverNonLinearPetsc<double> *solver  = static_cast<Feel::SolverNonLinearPetsc<double>*>( ctx );
+        if ( !solver ) return 1;
+        if ( solver->worldComm().isMasterRank() )
+            std::cout << "   " << it  << " " << solver->prefix() << " KSP Residual norm " << std::scientific << rnorm << "\n";
         return 0;
     }
 
@@ -130,14 +175,14 @@ extern "C"
 
         if ( solver->comm().size()>1 )
         {
-            R.reset( new Feel::VectorPetscMPI<double>( r, solver->mapRowPtr() ) );
-            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRowPtr() ) );
+            R.reset( new Feel::VectorPetscMPI<double>( r, solver->mapColPtr() ) );
+            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapColPtr() ) );
         }
 
         else // MPI
         {
-            R.reset( new Feel::VectorPetsc<double>( r ) );
-            X_global.reset( new Feel::VectorPetsc<double>( x ) );
+            R.reset( new Feel::VectorPetsc<double>( r, solver->mapColPtr() ) );
+            X_global.reset( new Feel::VectorPetsc<double>( x, solver->mapColPtr() ) );
         }
 
         //if (solver->residual != NULL) solver->residual (X_local, R);
@@ -177,7 +222,7 @@ extern "C"
 #else
             Jac.reset( new Feel::MatrixPetscMPI<double>( jac,solver->mapRowPtr(),solver->mapColPtr() ) );
 #endif
-            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRowPtr() ) );
+            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapColPtr() ) );
         }
 
         else
@@ -512,16 +557,6 @@ void SolverNonLinearPetsc<T>::init ()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 #endif
-#if PETSC_VERSION_LESS_THAN(2,3,3)
-        ierr = SNESSetMonitor ( M_snes, __feel_petsc_snes_monitor,
-                                this, PETSC_NULL );
-#else
-        // API name change in PETSc 2.3.3
-        ierr = SNESMonitorSet ( M_snes, __feel_petsc_snes_monitor,
-                                this, PETSC_NULL );
-#endif
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-
 
         ierr = SNESSetFromOptions( M_snes );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
@@ -718,13 +753,15 @@ void SolverNonLinearPetsc<T>::init ()
 
         if ( this->showSNESMonitor() )
         {
-            ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_NULL,PETSC_NULL );
+            ierr = SNESMonitorSet( M_snes,__feel_petsc_snes_monitor,(void*) this,PETSC_NULL );
+            //ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_NULL,PETSC_NULL );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
         if ( this->showKSPMonitor() )
         {
-            ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+            ierr = KSPMonitorSet( M_ksp,__feel_petsc_snes_ksp_monitor,(void*) this,PETSC_NULL );
+            //ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
@@ -855,6 +892,21 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
                               this->maxitKSP() );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
+    if ( this->preSolve() )
+    {
+        LOG(INFO) << "set Pre solve" ;
+        int e;
+        e = KSPSetPreSolve( M_ksp, feel_petsc_pre_nlsolve, this );
+        CHKERRABORT( this->worldComm().globalComm(), e);
+    }
+    
+    if ( this->postSolve() )
+    {
+        LOG(INFO) << "set Post solve" ;
+        int e;
+        e = KSPSetPostSolve( M_ksp, feel_petsc_post_nlsolve, this );
+        CHKERRABORT( this->worldComm().globalComm(), e);
+    }
 
     if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
     {

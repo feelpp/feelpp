@@ -77,9 +77,9 @@ void run()
     for ( size_type k=0 ; k<nLocDofXh ; ++k )
         U2.set( k, 1.0 );
     for ( size_type k=0 ; k<nLocDofpXh1 ; ++k )
-        U1.set( k, 2.0 );
+        U1.set( pXh->dof()->dofIdToContainerId(0,k), 2.0 );
     for ( size_type k=0 ; k<nLocDofpXh2 ; ++k )
-        U1.set( nLocDofpXh1+k, 3.0 );
+        U1.set( pXh->dof()->dofIdToContainerId(1,k), 3.0 );
 
 
     auto myproj1 = vf::project(_space=Xh, _expr= idv(U2));

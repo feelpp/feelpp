@@ -1,571 +1,765 @@
-ChangeLog {#ChangeLog}
-======================
-
-[TOC]
-
-# Feel++ Release 0.100.0 {#feelpp01000}
-release date dd-mm-2014
-
-## Features
-
-   - Support Block preconditioning for Navier-Stokes (PMM and PCD)
-   - A lot of various fixes for the exporters: EnsightGold, HDF5
-   - Support for many configuration files that can be combined (e.g. to change
-     automatically solver strategies)
-   - Start work on boundary conditions generic framework, see examples in quickstart
-
-##  Noteworthy Issues ##
-
-   - FTBS inner keyword when using terminal keyword [Issue <a href="https://github.com/feelpp/feelpp/issues/577">577</a>]
-   - Support more features in the ginac parser [Issue <a href="https://github.com/feelpp/feelpp/issues/568">568</a>]
-   - Feature/edge [Issue <a href="https://github.com/feelpp/feelpp/pull/557">557</a>]
-   - Add support for modulo [Issue <a href="https://github.com/feelpp/feelpp/issues/549">549</a>]
-   - Add support for casting expressions from one type to another in the language [Issue <a href="https://github.com/feelpp/feelpp/issues/548">548</a>]
-   - Add support for floor and ceil in language [Issue <a href="https://github.com/feelpp/feelpp/issues/546">546</a>]
-   - Bug in handling face dof in vectorial finite elements (e.g. Nedelec,RT) [Issue <a href="https://github.com/feelpp/feelpp/issues/544">544</a>]
-   - Support interpolation and dirichlet conditions based on range of edges and points [Issue <a href="https://github.com/feelpp/feelpp/issues/537">537</a>]
-   - Support Matrix fields  [Issue <a href="https://github.com/feelpp/feelpp/issues/535">535</a>]
-   - Add support for component-wise dirichlet condition in vector fields [Issue <a href="https://github.com/feelpp/feelpp/issues/534">534</a>]
-   - eigenPair : each call erase previous eigen functions  [Issue <a href="https://github.com/feelpp/feelpp/issues/533">533</a>]
-   - Support pointwise operations in Vector<> [Issue <a href="https://github.com/feelpp/feelpp/issues/509">509</a>]
-   - Customize PETSc/KSP monitors [Issue <a href="https://github.com/feelpp/feelpp/issues/503">503</a>]
-   - printMatlab : The script should not have the same name than the variable [Issue <a href="https://github.com/feelpp/feelpp/issues/501">501</a>]
-   - Add support for -mat_mumps_icntl_7  [Issue <a href="https://github.com/feelpp/feelpp/issues/499">499</a>]
-   - FTE in feelpp_test_integration_relatedmesh  [Issue <a href="https://github.com/feelpp/feelpp/issues/498">498</a>]
-   - Feature/faster  [Issue <a href="https://github.com/feelpp/feelpp/pull/497">497</a>]
-   - Support Schur complement Pressure Mass Matrix for Stokes [Issue <a href="https://github.com/feelpp/feelpp/issues/495">495</a>]
-   - Optimize and cleanup DofTable [Issue <a href="https://github.com/feelpp/feelpp/issues/490">490</a>]
-   - Reduce compilation cost in creategmshmesh [Issue <a href="https://github.com/feelpp/feelpp/issues/488">488</a>]
-   - Configure Aitken tool from command line options [Issue <a href="https://github.com/feelpp/feelpp/issues/483">483</a>]
-   - Support map of ginac expression [Issue <a href="https://github.com/feelpp/feelpp/issues/482">482</a>]
-   - Port on MAC OS Yosemite [Issue <a href="https://github.com/feelpp/feelpp/issues/466">466</a>]
-   - OpenMP not usable [Issue <a href="https://github.com/feelpp/feelpp/issues/464">464</a>]
-   - Operator Framework (#457) [Issue <a href="https://github.com/feelpp/feelpp/pull/458">458</a>]
-   - Support Operator framework  [Issue <a href="https://github.com/feelpp/feelpp/issues/457">457</a>]
-   - Support interprocessedges mesh filter [Issue <a href="https://github.com/feelpp/feelpp/issues/454">454</a>]
-   - Class Mesh  [Issue <a href="https://github.com/feelpp/feelpp/issues/453">453</a>]
-   - Support atan2 keyword in language [Issue <a href="https://github.com/feelpp/feelpp/issues/450">450</a>]
-   - FTE test_mortar  [Issue <a href="https://github.com/feelpp/feelpp/issues/449">449</a>]
-   
-
-## Platform specific
-
-   - Support for Debian and Ubuntu (12.04, 14.04 and 14.10)
-   - Support for Prace supercomputer Curie@TGCC (France)
-   - Support for Mesocenters Grenoble and Strasbourg
-   - Support for MacOSX homebrew and macport including Yosemite
-
-# Feel++ Release 0.99.0 {#feelpp0990}
-   release date 07-09-2014
-
-## Changes
-
-   - Improve documentation, see <a
-     href="https://github.com/feelpp/feelpp/issues/300">#300</a>
-   - Refactoring of the linear and nonlinears solver and preconditioner framework
-
-## Features
-
-   - Support CMake 3.0
-   - Support Boost from 1.49 to 1.56
-   - Support PETSc from 3.1 to 3.5.1
-   - Support SLEPc from 3.1 to 3.5
-   - Support GCC from 4.7 to 4.9 (g++ versions that support the c++11 standard)
-   - Support CLANG from 3.2 to 3.5
-   - Support INTEL C++ Compiler starting from intel.15 version
-   - Support INTEL MKL starting from version 11
-   - Support in-memory on Gmsh data structures (Geo and Msh) see <a href="https://github.com/feelpp/feelpp/issues/412">#295</a>
-   - Support NLOpt see <a href="https://github.com/feelpp/feelpp/issues/407">#407</a>
-   - Started work on Python wrapper thanks to internship of T. Lantz, see <a href="https://github.com/feelpp/feelpp/issues/366">#366</a>
-   - New XDMF/HDF5 exporter thanks to internship of B. Vanthong, see <a href="https://github.com/feelpp/feelpp/issues/194">#194</a>
-
-## Noteworthy Issues
-
-   - Support more continuous integration using Travis [Issue <a href="https://github.com/feelpp/feelpp/issues/436">436</a>]
-   - Enable support for simd  [Issue <a href="https://github.com/feelpp/feelpp/issues/435">435</a>]
-   - MPIIO integer size detection breaks feel++ 32 bits platforms [Issue <a href="https://github.com/feelpp/feelpp/issues/434">434</a>]
-   - FindXdmf.cmake missing [Issue <a href="https://github.com/feelpp/feelpp/issues/433">433</a>]
-   - Add backend as argument to form1 and form2 [Issue <a href="https://github.com/feelpp/feelpp/issues/431">431</a>]
-   - Add support for set of elements of function spaces [Issue <a href="https://github.com/feelpp/feelpp/issues/430">430</a>]
-   - Add support for Matrix transpose without assembly [Issue <a href="https://github.com/feelpp/feelpp/issues/427">427</a>]
-   - Add support for newMatrix() without args [Issue <a href="https://github.com/feelpp/feelpp/issues/426">426</a>]
-   - Add compatibility headers in contrib/gmsh depending on version [Issue <a href="https://github.com/feelpp/feelpp/issues/425">425</a>]
-   - Add Eigen3 3.2.2 to contrib [Issue <a href="https://github.com/feelpp/feelpp/issues/422">422</a>]
-   - Better support ML with cmake [Issue <a href="https://github.com/feelpp/feelpp/issues/421">421</a>]
-   - Support MKL (starting from v11) [Issue <a href="https://github.com/feelpp/feelpp/issues/420">420</a>]
-   - Support boost 1.56 [Issue <a href="https://github.com/feelpp/feelpp/issues/419">419</a>]
-   - Add functionality to check/test Feel++ version [Issue <a href="https://github.com/feelpp/feelpp/issues/418">418</a>]
-   - Add application to provide various mesh information [Issue <a href="https://github.com/feelpp/feelpp/issues/417">417</a>]
-   - Support PETSc 3.5.X and above [Issue <a href="https://github.com/feelpp/feelpp/issues/415">415</a>]
-   - Support SLEPc 3.4.X and above [Issue <a href="https://github.com/feelpp/feelpp/issues/414">414</a>]
-   - Set processor affinity & dump cpu information [Issue <a href="https://github.com/feelpp/feelpp/issues/413">413</a>]
-   - Support Reading Gmsh data structures directly in memory [Issue <a href="https://github.com/feelpp/feelpp/issues/412">412</a>]
-   - Port to cmake 3.0 [Issue <a href="https://github.com/feelpp/feelpp/issues/411">411</a>]
-   - Add an option to enable/disable creation of the np_<nproc> subdirectory [Issue <a href="https://github.com/feelpp/feelpp/issues/410">410</a>]
-   - problem with markerToDof function  [Issue <a href="https://github.com/feelpp/feelpp/issues/409">409</a>]
-   - Bug in graph construction: more non zero entries in rows than there are entries [Issue <a href="https://github.com/feelpp/feelpp/issues/408">408</a>]
-   - Add support for (non-linear) optimisation libraries [Issue <a href="https://github.com/feelpp/feelpp/issues/407">407</a>]
-   - Need to access to the neighbours of dof and to change value of functions only on some dof [Issue <a href="https://github.com/feelpp/feelpp/issues/404">404</a>]
-   - Exporter Ensight not work [Issue <a href="https://github.com/feelpp/feelpp/issues/403">403</a>]
-   - Problem with feelpp_doc_traces [Issue <a href="https://github.com/feelpp/feelpp/issues/401">401</a>]
-   - Fast Marching with Hypercube [Issue <a href="https://github.com/feelpp/feelpp/issues/399">399</a>]
-   - .geo parser [Issue <a href="https://github.com/feelpp/feelpp/issues/398">398</a>]
-   - Support variable expansion in options [Issue <a href="https://github.com/feelpp/feelpp/issues/391">391</a>]
-   - Non existing marked elements [Issue <a href="https://github.com/feelpp/feelpp/issues/389">389</a>]
-   - Unregistered options [Issue <a href="https://github.com/feelpp/feelpp/issues/385">385</a>]
-   - Random ensight case file generation depending on architecture [Issue <a href="https://github.com/feelpp/feelpp/issues/379">379</a>]
-   - Provide average, min and max mesh size [Issue <a href="https://github.com/feelpp/feelpp/issues/377">377</a>]
-   - Bug in initialisation of CRBModel in composite case [Issue <a href="https://github.com/feelpp/feelpp/issues/361">361</a>]
-   - Bug in non conforming interpolation when space are the same but the mesh is not [Issue <a href="https://github.com/feelpp/feelpp/issues/356">356</a>]
-   - Bug in mortar dof table points coordinates [Issue <a href="https://github.com/feelpp/feelpp/issues/355">355</a>]
-   - Bug in one of the tests in 3D in test_integration_opt (high order geom) [Issue <a href="https://github.com/feelpp/feelpp/issues/354">354</a>]
-
-## Platform specific
-
-   - MACOSX: when using cmake3 set MACOS_RPATH to ON by default
-   - MACOSX: when using cmake3 set CMAKE_INSTALL_RPATH to CMAKE_INSTALL_PREFIX/lib
-   - Port on Curie (@TGCC,France)
-
-# Feel++ Release 0.98.0 {#feelpp0980}
-   release date 22-05-2014
-
-
-  - #374 Move test_bdf* to testsuite/feelts
-  - #372 FTE in test_bdf2 : invalid c++ code generated at runtime by ginac
-  - #373 Support simple operators + - in GiNaC::matrix
-  - #354 Bug in one of the tests in 3D in test_integration_opt (high order geom)
-
-## Changes
-
-   - Improve documentation, see <a
-     href="https://github.com/feelpp/feelpp/issues/300">#300</a>
-   - Refactoring of the linear and nonlinears solver and preconditioner framework
-   - Simplified CRB model interface
-
-## Features
-
-   - Support evaluating expressions over faces (not only elements) and compute
-     min, max (`minmax`) and L infinity norm (`normLinf`) of these expressions
-   - Support PETSc and SLEPc 3.4.4
-   - Support GCC from 4.7 to 4.9 (g++ versions that support the c++11 standard)
-   - Port on Froggy at Mesocentre Ciment (Grenoble,France)
-   - Improve support for eim in CRB by including eim approximation error into crb
-   - <a href="https://github.com/feelpp/feelpp/issues/295">#295</a> Support Gmsh export in parallel
-   - <a href="https://github.com/feelpp/feelpp/issues/348">#348</a> Support evaluate of expression over faces
-
-##  Noteworthy Issues
-
-   - <a href="https://github.com/feelpp/feelpp/issues/356">#356</a> Bug in non conforming interpolation when space are the same but the mesh is not the same
-   - <a href="https://github.com/feelpp/feelpp/issues/355">#355</a> Bug in mortar dof table points coordinates
-   - <a href="https://github.com/feelpp/feelpp/issues/349">#349</a> Bug in composite spaces when subspaces are the same
-   - <a href="https://github.com/feelpp/feelpp/issues/244">#244</a> Bug in test_interpolation and possibly pointwise interpolation
-   - <a href="https://github.com/feelpp/feelpp/issues/350">#350</a> Set timeout for tests and application when used in ctest
-   - <a href="https://github.com/feelpp/feelpp/issues/335">#335</a> Petsc Error in nlsolve
-   - <a href="https://github.com/feelpp/feelpp/issues/346">#346</a> Support reading partitioned mesh on one processor
-   - <a href="https://github.com/feelpp/feelpp/issues/343">#343</a> Port to gcc 4.9
-   - <a href="https://github.com/feelpp/feelpp/issues/341">#341</a> Petsc error with solvereigen
-   - <a href="https://github.com/feelpp/feelpp/issues/340">#340</a> Error with cross product
-   - <a href="https://github.com/feelpp/feelpp/issues/339">#339</a> Error norm for CRB models using EIM
-   - <a href="https://github.com/feelpp/feelpp/issues/338">#338</a> Unable to compile (at least with gcc >= 4.7)
-   - <a href="https://github.com/feelpp/feelpp/issues/336">#336</a> For install feel++ on Ubuntu 12.04
-   - <a href="https://github.com/feelpp/feelpp/issues/337">#337</a> Scotch5 and HomeBrew
-   - <a href="https://github.com/feelpp/feelpp/issues/334">#334</a> marker are not preserved by operatorLagrangeP1
-
-<hr>
-
-# Feel++ Release 0.97.4 {#feelpp0974}
-   release date 03-18-2014
-
-## Changes since 0.97.3
-
-   - Make sure that all headers are installed properly, see <a
-     href="https://github.com/feelpp/feelpp/issues/318">#318</a>
-
-#  Feel++ Release 0.97.3
-   release date 03-17-2014
-
-##  Changes since 0.97.2
-
-   - Fix Feel++ programming environment and cmake script, see <a
-     href="https://github.com/feelpp/feelpp/issues/314">#314</a>
-   - Install CRB framework properly, see <a
-     href="https://github.com/feelpp/feelpp/issues/315">#315</a>
-
-#  Feel++ Release 0.97.2 {#feelpp0972}
-   release date 03-16-2014
-
-## changes0972 Changes since 0.97.1
-
-   - Fix Feel++ programming environment and cmake script, see <a
-     href="https://github.com/feelpp/feelpp/issues/314">#314</a>
-   - Install simple c++ examples (laplacian, stokes, ...) with their associated
-     data (config file, mesh, geometry, ...) , see <a
-     href="https://github.com/feelpp/feelpp/issues/311">#311</a>
-
-# feelpp0971 Feel++ Release 0.97.1
-   release date 03-16-2014
-
-## changes0971 Changes since 0.97.0
-
-   - Fix support for PETSc 3.4.4, see <a
-     href="https://github.com/feelpp/feelpp/issues/311">#311</a>
-   - Fix installation of missing headers in 0.97.0, see <a
-     href="https://github.com/feelpp/feelpp/issues/312">#312</a>
-   - Master branch is now supported in our continuous integration process, see
-     <a href="https://github.com/feelpp/feelpp/issues/274">#274</a>
-
-# feelpp0970 Feel++ Release 0.97.0
-   release date 03-14-2014
-
-## changes0970 Changes
-
-   - Improve documentation, see <a
-     href="https://github.com/feelpp/feelpp/issues/300">#300</a>
-   - Massive reorganisation of headers and files
-   - Propose an alternative handling of header file: rather than having
-     everything in one header file, include only the necessary header files
-     which reduce compilation times
-   - Feel++ now uses <a href="http://www.travis-ci.org">Travis-CI</a> for
-     Continuous Integration, see <a
-     href="http://www.travis-ci.org/feelpp/feelpp">here</a> the Feel++ status
-   - Feel++ is now on Youtube: our videos are uploaded <a href="http://www.youtube.com/channel/UCnLX6kyV8j644isqhMpUN4Q/">here</a>
-   - Feel++ is now on Twitter: it shows the github development activity as well
-     as the Feel++ YouTube channel updates. Check it <a href="http://www.twitter.com/feelpp/">here</a>
-
-## features0970 Features
-
-   - Support Eigen3 to latest stable release 3.2.1
-   - Support <a href="http://onelab.info/">OneLab</a> which enables a graphical
-     interface through Gmsh, see <a href="https://github.com/feelpp/feelpp/issues/64">#64</a>
-   - Support for discontinuous galerkin as well as internal face
-     integration in parallel (1D, 2D and 3D)
-   - Support discontinuous integration over a range of element (a subset of
-     faces), see <a href="https://github.com/feelpp/feelpp/issues/227">#227</a>
-   - Support ghost cells in ensightgold format for better visualisation (without
-     artefacts between subdomain in 3D), see #243
-   - Support mortar function spaces, see <a
-     href="https://github.com/feelpp/feelpp/issues/36">#36</a>
-   - Support the empirical interpolation method, see <a
-     href="https://github.com/feelpp/feelpp/issues/26">#26</a>
-   - Support initialization of element of function space with an expression, see <a
-     href="https://github.com/feelpp/feelpp/issues/282">#282</a>
-   - Support keyword to compute the projector to the tangent hyperplan, see <a
-     href="https://github.com/feelpp/feelpp/issues/222">#222</a>
-   - Support keyword to compute the norm2, see <a
-     href="https://github.com/feelpp/feelpp/issues/223">#223</a>
-   - Support keyword on() in element of function spaces, see <a
-     href="https://github.com/feelpp/feelpp/issues/213">#213</a>
-   - Simplified help messages, see <a
-     href="https://github.com/feelpp/feelpp/issues/273">#273</a>
-
-
-## issues0970 Noteworthy Issues
-   - <a href="https://github.com/feelpp/feelpp/issues/309">#309</a> Add support for isMasterRank() in Environment
-   - <a href="https://github.com/feelpp/feelpp/issues/308">#308</a> Support Ginac expression evaluation
-   - <a href="https://github.com/feelpp/feelpp/issues/271">#271</a>  Assertion failure in local/global assembly using eigen fixed matrices in 3D p >= 4
-   - <a href="https://github.com/feelpp/feelpp/issues/198">#198</a> FEELPP_ENABLE_MPI_MODE=OFF code branches are unmaintained and are removed
-   - <a href="https://github.com/feelpp/feelpp/issues/219">#219</a> Create configure script to generate configuration for cmake
-   - <a href="https://github.com/feelpp/feelpp/issues/224">#224</a> Define an integer type for mpi rank processes
-   - <a href="https://github.com/feelpp/feelpp/issues/260">#260</a> Improved support for string Dirichlet condition handling
-
-<hr>
-# feelpp0960 Feel++ Release 0.96.0
-   release date 01-02-2014
-
-## changes0960 Changes
-
-   - performance improvements in parallel computing: reduce collective
-     operations, rewrite of some internals
-   - improved Ginac(symbolic calculus) support
-   - updated documentation to reflect Homebrew(MacOSX) support and the more
-     stringent requirements on the compilers that g++ must be at least 4.6 and
-     clang 3.2
-
-## features0960 Features
-
-   - Feel++ is now fully supported on Mac OS X systems >= 10.9 (Mavericks) using
-     Homebrew and MacPorts
-   - Feel++ supports creating sequential function spaces out of parallel meshes
-   - Feel++ supports creating local interpolation operators in subdomains
-   - Feel++ provides an implementation of the empirical interpolation method (eim)
-   - Feel++ provides a new reduced basis framework that uses the eim as a
-     central ingredient to obtain an affine decomposition
-
-## issues0960 Noteworthy Issues
-
-   - <a href="https://github.com/feelpp/feelpp/issues/202">#202</a> Intermittent
-     crash when creating OperatorInterpolation
-   - <a href="https://github.com/feelpp/feelpp/issues/201">#201</a> Crash when
-     creating a sequential functionspace using a parallel mesh
-   - <a href="https://github.com/feelpp/feelpp/issues/195">#195</a> Crash in
-     DofTable (see sequential functionspace with parallel mesh feature)
-
-# feelpp0950 Feel++ Release 0.95.0
-   release date 04-10-2013
-
-## changes0950 Changes
-
-   - reduce tremendously the memory footprint in parallel application especially for large meshes
-   - number of files generated by Ginac in parallel applications, now only one .so is generated for each expression
-   - various valgrind invalid read and write fixed
-   - fix memory leak using PETSc when solver/preconditioner needed frequent updates
-
-## features0950 Features
-
-   - support up to PETSc 3.4.2
-   - support up to SLEPc 3.4.2
-   - support up to Boost 1.54
-   - support up to Eigen 3.2
-   - Correspondence table between gmsh and feel++ node numbering allowing to
-     easily couple different codes for example a feel++ code and a matlab code
-   - now the boundary elements set correspond to all elements sharing a
-     sub-entity with the boundary (point edge or face ) and not only a face
-     this affects \c boundaryelements and \c internalelements
-   - Extend support for Lambda expressions in the variational formulation
-     language, now more complex expressions are allowed with the lambda
-     expression framework
-   - Submeshes of elements and faces can be extracted now in parallel. For
-     efficient localization/interpolation later, the relation with the parent
-     mesh can be kept. This is completely done under the hood.
-   - Support for basic memory logging from PETSc
-   - Lots of simplified user interface changes all over the place with control
-     enabled from the .cfg files
-
-## issues0950 Noteworthy Issues
-
-   - <a href="https://github.com/feelpp/feelpp/issues/158">#157</a> Extend support for Lambda expressions
-   - <a href="https://github.com/feelpp/feelpp/issues/157">#157</a> Do not ship eigen, cln, glog and gflags when releasing Feel++
-   - <a href="https://github.com/feelpp/feelpp/issues/156">#156</a> extend boundary elements to all elements sharing a sub-entity with the boundary
-   - <a href="https://github.com/feelpp/feelpp/issues/140">#140</a> Mesh files refined twice the number of refinement levels at generation step
-   - <a href="https://github.com/feelpp/feelpp/issues/128">#128</a> BDF not working in order 4
-   - <a href="https://github.com/feelpp/feelpp/issues/126">#126</a> don't store all mesh points
-   - <a href="https://github.com/feelpp/feelpp/issues/102">#102</a> Clear temporary Ginac generated files when Feel++ is finalized
-   - <a href="https://github.com/feelpp/feelpp/issues/101">#101</a> Correspondence of gmsh and feel++ node numbering
-   - <a href="https://github.com/feelpp/feelpp/issues/58">#58</a> use comp(X) in parallel
-   - <a href="https://github.com/feelpp/feelpp/issues/33">#33</a> problem with gradient of fonction real dim= Dim and topological dim=Dim-1
-   - <a href="https://github.com/feelpp/feelpp/issues/13">#13</a> trace or createSubmesh in parallel
-
-# feelpp0930 Feel++ Release 0.93.0
-   release date xx-yy-2013
-
-
-## changes0930 Changes
-
-   - Feel++ is now hosted on GitHub : https://github.com/feelpp/feelpp
-   - port to LRZ/SuperMUC thanks to PRACE 6th-call and HP-FEEL++ project
-   - port to Strasbourg and Grenoble Mesocenters
-   - major update of the feel++ online manual using Doxygen
-   see [Feel++ Online Document](http://feelpp.github.io/feelpp/)
-
-
-## features0930 Features
-
-   - retrieving command line/config options
-   \code
-   option(_name="",_prefix="",_sub="").as<xxx>()
-   // for example retrieve the option gmsh.hsize
-   option(_name="gmsh.hsize").as<double>()
-   \endcode
-   - \c Environment::findFile(std::string) : look for a file in the list of
-     directories known to Feel++ (current directory, previous directories stored
-     via \c changeRepository(), and for .geo/.mshg files also \c localGeoRepository()
-     and \c systemGeoRepository()
-   - support for Boost 1.53
-   - support for PETSc 3.4
-   - support for loadleveler, slurm and ccc: automatic generation of scheduling scripts
-   - new feel++ snes options
-     - snes-{r,a,s}tol
-     - snes-maxit
-     - snes-ksp-rtol
-     - ksp-maxit
-     - ksp-{a,d}tol
-   - Nonlinear solves with lambda function, see \ref bratu.cpp and \ref nonlinearpow.cpp
-   - added \ref LoadMesh function that can load either a .geo or a .msh file
-   see \ref StokesTutorial
-   - support for Gmsh mesh file binary format use \c --gmsh.format=1 (binary)
-   - in bi/linear forms,
-     - no need for specifying the algebraic representation for bi/linear forms anymore
-     \code
-     auto a = form2( Xh, Xh ); auto l=form1(Xh)
-     a.solve( _solution=u, _rhs=l);
-     \endcode
-     - support for +=
-     \code
-     auto a = form2( Xh, Xh ), at = form2( Xh, Xh); a += at (sum matrices)
-     auto l = form1( Xh ), lt = form1( Xh ); l += lt (sum vectors)
-     \endcode
-     useful for example for time dependent and time independent terms handling.
-   - The language now supports the following \ref Keywords
-     - \c cross(u,v) (cross product)
-     - \c eye<m,n>(), \c Id<m,n>() identity matrix (if non square, 1 on main diagonal, 0 elsewhere)
-     - \c constant<m,n>(value) constant matrix with entries set to  "value"
-     - \c zero<m,n>() matrix of zeros
-     - \c inv() and \ det(): inverse and determinant, e.g. for change of variable (see \ref laplacian_polar.cpp)
-     - \c sym(A) and \c antisym(A)
-   - In exporters,
-     - support for static, change_coords_only, remesh \ref ExporterGeometry
-     - Ensight Gold support
-       - support filesets
-       - support scalars
-       - support for markedfaces (mesh and fields)
-     - options (with prefix)
-       - \c exporter.format = ensight, ensightgold, gmsh
-       - \c exporter.geo = 0 (static), 1(change_coords_only), 2(remesh)
-
-
-
-
-
-## issues0930 Issues
-
-   - <a href="https://github.com/feelpp/feelpp/issues/123">#123</a> test_ginac fails to compile
-   - <a href="https://github.com/feelpp/feelpp/issues/122">#122</a> Automatic generation of API documentation from research
-   - <a href="https://github.com/feelpp/feelpp/issues/121">#121</a> code in doc/manual/heatns fail to compile
-   - <a href="https://github.com/feelpp/feelpp/issues/120">#120</a> Codes in doc/manual/dd fail to compile
-   - <a href="https://github.com/feelpp/feelpp/issues/119">#119</a> exporter ensightgold with vectorial field
-   - <a href="https://github.com/feelpp/feelpp/issues/118">#118</a> problem using -idv(...) in expression and operator linear free
-   - <a href="https://github.com/feelpp/feelpp/issues/116">#116</a> Support Ensight Gold format
-   - <a href="https://github.com/feelpp/feelpp/issues/111">#111</a> Compilation error of CRB models in develop branch
-   - <a href="https://github.com/feelpp/feelpp/issues/109">#109</a> Load Gmsh supported file format seamlessly
-   - <a href="https://github.com/feelpp/feelpp/issues/106">#106</a> Improve website documentation
-   - <a href="https://github.com/feelpp/feelpp/issues/103">#103</a> Off by one error in mesh point indices
-   - <a href="https://github.com/feelpp/feelpp/issues/15">#15</a> Reorder dof with respect to interior, face, edge and vertex dof of the domain
-   - <a href="https://github.com/feelpp/feelpp/issues/38">#38</a> support for gmsh binary format enhancement
-   - <a href="https://github.com/feelpp/feelpp/issues/45">#45</a> problem with dot function in parallel when using vectors
-   - <a href="https://github.com/feelpp/feelpp/issues/56">#56</a> use multVector directly with element_type
-   - <a href="https://github.com/feelpp/feelpp/issues/79">#79</a> improve export when same mesh reused enhancement
-   - <a href="https://github.com/feelpp/feelpp/issues/91">#91</a> GFlags not used
-   - <a href="https://github.com/feelpp/feelpp/issues/95">#95</a> Port Feel++ on SUPERMUC
-   - <a href="https://github.com/feelpp/feelpp/issues/99">#99</a> (Re)Moving libmatheval Usability Component-Progenv
-
-# feelpp0920 Feel++ Release 0.92.0
-
-## changes0920 Changes
-
-   - support for Boost 1.49, 1.50, 1.51 and 1.52
-   - imported for Eigen 3.1 in contrib/eigen
-   - port to gcc4.7, clang 3.1 and clang 3.2
-   - added cmake macro feelpp_add application, see http://code.google.com/p/feelpp/issues/detail?id=11&can=1
-   - support Gmsh from both executable and library(preferred and more powerful)
-   - support for PETSc 3.3
-   - port to Marseille mesocenter supercomputer (thx to CEMRACS'12)
-   - port on the TGCC
-   - added scotch Portfile from macport and use esmumps variant for mumps support
-   - added PETSc 3.3-p1 support and use suitesparse as well as scotch directly
-   from macport instead of downloading/compiling them
-   - improved benchmarking framework and in particular the handling of the
-   statistics provided by the benchmark with views per key and flat views. In
-   the last case various files are automatically generated for each benchmark
-   - added eigen(3.1) backend with support for dense and sparse eigen matrices
-   Fixes issue #36
-   - added 2D and 3D mesh adaptation using Gmsh
-   - seamless parallelisation of the FunctionSpace data structure in the case of
-   product of function spaces
-   - lift operator merged with projection operator
-   - support for mesh generation directly from Gmsh library
-   - support for element splitting (Fixes issue #40)
-   - many new keywords
-     - mean value of a function: mean(_range=elements(mesh),_expr=sin(pi Px()));
-     - norm L_2 of a function: normL2(_range=elements(mesh),_expr=sin(pi Px()));
-     - norm L_2 of a function squared: normL2Squared(_range=elements(mesh),_expr=sin(pi Px()));
-     - infinity norm of a function: normLinf(_range=elements(mesh),_expr=sin(pi Px()));
-     - inner(a,b): a . b
-     - cross(a,b): a x b
-     - sym(a): .5 (a + aT )
-     - zero<m,n>(): matrix of zeros of size m x n
-     - ones<m,n>(): matrix of ones of size m x n
-     - constant<m,n>(a): matrix of constant value a of size m x n
-     - eye<m,n>(), Id<m,n>(): unit diagonal matrix of size m x n
-    - support for symbolic computing using Ginac
-    - support for meta-expression
-    \code
-    auto I = integrate(_range=elements(mesh),_expr=_e1 );
-    auto v1 = I( idv(v) ).evaluate();
-    auto v2 = I( cst(1) ).evaluate();
-    \endcode
-   - update manual and tutorial, see #61 and #70
-
-## bugs0920 Bugs
-
-   - fixed issue 1: http://code.google.com/p/feelpp/issues/detail?id=1&can=1
-   - fixed issue 2: http://code.google.com/p/feelpp/issues/detail?id=2&can=1
-   - fixed issue 6: http://code.google.com/p/feelpp/issues/detail?id=6&can=1
-   - fixed issue 9: http://code.google.com/p/feelpp/issues/detail?id=9&can=1
-
-
-# Feel++ Release 0.91.1
-
-   - overall cleanup in C++ preprocessor macros
-   - cleanup in cmake
-   - fix some compilation issues and added more stringent compiler flags
-   - port to boost1.49
-   - Fix issues 1, 2 and 9 (see Google Code, http://code.google.com/p/feelpp/issues/list)
-
-# Feel++ Release 0.91.0
-
-## changes0910 Developer changes
-
-   - Feel++ is now seamlessly parallel
-   - Feel++ supports seamlessly interpolation in its variational formulation
-   language
-   - cmake: overall cleanup of cmake feel++ variables which are now prefixed
-   FEELPP
-    - cmake: in-source builds forbidden
-    - cmake: guards againts invalid CMAKE_BUILD_TYPE
-    - cmake: added sse, altivec and neon optimizations
-    - cmake: fix bug in make_directory
-    - cmake: even more minimal configuration in doc/tutorial
-    - fix compilation in APPLE and s390 platforms
-   - added macport port for feel++ with support for snow leopard and lion
-   - Eigen code has been updated to 3.0.5
-   - added a config file with extension .cfg based on Boost.program_options in
-   Application classes
-   - provide systemConfigRepository() and localConfigRepository() in Environment
-   class which return respectively the local and system location of the config
-   file
-   - merge the two implementations of aitken relaxation method and provide a
-   simplified interface
-   - added interface nlSolve interface to backend similar to solve allowing to
-   order-free and optional parameters
-   - added interface to external solver libraries via petsc such as mumps or
-   umfpack. This is configurable via the config file (.cfg)
-   - various fixes in geometric mapping (and inverse) and polynomialset to handle
-   objects of topoligical dimension d-1 living in dimension d space.
-   - added implementation of $L_2$ and $H_1$ projector which renders rather
-   seamless these projection.
-   - fix copy/paste bug in bdf extrapolation, the coefficient were divided by dt
-   - support for interpolating functions living on meshes of different
-   topoligical dimension
-   - added mesh elements and faces extraction using createSubmesh() based on mesh
-   filters
-   - added lift and trace operator, interface might change
-   - BDF:
-     - new bdf() free function to generate a new bdf `shared_ptr` object and
-     configure it
-     \code
-     // vm is the variable map provided by program options
-     // note that by default most option get their value from the command line
-     // or config files
-     auto mybdf = bdf( _space=Xh, _vm=this->vm(), _order=2, _time_step=0.1 );
-     \endcode
-   - changed options for bdf: now use . to separate  bdf from rest of option in
-     order to be able to create section in config files
-   - can pass a prefix to handle several bdf in application
-   - GeoTool:
-    - update geotool to support markers for 1D meshes
-    - added a new Cube object
-    - added a pie object
-   - added mshconvert() which allows to generate a gmsh mesh out of mesh formats
-   supported by gmsh
-   - support for passing shared_ptr<> to the differential operators and to on()
-   - support in the language for test and trial functions not being defined on the
-   same mesh
-   - Language:
-     - added sym() and antisym() to compute the symmetric and antisymmetric parts of
-     a matrix expression
-     - added access to expression components via () operator
-     - allow integration of test and/or trial functions which are defined  on different
-     meshes as well as integrating on a different mesh.
-   - reorganized completely and updated/corrected the manual
-   - updated doxygen documentation
-
+# Change Log
+
+## [v0.100.0](https://github.com/feelpp/feelpp/tree/v0.100.0) (2016-01-25)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.100.0-beta.7...v0.100.0)
+
+**Closed issues:**
+
+- degree of polynomial [\#703](https://github.com/feelpp/feelpp/issues/703)
+- feel\_test\_integration FTBS [\#693](https://github.com/feelpp/feelpp/issues/693)
+- cmake broken for quickstart [\#686](https://github.com/feelpp/feelpp/issues/686)
+- Implement Ksp post and pre solve functions [\#685](https://github.com/feelpp/feelpp/issues/685)
+- Preconditioner, Worldcomm, rebuild [\#682](https://github.com/feelpp/feelpp/issues/682)
+- Package not compiling [\#679](https://github.com/feelpp/feelpp/issues/679)
+- FTBS with clang: feelmodels/modelproperties.cpp [\#676](https://github.com/feelpp/feelpp/issues/676)
+- Exporter prefix [\#672](https://github.com/feelpp/feelpp/issues/672)
+- Json parser does not support comments in boost 1.59.0 [\#659](https://github.com/feelpp/feelpp/issues/659)
+- Bug in assignment operator for forms [\#656](https://github.com/feelpp/feelpp/issues/656)
+- Refactor createSubmesh [\#648](https://github.com/feelpp/feelpp/issues/648)
+- Use of two "nested" preconditioners fails in parallel [\#645](https://github.com/feelpp/feelpp/issues/645)
+- nonlinear pow function works only with integer [\#636](https://github.com/feelpp/feelpp/issues/636)
+- Geometry file parse variable bug [\#634](https://github.com/feelpp/feelpp/issues/634)
+- documentation: add a link to the book on feelpp.org [\#632](https://github.com/feelpp/feelpp/issues/632)
+- EnsightGold exporter is broken [\#621](https://github.com/feelpp/feelpp/issues/621)
+- Reinitialization with fast marching method in sequential on mesh with hypercubes \(and Simplexes\) [\#620](https://github.com/feelpp/feelpp/issues/620)
+- FTBS with petsc/slepc 3.6.0 [\#617](https://github.com/feelpp/feelpp/issues/617)
+- Exporters: behavior differences between add\( ... \) function of exporter and add\( ... \) function of a time step [\#604](https://github.com/feelpp/feelpp/issues/604)
+- Bug in blockns [\#601](https://github.com/feelpp/feelpp/issues/601)
+- add createSubVector for PetscVector [\#599](https://github.com/feelpp/feelpp/issues/599)
+- Quickstart sample not building: feelpp\_qs\_sm\_3d [\#590](https://github.com/feelpp/feelpp/issues/590)
+- Optimisation of laplacian for p=2 [\#581](https://github.com/feelpp/feelpp/issues/581)
+- Vectorial Laplacian and Hypercube [\#580](https://github.com/feelpp/feelpp/issues/580)
+- Allow new quadrature formulas in integrate [\#564](https://github.com/feelpp/feelpp/issues/564)
+- EigenSolver : remove unconverged eigenfunctions [\#562](https://github.com/feelpp/feelpp/issues/562)
+- Wrong exact integration value from testsuite [\#559](https://github.com/feelpp/feelpp/issues/559)
+- Ensight exporter and 2d markers [\#554](https://github.com/feelpp/feelpp/issues/554)
+- markerToDof using face marker [\#553](https://github.com/feelpp/feelpp/issues/553)
+- VTK exporter 3D numbering [\#551](https://github.com/feelpp/feelpp/issues/551)
+- Providing options to Petsc. [\#550](https://github.com/feelpp/feelpp/issues/550)
+- Add support for random number generation in language [\#547](https://github.com/feelpp/feelpp/issues/547)
+- L2 projection seems broken in feeldicr/projector.cpp [\#541](https://github.com/feelpp/feelpp/issues/541)
+- Support Null Space in solver  [\#531](https://github.com/feelpp/feelpp/issues/531)
+- Linking fails for high-order geometries with hypercube elements  [\#528](https://github.com/feelpp/feelpp/issues/528)
+- Problem inside createGMSHMesh [\#526](https://github.com/feelpp/feelpp/issues/526)
+- Load several config files [\#525](https://github.com/feelpp/feelpp/issues/525)
+- Feel++ 0.100.0 Beta 1 release doesn't compile on OS X [\#519](https://github.com/feelpp/feelpp/issues/519)
+- Gmsh header lost [\#517](https://github.com/feelpp/feelpp/issues/517)
+- Problem in macro FEELPP\_VERSION\_GREATER\_THAN [\#514](https://github.com/feelpp/feelpp/issues/514)
+- homebrew compilation fails [\#513](https://github.com/feelpp/feelpp/issues/513)
+- Problems when linking Feel++ develop version [\#494](https://github.com/feelpp/feelpp/issues/494)
+- Support variable expansion in options [\#391](https://github.com/feelpp/feelpp/issues/391)
+- Mesh export for parallel execution [\#367](https://github.com/feelpp/feelpp/issues/367)
+- Bug in mesh generated by operator Lagrange P1 in 3d [\#199](https://github.com/feelpp/feelpp/issues/199)
+- Support laplacian keyword for scalar and vector fields [\#146](https://github.com/feelpp/feelpp/issues/146)
+- Support mean linear functional [\#704](https://github.com/feelpp/feelpp/issues/704)
+- Refactor CreateSubMeshTool  [\#700](https://github.com/feelpp/feelpp/issues/700)
+- Change default FEELPP\_MESH\_MAX\_ORDER to 2 [\#697](https://github.com/feelpp/feelpp/issues/697)
+- Exporter Ensight: variable names with space characters [\#692](https://github.com/feelpp/feelpp/issues/692)
+- provide free function to generate a VectorPetsc shared/unique pointer from a PETSc vector [\#688](https://github.com/feelpp/feelpp/issues/688)
+- FTBS thermodyn  [\#677](https://github.com/feelpp/feelpp/issues/677)
+- Support symmetric/SPD matrices and trigger associated solver/preconditioners  [\#673](https://github.com/feelpp/feelpp/issues/673)
+- Add functions to check for Inf and NaN in eigen3 data structures [\#669](https://github.com/feelpp/feelpp/issues/669)
+- Support for time adaptation  [\#666](https://github.com/feelpp/feelpp/issues/666)
+- Support addition bilinear form scaled by a scalar [\#664](https://github.com/feelpp/feelpp/issues/664)
+- Improve timer support [\#657](https://github.com/feelpp/feelpp/issues/657)
+- Reduce mesh data structure memory footprint and improve loading [\#653](https://github.com/feelpp/feelpp/issues/653)
+- Allow to change value on diagonal for elimination [\#652](https://github.com/feelpp/feelpp/issues/652)
+- Add support to get test and trial function in dsel from expression [\#651](https://github.com/feelpp/feelpp/issues/651)
+- create meaningful type with using for mesh filters [\#647](https://github.com/feelpp/feelpp/issues/647)
+- Add support for description of fields  [\#646](https://github.com/feelpp/feelpp/issues/646)
+- support markededges\(\) as an alias to markedfaces\(\) in 2D [\#644](https://github.com/feelpp/feelpp/issues/644)
+- Move to c++14 by default [\#640](https://github.com/feelpp/feelpp/issues/640)
+- Support range\(\) to create lists containing arithmetic  progressions [\#639](https://github.com/feelpp/feelpp/issues/639)
+- Support interpolant from H^1 to H^curl and more generally the De Rahm Diagram [\#638](https://github.com/feelpp/feelpp/issues/638)
+- Add control for model instantiation in cmake  [\#629](https://github.com/feelpp/feelpp/issues/629)
+- Refactor mesh/filters.hpp [\#626](https://github.com/feelpp/feelpp/issues/626)
+- Add free functions for accessing local and global ranks in data structures [\#625](https://github.com/feelpp/feelpp/issues/625)
+- Allow different C++ standard support  [\#622](https://github.com/feelpp/feelpp/issues/622)
+- Fixed mpi warning in slurm generated scripts [\#614](https://github.com/feelpp/feelpp/issues/614)
+- Move precAFP to benchmarks/magnetostatic [\#613](https://github.com/feelpp/feelpp/issues/613)
+- Change default path for exporter [\#611](https://github.com/feelpp/feelpp/issues/611)
+- Add support for ExtendedFieldFromInterface  [\#610](https://github.com/feelpp/feelpp/issues/610)
+- Improve performance of assembly of complex terms in bilinear terms [\#609](https://github.com/feelpp/feelpp/issues/609)
+- Support integral evaluation of a vector of scalars, vectors or matrices [\#603](https://github.com/feelpp/feelpp/issues/603)
+- Support higher order meshes for levelset [\#596](https://github.com/feelpp/feelpp/issues/596)
+- Extract block diagonal matrix [\#593](https://github.com/feelpp/feelpp/issues/593)
+- Bug in RT0 in 3D: no convergence [\#592](https://github.com/feelpp/feelpp/issues/592)
+- Timers table for Feel++ [\#591](https://github.com/feelpp/feelpp/issues/591)
+- add support for prefix in loadMesh [\#588](https://github.com/feelpp/feelpp/issues/588)
+- Improve documentation [\#578](https://github.com/feelpp/feelpp/issues/578)
+- FTBS inner keyword when using terminal keyword [\#577](https://github.com/feelpp/feelpp/issues/577)
+- Support new keyword : msi  [\#572](https://github.com/feelpp/feelpp/issues/572)
+- Support more features in the ginac parser [\#568](https://github.com/feelpp/feelpp/issues/568)
+- Support HDF5 format  [\#560](https://github.com/feelpp/feelpp/issues/560)
+- Support traits like is\_edge, is\_face, is\_point,... [\#556](https://github.com/feelpp/feelpp/issues/556)
+- Add support for modulo [\#549](https://github.com/feelpp/feelpp/issues/549)
+- Add support for casting expressions from one type to another in the language [\#548](https://github.com/feelpp/feelpp/issues/548)
+- Add support for floor and ceil in language [\#546](https://github.com/feelpp/feelpp/issues/546)
+- Bug in handling face dof in vectorial finite elements \(e.g. Nedelec,RT\) [\#544](https://github.com/feelpp/feelpp/issues/544)
+- Support interpolation and dirichlet conditions based on range of edges and points [\#537](https://github.com/feelpp/feelpp/issues/537)
+- Clean up tangent and normal computation in local interpolant [\#536](https://github.com/feelpp/feelpp/issues/536)
+- Support Matrix fields  [\#535](https://github.com/feelpp/feelpp/issues/535)
+- Add support for component-wise dirichlet condition in vector fields [\#534](https://github.com/feelpp/feelpp/issues/534)
+- eigenPair : each call erase previous eigen functions  [\#533](https://github.com/feelpp/feelpp/issues/533)
+- Support pointwise operations in Vector\<\> [\#509](https://github.com/feelpp/feelpp/issues/509)
+- Customize PETSc/KSP monitors [\#503](https://github.com/feelpp/feelpp/issues/503)
+- printMatlab : The script should not have the same name than the variable [\#501](https://github.com/feelpp/feelpp/issues/501)
+- Add support for -mat\_mumps\_icntl\_7  [\#499](https://github.com/feelpp/feelpp/issues/499)
+- FTE in feelpp\_test\_integration\_relatedmesh  [\#498](https://github.com/feelpp/feelpp/issues/498)
+- Support Schur complement Pressure Mass Matrix for Stokes [\#495](https://github.com/feelpp/feelpp/issues/495)
+- Support assembly PˆT A P  [\#492](https://github.com/feelpp/feelpp/issues/492)
+- Optimize and cleanup DofTable [\#490](https://github.com/feelpp/feelpp/issues/490)
+- Reduce compilation cost in creategmshmesh [\#488](https://github.com/feelpp/feelpp/issues/488)
+- Configure Aitken tool from command line options [\#483](https://github.com/feelpp/feelpp/issues/483)
+- Support map of ginac expression [\#482](https://github.com/feelpp/feelpp/issues/482)
+- CMake modification: FindFeel++.cmake [\#479](https://github.com/feelpp/feelpp/issues/479)
+- Support updateMarkers\(\) functions for faces [\#467](https://github.com/feelpp/feelpp/issues/467)
+- Port on MAC OS Yosemite [\#466](https://github.com/feelpp/feelpp/issues/466)
+- OpenMP not usable [\#464](https://github.com/feelpp/feelpp/issues/464)
+- Support factorisation based preconditioner for Navier-Stokes \(e.g. BTPCD and PCD\) [\#460](https://github.com/feelpp/feelpp/issues/460)
+- Support Operator framework  [\#457](https://github.com/feelpp/feelpp/issues/457)
+- Support concatenation of mesh elements containers [\#455](https://github.com/feelpp/feelpp/issues/455)
+- Support interprocessedges mesh filter [\#454](https://github.com/feelpp/feelpp/issues/454)
+- Class Mesh  [\#453](https://github.com/feelpp/feelpp/issues/453)
+- Support atan2 keyword in language [\#450](https://github.com/feelpp/feelpp/issues/450)
+- FTE test\_mortar  [\#449](https://github.com/feelpp/feelpp/issues/449)
+- Support new interpolation framework in OperatorInterpolation and possibly other classes [\#448](https://github.com/feelpp/feelpp/issues/448)
+- Support generic WorldComm in Exporter{EnsightGold,HDF5} [\#446](https://github.com/feelpp/feelpp/issues/446)
+- Support worldcomm in Ginac expression [\#445](https://github.com/feelpp/feelpp/issues/445)
+- Possible deadlock in loadMesh [\#444](https://github.com/feelpp/feelpp/issues/444)
+- compilation error with chi expression [\#442](https://github.com/feelpp/feelpp/issues/442)
+- FTE test\_on\_inside [\#441](https://github.com/feelpp/feelpp/issues/441)
+- FTE in test\_interpolation\_nedelec  [\#440](https://github.com/feelpp/feelpp/issues/440)
+- Support square root of sparse matrices  [\#439](https://github.com/feelpp/feelpp/issues/439)
+- Add support for jacobi elliptic functions [\#438](https://github.com/feelpp/feelpp/issues/438)
+- Ensight exporter: bad output in parallel [\#406](https://github.com/feelpp/feelpp/issues/406)
+- Bug when computing the curl of the curl of an expression [\#397](https://github.com/feelpp/feelpp/issues/397)
+- Change ginac expression management [\#395](https://github.com/feelpp/feelpp/issues/395)
+- Add local/global interpolant tests [\#392](https://github.com/feelpp/feelpp/issues/392)
+- Segfault when loading/saving mesh [\#371](https://github.com/feelpp/feelpp/issues/371)
+- Add support for parallel I/O via MPIIO to ensight gold format [\#326](https://github.com/feelpp/feelpp/issues/326)
+- Add FILE\_INDEX support in Ensight Gold format [\#305](https://github.com/feelpp/feelpp/issues/305)
+- MPI\_Scatter hangs inside Feel++ environment [\#304](https://github.com/feelpp/feelpp/issues/304)
+
+**Merged pull requests:**
+
+- fixes \#580 and associated to \#581: laplacian on hypercube [\#695](https://github.com/feelpp/feelpp/pull/695) ([prudhomm](https://github.com/prudhomm))
+- Install Feel++ main dependencies using CMake [\#689](https://github.com/feelpp/feelpp/pull/689) ([aancel](https://github.com/aancel))
+- Correction of testsuite fails from \#586 [\#683](https://github.com/feelpp/feelpp/pull/683) ([LANTZT](https://github.com/LANTZT))
+- Issue \#672: Exporter prefix [\#675](https://github.com/feelpp/feelpp/pull/675) ([aancel](https://github.com/aancel))
+- Feature/hdf5 grp [\#667](https://github.com/feelpp/feelpp/pull/667) ([gdolle](https://github.com/gdolle))
+- Feature/prec ams [\#663](https://github.com/feelpp/feelpp/pull/663) ([vhuber](https://github.com/vhuber))
+- implement \#527 : mpd and interval [\#661](https://github.com/feelpp/feelpp/pull/661) ([prudhomm](https://github.com/prudhomm))
+- implement the hdf5 format in save and load [\#660](https://github.com/feelpp/feelpp/pull/660) ([prudhomm](https://github.com/prudhomm))
+- Feature/derahm [\#641](https://github.com/feelpp/feelpp/pull/641) ([prudhomm](https://github.com/prudhomm))
+- Holo3 Image Correlation [\#627](https://github.com/feelpp/feelpp/pull/627) ([LANTZT](https://github.com/LANTZT))
+- Doxygen documentation update [\#618](https://github.com/feelpp/feelpp/pull/618) ([bachir151](https://github.com/bachir151))
+- Benchmark IO [\#606](https://github.com/feelpp/feelpp/pull/606) ([youldrouis](https://github.com/youldrouis))
+- msi operator tests [\#589](https://github.com/feelpp/feelpp/pull/589) ([LANTZT](https://github.com/LANTZT))
+- MultiScale Image keyword  [\#585](https://github.com/feelpp/feelpp/pull/585) ([LANTZT](https://github.com/LANTZT))
+- Holo3 Quadrature formula [\#570](https://github.com/feelpp/feelpp/pull/570) ([LANTZT](https://github.com/LANTZT))
+- Add a Gitter chat badge to README.md [\#538](https://github.com/feelpp/feelpp/pull/538) ([gitter-badger](https://github.com/gitter-badger))
+- Feature/updatemarker [\#701](https://github.com/feelpp/feelpp/pull/701) ([prudhomm](https://github.com/prudhomm))
+- Feature/sanitize [\#696](https://github.com/feelpp/feelpp/pull/696) ([prudhomm](https://github.com/prudhomm))
+- Feature/prec adapt ns [\#684](https://github.com/feelpp/feelpp/pull/684) ([prudhomm](https://github.com/prudhomm))
+- Feature/symm [\#674](https://github.com/feelpp/feelpp/pull/674) ([prudhomm](https://github.com/prudhomm))
+- Feature/findfeelpp \(Issue \#479\) [\#670](https://github.com/feelpp/feelpp/pull/670) ([aancel](https://github.com/aancel))
+- Feature/faster [\#654](https://github.com/feelpp/feelpp/pull/654) ([prudhomm](https://github.com/prudhomm))
+- Feature/fsi [\#616](https://github.com/feelpp/feelpp/pull/616) ([prudhomm](https://github.com/prudhomm))
+
+## [v0.100.0-beta.7](https://github.com/feelpp/feelpp/tree/v0.100.0-beta.7) (2015-02-11)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.100.0-beta.6...v0.100.0-beta.7)
+
+## [v0.100.0-beta.6](https://github.com/feelpp/feelpp/tree/v0.100.0-beta.6) (2015-02-11)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.100.0-beta.5...v0.100.0-beta.6)
+
+## [v0.100.0-beta.5](https://github.com/feelpp/feelpp/tree/v0.100.0-beta.5) (2015-02-10)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.100.0-beta.4...v0.100.0-beta.5)
+
+## [v0.100.0-beta.4](https://github.com/feelpp/feelpp/tree/v0.100.0-beta.4) (2015-02-08)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.100.0-beta.3...v0.100.0-beta.4)
+
+## [v0.100.0-beta.3](https://github.com/feelpp/feelpp/tree/v0.100.0-beta.3) (2015-02-08)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.100.0-beta.2...v0.100.0-beta.3)
+
+## [v0.100.0-beta.2](https://github.com/feelpp/feelpp/tree/v0.100.0-beta.2) (2015-02-08)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.100.0-beta.1...v0.100.0-beta.2)
+
+**Closed issues:**
+
+- Get a function from a VectorPetsc [\#524](https://github.com/feelpp/feelpp/issues/524)
+- Hcurl x Pch [\#523](https://github.com/feelpp/feelpp/issues/523)
+- Eigen3 with installed feel++ from apt on project. [\#521](https://github.com/feelpp/feelpp/issues/521)
+- Nedelec: fix level of verbosity [\#520](https://github.com/feelpp/feelpp/issues/520)
+- FindPETSc.cmake is broken with PETSc \> 3.5 [\#516](https://github.com/feelpp/feelpp/issues/516)
+- Feel++ for Ubuntu 14.10 [\#515](https://github.com/feelpp/feelpp/issues/515)
+- HDF5 exporter: bad output after first timestep [\#508](https://github.com/feelpp/feelpp/issues/508)
+- Change of nlSolver type with setType\( \) is not taken into account [\#505](https://github.com/feelpp/feelpp/issues/505)
+- Optimize high order geometric mapping [\#234](https://github.com/feelpp/feelpp/issues/234)
+
+## [v0.100.0-beta.1](https://github.com/feelpp/feelpp/tree/v0.100.0-beta.1) (2015-01-18)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.100.0-alpha.1-assembly...v0.100.0-beta.1)
+
+**Closed issues:**
+
+- Bug exporter paraview MPI dof table [\#506](https://github.com/feelpp/feelpp/issues/506)
+- Lots of FTBS inside benchmarks/perf and doc [\#500](https://github.com/feelpp/feelpp/issues/500)
+- Problem when mesh generation fails [\#486](https://github.com/feelpp/feelpp/issues/486)
+- Problem when using two-part PETSc arguments [\#485](https://github.com/feelpp/feelpp/issues/485)
+- Matrix Type [\#476](https://github.com/feelpp/feelpp/issues/476)
+- math::ellipjc function [\#451](https://github.com/feelpp/feelpp/issues/451)
+- exporter.export [\#383](https://github.com/feelpp/feelpp/issues/383)
+- Implement local interpolant framework [\#369](https://github.com/feelpp/feelpp/issues/369)
+- Projector warning [\#358](https://github.com/feelpp/feelpp/issues/358)
+- Visualization of a response surface  [\#302](https://github.com/feelpp/feelpp/issues/302)
+- Update Feel++ documentation [\#300](https://github.com/feelpp/feelpp/issues/300)
+- Add quickstart navier-stokes example [\#298](https://github.com/feelpp/feelpp/issues/298)
+- FTE in test\_eim  in parallel [\#263](https://github.com/feelpp/feelpp/issues/263)
+- Optimize OperatorInterpolation communicator [\#232](https://github.com/feelpp/feelpp/issues/232)
+- DB issue with test\_eim [\#168](https://github.com/feelpp/feelpp/issues/168)
+- Fix testsuite compilation and execution [\#88](https://github.com/feelpp/feelpp/issues/88)
+
+## [v0.100.0-alpha.1-assembly](https://github.com/feelpp/feelpp/tree/v0.100.0-alpha.1-assembly) (2014-12-22)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.99.0-final.1...v0.100.0-alpha.1-assembly)
+
+**Closed issues:**
+
+- Wrong interpolated values with Eigen backend  [\#491](https://github.com/feelpp/feelpp/issues/491)
+- Sign of Nedelec [\#489](https://github.com/feelpp/feelpp/issues/489)
+- Weird deadlock with filters [\#484](https://github.com/feelpp/feelpp/issues/484)
+- Add example to store forms, mesh and function spaces in data structure [\#481](https://github.com/feelpp/feelpp/issues/481)
+- mumps atlas [\#480](https://github.com/feelpp/feelpp/issues/480)
+- Bug boost-1.57 matrix ublas [\#478](https://github.com/feelpp/feelpp/issues/478)
+- vf::project with extend doftable [\#477](https://github.com/feelpp/feelpp/issues/477)
+- In-Situ visualization [\#475](https://github.com/feelpp/feelpp/issues/475)
+- VTK Exporter [\#474](https://github.com/feelpp/feelpp/issues/474)
+- Restart with Ensight Gold is broken [\#473](https://github.com/feelpp/feelpp/issues/473)
+- Bug in ensightgold exporter [\#472](https://github.com/feelpp/feelpp/issues/472)
+- Expressions built from GinaC::ex [\#469](https://github.com/feelpp/feelpp/issues/469)
+- Segmentation fault in doc/manual/laplacian/laplacian\_polar.cpp [\#463](https://github.com/feelpp/feelpp/issues/463)
+- Reduce mpi communication in exporter [\#462](https://github.com/feelpp/feelpp/issues/462)
+- Bad behavior of solver with Petsc 3.5.x [\#461](https://github.com/feelpp/feelpp/issues/461)
+- Static geometry with exporters  [\#456](https://github.com/feelpp/feelpp/issues/456)
+- Problem with CMakeCache [\#452](https://github.com/feelpp/feelpp/issues/452)
+- Release 0.99.0-final.1 cmake fail [\#437](https://github.com/feelpp/feelpp/issues/437)
+- Merging feature/explicit into develop [\#387](https://github.com/feelpp/feelpp/issues/387)
+- Add options for exporting in one or several files \(either domain or time\) [\#353](https://github.com/feelpp/feelpp/issues/353)
+- extend p0 continuous space to vectorial case in // [\#225](https://github.com/feelpp/feelpp/issues/225)
+- Support HDF5/XMDF  formats [\#194](https://github.com/feelpp/feelpp/issues/194)
+
+## [v0.99.0-final.1](https://github.com/feelpp/feelpp/tree/v0.99.0-final.1) (2014-09-07)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.99.0-beta.6...v0.99.0-final.1)
+
+**Closed issues:**
+
+- Support more continuous integration using Travis [\#436](https://github.com/feelpp/feelpp/issues/436)
+- Enable support for simd  [\#435](https://github.com/feelpp/feelpp/issues/435)
+- MPIIO integer size detection breaks feel++ 32 bits platforms [\#434](https://github.com/feelpp/feelpp/issues/434)
+- FindXdmf.cmake missing [\#433](https://github.com/feelpp/feelpp/issues/433)
+- Add support for set of elements of function spaces [\#430](https://github.com/feelpp/feelpp/issues/430)
+- Add compatibility headers in contrib/gmsh depending on version [\#425](https://github.com/feelpp/feelpp/issues/425)
+- Add application to provide various mesh information [\#417](https://github.com/feelpp/feelpp/issues/417)
+- Add support for \(non-linear\) optimisation libraries [\#407](https://github.com/feelpp/feelpp/issues/407)
+- Python Wrapping of a Laplacian example [\#366](https://github.com/feelpp/feelpp/issues/366)
+- Benchmark ublas vs eigen3 vs nt2 [\#238](https://github.com/feelpp/feelpp/issues/238)
+
+## [v0.99.0-beta.6](https://github.com/feelpp/feelpp/tree/v0.99.0-beta.6) (2014-08-31)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.99.0-beta.4...v0.99.0-beta.6)
+
+## [v0.99.0-beta.4](https://github.com/feelpp/feelpp/tree/v0.99.0-beta.4) (2014-08-30)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.99.0-beta.3...v0.99.0-beta.4)
+
+**Closed issues:**
+
+- HDF5 file format [\#368](https://github.com/feelpp/feelpp/issues/368)
+
+## [v0.99.0-beta.3](https://github.com/feelpp/feelpp/tree/v0.99.0-beta.3) (2014-08-29)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.99.0-beta.2...v0.99.0-beta.3)
+
+**Closed issues:**
+
+- Add backend as argument to form1 and form2 [\#431](https://github.com/feelpp/feelpp/issues/431)
+- develop branch currently broken [\#429](https://github.com/feelpp/feelpp/issues/429)
+- Update petsc to 3.5.x on mesostra [\#428](https://github.com/feelpp/feelpp/issues/428)
+- Update Gmsh to 2.8.5 \(or later\) on mesostra [\#424](https://github.com/feelpp/feelpp/issues/424)
+
+**Merged pull requests:**
+
+- Internship file formats [\#381](https://github.com/feelpp/feelpp/pull/381) ([VANTHONG](https://github.com/VANTHONG))
+- Internship Python [\#380](https://github.com/feelpp/feelpp/pull/380) ([LANTZT](https://github.com/LANTZT))
+
+## [v0.99.0-beta.2](https://github.com/feelpp/feelpp/tree/v0.99.0-beta.2) (2014-08-26)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.99.0-beta.1...v0.99.0-beta.2)
+
+**Closed issues:**
+
+- Add support for Matrix transpose without assembly [\#427](https://github.com/feelpp/feelpp/issues/427)
+- Add support for newMatrix\(\) without args [\#426](https://github.com/feelpp/feelpp/issues/426)
+- problem in feature-gmsh-in-memory  [\#423](https://github.com/feelpp/feelpp/issues/423)
+
+## [v0.99.0-beta.1](https://github.com/feelpp/feelpp/tree/v0.99.0-beta.1) (2014-08-20)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.98.0...v0.99.0-beta.1)
+
+**Closed issues:**
+
+- Add Eigen3 3.2.2 to contrib [\#422](https://github.com/feelpp/feelpp/issues/422)
+- Better support ML with cmake [\#421](https://github.com/feelpp/feelpp/issues/421)
+- Support boost 1.56 [\#419](https://github.com/feelpp/feelpp/issues/419)
+- Add functionality to check/test Feel++ version [\#418](https://github.com/feelpp/feelpp/issues/418)
+- Support PETSc 3.5.X and above [\#415](https://github.com/feelpp/feelpp/issues/415)
+- Support SLEPc 3.4.X and above [\#414](https://github.com/feelpp/feelpp/issues/414)
+- Set processor affinity & dump cpu information [\#413](https://github.com/feelpp/feelpp/issues/413)
+- Support Reading Gmsh data structures directly in memory [\#412](https://github.com/feelpp/feelpp/issues/412)
+- Port to cmake 3.0 [\#411](https://github.com/feelpp/feelpp/issues/411)
+- Add an option to enable/disable creation of the np\_\<nproc\> subdirectory [\#410](https://github.com/feelpp/feelpp/issues/410)
+- problem with markerToDof function  [\#409](https://github.com/feelpp/feelpp/issues/409)
+- Bug in graph construction: more non zero entries in rows than there are entries [\#408](https://github.com/feelpp/feelpp/issues/408)
+- Need to access to the neighbours of dof and to change value of functions only on some dof [\#404](https://github.com/feelpp/feelpp/issues/404)
+- Exporter Ensight not work [\#403](https://github.com/feelpp/feelpp/issues/403)
+- Problem with feelpp\_doc\_traces [\#401](https://github.com/feelpp/feelpp/issues/401)
+- Fast Marching with Hypercube [\#399](https://github.com/feelpp/feelpp/issues/399)
+- .geo parser [\#398](https://github.com/feelpp/feelpp/issues/398)
+- Update Ensight to 10.0.3g in Atlas [\#396](https://github.com/feelpp/feelpp/issues/396)
+- Non existing marked elements [\#389](https://github.com/feelpp/feelpp/issues/389)
+- Unregistered options [\#385](https://github.com/feelpp/feelpp/issues/385)
+- Random ensight case file generation depending on architecture [\#379](https://github.com/feelpp/feelpp/issues/379)
+- Provide average, min and max mesh size [\#377](https://github.com/feelpp/feelpp/issues/377)
+- Move all crb related tests to testsuite/feelcrb [\#376](https://github.com/feelpp/feelpp/issues/376)
+- test\_eim and test\_eim\_grepl FTBS [\#375](https://github.com/feelpp/feelpp/issues/375)
+- Move test\_bdf\* to testsuite/feelts [\#374](https://github.com/feelpp/feelpp/issues/374)
+- Support simple operators + - in GiNaC::matrix [\#373](https://github.com/feelpp/feelpp/issues/373)
+- FTE in test\_bdf2 : invalid c++ code generated at runtime by ginac [\#372](https://github.com/feelpp/feelpp/issues/372)
+- Bug in initialisation of CRBModel in composite case [\#361](https://github.com/feelpp/feelpp/issues/361)
+- Port Feel++ to archlinux [\#360](https://github.com/feelpp/feelpp/issues/360)
+- Bug in one of the tests in 3D in test\_integration\_opt \(high order geom\) [\#354](https://github.com/feelpp/feelpp/issues/354)
+- Improve Ginac expression support and documentation [\#331](https://github.com/feelpp/feelpp/issues/331)
+- createSubmesh in // [\#322](https://github.com/feelpp/feelpp/issues/322)
+- OneFeel broken  [\#307](https://github.com/feelpp/feelpp/issues/307)
+- FTBS with g++ 4.9.0 [\#270](https://github.com/feelpp/feelpp/issues/270)
+- Change how result files are written to the filesystem in a parallel execution context [\#183](https://github.com/feelpp/feelpp/issues/183)
+- Merge all\_gathers in feelcore/worldcomm.cpp [\#181](https://github.com/feelpp/feelpp/issues/181)
+- Port to Intel Compiler [\#23](https://github.com/feelpp/feelpp/issues/23)
+
+**Merged pull requests:**
+
+- Feature gmsh in memory [\#416](https://github.com/feelpp/feelpp/pull/416) ([prudhomm](https://github.com/prudhomm))
+- Merging with branch feature/explicit [\#388](https://github.com/feelpp/feelpp/pull/388) ([prudhomm](https://github.com/prudhomm))
+- Feature/ensight [\#306](https://github.com/feelpp/feelpp/pull/306) ([prudhomm](https://github.com/prudhomm))
+
+## [v0.98.0](https://github.com/feelpp/feelpp/tree/v0.98.0) (2014-05-22)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.98.0-beta.2...v0.98.0)
+
+**Closed issues:**
+
+- Bug in non conforming interpolation when space are the same but the mesh is not [\#356](https://github.com/feelpp/feelpp/issues/356)
+- Bug in mortar dof table points coordinates [\#355](https://github.com/feelpp/feelpp/issues/355)
+- Fix publish.sh for the deployment of Doxygen documentation in www.feelpp.org [\#352](https://github.com/feelpp/feelpp/issues/352)
+- Bug in composite spaces when subspaces are the same [\#349](https://github.com/feelpp/feelpp/issues/349)
+- Install a MathJAX server [\#303](https://github.com/feelpp/feelpp/issues/303)
+- Support Gmsh export in parallel  [\#295](https://github.com/feelpp/feelpp/issues/295)
+- Bug in test\_interpolation and possibly pointwise interpolation [\#244](https://github.com/feelpp/feelpp/issues/244)
+
+## [v0.98.0-beta.2](https://github.com/feelpp/feelpp/tree/v0.98.0-beta.2) (2014-05-06)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.98.0-beta.1...v0.98.0-beta.2)
+
+**Closed issues:**
+
+- Set timeout for tests and application when used in ctest [\#350](https://github.com/feelpp/feelpp/issues/350)
+- Support evaluate of expression over faces [\#348](https://github.com/feelpp/feelpp/issues/348)
+- Support reading partitioned mesh on one processor  [\#346](https://github.com/feelpp/feelpp/issues/346)
+- Port to gcc 4.9 [\#343](https://github.com/feelpp/feelpp/issues/343)
+- Petsc error with solvereigen [\#341](https://github.com/feelpp/feelpp/issues/341)
+- Error with cross product [\#340](https://github.com/feelpp/feelpp/issues/340)
+- Error norm for CRB models using EIM [\#339](https://github.com/feelpp/feelpp/issues/339)
+- Unable to compile \(at least with gcc \>= 4.7\) [\#338](https://github.com/feelpp/feelpp/issues/338)
+- Scotch5 and HomeBrew [\#337](https://github.com/feelpp/feelpp/issues/337)
+- For install feel++ on Ubuntu 12.04 [\#336](https://github.com/feelpp/feelpp/issues/336)
+- Petsc Error in nlsolve [\#335](https://github.com/feelpp/feelpp/issues/335)
+- marker are not preserved by operatorLagrangeP1 [\#334](https://github.com/feelpp/feelpp/issues/334)
+- Allow passing a specific worldComm to the Gmsh interface [\#327](https://github.com/feelpp/feelpp/issues/327)
+- Random results ! [\#325](https://github.com/feelpp/feelpp/issues/325)
+- Ginac and macos. [\#324](https://github.com/feelpp/feelpp/issues/324)
+- CRBTrilinear should be a derived class of CRB [\#287](https://github.com/feelpp/feelpp/issues/287)
+- Update clang-3.4 to the release version on Strasbourg Mesocentre [\#268](https://github.com/feelpp/feelpp/issues/268)
+- Install PETSc debug version on supermuc  [\#190](https://github.com/feelpp/feelpp/issues/190)
+
+**Merged pull requests:**
+
+- Feature/doc [\#329](https://github.com/feelpp/feelpp/pull/329) ([prudhomm](https://github.com/prudhomm))
+
+## [v0.98.0-beta.1](https://github.com/feelpp/feelpp/tree/v0.98.0-beta.1) (2014-03-27)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.97.4...v0.98.0-beta.1)
+
+**Closed issues:**
+
+- Add support for SLEPc 3.4.4 [\#321](https://github.com/feelpp/feelpp/issues/321)
+- Polyvis application is currently broken [\#320](https://github.com/feelpp/feelpp/issues/320)
+- EIM convergence [\#319](https://github.com/feelpp/feelpp/issues/319)
+
+## [v0.97.4](https://github.com/feelpp/feelpp/tree/v0.97.4) (2014-03-18)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.97.3...v0.97.4)
+
+**Closed issues:**
+
+- Install all header from the feel++ library [\#318](https://github.com/feelpp/feelpp/issues/318)
+
+## [v0.97.3](https://github.com/feelpp/feelpp/tree/v0.97.3) (2014-03-17)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.97.2...v0.97.3)
+
+**Closed issues:**
+
+- Incomplete CRB programming environment installation [\#315](https://github.com/feelpp/feelpp/issues/315)
+
+## [v0.97.2](https://github.com/feelpp/feelpp/tree/v0.97.2) (2014-03-16)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.97.1...v0.97.2)
+
+**Closed issues:**
+
+- Bug in FindFeel++ as well as FindGLOG and FindGFlags [\#314](https://github.com/feelpp/feelpp/issues/314)
+- Ship simple c++ feel++ examples in /usr/share/doc [\#313](https://github.com/feelpp/feelpp/issues/313)
+- Add support for PETSc 3.4.4 [\#311](https://github.com/feelpp/feelpp/issues/311)
+
+## [v0.97.1](https://github.com/feelpp/feelpp/tree/v0.97.1) (2014-03-16)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.97.0...v0.97.1)
+
+**Closed issues:**
+
+- Missing headers in installed version of feel++ 0.97.0 [\#312](https://github.com/feelpp/feelpp/issues/312)
+
+## [v0.97.0](https://github.com/feelpp/feelpp/tree/v0.97.0) (2014-03-14)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.97.0-beta.1...v0.97.0)
+
+**Closed issues:**
+
+- Add support for isMasterRank\(\) in Environment [\#309](https://github.com/feelpp/feelpp/issues/309)
+- Support Ginac expression evaluation  [\#308](https://github.com/feelpp/feelpp/issues/308)
+- Add support in Ensight gold format for constant per case in files [\#296](https://github.com/feelpp/feelpp/issues/296)
+- Support close graph block [\#276](https://github.com/feelpp/feelpp/issues/276)
+- Support for Mortar method [\#36](https://github.com/feelpp/feelpp/issues/36)
+
+**Merged pull requests:**
+
+- release v0.97.0 [\#310](https://github.com/feelpp/feelpp/pull/310) ([prudhomm](https://github.com/prudhomm))
+
+## [v0.97.0-beta.1](https://github.com/feelpp/feelpp/tree/v0.97.0-beta.1) (2014-03-09)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.97.0-alpha.3...v0.97.0-beta.1)
+
+**Closed issues:**
+
+- Update eigen to version 3.2.1 [\#299](https://github.com/feelpp/feelpp/issues/299)
+- Segmentation fault with extended doftable [\#294](https://github.com/feelpp/feelpp/issues/294)
+- Compilation issue in doftable.hpp [\#293](https://github.com/feelpp/feelpp/issues/293)
+- PETSC Error during execution of doc/manual/eigen/ge\_curlcurl [\#290](https://github.com/feelpp/feelpp/issues/290)
+- Support initialization of element of function spaces using an expression [\#282](https://github.com/feelpp/feelpp/issues/282)
+- Assertion failure in local/global assembly using eigen fixed matrices in 3D p \>= 4 [\#271](https://github.com/feelpp/feelpp/issues/271)
+- Implement Newmark algorithm in feel/feelts [\#247](https://github.com/feelpp/feelpp/issues/247)
+- Merge tex/pdf manual with doxygen documentation  [\#211](https://github.com/feelpp/feelpp/issues/211)
+- Memory issue for large scale reduced basis applications [\#112](https://github.com/feelpp/feelpp/issues/112)
+- Implement ExodusII file format [\#108](https://github.com/feelpp/feelpp/issues/108)
+- Interface with OneLaB [\#64](https://github.com/feelpp/feelpp/issues/64)
+- implement the empirical interpolation method [\#26](https://github.com/feelpp/feelpp/issues/26)
+
+**Merged pull requests:**
+
+- Proofread  documentation [\#291](https://github.com/feelpp/feelpp/pull/291) ([dbarbier](https://github.com/dbarbier))
+
+## [v0.97.0-alpha.3](https://github.com/feelpp/feelpp/tree/v0.97.0-alpha.3) (2014-02-26)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.97.0-alpha.2...v0.97.0-alpha.3)
+
+**Closed issues:**
+
+- Wrong dual error estimator behavior in parabolic case [\#281](https://github.com/feelpp/feelpp/issues/281)
+- Delete feelpp\_qs\_laplacian\_onefeel [\#275](https://github.com/feelpp/feelpp/issues/275)
+- Support Travis-CI  [\#274](https://github.com/feelpp/feelpp/issues/274)
+- Improve eigs interface to support function spaces [\#272](https://github.com/feelpp/feelpp/issues/272)
+- Bug in onefeel on MACOSX [\#266](https://github.com/feelpp/feelpp/issues/266)
+
+## [v0.97.0-alpha.2](https://github.com/feelpp/feelpp/tree/v0.97.0-alpha.2) (2014-02-16)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.97.0-alpha.1...v0.97.0-alpha.2)
+
+**Closed issues:**
+
+- Simplify application help messages [\#273](https://github.com/feelpp/feelpp/issues/273)
+- Refactor Ginac expression handling [\#269](https://github.com/feelpp/feelpp/issues/269)
+- Support linear partitioning with one element associated to one subdomain [\#262](https://github.com/feelpp/feelpp/issues/262)
+
+## [v0.97.0-alpha.1](https://github.com/feelpp/feelpp/tree/v0.97.0-alpha.1) (2014-02-13)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.96.0...v0.97.0-alpha.1)
+
+**Closed issues:**
+
+- Improve support for string Dirichlet condition handling [\#260](https://github.com/feelpp/feelpp/issues/260)
+- Solver convergence for an aerothermal application [\#259](https://github.com/feelpp/feelpp/issues/259)
+- Support paraview using ensightgold sos format [\#258](https://github.com/feelpp/feelpp/issues/258)
+- Assertion failure when using ensightgold format [\#257](https://github.com/feelpp/feelpp/issues/257)
+- FTBS in test\_eim\_grepl [\#256](https://github.com/feelpp/feelpp/issues/256)
+- FTBS in test\_rbspace [\#253](https://github.com/feelpp/feelpp/issues/253)
+- make does not regenerate compilation when a file is touched. [\#250](https://github.com/feelpp/feelpp/issues/250)
+- FTBS in test\_eim and test\_eim\_grepl [\#249](https://github.com/feelpp/feelpp/issues/249)
+- Bug in Discontinuous Galerkin in case of Mesh with hypercubes [\#248](https://github.com/feelpp/feelpp/issues/248)
+- internalelements [\#245](https://github.com/feelpp/feelpp/issues/245)
+- Support ghost cell in ensight gold format [\#243](https://github.com/feelpp/feelpp/issues/243)
+- newMatrix with extended pattern crashes in parallel [\#242](https://github.com/feelpp/feelpp/issues/242)
+- Update Feel++ 0.96.0 documentation [\#241](https://github.com/feelpp/feelpp/issues/241)
+- Refactor BDFBase  [\#237](https://github.com/feelpp/feelpp/issues/237)
+- Support extended stencil over a range of elements [\#227](https://github.com/feelpp/feelpp/issues/227)
+- Change strategy for Feel++ headers [\#226](https://github.com/feelpp/feelpp/issues/226)
+- Define an integer type for mpi rank processes [\#224](https://github.com/feelpp/feelpp/issues/224)
+- Implement norm2 in the language [\#223](https://github.com/feelpp/feelpp/issues/223)
+- Implement projector on the tangent plane [\#222](https://github.com/feelpp/feelpp/issues/222)
+- Create configure script to generate configuration for cmake [\#219](https://github.com/feelpp/feelpp/issues/219)
+- Implement a simple make check after compiling the library [\#218](https://github.com/feelpp/feelpp/issues/218)
+- Substitute variables in config [\#217](https://github.com/feelpp/feelpp/issues/217)
+- Add on\(\) keyword for an element\_type to set the degrees of freedom on an element range [\#213](https://github.com/feelpp/feelpp/issues/213)
+- OperatorInterpolation yields wrong results on hypercube elements [\#212](https://github.com/feelpp/feelpp/issues/212)
+- Update Feel++ documentation regarding MacOSX installation [\#210](https://github.com/feelpp/feelpp/issues/210)
+- Spurious values in exporter [\#203](https://github.com/feelpp/feelpp/issues/203)
+- benchmark - stokes\_Pressure [\#200](https://github.com/feelpp/feelpp/issues/200)
+- FEELPP\_ENABLE\_MPI\_MODE=OFF obsolete ? Cleanup needed [\#198](https://github.com/feelpp/feelpp/issues/198)
+- Ginac problem on hpc-login  [\#193](https://github.com/feelpp/feelpp/issues/193)
+- Update Feel++ Portfile on macport [\#187](https://github.com/feelpp/feelpp/issues/187)
+- Compile Feel++ on MacOsX using Xcode 5 and libc++ [\#186](https://github.com/feelpp/feelpp/issues/186)
+- Interpolation issue with form1 [\#180](https://github.com/feelpp/feelpp/issues/180)
+- Compilation of laplacian doesn't work with gcc 4.6/boost 1.54 [\#179](https://github.com/feelpp/feelpp/issues/179)
+- benchmarks/stokes fail to compile [\#178](https://github.com/feelpp/feelpp/issues/178)
+- about geofiles and data [\#172](https://github.com/feelpp/feelpp/issues/172)
+- Define interprocess entities \(not only for faces\) [\#161](https://github.com/feelpp/feelpp/issues/161)
+- Simplify  and extend DofTable  [\#160](https://github.com/feelpp/feelpp/issues/160)
+- About the Application class - constructor\(argc,argv,ad,od\) [\#134](https://github.com/feelpp/feelpp/issues/134)
+- Segfault when integrating over internalfaces  [\#124](https://github.com/feelpp/feelpp/issues/124)
+- Rounding errors in bdf metadata files [\#30](https://github.com/feelpp/feelpp/issues/30)
+- interpolation through matrix different  \_test/\_trial space does not work [\#4](https://github.com/feelpp/feelpp/issues/4)
+- OpInterlation too slow [\#3](https://github.com/feelpp/feelpp/issues/3)
+
+**Merged pull requests:**
+
+- Feature/header [\#240](https://github.com/feelpp/feelpp/pull/240) ([prudhomm](https://github.com/prudhomm))
+
+## [v0.96.0](https://github.com/feelpp/feelpp/tree/v0.96.0) (2014-01-03)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.96.0-beta.3...v0.96.0)
+
+**Closed issues:**
+
+- Set minimal version for Boost in cmake [\#220](https://github.com/feelpp/feelpp/issues/220)
+- functions. [\#184](https://github.com/feelpp/feelpp/issues/184)
+- Cleanup $HOME/feel before launching nightly tests or set another 'feel' repository [\#169](https://github.com/feelpp/feelpp/issues/169)
+
+**Merged pull requests:**
+
+- Feature/harts [\#216](https://github.com/feelpp/feelpp/pull/216) ([prudhomm](https://github.com/prudhomm))
+- Merge feature/mortar into develop [\#207](https://github.com/feelpp/feelpp/pull/207) ([prudhomm](https://github.com/prudhomm))
+
+## [v0.96.0-beta.3](https://github.com/feelpp/feelpp/tree/v0.96.0-beta.3) (2013-11-15)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.96.0-beta.2...v0.96.0-beta.3)
+
+## [v0.96.0-beta.2](https://github.com/feelpp/feelpp/tree/v0.96.0-beta.2) (2013-11-14)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.96.0-beta.1...v0.96.0-beta.2)
+
+**Closed issues:**
+
+- Homebrew breaks Ginac expression compilation [\#209](https://github.com/feelpp/feelpp/issues/209)
+- Always FEM context is used by id\_\(\) function of ReducedBasisSpace   [\#208](https://github.com/feelpp/feelpp/issues/208)
+- Compiling Feel++ in Linux [\#206](https://github.com/feelpp/feelpp/issues/206)
+- bug in documentation [\#196](https://github.com/feelpp/feelpp/issues/196)
+
+## [v0.96.0-beta.1](https://github.com/feelpp/feelpp/tree/v0.96.0-beta.1) (2013-11-11)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.95.0...v0.96.0-beta.1)
+
+**Closed issues:**
+
+- Issue with doxygen pages in git  [\#205](https://github.com/feelpp/feelpp/issues/205)
+- Intermittent crash when creating OperatorInterpolation [\#202](https://github.com/feelpp/feelpp/issues/202)
+- Crash when creating a sequential functionspace  using a parallel mesh [\#201](https://github.com/feelpp/feelpp/issues/201)
+- Use Slepc on Supermuc [\#197](https://github.com/feelpp/feelpp/issues/197)
+- Crash in DofTable [\#195](https://github.com/feelpp/feelpp/issues/195)
+- Atlas  installation [\#192](https://github.com/feelpp/feelpp/issues/192)
+- Install PETSc debug version on mesostra [\#191](https://github.com/feelpp/feelpp/issues/191)
+- Publish online documentation for v0.95.0 [\#189](https://github.com/feelpp/feelpp/issues/189)
+- periodic boundary conditions seems buggy [\#188](https://github.com/feelpp/feelpp/issues/188)
+- Support releases of Ginac excompiler and associated framework [\#185](https://github.com/feelpp/feelpp/issues/185)
+- about --help [\#182](https://github.com/feelpp/feelpp/issues/182)
+- Laplacian\_polar example doesn't compile due to Eigen 3.2 [\#176](https://github.com/feelpp/feelpp/issues/176)
+- reserved identifier violation [\#174](https://github.com/feelpp/feelpp/issues/174)
+- Include all headers only once? [\#173](https://github.com/feelpp/feelpp/issues/173)
+- lowering  memory footprint  [\#97](https://github.com/feelpp/feelpp/issues/97)
+- Add MatrixShell support to PETSc solver classes [\#52](https://github.com/feelpp/feelpp/issues/52)
+
+**Merged pull requests:**
+
+- Merge Feature/port macosx xc5 [\#204](https://github.com/feelpp/feelpp/pull/204) ([prudhomm](https://github.com/prudhomm))
+
+## [v0.95.0](https://github.com/feelpp/feelpp/tree/v0.95.0) (2013-10-04)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.95.0-beta.3...v0.95.0)
+
+## [v0.95.0-beta.3](https://github.com/feelpp/feelpp/tree/v0.95.0-beta.3) (2013-10-01)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.95.0-beta.2...v0.95.0-beta.3)
+
+## [v0.95.0-beta.2](https://github.com/feelpp/feelpp/tree/v0.95.0-beta.2) (2013-09-29)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.95.0-beta.1...v0.95.0-beta.2)
+
+## [v0.95.0-beta.1](https://github.com/feelpp/feelpp/tree/v0.95.0-beta.1) (2013-09-28)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/v0.94.0...v0.95.0-beta.1)
+
+**Closed issues:**
+
+- Memory management after matrix destructor [\#177](https://github.com/feelpp/feelpp/issues/177)
+- Feel++ FTBS in crb.cpp [\#170](https://github.com/feelpp/feelpp/issues/170)
+- Breakage/Conflicts between geo-variables-list option and Gmsh class interface [\#167](https://github.com/feelpp/feelpp/issues/167)
+- Wrong MshFileVersion in generated geo files [\#166](https://github.com/feelpp/feelpp/issues/166)
+- testsuite/feeldisc/test\_integration\_ginac fails in sequential \(apply likely to all testsuite\)  [\#165](https://github.com/feelpp/feelpp/issues/165)
+- Problem with use of GiNaC on Supermuc [\#164](https://github.com/feelpp/feelpp/issues/164)
+- doc/manual/adapt/Lshape FTBS [\#163](https://github.com/feelpp/feelpp/issues/163)
+- Update/Add  hpc-login software : gcc 4.7.3, gcc 4.8.1, clang 3.3, petsc/slepc, ... [\#162](https://github.com/feelpp/feelpp/issues/162)
+- Update to PETSc 3.4.2 and SLEPC 3.4.1 on supermuc [\#159](https://github.com/feelpp/feelpp/issues/159)
+- Do not ship eigen, cln, glog and gflags when releasing Feel++ [\#157](https://github.com/feelpp/feelpp/issues/157)
+- Port to Eigen 3.2 [\#156](https://github.com/feelpp/feelpp/issues/156)
+- Feel++ fail to compile - petsc-3.4.2/slepc-3.4.1 [\#154](https://github.com/feelpp/feelpp/issues/154)
+- Issues with faces data structure in sequential and parallel [\#147](https://github.com/feelpp/feelpp/issues/147)
+- port to boost 1.53 and 1.54 [\#142](https://github.com/feelpp/feelpp/issues/142)
+- memory leak in d-i7-2 [\#133](https://github.com/feelpp/feelpp/issues/133)
+- problem with p0 continuous space in product spaces in parallel [\#132](https://github.com/feelpp/feelpp/issues/132)
+- laplacian\_full not working in parallel [\#127](https://github.com/feelpp/feelpp/issues/127)
+- port of openturns on froggy [\#115](https://github.com/feelpp/feelpp/issues/115)
+- Clear temporary Ginac so when feelpp app exit [\#102](https://github.com/feelpp/feelpp/issues/102)
+- use comp\(X\) in parallel [\#58](https://github.com/feelpp/feelpp/issues/58)
+- specify python version on cdash [\#24](https://github.com/feelpp/feelpp/issues/24)
+- trace or createSubmesh in parallel [\#13](https://github.com/feelpp/feelpp/issues/13)
+- memory leak in backend-\>solve\(\)  [\#7](https://github.com/feelpp/feelpp/issues/7)
+
+## [v0.94.0](https://github.com/feelpp/feelpp/tree/v0.94.0) (2013-08-16)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/feelpp-0.93.0...v0.94.0)
+
+**Closed issues:**
+
+- Allow rebuild partition when creating gmsh meshes [\#151](https://github.com/feelpp/feelpp/issues/151)
+- add petsc and version in ctest build name [\#150](https://github.com/feelpp/feelpp/issues/150)
+- port to PETSc 3.4 [\#149](https://github.com/feelpp/feelpp/issues/149)
+- config file [\#148](https://github.com/feelpp/feelpp/issues/148)
+- loadMesh generates an hypercube as default mesh  [\#145](https://github.com/feelpp/feelpp/issues/145)
+- Testsuite  [\#143](https://github.com/feelpp/feelpp/issues/143)
+- Mesh files refined twice the number of refinement levels at generation step [\#140](https://github.com/feelpp/feelpp/issues/140)
+- test\_eim check fails [\#139](https://github.com/feelpp/feelpp/issues/139)
+- test\_ginac fails and timeouts [\#138](https://github.com/feelpp/feelpp/issues/138)
+- create submesh crashes in parallel [\#137](https://github.com/feelpp/feelpp/issues/137)
+- Feel++/CDash broken ? [\#136](https://github.com/feelpp/feelpp/issues/136)
+- CreateSubMesh [\#135](https://github.com/feelpp/feelpp/issues/135)
+- Option --export doesn't work [\#131](https://github.com/feelpp/feelpp/issues/131)
+- broken crb\_add\_model macro when optionnal SRCS [\#130](https://github.com/feelpp/feelpp/issues/130)
+- BDF not working in order 4 [\#128](https://github.com/feelpp/feelpp/issues/128)
+- don't store all mesh points [\#126](https://github.com/feelpp/feelpp/issues/126)
+- Sequential programs appear to run by default in parallel [\#125](https://github.com/feelpp/feelpp/issues/125)
+- Automatic generation of API documentation from research/ [\#122](https://github.com/feelpp/feelpp/issues/122)
+- exporter ensightgold with vectorial field [\#119](https://github.com/feelpp/feelpp/issues/119)
+- problem using -idv\(...\) in expression and operator linear free [\#118](https://github.com/feelpp/feelpp/issues/118)
+- Edit CMakeLists.txt for doxygen [\#117](https://github.com/feelpp/feelpp/issues/117)
+- Support Ensight Gold format [\#116](https://github.com/feelpp/feelpp/issues/116)
+- Correspondence of gmsh and feel++ node numbering [\#101](https://github.com/feelpp/feelpp/issues/101)
+- Add "t" as a symbol for time in Ginac\_Ex [\#100](https://github.com/feelpp/feelpp/issues/100)
+- problem with gradient of fonction real dim= Dim and topological dim=Dim-1 [\#33](https://github.com/feelpp/feelpp/issues/33)
+- Segfault in the language with g++ 4.7 [\#25](https://github.com/feelpp/feelpp/issues/25)
+
+## [feelpp-0.93.0](https://github.com/feelpp/feelpp/tree/feelpp-0.93.0) (2013-05-26)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/version-0.92.1...feelpp-0.93.0)
+
+**Closed issues:**
+
+- test\_ginac fails to compile [\#123](https://github.com/feelpp/feelpp/issues/123)
+- code in doc/manual/heatns fail to compile [\#121](https://github.com/feelpp/feelpp/issues/121)
+- Codes in doc/manual/dd fail to compile [\#120](https://github.com/feelpp/feelpp/issues/120)
+- Compilation error of CRB models in develop branch [\#111](https://github.com/feelpp/feelpp/issues/111)
+- compilation failed with clang3.1 in develop branch [\#110](https://github.com/feelpp/feelpp/issues/110)
+- Load Gmsh supported file format seamlessly [\#109](https://github.com/feelpp/feelpp/issues/109)
+- cmake fails when one vm with only one core [\#107](https://github.com/feelpp/feelpp/issues/107)
+- Improve website documentation [\#106](https://github.com/feelpp/feelpp/issues/106)
+- error using unitSquare\(\) in branch rbframework with gcc46 [\#104](https://github.com/feelpp/feelpp/issues/104)
+- Off by one error in mesh point indices [\#103](https://github.com/feelpp/feelpp/issues/103)
+- \(Re\)Moving libmatheval  [\#99](https://github.com/feelpp/feelpp/issues/99)
+- feel++0.92.0 on oneiric, make check fails to build  mortar app [\#98](https://github.com/feelpp/feelpp/issues/98)
+- Port Feel++ on SUPERMUC [\#95](https://github.com/feelpp/feelpp/issues/95)
+- improve export when same mesh reused [\#79](https://github.com/feelpp/feelpp/issues/79)
+- crb applications in research/apee fail to compile in Debug mode on Debian/Ubuntu [\#69](https://github.com/feelpp/feelpp/issues/69)
+- problem with dot function in parallel when using vectors [\#45](https://github.com/feelpp/feelpp/issues/45)
+- support for gmsh binary format [\#38](https://github.com/feelpp/feelpp/issues/38)
+- Reorder dof with respect to interior, face, edge and vertex dof of the domain [\#15](https://github.com/feelpp/feelpp/issues/15)
+
+## [version-0.92.1](https://github.com/feelpp/feelpp/tree/version-0.92.1) (2013-03-10)
+[Full Changelog](https://github.com/feelpp/feelpp/compare/version-0.92...version-0.92.1)
+
+**Closed issues:**
+
+- Why is there a VectorPetscMPI ? or equivalently what should it do differently from VectorPetsc [\#96](https://github.com/feelpp/feelpp/issues/96)
+- GFlags not used [\#91](https://github.com/feelpp/feelpp/issues/91)
+- Is there any instruction to install the feel++ on Windows 7+VS2010+Intel Fortran 2011? [\#57](https://github.com/feelpp/feelpp/issues/57)
+- use multVector directly with element\_type [\#56](https://github.com/feelpp/feelpp/issues/56)
+
+## [version-0.92](https://github.com/feelpp/feelpp/tree/version-0.92) (2013-03-03)
+**Closed issues:**
+
+- HeatSink not working in parallel [\#94](https://github.com/feelpp/feelpp/issues/94)
+- HeatSink not working in parallel [\#93](https://github.com/feelpp/feelpp/issues/93)
+- No feel++ applications running [\#90](https://github.com/feelpp/feelpp/issues/90)
+- Allow saving results using relative path  [\#89](https://github.com/feelpp/feelpp/issues/89)
+- cmake \(feelpp\) & boost [\#87](https://github.com/feelpp/feelpp/issues/87)
+- cmake version on ubuntu [\#86](https://github.com/feelpp/feelpp/issues/86)
+- doc/manual/adapt crash on develop branch [\#85](https://github.com/feelpp/feelpp/issues/85)
+- assertion for the inner keword [\#84](https://github.com/feelpp/feelpp/issues/84)
+- Rename libfeel++ to libfeelpp for consistency [\#83](https://github.com/feelpp/feelpp/issues/83)
+- cleanup tutorial examples  [\#82](https://github.com/feelpp/feelpp/issues/82)
+- rename libfeel++ into libfeelpp [\#81](https://github.com/feelpp/feelpp/issues/81)
+- cleanup \(remove?\) gmm installation [\#80](https://github.com/feelpp/feelpp/issues/80)
+- option function interface and handling exception [\#78](https://github.com/feelpp/feelpp/issues/78)
+- fsi crash [\#77](https://github.com/feelpp/feelpp/issues/77)
+- Compilation error of CRB \(with EIM\) application in develop branch [\#76](https://github.com/feelpp/feelpp/issues/76)
+- Feel++ FTBS in debug mode [\#75](https://github.com/feelpp/feelpp/issues/75)
+- Update Feel++ on Curie  [\#74](https://github.com/feelpp/feelpp/issues/74)
+- Update Glog to 3.3 [\#73](https://github.com/feelpp/feelpp/issues/73)
+- Update to Eigen 3.1.2 [\#72](https://github.com/feelpp/feelpp/issues/72)
+- Feel++ Installation process incomplete [\#71](https://github.com/feelpp/feelpp/issues/71)
+- Update Feel++ Documentation/Tutorial [\#70](https://github.com/feelpp/feelpp/issues/70)
+- Fast localisation of mesh elements between meshes related by extraction [\#68](https://github.com/feelpp/feelpp/issues/68)
+- Port Feel++ on Suse [\#67](https://github.com/feelpp/feelpp/issues/67)
+- Port Feel++ on Scientific Linux [\#66](https://github.com/feelpp/feelpp/issues/66)
+- Automatic generation of User and Reference Manual [\#61](https://github.com/feelpp/feelpp/issues/61)
+- 10 min crash course for Feel++ [\#60](https://github.com/feelpp/feelpp/issues/60)
+- Invalid communicator [\#59](https://github.com/feelpp/feelpp/issues/59)
+- feelpp\_doc\_LShape segfaults [\#55](https://github.com/feelpp/feelpp/issues/55)
+- Ginac is not building properly causing FTBS [\#54](https://github.com/feelpp/feelpp/issues/54)
+- warnings regarding the mesh [\#53](https://github.com/feelpp/feelpp/issues/53)
+- added computation of the mean of a function [\#51](https://github.com/feelpp/feelpp/issues/51)
+- support for a mix periodic/non periodic conditions in product spaces [\#50](https://github.com/feelpp/feelpp/issues/50)
+- periodic vectorial functionspace fail [\#49](https://github.com/feelpp/feelpp/issues/49)
+- keep information when create a submesh [\#48](https://github.com/feelpp/feelpp/issues/48)
+- failed to compile on ubuntu 12.04 gcc 4.6 [\#47](https://github.com/feelpp/feelpp/issues/47)
+- gmsh - createGMSHMesh \( writting the .geo \) - problem with number of partition [\#46](https://github.com/feelpp/feelpp/issues/46)
+- Wrong number of dof in parallel ? [\#44](https://github.com/feelpp/feelpp/issues/44)
+- geomap strategy bug with ho [\#43](https://github.com/feelpp/feelpp/issues/43)
+- Support both Gmsh from library and executable [\#42](https://github.com/feelpp/feelpp/issues/42)
+- Mesh refinement support from Gmsh library [\#39](https://github.com/feelpp/feelpp/issues/39)
+- periodic boundary conditions do not compile for composite spaces [\#37](https://github.com/feelpp/feelpp/issues/37)
+- Add Eigen3 backend [\#35](https://github.com/feelpp/feelpp/issues/35)
+- port on curie \(TGCC/Genci/Prace\) [\#34](https://github.com/feelpp/feelpp/issues/34)
+- Seamless parallelism [\#32](https://github.com/feelpp/feelpp/issues/32)
+- marker on periodic elements [\#31](https://github.com/feelpp/feelpp/issues/31)
+- Improve logging capabilities \(e.g. use glog\) [\#29](https://github.com/feelpp/feelpp/issues/29)
+- Implement L\_infinity norm  [\#28](https://github.com/feelpp/feelpp/issues/28)
+- Export \(gmsh/ensight\) functions of product spaces [\#27](https://github.com/feelpp/feelpp/issues/27)
+- Port to clang 3.1 [\#22](https://github.com/feelpp/feelpp/issues/22)
+- add support for += on elements of function space [\#21](https://github.com/feelpp/feelpp/issues/21)
+- failed to compile on ubuntu 12.04 gcc 4.6 with mpich2 [\#20](https://github.com/feelpp/feelpp/issues/20)
+- Implement new keywords det\(\) and inv\(\) in the variational formulation language [\#19](https://github.com/feelpp/feelpp/issues/19)
+- fail to change hsize in geofile [\#18](https://github.com/feelpp/feelpp/issues/18)
+- Serialize the mesh data structure  [\#17](https://github.com/feelpp/feelpp/issues/17)
+- Enhance product of function spaces [\#16](https://github.com/feelpp/feelpp/issues/16)
+- discrepancy betwen manual and code for laplacian.cpp [\#12](https://github.com/feelpp/feelpp/issues/12)
+- Simplify Feel++ application setup \(geo files, cfg files,...\) [\#11](https://github.com/feelpp/feelpp/issues/11)
+- MPI errors with nlSolve function [\#10](https://github.com/feelpp/feelpp/issues/10)
+- compilation issue with geo\(\) interface [\#9](https://github.com/feelpp/feelpp/issues/9)
+- memory leak in backend-\>solve\(\)  [\#8](https://github.com/feelpp/feelpp/issues/8)
+- Lagrange P1 [\#6](https://github.com/feelpp/feelpp/issues/6)
+- integration of mesh adaptation in Feel++ [\#5](https://github.com/feelpp/feelpp/issues/5)
+- disable benchmarks compilation by default [\#2](https://github.com/feelpp/feelpp/issues/2)
+- increase template-depth to 256 [\#1](https://github.com/feelpp/feelpp/issues/1)
+
+
+
+\* *This Change Log was automatically generated by [github_changelog_generator](https://github.com/skywinder/Github-Changelog-Generator)*

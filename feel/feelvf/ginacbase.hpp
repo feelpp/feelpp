@@ -66,9 +66,9 @@ public:
             }
 
             for ( auto const& is : M_indexSymbolXYZ )
-                LOG(INFO) << "index symbol relation  " << is.first << " and " << is.second << "\n";
+                VLOG(1) << "index symbol relation:  " << is.first << " -> " << is.second << "\n";
             for ( auto const& is : M_indexSymbolN )
-                LOG(INFO) << "index symbol relation  " << is.first << " and " << is.second << "\n";
+                VLOG(1) << "index symbol relation:  " << is.first << " -> " << is.second << "\n";
 
             this->setParameterFromOption();
         }
@@ -87,6 +87,15 @@ public:
         {
             return M_syms;
         }
+
+    bool hasSymbol( std::string const& symb ) const
+        {
+            for ( auto const& s : M_syms )
+                if ( s.get_name() == symb)
+                    return true;
+            return false;
+        }
+
 
     vec_type const& parameterValue() const { return M_params; }
     value_type parameterValue( int p ) const { return M_params[p]; }
@@ -110,7 +119,7 @@ public:
                     {
                         value_type v = option( _name=s.get_name() ).as<double>();
                         m.insert( std::make_pair( s.get_name(), v ) );
-                        LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
+                        VLOG(1) << "symbol " << s.get_name() << " found in option with value " << v;
                     }
                     catch(...)
                     {}
@@ -149,12 +158,12 @@ public:
                 if ( it != M_syms.end() )
                 {
                     M_params[it-M_syms.begin()] = p.second;
-                    LOG(INFO) << "setting parameter : " << p.first << " with value: " << p.second;
-                    LOG(INFO) << "parameter: \n" << M_params;
+                    VLOG(2) << "setting parameter : " << p.first << " with value: " << p.second;
+                    VLOG(2) << "parameter: \n" << M_params;
                 }
                 else
                 {
-                    LOG(INFO) << "Invalid parameters : " << p.first << " with value: " << p.second;
+                    VLOG(1) << "Invalid parameters : " << p.first << " with value: " << p.second;
                 }
             }
         }

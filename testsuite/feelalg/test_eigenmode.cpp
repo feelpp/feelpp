@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
                         _formB=b,
                         _solver="krylovschur",
                         _problem="ghep",
-                        _transform="sinvert",
+                        _transform="shift_invert",
                         _spectrum="smallest_magnitude",
                         _nev=15,
                         _ncv=30,

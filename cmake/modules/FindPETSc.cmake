@@ -41,7 +41,7 @@ function (petsc_get_version)
   endif ()
 endfunction ()
 
-find_program (MAKE_EXECUTABLE NAMES make gmake)
+find_program (MAKE_EXECUTABLE NAMES gmake make)
 
 foreach( debian_arches linux kfreebsd )
   IF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
@@ -66,8 +66,10 @@ if ( NOT PETSC_DIR )
       message(STATUS "checking version ${version} for file ${flavor}/include/petsc.h...")
       find_path (PETSC_DIR include/petsc.h
         PATHS
+        /usr/local/opt/petsc/real
         /usr/lib/petscdir/${version}/${flavor}
         /usr/local/Cellar/petsc/${version}/${flavor}
+        /usr/local/
         NO_DEFAULT_PATH
         DOC "PETSc Directory")
     endforeach()
@@ -82,6 +84,7 @@ find_path (PETSC_DIR include/petsc.h
   /usr/lib/petscdir/3.4.4 /usr/lib/petscdir/3.4.3 /usr/lib/petscdir/3.4.2
   /usr/lib/petscdir/3.3 /usr/lib/petscdir/3.2 /usr/lib/petscdir/3.1 /usr/lib/petscdir/3.0.0 /usr/lib/petscdir/2.3.3 /usr/lib/petscdir/2.3.2 # Debian
   /opt/local/lib/petsc # macports
+  /usr/local/lib/petsc # freebsd
   $ENV{HOME}/petsc
   $ENV{PETSC_HOME}
   $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}
@@ -211,18 +214,13 @@ show :
   else ()
     set (PETSC_LIBRARY_VEC "NOTFOUND" CACHE INTERNAL "Cleared" FORCE) # There is no libpetscvec
     petsc_find_library (SINGLE petsc)
-    # If we didn't found a library name libpetsc, we try with
-    # libpetsc_real, as it is used in latest Debian version
+    #Try to find Petsc REAL - for debian
     if(NOT PETSC_LIBRARY_SINGLE)
       petsc_find_library (SINGLE petsc_real)
     endif()
-    if(NOT PETSC_LIBRARY_SINGLE)
-      message(WARNING "CMake couldn't find PETSC_SINGLE_LIBRARY.")
-    else()
-      foreach (pkg SYS VEC MAT DM KSP SNES TS ALL)
-        set (PETSC_LIBRARIES_${pkg} "${PETSC_LIBRARY_SINGLE}")
-      endforeach ()
-    endif()
+    foreach (pkg SYS VEC MAT DM KSP SNES TS ALL)
+      set (PETSC_LIBRARIES_${pkg} "${PETSC_LIBRARY_SINGLE}")
+    endforeach ()
   endif ()
   if (PETSC_LIBRARY_TS)
     message (STATUS "Recognized PETSc install with separate libraries for each package")
@@ -258,7 +256,6 @@ int main(int argc,char *argv[]) {
   mark_as_advanced (PETSC_INCLUDE_DIR PETSC_INCLUDE_CONF)
   set (petsc_includes_minimal ${PETSC_INCLUDE_CONF} ${PETSC_INCLUDE_DIR})
 
-
   petsc_test_runs ("${petsc_includes_minimal}" "${PETSC_LIBRARIES_TS}" petsc_works_minimal)
   if (petsc_works_minimal)
     message (STATUS "Minimal PETSc includes and libraries work.  This probably means we are building with shared libs.")
@@ -288,7 +285,7 @@ int main(int argc,char *argv[]) {
           #if(PETSc_FIND_REQUIRED)
           #message (FATAL_ERROR "PETSc is required and could not be used, maybe the install is broken.")
           #else()
-	        message (STATUS "PETSc could not be used, maybe the install is broken.")
+	      message (STATUS "PETSc could not be used, maybe the install is broken.")
           #endif()
 	    endif (petsc_works_all)
       endif (petsc_works_alllibraries)
@@ -319,10 +316,6 @@ find_package_handle_standard_args (PETSc
   PETSC_INCLUDES PETSC_LIBRARIES )
 
 if ( PETSC_FOUND )
-  add_definitions( -DFEELPP_HAS_PETSC -DFEELPP_HAS_PETSC_H )
-  set(FEELPP_HAS_PETSC 1)
-  set(FEELPP_HAS_PETSC_H 1)
-
   # add PETSC includes (in case of non conventionnal install of petsc TPS)
   include_directories(${PETSC_INCLUDES})
 endif( PETSC_FOUND )

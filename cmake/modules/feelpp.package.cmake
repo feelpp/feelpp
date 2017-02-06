@@ -36,7 +36,7 @@ SET(CPACK_PACKAGE_NAME "feelpp")
 SET(CPACK_GENERATOR "TGZ")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Feel++")
 SET(CPACK_PACKAGE_VENDOR "Christophe Prud'homme")
-SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.md")
+SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.adoc")
 SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING.md")
 SET(CPACK_PACKAGE_VERSION_MAJOR "${FEELPP_VERSION_MAJOR}")
 SET(CPACK_PACKAGE_VERSION_MINOR "${FEELPP_VERSION_MINOR}")
@@ -58,10 +58,13 @@ SET(CPACK_SOURCE_STRIP_FILES "")
 # from source tarball.
 set(CPACK_SOURCE_IGNORE_FILES
   "/\\\\.git/;\\\\.gitignore;/\\\\.svn;"
+  "/.git;"
   "/admin/;/Templates/;"
   "/auto/;/ltxpng/;"
   "/TAGS;/#.*;/.*~$;/*.log$;/.cvsignore;/.bzrignore;/work/;/autom4te.cache/"
-#  "${PROJECT_SOURCE_DIR}/contrib/eigen"
+  #  "${PROJECT_SOURCE_DIR}/contrib/eigen"
+  "${PROJECT_SOURCE_DIR}/CMakeLists.txt.user"
+  "${PROJECT_SOURCE_DIR}/CMakeLists.txt.doc"
   "${PROJECT_SOURCE_DIR}/contrib/cln"
   "${PROJECT_SOURCE_DIR}/contrib/boost"
 # "${PROJECT_SOURCE_DIR}/contrib/gmsh"
@@ -76,7 +79,9 @@ set(CPACK_SOURCE_IGNORE_FILES
   "${PROJECT_SOURCE_DIR}/data/gmsh/aorta"
   "${PROJECT_SOURCE_DIR}/data/ensoght"
   "${PROJECT_SOURCE_DIR}/data/gmsh/pelvis"
-  "${PROJECT_SOURCE_DIR}/applications/"
+  "${PROJECT_SOURCE_DIR}/applications/crb"
+  "${PROJECT_SOURCE_DIR}/applications/check"
+  "${PROJECT_SOURCE_DIR}/applications/polyvis"
   "${PROJECT_SOURCE_DIR}/testsuite"
   "${PROJECT_SOURCE_DIR}/benchmarks/"
   "${PROJECT_SOURCE_DIR}/benchmarks/navierstokes/"

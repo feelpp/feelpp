@@ -29,10 +29,17 @@
 #if !defined(FEELPP_LOADMESH_HPP)
 #define FEELPP_LOADMESH_HPP 1
 
+
+
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
+
+#if defined(FEELPP_HAS_GMSH_H)
 #include <feel/feelfilters/geo.hpp>
 #include <feel/feelfilters/domain.hpp>
+#endif
+#include <feel/feelfilters/importeracusimrawmesh.hpp>
+
 
 namespace Feel {
 
@@ -54,8 +61,7 @@ BOOST_PARAMETER_FUNCTION(
 
     ( required
       ( mesh, *)
-
-        ) // 4. one required parameter, and
+      ) // 4. one required parameter, and
 
     ( optional
       ( prefix,(std::string), "" )
@@ -63,6 +69,7 @@ BOOST_PARAMETER_FUNCTION(
       ( desc, *,boost::shared_ptr<gmsh_type>() )  // geo() can't be used here as default !!
 
       ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
+      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.scale") )
       ( straighten,          (bool), boption(_prefix=prefix,_name="gmsh.straighten") )
       ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
@@ -77,9 +84,12 @@ BOOST_PARAMETER_FUNCTION(
       ( savehdf5,        *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.savehdf5") )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends") )
-        )
-    )
+      ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity") )
+      )
+                         )
 {
+    using Feel::cout;
+    
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunsequenced"
@@ -94,36 +104,53 @@ BOOST_PARAMETER_FUNCTION(
     fs::path mesh_name=fs::path(Environment::findFile(filenameExpand));
     int proc_rank = worldcomm.globalRank();
     //Environment::isMasterRank()
-    if ( proc_rank == 0 )
-        std::cout << "[loadMesh] Loading " << fs::system_complete(mesh_name) << "\n";
+
+    // add mesh format supported by gmsh: unv (i-deas), mesh(inria), bdf(nastran), actran, p3d, cgns, med
     LOG_IF( WARNING,
             mesh_name.extension() != ".geo" &&
             mesh_name.extension() != ".json" &&
-            mesh_name.extension() != ".msh" )
+            mesh_name.extension() != ".msh" &&
+            mesh_name.extension() != ".bdf" &&
+            mesh_name.extension() != ".cgns" &&
+            mesh_name.extension() != ".p3d" &&
+            mesh_name.extension() != ".mesh" &&
+            mesh_name.extension() != ".med" &&
+            mesh_name.extension() != ".arm" )
         << "Invalid filename " << filenameExpand << " it should have either the .geo. .json or .msh extension\n";
 
-
+#if defined(FEELPP_HAS_GMSH_H)
     if ( mesh_name.extension() == ".geo" )
     {
 #if defined(FEELPP_HAS_HDF5)
-        auto json_fname = mesh_name.stem().string()+".json";
-        if ( boption(_name="gmsh.use-json") && fs::exists(json_fname) )
+        if ( boption(_name="mesh.load.enable") && soption(_name="mesh.load.format") == "json+h5" )
         {
-            LOG(INFO) << " Loading mesh in JSON/HDF5 format";
-            CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
-            auto m = boost::make_shared<_mesh_type>();
-            m->loadHDF5( json_fname );
-            return m;
+            auto json_fname = mesh_name.stem().string()+".json";
+            if( fs::exists(json_fname) )
+            {
+                cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(json_fname) << "\n";
+                LOG(INFO) << " Loading mesh in format json+h5: " << json_fname;
+                CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
+                _mesh_ptrtype m( mesh );
+                m->setWorldComm( worldcomm );
+                m->loadHDF5( json_fname );
+                return m;
+            }
         }
 #endif
 
+        cout << "[loadMesh] Loading mesh in format geo+msh: " << fs::system_complete(mesh_name) << "\n";
+        if ( !desc )
+            cout << "[loadMesh] Use default geo desc: " << mesh_name.string() << " " << h << " " << depends << "\n";
+
+        auto thedesc = (!desc) ? geo( _filename=mesh_name.string(),
+                                      _h=h,
+                                      _depends=depends,
+                                      _worldcomm=worldcomm  ) : desc;
         auto m = createGMSHMesh(
             _mesh=mesh,
-            _desc= (!desc) ? geo( _filename=mesh_name.string(),
-                                  _h=h,
-                                  _depends=depends,
-                                  _worldcomm=worldcomm  ) : desc ,
+            _desc= thedesc ,
             _h=h,
+            _scale=scale,
             _straighten=straighten,
             _refine=refine,
             _update=update,
@@ -135,8 +162,9 @@ BOOST_PARAMETER_FUNCTION(
             _rebuild_partitions_filename=rebuild_partitions_filename,
             _partitions=partitions,
             _partitioner=partitioner,
-            _partition_file=partition_file
-            );
+            _partition_file=partition_file,
+            _verbose=verbose
+                                );
 
 #if defined(FEELPP_HAS_HDF5)
         if ( savehdf5 )
@@ -144,61 +172,115 @@ BOOST_PARAMETER_FUNCTION(
 #endif
         return m;
     }
+#else
+    LOG(WARNING) << "Gmsh support not available: loading a .geo is not supported.";
+#endif
+    
+    if ( ( mesh_name.extension() == ".msh"  ) ||
+         ( mesh_name.extension() == ".bdf"  ) ||
+         ( mesh_name.extension() == ".cgns"  ) ||
+         ( mesh_name.extension() == ".p3d"  ) ||
+         ( mesh_name.extension() == ".mesh"  ) ||
+         ( mesh_name.extension() == ".med"  ) )
 
-    if ( mesh_name.extension() == ".msh"  )
     {
+        cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << "\n";
+        
+        tic();
         auto m = loadGMSHMesh( _mesh=mesh,
-                             _filename=mesh_name.string(),
-                             _straighten=straighten,
-                             _refine=refine,
-                             _update=update,
-                             _physical_are_elementary_regions=physical_are_elementary_regions,
-                             _worldcomm=worldcomm,
-                             _respect_partition=respect_partition,
-                             _rebuild_partitions=rebuild_partitions,
-                             _rebuild_partitions_filename=rebuild_partitions_filename,
-                             _partitions=partitions,
-                             _partitioner=partitioner,
-                             _partition_file=partition_file
-            );
+                               _filename=mesh_name.string(),
+                               _straighten=straighten,
+                               _refine=refine,
+                               _scale=scale,
+                               _update=update,
+                               _physical_are_elementary_regions=physical_are_elementary_regions,
+                               _worldcomm=worldcomm,
+                               _respect_partition=respect_partition,
+                               _rebuild_partitions=rebuild_partitions,
+                               _rebuild_partitions_filename=rebuild_partitions_filename,
+                               _partitions=partitions,
+                               _partitioner=partitioner,
+                               _partition_file=partition_file,
+                               _verbose=verbose
+                               );
+
+        toc("loadMesh.loadGMSHMesh", FLAGS_v>0);
+        cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << " done\n";
+
 #if defined(FEELPP_HAS_HDF5)
+        tic();
         if ( savehdf5 )
             m->saveHDF5( mesh_name.stem().string()+".json" );
+        toc("loadMesh.saveHDF5", FLAGS_v>0);
+        cout << "[loadMesh] Saving HDF5 mesh: " << fs::system_complete(mesh_name.stem().string()+".json") << std::endl;
 #endif
         return m;
     }
+
 #if defined(FEELPP_HAS_HDF5)
     if ( mesh_name.extension() == ".json"  )
     {
-        LOG(INFO) << " Loading mesh in HDF5 format";
+        cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(mesh_name) << "\n";
+        LOG(INFO) << " Loading mesh in json+h5 format " << fs::system_complete(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
-        auto m = boost::make_shared<_mesh_type>();
-        m->loadHDF5( mesh_name.string() );
+        _mesh_ptrtype m( mesh );
+        m->setWorldComm( worldcomm );
+        m->loadHDF5( mesh_name.string(), update );
         return m;
     }
 #endif
 
+    // Acusim Raw Mesh
+    if ( mesh_name.extension() == ".arm"  )
+    {
+        cout << "[loadMesh] Loading mesh in format arm(acusolve)h5: " << fs::system_complete(mesh_name) << "\n";
+        LOG(INFO) << " Loading mesh in arm(acusolve) format " << fs::system_complete(mesh_name);
+        CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
+        _mesh_ptrtype m( mesh );
+        m->setWorldComm( worldcomm );
+        ImporterAcusimRawMesh<_mesh_type> i( mesh_name.string(), worldcomm );
+        i.visit( m.get() );
+        m->components().reset();
+        m->components().set( update );
+        m->updateForUse();
+#if defined(FEELPP_HAS_HDF5)
+        if ( savehdf5 )
+            m->saveHDF5( fs::path(filenameExpand).stem().string()+".json" );
+#endif
+        return m;
+    }
+#if defined( FEELPP_HAS_GMSH_H )
+    mesh_name = soption(_name="gmsh.domain.shape");
+
+    cout << "[loadMesh] no file name or unrecognized extension provided\n"
+         << "[loadMesh] automatically generating amesh from gmsh.domain.shape in format geo+msh: "
+         << mesh_name << ".geo\n";
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
     auto m = createGMSHMesh(_mesh=mesh,
-                          _desc=domain( _name=soption(_name="gmsh.domain.shape"), _h=h, _worldcomm=worldcomm ),
-                          _h=h,
-                          _refine=refine,
-                          _update=update,
-                          _physical_are_elementary_regions=physical_are_elementary_regions,
-                          _force_rebuild=force_rebuild,
-                          _worldcomm=worldcomm,
-                          _respect_partition=respect_partition,
-                          _rebuild_partitions=rebuild_partitions,
-                          _rebuild_partitions_filename=rebuild_partitions_filename,
-                          _partitions=partitions,
-                          _partitioner=partitioner,
-                          _partition_file=partition_file );
+                            _desc=domain( _name=mesh_name.string(), _h=h, _worldcomm=worldcomm ),
+                            _h=h,
+                            _refine=refine,
+                            _update=update,
+                            _physical_are_elementary_regions=physical_are_elementary_regions,
+                            _force_rebuild=force_rebuild,
+                            _worldcomm=worldcomm,
+                            _respect_partition=respect_partition,
+                            _rebuild_partitions=rebuild_partitions,
+                            _rebuild_partitions_filename=rebuild_partitions_filename,
+                            _partitions=partitions,
+                            _partitioner=partitioner,
+                            _partition_file=partition_file,
+                            _verbose=verbose);
 
 #if defined(FEELPP_HAS_HDF5)
     if ( savehdf5 )
         m->saveHDF5( fs::path(filenameExpand).stem().string()+".json" );
 #endif
     return m;
+#else
+    LOG(WARNING) << "Gmsh support not available. No mesh file provided, return an empty mesh.";
+    return boost::make_shared<_mesh_type>();
+#endif
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif

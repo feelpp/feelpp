@@ -1427,7 +1427,7 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
     const uint32_type nPointInPtSet = ptset.nPoints();
 
     out << "$Nodes\n";
-    out << ptset.nPoints()+elt.nPoints() << "\n";//number points
+    out << ptset.nPoints()+elt.nVertices() << "\n";//number points
 
     for ( uint32_type i = 0; i < nPointInPtSet; ++i )
     {
@@ -1445,16 +1445,17 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
         out << "\n";
     }
 
-    for ( int i = 0; i < elt.nPoints(); ++i )
+    for ( uint16_type i = 0; i < elt.nVertices(); ++i )
     {
-        out << nPointInPtSet+i+1
-            << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i)(0);
+        auto const& thepoint = elt.vertex(i);
+        out << nPointInPtSet+1+i
+            << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(0);
         if ( mesh_type::nRealDim >= 2 )
-            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i)(1);
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(1);
         else
             out << " 0";
         if ( mesh_type::nRealDim >= 3 )
-            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i)(2);
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(2);
         else
             out << " 0";
         out << "\n";
@@ -1477,9 +1478,9 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
     out << nPointInPtSet+1 << " "; // id element
     out << ordering.type();
     out << " 2 0 0 ";
-    for ( uint16_type p=0; p<element_type::numPoints; ++p )
+    for ( uint16_type p=0; p< elt.nVertices(); ++p )
     {
-        out << " " << nPointInPtSet + ordering.fromGmshId( p ) + 1;
+        out << " " << nPointInPtSet + p/*ordering.fromGmshId( p )*/ + 1;
     }
     out<<"\n";
     out << "$EndElements\n";

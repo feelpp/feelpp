@@ -223,7 +223,7 @@ getOptionIfAvalaible( std::string const& name, std::string const& prefix, std::s
                       po::variables_map vm = Environment::vm() )
 {
     bool hasOption=false;
-    T res;
+    T res{};
     std::string optctx = (sub.empty())? "": sub+"-";
     if ( vm.count( prefixvm(prefix,optctx+name) ) )
     {
@@ -339,10 +339,10 @@ public :
     //ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
     ConfigureKSP( KSP& ksp,PreconditionerPetsc<double> * precFeel,WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                   std::vector<std::string> const& prefixOverwrite,
-                  std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 );
+                  std::string const& kspType = "gmres", double rtol = 1e-8, size_type maxit=1000 );
     ConfigureKSP( PreconditionerPetsc<double> * precFeel,WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                   std::vector<std::string> const& prefixOverwrite,
-                  std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 );
+                  std::string const& kspType = "gmres", double rtol = 1e-8, size_type maxit=1000 );
     bool kspView() const { return M_kspView; }
 
 private :

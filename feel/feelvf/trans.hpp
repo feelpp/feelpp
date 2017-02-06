@@ -104,7 +104,7 @@ public:
     };
     template<typename... TheExpr>
     typename Lambda<TheExpr...>::type
-    operator()( TheExpr... e  ) { return trans(M_expr(e...)); }
+    operator()( TheExpr... e  ) { return typename Lambda<TheExpr...>::type( M_expr(e...) ); }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
@@ -164,10 +164,10 @@ public:
         {
             M_tensor_expr.update( geom, face );
         }
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            M_tensor_expr.updateContext( ctx );
+            M_tensor_expr.updateContext( ctx... );
         }
 
 

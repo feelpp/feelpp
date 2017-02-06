@@ -45,9 +45,11 @@ set(ginaclib_sources
     polynomial/gcd_uvar.cpp
     polynomial/mgcd.cpp
     polynomial/mod_gcd.cpp
+    polynomial/normalize.cpp
     polynomial/optimal_vars_finder.cpp
     polynomial/pgcd.cpp
     polynomial/primpart_content.cpp
+    polynomial/remainder.cpp
     polynomial/upoly_io.cpp
     power.cpp
     print.cpp
@@ -71,6 +73,7 @@ set(ginaclib_public_headers
     class_info.h
     clifford.h
     color.h
+    compiler.h
     constant.h
     container.h
     ex.h
@@ -113,11 +116,9 @@ set(ginaclib_public_headers
 
 set(ginaclib_private_headers
     remember.h
-    tostring.h
     utils.h
     crc32.h
     hash_seed.h
-    compiler.h
     parser/lexer.h
     parser/debug.h
     polynomial/gcd_euclid.h
@@ -148,25 +149,35 @@ set(ginaclib_private_headers
 )
 
 add_library(feelpp_ginac ${ginaclib_sources})
+add_definitions(-DLIBEXECDIR="${LIBEXECDIR}/")
 set_target_properties(feelpp_ginac PROPERTIES
 	SOVERSION ${ginaclib_soversion}
 	VERSION ${ginaclib_version})
-target_link_libraries(feelpp_ginac ${CLN_LIBRARIES} ${CMAKE_DL_LIBS} ${Boost_MPI_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${MPI_CXX_LIBRARIES})
+target_link_libraries(feelpp_ginac ${CLN_LIBRARIES} ${CMAKE_DL_LIBS} ${Boost_MPI_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${MPI_LIBRARIES})
 include_directories(${CMAKE_SOURCE_DIR}/contrib/ginac/ginac ${MPI_CXX_INCLUDE_PATH})
 
 if (NOT BUILD_SHARED_LIBS)
-	set_target_properties(feelpp_ginac PROPERTIES OUTPUT_NAME "feelpp_ginac")
+    set_target_properties(feelpp_ginac PROPERTIES OUTPUT_NAME "feelpp_ginac")
 	# Avoid the static library vs import library conflict (necessary for
 	# m$ toolchain).
 	set_target_properties(feelpp_ginac PROPERTIES PREFIX "lib")
-else()
-  set_property(TARGET feelpp_ginac PROPERTY MACOSX_RPATH ON)
+  else()
+    set_property(TARGET feelpp_ginac PROPERTY MACOSX_RPATH ON)
 endif()
 
 install(TARGETS feelpp_ginac LIBRARY DESTINATION "${LIB_INSTALL_DIR}" COMPONENT Libs
-		      RUNTIME DESTINATION "${BIN_INSTALL_DIR}" COMPONENT Libs
-		      ARCHIVE DESTINATION "${LIB_INSTALL_DIR}" COMPONENT Libs)
+  RUNTIME DESTINATION "${BIN_INSTALL_DIR}" COMPONENT Libs
+  ARCHIVE DESTINATION "${LIB_INSTALL_DIR}" COMPONENT Libs)
 install(FILES ${ginaclib_public_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/ginac" COMPONENT Devel)
+
+## Feel++ modification
+## Those headers will be installed twice, Needed for custom installations to properly work and not breaking codes for now
+set(ginaclib_public_parser_headers
+      parser/parser.h
+      parser/parse_context.h)
+install(FILES ${ginaclib_public_parser_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/ginac/parser" COMPONENT Devel)
+## End Feel++ modification
+
 
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/function.h
