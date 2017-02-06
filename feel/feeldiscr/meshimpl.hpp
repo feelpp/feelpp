@@ -1054,9 +1054,20 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
     // std::set<size_type> s;
     tic();
-    for ( ; iv != en; ++iv )
+
+    // get an ordering by process (need in // for have a deterministic choice of face connection (0 and 1) and therfore to define the permutations )
+    std::map<rank_type,typename super_elements::elements_reference_wrapper_type, std::less<rank_type> > elementsByProcOrdering;
+    auto itt = this->beginElement();
+    auto enn = this->endElement();
+    for ( ; itt!=enn;++itt )
     {
-        element_type const& __element = *iv;
+        rank_type pid = itt->processId();
+        elementsByProcOrdering[ pid ].push_back( boost::cref(*itt) );
+    }
+    for ( auto const& elementsByProcPair : elementsByProcOrdering )
+        for ( auto elementsByProc : elementsByProcPair.second )
+    {
+        element_type const& __element =  boost::unwrap_ref( elementsByProc );//*iv;
         const size_type __element_id = __element.id();
         const rank_type eltPid = __element.processId();
         auto eltPtr = boost::addressof( __element );
@@ -1068,17 +1079,17 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
         {
 #if !defined( NDEBUG )
             DVLOG(2) << "------------------------------------------------------------\n";
-            DVLOG(2) << "Element id: " << iv->id() << " local face id: " << j << "\n";
+            DVLOG(2) << "Element id: " << __element.id() << " local face id: " << j << "\n";
 #endif
             for ( int f = 0; f < face_type::numVertices; ++f )
             {
-                uint16_type pt_localid = ( nDim==1 )?j:/*iv->*/element_type::fToP( j, f );
-                // lids[f]= iv->point( pt_localid ).id();
+                uint16_type pt_localid = ( nDim==1 )?j:/*__element.*/element_type::fToP( j, f );
+                // lids[f]= __element.point( pt_localid ).id();
                 lids[f]= pointIdInElt[ myfToP[j*face_type::numVertices+f] ];
 
 #if !defined( NDEBUG )
-                VLOG(3) << "add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
-                        << " global id " << myfToP[j*face_type::numVertices+f]/*iv->point( pt_localid ).id()*/ << "\n";
+                VLOG(3) << "add point local id " << f << " to face " << j  << " " << __element.fToP( j, f )
+                        << " global id " << myfToP[j*face_type::numVertices+f]/*__element.point( pt_localid ).id()*/ << "\n";
 #endif
             }
             std::sort(lids.begin(), lids.end());
@@ -1091,7 +1102,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
 #if !defined( NDEBUG )
             DVLOG(2) << "------------------------------------------------------------\n";
-            DVLOG(2) << "Element id: " << iv->id() << " local face id: " << j << "\n";
+            DVLOG(2) << "Element id: " << __element.id() << " local face id: " << j << "\n";
 #endif
 
             if ( faceinserted )
@@ -1112,7 +1123,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 facePtr->setProcessId( __element.processId() );
                 // set the vertices of the face
                 for ( size_type k = 0; k < face_type::numPoints; ++k )
-                    facePtr->setPoint( k, iv->point( /*ele.*/element_type::fToP( j, k ) ) );
+                    facePtr->setPoint( k, __element.point( /*ele.*/element_type::fToP( j, k ) ) );
 
                 if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
                     facePtr->addElement( __element_id );
@@ -1171,7 +1182,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 if ( cface.isConnectedTo0() && cface.isConnectedTo1() )
                 {
                     DVLOG(2) << "internal face, fixing process id if necessary\n";
-                    FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).warn( "invalid element face error" );
+                    FEELPP_ASSERT( __element.facePtr( j ) )( j )( __element.id() ).warn( "invalid element face error" );
                     FEELPP_ASSERT( cface.isConnectedTo0() && cface.isConnectedTo1() )
                         ( cface.isConnectedTo0() )( cface.isConnectedTo1() ).error ("inconsistent data structure" );
                     if ( cface.processId()!=this->worldComm().localRank() )
@@ -1215,7 +1226,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     DVLOG(2) << "ad_second: " << facePtr->ad_second() << "\n";
                     DVLOG(2) << "pos_second: " << facePtr->pos_second() << "\n";
                     DVLOG(2) << "proc_second: " << facePtr->proc_second() << "\n";
-                    DVLOG(2) << "element process id: " << iv->processId() << "\n";
+                    DVLOG(2) << "element process id: " << __element.processId() << "\n";
 #endif
                 }
 
