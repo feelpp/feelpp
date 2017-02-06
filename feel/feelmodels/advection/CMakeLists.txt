@@ -9,7 +9,7 @@ foreach(_DIM 2 3)
       DIM     ${_DIM}
       POLY_ORDER ${_POLY_ORDER}
       GEO_ORDER 1
-      #USE_PERIODICITY
+      #PERIODICITY
       POINT_SET EquiSpaced 
       ADD_CMAKE_INSTALL
       )
@@ -18,7 +18,7 @@ foreach(_DIM 2 3)
       DIM     ${_DIM}
       POLY_ORDER ${_POLY_ORDER}
       GEO_ORDER 1
-      #USE_PERIODICITY
+      #PERIODICITY
       POINT_SET Fekete 
       ADD_CMAKE_INSTALL
       )
@@ -37,7 +37,7 @@ foreach(_DIM 2 3)
       POLY_ORDER ${_POLY_ORDER}
       GEO_ORDER ${_POLY_ORDER}
       POINT_SET EquiSpaced 
-      #USE_PERIODICITY
+      #PERIODICITY
       ADD_CMAKE_INSTALL
       )
   set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME} )
@@ -46,7 +46,7 @@ foreach(_DIM 2 3)
       POLY_ORDER ${_POLY_ORDER}
       GEO_ORDER ${_POLY_ORDER}
       POINT_SET Fekete 
-      #USE_PERIODICITY
+      #PERIODICITY
       ADD_CMAKE_INSTALL
       )
   set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME} )
@@ -64,7 +64,7 @@ foreach(_DIM 2 3)
       POLY_ORDER ${_POLY_ORDER}
       POLY_SET Vectorial
       GEO_ORDER 1
-      #USE_PERIODICITY
+      #PERIODICITY
       POINT_SET EquiSpaced 
       ADD_CMAKE_INSTALL
       )
@@ -74,7 +74,7 @@ foreach(_DIM 2 3)
       POLY_ORDER ${_POLY_ORDER}
       POLY_SET Vectorial
       GEO_ORDER 1
-      #USE_PERIODICITY
+      #PERIODICITY
       POINT_SET Fekete 
       ADD_CMAKE_INSTALL
       )
