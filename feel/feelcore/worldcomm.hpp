@@ -5,8 +5,9 @@
   Author(s): Vincent Chabannes <vincent.chabannes@imag.fr>
        Date: 2012-02-14
 
-  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
-
+  @copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+  @copyright (C) 2012-2017 Feel++ Consortium
+  
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -21,13 +22,12 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file worldcomm.hpp
-   \author Vincent Chabannes <vincent.chabannes@imag.fr>
-   \date 2012-02-14
- */
-#ifndef __worldcomm_H
-#define __worldcomm_H 1
+//!
+//! @file
+//! @author Vincent Chabannes <vincent.chabannes@imag.fr> 
+//!
+#ifndef FEELPP_WORLDCOMM_HPP
+#define FEELPP_WORLDCOMM_HPP 1
 
 #include <boost/mpi.hpp>
 #if defined(FEELPP_HAS_MPI_H)
@@ -40,7 +40,22 @@
 namespace Feel
 {
 
-
+//!
+//! @ingroup Core
+//! @brief Provides interface to MPI Communicators
+//!
+//! @todo define global, local and god WorldComm
+//! @todo define sub WorldComm
+//! 
+//! @code
+//! auto world = Environment::worldComm();
+//! std::vector<int> mapColorWorld;
+//! for( int rank : irange( world.size() ) )
+//!   mapColorWorld.push_back( rank % 2 );
+//! // Creates a WorldComm where we have split the processes into two sets
+//! WorldComm worldColored( mapColorWorld );
+//! @endcode
+//!
 class FEELPP_EXPORT WorldComm : public boost::mpi::communicator, public boost::enable_shared_from_this<WorldComm>
 {
 
@@ -48,17 +63,26 @@ class FEELPP_EXPORT WorldComm : public boost::mpi::communicator, public boost::e
 
 public:
 
+    //! self type
     typedef WorldComm self_type;
+    //! `boost::shared_ptr` type
     typedef boost::shared_ptr<WorldComm> self_ptrtype;
+    //! underlying MPI communicator type
     typedef boost::mpi::communicator communicator_type;
 
+    //! Default constructor
     WorldComm();
+
+    //! constructor from an `boost::mpi::communicator`
     WorldComm( super const& );
 
+    //! build a sub WorldComm from a \c color
     WorldComm( int _color );
 
-    // A supp
+    //! Creates a sub WorldComm from a set of colors
     WorldComm( std::vector<int> const& _colorWorld );
+    
+    //! 
     WorldComm( std::vector<int> const& _colorWorld, int localRank,
                communicator_type const& _globalComm=communicator_type(),
                communicator_type const& _godComm=communicator_type()  );
@@ -94,10 +118,14 @@ public:
     static self_ptrtype New() { return self_ptrtype(new self_type); }
     static self_ptrtype New( super const& s ) { return self_ptrtype(new self_type( s )); }
     void init( int color = 0, bool colormap = false );
+
+    //! Returns the current WorldComm
     communicator_type const& globalComm() const
     {
         return *this;
     }
+
+    //! Returns the local WorldComm
     communicator_type const& localComm() const
     {
         return M_localComm;
@@ -106,6 +134,8 @@ public:
     {
         return M_godComm;
     }
+
+    //! Returns the local WorldComm, @see localComm
     communicator_type const& comm() const
     {
         return M_localComm;
@@ -128,14 +158,19 @@ public:
         return this->godComm().size();
     }
 
+    //! Returns the rank in the global WorldComm
     rank_type globalRank() const
     {
         return this->globalComm().rank();
     }
+
+    //! Returns the rank in the local WorldComm
     rank_type localRank() const
     {
         return this->localComm().rank();
     }
+
+    //! Returns the rank in the God WorldComm
     rank_type godRank() const
     {
         return this->godComm().rank();
@@ -173,12 +208,13 @@ public:
         return M_mapGlobalRankToGodRank[k];
     }
 
-
+    //! Returns the master rank
     rank_type masterRank() const
     {
         return M_masterRank;
     }
 
+    //! Returns \c true if process has master rank, \c false otherwise
     bool isMasterRank() const
     {
         return ( this->globalRank() ==  this->masterRank() );
@@ -192,19 +228,22 @@ public:
     WorldComm const& masterWorld( int n );
     int numberOfSubWorlds() const;
 
+    //! Returns the sequential sub worldcomm
     WorldComm const& subWorldCommSeq() const;
 
-
+    //! Returns \c true if current worldcomm is active in God worldcomm
     bool isActive() const
     {
         return this->isActive(this->godRank());
     }
 
+    //! Returns \c true if worldcomm \p rank is active in God worldcomm
     bool isActive( int rank ) const
     {
         return M_isActive[rank];
     }
 
+    //! Returns the vector of activity in this world
     std::vector<int> const& activityOnWorld() const
     {
         return M_isActive;
@@ -214,9 +253,7 @@ public:
 
     void setColorMap( std::vector<int> const& colormap );
 
-    /**
-     * showMe
-     */
+    //! prints information on \p out on the WorldComm
     void showMe( std::ostream& __out = std::cout ) const;
 
     WorldComm operator+( WorldComm const & _worldComm ) const;

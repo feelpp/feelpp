@@ -44,6 +44,7 @@ if ( NOT TARGET quickstart )
 endif()
 
 
+
 feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_2D INSTALL TEST)
 feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D INSTALL TEST)
 feelpp_add_testcase( laplacian PREFIX qs CATEGORY quickstart )
