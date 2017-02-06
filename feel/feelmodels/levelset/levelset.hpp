@@ -184,8 +184,10 @@ public:
     typedef Advection<ConvexType, Lagrange<Order, Scalar>, PeriodicityType> modgradphi_advection_type;
     typedef boost::shared_ptr<modgradphi_advection_type> modgradphi_advection_ptrtype;
     // Stretch advection
-    typedef Advection<ConvexType, Lagrange<Order, Scalar>, PeriodicityType> stretch_advection_type;
+    typedef Advection<ConvexType, Lagrange<Order, Scalar, Continuous>, PeriodicityType> stretch_advection_type;
     typedef boost::shared_ptr<stretch_advection_type> stretch_advection_ptrtype;
+    typedef typename stretch_advection_type::element_advection_type element_stretch_type;
+    typedef boost::shared_ptr<element_stretch_type> element_stretch_ptrtype;
 
     //--------------------------------------------------------------------//
     // Exporter
@@ -297,7 +299,7 @@ public:
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
     element_levelset_vectorial_ptrtype const& gradPhi() const;
     element_levelset_ptrtype const& modGradPhi() const;
-    element_levelset_ptrtype const& stretch() const;
+    element_stretch_ptrtype const& stretch() const;
     element_levelset_ptrtype const& heaviside() const;
     element_levelset_ptrtype const& H() const { return this->heaviside(); }
     element_levelset_ptrtype const& dirac() const;
@@ -544,7 +546,7 @@ private:
     // Stretch advection
     bool M_useStretchAugmented;
     stretch_advection_ptrtype M_stretchAdvection;
-    mutable element_levelset_ptrtype M_levelsetStretch;
+    mutable element_stretch_ptrtype M_levelsetStretch;
 
     //--------------------------------------------------------------------//
     // Export
