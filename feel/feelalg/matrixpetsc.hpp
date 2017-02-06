@@ -213,6 +213,11 @@ public:
      */
     size_type rowStop () const;
 
+    //!
+    //! @return the number of non-zero entries
+    //!
+    std::size_t nnz() const;
+    
     //@}
 
     /** @name  Mutators
@@ -551,7 +556,14 @@ public:
      */
     void zeroEntriesDiagonal();
 
+    //!
+    //! get some matrix information use MatInfo data structure from Petsc
+    //!
     virtual void getMatInfo(std::vector<double> &);
+
+    //!
+    //! 
+    //!
     virtual void threshold( void );
 
 private:

@@ -9,8 +9,18 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
+#include "unsupported/Eigen/SpecialFunctions"
 
+#if defined __GNUC__ && __GNUC__>=6
+  #pragma GCC diagnostic ignored "-Wignored-attributes"
+#endif
 // using namespace Eigen;
+
+#ifdef EIGEN_VECTORIZE_SSE
+const bool g_vectorize_sse = true;
+#else
+const bool g_vectorize_sse = false;
+#endif
 
 namespace Eigen {
 namespace internal {
@@ -148,6 +158,14 @@ template<typename Scalar> void packetmath()
     else if (offset==5) internal::palign<5>(packets[0], packets[1]);
     else if (offset==6) internal::palign<6>(packets[0], packets[1]);
     else if (offset==7) internal::palign<7>(packets[0], packets[1]);
+    else if (offset==8) internal::palign<8>(packets[0], packets[1]);
+    else if (offset==9) internal::palign<9>(packets[0], packets[1]);
+    else if (offset==10) internal::palign<10>(packets[0], packets[1]);
+    else if (offset==11) internal::palign<11>(packets[0], packets[1]);
+    else if (offset==12) internal::palign<12>(packets[0], packets[1]);
+    else if (offset==13) internal::palign<13>(packets[0], packets[1]);
+    else if (offset==14) internal::palign<14>(packets[0], packets[1]);
+    else if (offset==15) internal::palign<15>(packets[0], packets[1]);
     internal::pstore(data2, packets[0]);
 
     for (int i=0; i<PacketSize; ++i)
@@ -177,7 +195,7 @@ template<typename Scalar> void packetmath()
     internal::pstore(data2, internal::pset1<Packet>(data1[offset]));
     VERIFY(areApprox(ref, data2, PacketSize) && "internal::pset1");
   }
-  
+
   {
     for (int i=0; i<PacketSize*4; ++i)
       ref[i] = data1[i/PacketSize];
@@ -189,7 +207,7 @@ template<typename Scalar> void packetmath()
     internal::pstore(data2+3*PacketSize, A3);
     VERIFY(areApprox(ref, data2, 4*PacketSize) && "internal::pbroadcast4");
   }
-  
+
   {
     for (int i=0; i<PacketSize*2; ++i)
       ref[i] = data1[i/PacketSize];
@@ -199,9 +217,9 @@ template<typename Scalar> void packetmath()
     internal::pstore(data2+1*PacketSize, A1);
     VERIFY(areApprox(ref, data2, 2*PacketSize) && "internal::pbroadcast2");
   }
-  
+
   VERIFY(internal::isApprox(data1[0], internal::pfirst(internal::pload<Packet>(data1))) && "internal::pfirst");
-  
+
   if(PacketSize>1)
   {
     for(int offset=0;offset<4;++offset)
@@ -212,6 +230,7 @@ template<typename Scalar> void packetmath()
       VERIFY(areApprox(ref, data2, PacketSize) && "ploaddup");
     }
   }
+
   if(PacketSize>2)
   {
     for(int offset=0;offset<4;++offset)
@@ -227,14 +246,14 @@ template<typename Scalar> void packetmath()
   for (int i=0; i<PacketSize; ++i)
     ref[0] += data1[i];
   VERIFY(isApproxAbs(ref[0], internal::predux(internal::pload<Packet>(data1)), refvalue) && "internal::predux");
-  
+
   {
     for (int i=0; i<4; ++i)
       ref[i] = 0;
     for (int i=0; i<PacketSize; ++i)
       ref[i%4] += data1[i];
-    internal::pstore(data2, internal::predux4(internal::pload<Packet>(data1)));
-    VERIFY(areApprox(ref, data2, PacketSize>4?PacketSize/2:PacketSize) && "internal::predux4");
+    internal::pstore(data2, internal::predux_downto4(internal::pload<Packet>(data1)));
+    VERIFY(areApprox(ref, data2, PacketSize>4?PacketSize/2:PacketSize) && "internal::predux_downto4");
   }
 
   ref[0] = 1;
@@ -284,6 +303,26 @@ template<typename Scalar> void packetmath()
       VERIFY(isApproxAbs(result[i], (selector.select[i] ? data1[i] : data2[i]), refvalue));
     }
   }
+
+  if (PacketTraits::HasBlend || g_vectorize_sse) {
+    // pinsertfirst
+    for (int i=0; i<PacketSize; ++i)
+      ref[i] = data1[i];
+    Scalar s = internal::random<Scalar>();
+    ref[0] = s;
+    internal::pstore(data2, internal::pinsertfirst(internal::pload<Packet>(data1),s));
+    VERIFY(areApprox(ref, data2, PacketSize) && "internal::pinsertfirst");
+  }
+
+  if (PacketTraits::HasBlend || g_vectorize_sse) {
+    // pinsertlast
+    for (int i=0; i<PacketSize; ++i)
+      ref[i] = data1[i];
+    Scalar s = internal::random<Scalar>();
+    ref[PacketSize-1] = s;
+    internal::pstore(data2, internal::pinsertlast(internal::pload<Packet>(data1),s));
+    VERIFY(areApprox(ref, data2, PacketSize) && "internal::pinsertlast");
+  }
 }
 
 template<typename Scalar> void packetmath_real()
@@ -310,7 +349,7 @@ template<typename Scalar> void packetmath_real()
   CHECK_CWISE1_IF(PacketTraits::HasRound, numext::round, internal::pround);
   CHECK_CWISE1_IF(PacketTraits::HasCeil, numext::ceil, internal::pceil);
   CHECK_CWISE1_IF(PacketTraits::HasFloor, numext::floor, internal::pfloor);
-  
+
   for (int i=0; i<size; ++i)
   {
     data1[i] = internal::random<Scalar>(-1,1);
@@ -359,7 +398,15 @@ template<typename Scalar> void packetmath_real()
     VERIFY_IS_EQUAL(std::exp(-std::numeric_limits<Scalar>::denorm_min()), data2[1]);
   }
 
-#ifdef EIGEN_HAS_C99_MATH
+  if (PacketTraits::HasTanh) {
+    // NOTE this test migh fail with GCC prior to 6.3, see MathFunctionsImpl.h for details.
+    data1[0] = std::numeric_limits<Scalar>::quiet_NaN();
+    packet_helper<internal::packet_traits<Scalar>::HasTanh,Packet> h;
+    h.store(data2, internal::ptanh(h.load(data1)));
+    VERIFY((numext::isnan)(data2[0]));
+  }
+
+#if EIGEN_HAS_C99_MATH
   {
     data1[0] = std::numeric_limits<Scalar>::quiet_NaN();
     packet_helper<internal::packet_traits<Scalar>::HasLGamma,Packet> h;
@@ -386,11 +433,13 @@ template<typename Scalar> void packetmath_real()
     data2[i] = internal::random<Scalar>(0,1) * std::pow(Scalar(10), internal::random<Scalar>(-6,6));
   }
 
-  if(internal::random<float>(0,1)<0.1)
+  if(internal::random<float>(0,1)<0.1f)
     data1[internal::random<int>(0, PacketSize)] = 0;
   CHECK_CWISE1_IF(PacketTraits::HasSqrt, std::sqrt, internal::psqrt);
   CHECK_CWISE1_IF(PacketTraits::HasLog, std::log, internal::plog);
-#if defined(EIGEN_HAS_C99_MATH) && (__cplusplus > 199711L)
+#if EIGEN_HAS_C99_MATH && (__cplusplus > 199711L)
+  CHECK_CWISE1_IF(PacketTraits::HasExpm1, std::expm1, internal::pexpm1);
+  CHECK_CWISE1_IF(PacketTraits::HasLog1p, std::log1p, internal::plog1p);
   CHECK_CWISE1_IF(internal::packet_traits<Scalar>::HasLGamma, std::lgamma, internal::plgamma);
   CHECK_CWISE1_IF(internal::packet_traits<Scalar>::HasErf, std::erf, internal::perf);
   CHECK_CWISE1_IF(internal::packet_traits<Scalar>::HasErfc, std::erfc, internal::perfc);
@@ -423,14 +472,12 @@ template<typename Scalar> void packetmath_real()
     // VERIFY_IS_EQUAL(std::log(std::numeric_limits<Scalar>::denorm_min()), data2[0]);
     VERIFY((numext::isnan)(data2[1]));
 
-    data1[0] = -1.0f;
+    data1[0] = Scalar(-1.0f);
     h.store(data2, internal::plog(h.load(data1)));
     VERIFY((numext::isnan)(data2[0]));
-#if !EIGEN_FAST_MATH
     h.store(data2, internal::psqrt(h.load(data1)));
     VERIFY((numext::isnan)(data2[0]));
     VERIFY((numext::isnan)(data2[1]));
-#endif
   }
 }
 
@@ -444,7 +491,7 @@ template<typename Scalar> void packetmath_notcomplex()
   EIGEN_ALIGN_MAX Scalar data1[PacketTraits::size*4];
   EIGEN_ALIGN_MAX Scalar data2[PacketTraits::size*4];
   EIGEN_ALIGN_MAX Scalar ref[PacketTraits::size*4];
-  
+
   Array<Scalar,Dynamic,1>::Map(data1, PacketTraits::size*4).setRandom();
 
   ref[0] = data1[0];
@@ -463,7 +510,7 @@ template<typename Scalar> void packetmath_notcomplex()
   for (int i=0; i<PacketSize; ++i)
     ref[0] = (std::max)(ref[0],data1[i]);
   VERIFY(internal::isApprox(ref[0], internal::predux_max(internal::pload<Packet>(data1))) && "internal::predux_max");
-  
+
   for (int i=0; i<PacketSize; ++i)
     ref[i] = data1[0]+Scalar(i);
   internal::pstore(data2, internal::plset<Packet>(data1[0]));
@@ -475,12 +522,12 @@ template<typename Scalar,bool ConjLhs,bool ConjRhs> void test_conj_helper(Scalar
   typedef internal::packet_traits<Scalar> PacketTraits;
   typedef typename PacketTraits::type Packet;
   const int PacketSize = PacketTraits::size;
-  
+
   internal::conj_if<ConjLhs> cj0;
   internal::conj_if<ConjRhs> cj1;
   internal::conj_helper<Scalar,Scalar,ConjLhs,ConjRhs> cj;
   internal::conj_helper<Packet,Packet,ConjLhs,ConjRhs> pcj;
-  
+
   for(int i=0;i<PacketSize;++i)
   {
     ref[i] = cj0(data1[i]) * cj1(data2[i]);
@@ -488,7 +535,7 @@ template<typename Scalar,bool ConjLhs,bool ConjRhs> void test_conj_helper(Scalar
   }
   internal::pstore(pval,pcj.pmul(internal::pload<Packet>(data1),internal::pload<Packet>(data2)));
   VERIFY(areApprox(ref, pval, PacketSize) && "conj_helper pmul");
-  
+
   for(int i=0;i<PacketSize;++i)
   {
     Scalar tmp = ref[i];
@@ -516,12 +563,12 @@ template<typename Scalar> void packetmath_complex()
     data1[i] = internal::random<Scalar>() * Scalar(1e2);
     data2[i] = internal::random<Scalar>() * Scalar(1e2);
   }
-  
+
   test_conj_helper<Scalar,false,false> (data1,data2,ref,pval);
   test_conj_helper<Scalar,false,true>  (data1,data2,ref,pval);
   test_conj_helper<Scalar,true,false>  (data1,data2,ref,pval);
   test_conj_helper<Scalar,true,true>   (data1,data2,ref,pval);
-  
+
   {
     for(int i=0;i<PacketSize;++i)
       ref[i] = Scalar(std::imag(data1[i]),std::real(data1[i]));
@@ -541,11 +588,11 @@ template<typename Scalar> void packetmath_scatter_gather()
   for (int i=0; i<PacketSize; ++i) {
     data1[i] = internal::random<Scalar>()/RealScalar(PacketSize);
   }
-  
+
   int stride = internal::random<int>(1,20);
-  
+
   EIGEN_ALIGN_MAX Scalar buffer[PacketSize*20];
-  memset(buffer, 0, 20*sizeof(Packet));
+  memset(buffer, 0, 20*PacketSize*sizeof(Scalar));
   Packet packet = internal::pload<Packet>(data1);
   internal::pscatter<Scalar, Packet>(buffer, packet, stride);
 
@@ -579,7 +626,7 @@ void test_packetmath()
     CALL_SUBTEST_1( packetmath_notcomplex<float>() );
     CALL_SUBTEST_2( packetmath_notcomplex<double>() );
     CALL_SUBTEST_3( packetmath_notcomplex<int>() );
-    
+
     CALL_SUBTEST_1( packetmath_real<float>() );
     CALL_SUBTEST_2( packetmath_real<double>() );
 

@@ -284,6 +284,7 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
     typedef typename ReturnType<internal::member_any>::Type AnyReturnType;
     typedef PartialReduxExpr<ExpressionType, internal::member_count<Index>, Direction> CountReturnType;
     typedef typename ReturnType<internal::member_prod>::Type ProdReturnType;
+    typedef Reverse<const ExpressionType, Direction> ConstReverseReturnType;
     typedef Reverse<ExpressionType, Direction> ReverseReturnType;
 
     template<int p> struct LpNormReturnType {
@@ -456,7 +457,15 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
       *
       * \sa DenseBase::reverse() */
     EIGEN_DEVICE_FUNC
-    const ReverseReturnType reverse() const
+    const ConstReverseReturnType reverse() const
+    { return ConstReverseReturnType( _expression() ); }
+
+    /** \returns a writable matrix expression
+      * where each column (or row) are reversed.
+      *
+      * \sa reverse() const */
+    EIGEN_DEVICE_FUNC
+    ReverseReturnType reverse()
     { return ReverseReturnType( _expression() ); }
 
     typedef Replicate<ExpressionType,(isVertical?Dynamic:1),(isHorizontal?Dynamic:1)> ReplicateReturnType;
@@ -540,7 +549,7 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
 
     /** Returns the expression of the sum of the vector \a other to each subvector of \c *this */
     template<typename OtherDerived> EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC
-    CwiseBinaryOp<internal::scalar_sum_op<Scalar>,
+    CwiseBinaryOp<internal::scalar_sum_op<Scalar,typename OtherDerived::Scalar>,
                   const ExpressionTypeNestedCleaned,
                   const typename ExtendedType<OtherDerived>::Type>
     operator+(const DenseBase<OtherDerived>& other) const
@@ -553,7 +562,7 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
     /** Returns the expression of the difference between each subvector of \c *this and the vector \a other */
     template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
-    CwiseBinaryOp<internal::scalar_difference_op<Scalar>,
+    CwiseBinaryOp<internal::scalar_difference_op<Scalar,typename OtherDerived::Scalar>,
                   const ExpressionTypeNestedCleaned,
                   const typename ExtendedType<OtherDerived>::Type>
     operator-(const DenseBase<OtherDerived>& other) const
@@ -593,7 +602,7 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
       return m_matrix / extendedTo(other.derived());
     }
 
-    /** \returns an expression where each column of row of the referenced matrix are normalized.
+    /** \returns an expression where each column (or row) of the referenced matrix are normalized.
       * The referenced matrix is \b not modified.
       * \sa MatrixBase::normalized(), normalize()
       */
@@ -616,6 +625,7 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
 /////////// Geometry module ///////////
 
     typedef Homogeneous<ExpressionType,Direction> HomogeneousReturnType;
+    EIGEN_DEVICE_FUNC
     HomogeneousReturnType homogeneous() const;
 
     typedef typename ExpressionType::PlainObject CrossReturnType;
@@ -645,6 +655,7 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
                   Direction==Horizontal ? HNormalized_SizeMinusOne : 1> >
             HNormalizedReturnType;
 
+    EIGEN_DEVICE_FUNC
     const HNormalizedReturnType hnormalized() const;
 
   protected:

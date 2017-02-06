@@ -104,13 +104,12 @@ namespace parameter = boost::parameter;
 
 namespace detail
 {
-
 template<typename T,int M, int N>
 struct ID
 {
     friend class boost::serialization::access;
     typedef T value_type;
-    typedef Eigen::Matrix<value_type,M,N> m_type;
+    typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename  array_type::index_range range;
 
@@ -141,7 +140,10 @@ struct ID
         M_id( elem.idExtents( context ) )
     {
         for(int k = 0;k < M_id.shape()[0]; k++ )
+        {
+            M_id[k].resize( M, N );
             M_id[k].setZero();
+        }
         elem.id_( context, M_id );
     }
 
@@ -203,7 +205,7 @@ struct DD
 {
     typedef T value_type;
     friend class boost::serialization::access;
-    typedef Eigen::Matrix<value_type,M,N> m_type;
+    typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -223,7 +225,10 @@ struct DD
         M_grad( elem.gradExtents( context ) )
     {
         for(int k = 0;k < M_grad.shape()[0]; k++ )
+        {
+            M_grad[k].resize(M,N);
             M_grad[k].setZero();
+        }
         elem.grad_( context, M_grad );
     }
 
@@ -266,7 +271,7 @@ template<typename T,int N, int M, int P>
 struct D
 {
     typedef T value_type;
-    typedef Eigen::Matrix<value_type,M,P> m_type;
+    typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
 
@@ -287,7 +292,10 @@ struct D
         M_grad( elem.dExtents( context ) )
     {
         for(int k = 0;k < M_grad.shape()[0]; k++ )
+        {
+            M_grad[k].resize(M,P);
             M_grad[k].setZero();
+        }
         elem.d_( N, context, M_grad );
     }
 
@@ -302,11 +310,11 @@ struct D
     array_type M_grad;
 };
 
-template<typename T>
+template<typename T, int D = 1>
 struct Div
 {
     typedef T value_type;
-    typedef Eigen::Matrix<value_type,1,1> m_type;
+    typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -326,7 +334,10 @@ struct Div
         M_div( elem.divExtents( context ) )
     {
         for(int k = 0;k < M_div.shape()[0]; k++ )
+        {
+            M_div[k].resize(D,1);
             M_div[k].setZero();
+        }
         elem.div_( context, M_div );
     }
 
@@ -344,7 +355,7 @@ template<typename T, int N, int D>
 struct Curl
 {
     typedef T value_type;
-    typedef Eigen::Matrix<value_type,D,1> m_type;
+    typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -364,7 +375,10 @@ struct Curl
         M_curl( elem.curlExtents( context ) )
     {
         for(int k = 0;k < M_curl.shape()[0]; k++ )
+        {
+            M_curl[k].resize(D,1);
             M_curl[k].setZero();
+        }
         init( elem, context, boost::is_same<mpl::int_<N>, mpl::int_<-1> >() );
     }
     template<typename Elem, typename ContextType>
@@ -412,7 +426,7 @@ struct H
 {
     friend class boost::serialization::access;
     typedef T value_type;
-    typedef Eigen::Matrix<value_type,M,N> m_type;
+    typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename  array_type::index_range range;
 
@@ -433,7 +447,10 @@ struct H
         M_hess( elem.hessExtents( context ) )
     {
         for(int k = 0;k < M_hess.shape()[0]; k++ )
+        {
+            M_hess[k].resize(M,N);
             M_hess[k].setZero();
+        }
         elem.hess_( context, M_hess );
     }
     m_type const& operator[]( uint16_type q  ) const
@@ -1409,10 +1426,13 @@ public:
     static constexpr uint16_type rank = ( is_composite? invalid_uint16_type_value : basis_0_type::rank );
     static constexpr bool is_scalar = ( is_composite? false : basis_0_type::is_scalar );
     static constexpr bool is_vectorial = ( is_composite? false : basis_0_type::is_vectorial );
-    static constexpr bool is_tensor2 = ( is_composite? false : basis_0_type::is_tensor2 );
+    static constexpr bool is_tensor2 = ( is_composite? false : basis_0_type::is_tensor2  && !is_symm_v<basis_0_type> );
+    static constexpr bool is_tensor2symm = ( is_composite? false : basis_0_type::is_tensor2 && is_symm_v<basis_0_type> );
     static constexpr bool is_continuous = ( is_composite? false : basis_0_type::isContinuous );
     static constexpr bool is_modal = ( is_composite? false : basis_0_type::is_modal );
     static constexpr bool is_nodal = !is_modal;
+
+
     static constexpr uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents1 );
     static constexpr uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents2 );
     static constexpr bool is_product = ( is_composite? invalid_uint16_type_value : basis_0_type::is_product );
@@ -1427,7 +1447,7 @@ public:
                              mpl::inserter<mpl::int_<0>,mpl::plus<mpl::_,mpl::_> > >::type::value;
     static const uint16_type N_COMPONENTS = nComponents;
     static const uint16_type nSpaces = mpl::size<bases_list>::type::value;
-
+    static constexpr uint16_type nRealComponents = is_tensor2symm?basis_0_type::nComponents1*(basis_0_type::nComponents1+1)/2:nComponents;
     typedef typename GetPeriodicity<periodicity_type,0>::type periodicity_0_type;
     static const bool is_periodic = periodicity_0_type::is_periodic;
 
@@ -1606,7 +1626,10 @@ public:
         typedef typename super::value_type bc_type;
         typedef typename matrix_node<value_type>::type matrix_node_type;
         typedef typename super::iterator iterator;
-        Context( functionspace_ptrtype Xh ) : M_Xh( Xh ) {}
+        Context( functionspace_ptrtype const& Xh ) : M_Xh( Xh ) {}
+        Context() = default;
+        Context( Context const& ) = default;
+        Context& operator=( Context const& ) = default;
         virtual ~Context() {}
 
         std::pair<iterator, bool>
@@ -1782,6 +1805,8 @@ public:
             return M_t[i];
         }
 
+        constexpr bool ctxHaveBeenMpiBroadcasted() const { return false; }
+
     private:
 
         std::vector<node_type> M_t;
@@ -1855,10 +1880,12 @@ public:
         static const bool is_scalar = functionspace_type::is_scalar;
         static const bool is_vectorial = functionspace_type::is_vectorial;
         static const bool is_tensor2 = functionspace_type::is_tensor2;
+        static const bool is_tensor2symm = functionspace_type::is_tensor2symm;
         static const bool is_continuous = functionspace_type::is_continuous;
         static const uint16_type nComponents1 = functionspace_type::nComponents1;
         static const uint16_type nComponents2 = functionspace_type::nComponents2;
         static const uint16_type nComponents = functionspace_type::nComponents;
+        static const uint16_type nRealComponents = functionspace_type::nRealComponents;
         static const uint16_type nSpaces = functionspace_type::nSpaces;
         static const bool is_mortar = functionspace_type::is_mortar;
         static const int rank = functionspace_type::rank;
@@ -1991,8 +2018,12 @@ public:
             return *this;
         }
 #endif
+
+        template<typename ContOtherType>
+        Element& operator=( Element<T,ContOtherType> const& v );
+
         template<typename VectorExpr>
-        Element& operator=( VectorExpr const& __v );
+        Element& operator=( VectorExpr const& v );
 
 
         /**
@@ -2077,14 +2108,20 @@ public:
             if ( j != ComponentType::NO_COMPONENT )
             {
                 CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
-                startSlice = ((int)i)*nComponents2+((int)j);
+                if ( is_tensor2symm )
+                {
+                    startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
+                }
+                else
+                    startSlice = ((int)i)*nComponents2+((int)j);
                 __name += "_" + componentToString( j );
             }
             //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
-            auto sActive = ublas::slice( this->container().start()+startSlice, nComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( this->container().startNonContiguousGhosts()+startSlice, nComponents, M_functionspace->nLocalGhostPerComponent() );
+            auto sActive = ublas::slice( this->container().start()+startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
+            auto sGhost = ublas::slice( this->container().startNonContiguousGhosts()+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
 
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
+
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
                               typename component_type::container_type( this->vec().data().expression(), sActive,
@@ -2104,13 +2141,18 @@ public:
             if ( j != ComponentType::NO_COMPONENT )
             {
                 CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
-                startSlice = ((int)i)*nComponents2+((int)j);
+                if ( is_tensor2symm )
+                {
+                    startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
+                }
+                else
+                    startSlice = ((int)i)*nComponents2+((int)j);
                 __name += "_" + componentToString( j );
             }
             //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
             size_type startGhostDof = (container_type::is_shallow_array_adaptor_vector)? 0 : this->functionSpace()->dof()->nLocalDofWithoutGhost();
-            auto sActive = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( startGhostDof+startSlice, nComponents, M_functionspace->nLocalGhostPerComponent() );
+            auto sActive = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
+            auto sGhost = ublas::slice( startGhostDof+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
 
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
             size_type startContainerIndex = start() + startSlice;
@@ -2147,13 +2189,22 @@ public:
             if ( j != ComponentType::NO_COMPONENT )
             {
                 CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
-                startSlice = ((int)i)*nComponents2+((int)j);
+
+                if ( is_tensor2symm )
+                {
+                    startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
+                }
+                else
+                {
+                    startSlice = ((int)i)*nComponents2+((int)j);
+                }
                 __name += "_" + componentToString( j );
+
             }
 
             //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
-            auto sActive = ublas::slice( this->container().start()+startSlice, nComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( this->container().startNonContiguousGhosts()+startSlice, nComponents, M_functionspace->nLocalGhostPerComponent() );
+            auto sActive = ublas::slice( this->container().start()+startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
+            auto sGhost = ublas::slice( this->container().startNonContiguousGhosts()+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
 
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
@@ -2176,13 +2227,22 @@ public:
             if ( j != ComponentType::NO_COMPONENT )
             {
                 CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
-                startSlice = ((int)i)*nComponents2+((int)j);
+                if ( is_tensor2symm )
+                {
+                    startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
+                }
+                else
+                {
+                    startSlice = ((int)i)*nComponents2+((int)j);
+                }
                 __name += "_" + componentToString( j );
             }
+
             //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
             size_type startGhostDof = (container_type::is_shallow_array_adaptor_vector)? 0 : this->functionSpace()->dof()->nLocalDofWithoutGhost();
-            auto sActive = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( startGhostDof+startSlice, nComponents, M_functionspace->nLocalGhostPerComponent() );
+            auto sActive = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
+            auto sGhost = ublas::slice( startGhostDof+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
+
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
             size_type startContainerIndex = start() + startSlice;
@@ -2386,13 +2446,23 @@ public:
         //@{
 
         typedef boost::multi_array<value_type,3> array_type;
-        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> _id_type;
+#if 0
+        typedef Eigen::Tensor<value_type,nComponents1,nComponents2> _id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nRealDim> _grad_type;
         typedef Eigen::Matrix<value_type,nRealDim,nRealDim> _hess_type;
-        typedef Eigen::Matrix<value_type,1,1> _div_type;
+        typedef Eigen::Matrix<value_type,nComponents2,1> _div_type;
         typedef Eigen::Matrix<value_type,nRealDim,1> _curl_type;
+#else
+        typedef Eigen::Tensor<value_type,2> _id_type;
+        typedef Eigen::Tensor<value_type,2> _grad_type;
+        typedef Eigen::Tensor<value_type,2> _dn_type;
+        typedef Eigen::Tensor<value_type,2> _hess_type;
+        typedef Eigen::Tensor<value_type,2> _div_type;
+        typedef Eigen::Tensor<value_type,2> _curl_type;
+#endif
         typedef boost::multi_array<_id_type,1> id_array_type;
         typedef boost::multi_array<_grad_type,1> grad_array_type;
+        typedef boost::multi_array<_dn_type,1> dn_array_type;
         typedef boost::multi_array<_hess_type,1> hess_array_type;
         typedef boost::multi_array<_div_type,1> div_array_type;
         typedef boost::multi_array<_curl_type,1> curl_array_type;
@@ -2511,6 +2581,20 @@ public:
             return this->extremeValue( P0h, "min" );
         }
 
+        template <typename ... CTX>
+        decltype(auto) //basis_context_ptrtype
+        selectContext( CTX const& ... ctx ) const
+            {
+                typedef boost::fusion::vector<CTX...> my_vector_ctx_type;
+                typedef typename boost::fusion::result_of::distance<typename boost::fusion::result_of::begin<my_vector_ctx_type>::type,
+                                                                    typename boost::fusion::result_of::find<my_vector_ctx_type,basis_context_ptrtype>::type>::type pos_ctx_type;
+                static const int myNumberOfCtx = boost::mpl::size<my_vector_ctx_type>::type::value;
+                // CHECK( pos_ctx_type::value < myNumberOfCtx ) << "no compatible context : "<< pos_ctx_type::value << " and " << myNumberOfCtx;
+                static const int ctxPosition = (pos_ctx_type::value >= myNumberOfCtx)?0 : pos_ctx_type::value;
+                my_vector_ctx_type ctxvec( ctx... );
+                return boost::fusion::at_c<ctxPosition>( ctxvec );
+            }
+
         //! Interpolation at a set of points
         //@{
         /**
@@ -2594,6 +2678,9 @@ public:
             shape[0] = 1;
 
             id_array_type v( shape );
+            _id_type idzero( ncdof, 1 );
+            std::fill( v.data(), v.data()+v.num_elements(), idzero.constant(0.));
+
             if( context.size() > 0 )
             {
                 for( int i = 0 ; it != en; ++it, ++i )
@@ -2631,6 +2718,9 @@ public:
             boost::array<typename array_type::index, 1> shape;
             shape[0] = 1;
             id_array_type v( shape );
+            const int ncdof  = is_product?nComponents:1;
+            _id_type idzero( ncdof, 1 );
+            std::fill( v.data(), v.data()+v.num_elements(), idzero.constant(0.));
 
             value_type result=0;
             int proc_having_the_point = context.processorHavingPoint( i );
@@ -2877,9 +2967,30 @@ public:
         dzInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
 
 
+        template<typename ContextType>
+        boost::array<typename array_type::index, 1>
+        dnExtents( ContextType const & context ) const
+        {
+            boost::array<typename array_type::index, 1> shape;
+            shape[0] = context.xRefs().size2();
+            return shape;
+        }
+        template<typename ContextType>
+        void
+        dn( ContextType const & context, dn_array_type& v ) const
+        {
+            dn_( context, v );
+        }
+        template<typename ContextType>
+        void dn_( ContextType const & context, dn_array_type& v ) const;
+
+        void
+        dnInterpolate( matrix_node_type __ptsReal, dn_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
+
+
         //@}
 
-        typedef Feel::detail::Div<value_type> div_type;
+        typedef Feel::detail::Div<value_type,nComponents2> div_type;
 
         template<typename ContextType>
         boost::array<typename array_type::index, 1>
@@ -3580,9 +3691,9 @@ public:
         /*
          *
          */
-        void initSubElementView( mpl::true_ );
+        FEELPP_NO_EXPORT void initSubElementView( mpl::true_ );
 
-        void initSubElementView( mpl::false_ ) {}
+        FEELPP_NO_EXPORT void initSubElementView( mpl::false_ ) {}
 
 
         friend class boost::serialization::access;
@@ -3678,36 +3789,36 @@ public:
     private:
 
         template<typename RangeType, typename ExprType>
-        void onImpl( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate = true, bool verbose = false )
+        FEELPP_NO_EXPORT void onImpl( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate = true, bool verbose = false )
         {
             onImplBase( r, e, prefix, geomap_strategy, accumulate, verbose, boost::is_std_list<RangeType>()  );
         }
 
         template<typename RangeType, typename ExprType>
-        void onImplBase( RangeType const& rList, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::true_ )
+        FEELPP_NO_EXPORT void onImplBase( RangeType const& rList, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::true_ )
         {
             const int iDim = boost::tuples::template element<0, typename RangeType::value_type>::type::value;
             for ( auto const& r : rList )
                 onImpl( std::make_pair( r.template get<1>(), r.template get<2>()), e, prefix, geomap_strategy, accumulate, verbose, mpl::int_<iDim>() );
         }
         template<typename RangeType, typename ExprType>
-        void onImplBase( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::false_ )
+        FEELPP_NO_EXPORT void onImplBase( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::false_ )
         {
             const int iDim = boost::tuples::template element<0, RangeType>::type::value;
             onImpl( std::make_pair( r.template get<1>(), r.template get<2>()), e, prefix, geomap_strategy, accumulate, verbose, mpl::int_<iDim>() );
         }
 
         template<typename IteratorType, typename ExprType>
-        void onImpl( std::pair<IteratorType,IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_ELEMENTS>  );
+        FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType,IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_ELEMENTS>  );
 
         template<typename IteratorType, typename ExprType>
-        void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_FACES>  );
+        FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_FACES>  );
 
         template<typename IteratorType, typename ExprType>
-        void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_EDGES>  );
+        FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_EDGES>  );
 
         template<typename IteratorType, typename ExprType>
-        void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_POINTS>  );
+        FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_POINTS>  );
 
     private:
 
@@ -3784,7 +3895,13 @@ public:
         this->init( mesh, 0, dofindices, periodicity );
     }
 
-    FunctionSpace() {}
+    FunctionSpace( WorldComm const& worldcomm = Environment::worldComm() )
+        :
+        M_worldsComm( std::vector<WorldComm>(nSpaces,worldcomm) ),
+        M_worldComm( new WorldComm( worldcomm ) ),
+        M_extendedDofTableComposite( std::vector<bool>(nSpaces,false) ),
+        M_extendedDofTable( false )
+        {}
     // template<typename... FSpaceList>
     // FunctionSpace( FSpaceList... space_list )
     //     :
@@ -4014,7 +4131,7 @@ public:
      */
     uint16_type qDim() const
     {
-        return N_COMPONENTS;
+        return is_tensor2symm?nRealComponents:N_COMPONENTS;
     }
 
     /**
@@ -4228,7 +4345,6 @@ public:
     */
     reference_element_ptrtype const& fe() const
     {
-        DCHECK( M_ref_fe ) << "Invalid reference element\n";
         return M_ref_fe;
     }
 
@@ -4487,6 +4603,7 @@ public:
     element_external_storage_type
     element( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
+#if FEELPP_HAS_PETSC
         VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
         //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
         CHECK( vecPetsc ) << "only petsc vector";
@@ -4500,6 +4617,10 @@ public:
         value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
         element_external_storage_type u( this->shared_from_this(),nActiveDof,arrayActiveDof,
                                          nGhostDof, arrayGhostDof );
+#else
+        LOG(WARNING) << "element(Vector<value_type> const& vec, int blockIdStart): This function is disabled when Feel++ is not built with PETSc";
+        element_external_storage_type u;
+#endif
         return u;
     }
 
@@ -4511,6 +4632,7 @@ public:
     element_external_storage_ptrtype
     elementPtr( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
+#if FEELPP_HAS_PETSC
         VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
         //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
         CHECK( vecPetsc ) << "only petsc vector";
@@ -4524,6 +4646,10 @@ public:
         value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
         element_external_storage_ptrtype u( new element_external_storage_type( this->shared_from_this(),nActiveDof,arrayActiveDof,
                                                                                nGhostDof, arrayGhostDof ) );
+#else
+        LOG(WARNING) << "element(Vector<value_type> const& vec, int blockIdStart): This function is disabled when Feel++ is not built with PETSc";
+        element_external_storage_type u;
+#endif
         return u;
     }
 
@@ -4533,6 +4659,16 @@ public:
     template<int i>
     typename mpl::at_c<functionspace_vector_type,i>::type
     functionSpace()
+    {
+        return fusion::at_c<i>( M_functionspaces );
+    }
+
+    /**
+     * get the \p i -th \c FunctionSpace out the list
+     */
+    template<int i>
+    typename mpl::at_c<functionspace_vector_type,i>::type const&
+    functionSpace() const
     {
         return fusion::at_c<i>( M_functionspaces );
     }
@@ -4673,42 +4809,42 @@ protected:
 
 private:
 
-    void init( mesh_ptrtype const& mesh,
-               size_type mesh_components,
-               periodicity_type const& periodicity,
-               std::vector<Dof > const& dofindices,
-               mpl::bool_<false> );
-    void init( mesh_ptrtype const& mesh,
-               size_type mesh_components,
-               periodicity_type const& periodicity,
-               std::vector<Dof > const& dofindices,
-               mpl::bool_<true> );
+    FEELPP_NO_EXPORT void init( mesh_ptrtype const& mesh,
+                                size_type mesh_components,
+                                periodicity_type const& periodicity,
+                                std::vector<Dof > const& dofindices,
+                                mpl::bool_<false> );
+    FEELPP_NO_EXPORT void init( mesh_ptrtype const& mesh,
+                                size_type mesh_components,
+                                periodicity_type const& periodicity,
+                                std::vector<Dof > const& dofindices,
+                                mpl::bool_<true> );
     template<typename FSpaceHead, typename... FSpaceTail>
-    void initList( FSpaceHead& fspacehead, FSpaceTail... fspacetail );
+    FEELPP_NO_EXPORT void initList( FSpaceHead& fspacehead, FSpaceTail... fspacetail );
 
-    void initList();
+    FEELPP_NO_EXPORT void initList();
 
     template<typename FSpaceHead>
-    void initHead( FSpaceHead& fspacehead );
+    FEELPP_NO_EXPORT void initHead( FSpaceHead& fspacehead );
 
-    size_type nDof( mpl::bool_<false> ) const;
-    size_type nDof( mpl::bool_<true> ) const;
+    FEELPP_NO_EXPORT size_type nDof( mpl::bool_<false> ) const;
+    FEELPP_NO_EXPORT size_type nDof( mpl::bool_<true> ) const;
 
-    size_type nLocalDof( mpl::bool_<false> ) const;
-    size_type nLocalDof( mpl::bool_<true> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDof( mpl::bool_<false> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDof( mpl::bool_<true> ) const;
 
-    size_type nLocalDofWithGhost( mpl::bool_<false> ) const;
-    size_type nLocalDofWithGhost( mpl::bool_<true> ) const;
-    size_type nLocalDofWithoutGhost( mpl::bool_<false> ) const;
-    size_type nLocalDofWithoutGhost( mpl::bool_<true> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithGhost( mpl::bool_<false> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithGhost( mpl::bool_<true> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithoutGhost( mpl::bool_<false> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithoutGhost( mpl::bool_<true> ) const;
 
-    size_type nLocalDofWithGhostOnProc( const int proc, mpl::bool_<false> ) const;
-    size_type nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const;
-    size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const;
-    size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithGhostOnProc( const int proc, mpl::bool_<false> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const;
 
-    void rebuildDofPoints( mpl::bool_<false> );
-    void rebuildDofPoints( mpl::bool_<true> );
+    FEELPP_NO_EXPORT void rebuildDofPoints( mpl::bool_<false> );
+    FEELPP_NO_EXPORT void rebuildDofPoints( mpl::bool_<true> );
 
     friend class ComponentSpace;
     class ComponentSpace
@@ -4795,6 +4931,12 @@ private:
 }; // FunctionSpace
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
+const bool FunctionSpace<A0,A1,A2,A3,A4>::is_tensor2symm;
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::nRealComponents;
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename T,  typename Cont>
 const bool FunctionSpace<A0,A1,A2,A3, A4>::Element<T,Cont>::is_scalar;
 
@@ -4808,7 +4950,15 @@ const bool FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::is_tensor2;
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename T,  typename Cont>
+const bool FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::is_tensor2symm;
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename T,  typename Cont>
 const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::nComponents;
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename T,  typename Cont>
+const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::nRealComponents;
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
@@ -5085,7 +5235,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::buildComponentSpace() const
 {
-    if ( ( is_vectorial || is_tensor2 ) && !M_comp_space )
+    if ( ( is_vectorial || is_tensor2 || is_tensor2symm ) && !M_comp_space )
     {
         // Warning: this works regarding the communicator . for the component space
         // it will use in mixed spaces only numberofSudomains/numberofspace processors

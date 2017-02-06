@@ -41,7 +41,7 @@ namespace Feel {
  * cout << "Hello World from process " << Environment::rank()  << std::endl;
  * @encode
  */
-class MasterStream
+class FEELPP_EXPORT MasterStream
 {
 public:
     /**
@@ -98,6 +98,27 @@ public:
      * @return the shared_ptr WorldComm
      */
     boost::shared_ptr<WorldComm> worldCommPtr() const { return wc; }
+
+    /**
+     * variadic template function to provide open() from std::ofstream
+     */
+    template<typename... Args>
+    void open(Args... args)
+        {
+            auto* o = dynamic_cast<std::ofstream*>( &out );
+            if ( o && wc->isMasterRank() )
+                o->open( args... );
+        }
+
+    /**
+     * provides close() from std::ofstream
+     */
+    void close()
+        {
+            auto* o = dynamic_cast<std::ofstream*>( &out );
+            if ( o && wc->isMasterRank() )
+                o->close();
+        }
 
 protected:
     std::ostream& out;

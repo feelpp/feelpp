@@ -4,7 +4,7 @@
  *  but not of any interest to the user of the library. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -264,56 +264,56 @@ const ex _ex120 = _ex120;
 library_init::library_init()
 {
 	if (count++==0) {
-		(_num_120_p = new numeric(-120))->setflag(status_flags::dynallocated);
-		(_num_60_p = new numeric(-60))->setflag(status_flags::dynallocated);
-		(_num_48_p = new numeric(-48))->setflag(status_flags::dynallocated);
-		(_num_30_p = new numeric(-30))->setflag(status_flags::dynallocated);
-		(_num_25_p = new numeric(-25))->setflag(status_flags::dynallocated);
-		(_num_24_p = new numeric(-24))->setflag(status_flags::dynallocated);
-		(_num_20_p = new numeric(-20))->setflag(status_flags::dynallocated);
-		(_num_18_p = new numeric(-18))->setflag(status_flags::dynallocated);
-		(_num_15_p = new numeric(-15))->setflag(status_flags::dynallocated);
-		(_num_12_p = new numeric(-12))->setflag(status_flags::dynallocated);
-		(_num_11_p = new numeric(-11))->setflag(status_flags::dynallocated);
-		(_num_10_p = new numeric(-10))->setflag(status_flags::dynallocated);
-		(_num_9_p = new numeric(-9))->setflag(status_flags::dynallocated);
-		(_num_8_p = new numeric(-8))->setflag(status_flags::dynallocated);
-		(_num_7_p = new numeric(-7))->setflag(status_flags::dynallocated);
-		(_num_6_p = new numeric(-6))->setflag(status_flags::dynallocated);
-		(_num_5_p = new numeric(-5))->setflag(status_flags::dynallocated);
-		(_num_4_p = new numeric(-4))->setflag(status_flags::dynallocated);
-		(_num_3_p = new numeric(-3))->setflag(status_flags::dynallocated);
-		(_num_2_p = new numeric(-2))->setflag(status_flags::dynallocated);
-		(_num_1_p = new numeric(-1))->setflag(status_flags::dynallocated);
-		(_num_1_2_p = new numeric(-1,2))->setflag(status_flags::dynallocated);
-		(_num_1_3_p = new numeric(-1,3))->setflag(status_flags::dynallocated);
-		(_num_1_4_p = new numeric(-1,4))->setflag(status_flags::dynallocated);
-		(_num0_p = new numeric(0))->setflag(status_flags::dynallocated);
+		_num_120_p = (const numeric *)&dynallocate<numeric>(-120);
+		_num_60_p = (const numeric *)&dynallocate<numeric>(-60);
+		_num_48_p = (const numeric *)&dynallocate<numeric>(-48);
+		_num_30_p = (const numeric *)&dynallocate<numeric>(-30);
+		_num_25_p = (const numeric *)&dynallocate<numeric>(-25);
+		_num_24_p = (const numeric *)&dynallocate<numeric>(-24);
+		_num_20_p = (const numeric *)&dynallocate<numeric>(-20);
+		_num_18_p = (const numeric *)&dynallocate<numeric>(-18);
+		_num_15_p = (const numeric *)&dynallocate<numeric>(-15);
+		_num_12_p = (const numeric *)&dynallocate<numeric>(-12);
+		_num_11_p = (const numeric *)&dynallocate<numeric>(-11);
+		_num_10_p = (const numeric *)&dynallocate<numeric>(-10);
+		_num_9_p = (const numeric *)&dynallocate<numeric>(-9);
+		_num_8_p = (const numeric *)&dynallocate<numeric>(-8);
+		_num_7_p = (const numeric *)&dynallocate<numeric>(-7);
+		_num_6_p = (const numeric *)&dynallocate<numeric>(-6);
+		_num_5_p = (const numeric *)&dynallocate<numeric>(-5);
+		_num_4_p = (const numeric *)&dynallocate<numeric>(-4);
+		_num_3_p = (const numeric *)&dynallocate<numeric>(-3);
+		_num_2_p = (const numeric *)&dynallocate<numeric>(-2);
+		_num_1_p = (const numeric *)&dynallocate<numeric>(-1);
+		_num_1_2_p = (const numeric *)&dynallocate<numeric>(-1,2);
+		_num_1_3_p = (const numeric *)&dynallocate<numeric>(-1,3);
+		_num_1_4_p = (const numeric *)&dynallocate<numeric>(-1,4);
+		_num0_p = (const numeric *)&dynallocate<numeric>(0);
 		_num0_bp  = _num0_p;  // Cf. class ex default ctor.
-		(_num1_4_p = new numeric(1,4))->setflag(status_flags::dynallocated);
-		(_num1_3_p = new numeric(1,3))->setflag(status_flags::dynallocated);
-		(_num1_2_p = new numeric(1,2))->setflag(status_flags::dynallocated);
-		(_num1_p = new numeric(1))->setflag(status_flags::dynallocated);
-		(_num2_p = new numeric(2))->setflag(status_flags::dynallocated);
-		(_num3_p = new numeric(3))->setflag(status_flags::dynallocated);
-		(_num4_p = new numeric(4))->setflag(status_flags::dynallocated);
-		(_num5_p = new numeric(5))->setflag(status_flags::dynallocated);
-		(_num6_p = new numeric(6))->setflag(status_flags::dynallocated);
-		(_num7_p = new numeric(7))->setflag(status_flags::dynallocated);
-		(_num8_p = new numeric(8))->setflag(status_flags::dynallocated);
-		(_num9_p = new numeric(9))->setflag(status_flags::dynallocated);
-		(_num10_p = new numeric(10))->setflag(status_flags::dynallocated);
-		(_num11_p = new numeric(11))->setflag(status_flags::dynallocated);
-		(_num12_p = new numeric(12))->setflag(status_flags::dynallocated);
-		(_num15_p = new numeric(15))->setflag(status_flags::dynallocated);
-		(_num18_p = new numeric(18))->setflag(status_flags::dynallocated);
-		(_num20_p = new numeric(20))->setflag(status_flags::dynallocated);
-		(_num24_p = new numeric(24))->setflag(status_flags::dynallocated);
-		(_num25_p = new numeric(25))->setflag(status_flags::dynallocated);
-		(_num30_p = new numeric(30))->setflag(status_flags::dynallocated);
-		(_num48_p = new numeric(48))->setflag(status_flags::dynallocated);
-		(_num60_p = new numeric(60))->setflag(status_flags::dynallocated);
-		(_num120_p = new numeric(120))->setflag(status_flags::dynallocated);
+		_num1_4_p = (const numeric *)&dynallocate<numeric>(1,4);
+		_num1_3_p = (const numeric *)&dynallocate<numeric>(1,3);
+		_num1_2_p = (const numeric *)&dynallocate<numeric>(1,2);
+		_num1_p = (const numeric *)&dynallocate<numeric>(1);
+		_num2_p = (const numeric *)&dynallocate<numeric>(2);
+		_num3_p = (const numeric *)&dynallocate<numeric>(3);
+		_num4_p = (const numeric *)&dynallocate<numeric>(4);
+		_num5_p = (const numeric *)&dynallocate<numeric>(5);
+		_num6_p = (const numeric *)&dynallocate<numeric>(6);
+		_num7_p = (const numeric *)&dynallocate<numeric>(7);
+		_num8_p = (const numeric *)&dynallocate<numeric>(8);
+		_num9_p = (const numeric *)&dynallocate<numeric>(9);
+		_num10_p = (const numeric *)&dynallocate<numeric>(10);
+		_num11_p = (const numeric *)&dynallocate<numeric>(11);
+		_num12_p = (const numeric *)&dynallocate<numeric>(12);
+		_num15_p = (const numeric *)&dynallocate<numeric>(15);
+		_num18_p = (const numeric *)&dynallocate<numeric>(18);
+		_num20_p = (const numeric *)&dynallocate<numeric>(20);
+		_num24_p = (const numeric *)&dynallocate<numeric>(24);
+		_num25_p = (const numeric *)&dynallocate<numeric>(25);
+		_num30_p = (const numeric *)&dynallocate<numeric>(30);
+		_num48_p = (const numeric *)&dynallocate<numeric>(48);
+		_num60_p = (const numeric *)&dynallocate<numeric>(60);
+		_num120_p = (const numeric *)&dynallocate<numeric>(120);
 
 		new((void*)&_ex_120) ex(*_num_120_p);
 		new((void*)&_ex_60) ex(*_num_60_p);

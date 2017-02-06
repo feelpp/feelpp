@@ -22,14 +22,16 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 
 add_subdirectory(python)
 
+if( FEELPP_HAS_GMSH )
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
   foreach(DIR laplacian
       stokes
+      stokes_1D
       advection
       accoustic
       dd
@@ -45,7 +47,9 @@ if (NOT FEELPP_MINIMAL_CONFIGURATION)
       opt
       eikonal
       eigen
-      magnetostatic )
+      magnetostatic
+      hdg )
     add_subdirectory(${DIR})
   endforeach()
+endif()
 endif()

@@ -38,6 +38,13 @@ if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
 	#message(STATUS "[feelpp] use NEW policy CMP0046" )
 	#cmake_policy(SET CMP0046 NEW)
 endif()
+# CMake 3.5.2 warns about this policy introduced in 3.1
+# Use the old behavior for now to suppress warnings
+# for more info : cmake --help-policy CMP0053
+if ( ${CMAKE_VERSION} VERSION_GREATER 3.1 )
+    message(STATUS "[feelpp] use old policy CMP0053" )
+    cmake_policy(SET CMP0053 OLD)
+endif()
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
@@ -100,6 +107,7 @@ OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" 
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
+OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" ON)
 
 # enable PCH only for GCC as for now
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -113,6 +121,7 @@ OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
 SET(FEELPP_DEFAULT_TEST_TIMEOUT "300")
 OPTION(FEELPP_ENABLE_DOXYGEN "enable Feel++ doxygen documentation generation" OFF)
 OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
+OPTION(FEELPP_MINIMAL_BUILD "Enable Feel++ minimal build" OFF)
 
 OPTION(FEELPP_USE_GMSH_PACKAGE "Use system installed package" ON)
 
@@ -305,6 +314,8 @@ include( feelpp.macros )
 
 # Find feel++ dependencies 
 include( feelpp.dependencies )
+add_custom_target(contrib)
+add_subdirectory(contrib)
 
 # Load documented project for Doxygen
 # it assumes that a project is valid if :
@@ -352,6 +363,7 @@ endif()
 ADD_SUBDIRECTORY ( feel )
 
 IF( FEELPP_MINIMAL_CONFIGURATION )
+  set( FEELPP_ENABLE_TOOLBOXES OFF )
   set( FEELPP_ENABLE_BENCHMARKS OFF )
   set( FEELPP_ENABLE_TESTS OFF )
   set( FEELPP_ENABLE_RESEARCH OFF )
@@ -378,6 +390,11 @@ INCLUDE(CTest)
 ENABLE_TESTING()
 
 add_custom_target(check)
+add_custom_target(install-testcase
+  COMMAND ${CMAKE_COMMAND}
+  -D COMPONENT=install-testcase
+  -P cmake_install.cmake
+  )
 
 add_custom_target(check-full COMMAND "ctest")
 IF(FEELPP_ENABLE_TESTS )
@@ -409,7 +426,18 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEELPP_ENABLE_RESEARCH )
 endif()
 
 include(feelpp.module.quickstart)
+if ( FEELPP_HAS_QUICKSTART )
+  add_custom_target(quickstart)
+  add_subdirectory(quickstart)
+endif()
 
+include(feelpp.module.toolboxes)
+if ( FEELPP_HAS_TOOLBOXES )
+  add_custom_target(toolboxes)
+  add_subdirectory(toolboxes)
+endif()
+
+add_subdirectory(tools)
 
 ################################################################################
 # generate configuration header

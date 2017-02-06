@@ -151,7 +151,7 @@ public :
         else
             M_matrixCst = M_matrixFull; // same pointer
 
-        ie = this->backend()->newVector( this->dualImageSpace() );
+        M_ie = this->backend()->newVector( this->dualImageSpace() );
 
         initMatrix<domain_element_type>();
     }
@@ -174,30 +174,30 @@ public :
         typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
     };
 
-    template<typename Range, typename Expr>
-    void applyOn( Range range, Expr expr)
+    template<typename Range, typename Expr, typename Elem>
+    void applyOn( Range range, Expr const& expr, Elem const& de )
     {
         typedef typename boost::tuples::template element<0, Range>::type idim_type;
-        applyOn( range, expr, mpl::int_<idim_type::value>() );
+        applyOn( range, expr, de, mpl::int_<idim_type::value>() );
     }
 
     template<typename RangeT, typename ExprT>
     domain_element_type
-    projectL2( RangeT range, ExprT expr )
+    projectL2( RangeT range, ExprT const& expr )
     {
         auto sol = this->domainSpace()->element();
         auto uImage = this->dualImageSpace()->element();
 
-        ie->zero();
+        M_ie->zero();
 
-        form1( _test=this->dualImageSpace(), _vector=ie ) +=
-            integrate( _range=range, _expr=inner(expr,id( this->dualImageSpace()->element() ) ) );
-                       
-        this->backend()->solve( _matrix=M_matrixFull, _solution=sol, _rhs=ie );
+        form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
+            integrate( _range=range, _expr=inner(expr,id( uImage ) ) );
+
+        this->backend()->solve( _matrix=M_matrixFull, _solution=sol, _rhs=M_ie );
 
         return sol;
     }
-        
+
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( domain_element_type ),
                                      project,
@@ -234,13 +234,13 @@ public :
         auto sol = this->domainSpace()->element();
         auto uImage = this->dualImageSpace()->element();
 
-        ie->zero();
+        M_ie->zero();
 
         if ( M_proj_type != LIFT )
         {
             //typedef typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad_type myquad;
-            form1( _test=this->dualImageSpace(), _vector=ie ) +=
-                integrate( _range=range, _expr=inner(expr,id( this->dualImageSpace()->element() ) ),
+            form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
+                integrate( _range=range, _expr=inner(expr,id( uImage ) ),
                 //integrate( _range=range, _expr=trans(expr)*id( uImage ),
                            _quad=_Q<thequad_type::order+quadOrderId>(),
                            _quad1=_Q<thequad1_type::order+quad1OrderId>(),
@@ -249,21 +249,21 @@ public :
             switch( M_proj_type )
                 {
                 case H1:
-                    form1( _test=this->dualImageSpace(), _vector=ie ) +=
+                    form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
                         integrate( _range=range, _expr=trace(grad_expr*trans(grad( uImage )) ),
                                    _quad=_Q<thequad_type::order+quadOrderGrad>(),
                                    _quad1=_Q<thequad1_type::order+quad1OrderGrad>(),
                                    _geomap=geomap );
                     break;
                 case HDIV:
-                            form1( _test=this->dualImageSpace(), _vector=ie ) +=
+                            form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
                                 integrate( _range=range, _expr=div_expr*div( uImage ),
                                            _quad=_Q<thequad_type::order+quadOrderGrad>(),//quad,
                                            _quad1=_Q<thequad1_type::order+quad1OrderGrad>(),//quad1,
                                            _geomap=geomap );
                             break;
                 case HCURL:
-                            form1( _test=this->dualImageSpace(), _vector=ie ) +=
+                            form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
                                 integrate( _range=range, _expr=trans(curl_expr)*curl( uImage ),
                                            _quad=_Q<thequad_type::order+quadOrderGrad>(),
                                            _quad1=_Q<thequad1_type::order+quad1OrderGrad>(),
@@ -277,7 +277,7 @@ public :
 
         else if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
         {
-            form1( _test=this->dualImageSpace(), _vector=ie ) +=
+            form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
                 integrate( _range=range,
                            _expr=inner( expr, -grad( uImage )*vf::N() +
                                         M_gamma / vf::hFace() *id( uImage ) ),
@@ -289,7 +289,7 @@ public :
         //weak boundary conditions
         if ( M_proj_type == DIFF )
         {
-            form1( _test=this->dualImageSpace(), _vector=ie ) +=
+            form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
                 integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
                            _expr=inner( expr, M_epsilon*( -grad( uImage )*vf::N() ) +
                                                           M_gamma / vf::hFace() *id( uImage ) ),
@@ -309,22 +309,20 @@ public :
             {
                 bilinearForm +=
                     integrate( _range=range, _expr=
-                               ( -trans( id( this->dualImageSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N()
-                                 -trans( idt( this->domainSpace()->element() ) )* grad( this->dualImageSpace()->element() )*vf::N()
-                                 + M_gamma * trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                                 *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/
-                                 ),
+                               -inner( id( uImage ), gradt( sol )*vf::N() )
+                               -inner( idt( sol ), grad( uImage )*vf::N() )
+                               + M_gamma * inner( idt( sol ), id( uImage ) ) / vf::hFace(),
                                _quad=_Q<thequad_type::order+quadOrderId>(),
                                _quad1=_Q<thequad1_type::order+quad1OrderId>(),
                                _geomap=geomap );
             }
             else if ( M_dir == STRONG )
             {
-                this->applyOn(range, expr);
+                this->applyOn( range, expr, sol );
             }
         }
 
-        this->backend()->solve( _matrix=M_matrixFull, _solution=sol, _rhs=ie );
+        this->backend()->solve( _matrix=M_matrixFull, _solution=sol, _rhs=M_ie );
 
         return sol;
     }
@@ -334,8 +332,7 @@ public :
     operator()( RhsExpr const& rhs_expr )
     {
         return this->project( rhs_expr );
-    
-}
+    }
     template<typename RhsExpr>
     void
     operator()( domain_element_type& de, RhsExpr const& rhs_expr )
@@ -382,27 +379,26 @@ public :
 
 
     template< typename Expr>
-    domain_element_type derivate( Expr expr )
+    domain_element_type derivate( Expr const& expr )
     {
-        de = this->domainSpace()->element();
-        ie = this->backend()->newVector( this->dualImageSpace() );
-
-        form1( _test=this->dualImageSpace(), _vector=ie, _init=true );
-
-        form1( _test=this->dualImageSpace(), _vector=ie ) +=
+        auto de = this->domainSpace()->element();
+        auto uImage = this->dualImageSpace()->element();
+        M_ie->zero();
+        form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
             integrate(_range = elements( this->dualImageSpace()->mesh() ),
-                      _expr = - trace( expr * trans( grad( this->dualImageSpace()->element() ) ) ) );
+                      _expr = - trace( expr * trans( grad( uImage ) ) ) );
 
-        form1(_test=this->dualImageSpace(), _vector=ie) +=
+        form1(_test=this->dualImageSpace(), _vector=M_ie ) +=
             integrate(_range = boundaryfaces( this->dualImageSpace()->mesh() ),
-                      _expr =  trans( id( this->dualImageSpace()->element() ) ) * expr * vf::N() );
+                      _expr =  trans( id( uImage ) ) * expr * vf::N() );
 
-        ie->close();
-
-        this->backend()->solve( M_matrixFull, de, ie );
+        this->backend()->solve( M_matrixFull, de, M_ie );
         return de;
     }
 
+    double epsilon() const { return M_epsilon; }
+    double gamma() const { return M_gamma; }
+    ProjectorType projectorType() const { return M_proj_type; }
 
     //@}
 
@@ -507,15 +503,15 @@ private :
         M_matrixCst->close();
     }
 
-    template<typename Range, typename Expr>
-    void applyOn( Range range, Expr expr, mpl::int_<MESH_ELEMENTS> ){}
+    template<typename Range, typename Expr, typename Elem >
+    void applyOn( Range range, Expr const& expr, Elem const& de, mpl::int_<MESH_ELEMENTS> ){}
 
-    template<typename Range, typename Expr>
-    void applyOn( Range range, Expr expr, mpl::int_<MESH_FACES> )
+    template<typename Range, typename Expr, typename Elem>
+    void applyOn( Range range, Expr const& expr, Elem const& de, mpl::int_<MESH_FACES> )
     {
         form2 ( _trial=this->domainSpace(),
                 _test=this->dualImageSpace(),
-                _matrix=M_matrixFull ) +=  on( _range=range , _element=de, _rhs=ie, _expr=expr );
+                _matrix=M_matrixFull ) +=  on( _range=range , _element=de, _rhs=M_ie, _expr=expr );
     }
 
     //backend_ptrtype M_backend;
@@ -525,8 +521,8 @@ private :
     DirichletType M_dir;
     matrix_ptrtype M_matrixCst;
     matrix_ptrtype M_matrixFull;
-    domain_element_type de;
-    vector_ptrtype ie;
+    //domain_element_type M_de;
+    vector_ptrtype M_ie;
 
 };//Projector
 

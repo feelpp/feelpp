@@ -3,7 +3,7 @@
  *  Implementation of GiNaC's indices. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -260,7 +260,6 @@ ex idx::map(map_function & f) const
 		return *this;
 	else {
 		idx *copy = duplicate();
-		copy->setflag(status_flags::dynallocated);
 		copy->clearflag(status_flags::hash_calculated);
 		copy->value = mapped_value;
 		return *copy;
@@ -366,7 +365,7 @@ unsigned idx::calchash() const
 
 /** By default, basic::evalf would evaluate the index value but we don't want
  *  a.1 to become a.(1.0). */
-ex idx::evalf(int level) const
+ex idx::evalf() const
 {
 	return *this;
 }
@@ -374,7 +373,7 @@ ex idx::evalf(int level) const
 ex idx::subs(const exmap & m, unsigned options) const
 {
 	// First look for index substitutions
-	exmap::const_iterator it = m.find(*this);
+	auto it = m.find(*this);
 	if (it != m.end()) {
 
 		// Substitution index->index
@@ -385,7 +384,7 @@ ex idx::subs(const exmap & m, unsigned options) const
 		idx *i_copy = duplicate();
 		i_copy->value = it->second;
 		i_copy->clearflag(status_flags::hash_calculated);
-		return i_copy->setflag(status_flags::dynallocated);
+		return *i_copy;
 	}
 
 	// None, substitute objects in value (not in dimension)
@@ -396,7 +395,7 @@ ex idx::subs(const exmap & m, unsigned options) const
 	idx *i_copy = duplicate();
 	i_copy->value = subsed_value;
 	i_copy->clearflag(status_flags::hash_calculated);
-	return i_copy->setflag(status_flags::dynallocated);
+	return *i_copy;
 }
 
 /** Implementation of ex::diff() for an index always returns 0.
@@ -463,7 +462,7 @@ ex idx::replace_dim(const ex & new_dim) const
 	idx *i_copy = duplicate();
 	i_copy->dim = new_dim;
 	i_copy->clearflag(status_flags::hash_calculated);
-	return i_copy->setflag(status_flags::dynallocated);
+	return *i_copy;
 }
 
 ex idx::minimal_dim(const idx & other) const
@@ -476,7 +475,7 @@ ex varidx::toggle_variance() const
 	varidx *i_copy = duplicate();
 	i_copy->covariant = !i_copy->covariant;
 	i_copy->clearflag(status_flags::hash_calculated);
-	return i_copy->setflag(status_flags::dynallocated);
+	return *i_copy;
 }
 
 ex spinidx::toggle_dot() const
@@ -484,7 +483,7 @@ ex spinidx::toggle_dot() const
 	spinidx *i_copy = duplicate();
 	i_copy->dotted = !i_copy->dotted;
 	i_copy->clearflag(status_flags::hash_calculated);
-	return i_copy->setflag(status_flags::dynallocated);
+	return *i_copy;
 }
 
 ex spinidx::toggle_variance_dot() const
@@ -493,7 +492,7 @@ ex spinidx::toggle_variance_dot() const
 	i_copy->covariant = !i_copy->covariant;
 	i_copy->dotted = !i_copy->dotted;
 	i_copy->clearflag(status_flags::hash_calculated);
-	return i_copy->setflag(status_flags::dynallocated);
+	return *i_copy;
 }
 
 //////////
@@ -542,7 +541,7 @@ void find_free_and_dummy(exvector::const_iterator it, exvector::const_iterator i
 
 	// Find dummy pairs and free indices
 	it = v.begin(); itend = v.end();
-	exvector::const_iterator last = it++;
+	auto last = it++;
 	while (it != itend) {
 		if (is_dummy_pair(*it, *last)) {
 			out_dummy.push_back(*last);

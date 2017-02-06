@@ -14,9 +14,9 @@
 // first thing Eigen does: stop the compiler from committing suicide
 #include "src/Core/util/DisableStupidWarnings.h"
 
-// Handle NVCC/CUDA
-#ifdef __CUDACC__
-  // Do not try asserts on CUDA!
+// Handle NVCC/CUDA/SYCL
+#if defined(__CUDACC__) || defined(__SYCL_DEVICE_ONLY__)
+  // Do not try asserts on CUDA and SYCL!
   #ifndef EIGEN_NO_DEBUG
   #define EIGEN_NO_DEBUG
   #endif
@@ -25,30 +25,38 @@
   #undef EIGEN_INTERNAL_DEBUGGING
   #endif
 
-  // Do not try to vectorize on CUDA!
-  #ifndef EIGEN_DONT_VECTORIZE
-  #define EIGEN_DONT_VECTORIZE
-  #endif
-
   #ifdef EIGEN_EXCEPTIONS
   #undef EIGEN_EXCEPTIONS
   #endif
-  
+
   // All functions callable from CUDA code must be qualified with __device__
-  #define EIGEN_DEVICE_FUNC __host__ __device__
-  
+  #ifdef __CUDACC__
+    // Do not try to vectorize on CUDA and SYCL!
+    #ifndef EIGEN_DONT_VECTORIZE
+    #define EIGEN_DONT_VECTORIZE
+    #endif
+
+    #define EIGEN_DEVICE_FUNC __host__ __device__
+    // We need math_functions.hpp to ensure that that EIGEN_USING_STD_MATH macro
+    // works properly on the device side
+    #include <math_functions.hpp>
+  #else
+    #define EIGEN_DEVICE_FUNC
+  #endif
 #else
   #define EIGEN_DEVICE_FUNC
-  
 #endif
 
-#if defined(__CUDA_ARCH__)
+// When compiling CUDA device code with NVCC, pull in math functions from the
+// global namespace.  In host mode, and when device doee with clang, use the
+// std versions.
+#if defined(__CUDA_ARCH__) && defined(__NVCC__)
   #define EIGEN_USING_STD_MATH(FUNC) using ::FUNC;
 #else
   #define EIGEN_USING_STD_MATH(FUNC) using std::FUNC;
 #endif
 
-#if (defined(_CPPUNWIND) || defined(__EXCEPTIONS)) && !defined(__CUDA_ARCH__) && !defined(EIGEN_EXCEPTIONS)
+#if (defined(_CPPUNWIND) || defined(__EXCEPTIONS)) && !defined(__CUDA_ARCH__) && !defined(EIGEN_EXCEPTIONS) && !defined(EIGEN_USE_SYCL)
   #define EIGEN_EXCEPTIONS
 #endif
 
@@ -137,6 +145,19 @@
     #ifdef __FMA__
       #define EIGEN_VECTORIZE_FMA
     #endif
+    #if defined(__AVX512F__)
+      #define EIGEN_VECTORIZE_AVX512
+      #define EIGEN_VECTORIZE_AVX2
+      #define EIGEN_VECTORIZE_AVX
+      #define EIGEN_VECTORIZE_FMA
+      #define EIGEN_VECTORIZE_SSE3
+      #define EIGEN_VECTORIZE_SSSE3
+      #define EIGEN_VECTORIZE_SSE4_1
+      #define EIGEN_VECTORIZE_SSE4_2
+      #ifdef __AVX512DQ__
+        #define EIGEN_VECTORIZE_AVX512DQ
+      #endif
+    #endif
 
     // include files
 
@@ -153,6 +174,7 @@
       #if EIGEN_COMP_ICC >= 1110
         #include <immintrin.h>
       #else
+        #include <mmintrin.h>
         #include <emmintrin.h>
         #include <xmmintrin.h>
         #ifdef  EIGEN_VECTORIZE_SSE3
@@ -167,7 +189,7 @@
         #ifdef EIGEN_VECTORIZE_SSE4_2
         #include <nmmintrin.h>
         #endif
-        #ifdef EIGEN_VECTORIZE_AVX
+        #if defined(EIGEN_VECTORIZE_AVX) || defined(EIGEN_VECTORIZE_AVX512)
         #include <immintrin.h>
         #endif
       #endif
@@ -194,7 +216,16 @@
     #define EIGEN_VECTORIZE
     #define EIGEN_VECTORIZE_NEON
     #include <arm_neon.h>
+  #elif (defined __s390x__ && defined __VEC__)
+    #define EIGEN_VECTORIZE
+    #define EIGEN_VECTORIZE_ZVECTOR
+    #include <vecintrin.h>
   #endif
+#endif
+
+#if defined(__F16C__) && !defined(EIGEN_COMP_CLANG)
+  // We can use the optimized fp16 to float and float to fp16 conversion routines
+  #define EIGEN_HAS_FP16_C
 #endif
 
 #if defined __CUDACC__
@@ -202,8 +233,12 @@
   #include <vector_types.h>
   #if defined __CUDACC_VER__ && __CUDACC_VER__ >= 70500
     #define EIGEN_HAS_CUDA_FP16
-    #include <cuda_fp16.h>
   #endif
+#endif
+
+#if defined EIGEN_HAS_CUDA_FP16
+  #include <host_defines.h>
+  #include <cuda_fp16.h>
 #endif
 
 #if (defined _OPENMP) && (!defined EIGEN_DONT_PARALLELIZE)
@@ -235,6 +270,11 @@
 // for min/max:
 #include <algorithm>
 
+// for std::is_nothrow_move_assignable
+#ifdef EIGEN_INCLUDE_TYPE_TRAITS
+#include <type_traits>
+#endif
+
 // for outputting debug info
 #ifdef EIGEN_DEBUG_ASSIGN
 #include <iostream>
@@ -245,11 +285,22 @@
   #include <intrin.h>
 #endif
 
+#if defined(__SYCL_DEVICE_ONLY__)
+  #undef min
+  #undef max
+  #undef isnan
+  #undef isinf
+  #undef isfinite
+  #include <SYCL/sycl.hpp>
+#endif
+
 /** \brief Namespace containing all symbols from the %Eigen library. */
 namespace Eigen {
 
 inline static const char *SimdInstructionSetsInUse(void) {
-#if defined(EIGEN_VECTORIZE_AVX)
+#if defined(EIGEN_VECTORIZE_AVX512)
+  return "AVX512, FMA, AVX2, AVX, SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2";
+#elif defined(EIGEN_VECTORIZE_AVX)
   return "AVX SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2";
 #elif defined(EIGEN_VECTORIZE_SSE4_2)
   return "SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2";
@@ -267,6 +318,8 @@ inline static const char *SimdInstructionSetsInUse(void) {
   return "VSX";
 #elif defined(EIGEN_VECTORIZE_NEON)
   return "ARM NEON";
+#elif defined(EIGEN_VECTORIZE_ZVECTOR)
+  return "S390X ZVECTOR";
 #else
   return "None";
 #endif
@@ -282,7 +335,7 @@ inline static const char *SimdInstructionSetsInUse(void) {
 // we use size_t frequently and we'll never remember to prepend it with std:: everytime just to
 // ensure QNX/QCC support
 using std::size_t;
-// gcc 4.6.0 wants std:: for ptrdiff_t 
+// gcc 4.6.0 wants std:: for ptrdiff_t
 using std::ptrdiff_t;
 
 /** \defgroup Core_Module Core module
@@ -304,10 +357,17 @@ using std::ptrdiff_t;
 
 #include "src/Core/NumTraits.h"
 #include "src/Core/MathFunctions.h"
-#include "src/Core/SpecialFunctions.h"
 #include "src/Core/GenericPacketMath.h"
+#include "src/Core/MathFunctionsImpl.h"
 
-#if defined EIGEN_VECTORIZE_AVX
+#if defined EIGEN_VECTORIZE_AVX512
+  #include "src/Core/arch/SSE/PacketMath.h"
+  #include "src/Core/arch/AVX/PacketMath.h"
+  #include "src/Core/arch/AVX512/PacketMath.h"
+  #include "src/Core/arch/SSE/MathFunctions.h"
+  #include "src/Core/arch/AVX/MathFunctions.h"
+  #include "src/Core/arch/AVX512/MathFunctions.h"
+#elif defined EIGEN_VECTORIZE_AVX
   // Use AVX for floats and doubles, SSE for integers
   #include "src/Core/arch/SSE/PacketMath.h"
   #include "src/Core/arch/SSE/Complex.h"
@@ -329,24 +389,34 @@ using std::ptrdiff_t;
   #include "src/Core/arch/NEON/PacketMath.h"
   #include "src/Core/arch/NEON/MathFunctions.h"
   #include "src/Core/arch/NEON/Complex.h"
+#elif defined EIGEN_VECTORIZE_ZVECTOR
+  #include "src/Core/arch/ZVector/PacketMath.h"
+  #include "src/Core/arch/ZVector/MathFunctions.h"
+  #include "src/Core/arch/ZVector/Complex.h"
 #endif
 
+// Half float support
 #include "src/Core/arch/CUDA/Half.h"
+#include "src/Core/arch/CUDA/PacketMathHalf.h"
+#include "src/Core/arch/CUDA/TypeCasting.h"
 
 #if defined EIGEN_VECTORIZE_CUDA
   #include "src/Core/arch/CUDA/PacketMath.h"
-  #include "src/Core/arch/CUDA/PacketMathHalf.h"
   #include "src/Core/arch/CUDA/MathFunctions.h"
-  #include "src/Core/arch/CUDA/TypeCasting.h"
 #endif
 
 #include "src/Core/arch/Default/Settings.h"
 
+#include "src/Core/functors/TernaryFunctors.h"
 #include "src/Core/functors/BinaryFunctors.h"
 #include "src/Core/functors/UnaryFunctors.h"
 #include "src/Core/functors/NullaryFunctors.h"
 #include "src/Core/functors/StlFunctors.h"
 #include "src/Core/functors/AssignmentFunctors.h"
+
+// Specialized functors to enable the processing of complex numbers
+// on CUDA devices
+#include "src/Core/arch/CUDA/Complex.h"
 
 #include "src/Core/DenseCoeffsBase.h"
 #include "src/Core/DenseBase.h"
@@ -374,6 +444,7 @@ using std::ptrdiff_t;
 #include "src/Core/PlainObjectBase.h"
 #include "src/Core/Matrix.h"
 #include "src/Core/Array.h"
+#include "src/Core/CwiseTernaryOp.h"
 #include "src/Core/CwiseBinaryOp.h"
 #include "src/Core/CwiseUnaryOp.h"
 #include "src/Core/CwiseNullaryOp.h"
@@ -422,6 +493,7 @@ using std::ptrdiff_t;
 #include "src/Core/products/TriangularSolverVector.h"
 #include "src/Core/BandMatrix.h"
 #include "src/Core/CoreIterators.h"
+#include "src/Core/ConditionEstimator.h"
 
 #include "src/Core/BooleanRedux.h"
 #include "src/Core/Select.h"
@@ -432,14 +504,14 @@ using std::ptrdiff_t;
 #include "src/Core/ArrayWrapper.h"
 
 #ifdef EIGEN_USE_BLAS
-#include "src/Core/products/GeneralMatrixMatrix_MKL.h"
-#include "src/Core/products/GeneralMatrixVector_MKL.h"
-#include "src/Core/products/GeneralMatrixMatrixTriangular_MKL.h"
-#include "src/Core/products/SelfadjointMatrixMatrix_MKL.h"
-#include "src/Core/products/SelfadjointMatrixVector_MKL.h"
-#include "src/Core/products/TriangularMatrixMatrix_MKL.h"
-#include "src/Core/products/TriangularMatrixVector_MKL.h"
-#include "src/Core/products/TriangularSolverMatrix_MKL.h"
+#include "src/Core/products/GeneralMatrixMatrix_BLAS.h"
+#include "src/Core/products/GeneralMatrixVector_BLAS.h"
+#include "src/Core/products/GeneralMatrixMatrixTriangular_BLAS.h"
+#include "src/Core/products/SelfadjointMatrixMatrix_BLAS.h"
+#include "src/Core/products/SelfadjointMatrixVector_BLAS.h"
+#include "src/Core/products/TriangularMatrixMatrix_BLAS.h"
+#include "src/Core/products/TriangularMatrixVector_BLAS.h"
+#include "src/Core/products/TriangularSolverMatrix_BLAS.h"
 #endif // EIGEN_USE_BLAS
 
 #ifdef EIGEN_USE_MKL_VML

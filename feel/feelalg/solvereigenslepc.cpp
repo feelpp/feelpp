@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -29,6 +29,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/feelslepc.hpp>
 #include <feel/feelalg/solvereigenslepc.hpp>
+#include <feel/feelalg/functionspetsc.hpp>
 
 namespace Feel
 {
@@ -376,6 +377,7 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
     setSlepcPositionOfSpectrum();
     setSlepcSpectralTransform();
     setSlepcDimensions();
+    setSlepcEPSTarget();
 
     // Set the tolerance and maximum iterations.
     ierr = EPSSetTolerances ( M_eps, this->tolerance(), this->maxIterations() );
@@ -388,6 +390,8 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
     // other customization routines.
     ierr = EPSSetFromOptions ( M_eps );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+    setSlepcPCSolverPackage();
 
     // Solve the eigenproblem.
     ierr = EPSSolve ( M_eps );
@@ -643,7 +647,7 @@ SolverEigenSlepc<T>::setSlepcProblemType()
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         break;
 
-        // Generalized Non-Hermitian with positive (semi-)deﬁnite B
+        // Generalized Non-Hermitian with positive (semi-)definite B
     case PGNHEP:
         ierr = EPSSetProblemType ( M_eps, EPS_PGNHEP );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
@@ -800,26 +804,55 @@ SolverEigenSlepc<T>:: setSlepcDimensions()
 
         ierr = PCSetType(pc,PCCHOLESKY);
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    }
+}
 
-        if( boption("solvereigen.pc-package-mumps") )
-        {
-#ifdef USE_COMPLEX_NUMBERS
-            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Spectrum slicing with MUMPS is not available for complex scalars");
-#endif
-            // EPSKrylovSchurSetDetectZeros(eps,PETSC_TRUE);  /* enforce zero detection */
-            ierr = PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);
-            CHKERRABORT( PETSC_COMM_WORLD,ierr );
-            /*
-             Add several MUMPS options (currently there is no better way of setting this in program):
-             '-mat_mumps_icntl_13 1': turn off ScaLAPACK for matrix inertia
-             '-mat_mumps_icntl_24 1': detect null pivots in factorization (for the case that a shift is equal to an eigenvalue)
-             '-mat_mumps_cntl_3 <tol>': a tolerance used for null pivot detection (must be larger than machine epsilon)
+template <typename T>
+void
+SolverEigenSlepc<T>::setSlepcPCSolverPackage()
+{
+    int ierr = 0;
+    ST st;
+    ierr = EPSGetST ( M_eps, &st );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    KSP ksp;
+    ierr = STGetKSP(st,&ksp);
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    PC pc;
+    ierr = KSPGetPC(ksp,&pc);
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
-             Note: depending on the interval, it may be necessary also to increase the workspace:
-             '-mat_mumps_icntl_14 <percentage>': increase workspace with a percentage (50, 100 or more)
-             */
-            PetscOptionsInsertString("-mat_mumps_icntl_13 1");
-        }
+    // EPSKrylovSchurSetDetectZeros(eps,PETSC_TRUE);  /* enforce zero detection */
+    MatSolverPackageType matsp = matSolverPackageConvertStrToEnum(soption("solvereigen.st-pc-factor-mat-solver-package-type"));
+    Feel::PetscPCFactorSetMatSolverPackage( pc, matsp);
+    // ierr = PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);
+    // CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    /*
+     Add several MUMPS options (currently there is no better way of setting this in program):
+     '-mat_mumps_icntl_13 1': turn off ScaLAPACK for matrix inertia
+     '-mat_mumps_icntl_24 1': detect null pivots in factorization (for the case that a shift is equal to an eigenvalue)
+     '-mat_mumps_cntl_3 <tol>': a tolerance used for null pivot detection (must be larger than machine epsilon)
+
+     Note: depending on the interval, it may be necessary also to increase the workspace:
+     '-mat_mumps_icntl_14 <percentage>': increase workspace with a percentage (50, 100 or more)
+     */
+    // #if PETSC_VERSION_LESS_THAN(3,7,0)
+    //         PetscOptionsInsertString("-mat_mumps_icntl_13 1");
+    // #else
+    //         PetscOptionsInsertString(NULL,"-mat_mumps_icntl_13 1");
+    // #endif
+}
+
+template <typename T>
+void
+SolverEigenSlepc<T>::setSlepcEPSTarget()
+{
+    double target = doption("solvereigen.eps-target");
+    if ( !isnan( target) )
+    {
+        int ierr = 0;
+        ierr = EPSSetTarget( M_eps, target);
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
     }
 }
 

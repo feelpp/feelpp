@@ -8,7 +8,7 @@
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
   Copyright (C) 2010-2014 Feel++ Consortium
-  
+
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -51,6 +51,7 @@
 
 #if defined( FEELPP_HAS_GMSH_H )
 class GModel;
+class Msg;
 #endif
 
 // there is a macro called sign in Gmsh that conflicts with
@@ -337,11 +338,13 @@ public:
             return M_refine_levels;
         }
 
+#if defined( FEELPP_HAS_GMSH_H )
     /**
      * @brief get the Gmsh GModel data structure
      * @return the Gmsh GModel data structure
      */
     GModel* gModel() const { return M_gmodel; }
+#endif
 
     //@}
 
@@ -382,6 +385,19 @@ public:
         {
             this->setCharacteristicLength( _h );
             return *this;
+        }
+
+    /**
+     * set Gmsh verbosity
+     * \param val the verbosity level
+     */
+    void setVerbosity( int val )
+        {
+#if defined( FEELPP_HAS_GMSH_H )
+            // Feel::cout << "Get GMSH Verbosity : " << Msg::GetVerbosity() << std::endl;
+            // Feel::cout << "Set GMSH Verbosity to " << val << std::endl;
+            Msg::SetVerbosity( val );
+#endif
         }
 
     /**
@@ -632,6 +648,9 @@ public:
      * \param forceRebuild if true, rebuild the mesh even if geofile is unchanged
      *        if false, rebuild only if geo file has changed.
      *        Useful if generateGeo has been called outside or if gmsh lybrary has changed.
+     * \param parametric :
+     * \param modifGeo : if true variable in geofile can be modified
+     * \param outputDirectory : output directory of geo and msh file. If empty then it s generated on current path.
      * \return the name of the mesh file generate by \c gmsh (with the \c .msh extension)
      */
     boost::tuple<std::string,bool>
@@ -639,7 +658,8 @@ public:
               std::string const& geo,
               bool const forceRebuild = false,
               bool const parametric = false,
-              bool const modifGeo = true ) const;
+              bool const modifGeo = true,
+              std::string const& outputDirectory = "" ) const;
 
     /**
      * refine the mesh uniformly by splitting
@@ -694,11 +714,11 @@ protected:
      *         Note: if you use it alone, generate will call this routine again, hence generate needs to know
      *         whether to regenerate the mesh or not
      */
-    bool generateGeo( std::string const& name, std::string const& geo,bool const modifGeo=true ) const;
+    bool generateGeo( std::string const& name, std::string const& geo,bool const modifGeo=true, std::string const& outputFilename = "" ) const;
 
 private:
 
-    void generate( std::string const& __name, uint16_type dim, bool parametric = false ) const;
+    void generate( std::string const& __name, uint16_type dim, bool parametric = false, std::string const& outputFilename = "" ) const;
 
     std::string  prefix( std::string const& __name, uint16_type dim ) const;
 

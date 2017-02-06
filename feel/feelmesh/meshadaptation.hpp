@@ -50,6 +50,9 @@
 #include <feel/feeldiscr/projector.hpp>
 #include <feel/feeldiscr/elementdiv.hpp>
 
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pdh.hpp>
+
 #include <boost/assert.hpp>
 #include <boost/regex.hpp>
 
@@ -105,7 +108,7 @@ namespace Feel
         //! vector type associated with backend (shared_ptr<> type)
         typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
-        typedef Simplex<Dim,OrderGeo> convex_type;
+        typedef Simplex<Dim,OrderGeo,Dim> convex_type;
         //! mesh type
         typedef Mesh<convex_type> mesh_type;
         //! mesh shared_ptr<> type
@@ -124,16 +127,19 @@ namespace Feel
         typedef typename space_type::element_type element_type;
 
         //! Scalar P0 space
-        typedef bases<Lagrange<0,Scalar, Discontinuous > > p0_basis_type;
-        typedef FunctionSpace<mesh_type, p0_basis_type> p0_space_type;
+        // typedef bases<Lagrange<0,Scalar, Discontinuous > > p0_basis_type;
+        // typedef FunctionSpace<mesh_type, p0_basis_type> p0_space_type;
+        typedef Pdh_type<mesh_type, 0> p0_space_type;
         typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
         typedef typename p0_space_type::element_type p0_element_type;
 
-        //! Scalar P1 space
-        typedef bases<Lagrange<1, Scalar> > p1_basis_type;
-        typedef FunctionSpace<mesh_type, p1_basis_type> p1_space_type;
+        // //! Scalar P1 space
+        // typedef bases<Lagrange<1, Scalar> > p1_basis_type;
+        // typedef FunctionSpace<mesh_type, p1_basis_type> p1_space_type;
+        typedef Pch_type<mesh_type, 1> p1_space_type;
         typedef boost::shared_ptr<p1_space_type> p1_space_ptrtype;
         typedef typename p1_space_type::element_type p1_element_type;
+
 
         //! Vectorial P1 space
         typedef bases<Lagrange<1, Vectorial> > p1vec_basis_type;
@@ -142,6 +148,8 @@ namespace Feel
         typedef typename p1vec_space_type::element_type p1vec_element_type;
 
         typedef typename mesh_type::point_type point_type;
+
+        typedef std::list< std::pair< std::vector<p1_element_type>, std::string> > metric_list_type;
 
         //! Constructor
         MeshAdaptation()
@@ -184,6 +192,9 @@ namespace Feel
         //! Adapt geofile for mesh adaptation
         std::string createAdaptedGeo(std::string geofile, std::string name, std::vector<std::string> posfiles, bool aniso);
 
+        //! Paste several pos files together (for parallel adaptation only)
+        std::string pastePosFilesTogether( std::vector< std::string >const & posFiles );
+
         //! Build adapted mesh
         std::string buildAdaptedMesh(std::string geofile, std::string name, std::vector<std::string> posfiles , bool aniso);
 
@@ -205,6 +216,21 @@ namespace Feel
         std::string adaptMeshHess2(element_type& U, const mesh_ptrtype& mesh, double hMin, double hMax,
                                    std::string name, std::string geofile, double tol, bool aniso,
                                    mpl::bool_<false>);
+
+        static metric_list_type makeMetricList( std::vector< p1_element_type >& metrics, std::string metric_name )
+            {
+                metric_list_type ml;
+                ml.push_back( std::make_pair( metrics, metric_name ) );
+                return ml;
+            }
+
+        static metric_list_type makeMetricList( p1_element_type& metric, std::string metric_name )
+            {
+                metric_list_type ml;
+                ml.push_back( std::make_pair(std::vector< p1_element_type >( {metric} ), metric_name ) );
+                return ml;
+            }
+
 
         //! Mesh adaptation interface
         // _initMesh = initial mesh
@@ -300,6 +326,7 @@ namespace Feel
 
         // Update the mesh
         LOG(INFO) << "load the new mesh...\n";
+        cout << "load the new mesh " << newMeshName << " ...\n";
         mesh_ptrtype newMesh = mesh_type::New();
         newMesh = loadGMSHMesh( _mesh = new mesh_type,
                                 _filename = newMeshName,
@@ -324,11 +351,12 @@ namespace Feel
 
         p1_space_ptrtype P1h = p1_space_type::New( mesh );
 
-        std::ofstream newPosFile( (boost::format( "%1%.%2%" ) % nameVar %posFormat ).str() );
+        std::string posFileName = (boost::format( "%1%_p_%2%.%3%" ) % nameVar %Environment::rank() %posFormat ).str();
+        std::ofstream newPosFile( posFileName );
 
         newPosFile << "View \" background mesh \" { \n";
-        auto eltIt = mesh->beginElement();
-        auto eltEnd = mesh->endElement();
+        auto eltIt = mesh->beginElementWithProcessId();
+        auto eltEnd = mesh->endElementWithProcessId();
         for ( ; eltIt != eltEnd; eltIt++)
             {
                 std::vector<point_type> eltPoints( eltIt->nPoints() );
@@ -371,7 +399,7 @@ namespace Feel
         newPosFile << "};";
         newPosFile.close();
 
-        return (boost::format( "%1%.%2%" ) % nameVar %posFormat ).str();
+        return posFileName;
     }
 
     template<int Dim,
@@ -390,11 +418,12 @@ namespace Feel
 
         p1_space_ptrtype P1h = p1_space_type::New( mesh );
 
-        std::ofstream newPosFile( (boost::format( "%1%.%2%" ) % nameVar %posFormat ).str() );
+        std::string posFileName = (boost::format( "%1%_p_%2%.%3%" ) % nameVar %Environment::rank() %posFormat ).str();
+        std::ofstream newPosFile( posFileName );
 
         newPosFile << "View \" background mesh \" { \n";
-        auto eltIt = mesh->beginElement();
-        auto eltEnd = mesh->endElement();
+        auto eltIt = mesh->beginElementWithProcessId();
+        auto eltEnd = mesh->endElementWithProcessId();
         for ( ; eltIt != eltEnd; eltIt++)
             {
                 std::vector<point_type> eltPoints( eltIt->nPoints() );
@@ -465,7 +494,7 @@ namespace Feel
         newPosFile << "};";
         newPosFile.close();
 
-        return (boost::format( "%1%.%2%" ) % nameVar %posFormat ).str();
+        return posFileName;
     }
 
     template<int Dim,
@@ -636,19 +665,97 @@ namespace Feel
     std::string
     MeshAdaptation<Dim,
                    Order,
+                   OrderGeo>::pastePosFilesTogether( std::vector< std::string >const & posFiles )
+    {
+        Feel::cout<<"Pasting thogether pos files: "<< posFiles <<std::endl;
+        // extract the base filename from first posFile
+        boost::regex regExtractBaseName( "(.+)_p_.+\\.pos" );
+        boost::match_results< decltype( posFiles[0].begin() ) > what;
+        CHECK( boost::regex_search(posFiles[0].begin(), posFiles[0].end(), what, regExtractBaseName))<<"regex of pos file name didn't match\n";
+        const std::string metricBaseName(what[1].first, what[1].second);
+
+        const std::string globalPosFileName( (boost::format("%1%.pos") %metricBaseName).str() );
+
+        std::ofstream globalPosFile( globalPosFileName );
+        globalPosFile << "View \" background mesh \" { \n";
+
+        for (auto const& f : posFiles )
+        {
+            std::ifstream inputPosFile( f );
+            std::string line;
+            // first line passed
+            std::getline( inputPosFile, line );
+            std::getline( inputPosFile, line );
+
+            // the end of a pos file is "};"
+            while( line.front() != '}' )
+            {
+                globalPosFile<<line<<"\n";
+                std::getline( inputPosFile, line );
+            }
+        }
+
+        globalPosFile<< "};";
+
+        return globalPosFileName;
+    }
+
+
+    template<int Dim,
+             int Order,
+             int OrderGeo>
+    std::string
+    MeshAdaptation<Dim,
+                   Order,
                    OrderGeo>::buildAdaptedMesh(std::string geofile, std::string name, std::vector<std::string> posfiles,
                                           bool aniso)
     {
         // Find name of the geofile (without extension), from the complete path
         size_t geoNameBegin = geofile.find_last_of("/");
-        size_t extensionBegin = geofile.find(".geo") - 1;
+        size_t extensionBegin = geofile.find_last_of(".") - 1;
         std::string geofileName = geofile.substr( geoNameBegin+1, extensionBegin - geoNameBegin);
+        Feel::cout << "[meshadaptation] buildAdaptedMesh: geofileName=" << geofileName << std::endl;
 
         std::string prefix = (boost::format( "./%1%" ) % geofileName ).str();
         std::string mshFormat = "msh";
         std::string newMeshName =  (boost::format( "%1%%2%.%3%" ) % prefix % name % mshFormat ).str();
 
+        // number of different metric (pos file by proc)
         int nbPosfiles = posfiles.size();
+
+        if (Environment::isParallel())
+        {
+            /*
+             gmsh can read .pos only partially filled but will search for all the points of the mesh in all the .pos.
+             This takes a long time, and it is better to paste together all the .pos for one metric and give a single .pos by metric to gmsh.
+             */
+
+            // get the pos files generated on all the subdomains
+            std::vector< std::vector<std::string> > all_posfiles;
+            mpi::gather(Environment::worldComm().globalComm(),
+                        posfiles,
+                        all_posfiles, Environment::worldComm().masterRank() );
+
+            if (Environment::worldComm().globalRank() == Environment::worldComm().masterRank())
+            {
+                std::vector< std::vector< std::string > > allPosFilesByMetric;
+                allPosFilesByMetric.resize( nbPosfiles );
+
+                for (auto const& posFilesOnProc : all_posfiles)
+                {
+                    for (int i=0; i<nbPosfiles; ++i)
+                    {
+                        allPosFilesByMetric[i].push_back( posFilesOnProc[i] );
+                    }
+                }
+                posfiles.clear();
+
+                for (int i=0; i<nbPosfiles; ++i)
+                {
+                    posfiles.push_back( this->pastePosFilesTogether( allPosFilesByMetric[i] ) );
+                }
+            }
+        }
 
         if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  &&  Environment::worldComm().globalRank() == Environment::worldComm().masterRank() ) )
             {
@@ -689,6 +796,7 @@ namespace Feel
 
                 // Initializing
                 GmshInitialize(argcGmsh, argvGmsh);
+                Msg::SetVerbosity( ioption("gmsh.verbosity") );
 
                 GmshSetOption("Mesh", "Algorithm", 5.);
                 ::GModel *newGmshModel = new GModel();
@@ -700,6 +808,7 @@ namespace Feel
                 for (unsigned int i = 0; i < CTX::instance()->files.size(); i++)
                     {
                         LOG(INFO) << "[MeshAdaptation] loaded files : " << CTX::instance()->files[i] << "\n";
+                        Feel::cout << "[MeshAdaptation] loaded files : " << CTX::instance()->files[i] << std::endl;
                         MergeFile(CTX::instance()->files[i]);
                     }
 
@@ -718,6 +827,7 @@ namespace Feel
                             }
 
                         LOG(INFO) << "[MeshAdaptation] PostView : " << v->getData()->getFileName() << "\n";
+                        Feel::cout << "[MeshAdaptation] PostView : " << v->getData()->getFileName() << std::endl;
 
                         /// Add new PView as post processing file
                         int id = myFieldManager->newId();
@@ -750,17 +860,28 @@ namespace Feel
                 f = myFieldManager->get(myFieldManager->getBackgroundField());
 
                 /// Algo for remeshing
-                CTX::instance()->mesh.algo2d = ALGO_2D_BAMG;
-                if (Dim == 3)
-                    CTX::instance()->mesh.algo3d = ALGO_3D_MMG3D;
-
+                if (aniso)
+                {
+                    CTX::instance()->mesh.algo2d = ALGO_2D_BAMG;
+                    if (Dim == 3)
+                        CTX::instance()->mesh.algo3d = ALGO_3D_MMG3D;
+                }
+                else
+                {
+                    CTX::instance()->mesh.algo2d = ALGO_2D_MESHADAPT;
+                    if (Dim == 3)
+                        CTX::instance()->mesh.algo3d = ALGO_3D_DELAUNAY;
+                }
                 newGmshModel->deleteMesh(); //Delete current mesh
                 newGmshModel->mesh(Dim);
 
                 LOG(INFO) << "[MeshAdaptation] New mesh built : " << newMeshName << "\n";
+                Feel::cout << "[MeshAdaptation] New mesh built : " << newMeshName << std::endl;
                 newGmshModel->writeMSH(newMeshName);
                 LOG(INFO) << "[MeshAdaptation] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
                 LOG(INFO) << "[MeshAdaptation] elements : " << newGmshModel->getNumMeshElements() << "\n";
+                Feel::cout << "[MeshAdaptation] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
+                Feel::cout << "[MeshAdaptation] elements : " << newGmshModel->getNumMeshElements() << std::endl;
 
                 //// Delete list of loaded files
                 //CTX::instance()->files.erase(CTX::instance()->files.begin(), CTX::instance()->files.end());
@@ -793,7 +914,11 @@ namespace Feel
                         if( Dim == 3)
                             __str << "-algo mmg3d" << " ";
                     }
-                __str << "-" << Dim;
+                __str << "-" << Dim << " "
+                      << "-part " << Environment::numberOfProcessors();
+
+                Feel::cout << Feel::tc::yellow << "executing gmsh command:\n "
+                           << __str.str() << Feel::tc::reset << "\n";
 
                 ::system(__str.str().c_str());
 #endif

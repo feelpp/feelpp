@@ -31,12 +31,13 @@ namespace Eigen {
   *
   * \sa Tensor
   */
-template<typename T, typename Dimensions, int Options_> class TensorStorage;
+// no need for this and clang 4.0 does not accept it
+//template<typename T, typename Dimensions, int Options_> class TensorStorage;
 
 
 // Pure fixed-size storage
-template<typename T, int Options_, typename FixedDimensions>
-class TensorStorage<T, FixedDimensions, Options_>
+template<typename T, typename FixedDimensions, int Options_>
+class TensorStorage
 {
  private:
   static const std::size_t Size = FixedDimensions::total_size;
@@ -85,7 +86,7 @@ class TensorStorage<T, DSizes<IndexType, NumIndices_>, Options_>
         : m_data(internal::conditional_aligned_new_auto<T,(Options_&DontAlign)==0>(size)), m_dimensions(dimensions)
       { EIGEN_INTERNAL_TENSOR_STORAGE_CTOR_PLUGIN }
 
-#ifdef EIGEN_HAS_VARIADIC_TEMPLATES
+#if EIGEN_HAS_VARIADIC_TEMPLATES
     template <typename... DenseIndex>
     EIGEN_DEVICE_FUNC TensorStorage(DenseIndex... indices) : m_dimensions(indices...) {
       m_data = internal::conditional_aligned_new_auto<T,(Options_&DontAlign)==0>(internal::array_prod(m_dimensions));

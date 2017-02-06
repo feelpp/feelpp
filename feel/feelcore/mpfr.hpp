@@ -39,6 +39,9 @@ using namespace std;
 
 namespace Feel
 {
+//!
+//! \internal
+//!
 namespace mpfr
 {
 class RefCounter
@@ -542,6 +545,9 @@ bool operator >= ( const unsigned long int r1, const MpfrClass& r2 );
 MpfrClass min ( const MpfrClass& a, const MpfrClass& b );
 MpfrClass max ( const MpfrClass& a, const MpfrClass& b );
 } // mp
+//!
+//! \endinternal
+//!
 } // Feel
 #endif		// _MPFR_CLASS_H_
 

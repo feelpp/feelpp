@@ -279,54 +279,67 @@ main( int argc, char* argv[] )
     return ret;
 }
 */
-BOOST_AUTO_TEST_CASE( meditimport )
+BOOST_AUTO_TEST_CASE( supportedgmshmesh_import )
 {
     using namespace Feel::vf;
     typedef Mesh<Simplex<3> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    mesh_ptrtype mesh,meshimp;
-    mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=convert2msh( "Cylref.mesh" ),
-                           _physical_are_elementary_regions=true,
-                           _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
-    mesh->addMarkerName("inlet",1,2);
-    mesh->addMarkerName("outlet",2,2);
-    mesh->addMarkerName("wall",3,2);
+    std::vector<std::string> supported_formats = {".mesh"};
+#ifdef FEELPP_HAS_GMSH_HAS_MED
+    supported_formats.push_back(".med");
+#endif
+#ifdef FEELPP_HAS_GMSH_HAS_CGNS
+    supported_formats.push_back(".cgns");
+#endif
+    for (auto format: supported_formats)
+      {
+	mesh_ptrtype mesh,meshimp;
+	mesh = createGMSHMesh( _mesh=new mesh_type,
+			       _desc=convert2msh( "Cylref"+format ),
+			       _physical_are_elementary_regions=true,
+			       _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+	mesh->addMarkerName("inlet",1,2);
+	mesh->addMarkerName("outlet",2,2);
+	mesh->addMarkerName("wall",3,2);
 
 #if 0
-    std::ostringstream estr;
-    estr << "gmshexp-" << T::value;
-    typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
-    export_ptrtype exporter( Exporter<mesh_type>::New( "gmsh", estr.str() ) );
-    exporter->step( 0 )->setMesh( mesh );
-    exporter->save();
-    std::ostringstream fstr;
-    fstr << "gmshexp-" << T::value << "-1_0.msh";
+	std::ostringstream estr;
+	estr << "gmshexp-" << T::value;
+	typedef Exporter<mesh_type> export_type;
+	typedef boost::shared_ptr<export_type> export_ptrtype;
+	export_ptrtype exporter( Exporter<mesh_type>::New( "gmsh", estr.str() ) );
+	exporter->step( 0 )->setMesh( mesh );
+	exporter->save();
+	std::ostringstream fstr;
+	fstr << "gmshexp-" << T::value << "-1_0.msh";
 #else
-    std::ostringstream fstr;
-    fstr << "gmshexp-" << 3 << ".msh";
-    saveGMSHMesh(_mesh=mesh,_filename=fstr.str() );
+	std::ostringstream fstr;
+	fstr << "gmshexp-" << 3 << ".msh";
+	saveGMSHMesh(_mesh=mesh,_filename=fstr.str() );
 #endif
 
-    meshimp = loadGMSHMesh( _mesh=new mesh_type,
-                            _filename=fstr.str(),
-                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+	meshimp = loadGMSHMesh( _mesh=new mesh_type,
+				_filename=fstr.str(),
+				_update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 
-    BOOST_CHECK_EQUAL( nelements( elements(mesh) ),nelements( elements(meshimp) ) );
-    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"inlet") ),nelements( markedfaces(meshimp,"inlet") ) );
-    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"outlet") ),nelements( markedfaces(meshimp,"outlet") ) );
-    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"wall") ),nelements( markedfaces(meshimp,"wall") ) );
+	BOOST_CHECK_EQUAL( nelements( elements(mesh) ),nelements( elements(meshimp) ) );
+	BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"inlet") ),nelements( markedfaces(meshimp,"inlet") ) );
+	BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"outlet") ),nelements( markedfaces(meshimp,"outlet") ) );
+	BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"wall") ),nelements( markedfaces(meshimp,"wall") ) );
 
-    BOOST_CHECK_EQUAL( std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ),
-                       std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
-    BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
-                       std::distance( meshimp->beginElement(), meshimp->endElement() ) );
-    BOOST_CHECK_EQUAL( integrate( elements( mesh ), cst( 1. ) ).evaluate(),
-                       integrate( elements( meshimp ), cst( 1. ) ).evaluate() );
-    BOOST_CHECK_EQUAL( integrate( boundaryfaces( mesh ), cst( 1. ) ).evaluate() ,
-                       integrate( boundaryfaces( meshimp ), cst( 1. ) ).evaluate() );
+	BOOST_CHECK_EQUAL( std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ),
+			   std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
+	BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
+			   std::distance( meshimp->beginElement(), meshimp->endElement() ) );
+	BOOST_CHECK_EQUAL( integrate( elements( mesh ), cst( 1. ) ).evaluate(),
+			   integrate( elements( meshimp ), cst( 1. ) ).evaluate() );
+	BOOST_CHECK_EQUAL( integrate( boundaryfaces( mesh ), cst( 1. ) ).evaluate() ,
+			   integrate( boundaryfaces( meshimp ), cst( 1. ) ).evaluate() );
+
+	BOOST_TEST_MESSAGE( "[supportedgmshmesh_import] mesh format: " << format << " done.\n" );
+      }
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()

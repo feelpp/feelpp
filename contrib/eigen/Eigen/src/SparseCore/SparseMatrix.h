@@ -35,7 +35,7 @@ namespace Eigen {
   * \tparam _Index the type of the indices. It has to be a \b signed type (e.g., short, int, std::ptrdiff_t). Default is \c int.
   *
   * This class can be extended with the help of the plugin mechanism described on the page
-  * \ref TopicCustomizingEigen by defining the preprocessor symbol \c EIGEN_SPARSEMATRIX_PLUGIN.
+  * \ref TopicCustomizing_Plugins by defining the preprocessor symbol \c EIGEN_SPARSEMATRIX_PLUGIN.
   */
 
 namespace internal {
@@ -94,6 +94,7 @@ class SparseMatrix
 {
     typedef SparseCompressedBase<SparseMatrix> Base;
     using Base::convert_index;
+    friend class SparseVector<_Scalar,0,_Index>;
   public:
     using Base::isCompressed;
     using Base::nonZeros;
@@ -440,7 +441,7 @@ class SparseMatrix
     template<typename InputIterators,typename DupFunctor>
     void setFromTriplets(const InputIterators& begin, const InputIterators& end, DupFunctor dup_func);
 
-    void sumupDuplicates() { collapseDuplicates(internal::scalar_sum_op<Scalar>()); }
+    void sumupDuplicates() { collapseDuplicates(internal::scalar_sum_op<Scalar,Scalar>()); }
 
     template<typename DupFunctor>
     void collapseDuplicates(DupFunctor dup_func = DupFunctor());
@@ -785,30 +786,38 @@ class SparseMatrix
       EIGEN_DBG_SPARSE(
         s << "Nonzero entries:\n";
         if(m.isCompressed())
+        {
           for (Index i=0; i<m.nonZeros(); ++i)
             s << "(" << m.m_data.value(i) << "," << m.m_data.index(i) << ") ";
+        }
         else
+        {
           for (Index i=0; i<m.outerSize(); ++i)
           {
             Index p = m.m_outerIndex[i];
             Index pe = m.m_outerIndex[i]+m.m_innerNonZeros[i];
             Index k=p;
-            for (; k<pe; ++k)
+            for (; k<pe; ++k) {
               s << "(" << m.m_data.value(k) << "," << m.m_data.index(k) << ") ";
-            for (; k<m.m_outerIndex[i+1]; ++k)
+            }
+            for (; k<m.m_outerIndex[i+1]; ++k) {
               s << "(_,_) ";
+            }
           }
+        }
         s << std::endl;
         s << std::endl;
         s << "Outer pointers:\n";
-        for (Index i=0; i<m.outerSize(); ++i)
+        for (Index i=0; i<m.outerSize(); ++i) {
           s << m.m_outerIndex[i] << " ";
+        }
         s << " $" << std::endl;
         if(!m.isCompressed())
         {
           s << "Inner non zeros:\n";
-          for (Index i=0; i<m.outerSize(); ++i)
+          for (Index i=0; i<m.outerSize(); ++i) {
             s << m.m_innerNonZeros[i] << " ";
+          }
           s << " $" << std::endl;
         }
         s << std::endl;
@@ -979,7 +988,7 @@ template<typename Scalar, int _Options, typename _Index>
 template<typename InputIterators>
 void SparseMatrix<Scalar,_Options,_Index>::setFromTriplets(const InputIterators& begin, const InputIterators& end)
 {
-  internal::set_from_triplets<InputIterators, SparseMatrix<Scalar,_Options,_Index> >(begin, end, *this, internal::scalar_sum_op<Scalar>());
+  internal::set_from_triplets<InputIterators, SparseMatrix<Scalar,_Options,_Index> >(begin, end, *this, internal::scalar_sum_op<Scalar,Scalar>());
 }
 
 /** The same as setFromTriplets but when duplicates are met the functor \a dup_func is applied:
@@ -1080,7 +1089,7 @@ EIGEN_DONT_INLINE SparseMatrix<Scalar,_Options,_Index>& SparseMatrix<Scalar,_Opt
     IndexVector positions(dest.outerSize());
     for (Index j=0; j<dest.outerSize(); ++j)
     {
-      Index tmp = dest.m_outerIndex[j];
+      StorageIndex tmp = dest.m_outerIndex[j];
       dest.m_outerIndex[j] = count;
       positions[j] = count;
       count += tmp;

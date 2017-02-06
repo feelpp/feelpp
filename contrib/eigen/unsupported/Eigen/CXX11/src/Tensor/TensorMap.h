@@ -18,11 +18,16 @@ namespace Eigen {
   * \brief A tensor expression mapping an existing array of data.
   *
   */
-
-template<typename PlainObjectType, int Options_> class TensorMap : public TensorBase<TensorMap<PlainObjectType, Options_> >
+/// template <class> class MakePointer_ is added to convert the host pointer to the device pointer.
+/// It is added due to the fact that for our device compiler T* is not allowed.
+/// If we wanted to use the same Evaluator functions we have to convert that type to our pointer T.
+/// This is done through our MakePointer_ class. By default the Type in the MakePointer_<T> is T* .
+/// Therefore, by adding the default value, we managed to convert the type and it does not break any
+/// existing code as its default value is T*.
+template<typename PlainObjectType, int Options_, template <class> class MakePointer_> class TensorMap : public TensorBase<TensorMap<PlainObjectType, Options_, MakePointer_> >
 {
   public:
-    typedef TensorMap<PlainObjectType, Options_> Self;
+    typedef TensorMap<PlainObjectType, Options_, MakePointer_> Self;
     typedef typename PlainObjectType::Base Base;
     typedef typename Eigen::internal::nested<Self>::type Nested;
     typedef typename internal::traits<PlainObjectType>::StorageKind StorageKind;
@@ -36,7 +41,7 @@ template<typename PlainObjectType, int Options_> class TensorMap : public Tensor
                          Scalar *,
                          const Scalar *>::type
                      PointerType;*/
-    typedef Scalar* PointerType;
+    typedef typename MakePointer_<Scalar>::Type PointerType;
     typedef PointerType PointerArgType;
 
     static const int Options = Options_;
@@ -57,7 +62,7 @@ template<typename PlainObjectType, int Options_> class TensorMap : public Tensor
       EIGEN_STATIC_ASSERT((0 == NumIndices || NumIndices == Dynamic), YOU_MADE_A_PROGRAMMING_MISTAKE)
     }
 
-#ifdef EIGEN_HAS_VARIADIC_TEMPLATES
+#if EIGEN_HAS_VARIADIC_TEMPLATES
     template<typename... IndexTypes> EIGEN_DEVICE_FUNC
     EIGEN_STRONG_INLINE TensorMap(PointerArgType dataPtr, Index firstDimension, IndexTypes... otherDimensions) : m_data(dataPtr), m_dimensions(firstDimension, otherDimensions...) {
       // The number of dimensions used to construct a tensor must be equal to the rank of the tensor.
@@ -109,9 +114,9 @@ template<typename PlainObjectType, int Options_> class TensorMap : public Tensor
     EIGEN_DEVICE_FUNC
     EIGEN_STRONG_INLINE Index size() const { return m_dimensions.TotalSize(); }
     EIGEN_DEVICE_FUNC
-    EIGEN_STRONG_INLINE Scalar* data() { return m_data; }
+    EIGEN_STRONG_INLINE PointerType data() { return m_data; }
     EIGEN_DEVICE_FUNC
-    EIGEN_STRONG_INLINE const Scalar* data() const { return m_data; }
+    EIGEN_STRONG_INLINE const PointerType data() const { return m_data; }
 
     EIGEN_DEVICE_FUNC
     EIGEN_STRONG_INLINE const Scalar& operator()(const array<Index, NumIndices>& indices) const
@@ -140,7 +145,7 @@ template<typename PlainObjectType, int Options_> class TensorMap : public Tensor
       return m_data[index];
     }
 
-#ifdef EIGEN_HAS_VARIADIC_TEMPLATES
+#if EIGEN_HAS_VARIADIC_TEMPLATES
     template<typename... IndexTypes> EIGEN_DEVICE_FUNC
     EIGEN_STRONG_INLINE const Scalar& operator()(Index firstIndex, Index secondIndex, IndexTypes... otherIndices) const
     {
@@ -227,7 +232,7 @@ template<typename PlainObjectType, int Options_> class TensorMap : public Tensor
       return m_data[index];
     }
 
-#ifdef EIGEN_HAS_VARIADIC_TEMPLATES
+#if EIGEN_HAS_VARIADIC_TEMPLATES
     template<typename... IndexTypes> EIGEN_DEVICE_FUNC
     EIGEN_STRONG_INLINE Scalar& operator()(Index firstIndex, Index secondIndex, IndexTypes... otherIndices)
     {
@@ -307,7 +312,7 @@ template<typename PlainObjectType, int Options_> class TensorMap : public Tensor
     }
 
   private:
-    Scalar* m_data;
+    typename MakePointer_<Scalar>::Type m_data;
     Dimensions m_dimensions;
 };
 

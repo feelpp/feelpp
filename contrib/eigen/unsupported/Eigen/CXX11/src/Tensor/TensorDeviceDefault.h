@@ -44,6 +44,26 @@ struct DefaultDevice {
 #endif
   }
 
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE size_t firstLevelCacheSize() const {
+#if !defined(__CUDA_ARCH__) && !defined(__SYCL_DEVICE_ONLY__)
+    // Running on the host CPU
+    return l1CacheSize();
+#else
+    // Running on a CUDA device, return the amount of shared memory available.
+    return 48*1024;
+#endif
+  }
+
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE size_t lastLevelCacheSize() const {
+#if !defined(__CUDA_ARCH__) && !defined(__SYCL_DEVICE_ONLY__)
+    // Running single threaded on the host CPU
+    return l3CacheSize();
+#else
+    // Running on a CUDA device
+    return firstLevelCacheSize();
+#endif
+  }
+
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE int majorDeviceVersion() const {
 #ifndef __CUDA_ARCH__
     // Running single threaded on the host CPU

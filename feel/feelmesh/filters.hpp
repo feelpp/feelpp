@@ -103,6 +103,7 @@ using ext_faces_t = boost::tuple<mpl::size_t<MESH_FACES>,
                                  boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > >
                                  >;
 
+
 template<typename IteratorType>
 using filter_enum_t = typename boost::tuples::element<0,IteratorType>::type;
 template<typename IteratorType>
@@ -1160,6 +1161,56 @@ boundaryelements( MeshType const& mesh, EntityProcessType entity )
                               myelts );
 }
 
+template<typename MeshType>
+ext_elements_t<MeshType>
+elementsWithMarkedFaces( MeshType const& mesh, boost::any const& flag, EntityProcessType entity = EntityProcessType::LOCAL_ONLY )
+{
+    typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > cont_range_type;
+    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+
+    flag_type theflag = mesh->markerId( flag );
+
+    if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
+    {
+        for ( auto const& elt : markedfaces(mesh,flag) )
+        {
+            if ( elt.isConnectedTo0() )
+                myelts->push_back(boost::cref(elt.element0()));
+            if ( elt.isConnectedTo1() )
+                myelts->push_back(boost::cref(elt.element1()));
+        }
+    }
+    if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
+    {
+        std::set<size_type> eltGhostDone;
+
+        auto face_it = mesh->interProcessFaces().first;
+        auto const face_en = mesh->interProcessFaces().second;
+        for ( ; face_it!=face_en ; ++face_it )
+        {
+            auto const& elt0 = face_it->element0();
+            auto const& elt1 = face_it->element1();
+            const bool elt0isGhost = elt0.isGhostCell();
+            auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
+
+            if ( eltGhostDone.find( eltOffProc.id() ) != eltGhostDone.end() ) continue;
+
+
+            // add elt in range
+            if ( eltOffProc.marker().value() == theflag )
+            {
+                myelts->push_back(boost::cref(eltOffProc));
+            }
+
+            eltGhostDone.insert( eltOffProc.id() );
+        }
+    }
+
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                              myelts->begin(),
+                              myelts->end(),
+                              myelts );
+}
 
 template<typename MeshType>
 ext_elements_t<MeshType>
@@ -1333,6 +1384,7 @@ marked2faces( MeshType const& mesh, boost::any flag, EntityProcessType entity )
                               myelts );
 
 }
+
 
 
 template<typename MeshType>

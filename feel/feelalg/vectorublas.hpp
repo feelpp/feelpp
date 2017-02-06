@@ -315,7 +315,6 @@ public:
      */
     Vector<T>& operator+=( const Vector<T>& v )
     {
-        checkInvariant();
         add( 1., v );
         return *this;
     }
@@ -326,9 +325,7 @@ public:
      */
     Vector<T>& operator-=( const Vector<T>& v )
     {
-        checkInvariant();
         add( -1., v );
-
         return *this;
     }
 
@@ -337,9 +334,7 @@ public:
      */
     Vector<T>& operator*=( T const& v )
     {
-        checkInvariant();
         this->scale( v );
-
         return *this;
     }
     //@}
@@ -565,7 +560,9 @@ public:
      */
     void add ( const size_type i, const value_type& value )
     {
+#if !defined(NDEBUG)
         checkInvariant();
+#endif
         ( *this )( i ) += value;
     }
 
@@ -583,7 +580,9 @@ public:
      */
     void set ( size_type i, const value_type& value )
     {
+#if !defined(NDEBUG)
         checkInvariant();
+#endif
         ( *this )( i ) = value;
     }
 
@@ -911,7 +910,6 @@ public:
      */
     void add( const Vector<T>& v )
     {
-        checkInvariant();
         add( 1., v );
         return;
     }
@@ -998,9 +996,9 @@ public:
     //@}
 
 #ifdef FEELPP_HAS_HDF5
-    void saveHDF5( std::string const& filename );
-    void loadHDF5( std::string const& filename );
-    void ioHDF5( bool isLoad, std::string const& filename );
+    void saveHDF5( std::string const& filename, std::string tableName = "element", bool appendMode = false );
+    void loadHDF5( std::string const& filename, std::string tableName = "element" );
+    void ioHDF5( bool isLoad, std::string const& filename, std::string tableName = "element", bool appendMode = false );
 #endif
 
 
@@ -1304,6 +1302,8 @@ extern template class VectorUblas<double,ublas::vector_slice<ublas::vector<doubl
 #endif
 
 }
+
+#if FEELPP_HAS_PETSC
 #include <feel/feelalg/vectorpetsc.hpp>
 
 namespace Feel
@@ -1398,6 +1398,7 @@ toPETSc( boost::shared_ptr<VectorUblas<T,Storage>> & v )
 
 
 } // Feel
+#endif
 
 
 #endif /* __VectorUblas_H */

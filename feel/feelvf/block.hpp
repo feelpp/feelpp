@@ -215,13 +215,11 @@ struct BlocksBase
         M_cptToBuild( 0 )
     {}
 
-    BlocksBase( BlocksBase<T> const& b )
-        :
-        M_nRow( b.M_nRow ),
-        M_nCol( b.M_nCol ),
-        M_vec( b.M_vec ),
-        M_cptToBuild( b.M_cptToBuild )
-    {}
+    BlocksBase( BlocksBase<T> const& b ) = default;
+    BlocksBase( BlocksBase<T> && b ) = default;
+
+    BlocksBase& operator=( BlocksBase<T> const& b ) = default;
+    BlocksBase& operator=( BlocksBase<T> && b ) = default;
 
     BlocksBase<T>
     operator<<( block_type const& m )  const
@@ -392,10 +390,13 @@ public :
         super_type(nr,nc,pat)
     {}
 
-    BlocksStencilPattern(super_type const & b)
-        :
-        super_type(b)
-    {}
+    BlocksStencilPattern(super_type const& b): super_type( b ) {}
+
+    BlocksStencilPattern(BlocksStencilPattern const& b) = default;
+    BlocksStencilPattern(BlocksStencilPattern && b) = default;
+
+    BlocksStencilPattern& operator=( BlocksStencilPattern const& ) = default;
+    BlocksStencilPattern& operator=( BlocksStencilPattern && ) = default;
 
     self_type
     operator<<( size_type const& m ) const

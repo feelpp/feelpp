@@ -29,6 +29,9 @@
 #if !defined(FEELPP_DOMAIN_HPP)
 #define FEELPP_DOMAIN_HPP 1
 
+#include <feel/feelconfig.h>
+
+#ifdef FEELPP_HAS_GMSH
 #include <feel/feelfilters/gmsh.hpp>
 
 namespace Feel {
@@ -106,5 +109,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 }
+
+#endif
 
 #endif /* FEELPP_DOMAIN_HPP */

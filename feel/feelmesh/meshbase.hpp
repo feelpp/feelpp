@@ -1,33 +1,29 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-11-09
-
-  Copyright (C) 2005,2006 EPFL
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file meshbase.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-11-09
- */
-#ifndef __MeshBase_H
-#define __MeshBase_H 1
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 05 Feb 2017
+//! @copyright 2005-2006 EPFL
+//! @copyright 2011-2017 Feel++ Consortium
+//!
+#ifndef FEELPP_MESHBASE_HPP
+#define FEELPP_MESHBASE_HPP 1
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/context.hpp>
@@ -38,10 +34,13 @@ namespace Feel
 {
 class SubMeshData;
 
-/**
- * Components of a mesh that can be enabled or disabled when calling
- * \c updateForUse()
- */
+//!
+//! @brief Mesh components enum
+//! @ingroup Mesh
+//! 
+//! Components of a mesh that can be enabled or disabled when calling
+//! \c updateForUse()
+//!
 enum MeshComponents
 {
     MESH_UPDATE_EDGES     = ( 1 << 0 ),
@@ -61,13 +60,13 @@ enum MeshComponents
 const uint16_type MESH_ALL_COMPONENTS = MESH_UPDATE_EDGES | MESH_UPDATE_FACES | MESH_CHECK | MESH_PARTITION | MESH_RENUMBER;
 const uint16_type MESH_COMPONENTS_DEFAULTS = MESH_RENUMBER | MESH_CHECK;
 
-/**
- * \class MeshBase
- * \brief base mesh class
- *
- *  @author Christophe Prud'homme
- *  @see
- */
+//!
+//! @brief base mesh class
+//! @ingroup Mesh
+//!
+//! @author Christophe Prud'homme
+//! @see
+//!/
 class MeshBase
 {
 public:
@@ -96,20 +95,16 @@ public:
      */
     //@{
 
-    /**
-     * Default constructor
-     */
-    MeshBase( WorldComm const& worldComm = Environment::worldComm() );
-
-    /**
-     * copy constructor
-     */
-    MeshBase( MeshBase const& );
-
-    /**
-     * destructor. make it virtual for derived classes
-     */
+    MeshBase() = default;
+    MeshBase( MeshBase const& ) = default;
+    MeshBase( MeshBase && ) = default;
     virtual ~MeshBase();
+
+    /**
+     * build from a topological dimension, a real dimension and a communicator
+     */
+    MeshBase( uint16_type topodim, uint16_type realdim,
+              WorldComm const& worldComm = Environment::worldComm() );
 
     //@}
 
@@ -117,10 +112,8 @@ public:
      */
     //@{
 
-    /**
-     * copy operator
-     */
-    MeshBase& operator=( MeshBase const& m );
+    MeshBase& operator=( MeshBase const& m ) = default;
+    MeshBase& operator=( MeshBase && m ) = default;
 
     //@}
 
@@ -207,17 +200,13 @@ public:
      */
     //@{
 
-    /**
-     * set the number of partitions
-     */
+    //! set the number of partitions 
     void setNumberOfPartitions( rank_type n )
     {
         M_n_parts = n;
     }
 
-    /**
-     * set the number of vertices
-     */
+    //! set the number of vertices 
     void setNumVertices( size_type n )
     {
         M_n_vertices = n ;
@@ -484,6 +473,145 @@ public:
             return invalid_size_type_value;
         }
 
+    //!
+    //! @return true if the list strings are all  mesh marker
+    //!
+    bool hasAllMarkers( std::initializer_list<std::string> l )
+        {
+            bool f = true;
+            for (auto n : l )
+            {
+                if ( !this->hasMarker( n ) )
+                    f = false;
+            }
+            return f;
+        }
+    //!
+    //! @return true if any of the list string contain a mesh marker
+    //!
+    bool hasAnyMarker( std::initializer_list<std::string> l )
+        {
+            for (auto n : l )
+            {
+                if ( this->hasMarker( n ) )
+                    return true;
+            }
+            return false;
+        }
+    /**
+     * @return true if \p marker exists, false otherwise
+     */
+    bool
+    hasMarker( std::string const& marker ) const
+        {
+            return markerName( marker ) != invalid_size_type_value;
+        }
+
+    /**
+     * @return true if \p marker exists and topological dimension of the entity
+     * associated is Dim-1, false otherwise
+     */
+    bool
+    hasFaceMarker( std::string const& marker ) const
+        {
+            return hasMarker( marker ) && ( markerDim( marker ) == M_topodim-1 );
+        }
+
+    /**
+     * @return true if \p marker exists and topological dimension of the entity
+     * associated is Dim-2, false otherwise
+     */
+    bool
+    hasEdgeMarker( std::string const& marker ) const
+        {
+            return (M_topodim == 3) && hasMarker( marker ) &&  ( markerDim( marker ) == M_topodim-2 );
+        }
+
+    /**
+     * @return true if \p marker exists and topological dimension of the entity
+     * associated is 0, false otherwise
+     */
+    bool
+    hasPointMarker( std::string const& marker ) const
+        {
+            return hasMarker( marker ) &&  ( markerDim( marker ) == 0 );
+        }
+
+    /**
+     * @return true if all markers are defined in the mesh, false otherwise
+     */
+    bool hasMarkers( std::initializer_list<std::string> l ) const
+        {
+            for( auto m : l )
+            {
+                if ( !hasMarker( m ) ) return false;
+            }
+            return true;
+
+        }
+
+
+    /**
+     * @return the id associated to the \p marker
+     */
+    size_type markerName( std::string const& marker ) const
+    {
+        auto mit = M_markername.find( marker );
+        if (  mit != M_markername.end() )
+            return mit->second[0];
+        return invalid_size_type_value;
+    }
+    /**
+     * @return the marker name associated to the \p marker id
+     */
+    std::string markerName( size_type marker ) const
+        {
+            for( auto const& n : M_markername )
+            {
+                if (n.second[0] == marker )
+                    return n.first;
+            }
+            return std::string();
+        }
+
+    /**
+     * @return the topological dimension associated to the \p marker
+     */
+    size_type markerDim( std::string const& marker ) const
+    {
+        auto mit = M_markername.find( marker );
+        if (  mit != M_markername.end() )
+            return mit->second[1];
+        return invalid_size_type_value;
+    }
+
+    /**
+     * @return the marker names
+     */
+    std::map<std::string, std::vector<size_type> > markerNames() const
+    {
+        return M_markername;
+    }
+
+    /**
+     * add a new marker name
+     */
+    void addMarkerName( std::pair<std::string, std::vector<size_type> > const& marker )
+        {
+            M_markername.insert( marker );
+        }
+
+    /**
+     * add a new marker name
+     */
+    void addMarkerName( std::string __name, int __id ,int __topoDim )
+        {
+            M_markername[__name] = { static_cast<size_type>(__id), static_cast<size_type>(__topoDim) };
+        }
+
+    /// @return the marker id given the marker name \p marker
+    flag_type markerId( boost::any const& marker );
+
     //@}
 
 
@@ -540,8 +668,28 @@ private:
             ar & M_is_parametric;
             ar & M_n_vertices;
             ar & M_n_parts;
+            ar & M_markername;
         }
+protected:
+
+    /**
+     * marker name dictionnary ( std::string -> <int,int> )
+     * get<0>() provides the id
+     * get<1>() provides the topological dimension
+     */
+    std::map<std::string, std::vector<size_type> > M_markername;
+
 private:
+
+    /**
+     * topological dimension
+     */
+    uint16_type M_topodim;
+
+    /**
+     * real dimension
+     */
+    uint16_type M_realdim;
 
     /**
      * encodes components that should be updated
@@ -578,6 +726,7 @@ private:
 
     // sub mesh data
     smd_ptrtype M_smd;
+
 
 };
 }

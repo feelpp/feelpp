@@ -20,13 +20,78 @@ namespace Eigen {
   *
   */
 namespace internal {
+#if defined(EIGEN_VECTORIZE_AVX) && defined(EIGEN_USE_LIBXSMM)
+template<typename Scalar, typename Index>
+void pack_simple(Scalar * dst, const Scalar * src, Index cols, Index rows, Index lddst, Index ldsrc) {
+  size_t psize = packet_traits<Scalar>::size;           // Packet size
+  typedef typename packet_traits<Scalar>::type Packet;  // Packet type
+  size_t alignment = psize*sizeof(Scalar);              // Needed alignment
+  if (rows % psize == 0 && (lddst*sizeof(Scalar)) % alignment == 0 &&
+     (ldsrc*sizeof(Scalar)) % alignment == 0 &&
+     reinterpret_cast<uintptr_t>(src) % alignment == 0 &&
+     reinterpret_cast<uintptr_t>(dst) % alignment == 0) {
+    // Optimized version using packets
+    size_t num_packets = rows / psize;
+    for (Index col = 0; col < cols; ++col) {
+      EIGEN_ASM_COMMENT("begin pack_simple inner copy");
+      // Unrolled manually 4 times.
+      for (size_t i=0; i < num_packets/4; ++i) {
+        internal::pstore(dst, internal::pload<Packet>(src));
+        dst += psize; src += psize;
+        internal::pstore(dst, internal::pload<Packet>(src));
+        dst += psize; src += psize;
+        internal::pstore(dst, internal::pload<Packet>(src));
+        dst += psize; src += psize;
+        internal::pstore(dst, internal::pload<Packet>(src));
+        dst += psize; src += psize;
+      }
+      for (size_t i=0; i < num_packets%4; ++i) {
+        internal::pstore(dst, internal::pload<Packet>(src));
+        dst += psize; src += psize;
+      }
+      dst += lddst - num_packets*psize;
+      src += ldsrc - num_packets*psize;
+      EIGEN_ASM_COMMENT("end pack_simple inner copy");
+    }
+  } else {
+    // Naive memcpy calls
+    for (Index col = 0; col < cols; ++col) {
+      memcpy(dst + col*lddst, src + col*ldsrc, rows*sizeof(Scalar));
+    }
+  }
+}
+
+template<typename LhsScalar, typename RhsScalar, typename Scalar>
+  struct libxsmm_wrapper {
+    libxsmm_wrapper() {}
+    libxsmm_wrapper(int flags, int m, int n, int k, int lda, int ldb, int ldc, float alpha, float beta, int prefetch) {}
+    void operator()(const LhsScalar* a, const RhsScalar* b, Scalar* c) {}
+    void operator()(const LhsScalar* a, const RhsScalar* b, Scalar* c, const LhsScalar* ap, const RhsScalar* bp, const Scalar* cp) {}
+  };
+
+  template<>
+  struct libxsmm_wrapper<float, float, float>: public libxsmm_mmfunction<float> {
+    libxsmm_wrapper(): libxsmm_mmfunction() {}
+    libxsmm_wrapper(int flags, int m, int n, int k, int lda, int ldb, int ldc, float alpha, float beta, int prefetch) :
+        libxsmm_mmfunction(flags, m, n, k, lda, ldb, ldc, alpha, beta, prefetch) {}
+  };
+
+  template<>
+  struct libxsmm_wrapper<double, double, double>: public libxsmm_mmfunction<double> {
+    libxsmm_wrapper(): libxsmm_mmfunction() {}
+    libxsmm_wrapper(int flags, int m, int n, int k, int lda, int ldb, int ldc, float alpha, float beta, int prefetch) :
+        libxsmm_mmfunction(flags, m, n, k, lda, ldb, ldc, alpha, beta, prefetch) {}
+  };
+#endif
+
 
 template<typename Dimensions, typename LhsXprType, typename RhsXprType>
 struct traits<TensorContractionOp<Dimensions, LhsXprType, RhsXprType> >
 {
   // Type promotion to handle the case where the types of the lhs and the rhs are different.
-  typedef typename internal::promote_storage_type<typename LhsXprType::Scalar,
-                                                  typename RhsXprType::Scalar>::ret Scalar;
+  typedef typename gebp_traits<typename remove_const<typename LhsXprType::Scalar>::type,
+                               typename remove_const<typename RhsXprType::Scalar>::type>::ResScalar Scalar;
+
   typedef typename promote_storage_type<typename traits<LhsXprType>::StorageKind,
                                         typename traits<RhsXprType>::StorageKind>::ret StorageKind;
   typedef typename promote_index_type<typename traits<LhsXprType>::Index,
@@ -37,11 +102,11 @@ struct traits<TensorContractionOp<Dimensions, LhsXprType, RhsXprType> >
   typedef typename remove_reference<RhsNested>::type _RhsNested;
 
   // From NumDims below.
-  static const int NumDimensions = max_n_1<traits<RhsXprType>::NumDimensions + traits<RhsXprType>::NumDimensions - 2 * array_size<Dimensions>::value>::size;
+  static const int NumDimensions = traits<RhsXprType>::NumDimensions + traits<RhsXprType>::NumDimensions - 2 * array_size<Dimensions>::value;
   static const int Layout = traits<LhsXprType>::Layout;
 
   enum {
-    Flags = 0,
+    Flags = 0
   };
 };
 
@@ -65,7 +130,7 @@ struct traits<TensorEvaluator<const TensorContractionOp<Indices_, LeftArgType_, 
   typedef Device_ Device;
 
   // From NumDims below.
-  static const int NumDimensions = max_n_1<traits<LeftArgType_>::NumDimensions + traits<RightArgType_>::NumDimensions - 2 * array_size<Indices_>::value>::size;
+  static const int NumDimensions = traits<LeftArgType_>::NumDimensions + traits<RightArgType_>::NumDimensions - 2 * array_size<Indices_>::value;
 };
 
 }  // end namespace internal
@@ -75,8 +140,8 @@ class TensorContractionOp : public TensorBase<TensorContractionOp<Indices, LhsXp
 {
   public:
   typedef typename Eigen::internal::traits<TensorContractionOp>::Scalar Scalar;
-  typedef typename internal::promote_storage_type<typename LhsXprType::CoeffReturnType,
-                                                  typename RhsXprType::CoeffReturnType>::ret CoeffReturnType;
+  typedef typename internal::gebp_traits<typename LhsXprType::CoeffReturnType,
+                                                   typename RhsXprType::CoeffReturnType>::ResScalar CoeffReturnType;
   typedef typename Eigen::internal::nested<TensorContractionOp>::type Nested;
   typedef typename Eigen::internal::traits<TensorContractionOp>::StorageKind StorageKind;
   typedef typename Eigen::internal::traits<TensorContractionOp>::Index Index;
@@ -140,11 +205,11 @@ struct TensorContractionEvaluatorBase
   static const int RDims =
       internal::array_size<typename TensorEvaluator<EvalRightArgType, Device>::Dimensions>::value;
   static const int ContractDims = internal::array_size<Indices>::value;
-  static const int NumDims = max_n_1<LDims + RDims - 2 * ContractDims>::size;
+  static const int NumDims = LDims + RDims - 2 * ContractDims;
 
   typedef array<Index, ContractDims> contract_t;
-  typedef array<Index, max_n_1<LDims - ContractDims>::size> left_nocontract_t;
-  typedef array<Index, max_n_1<RDims - ContractDims>::size> right_nocontract_t;
+  typedef array<Index, LDims - ContractDims> left_nocontract_t;
+  typedef array<Index, RDims - ContractDims> right_nocontract_t;
 
   typedef DSizes<Index, NumDims> Dimensions;
 
@@ -155,9 +220,9 @@ struct TensorContractionEvaluatorBase
     m_rightImpl(choose(Cond<static_cast<int>(Layout) == static_cast<int>(ColMajor)>(),
                           op.rhsExpression(), op.lhsExpression()), device),
         m_device(device),
-        m_result(NULL) {
+        m_result(NULL), m_expr_indices(op.indices()) {
     EIGEN_STATIC_ASSERT((static_cast<int>(TensorEvaluator<LeftArgType, Device>::Layout) ==
-			   static_cast<int>(TensorEvaluator<RightArgType, Device>::Layout)),
+         static_cast<int>(TensorEvaluator<RightArgType, Device>::Layout)),
                         YOU_MADE_A_PROGRAMMING_MISTAKE);
 
 
@@ -218,11 +283,9 @@ struct TensorContractionEvaluatorBase
       rhs_strides[i+1] = rhs_strides[i] * eval_right_dims[i];
     }
 
-    m_i_strides[0] = 1;
-    m_j_strides[0] = 1;
-    if(ContractDims) {
-        m_k_strides[0] = 1;
-    }
+    if (m_i_strides.size() > 0) m_i_strides[0] = 1;
+    if (m_j_strides.size() > 0) m_j_strides[0] = 1;
+    if (m_k_strides.size() > 0) m_k_strides[0] = 1;
 
     m_i_size = 1;
     m_j_size = 1;
@@ -318,10 +381,7 @@ struct TensorContractionEvaluatorBase
       }
     }
 
-    // Scalar case. We represent the result as a 1d tensor of size 1.
-    if (LDims + RDims == 2 * ContractDims) {
-      m_dimensions[0] = 1;
-    }
+    EnableXSMMIfPossible(eval_op_indices);
 
     // If the layout is RowMajor, we need to reverse the m_dimensions
     if (static_cast<int>(Layout) == static_cast<int>(RowMajor)) {
@@ -333,7 +393,7 @@ struct TensorContractionEvaluatorBase
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Dimensions& dimensions() const { return m_dimensions; }
 
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool evalSubExprsIfNeeded(Scalar* data) {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool evalSubExprsIfNeeded(Scalar * data) {
     m_leftImpl.evalSubExprsIfNeeded(NULL);
     m_rightImpl.evalSubExprsIfNeeded(NULL);
     if (data) {
@@ -426,114 +486,15 @@ struct TensorContractionEvaluatorBase
         buffer, resIncr, alpha);
   }
 
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void cleanup() {
-    m_leftImpl.cleanup();
-    m_rightImpl.cleanup();
-
-    if (m_result != NULL) {
-      m_device.deallocate(m_result);
-      m_result = NULL;
-    }
-  }
-
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType coeff(Index index) const {
-    return m_result[index];
-  }
-
-  template<int LoadMode>
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE PacketReturnType packet(Index index) const {
-    return internal::ploadt<PacketReturnType, LoadMode>(m_result + index);
-  }
-
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar* data() const { return m_result; }
-
-  protected:
-  // Prevent assignment
-  TensorContractionEvaluatorBase& operator = (const TensorContractionEvaluatorBase&);
-  Dimensions m_dimensions;
-
-  contract_t m_k_strides;
-  contract_t m_left_contracting_strides;
-  contract_t m_right_contracting_strides;
-
-  bool m_lhs_inner_dim_contiguous;
-  bool m_rhs_inner_dim_contiguous;
-  bool m_rhs_inner_dim_reordered;
-
-  left_nocontract_t m_i_strides;
-  right_nocontract_t m_j_strides;
-  left_nocontract_t m_left_nocontract_strides;
-  right_nocontract_t m_right_nocontract_strides;
-
-  Index m_i_size;
-  Index m_j_size;
-  Index m_k_size;
-
-  TensorEvaluator<EvalLeftArgType, Device> m_leftImpl;
-  TensorEvaluator<EvalRightArgType, Device> m_rightImpl;
-  const Device& m_device;
-  Scalar* m_result;
-};
-
-
-// evaluator for default device
-template<typename Indices, typename LeftArgType, typename RightArgType, typename Device>
-struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgType>, Device> :
-    public TensorContractionEvaluatorBase<
-      TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgType>, Device> > {
-  typedef TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgType>, Device> Self;
-  typedef TensorContractionEvaluatorBase<Self> Base;
-
-  typedef TensorContractionOp<Indices, LeftArgType, RightArgType> XprType;
-  typedef typename internal::remove_const<typename XprType::Scalar>::type Scalar;
-  typedef typename XprType::Index Index;
-  typedef typename XprType::CoeffReturnType CoeffReturnType;
-  typedef typename PacketType<CoeffReturnType, Device>::type PacketReturnType;
-
-  enum {
-    Layout = TensorEvaluator<LeftArgType, Device>::Layout,
-  };
-
-  // Most of the code is assuming that both input tensors are ColMajor. If the
-  // inputs are RowMajor, we will "cheat" by swapping the LHS and RHS:
-  // If we want to compute A * B = C, where A is LHS and B is RHS, the code
-  // will pretend B is LHS and A is RHS.
-  typedef typename internal::conditional<
-    static_cast<int>(Layout) == static_cast<int>(ColMajor), LeftArgType, RightArgType>::type EvalLeftArgType;
-  typedef typename internal::conditional<
-    static_cast<int>(Layout) == static_cast<int>(ColMajor), RightArgType, LeftArgType>::type EvalRightArgType;
-
-  static const int LDims =
-      internal::array_size<typename TensorEvaluator<EvalLeftArgType, Device>::Dimensions>::value;
-  static const int RDims =
-      internal::array_size<typename TensorEvaluator<EvalRightArgType, Device>::Dimensions>::value;
-  static const int ContractDims = internal::array_size<Indices>::value;
-
-  typedef array<Index, ContractDims> contract_t;
-  typedef array<Index, max_n_1<LDims - ContractDims>::size> left_nocontract_t;
-  typedef array<Index, max_n_1<RDims - ContractDims>::size> right_nocontract_t;
-
-  static const int NumDims = max_n_1<LDims + RDims - 2 * ContractDims>::size;
-
-  // Could we use NumDimensions here?
-  typedef DSizes<Index, NumDims> Dimensions;
-
-
-  EIGEN_DEVICE_FUNC TensorEvaluator(const XprType& op, const Device& device) :
-      Base(op, device) { }
-
-  template <bool lhs_inner_dim_contiguous, bool rhs_inner_dim_contiguous, bool rhs_inner_dim_reordered, int Alignment>
-  EIGEN_DEVICE_FUNC void evalProduct(Scalar* buffer) const {
-    if (this->m_j_size == 1) {
-      this->template evalGemv<lhs_inner_dim_contiguous, rhs_inner_dim_contiguous, rhs_inner_dim_reordered, Alignment>(buffer);
-      return;
-    }
-
-    evalGemm<lhs_inner_dim_contiguous, rhs_inner_dim_contiguous, rhs_inner_dim_reordered, Alignment>(buffer);
-  }
-
   template <bool lhs_inner_dim_contiguous, bool rhs_inner_dim_contiguous, bool rhs_inner_dim_reordered, int Alignment>
   EIGEN_DEVICE_FUNC void evalGemm(Scalar* buffer) const {
+    #if defined(EIGEN_VECTORIZE_AVX) && defined(EIGEN_USE_LIBXSMM)
+    if (m_can_use_xsmm) {
+      evalGemmXSMM(buffer);
+      return;
+    }
+    #endif
+
     // columns in left side, rows in right side
     const Index k = this->m_k_size;
 
@@ -616,13 +577,331 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
 
           // call gebp (matrix kernel)
           // The parameters here are copied from Eigen's GEMM implementation
-          gebp(output.getSubMapper(i2, j2), blockA, blockB, actual_mc, actual_kc, actual_nc, 1.0, -1, -1, 0, 0);
+          gebp(output.getSubMapper(i2, j2), blockA, blockB, actual_mc, actual_kc, actual_nc, Scalar(1), -1, -1, 0, 0);
         }
       }
     }
 
     this->m_device.deallocate(blockA);
     this->m_device.deallocate(blockB);
+  }
+
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void cleanup() {
+    m_leftImpl.cleanup();
+    m_rightImpl.cleanup();
+
+    if (m_result != NULL) {
+      m_device.deallocate(m_result);
+      m_result = NULL;
+    }
+  }
+
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType coeff(Index index) const {
+    return m_result[index];
+  }
+
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorOpCost costPerCoeff(bool) const {
+    return TensorOpCost(sizeof(CoeffReturnType), 0, 0);
+  }
+
+  template<int LoadMode>
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE PacketReturnType packet(Index index) const {
+    return internal::ploadt<PacketReturnType, LoadMode>(m_result + index);
+  }
+
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar* data() const { return m_result; }
+
+protected:
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void EnableXSMMIfPossible(const array<IndexPair<Index>, ContractDims>& eval_op_indices) {
+    m_can_use_xsmm = false;
+
+#if defined(EIGEN_VECTORIZE_AVX) && defined(EIGEN_USE_LIBXSMM)
+    typedef typename internal::remove_const<typename EvalLeftArgType::Scalar>::type LhsScalar;
+    typedef typename internal::remove_const<typename EvalRightArgType::Scalar>::type RhsScalar;
+    if (!std::is_same<Scalar, LhsScalar>::value ||
+        !std::is_same<Scalar, RhsScalar>::value ||
+        !(std::is_same<Scalar, float>::value ||
+          std::is_same<Scalar, double>::value) ||
+        m_leftImpl.data() == NULL ||
+        m_rightImpl.data() == NULL) {
+      return;
+    }
+
+    // Check if we can use faster matmul algorithms. For contraction to be
+    // equivalent to matmul, we need both lhs and rhs contracting dims sequences
+    // to be either a prefix or suffix of all dims. Also, the order of both
+    // must be the same, so we don't have to do reordering.
+    // For example:
+    // * OK: lhs 4D, rhs 4D, contraction: [(0, 2), (1, 3)]
+    // * BAD: lhs 3D, rhs 3D, contraction: [(1,1)]
+    // * BAD: lhs 3D, rhs 3D, contraction: [(0, 0), (2, 2)]
+    // * BAD: lhs 3D, rhs 3D, contraction: [(0, 2), (1, 1)]
+    // Depending if contraction dims are prefix or suffix of all dims we need to
+    // pre-transpose matrices in matmul algorithm:
+    // lhs: prefix -> transpose, suffix -> no transpose
+    // rhs: prefix -> no transpose, suffix -> transpose
+    // For example, for lhs 2D, rhs 2D, contraction [(1, 0)] is regular,
+    // non-transposed matmul.
+    if (ContractDims == 0) {
+      // This case is totally uninteresting, filter it out to avoid problems
+      // with iterations in further tests.
+      return;
+    }
+
+    // Check if RHS dims list is increasing. LHS already is, so if not, the
+    // order is different and we cannot do matmul.
+    for (int i = 1; i < ContractDims; i++) {
+      if (eval_op_indices[i].second < eval_op_indices[i-1].second) {
+        return;
+      }
+    }
+
+    // Check if no holes.
+    int diff;
+    for (int i = 1; i < ContractDims; i++) {
+      // LHS contract dims are sorted to form an increasing seq.
+      diff = eval_op_indices[i].first - eval_op_indices[i-1].first;
+      if (diff != 1) {
+        return;
+      }
+      // Now we may already assume RHS contract dims seq is increasing too.
+      diff = eval_op_indices[i].second - eval_op_indices[i-1].second;
+      if (diff != 1) {
+        return;
+      }
+    }
+
+    // Check if suffix or prefix.
+    if (eval_op_indices[0].first != 0 &&
+        eval_op_indices[ContractDims-1].first != LDims-1) {
+      return;
+    }
+    if (eval_op_indices[0].second != 0 &&
+        eval_op_indices[ContractDims-1].second != RDims-1) {
+      return;
+    }
+
+    m_can_use_xsmm = true;
+    #endif
+  }
+
+#if defined(EIGEN_VECTORIZE_AVX) && defined(EIGEN_USE_LIBXSMM)
+  EIGEN_DEVICE_FUNC void evalGemmXSMM(Scalar* buffer) const {
+    // columns in left side, rows in right side
+    const Index k = this->m_k_size;
+
+    // rows in left side
+    const Index m = this->m_i_size;
+
+    // columns in right side
+    const Index n = this->m_j_size;
+
+    const bool transposeA = !m_lhs_inner_dim_contiguous;
+    const bool transposeB = !m_rhs_inner_dim_contiguous;
+
+    typedef typename internal::remove_const<typename EvalLeftArgType::Scalar>::type LhsScalar;
+    typedef typename internal::remove_const<typename EvalRightArgType::Scalar>::type RhsScalar;
+
+    internal::TensorXsmmContractionBlocking<LhsScalar, RhsScalar, Index> blocking(
+        k, m, n, 1, transposeA, transposeB);
+
+    // Outer blocks sizes
+    const Index mc_outer = blocking.outer_m();
+    const Index nc_outer = blocking.outer_n();
+    const Index kc_outer = blocking.outer_k();
+    // Inner blocks sizes
+    const Index mc = blocking.mc();
+    const Index nc = blocking.nc();
+    const Index kc = blocking.kc();
+    // Decisions whether we should copy parts of matrices
+    const bool copyA = blocking.copyA();
+    const bool copyB = blocking.copyB();
+
+    const LhsScalar* leftData = m_leftImpl.data();
+    const RhsScalar* rightData = m_rightImpl.data();
+
+    const libxsmm_blasint stride_A = static_cast<libxsmm_blasint>(transposeA ? k : m);
+    const libxsmm_blasint stride_B = static_cast<libxsmm_blasint>(transposeB ? n : k);
+    const libxsmm_blasint stride_C = static_cast<libxsmm_blasint>(m);
+
+    const libxsmm_blasint stride_blockA = static_cast<libxsmm_blasint>(mc);
+    // Use bigger stride to avoid hitting same cache line too often.
+    // This consistently gives +~0.5 Gflops.
+    const libxsmm_blasint stride_panelB = static_cast<libxsmm_blasint>(
+        kc % 32 == 0 ? kc + 16 : kc
+    );
+
+    // Kernel for the general case (not edges)
+    internal::libxsmm_wrapper<LhsScalar, RhsScalar, Scalar> kernel;
+
+    LhsScalar* blockA = NULL;
+    RhsScalar* panelB = NULL;
+
+    if (copyA) {
+      blockA = static_cast<LhsScalar*>(this->m_device.allocate(mc * kc * sizeof(LhsScalar)));
+    }
+    if (copyB) {
+      panelB = static_cast<RhsScalar*>(this->m_device.allocate(nc_outer * stride_panelB * sizeof(RhsScalar)));
+    }
+
+    const Index kernel_stride_A = copyA ? stride_blockA : stride_A;
+    const Index kernel_stride_B = copyB ? stride_panelB : stride_B;
+    kernel = internal::libxsmm_wrapper<LhsScalar, RhsScalar, Scalar>(0, mc, nc, kc, kernel_stride_A, kernel_stride_B, stride_C, 1, 1, blocking.prefetch());
+
+    // Outer blocking
+    for (Index ki_outer = 0; ki_outer < k; ki_outer += kc_outer) {
+      for (Index mi_outer = 0; mi_outer < m; mi_outer += mc_outer) {
+        for (Index ni_outer = 0; ni_outer < n; ni_outer += nc_outer) {
+          using numext::mini;
+
+          Index actual_nc_outer = mini(ni_outer+nc_outer, n) - ni_outer;
+
+          // Inner blocking
+          for (Index ki = ki_outer; ki < mini(ki_outer+kc_outer, k); ki += kc) {
+            const Index actual_kc = mini(ki_outer+kc_outer, mini(ki+kc, k)) - ki;
+            const float beta = ki == 0 ? 0 : 1;
+
+            if (copyB) {
+              if (transposeB) {
+                libxsmm_otrans(panelB, rightData + ki*stride_B + ni_outer, sizeof(RhsScalar), actual_nc_outer, actual_kc, stride_B, stride_panelB);
+              } else {
+                internal::pack_simple<RhsScalar, Index>(panelB, rightData + ni_outer*stride_B + ki, actual_nc_outer, actual_kc, stride_panelB, stride_B);
+              }
+            }
+
+            for (Index mi = mi_outer; mi < mini(mi_outer+mc_outer, m); mi += mc) {
+              const Index actual_mc = mini(mi_outer+mc_outer, mini(mi+mc, m)) - mi;
+
+              const LhsScalar* a = transposeA ? leftData + mi*stride_A + ki :
+                                                leftData + ki*stride_A + mi;
+
+              if (copyA) {
+                if (transposeA) {
+                  libxsmm_otrans(blockA, a, sizeof(LhsScalar), actual_kc, actual_mc, stride_A, stride_blockA);
+                } else {
+                  internal::pack_simple<LhsScalar, Index>(blockA, a, actual_kc, actual_mc, stride_blockA, stride_A);
+                }
+              }
+              const LhsScalar* actual_a = copyA ? blockA : a;
+
+              for (Index ni = ni_outer; ni < mini(ni_outer+nc_outer, n); ni += nc) {
+                const Index actual_nc = mini(ni_outer+nc_outer, mini(ni+nc, n)) - ni;
+
+                const RhsScalar* b = rightData + ni*stride_B + ki;
+                Scalar* c = buffer + ni*stride_C + mi;
+                const Scalar* cp = c + nc*stride_C;
+
+                const RhsScalar* actual_b = copyB ? panelB + (ni-ni_outer)*stride_panelB : b;
+                const RhsScalar* bp = copyB ? panelB + nc*stride_panelB : b + nc*stride_B;
+
+                if (actual_mc == mc && actual_kc == kc && actual_nc == nc && beta == 1) {
+                  // Most used, cached kernel.
+                  kernel(actual_a, actual_b, c, actual_a, bp, cp);
+                } else {
+                  // Edges - use libxsmm kernel cache.
+                  internal::libxsmm_wrapper<LhsScalar, RhsScalar, Scalar>(0, actual_mc, actual_nc, actual_kc, kernel_stride_A, kernel_stride_B, stride_C, 1, beta, blocking.prefetch())(actual_a, actual_b, c, actual_a, bp, cp);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (copyA) {
+      this->m_device.deallocate(blockA);
+    }
+    if (copyB) {
+      this->m_device.deallocate(panelB);
+    }
+  }
+#endif
+
+  // Prevent assignment
+  TensorContractionEvaluatorBase& operator = (const TensorContractionEvaluatorBase&);
+  Dimensions m_dimensions;
+
+  contract_t m_k_strides;
+  contract_t m_left_contracting_strides;
+  contract_t m_right_contracting_strides;
+
+  bool m_lhs_inner_dim_contiguous;
+  bool m_rhs_inner_dim_contiguous;
+  bool m_rhs_inner_dim_reordered;
+
+  left_nocontract_t m_i_strides;
+  right_nocontract_t m_j_strides;
+  left_nocontract_t m_left_nocontract_strides;
+  right_nocontract_t m_right_nocontract_strides;
+
+  Index m_i_size;
+  Index m_j_size;
+  Index m_k_size;
+
+  TensorEvaluator<EvalLeftArgType, Device> m_leftImpl;
+  TensorEvaluator<EvalRightArgType, Device> m_rightImpl;
+  const Device& m_device;
+  Scalar* m_result;
+  /// required for sycl
+  const Indices m_expr_indices;
+
+  bool m_can_use_xsmm;
+};
+
+
+// evaluator for default device
+template<typename Indices, typename LeftArgType, typename RightArgType, typename Device>
+struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgType>, Device> :
+    public TensorContractionEvaluatorBase<
+      TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgType>, Device> > {
+  typedef TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgType>, Device> Self;
+  typedef TensorContractionEvaluatorBase<Self> Base;
+
+  typedef TensorContractionOp<Indices, LeftArgType, RightArgType> XprType;
+  typedef typename internal::remove_const<typename XprType::Scalar>::type Scalar;
+  typedef typename XprType::Index Index;
+  typedef typename XprType::CoeffReturnType CoeffReturnType;
+  typedef typename PacketType<CoeffReturnType, Device>::type PacketReturnType;
+
+  enum {
+    Layout = TensorEvaluator<LeftArgType, Device>::Layout
+  };
+
+  // Most of the code is assuming that both input tensors are ColMajor. If the
+  // inputs are RowMajor, we will "cheat" by swapping the LHS and RHS:
+  // If we want to compute A * B = C, where A is LHS and B is RHS, the code
+  // will pretend B is LHS and A is RHS.
+  typedef typename internal::conditional<
+    static_cast<int>(Layout) == static_cast<int>(ColMajor), LeftArgType, RightArgType>::type EvalLeftArgType;
+  typedef typename internal::conditional<
+    static_cast<int>(Layout) == static_cast<int>(ColMajor), RightArgType, LeftArgType>::type EvalRightArgType;
+
+  static const int LDims =
+      internal::array_size<typename TensorEvaluator<EvalLeftArgType, Device>::Dimensions>::value;
+  static const int RDims =
+      internal::array_size<typename TensorEvaluator<EvalRightArgType, Device>::Dimensions>::value;
+  static const int ContractDims = internal::array_size<Indices>::value;
+
+  typedef array<Index, ContractDims> contract_t;
+  typedef array<Index, LDims - ContractDims> left_nocontract_t;
+  typedef array<Index, RDims - ContractDims> right_nocontract_t;
+
+  static const int NumDims = LDims + RDims - 2 * ContractDims;
+
+  // Could we use NumDimensions here?
+  typedef DSizes<Index, NumDims> Dimensions;
+
+  EIGEN_DEVICE_FUNC TensorEvaluator(const XprType& op, const Device& device) :
+      Base(op, device) { }
+
+  template <bool lhs_inner_dim_contiguous, bool rhs_inner_dim_contiguous, bool rhs_inner_dim_reordered, int Alignment>
+  EIGEN_DEVICE_FUNC void evalProduct(Scalar* buffer) const {
+    if (this->m_j_size == 1) {
+      this->template evalGemv<lhs_inner_dim_contiguous, rhs_inner_dim_contiguous, rhs_inner_dim_reordered, Alignment>(buffer);
+      return;
+    }
+
+    this->template evalGemm<lhs_inner_dim_contiguous, rhs_inner_dim_contiguous, rhs_inner_dim_reordered, Alignment>(buffer);
   }
 };
 

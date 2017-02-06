@@ -35,7 +35,7 @@ namespace vf{
  * @see
  */
 template<typename ExprT,int Order=2>
-class GinacExVF : public Feel::vf::GiNaCBase
+class FEELPP_EXPORT GinacExVF : public Feel::vf::GiNaCBase
 {
 public:
 
@@ -101,11 +101,14 @@ public:
         M_fun( fun ),
         M_expr( expr ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
-        M_filename( Environment::expand( (filename.empty() || fs::path(filename).is_absolute())? filename : (fs::current_path()/filename).string() ) ),
+        M_filename(),
         M_exprDesc( exprDesc )
         {
+            std::string filenameExpanded = Environment::expand( filename );
+            M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::path(Environment::exprRepository())/filenameExpanded).string();
+
             DVLOG(2) << "Ginac constructor with expression_type \n";
-            GiNaC::lst exprs(fun);
+            GiNaC::lst exprs({fun});
             GiNaC::lst syml;
             std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
 
@@ -360,11 +363,12 @@ public:
                 updateFun( geom );
             }
 
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
             {
                 if ( M_is_zero ) return;
-                update( ctx->gmContext() );
+                boost::fusion::vector<CTX...> ctxvec( ctx... );
+                update( boost::fusion::at_c<0>( ctxvec )->gmContext() );
             }
 
         value_type

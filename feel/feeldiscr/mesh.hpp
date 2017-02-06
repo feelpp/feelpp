@@ -720,47 +720,6 @@ public:
         return M_e2f[std::make_pair(e,n)];
     }
 
-    /**
-     * @return the id associated to the \p marker
-     */
-    size_type markerName( std::string const& marker ) const
-    {
-        auto mit = M_markername.find( marker );
-        if (  mit != M_markername.end() )
-            return mit->second[0];
-        return invalid_size_type_value;
-    }
-    /**
-     * @return the marker name associated to the \p marker id
-     */
-    std::string markerName( size_type marker ) const
-        {
-            for( auto const& n : M_markername )
-            {
-                if (n.second[0] == marker )
-                    return n.first;
-            }
-            return std::string();
-        }
-
-    /**
-     * @return the topological dimension associated to the \p marker
-     */
-    size_type markerDim( std::string const& marker ) const
-    {
-        auto mit = M_markername.find( marker );
-        if (  mit != M_markername.end() )
-            return mit->second[1];
-        return invalid_size_type_value;
-    }
-
-    /**
-     * @return the marker names
-     */
-    std::map<std::string, std::vector<size_type> > markerNames() const
-    {
-        return M_markername;
-    }
 
     /**
      * @return a localization tool
@@ -823,75 +782,7 @@ public:
      */
     //@{
 
-    /**
-     * @return true if \p marker exists, false otherwise
-     */
-    bool
-    hasMarker( std::string const& marker ) const
-        {
-            return markerName( marker ) != invalid_size_type_value;
-        }
 
-    /**
-     * @return true if \p marker exists and topological dimension of the entity
-     * associated is Dim-1, false otherwise
-     */
-    bool
-    hasFaceMarker( std::string const& marker ) const
-        {
-            return hasMarker( marker ) && ( markerDim( marker ) == nDim-1 );
-        }
-
-    /**
-     * @return true if \p marker exists and topological dimension of the entity
-     * associated is Dim-2, false otherwise
-     */
-    bool
-    hasEdgeMarker( std::string const& marker ) const
-        {
-            return (nDim == 3) && hasMarker( marker ) &&  ( markerDim( marker ) == nDim-2 );
-        }
-
-    /**
-     * @return true if \p marker exists and topological dimension of the entity
-     * associated is 0, false otherwise
-     */
-    bool
-    hasPointMarker( std::string const& marker ) const
-        {
-            return hasMarker( marker ) &&  ( markerDim( marker ) == 0 );
-        }
-
-    /**
-     * add a new marker name
-     */
-    void addMarkerName( std::pair<std::string, std::vector<size_type> > const& marker )
-    {
-        M_markername.insert( marker );
-    }
-
-    /**
-     * add a new marker name
-     */
-    void addMarkerName( std::string __name, int __id ,int __topoDim )
-    {
-        M_markername[__name] = { static_cast<size_type>(__id), static_cast<size_type>(__topoDim) };
-    }
-    /**
-      * @return true if all markers are defined in the mesh, false otherwise
-      */
-    bool hasMarkers( std::initializer_list<std::string> l ) const
-    {
-      for( auto m : l )
-      {
-        if ( !hasMarker( m ) ) return false;
-      }
-      return true;
-
-    }
-
-    /// @return the marker id given the marker name \p marker
-    flag_type markerId( boost::any const& marker );
 
     /**
      * erase element at position \p position
@@ -1125,7 +1016,7 @@ private:
     /**
      * save mesh in hdf5
      */
-    void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+    FEELPP_NO_EXPORT void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 #endif
 public:
     /**
@@ -1323,9 +1214,9 @@ public:
         }
 private:
 
-    void propagateMarkers( mpl::int_<1> ) {}
-    void propagateMarkers( mpl::int_<2> );
-    void propagateMarkers( mpl::int_<3> );
+    FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<1> ) {}
+    FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<2> );
+    FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<3> );
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -1337,7 +1228,7 @@ private:
                 DVLOG(2) << "encoding...\n";
                 encode();
                 DVLOG(2) << "loading markers...\n";
-                ar & M_markername;
+                ar & this->M_markername;
                 DVLOG(2) << "loading pts...\n";
                 ar & M_enc_pts;
                 DVLOG(2) << "loading faces...\n";
@@ -1349,7 +1240,7 @@ private:
             {
                 DVLOG(2) << "Serializing mesh(loading) ...\n";
                 DVLOG(2) << "loading markers...\n";
-                ar & M_markername;
+                ar & this->M_markername;
                 DVLOG(2) << "loading pts...\n";
                 ar & M_enc_pts;
                 DVLOG(2) << "loading faces...\n";
@@ -1725,25 +1616,25 @@ public:
         /*---------------------------------------------------------------
          *initializes the kd tree and the map between node and list elements(all elements)
          */
-        void init();
+        FEELPP_NO_EXPORT void init();
 
         /*---------------------------------------------------------------
          *initializes the kd tree and the map between node and list elements(only on boundary)
          */
-        void initBoundaryFaces();
+        FEELPP_NO_EXPORT void initBoundaryFaces();
 
         /*---------------------------------------------------------------
          *search near elt in kd tree and get a sorted list
          */
-        void searchInKdTree( const node_type & p,
-                             std::list< std::pair<size_type, uint> > & listTri );
-
+        FEELPP_NO_EXPORT void searchInKdTree( const node_type & p,
+                                              std::list< std::pair<size_type, uint> > & listTri );
+        
         /*---------------------------------------------------------------
          * computed barycenter
          */
-        node_type computeBarycenter(mpl::int_<1> /**/) const;
-        node_type computeBarycenter(mpl::int_<2> /**/) const;
-        node_type computeBarycenter(mpl::int_<3> /**/) const;
+        FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<1> /**/) const;
+        FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<2> /**/) const;
+        FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<3> /**/) const;
 
     private:
 
@@ -1828,43 +1719,43 @@ private:
     /**
      * \sa renumber()
      */
-    void renumber( mpl::bool_<false> ) {}
+    FEELPP_NO_EXPORT void renumber( mpl::bool_<false> ) {}
 
     /**
      * \sa renumber()
      */
-    void renumber( mpl::bool_<true> );
+    FEELPP_NO_EXPORT void renumber( mpl::bool_<true> );
 
     /**
      * modify edges on boundary in 3D
      */
-    void modifyEdgesOnBoundary( face_iterator& face, mpl::bool_<true> );
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_iterator& face, mpl::bool_<true> );
 
     /**
      * modify edges on boundary in 2D or 1D
      */
-    void modifyEdgesOnBoundary( face_iterator& face, mpl::bool_<false> );
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_iterator& face, mpl::bool_<false> );
 
     /**
      * modify element that may touch the boundary through one of its edge in 1D or 2D
      */
-    bool modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<false> );
+    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<false> );
 
     /**
      * modify element that may touch the boundary through one of its edge in 3D
      */
-    bool modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<true> );
+    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<true> );
 
     /**
      * update entities on boundary (point, edge, face and element)
      */
-    void updateOnBoundary();
+    FEELPP_NO_EXPORT void updateOnBoundary();
 
     /**
      * fix duplication of point in connection1 with 3d mesh at order 3 and 4
      */
-    void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::true_ );
-    void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::false_ );
+    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::true_ );
+    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::false_ );
 
 private:
 
@@ -1914,13 +1805,6 @@ private:
      * Arrays containing the global ids of edges of each element
      */
     boost::multi_array<element_edge_type,2> M_e2e;
-
-    /**
-     * marker name dictionnary ( std::string -> <int,int> )
-     * get<0>() provides the id
-     * get<1>() provides the topological dimension
-     */
-    std::map<std::string, std::vector<size_type> > M_markername;
 
     /**
      * periodic entities

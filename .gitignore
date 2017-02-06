@@ -4,6 +4,7 @@ build/
 *.hppbck
 *.log
 *.orig
+*.vim
 /#CTestConfig.cmake#
 /#ctest.make#
 /.DS_Store
@@ -112,3 +113,4 @@ build/
 ginac.pc
 /applications/crb/thermalfin/thermalfinapp.cpp
 /research/hpmortar/
+/tools/scripts/buildkite/feelpp_build.sh

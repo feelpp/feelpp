@@ -32,7 +32,7 @@ namespace vf {
  * Handle Ginac matrix expression
  */
 template<int M=1, int N=1, int Order = 2>
-class GinacMatrix : public Feel::vf::GiNaCBase
+class FEELPP_EXPORT GinacMatrix : public Feel::vf::GiNaCBase
 {
 public:
 
@@ -91,14 +91,17 @@ public:
 
     GinacMatrix() : super() {}
     explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc,
-                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
+                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr=Environment::exprRepository() )
         :
         super( syms ),
         M_fun( fun.evalm() ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
-        M_filename( Environment::expand( (filename.empty() || fs::path(filename).is_absolute())? filename : (fs::current_path()/filename).string() ) ),
+        M_filename(),
         M_exprDesc( exprDesc )
         {
+            std::string filenameExpanded = Environment::expand( filename );
+            M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::path(Environment::exprRepository())/filenameExpanded).string();
+
             DVLOG(2) << "Ginac matrix matrix constructor with expression_type \n";
             GiNaC::lst exprs;
             for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
@@ -116,14 +119,17 @@ public:
             Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
         }
     explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc,
-                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
+                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr=Environment::exprRepository() )
         :
         super(syms),
         M_fun(fun.evalm()),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
-        M_filename( Environment::expand( (filename.empty() || fs::path(filename).is_absolute())? filename : (fs::current_path()/filename).string() ) ),
+        M_filename(),
         M_exprDesc( exprDesc )
         {
+            std::string filenameExpanded = Environment::expand( filename );
+            M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::path(Environment::exprRepository())/filenameExpanded).string();
+
             DVLOG(2) << "Ginac matrix ex constructor with expression_type \n";
             GiNaC::lst exprs;
             for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
@@ -348,10 +354,11 @@ public:
                 }
             }
 
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
             {
-                update( ctx->gmContext() );
+                boost::fusion::vector<CTX...> ctxvec( ctx... );
+                update( boost::fusion::at_c<0>( ctxvec )->gmContext() );
             }
 
         value_type
@@ -395,7 +402,7 @@ private:
 }; // GinacMatrix
 
 template<int M,int N,int Order>
-std::ostream&
+FEELPP_EXPORT std::ostream&
 operator<<( std::ostream& os, GinacMatrix<M,N,Order> const& e )
 {
     os << e.expression();
@@ -403,14 +410,14 @@ operator<<( std::ostream& os, GinacMatrix<M,N,Order> const& e )
 }
 
 template<int M, int N, int Order>
-std::string
+FEELPP_EXPORT std::string
 str( GinacMatrix<M,N,Order> && e )
 {
     return str( std::forward<GinacMatrix<M,N,Order>>(e).expression() );
 }
 
 template<int M, int N, int Order>
-std::string
+FEELPP_EXPORT std::string
 str( GinacMatrix<M,N,Order> const& e )
 {
     return str( e.expression() );

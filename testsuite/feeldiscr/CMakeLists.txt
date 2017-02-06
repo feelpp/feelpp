@@ -35,6 +35,7 @@ feelpp_add_test( lambda )
 feelpp_add_test( lift )
 feelpp_add_test( lm )
 feelpp_add_test( lowerdim_entity )
+feelpp_add_test( meshstructured )
 feelpp_add_test( mesh_transfinite CFG test_mesh_transfinite.cfg GEO test_mesh_transfinite.geo )
 feelpp_add_test( mixed )
 feelpp_add_test( normal3d )
@@ -42,7 +43,7 @@ feelpp_add_test( on_inside GEO test_on_inside.geo)
 
 feelpp_add_test( operatorlinearfree )
 feelpp_add_test( project NO_MPI_TEST)
-feelpp_add_test( projector CLI "--pc-type=gasm" ) # avoid destructor issue with LU-mumps in //
+feelpp_add_test( projector CLI "--pc-type=gasm --gmsh.hsize=0.2" ) # avoid destructor issue with LU-mumps in //
 feelpp_add_test( spaces )
 feelpp_add_test( stencil )
 feelpp_add_test( submesh )
@@ -67,7 +68,7 @@ feelpp_add_test( nlSolveComposite CFG test_nlSolveComposite.cfg)
 feelpp_add_test( project_prodspace )
 
 if ( FEELPP_HAS_SLEPC )
-  feelpp_add_test( eigs CLI "-st_pc_factor_mat_solver_package mumps" )
+  feelpp_add_test( eigs )
 endif()
 
 feelpp_add_test( twolaplaciansdistributed )
@@ -78,4 +79,5 @@ feelpp_add_test( markerhdf5_3D SRCS test_markerhdf5 DEFS CHECKH5_DIM=3 GEO marke
 feelpp_add_test( upmarker_faces )
 feelpp_add_test( listofrange )
 
+feelpp_add_test( element0D )
 

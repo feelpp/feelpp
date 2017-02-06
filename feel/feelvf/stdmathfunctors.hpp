@@ -236,12 +236,12 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         template<typename... TheExpr>                                      \
         struct Lambda                                                   \
         {                                                               \
-            typedef VF_FUNC_NAME( O )<TheExpr...> type;                    \
+            typedef VF_FUNC_NAME( O )<typename ExprT1::template Lambda<TheExpr...>::type> type; \
         };                                                              \
                                                                         \
         template<typename... TheExpr>                                        \
-            typename Lambda<TheExpr...>::type                               \
-        operator()( TheExpr... e ) { return VF_FUNC_NAME(O)<TheExpr...>( e... ); } \
+            typename Lambda<TheExpr...>::type                           \
+        operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr_1( e... ) ); } \
                                                                         \
                                                                         \
         expression_1_type const& expression() const { return M_expr_1; } \
@@ -263,21 +263,21 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
                 M_expr( expr.expression(), geom ),                     \
                 M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
-                        update( geom );                                 \
+                        /*update( geom );*/                             \
                     }                                                   \
             tensor( this_type const& expr,Geo_t const& geom, Basis_i_t const& /*fev*/ ) \
                 :                                                       \
                 M_expr( expr.expression(), geom ),                     \
                 M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
-                        update( geom );                                 \
+                        /*update( geom );*/                             \
                     }                                                   \
             tensor( this_type const& expr, Geo_t const& geom )             \
                 :                                                       \
                 M_expr( expr.expression(), geom ),                     \
                 M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
-                        update( geom );                                 \
+                        /*update( geom );*/                             \
                     }                                                   \
             template<typename IM>                                       \
                 void init( IM const& im )                               \
@@ -300,10 +300,10 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             {                                                           \
                 M_expr.update( geom, face );                           \
             }                                                           \
-            template<typename CTX>                                      \
-                void updateContext( CTX const& ctx )                    \
+            template<typename ... CTX>                                  \
+                void updateContext( CTX const& ... ctx )                \
             {                                                           \
-                M_expr.updateContext( ctx );                           \
+                M_expr.updateContext( ctx... );                         \
             }                                                           \
                                                                         \
                 value_type                                              \
@@ -434,12 +434,12 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         template<typename... TheExpr>                                   \
         struct Lambda                                                   \
         {                                                               \
-            typedef VF_FUNC_NAME( O )<TheExpr...> type;                    \
+            typedef VF_FUNC_NAME( O )<typename ExprT1::template Lambda<TheExpr...>::type, typename ExprT2::template Lambda<TheExpr...>::type > type; \
         };                                                              \
                                                                         \
         template<typename... TheExpr>                                        \
             typename Lambda<TheExpr...>::type                               \
-        operator()( TheExpr... e ) { return VF_FUNC_NAME(O)<TheExpr...>( e... ); } \
+        operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr_1( e... ), M_expr_2( e... ) ); } \
                                                                         \
                                                                         \
         expression_1_type const& expression1() const { return M_expr_1; } \
@@ -506,11 +506,11 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
                 M_expr1.update( geom, face );                           \
                 M_expr2.update( geom, face );                           \
             }                                                           \
-            template<typename CTX>                                      \
-                void updateContext( CTX const& ctx )                    \
+            template<typename ... CTX>                                  \
+                void updateContext( CTX const& ... ctx )                \
             {                                                           \
-                M_expr1.updateContext( ctx );                           \
-                M_expr2.updateContext( ctx );                           \
+                M_expr1.updateContext( ctx... );                        \
+                M_expr2.updateContext( ctx... );                        \
             }                                                           \
                                                                         \
                 value_type                                              \

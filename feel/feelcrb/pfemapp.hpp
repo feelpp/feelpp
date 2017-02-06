@@ -88,7 +88,7 @@ public:
                                 % this->vm()["hsize"].template as<double>()
                               );
         std::cout << "[PFemApp] build model " << this->about().appName() << "\n";
-        model = crbmodel_ptrtype( new crbmodel_type( this->vm() ) );
+        model = crbmodel_ptrtype( new crbmodel_type() );
 
         std::cout << "build model " << this->about().appName() << " done\n";
     }

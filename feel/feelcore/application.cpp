@@ -56,7 +56,9 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/application.hpp>
 
+#if FEELPP_HAS_PETSC
 #include <feel/feelcore/feelpetsc.hpp>
+#endif
 
 #if defined(FEELPP_HAS_TRILINOS_EPETRA)
 #if defined(FEELPP_HAS_MPI_H)
@@ -86,10 +88,14 @@ namespace Feel
 namespace fs = boost::filesystem;
 namespace ptree = boost::property_tree;
 
+//!
+//! \internal
+//!
 namespace detail
 {
 const int spaces = 30;
 }
+//! \endinternal
 
 FEELPP_NO_EXPORT
 std::pair<std::string, std::string>

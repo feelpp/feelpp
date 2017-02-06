@@ -16,9 +16,9 @@ image:https://badges.gitter.im/Join%20Chat.svg["Join the chat at", https://gitte
 | Platform & Compiler | `master` | `develop` 
 | Travis/Ubuntu & Clang >= 3.5 |  image:https://travis-ci.org/feelpp/feelpp.svg?branch=master["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
 | image:https://travis-ci.org/feelpp/feelpp.svg?branch=develop["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
-| Buildkite Ubuntu 14.04 
-| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feel-plus-plus-consortium/feelpp"] 
-| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feel-plus-plus-consortium/feelpp"] 
+| Buildkite Ubuntu 16.10 
+|  
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"] 
 |===
 
 == Introduction
@@ -44,8 +44,7 @@ Here are the latest releases of Feel++
 
 == Documentation
 
- * develop branch : link:http://www.feelpp.org/docs/develop/index.html[Feel++ Online Reference Manual]
- * master branch (latest release) : link:http://www.feelpp.org/docs/master/index.html[Feel++ Online Reference Manual]
+ * develop branch : link:http://book.feelpp.org[Feel++ Book]
 
 == Features
 
