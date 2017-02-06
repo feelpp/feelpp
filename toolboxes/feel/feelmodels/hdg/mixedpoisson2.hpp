@@ -573,25 +573,17 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
                                  _expr=idt(phat)*trans(id(v))*N());
 
 
-    // -(j, grad(w))
-    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh),_expr=(-grad(w)*idt(u)));
-
-    // <j.n,w>_Gamma
-    bbf( 1_c, 0_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N()) ) );
-    bbf( 1_c, 0_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=(rightface(id(w))*rightfacet(trans(idt(u))*N())) );
-    bbf( 1_c, 0_c ) += integrate(_range=boundaryfaces(M_mesh),
-                                 _expr=(id(w)*trans(idt(u))*N()));
+    // (div(j),q)_Omega
+    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=-(id(w)*divt(u)));
 
 
     // <tau p, w>_Gamma
     bbf( 1_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=tau_constant *
+                                 _expr=-tau_constant *
                                  ( leftfacet( pow(idv(H),M_tau_order)*idt(p))*leftface(id(w)) +
                                    rightfacet( pow(idv(H),M_tau_order)*idt(p))*rightface(id(w) )));
     bbf( 1_c, 1_c ) += integrate(_range=boundaryfaces(M_mesh),
-                                 _expr=(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
+                                 _expr=-(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
 
     // (1/delta_t p, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
@@ -601,11 +593,11 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
 
     // <-tau phat, w>_Gamma\Gamma_I
     bbf( 1_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=-tau_constant * idt(phat) *
+                                 _expr=tau_constant * idt(phat) *
                                  ( leftface( pow(idv(H),M_tau_order)*id(w) )+
                                    rightface( pow(idv(H),M_tau_order)*id(w) )));
     bbf( 1_c, 2_c ) += integrate(_range=gammaMinusIntegral,
-                                 _expr=-tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
+                                 _expr=tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
 
 
     // <j.n,mu>_Omega/Gamma
@@ -613,6 +605,15 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
                                  _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
                                                 rightfacet(trans(idt(u))*N())) ) );
 
+    // <tau p, mu>_Omega/Gamma
+    bbf( 2_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
+                                 _expr=tau_constant * id(l) * ( leftfacet( pow(idv(H),M_tau_order)*idt(p) )+
+                                                                rightfacet( pow(idv(H),M_tau_order)*idt(p) )));
+
+    // <-tau phat, mu>_Omega/Gamma
+    bbf( 2_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
+                                 _expr=-sc_param*tau_constant * idt(phat) * id(l) * ( leftface( pow(idv(H),M_tau_order) )+
+                                                                                      rightface( pow(idv(H),M_tau_order) )));
 
     this->assembleBoundaryCond();
 }
@@ -774,7 +775,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assemblePotentialRHS( Expr<Expr
 
 
 template<int Dim, int Order, int G_Order, int E_Order>
-void 
+void
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleBoundaryCond()
 {
     auto itField = modelProperties().boundaryConditions().find( "potential");
@@ -801,6 +802,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleBoundaryCond()
             }
         }
 
+        // Need to be moved or at least check if the expression depend on t
         itType = mapField.find( "Robin" );
         if ( itType != mapField.end() )
         {
@@ -809,13 +811,13 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleBoundaryCond()
                 std::string marker = exAtMarker.marker();
                 auto g1 = expr<expr_order>(exAtMarker.expression1());
                 auto g2 = expr<expr_order>(exAtMarker.expression2());
-                
+
 				if ( !this->isStationary() )
                 {
                     g1.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                     g2.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 }
-				
+
                 this->assembleRobin(g1, g2, marker);
             }
         }
