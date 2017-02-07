@@ -1776,6 +1776,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Stretch")),
                                        *this->stretch() );
     }
+    if( M_useCauchyAugmented )
+    {
+        M_backwardCharacteristicsAdvection->exportResults( time );
+    }
 
     super_type::exportResultsImpl( time );
 
