@@ -88,25 +88,22 @@ public:
 
     typedef DiscontinuousInterfaces<fusion::vector<mpl::vector<mpl::int_<3>, mpl::int_<11>, mpl::int_<13> >,mpl::vector<mpl::int_<4>, mpl::int_<11>, mpl::int_<14> > > >  discontinuity_type;
     typedef bases<Lagrange<OrderT, Scalar, discontinuity_type> > temp_basis_type;
+    typedef bases<Lagrange<OrderT, Scalar> > basis_type;
 
 #if defined( OPUS_WITH_THERMAL_DISCONTINUITY )
     typedef FunctionSpace<mesh_type, temp_basis_type, discontinuity_type,  Periodicity<Periodic<> > > temp_functionspace_type;
 #else
     typedef FunctionSpace<mesh_type, temp_basis_type, Periodicity<Periodic<> > > temp_functionspace_type;
 #endif
+    typedef FunctionSpace<mesh_type, basis_type > functionspace_type;
 
     typedef temp_functionspace_type space_type;
     typedef typename space_type::element_type element_type;
-
-    static const bool is_time_dependent = true;
-    static const bool is_linear = true;
-
 };
 
 template<int OrderU=2, int OrderP=OrderU-1, int OrderT=OrderP>
 class OpusModelRB : public OpusModelBase,
-                    public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<OrderU,OrderP,OrderT>, TimeDependent >,
-                    public boost::enable_shared_from_this< OpusModelRB<OrderU,OrderP,OrderT> >
+                    public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<OrderU,OrderP,OrderT>, TimeDependent >
 {
     typedef OpusModelBase super;
 public:
@@ -143,7 +140,7 @@ public:
     static const double Qmin ;
     static const double Qmax ;
 #endif
-    static const uint16_type ParameterSpaceDimension = 5;
+    //static const uint16_type ParameterSpaceDimension = 5;
 
     //@}
     /** @name Typedefs
@@ -155,9 +152,8 @@ public:
 
 
     /*mesh*/
-    typedef Simplex<Dim> entity_type;
-    typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef typename super_type::mesh_type mesh_type;
+    typedef typename super_type::mesh_ptrtype mesh_ptrtype;
 
     typedef Simplex<1,1,2> entity12_type;
     typedef Mesh<entity12_type> mesh12_type;
@@ -176,16 +172,6 @@ public:
     typedef eigen_matrix_type ematrix_type;
     typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
-    /* temperature */
-    typedef DiscontinuousInterfaces<fusion::vector<mpl::vector<mpl::int_<3>, mpl::int_<11>, mpl::int_<13> >,mpl::vector<mpl::int_<4>, mpl::int_<11>, mpl::int_<14> > > >  discontinuity_type;
-    typedef bases<Lagrange<OrderT, Scalar, discontinuity_type> > temp_basis_type;
-    //typedef bases<Lagrange<OrderT, Scalar> > temp_basis_type;
-    typedef bases<Lagrange<OrderT, Vectorial> > grad_temp_basis_type;
-    //typedef Periodic<1,2,value_type> periodic_type;
-    typedef Periodic<> periodic_type;
-
-    typedef temp_basis_type basis_type;
-
     typedef typename FunctionSpaceDefinition<OrderU,OrderP,OrderT>::temp_functionspace_type temp_functionspace_type;
     typedef ReducedBasisSpace<super_type> temp_rbfunctionspace_type;
 
@@ -202,6 +188,7 @@ public:
     typedef temp_element_type element_type;
     typedef temp_functionspace_type space_type;
 
+    typedef bases<Lagrange<OrderT, Vectorial> > grad_temp_basis_type;
     typedef FunctionSpace<mesh_type, grad_temp_basis_type> grad_temp_functionspace_type;
     typedef boost::shared_ptr<grad_temp_functionspace_type> grad_temp_functionspace_ptrtype;
     typedef typename grad_temp_functionspace_type::element_type grad_temp_element_type;
@@ -248,14 +235,9 @@ public:
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
-    /* parameter space */
-    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+    typedef typename super_type::parameterspace_type parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
-    typedef typename parameterspace_type::element_type parameter_type;
-    typedef typename parameterspace_type::element_ptrtype parameter_ptrtype;
-    typedef typename parameterspace_type::sampling_type sampling_type;
-    typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
-
+    typedef typename super_type::parameter_type parameter_type;
 
     /* time */
     typedef Bdf<temp_functionspace_type>  temp_bdf_type;
@@ -323,7 +305,7 @@ public:
     int mMaxM( int q );
     int mMaxF( int output_index, int q );
 
-
+#if 0
     /**
      * \brief Returns the function space
      */
@@ -335,17 +317,19 @@ public:
     /**
      * \brief Returns the function space
      */
+
     rbfunctionspace_ptrtype rBFunctionSpace()
     {
         return M_RbTh;
     }
+
 
     //! return the parameter space
     parameterspace_ptrtype parameterSpace() const
     {
         return M_Dmu;
     }
-
+#endif
     parameter_type refParameter()
     {
         return M_Dmu->min();
