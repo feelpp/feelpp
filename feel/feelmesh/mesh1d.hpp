@@ -202,9 +202,10 @@ class Mesh1D
                  super_faces::isEmpty() );
     }
 
-    /**
- * \return the number of elements
- */
+    //!
+    //! @brief get the number of elements in the mesh
+    //! @return the number of elements in the mesh
+    //!
     size_type numElements() const
     {
         return this->elements().size();
@@ -218,10 +219,13 @@ class Mesh1D
         return super_elements::element_type::numLocalFaces;
     }
 
-    //! @return the number of local topological faces
+    //! 
+    //! the number of topological faces per element
+    //! @return the number of topological faces per element
+    //!
     uint16_type numLocalTopologicalFaces() const
     {
-        return this->beginElement()->nTopologicalFaces();
+        return super_elements::element_type::numTopologicalFaces;
     }
 
     /**
