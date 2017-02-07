@@ -1,32 +1,26 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
- This file is part of the Feel library
-
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 2006-12-30
-
- Copyright (C) 2006,2007,2008,2009,2010 Universite de Grenoble 1
- Copyright (C) 2011-2016 Feel++ Consortium
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 3.0 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- */
-/**
- \file feel.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2006-12-30
- */
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 05 Feb 2017
+//! @copyright 2017 Feel++ Consortium
+//!
 # ifndef __cplusplus
 # error You must use C++ for Feel
 # endif
@@ -34,7 +28,20 @@
 # ifndef _FEELPP_HH_
 # define _FEELPP_HH_
 
+//! @defgroup Core 
+//! Core classes provided by the library
 
+//! @defgroup Mesh
+//! Mesh classes and algorithms provided by the library
+
+//! @defgroup Discretization 
+//! Discretization classes and algorithms provided by the library
+
+//! @defgroup Filters
+//! Filter classes provided by the library
+
+//! @defgroup Variational-Formulation
+//! Variational forms provided by the library
 
 #if defined(__APPLE__)
 #undef tolower
@@ -161,6 +168,7 @@ using google::INFO;
 using google::FATAL;
 using boost::format;
 
+//! @cond
 namespace detail
 {
 /*
@@ -184,6 +192,7 @@ namespace detail
  */
 template <class T> inline void ignore_unused_variable_warning( const T& ) { }
 }
+//! @endcond
 
 /*!  \page Types Feel Types
   \section types Types
@@ -245,9 +254,7 @@ typedef double scalar_type;
 // only available in boost 1.32
 #include <boost/mpl/eval_if.hpp>
 
-/*! \namespace detail
-  \internal
-*/
+//! @cond
 namespace detail
 {
 template<int bit_size>
@@ -293,6 +300,7 @@ struct real
     >::type type;
 };
 }
+//! @endcond
 #if 0
 typedef detail::integer<1>::type  int1_type;
 
@@ -315,9 +323,7 @@ typedef detail::real<64>::type real64_type;
 BOOST_STATIC_ASSERT( ( boost::is_same<real32_type, float>::value ) );
 BOOST_STATIC_ASSERT( ( boost::is_same<real64_type, double>::value ) );
 
-/*! \namespace detail
-  \internal
-*/
+//! @cond
 namespace detail
 {
 template< int bit_size >
@@ -340,6 +346,8 @@ struct unsigned_integer
     >::type type;
 };
 }
+//! @endcond
+
 #if 0
 typedef detail::unsigned_integer<1>::type  uint1_type;
 typedef detail::unsigned_integer<8>::type  uint8_type;
@@ -436,32 +444,52 @@ const size_type invalid_size_type_value = size_type( -1 );
 
 namespace Feel
 {
-// alias for program_options namespace
+//!
+//! \namespace
+//! @brief Feel++ alias for program_options namespace
+//! 
 namespace po = boost::program_options;
 
+//!
+//! @ingroup Core
+//! Function that compute the command line option prefix for the option variable map
+//!
+//! @param prefix prefix
+//! @param opt option
+//! @param sep separator between sections of the option
+//!
 std::string
 prefixvm( std::string const& prefix,
           std::string const& opt,
           std::string const& sep="." );
 
-/**
- * @return a trimmed string removing all leading and trailing spaces and replace
- * all special characters " ;:," inside the block by a _
- */
-std::string
-sanitize( std::string const& s );
+//!
+//! @ingroup Core
+//! @brief trim string to remove special characters
+//! 
+//! trim string removing all leading and trailing spaces and replace
+//! all special characters " ;:," inside the block by a _
+//! @param s a string to be trimmed
+//! 
+std::string sanitize( std::string const& s );
 
-/**
- * @return a vector of trimmed strings removing all leading and trailing spaces and replace
- * all special characters " ;:," inside the block by a _
- */
-std::vector<std::string>
-sanitize( std::vector<std::string> const& s );
+//! 
+//! trim a vector of strings removing all leading and trailing spaces and
+//! replace all special characters " ;:," inside the block by a _
+//! @param s a vector of strings
+//! 
+std::vector<std::string> sanitize( std::vector<std::string> const& s );
 
-// alias for date_time namespaces
+//!
+//! \namespace
+//! @ingroup Core
+//! 
+//! Feel++ namespace alias for boost::posix_time
 namespace posix_time = boost::posix_time;
+//! Feel++ namespace alias for boost::gregorian
 namespace gregorian = boost::gregorian;
 
+//! @cond
 namespace meta
 {
 template<typename TheArgs>
@@ -476,6 +504,7 @@ struct remove_all
     >::type type;
 };
 }
+//! @endcond
 }
 
 #if defined( FEELPP_HAS_ARPREC)
@@ -493,6 +522,7 @@ struct remove_all
 # include <qd/fpu.h>
 
 
+//! @cond
 /// numeric_limits<dd_real> specialization.
 namespace std
 {
@@ -550,12 +580,13 @@ struct numeric_limits<qd_real>
 
 };
 }
-
+//! @endcond
 #endif /* FEELPP_HAS_QD */
 
 #if defined( FEELPP_HAS_MPFR )
 #include <feel/feelcore/mpfr.hpp>
 
+//! @cond
 namespace Feel
 {
 /**
@@ -587,9 +618,25 @@ inline void setMpPrecision( mp_precision_type __prec )
 const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()+1 );
 
 }
+//! @endcond
 #endif // FEELPP_HAS_MPFR
 
+#if defined(FEELPP_DOXYGEN_INVOKED)
 
+//!
+//! @ingroup Core
+//! Log if condition satisfied when `NDEBUG` is not defined
+//!
+//! This macro is enabled only if `NDEBUG` is not defined which is to say that
+//! the macro will be activited when debugging
+//! 
+//! @code
+//! DVLOG_IF( INFO, param < 10 ) << "print only if param < 10";
+//! @endcode
+//!
+#define DVLOG_IF(verboselevel, condition) unspecified
+
+#else
 
 #if !defined(MPI_INT64_T)
 #define MPI_INT64_T MPI_LONG_INT
@@ -634,6 +681,7 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 
 #endif // DVLOG_IF
 
+# endif // FEELPP_DOXYGEN_INVOKED
 
 #include <feel/feelcore/ptr.hpp>
 #include <feel/feelcore/range.hpp>

@@ -1,0 +1,47 @@
+Benchmarks for HDG
+==================
+
+NOTE: we need to rebuild the backend when we do a convergence analysis to avoid
+petsc crashing because it keeps data(preconditioner) between runs
+
+# Laplacian
+
+with static condensation in parallel
+
+[source,sh]
+----
+mpirun -np 4 ./feelpp_benchmarks_bench_hdg_laplacian_2D_P1 -- --p_exact="x:x" --use_hypercube=true --sc.condense=true --backend.rebuild=true
+----
+
+NOTE: error should be 0 thanks to exact solution being linear
+
+with static condensation in sequential on one element
+
+[source,sh]
+----
+./feelpp_benchmarks_bench_hdg_laplacian_2D_P1 -- --p_exact="x:x" --use_hypercube=false --gmsh.filename oneelt.msh  --sc.condense=true --backend.rebuild=true --nb_refine=1
+----
+
+NOTE: error should be 0 thanks to exact solution being linear
+
+
+# MixedPoisson
+
+The model file, the geometries and the configuration files are in cvg-tests. +
+The simplest way to launch the tests is with the following command:
+
+[source,sh]
+----
+mpirun -np 1 feelpp_benchmarks_conv_2DP1G1E3 --config-file cvg-tests/darcy2D-Dir.cfg
+----
+
+The templates parameters stand for the dimension, the polynomial order, the geometric order and the expression order. +
+You have different configuration files for 2D and 3D and for each type of boundary condition. +
+The important options are:
+
+* `cvg.p_exact`: exact expression for the pressure
+* `cvg.cond`: conductivity
+* `cvg.refine-nb`: number of iteration of the convergence test
+* `cvg.refine-factor`: factor by which to divide hsize at each iteration
+* `mixedpoisson.use-sc`: use static condensation or not
+
