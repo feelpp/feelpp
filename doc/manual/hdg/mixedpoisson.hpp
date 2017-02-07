@@ -1,5 +1,29 @@
-#ifndef _MIXEDPOISSON_HPP
-#define _MIXEDPOISSON_HPP 
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Romain Hild <hild@math.unistra.fr>
+//! @date 07 Feb 2017
+//! @copyright 2016-2017 Feel++ Consortium
+//!
+//!
+#ifndef FEELPP_MIXEDPOISSON_HPP
+#define FEELPP_MIXEDPOISSON_HPP 1
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
@@ -87,7 +111,7 @@ public:
     typedef Simplex<Dim-1,G_Order,Dim> face_convex_type;
     typedef Mesh<face_convex_type> face_mesh_type;
     typedef boost::shared_ptr<face_mesh_type> face_mesh_ptrtype;
-    
+
     // Vh
     using Vh_t = Pdhv_type<mesh_type,Order>;
     using Vh_ptr_t = Pdhv_ptrtype<mesh_type,Order>;
@@ -104,8 +128,8 @@ public:
     using Mh_element_t = typename Mh_t::element_type;
     using Mh_element_ptr_t = typename Mh_t::element_ptrtype;
     // Ch
-    using Ch_t = Pch_type<mesh_type,0>;
-    using Ch_ptr_t = Pch_ptrtype<mesh_type,0>;
+    using Ch_t = Pch_type<face_mesh_type,0>;
+    using Ch_ptr_t = Pch_ptrtype<face_mesh_type,0>;
     using Ch_element_t = typename Ch_t::element_type;
     using Ch_element_ptr_t = typename Ch_t::element_ptrtype;
     // M0h
@@ -122,16 +146,16 @@ public:
 
     typedef Exporter<mesh_type,G_Order> exporter_type;
     typedef boost::shared_ptr <exporter_type> exporter_ptrtype;
-   
+
     // time
     // typedef Lagrange<Order,Scalar,Discontinuous> basis_scalar_type;
     // typedef FunctionSpace<mesh_type, bases<basis_scalar_type>> space_mixedpoisson_type;
-    
+
     // typedef Bdf<space_mixedpoisson_type>  bdf_type;
     typedef Bdf <Wh_t> bdf_type;
     // typedef Bdf<Pdh_type<mesh_type,Order>> bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
-    
+
 //private:
 protected:
     model_prop_ptrtype M_modelProperties;
@@ -155,46 +179,46 @@ protected:
     vector_ptrtype M_U;
 
     Vh_element_ptr_t M_up; // flux solution
-    Wh_element_ptr_t M_pp; // potential solution 
+    Wh_element_ptr_t M_pp; // potential solution
     Ch_element_ptr_t M_mup; // potential solution on the first integral boundary condition
     Ch_element_ptr_t M_mup2; // potential solution on the second integral boundary condition
 
     // time discretization
     bdf_ptrtype M_bdf_mixedpoisson;
- 
+
 
     int M_tau_order;
-    
+
     int M_integralCondition;
     bool M_isPicard;
 
     std::list<std::string> M_integralMarkersList;
-    
-    
+
+
     void initGraphs();
     void initGraphsWithIntegralCond();
     void assembleACst();
 
 public:
     linearAssembly_function_type M_updateAssembly;
-    
+
     // constructor
     // MixedPoisson( std::string prefix = "" );
-    MixedPoisson( std::string const& prefix = "mixedpoisson",                   
+    MixedPoisson( std::string const& prefix = "mixedpoisson",
                     WorldComm const& _worldComm = Environment::worldComm(),
                     std::string const& subPrefix = "",
                     std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
-    
+
     MixedPoisson( self_type const& MP ) = default;
     static self_ptrtype New( std::string const& prefix = "mixedpoisson",
                              WorldComm const& worldComm = Environment::worldComm(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() ); 
+                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
     using op_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Wh_t, Pdh_type<mesh_type,1>>>;
     using opv_interp_ptrtype = boost::shared_ptr<OperatorInterpolation<Vh_t, Pdhv_type<mesh_type,1>>>;
     void init( mesh_ptrtype mesh = nullptr, int extraRow = 0, int extraCol = 0, mesh_ptrtype meshVisu = nullptr);
-               
+
     virtual void initModel();
     virtual void initSpaces();
     virtual void initGraphs(int extraRow, int extraCol);
@@ -218,7 +242,7 @@ public:
     Mh_ptr_t traceSpace() const { return M_Mh; }
     M0h_ptr_t traceSpaceOrder0() const { return M_M0h; }
     Ch_ptr_t constantSpace() const {return M_Ch;}
-    
+
     Vh_element_ptr_t fluxField() const { return M_up; }
     Wh_element_ptr_t potentialField() const { return M_pp; }
     model_prop_type modelProperties() { return *M_modelProperties; }
@@ -227,7 +251,7 @@ public:
     int integralCondition() const { return M_integralCondition; }
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
-    
+
     // time step scheme
     virtual void createTimeDiscretization() ;
     bdf_ptrtype timeStepBDF() { return M_bdf_mixedpoisson; }
@@ -237,7 +261,7 @@ public:
     virtual void updateTimeStepBDF();
     virtual void initTimeStep();
     void updateTimeStep() { this->updateTimeStepBDF(); }
-   
+
     // Exporter
     virtual void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr )
         {
@@ -251,7 +275,7 @@ public:
 
 
 
-template<int Dim, int Order, int G_Order> 
+template<int Dim, int Order, int G_Order>
 void MixedPoisson<Dim, Order, G_Order>::initTimeStep()
 {
         // start or restart time step scheme
@@ -277,7 +301,7 @@ void MixedPoisson<Dim, Order, G_Order>::initTimeStep()
 
         this->log("MixedPoisson","initTimeStep", "restart bdf/exporter done" );
     }
-    
+
 }
 
 
@@ -409,7 +433,7 @@ MixedPoisson<Dim, Order, G_Order>::initModel()
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Dirichlet" );
-        
+
 	if ( itType != mapField.end() )
         {
             Feel::cout << "Dirichlet: ";
@@ -423,7 +447,7 @@ MixedPoisson<Dim, Order, G_Order>::initModel()
             }
             Feel::cout << std::endl;
         }
-	 
+
         itType = mapField.find( "Neumann" );
         if ( itType != mapField.end() )
         {
@@ -476,7 +500,7 @@ MixedPoisson<Dim, Order, G_Order>::initModel()
 
     if ( M_integralMarkersList.empty() )
         M_integralCondition = 0;
-    else  
+    else
         M_integralCondition = M_integralMarkersList.size();
 
     if ( boost::icontains(M_modelProperties->model(),"picard") )
@@ -507,7 +531,7 @@ MixedPoisson<Dim, Order, G_Order>::initSpaces()
 
     M_up = M_Vh->elementPtr( "u" );
     M_pp = M_Wh->elementPtr( "p" );
-    
+
 
     Feel::cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
          << "Wh<" << Order << "> : " << M_Wh->nDof() << std::endl
@@ -519,13 +543,13 @@ MixedPoisson<Dim, Order, G_Order>::initSpaces()
 
 template<int Dim, int Order, int G_Order>
 void
-MixedPoisson<Dim, Order, G_Order>::initExporter( mesh_ptrtype meshVisu ) 
+MixedPoisson<Dim, Order, G_Order>::initExporter( mesh_ptrtype meshVisu )
 {
     std::string geoExportType="static"; //change_coords_only, change, static
     M_exporter = exporter ( _mesh=meshVisu?meshVisu:this->mesh() ,
                             _name="Export",
                             _geo=geoExportType,
-        		    _path=this->exporterPath() ); 
+        		    _path=this->exporterPath() );
 }
 
 template<int Dim, int Order, int G_Order>
@@ -534,8 +558,8 @@ MixedPoisson<Dim,Order,G_Order>::createTimeDiscretization()
 {
     this->log("MixedPoisson","createTimeDiscretization", "start" );
     this->timerTool("Constructor").start();
-    
-    
+
+
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
     std::string suffixName = "";
     if ( myFileFormat == "binary" )
@@ -549,7 +573,7 @@ MixedPoisson<Dim,Order,G_Order>::createTimeDiscretization()
                        _restart=this->doRestart(),
                        _restart_path=this->restartPath(),
                        _restart_at_last_save=this->restartAtLastSave(),
-                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() ); 
+                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
     M_bdf_mixedpoisson->setfileFormat( myFileFormat );
     M_bdf_mixedpoisson->setPathSave( (fs::path(this->rootRepository()) /
                                fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%M_bdf_mixedpoisson->bdfOrder()%this->timeStep() ).str() ) ) ).string() );
@@ -565,7 +589,7 @@ template<int Dim, int Order, int G_Order>
 void
 MixedPoisson<Dim, Order, G_Order>::initGraphs(int extraRow, int extraCol)
 {
-    int baseRow = 3 + M_integralCondition; 
+    int baseRow = 3 + M_integralCondition;
     int baseCol = 3 + M_integralCondition;
     M_hdg_graph = BlocksBaseGraphCSR(baseRow+extraRow,baseCol+extraCol);
     M_hdg_vec = BlocksBaseVector<double>(baseRow+extraRow);
@@ -610,7 +634,7 @@ MixedPoisson<Dim, Order, G_Order>::initGraphs(int extraRow, int extraCol)
 	}
 
         M_hdg_vec(i,0) = M_backend->newVector( M_Ch );
-        
+
     }
 
     if (M_integralCondition)
@@ -632,7 +656,7 @@ MixedPoisson<Dim, Order, G_Order>::solve()
 {
     tic();
     M_modelProperties -> parameters().updateParameterValues();
-    // M_modelProperties -> boundaryConditions().setParameterValues( { {t, M_bdf_mixedpoisson->time()} } ); 
+    // M_modelProperties -> boundaryConditions().setParameterValues( { {t, M_bdf_mixedpoisson->time()} } );
     updateConductivityTerm();
     assembleF();
     if ( M_updateAssembly != NULL )
@@ -666,7 +690,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleA()
     auto nu = M_Ch->element( "nu" );
     auto uI = M_Ch->element( "uI" );
     auto uI2 = M_Ch->element( "uI2" );
-    
+
     auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
     auto H = M_M0h->element( "H" );
@@ -719,7 +743,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleA()
 
     // -(j, grad(w))
     a21 += integrate(_range=elements(M_mesh),_expr=(-grad(w)*idt(u)));
-    
+
     // <j.n,w>_Gamma
     a21 += integrate(_range=internalfaces(M_mesh),
                      _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N()) ) );
@@ -736,13 +760,13 @@ MixedPoisson<Dim, Order, G_Order>::assembleA()
                        rightfacet( pow(idv(H),M_tau_order)*idt(p))*rightface(id(w) )));
     a22 += integrate(_range=boundaryfaces(M_mesh),
                      _expr=(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
-    
+
     // (1/delta_t p, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
         a22 += integrate(_range=elements(M_mesh),
                          _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
     }
-    
+
     // <-tau phat, w>_Gamma\Gamma_I
     a23 += integrate(_range=internalfaces(M_mesh),
                      _expr=-tau_constant * idt(phat) *
@@ -873,11 +897,11 @@ MixedPoisson<Dim, Order, G_Order>::assembleA()
                     	a41 += integrate( _range=markedfaces(M_mesh,marker), _expr=trans(idt(u))*N()*id(nu) );
 
                     	// <tau p, m>_Gamma_I
-                    	a42 += integrate( _range=markedfaces(M_mesh,marker), 
+                    	a42 += integrate( _range=markedfaces(M_mesh,marker),
 					  _expr=tau_constant * ( pow(idv(H),M_tau_order)*idt(p) ) * id(nu) );
 
                     	// -<lambda2, m>_Gamma_I
-                    	a44 += integrate( _range=markedfaces(M_mesh,marker), 
+                    	a44 += integrate( _range=markedfaces(M_mesh,marker),
 					  _expr=-tau_constant * (pow(idv(H),M_tau_order)*id(nu)) *idt(uI) );
 		    }
                 }
@@ -927,7 +951,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleA()
                     std::string marker = exAtMarker.marker();
 		    if (marker == M_integralMarkersList.back() )
 	    	    {
-                    	
+
 			// <lambda, v.n>_Gamma_I2
                     	a15 += integrate( _range=markedfaces(M_mesh,marker),
                         	          _expr=trans(id(u))*N()*idt(uI2) );
@@ -940,11 +964,11 @@ MixedPoisson<Dim, Order, G_Order>::assembleA()
                     	a51 += integrate( _range=markedfaces(M_mesh,marker), _expr=trans(idt(u))*N()*id(nu) );
 
                     	// <tau p, m>_Gamma_I2
-                    	a52 += integrate( _range=markedfaces(M_mesh,marker), 
+                    	a52 += integrate( _range=markedfaces(M_mesh,marker),
 					  _expr=tau_constant * ( pow(idv(H),M_tau_order)*idt(p) ) * id(nu) );
 
                     	// -<tau lambda3, m>_Gamma_I2
-                    	a55 += integrate( _range=markedfaces(M_mesh,marker), 
+                    	a55 += integrate( _range=markedfaces(M_mesh,marker),
 					  _expr=-tau_constant * (pow(idv(H),M_tau_order)*id(nu)) *idt(uI2) );
 		    }
                 }
@@ -952,7 +976,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleA()
         }
     }
 
-    
+
 }
 
 template<int Dim, int Order, int G_Order>
@@ -994,7 +1018,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                 }
             }
         }
-	
+
         itType = mapField.find( "Dirichlet" );
         if ( itType != mapField.end() )
         {
@@ -1008,7 +1032,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                         g.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
 		    // <g_D, mu>_Gamma_D
 		    rhs3 += integrate(_range=markedfaces(M_mesh,marker),
-                                  _expr=id(l)*g);                    
+                                  _expr=id(l)*g);
                 }
                 else if ( exAtMarker.isFile() )
                 {
@@ -1100,7 +1124,7 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                     std::string marker = exAtMarker.marker();
 		    if ( marker == M_integralMarkersList.front() )
 		    {
-                    
+
 			double meas = integrate( _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
 
 
@@ -1120,13 +1144,13 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                             {
                             	Feel::cout << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
                             	LOG(INFO) << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
-                            
+
                             	// data may depend on time
                             	g = exAtMarker.data(M_bdf_mixedpoisson->time());
                             }
                             else
                                 g = exAtMarker.data(0.1);
-                            
+
                             LOG(INFO) << "use g=" << g << std::endl;
                             Feel::cout << "g=" << g << std::endl;
                             rhs4 += integrate(_range=markedfaces(M_mesh,marker),
@@ -1171,13 +1195,13 @@ MixedPoisson<Dim, Order, G_Order>::assembleF()
                             	{
                             	     Feel::cout << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
                             	     LOG(INFO) << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
-                            
+
                            	     // data may depend on time
                             	     g = exAtMarker.data(M_bdf_mixedpoisson->time());
                             	}
                             	else
                                      g = exAtMarker.data(0.1);
-                            
+
                             	LOG(INFO) << "use g=" << g << std::endl;
                             	Feel::cout << "g=" << g << std::endl;
                             	rhs5 += integrate(_range=markedfaces(M_mesh,marker),
@@ -1283,7 +1307,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
         LOG(INFO) << "exporting on computational mesh at time " << time;
         M_exporter->step( time )->setMesh( M_mesh );
     }
-    
+
     // Export computed solutions
     auto postProcess = M_modelProperties->postProcess();
     auto itField = postProcess.find( "Fields");
@@ -1339,7 +1363,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
 				auto p_exact = expr(exAtMarker.expression() );
 				if ( !this->isStationary() )
     			      	    p_exact.setParameterValues( { {"t", time } } );
-    				double K = 1; 
+    				double K = 1;
 				for( auto const& pairMat : M_modelProperties->materials() )
                 		{
                     		   auto material = pairMat.second;
@@ -1347,9 +1371,9 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
                 		}
     				auto gradp_exact = grad<Dim>(p_exact);
    				auto u_exact = expr(-K*trans(gradp_exact));
-				M_exporter->step( time )->add(prefixvm(M_prefix, "p_exact"), project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact) );	
+				M_exporter->step( time )->add(prefixvm(M_prefix, "p_exact"), project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact) );
 				M_exporter->step( time )->add(prefixvm(M_prefix, "u_exact"), project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact) );
-				
+
 				auto l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(*M_up) );
 				auto l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
 				if (l2norm_uex < 1)
@@ -1359,21 +1383,21 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
     				auto l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact );
     				if (l2norm_pex < 1)
 				    l2norm_pex = 1.0;
-						
+
     				Feel::cout << "----- Computed Errors -----" << std::endl;
     				Feel::cout << "||p-p_ex||_L2=\t" << l2err_p/l2norm_pex << std::endl;
 				Feel::cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
 				Feel::cout << "---------------------------" << std::endl;
-				
+
     				// Export the errors
 				M_exporter -> step( time )->add(prefixvm(M_prefix, "p_error_L2"), l2err_p/l2norm_pex );
 				M_exporter -> step( time )->add(prefixvm(M_prefix, "u_error_L2"), l2err_u/l2norm_uex );
-			    } 
+			    }
 			}
 		    }
 
 		}
-			
+
             } else if ( field != "state variable" )
             {
        		// Import data
@@ -1385,7 +1409,7 @@ MixedPoisson<Dim,Order, G_Order>::exportResults( double time, mesh_ptrtype mesh,
 		    auto mapField = (*itField).second;
 		    auto itType = mapField.find( field );
 		    if ( itType != mapField.end() )
-        	    {		
+        	    {
             	    	for ( auto const& exAtMarker : (*itType).second )
             		{
 			    if ( exAtMarker.isExpression() )
