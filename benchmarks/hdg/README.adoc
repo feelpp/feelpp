@@ -29,18 +29,19 @@ NOTE: error should be 0 thanks to exact solution being linear
 
 The model file, the geometries and the configuration files are in cvg-tests. +
 The simplest way to launch the tests is with the following command:
-[sources,sh]
----
+
+[source,sh]
+----
 mpirun -np 1 feelpp_benchmarks_conv_2DP1G1E3 --config-file cvg-tests/darcy2D-Dir.cfg
----
+----
 
 The templates parameters stand for the dimension, the polynomial order, the geometric order and the expression order. +
 You have different configuration files for 2D and 3D and for each type of boundary condition. +
 The important options are:
 
-* `_cvg.p_exact_`: exact expression for the pressure
-* `_cvg.cond_`: conductivity
-* `_cvg.refine-nb_`: number of iteration of the convergence test
-* `_cvg.refine-factor_`: factor by which to divide hsize at each iteration
-* `_mixedpoisson.use-sc_`: use static condensation or not
+* `cvg.p_exact`: exact expression for the pressure
+* `cvg.cond`: conductivity
+* `cvg.refine-nb`: number of iteration of the convergence test
+* `cvg.refine-factor`: factor by which to divide hsize at each iteration
+* `mixedpoisson.use-sc`: use static condensation or not
 
