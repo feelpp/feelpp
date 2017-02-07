@@ -121,6 +121,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     {
         M_stretchAdvection->init();
     }
+    // Init backward characteristics advection
+    if( M_useCauchyAugmented )
+    {
+        M_backwardCharacteristicsAdvection->init();
+    }
 
     // Init iterSinceReinit
     if( this->doRestart() )
@@ -248,6 +253,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     {
         // Initialize stretch modGradPhi
         M_stretchAdvection->fieldSolutionPtr()->setConstant(1.);
+    }
+    if( M_useCauchyAugmented )
+    {
+        // Initialize backward characteristics
+        *(M_backwardCharacteristicsAdvection->fieldSolutionPtr()) = vf::project(
+                _space=M_backwardCharacteristicsAdvection->functionSpace(),
+                _range=elements(M_backwardCharacteristicsAdvection->mesh()),
+                _expr=vf::P()
+                );
     }
 
     this->log("LevelSet", "initLevelsetValue", "finish");
@@ -418,12 +432,26 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
 
         M_stretchAdvection->getExporter()->setDoExport( boption( _name="do_export_stretch-advection", _prefix=this->prefix() ) );
     }
+    if( M_useCauchyAugmented )
+    {
+        M_backwardCharacteristicsAdvection = backwardcharacteristics_advection_type::New(
+                prefixvm(this->prefix(), "backward-characteristics-advection"),
+                this->worldComm()
+                );
+        M_backwardCharacteristicsAdvection->setModelName( "Advection" );
+        M_backwardCharacteristicsAdvection->build( this->functionSpaceVectorial() );
+        M_backwardCharacteristicsAdvection->timeStepBDF()->setOrder( this->timeStepBDF()->bdfOrder() );
+
+        M_backwardCharacteristicsAdvection->getExporter()->setDoExport( boption( _name="do_export_backward-characteristics-advection", _prefix=this->prefix() ) );
+    }
     for( std::string const& bcMarker: this->M_bcMarkersInflow )
     {
         if( M_useGradientAugmented )
             M_modGradPhiAdvection->addMarkerInflowBC( bcMarker );
         if( M_useStretchAugmented )
             M_stretchAdvection->addMarkerInflowBC( bcMarker );
+        if( M_useCauchyAugmented )
+            M_backwardCharacteristicsAdvection->addMarkerInflowBC( bcMarker );
     }
 }
 
@@ -644,6 +672,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     M_useStretchAugmented = boption( _name="use-stretch-augmented", _prefix=this->prefix() );
     M_reinitStretchAugmented = boption( _name="reinit-stretch-augmented", _prefix=this->prefix() );
+
+    M_useCauchyAugmented = boption( _name="use-cauchy-augmented", _prefix=this->prefix() );
 
     //M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
 }
@@ -1311,6 +1341,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
                 //);
         M_stretchAdvection->solve();
     }
+    if( M_useCauchyAugmented )
+    {
+        auto u = this->fieldAdvectionVelocityPtr();
+        M_backwardCharacteristicsAdvection->updateAdvectionVelocity( idv(u) );
+        M_backwardCharacteristicsAdvection->solve();
+    }
+
     // Update interface-related quantities
     this->updateInterfaceQuantities();
 
@@ -1342,6 +1379,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
         M_modGradPhiAdvection->updateTimeStep();
     if( M_useStretchAugmented )
         M_stretchAdvection->updateTimeStep();
+    if( M_useCauchyAugmented )
+        M_backwardCharacteristicsAdvection->updateTimeStep();
 
     if( M_iterSinceReinit < M_timeOrder )
     {
@@ -1350,9 +1389,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
             M_modGradPhiAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
         if( M_useStretchAugmented )
             M_stretchAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
-        //this->timeStepBDF()->setTimeInitial( current_time ); 
-        //this->timeStepBDF()->restart();
-        //this->timeStepBDF()->setTimeInitial( this->timeInitial() );
+        if( M_useCauchyAugmented )
+            M_backwardCharacteristicsAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
     }
 }
 

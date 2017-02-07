@@ -120,7 +120,7 @@ public:
     //--------------------------------------------------------------------//
     // Space vectorial levelset
     typedef Lagrange<Order, Vectorial> basis_levelset_vectorial_type;
-    typedef FunctionSpace<mesh_type, bases<basis_levelset_vectorial_type>, value_type, Periodicity<periodicity_type> > space_levelset_vectorial_type;
+    typedef FunctionSpace<mesh_type, bases<basis_levelset_vectorial_type>, Periodicity<periodicity_type> > space_levelset_vectorial_type;
     typedef boost::shared_ptr<space_levelset_vectorial_type> space_levelset_vectorial_ptrtype;
     typedef typename space_levelset_vectorial_type::element_type element_levelset_vectorial_type;
     typedef boost::shared_ptr< element_levelset_vectorial_type > element_levelset_vectorial_ptrtype;
@@ -186,8 +186,11 @@ public:
     // Stretch advection
     typedef Advection<ConvexType, Lagrange<Order, Scalar, Continuous>, PeriodicityType> stretch_advection_type;
     typedef boost::shared_ptr<stretch_advection_type> stretch_advection_ptrtype;
-    typedef typename stretch_advection_type::element_advection_type element_stretch_type;
-    typedef boost::shared_ptr<element_stretch_type> element_stretch_ptrtype;
+
+    //--------------------------------------------------------------------//
+    // Backward characteristics advection
+    typedef Advection<ConvexType, Lagrange<Order, Vectorial>, PeriodicityType> backwardcharacteristics_advection_type;
+    typedef boost::shared_ptr<backwardcharacteristics_advection_type> backwardcharacteristics_advection_ptrtype;
 
     //--------------------------------------------------------------------//
     // Exporter
@@ -539,14 +542,19 @@ private:
     // ModGradPhi advection
     bool M_useGradientAugmented;
     bool M_reinitGradientAugmented;
-    bool M_reinitStretchAugmented;
     modgradphi_advection_ptrtype M_modGradPhiAdvection;
 
     //--------------------------------------------------------------------//
     // Stretch advection
     bool M_useStretchAugmented;
+    bool M_reinitStretchAugmented;
     stretch_advection_ptrtype M_stretchAdvection;
     mutable element_stretch_ptrtype M_levelsetStretch;
+
+    //--------------------------------------------------------------------//
+    // Backward characteristics advection
+    bool M_useCauchyAugmented;
+    backwardcharacteristics_advection_ptrtype M_backwardCharacteristicsAdvection;
 
     //--------------------------------------------------------------------//
     // Export
