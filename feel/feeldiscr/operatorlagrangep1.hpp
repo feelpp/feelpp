@@ -882,7 +882,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
             {
                 auto resultRecvData = MAPresultRecvData[proc][cpt];
 
-                auto const& myGhostEltBase = this->domainSpace()->mesh()->element( mapMsg[proc][cpt],proc );
+                auto const& myGhostEltBase = this->domainSpace()->mesh()->element( mapMsg[proc][cpt] );
 
                 auto const& mapLocalToGlobalPointId = resultRecvData.template get<1>();
                 auto resultRecv = resultRecvData.template get<0>();
@@ -962,7 +962,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                     nNewElem++;
 
                     auto const& theNewElt = M_mesh->addElement ( elt );
-                    M_mesh->elements().modify( M_mesh->elementIterator( theNewElt.id(),  proc ),
+                    M_mesh->elements().modify( M_mesh->elementIterator( theNewElt.id() ),
                                                 Feel::detail::updateIdInOthersPartitions( proc, itelt->template get<1>() ) );
 
                 } // for ( ;itelt!=enelt;++itelt )

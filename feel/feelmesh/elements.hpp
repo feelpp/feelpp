@@ -105,21 +105,9 @@ public:
         element_type,
         multi_index::indexed_by<
             //multi_index::random_access<>,
-            // sort by less<int> on id() + pid()
-#if 1
             multi_index::ordered_unique<multi_index::identity<element_type> >
-#else
-            multi_index::ordered_unique<
-                multi_index::composite_key<element_type,
-                                           multi_index::const_mem_fun<element_type,
-                                                                      rank_type,
-                                                                      &element_type::processId>,
-                                           multi_index::const_mem_fun<element_type,
-                                                                      size_type,
-                                                                      &element_type::id> > >
-#endif
-
 #if 0
+            // sort by less<int> on id() + pid()
             multi_index::ordered_unique<
                 multi_index::composite_key<element_type,
                                            multi_index::const_mem_fun<element_type,
@@ -394,6 +382,7 @@ public:
         return M_elements.find( element_type( i ) );
     };
 
+    FEELPP_DEPRECATED
     element_iterator elementIterator( size_type i, rank_type p ) const
     {
         //return  M_elements.template get<0>().find( boost::make_tuple( p, i ) );
@@ -412,6 +401,7 @@ public:
         return *M_elements.find( element_type( i ) );
     };
 
+    FEELPP_DEPRECATED
     element_type const& element( size_type i, rank_type p ) const
     {
         //return *M_elements.template get<0>().find( boost::make_tuple( p, i ) );
@@ -795,7 +785,7 @@ public:
         auto en = rangeElt.template get<2>();
 
         for ( ; it != en; ++it )
-            M_elements.modify( this->elementIterator( boost::unwrap_ref(*it).id(), boost::unwrap_ref(*it).processId() ), [&markerType,&evec]( element_type& e )
+            M_elements.modify( this->elementIterator( boost::unwrap_ref(*it).id() ), [&markerType,&evec]( element_type& e )
                                {
                                    e.setMarker( markerType, evec.localToGlobal( e.id(), 0, 0 ) );
                                } );

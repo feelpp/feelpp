@@ -524,7 +524,7 @@ void Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionOnePermutation()
                                   permutation, mpl::bool_<( SHAPE == SHAPE_TETRA )>() );
 
         if ( permutation.value() != face_permutation_type::IDENTITY )
-            this->elements().modify( this->elementIterator( elt_it->ad_second(), elt_it->proc_second() ),
+            this->elements().modify( this->elementIterator( elt_it->ad_second() ),
                                      Feel::detail::UpdateFacePermutation<face_permutation_type>( elt_it->pos_second(),
                                                                                                  permutation ) );
     }

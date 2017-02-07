@@ -1245,7 +1245,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
                                 if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
                                 {
-                                    MlocEvalBasisNEW->update( this->domainSpace()->mesh()->element( domain_eid, theImageElt.processId() ) );
+                                    MlocEvalBasisNEW->update( this->domainSpace()->mesh()->element( domain_eid ) );
                                     IhLoc = MlocEvalBasisNEW->interpolant();
                                 }
 

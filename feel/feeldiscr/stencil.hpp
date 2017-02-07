@@ -1489,8 +1489,8 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
         for ( std::pair<size_type,rank_type> const& infoTestElt : infoTestElts )
         {
         size_type idTestElt = infoTestElt.first;
-        rank_type pidTestElt = infoTestElt.second;
-        auto const& elem = _M_X1->mesh()->element( idTestElt,pidTestElt );
+        //rank_type pidTestElt = infoTestElt.second;
+        auto const& elem = _M_X1->mesh()->element( idTestElt );
 
         auto const domains_eid_set = trialElementId( elem.id(), mpl::int_<nDimDiffBetweenTestTrial>() );
         //const uint16_type  n1_dof_on_element = element_dof1.size();
@@ -1562,8 +1562,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                                              _M_X2->dof()->buildDofTableMPIExtended() ) )
                                         << "Both spaces must have the extended dof table and none of them should be P0 Continuous to build the matrix stencil. Use block pattern construction instead!";
 
-                                const auto * neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
-                                                                                     neighbor_process_id ) );
+                                const auto * neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id ) );
 
                                 if ( neighbor_id == neighbor->id()  )
                                 {
