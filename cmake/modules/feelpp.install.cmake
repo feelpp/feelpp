@@ -86,18 +86,19 @@ endif()
 
 set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
   -P "${CMAKE_BINARY_DIR}/contrib/cmake_install.cmake"
+  -P "${CMAKE_BINARY_DIR}/tools/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/mesh/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Libs -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/cmake_install.cmake")
 
 if ( FEELPP_MINIMAL_BUILD )
   add_custom_target(install-feelpp-lib
-    DEPENDS contrib feelpp 
+    DEPENDS contrib tools feelpp 
     COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
     )
 else()
   add_custom_target(install-feelpp-lib
-    DEPENDS contrib feelpp feelpp_mesh_partitioner
+    DEPENDS contrib tools feelpp feelpp_mesh_partitioner
     COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
     )
 endif()
