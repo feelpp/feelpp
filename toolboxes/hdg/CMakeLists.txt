@@ -44,3 +44,8 @@ foreach(D 3)
 	endforeach()
   endforeach()
 endforeach()
+
+feelpp_add_testcase(bitter)
+feelpp_add_testcase(cylinder)
+feelpp_add_testcase(testDarcy)
+feelpp_add_testcase(mixed-poisson)
