@@ -946,7 +946,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
     // other data used if updateComponentFacesMinimal is true for build adjacency elements info
     std::vector< std::tuple<size_type,rank_type,uint16_type> > f2e;
-    boost::unordered_map<std::pair<size_type,rank_type>, std::vector<std::tuple<size_type,rank_type,uint16_type> > > e2e;
+    boost::unordered_map<size_type, std::vector<std::tuple<size_type,rank_type,uint16_type> > > e2e;
     // special trick (at this time, we need also to add active faces which touch interprocess boundary)
     // else mpi dof table can be not build
     std::set<size_type> ptsTouchInterProcess;
@@ -1236,8 +1236,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     if ( updateComponentFacesMinimal )
                     {
                         auto const& f2eVal = f2e[cface.id()];
-                        e2e[std::make_pair(std::get<0>(f2eVal),std::get<1>(f2eVal))].push_back( std::make_tuple( __element_id, eltPid, std::get<2>(f2eVal) ) );
-                        e2e[std::make_pair(__element_id,eltPid)].push_back( std::make_tuple( std::get<0>(f2eVal), std::get<1>(f2eVal), j ) );
+                        e2e[std::get<0>(f2eVal)].push_back( std::make_tuple( __element_id, eltPid, std::get<2>(f2eVal) ) );
+                        e2e[__element_id].push_back( std::make_tuple( std::get<0>(f2eVal), std::get<1>(f2eVal), j ) );
 
                         //bool isInterProcessFace = numPartition > 1 && ( ( facePtr->element0().processId() == currentPid && eltPid != currentPid ) ||
                         //                                                ( facePtr->element0().processId() != currentPid && eltPid == currentPid ) );
@@ -1347,11 +1347,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             else
             {
                 // be careful: this step is crucial to set proper neighbor connectivity
-                element_iterator elt1 = this->elementIterator( f_it->ad_first(), f_it->proc_first() );
+                element_iterator elt1 = this->elementIterator( f_it->ad_first()/*, f_it->proc_first()*/ );
                 this->elements().modify( elt1, Feel::detail::UpdateFace<face_type>( boost::cref( *f_it ) ) );
                 if ( f_it->isConnectedTo1() )
                 {
-                    element_iterator elt2 = this->elementIterator( f_it->ad_second(), f_it->proc_second() );
+                    element_iterator elt2 = this->elementIterator( f_it->ad_second()/*, f_it->proc_second()*/ );
                     this->elements().modify( elt2, Feel::detail::UpdateFace<face_type>( boost::cref( *f_it ) ) );
 
                     // fix duplication of point in connection1 with 3d mesh at order 3 and 4
@@ -1377,11 +1377,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             }
             else
             {
-                element_iterator elt1 = this->elementIterator( f_it->ad_first(), f_it->proc_first() );
+                element_iterator elt1 = this->elementIterator( f_it->ad_first()/*, f_it->proc_first()*/ );
                 this->elements().modify( elt1, [&f_it]( element_type& elt ) { elt.setFace( f_it->pos_first(), *f_it ); } );
                 if ( f_it->isConnectedTo1() )
                 {
-                    element_iterator elt2 = this->elementIterator( f_it->ad_second(), f_it->proc_second() );
+                    element_iterator elt2 = this->elementIterator( f_it->ad_second()/*, f_it->proc_second()*/ );
                     this->elements().modify( elt2, [&f_it]( element_type& elt ) { elt.setFace( f_it->pos_second(), *f_it ); } );
 
                     // fix duplication of point in connection1 with 3d mesh at order 3 and 4
@@ -1393,8 +1393,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
         for ( auto const& eltDatasPair : e2e )
         {
-            auto const& eltDatasKey = eltDatasPair.first;
-            element_iterator eltIt1 = this->elementIterator( eltDatasKey.first, eltDatasKey.second );
+            element_iterator eltIt1 = this->elementIterator( eltDatasPair.first );
             for (auto const& eltDatas  : eltDatasPair.second )
             {
                 uint16_type j = std::get<2>( eltDatas );
@@ -1508,7 +1507,7 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
     size_type next_face = 0;
     bool faceinserted = false;
 
-    boost::unordered_map<std::pair<size_type,rank_type>, std::vector<std::tuple<size_type,rank_type,uint16_type> > > e2e;
+    boost::unordered_map<size_type, std::vector<std::tuple<size_type,rank_type,uint16_type> > > e2e;
 
     element_iterator iv,  en;
     boost::tie( iv, en ) = this->elementsRange();
@@ -1543,8 +1542,8 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
             else // already stored
             {
                 auto const& f2eVal = f2e[faceIdRegistered];
-                e2e[std::make_pair(std::get<0>(f2eVal),std::get<1>(f2eVal))].push_back( std::make_tuple( eltId, eltPid, std::get<2>(f2eVal) ) );
-                e2e[std::make_pair(eltId,eltPid)].push_back( std::make_tuple( std::get<0>(f2eVal), std::get<1>(f2eVal), j ) );
+                e2e[std::get<0>(f2eVal)].push_back( std::make_tuple( eltId, eltPid, std::get<2>(f2eVal) ) );
+                e2e[eltId].push_back( std::make_tuple( std::get<0>(f2eVal), std::get<1>(f2eVal), j ) );
                 // erase face desc in map (maybe improve other acces)
                 if ( nDim == nRealDim )
                     _faces.erase( _faceit );
@@ -1554,8 +1553,7 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
 
     for ( auto const& eltDatasPair : e2e )
     {
-        auto const& eltDatasKey = eltDatasPair.first;
-        element_iterator eltIt1 = this->elementIterator( eltDatasKey.first, eltDatasKey.second );
+        element_iterator eltIt1 = this->elementIterator( eltDatasPair.first );
         for (auto const& eltDatas  : eltDatasPair.second )
         {
             uint16_type j = std::get<2>( eltDatas );
@@ -1982,7 +1980,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
             std::cout<< "I am the proc " << this->worldComm().localRank()<<" I receive to proc " << proc
                      <<" with tag "<< cpt << std::endl;
 #endif
-            auto const& theelt = this->element( mapMsg[proc][cpt],proc );
+            auto const& theelt = this->element( mapMsg[proc][cpt]/*,proc*/ );
 
             //update faces data
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
@@ -2428,7 +2426,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
             auto const& idPointsWithNodeRecv = itFinalDataToRecv->second[k].template get<0>();
             auto const& idEdgesWithBaryRecv = itFinalDataToRecv->second[k].template get<1>();
             auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k].template get<2>();
-            auto const& theelt = this->element( memoryMsgToSend[idProc][k], idProc );
+            auto const& theelt = this->element( memoryMsgToSend[idProc][k]/*, idProc*/ );
 
             //update faces data
             if ( !idFacesWithBaryRecv.empty() )

@@ -2290,7 +2290,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
             const int nbDataToTreat = dataToRecv.size();
             for ( int k=0;k<nbDataToTreat;++k )
             {
-                auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/,  procToRecv );
+                auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/ );
                 new_mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( procToRecv, dataToRecv[k]/*idEltAsked*/ ) );
             }
         }
@@ -2363,7 +2363,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
                 size_type idEltAsked;
                 new_mesh->worldComm().localComm().recv(procToRecv, k, idEltAsked);
 
-                auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/,  procToRecv );
+                auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/ );
                 new_mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( procToRecv, idEltAsked ) );
             }
         }

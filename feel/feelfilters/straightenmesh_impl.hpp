@@ -95,7 +95,7 @@ straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mp
             auto const eneltghost = itprocghost->second.end();
             for ( ; iteltghost!=eneltghost ; ++iteltghost )
             {
-                auto const& eltGhost = mesh->element(*iteltghost,itprocghost->first);
+                auto const& eltGhost = mesh->element(*iteltghost);
                 for ( uint16_type f = 0 ; f < mesh_type::element_type::numTopologicalFaces ; ++f )
                 {
                     auto const& theface = eltGhost.face(f);

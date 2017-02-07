@@ -1723,26 +1723,9 @@ buildGmcWithRelationDifferentMeshType2( boost::shared_ptr<SpaceType> const& spac
     typedef typename gmc_type::gm_type::precompute_ptrtype geopc_ptrtype;
 
     geopc_ptrtype geopc( boost::make_shared<geopc_type>( gm, im.points() ) );
-    if ( space->mesh()->hasElement( idElt ) ) // test if is an active element
-    {
-        auto const& eltInit = space->mesh()->element( idElt );
-        return boost::make_shared<gmc_type>( gm, eltInit, geopc );
-    }
-    else // maybe a ghost, else error
-    {
-        rank_type ghostProcId = invalid_rank_type_value;
-        for ( rank_type p : space->mesh()->neighborSubdomains() )
-        {
-            if ( space->mesh()->hasElement( idElt, p ) )
-            {
-                ghostProcId = p;
-                break;
-            }
-        }
-        CHECK( ghostProcId != invalid_rank_type_value ) << "element id " << idElt << "not found";
-        auto const& eltInit = space->mesh()->element( idElt,ghostProcId );
-        return boost::make_shared<gmc_type>( gm, eltInit, geopc );
-    }
+    CHECK( space->mesh()->hasElement( idElt ) ) << " mesh doesnt have an element id " << idElt;
+    auto const& eltInit = space->mesh()->element( idElt );
+    return boost::make_shared<gmc_type>( gm, eltInit, geopc );
 }
 
 template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
@@ -1772,29 +1755,8 @@ updateGmcWithRelationDifferentMeshType2( FaceType const& theface, boost::shared_
 {
     typedef typename QuadMapped<ImType>::permutation_type permutation_type;
 
-#if 0
+    CHECK( space->mesh()->hasElement( idElt ) ) << " mesh doesnt have an element id " << idElt;
     auto const& theelt = space->mesh()->element( idElt );
-#else
-     // find process of element
-    rank_type ghostProcId = invalid_rank_type_value;
-    if ( space->mesh()->hasElement( idElt ) )
-    {
-        ghostProcId = space->mesh()->element( idElt ).processId();
-    }
-    else
-    {
-        for ( rank_type p : space->mesh()->neighborSubdomains() )
-        {
-            if ( space->mesh()->hasElement( idElt, p ) )
-            {
-                ghostProcId = p;
-                break;
-            }
-        }
-    }
-    CHECK( ghostProcId != invalid_rank_type_value ) << "element id " << idElt << "not found";
-    auto const& theelt = space->mesh()->element( idElt,ghostProcId );
-#endif
     gmc->update(theelt);
     bool found = gmcExpr->updateFromNeighborMatchingFace( theface.element0(), theface.idInElement0(), gmc );
     CHECK(found) << "the permutation of quad point was not found\n";
@@ -1809,29 +1771,8 @@ updateGmcWithRelationDifferentMeshType21( FaceType const& theface, boost::shared
 {
     typedef typename QuadMapped<ImType>::permutation_type permutation_type;
 
-#if 0
+    CHECK( space->mesh()->hasElement( idElt ) ) << " mesh doesnt have an element id " << idElt;
     auto const& theelt = space->mesh()->element( idElt );
-#else
-     // find process of element
-    rank_type ghostProcId = invalid_rank_type_value;
-    if ( space->mesh()->hasElement( idElt ) )
-    {
-        ghostProcId = space->mesh()->element( idElt ).processId();
-    }
-    else
-    {
-        for ( rank_type p : space->mesh()->neighborSubdomains() )
-        {
-            if ( space->mesh()->hasElement( idElt, p ) )
-            {
-                ghostProcId = p;
-                break;
-            }
-        }
-    }
-    CHECK( ghostProcId != invalid_rank_type_value ) << "element id " << idElt << "not found";
-    auto const& theelt = space->mesh()->element( idElt,ghostProcId );
-#endif
     gmc->update(theelt);
     bool found = gmcExpr->updateFromNeighborMatchingFace( theface.element1(), theface.idInElement1(), gmc );
     //bool found = gmcExpr->updateFromNeighborMatchingFace( theface.element0(), theface.idInElement0(), gmc );
@@ -3071,7 +3012,7 @@ Integrator<Elements, Im, Expr, Im2>::faceIntegratorUseTwoConnections( vf::detail
             res=false;
         else
         {
-            auto const& faceTrial = __form.trialSpace()->mesh()->element(idEltTrial, eltTest.processId() ).face( faceIdInElt );
+            auto const& faceTrial = __form.trialSpace()->mesh()->element(idEltTrial ).face( faceIdInElt );
             res = faceTrial.isConnectedTo0() && faceTrial.isConnectedTo1();
         }
     }
@@ -3209,7 +3150,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
         }
 
-        auto const& elt0TestInit = __form.testSpace()->mesh()->element( idEltTestInit,procIdElt0 );
+        auto const& elt0TestInit = __form.testSpace()->mesh()->element( idEltTestInit );
         //auto const& faceTestInit = elt0TestInit.face( __face_id_in_elt_0 );
 
         // get the geometric mapping associated with element 0
@@ -3279,7 +3220,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             }
             //CHECK( idElt1TestInit != invalid_size_type_value ) << "mesh relation fail : no find a corresponding element\n";
             // get element1
-            auto const& elt1TestInit = __form.testSpace()->mesh()->element( idElt1TestInit,procIdElt1 );
+            auto const& elt1TestInit = __form.testSpace()->mesh()->element( idElt1TestInit );
 
             // init linear/bilinear form for two connections
             __c1 = gmc_ptrtype( new gmc_type( __gm, elt1TestInit, __geopc, __face_id_in_elt_1 ) );
@@ -3338,7 +3279,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             }
 
             // element0 (from test mesh) used in integration
-            auto const& elt0Test = __form.testSpace()->mesh()->element( idEltTest,procIdElt0 );
+            auto const& elt0Test = __form.testSpace()->mesh()->element( idEltTest );
             CHECK( !elt0Test.isGhostCell() ) << "elt0 can't be a ghost element";
             //auto const& faceTest = elt0Test.face( __face_id_in_elt_0 );
 
@@ -3386,7 +3327,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 CHECK( idElt1Test != invalid_size_type_value ) << "mesh relation fail : no find a corresponding element\n";
 
                 // element1 (from test mesh) used in integration
-                auto const& elt1Test = __form.testSpace()->mesh()->element( idElt1Test,procIdElt1 );
+                auto const& elt1Test = __form.testSpace()->mesh()->element( idElt1Test );
 
                 if ( !isInitConnectionTo1 )
                 {

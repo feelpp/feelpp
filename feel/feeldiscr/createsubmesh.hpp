@@ -375,7 +375,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                             const rank_type procIdGhost = itProcGhost.first;
                             for ( size_type eltIdGhost : itProcGhost.second)
                             {
-                                auto const& ghostElt = M_mesh->element( eltIdGhost,procIdGhost );
+                                auto const& ghostElt = M_mesh->element( eltIdGhost );
                                 ghostCellsFind[procIdGhost].insert( boost::make_tuple( ghostElt.id(),
                                                                                        ghostElt.idInOthersPartitions( ghostElt.processId() ) ) );
                             }
@@ -606,7 +606,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                             const rank_type procIdGhost = itProcGhost.first;
                             for (size_type eltIdGhost : itProcGhost.second)
                             {
-                                auto const& ghostElt = M_mesh->element(eltIdGhost,procIdGhost);
+                                auto const& ghostElt = M_mesh->element(eltIdGhost);
                                 for ( uint16_type s=0; s<ghostElt.numTopologicalFaces; s++ )
                                 {
                                     if ( !ghostElt.facePtr( s ) )
@@ -801,7 +801,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
                             const rank_type procIdGhost = itProcGhost.first;
                             for (size_type eltIdGhost : itProcGhost.second)
                             {
-                                auto const& ghostElt = M_mesh->element(eltIdGhost,procIdGhost);
+                                auto const& ghostElt = M_mesh->element(eltIdGhost);
                                 for ( uint16_type s=0; s<ghostElt.numEdges/*numTopologicalFaces*/; s++ )
                                 {
                                     if ( !ghostElt.edgePtr( s ) )
@@ -874,8 +874,8 @@ template <typename MeshType,typename IteratorRange,int TheTag>
 typename MeshType::element_type const&
 CreateSubmeshTool<MeshType,IteratorRange,TheTag>::entityExtracted( size_type id, rank_type pid, mpl::int_<MESH_ELEMENTS> /**/ ) const
 {
-    CHECK( M_mesh->hasElement( id,pid ) ) << "no element with id " << id << " on proc " << pid;
-    return M_mesh->element( id,pid );
+    CHECK( M_mesh->hasElement( id ) ) << "no element with id " << id;
+    return M_mesh->element( id );
 }
 template <typename MeshType,typename IteratorRange,int TheTag>
 typename MeshType::face_type const&
@@ -1121,7 +1121,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::
                 auto itFindGhostOld = ghostOldEltDone.find( oldElem.id() );
                 if ( itFindGhostOld != ghostOldEltDone.end() )
                 {
-                    auto eltIt = newMesh->elementIterator( itFindGhostOld->second.first, itFindGhostOld->second.second/*proc_id*/ );
+                    auto eltIt = newMesh->elementIterator( itFindGhostOld->second.first );
                     newMesh->elements().modify( eltIt, Feel::detail::updateIdInOthersPartitions( rankRecv, idEltActiveInOtherProc ) );
                     if ( rankRecv < eltIt->processId() )
                     {
@@ -1213,7 +1213,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::
     for ( auto const& dataEltDuplicated : mapActiveEltDuplicatedInWorld )
     {
         size_type newId = dataEltDuplicated.first;
-        auto eltIt = newMesh->elementIterator( newId, proc_id );
+        auto eltIt = newMesh->elementIterator( newId );
 
         rank_type minPid = proc_id;
         std::set<rank_type> allpid;

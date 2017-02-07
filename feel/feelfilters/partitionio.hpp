@@ -1132,7 +1132,7 @@ void PartitionIO<MeshType>::readGhostElements( std::map<rank_type,std::vector<si
         int pid = M_uintBuffer[currentBufferIndex++];
         //size_type idInActivePart = M_uintBuffer[currentBufferIndex++];
 
-        auto it = M_meshPartIn->elementIterator( id, partId );
+        auto it = M_meshPartIn->elementIterator( id );
         M_meshPartIn->elements().modify( it, Feel::detail::UpdateProcessId(pid) );
         //M_meshPartIn->elements().modify( it, Feel::detail::updateIdInOthersPartitions( pid, idInActivePart ) );
         M_meshPartIn->elements().modify( it, Feel::detail::UpdateNeighborPartition( partId ) );
@@ -1478,7 +1478,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         const int nDataRecv = itFinalDataToRecv->second.size();
         for ( int k=0; k<nDataRecv; ++k )
         {
-            auto eltToUpdate = M_meshPartIn->elementIterator( memoryMsgToSend[pid][k],pid );
+            auto eltToUpdate = M_meshPartIn->elementIterator( memoryMsgToSend[pid][k] );
             M_meshPartIn->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( pid, itFinalDataToRecv->second[k] ) );
         }
     }

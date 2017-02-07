@@ -149,7 +149,7 @@ updateDofOnVertices( MeshType const& mesh, typename MeshType::face_type const& t
             bool findFace=false;
             DCHECK(itprocghost->second.size()>0) << "need to have at least one ghost element\n";
             auto iteltghost = itprocghost->second.begin();
-            auto const& eltGhost = mesh.element(*iteltghost,theprocGhost);
+            auto const& eltGhost = mesh.element(*iteltghost);
             for ( uint16_type f = 0; f < MeshType::element_type::numTopologicalFaces && !findFace; ++f )
             {
                 if ( !eltGhost.facePtr(f) )
@@ -202,7 +202,7 @@ updateDofOnVertices( MeshType const& mesh, typename MeshType::element_type const
             bool findDofVertice = false;
             DCHECK( eltGhostPair.second.size()>0 ) << "need to have at least one ghost element\n";
             auto iteltghost = eltGhostPair.second.begin();
-            auto const& eltGhost = mesh.element(*iteltghost,theprocGhost);
+            auto const& eltGhost = mesh.element(*iteltghost);
             for ( uint16_type n=0; n < eltGhost.nVertices(); n++ )
             {
                 if ( eltGhost.point(n).id() == theptId )
@@ -270,7 +270,7 @@ updateDofOnEdges( MeshType const& mesh, typename MeshType::face_type const& thef
 
             DCHECK(itprocghost->second.size()>0) << "need to have at least one ghost element\n";
             auto iteltghost = itprocghost->second.begin();
-            auto const& eltGhost = mesh.element(*iteltghost,theprocGhost);
+            auto const& eltGhost = mesh.element(*iteltghost);
             bool findFace=false;
             for ( uint16_type f = 0; f < MeshType::element_type::numTopologicalFaces && !findFace; ++f )
             {
