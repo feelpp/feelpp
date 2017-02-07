@@ -675,60 +675,10 @@ void MixedElasticity<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::
 {
     auto blf = blockform1( *M_ps, M_F );
     auto nu = M_Ch->element( "nu" );
-/*
-    std::string marker;
-    Expr<GinacEx<expr_order> > g;
-    if ( !markerOpt.empty())
-    {
-        marker = markerOpt;
-        std::ostringstream f;
-        f << std::setprecision(14) << intjn;
-        g = expr<expr_order>(f.str());
-    
-    }
-    else
-    {
-        auto exAtMarker = M_IBCList[i];
-        marker = exAtMarker.marker();
-
-        if ( exAtMarker.isExpression() )
-        {
-            g = expr<expr_order>(exAtMarker.expression());
-            if ( !this->isStationary() )
-                g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
-
-        } else if ( exAtMarker.isFile() )
-        {
-            double d;
-            if ( !this->isStationary() )
-            {
-                Feel::cout << "use data file to set rhs for Dirichlet BC at time " << M_nm_mixedelasticity->time() << std::endl;
-                LOG(INFO) << "use data file to set rhs for Dirichlet BC at time " << M_nm_mixedelasticity->time() << std::endl;
-
-                // data may depend on time
-                d = exAtMarker.data(M_nm_mixedelasticity->time());
-            }
-            else
-                d = exAtMarker.data(0.1);
-
-            LOG(INFO) << "use g=" << d << std::endl;
-            Feel::cout << "g=" << d << std::endl;
-
-            std::ostringstream f;
-            f << std::setprecision(14) << d;
-            g = expr<expr_order>(f.str());
-
-        }
-    }
-*/
 
     auto exAtMarker = M_IBCList[i];
     auto marker = exAtMarker.marker();
-    /*
-    std::ostringstream f;
-    f << std::setprecision(14) << exAtMarker.expression();
-    auto g = expr<Dim, 1, expr_order>(f.str());
-    */
+    
     auto g = expr<Dim,1,expr_order>(exAtMarker.expression());
     if ( !this->isStationary() )
         g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
@@ -1185,23 +1135,25 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                 }
 
             }
-            /*else if ( field == "integral" )
+            else if ( M_mesh->hasFaceMarker(field) )
             { 
-                        std::vector<double> force_integral(Dim);
-                        auto marker = "top";
-                        auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+                auto marker = field;
+            	LOG(INFO) << "exporting computed force on " << marker << " at time " << time;
+                std::vector<double> force_integral(Dim);
+
+                auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                             _expr=trans(idv(M_up))*N());
                     
-                        std::string stringForce = "integralForce_";
-                        Feel::cout << "Force computed: " << std::endl;
-                        for( auto i=0;i < Dim;i++ )
-                        {
-                            auto stringForce_help = stringForce + static_cast<std::ostringstream*>( &(std::ostringstream() << i) )->str();
-                            force_integral[i] = j_integral.evaluate()(i,0);
-                            Feel::cout << force_integral[i] << std::endl;
-                            M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
-                        }
-            }*/
+                std::string stringForce = "integralForce_";
+                Feel::cout << "Force computed: " << std::endl;
+                for( auto i=0;i < Dim;i++ )
+                {
+                    auto stringForce_help = stringForce + static_cast<std::ostringstream*>( &(std::ostringstream() << i) )->str();
+                    force_integral[i] = j_integral.evaluate()(i,0);
+                    Feel::cout << force_integral[i] << std::endl;
+                    M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
+                }
+            }
             else if ( field == "displacement" )
         	{
             	LOG(INFO) << "exporting displacement at time " << time;
