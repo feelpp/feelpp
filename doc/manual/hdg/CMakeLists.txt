@@ -1,4 +1,4 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+###  CMakeLists.txt; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 03 Mar 2016
@@ -23,7 +23,7 @@
 #
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-feelpp_add_application( electro-thermal SRCS et_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore )
+feelpp_add_application( electro-thermal SRCS et_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 ) #LINK_LIBRARIES feelpp_modelcore )
 feelpp_add_application( electro-thermal-2 SRCS et2_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore)
 feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore)
 
@@ -42,13 +42,13 @@ feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_I
 #endforeach()
 
 # foreach(D RANGE 1 3 1)
-#  foreach(P  RANGE 0 4 1) #3 
-#     feelpp_add_application( mixed-poisson2-model_${D}DP${P}
-#     SRCS mixedpoisson2_main.cpp mixedpoisson2.hpp
-#     LINK_LIBRARIES feelpp_modelcore
-#     DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P})
-#   endforeach()
-# endforeach()
+#   foreach(P  RANGE 0 4 1) #3
+#      feelpp_add_application( mixed-poisson2-model_${D}DP${P}
+#        SRCS mixedpoisson2_main.cpp mixedpoisson2.hpp
+#        LINK_LIBRARIES feelpp_modelcore
+#        DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P})
+#    endforeach()
+#  endforeach()
 
 # foreach(D RANGE 1 3 1)
 #   foreach(P RANGE 0 4 1) #3
@@ -60,16 +60,16 @@ feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_I
 #                                 INCLUDE_IN_ALL
 #                                 LINK_LIBRARIES feelpp_modelcore )
 #       endforeach()
-#     endforeach() 
+#     endforeach()
 #   endforeach()
 # endforeach()
 
 
 # foreach(D 3)
-#   foreach(P  RANGE 0 4 0) #3 
+#   foreach(P  RANGE 0 4 0) #3
 # 	foreach (N RANGE 1 2 1)
-# 	  feelpp_add_application( mixed-elasticity-model_${D}DP${P}_G${N} 
-# 							SRCS mixedelasticity_main.cpp mixedelasticity.hpp 
+# 	  feelpp_add_application( mixed-elasticity-model_${D}DP${P}_G${N}
+# 							SRCS mixedelasticity_main.cpp mixedelasticity.hpp
 # 							DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N}
 # 							INCLUDE_IN_ALL
 # 							LINK_LIBRARIES feelpp_modelcore )
@@ -87,7 +87,7 @@ feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_I
 #                                 INCLUDE_IN_ALL
 #                                 LINK_LIBRARIES feelpp_modelcore )
 #       endforeach()
-#     endforeach() 
+#     endforeach()
 #   endforeach()
 # endforeach()
 
