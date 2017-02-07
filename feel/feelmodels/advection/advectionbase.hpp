@@ -49,7 +49,7 @@ enum class AdvectionStabMethod { NONE=0, GALS, CIP, SUPG, SGS };
 template< 
     typename ConvexType, typename BasisAdvectionType, 
     typename PeriodicityType = NoPeriodicity,
-    typename BasisDiffusionReactionType = BasisAdvectionType
+    typename BasisDiffusionReactionType = typename BasisAdvectionType::component_basis_type
         >
 class AdvectionBase : 
     public ModelNumerical,
