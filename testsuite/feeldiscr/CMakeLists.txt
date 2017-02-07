@@ -70,7 +70,7 @@ feelpp_add_test( nlSolveComposite CFG test_nlSolveComposite.cfg)
 feelpp_add_test( project_prodspace )
 
 if ( FEELPP_HAS_SLEPC )
-  feelpp_add_test( eigs CLI "-st_pc_factor_mat_solver_package mumps" )
+  feelpp_add_test( eigs )
 endif()
 
 feelpp_add_test( twolaplaciansdistributed )
@@ -82,5 +82,5 @@ feelpp_add_test( upmarker_faces )
 feelpp_add_test( listofrange )
 
 feelpp_add_test( productspaces )
+feelpp_add_test( space_cst )
 feelpp_add_test( element0D )
-

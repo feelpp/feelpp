@@ -88,10 +88,14 @@ namespace Feel
 namespace fs = boost::filesystem;
 namespace ptree = boost::property_tree;
 
+//!
+//! \internal
+//!
 namespace detail
 {
 const int spaces = 30;
 }
+//! \endinternal
 
 FEELPP_NO_EXPORT
 std::pair<std::string, std::string>

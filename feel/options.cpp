@@ -192,7 +192,7 @@ po::options_description
 gmsh_options( std::string const& prefix )
 {
     po::options_description _options( "Gmsh " + prefix + " options" );
-#if defined( FEELPP_HAS_GMSH_H )
+
     _options.add_options()
     // gmsh options
         ( prefixvm( prefix,"gmsh.filename" ).c_str(), Feel::po::value<std::string>()->default_value( "untitled.geo" ), "Gmsh filename" )
@@ -212,11 +212,7 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Partition Gmsh mesh once generated or loaded" )
         ( prefixvm( prefix,"gmsh.respect_partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "true to respect paritioning when mesh is loaded, false to ensure that partition is within the number of processors" )
         ( prefixvm( prefix,"gmsh.npartitions" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "Number of partitions" )
-#if defined(HAVE_METIS)
         ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO, 2=METIS)" )
-#else
-        ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO)" )
-#endif
         ( prefixvm( prefix,"gmsh.verbosity" ).c_str(), Feel::po::value<int>()->default_value( 5 ), "Gmsh verbosity level (0:silent except fatal errors, 1:+errors, 2:+warnings, 3:+direct, 4:+info except status bar, 5:normal, 99:debug)" )
         ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" )
 
@@ -242,7 +238,7 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.randFactor" ).c_str(), Feel::po::value<double>()->default_value( -1 ), "Mesh.RandomFactor. -1 stand for default value" )
 
         ( prefixvm( prefix,"partition.linear" ).c_str(), Feel::po::value<bool>()->default_value( false ), "linear partitioning if true (false otherwise)" );
-#endif
+
     return _options;
 
 
@@ -494,9 +490,14 @@ solvereigen_options( std::string const& prefix )
         ( ( _prefix+"solvereigen.nev" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of requested eigenpairs" )
         ( ( _prefix+"solvereigen.ncv" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "dimension of the subspace" )
         ( ( _prefix+"solvereigen.mpd" ).c_str(), Feel::po::value<int>()->default_value( -2 ), "maximum projected dimension" )
+        ( ( _prefix+"solvereigen.eps-target" ).c_str(), Feel::po::value<double>()->default_value( NAN ), "sets the value of the target" )
         ( ( _prefix+"solvereigen.interval-a" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "start of the interval in which all the eigenvalues are found" )
         ( ( _prefix+"solvereigen.interval-b" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "end of the interval in which all the eigenvalues are found" )
-        ( ( _prefix+"solvereigen.pc-package-mumps" ).c_str(), Feel::po::value<bool>()->default_value( true ), "use mumps in the case of interval" )
+#if defined(PETSC_HAVE_MUMPS)
+        ( ( _prefix+"solvereigen.st-pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "mumps" ), "sets the software that is used to perform the factorization for the spectral transformation (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+#else
+        ( ( _prefix+"solvereigen.st-pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "sets the software that is used to perform the factorization for the spectral transformation (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+#endif
         ( ( _prefix+"solvereigen.krylovschur-partitions" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of communicator to use for interval" )
         ( ( _prefix+"solvereigen.tolerance" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "solver tolerance" )
         ( ( _prefix+"solvereigen.maxiter" ).c_str(), Feel::po::value<int>()->default_value( 10000 ), "maximum number of iterations" )

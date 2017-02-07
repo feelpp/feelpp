@@ -1,36 +1,35 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+// -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! This file provides the header of the 1D mesh data structure
+//!
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 05 Feb 2017
+//! @copyright 2005,2006 EPFL
+//! @copyright 2007-2010 Université Joseph Fourier (Grenoble I)
+//! @copyright 2011-2017 Feel++ Consortium
+//!
+#ifndef FEELPP_MESH1D_HPP
+#define FEELPP_MESH1D_HPP 1
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-11-09
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file mesh1d.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-11-09
- */
-#ifndef __Mesh1D_H
-#define __Mesh1D_H 1
-
+#include <iomanip>
+#include <fstream>
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
@@ -60,22 +59,22 @@
 
 namespace Feel
 {
-/**
- * \class Mesh1D
- * \brief 1D mesh class
- *
- * \code
- * // create a 1D mesh made of simplex of order 1
- * Mesh1D<Simplex<1,1> > mesh;
- *
- * // create a 1D mesh made of simplex of order 2
- * Mesh1D<Simplex<1,2> > mesh;
- * \endcode
- *
- *  @author Christophe Prud'homme
- *  @see
- */
-template <typename Shape>
+//!
+//! @brief 1D mesh class
+//! @ingroup Mesh
+//!
+//! @code
+//! // create a 1D mesh made of simplex of order 1
+//! Mesh1D<Simplex<1,1> > mesh;
+//!
+//! // create a 1D mesh made of simplex of order 2
+//! Mesh1D<Simplex<1,2> > mesh;
+//! @endcode
+//!
+//! @author Christophe Prud'homme
+//! @see Mesh2D, Mesh3D
+//!
+template<typename Shape>
 class Mesh1D
     : public VisitableBase<>,
       public MeshBase,
@@ -138,7 +137,7 @@ class Mesh1D
     //@}
 
     /** @name Constructors, destructor
- */
+     */
     //@{
 
     /**
@@ -153,9 +152,7 @@ class Mesh1D
     {
     }
 
-    /**
- * copy constructor
- */
+    //! copy constructor
     Mesh1D( Mesh1D const& m )
         : super_visitable(),
           super( m ),
@@ -165,9 +162,7 @@ class Mesh1D
     {
     }
 
-    /**
- * destructor
- */
+    //! destructor
     ~Mesh1D()
     {
     }
@@ -175,7 +170,7 @@ class Mesh1D
     //@}
 
     /** @name Operator overloads
- */
+     */
     //@{
 
     Mesh1D& operator=( Mesh1D const& m )
@@ -194,12 +189,12 @@ class Mesh1D
     //@}
 
     /** @name Accessors
- */
+     */
     //@{
 
     /**
- * \return \p true if all containers are empty, \p false otherwise
- */
+     * \return \p true if all containers are empty, \p false otherwise
+     */
     bool isEmpty() const
     {
         return ( super_elements::isEmpty() &&
@@ -207,39 +202,43 @@ class Mesh1D
                  super_faces::isEmpty() );
     }
 
-    /**
- * \return the number of elements
- */
+    //!
+    //! @brief get the number of elements in the mesh
+    //! @return the number of elements in the mesh
+    //!
     size_type numElements() const
     {
         return this->elements().size();
     }
 
     /**
- * \return the number of faces in an element
- */
+     * \return the number of faces in an element
+     */
     size_type numLocalFaces() const
     {
         return super_elements::element_type::numLocalFaces;
     }
 
-    //! @return the number of local topological faces
+    //! 
+    //! the number of topological faces per element
+    //! @return the number of topological faces per element
+    //!
     uint16_type numLocalTopologicalFaces() const
     {
-        return this->beginElement()->nTopologicalFaces();
+        return super_elements::element_type::numTopologicalFaces;
     }
 
     /**
- * \return the number of vertices in an element
- */
+     * \return the number of vertices in an element
+     */
     size_type numLocalVertices() const
     {
         return super_elements::element_type::numLocalVertices;
     }
 
     /**
- * \return the number of faces
- */
+     * \return the number of faces
+     */
     size_type numFaces() const
     {
         return this->faces().size();
@@ -250,8 +249,8 @@ class Mesh1D
     }
 
     /**
- * \return the number of points
- */
+     * \return the number of points
+     */
     size_type numPoints() const
     {
         return this->points().size();
@@ -260,13 +259,13 @@ class Mesh1D
     //@}
 
     /** @name  Mutators
- */
+     */
     //@{
 
     //@}
 
     /** @name  Methods
- */
+     */
     //@{
 
     virtual void setWorldComm( WorldComm const& _worldComm )
@@ -278,9 +277,9 @@ class Mesh1D
     }
 
     /**
- * clear out all data from the mesh, \p isEmpty() should return
- * \p true after a \p clear()
- */
+     * clear out all data from the mesh, \p isEmpty() should return
+     * \p true after a \p clear()
+     */
     virtual void clear()
     {
         this->elements().clear();
@@ -295,9 +294,9 @@ class Mesh1D
 
   protected:
     /**
- * dummy  implementation
- * \see Mesh
- */
+     * dummy  implementation
+     * \see Mesh
+     */
     void renumber()
     {
         FEELPP_ASSERT( 0 )
@@ -305,16 +304,16 @@ class Mesh1D
     }
 
     /**
- * update permutation of entities of co-dimension 1
- */
+     * update permutation of entities of co-dimension 1
+     */
     void updateEntitiesCoDimensionOnePermutation()
     {
         // no-op
     }
 
     /**
- * update the entities of co-dimension 2
- */
+     * update the entities of co-dimension 2
+     */
     void updateEntitiesCoDimensionTwo()
     {
         // no-op

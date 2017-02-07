@@ -24,7 +24,7 @@
 
 #feelpp_add_application( hdg_darcy main.cpp )
 
-foreach(D RANGE 1 3 1)
+foreach(D RANGE 2 3 1)
     foreach(P RANGE 0 4 1) #3 
         feelpp_add_application( mixed-poisson2-model_${D}DP${P}
                                 SRCS mixedpoisson2_main.cpp
