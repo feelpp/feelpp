@@ -433,16 +433,20 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"use-stretch-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Advect stretch independently")
         (prefixvm(prefix,"reinit-stretch-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Reinit stretch when phi is reinitialized")
 
+        (prefixvm(prefix,"use-cauchy-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Advect additional backward characteristics to compute Cauchy tensor")
+
         (prefixvm(prefix,"do_export_gradphi").c_str(), Feel::po::value<bool>(), "doExportGradPhi")
         (prefixvm(prefix,"do_export_modgradphi").c_str(), Feel::po::value<bool>(), "doExportModGradPhi")
         (prefixvm(prefix,"do_export_modgradphi-advection").c_str(), Feel::po::value<bool>()->default_value(false), "doExportModGradPhi-Advection")
         (prefixvm(prefix,"do_export_stretch-advection").c_str(), Feel::po::value<bool>()->default_value(false), "doExportStretch-Advection")
+        (prefixvm(prefix,"do_export_backward-characteristics-advection").c_str(), Feel::po::value<bool>()->default_value(false), "doExportBackwardCharacteristics-Advection")
         ;
 
     levelsetOptions
         .add( advection_options( prefix ) )
         .add( advection_options( prefixvm(prefix, "modgradphi-advection") ) )
         .add( advection_options( prefixvm(prefix, "stretch-advection") ) )
+        .add( advection_options( prefixvm(prefix, "backward-characteristics-advection") ) )
         .add( backend_options( prefixvm(prefix, "projector-l2") ) )
         .add( backend_options( prefixvm(prefix, "projector-l2-vec") ) )
         .add( backend_options( prefixvm(prefix, "smoother") ) )
