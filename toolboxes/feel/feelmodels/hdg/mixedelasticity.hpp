@@ -849,7 +849,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 			// bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
         	//                              _expr = this->timeStepNM()->polySecondDerivCoefficient()*rho*inner(idt(u),id(w)) );
 			bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
-            	                         _expr = rho*inner(idt(u),id(w))/(dt*dt) );
+            	                         _expr = -rho*inner(idt(u),id(w))/(dt*dt) );
 		}
     }
 
@@ -1049,7 +1049,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 			auto dt = this-> timeStep();
         	// blf(1_c) += integrate( _range=elements(M_mesh),
         	//                         _expr= rho*inner(idv(this->timeStepNM()->polyDeriv()),id(w)) );
-        	blf(1_c) += integrate( _range=elements(M_mesh), _expr= rho*inner( 2*idv(u)-idv(u1) ,id(w))/(dt*dt) );
+        	blf(1_c) += integrate( _range=elements(M_mesh), _expr= -rho*inner( 2*idv(u)-idv(u1) ,id(w))/(dt*dt) );
 		}
     }
 
