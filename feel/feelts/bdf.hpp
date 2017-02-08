@@ -514,15 +514,9 @@ Bdf<SpaceType>::init()
 {
     if ( this->path().empty() )
     {
-        int timeStep = this->timeStep();
-        if( this->isReverseLoad() )
-        {
-            // Read file in previous directory.
-            timeStep = -timeStep;
-        }
         this->setPathSave( (boost::format("%3%bdf_o_%1%_dt_%2%")
                             %this->bdfOrder()
-                            %timeStep
+                            %this->timeStep()
                             %this->bdfPrefix()  ).str() );
     }
 
@@ -741,9 +735,6 @@ void
 Bdf<SpaceType>::saveCurrent()
 {
     if (!this->saveInFile()) return;
-
-    if( this->isReverse() and (M_reverseLoad == false) )
-        LOG(WARNING) << "saveCurrent : bdf file unknowns will be overwritten! (=> setReverseLoad(true => false)";
 
     bool doSave=false;
     for ( uint8_type i = 0; i < this->timeOrder() && !doSave; ++i )
