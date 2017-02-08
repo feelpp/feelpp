@@ -61,12 +61,18 @@
 #include <hwloc.h>
 #endif
 
+
 namespace Feel
 {
 namespace tc = termcolor;
 namespace pt =  boost::property_tree;
 
 class TimerTable;
+
+//!
+//! @class MemoryUsage
+//! @ingroup Core
+//! @brief class to query for memory usage
 struct MemoryUsage
 {
     MemoryUsage()
@@ -106,7 +112,7 @@ struct MemoryUsage
 #endif
 
 };
-//! 
+//! @ingroup Core
 //! default \c makeAbout function to define the \c AboutData structure of the Feel++
 //! application
 //! @param name name or short name of the application
@@ -115,7 +121,9 @@ AboutData makeAboutDefault( std::string name );
 
 //! 
 //! @class Environment "Environment"
+//! @ingroup Core
 //! @brief Initialize, finalize, and query the Feel++ environment.
+//! @ingroup Core
 //! 
 //! The @c Environment class is used to initialize, finalize, and
 //! query the Feel++ environment. It will typically be used in the @c
@@ -126,12 +134,28 @@ AboutData makeAboutDefault( std::string name );
 //! @code
 //! int main(int argc, char* argv[])
 //! {
-//! Feel::Environment env(argc, argv);
+//!    using namespace Feel;
+//!    Environment env(argc, argv);
 //! }
 //! @endcode
-//! 
+//! or more commonly
+//! @code
+//! int main(int argc, char* argv[])
+//! {
+//!    using namespace Feel;
+//!    po::options_description myoptions( "Laplacian options" );
+//!    myoptions.add_options()
+//!          ( "mu", po::value<double>()->default_value( 1.0 ), "coeff" );
+//!    Environment env( _argc=argc, _argv=argv,
+//!                     _desc=myoptions,
+//!                    _about=about(_name="myapp",
+//!                                 _author="Feel++ Consortium",
+//!                                 _email="feelpp-devel@feelpp.org"));
+//! }
+//! @endcode
+//!
 //! The instance of @c Environment will initialize Feel++ (by calling @c MPI, @c
-//! PETSc, @c SLEPc and @c MAdLib initialization routines) in its constructor
+//! PETSc, @c SLEPc or Logging initialization routines) in its constructor
 //! and finalize in its destructor.
 //! 
 //! @author Christophe Prud'homme
@@ -967,6 +991,7 @@ BOOST_PARAMETER_FUNCTION(
     return opt;
 }
 
+//! @cond
 namespace detail
 {
 template<typename Args, typename Tag=tag::opt>
@@ -982,6 +1007,7 @@ struct option
 };
 
 }
+//! @endcond
 
 BOOST_PARAMETER_FUNCTION(
     ( typename Feel::detail::option<Args>::type ),
