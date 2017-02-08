@@ -519,7 +519,7 @@ Bdf<SpaceType>::init()
                             %this->timeStep()
                             %this->bdfPrefix()  ).str() );
     }
-
+    // in super::init() M_iteration is set back to 0
     super::init();
 
     if ( this->isRestart() )
@@ -534,7 +534,7 @@ Bdf<SpaceType>::init()
             int iteration = (M_iteration-p);
             // Load files beginning at last iteration.
             if( this->isReverse() and M_reverseLoad )
-                iteration = niteration - iteration + 1;
+                iteration = niteration - iteration;
             CHECK( iteration >= 0 )
                 << "BDF init: negative iteration: "<< iteration
                 << "( niter:"<< niteration << ", iter:"<< M_iteration << ")";
@@ -542,7 +542,11 @@ Bdf<SpaceType>::init()
             if ( fileFormat() == "hdf5")
             {
 #ifdef FEELPP_HAS_HDF5
-                M_unknowns[p]->loadHDF5( ( dirPath / (boost::format("%1%-%2%.h5") % M_name % iteration).str() ).string() );
+                fs::path fname =  dirPath / (boost::format("%1%-%2%.h5") % M_name % iteration).str();
+                VLOG(1) << "BDF HDF5 load solution iteration " << iteration
+                        << " time " << M_time
+                        << " from " << fname.string();
+                M_unknowns[p]->loadHDF5( fname.string() );
 #else
                 CHECK( false ) << "hdf5 not detected";
 #endif
@@ -806,9 +810,9 @@ Bdf<SpaceType>::loadCurrent()
         {
 #ifdef FEELPP_HAS_HDF5
             fs::path fname =  M_path_save / (boost::format("%1%-%2%.h5")%M_name %iteration).str();
-            LOG(INFO) << "BDF HDF5 load solution iteration " << iteration
-                      << " time " << M_time
-                      << " from " << .string();
+            VLOG(1) << "BDF HDF5 load solution iteration " << iteration
+                    << " time " << M_time
+                    << " from " << fname.string();
             if ( fs::exists( fname ) )
                 M_unknowns[0]->loadHDF5( fname.string() );
             else
