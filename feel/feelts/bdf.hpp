@@ -142,21 +142,8 @@ public:
      * @param name name of the BDF
      */
     Bdf( space_ptrtype const& space, std::string const& name );
-
     //! copy operator
-    Bdf( Bdf const& b )
-        :
-        super( b ),
-        M_order( b.M_order ),
-        M_strategyHighOrderStart( b.M_strategyHighOrderStart ),
-        M_order_cur( b.M_order_cur ),
-        M_last_iteration_since_order_change( b.M_last_iteration_since_order_change ),
-        M_iterations_between_order_change( b.M_iterations_between_order_change ),
-        M_space( b.M_space ),
-        M_unknowns( b.M_unknowns ),
-        M_alpha( b.M_alpha ),
-        M_beta( b.M_beta )
-    {}
+    Bdf( Bdf const& b );
 
     ~Bdf();
 
@@ -258,6 +245,9 @@ public:
     template<typename container_type>
     void shiftRight( typename space_type::template Element<value_type, container_type> const& u_curr );
 
+    /**
+     * Move to next time step (solution not shifted).
+     */
     double next() const
     {
         double tcur = super::next();
@@ -275,6 +265,9 @@ public:
         return tcur;
     }
 
+    /**
+     * Move to next time step with solution shift.
+     */
     template<typename container_type>
     double
     next( typename space_type::template Element<value_type, container_type> const& u_curr )
@@ -284,17 +277,18 @@ public:
         return this->next();
     }
 
-		/**
-		 * Return \f$ \alpha_i \f$
-		 */
+    /**
+     * Return \f$ \alpha_i \f$
+     */
     double polyCoefficient( int i ) const
     {
         CHECK( i >=0 && i < BDF_MAX_ORDER-1 ) <<  "[BDF] invalid index " << i;
         return M_beta[this->timeOrder()-1][i];
-    }  
-		/**
-		 * Return \f$ \frac{\alpha_i}{\Delta t} \f$
-		 */
+    }
+
+    /**
+     * Return \f$ \frac{\alpha_i}{\Delta t} \f$
+     */
     double polyDerivCoefficient( int i ) const
     {
         CHECK( i >=0 && i <= BDF_MAX_ORDER ) << "[BDF] invalid index " << i;
@@ -319,15 +313,28 @@ public:
     element_type const& prior() const { return *M_unknowns[0]; }
 
     element_type& prior() { return *M_unknowns[0]; }
-    
+
     template<typename container_type>
     void setUnknown( int i,  typename space_type::template Element<value_type, container_type> const& e )
     {
         *M_unknowns[i] = e;
     }
 
+    //! Load saved unknown beginning from last iteration.
+    //! In bdf, solutions are saved from Ti (iter 0) ->Tf (iter N) in hdf5 files
+    //! indexed by the iteration.
+    //! If we reverse bdf, it runs from Tf (iter 0) -> Ti (iter N).
+    //! To read hdf5 solution from files, we have to load the file N at Ti.
+    //! Therefore reversing iteration index to load the correct file.
+    //! Note: it is not required if the solution has to be saved.
+    void setReverseLoad( bool reverseLoad = false )
+    {
+        M_reverseLoad=reverseLoad;
+    }
+
     void showMe( std::ostream& __out = std::cout ) const;
 
+    //! Load current unknown in a file (hdf5, binary, ...)
     void loadCurrent();
 
     void print() const
@@ -344,7 +351,7 @@ public:
 private:
     void init();
 
-
+    //! Save current unknown in a file (hdf5, binary, ...)
     void saveCurrent();
 
     //! save/load Bdf metadata
@@ -391,9 +398,10 @@ private:
     //! Coefficients \f$ \beta_i \f$ of the extrapolation
     std::vector<ublas::vector<double> > M_beta;
 
+    bool M_reverseLoad;
+
     //! extrapolation field and rhs part of bdf scheme
     element_ptrtype M_poly, M_polyDeriv;
-
 };
 
 template <typename SpaceType>
@@ -409,6 +417,7 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
     M_beta( BDF_MAX_ORDER ),
+    M_reverseLoad( false ),
     M_poly( M_space->elementPtr() ),
     M_polyDeriv( M_space->elementPtr() )
 {
@@ -420,8 +429,6 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
         M_unknowns[__i]->zero();
     }
     computeCoefficients();
-
-
 }
 
 template <typename SpaceType>
@@ -429,6 +436,23 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
                      std::string const& name  )
     :
     bdf_type( __space, name, "" )
+{}
+
+//! copy operator
+template <typename SpaceType>
+Bdf<SpaceType>::Bdf( Bdf const& b )
+    :
+        super( b ),
+        M_order( b.M_order ),
+        M_strategyHighOrderStart( b.M_strategyHighOrderStart ),
+        M_order_cur( b.M_order_cur ),
+        M_last_iteration_since_order_change( b.M_last_iteration_since_order_change ),
+        M_iterations_between_order_change( b.M_iterations_between_order_change ),
+        M_space( b.M_space ),
+        M_unknowns( b.M_unknowns ),
+        M_alpha( b.M_alpha ),
+        M_beta( b.M_beta )
+        M_reverseLoad( b.M_reverseLoad )
 {}
 
 template <typename SpaceType>
@@ -484,6 +508,7 @@ Bdf<SpaceType>::computeCoefficients()
         }
     }
 }
+
 template <typename SpaceType>
 void
 Bdf<SpaceType>::init()
@@ -500,12 +525,23 @@ Bdf<SpaceType>::init()
     {
         fs::path dirPath = ( this->restartPath().empty() )? this->path() : this->restartPath()/this->path();
 
-        for ( int p = 0; p < std::min( M_order, M_iteration+1 ); ++p )
+        const int niteration = this->iterationNumber();
+        int pmax = std::min( M_order, M_iteration+1 );
+
+        for ( int p = 0; p < pmax; ++p )
         {
+            int iteration = (M_iteration-p);
+            // Load files beginning at last iteration.
+            if( this->isReverse() and M_reverseLoad )
+                iteration = niteration - iteration + 1;
+            CHECK( iteration >= 0 )
+                << "BDF init: negative iteration: "<< iteration
+                << "( niter:"<< niteration << ", iter:"<< M_iteration << ")";
+
             if ( fileFormat() == "hdf5")
             {
 #ifdef FEELPP_HAS_HDF5
-                M_unknowns[p]->loadHDF5( ( dirPath / (boost::format("%1%-%2%.h5")%M_name %(M_iteration-p)).str() ).string() );
+                M_unknowns[p]->loadHDF5( ( dirPath / (boost::format("%1%-%2%.h5") % M_name % iteration).str() ).string() );
 #else
                 CHECK( false ) << "hdf5 not detected";
 #endif
@@ -515,9 +551,9 @@ Bdf<SpaceType>::init()
                 // create and open a character archive for output
                 std::ostringstream ostr;
                 if( M_rankProcInNameOfFiles )
-                    ostr << M_name << "-" << M_iteration-p<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+                    ostr << M_name << "-" << iteration <<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
                 else
-                    ostr << M_name << "-" << M_iteration-p;
+                    ostr << M_name << "-" << iteration;
                 DVLOG(2) << "[Bdf::init()] load file: " << ostr.str() << "\n";
 
                 fs::ifstream ifs;
@@ -699,6 +735,9 @@ Bdf<SpaceType>::saveCurrent()
 {
     if (!this->saveInFile()) return;
 
+    if( this->isReverse() and (M_reverseLoad == false) )
+        LOG(WARNING) << "saveCurrent : bdf file unknowns will be overwritten! (=> setReverseLoad(true => false)";
+
     bool doSave=false;
     for ( uint8_type i = 0; i < this->timeOrder() && !doSave; ++i )
         {
@@ -712,11 +751,12 @@ Bdf<SpaceType>::saveCurrent()
     bdfsaver.save();
 
     {
+        int iteration = M_iteration;
 
         if ( this->fileFormat() == "hdf5")
         {
 #ifdef FEELPP_HAS_HDF5
-            M_unknowns[0]->saveHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %M_iteration).str() ).string() );
+            M_unknowns[0]->saveHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %iteration).str() ).string() );
 #else
             CHECK( false ) << "hdf5 not detected";
 #endif
@@ -726,9 +766,9 @@ Bdf<SpaceType>::saveCurrent()
             std::ostringstream ostr;
 
             if( M_rankProcInNameOfFiles )
-                ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+                ostr << M_name << "-" << iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
             else
-                ostr << M_name << "-" << M_iteration;
+                ostr << M_name << "-" << iteration;
             // load data from archive
             fs::ofstream ofs( M_path_save / ostr.str() );
             boost::archive::binary_oarchive oa( ofs );
@@ -738,6 +778,14 @@ Bdf<SpaceType>::saveCurrent()
     }
 }
 
+//! Load current unknown in a file (hdf5, binary, ...)
+//! The filename depends on the bdf name and the time iteration.
+//!
+//! Notes:
+//!     - that if bdf is set to `setReverse(true)`, the iteration 0 will be loaded.
+//!     - You might desire to read a bdf backward. Then you have to pass `setReverseLoad(true)`
+//!       to load existing unknowns from last iteration! It is require after a restart if time
+//!       loop sense changed.
 template <typename SpaceType>
 void
 Bdf<SpaceType>::loadCurrent()
@@ -746,11 +794,23 @@ Bdf<SpaceType>::loadCurrent()
     //bdfsaver.save();
 
     {
+        const int niteration = this->iterationNumber();
+        int iteration = M_iteration;
+        // Load files beginning at last iteration.
+        if( this->isReverse() and M_reverseLoad )
+            iteration = niteration - iteration + 1;
+        LOG(INFO) << "BDF iteration: "<< iteration << "( niter:"<< niteration << ", iter:"<< M_iteration << ")";
+        CHECK( iteration >= 0 )
+            << "BDF loadCurrent: negative iteration: "<< iteration
+            << "( niter:"<< niteration << ", iter:"<< M_iteration << ")";
 
         if ( this->fileFormat() == "hdf5")
         {
 #ifdef FEELPP_HAS_HDF5
-            M_unknowns[0]->loadHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %M_iteration).str() ).string() );
+            LOG(INFO) << "BDF HDF5 load solution iteration " << iteration
+                      << " time " << M_time
+                      << " from " << ( M_path_save / (boost::format("%1%-%2%.h5")%M_name %iteration).str() ).string();
+            M_unknowns[0]->loadHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %iteration).str() ).string() );
 #else
             CHECK( false ) << "hdf5 not detected";
 #endif
@@ -761,9 +821,9 @@ Bdf<SpaceType>::loadCurrent()
             std::ostringstream ostr;
 
             if( M_rankProcInNameOfFiles )
-                ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+                ostr << M_name << "-" << iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
             else
-                ostr << M_name << "-" << M_iteration;
+                ostr << M_name << "-" << iteration;
 
             fs::ifstream ifs( M_path_save / ostr.str() );
 
