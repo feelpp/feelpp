@@ -100,10 +100,10 @@ public:
     typedef SpaceType space_type;
     typedef boost::shared_ptr<space_type>  space_ptrtype;
     typedef typename space_type::element_type element_type;
+    typedef typename space_type::element_ptrtype element_ptrtype;
     typedef typename space_type::return_type return_type;
     typedef typename element_type::value_type value_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
-    typedef boost::shared_ptr<element_type> unknown_type;
+    typedef element_ptrtype unknown_type;
     typedef typename node<value_type>::type node_type;
 
     typedef typename super::time_iterator time_iterator;
@@ -116,7 +116,10 @@ public:
      * @param name name of the newmark ts
      * @param prefix prefix of the newmark ts
      */
-    Newmark( po::variables_map const& vm, space_ptrtype const& space, std::string const& name, std::string const& prefix="" );
+    FEELPP_DEPRECATED
+    Newmark( po::variables_map const& vm, space_ptrtype const& space, std::string const& name, std::string const& prefix="" )
+        : newmark_type( space,name,prefix ) {}
+    Newmark( space_ptrtype const& space, std::string const& name, std::string const& prefix="" );
 
     /**
      * Constructor
@@ -255,12 +258,11 @@ private:
 };
 
 template <typename SpaceType>
-Newmark<SpaceType>::Newmark( po::variables_map const& vm,
-                             space_ptrtype const& __space,
+Newmark<SpaceType>::Newmark( space_ptrtype const& __space,
                              std::string const& name,
                              std::string const& prefix )
     :
-    super( vm, name, prefix, __space->worldComm() ),
+    super( name, prefix, __space->worldComm() ),
     M_space( __space ),
     M_currentVel( unknown_type( new element_type( M_space ) ) ),
     M_currentAcc( unknown_type( new element_type( M_space ) ) ),
@@ -764,25 +766,24 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( space,*( boost::is_convertible<mpl::_,boost::shared_ptr<Feel::FunctionSpaceBase> > ) ) )
     ( optional
-      ( vm,*, Environment::vm() )
       ( prefix,*,"" )
       ( name,*,"newmark" )
-      ( initial_time,*( boost::is_floating_point<mpl::_> ),vm[prefixvm( prefix,"ts.time-initial" )].template as<double>() )
-      ( final_time,*( boost::is_floating_point<mpl::_> ),vm[prefixvm( prefix,"ts.time-final" )].template as<double>() )
-      ( time_step,*( boost::is_floating_point<mpl::_> ),vm[prefixvm( prefix,"ts.time-step" )].template as<double>() )
+      ( initial_time,*( boost::is_floating_point<mpl::_> ), doption(_prefix=prefix,_name="ts.time-initial") )
+      ( final_time,*( boost::is_floating_point<mpl::_> ),doption(_prefix=prefix,_name="ts.time-final") )
+      ( time_step,*( boost::is_floating_point<mpl::_> ),doption(_prefix=prefix,_name="ts.time-step") )
       //( strategy,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"ts.strategy" )].template as<int>() )
-      ( steady,*( bool ),vm[prefixvm( prefix,"ts.steady" )].template as<bool>() )
-      ( restart,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"ts.restart" )].template as<bool>() )
-      ( restart_path,*,vm[prefixvm( prefix,"ts.restart.path" )].template as<std::string>() )
-      ( restart_at_last_save,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"ts.restart.at-last-save" )].template as<bool>() )
-      ( save,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"ts.save" )].template as<bool>() )
-      ( freq,*(boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"ts.save.freq" )].template as<int>() )
-      ( format,*,vm[prefixvm( prefix,"ts.file-format" )].template as<std::string>() )
-      ( rank_proc_in_files_name,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"ts.rank-proc-in-files-name" )].template as<bool>() )
+      ( steady,*( bool ),boption(_prefix=prefix,_name="ts.steady") )
+      ( restart,*( boost::is_integral<mpl::_> ),boption(_prefix=prefix,_name="ts.restart") )
+      ( restart_path,*,soption(_prefix=prefix,_name="ts.restart.path") )
+      ( restart_at_last_save,*( boost::is_integral<mpl::_> ),boption(_prefix=prefix,_name="ts.restart.at-last-save") )
+      ( save,*( boost::is_integral<mpl::_> ),boption(_prefix=prefix,_name="ts.save") )
+      ( freq,*(boost::is_integral<mpl::_> ),ioption(_prefix=prefix,_name="ts.save.freq") )
+      ( format,*,soption(_prefix=prefix,_name="ts.file-format") )
+      ( rank_proc_in_files_name,*( boost::is_integral<mpl::_> ),boption(_prefix=prefix,_name="ts.rank-proc-in-files-name") )
     ) )
 {
     typedef typename meta::remove_all<space_type>::type::element_type _space_type;
-    auto thenewmark = boost::shared_ptr<Newmark<_space_type> >( new Newmark<_space_type>( vm,space,name,prefix ) );
+    auto thenewmark = boost::shared_ptr<Newmark<_space_type> >( new Newmark<_space_type>( space,name,prefix ) );
     thenewmark->setTimeInitial( initial_time );
     thenewmark->setTimeFinal( final_time );
     thenewmark->setTimeStep( time_step );
