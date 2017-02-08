@@ -814,10 +814,14 @@ Bdf<SpaceType>::loadCurrent()
         if ( this->fileFormat() == "hdf5")
         {
 #ifdef FEELPP_HAS_HDF5
+            fs::path fname =  M_path_save / (boost::format("%1%-%2%.h5")%M_name %iteration).str();
             LOG(INFO) << "BDF HDF5 load solution iteration " << iteration
                       << " time " << M_time
-                      << " from " << ( M_path_save / (boost::format("%1%-%2%.h5")%M_name %iteration).str() ).string();
-            M_unknowns[0]->loadHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %iteration).str() ).string() );
+                      << " from " << .string();
+            if ( fs::exists( fname ) )
+                M_unknowns[0]->loadHDF5( fname.string() );
+            else
+                throw std::invalid_argument( fname.string() + " not found" );
 #else
             CHECK( false ) << "hdf5 not detected";
 #endif
