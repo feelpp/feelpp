@@ -174,10 +174,18 @@ public:
         return M_time;
     }
 
-    //! return the iteration number
+    //! return the current iteration
     int iteration() const
     {
         return M_iteration;
+    }
+
+    //! return the number of iteration
+    const int iterationNumber() const
+    {
+        if( M_dt == 0)
+            return 0;
+        return static_cast<int>( std::abs((M_Tf-M_Ti)/M_dt) );
     }
 
     //! return the real time in seconds spent in the iteration
@@ -214,7 +222,6 @@ public:
         ++M_iteration;
         return M_Ti;
     }
-
 
     //! return true if Bdf is finished, false otherwise
     bool isFinished() const
@@ -265,6 +272,7 @@ public:
         M_time_values_map.push_back( this->time() );
         //update();
     }
+
     virtual void update()
     {
         double tn = M_time_values_map[M_iteration];
@@ -279,6 +287,12 @@ public:
     TSState state() const
     {
         return M_state;
+    }
+
+    //! return the reverse time loop state.
+    bool isReverse() const
+    {
+        return M_reverse;
     }
 
     //! return the relative path where the bdf data is stored
@@ -352,6 +366,32 @@ public:
             M_Tf=1e30;
         }
     }
+    //! Reverse time (iteration always start at 0!)
+    void setReverse( bool reverse=false )
+    {
+        CHECK( state() != TS_RUNNING ) << "Trying to reverse a running state bdf. Reverse require prior bdf stopped state!";
+
+        bool doReverse = ( ((not isReverse()) and (reverse==true))
+                           or (isReverse() and (reverse==false)) );
+        M_reverse=reverse;
+
+        // Don't reverse if already reversed.
+        if( doReverse )
+        {
+            LOG(INFO) << "BDF do reverse time.";
+            double Tf=M_Tf;
+            M_Tf = M_Ti;
+            M_Ti = Tf;
+            M_dt = -M_dt;
+        }
+
+        if( isReverse() )
+            LOG(INFO) << "BDF is reversed.";
+        else
+            LOG(INFO) << "BDF is NOT reversed.";
+        print();
+    }
+
     void setRestart( bool doRestart )
     {
         M_restart=doRestart;
@@ -402,7 +442,7 @@ protected:
 
     //! is steady
     bool M_steady;
-    
+
     //! initial time to start
     double M_Ti;
 
@@ -414,6 +454,9 @@ protected:
 
     //! state of the time stepping algorithm
     mutable TSState M_state;
+
+    //! is reversed
+    bool M_reverse;
 
     //! restart
     int M_n_restart;
