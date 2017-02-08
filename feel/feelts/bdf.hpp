@@ -513,10 +513,18 @@ void
 Bdf<SpaceType>::init()
 {
     if ( this->path().empty() )
+    {
+        int timeStep = this->timeStep();
+        if( this->isReverseLoad() )
+        {
+            // Read file in previous directory.
+            timeStep = -timeStep;
+        }
         this->setPathSave( (boost::format("%3%bdf_o_%1%_dt_%2%")
                             %this->bdfOrder()
-                            %this->timeStep()
+                            %timeStep
                             %this->bdfPrefix()  ).str() );
+    }
 
     super::init();
 
