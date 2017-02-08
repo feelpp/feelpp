@@ -536,9 +536,11 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::initModel()
 
 
     if ( !M_IBCList.empty() )
+    {
         M_IBCList.clear();
+    }
     itField = M_modelProperties->boundaryConditions().find( "stress");
-    if ( itField != modelProperties().boundaryConditions().end() )
+    if ( itField != M_modelProperties->boundaryConditions().end() )
     {
         auto mapField = (*itField).second; 
         auto itType = mapField.find( "Integral" );
@@ -564,6 +566,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::initModel()
         M_integralCondition = 0;
     else
         M_integralCondition = M_IBCList.size();
+    
 
 }
 
@@ -1091,20 +1094,27 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                 // Exporting the stress component by component
                 auto Sh = Pch<Order> (M_mesh);
                 auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
+
                 auto SXX = l2p -> project (_expr = idv (M_up.comp(Component::X, Component::X)) );
-                auto SYY = l2p -> project (_expr = idv (M_up.comp(Component::Y, Component::Y)) );
-                auto SZZ = l2p -> project (_expr = idv (M_up.comp(Component::Z, Component::Z)) );
-
-                auto SXY = l2p -> project (_expr = idv (M_up.comp(Component::X, Component::Y)) );
-                auto SYZ = l2p -> project (_expr = idv (M_up.comp(Component::Y, Component::Z)) );
-                auto SXZ = l2p -> project (_expr = idv (M_up.comp(Component::X, Component::Z)) );
-
                 M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXX"), SXX );
-                M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYY"), SYY );
-                M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaZZ"), SZZ );
-                M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXY"), SXY );
-                M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYZ"), SYZ );
-                M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXZ"), SXZ );
+
+                if (Dim > 1)
+                {
+                    auto SYY = l2p -> project (_expr = idv (M_up.comp(Component::Y, Component::Y)) );
+                    auto SXY = l2p -> project (_expr = idv (M_up.comp(Component::X, Component::Y)) );
+                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYY"), SYY );
+                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXY"), SXY );
+                }
+                if (Dim > 2)
+                {            
+                    auto SZZ = l2p -> project (_expr = idv (M_up.comp(Component::Z, Component::Z)) );
+                    auto SYZ = l2p -> project (_expr = idv (M_up.comp(Component::Y, Component::Z)) );
+                    auto SXZ = l2p -> project (_expr = idv (M_up.comp(Component::X, Component::Z)) );
+                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaZZ"), SZZ );
+                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYZ"), SYZ );
+                    M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXZ"), SXZ );
+                }
+
          		// M_exporter->step(time)->add(prefixvm(M_prefix, "stress"), Idhv?(*Idhv)( M_up):M_up );
          
 
@@ -1161,14 +1171,21 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                 // Projecting on L2 space for continuity.
                 auto Sh = Pch<Order> (M_mesh);
                 auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
-                auto UX = l2p -> project (_expr = idv (M_pp[Component::X]) );
-                auto UY = l2p -> project (_expr = idv (M_pp[Component::Y]) );
-                auto UZ = l2p -> project (_expr = idv (M_pp[Component::Z]) );
-                
-                M_exporter->step(time)->add(prefixvm(M_prefix, "UX"),UX ) ;    	
-                M_exporter->step(time)->add(prefixvm(M_prefix, "UY"),UY ) ;    	
-                M_exporter->step(time)->add(prefixvm(M_prefix, "UZ"),UZ ) ;    	
-	
+
+                auto UX = l2p -> project (_expr = idv (M_pp[Component::X]) );     
+                M_exporter->step(time)->add(prefixvm(M_prefix, "UX"),UX ) ;  
+  	
+                if (Dim > 1)
+                {
+                    auto UY = l2p -> project (_expr = idv (M_pp[Component::Y]) );
+                    M_exporter->step(time)->add(prefixvm(M_prefix, "UY"),UY ) ;    	
+                }
+                if (Dim > 2)
+                {   
+                    auto UZ = l2p -> project (_expr = idv (M_pp[Component::Z]) );
+                    M_exporter->step(time)->add(prefixvm(M_prefix, "UZ"),UZ ) ;    	
+	            }
+
 				auto itField = M_modelProperties->boundaryConditions().find("ExactSolution");
  				if ( itField != M_modelProperties->boundaryConditions().end() )
  				{
@@ -1210,20 +1227,27 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
 				
                                     auto Sh = Pch<Order> (M_mesh);
                                     auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
+                                    
                                     auto SXX = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::X, Component::X)) );
-                                    auto SYY = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::Y, Component::Y)) );
-                                    auto SZZ = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::Z, Component::Z)) );
-
-                                    auto SXY = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::X, Component::Y)) );
-                                    auto SYZ = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::Y, Component::Z)) );
-                                    auto SXZ = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::X, Component::Z)) );
-
                                     M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXX"), SXX );
-                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactYY"), SYY );
-                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactZZ"), SZZ );
-                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXY"), SXY );
-                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactYZ"), SYZ );
-                                    M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXZ"), SXZ );
+                                    
+                                    if (Dim > 1)
+                                    {
+                                        auto SYY = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::Y, Component::Y)) );
+                                        auto SXY = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::X, Component::Y)) );
+                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactYY"), SYY );
+                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXY"), SXY );
+                                    }
+                                    if (Dim > 2)
+                                    {
+                                        auto SYZ = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::Y, Component::Z)) );
+                                        auto SXZ = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::X, Component::Z)) );
+                                        auto SZZ = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::Z, Component::Z)) );
+                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactZZ"), SZZ );
+                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactYZ"), SYZ );
+                                        M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXZ"), SXZ );
+                                    }
+
                 					// M_exporter->add(prefixvm(M_prefix, "sigma_exact"), Idhv?(*Idhv)( export_sigmaEX): export_sigmaEX );
 
 									auto l2err_sigma = normL2( _range=elements(M_mesh), _expr=sigma_exact - idv(M_up) );

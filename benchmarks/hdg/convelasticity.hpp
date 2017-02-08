@@ -1,4 +1,4 @@
-#include "mixedelasticity.hpp"
+#include "feel/feelmodels/hdg/mixedelasticity.hpp"
 
 namespace Feel {
 
@@ -177,38 +177,27 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
         h /= doption("cvg.refine-factor");
     }
 
-	Feel::cout << __LINE__ << std::endl;
 
-#if 1
+#if 0
 	// COMPUTE THE ERROR IN 2D FOR A CURVED LINE TO VERIFY GEOMETRICAL ORDER 
 
-	Feel::cout << __LINE__ << std::endl;
     auto itField = M_model->modelProperties().boundaryConditions().find("GeometricalTest");
-	Feel::cout << __LINE__ << std::endl;
     if ( itField != M_model->modelProperties().boundaryConditions().end() )
     {
-	Feel::cout << __LINE__ << std::endl;
 	    auto mapField = itField -> second;
-	Feel::cout << __LINE__ << std::endl;
         auto itType = mapField.find( "force_F" );
-	Feel::cout << __LINE__ << std::endl;
         if (itType != mapField.end() )
         {
 			for (auto const& exAtMarker : itType->second )
             {
 				auto forceF = expr<Dim,1> (exAtMarker.expression() );
-	Feel::cout << __LINE__ << std::endl;
 				auto curveError = forceF; //curvedForce - forceF);
-	Feel::cout << __LINE__ << std::endl;
 				auto curvedForce = integrate(_range=markedfaces(M_mesh,exAtMarker.marker()), _expr = id(M_model->fluxField()) * N() );
 				
 				Feel::cout << "Error for geometrical order:\t" << curveError << std::endl;	
 			}
-	Feel::cout << __LINE__ << std::endl;
 		}
-	Feel::cout << __LINE__ << std::endl;
 	}
-	Feel::cout << __LINE__ << std::endl;
 	
 #endif
 /*
