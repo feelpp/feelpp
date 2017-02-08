@@ -187,7 +187,6 @@ public :
         // Restart from iteration 0
         ts->start(u);
 
-
         BOOST_CHECK( ts->isReverse() == false );
         BOOST_CHECK( ts->timeInitial() == 20 );
         BOOST_CHECK( ts->timeFinal() == 100 );
@@ -197,7 +196,7 @@ public :
         v.reserve((100-20)/10);
         for ( ; ts->isFinished() == false; ts->next(u) )
         {
-            LOG(INFO) << "BDF forward iteration" << ts->iteration();
+            LOG(INFO) << "BDF forward iteration: " << ts->iteration() << ", time:" << ts->time();
             const int iter = ts->iteration();
             u.on(_range=elements(M_mesh), _expr=cst(iter) );
             double val = integrate( _range=elements(M_mesh),
@@ -223,7 +222,7 @@ public :
         int k=0;
         for ( ; ts->isFinished() == false; ts->next() )
         {
-             LOG(INFO) << "BDF reversed iteration" << ts->iteration();
+             LOG(INFO) << "BDF reversed iteration:" << ts->iteration() << ", time:" << ts->time();
              ts->loadCurrent();
              auto w = ts->unknown(0);
              double val = integrate( _range=elements(M_mesh),
