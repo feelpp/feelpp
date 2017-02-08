@@ -219,16 +219,18 @@ public :
         BOOST_CHECK( ts->timeInitial() == 100 );
         BOOST_CHECK( ts->timeFinal() == 20 );
         BOOST_CHECK( ts->timeStep() == -10 );
-        int k=0;
-        for ( ; ts->isFinished() == false; ts->next() )
+        int k=v.size()-1;
+        for ( ; ts->isFinished() == false; ts->next(), --k )
         {
              LOG(INFO) << "BDF reversed iteration:" << ts->iteration() << ", time:" << ts->time();
              ts->loadCurrent();
              auto w = ts->unknown(0);
              double val = integrate( _range=elements(M_mesh),
                                      _expr=idv(w) ).evaluate()(0,0);
-             BOOST_CHECK( (val-v[k])*(val-v[k]) < 1e-10 );
-             k++;
+             double err= (val-v[k])*(val-v[k]);
+             LOG(INFO) << "err = " << err << " val=" << val << "v[" << k << "]=" << v[k];
+             BOOST_TEST_MESSAGE( "err = " << err << " val=" << val << "v[" << k << "]=" << v[k] );
+             BOOST_CHECK(  err < 1e-10 );
         }
 
         // BDF State is STOPPED here.
