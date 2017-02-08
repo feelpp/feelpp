@@ -28,20 +28,22 @@
 #include <feel/feelcore/feelmacros.hpp>
 #include <feel/feelcore/environment.hpp>
 
-#if defined(__clang__)
-#if  !defined(__APPLE__) && FEELPP_CLANG_AT_LEAST(3,9)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wundefined-var-template"
-#endif
-#endif
+// #if defined(__clang__)
+// #if  !defined(__APPLE__) && FEELPP_CLANG_AT_LEAST(3,9)
+// #pragma clang diagnostic push
+// #pragma clang diagnostic ignored "-Wundefined-var-template"
+// #endif
+// #endif
 
 #include <ginac/ginac.h>
+extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
 
-#if defined(__clang__)
-#if  !defined(__APPLE__) && FEELPP_CLANG_AT_LEAST(3,9)
-#pragma clang diagnostic pop
-#endif
-#endif
+// #if defined(__clang__)
+// #if  !defined(__APPLE__) && FEELPP_CLANG_AT_LEAST(3,9)
+// #pragma clang diagnostic pop
+// #endif
+// #endif
 
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/worldcomm.hpp>
