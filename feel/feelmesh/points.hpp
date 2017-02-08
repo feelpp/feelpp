@@ -48,7 +48,7 @@ namespace multi_index = boost::multi_index;
   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   @see
 */
-template<uint16_type nDim>
+template<uint16_type nDim,typename T = double>
 class Points
 {
 public:
@@ -58,7 +58,7 @@ public:
      */
     //@{
 
-    typedef GeoElement0D<nDim> point_type;
+    typedef GeoElement0D<nDim,SubFaceOfNone,T> point_type;
     typedef multi_index::multi_index_container<
     point_type,
     multi_index::indexed_by<

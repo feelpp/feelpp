@@ -140,22 +140,22 @@ template <typename GeoShape, typename T = double, int Tag = 0>
 class Mesh
     :
         public mpl::if_<is_0d<GeoShape>,
-                        mpl::identity<Mesh0D<GeoShape > >,
+                        mpl::identity<Mesh0D<GeoShape,T> >,
                         typename mpl::if_<is_1d<GeoShape>,
-                                          mpl::identity<Mesh1D<GeoShape > >,
+                                          mpl::identity<Mesh1D<GeoShape,T> >,
                                           typename mpl::if_<is_2d<GeoShape>,
-                                                            mpl::identity<Mesh2D<GeoShape> >,
-                                                            mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type,
+                                                            mpl::identity<Mesh2D<GeoShape,T> >,
+                                                            mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type,
         public boost::addable<Mesh<GeoShape,T,Tag> >,
         public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >
 {
     using super = typename mpl::if_<is_0d<GeoShape>,
-                                    mpl::identity<Mesh0D<GeoShape > >,
+                                    mpl::identity<Mesh0D<GeoShape,T> >,
                                     typename mpl::if_<is_1d<GeoShape>,
-                                                      mpl::identity<Mesh1D<GeoShape > >,
+                                                      mpl::identity<Mesh1D<GeoShape,T> >,
                                                       typename mpl::if_<is_2d<GeoShape>,
-                                                                        mpl::identity<Mesh2D<GeoShape> >,
-                                                                        mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type;
+                                                                        mpl::identity<Mesh2D<GeoShape,T> >,
+                                                                        mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type;
 public:
 
 

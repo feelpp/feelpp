@@ -70,15 +70,15 @@ namespace Feel
 //! @author Christophe Prud'homme
 //! @see Mesh2D, Mesh3D
 //!
-template<typename Shape>
+template<typename Shape, typename T = double>
 class Mesh1D
     :
         public VisitableBase<>,
         public MeshBase,
-        public Elements<Shape>,
-        public Points<Shape::nRealDim>,
+        public Elements<Shape,T>,
+        public Points<Shape::nRealDim,T>,
         public Faces<typename Shape::template shape<0,Shape::nOrder,Shape::nRealDim>::type,
-                     typename Elements<Shape>::element_type>
+                     typename Elements<Shape,T>::element_type>
 {
     // check at compilation time that the shape has indeed dimension 1
     BOOST_STATIC_ASSERT( Shape::nDim == 1 );
@@ -98,14 +98,14 @@ public:
     typedef VisitableBase<> super_visitable;
     typedef MeshBase super;
 
-    typedef Elements<Shape> super_elements;
+    typedef Elements<Shape,T> super_elements;
     typedef typename super_elements::elements_type elements_type;
     typedef typename super_elements::element_type element_type;
     typedef typename super_elements::element_iterator element_iterator;
     typedef typename super_elements::element_const_iterator element_const_iterator;
     typedef typename super_elements::update_element_neighbor_type update_element_neighbor_type;
 
-    typedef Points<nRealDim> super_points;
+    typedef Points<nRealDim,T> super_points;
     typedef typename super_points::points_type points_type;
     typedef typename super_points::point_type point_type;
 
@@ -124,7 +124,7 @@ public:
     typedef typename edges_reference_wrapper_type::iterator edge_reference_wrapper_iterator;
     typedef typename edges_reference_wrapper_type::const_iterator edge_reference_wrapper_const_iterator;
 
-    typedef Mesh1D<Shape> self_type;
+    typedef Mesh1D<Shape,T> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     typedef typename element_type::vertex_permutation_type vertex_permutation_type;

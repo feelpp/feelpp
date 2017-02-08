@@ -58,9 +58,9 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    typedef typename FaceType::value_type value_type;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<EdgeType::nRealDim>, mpl::int_<3> >,
-                              mpl::identity<GeoElement1D<3, EdgeType,SubFaceOfMany<FaceType> > >,
+                              mpl::identity<GeoElement1D<3, EdgeType,SubFaceOfMany<FaceType>,value_type > >,
                               mpl::identity<boost::none_t> >::type::type edge_type;
 
 

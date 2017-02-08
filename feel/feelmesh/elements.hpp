@@ -75,7 +75,7 @@ namespace detail
   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   @see
 */
-template<typename ElementType>
+template<typename ElementType, typename T = double>
 class Elements
 {
 public:
@@ -91,12 +91,12 @@ public:
      * dimension of the geometric space.
      */
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<3> >,
-            mpl::identity<GeoElement3D<ElementType::nRealDim, ElementType> >,
+                              mpl::identity<GeoElement3D<ElementType::nRealDim, ElementType, T> >,
             typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<2> >,
-            mpl::identity<GeoElement2D<ElementType::nRealDim, ElementType> >,
+                              mpl::identity<GeoElement2D<ElementType::nRealDim, ElementType, SubFaceOfNone, T> >,
             typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<1> >,
-            mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType> >,
-            mpl::identity<GeoElement0D<ElementType::nRealDim, ElementType> > >::type>::type>::type::type element_type;
+                              mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType, SubFaceOfNone, T> >,
+                              mpl::identity<GeoElement0D<ElementType::nRealDim, SubFaceOfNone/*ElementType*/, T> > >::type>::type>::type::type element_type;
 
     /**
      * multi-indexed element container
