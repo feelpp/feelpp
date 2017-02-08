@@ -428,7 +428,7 @@ template <typename SpaceType>
 Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
                      std::string const& name  )
     :
-    super( __space, name, "" )
+    bdf_type( __space, name, "" )
 {}
 
 template <typename SpaceType>
@@ -821,6 +821,11 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::computePolyAndPolyDeriv()
 {
+    if ( !M_poly )
+        M_poly = M_space->elementPtr();
+    if ( !M_polyDeriv )
+        M_polyDeriv = M_space->elementPtr();
+
     M_poly->zero();
     for ( uint8_type i = 0; i < this->timeOrder(); ++i )
         M_poly->add(  this->polyCoefficient( i ),  *M_unknowns[ i ] );
