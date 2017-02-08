@@ -84,9 +84,9 @@ template <uint16_type Dim,
          typename POINTTYPE = Geo0D<Dim, T> >
 class GeoND
     :
-public GeoEntity<GEOSHAPE>
+        public GeoEntity<GEOSHAPE,T>
 {
-    typedef GeoEntity<GEOSHAPE> super;
+    typedef GeoEntity<GEOSHAPE,T> super;
 public:
 
     typedef T value_type;
@@ -156,8 +156,8 @@ public:
         // quadrature formula used in entity measure (for ho geo, need to check)
         static const uint16_type quad_order = (nOrder-1)*nDim;
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_hypercube>,
-                                  mpl::identity<typename IMGeneric<quad_order,Dim,Hypercube,Gauss,double>::type >,
-                                  mpl::identity<typename IMGeneric<quad_order,Dim,Simplex,Gauss,double>::type > >::type::type type;
+                                  mpl::identity<typename IMGeneric<quad_order,Dim,Hypercube,Gauss,value_type/*double*/>::type >,
+                                  mpl::identity<typename IMGeneric<quad_order,Dim,Simplex,Gauss,value_type/*double*/>::type > >::type::type type;
     };
     typedef typename GetImMeasure<nOrder>::type quad_meas_type;
     typedef typename GetImMeasure<1>::type quad_meas1_type;
@@ -354,14 +354,14 @@ public:
         constexpr int nPtsInFace = GEOSHAPE::topological_face_type::numPoints;
 
         node_type n( nRealDim );
-        em_node_type en( n.data().begin(), n.size() );
+        em_node_type<value_type> en( n.data().begin(), n.size() );
         en.setZero();
         for ( uint16_type p =  0;  p < nPtsInFace; ++p )
         {
             // get pt id in element  from local pt id  in face
             int ptid = this->fToP( f, p );
             auto const& node = this->point( ptid ).node();
-            em_node_type emnode( const_cast<double*>( node.data().begin() ), node.size() );
+            em_node_type<value_type> emnode( const_cast<typename point_type::value_type/*double*/*>( node.data().begin() ), node.size() );
             en += emnode;
         }
         en /= nPtsInFace;
@@ -547,15 +547,15 @@ public:
      *
      * @return the max length of the edges of the element
      */
-    double h() const
+    value_type h() const
     {
-        em_matrix_col_type G( const_cast<double*>(this->G().data().begin()), this->G().size1(), this->G().size2() );
-        double res = 0.;
+        em_matrix_col_type<value_type> G( const_cast<value_type/*double*/*>(this->G().data().begin()), this->G().size1(), this->G().size2() );
+        value_type res = 0.;
         for ( uint16_type __e = 0; __e < numLocalEdges; ++__e )
         {
             int col1 = this->eToP( __e, 0 );
             int col2 = this->eToP( __e, 1 );
-            double r = (G.col(col1)-G.col(col2)).norm();
+            value_type r = (G.col(col1)-G.col(col2)).norm();
 
             res = ( res > r )?res:r;
         }
@@ -565,16 +565,16 @@ public:
      * @brief get the minimum edge length in the element
      * @return the minimum edge length in the element
      */
-    double hMin() const
+    value_type hMin() const
     {
-        em_matrix_col_type G( const_cast<double*>(this->G().data().begin()), this->G().size1(), this->G().size2() );
+        em_matrix_col_type<value_type> G( const_cast<value_type/*double*/*>(this->G().data().begin()), this->G().size1(), this->G().size2() );
 
-        double res = 1e10;
+        value_type res = 1e10;
         for ( uint16_type __e = 0; __e < numLocalEdges; ++__e )
         {
             int col1 = this->eToP( __e, 0 );
             int col2 = this->eToP( __e, 1 );
-            double r = (G.col(col1)-G.col(col2)).norm();
+            value_type r = (G.col(col1)-G.col(col2)).norm();
             res = ( res > r )?r:res;
         }
         return res;
@@ -586,35 +586,35 @@ public:
      *
      * @return the max length of the edges of the local face
      */
-    double hFace( uint16_type f ) const
+    value_type hFace( uint16_type f ) const
     {
         if ( nRealDim==1 )
             return 1;
 
         constexpr int nEdges = GEOSHAPE::topological_face_type::numEdges;
-        em_matrix_col_type G( const_cast<double*>(this->G().data().begin()), this->G().size1(), this->G().size2() );
+        em_matrix_col_type<value_type> G( const_cast<value_type/*double*/*>(this->G().data().begin()), this->G().size1(), this->G().size2() );
 
-        double res = 0.;
+        value_type res = 0.;
         for ( uint16_type e =  0;  e < nEdges; ++e )
         {
             // get edge id in face from local edge id
             int edg = this->f2e( f, (nDim==2)?f:e );
             int col1 = this->eToP( edg, 0 );
             int col2 = this->eToP( edg, 1 );
-            double r = (G.col(col1)-G.col(col2)).norm();
+            value_type r = (G.col(col1)-G.col(col2)).norm();
             res = ( res > r )?res:r;
         }
         return res;
     }
 
-    double hEdge( uint16_type f ) const
+    value_type hEdge( uint16_type f ) const
     {
         int col1 = this->eToP( f, 0 );
         int col2 = this->eToP( f, 1 );
         auto const& node1 = this->point( col1 ).node();
-        em_node_type emnode1( const_cast<double*>( node1.data().begin() ), node1.size() );
+        em_node_type<value_type> emnode1( const_cast<value_type/*double*/*>( node1.data().begin() ), node1.size() );
         auto const& node2 = this->point( col2 ).node();
-        em_node_type emnode2( const_cast<double*>( node2.data().begin() ), node2.size() );
+        em_node_type<value_type> emnode2( const_cast<value_type/*double*/*>( node2.data().begin() ), node2.size() );
         return ( emnode1 - emnode2 ).norm();
     }
 
@@ -629,7 +629,7 @@ public:
     /**
      * \return the measure of the element
      */
-    double measure() const
+    value_type measure() const
     {
         //return M_measure;
         auto itFindMeasure = M_measures.find( GEOND_MEASURES::MEAS_ELEMENT );
@@ -645,7 +645,7 @@ public:
     /**
      * \return the measure of the element face \p f
      */
-    double faceMeasure( uint16_type f ) const
+    value_type faceMeasure( uint16_type f ) const
     {
         //return M_measurefaces[f];
         auto itFindMeasure = M_measures.find( GEOND_MEASURES::MEAS_FACES );
@@ -661,7 +661,7 @@ public:
     /**
      * \return the measure of the element faces
      */
-    std::vector<double> const& faceMeasures() const
+    std::vector<value_type> const& faceMeasures() const
     {
         //return M_measurefaces;
         CHECK( M_measures.find( GEOND_MEASURES::MEAS_FACES ) != M_measures.end() ) << "FACE_MEASURES is not computed";
@@ -1188,7 +1188,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureImpl( boost::shared_ptr<GmType> 
     }
 
     auto ctx = gm->template context<vm::JACOBIAN>( *this, pc );
-    double meas = 0.;
+    value_type meas = 0.;
     for ( int q=0 ; q < thequad.nPoints() ; ++q )
         meas += thequad.weight(q)*ctx->J( q );
     M_measures[GEOND_MEASURES::MEAS_ELEMENT][0] = meas;
@@ -1205,7 +1205,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureImpl( QuadType const& thequad,
         M_measures[GEOND_MEASURES::MEAS_ELEMENT].resize( 1 );
     }
 
-    double meas = 0.;
+    value_type meas = 0.;
     for ( int q=0 ; q < thequad.nPoints() ; ++q )
         meas += thequad.weight(q)*ctx->J( q );
     M_measures[GEOND_MEASURES::MEAS_ELEMENT][0] = meas;
@@ -1230,7 +1230,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( boost::shared_ptr<GmTy
     for ( int f = 0; f < numTopologicalFaces; ++f )
     {
         ctx->update( *this, f );
-        double meas = 0.;
+        value_type meas = 0.;
         for ( int q=0 ; q < thequad.nPointsOnFace( f ) ; ++q )
             meas += thequad.weight(f,q)*ctx->J( q )*ctx->normalNorm( q );
         M_measures[GEOND_MEASURES::MEAS_FACES][f] = meas;
@@ -1254,7 +1254,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( QuadType const& thequa
     for ( int f = 0; f < numTopologicalFaces; ++f )
     {
         ctx->update( dynamic_cast<typename CtxType::element_type const&>(*this), f );
-        double meas = 0.;
+        value_type meas = 0.;
         for ( int q=0 ; q < thequad.nPointsOnFace( f ) ; ++q )
             meas += thequad.weight(f,q)*ctx->J( q )*ctx->normalNorm( q );
         M_measures[GEOND_MEASURES::MEAS_FACES][f] = meas;

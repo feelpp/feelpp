@@ -59,10 +59,10 @@ class Geo0D
 public boost::equality_comparable<Geo0D<Dim,T> >,
 public boost::less_than_comparable<Geo0D<Dim,T> >,
 public boost::less_than_comparable<Geo0D<Dim,T>, size_type>,
-public GeoEntity<Simplex<0, 1, Dim> >,
+public GeoEntity<Simplex<0, 1, Dim>,T >,
 public node<T, Dim>::type
 {
-    typedef GeoEntity<Simplex<0, 1, Dim> > super;
+    typedef GeoEntity<Simplex<0, 1, Dim>,T > super;
     typedef typename node<T, Dim>::type super2;
 public:
 

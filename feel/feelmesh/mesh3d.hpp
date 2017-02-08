@@ -73,17 +73,17 @@ namespace Feel
 //!  @author Christophe Prud'homme
 //!  @see
 //!
-template <typename Shape>
+template <typename Shape, typename T = double>
 class Mesh3D
     : public VisitableBase<>,
       public MeshBase,
-      public Elements<Shape>,
-      public Points<3>,
+      public Elements<Shape,T>,
+      public Points<3,T>,
       public Faces<typename Shape::template shape<2>::type,
-                   typename Elements<Shape>::element_type>,
+                   typename Elements<Shape,T>::element_type>,
       public Edges<typename Shape::template shape<1>::type,
                    typename Faces<typename Shape::template shape<2>::type,
-                                  typename Elements<Shape>::element_type>::face_type>
+                                  typename Elements<Shape,T>::element_type>::face_type>
 {
     // check at compilation time that the shape has indeed dimension 2
     BOOST_STATIC_ASSERT( Shape::nDim == 3 );
@@ -100,7 +100,7 @@ class Mesh3D
     typedef VisitableBase<> super_visitable;
     typedef MeshBase super;
 
-    typedef Elements<Shape> super_elements;
+    typedef Elements<Shape,T> super_elements;
     typedef typename super_elements::elements_type elements_type;
     typedef typename super_elements::element_type element_type;
     typedef typename super_elements::element_iterator element_iterator;
@@ -111,7 +111,7 @@ class Mesh3D
     typedef typename element_type::edge_permutation_type edge_permutation_type;
     typedef typename element_type::face_permutation_type face_permutation_type;
 
-    typedef Points<3> super_points;
+    typedef Points<3,T> super_points;
     typedef typename super_points::points_type points_type;
     typedef typename super_points::point_type point_type;
 
@@ -136,7 +136,7 @@ class Mesh3D
 
     typedef typename std::pair<size_type, size_type> edge_pair_type;
 
-    typedef Mesh3D<Shape> self_type;
+    typedef Mesh3D<Shape,T> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     static const size_type SHAPE = Shape::Shape;
@@ -380,8 +380,8 @@ void check() const;
     boost::multi_array<element_edge_type, 2> M_e2e;
 };
 
-template <typename GEOSHAPE>
-Mesh3D<GEOSHAPE>::Mesh3D( WorldComm const& worldComm )
+template <typename GEOSHAPE, typename T>
+Mesh3D<GEOSHAPE,T>::Mesh3D( WorldComm const& worldComm )
     : super_visitable(),
       super( 3, nRealDim, worldComm ),
       super_elements( worldComm ),
@@ -391,12 +391,12 @@ Mesh3D<GEOSHAPE>::Mesh3D( WorldComm const& worldComm )
       M_e2e()
 {
 }
-template <typename GEOSHAPE>
-Mesh3D<GEOSHAPE>::~Mesh3D()
+template <typename GEOSHAPE, typename T>
+Mesh3D<GEOSHAPE,T>::~Mesh3D()
 {
 }
-template <typename GEOSHAPE>
-void Mesh3D<GEOSHAPE>::clear()
+template <typename GEOSHAPE, typename T>
+void Mesh3D<GEOSHAPE,T>::clear()
 {
     this->elements().clear();
     this->points().clear();
@@ -408,8 +408,8 @@ void Mesh3D<GEOSHAPE>::clear()
         .error( "all mesh containers should be empty after a clear." );
 }
 
-template <typename GEOSHAPE>
-void Mesh3D<GEOSHAPE>::determineFacePermutation( uint16_type numZeros, std::vector<size_type> const& def,
+template <typename GEOSHAPE, typename T>
+void Mesh3D<GEOSHAPE,T>::determineFacePermutation( uint16_type numZeros, std::vector<size_type> const& def,
                                                  std::vector<size_type> const& cur, std::vector<uint32_type>& diff,
                                                  face_permutation_type& permutation, mpl::bool_<true> )
 {
@@ -447,8 +447,8 @@ void Mesh3D<GEOSHAPE>::determineFacePermutation( uint16_type numZeros, std::vect
     }
 }
 
-template <typename GEOSHAPE>
-void Mesh3D<GEOSHAPE>::determineFacePermutation( uint16_type numZeros, std::vector<size_type> const& def,
+template <typename GEOSHAPE, typename T>
+void Mesh3D<GEOSHAPE,T>::determineFacePermutation( uint16_type numZeros, std::vector<size_type> const& def,
                                                  std::vector<size_type> const& cur, std::vector<uint32_type>& diff,
                                                  face_permutation_type& permutation, mpl::bool_<false> )
 {
@@ -488,8 +488,8 @@ void Mesh3D<GEOSHAPE>::determineFacePermutation( uint16_type numZeros, std::vect
     }
 }
 
-template <typename GEOSHAPE>
-void Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionOnePermutation()
+template <typename GEOSHAPE, typename T>
+void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionOnePermutation()
 {
     boost::timer ti;
     std::vector<size_type> _left( face_type::numVertices );
@@ -547,8 +547,8 @@ void Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionOnePermutation()
     DVLOG( 2 ) << "[Mesh3D::updateFaces] element/face permutation : " << ti.elapsed() << "\n";
 }
 #if 1
-template <typename GEOSHAPE>
-void Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
+template <typename GEOSHAPE, typename T>
+void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
 {
     boost::timer ti;
     boost::unordered_map<std::set<size_type>, size_type> _edges;
@@ -817,8 +817,8 @@ void Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 }
 #else
 
-template <typename GEOSHAPE>
-void Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
+template <typename GEOSHAPE, typename T>
+void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
 {
     boost::timer ti;
     rank_type currentPid = this->worldComm().localRank();
