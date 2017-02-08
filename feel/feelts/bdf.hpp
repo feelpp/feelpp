@@ -236,7 +236,6 @@ public:
     */
     double restart();
 
-
     /**
        Update the vectors of the previous time steps by shifting on the right
        the old values.
@@ -451,7 +450,7 @@ Bdf<SpaceType>::Bdf( Bdf const& b )
         M_space( b.M_space ),
         M_unknowns( b.M_unknowns ),
         M_alpha( b.M_alpha ),
-        M_beta( b.M_beta )
+        M_beta( b.M_beta ),
         M_reverseLoad( b.M_reverseLoad )
 {}
 
