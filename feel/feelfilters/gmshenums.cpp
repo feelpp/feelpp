@@ -22,10 +22,17 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <feel/feelfilters/gmshenums.hpp>
+#include <feel/feelcore/feel.hpp>
 
 namespace Feel
 {
 
 const char* FEELPP_GMSH_FORMAT_VERSION = "2.2";
+
+#if defined(HAVE_METIS)
+const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT = GMSH_PARTITIONER_METIS;
+#else
+const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT = GMSH_PARTITIONER_CHACO;
+#endif
 
 }
