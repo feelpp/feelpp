@@ -26,5 +26,6 @@ feelpp_add_test( bdf )
 feelpp_add_test( bdf2 CFG test_bdf2.cfg )
 feelpp_add_test( bdf3 CFG test_bdf3.cfg NO_MPI_TEST )
 feelpp_add_test( bdf_reverse )
+feelpp_add_test( bdf_forward )
 
 

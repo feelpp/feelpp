@@ -44,7 +44,7 @@ makeAbout()
     AboutData about( "test_bdf_reverse" ,
                      "test_bdf_reverse" ,
                      "0.2",
-                     "nD(n=2,3) test bdf2",
+                     "nD(n=2,3) test reverse",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2013 Feel++ Consortium" );
 
