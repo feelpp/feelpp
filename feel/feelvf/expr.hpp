@@ -410,7 +410,8 @@ public:
         }
     void setParameterValues( std::map<std::string,value_type> const& mp )
         {
-            this->setParameterValues( mp, boost::is_base_of<Feel::vf::GiNaCBase,expression_type>() );
+            //this->setParameterValues( mp, boost::is_base_of<Feel::vf::GiNaCBase,expression_type>() );
+            M_expr.setParameterValues( mp );
         }
     void setParameterValues( std::map<std::string,value_type> const& mp, mpl::bool_<true> )
         {
