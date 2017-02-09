@@ -34,22 +34,6 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 
-namespace GiNaC
-{
-std::string strsymbol( std::vector<symbol> const& f )
-{
-    std::ostringstream ostr;
-    ostr << "(";
-    for(int i =0; i < f.size();++i)
-    {
-        ostr << f[i].get_name();
-        if ( i < f.size()-1 )
-            ostr << ",";
-    }
-    ostr << ")";
-    return ostr.str();
-}
-}
 /** use Feel namespace */
 using namespace Feel;
 //using Feel::project;
