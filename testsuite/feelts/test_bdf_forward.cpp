@@ -87,7 +87,7 @@ public :
 
             ts->start();
 
-            BOOST_CHECK( ts->iteration < ts->iterationNumber() );
+            BOOST_CHECK( ts->iteration() < ts->iterationNumber() );
             BOOST_CHECK( ts->timeInitial() == 20 );
             BOOST_CHECK( ts->timeFinal() == 100 );
             BOOST_CHECK( ts->timeStep() == 10 );
