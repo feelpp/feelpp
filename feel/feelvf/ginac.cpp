@@ -72,6 +72,7 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
     symtab table;
     LOG(INFO) <<"Inserting symbols in symbol table";
 
+#if 0
     table["x"]=syms[0];
     if ( syms.size() == 2 )
     {
@@ -82,6 +83,7 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
         table["y"]=syms[1];
         table["z"]=syms[2];
     }
+#endif
     std::vector<symbol> total_syms;
     boost::for_each( syms, [&table, &total_syms]( symbol const& param )
                      {
@@ -96,7 +98,7 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
                          total_syms.push_back(symbol(param));
                          table[param.get_name()] = param;
                      } );
-
+    LOG(INFO) << " . table : " << table;
     LOG(INFO) <<"Defining parser";
     parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
 
@@ -129,7 +131,7 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
     {
         std::cerr << "Exception of unknown type!\n";
     }
-
+    LOG(INFO) << "e=" << e << "\n";
     return e;
 }
 
