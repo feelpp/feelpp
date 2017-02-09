@@ -45,3 +45,41 @@ The important options are:
 * `cvg.refine-factor`: factor by which to divide hsize at each iteration
 * `mixedpoisson.use-sc`: use static condensation or not
 
+# Linear elasticity
+
+with static condensation in parallel
+
+[source,sh]
+----
+mpirun -np 4 ./feelpp_benchmarks_bench_hdg_linear_elasticity_2D_P2 -- --u_exact="{x*x,x*y}:x:y" --f="{8,0}:x:y" --use_hypercube=true --sc.condense=true --backend.rebuild=true 
+----
+
+The important options are:
+
+* `u_exact`: exact expression for the displacement
+* `f`: external force applied
+* `nb_refine`: number of iteration of the convergence test
+
+NOTE: error should be 0 thanks to exact solution being quadratic
+
+
+
+# MixedElasticity
+
+The model file, the geometries and the configuration files are in cvg-el-tests. +
+The simplest way to launch the tests is with the following command:
+
+[source,sh]
+----
+mpirun -np 1 feelpp_benchmarks_elasticity_conv_2DP1G1E4 --config-file cvg-el-tests/cvgElasticity2D.cfg
+----
+
+The templates parameters stand for the dimension, the polynomial order, the geometric order and the expression order. +
+You have two different configuration files for 2D and 3D. +
+You have two different json files (2D and 3D) to specify the exact solution and the model properties. +
+The important options are:
+
+* `cvg.refine-nb`: number of iteration of the convergence test
+* `cvg.refine-factor`: factor by which to divide hsize at each iteration
+* `mixedelasticity.use-sc`: use static condensation or not
+
