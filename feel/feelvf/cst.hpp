@@ -127,6 +127,8 @@ public:
     typename Lambda<TheExpr...>::type
     operator()( TheExpr... e  ) { return typename Lambda<TheExpr...>::type(M_constant); }
 
+    void setParameterValues( std::map<std::string,value_type> const& mp ) {}
+
     template<typename Geo_t, typename Basis_i_t=mpl::void_, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
