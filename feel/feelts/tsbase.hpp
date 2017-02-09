@@ -369,7 +369,7 @@ public:
     //! Reverse time (iteration always start at 0!)
     void setReverse( bool reverse=false )
     {
-        CHECK( state() != TS_RUNNING ) << "Trying to reverse a running state bdf. Reverse require prior bdf stopped state!";
+        CHECK( state() != TS_RUNNING ) << "Trying to reverse a running state bdf (TS_STOPPED required)!";
 
         bool doReverse = ( ((not isReverse()) and (reverse==true))
                            or (isReverse() and (reverse==false)) );
