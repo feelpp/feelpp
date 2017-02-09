@@ -855,7 +855,7 @@ BOOST_PARAMETER_FUNCTION(
       ( restart_at_last_save,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.restart.at-last-save") )
       ( save,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.save") )
       ( freq,*(boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="bdf.save.freq") )
-      ( format,*, boption(_prefix=prefix,_name="bdf.file-format") )
+      ( format,*, soption(_prefix=prefix,_name="bdf.file-format") )
       ( rank_proc_in_files_name,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.rank-proc-in-files-name") )
     ) )
 {
