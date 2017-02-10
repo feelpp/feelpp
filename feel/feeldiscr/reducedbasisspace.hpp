@@ -884,12 +884,12 @@ public :
                     // std::cout << "has rbspace\n";
                     if ( M_meshForRbContext )
                     {
-                        if ( !M_meshForRbContext->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) )
+                        if ( !M_meshForRbContext->hasElement( meshEltCtx.id()/*, meshEltCtx.processId()*/ ) )
                         {
                             meshEltCtx.setMeshAndGm( M_meshForRbContext.get(), M_meshForRbContext->gm(), M_meshForRbContext->gm1() );
                             M_meshForRbContext->addElement( meshEltCtx, false );
                         }
-                        auto const& meshEltCtxRegister = M_meshForRbContext->element( meshEltCtx.id(), meshEltCtx.processId() );
+                        auto const& meshEltCtxRegister = M_meshForRbContext->element( meshEltCtx.id()/*, meshEltCtx.processId()*/ );
                         typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_meshForRbContext->gm(),meshEltCtxRegister ) );
                         ar & boost::serialization::make_nvp( "gmContext", *gmContext );
                         this->setGmContext( gmContext );
@@ -897,8 +897,8 @@ public :
                     else if ( M_rbspace->mesh() )
                     {
                         // std::cout << "has mesh in rbspace\n";
-                        CHECK ( M_rbspace->mesh()->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) ) << "fails because mesh doesnt have the element reloaded for gmc";
-                        auto const& meshEltCtxRegister = M_rbspace->mesh()->element( meshEltCtx.id(), meshEltCtx.processId() );
+                        CHECK ( M_rbspace->mesh()->hasElement( meshEltCtx.id()/*,meshEltCtx.processId()*/ ) ) << "fails because mesh doesnt have the element reloaded for gmc";
+                        auto const& meshEltCtxRegister = M_rbspace->mesh()->element( meshEltCtx.id()/*,meshEltCtx.processId()*/ );
                         typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_rbspace->mesh()->gm(),meshEltCtxRegister ) );
                         ar & boost::serialization::make_nvp( "gmContext", *gmContext );
                         this->setGmContext( gmContext );
