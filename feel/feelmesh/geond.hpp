@@ -549,7 +549,8 @@ public:
      */
     value_type h() const
     {
-        em_matrix_col_type<value_type> G( const_cast<value_type/*double*/*>(this->G().data().begin()), this->G().size1(), this->G().size2() );
+        matrix_node_type nodesG = this->G();
+        em_matrix_col_type<value_type> G( const_cast<value_type*>(nodesG.data().begin()), nodesG.size1(), nodesG.size2() );
         value_type res = 0.;
         for ( uint16_type __e = 0; __e < numLocalEdges; ++__e )
         {
@@ -567,7 +568,8 @@ public:
      */
     value_type hMin() const
     {
-        em_matrix_col_type<value_type> G( const_cast<value_type/*double*/*>(this->G().data().begin()), this->G().size1(), this->G().size2() );
+        matrix_node_type nodesG = this->G();
+        em_matrix_col_type<value_type> G( const_cast<value_type*>(nodesG.data().begin()), nodesG.size1(), nodesG.size2() );
 
         value_type res = 1e10;
         for ( uint16_type __e = 0; __e < numLocalEdges; ++__e )
@@ -592,7 +594,8 @@ public:
             return 1;
 
         constexpr int nEdges = GEOSHAPE::topological_face_type::numEdges;
-        em_matrix_col_type<value_type> G( const_cast<value_type/*double*/*>(this->G().data().begin()), this->G().size1(), this->G().size2() );
+        matrix_node_type nodesG = this->G();
+        em_matrix_col_type<value_type> G( const_cast<value_type*>(nodesG.data().begin()), nodesG.size1(), nodesG.size2() );
 
         value_type res = 0.;
         for ( uint16_type e =  0;  e < nEdges; ++e )
@@ -612,9 +615,9 @@ public:
         int col1 = this->eToP( f, 0 );
         int col2 = this->eToP( f, 1 );
         auto const& node1 = this->point( col1 ).node();
-        em_node_type<value_type> emnode1( const_cast<value_type/*double*/*>( node1.data().begin() ), node1.size() );
+        em_node_type<value_type> emnode1( const_cast<value_type*>( node1.data().begin() ), node1.size() );
         auto const& node2 = this->point( col2 ).node();
-        em_node_type<value_type> emnode2( const_cast<value_type/*double*/*>( node2.data().begin() ), node2.size() );
+        em_node_type<value_type> emnode2( const_cast<value_type*>( node2.data().begin() ), node2.size() );
         return ( emnode1 - emnode2 ).norm();
     }
 
@@ -780,8 +783,9 @@ public:
 
         for ( int i = 0; i < nRealDim ; ++i )
         {
-            ublas::row( orientation_matrix, i ) = ( ublas::column( this->G(), i+1 ) -
-                                                    ublas::column( this->G(),   0 ) );
+            matrix_node_type nodesG = this->G();
+            ublas::row( orientation_matrix, i ) = ( ublas::column( nodesG, i+1 ) -
+                                                    ublas::column( nodesG,   0 ) );
 
         }
 
