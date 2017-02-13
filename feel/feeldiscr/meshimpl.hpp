@@ -1146,9 +1146,6 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 DVLOG(2) << "ad_first: " << facePtr->ad_first() << "\n";
                 DVLOG(2) << "pos_first: " << facePtr->pos_first() << "\n";
                 DVLOG(2) << "proc_first: " << facePtr->proc_first() << "\n";
-                DVLOG(2) << "ad_second: " << facePtr->ad_second() << "\n";
-                DVLOG(2) << "pos_second: " << facePtr->pos_second() << "\n";
-                DVLOG(2) << "proc_second: " << facePtr->proc_second() << "\n";
 #endif
             }
 
@@ -1223,9 +1220,6 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     DVLOG(2) << "ad_first: " << facePtr->ad_first() << "\n";
                     DVLOG(2) << "pos_first: " << facePtr->pos_first() << "\n";
                     DVLOG(2) << "proc_first: " << facePtr->proc_first() << "\n";
-                    DVLOG(2) << "ad_second: " << facePtr->ad_second() << "\n";
-                    DVLOG(2) << "pos_second: " << facePtr->pos_second() << "\n";
-                    DVLOG(2) << "proc_second: " << facePtr->proc_second() << "\n";
                     DVLOG(2) << "element process id: " << __element.processId() << "\n";
 #endif
                 }
