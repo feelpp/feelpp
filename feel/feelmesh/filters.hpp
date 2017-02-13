@@ -1139,7 +1139,7 @@ elementsWithMarkedFaces( MeshType const& mesh, boost::any const& flag, EntityPro
 
 
             // add elt in range
-            if ( eltOffProc.marker().value() == theflag )
+            if ( eltOffProc.hasMarker() && eltOffProc.marker().value() == theflag )
             {
                 myelts->push_back(boost::cref(eltOffProc));
             }
@@ -1189,7 +1189,7 @@ markedelements( MeshType const& mesh, boost::any const& flag, EntityProcessType 
 
 
             // add elt in range
-            if ( eltOffProc.marker().value() == theflag )
+            if ( eltOffProc.hasMarker() && eltOffProc.marker().value() == theflag )
                 myelts->push_back(boost::cref(eltOffProc));
 
             eltGhostDone.insert( eltOffProc.id() );
@@ -1236,7 +1236,7 @@ marked2elements( MeshType const& mesh, boost::any const& flag, EntityProcessType
 
 
             // add elt in range
-            if ( eltOffProc.marker2().value() == theflag )
+            if ( eltOffProc.hasMarker2() && eltOffProc.marker2().value() == theflag )
                 myelts->push_back(boost::cref(eltOffProc));
 
             eltGhostDone.insert( eltOffProc.id() );
@@ -1323,7 +1323,7 @@ marked2faces( MeshType const& mesh, boost::any flag, EntityProcessType entity )
             for ( size_type f = 0; f < mesh->numLocalFaces(); f++ )
             {
                 auto const& theface = eltOffProc.face(f);
-                if ( theface.marker2().value() == theflag ) //&& faceGhostDone.find( theface.id() ) == faceGhostDone.end() )
+                if ( theface.hasMarker2() && theface.marker2().value() == theflag ) //&& faceGhostDone.find( theface.id() ) == faceGhostDone.end() )
                     myelts->push_back(boost::cref(theface));
             }
         }
