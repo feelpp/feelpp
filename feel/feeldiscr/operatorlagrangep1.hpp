@@ -585,9 +585,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                 uint16_type localptid = itl->point( p ).id();
                 uint16_type localptid_dof = localDof( curelt, localptid );
 
-                size_type ptid = boost::get<0>( this->domainSpace()->dof()->localToGlobal( curelt.id(),
-                                                localptid_dof, 0 ) );
-                FEELPP_ASSERT( ptid < this->domainSpace()->nLocalDof()/domain_space_type::nComponents )( ptid )( this->domainSpace()->nLocalDof()/domain_space_type::nComponents ).warn( "invalid domain dof index" );
+                size_type ptid = this->domainSpace()->dof()->localToGlobal( curelt.id(),localptid_dof, 0 ).index();
 
                 if (doParallelBuild && !this->domainSpace()->dof()->dofGlobalClusterIsOnProc(this->domainSpace()->dof()->mapGlobalProcessToGlobalCluster(ptid)))
                     mapGhostDofIdClusterToProcess[this->domainSpace()->dof()->mapGlobalProcessToGlobalCluster(ptid)] = ptid;
@@ -642,11 +640,6 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                 ( localptid_dof )
                 ( ptid ).warn( "[after] inconsistent point coordinates" );
 
-                FEELPP_ASSERT( ublas::norm_2( elt.point( p ).node()-ublas::column( elt.G(), p ) ) < 1e-10 )
-                ( p )
-                ( elt.point( p ).node() )
-                ( elid )
-                ( elt.G() ).warn( "[after] inconsistent point coordinates" );
 #endif
             }
 
