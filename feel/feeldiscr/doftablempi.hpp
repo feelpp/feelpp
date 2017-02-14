@@ -1201,17 +1201,12 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
     const uint16_type ncdof = is_product?nComponents:1;
     DVLOG(2) << "[buildGlobalProcessToGlobalClusterDofMapOthersMesh] ncdof " << ncdof << "\n";
 
-    // extract ghost elements where doftable is also build
-    typedef boost::reference_wrapper<typename mesh_type::element_type const> element_ref_type;
-    // store entities in a vector
-    typedef std::vector<element_ref_type> cont_range_type;
-
     size_type nLocalDofWithGhost = this->M_n_localWithGhost_df[myRank];
     std::vector<bool> dofdone( nLocalDofWithGhost,false);
     std::vector<bool> dofIsGhost( nLocalDofWithGhost,false);
     size_type nDofNotPresent=0;
     std::vector< std::map<size_type,std::set< std::vector<size_type> > > > listToSend(this->worldComm().localSize());
-    boost::shared_ptr<cont_range_type> myActiveEltsTouchInterProcess( new cont_range_type );
+    typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myActiveEltsTouchInterProcess( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
 
     if (is_continuous)
     {
@@ -1359,7 +1354,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
     // extended dof table
     if ( this->buildDofTableMPIExtended() )
     {
-        boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+        typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
         auto rangeGhostElement = mesh.ghostElements();
         auto itGhostElt = std::get<0>( rangeGhostElement );
         auto enGhostElt = std::get<1>( rangeGhostElement );
@@ -1682,11 +1677,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
     DVLOG(2) << "[buildGhostDofMap] call buildGhostDofMapExtended on rank "<<  this->worldComm().rank() << "\n";
 
     // extract range of elements
-    typedef boost::reference_wrapper<typename mesh_type::element_type const> element_ref_type;
-    typedef std::vector<element_ref_type> cont_range_type;
-
-    boost::shared_ptr<cont_range_type> myActiveEltsTouchInterProcess( new cont_range_type );
-    boost::shared_ptr<cont_range_type> myGhostEltsExtended( new cont_range_type );
+    typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myActiveEltsTouchInterProcess( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
+    typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myGhostEltsExtended( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
 
     std::set<size_type> dofdoneActive, dofdoneGhost;
     auto rangeInterProcessFaces = mesh.interProcessFaces();
@@ -2064,11 +2056,8 @@ void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPointsExtendedGhostMap( mesh_type& mesh ) const
 {
     // extract range of elements
-    typedef boost::reference_wrapper<typename mesh_type::element_type const> element_ref_type;
-    typedef std::vector<element_ref_type> cont_range_type;
-
-    boost::shared_ptr<cont_range_type> myActiveEltsTouchInterProcess( new cont_range_type );
-    boost::shared_ptr<cont_range_type> myGhostEltsExtended( new cont_range_type );
+    typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myActiveEltsTouchInterProcess( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
+    typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myGhostEltsExtended( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
 
     std::set<size_type> dofdoneActive, dofdoneGhost;
     auto rangeInterProcessFaces = mesh.interProcessFaces();
