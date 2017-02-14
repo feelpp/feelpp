@@ -191,7 +191,10 @@ public:
     //! return the real time in seconds spent in the iteration
     double realTimePerIteration() const
     {
-        CHECK( state() == TS_RUNNING ) << "invalid Time Stepping state, it should be " << TS_RUNNING << " (TS_RUNNING) and it is " << state();
+        CHECK( state() == TS_RUNNING )
+            << "TSBase::realTimePerIteration(): invalid Time Stepping state for '" << M_name
+            <<"', it should be " << TS_RUNNING
+            << " (TS_RUNNING) and it is " << state();
         M_real_time_per_iteration = M_timer.elapsed();
         return M_real_time_per_iteration;
     }
@@ -257,7 +260,10 @@ public:
      */
     virtual double next() const
     {
-        CHECK( state() == TS_RUNNING ) << "invalid Time Stepping state, it should be " << TS_RUNNING << " (TS_RUNNING) and it is " << state();
+        CHECK( state() == TS_RUNNING )
+            << "TSBase::next(): invalid Time Stepping state for '"<< M_name
+            <<"', it should be " << TS_RUNNING
+            << " (TS_RUNNING) and it is " << state();
         M_real_time_per_iteration = M_timer.elapsed();
         M_timer.restart();
         if ( boption(prefixvm(M_prefix,"ts.display-stats")) )
@@ -289,10 +295,26 @@ public:
         return M_state;
     }
 
+    bool isStopped() const
+    {
+        return (state() == TS_STOPPED);
+    }
+
+    bool isRunning() const
+    {
+        return (state() == TS_RUNNING);
+    }
+
     //! return the reverse time loop state.
     bool isReverse() const
     {
         return M_reverse;
+    }
+
+    //! return the reverse time loop state.
+    bool isReverseLoad() const
+    {
+        return M_reverseLoad;
     }
 
     //! return the relative path where the bdf data is stored
@@ -369,7 +391,10 @@ public:
     //! Reverse time (iteration always start at 0!)
     void setReverse( bool reverse=false )
     {
-        CHECK( state() != TS_RUNNING ) << "Trying to reverse a running state bdf (TS_STOPPED required)!";
+        CHECK( state() != TS_RUNNING )
+            << "TSBase::setReverse(): invalid Time Stepping state for '" << M_name
+            << "', it should be " << TS_STOPPED
+            << " (TS_STOPPED) and it is " << state();
 
         bool doReverse = ( ((not isReverse()) and (reverse==true))
                            or (isReverse() and (reverse==false)) );
@@ -384,12 +409,18 @@ public:
             M_Ti = Tf;
             M_dt = -M_dt;
         }
+    }
 
-        if( isReverse() )
-            LOG(INFO) << "BDF is reversed.";
-        else
-            LOG(INFO) << "BDF is NOT reversed.";
-        print();
+    //! Load saved unknown beginning from last iteration.
+    //! In bdf, solutions are saved from Ti (iter 0) ->Tf (iter N) in hdf5 files
+    //! indexed by the iteration.
+    //! If we reverse bdf, it runs from Tf (iter 0) -> Ti (iter N).
+    //! To read hdf5 solution from files, we have to load the file N at Ti.
+    //! Therefore reversing iteration index to load the correct file.
+    //! Note: it is not required if the solution has to be saved.
+    void setReverseLoad( bool reverseLoad = false )
+    {
+        M_reverseLoad=reverseLoad;
     }
 
     void setRestart( bool doRestart )
@@ -457,6 +488,9 @@ protected:
 
     //! is reversed
     bool M_reverse;
+
+    //! is file load from reverse
+    bool M_reverseLoad;
 
     //! restart
     int M_n_restart;

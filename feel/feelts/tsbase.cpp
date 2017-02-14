@@ -43,6 +43,7 @@ TSBase::TSBase()
     M_dt( 1.0 ),
     M_state( TS_UNITIALIZED ),
     M_reverse( false ),
+    M_reverseLoad( false ),
     M_n_restart( 0 ),
     M_restart( false ),
     M_restartPath( "" ),
@@ -66,6 +67,7 @@ TSBase::TSBase( std::string name, std::string const& prefix, WorldComm const& wo
     M_dt( doption(_prefix=prefix,_name="ts.time-step") ),
     M_state( TS_UNITIALIZED ),
     M_reverse( false ),
+    M_reverseLoad( false ),
     M_n_restart( 0 ),
     M_restart( boption(_prefix=prefix,_name="ts.restart") ),
     M_restartPath( soption(_prefix=prefix,_name="ts.restart.path") ),
@@ -89,6 +91,7 @@ TSBase::TSBase( std::string name, WorldComm const& worldComm )
     M_dt( 1.0 ),
     M_state( TS_UNITIALIZED ),
     M_reverse( false ),
+    M_reverseLoad( false ),
     M_n_restart( 0 ),
     M_restart( false ),
     M_restartPath( "" ),
@@ -111,6 +114,7 @@ TSBase::TSBase( TSBase const& b )
     M_dt( b.M_dt ),
     M_state( b.M_state ),
     M_reverse( b.M_reverse ),
+    M_reverseLoad( b.M_reverseLoad ),
     M_n_restart( b.M_n_restart ),
     M_restart( b.M_restart ),
     M_restartPath( b.M_restartPath ),
@@ -139,6 +143,7 @@ TSBase::operator=( TSBase const& b )
         M_n_restart = b.M_n_restart;
         M_state = b.M_state;
         M_reverse = b.M_reverse;
+        M_reverseLoad = b.M_reverseLoad;
         M_restart = b.M_restart;
         M_restartPath = b.M_restartPath;
         M_restartStepBeforeLastSave = b.M_restartStepBeforeLastSave;
