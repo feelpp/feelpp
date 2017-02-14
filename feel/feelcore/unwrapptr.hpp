@@ -53,7 +53,7 @@ unwrap_ptr( C & c, mpl::bool_<true> )
 }
 
 template<typename C>
-Feel::remove_shared_ptr_type<C> const&
+Feel::remove_shared_ptr_type<C> &
 unwrap_ptr( C & c, mpl::bool_<false> )
 {
     return c;
