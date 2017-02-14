@@ -46,13 +46,31 @@
 
 namespace Feel
 {
+
+namespace meshdetail
+{
+template<typename MeshType>
+typename MeshType::gm1_ptrtype
+initGm1( typename MeshType::gm_ptrtype gm, mpl::true_ /**/ )
+{
+    return gm;
+}
+template<typename MeshType>
+typename MeshType::gm1_ptrtype
+initGm1( typename MeshType::gm_ptrtype gm, mpl::false_ /**/ )
+{
+    return typename MeshType::gm1_ptrtype( new typename MeshType::gm1_type );
+}
+}
+
+
 template<typename Shape, typename T, int Tag>
 Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm )
     :
     super(worldComm),
     M_numGlobalElements( 0 ),
     M_gm( new gm_type ),
-    M_gm1( new gm1_type ),
+    M_gm1( Feel::meshdetail::initGm1<type>( M_gm, mpl::bool_<nOrder==1>() ) ),
     M_meas( 0 ),
     M_measbdy( 0 ),
     M_substructuring( false ),
@@ -302,11 +320,12 @@ Mesh<Shape, T, Tag>::updateForUse()
     } // isUpdatedForUse
 
 
-    if ( M_is_gm_cached == false )
+    if ( !this->components().test( MESH_GEOMAP_NOT_CACHED ) && !M_is_gm_cached )
     {
         tic();
         M_gm->initCache( this );
-        M_gm1->initCache( this );
+        if ( nOrder > 1 )
+            M_gm1->initCache( this );
         M_is_gm_cached = true;
         toc("Mesh::updateForUse update geomap cache",FLAGS_v>0);
         VLOG(1) << "[Mesh::updateForUse] update geomap cache";

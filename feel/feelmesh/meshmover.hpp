@@ -284,8 +284,12 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
         imesh->updateMeasures();
 
     // reset geomap cache
-    imesh->gm()->initCache( imesh.get() );
-    imesh->gm1()->initCache( imesh.get() );
+    if ( imesh->gm()->isCached() )
+    {
+        imesh->gm()->initCache( imesh.get() );
+        if ( mesh_type::nOrder > 1 )
+            imesh->gm1()->initCache( imesh.get() );
+    }
 
     // reset localisation tool
     imesh->tool_localization()->reset();
