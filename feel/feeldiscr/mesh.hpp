@@ -2211,7 +2211,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
     for ( ; face_it!=face_en ; ++face_it )
     {
         auto const& old_face = *face_it;
-        if ( old_face.hasMarker() ) continue;
+        if ( !old_face.hasMarker() ) continue;
 
         typename P1_mesh_type::face_type new_face;
         // is on boundary
