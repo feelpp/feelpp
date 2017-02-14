@@ -319,18 +319,6 @@ public:
         *M_unknowns[i] = e;
     }
 
-    //! Load saved unknown beginning from last iteration.
-    //! In bdf, solutions are saved from Ti (iter 0) ->Tf (iter N) in hdf5 files
-    //! indexed by the iteration.
-    //! If we reverse bdf, it runs from Tf (iter 0) -> Ti (iter N).
-    //! To read hdf5 solution from files, we have to load the file N at Ti.
-    //! Therefore reversing iteration index to load the correct file.
-    //! Note: it is not required if the solution has to be saved.
-    void setReverseLoad( bool reverseLoad = false )
-    {
-        M_reverseLoad=reverseLoad;
-    }
-
     void showMe( std::ostream& __out = std::cout ) const;
 
     //! Load current unknown in a file (hdf5, binary, ...)
@@ -397,8 +385,6 @@ private:
     //! Coefficients \f$ \beta_i \f$ of the extrapolation
     std::vector<ublas::vector<double> > M_beta;
 
-    bool M_reverseLoad;
-
     //! extrapolation field and rhs part of bdf scheme
     element_ptrtype M_poly, M_polyDeriv;
 };
@@ -416,7 +402,6 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
     M_beta( BDF_MAX_ORDER ),
-    M_reverseLoad( false ),
     M_poly( M_space->elementPtr() ),
     M_polyDeriv( M_space->elementPtr() )
 {
@@ -450,8 +435,7 @@ Bdf<SpaceType>::Bdf( Bdf const& b )
         M_space( b.M_space ),
         M_unknowns( b.M_unknowns ),
         M_alpha( b.M_alpha ),
-        M_beta( b.M_beta ),
-        M_reverseLoad( b.M_reverseLoad )
+        M_beta( b.M_beta )
 {}
 
 template <typename SpaceType>
@@ -533,7 +517,7 @@ Bdf<SpaceType>::init()
         {
             int iteration = (M_iteration-p);
             // Load files beginning at last iteration.
-            if( this->isReverse() and M_reverseLoad )
+            if( this->isReverseLoad() )
                 iteration = niteration - iteration;
             CHECK( iteration >= 0 )
                 << "BDF init: negative iteration: "<< iteration
@@ -799,7 +783,7 @@ Bdf<SpaceType>::loadCurrent()
         const int niteration = this->iterationNumber();
         int iteration = M_iteration;
         // Load files beginning at last iteration.
-        if( this->isReverse() and M_reverseLoad )
+        if( this->isReverseLoad() )
             iteration = niteration - iteration + 1;
         LOG(INFO) << "BDF iteration: "<< iteration << "( niter:"<< niteration << ", iter:"<< M_iteration << ")";
         CHECK( iteration >= 0 )
@@ -916,6 +900,7 @@ BOOST_PARAMETER_FUNCTION(
       ( time_step,*( boost::is_floating_point<mpl::_> ), doption(_prefix=prefix,_name="bdf.time-step") )
       ( strategy,*( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="bdf.strategy") )
       ( steady,*( bool ), boption(_prefix=prefix,_name="bdf.steady") )
+      ( reverse,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.reverse") )
       ( restart,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.restart") )
       ( restart_path,*, soption(_prefix=prefix,_name="bdf.restart.path") )
       ( restart_at_last_save,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.restart.at-last-save") )
@@ -932,6 +917,7 @@ BOOST_PARAMETER_FUNCTION(
     thebdf->setTimeStep( time_step );
     thebdf->setOrder( order );
     thebdf->setSteady( steady );
+    thebdf->setReverse( reverse );
     thebdf->setRestart( restart );
     thebdf->setRestartPath( restart_path );
     thebdf->setRestartAtLastSave( restart_at_last_save );
