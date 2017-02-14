@@ -73,11 +73,7 @@ template<typename MeshType>
 using idelements_t = elements_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
-using ext_elements_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                                    typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
-                                    typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
-                                    boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > >
-                                    >;
+using ext_elements_t = elements_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
 using boundaryelements_t = elements_reference_wrapper_t<MeshType>;
@@ -91,33 +87,6 @@ using marked2elements_t = elements_reference_wrapper_t<MeshType>;
 template<typename MeshType>
 using marked3elements_t = elements_reference_wrapper_t<MeshType>;
 
-
-// template<typename MeshType>
-// using faces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
-//                               typename MeshTraits<MeshType>::pid_face_const_iterator,
-//                               typename MeshTraits<MeshType>::pid_face_const_iterator>;
-
-template<typename MeshType>
-using ext_faces_t = boost::tuple<mpl::size_t<MESH_FACES>,
-                                 typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> >::const_iterator,
-                                 typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> >::const_iterator,
-                                 boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > >
-                                 >;
-
-
-template<typename IteratorType>
-using filter_enum_t = typename boost::tuples::element<0,IteratorType>::type;
-template<typename IteratorType>
-using filter_iterator_t = typename boost::tuples::element<1,IteratorType>::type;
-template<typename IteratorType>
-using filter_entity_t = typename filter_iterator_t<IteratorType>::value_type;
-
-template<typename IteratorType>
-using ext_entities_from_iterator_t = boost::tuple<filter_enum_t<IteratorType>,
-                                                  typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
-                                                  typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
-                                                  boost::shared_ptr<std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> > >
-                                                  >;
 
 
 template<typename MeshType>
@@ -136,6 +105,9 @@ using idfaces_t =  faces_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
 using faces_pid_t = faces_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using ext_faces_t = faces_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
 using boundaryfaces_t = faces_reference_wrapper_t<MeshType>;
@@ -166,11 +138,8 @@ template<typename MeshType>
 using pid_edges_t = edges_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
-using ext_edges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,
-                                  typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::edge_type const> >::const_iterator,
-                                  typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::edge_type const> >::const_iterator,
-                                  boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::edge_type const> > >
-                                  >;
+using ext_edges_t =  edges_reference_wrapper_t<MeshType>;
+
 template<typename MeshType>
 using markededges_t = edges_reference_wrapper_t<MeshType>;
 template<typename MeshType>
@@ -199,6 +168,8 @@ using internalpoints_t = points_reference_wrapper_t<MeshType>;
 
 template<typename IteratorRangeT>
 using submeshrange_t = typename Feel::detail::submeshrangetype<IteratorRangeT>::type;
+
+#if 0
 /**
  * namespace for meta mesh computation data structure
  */
@@ -242,7 +213,7 @@ struct marked3elements
 };
 
 } // meta
-
+#endif
 /**
  * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements with pid \p flag
@@ -997,11 +968,10 @@ element( ElementType const& elt  )
 
 template<typename MeshType>
 ext_elements_t<MeshType>
-elements( MeshType const& mesh, EntityProcessType entity, mpl::bool_<false> )
+elements( MeshType const& imesh, EntityProcessType entity )
 {
-    typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
-
+    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
+    auto const& mesh = Feel::unwrap_ptr( imesh );
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
         for ( auto const& elt : elements(mesh) )
         {
@@ -1038,28 +1008,13 @@ elements( MeshType const& mesh, EntityProcessType entity, mpl::bool_<false> )
                               myelts );
 }
 
-template<typename MeshType>
-ext_elements_t<MeshType>
-elements( MeshType const& mesh, EntityProcessType entity, mpl::bool_<true> )
-{
-    return elements( *mesh, entity, mpl::bool_<false>() );
-}
 
 template<typename MeshType>
 ext_elements_t<MeshType>
-elements( MeshType const& mesh, EntityProcessType entity )
+boundaryelements( MeshType const& imesh, EntityProcessType entity )
 {
-    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return elements( mesh, entity, is_ptr_or_shared_ptr() );
-}
-
-
-template<typename MeshType>
-ext_elements_t<MeshType>
-boundaryelements( MeshType const& mesh, EntityProcessType entity )
-{
-    typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
+    auto const& mesh = Feel::unwrap_ptr( imesh );
 
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
         for ( auto const& elt : boundaryelements(mesh) )
@@ -1071,7 +1026,7 @@ boundaryelements( MeshType const& mesh, EntityProcessType entity )
     {
         std::set<size_type> eltGhostDone;
 
-        auto rangeInterProcessFaces = mesh->interProcessFaces();
+        auto rangeInterProcessFaces = mesh.interProcessFaces();
         auto face_it = std::get<0>( rangeInterProcessFaces );
         auto const face_en = std::get<1>( rangeInterProcessFaces );
         for ( ; face_it!=face_en ; ++face_it )
@@ -1102,12 +1057,12 @@ boundaryelements( MeshType const& mesh, EntityProcessType entity )
 
 template<typename MeshType>
 ext_elements_t<MeshType>
-elementsWithMarkedFaces( MeshType const& mesh, boost::any const& flag, EntityProcessType entity = EntityProcessType::LOCAL_ONLY )
+elementsWithMarkedFaces( MeshType const& imesh, boost::any const& flag, EntityProcessType entity = EntityProcessType::LOCAL_ONLY )
 {
-    typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
+    auto const& mesh = Feel::unwrap_ptr( imesh );
 
-    flag_type theflag = mesh->markerId( flag );
+    flag_type theflag = mesh.markerId( flag );
 
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
     {
@@ -1124,7 +1079,7 @@ elementsWithMarkedFaces( MeshType const& mesh, boost::any const& flag, EntityPro
     {
         std::set<size_type> eltGhostDone;
 
-        auto rangeInterProcessFaces = mesh->interProcessFaces();
+        auto rangeInterProcessFaces = mesh.interProcessFaces();
         auto face_it = std::get<0>( rangeInterProcessFaces );
         auto const face_en = std::get<1>( rangeInterProcessFaces );
         for ( ; face_it!=face_en ; ++face_it )
@@ -1156,12 +1111,12 @@ elementsWithMarkedFaces( MeshType const& mesh, boost::any const& flag, EntityPro
 
 template<typename MeshType>
 ext_elements_t<MeshType>
-markedelements( MeshType const& mesh, boost::any const& flag, EntityProcessType entity )
+markedelements( MeshType const& imesh, boost::any const& flag, EntityProcessType entity )
 {
-    typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
+    auto const& mesh = Feel::unwrap_ptr( imesh );
 
-    flag_type theflag = mesh->markerId( flag );
+    flag_type theflag = mesh.markerId( flag );
 
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
         for ( auto const& elt : markedelements(mesh,flag) )
@@ -1174,7 +1129,7 @@ markedelements( MeshType const& mesh, boost::any const& flag, EntityProcessType 
     {
         std::set<size_type> eltGhostDone;
 
-        auto rangeInterProcessFaces = mesh->interProcessFaces();
+        auto rangeInterProcessFaces = mesh.interProcessFaces();
         auto face_it = std::get<0>( rangeInterProcessFaces );
         auto const face_en = std::get<1>( rangeInterProcessFaces );
         for ( ; face_it!=face_en ; ++face_it )
@@ -1204,12 +1159,12 @@ markedelements( MeshType const& mesh, boost::any const& flag, EntityProcessType 
 
 template<typename MeshType>
 ext_elements_t<MeshType>
-marked2elements( MeshType const& mesh, boost::any const& flag, EntityProcessType entity )
+marked2elements( MeshType const& imesh, boost::any const& flag, EntityProcessType entity )
 {
-    typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
+    auto const& mesh = Feel::unwrap_ptr( imesh );
 
-    flag_type theflag = mesh->markerId( flag );
+    flag_type theflag = mesh.markerId( flag );
 
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
         for ( auto const& elt : marked2elements(mesh,flag) )
@@ -1221,7 +1176,7 @@ marked2elements( MeshType const& mesh, boost::any const& flag, EntityProcessType
     {
         std::set<size_type> eltGhostDone;
 
-        auto rangeInterProcessFaces = mesh->interProcessFaces();
+        auto rangeInterProcessFaces = mesh.interProcessFaces();
         auto face_it = std::get<0>( rangeInterProcessFaces );
         auto const face_en = std::get<1>( rangeInterProcessFaces );
         for ( ; face_it!=face_en ; ++face_it )
@@ -1252,10 +1207,10 @@ marked2elements( MeshType const& mesh, boost::any const& flag, EntityProcessType
 
 template<typename MeshType>
 ext_faces_t<MeshType>
-boundaryfaces( MeshType const& mesh, EntityProcessType entity )
+boundaryfaces( MeshType const& imesh, EntityProcessType entity )
 {
-    typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
+    auto const& mesh = Feel::unwrap_ptr( imesh );
 
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
         for ( auto const& theface : boundaryfaces(mesh) )
@@ -1266,7 +1221,7 @@ boundaryfaces( MeshType const& mesh, EntityProcessType entity )
     if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
     {
         //std::set<size_type> faceGhostDone;
-        auto rangeInterProcessFaces = mesh->interProcessFaces();
+        auto rangeInterProcessFaces = mesh.interProcessFaces();
         auto face_it = std::get<0>( rangeInterProcessFaces );
         auto const face_en = std::get<1>( rangeInterProcessFaces );
         for ( ; face_it!=face_en ; ++face_it )
@@ -1277,7 +1232,7 @@ boundaryfaces( MeshType const& mesh, EntityProcessType entity )
             const bool elt0isGhost = elt0.isGhostCell();
             auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
 
-            for ( size_type f = 0; f < mesh->numLocalFaces(); f++ )
+            for ( size_type f = 0; f < mesh.numLocalFaces(); f++ )
             {
                 auto const& theface = eltOffProc.face(f);
                 if ( theface.isOnBoundary() ) //&& faceGhostDone.find( theface.id() ) == faceGhostDone.end() )
@@ -1295,11 +1250,12 @@ boundaryfaces( MeshType const& mesh, EntityProcessType entity )
 
 template<typename MeshType>
 ext_faces_t<MeshType>
-marked2faces( MeshType const& mesh, boost::any flag, EntityProcessType entity )
+marked2faces( MeshType const& imesh, boost::any flag, EntityProcessType entity )
 {
-    typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
-    flag_type theflag = mesh->markerId( flag );
+    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
+    auto const& mesh = Feel::unwrap_ptr( imesh );
+
+    flag_type theflag = mesh.markerId( flag );
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
         for ( auto const& theface : marked2faces(mesh, theflag) )
         {
@@ -1309,7 +1265,7 @@ marked2faces( MeshType const& mesh, boost::any flag, EntityProcessType entity )
     if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
     {
         //std::set<size_type> faceGhostDone;
-        auto rangeInterProcessFaces = mesh->interProcessFaces();
+        auto rangeInterProcessFaces = mesh.interProcessFaces();
         auto face_it = std::get<0>( rangeInterProcessFaces );
         auto const face_en = std::get<1>( rangeInterProcessFaces );
         for ( ; face_it!=face_en ; ++face_it )
@@ -1320,7 +1276,7 @@ marked2faces( MeshType const& mesh, boost::any flag, EntityProcessType entity )
             const bool elt0isGhost = elt0.isGhostCell();
             auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
 
-            for ( size_type f = 0; f < mesh->numLocalFaces(); f++ )
+            for ( size_type f = 0; f < mesh.numLocalFaces(); f++ )
             {
                 auto const& theface = eltOffProc.face(f);
                 if ( theface.hasMarker2() && theface.marker2().value() == theflag ) //&& faceGhostDone.find( theface.id() ) == faceGhostDone.end() )
@@ -1340,12 +1296,10 @@ marked2faces( MeshType const& mesh, boost::any flag, EntityProcessType entity )
 
 template<typename MeshType>
 ext_edges_t<MeshType>
-interprocessedges( MeshType const& mesh, rank_type neighbor_pid = invalid_rank_type_value, EntityProcessType entity = EntityProcessType::ALL )
+interprocessedges( MeshType const& imesh, rank_type neighbor_pid = invalid_rank_type_value, EntityProcessType entity = EntityProcessType::ALL )
 {
-    typedef typename MeshTraits<MeshType>::face_type face_type;
-    typedef typename MeshTraits<MeshType>::edge_type edge_type;
-    typedef std::vector<boost::reference_wrapper<edge_type const> > cont_range_type;
-    boost::shared_ptr<cont_range_type> myedges( new cont_range_type );
+    typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype myedges( new typename MeshTraits<MeshType>::edges_reference_wrapper_type );
+    auto const& mesh = Feel::unwrap_ptr( imesh );
 
     if ( entity == EntityProcessType::ALL )
     {
@@ -1371,7 +1325,7 @@ interprocessedges( MeshType const& mesh, rank_type neighbor_pid = invalid_rank_t
         std::set<size_type> saveIdEdges;
         for ( auto const& theface : interprocessfaces(mesh,neighbor_pid) )
         {
-            for ( uint16_type e=0 ; e<face_type::numLocalEdges ; ++e )
+            for ( uint16_type e=0 ; e<MeshTraits<MeshType>::face_type::numLocalEdges ; ++e )
                 saveIdEdges.insert( theface.face(e).id() );
         }
 
