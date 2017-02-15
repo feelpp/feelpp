@@ -78,7 +78,10 @@ public:
     typedef std::vector<double> time_values_map_type;
 
     TSBase();
-    TSBase( po::variables_map const& vm, std::string name, std::string const& prefix, WorldComm const& worldComm );
+    FEELPP_DEPRECATED
+    TSBase( po::variables_map const& vm, std::string name, std::string const& prefix, WorldComm const& worldComm )
+        : TSBase( name,prefix,worldComm ) {}
+    TSBase( std::string name, std::string const& prefix, WorldComm const& worldComm );
     TSBase( std::string name, WorldComm const& worldComm );
     TSBase( TSBase const& b );
 

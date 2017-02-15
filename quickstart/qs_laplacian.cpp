@@ -21,12 +21,12 @@
    License along with this library; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-//! [global]
+// tag::global[]
 #include <feel/feel.hpp>
 
 int main(int argc, char**argv )
 {
-    //# marker1 #
+    // tag::env[]
     using namespace Feel;
     using Feel::cout;
 	po::options_description laplacianoptions( "Laplacian options" );
@@ -40,9 +40,9 @@ int main(int argc, char**argv )
                    _about=about(_name="qs_laplacian",
                                 _author="Feel++ Consortium",
                                 _email="feelpp-devel@feelpp.org"));
-    //# endmarker1 #
+    // end::env[]
 
-    //# marker2 #
+    // tag::mesh_space[]
     tic();
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
     toc("loadMesh");
@@ -58,9 +58,9 @@ int main(int argc, char**argv )
     auto g = expr( soption(_name="functions.g"), "g" );
     auto v = Vh->element( g, "g" );
     toc("Vh");
-    //# endmarker2 #
+    // end::mesh_space[]
 
-    //# marker3 #
+    // tag::forms[]
     tic();
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
@@ -87,10 +87,10 @@ int main(int argc, char**argv )
         a.solve(_rhs=l,_solution=u);
     toc("a.solve");
 
-    //# endmarker3 #
+    // end::forms[]
     cout << "||u-u_h||_L2=" << normL2(_range=elements(mesh), _expr=idv(u)-g) << std::endl;
 
-    //# marker4 #
+    // tag::export[]
     tic();
     auto e = exporter( _mesh=mesh );
     e->addRegions();
@@ -99,6 +99,6 @@ int main(int argc, char**argv )
     e->save();
     toc("Exporter");
     return 0;
-    //# endmarker4 #
+    // end::export[]
 }
-//! [global]
+// end::global[]
