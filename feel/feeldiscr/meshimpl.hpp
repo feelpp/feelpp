@@ -97,6 +97,7 @@ Mesh<Shape, T, Tag>::updateForUse()
     VLOG(2) << "component              MESH_UPDATE_FACES: " <<  this->components().test( MESH_UPDATE_FACES ) << "\n";
     VLOG(2) << "component                 MESH_PARTITION: " <<  this->components().test( MESH_PARTITION ) << "\n";
     VLOG(2) << "component        MESH_NO_UPDATE_MEASURES: " <<  this->components().test( MESH_NO_UPDATE_MEASURES ) << "\n";
+    VLOG(2) << "component         MESH_GEOMAP_NOT_CACHED: " <<  this->components().test( MESH_GEOMAP_NOT_CACHED ) << "\n";
 
     boost::timer ti;
 
