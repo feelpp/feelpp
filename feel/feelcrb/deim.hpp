@@ -109,29 +109,13 @@ public :
         }
     }
 
+
     void run()
     {
         int mMax = ioption("eim.dimension-max");
         auto mu = M_parameter_space->max();
 
-        vector_ptrtype V = assemble( mu );
-
-        // first interpolation point
-        auto vec_max = vectorMaxAbs( V );
-        int i = vec_max.template get<1>();
-        double max = vec_max.template get<0>();
-
-        M_M=1;
-
-        // first vector of the base
-        V->scale( 1./max );
-        M_bases.push_back( V );
-
-        M_index.push_back(i);
-
-        M_B.conservativeResize(M_M,M_M);
-        M_B(M_M-1,M_M-1) = V->operator()(i);
-
+        addNewVector(mu);
 
         tic();
         for ( ; M_M<=mMax; )
@@ -146,36 +130,8 @@ public :
             }
 
             mu = best_fit.template get<0>();
+            addNewVector(mu);
 
-            vector_ptrtype newV = assemble(mu);
-            vectorN_type coeff = computeCoefficient( newV );
-
-
-            // Assemble Residual
-            for ( int i=0; i<M_M; i++ )
-                newV->add( -coeff(i), M_bases[i] );
-
-            vec_max = vectorMaxAbs( newV );
-
-            M_M++;
-            max = vec_max.template get<0>();
-            newV->scale( 1./max );
-            M_bases.push_back( newV );
-
-            i = vec_max.template get<1>();
-            M_index.push_back(i);
-
-            M_B.conservativeResize( M_M, M_M );
-            // update last row of M_B
-            for ( int j = 0; j<M_M; j++ )
-            {
-                M_B(M_M-1, j) = M_bases[j]->operator() (M_index[M_M-1] );
-            }
-            //update last col of M_B
-            for ( int i=0; i<M_M; i++ )
-            {
-                M_B(i, M_M-1) = M_bases[M_M-1]->operator() (M_index[i]);
-            }
         }
         toc("DEIM : greedy");
         Feel::cout << "DEIM number of basis function vector : "<< M_M << std::endl;
@@ -236,6 +192,42 @@ private :
         return boost::make_tuple( mu_max, max );
     }
 
+    void addNewVector( parameter_type mu )
+    {
+        vector_ptrtype V = assemble( mu );
+        vectorN_type coeff = computeCoefficient( V );
+
+        vector_ptrtype Phi = V->clone();
+        *Phi = *V;
+
+        // Assemble Residual
+        for ( int i=0; i<M_M; i++ )
+            Phi->add( -coeff(i), M_bases[i] );
+
+        auto vec_max = vectorMaxAbs( Phi );
+        int i = vec_max.template get<1>();
+        double max = vec_max.template get<0>();
+
+        M_M++;
+
+        Phi->scale( 1./max );
+        M_bases.push_back( Phi );
+        M_index.push_back(i);
+
+        M_B.conservativeResize(M_M,M_M);
+        // update last row of M_B
+        for ( int j = 0; j<M_M; j++ )
+        {
+            M_B(M_M-1, j) = M_bases[j]->operator() (M_index[M_M-1] );
+        }
+        //update last col of M_B
+        for ( int i=0; i<M_M-1; i++ )
+        {
+            M_B(i, M_M-1) = M_bases[M_M-1]->operator() (M_index[i]);
+        }
+    }
+
+
     vectorN_type computeCoefficient( parameter_type mu )
     {
         vector_ptrtype V = assemble( mu );
@@ -245,13 +237,21 @@ private :
     vectorN_type computeCoefficient( vector_ptrtype V )
     {
         vectorN_type rhs (M_M);
-        for ( int i=0; i<M_M; i++ )
-        {
-            rhs(i) = V->operator() ( M_index[i] );
-        }
         vectorN_type coeff (M_M);
-        coeff = M_B.lu().solve( rhs );
+      if ( M_M>0 )
+        {
+            for ( int i=0; i<M_M; i++ )
+                rhs(i) = V->operator() ( M_index[i] );
+            coeff = M_B.lu().solve( rhs );
+        }
         return coeff;
+    }
+
+    void printMu( parameter_type mu )
+    {
+        Feel::cout << mu[0];
+        for ( int i=1; i<mu.size(); i++ )
+            Feel::cout << ", "<< mu[i] ;
     }
 
     parameterspace_ptrtype M_parameter_space;
@@ -266,7 +266,7 @@ private :
 };
 
 
-
+po::options_description eimOptions( std::string const& prefix ="");
 }
 
 #endif
