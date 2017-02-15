@@ -22,11 +22,17 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <feel/feeldiscr/meshstructured.hpp>
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/polygon.hpp>
 
+typedef boost::geometry::model::d2::point_xy<double> poly_point_type;
+typedef boost::geometry::model::segment<poly_point_type> segment_type;
+typedef boost::geometry::model::polygon<poly_point_type> polygon_type;
 
 namespace Feel {
 
-MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<float> cx, holo3_image<float> cy, WorldComm const& wc = Environment::worldComm(), bool withCoord = false )
+MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<float> cx, holo3_image<float> cy, WorldComm const& wc = Environment::worldComm(), std::string pathPoly="",  bool withCoord = false, bool withPoly = false)
     :
     super( wc ),
     M_nx( nx ),
@@ -72,6 +78,40 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
     std::map<int,int> idStructuredMeshToFeelMesh;
     node_type coords( 2 );
 
+    
+    // polygon build
+    std::vector<polygon_type> list_poly ;
+    //std::cout << list_poly.size() << std::endl;
+    polygon_type poly;
+    bool inPoly = false;
+    bool testInPoly = false;
+    if (withPoly)
+    {
+        polygon_type p ;
+        std::ifstream flux(pathPoly) ;
+        int nbPolygons ;
+        int nbVertices ;
+        double coordX, coordY ;
+        flux >> nbPolygons ;
+        //std::cout<< "nP " << nbPolygons <<  std::endl;
+        for (int j = 0 ; j < nbPolygons ; j ++) {
+            flux >> nbVertices ;
+            //std::cout<< "nV: " << nbVertices <<  std::endl;
+            for (int i = 0 ; i < nbVertices ; i ++) {
+                flux >> coordX ;
+                flux >> coordY ;
+                p.outer().push_back(poly_point_type(coordX*pixelsize, coordY*pixelsize)) ;
+
+            }
+            p.outer().push_back(poly_point_type(p.outer().at(0).x(), p.outer().at(0).y())) ;
+
+            list_poly.push_back(p) ;
+            p.clear() ;
+        }
+    }
+    //std::cout<< "poly build end"<< std::endl;
+
+
     // active points
     for( int j = startColPtId[partId] ; j < startColPtId[partId]+nPtByCol[partId]; ++j )
     {
@@ -88,10 +128,24 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
             coords[0]=M_pixelsize*j;
             coords[1]=M_pixelsize*i;
             }
+            if (withPoly)
+            {
+                poly_point_type p(coords[0],coords[1]);
+                for (int k=0;k<list_poly.size();k++)
+                {
+                    poly= list_poly[k];
+                    testInPoly=boost::geometry::within(p,poly);
+                    inPoly=(inPoly)||(testInPoly);
+                }
+            }
+            if ( (!withPoly)||(!inPoly))
+            {
             point_type pt( ptid,coords );
             pt.setProcessId( partId );
             pt.setProcessIdInPartition( partId );
             this->addPoint( pt );
+            }
+            inPoly=false;
         }
     }
 
@@ -122,7 +176,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
             this->addPoint( pt );
         }
     }
-
+    
     // active elements
     size_type startColPtIdForElt = startColPtId[partId];
     size_type stopColPtIdForElt = startColPtId[partId]+(nPtByCol[partId]-1);
@@ -138,6 +192,40 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
 
         for( int i = 0 ; i < M_nx-1; ++i )
         {
+            if (withPoly)
+            {
+                poly_point_type p1;
+                poly_point_type p2;
+                poly_point_type p3;
+                poly_point_type p4;
+                if (withCoord)
+                {
+                    p1=poly_point_type(M_cy(j,i+1),M_cx(j,i+1));
+                    p2=poly_point_type(M_cy(j+1,i+1),M_cx(j+1,i+1));
+                    p3=poly_point_type(M_cy(j+1,i),M_cx(j+1,i));
+                    p4=poly_point_type(M_cy(j,i),M_cx(j,i));
+                }
+                else
+                {
+                    p1=poly_point_type(M_pixelsize*j,M_pixelsize*(i+1));
+                    p2=poly_point_type(M_pixelsize*(j+1),M_pixelsize*(i+1));
+                    p3=poly_point_type(M_pixelsize*(j+1),M_pixelsize*i);
+                    p4=poly_point_type(M_pixelsize*j,M_pixelsize*i);
+                }
+
+                for (int k=0;k<list_poly.size();k++)
+                {
+                    poly= list_poly[k];
+                    bool testInPoly1=boost::geometry::within(p1,poly);
+                    bool testInPoly2=boost::geometry::within(p2,poly);
+                    bool testInPoly3=boost::geometry::within(p3,poly);
+                    bool testInPoly4=boost::geometry::within(p4,poly);
+                    inPoly=(inPoly)||(testInPoly1)||(testInPoly2)||(testInPoly3)||(testInPoly4);
+                }
+
+            }
+            if ( (!withPoly)||(!inPoly))
+            {
             size_type eid = (M_ny-1)*i+j; // StructuredMesh Id
             element_type e;
             e.setProcessIdInPartition( partId );
@@ -154,6 +242,8 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
 
             auto const& eltInserted = this->addElement( e, true ); // e.id() is defined by Feel++
             idStructuredMeshToFeelMesh.insert( std::make_pair(eid,eltInserted.id()));
+            }
+            inPoly=false;
         }
     }
 
@@ -169,6 +259,39 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
         rank_type partIdGhost = ghostEltCol.second;
         for( int i = 0 ; i < M_nx-1; ++i )
         {
+            if (withPoly)
+            {
+                poly_point_type p1;
+                poly_point_type p2;
+                poly_point_type p3;
+                poly_point_type p4;
+                if (withCoord)
+                {
+                    p1=poly_point_type(M_cy(j,i+1),M_cx(j,i+1));
+                    p2=poly_point_type(M_cy(j+1,i+1),M_cx(j+1,i+1));
+                    p3=poly_point_type(M_cy(j+1,i),M_cx(j+1,i));
+                    p4=poly_point_type(M_cy(j,i),M_cx(j,i));
+                }
+                else
+                {
+                    p1=poly_point_type(M_pixelsize*j,M_pixelsize*(i+1));
+                    p2=poly_point_type(M_pixelsize*(j+1),M_pixelsize*(i+1));
+                    p3=poly_point_type(M_pixelsize*(j+1),M_pixelsize*i);
+                    p4=poly_point_type(M_pixelsize*j,M_pixelsize*i);
+                }
+                for (int k=0;k<list_poly.size();k++)
+                {
+                    poly= list_poly[k];
+                    bool testInPoly1=boost::geometry::within(p1,poly);
+                    bool testInPoly2=boost::geometry::within(p2,poly);
+                    bool testInPoly3=boost::geometry::within(p3,poly);
+                    bool testInPoly4=boost::geometry::within(p4,poly);
+                    inPoly=(inPoly)||(testInPoly1)||(testInPoly2)||(testInPoly3)||(testInPoly4);
+                }
+
+            }
+            if ( (!withPoly)||(!inPoly))
+            {
             size_type eid = (M_ny-1)*i+j; // StructuredMesh Id
             element_type e;
             e.setProcessIdInPartition( partId );
@@ -189,6 +312,8 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
 
             idStructuredMeshToFeelMesh.insert( std::make_pair(eid,eltInserted.id()));
             mapGhostElt.insert( std::make_pair( eid,boost::make_tuple( idStructuredMeshToFeelMesh[eid], partIdGhost ) ) );
+            }
+            inPoly=false;
         }
     }
 
