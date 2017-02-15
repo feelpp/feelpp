@@ -55,6 +55,7 @@ using range_t = typename mpl::if_< boost::is_std_list<RangeType>,
                                    mpl::identity<RangeType>,
                                    mpl::identity<std::list<RangeType> > >::type::type::value_type;
 
+
 template<typename MeshType>
 using allelements_t =  boost::tuple<mpl::size_t<MESH_ELEMENTS>,
                                  typename MeshTraits<MeshType>::element_const_iterator,
@@ -169,6 +170,19 @@ using internalpoints_t = points_reference_wrapper_t<MeshType>;
 template<typename IteratorRangeT>
 using submeshrange_t = typename Feel::detail::submeshrangetype<IteratorRangeT>::type;
 
+
+template<typename IteratorType>
+using filter_enum_t = typename boost::tuples::element<0,IteratorType>::type;
+template<typename IteratorType>
+using filter_iterator_t = typename boost::tuples::element<1,IteratorType>::type;
+template<typename IteratorType>
+using filter_entity_t = typename filter_iterator_t<IteratorType>::value_type;
+template<typename IteratorType>
+using ext_entities_from_iterator_t = boost::tuple<filter_enum_t<IteratorType>,
+                                                  typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
+                                                  typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
+                                                  std::shared_ptr<std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> > >
+                                                  >;
 #if 0
 /**
  * namespace for meta mesh computation data structure
