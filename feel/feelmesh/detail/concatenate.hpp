@@ -38,7 +38,7 @@ namespace detail
  */
 template<typename ContainerType, typename IteratorType>
 void
-concatenate_entities( boost::shared_ptr<ContainerType>& elts, IteratorType it )
+concatenate_entities( std::shared_ptr<ContainerType>& elts, IteratorType it )
 {
     using face_t = filter_entity_t<IteratorType>;
     auto append = [&elts]( face_t const& e ) { elts->push_back( boost::cref(e) ); };
@@ -47,7 +47,7 @@ concatenate_entities( boost::shared_ptr<ContainerType>& elts, IteratorType it )
 
 template<typename ContainerType, typename IteratorType, typename ...Args>
 void
-concatenate_entities( boost::shared_ptr<ContainerType>& elts, IteratorType it, Args... args )
+concatenate_entities( std::shared_ptr<ContainerType>& elts, IteratorType it, Args... args )
 {
     using face_t = filter_entity_t<IteratorType>;
     auto append = [&elts]( face_t const& e ) { elts->push_back( boost::cref(e) ); };
@@ -62,7 +62,7 @@ concatenate_impl( IteratorType it, Args... args )
 {
     using face_t = filter_entity_t<IteratorType>;
     typedef std::vector<boost::reference_wrapper<face_t const> > cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    std::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
     auto append = [&myelts]( face_t const& e ) { myelts->push_back( boost::cref(e) ); };
     std::for_each( begin( it ), end( it ), append );
