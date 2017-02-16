@@ -572,18 +572,19 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
     bbf( 0_c, 2_c ) += integrate(_range=gammaMinusIntegral,
                                  _expr=idt(phat)*trans(id(v))*N());
 
-
+#if 1       // NEW VERSION
     // (div(j),q)_Omega
-    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=-(id(w)*divt(u)));
+    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=(id(w)*divt(u)));
 
 
     // <tau p, w>_Gamma
     bbf( 1_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=-tau_constant *
+                                 _expr=tau_constant *
                                  ( leftfacet( pow(idv(H),M_tau_order)*idt(p))*leftface(id(w)) +
                                    rightfacet( pow(idv(H),M_tau_order)*idt(p))*rightface(id(w) )));
     bbf( 1_c, 1_c ) += integrate(_range=boundaryfaces(M_mesh),
-                                 _expr=-(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
+                                 _expr=(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
+
 
     // (1/delta_t p, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
@@ -593,11 +594,11 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
 
     // <-tau phat, w>_Gamma\Gamma_I
     bbf( 1_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=tau_constant * idt(phat) *
+                                 _expr=-tau_constant * idt(phat) *
                                  ( leftface( pow(idv(H),M_tau_order)*id(w) )+
                                    rightface( pow(idv(H),M_tau_order)*id(w) )));
     bbf( 1_c, 2_c ) += integrate(_range=gammaMinusIntegral,
-                                 _expr=tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
+                                 _expr=-tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
 
 
     // <j.n,mu>_Omega/Gamma
@@ -614,6 +615,51 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
     bbf( 2_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
                                  _expr=-sc_param*tau_constant * idt(phat) * id(l) * ( leftface( pow(idv(H),M_tau_order) )+
                                                                                       rightface( pow(idv(H),M_tau_order) )));
+
+
+
+#else
+ 
+    // -(j, grad(w))
+    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh),_expr=(-grad(w)*idt(u)));
+
+    // <j.n,w>_Gamma
+    bbf( 1_c, 0_c ) += integrate(_range=internalfaces(M_mesh),
+                                 _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N()) ) );
+    bbf( 1_c, 0_c ) += integrate(_range=internalfaces(M_mesh),
+                                 _expr=(rightface(id(w))*rightfacet(trans(idt(u))*N())) );
+    bbf( 1_c, 0_c ) += integrate(_range=boundaryfaces(M_mesh),
+                                _expr=(id(w)*trans(idt(u))*N())); 
+
+
+     // <tau p, w>_Gamma
+      bbf( 1_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
+                                     _expr=tau_constant *
+                                  ( leftfacet( pow(idv(H),M_tau_order)*idt(p))*leftface(id(w)) +
+                                     rightfacet( pow(idv(H),M_tau_order)*idt(p))*rightface(id(w) )));
+      bbf( 1_c, 1_c ) += integrate(_range=boundaryfaces(M_mesh),
+                                   _expr=(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
+
+
+     // (1/delta_t p, w)_Omega  [only if it is not stationary]
+      if ( !this->isStationary() ) {
+         bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
+                                      _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
+     }
+
+     // <-tau phat, w>_Gamma\Gamma_I
+      bbf( 1_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
+                                  _expr=-tau_constant * idt(phat) *
+                                     ( leftface( pow(idv(H),M_tau_order)*id(w) )+
+                                     rightface( pow(idv(H),M_tau_order)*id(w) )));
+      bbf( 1_c, 2_c ) += integrate(_range=gammaMinusIntegral,
+                                  _expr=-tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
+
+     // <j.n,mu>_Omega/Gamma
+      bbf( 2_c, 0_c ) += integrate(_range=internalfaces(M_mesh),
+                                   _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
+                                                  rightfacet(trans(idt(u))*N())) ) );
+#endif
 
     this->assembleBoundaryCond();
 }
