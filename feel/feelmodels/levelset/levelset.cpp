@@ -1322,9 +1322,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
         auto NxN = idv(this->N()) * trans(idv(this->N()));
         auto Du = sym( gradv(u) );
         M_modGradPhiAdvection->updateAdvectionVelocity( idv(u) );
-        //M_modGradPhiAdvection->updateReactionCoeff( inner(NxN, Du) );
-        auto NxNDu = this->smoother()->project( inner(NxN, Du) );
-        M_modGradPhiAdvection->updateReactionCoeff( idv(NxNDu) );
+        M_modGradPhiAdvection->updateReactionCoeff( inner(NxN, Du) );
+        //auto NxNDu = this->smoother()->project( inner(NxN, Du) );
+        //M_modGradPhiAdvection->updateReactionCoeff( idv(NxNDu) );
         //M_modGradPhiAdvection->updateSourceAdded(
                 //- idv(modGradPhi) * inner( NxN, Du)
                 //);
