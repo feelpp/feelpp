@@ -82,7 +82,7 @@ enum class LevelSetMeasuresExported
 };
 enum class LevelSetFieldsExported
 {
-    GradPhi, ModGradPhi
+    GradPhi, ModGradPhi, CauchyGreenInvariant1, CauchyGreenInvariant2
 };
 
 template<typename ConvexType, int Order=1, typename PeriodicityType = NoPeriodicity>
@@ -191,6 +191,10 @@ public:
     // Backward characteristics advection
     typedef Advection<ConvexType, Lagrange<Order, Vectorial>, PeriodicityType> backwardcharacteristics_advection_type;
     typedef boost::shared_ptr<backwardcharacteristics_advection_type> backwardcharacteristics_advection_ptrtype;
+    // Cauchy-Green tensor invariants types
+    //typedef typename backwardcharacteristics_advection_type::element_advection_type element_cauchygreen_invariant_type;
+    typedef element_levelset_type element_cauchygreen_invariant_type;
+    typedef boost::shared_ptr<element_cauchygreen_invariant_type> element_cauchygreen_invariant_ptrtype;
 
     //--------------------------------------------------------------------//
     // Exporter
@@ -324,6 +328,11 @@ public:
     projector_levelset_vectorial_ptrtype const& smootherVectorial() const;
 
     void updateInterfaceQuantities();
+
+    //--------------------------------------------------------------------//
+    // Cauchy-Green tensor invariants
+    element_cauchygreen_invariant_ptrtype const& cauchyGreenInvariant1() const;
+    element_cauchygreen_invariant_ptrtype const& cauchyGreenInvariant2() const;
 
     //--------------------------------------------------------------------//
     // Markers
@@ -555,6 +564,9 @@ private:
     // Backward characteristics advection
     bool M_useCauchyAugmented;
     backwardcharacteristics_advection_ptrtype M_backwardCharacteristicsAdvection;
+    // Cauchy-Green tensor invariants
+    mutable element_cauchygreen_invariant_ptrtype M_cauchyGreenInvariant1;
+    mutable element_cauchygreen_invariant_ptrtype M_cauchyGreenInvariant2;
 
     //--------------------------------------------------------------------//
     // Export

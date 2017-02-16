@@ -796,6 +796,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
                 this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::GradPhi );
             if( o == "modgradphi" || o == "all" )
                 this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+            if( o == "cauchygreeninvariant1" )
+                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant1 );
+            if( o == "cauchygreeninvariant2" )
+                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant2 );
         }
     }
     // Overwrite with options from CFG
@@ -805,6 +809,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_modgradphi").c_str()) )
         if ( boption(_name="do_export_modgradphi",_prefix=this->prefix()) )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_cauchygreeninvariant1").c_str()) )
+        if ( boption(_name="do_export_cauchygreeninvariant1",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant1 );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_cauchygreeninvariant2").c_str()) )
+        if ( boption(_name="do_export_cauchygreeninvariant2",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant2 );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1395,6 +1405,65 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_cauchygreen_invariant_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
+{
+    if( !M_cauchyGreenInvariant1 )
+        M_cauchyGreenInvariant1.reset( new element_cauchygreen_invariant_type(this->functionSpace(), "CauchyGreenI1(TrC)") );
+
+    if( M_useCauchyAugmented )
+    {
+        auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
+        auto Id = vf::Id<nDim, nDim>();
+        auto N0 = vf::project(
+                _space=this->functionSpaceVectorial(),
+                _expr=trans(inv(gradv(Y)))*idv(this->N()) / norm2(trans(inv(gradv(Y)))*idv(this->N()))
+                );
+        auto N0xN0 = idv(N0)*trans(idv(N0));
+        *M_cauchyGreenInvariant1 = vf::project(
+                _space=M_cauchyGreenInvariant1->functionSpace(),
+                _expr=trace( inv(gradv(Y))*(Id-N0xN0)*trans(inv(gradv(Y))) )
+                );
+    }
+    else
+    {
+        throw std::logic_error( this->prefix()+".use-cauchy-augmented option must be true to use Cauchy-Green invariants" );
+    }
+
+    return M_cauchyGreenInvariant1;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_cauchygreen_invariant_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
+{
+    if( !M_cauchyGreenInvariant2 )
+        M_cauchyGreenInvariant2.reset( new element_cauchygreen_invariant_type(this->functionSpace(), "CauchyGreenI2(TrCofC)") );
+
+    if( M_useCauchyAugmented )
+    {
+        auto trA = this->cauchyGreenInvariant1();
+        auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
+        auto Id = vf::Id<nDim, nDim>();
+        auto N0 = vf::project(
+                _space=this->functionSpaceVectorial(),
+                _expr=trans(inv(gradv(Y)))*idv(this->N()) / norm2(trans(inv(gradv(Y)))*idv(this->N()))
+                );
+        auto N0xN0 = idv(N0)*trans(idv(N0));
+        *M_cauchyGreenInvariant2 = vf::project(
+                _space=M_cauchyGreenInvariant2->functionSpace(),
+                _expr=0.5*( idv(trA)*idv(trA)-trace( inv(gradv(Y))*(Id-N0xN0)*inv(gradv(Y)*trans(gradv(Y)))*(Id-N0xN0)*trans(inv(gradv(Y))) ) )
+                );
+    }
+    else
+    {
+        throw std::logic_error( "use-cauchy-augmented option must be true to use Cauchy-Green invariants" );
+    }
+
+    return M_cauchyGreenInvariant2;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
 {
@@ -1779,6 +1848,18 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     if( M_useCauchyAugmented )
     {
         M_backwardCharacteristicsAdvection->exportResults( time );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::CauchyGreenInvariant1 ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"CauchyGreenInvariant1(TrC)"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"CauchyGreenInvariant1(TrC)")),
+                                       *this->cauchyGreenInvariant1() );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::CauchyGreenInvariant2 ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"CauchyGreenInvariant2(TrCofC)"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"CauchyGreenInvariant2(TrCofC)")),
+                                       *this->cauchyGreenInvariant2() );
     }
 
     super_type::exportResultsImpl( time );
