@@ -41,37 +41,9 @@ feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_I
 #   endforeach()
 #endforeach()
 
-# foreach(D 3)
-#   foreach(P  RANGE 0 4 0) #3
-# 	foreach (N RANGE 1 2 1)
-# 	  feelpp_add_application( mixed-elasticity-model_${D}DP${P}_G${N}
-# 							SRCS mixedelasticity_main.cpp mixedelasticity.hpp
-# 							DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N}
-# 							INCLUDE_IN_ALL
-# 							LINK_LIBRARIES feelpp_modelcore )
-# 	endforeach()
-#   endforeach()
-# endforeach()
-
-# foreach(D 3)
-#   foreach(P RANGE 0 4 0) #3
-#     foreach(N RANGE 1 2 1)
-#       foreach(E 4)
-#         feelpp_add_application( elasticity_conv_${D}DP${P}G${N}E${E}
-#                                 SRCS convelasticity_main.cpp
-#                                 DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_EXP_ORDER=${E}
-#                                 INCLUDE_IN_ALL
-#                                 LINK_LIBRARIES feelpp_modelcore )
-#       endforeach()
-#     endforeach()
-#   endforeach()
-# endforeach()
-
 
 feelpp_add_application( mixed-stokes SRCS mixedstokes.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=1)
 
 feelpp_add_testcase(quarter-turn)
 feelpp_add_testcase(lamina-cribrosa)
-feelpp_add_testcase(mixed-elasticity)
 feelpp_add_testcase(kovasznay)
-feelpp_add_testcase(cvg-el-tests)
