@@ -127,6 +127,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
            << this->getInfoNeumannBC()
+           << this->getInfoSlipBC()
            << this->getInfoPressureBC();
     for ( std::string typeOutlet : std::vector<std::string>({"free","windkessel"}) )
     {
