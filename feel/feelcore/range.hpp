@@ -21,14 +21,25 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+//!
+//! @file
+//! Defines `Feel::range`
+//!
 #ifndef FEELPP_RANGE_HPP
 #define FEELPP_RANGE_HPP 1
 
 #include <vector>
 
+#include <boost/range/irange.hpp>
+
 namespace Feel {
 
+using boost::irange;
+
 /**
+ @ingroup Core
+ Provides range of integers
+
  \c range(stop) 
  \code range(start, stop[, step]) \endcode
  
@@ -41,12 +52,14 @@ namespace Feel {
  negative, the last element is the smallest start + i * step greater than
  stop. step must not be zero.
 
- \example
+ @code
  range(10)     : 0,1,2,3,4,5,6,7,8,9
  range(1,10)   : 1,2,3,4,5,6,7,8,9
  range(1,10,2) : 1,3,5,7,9
- \endexample
- */
+ @endcode
+ @note Boost.irange should be preferred to range
+ @deprecated
+*/
 template<typename T>
 std::vector<T>
 range( T && beg, T && end, T && step )
@@ -58,13 +71,22 @@ range( T && beg, T && end, T && step )
 
     return std::move(v);
 }
-
+//!
+//! @ingroup Core
+//! return a range of integers between \c beg and \c end with a step of 1
+//! @deprecated
+//!
 template<typename T>
 std::vector<T>
 range( T && beg, T && end )
 {
     return range( std::forward<T>(beg), std::forward<T>(end), T(1) );
 }
+//!
+//! @ingroup Core
+//! return a range of integers between 0 and \c end with a step of 1
+//! @deprecated
+//!
 template<typename T>
 std::vector<T>
 range( T && end )

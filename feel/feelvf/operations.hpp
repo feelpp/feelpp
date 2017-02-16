@@ -416,6 +416,12 @@
         L_type VF_TYPE_CV(L) left() const { return M_left; }           \
         R_type VF_TYPE_CV(R) right() const { return M_right; }         \
                                                                         \
+        void setParameterValues( std::map<std::string,value_type> const& mp ) \
+        {                                                               \
+            M_left.setParameterValues( mp );                            \
+            M_right.setParameterValues( mp );                           \
+        }                                                               \
+                                                                        \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \
         {                                                               \
