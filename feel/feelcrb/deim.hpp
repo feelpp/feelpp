@@ -396,11 +396,8 @@ private :
         sparse_matrix_ptrtype M = this->assemble( mu );
         vectorN_type coeff = computeCoefficient( M );
 
-        sparse_matrix_ptrtype newM = backend()->newMatrix( M->mapRowPtr(), M->mapColPtr() );
-        //Mat* m;
-        MatConvert(toPETSc(M)->mat(), MATSAME, MAT_INITIAL_MATRIX, &toPETSc(newM)->mat() );
-        //sparse_matrix_ptrtype newM ( new MatrixPetsc<value_type>( *m ) );
-        //auto newM = boost::make_shared<decltype(*M)>(*M);
+        sparse_matrix_ptrtype newM = backend()->newMatrix( M->mapColPtr(), M->mapRowPtr(), M->graph() );
+        *newM=*M;
 
         for ( int i=0; i<M_M; i++ )
             newM->addMatrix( -coeff(i), M_bases[i] );
@@ -433,7 +430,7 @@ private :
 };
 
 
-po::options_description eimOptions( std::string const& prefix ="");
+    po::options_description eimOptions( std::string const& prefix ="");
 }
 
 #endif
