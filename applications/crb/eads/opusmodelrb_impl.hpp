@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-12-10
  */
-#if !defined(OPUSMODELRB_IMPL_HPP_)
+#ifndef OPUSMODELRB_IMPL_HPP
 #define OPUSMODELRB_IMPL_HPP_ 1
 
 #include <feel/feel.hpp>
@@ -61,8 +61,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB( po::variables_map const& vm )
     :
     //super( 2, vm ),
     super( vm ),
-    //M_backend( backend_type::build( vm, "backend.crb.fem" ) ),
-    //M_backendM( backend_type::build( vm, "backend.crb.norm" ) ),
     M_backend( backend(_name="backend.crb.fem") ),
     M_backendM( backend(_name="backend.crb.norm") ),
     M_meshSize( vm["hsize"].template as<double>() ),
@@ -84,8 +82,6 @@ template<int OrderU, int OrderP, int OrderT>
 OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB(  )
     :
     super(),
-    //M_backend(),
-    //M_backendM(),
     M_backend( backend(_name="backend.crb.fem") ),
     M_backendM( backend(_name="backend.crb.norm") ),
     M_meshSize( 1 ),
@@ -99,10 +95,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB(  )
     M_Dmu( new parameterspace_type )
 
 {
-    LOG(INFO) << "[default] constructor, build backend" << "\n";
-    // backend =  backend();
-    // backendM = backend(_name="backendM");
-
     LOG(INFO) << "[default] constructor, build backend done" << "\n";
     initParametrization();
     LOG(INFO) << "[default] init done" << "\n";
@@ -203,10 +195,11 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
 
     M_Th = temp_functionspace_type::New( _mesh=M_mesh,
                                          _periodicity=periodicity(Periodic<>( 1, 2 , period ) ) );
+    this->setFunctionSpaces( M_Th );
+
     // M_RbTh = temp_rbfunctionspace_type::New(_model=this->shared_from_this(),
     //                                         _mesh=M_mesh,
     //                                         _periodicity=periodicity(Periodic<>( 1, 2 , period ) ) );
-    M_RbTh->setFunctionSpace( M_Th );
 
 
     LOG(INFO) << "   - Th built\n";
@@ -256,8 +249,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
                       +chi( emarker() == M_Th->mesh()->markerName( "IC2" ) )*this->data()->component( "IC2" ).Q() );
     LOG(INFO) << "   - [OpusModel::OpusModel] P0 functions allocated\n";
 
-
-
     double e_AIR = this->data()->component( "AIR" ).e();
 
     double e_PCB = this->data()->component( "PCB" ).e();
@@ -290,12 +281,13 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     M_Aqm.resize( Qa() );
     for(int i=0; i< Qa(); i++)
         M_Aqm[i].resize(1);
-    M_Aqm[0][0] = M_backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
-    //form2( _test=M_Th, _trial=M_Th, _matrix=M_Aqm[0] );
+    //M_Aqm[0][0] = M_backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
 
-    for ( int q = 1; q < Qa(); ++q )
+    //for ( int q = 1; q < Qa(); ++q )
+    for ( int q = 0; q < Qa(); ++q )
     {
-        M_Aqm[q][0] = M_backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
+        //M_Aqm[q][0] = M_backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
+        M_Aqm[q][0] = M_backend->newMatrix( _test=M_Th, _trial=M_Th );
     }
 
     // mass matrix
@@ -304,7 +296,8 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     for ( int q = 0; q < Qm(); ++q )
     {
         M_Mqm[q].resize( 1 );
-        M_Mqm[q][0] = M_backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
+        //M_Mqm[q][0] = M_backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
+        M_Mqm[q][0] = M_backend->newMatrix( _test=M_Th, _trial=M_Th );
     }
 
     // outputs
@@ -321,8 +314,8 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
         }
     }
 
-
-    D = M_backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
+    //D = M_backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
+    D = M_backend->newMatrix( _test=M_Th, _trial=M_Th );
     L.resize( Nl() );
 
     for ( int l = 0; l < Nl(); ++l )
@@ -332,18 +325,17 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
 
     //Mass = M_backend->newMatrix( M_Th, M_Th );
 
-    M_temp_bdf = bdf( _space=M_Th, _vm=this->vm(), _name="temperature" , _prefix="temperature" );
+    M_temp_bdf = bdf( _space=M_Th, _name="temperature" , _prefix="temperature" );
 
     using namespace Feel::vf;
 
-    element_ptrtype bdf_poly ( new element_type ( M_Th ) );
+    //element_ptrtype bdf_poly ( new element_type ( M_Th ) );
 
     element_type u( M_Th, "u" );
     element_type v( M_Th, "v" );
     element_type w( M_Th, "w" );
 
     LOG(INFO) << "   - Number of dof " << M_Th->nLocalDof() << "\n";
-
     M_T0 = 300;
 
     std::vector<std::string> markers;
@@ -582,7 +574,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
-
     // stabilisation terms : AIR4 (in AIR123 velocity is zero)
     // coefficient is Jinv44(1,1) for x terms
     // coefficient is Jinv44(2,2)=1 for y terms
@@ -709,7 +700,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
 
-
     //mas matrix
     //form2( M_Th, M_Th, Mass, _init=true, _pattern=pattern );
 
@@ -737,9 +727,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
                    +grad( u )*trans( gradt( u ) )
                  );
     M->close();
-
-
-
 
     //
     // L_2 scalar product
@@ -893,7 +880,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( parameter_type const& mu, doub
                              -D*( conv1+conv2*Px()+conv3*Px()*Px() )*Ny()*detJ44 ).evaluate()( 0, 0 );
 #endif
     //LOG(INFO) << "Dnum= " << Dnum << "\n";
-
     int AqIndex = 0;
     M_betaAqm.resize( Qa() );
     for(int i=0; i<this->Qa(); i++)
@@ -934,7 +920,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( parameter_type const& mu, doub
     M_betaL[ 0 ][ 2 ][ 0 ] = Jinv44xx*detJ44; // ea : dx Nx term dirichlet
     M_betaL[ 0 ][ 3 ][ 0 ] = Jinv44yy*detJ44; // ea : dy Ny term dirichlet
     M_betaL[ 0 ][ 4 ][ 0 ] = detJ44; // ea : penalisation term dirichlet
-
     //LOG(INFO) << "BetaL[0] = " << M_betaL[0] << "\n";
 
     // l =1
@@ -959,7 +944,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( parameter_type const& mu, doub
     M_betaL[ 3 ][ 1 ][ 0 ]= detJ44;
     //LOG(INFO) << "BetaL[3] = " << M_betaL[3] << "\n";
 
-
     M_betaMqm.resize( Qm() );
     for(int i=0; i<Qm(); i++)
         M_betaMqm[i].resize( 1 );
@@ -972,6 +956,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( parameter_type const& mu, doub
 template<int OrderU, int OrderP, int OrderT>
 OpusModelRB<OrderU,OrderP,OrderT>::~OpusModelRB()
 {}
+#if 0 // Already defined in crb model
 template<int OrderU, int OrderP, int OrderT>
 typename OpusModelRB<OrderU,OrderP,OrderT>::sparse_matrix_ptrtype
 OpusModelRB<OrderU,OrderP,OrderT>::newMatrix() const
@@ -987,7 +972,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::newVector() const
 {
     return M_backend->newVector( M_Th );
 }
-
+#endif
 template<int OrderU, int OrderP, int OrderT>
 void
 OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu , double time )
@@ -1114,10 +1099,11 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
         M_temp_bdf->setSteady();
     }
 
-    M_temp_bdf->start();
+    //M_temp_bdf->start();
     M_bdf_coeff = M_temp_bdf->polyDerivCoefficient( 0 );
 
-    for ( M_temp_bdf->start(); !M_temp_bdf->isFinished(); M_temp_bdf->next() )
+    //for ( M_temp_bdf->start(); !M_temp_bdf->isFinished(); M_temp_bdf->next() )
+    for ( M_temp_bdf->start(*T); !M_temp_bdf->isFinished(); M_temp_bdf->next() )
     {
         *M_bdf_poly = M_temp_bdf->polyDeriv();
         this->update( mu , M_temp_bdf->time() );
@@ -1167,10 +1153,11 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
         M_temp_bdf->setSteady();
     }
 
-    M_temp_bdf->start();
+    //M_temp_bdf->start();
     M_bdf_coeff = M_temp_bdf->polyDerivCoefficient( 0 );
 
-    for ( M_temp_bdf->start(); !M_temp_bdf->isFinished(); M_temp_bdf->next() )
+    //for ( M_temp_bdf->start(); !M_temp_bdf->isFinished(); M_temp_bdf->next() )
+    for ( M_temp_bdf->start(*T); !M_temp_bdf->isFinished(); M_temp_bdf->next() )
     {
         *M_bdf_poly = M_temp_bdf->polyDeriv();
         this->update( mu , M_temp_bdf->time() );

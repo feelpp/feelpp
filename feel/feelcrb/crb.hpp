@@ -1618,7 +1618,6 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
     auto Apr = M_model->newMatrix();
 
-
     int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
     double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
     double fixedpoint_critical_value  = doption(_name="crb.fixedpoint-critical-value");
@@ -1639,7 +1638,6 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
         elementptr = M_model->assembleInitialGuess( mu ) ;
         u = *elementptr ;
     }
-
     auto uold = M_model->functionSpace()->element();
     auto bdf_poly = M_model->functionSpace()->element();
 
@@ -1652,7 +1650,6 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
           !M_bdf_primal->isFinished() , !M_bdf_primal_save->isFinished();
           M_bdf_primal->next() , M_bdf_primal_save->next() )
     {
-
         int bdf_iter = M_bdf_primal->iteration();
 
         if ( ! M_model->isSteady() )
@@ -1692,15 +1689,12 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
             if ( ! M_model->isSteady() )
             {
-
                 bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
-
                 if ( bdf_iter == 1 )
                 {
                     Apr->addMatrix( bdf_coeff, M );
                 }
-
-                auto bdf_poly = M_bdf_primal->polyDeriv();
+                //auto bdf_poly = M_bdf_primal->polyDeriv();
                 *Rhs = *F[0];
                 *vec_bdf_poly = bdf_poly;
                 Rhs->addVector( *vec_bdf_poly, *M );
@@ -1709,7 +1703,6 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
             {
                 *Rhs = *F[0];
             }
-
             //backup for non linear problems
             uold = u;
 
@@ -1735,13 +1728,11 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
                 increment_norm = M_model->computeNormL2( u , uold );
 
             LOG(INFO) << "iteration " << iteration << ", increment_norm = " <<  increment_norm << "\n";
-            //std::cout << "[OFFLINE] iteration " << iteration << ", increment_norm = " <<  increment_norm << "\n";
             this->offline_iterations_summary.first = iteration;
             this->offline_iterations_summary.second = increment_norm;
             iteration++;
 
         }while( increment_norm > increment_fixedpoint_tol && iteration < max_fixedpoint_iterations );
-
 
         M_bdf_primal->shiftRight( u );
         if ( ! M_model->isSteady() )
@@ -2220,7 +2211,7 @@ CRB<TruthModelType>::offline()
     if( M_use_newton )
     {
         //boost::tie( Mqm , Jqm, Rqm ) = M_model->computeAffineDecomposition();
-        boost::tie( M_Mqm , M_Jqm, M_Rqm ) = M_model->computeAffineDecomposition(); //TEST CD
+        boost::tie( M_Mqm , M_Jqm, M_Rqm ) = M_model->computeAffineDecomposition();
     }
     else
     {
@@ -2249,6 +2240,7 @@ CRB<TruthModelType>::offline()
 
         M_coeff_pr_ini_online.resize(0);
         M_coeff_du_ini_online.resize(0);
+
 
         this->generateSuperSampling();
 
@@ -2496,6 +2488,7 @@ CRB<TruthModelType>::offline()
             timer2.restart();
             u = offlineFixedPointPrimal( mu  );
             tpr=timer2.elapsed();
+
             if ( M_solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
             {
                 timer2.restart();

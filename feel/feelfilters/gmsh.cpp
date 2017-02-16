@@ -92,11 +92,6 @@ namespace Feel
 {
 namespace fs = boost::filesystem;
 
-#if defined(HAVE_METIS)
-const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT = GMSH_PARTITIONER_METIS;
-#else
-const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT = GMSH_PARTITIONER_CHACO;
-#endif
 
 
 int

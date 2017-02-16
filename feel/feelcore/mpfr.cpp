@@ -5,6 +5,9 @@
 
 namespace Feel
 {
+//!
+//! \internal
+//!
 namespace mpfr
 {
 MpfrClass::PrecisionType &MpfrClass::CurrPrecision = __gmpfr_default_fp_bit_precision;

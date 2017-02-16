@@ -62,6 +62,7 @@ BOOST_AUTO_TEST_CASE( test_main_fit )
     Feel::Environment::changeRepository( boost::format( "testsuite/feelfit/%1%/" )
                                          % Feel::Environment::about().appName()
                                          );
+    // tag::fit[]
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
     auto Xh = Pch<1>(mesh);
     auto T = Xh->element(); // the temperature (say)
@@ -139,6 +140,7 @@ BOOST_AUTO_TEST_CASE( test_main_fit )
 
         BOOST_TEST_MESSAGE( boost::format("test %1% done")% i );
     }
+   // end::fit[]
 }
 
 BOOST_AUTO_TEST_SUITE_END()
