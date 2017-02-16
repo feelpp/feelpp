@@ -440,6 +440,8 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"do_export_modgradphi-advection").c_str(), Feel::po::value<bool>()->default_value(false), "doExportModGradPhi-Advection")
         (prefixvm(prefix,"do_export_stretch-advection").c_str(), Feel::po::value<bool>()->default_value(false), "doExportStretch-Advection")
         (prefixvm(prefix,"do_export_backward-characteristics-advection").c_str(), Feel::po::value<bool>()->default_value(false), "doExportBackwardCharacteristics-Advection")
+        (prefixvm(prefix,"do_export_cauchygreeninvariant1").c_str(), Feel::po::value<bool>(), "doExportCauchyGreenInvariant1")
+        (prefixvm(prefix,"do_export_cauchygreeninvariant2").c_str(), Feel::po::value<bool>(), "doExportCauchyGreenInvariant2")
         ;
 
     levelsetOptions
