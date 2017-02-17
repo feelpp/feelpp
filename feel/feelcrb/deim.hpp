@@ -45,6 +45,8 @@
 #include <feel/feelalg/topetsc.hpp>
 #include <Eigen/Core>
 
+#define POUT std::cout<<"["<<Environment::worldComm().globalRank()<<"] "
+
 namespace Feel
 {
 
@@ -108,31 +110,41 @@ public :
 
     void run()
     {
+        tic();
         int mMax = ioption("eim.dimension-max");
+        double error=0;
         auto mu = M_parameter_space->max();
 
-        addNewVector(mu);
+        Feel::cout << "DEIM : Start algorithm with mu=["<<mu[0];
+        for ( int i=1; i<mu.size(); i++ )
+            Feel::cout << "," << mu[i];
+        Feel::cout << "]\n";
+        Feel::cout <<"===========================================\n";
+        do{
+            Feel::cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu=["<<mu[0];
+            for ( int i=1; i<mu.size(); i++ )
+                Feel::cout << "," << mu[i];
+            Feel::cout << "]\n";
 
-        tic();
-        for ( ; M_M<=mMax; )
-        {
-            // choose next mu
-            auto best_fit = computeBestFit();
+            tic();
+            addNewVector(mu);
+            toc("Add new vector in DEIM basis");
 
-            Feel::cout << "DEIM : Current error : "<< best_fit.template get<1>()
-                       <<", tolerance : " << M_tol <<std::endl;
-            if ( best_fit.template get<1>()<M_tol )
+            if ( M_M<mMax )
             {
-                Feel::cout << "DEIM : Stopping greedy algorithm\n";
-                break;
+                auto best_fit = computeBestFit();
+                error = best_fit.template get<1>();
+                mu = best_fit.template get<0>();
+                Feel::cout << "DEIM : Current error : "<< error
+                           <<", tolerance : " << M_tol <<std::endl;
+                Feel::cout <<"===========================================\n";
             }
 
-            mu = best_fit.template get<0>();
-            addNewVector(mu);
+        }while( M_M<mMax && error>M_tol );
 
-        }
-        toc("DEIM : greedy");
-        Feel::cout << "DEIM number of basis function vector : "<< M_M << std::endl;
+        Feel::cout << "DEIM : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
+
+        toc("DEIM : Total Time");
     }
 
     vectorN_type beta( parameter_type mu )
@@ -248,14 +260,24 @@ private :
         M_B.conservativeResize(M_M,M_M);
         // update last row of M_B
         for ( int j = 0; j<M_M; j++ )
-        {
-            M_B(M_M-1, j) = M_bases[j]->operator() (M_index[M_M-1] );
-        }
+            M_B(M_M-1, j) = evaluate( M_bases[j], M_index[M_M-1]);
+
         //update last col of M_B
         for ( int i=0; i<M_M-1; i++ )
+            M_B(i, M_M-1) = evaluate( M_bases[M_M-1], M_index[i] );
+    }
+
+    double evaluate( vector_ptrtype V, int index )
+    {
+        double value=0;
+        int proc_number = V->map().procOnGlobalCluster(index);
+        if ( Environment::worldComm().globalRank()==proc_number )
         {
-            M_B(i, M_M-1) = M_bases[M_M-1]->operator() (M_index[i]);
+            index = index - V->map().firstDofGlobalCluster();
+            value = V->operator()( index );
         }
+        boost::mpi::broadcast( Environment::worldComm(), value, proc_number );
+        return value;
     }
 
     vectormax_type vectorMaxAbs( vector_ptrtype V )
@@ -265,6 +287,8 @@ private :
         newV->abs();
         int index = 0;
         double max = newV->maxWithIndex( &index );
+        double eval=evaluate( newV, index );
+
         return boost::make_tuple( max, index );
     }
 
@@ -291,7 +315,7 @@ private :
         if ( M_M>0 )
         {
             for ( int i=0; i<M_M; i++ )
-                rhs(i) = V->operator() ( M_index[i] );
+                rhs(i) = evaluate( V, M_index[i] );
             coeff = M_B.lu().solve( rhs );
         }
         return coeff;
@@ -390,6 +414,8 @@ private :
 
         return boost::make_tuple( max, index );
     }
+
+
 
     tensor_ptrtype residual( parameter_type mu )
     {
