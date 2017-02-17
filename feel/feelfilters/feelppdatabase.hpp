@@ -53,7 +53,7 @@ public :
     FeelppDatabase( WorldComm const& worldComm = Environment::worldComm() )
         :
         M_worldComm( worldComm ),
-        M_name( "field" ),
+        M_dbFilenameJson( "mydb.dbfeelpp.json" ),
         M_dbRepository( fs::current_path() ),
 #ifdef FEELPP_HAS_HDF5
         M_vectorFileFormat( "hdf5" )
@@ -70,8 +70,33 @@ public :
 
     std::vector<double> timeSet() const { return M_timeSet; }
 
+    std::map<std::string,std::tuple<std::string,uint16_type,uint16_type> > const& fieldsInfo() const { return M_fieldInfoInDb; }
+
+    bool hasScalarField() const
+        {
+            for ( auto const& fieldInfoPair : M_fieldInfoInDb )
+                if ( std::get<2>( fieldInfoPair.second ) == 1 )
+                    return true;
+            return false;
+        }
+    bool hasVectorialField() const
+        {
+            for ( auto const& fieldInfoPair : M_fieldInfoInDb )
+                if ( std::get<2>( fieldInfoPair.second ) == mesh_type::nRealDim )
+                    return true;
+            return false;
+        }
+
     std::string const& vectorFileFormat() const { return M_vectorFileFormat; }
 
+    void setFilename( std::string const& s )
+        {
+            fs::path pathJson = fs::system_complete( s );
+            M_dbFilenameJson = pathJson.filename().string();
+            //std::cout << "M_dbFilenameJson : " << M_dbFilenameJson << "\n";
+            M_dbRepository = pathJson.parent_path();
+            //std::cout << "M_dbRepository : " << M_dbRepository.string() << "\n";
+        }
 
     void setDbRepository( std::string const& s ) { M_dbRepository = s; }
 
@@ -82,8 +107,7 @@ public :
 
     void loadInfo()
         {
-            std::string jsonFilename = "mydb.dbfeelpp.json";
-            std::string jsonPath = (M_dbRepository/jsonFilename).string();
+            std::string jsonPath = (M_dbRepository/M_dbFilenameJson).string();
 
             if ( !fs::exists( jsonPath ) )
             {
@@ -107,11 +131,30 @@ public :
             }
 
             M_timeSet.clear();
-            for (auto const& item : ptreeDb.get_child("time-set"))
+            auto ptreeDbTimeSet = ptreeDb.get_child_optional("time-set");
+            if ( ptreeDbTimeSet )
             {
-                double time = item.second.template get_value<double>();
-                std::cout << "time reload " << time << "\n";
-                M_timeSet.push_back( time );
+                for ( auto const& item : *ptreeDbTimeSet )
+                {
+                    double time = item.second.template get_value<double>();
+                    //std::cout << "time reload " << time << "\n";
+                    M_timeSet.push_back( time );
+                }
+            }
+
+            M_fieldInfoInDb.clear();
+            auto ptreeDbFieldInfos = ptreeDb.get_child_optional( "fields" );
+            if ( ptreeDbFieldInfos )
+            {
+                for (auto const& item : *ptreeDbFieldInfos )
+                {
+
+                    std::string fieldName = item.first;
+                    std::string basisName = item.second.template get<std::string>( "basis-name" );
+                    uint16_type basisOrder = item.second.template get<uint16_type>( "basis-order" );
+                    uint16_type nComp = item.second.template get<uint16_type>( "nComp" );
+                    M_fieldInfoInDb[fieldName]=std::make_tuple( basisName,basisOrder,nComp );
+                }
             }
 
         }
@@ -155,20 +198,18 @@ public :
                     ptreeDb.add_child( "fields", ptreeDbFieldInfos );
                 }
 
-                std::string jsonFilename = "mydb.dbfeelpp.json";
-                std::string jsonOutputPath = (M_dbRepository/jsonFilename).string();
+                std::string jsonOutputPath = (M_dbRepository/M_dbFilenameJson).string();
                 write_json( jsonOutputPath, ptreeDb );
             }
             this->worldComm().barrier();
         }
 
-    mesh_ptrtype loadMesh()
+    mesh_ptrtype loadMesh( size_type updateCtx = size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES) )
         {
             CHECK( !M_meshFilename.empty() ) << "no mesh filename in database";
             //int nPartition = Environment::worldComm().size();
             //M_meshFilename = (boost::format("mesh_p%1%.json")%nPartition ).str();
             std::string inputMeshPath = (M_dbRepository/ M_meshFilename).string();
-            size_type updateCtx = size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES);
             M_mesh = Feel::loadMesh(_mesh=new mesh_type,_filename=inputMeshPath,
                                     _update=updateCtx );
             return M_mesh;
@@ -266,7 +307,8 @@ public :
 
 private :
     WorldComm const& M_worldComm;
-    std::string M_name;
+
+    std::string M_dbFilenameJson;
     fs::path M_dbRepository;
     std::string M_meshFilename;
     std::string M_vectorFileFormat;
