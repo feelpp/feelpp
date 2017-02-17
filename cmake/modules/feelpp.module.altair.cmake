@@ -25,34 +25,35 @@ OPTION( FEELPP_ENABLE_ACUSIM "Enable ACUSIM (libraries to read acusim files )" O
 
 if ( FEELPP_ENABLE_ACUSIM )
 
-  #FIND_PATH(ACUSIM_DIR acusim.h
-  FIND_PATH(ACUSIM_DIR include/acusim.h
+
+  FIND_PATH(ACUSIM_BASE_DIR include/acusim.h
       PATHS
       /apps/users/hw-13.0.213/altair/acusolve/linux64
-      /data/software/licensed/Altair/altair/acusolve/linux64
+      $ENV{ACUSIM_DIR}/altair/acusolve/linux64
+      #/data/software/licensed/Altair/altair/acusolve/linux64
       # directories to look for altair headers
       # --> a remplir <chemoin vers altair development files> 
       #PATH_SUFFIXES
       #include
       NO_DEFAULT_PATH)
 
-    message(STATUS "[feelpp] acusim dir : ${ACUSIM_DIR}")
+    message(STATUS "[feelpp] acusim base dir : ${ACUSIM_BASE_DIR}")
 
-    if ( ACUSIM_DIR )
+    if ( ACUSIM_BASE_DIR )
       
-      set(ACUSIM_INCLUDE_DIR "${ACUSIM_DIR}/include")
+      set(ACUSIM_INCLUDE_DIR "${ACUSIM_BASE_DIR}/include")
       include_directories(${ACUSIM_INCLUDE_DIR})
       
-      set(ACUSIM_LIBRARY_DIR "${ACUSIM_DIR}/lib")
+      set(ACUSIM_LIBRARY_DIR "${ACUSIM_BASE_DIR}/lib")
       FIND_LIBRARY(ACUSIM_ADB_LIBRARY NAMES adb PATHS ${ACUSIM_LIBRARY_DIR} NO_DEFAULT_PATH)
       FIND_LIBRARY(ACUSIM_CCI_LIBRARY NAMES cci PATHS ${ACUSIM_LIBRARY_DIR} NO_DEFAULT_PATH)
       FIND_LIBRARY(ACUSIM_ECO_LIBRARY NAMES eco PATHS ${ACUSIM_LIBRARY_DIR} NO_DEFAULT_PATH)
       FIND_LIBRARY(ACUSIM_FRM_LIBRARY NAMES frm PATHS ${ACUSIM_LIBRARY_DIR} NO_DEFAULT_PATH)
 
       set( ACUSIM_OTHERS_LIBRARY
-      ${ACUSIM_DIR}/bin/libh3dreader.so
-      ${ACUSIM_DIR}/bin/libh3dwriter.so
-      ${ACUSIM_DIR}/bin/libintlc.so
+      ${ACUSIM_BASE_DIR}/bin/libh3dreader.so
+      ${ACUSIM_BASE_DIR}/bin/libh3dwriter.so
+      ${ACUSIM_BASE_DIR}/bin/libintlc.so
       )
       set(ACUSIM_LIBRARIES ${ACUSIM_ADB_LIBRARY} ${ACUSIM_CCI_LIBRARY}  ${ACUSIM_ECO_LIBRARY} ${ACUSIM_FRM_LIBRARY}  ${ACUSIM_OTHERS_LIBRARY} )
 
@@ -70,7 +71,7 @@ if ( FEELPP_ENABLE_ACUSIM )
     # handle the QUIETLY and REQUIRED arguments and set ACUSIM_FOUND to TRUE if
     # all listed variables are TRUE
     include (FindPackageHandleStandardArgs)
-    find_package_handle_standard_args (ACUSIM DEFAULT_MSG ACUSIM_DIR ACUSIM_INCLUDE_DIR ACUSIM_LIBRARIES )
+    find_package_handle_standard_args (ACUSIM DEFAULT_MSG ACUSIM_BASE_DIR ACUSIM_INCLUDE_DIR ACUSIM_LIBRARIES )
 
     mark_as_advanced (ACUSIM_INCLUDE_DIR ACUSIM_LIBRARIES )
 
