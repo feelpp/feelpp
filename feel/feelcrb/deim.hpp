@@ -45,7 +45,6 @@
 #include <feel/feelalg/topetsc.hpp>
 #include <Eigen/Core>
 
-#define POUT std::cout<<"["<<Environment::worldComm().globalRank()<<"] "
 
 namespace Feel
 {
@@ -271,11 +270,10 @@ private :
     {
         double value=0;
         int proc_number = V->map().procOnGlobalCluster(index);
+
         if ( Environment::worldComm().globalRank()==proc_number )
-        {
-            index = index - V->map().firstDofGlobalCluster();
-            value = V->operator()( index );
-        }
+            value = V->operator()( index - V->map().firstDofGlobalCluster() );
+
         boost::mpi::broadcast( Environment::worldComm(), value, proc_number );
         return value;
     }
@@ -383,14 +381,28 @@ private :
         M_B.conservativeResize(M_M,M_M);
         for ( int j = 0; j<M_M; j++ )
         {
-            M_B(M_M-1, j) = M_bases[j]->operator() ( M_index[M_M-1].first, M_index[M_M-1].second );
+            M_B(M_M-1, j) = evaluate( M_bases[j], M_index[M_M-1].first, M_index[M_M-1].second );
         }
         //update last col of M_B
         for ( int i=0; i<M_M-1; i++ )
         {
-            M_B(i, M_M-1) = M_bases[M_M-1]->operator() ( M_index[i].first, M_index[i].second );
+            M_B(i, M_M-1) = evaluate( M_bases[M_M-1], M_index[i].first, M_index[i].second );
         }
 
+    }
+
+    double evaluate( sparse_matrix_ptrtype M, int i, int j )
+    {
+        double value=0;
+        int proc_number = M->mapRow().procOnGlobalCluster(i);
+
+        if ( !M->closed() )
+            M->close();
+        if ( Environment::worldComm().globalRank()==proc_number )
+             value = M->operator() (i,j);
+
+        boost::mpi::broadcast( Environment::worldComm(), value, proc_number );
+        return value;
     }
 
     matrixmax_type matrixMaxAbs( sparse_matrix_ptrtype M )
@@ -399,17 +411,23 @@ private :
         if ( !M->closed() )
             M->close();
 
-        vector_ptrtype V = M->diagonal();
-        int ierr=0;
-        int nrow = M->size1();
-        int idx [nrow];
+        auto V = backend()->newVector( M->mapRowPtr() );
+        PetscInt idx[M->mapRow().nLocalDof()];
 
-        ierr=MatGetRowMaxAbs( toPETSc(M)->mat(), toPETSc(V)->vec(), idx );
+        int ierr=MatGetRowMaxAbs( toPETSc(M)->mat(), toPETSc(V)->vec(), idx );
         CHKERRABORT( M->comm(),ierr );
 
         int i_row = 0;
-        double max = V->maxWithIndex( &i_row );
-        int i_col = idx[i_row];
+        int i_col = 0;
+        PetscReal val=0;
+        VecMax(toPETSc(V)->vec(), &i_row, &val);
+        double max = static_cast<Real>( val );
+
+        int proc_number = V->map().procOnGlobalCluster(i_row);
+        if ( Environment::worldComm().globalRank()==proc_number )
+            i_col = idx[i_row - V->map().firstDofGlobalCluster()];
+        boost::mpi::broadcast( Environment::worldComm(), i_col, proc_number );
+
         std::pair<int,int> index (i_row,i_col);
 
         return boost::make_tuple( max, index );
@@ -440,7 +458,7 @@ private :
         if ( M_M>0 )
         {
             for ( int i=0; i<M_M; i++ )
-                rhs(i) = M->operator() ( M_index[i].first, M_index[i].second );
+                rhs(i) = evaluate( M, M_index[i].first, M_index[i].second );
             coeff = M_B.lu().solve( rhs );
         }
         return coeff;
