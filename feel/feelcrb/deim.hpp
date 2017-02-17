@@ -54,6 +54,7 @@ class DEIMBase
 {
 public :
     typedef ModelType model_type;
+    typedef typename model_type::value_type value_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
 
     typedef typename ModelType::parameterspace_type parameterspace_type;
@@ -67,10 +68,24 @@ public :
 
     typedef std::function<tensor_ptrtype ( const parameter_type& mu)> assemble_function_type;
 
+    typedef Backend<value_type> backend_type;
+    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef typename backend_type::vector_type vector_type;
+    typedef typename backend_type::vector_ptrtype vector_ptrtype;
+    typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
+    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+
     typedef Eigen::MatrixXd matrixN_type;
     typedef Eigen::VectorXd vectorN_type;
 
     typedef boost::tuple<parameter_type,double> bestfit_type;
+
+    static const bool is_matrix = std::is_same<tensor_type,sparse_matrix_type>::value;
+    typedef typename mpl::if_< mpl::bool_<is_matrix>,
+                               std::pair<int,int>, int >::type indice_type;
+
+    typedef boost::tuple<double,int> vectormax_type;
+    typedef boost::tuple<double,std::pair<int,int>> matrixmax_type;
 
     DEIMBase()
     {}
@@ -163,91 +178,12 @@ public :
 
 
 protected :
-    virtual void addNewVector( parameter_type mu )=0;
-    virtual vectorN_type computeCoefficient( tensor_ptrtype V )=0;
-    virtual tensor_ptrtype residual( parameter_type mu )=0;
-
-    vectorN_type computeCoefficient( parameter_type mu )
-    {
-        tensor_ptrtype T = assemble( mu );
-        return computeCoefficient( T );
-    }
-
-
-    bestfit_type computeBestFit()
-    {
-        tic();
-        double max=0;
-        auto mu_max = M_parameter_space->element();
-        for ( auto const& mu : *M_trainset )
-        {
-            tensor_ptrtype T = residual( mu );
-
-            double norm = T->linftyNorm();
-            if ( norm>max )
-            {
-                max = norm;
-                mu_max = mu;
-            }
-        }
-        toc("DEIM : compute best fit");
-
-        return boost::make_tuple( mu_max, max );
-    }
-
-
-
-
-    parameterspace_ptrtype M_parameter_space;
-    sampling_ptrtype M_trainset;
-    int M_M;
-    double M_tol;
-    matrixN_type M_B;
-    std::vector< tensor_ptrtype > M_bases;
-};
-
-
-template <typename ModelType>
-class DEIM :
-        public DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::vector_type>
-{
-public :
-    typedef DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::vector_type> super_type;
-    typedef typename super_type::parameter_type parameter_type;
-    typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
-    typedef typename super_type::sampling_ptrtype sampling_ptrtype;
-    typedef typename super_type::vectorN_type vectorN_type;
-    typedef typename super_type::tensor_ptrtype tensor_ptrtype;
-
-    typedef typename ModelType::value_type value_type;
-
-    typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
-
-    typedef typename backend_type::vector_type vector_type;
-    typedef typename backend_type::vector_ptrtype vector_ptrtype;
-
-    typedef boost::tuple<double,int> vectormax_type;
-
-    DEIM() :
-        super_type()
-    {}
-
-    DEIM( parameterspace_ptrtype Dmu, sampling_ptrtype sampling=NULL ) :
-        super_type( Dmu, sampling )
-    {}
-
-    ~DEIM()
-    {}
-
-
-private :
     void addNewVector( parameter_type mu )
     {
-        vector_ptrtype Phi = residual( mu );
+        tensor_ptrtype Phi = residual( mu );
 
         auto vec_max = vectorMaxAbs( Phi );
-        int i = vec_max.template get<1>();
+        auto i = vec_max.template get<1>();
         double max = vec_max.template get<0>();
 
         M_M++;
@@ -278,6 +214,23 @@ private :
         return value;
     }
 
+    double evaluate( sparse_matrix_ptrtype M, std::pair<int,int>  idx )
+    {
+        int i = idx.first;
+        int j =idx.second;
+
+        double value=0;
+        int proc_number = M->mapRow().procOnGlobalCluster(i);
+
+        if ( !M->closed() )
+            M->close();
+        if ( Environment::worldComm().globalRank()==proc_number )
+            value = M->operator() (i,j);
+
+        boost::mpi::broadcast( Environment::worldComm(), value, proc_number );
+        return value;
+    }
+
     vectormax_type vectorMaxAbs( vector_ptrtype V )
     {
         auto newV = V->clone();
@@ -290,122 +243,7 @@ private :
         return boost::make_tuple( max, index );
     }
 
-    tensor_ptrtype residual( parameter_type mu )
-    {
-        vector_ptrtype V = this->assemble( mu );
-        vectorN_type coeff = computeCoefficient( V );
-
-        vector_ptrtype newV = V->clone();
-        *newV = *V;
-
-        for ( int i=0; i<M_M; i++ )
-            newV->add( -coeff(i), M_bases[i] );
-
-        return newV;
-    }
-
-    using super_type::computeCoefficient;
-
-    vectorN_type computeCoefficient( tensor_ptrtype V )
-    {
-        vectorN_type rhs (M_M);
-        vectorN_type coeff (M_M);
-        if ( M_M>0 )
-        {
-            for ( int i=0; i<M_M; i++ )
-                rhs(i) = evaluate( V, M_index[i] );
-            coeff = M_B.lu().solve( rhs );
-        }
-        return coeff;
-    }
-
-    std::vector<int> M_index;
-
-    using super_type::M_M;
-    using super_type::M_B;
-    using super_type::M_bases;
-};
-
-
-template <typename ModelType>
-class MDEIM :
-        public DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::sparse_matrix_type>
-{
-public :
-    typedef DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::sparse_matrix_type> super_type;
-
-    typedef typename super_type::parameter_type parameter_type;
-    typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
-    typedef typename super_type::sampling_ptrtype sampling_ptrtype;
-    typedef typename super_type::vectorN_type vectorN_type;
-    typedef typename super_type::tensor_ptrtype tensor_ptrtype;
-
-
-    typedef typename ModelType::value_type value_type;
-
-    typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
-    typedef typename backend_type::vector_type vector_type;
-    typedef typename backend_type::vector_ptrtype vector_ptrtype;
-    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-
-
-    typedef boost::tuple<double,std::pair<int,int>> matrixmax_type;
-
-    MDEIM() :
-        super_type()
-    {}
-
-    MDEIM( parameterspace_ptrtype Dmu, sampling_ptrtype sampling=NULL ) :
-        super_type( Dmu, sampling )
-    {}
-
-    ~MDEIM()
-    {}
-
-private :
-    void addNewVector( parameter_type mu )
-    {
-        sparse_matrix_ptrtype Phi = residual( mu );
-
-        auto mat_max = matrixMaxAbs( Phi );
-        auto idx = mat_max.template get<1>();
-        double max = mat_max.template get<0>();
-
-        M_M++;
-
-        Phi->scale( 1./max );
-        M_bases.push_back( Phi );
-        M_index.push_back( idx );
-
-        M_B.conservativeResize(M_M,M_M);
-        for ( int j = 0; j<M_M; j++ )
-        {
-            M_B(M_M-1, j) = evaluate( M_bases[j], M_index[M_M-1].first, M_index[M_M-1].second );
-        }
-        //update last col of M_B
-        for ( int i=0; i<M_M-1; i++ )
-        {
-            M_B(i, M_M-1) = evaluate( M_bases[M_M-1], M_index[i].first, M_index[i].second );
-        }
-
-    }
-
-    double evaluate( sparse_matrix_ptrtype M, int i, int j )
-    {
-        double value=0;
-        int proc_number = M->mapRow().procOnGlobalCluster(i);
-
-        if ( !M->closed() )
-            M->close();
-        if ( Environment::worldComm().globalRank()==proc_number )
-             value = M->operator() (i,j);
-
-        boost::mpi::broadcast( Environment::worldComm(), value, proc_number );
-        return value;
-    }
-
-    matrixmax_type matrixMaxAbs( sparse_matrix_ptrtype M )
+    matrixmax_type vectorMaxAbs( sparse_matrix_ptrtype M )
     {
         DCHECK( M->isInitialized() ) << "MatrixPetsc<> not initialized";
         if ( !M->closed() )
@@ -433,43 +271,143 @@ private :
         return boost::make_tuple( max, index );
     }
 
-
-
-    tensor_ptrtype residual( parameter_type mu )
+    vectorN_type computeCoefficient( parameter_type mu )
     {
-        sparse_matrix_ptrtype M = this->assemble( mu );
-        vectorN_type coeff = computeCoefficient( M );
-
-        sparse_matrix_ptrtype newM = backend()->newMatrix( M->mapColPtr(), M->mapRowPtr(), M->graph() );
-        *newM=*M;
-
-        for ( int i=0; i<M_M; i++ )
-            newM->addMatrix( -coeff(i), M_bases[i] );
-
-        return newM;
+        tensor_ptrtype T = assemble( mu );
+        return computeCoefficient( T );
     }
 
-    using super_type::computeCoefficient;
-
-    vectorN_type computeCoefficient( tensor_ptrtype M )
+    vectorN_type computeCoefficient( tensor_ptrtype T )
     {
         vectorN_type rhs (M_M);
         vectorN_type coeff (M_M);
         if ( M_M>0 )
         {
             for ( int i=0; i<M_M; i++ )
-                rhs(i) = evaluate( M, M_index[i].first, M_index[i].second );
+                rhs(i) = evaluate( T, M_index[i] );
             coeff = M_B.lu().solve( rhs );
         }
         return coeff;
     }
 
+    bestfit_type computeBestFit()
+    {
+        tic();
+        double max=0;
+        auto mu_max = M_parameter_space->element();
+        for ( auto const& mu : *M_trainset )
+        {
+            tensor_ptrtype T = residual( mu );
 
-    std::vector<std::pair<int,int>> M_index;
+            double norm = T->linftyNorm();
+            if ( norm>max )
+            {
+                max = norm;
+                mu_max = mu;
+            }
+        }
+        toc("DEIM : compute best fit");
 
-    using super_type::M_M;
-    using super_type::M_B;
-    using super_type::M_bases;
+        return boost::make_tuple( mu_max, max );
+    }
+
+    tensor_ptrtype residual( parameter_type mu )
+    {
+        tensor_ptrtype T = this->assemble( mu );
+        vectorN_type coeff = computeCoefficient( T );
+
+        auto newT = copyTensor( T );
+
+        for ( int i=0; i<M_M; i++ )
+            add( newT, -coeff(i), M_bases[i] );
+
+        return newT;
+    }
+
+    void add( vector_ptrtype V, double const& a, vector_ptrtype vec )
+    {
+        V->add( a, vec );
+    }
+    void add( sparse_matrix_ptrtype M, double const& a, sparse_matrix_ptrtype mat )
+    {
+        M->addMatrix( a, mat );
+    }
+
+    vector_ptrtype copyTensor( vector_ptrtype V )
+    {
+        vector_ptrtype newV = V->clone();
+        *newV = *V;
+        return newV;
+    }
+
+    sparse_matrix_ptrtype copyTensor( sparse_matrix_ptrtype M )
+    {
+        sparse_matrix_ptrtype newM = backend()->newMatrix( M->mapColPtr(),
+                                                           M->mapRowPtr(),
+                                                           M->graph() );
+        *newM=*M;
+        return newM;
+    }
+
+
+    parameterspace_ptrtype M_parameter_space;
+    sampling_ptrtype M_trainset;
+    int M_M;
+    double M_tol;
+    matrixN_type M_B;
+    std::vector< tensor_ptrtype > M_bases;
+    std::vector<indice_type> M_index;
+};
+
+
+template <typename ModelType>
+class DEIM :
+        public DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::vector_type>
+{
+public :
+    typedef DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::vector_type> super_type;
+    typedef typename super_type::parameter_type parameter_type;
+    typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
+    typedef typename super_type::sampling_ptrtype sampling_ptrtype;
+    DEIM() :
+        super_type()
+    {}
+
+    DEIM( parameterspace_ptrtype Dmu, sampling_ptrtype sampling=NULL ) :
+        super_type( Dmu, sampling )
+    {}
+
+    ~DEIM()
+    {}
+
+
+private :
+};
+
+
+template <typename ModelType>
+class MDEIM :
+        public DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::sparse_matrix_type>
+{
+public :
+    typedef DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::sparse_matrix_type> super_type;
+
+    typedef typename super_type::parameter_type parameter_type;
+    typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
+    typedef typename super_type::sampling_ptrtype sampling_ptrtype;
+
+    MDEIM() :
+        super_type()
+    {}
+
+    MDEIM( parameterspace_ptrtype Dmu, sampling_ptrtype sampling=NULL ) :
+        super_type( Dmu, sampling )
+    {}
+
+    ~MDEIM()
+    {}
+
+private :
 
 };
 
