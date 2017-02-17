@@ -198,7 +198,7 @@ ConverterAcusimDatabase<MeshType>::run()
         std::cout << "hasScalarSpace : " << hasScalarSpace << "\n"
                   << "hasVectorialSpace : " << hasVectorialSpace << "\n";
 
-    auto mesh = M_feelppDatabase.loadMesh();
+    auto mesh = M_feelppDatabase.loadMesh( MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES );
 
     if ( hasVectorialSpace )
     {

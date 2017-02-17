@@ -204,7 +204,7 @@ public :
             this->worldComm().barrier();
         }
 
-    mesh_ptrtype loadMesh( size_type updateCtx = size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES) )
+    mesh_ptrtype loadMesh( size_type updateCtx = MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
         {
             CHECK( !M_meshFilename.empty() ) << "no mesh filename in database";
             //int nPartition = Environment::worldComm().size();
