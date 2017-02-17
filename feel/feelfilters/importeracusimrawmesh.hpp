@@ -87,8 +87,10 @@ markerNameFromAcusimName( std::string const& acusimName, std::string const& elem
                 return acusimNameSplitted[k];
         }
     }
-
     std::string markerName;
+    if ( nNameSplitted == 1 )
+        markerName = acusimName;
+
     return markerName;
 }
 
@@ -331,7 +333,6 @@ void ImporterAcusimRawMesh<MeshType>::readElements( mesh_type* mesh ) const
             e.setProcessIdInPartition( partId );
             e.setProcessId( partId );
             e.setMarker( markerId );
-            e.setMarker2( markerId );
 
             for ( size_type k = 0; k < element_type::numPoints; ++k )
             {
@@ -397,7 +398,6 @@ void ImporterAcusimRawMesh<MeshType>::readFaces( mesh_type* mesh ) const
             f.setProcessIdInPartition( partId );
             f.setProcessId( partId );
             f.setMarker( markerId );
-            f.setMarker2( markerId );
 
             for ( size_type k = 0; k < face_type::numPoints; ++k )
             {
@@ -487,7 +487,6 @@ void ImporterAcusimRawMesh<MeshType>::readMeshAcusolveAPI( mesh_type* mesh ) con
         std::cout << "  marker element : " << marker << "\n";
         mesh->addMarkerName( marker, markerId, mesh_type::nDim );
         e.setMarker( markerId );
-        //e.setMarker2( markerId );
 
         // load element connectivity
         int * elmCnn = new int[nElmElems*nElmElemNodes];
