@@ -38,17 +38,34 @@
 
 namespace Feel
 {
+class FeelppDatabaseFieldInfo : public std::tuple<std::string,uint16_type,uint16_type>
+{
+    typedef std::tuple<std::string,uint16_type,uint16_type> super_type;
+public :
+    FeelppDatabaseFieldInfo() = default;
+    FeelppDatabaseFieldInfo( std::string const& basisName, uint16_type basisOrder, uint16_type nComp )
+        :
+        super_type( basisName,basisOrder,nComp )
+        {}
+    FeelppDatabaseFieldInfo( FeelppDatabaseFieldInfo const& ) = default;
+    FeelppDatabaseFieldInfo( FeelppDatabaseFieldInfo && ) = default;
+    FeelppDatabaseFieldInfo& operator=( FeelppDatabaseFieldInfo const& ) = default;
+
+    std::string const& basisName() const { return std::get<0>(*this); }
+    uint16_type basisOrder() const { return std::get<1>(*this); }
+    uint16_type nComponents() const { return std::get<2>(*this); }
+
+    void setBasisName( std::string const& name ) { std::get<0>(*this) = name; }
+    void setBasisOrder( uint16_type order ) { std::get<1>(*this) = order; }
+    void setNComponents( uint16_type ncomp ) { std::get<2>(*this) = ncomp; }
+};
 
 template<typename MeshType>
 class FeelppDatabase
 {
 public :
     using mesh_type = decay_type<MeshType>;
-    //using space_ptrtype = boost::shared_ptr<space_type>;
-    //using mesh_type = typename space_type::mesh_type;
     using mesh_ptrtype = boost::shared_ptr<mesh_type>;
-    //using element_type = typename space_type::element_type;
-    //using element_ptrtype = typename space_type::element_ptrtype;
 
     FeelppDatabase( WorldComm const& worldComm = Environment::worldComm() )
         :
@@ -68,24 +85,47 @@ public :
 
     std::string const& meshFilename() const { return M_meshFilename; }
 
-    std::vector<double> timeSet() const { return M_timeSet; }
+    std::vector<double> const& timeSet() const { return M_timeSet; }
 
-    std::map<std::string,std::tuple<std::string,uint16_type,uint16_type> > const& fieldsInfo() const { return M_fieldInfoInDb; }
+    std::map<std::string,FeelppDatabaseFieldInfo> const& fieldsInfo() const { return M_fieldInfoInDb; }
+
+    FeelppDatabaseFieldInfo const& fieldInfo( std::string const& name ) const { return M_fieldInfoInDb.find( name )->second; }
 
     bool hasScalarField() const
         {
             for ( auto const& fieldInfoPair : M_fieldInfoInDb )
-                if ( std::get<2>( fieldInfoPair.second ) == 1 )
+                if ( fieldInfoPair.second.nComponents() == 1 )
                     return true;
             return false;
         }
     bool hasVectorialField() const
         {
             for ( auto const& fieldInfoPair : M_fieldInfoInDb )
-                if ( std::get<2>( fieldInfoPair.second ) == mesh_type::nRealDim )
+                if ( fieldInfoPair.second.nComponents() > 1 && fieldInfoPair.second.nComponents() == mesh_type::nRealDim )
                     return true;
             return false;
         }
+    bool hasField( std::string const& fieldName ) const
+        {
+            return ( M_fieldInfoInDb.find( fieldName ) != M_fieldInfoInDb.end() );
+        }
+    bool isScalarField( std::string const& fieldName ) const
+        {
+            auto itFindField = M_fieldInfoInDb.find( fieldName );
+            if ( itFindField == M_fieldInfoInDb.end() )
+                return false;
+            uint16_type ncomp = itFindField->second.nComponents();
+            return ( ncomp == 1 );
+        }
+    bool isVectorialField( std::string const& fieldName ) const
+        {
+            auto itFindField = M_fieldInfoInDb.find( fieldName );
+            if ( itFindField == M_fieldInfoInDb.end() )
+                return false;
+            uint16_type ncomp = itFindField->second.nComponents();
+            return ( (ncomp > 1) && (ncomp == mesh_type::nRealDim) );
+        }
+
 
     std::string const& vectorFileFormat() const { return M_vectorFileFormat; }
 
@@ -153,7 +193,7 @@ public :
                     std::string basisName = item.second.template get<std::string>( "basis-name" );
                     uint16_type basisOrder = item.second.template get<uint16_type>( "basis-order" );
                     uint16_type nComp = item.second.template get<uint16_type>( "nComp" );
-                    M_fieldInfoInDb[fieldName]=std::make_tuple( basisName,basisOrder,nComp );
+                    M_fieldInfoInDb[fieldName] = FeelppDatabaseFieldInfo( basisName,basisOrder,nComp );
                 }
             }
 
@@ -186,9 +226,9 @@ public :
                     for ( auto const& fieldInfoPair : M_fieldInfoInDb )
                     {
                         std::string const& fieldName = fieldInfoPair.first;
-                        std::string const& basisName = std::get<0>( fieldInfoPair.second );
-                        uint16_type basisOrder = std::get<1>( fieldInfoPair.second );
-                        uint16_type nComp = std::get<2>( fieldInfoPair.second );
+                        std::string const& basisName = fieldInfoPair.second.basisName();
+                        uint16_type basisOrder = fieldInfoPair.second.basisOrder();
+                        uint16_type nComp = fieldInfoPair.second.nComponents();
                         boost::property_tree::ptree ptreeDbFieldInfo;
                         ptreeDbFieldInfo.add("basis-name",basisName);
                         ptreeDbFieldInfo.add("basis-order",basisOrder);
@@ -314,7 +354,7 @@ private :
     std::string M_vectorFileFormat;
     mesh_ptrtype M_mesh;
     std::vector<double> M_timeSet;
-    std::map<std::string,std::tuple<std::string,uint16_type,uint16_type> > M_fieldInfoInDb;
+    std::map<std::string,FeelppDatabaseFieldInfo> M_fieldInfoInDb;
 
 };
 
