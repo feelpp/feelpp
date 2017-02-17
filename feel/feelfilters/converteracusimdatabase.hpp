@@ -65,6 +65,7 @@ public :
 
     ConverterAcusimDatabase()
         :
+        M_acusimWorkRepository( "ACUSIM.DIR" ),
         M_nNodes( 0 ),
         M_nodeIds( nullptr ),
         M_nOutSteps( 0 ),
@@ -74,10 +75,19 @@ public :
 
     WorldComm const& worldComm() const { return M_feelppDatabase.worldComm(); }
 
-    void setInputRepository( std::string const& idir )
+    void setAcusimRepository( std::string const& idir )
         {
-            M_acusimRepository = idir;
+            M_acusimRepository = fs::system_complete( idir );
         }
+    void setAcusimProblemName(std::string const& name )
+        {
+            M_acusimProblemName = name;
+        }
+    void setAcusimWorkRepository(std::string const& dir )
+        {
+            M_acusimWorkRepository = dir;
+        }
+
     void setOutputRepository( std::string const& odir )
         {
             M_feelppDatabase.setDbRepository( odir );
@@ -89,11 +99,12 @@ public :
 
     void init()
         {
-
-            M_adbHd = adbNew( (char*)"test", (char*)"ACUSIM.DIR", (char*)"/home/u2/chabannes/po_smallmesh/DATA_PO/", 0 );
+            //M_adbHd = adbNew( (char*)"test", (char*)"ACUSIM.DIR", (char*)"/home/u2/chabannes/po_smallmesh/DATA_PO/", 0 );
+            M_adbHd = adbNew( (char*)M_acusimProblemName.c_str(), (char*)M_acusimWorkRepository.c_str(), (char*)M_acusimRepository.string().c_str(), 0 );
             CHECK( M_adbHd != NULL ) << "Error opening the data base " << adbGetError();
             // init database loading
             bool success = adbOpenRun(M_adbHd,1);
+            CHECK( success ) << "error on opening the acusim database name="<<M_acusimProblemName<<" rep: " << M_acusimRepository;
         }
     void close()
         {
@@ -130,7 +141,10 @@ private :
     void runSaveFieldInTimeSet( boost::shared_ptr<SpaceType> const& space, std::string const& fieldName, int fieldIndex );
 
 private :
+
     fs::path M_acusimRepository;
+    std::string M_acusimProblemName;
+    std::string M_acusimWorkRepository;
 
     FeelppDatabase<mesh_type> M_feelppDatabase;
 
