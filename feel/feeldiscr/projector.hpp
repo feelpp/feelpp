@@ -396,6 +396,9 @@ public :
         return de;
     }
 
+    double epsilon() const { return M_epsilon; }
+    double gamma() const { return M_gamma; }
+    ProjectorType projectorType() const { return M_proj_type; }
 
     //@}
 

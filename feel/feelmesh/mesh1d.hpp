@@ -1,35 +1,28 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-11-09
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file mesh1d.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-11-09
- */
-#ifndef __Mesh1D_H
-#define __Mesh1D_H 1
-
+// -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 05 Feb 2017
+//! @copyright 2017 Feel++ Consortium
+//!
+#ifndef FEELPP_MESH1D_HPP
+#define FEELPP_MESH1D_HPP 1
 
 #include <iomanip>
 #include <fstream>
@@ -62,21 +55,21 @@
 
 namespace Feel
 {
-/**
- * \class Mesh1D
- * \brief 1D mesh class
- *
- * \code
- * // create a 1D mesh made of simplex of order 1
- * Mesh1D<Simplex<1,1> > mesh;
- *
- * // create a 1D mesh made of simplex of order 2
- * Mesh1D<Simplex<1,2> > mesh;
- * \endcode
- *
- *  @author Christophe Prud'homme
- *  @see
- */
+//!
+//! @brief 1D mesh class
+//! @ingroup Mesh
+//!
+//! @code
+//! // create a 1D mesh made of simplex of order 1
+//! Mesh1D<Simplex<1,1> > mesh;
+//!
+//! // create a 1D mesh made of simplex of order 2
+//! Mesh1D<Simplex<1,2> > mesh;
+//! @endcode
+//!
+//! @author Christophe Prud'homme
+//! @see Mesh2D, Mesh3D
+//!
 template<typename Shape>
 class Mesh1D
     :
@@ -329,7 +322,7 @@ private:
 
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
+    FEELPP_NO_EXPORT void serialize( Archive & ar, const unsigned int version )
         {
             ar & boost::serialization::base_object<super>( *this );
             DVLOG(2) << "Serializing points\n";

@@ -42,11 +42,19 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
 {
     if ( !fs::exists( filename ) ) 
     {
-      LOG(INFO) << "Could not find " << filename << std::endl;
-      return;
+        if ( Environment::isMasterRank() )
+        {
+            std::cout << "[modelProperties]  Could not find :\"" << filename << "\"" <<std::endl;
+        }
+        LOG(INFO) << "Could not find " << filename << std::endl;
+        return;
     }
     else
     {
+        if ( Environment::isMasterRank() )
+        {
+            std::cout << "[modelProperties] Loading Model Properties : \"" << filename << "\"" << std::endl;
+        }
         LOG(INFO) << "Loading " << filename << std::endl;
     }
 
@@ -107,6 +115,18 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     else
     {
         LOG(WARNING) << "Model does not have any boundary conditions\n";
+    }
+    auto ic = M_p.get_child_optional("InitialConditions");
+    if ( ic )
+    {
+        LOG(INFO) << "Model with initial conditions\n";
+        if ( !directoryLibExpr.empty() )
+            M_ic.setDirectoryLibExpr( directoryLibExpr );
+        M_ic.setPTree( *ic );
+    }
+    else
+    {
+        LOG(WARNING) << "Model does not have any initial conditions\n";
     }
     auto mat = M_p.get_child_optional("Materials");
     if ( mat )

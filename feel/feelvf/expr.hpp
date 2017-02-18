@@ -410,7 +410,8 @@ public:
         }
     void setParameterValues( std::map<std::string,value_type> const& mp )
         {
-            this->setParameterValues( mp, boost::is_base_of<Feel::vf::GiNaCBase,expression_type>() );
+            //this->setParameterValues( mp, boost::is_base_of<Feel::vf::GiNaCBase,expression_type>() );
+            M_expr.setParameterValues( mp );
         }
     void setParameterValues( std::map<std::string,value_type> const& mp, mpl::bool_<true> )
         {
@@ -488,10 +489,10 @@ public:
         {
             M_tensor_expr.update( geom, face );
         }
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            M_tensor_expr.updateContext( ctx );
+            M_tensor_expr.updateContext( ctx... );
         }
 
 

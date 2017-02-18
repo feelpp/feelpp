@@ -140,7 +140,7 @@ int main(int argc, char**argv )
 
     a = integrate( _range=elements( mesh ), _expr=mu*inner( deft, grad(v) ) + rho*mybdf->polyDerivCoefficient(0)*trans(idt(u))*id(u) );
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
-    auto e = exporter( _mesh=mesh );
+    //auto e = exporter( _mesh=mesh );
     auto w = Vh->functionSpace<0>()->element( curlv(u), "w" );
 
     /*
@@ -248,7 +248,8 @@ int main(int argc, char**argv )
         
         toc("Postprocess");
         tic();
-        //e->step(mybdf->time())->setMesh( P1h->mesh() );
+        
+        auto e = exporter( _mesh=mesh );
         e->step(mybdf->time())->add( "u", u );
         w.on( _range=elements(mesh), _expr=curlv(u) );
         e->step(mybdf->time())->add( "w", w );
@@ -256,12 +257,39 @@ int main(int argc, char**argv )
         auto mean_p = mean( _range=elements(mesh), _expr=idv(p) )( 0, 0 );
         e->step(mybdf->time())->addScalar( "mean_p", mean_p );
         e->save();
-        //e->restart( mybdf->time() );
+        Environment::saveTimers( true );
+            
+    }
         toc("Exporter");
         toc("time step");
+    
+    tic();
+    
+    if(geo_order>1 || p_order>1)
+    {
+        auto meshP1 = lagrangeP1(_space=Vh->template functionSpace<0>())->mesh();
+        auto XhVisuU = Pchv<1>(meshP1,true);
+        auto XhVisuP = Pch<1>(meshP1,true);
+        auto opIVisuU = opInterpolation(_domainSpace=Vh->template functionSpace<0>(),
+                                        _imageSpace=XhVisuU,
+                                        _type=InterpolationNonConforme(false,true,false) );
+        auto opIVisuP = opInterpolation(_domainSpace=Vh->template functionSpace<1>(),
+                                        _imageSpace=XhVisuP,
+                                        _type=InterpolationNonConforme(false,true,false) );
+        
+        auto uVisu = opIVisuU->operator()(u);
+        auto pVisu = opIVisuP->operator()(p);
+        
+        // exporter mesh and harmonic extension
+        auto e2 = exporter( _mesh=meshP1, _name="VisuP1" );
+        e2->step(mybdf->time())->setMesh( meshP1 );
+        e2->step(mybdf->time())->add( "u", uVisu );
+        e2->step(mybdf->time())->add( "p", pVisu );
+        e2->save();
 
     }
-    //! [marker1]
+    toc("ExporterHO");
+    Environment::saveTimers( true );
 
 
 

@@ -106,6 +106,25 @@ class SparseCompressedBase
     /** \returns whether \c *this is in compressed form. */
     inline bool isCompressed() const { return innerNonZeroPtr()==0; }
 
+    /** \returns a read-only view of the stored coefficients as a 1D array expression.
+      *
+      * \warning this method is for \b compressed \b storage \b only, and it will trigger an assertion otherwise.
+      *
+      * \sa valuePtr(), isCompressed() */
+    const Map<const Array<Scalar,Dynamic,1> > coeffs() const { eigen_assert(isCompressed()); return Array<Scalar,Dynamic,1>::Map(valuePtr(),nonZeros()); }
+
+    /** \returns a read-write view of the stored coefficients as a 1D array expression
+      *
+      * \warning this method is for \b compressed \b storage \b only, and it will trigger an assertion otherwise.
+      *
+      * Here is an example:
+      * \include SparseMatrix_coeffs.cpp
+      * and the output is:
+      * \include SparseMatrix_coeffs.out
+      *
+      * \sa valuePtr(), isCompressed() */
+    Map<Array<Scalar,Dynamic,1> > coeffs() { eigen_assert(isCompressed()); return Array<Scalar,Dynamic,1>::Map(valuePtr(),nonZeros()); }
+
   protected:
     /** Default constructor. Do nothing. */
     SparseCompressedBase() {}
@@ -205,11 +224,11 @@ class SparseCompressedBase<Derived>::ReverseInnerIterator
       }
       else
       {
-        m_start.value() = mat.outerIndexPtr()[outer];
+        m_start = mat.outerIndexPtr()[outer];
         if(mat.isCompressed())
           m_id = mat.outerIndexPtr()[outer+1];
         else
-          m_id = m_start.value() + mat.innerNonZeroPtr()[outer];
+          m_id = m_start + mat.innerNonZeroPtr()[outer];
       }
     }
 
@@ -235,14 +254,15 @@ class SparseCompressedBase<Derived>::ReverseInnerIterator
     inline Index row() const { return IsRowMajor ? m_outer.value() : index(); }
     inline Index col() const { return IsRowMajor ? index() : m_outer.value(); }
 
-    inline operator bool() const { return (m_id > m_start.value()); }
+    inline operator bool() const { return (m_id > m_start); }
 
   protected:
     const Scalar* m_values;
     const StorageIndex* m_indices;
-    const internal::variable_if_dynamic<Index,Derived::IsVectorAtCompileTime?0:Dynamic> m_outer;
+    typedef internal::variable_if_dynamic<Index,Derived::IsVectorAtCompileTime?0:Dynamic> OuterType;
+    const OuterType m_outer;
+    Index m_start;
     Index m_id;
-    const internal::variable_if_dynamic<Index,Derived::IsVectorAtCompileTime?0:Dynamic> m_start;
 };
 
 namespace internal {
@@ -253,7 +273,6 @@ struct evaluator<SparseCompressedBase<Derived> >
 {
   typedef typename Derived::Scalar Scalar;
   typedef typename Derived::InnerIterator InnerIterator;
-  typedef typename Derived::ReverseInnerIterator ReverseInnerIterator;
   
   enum {
     CoeffReadCost = NumTraits<Scalar>::ReadCost,

@@ -44,6 +44,12 @@ extern "C"
 #include <boost/assign/std/vector.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/local_time_adjustor.hpp>
+#include <boost/date_time/c_local_time_adjustor.hpp>
+
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 #include <gflags/gflags.h>
 
@@ -106,7 +112,7 @@ bool IsGoogleLoggingInitialized();
 }
 namespace Feel
 {
-
+namespace pt =  boost::property_tree;
 //namespace detail
 //{
 FEELPP_NO_EXPORT
@@ -339,7 +345,7 @@ Environment::initPetsc( int * argc, char *** argv )
         i_initialized = true;
 
         int ierr;
-        if(argc > 0 && argv)
+        if( (*argc > 0) && ( argv != nullptr ) )
         {
 #if defined( FEELPP_HAS_SLEPC )
             ierr = SlepcInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
@@ -389,6 +395,9 @@ Environment::Environment( int argc, char** argv,
 #endif
     }
 
+    S_argc = argc;
+    S_argv = argv;
+    
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
@@ -425,9 +434,14 @@ Environment::Environment( int argc, char** argv,
 #if defined ( FEELPP_HAS_PETSC_H )
     initPetsc( &argc, &envargv );
 #endif
+
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
 
+    boost::gregorian::date today = boost::gregorian::day_clock::local_day();
+    tic();
+    cout << "[ Starting Feel++ ] " << tc::green << "application "  << about.appName()
+         <<  " version " << about.version() << " date " << today << tc::reset << std::endl;
 
     if ( S_vm.count( "nochdir" ) == 0 )
     {
@@ -438,63 +452,9 @@ Environment::Environment( int argc, char** argv,
         bool createSubdir = add_subdir_np && S_vm["npdir"].as<bool>();
         changeRepository( _directory=f,_subdir=createSubdir );
     }
-    S_scratchdir = fs::current_path() / "logs"; //scratchdir();
 
-    fs::path a0 = std::string( argv[0] );
-    const int Nproc = 200;
+    
 
-    if ( S_worldcomm->size() > Nproc )
-    {
-        std::string smin = boost::lexical_cast<std::string>( Nproc*std::floor( S_worldcomm->rank()/Nproc ) );
-        std::string smax = boost::lexical_cast<std::string>( Nproc*std::ceil( double( S_worldcomm->rank()+1 )/Nproc )-1 );
-        std::string replog = smin + "-" + smax;
-        S_scratchdir/= a0.filename()/replog;
-    }
-
-    else
-        S_scratchdir/= a0.filename();
-
-    // only one processor every Nproc creates the corresponding log directory
-    if ( S_worldcomm->rank() % Nproc == 0 )
-    {
-        if ( !fs::exists( S_scratchdir ) )
-            fs::create_directories( S_scratchdir );
-    }
-
-    FLAGS_log_dir=S_scratchdir.string();
-
-    google::AllowCommandLineReparsing();
-    google::ParseCommandLineFlags( &argc, &argv, false );
-    //std::cout << "FLAGS_vmodule: " << FLAGS_vmodule << "\n";
-#if 0
-    std::cout << "argc=" << argc << "\n";
-
-    for ( int i = 0; i < argc; ++i )
-    {
-        std::cout << "argv[" << i << "]=" << argv[i] << "\n";
-    }
-
-#endif
-
-    // Initialize Google's logging library.
-    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
-    {
-        if ( FLAGS_no_log )
-        {
-            if ( S_worldcomm->rank() == 0 && FLAGS_no_log == 1 )
-                FLAGS_no_log = 0;
-
-            google::InitGoogleLogging( argv[0] );
-        }
-
-        else if ( argc > 0 )
-            google::InitGoogleLogging( argv[0] );
-
-        else
-            google::InitGoogleLogging( "feel++" );
-    }
-
-    google::InstallFailureSignalHandler();
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
     //int n = 2;
@@ -534,12 +494,6 @@ Environment::Environment( int argc, char** argv,
     Environment::initHwlocTopology();
 #endif
 
-    boost::gregorian::date today = boost::gregorian::day_clock::local_day();
-    tic();
-    cout << "[ Starting Feel++ ] " << tc::green << "application "  << about.appName()
-         <<  " version " << about.version() << " date " << today << tc::reset << std::endl;
-    cout << " . Results are stored in "
-         << tc::red << fs::current_path().string() << tc::reset << std::endl;
 }
 void
 Environment::clearSomeMemory()
@@ -565,7 +519,7 @@ Environment::~Environment()
          << " execution time " << t << "s" << tc::reset << std::endl;
 
 #if defined(FEELPP_HAS_HARTS)
-    /* if we used hwloc, we free tolology data */
+    /* if we used hwloc, we free topology data */
     Environment::destroyHwlocTopology();
 #endif
 
@@ -675,8 +629,18 @@ Environment::~Environment()
 
 #endif // FEELPP_HAS_PETSC_H
 
-        google::ShutdownGoogleLogging();
+        stopLogging();
+        generateSummary( S_about.appName(), "end", true );
+        // make sure everybody is here
+        Environment::worldComm().barrier();
+        if ( Environment::isMasterRank() && S_vm.count("rm") )
+        {
+            cout << tc::red << "Removing all files (--rm)  in " << appRepository() << "..." << tc::reset << std::endl;
+            fs::remove_all( S_appdir );
+        }
+        
     }
+    
 }
 
 
@@ -1245,7 +1209,8 @@ Environment::doOptions( int argc, char** argv,
                 for ( std::string cfgfile : configFiles )
                 {
                     if ( !fs::exists( cfgfile ) ) continue;
-                    LOG( INFO ) << "Reading " << cfgfile << "...";
+                    cout << tc::green << "Reading " << cfgfile << "..." << tc::reset << std::endl;
+                    // LOG( INFO ) << "Reading " << cfgfile << "...";
                     S_configFileNames.insert( fs::absolute( cfgfile ).string() );
                     S_cfgdir = fs::absolute( cfgfile ).parent_path();
                     std::ifstream ifs( cfgfile.c_str() );
@@ -1255,7 +1220,9 @@ Environment::doOptions( int argc, char** argv,
 
             if ( S_vm.count( "config-file" ) && fs::exists(  S_vm["config-file"].as<std::string>() ) )
             {
-                LOG( INFO ) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
+                cout << tc::green << "Reading " << S_vm["config-file"].as<std::string>()
+                     << "..." << tc::reset << std::endl;
+                // LOG( INFO ) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
                 S_configFileNames.insert( fs::absolute( S_vm["config-file"].as<std::string>() ).string() );
                 S_cfgdir = fs::absolute( S_vm["config-file"].as<std::string>() ).parent_path();
                 std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
@@ -1585,15 +1552,53 @@ Environment::systemConfigRepository()
     rep_path /= "share/feel/config";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
+std::string
+Environment::appRepository()
+{
+    return S_appdir.string();
+}
+std::string
+Environment::exprRepository()
+{
+    fs::path rep_path( S_appdir );
+
+    std::string exprdir = "exprs";
+    if ( S_vm.count( "subdir.expr" ) )
+        exprdir = S_vm["subdir.expr"].as<std::string>();
+    rep_path /= exprdir;
+
+    if ( !fs::exists( rep_path ) )
+        fs::create_directory( rep_path );
+
+    return rep_path.string();
+}
+std::string
+Environment::logsRepository()
+{
+    if ( !fs::exists( S_appdir / "logs" ) )
+        fs::create_directory( S_appdir / "logs" );
+    return (S_appdir / "logs").string();
+}
+
+std::string
+Environment::exportsRepository()
+{
+    if ( !fs::exists( S_appdir / "exports" ) )
+        fs::create_directory( S_appdir / "exports" );
+    return (S_appdir / "exports").string();
+}
 
 void
-Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfilename, bool add_subdir_np, WorldComm const& worldcomm )
+Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfilename, bool add_subdir_np, WorldComm const& worldcomm, bool remove )
 {
     if ( Environment::vm().count( "nochdir" ) )
+    {
+        S_appdir = fs::current_path();
         return;
-
+    }
+    stopLogging( remove );
     fs::path rep_path;
-    S_paths.push_back( fs::current_path() );
+    S_paths.push_back( S_appdir );
 
     typedef std::vector< std::string > split_vector_type;
 
@@ -1643,12 +1648,54 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
     // wait all process in order to be sure that the dir has been created by master process
     worldcomm.barrier();
 
-    ::chdir( rep_path.string().c_str() );
+    S_appdir = rep_path;
+    
+    // we change directory for now but that may change in the future
+    ::chdir( S_appdir.string().c_str() );
 
-    setLogs( logfilename );
+    startLogging( Environment::about().appName() );
+    cout << tc::red
+         << " . " << Environment::about().appName() << " files are stored in " << tc::red << Environment::appRepository()
+         << tc::reset << std::endl;
+    cout << " .. exports :"  << Environment::exportsRepository() << std::endl;
+    cout << " .. logfiles :" << Environment::logsRepository() << std::endl;
 
+    Environment::generateSummary( Environment::about().appName(), "start", true ); 
+    
+    // eventually cleanup
+    if ( remove )
+    {
+        LOG(INFO) << "removing " << S_paths.back() << " after changing repository";
+        if ( worldcomm.isMasterRank() )
+            fs::remove_all( S_paths.back() );
+    }
 }
 
+pt::ptree&
+Environment::generateSummary( std::string fname, std::string stage, bool write )
+{
+    using namespace std::string_literals;
+    std::string jsonfname = Environment::about().appName()+".json";
+    S_summary.put("application.name",Environment::about().appName());
+
+    //boost::gregorian::date today = boost::gregorian::day_clock::local_day();
+    using boost::posix_time::ptime;
+    using boost::posix_time::second_clock;
+    using boost::posix_time::to_simple_string;
+    using boost::gregorian::day_clock;
+
+    ptime todayUtc(day_clock::universal_day(), second_clock::universal_time().time_of_day());
+    std::string today = to_simple_string(todayUtc);
+    
+    S_summary.put("application.date."s+stage,today);
+    S_summary.put("application.directories.exports",Environment::exportsRepository());
+    S_summary.put("application.directories.logs",Environment::logsRepository());
+    S_summary.put("application.directories.exprs",Environment::exprRepository());
+
+    if ( write )
+        pt::write_json(jsonfname, S_summary);
+    return S_summary;
+}
 #if 0
 po::variables_map
 Environment::vm( po::options_description const& desc )
@@ -1666,6 +1713,71 @@ Environment::setLogs( std::string const& prefix )
 {
 
 
+}
+
+void
+Environment::startLogging( std::string decorate )
+{
+    fs::path a0 = logsRepository();
+    const int Nproc = 200;
+
+    if ( S_worldcomm->size() > Nproc )
+    {
+        std::string smin = boost::lexical_cast<std::string>( Nproc*std::floor( S_worldcomm->rank()/Nproc ) );
+        std::string smax = boost::lexical_cast<std::string>( Nproc*std::ceil( double( S_worldcomm->rank()+1 )/Nproc )-1 );
+        std::string replog = smin + "-" + smax;
+        a0 /= replog;
+    }
+
+    // only one processor every Nproc creates the corresponding log directory
+    if ( S_worldcomm->rank() % Nproc == 0 )
+    {
+        if ( !fs::exists( a0 ) )
+            fs::create_directories( a0 );
+    }
+
+    FLAGS_log_dir=a0.string();
+
+    google::AllowCommandLineReparsing();
+    google::ParseCommandLineFlags( &S_argc, &S_argv, false );
+    //std::cout << "FLAGS_vmodule: " << FLAGS_vmodule << "\n";
+#if 0
+    std::cout << "argc=" << S_argc << "\n";
+
+    for ( int i = 0; i < S_argc; ++i )
+    {
+        std::cout << "argv[" << i << "]=" << S_argv[i] << "\n";
+    }
+
+#endif
+
+
+    // Initialize Google's logging library.
+    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+    {
+        if ( FLAGS_no_log )
+        {
+            if ( S_worldcomm->rank() == 0 && FLAGS_no_log == 1 )
+                FLAGS_no_log = 0;
+        }
+        google::InitGoogleLogging( S_argv[0] );
+    }
+    google::InstallFailureSignalHandler();
+}
+
+void
+Environment::stopLogging( bool remove )
+{
+    if ( google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+    {
+        google::ShutdownGoogleLogging();
+        if ( (remove || Environment::vm().count( "rmlogs" ))  &&
+             S_worldcomm->isMasterRank() )
+        {
+            std::cout  << tc::red << "Removing log files (--rmlogs) in " << Environment::logsRepository() << tc::reset << std::endl;
+            fs::remove_all( Environment::logsRepository() );
+        }
+    }
 }
 
 std::vector<WorldComm> const&
@@ -2030,6 +2142,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "${feelpp_builddir}", topBuildDir );
     boost::replace_all( res, "${feelpp_databasesdir}", topSrcDir + "/databases/" );
     boost::replace_all( res, "${top_srcdir}", topSrcDir );
+    boost::replace_all( res, "${toolboxes_srcdir}", topSrcDir + "/toolboxes/" );
     boost::replace_all( res, "${top_builddir}", topBuildDir );
     boost::replace_all( res, "${cfgdir}", cfgDir );
     boost::replace_all( res, "${home}", homeDir );
@@ -2042,6 +2155,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$feelpp_builddir", topBuildDir );
     boost::replace_all( res, "$feelpp_databasesdir", topSrcDir + "/databases/" );
     boost::replace_all( res, "$top_srcdir", topSrcDir );
+    boost::replace_all( res, "$toolboxes_srcdir", topSrcDir + "/toolboxes/" );
     boost::replace_all( res, "$top_builddir", topBuildDir );
     boost::replace_all( res, "$cfgdir", cfgDir );
     boost::replace_all( res, "$home", homeDir );
@@ -2109,8 +2223,11 @@ Environment::saveTimersMD( std::ostream &os )
 }
 
 
+int Environment::S_argc = 0;
+char** Environment::S_argv = 0;
 
 AboutData Environment::S_about;
+pt::ptree Environment::S_summary;
 boost::shared_ptr<po::command_line_parser> Environment::S_commandLineParser;
 std::set<std::string> Environment::S_configFileNames;
 po::variables_map Environment::S_vm;
@@ -2128,6 +2245,7 @@ std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemConfigRepository().get<0>(),
                                                Environment::systemGeoRepository().get<0>()
                                              };
+fs::path Environment::S_appdir = fs::current_path();
 fs::path Environment::S_scratchdir;
 fs::path Environment::S_cfgdir;
 

@@ -45,7 +45,7 @@ template<typename MatrixType> void array_for_matrix(const MatrixType& m)
   VERIFY_IS_MUCH_SMALLER_THAN(m1.rowwise().sum().sum() - m1.sum(), m1.squaredNorm());
   VERIFY_IS_MUCH_SMALLER_THAN(m1.colwise().sum() + m2.colwise().sum() - (m1+m2).colwise().sum(), (m1+m2).squaredNorm());
   VERIFY_IS_MUCH_SMALLER_THAN(m1.rowwise().sum() - m2.rowwise().sum() - (m1-m2).rowwise().sum(), (m1-m2).squaredNorm());
-  VERIFY_IS_APPROX(m1.colwise().sum(), m1.colwise().redux(internal::scalar_sum_op<Scalar>()));
+  VERIFY_IS_APPROX(m1.colwise().sum(), m1.colwise().redux(internal::scalar_sum_op<Scalar,Scalar>()));
 
   // vector-wise ops
   m3 = m1;
@@ -133,6 +133,12 @@ template<typename MatrixType> void comparisons(const MatrixType& m)
 
   // count
   VERIFY(((m1.array().abs()+1)>RealScalar(0.1)).count() == rows*cols);
+
+  // and/or
+  VERIFY( ((m1.array()<RealScalar(0)).matrix() && (m1.array()>RealScalar(0)).matrix()).count() == 0);
+  VERIFY( ((m1.array()<RealScalar(0)).matrix() || (m1.array()>=RealScalar(0)).matrix()).count() == rows*cols);
+  RealScalar a = m1.cwiseAbs().mean();
+  VERIFY( ((m1.array()<-a).matrix() || (m1.array()>a).matrix()).count() == (m1.cwiseAbs().array()>a).count());
 
   typedef Matrix<typename MatrixType::Index, Dynamic, 1> VectorOfIndices;
 

@@ -8,7 +8,7 @@ Version: %{version}
 Release: %{release}
 License: GPL
 Group: System Environment/Libraries
-Source0: ftp://ftpthep.physik.uni-mainz.de/pub/GiNaC/%{name}-%{version}.tar.bz2
+Source0: http://www.ginac.de/%{name}-%{version}.tar.bz2
 URL: http://www.ginac.de/
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Prefix: %{_prefix}

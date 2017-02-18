@@ -26,7 +26,7 @@
 
 namespace Feel {
 
-
+#pragma GCC visibility push(hidden)
 /// \cond detail
 namespace detail
 {
@@ -581,6 +581,7 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
 
 } // detail
 /// \endcond
+#pragma GCC visibility pop
 
 }
 #endif
