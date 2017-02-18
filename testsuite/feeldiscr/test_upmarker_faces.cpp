@@ -132,9 +132,10 @@ public:
         // boundary faces, add them in a vector.
         for(;it!=en;++it)
         {
-            for(uint16_type f=0;f<it->numTopologicalFaces; ++f)
+            auto const& elt = boost::unwrap_ref( *it );
+            for(uint16_type f=0;f<elt.numTopologicalFaces; ++f)
             {
-                auto face = it->face(f);
+                auto face = elt.face(f);
                 if( face.isOnBoundary() )
                     myfaces->push_back(boost::cref(face));
             }
@@ -173,22 +174,25 @@ public:
         int size=0;
         //for(;it!=en;++it)
         //    size++;
-        it=get<1>(range);
+        it = boost::get<1>(range);
         for(;it!=en;++it)
-            for(uint16_type f=0;f<it->numTopologicalFaces; ++f)
+        {
+            auto const& elt = boost::unwrap_ref( *it );
+            for(uint16_type f=0;f<elt.numTopologicalFaces; ++f)
             {
-                auto face = it->face(f);
+                auto face = elt.face(f);
                 if( face.isOnBoundary() )
                 {
                     std::cout
-                        << "elt mk2: "<< it->marker2().value()
-                        << " elt mk3: "<< it->marker3().value()
+                        << "elt mk2: "<< elt.marker2().value()
+                        << " elt mk3: "<< elt.marker3().value()
                         << " | face mk2: " << face.marker2().value()
                         << " | face mk3: " << face.marker3().value()
                         << "\n";
                     size++;
                 }
             }
+        }
 
         auto exp = exporter(_mesh=M_mesh, _name="testsuite_upmarker_faces");
         exp->step(0)->setMesh(M_mesh);

@@ -180,8 +180,9 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
 
                         gmshSavePhysicalNames( out, __step->mesh() );
 
-                        auto pt_it = __step->mesh()->beginPointWithProcessId();
-                        auto const pt_en = __step->mesh()->endPointWithProcessId();
+                        auto rangePoints = __step->mesh()->pointsWithProcessId();
+                        auto pt_it = std::get<0>(rangePoints);
+                        auto const pt_en = std::get<1>(rangePoints);
 
                         gmshSaveNodesStart( out, __step->mesh(), std::distance(pt_it, pt_en) );
                         gmshSaveNodes( out,__step->mesh() );
@@ -509,19 +510,20 @@ ExporterGmsh<MeshType,N>::numberOfGlobalPtAndIndex( mesh_ptrtype mesh ) const
 {
     size_type nPointToWriteOnProcess=0;
 
-    auto itPt = mesh->beginPointWithProcessId();
-    auto const enPt = mesh->endPointWithProcessId();
+    auto rangePoints = mesh->pointsWithProcessId();
+    auto itPt = std::get<0>( rangePoints );
+    auto const enPt = std::get<1>( rangePoints );
 
-    
     /* If we want only one file, specify the same filename for each process */
     if(boption(_name="exporter.gmsh.merge") == true)
     {
         for ( ; itPt!=enPt ; ++itPt )
         {
-            if ( itPt->isLinkedToOtherPartitions() )
+            auto const& pt = boost::unwrap_ref( *itPt );
+            if ( pt.isLinkedToOtherPartitions() )
             {
                 // add if the processId() is the min rank
-                if (itPt->processId() < *std::min_element( itPt->neighborPartitionIds().begin(),itPt->neighborPartitionIds().end() ) )
+                if (pt.processId() < *std::min_element( pt.neighborPartitionIds().begin(),pt.neighborPartitionIds().end() ) )
                     ++nPointToWriteOnProcess;
             }
             else ++nPointToWriteOnProcess;
@@ -593,49 +595,52 @@ template<typename MeshType, int N>
 void
 ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, bool parametric ) const
 {
-    auto pt_it = mesh->beginPointWithProcessId();
-    auto const pt_en = mesh->endPointWithProcessId();
+    auto rangePoints = mesh->pointsWithProcessId();
+    auto pt_it = std::get<0>( rangePoints );
+    auto const pt_en = std::get<1>( rangePoints );
 
+    bool merge = boption(_name="exporter.gmsh.merge");
     for ( ; pt_it!=pt_en ; ++pt_it )
     {
+        auto const& pt = boost::unwrap_ref( *pt_it );
         // if we want only one file, we discard nodes shared by different processes
-        if(boption(_name="exporter.gmsh.merge") == true)
+        if( merge )
         {
-            if ( pt_it->isLinkedToOtherPartitions() )
+            if ( pt.isLinkedToOtherPartitions() )
             {
                 // add if the processId() is the min rank
-                if ( pt_it->processId() > *std::min_element( pt_it->neighborPartitionIds().begin(),pt_it->neighborPartitionIds().end() ) )
+                if ( pt.processId() > *std::min_element( pt.neighborPartitionIds().begin(),pt.neighborPartitionIds().end() ) )
                     continue;
             }
         }
         // otherwise we put all the nodes in each file (to have a complete nodeset)
 
         // warning add 1 to the id in order to be sure that all gmsh id >0
-        out << pt_it->id()+1
-            << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt_it->node()[0];
+        out << pt.id()+1
+            << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt.node()[0];
 
         if ( mesh_type::nRealDim >= 2 )
-            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt_it->node()[1];
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt.node()[1];
 
         else
             out << " 0";
 
         if ( mesh_type::nRealDim >= 3 )
-            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt_it->node()[2];
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt.node()[2];
 
         else
             out << " 0";
 
         if ( parametric && mesh->isParametric() )
         {
-            out << " " << pt_it->gDim() << " " << pt_it->gTag();
+            out << " " << pt.gDim() << " " << pt.gTag();
 
-            if ( pt_it->gDim() == 1 )
-                out << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt_it->u();
+            if ( pt.gDim() == 1 )
+                out << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt.u();
 
-            else if ( pt_it->gDim() == 2 )
-                out << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt_it->u()
-                    << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt_it->v();
+            else if ( pt.gDim() == 2 )
+                out << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt.u()
+                    << " " << std::setw( 20 ) << std::setprecision( 16 )    << pt.v();
         }
 
         out << "\n";
@@ -723,6 +728,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
     for ( ; face_it != face_end; ++face_it )
     {
+        auto const& face = boost::unwrap_ref( *face_it );
         // elm-number elm-type number-of-tags < tag > ... node-number-list
         /*
         if(boption(_name="exporter.gmsh.merge") == true)
@@ -733,7 +739,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
         }
         else
         {
-            out<< indexEltStart + face_it->id()+1 <<" ";
+            out<< indexEltStart + face.id()+1 <<" ";
         }
         */
         out << ordering_face.type();
@@ -741,8 +747,8 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
         if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
         {
-            // out<<" 2 " << face_it->marker().value() << " " << face_it->marker2().value();
-            out<<" 3 " << face_it->marker().value() << " " << face_it->marker2().value() << " " << face_it->processId()+1;
+            // out<<" 2 " << face.marker().value() << " " << face.marker2().value();
+            out<<" 3 " << flag_type( (face.hasMarker())? face.marker().value() : 0) << " " << flag_type((face.hasMarker2())? face.marker2().value() : 0) << " " << face.processId()+1;
         }
 
         else if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.2" ) )
@@ -753,32 +759,32 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
                 nbTag += 1;
             }
             else
-                nbTag += face_it->numberOfPartitions();
+                nbTag += face.numberOfPartitions();
             out << " " << nbTag
-                << " " << face_it->marker().value()
-                << " " << face_it->marker2().value();
+                << " " << flag_type( (face.hasMarker())? face.marker().value() : 0 )
+                << " " << flag_type( (face.hasMarker2())?face.marker2().value() : 0 );
 
 
             if ( boption(_name="partition.linear" ) )
             {
                 out << " " <<  1
-                    << " " << pids[face_it->element0().id()]+1;
+                    << " " << pids[face.element0().id()]+1;
             }
             else
             {
-                out << " " << face_it->numberOfPartitions()
-                    << " " << face_it->processId()+1;
-                for ( size_type i=0 ; i<face_it->numberOfNeighborPartitions(); ++i )
-                    out << " " << -( face_it->neighborPartitionIds()[i]+1 );
+                out << " " << face.numberOfPartitions()
+                    << " " << face.processId()+1;
+                for ( size_type i=0 ; i<face.numberOfNeighborPartitions(); ++i )
+                    out << " " << -( face.neighborPartitionIds()[i]+1 );
             }
         }
 
         // node-number-list
         for ( uint16_type p=0; p<face_type::numPoints; ++p )
         {
-            //DCHECK( mapPointsId.find(face_it->point( ordering_face.fromGmshId( p ) ).id()) != mapPointsId.end() ) << "invalid point id\n";
-            //out << " " << mapPointsId.find(face_it->point( ordering_face.fromGmshId( p ) ).id())->second;
-            out << " " << face_it->point( ordering_face.fromGmshId( p ) ).id()+1;
+            //DCHECK( mapPointsId.find(face.point( ordering_face.fromGmshId( p ) ).id()) != mapPointsId.end() ) << "invalid point id\n";
+            //out << " " << mapPointsId.find(face.point( ordering_face.fromGmshId( p ) ).id())->second;
+            out << " " << face.point( ordering_face.fromGmshId( p ) ).id()+1;
         }
 
         out<<"\n";
@@ -788,6 +794,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
     for ( ; elt_it != elt_en; ++elt_it, ++pid )
     {
+        auto const& elt = boost::unwrap_ref( *elt_it );
         /*
         if(boption(_name="exporter.gmsh.merge") == true)
         {
@@ -797,15 +804,15 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
         }
         else
         {
-            out << indexEltStart + number_markedfaces + elt_it->id()+1 <<" ";
+            out << indexEltStart + number_markedfaces + elt.id()+1 <<" ";
         }
     */
         out << ordering.type();
 
         if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
         {
-            //out<<" 2 " << elt_it->marker().value() << " " << elt_it->marker2().value();
-            out<<" 3 " << elt_it->marker().value() << " " << elt_it->marker2().value() << " " << elt_it->processId()+1;
+            //out<<" 2 " << elt.marker().value() << " " << elt.marker2().value();
+            out<<" 3 " << flag_type( (elt.hasMarker())? elt.marker().value() : 0 ) << " " << flag_type( (elt.hasMarker2())? elt.marker2().value() : 0 ) << " " << elt.processId()+1;
         }
 
         else if ( FEELPP_GMSH_FORMAT_VERSION== std::string( "2.2" ) )
@@ -815,41 +822,41 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
             if ( boption(_name="partition.linear" ) )
             {
-                for ( size_type i=0 ; i< elt_it->nNeighbors(); ++i )
-                    if ( elt_it->neighbor(i).first != invalid_size_type_value )
-                        f.push_back( elt_it->neighbor(i).first );
+                for ( size_type i=0 ; i< elt.nNeighbors(); ++i )
+                    if ( elt.neighbor(i).first != invalid_size_type_value )
+                        f.push_back( elt.neighbor(i).first );
 
                 nbTag+=f.size()+1;
             }
             else
-                nbTag+=elt_it->numberOfPartitions();
+                nbTag+=elt.numberOfPartitions();
             out << " " << nbTag
-                << " " << elt_it->marker().value()
-                << " " << elt_it->marker2().value();
+                << " " << flag_type( (elt.hasMarker())? elt.marker().value() : 0 )
+                << " " << flag_type( (elt.hasMarker2())? elt.marker2().value() : 0 );
 
             if ( boption(_name="partition.linear" ) )
             {
 
-                out << " " << f.size()+1 << " " << pids[elt_it->id()]+1;
+                out << " " << f.size()+1 << " " << pids[elt.id()]+1;
                 for( auto i : f )
                     out << " " << -( pids[i]+1 );
             }
             else
             {
-                out << " " << elt_it->numberOfPartitions()
-                    << " " << elt_it->processId()+1;
+                out << " " << elt.numberOfPartitions()
+                    << " " << elt.processId()+1;
 
-                for ( size_type i=0 ; i<elt_it->numberOfNeighborPartitions(); ++i )
-                    out << " " << -( elt_it->neighborPartitionIds()[i]+1 );
+                for ( size_type i=0 ; i<elt.numberOfNeighborPartitions(); ++i )
+                    out << " " << -( elt.neighborPartitionIds()[i]+1 );
             }
         }
 
         for ( uint16_type p=0; p<element_type::numPoints; ++p )
         {
-            //DCHECK ( mapPointsId.find(elt_it->point( ordering.fromGmshId( p ) ).id()) != mapPointsId.end() ) << "invalid point id\n";
-            //std::cout << "index " << p << " -> " << ordering.fromGmshId(p) << " -> " << elt_it->point( ordering.fromGmshId(p) ).id()+1 << " : " << elt_it->point( ordering.fromGmshId(p) ).node() << "\n";
-            //out << " " << mapPointsId.find(elt_it->point( ordering.fromGmshId( p ) ).id())->second;
-            out << " " << elt_it->point( ordering.fromGmshId( p ) ).id()+1;
+            //DCHECK ( mapPointsId.find(elt.point( ordering.fromGmshId( p ) ).id()) != mapPointsId.end() ) << "invalid point id\n";
+            //std::cout << "index " << p << " -> " << ordering.fromGmshId(p) << " -> " << elt.point( ordering.fromGmshId(p) ).id()+1 << " : " << elt.point( ordering.fromGmshId(p) ).node() << "\n";
+            //out << " " << mapPointsId.find(elt.point( ordering.fromGmshId( p ) ).id())->second;
+            out << " " << elt.point( ordering.fromGmshId( p ) ).id()+1;
         }
 
         out<<"\n";
@@ -940,9 +947,12 @@ ExporterGmsh<MeshType,N>::computeMinMax(step_ptrtype __step, std::map<std::strin
     auto face_en = allmarkedfaces.template get<2>();
     int number_markedfaces= std::distance( face_it, face_en );
 
-    auto elts = elements( mesh );
-    auto elt_it = elts.template get<1>();
-    auto elt_en = elts.template get<2>();
+    // auto elts = elements( mesh );
+    // auto elt_it = elts.template get<1>();
+    // auto elt_en = elts.template get<2>();
+    auto rangeElements = mesh->elementsWithProcessId();
+    auto elt_it = std::get<0>( rangeElements );
+    auto elt_en = std::get<1>( rangeElements );
 
     nodal_scalar_const_iterator __varScal = __step->beginNodalScalar();
     nodal_scalar_const_iterator __varScal_end = __step->endNodalScalar();
@@ -980,9 +990,9 @@ ExporterGmsh<MeshType,N>::computeMinMax(step_ptrtype __step, std::map<std::strin
 
         uint16_type nComponents = __uVec.nComponents;
 
-        element_mesh_const_iterator elt_it;
-        element_mesh_const_iterator elt_en;
-        boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
+        // element_mesh_const_iterator elt_it;
+        // element_mesh_const_iterator elt_en;
+        // boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
         
         // record min-max value for function
         // check if record already exists
@@ -1034,8 +1044,8 @@ ExporterGmsh<MeshType,N>::computeMinMax(step_ptrtype __step, std::map<std::strin
     {
         element_scalar_type const& __u = __ElmScal->second;
 
-        element_mesh_const_iterator elt_it = mesh->beginElement();
-        element_mesh_const_iterator elt_en = mesh->endElement();
+        // element_mesh_const_iterator elt_it = mesh->beginElement();
+        // element_mesh_const_iterator elt_en = mesh->endElement();
 
         if ( !__u.areGlobalValuesUpdated() )
             __u.updateGlobalValues();
@@ -1105,12 +1115,17 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         std::for_each( face_it, face_en, [&pid, &face_pids]( typename MeshType::face_type const& e ){ face_pids[e.id()]=pid++; });
     //}
 
-    auto elts = elements( mesh );
-    auto elt_it = elts.template get<1>();
-    auto elt_en = elts.template get<2>();
+    auto rangeElements = mesh->elementsWithProcessId();
+    auto elt_it = std::get<0>( rangeElements );
+    auto elt_en = std::get<1>( rangeElements );
+
+    // auto elts = elements( mesh );
+    // auto elt_it = elts.template get<1>();
+    // auto elt_en = elts.template get<2>();
     std::map<int,int> elt_pids;
     //if(boption(_name="exporter.gmsh.merge") == true)
     //{
+        // std::for_each( elt_it, elt_en, [&pid,&elt_pids]( typename MeshType::element_type const& e ){ elt_pids[e.id()]=pid++; });
         std::for_each( elt_it, elt_en, [&pid,&elt_pids]( typename MeshType::element_type const& e ){ elt_pids[e.id()]=pid++; });
     //}
 
@@ -1137,9 +1152,12 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         out << "1\n";//n-component (1 is scalar) field
         //out << mesh->numElements() << "\n";//number associated nodal values
 
-        element_mesh_const_iterator elt_it;
-        element_mesh_const_iterator elt_en;
-        boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
+        // element_mesh_const_iterator elt_it;
+        // element_mesh_const_iterator elt_en;
+        // boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
+        // auto rangeElements = mesh->elementsWithProcessId();
+        elt_it = std::get<2>( rangeElements )->begin();
+        // auto elt_en = std::get<1>( rangeElements );
 
         out << std::distance(elt_it, elt_en) << "\n";
 
@@ -1148,20 +1166,21 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
         for ( ; elt_it!=elt_en ; ++elt_it )
         {
+            auto const& elt = boost::unwrap_ref( *elt_it );
             // either use the relinearized version for one file dataset or classic for one file per process
             /*
             if(boption(_name="exporter.gmsh.merge") == true)
             {
             */
-                out << elt_pids[elt_it->id()];
+                out << elt_pids[elt.id()];
                 /*
             }
             else
             {
-                out << indexEltStart + number_markedfaces + elt_it->id()+1;
+                out << indexEltStart + number_markedfaces + elt.id()+1;
             }
             */
-            //nLocGeoPt = elt_it->nPoints();
+            //nLocGeoPt = elt.nPoints();
             //nLocalDof = mesh->numLocalVertices();
             nLocalDof = nodal_scalar_type::functionspace_type::basis_type::nLocalDof;
             out << " " << nLocalDof;
@@ -1169,19 +1188,19 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
             for ( uint16_type l = 0; l < nLocalDof; ++l )
             {
                 uint16_type gmsh_l = ordering.fromGmshId( l );
-                globaldof = boost::get<0>( __u.functionSpace()->dof()->localToGlobal( elt_it->id(), gmsh_l, 0 ) ); //l,c
+                globaldof = boost::get<0>( __u.functionSpace()->dof()->localToGlobal( elt.id(), gmsh_l, 0 ) ); //l,c
 
                 // verify that the dof points and mesh points coincide
 #if !defined(NDEBUG)
 #if 0
-                if ( ublas::norm_2( boost::get<0>( __u.functionSpace()->dof()->dofPoint( globaldof ) )-elt_it->point( ordering.fromGmshId( l ) ).node() ) > 1e-10 )
+                if ( ublas::norm_2( boost::get<0>( __u.functionSpace()->dof()->dofPoint( globaldof ) )-elt.point( ordering.fromGmshId( l ) ).node() ) > 1e-10 )
                 {
                     std::cout << "------------------------------------------------------------\n";
                     std::cout << "invalid dof/mesh points\n";
                     std::cout << "dof global id:" << globaldof << " | local id:" << gmsh_l << "\n";
-                    std::cout << "point global id:" <<  elt_it->point( ordering.fromGmshId( l ) ).id() << " | local id:" << gmsh_l << "\n";
+                    std::cout << "point global id:" <<  elt.point( ordering.fromGmshId( l ) ).id() << " | local id:" << gmsh_l << "\n";
                     std::cout << "node dof:  " << boost::get<0>( __u.functionSpace()->dof()->dofPoint( globaldof ) ) << "\n";
-                    std::cout << "node element:  " << elt_it->point( ordering.fromGmshId( l ) ).node() << "\n";
+                    std::cout << "node element:  " << elt.point( ordering.fromGmshId( l ) ).node() << "\n";
                 }
 #endif
 #endif // NDEBUG
@@ -1215,25 +1234,27 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         out << "3\n";//n-component (3 is vectorial) field
         //out << mesh->numElements() << "\n";//number associated nodal values
 
-        element_mesh_const_iterator elt_it;
-        element_mesh_const_iterator elt_en;
-        boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
-        
+        // element_mesh_const_iterator elt_it;
+        // element_mesh_const_iterator elt_en;
+        // boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
+        elt_it = std::get<2>( rangeElements )->begin();
+
         out << std::distance(elt_it, elt_en) << "\n";//number associated nodal values
 
         for (; elt_it!=elt_en ; ++elt_it )
         {
+            auto const& elt = boost::unwrap_ref( *elt_it );
             // either use the relinearized version for one file dataset or classic for one file per process
             /*
             if(boption(_name="exporter.gmsh.merge") == true)
             {
             */
-                out << elt_pids[elt_it->id()];
+                out << elt_pids[elt.id()];
                 /*
             }
             else
             {
-                out << indexEltStart + number_markedfaces + elt_it->id()+1;
+                out << indexEltStart + number_markedfaces + elt.id()+1;
             }
             */
             //nLocalDof = mesh->numLocalVertices();
@@ -1250,7 +1271,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
                     if ( c < nComponents )
                     {
-                        globaldof = boost::get<0>( __uVec.functionSpace()->dof()->localToGlobal( elt_it->id(),
+                        globaldof = boost::get<0>( __uVec.functionSpace()->dof()->localToGlobal( elt.id(),
                                                    gmsh_l,
                                                    c ) );
                         //out << __uVec( globaldof);
@@ -1290,9 +1311,10 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         out << "1\n";//n-component (1 is scalar) field
         //out << mesh->numElements() << "\n";//number associated nodal values
 
-        element_mesh_const_iterator elt_it;
-        element_mesh_const_iterator elt_en;
-        boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
+        // element_mesh_const_iterator elt_it;
+        // element_mesh_const_iterator elt_en;
+        // boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
+        elt_it = std::get<2>( rangeElements )->begin();
 
         out << std::distance(elt_it, elt_en) << "\n";
 
@@ -1301,18 +1323,20 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
         for ( ; elt_it!=elt_en ; ++elt_it )
         {
-            globaldof = boost::get<0>( __u.functionSpace()->dof()->localToGlobal( elt_it->id(), 0, 0 ) ); //l,c
+            auto const& elt = boost::unwrap_ref( *elt_it );
+
+            globaldof = boost::get<0>( __u.functionSpace()->dof()->localToGlobal( elt.id(), 0, 0 ) ); //l,c
 
             // either use the relinearized version for one file dataset or classic for one file per process
             /*
             if(boption(_name="exporter.gmsh.merge") == true)
             {
             */
-                out << elt_pids[elt_it->id()] << " " << /*__u( globaldof)*/__u.container()( globaldof ) << "\n";
+                out << elt_pids[elt.id()] << " " << /*__u( globaldof)*/__u.container()( globaldof ) << "\n";
             //}
             //else
             //{
-                //out << indexEltStart + number_markedfaces+elt_it->id()+1 << " " << [>__u( globaldof)<]__u.container()( globaldof ) << "\n";
+                //out << indexEltStart + number_markedfaces+elt.id()+1 << " " << [>__u( globaldof)<]__u.container()( globaldof ) << "\n";
             //}
         }
 
@@ -1388,14 +1412,14 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
 
     if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
     {
-        out<<" 3 " << elt.marker().value() << " " << elt.marker2().value() << " " << elt.processId()+1;
+        out<<" 3 " << flag_type( (elt.hasMarker())? elt.marker().value() : 0 ) << " " << flag_type( (elt.hasMarker2())? elt.marker2().value() : 0 ) << " " << elt.processId()+1;
     }
     else if ( FEELPP_GMSH_FORMAT_VERSION== std::string( "2.2" ) )
     {
         uint16_type nbTag = 3 + elt.numberOfPartitions();
         out << " " << nbTag
-            << " " << elt.marker().value()
-            << " " << elt.marker2().value()
+            << " " << flag_type( (elt.hasMarker())? elt.marker().value() : 0 )
+            << " " << flag_type( (elt.hasMarker2())? elt.marker2().value() : 0 )
             << " " << elt.numberOfPartitions()
             << " " << elt.processId()+1;
 

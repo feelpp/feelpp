@@ -84,9 +84,9 @@ template <uint16_type Dim,
          typename POINTTYPE = Geo0D<Dim, T> >
 class GeoND
     :
-public GeoEntity<GEOSHAPE>
+        public GeoEntity<GEOSHAPE,T>
 {
-    typedef GeoEntity<GEOSHAPE> super;
+    typedef GeoEntity<GEOSHAPE,T> super;
 public:
 
     typedef T value_type;
@@ -156,8 +156,8 @@ public:
         // quadrature formula used in entity measure (for ho geo, need to check)
         static const uint16_type quad_order = (nOrder-1)*nDim;
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_hypercube>,
-                                  mpl::identity<typename IMGeneric<quad_order,Dim,Hypercube,Gauss,double>::type >,
-                                  mpl::identity<typename IMGeneric<quad_order,Dim,Simplex,Gauss,double>::type > >::type::type type;
+                                  mpl::identity<typename IMGeneric<quad_order,Dim,Hypercube,Gauss,value_type/*double*/>::type >,
+                                  mpl::identity<typename IMGeneric<quad_order,Dim,Simplex,Gauss,value_type/*double*/>::type > >::type::type type;
     };
     typedef typename GetImMeasure<nOrder>::type quad_meas_type;
     typedef typename GetImMeasure<1>::type quad_meas1_type;
@@ -169,11 +169,7 @@ public:
         :
         super( 0 ),
         M_points( numPoints ),
-        M_G( nRealDim, numPoints ),
         M_neighbors( 0 ),
-        M_marker1(),
-        M_marker2(),
-        M_marker3(),
         M_gm(),
         M_gm1()
     {
@@ -189,11 +185,7 @@ public:
         :
         super( id ),
         M_points( numPoints ),
-        M_G( nRealDim, numPoints ),
         M_neighbors( 0 ),
-        M_marker1(),
-        M_marker2(),
-        M_marker3(),
         M_gm(),
         M_gm1()
     {
@@ -204,12 +196,9 @@ public:
         :
         super( std::move(e) ),
         M_points( std::move( e.M_points ) ),
-        M_G( std::move( e.M_G ) ),
         M_neighbors( std::move( e.M_neighbors ) ),
-        M_marker1( std::move( e.M_marker1 ) ),
-        M_marker2( std::move( e.M_marker2 ) ),
-        M_marker3( std::move( e.M_marker3 ) ),
-        M_mesh( std::move( e.M_mesh ) ),        
+        M_markers( std::move( e.M_markers ) ),
+        M_mesh( std::move( e.M_mesh ) ),
         M_gm( std::move( e.M_gm ) ),
         M_gm1( std::move( e.M_gm1 ) )
         {
@@ -221,11 +210,8 @@ public:
         {
             super::operator=( std::move(e) );
             M_points = std::move( e.M_points );
-            M_G = std::move( e.M_G );
             M_neighbors = std::move( e.M_neighbors );
-            M_marker1 = std::move( e.M_marker1 );
-            M_marker2 = std::move( e.M_marker2 );
-            M_marker3 = std::move( e.M_marker3 );
+            M_markers = std::move( e.M_markers );
             M_mesh = std::move( e.M_mesh );
             M_gm = std::move( e.M_gm );
             M_gm1 = std::move( e.M_gm1 );
@@ -292,7 +278,7 @@ public:
             bool pt_with_marker = false;
             for ( int i = 0; i < numPoints; ++i )
             {
-                pt_with_marker = this->point( i ).marker().isOn();
+                pt_with_marker = this->point( i ).hasMarker();
                 if ( pt_with_marker )
                     break;
             }
@@ -356,7 +342,7 @@ public:
      */
     node_type barycenter() const
     {
-        auto M = glas::average( M_G );
+        auto M = glas::average( this->G() );
         return ublas::column( M, 0 );
     }
 
@@ -366,18 +352,20 @@ public:
     node_type faceBarycenter( uint16_type f ) const
     {
         constexpr int nPtsInFace = GEOSHAPE::topological_face_type::numPoints;
-        em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
 
         node_type n( nRealDim );
-        em_node_type en( n.data().begin(), n.size() );
+        em_node_type<value_type> en( n.data().begin(), n.size() );
         en.setZero();
         for ( uint16_type p =  0;  p < nPtsInFace; ++p )
         {
             // get pt id in element  from local pt id  in face
             int ptid = this->fToP( f, p );
-            en += G.col(ptid);
+            auto const& node = this->point( ptid ).node();
+            em_node_type<value_type> emnode( const_cast<typename point_type::value_type/*double*/*>( node.data().begin() ), node.size() );
+            en += emnode;
         }
-        return en / nPtsInFace;
+        en /= nPtsInFace;
+        return n;
     }
 
     /**
@@ -507,9 +495,14 @@ public:
      *
      * \return the matrix of geometric nodes
      */
-    matrix_node_type const& G() const
+    matrix_node_type G() const
     {
-        return M_G;
+        matrix_node_type G( nRealDim, numPoints );
+        for ( uint16_type i=0;i<numPoints;++i )
+            ublas::column( G, i ) = M_points[i]->node();
+
+        return G;
+
     }
 
     /**
@@ -523,21 +516,13 @@ public:
     //matrix_node_type  vertices() const { return ublas::subrange( M_G, 0, nRealDim, 0, numVertices ); }
     matrix_node_type  vertices() const
     {
-        return ublas::subrange( M_G, 0, nRealDim, 0, numVertices );
+        matrix_node_type G( nRealDim, numVertices );
+            for ( uint16_type i=0;i<numVertices;++i )
+                ublas::column( G, i ) = M_points[i]->node();
+        return G;
+        // return ublas::subrange( M_G, 0, nRealDim, 0, numVertices );
     }
 
-    /**
-     * matrix of geometric nodes
-     * retrieve the matrix of geometric nodes (Dim x NumPoints) the
-     * matrix is column oriented, the column i contains the coordinate
-     * of the i-th geometric node of the element
-     *
-     * \return the matrix of geometric nodes
-     */
-    matrix_node_type & G()
-    {
-        return M_G;
-    }
 
     point_iterator beginPoint()
     {
@@ -562,15 +547,17 @@ public:
      *
      * @return the max length of the edges of the element
      */
-    double h() const
+    value_type h() const
     {
-        em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
-        double res = 0.;
+        matrix_node_type nodesG = this->G();
+        em_matrix_col_type<value_type> G( const_cast<value_type*>(nodesG.data().begin()), nodesG.size1(), nodesG.size2() );
+        value_type res = 0.;
         for ( uint16_type __e = 0; __e < numLocalEdges; ++__e )
         {
             int col1 = this->eToP( __e, 0 );
             int col2 = this->eToP( __e, 1 );
-            double r = (G.col(col1)-G.col(col2)).norm();
+            value_type r = (G.col(col1)-G.col(col2)).norm();
+
             res = ( res > r )?res:r;
         }
         return res;
@@ -579,16 +566,17 @@ public:
      * @brief get the minimum edge length in the element
      * @return the minimum edge length in the element
      */
-    double hMin() const
+    value_type hMin() const
     {
-        em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
+        matrix_node_type nodesG = this->G();
+        em_matrix_col_type<value_type> G( const_cast<value_type*>(nodesG.data().begin()), nodesG.size1(), nodesG.size2() );
 
-        double res = 1e10;
+        value_type res = 1e10;
         for ( uint16_type __e = 0; __e < numLocalEdges; ++__e )
         {
             int col1 = this->eToP( __e, 0 );
             int col2 = this->eToP( __e, 1 );
-            double r = (G.col(col1)-G.col(col2)).norm();
+            value_type r = (G.col(col1)-G.col(col2)).norm();
             res = ( res > r )?r:res;
         }
         return res;
@@ -600,33 +588,37 @@ public:
      *
      * @return the max length of the edges of the local face
      */
-    double hFace( uint16_type f ) const
+    value_type hFace( uint16_type f ) const
     {
         if ( nRealDim==1 )
             return 1;
 
         constexpr int nEdges = GEOSHAPE::topological_face_type::numEdges;
-        em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
+        matrix_node_type nodesG = this->G();
+        em_matrix_col_type<value_type> G( const_cast<value_type*>(nodesG.data().begin()), nodesG.size1(), nodesG.size2() );
 
-        double res = 0.;
+        value_type res = 0.;
         for ( uint16_type e =  0;  e < nEdges; ++e )
         {
             // get edge id in face from local edge id
             int edg = this->f2e( f, (nDim==2)?f:e );
             int col1 = this->eToP( edg, 0 );
             int col2 = this->eToP( edg, 1 );
-            double r = (G.col(col1)-G.col(col2)).norm();
+            value_type r = (G.col(col1)-G.col(col2)).norm();
             res = ( res > r )?res:r;
         }
         return res;
     }
 
-    double hEdge( uint16_type f ) const
+    value_type hEdge( uint16_type f ) const
     {
         int col1 = this->eToP( f, 0 );
         int col2 = this->eToP( f, 1 );
-        em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
-        return (G.col(col1)-G.col(col2)).norm();
+        auto const& node1 = this->point( col1 ).node();
+        em_node_type<value_type> emnode1( const_cast<value_type*>( node1.data().begin() ), node1.size() );
+        auto const& node2 = this->point( col2 ).node();
+        em_node_type<value_type> emnode2( const_cast<value_type*>( node2.data().begin() ), node2.size() );
+        return ( emnode1 - emnode2 ).norm();
     }
 
     struct tt
@@ -640,7 +632,7 @@ public:
     /**
      * \return the measure of the element
      */
-    double measure() const
+    value_type measure() const
     {
         //return M_measure;
         auto itFindMeasure = M_measures.find( GEOND_MEASURES::MEAS_ELEMENT );
@@ -656,7 +648,7 @@ public:
     /**
      * \return the measure of the element face \p f
      */
-    double faceMeasure( uint16_type f ) const
+    value_type faceMeasure( uint16_type f ) const
     {
         //return M_measurefaces[f];
         auto itFindMeasure = M_measures.find( GEOND_MEASURES::MEAS_FACES );
@@ -672,7 +664,7 @@ public:
     /**
      * \return the measure of the element faces
      */
-    std::vector<double> const& faceMeasures() const
+    std::vector<value_type> const& faceMeasures() const
     {
         //return M_measurefaces;
         CHECK( M_measures.find( GEOND_MEASURES::MEAS_FACES ) != M_measures.end() ) << "FACE_MEASURES is not computed";
@@ -791,8 +783,9 @@ public:
 
         for ( int i = 0; i < nRealDim ; ++i )
         {
-            ublas::row( orientation_matrix, i ) = ( ublas::column( this->G(), i+1 ) -
-                                                    ublas::column( this->G(),   0 ) );
+            matrix_node_type nodesG = this->G();
+            ublas::row( orientation_matrix, i ) = ( ublas::column( nodesG, i+1 ) -
+                                                    ublas::column( nodesG,   0 ) );
 
         }
 
@@ -802,18 +795,20 @@ public:
         return ( sgn > 0 ) ? 1 : 0;
     }
 
+    FEELPP_DEPRECATED
     void setPointCoordG( int i, ublas::vector<double> const& u )
     {
-        ublas::column( M_G, i ) = u;
+        // ublas::column( M_G, i ) = u;
     }
     void applyDisplacement( int i, ublas::vector<double> const& u )
     {
-        ublas::column( M_G, i ) += u;
+        // ublas::column( M_G, i ) += u;
         ( *M_points[ i ] ) += u;
     }
+    FEELPP_DEPRECATED
     void applyDisplacementG( int i, ublas::vector<double> const& u )
     {
-        ublas::column( M_G, i ) += u;
+        // ublas::column( M_G, i ) += u;
     }
     /**
      * set the tags associated to the points
@@ -823,10 +818,9 @@ public:
      */
     void setTags( std::vector<int> const& tags )
     {
-        M_marker1.assign( tags[0] );
-
+        M_markers[1].assign( tags[0] );
         if ( tags.size() > 1 )
-            M_marker2.assign( tags[1] );
+            M_markers[2].assign( tags[1] );
 
         if ( tags.size() > 2 )
         {
@@ -847,43 +841,92 @@ public:
 
         }
     }
+
+
+    std::map<uint16_type,Marker1> const&
+    markers() const
+    {
+        return M_markers;
+    }
+    void setMarkers( std::map<uint16_type,Marker1> const& markers )
+    {
+        M_markers = markers;
+    }
+    bool hasMarker( uint16_type k ) const
+    {
+        auto itFindMarker = M_markers.find( k );
+        if ( itFindMarker == M_markers.end() )
+            return false;
+        if ( itFindMarker->second.isOff() )
+            return false;
+        return true;
+    }
+    Marker1 const& marker( uint16_type k ) const
+    {
+        DCHECK( this->hasMarker( k ) ) << "no marker type " << k;
+        return M_markers.find( k )->second;
+    }
+    Marker1& marker( uint16_type k )
+    {
+        return M_markers[k];
+    }
+    void setMarker( uint16_type k, flag_type v )
+    {
+        M_markers[k].assign( v );
+    }
+
+    bool hasMarker() const
+    {
+        return this->hasMarker( 1 );
+    }
     Marker1 const& marker() const
     {
-        return M_marker1;
+        DCHECK( this->hasMarker( 1 ) ) << "no marker type 1";
+        return M_markers.find( 1 )->second;
     }
     Marker1& marker()
     {
-        return M_marker1;
+        return M_markers[1];
     }
     void setMarker( flag_type v )
     {
-        return M_marker1.assign( v );
+        M_markers[1].assign( v );
     }
 
-    Marker2 const& marker2() const
+    bool hasMarker2() const
     {
-        return M_marker2;
+        return this->hasMarker( 2 );
     }
-    Marker2& marker2()
+    Marker1 const& marker2() const
     {
-        return M_marker2;
+        DCHECK( this->hasMarker( 2 ) ) << "no marker type 2";
+        return M_markers.find( 2 )->second;
+    }
+    Marker1& marker2()
+    {
+        return M_markers[2];
     }
     void setMarker2( flag_type v )
     {
-        return M_marker2.assign( v );
+        M_markers[2].assign( v );
     }
 
-    Marker3 const& marker3() const
+    bool hasMarker3() const
     {
-        return M_marker3;
+        return this->hasMarker( 3 );
     }
-    Marker3& marker3()
+    Marker1 const& marker3() const
     {
-        return M_marker3;
+        DCHECK( this->hasMarker( 3 ) ) << "no marker type 3";
+        return M_markers.find( 3 )->second;
+    }
+    Marker1& marker3()
+    {
+        return M_markers[3];
     }
     void setMarker3( flag_type v )
     {
-        return M_marker3.assign( v );
+        M_markers[3].assign( v );
     }
 
     //! \return the number of point element neighbors
@@ -971,27 +1014,17 @@ private:
             ar & boost::serialization::base_object<super>( *this );
             DVLOG(2) << "  - points...\n";
             ar & M_points;
-            DVLOG(2) << "  - G...\n";
-            ar & M_G;
+            // DVLOG(2) << "  - G...\n";
+            // ar & M_G;
             DVLOG(2) << "  - measures...\n";
             ar & M_measures;
-            DVLOG(2) << "  - marker1...\n";
-            ar & M_marker1;
-            DVLOG(2) << "  - marker1: " << M_marker1.value() << "...\n";
-            DVLOG(2) << "  - marker2...\n";
-            ar & M_marker2;
-            DVLOG(2) << "  - marker2: " << M_marker2.value() << "...\n";
-            DVLOG(2) << "  - marker3...\n";
-            ar & M_marker3;
-            DVLOG(2) << "  - marker3: " << M_marker3.value() << "...\n";
+            DVLOG(2) << "  - markers...\n";
+            ar & M_markers;
         }
 
 private:
     /** geometric nodes of the element */
     std::vector<point_type*> M_points;
-
-    /**< matrix of the geometric nodes */
-    matrix_node_type M_G;
 
     enum GEOND_MEASURES
     {
@@ -1002,18 +1035,13 @@ private:
 
     mutable std::map<GEOND_MEASURES,std::vector<value_type> > M_measures;
 
-    //double M_measure;
-    //std::vector<double> M_measurefaces;
-
     //! store neighbor element id
     std::vector<std::pair<size_type,rank_type> > M_neighbors;
 
     //! measure of the set of point element neighbors
     //value_type M_meas_pneighbors;
 
-    Marker1 M_marker1;
-    Marker2 M_marker2;
-    Marker3 M_marker3;
+    std::map<uint16_type,Marker1> M_markers;
 
     // mesh to which the geond element belongs to
     mutable MeshBase const* M_mesh;
@@ -1035,9 +1063,9 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPoint( uint16_type const i, point_type con
     M_points[ i ] = const_cast<point_type *>( &p );
     //VLOG(1) << "[setPoint] üpdate point index " << i << " with "<< M_points[i]->id() << "\n";
     FEELPP_ASSERT( const_cast<point_type *>( &p ) != 0 ).error( "invalid Geo0D<>" );
-    DCHECK( M_G.size1() == M_points[i]->node().size()) << "Invalid dimension " << M_G.size1() << "  vs "  << M_points[i]->node().size()
-                                                       << " n=" << M_points[i]->node();
-    ublas::column( M_G, i ) = M_points[i]->node();
+    // DCHECK( M_G.size1() == M_points[i]->node().size()) << "Invalid dimension " << M_G.size1() << "  vs "  << M_points[i]->node().size()
+    //                                                    << " n=" << M_points[i]->node();
+    // ublas::column( M_G, i ) = M_points[i]->node();
 }
 
 
@@ -1050,7 +1078,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::showMe( bool verbose, std::ostream & out ) co
     out << " Number of Vertices = " << numVertices << std::endl;
     out << "   Number of Points = " << numPoints << std::endl;
     out << "                 id = " << this->id() << std::endl;
-    out << "                  G = " << M_G << "\n";
+    out << "                  G = " << this->G()/*M_G*/ << "\n";
 
     for ( int i = 0; i < numVertices; i++ )
     {
@@ -1070,7 +1098,7 @@ void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::swapPoints( const uint16_type & pt1, con
     M_points[ pt2 ] = tmp;
 
     // swap also the entries in G
-    ublas::column( M_G, pt1 ).swap( ublas::column( M_G, pt2 ) );
+    // ublas::column( M_G, pt1 ).swap( ublas::column( M_G, pt2 ) );
 }
 
 
@@ -1087,7 +1115,7 @@ void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::exchangePoints( const uint16_type otn[ n
     for ( unsigned int i = 0; i < numPoints; ++i )
     {
         M_points[ i ] = tmp[ otn[ i ] ];
-        ublas::column( M_G, i ) = M_points[i]->node();
+        // ublas::column( M_G, i ) = M_points[i]->node();
     }
 }
 
@@ -1164,7 +1192,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureImpl( boost::shared_ptr<GmType> 
     }
 
     auto ctx = gm->template context<vm::JACOBIAN>( *this, pc );
-    double meas = 0.;
+    value_type meas = 0.;
     for ( int q=0 ; q < thequad.nPoints() ; ++q )
         meas += thequad.weight(q)*ctx->J( q );
     M_measures[GEOND_MEASURES::MEAS_ELEMENT][0] = meas;
@@ -1181,7 +1209,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureImpl( QuadType const& thequad,
         M_measures[GEOND_MEASURES::MEAS_ELEMENT].resize( 1 );
     }
 
-    double meas = 0.;
+    value_type meas = 0.;
     for ( int q=0 ; q < thequad.nPoints() ; ++q )
         meas += thequad.weight(q)*ctx->J( q );
     M_measures[GEOND_MEASURES::MEAS_ELEMENT][0] = meas;
@@ -1206,7 +1234,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( boost::shared_ptr<GmTy
     for ( int f = 0; f < numTopologicalFaces; ++f )
     {
         ctx->update( *this, f );
-        double meas = 0.;
+        value_type meas = 0.;
         for ( int q=0 ; q < thequad.nPointsOnFace( f ) ; ++q )
             meas += thequad.weight(f,q)*ctx->J( q )*ctx->normalNorm( q );
         M_measures[GEOND_MEASURES::MEAS_FACES][f] = meas;
@@ -1230,7 +1258,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( QuadType const& thequa
     for ( int f = 0; f < numTopologicalFaces; ++f )
     {
         ctx->update( dynamic_cast<typename CtxType::element_type const&>(*this), f );
-        double meas = 0.;
+        value_type meas = 0.;
         for ( int q=0 ; q < thequad.nPointsOnFace( f ) ; ++q )
             meas += thequad.weight(f,q)*ctx->J( q )*ctx->normalNorm( q );
         M_measures[GEOND_MEASURES::MEAS_FACES][f] = meas;

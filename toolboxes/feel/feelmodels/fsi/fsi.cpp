@@ -386,13 +386,13 @@ FSI<FluidType,SolidType>::init()
         //----------------------------------------------------------------------------------//
         // get dofs on markedfaces fsi
         std::set<size_type> dofMarkerFsi;
-        for ( auto const& faceMarked : markedfaces(M_solidModel->mesh(),M_solidModel->markerNameFSI() ) )
+        for ( auto const& faceWrap : markedfaces(M_solidModel->mesh(),M_solidModel->markerNameFSI() ) )
         {
-            auto __face_it = faceMarked.template get<1>();
-            auto __face_en = faceMarked.template get<2>();
-            for( ; __face_it != __face_en; ++__face_it )
-            {
-                auto const& face = *__face_it;
+            //auto __face_it = faceMarked.template get<1>();
+            //auto __face_en = faceMarked.template get<2>();
+            //for( ; __face_it != __face_en; ++__face_it )
+            //{
+                auto const& face = boost::unwrap_ref( faceWrap );//*__face_it );
                 for ( uint16_type l = 0; l < M_solidModel->functionSpaceDisplacement()->dof()->nLocalDofOnFace(true); ++l )
                 {
                     for (uint16_type c1=0;c1<solid_type::nDim;c1++)
@@ -401,7 +401,7 @@ FSI<FluidType,SolidType>::init()
                         dofMarkerFsi.insert( gdof );
                     }
                 }
-            }
+                //}
         }
 #if 0 // bug
         std::set<size_type> dofMarkerFsiTest;

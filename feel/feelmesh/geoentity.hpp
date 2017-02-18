@@ -43,12 +43,12 @@ namespace Feel
    @author Christophe Prud'homme
    @see
 */
-template<typename Entity>
+template<typename Entity, typename T = double>
 class GeoEntity
     :
-    boost::equality_comparable<GeoEntity<Entity> >,
-    boost::less_than_comparable<GeoEntity<Entity> >,
-    boost::less_than_comparable<GeoEntity<Entity>, size_type>,
+    boost::equality_comparable<GeoEntity<Entity,T> >,
+    boost::less_than_comparable<GeoEntity<Entity,T> >,
+    boost::less_than_comparable<GeoEntity<Entity,T>, size_type>,
     public Entity
 {
 public:
@@ -59,8 +59,9 @@ public:
     //@{
 
     typedef Entity super;
-    typedef GeoEntity<Entity> GeoShape;
-    typedef GeoEntity<Entity> self_type;
+    typedef GeoEntity<Entity,T> GeoShape;
+    typedef GeoEntity<Entity,T> self_type;
+    typedef T value_type;
     typedef typename super::topological_face_type face_type;
     typedef face_type GeoBShape;
     typedef typename Entity::edge_permutation_type edge_permutation_type;
@@ -95,13 +96,13 @@ public:
     /**
      * helper class to construct the associated reference convex.
      */
-    template<typename T = double>
+    template<typename TT = double>
     struct reference_convex
     {
-        typedef Reference<Entity, nDim, nOrder, nRealDim, T> type;
+        typedef Reference<Entity, nDim, nOrder, nRealDim, TT> type;
     };
-    template<typename T = double>
-    using reference_convex_type =  Reference<Entity, nDim, nOrder, nRealDim, T>;
+    template<typename TT = double>
+    using reference_convex_type =  Reference<Entity, nDim, nOrder, nRealDim, TT>;
 
     //@}
 
@@ -605,7 +606,7 @@ public:
     /**
      * \return the measure of the entity
      */
-    virtual double measure() const = 0;
+    virtual value_type measure() const = 0;
 
     //@}
 

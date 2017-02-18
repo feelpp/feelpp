@@ -121,20 +121,20 @@ public :
                 if ( M_meshGeoContext )
                 {
                     // std::cout << "geospace ContextGeo with minimal mesh\n";
-                    if ( !M_meshGeoContext->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) )
+                    if ( !M_meshGeoContext->hasElement( meshEltCtx.id()/*,meshEltCtx.processId()*/ ) )
                     {
                         meshEltCtx.setMeshAndGm( M_meshGeoContext.get(), M_meshGeoContext->gm(), M_meshGeoContext->gm1() );
                         M_meshGeoContext->addElement( meshEltCtx, false );
                     }
-                    auto const& meshEltCtxRegister = M_meshGeoContext->element( meshEltCtx.id(), meshEltCtx.processId() );
+                    auto const& meshEltCtxRegister = M_meshGeoContext->element( meshEltCtx.id()/*,meshEltCtx.processId()*/ );
                     M_gmc.reset( new gmc_type( M_meshGeoContext->gm(),meshEltCtxRegister ) );
                     ar & boost::serialization::make_nvp( "gmContext", *M_gmc );
                 }
                 else if ( M_Xh && M_Xh->mesh() )
                 {
                     // std::cout << "geospace ContextGeo with full mesh\n";
-                    CHECK ( M_Xh->mesh()->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) ) << "fails because mesh doesnt have the element reloaded for gmc";
-                    auto const& meshEltCtxRegister = M_Xh->mesh()->element( meshEltCtx.id(), meshEltCtx.processId() );
+                    CHECK ( M_Xh->mesh()->hasElement( meshEltCtx.id()/*, meshEltCtx.processId()*/ ) ) << "fails because mesh doesnt have the element reloaded for gmc";
+                    auto const& meshEltCtxRegister = M_Xh->mesh()->element( meshEltCtx.id()/*, meshEltCtx.processId()*/ );
                     M_gmc.reset( new gmc_type( M_Xh->mesh()->gm(),meshEltCtxRegister ) );
                     ar & boost::serialization::make_nvp( "gmContext", *M_gmc );
 
