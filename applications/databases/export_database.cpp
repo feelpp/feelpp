@@ -48,8 +48,9 @@ int main(int argc, char**argv )
 
     for ( int i=0;i<timeSet.size();++i )
     {
+        double time = timeSet[i];
         if ( myDb.worldComm().isMasterRank() )
-            std::cout << "reload db at time " << timeSet[i] << "\n";
+            std::cout << "reload db at time " << time << "\n";
         for (auto const& fieldsInfo : fieldsInfo )
         {
             std::string fieldName = fieldsInfo.first;
@@ -57,16 +58,16 @@ int main(int argc, char**argv )
             if ( nComp == 1 )
             {
                 myDb.load( i,fieldName,uScal );
-                e->step(i)->add( fieldName, uScal );
+                e->step(time)->add( fieldName, uScal );
             }
             else if ( nComp == mesh->nRealDim )
             {
                 myDb.load( i,fieldName,uVec );
-                e->step(i)->add( fieldName, uVec );
+                e->step(time)->add( fieldName, uVec );
             }
         }
         if ( addPartitioning )
-            e->step(i)->addRegions();
+            e->step(time)->addRegions();
         e->save();
     }
 
