@@ -59,17 +59,9 @@ public :
     typedef typename solid_type::mesh_type mesh_solid_type;
     typedef typename solid_type::mesh_1dreduced_type mesh_solid_1dreduced_type;
 
-    typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
-                         typename MeshTraits<mesh_fluid_type>::marker_face_const_iterator,
-                         typename MeshTraits<mesh_fluid_type>::marker_face_const_iterator> range_fluid_face_type;
-
-    typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
-                         typename MeshTraits<mesh_solid_type>::marker_face_const_iterator,
-                         typename MeshTraits<mesh_solid_type>::marker_face_const_iterator> range_solid_face_type;
-
-    typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
-                         typename MeshTraits<mesh_solid_1dreduced_type>::element_const_iterator,
-                         typename MeshTraits<mesh_solid_1dreduced_type>::element_const_iterator> range_solid_elt_1dreduced_type;
+    typedef faces_reference_wrapper_t<mesh_fluid_type> range_fluid_face_type;
+    typedef faces_reference_wrapper_t<mesh_solid_type> range_solid_face_type;
+    typedef elements_reference_wrapper_t<mesh_solid_1dreduced_type> range_solid_elt_1dreduced_type;
 
 
     //-----------------------------------------------------------------------------------//
