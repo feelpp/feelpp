@@ -284,7 +284,7 @@ public :
             auto space = u.functionSpace();
 
             if ( M_fieldInfoInDb.find( nameUsed ) == M_fieldInfoInDb.end() )
-                M_fieldInfoInDb[nameUsed] = std::make_tuple( space->basisName(),space->basisOrder()[0],ElementType::nComponents  );
+                M_fieldInfoInDb[nameUsed] = FeelppDatabaseFieldInfo( space->basisName(),space->basisOrder()[0],ElementType::nComponents  );
 
             int timeIndexInDatabase = -1;//M_timeSet.size();
             for ( int k=0;k<M_timeSet.size(); ++ k )
