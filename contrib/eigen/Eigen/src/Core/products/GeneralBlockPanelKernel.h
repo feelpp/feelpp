@@ -299,16 +299,6 @@ void computeProductBlockingSizes(Index& k, Index& m, Index& n, Index num_threads
   if (!useSpecificBlockingSizes(k, m, n)) {
     evaluateProductBlockingSizesHeuristic<LhsScalar, RhsScalar, KcFactor, Index>(k, m, n, num_threads);
   }
-
-  typedef gebp_traits<LhsScalar,RhsScalar> Traits;
-  enum {
-    kr = 8,
-    mr = Traits::mr,
-    nr = Traits::nr
-  };
-  if (k > kr) k -= k % kr;
-  if (m > mr) m -= m % mr;
-  if (n > nr) n -= n % nr;
 }
 
 template<typename LhsScalar, typename RhsScalar, typename Index>
@@ -363,7 +353,7 @@ class gebp_traits
 public:
   typedef _LhsScalar LhsScalar;
   typedef _RhsScalar RhsScalar;
-  typedef typename scalar_product_traits<LhsScalar, RhsScalar>::ReturnType ResScalar;
+  typedef typename ScalarBinaryOpTraits<LhsScalar, RhsScalar>::ReturnType ResScalar;
 
   enum {
     ConjLhs = _ConjLhs,
@@ -444,15 +434,16 @@ public:
   template<typename LhsPacketType, typename RhsPacketType, typename AccPacketType>
   EIGEN_STRONG_INLINE void madd(const LhsPacketType& a, const RhsPacketType& b, AccPacketType& c, AccPacketType& tmp) const
   {
+    conj_helper<LhsPacketType,RhsPacketType,ConjLhs,ConjRhs> cj;
     // It would be a lot cleaner to call pmadd all the time. Unfortunately if we
     // let gcc allocate the register in which to store the result of the pmul
     // (in the case where there is no FMA) gcc fails to figure out how to avoid
     // spilling register.
 #ifdef EIGEN_HAS_SINGLE_INSTRUCTION_MADD
     EIGEN_UNUSED_VARIABLE(tmp);
-    c = pmadd(a,b,c);
+    c = cj.pmadd(a,b,c);
 #else
-    tmp = b; tmp = pmul(a,tmp); c = padd(c,tmp);
+    tmp = b; tmp = cj.pmul(a,tmp); c = padd(c,tmp);
 #endif
   }
 
@@ -467,9 +458,6 @@ public:
     r = pmadd(c,alpha,r);
   }
 
-protected:
-//   conj_helper<LhsScalar,RhsScalar,ConjLhs,ConjRhs> cj;
-//   conj_helper<LhsPacket,RhsPacket,ConjLhs,ConjRhs> pcj;
 };
 
 template<typename RealScalar, bool _ConjLhs>
@@ -478,7 +466,7 @@ class gebp_traits<std::complex<RealScalar>, RealScalar, _ConjLhs, false>
 public:
   typedef std::complex<RealScalar> LhsScalar;
   typedef RealScalar RhsScalar;
-  typedef typename scalar_product_traits<LhsScalar, RhsScalar>::ReturnType ResScalar;
+  typedef typename ScalarBinaryOpTraits<LhsScalar, RhsScalar>::ReturnType ResScalar;
 
   enum {
     ConjLhs = _ConjLhs,
@@ -592,7 +580,7 @@ DoublePacket<Packet> padd(const DoublePacket<Packet> &a, const DoublePacket<Pack
 }
 
 template<typename Packet>
-const DoublePacket<Packet>& predux4(const DoublePacket<Packet> &a)
+const DoublePacket<Packet>& predux_downto4(const DoublePacket<Packet> &a)
 {
   return a;
 }
@@ -984,7 +972,7 @@ void gebp_kernel<LhsScalar,RhsScalar,Index,DataMapper,mr,nr,ConjugateLhs,Conjuga
               EIGEN_ASM_COMMENT("begin step of gebp micro kernel 3pX4"); \
               EIGEN_ASM_COMMENT("Note: these asm comments work around bug 935!"); \
               internal::prefetch(blA+(3*K+16)*LhsProgress); \
-              if (EIGEN_ARCH_ARM) internal::prefetch(blB+(4*K+16)*RhsProgress); /* Bug 953 */ \
+              if (EIGEN_ARCH_ARM) { internal::prefetch(blB+(4*K+16)*RhsProgress); } /* Bug 953 */ \
               traits.loadLhs(&blA[(0+3*K)*LhsProgress], A0);  \
               traits.loadLhs(&blA[(1+3*K)*LhsProgress], A1);  \
               traits.loadLhs(&blA[(2+3*K)*LhsProgress], A2);  \
@@ -1536,12 +1524,12 @@ void gebp_kernel<LhsScalar,RhsScalar,Index,DataMapper,mr,nr,ConjugateLhs,Conjuga
           const RhsScalar* blB = &blockB[j2*strideB+offsetB*nr];
 
           // The following piece of code wont work for 512 bit registers
-          // Moreover it assumes that there is a half packet of the same size
+          // Moreover, if LhsProgress==8 it assumes that there is a half packet of the same size
           // as nr (which is currently 4) for the return type.
           typedef typename unpacket_traits<SResPacket>::half SResPacketHalf;
           if ((SwappedTraits::LhsProgress % 4) == 0 &&
               (SwappedTraits::LhsProgress <= 8) &&
-              unpacket_traits<SResPacketHalf>::size==4)
+              (SwappedTraits::LhsProgress!=8 || unpacket_traits<SResPacketHalf>::size==nr))
           {
             SAccPacket C0, C1, C2, C3;
             straits.initAcc(C0);
@@ -1593,10 +1581,10 @@ void gebp_kernel<LhsScalar,RhsScalar,Index,DataMapper,mr,nr,ConjugateLhs,Conjuga
             if(SwappedTraits::LhsProgress==8)
             {
               // Special case where we have to first reduce the accumulation register C0
-              typedef typename conditional<SwappedTraits::LhsProgress==8,typename unpacket_traits<SResPacket>::half,SResPacket>::type SResPacketHalf;
-              typedef typename conditional<SwappedTraits::LhsProgress==8,typename unpacket_traits<SLhsPacket>::half,SLhsPacket>::type SLhsPacketHalf;
-              typedef typename conditional<SwappedTraits::LhsProgress==8,typename unpacket_traits<SLhsPacket>::half,SRhsPacket>::type SRhsPacketHalf;
-              typedef typename conditional<SwappedTraits::LhsProgress==8,typename unpacket_traits<SAccPacket>::half,SAccPacket>::type SAccPacketHalf;
+              typedef typename conditional<SwappedTraits::LhsProgress>=8,typename unpacket_traits<SResPacket>::half,SResPacket>::type SResPacketHalf;
+              typedef typename conditional<SwappedTraits::LhsProgress>=8,typename unpacket_traits<SLhsPacket>::half,SLhsPacket>::type SLhsPacketHalf;
+              typedef typename conditional<SwappedTraits::LhsProgress>=8,typename unpacket_traits<SLhsPacket>::half,SRhsPacket>::type SRhsPacketHalf;
+              typedef typename conditional<SwappedTraits::LhsProgress>=8,typename unpacket_traits<SAccPacket>::half,SAccPacket>::type SAccPacketHalf;
 
               SResPacketHalf R = res.template gatherPacket<SResPacketHalf>(i, j2);
               SResPacketHalf alphav = pset1<SResPacketHalf>(alpha);
@@ -1608,13 +1596,13 @@ void gebp_kernel<LhsScalar,RhsScalar,Index,DataMapper,mr,nr,ConjugateLhs,Conjuga
                 SRhsPacketHalf b0;
                 straits.loadLhsUnaligned(blB, a0);
                 straits.loadRhs(blA, b0);
-                SAccPacketHalf c0 = predux4(C0);
+                SAccPacketHalf c0 = predux_downto4(C0);
                 straits.madd(a0,b0,c0,b0);
                 straits.acc(c0, alphav, R);
               }
               else
               {
-                straits.acc(predux4(C0), alphav, R);
+                straits.acc(predux_downto4(C0), alphav, R);
               }
               res.scatterPacket(i, j2, R);
             }

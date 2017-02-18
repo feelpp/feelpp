@@ -83,9 +83,9 @@ BOOST_AUTO_TEST_CASE( test_0 )
         int color = world.rank() % Npcomm;
 
         // create map which color the world
-        std::vector<int> mapColorWorld( Np );
-        for (rank_type p = 0 ; p < Np; ++p)
-            mapColorWorld[p] = p % Npcomm;
+        std::vector<int> mapColorWorld;
+        for( int rank : irange( 0, world.size() ) )
+            mapColorWorld.push_back( rank % Npcomm );
         // build a global world comm colored
         // this worldcomm can have a global mpi comm (on world) : worldColored.globalComm()
         // this worldcomm can have a local mpi comm (mpi group with color) : worldColored.localComm()
@@ -165,12 +165,14 @@ BOOST_AUTO_TEST_CASE( test_0 )
         e->add((boost::format("u_%1%")%color).str(),u);
         e->save();
 
-        auto strcase = soption( _name="exporter.format" ) + "/" + e->getPrefix() + "/" + (boost::format("laplacian_%1%.case") % color).str();
-        auto caseFileExist = !(Environment::findFile( strcase )).empty();
+        auto strcase = fs::path(Environment::exportsRepository()) / fs::path( soption( _name="exporter.format" ) ) / fs::path( e->getPrefix() ) / fs::path( (boost::format("laplacian_%1%.case") % color).str() );
+        BOOST_MESSAGE( "Find file on color: "<< color << " strcase: " << strcase << "\n" );
+        auto caseFileExist = !(Environment::findFile( strcase.string() )).empty();
 
         // Check if each communicator has created its ensight .case file.
         if( w.localRank() == 0 )
             BOOST_CHECK( caseFileExist );
+        worldColored.globalComm().barrier();
 
     }
 }

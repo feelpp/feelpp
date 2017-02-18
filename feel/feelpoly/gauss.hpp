@@ -29,6 +29,7 @@
 #ifndef __Gauss_H
 #define __Gauss_H 1
 
+#include <feel/feelpoly/expansions.hpp>
 #include <feel/feelpoly/quadpoint.hpp>
 
 namespace Feel

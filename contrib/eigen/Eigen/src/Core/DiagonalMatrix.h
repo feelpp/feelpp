@@ -71,18 +71,17 @@ class DiagonalBase : public EigenBase<Derived>
       return InverseReturnType(diagonal().cwiseInverse());
     }
     
-    typedef DiagonalWrapper<const CwiseUnaryOp<internal::scalar_multiple_op<Scalar>, const DiagonalVectorType> > ScalarMultipleReturnType;
     EIGEN_DEVICE_FUNC
-    inline const ScalarMultipleReturnType
+    inline const DiagonalWrapper<const EIGEN_EXPR_BINARYOP_SCALAR_RETURN_TYPE(DiagonalVectorType,Scalar,product) >
     operator*(const Scalar& scalar) const
     {
-      return ScalarMultipleReturnType(diagonal() * scalar);
+      return DiagonalWrapper<const EIGEN_EXPR_BINARYOP_SCALAR_RETURN_TYPE(DiagonalVectorType,Scalar,product) >(diagonal() * scalar);
     }
     EIGEN_DEVICE_FUNC
-    friend inline const ScalarMultipleReturnType
+    friend inline const DiagonalWrapper<const EIGEN_SCALAR_BINARYOP_EXPR_RETURN_TYPE(Scalar,DiagonalVectorType,product) >
     operator*(const Scalar& scalar, const DiagonalBase& other)
     {
-      return ScalarMultipleReturnType(other.diagonal() * scalar);
+      return DiagonalWrapper<const EIGEN_SCALAR_BINARYOP_EXPR_RETURN_TYPE(Scalar,DiagonalVectorType,product) >(scalar * other.diagonal());
     }
 };
 
@@ -291,12 +290,11 @@ MatrixBase<Derived>::asDiagonal() const
 template<typename Derived>
 bool MatrixBase<Derived>::isDiagonal(const RealScalar& prec) const
 {
-  using std::abs;
   if(cols() != rows()) return false;
   RealScalar maxAbsOnDiagonal = static_cast<RealScalar>(-1);
   for(Index j = 0; j < cols(); ++j)
   {
-    RealScalar absOnDiagonal = abs(coeff(j,j));
+    RealScalar absOnDiagonal = numext::abs(coeff(j,j));
     if(absOnDiagonal > maxAbsOnDiagonal) maxAbsOnDiagonal = absOnDiagonal;
   }
   for(Index j = 0; j < cols(); ++j)
@@ -317,19 +315,24 @@ struct Diagonal2Dense {};
 template<> struct AssignmentKind<DenseShape,DiagonalShape> { typedef Diagonal2Dense Kind; };
 
 // Diagonal matrix to Dense assignment
-template< typename DstXprType, typename SrcXprType, typename Functor, typename Scalar>
-struct Assignment<DstXprType, SrcXprType, Functor, Diagonal2Dense, Scalar>
+template< typename DstXprType, typename SrcXprType, typename Functor>
+struct Assignment<DstXprType, SrcXprType, Functor, Diagonal2Dense>
 {
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar> &/*func*/)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &/*func*/)
   {
+    Index dstRows = src.rows();
+    Index dstCols = src.cols();
+    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
+      dst.resize(dstRows, dstCols);
+    
     dst.setZero();
     dst.diagonal() = src.diagonal();
   }
   
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::add_assign_op<typename DstXprType::Scalar> &/*func*/)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::add_assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &/*func*/)
   { dst.diagonal() += src.diagonal(); }
   
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::sub_assign_op<typename DstXprType::Scalar> &/*func*/)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::sub_assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &/*func*/)
   { dst.diagonal() -= src.diagonal(); }
 };
 

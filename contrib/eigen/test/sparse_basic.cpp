@@ -25,6 +25,7 @@ template<typename SparseMatrixType> void sparse_basic(const SparseMatrixType& re
   //const Index outer = ref.outerSize();
 
   typedef typename SparseMatrixType::Scalar Scalar;
+  typedef typename SparseMatrixType::RealScalar RealScalar;
   enum { Flags = SparseMatrixType::Flags };
 
   double density = (std::max)(8./(rows*cols), 0.01);
@@ -193,6 +194,17 @@ template<typename SparseMatrixType> void sparse_basic(const SparseMatrixType& re
     VERIFY_IS_APPROX(m3 + refM4, refM3 + refM4);
     VERIFY_IS_APPROX(refM4 - m3, refM4 - refM3);
     VERIFY_IS_APPROX(m3 - refM4, refM3 - refM4);
+    VERIFY_IS_APPROX((RealScalar(0.5)*refM4 + RealScalar(0.5)*m3).eval(), RealScalar(0.5)*refM4 + RealScalar(0.5)*refM3);
+    VERIFY_IS_APPROX((RealScalar(0.5)*refM4 + m3*RealScalar(0.5)).eval(), RealScalar(0.5)*refM4 + RealScalar(0.5)*refM3);
+    VERIFY_IS_APPROX((RealScalar(0.5)*refM4 + m3.cwiseProduct(m3)).eval(), RealScalar(0.5)*refM4 + refM3.cwiseProduct(refM3));
+
+    VERIFY_IS_APPROX((RealScalar(0.5)*refM4 + RealScalar(0.5)*m3).eval(), RealScalar(0.5)*refM4 + RealScalar(0.5)*refM3);
+    VERIFY_IS_APPROX((RealScalar(0.5)*refM4 + m3*RealScalar(0.5)).eval(), RealScalar(0.5)*refM4 + RealScalar(0.5)*refM3);
+    VERIFY_IS_APPROX((RealScalar(0.5)*refM4 + (m3+m3)).eval(), RealScalar(0.5)*refM4 + (refM3+refM3));
+    VERIFY_IS_APPROX(((refM3+m3)+RealScalar(0.5)*m3).eval(), RealScalar(0.5)*refM3 + (refM3+refM3));
+    VERIFY_IS_APPROX((RealScalar(0.5)*refM4 + (refM3+m3)).eval(), RealScalar(0.5)*refM4 + (refM3+refM3));
+    VERIFY_IS_APPROX((RealScalar(0.5)*refM4 + (m3+refM3)).eval(), RealScalar(0.5)*refM4 + (refM3+refM3));
+
 
     VERIFY_IS_APPROX(m1.sum(), refM1.sum());
 
@@ -207,6 +219,61 @@ template<typename SparseMatrixType> void sparse_basic(const SparseMatrixType& re
     VERIFY_IS_APPROX((m1 = m1.transpose()), (refM1 = refM1.transpose().eval()));
     VERIFY_IS_APPROX((m1 = -m1.transpose()), (refM1 = -refM1.transpose().eval()));
     VERIFY_IS_APPROX((m1 += -m1), (refM1 += -refM1));
+
+    if(m1.isCompressed())
+    {
+      VERIFY_IS_APPROX(m1.coeffs().sum(), m1.sum());
+      m1.coeffs() += s1;
+      for(Index j = 0; j<m1.outerSize(); ++j)
+        for(typename SparseMatrixType::InnerIterator it(m1,j); it; ++it)
+          refM1(it.row(), it.col()) += s1;
+      VERIFY_IS_APPROX(m1, refM1);
+    }
+
+    // and/or
+    {
+      typedef SparseMatrix<bool, SparseMatrixType::Options, typename SparseMatrixType::StorageIndex> SpBool;
+      SpBool mb1 = m1.real().template cast<bool>();
+      SpBool mb2 = m2.real().template cast<bool>();
+      VERIFY_IS_EQUAL(mb1.template cast<int>().sum(), refM1.real().template cast<bool>().count());
+      VERIFY_IS_EQUAL((mb1 && mb2).template cast<int>().sum(), (refM1.real().template cast<bool>() && refM2.real().template cast<bool>()).count());
+      VERIFY_IS_EQUAL((mb1 || mb2).template cast<int>().sum(), (refM1.real().template cast<bool>() || refM2.real().template cast<bool>()).count());
+      SpBool mb3 = mb1 && mb2;
+      if(mb1.coeffs().all() && mb2.coeffs().all())
+      {
+        VERIFY_IS_EQUAL(mb3.nonZeros(), (refM1.real().template cast<bool>() && refM2.real().template cast<bool>()).count());
+      }
+    }
+  }
+
+  // test reverse iterators
+  {
+    DenseMatrix refMat2 = DenseMatrix::Zero(rows, cols);
+    SparseMatrixType m2(rows, cols);
+    initSparse<Scalar>(density, refMat2, m2);
+    std::vector<Scalar> ref_value(m2.innerSize());
+    std::vector<Index> ref_index(m2.innerSize());
+    if(internal::random<bool>())
+      m2.makeCompressed();
+    for(Index j = 0; j<m2.outerSize(); ++j)
+    {
+      Index count_forward = 0;
+
+      for(typename SparseMatrixType::InnerIterator it(m2,j); it; ++it)
+      {
+        ref_value[ref_value.size()-1-count_forward] = it.value();
+        ref_index[ref_index.size()-1-count_forward] = it.index();
+        count_forward++;
+      }
+      Index count_reverse = 0;
+      for(typename SparseMatrixType::ReverseInnerIterator it(m2,j); it; --it)
+      {
+        VERIFY_IS_APPROX( std::abs(ref_value[ref_value.size()-count_forward+count_reverse])+1, std::abs(it.value())+1);
+        VERIFY_IS_EQUAL( ref_index[ref_index.size()-count_forward+count_reverse] , it.index());
+        count_reverse++;
+      }
+      VERIFY_IS_EQUAL(count_forward, count_reverse);
+    }
   }
 
   // test transpose
@@ -317,6 +384,17 @@ template<typename SparseMatrixType> void sparse_basic(const SparseMatrixType& re
       VERIFY_IS_APPROX(mapMat2+mapMat3, refMat2+refMat3);
       VERIFY_IS_APPROX(mapMat2+mapMat3, refMat2+refMat3);
     }
+
+    Index i = internal::random<Index>(0,rows-1);
+    Index j = internal::random<Index>(0,cols-1);
+    m2.coeffRef(i,j) = 123;
+    if(internal::random<bool>())
+      m2.makeCompressed();
+    Map<SparseMatrixType> mapMat2(rows, cols, m2.nonZeros(), m2.outerIndexPtr(), m2.innerIndexPtr(), m2.valuePtr(),  m2.innerNonZeroPtr());
+    VERIFY_IS_EQUAL(m2.coeff(i,j),Scalar(123));
+    VERIFY_IS_EQUAL(mapMat2.coeff(i,j),Scalar(123));
+    mapMat2.coeffRef(i,j) = -123;
+    VERIFY_IS_EQUAL(m2.coeff(i,j),Scalar(-123));
   }
 
   // test triangularView
@@ -363,6 +441,14 @@ template<typename SparseMatrixType> void sparse_basic(const SparseMatrixType& re
     initSparse<Scalar>(density, refMat2, m2);
     refMat3 = refMat2.template selfadjointView<Lower>();
     m3 = m2.template selfadjointView<Lower>();
+    VERIFY_IS_APPROX(m3, refMat3);
+
+    refMat3 += refMat2.template selfadjointView<Lower>();
+    m3 += m2.template selfadjointView<Lower>();
+    VERIFY_IS_APPROX(m3, refMat3);
+
+    refMat3 -= refMat2.template selfadjointView<Lower>();
+    m3 -= m2.template selfadjointView<Lower>();
     VERIFY_IS_APPROX(m3, refMat3);
 
     // selfadjointView only works for square matrices:

@@ -134,34 +134,49 @@ protected:
 // Specialization for "dst = dec.solve(rhs)"
 // NOTE we need to specialize it for Dense2Dense to avoid ambiguous specialization error and a Sparse2Sparse specialization must exist somewhere
 template<typename DstXprType, typename DecType, typename RhsType, typename Scalar>
-struct Assignment<DstXprType, Solve<DecType,RhsType>, internal::assign_op<Scalar>, Dense2Dense, Scalar>
+struct Assignment<DstXprType, Solve<DecType,RhsType>, internal::assign_op<Scalar,Scalar>, Dense2Dense>
 {
   typedef Solve<DecType,RhsType> SrcXprType;
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar> &)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar,Scalar> &)
   {
-    // FIXME shall we resize dst here?
+    Index dstRows = src.rows();
+    Index dstCols = src.cols();
+    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
+      dst.resize(dstRows, dstCols);
+
     src.dec()._solve_impl(src.rhs(), dst);
   }
 };
 
 // Specialization for "dst = dec.transpose().solve(rhs)"
 template<typename DstXprType, typename DecType, typename RhsType, typename Scalar>
-struct Assignment<DstXprType, Solve<Transpose<const DecType>,RhsType>, internal::assign_op<Scalar>, Dense2Dense, Scalar>
+struct Assignment<DstXprType, Solve<Transpose<const DecType>,RhsType>, internal::assign_op<Scalar,Scalar>, Dense2Dense>
 {
   typedef Solve<Transpose<const DecType>,RhsType> SrcXprType;
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar> &)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar,Scalar> &)
   {
+    Index dstRows = src.rows();
+    Index dstCols = src.cols();
+    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
+      dst.resize(dstRows, dstCols);
+
     src.dec().nestedExpression().template _solve_impl_transposed<false>(src.rhs(), dst);
   }
 };
 
 // Specialization for "dst = dec.adjoint().solve(rhs)"
 template<typename DstXprType, typename DecType, typename RhsType, typename Scalar>
-struct Assignment<DstXprType, Solve<CwiseUnaryOp<internal::scalar_conjugate_op<typename DecType::Scalar>, const Transpose<const DecType> >,RhsType>, internal::assign_op<Scalar>, Dense2Dense, Scalar>
+struct Assignment<DstXprType, Solve<CwiseUnaryOp<internal::scalar_conjugate_op<typename DecType::Scalar>, const Transpose<const DecType> >,RhsType>,
+                  internal::assign_op<Scalar,Scalar>, Dense2Dense>
 {
   typedef Solve<CwiseUnaryOp<internal::scalar_conjugate_op<typename DecType::Scalar>, const Transpose<const DecType> >,RhsType> SrcXprType;
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar> &)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar,Scalar> &)
   {
+    Index dstRows = src.rows();
+    Index dstCols = src.cols();
+    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
+      dst.resize(dstRows, dstCols);
+    
     src.dec().nestedExpression().nestedExpression().template _solve_impl_transposed<true>(src.rhs(), dst);
   }
 };

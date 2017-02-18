@@ -82,9 +82,25 @@ public:
     {
     }
 
+    template<typename... TheExpr>
+    struct Lambda
+    {
+        typedef UnaryPlus<typename ExprT::template Lambda<TheExpr...>::type> type;
+    };
+
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr( e... ) ); }
+
+
     expression_type const& expression() const
     {
         return M_expr;
+    }
+
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+    {
+        M_expr.setParameterValues( mp );
     }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
@@ -138,10 +154,10 @@ public:
         {
             M_t_expr.update( geom, face );
         }
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            M_t_expr.updateContext( ctx );
+            M_t_expr.updateContext( ctx... );
         }
 
         value_type
@@ -266,9 +282,24 @@ public:
         return *this;
     }
 
+    template<typename... TheExpr>
+    struct Lambda
+    {
+        typedef UnaryMinus<typename ExprT::template Lambda<TheExpr...>::type> type;
+    };
+
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr( e... ) ); }
+
     expression_type const& expression() const
     {
         return M_expr;
+    }
+
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+    {
+        M_expr.setParameterValues( mp );
     }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
@@ -323,10 +354,10 @@ public:
             M_t_expr.update( geom, face );
         }
 
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            M_t_expr.updateContext( ctx );
+            M_t_expr.updateContext( ctx... );
         }
 
         value_type

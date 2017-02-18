@@ -286,13 +286,17 @@ struct compute_inverse_and_det_with_check<MatrixType, ResultType, 4>
 namespace internal {
 
 // Specialization for "dense = dense_xpr.inverse()"
-template<typename DstXprType, typename XprType, typename Scalar>
-struct Assignment<DstXprType, Inverse<XprType>, internal::assign_op<Scalar>, Dense2Dense, Scalar>
+template<typename DstXprType, typename XprType>
+struct Assignment<DstXprType, Inverse<XprType>, internal::assign_op<typename DstXprType::Scalar,typename XprType::Scalar>, Dense2Dense>
 {
   typedef Inverse<XprType> SrcXprType;
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar> &)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar,typename XprType::Scalar> &)
   {
-    // FIXME shall we resize dst here?
+    Index dstRows = src.rows();
+    Index dstCols = src.cols();
+    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
+      dst.resize(dstRows, dstCols);
+    
     const int Size = EIGEN_PLAIN_ENUM_MIN(XprType::ColsAtCompileTime,DstXprType::ColsAtCompileTime);
     EIGEN_ONLY_USED_FOR_DEBUG(Size);
     eigen_assert(( (Size<=1) || (Size>4) || (extract_data(src.nestedExpression())!=extract_data(dst)))

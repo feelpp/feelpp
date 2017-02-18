@@ -16,7 +16,21 @@
 #include <math_constants.h>
 #endif
 
+#if EIGEN_COMP_ICC>=1600 &&  __cplusplus >= 201103L
+#include <cstdint>
+#endif
+
 namespace Eigen {
+
+typedef EIGEN_DEFAULT_DENSE_INDEX_TYPE DenseIndex;
+
+/**
+ * \brief The Index type as used for the API.
+ * \details To change this, \c \#define the preprocessor symbol \c EIGEN_DEFAULT_DENSE_INDEX_TYPE.
+ * \sa \blank \ref TopicPreprocessorDirectives, StorageIndex.
+ */
+
+typedef EIGEN_DEFAULT_DENSE_INDEX_TYPE Index;
 
 namespace internal {
 
@@ -29,7 +43,7 @@ namespace internal {
 
 // Only recent versions of ICC complain about using ptrdiff_t to hold pointers,
 // and older versions do not provide *intptr_t types.
-#if EIGEN_COMP_ICC>=1600
+#if EIGEN_COMP_ICC>=1600 &&  __cplusplus >= 201103L
 typedef std::intptr_t  IntPtr;
 typedef std::uintptr_t UIntPtr;
 #else
@@ -145,7 +159,7 @@ struct is_convertible
 /** \internal Allows to enable/disable an overload
   * according to a compile time condition.
   */
-template<bool Condition, typename T> struct enable_if;
+template<bool Condition, typename T=void> struct enable_if;
 
 template<typename T> struct enable_if<true,T>
 { typedef T type; };
@@ -354,6 +368,48 @@ struct result_of<Func(ArgType0,ArgType1,ArgType2)> {
 };
 #endif
 
+struct meta_yes { char a[1]; };
+struct meta_no  { char a[2]; };
+
+// Check whether T::ReturnType does exist
+template <typename T>
+struct has_ReturnType
+{
+  template <typename C> static meta_yes testFunctor(typename C::ReturnType const *);
+  template <typename C> static meta_no testFunctor(...);
+
+  enum { value = sizeof(testFunctor<T>(0)) == sizeof(meta_yes) };
+};
+
+template<typename T> const T* return_ptr();
+
+template <typename T, typename IndexType=Index>
+struct has_nullary_operator
+{
+  template <typename C> static meta_yes testFunctor(C const *,typename enable_if<(sizeof(return_ptr<C>()->operator()())>0)>::type * = 0);
+  static meta_no testFunctor(...);
+
+  enum { value = sizeof(testFunctor(static_cast<T*>(0))) == sizeof(meta_yes) };
+};
+
+template <typename T, typename IndexType=Index>
+struct has_unary_operator
+{
+  template <typename C> static meta_yes testFunctor(C const *,typename enable_if<(sizeof(return_ptr<C>()->operator()(IndexType(0)))>0)>::type * = 0);
+  static meta_no testFunctor(...);
+
+  enum { value = sizeof(testFunctor(static_cast<T*>(0))) == sizeof(meta_yes) };
+};
+
+template <typename T, typename IndexType=Index>
+struct has_binary_operator
+{
+  template <typename C> static meta_yes testFunctor(C const *,typename enable_if<(sizeof(return_ptr<C>()->operator()(IndexType(0),IndexType(0)))>0)>::type * = 0);
+  static meta_no testFunctor(...);
+
+  enum { value = sizeof(testFunctor(static_cast<T*>(0))) == sizeof(meta_yes) };
+};
+
 /** \internal In short, it computes int(sqrt(\a Y)) with \a Y an integer.
   * Usage example: \code meta_sqrt<1023>::ret \endcode
   */
@@ -397,33 +453,6 @@ struct meta_least_common_multiple<A,B,K,true>
 template<typename T, typename U> struct scalar_product_traits
 {
   enum { Defined = 0 };
-};
-
-template<typename T> struct scalar_product_traits<T,T>
-{
-  enum {
-    // Cost = NumTraits<T>::MulCost,
-    Defined = 1
-  };
-  typedef T ReturnType;
-};
-
-template<typename T> struct scalar_product_traits<T,std::complex<T> >
-{
-  enum {
-    // Cost = 2*NumTraits<T>::MulCost,
-    Defined = 1
-  };
-  typedef std::complex<T> ReturnType;
-};
-
-template<typename T> struct scalar_product_traits<std::complex<T>, T>
-{
-  enum {
-    // Cost = 2*NumTraits<T>::MulCost,
-    Defined = 1
-  };
-  typedef std::complex<T> ReturnType;
 };
 
 // FIXME quick workaround around current limitation of result_of

@@ -416,6 +416,12 @@
         L_type VF_TYPE_CV(L) left() const { return M_left; }           \
         R_type VF_TYPE_CV(R) right() const { return M_right; }         \
                                                                         \
+        void setParameterValues( std::map<std::string,value_type> const& mp ) \
+        {                                                               \
+            M_left.setParameterValues( mp );                            \
+            M_right.setParameterValues( mp );                           \
+        }                                                               \
+                                                                        \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \
         {                                                               \
@@ -492,11 +498,11 @@
                 if ( is_zero::update_and_eval_right )                   \
                     M_right.update( geom, face );                           \
             }                                                           \
-            template<typename CTX>                                      \
-                void updateContext( CTX const& ctx )                    \
+            template<typename ... CTX>                                  \
+                void updateContext( CTX const& ... ctx )                \
             {                                                           \
-                M_left.updateContext( ctx );                           \
-                M_right.updateContext( ctx );                          \
+                M_left.updateContext( ctx... );                        \
+                M_right.updateContext( ctx... );                        \
             }                                                           \
                                                                         \
                                                                         \

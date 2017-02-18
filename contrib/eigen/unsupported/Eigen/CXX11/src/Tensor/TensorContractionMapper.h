@@ -22,8 +22,14 @@ enum {
 /*
  * Implementation of the Eigen blas_data_mapper class for tensors.
  */
+/// The make pointer class is used by sycl in order to build the mapper class on the device. For other platform the default make pointer is used which
+/// is scalar * for CoeffLoader.
+template <typename Tensor, bool HasRawAccess, template <class> class MakePointer_ = MakePointer> struct CoeffLoader;
+template<typename Scalar, typename Index, int side, typename Tensor, typename nocontract_t, typename contract_t,
+         int packet_size, bool inner_dim_contiguous, bool inner_dim_reordered, int Alignment,
+         template <class> class MakePointer_ = MakePointer> class BaseTensorContractionMapper;
 
-template <typename Tensor, bool HasRawAccess> struct CoeffLoader {
+template <typename Tensor, bool HasRawAccess, template <class> class MakePointer_> struct CoeffLoader {
   enum {
     DirectOffsets = false
   };
@@ -47,7 +53,7 @@ template <typename Tensor, bool HasRawAccess> struct CoeffLoader {
   const Tensor m_tensor;
 };
 
-template <typename Tensor> struct CoeffLoader<Tensor, true> {
+template <typename Tensor, template <class> class MakePointer_> struct CoeffLoader<Tensor, true, MakePointer_> {
   enum {
     DirectOffsets = true
   };
@@ -67,13 +73,14 @@ template <typename Tensor> struct CoeffLoader<Tensor, true> {
   }
  private:
   typedef typename Tensor::Scalar Scalar;
-  const Scalar* m_data;
+
+  typename MakePointer_<const Scalar>::Type m_data;
 };
 
 template<typename Scalar, typename Index, int side,
          typename Tensor,
          typename nocontract_t, typename contract_t,
-         int packet_size, bool inner_dim_contiguous, int Alignment>
+         int packet_size, bool inner_dim_contiguous, int Alignment, template <class> class MakePointer_ = MakePointer>
 class SimpleTensorContractionMapper {
   public:
   EIGEN_DEVICE_FUNC
@@ -89,7 +96,7 @@ class SimpleTensorContractionMapper {
       m_k_strides(k_strides) { }
 
   enum {
-    DirectOffsets = CoeffLoader<Tensor, Tensor::RawAccess>::DirectOffsets
+    DirectOffsets = CoeffLoader<Tensor, Tensor::RawAccess, MakePointer_>::DirectOffsets
   };
 
   EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void offsetBuffer(typename Tensor::Index offset) {
@@ -130,19 +137,19 @@ class SimpleTensorContractionMapper {
     }
 
     Index contract_val = left ? col : row;
-    for (int i = static_cast<int>(array_size<contract_t>::value) - 1; i > 0; i--) {
-      const Index idx = contract_val / m_k_strides[i];
-      linidx += idx * m_contract_strides[i];
-      contract_val -= idx * m_k_strides[i];
-    }
-
     if(array_size<contract_t>::value > 0) {
-        if (side == Rhs && inner_dim_contiguous) {
-            eigen_assert(m_contract_strides[0] == 1);
-            linidx += contract_val;
-        } else {
-            linidx += contract_val * m_contract_strides[0];
-        }
+      for (int i = static_cast<int>(array_size<contract_t>::value) - 1; i > 0; i--) {
+        const Index idx = contract_val / m_k_strides[i];
+        linidx += idx * m_contract_strides[i];
+        contract_val -= idx * m_k_strides[i];
+      }
+
+      if (side == Rhs && inner_dim_contiguous) {
+        eigen_assert(m_contract_strides[0] == 1);
+        linidx += contract_val;
+      } else {
+        linidx += contract_val * m_contract_strides[0];
+      }
     }
 
     return linidx;
@@ -153,15 +160,15 @@ class SimpleTensorContractionMapper {
     const bool left = (side == Lhs);
     Index nocontract_val[2] = {left ? row : col, left ? row + distance : col};
     Index linidx[2] = {0, 0};
-    for (int i = static_cast<int>(array_size<nocontract_t>::value) - 1; i > 0; i--) {
-      const Index idx0 = nocontract_val[0] / m_ij_strides[i];
-      const Index idx1 = nocontract_val[1] / m_ij_strides[i];
-      linidx[0] += idx0 * m_nocontract_strides[i];
-      linidx[1] += idx1 * m_nocontract_strides[i];
-      nocontract_val[0] -= idx0 * m_ij_strides[i];
-      nocontract_val[1] -= idx1 * m_ij_strides[i];
-    }
     if (array_size<typename Tensor::Dimensions>::value > array_size<contract_t>::value) {
+      for (int i = static_cast<int>(array_size<nocontract_t>::value) - 1; i > 0; i--) {
+        const Index idx0 = nocontract_val[0] / m_ij_strides[i];
+        const Index idx1 = nocontract_val[1] / m_ij_strides[i];
+        linidx[0] += idx0 * m_nocontract_strides[i];
+        linidx[1] += idx1 * m_nocontract_strides[i];
+        nocontract_val[0] -= idx0 * m_ij_strides[i];
+        nocontract_val[1] -= idx1 * m_ij_strides[i];
+      }
       if (side == Lhs && inner_dim_contiguous) {
         eigen_assert(m_nocontract_strides[0] == 1);
         linidx[0] += nocontract_val[0];
@@ -173,22 +180,24 @@ class SimpleTensorContractionMapper {
     }
 
     Index contract_val[2] = {left ? col : row, left ? col : row + distance};
-    for (int i = static_cast<int>(array_size<contract_t>::value) - 1; i > 0; i--) {
-      const Index idx0 = contract_val[0] / m_k_strides[i];
-      const Index idx1 = contract_val[1] / m_k_strides[i];
-      linidx[0] += idx0 * m_contract_strides[i];
-      linidx[1] += idx1 * m_contract_strides[i];
-      contract_val[0] -= idx0 * m_k_strides[i];
-      contract_val[1] -= idx1 * m_k_strides[i];
-    }
+    if (array_size<contract_t>::value> 0) {
+      for (int i = static_cast<int>(array_size<contract_t>::value) - 1; i > 0; i--) {
+        const Index idx0 = contract_val[0] / m_k_strides[i];
+        const Index idx1 = contract_val[1] / m_k_strides[i];
+        linidx[0] += idx0 * m_contract_strides[i];
+        linidx[1] += idx1 * m_contract_strides[i];
+        contract_val[0] -= idx0 * m_k_strides[i];
+        contract_val[1] -= idx1 * m_k_strides[i];
+      }
 
-    if (side == Rhs && inner_dim_contiguous) {
-      eigen_assert(m_contract_strides[0] == 1);
-      linidx[0] += contract_val[0];
-      linidx[1] += contract_val[1];
-    } else {
-      linidx[0] += contract_val[0] * m_contract_strides[0];
-      linidx[1] += contract_val[1] * m_contract_strides[0];
+      if (side == Rhs && inner_dim_contiguous) {
+        eigen_assert(m_contract_strides[0] == 1);
+        linidx[0] += contract_val[0];
+        linidx[1] += contract_val[1];
+      } else {
+        linidx[0] += contract_val[0] * m_contract_strides[0];
+        linidx[1] += contract_val[1] * m_contract_strides[0];
+      }
     }
     return IndexPair<Index>(linidx[0], linidx[1]);
   }
@@ -200,27 +209,26 @@ class SimpleTensorContractionMapper {
     return (Alignment == Aligned) && (side == Lhs) && inner_dim_contiguous ? 0 : size;
   }
   EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Index stride() const {
-    return ((side == Lhs) && inner_dim_contiguous) ? m_contract_strides[0] : 1;
+    return ((side == Lhs) && inner_dim_contiguous && array_size<contract_t>::value > 0) ? m_contract_strides[0] : 1;
   }
 
  protected:
-  CoeffLoader<Tensor, Tensor::RawAccess> m_tensor;
+  CoeffLoader<Tensor, Tensor::RawAccess, MakePointer_> m_tensor;
   const nocontract_t m_nocontract_strides;
   const nocontract_t m_ij_strides;
   const contract_t m_contract_strides;
   const contract_t m_k_strides;
 };
 
-
 template<typename Scalar, typename Index, int side,
          typename Tensor,
          typename nocontract_t, typename contract_t,
          int packet_size, bool inner_dim_contiguous,
-         bool inner_dim_reordered, int Alignment>
-class BaseTensorContractionMapper : public SimpleTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, packet_size, inner_dim_contiguous, Alignment>
+         bool inner_dim_reordered, int Alignment, template <class> class MakePointer_>
+class BaseTensorContractionMapper : public SimpleTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, packet_size, inner_dim_contiguous, Alignment, MakePointer_>
 {
  public:
-  typedef SimpleTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, packet_size, inner_dim_contiguous, Alignment> ParentMapper;
+  typedef SimpleTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, packet_size, inner_dim_contiguous, Alignment, MakePointer_> ParentMapper;
 
   EIGEN_DEVICE_FUNC
   BaseTensorContractionMapper(const Tensor& tensor,
@@ -233,9 +241,9 @@ class BaseTensorContractionMapper : public SimpleTensorContractionMapper<Scalar,
   typedef typename Tensor::PacketReturnType Packet;
   typedef typename unpacket_traits<Packet>::half HalfPacket;
 
-  template <int AlignmentType>
+  template <typename PacketT,int AlignmentType>
   EIGEN_DEVICE_FUNC
-  EIGEN_STRONG_INLINE Packet loadPacket(Index i, Index j) const {
+  EIGEN_STRONG_INLINE PacketT load(Index i, Index j) const {
     // whole method makes column major assumption
 
     // don't need to add offsets for now (because operator handles that)
@@ -273,7 +281,13 @@ class BaseTensorContractionMapper : public SimpleTensorContractionMapper<Scalar,
     }
     data[packet_size - 1] = this->m_tensor.coeff(last);
 
-    return pload<Packet>(data);
+    return pload<PacketT>(data);
+  }
+
+  template <int AlignmentType>
+  EIGEN_DEVICE_FUNC
+  EIGEN_STRONG_INLINE Packet loadPacket(Index i, Index j) const {
+    return this->load<Packet,AlignmentType>(i,j);
   }
 
   template <int AlignmentType>
@@ -299,11 +313,11 @@ template<typename Scalar, typename Index, int side,
          typename Tensor,
          typename nocontract_t, typename contract_t,
          bool inner_dim_contiguous,
-         bool inner_dim_reordered, int Alignment>
-class BaseTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, 1, inner_dim_contiguous, inner_dim_reordered, Alignment> : public SimpleTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, 1, inner_dim_contiguous, Alignment>
+         bool inner_dim_reordered, int Alignment, template <class> class MakePointer_>
+class BaseTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, 1, inner_dim_contiguous, inner_dim_reordered, Alignment, MakePointer_> : public SimpleTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, 1, inner_dim_contiguous, Alignment, MakePointer_>
 {
  public:
-  typedef SimpleTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, 1, inner_dim_contiguous, Alignment> ParentMapper;
+  typedef SimpleTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, 1, inner_dim_contiguous, Alignment, MakePointer_> ParentMapper;
 
   EIGEN_DEVICE_FUNC
   BaseTensorContractionMapper(const Tensor& tensor,
@@ -320,6 +334,12 @@ class BaseTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, con
     data[0] = this->m_tensor.coeff(this->computeIndex(i, j));
     return pload<typename Tensor::PacketReturnType>(data);
   }
+  template <typename PacketT,int> EIGEN_DEVICE_FUNC
+  EIGEN_STRONG_INLINE PacketT load(Index i, Index j) const {
+    EIGEN_ALIGN_MAX Scalar data[1];
+    data[0] = this->m_tensor.coeff(this->computeIndex(i, j));
+    return pload<PacketT>(data);
+  }
   template <int> EIGEN_DEVICE_FUNC
   EIGEN_STRONG_INLINE Packet loadHalfPacket(Index i, Index j) const {
     return loadPacket(i, j);
@@ -331,14 +351,14 @@ template<typename Scalar, typename Index, int side,
          typename Tensor,
          typename nocontract_t, typename contract_t,
          int packet_size,
-         bool inner_dim_contiguous, bool inner_dim_reordered, int Alignment>
+         bool inner_dim_contiguous, bool inner_dim_reordered, int Alignment, template <class> class MakePointer_=MakePointer>
 class TensorContractionSubMapper {
  public:
   typedef typename Tensor::PacketReturnType Packet;
   typedef typename unpacket_traits<Packet>::half HalfPacket;
 
-  typedef BaseTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, packet_size, inner_dim_contiguous, inner_dim_reordered, Alignment> ParentMapper;
-  typedef TensorContractionSubMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, packet_size, inner_dim_contiguous, inner_dim_reordered, Alignment> Self;
+  typedef BaseTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, packet_size, inner_dim_contiguous, inner_dim_reordered, Alignment, MakePointer_> ParentMapper;
+  typedef TensorContractionSubMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, packet_size, inner_dim_contiguous, inner_dim_reordered, Alignment, MakePointer_> Self;
   typedef Self LinearMapper;
 
   enum {
@@ -383,6 +403,14 @@ class TensorContractionSubMapper {
     return m_base_mapper.template loadPacket<Alignment>(i + m_vert_offset, j + m_horiz_offset);
   }
 
+  template <typename PacketT, int AlignmentType>
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketT loadPacket(Index i, Index j) const {
+    if (UseDirectOffsets) {
+      return m_base_mapper.template load<PacketT,AlignmentType>(i, j);
+    }
+    return m_base_mapper.template loadPacket<PacketT,AlignmentType>(i + m_vert_offset, j + m_horiz_offset);
+  }
+
   EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE HalfPacket loadHalfPacket(Index i) const {
     if (UseDirectOffsets) {
       return m_base_mapper.template loadHalfPacket<Alignment>(i, 0);
@@ -390,7 +418,7 @@ class TensorContractionSubMapper {
     return m_base_mapper.template loadHalfPacket<Alignment>(i + m_vert_offset, m_horiz_offset);
   }
 
-  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacket(Index i, Packet p) const {
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacket(Index i, const Packet& p) const {
     if (UseDirectOffsets) {
       m_base_mapper.storePacket(i, 0, p);
     }
@@ -430,14 +458,14 @@ template<typename Scalar_, typename Index, int side,
          typename Tensor,
          typename nocontract_t, typename contract_t,
          int packet_size,
-         bool inner_dim_contiguous, bool inner_dim_reordered, int Alignment>
+         bool inner_dim_contiguous, bool inner_dim_reordered, int Alignment,  template <class> class MakePointer_=MakePointer>
 class TensorContractionInputMapper
-  : public BaseTensorContractionMapper<Scalar_, Index, side, Tensor, nocontract_t, contract_t, packet_size, inner_dim_contiguous, inner_dim_reordered, Alignment> {
+  : public BaseTensorContractionMapper<Scalar_, Index, side, Tensor, nocontract_t, contract_t, packet_size, inner_dim_contiguous, inner_dim_reordered, Alignment, MakePointer_> {
 
  public:
   typedef Scalar_ Scalar;
-  typedef BaseTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, packet_size, inner_dim_contiguous, inner_dim_reordered, Alignment> Base;
-  typedef TensorContractionSubMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, packet_size, inner_dim_contiguous, inner_dim_reordered, Alignment> SubMapper;
+  typedef BaseTensorContractionMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, packet_size, inner_dim_contiguous, inner_dim_reordered, Alignment, MakePointer_> Base;
+  typedef TensorContractionSubMapper<Scalar, Index, side, Tensor, nocontract_t, contract_t, packet_size, inner_dim_contiguous, inner_dim_reordered, Alignment, MakePointer_> SubMapper;
   typedef SubMapper VectorMapper;
 
   EIGEN_DEVICE_FUNC TensorContractionInputMapper(const Tensor& tensor,

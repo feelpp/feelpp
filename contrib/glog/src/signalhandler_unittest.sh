@@ -39,7 +39,7 @@ die () {
 }
 
 BINDIR=".libs"
-LIBGLOG="$BINDIR/libglog.so"
+LIBGLOG="$BINDIR/libfeelpp_glog.so"
 
 BINARY="$BINDIR/signalhandler_unittest"
 LOG_INFO="./signalhandler_unittest.INFO"

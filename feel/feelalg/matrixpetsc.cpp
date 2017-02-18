@@ -783,6 +783,19 @@ size_type MatrixPetsc<T>::rowStop () const
     return static_cast<size_type>( stop );
 }
 
+template <typename T>
+inline
+std::size_t MatrixPetsc<T>::nnz () const
+{
+    FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );;
+
+    MatInfo info;
+    int ierr = MatGetInfo( M_mat, MAT_GLOBAL_SUM, &info);
+    
+    CHKERRABORT( this->comm(),ierr );
+    return info.nz_allocated;
+}
+
 
 
 template <typename T>
@@ -1256,14 +1269,18 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
      */
     if ( name != "NULL" )
     {
+#if 0
         ierr = PetscViewerBinaryOpen( this->comm(),
                                      name.c_str(),
                                      FILE_MODE_WRITE,
                                      &petsc_viewer );
-        //ierr = PetscViewerASCIIOpen( this->comm(),
-        //                             name.c_str(),
-        //                             &petsc_viewer );
+#endif
+        ierr = PetscViewerASCIIOpen( this->comm(),
+                                     name.c_str(),
+                                     &petsc_viewer );
         CHKERRABORT( this->comm(),ierr );
+
+#if 0
 #if PETSC_VERSION_LESS_THAN(3,7,0)
         ierr = PetscViewerSetFormat ( petsc_viewer,
                                       PETSC_VIEWER_BINARY_MATLAB );
@@ -1271,6 +1288,10 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
         ierr = PetscViewerPushFormat ( petsc_viewer,
                                       PETSC_VIEWER_BINARY_MATLAB );
 #endif
+#else
+        ierr = PetscViewerPushFormat ( petsc_viewer,
+                                       PETSC_VIEWER_ASCII_MATLAB );
+#endif       
         //PETSC_VIEWER_ASCII_PYTHON );
         CHKERRABORT( this->comm(),ierr );
 
@@ -2304,10 +2325,7 @@ void MatrixPetsc<T>::threshold(void)
 
     this->close();
 }
-//----------------------------------------------------------------------------------------------------//
-//----------------------------------------------------------------------------------------------------//
-//----------------------------------------------------------------------------------------------------//
-//----------------------------------------------------------------------------------------------------//
+
 //----------------------------------------------------------------------------------------------------//
 
 template <typename T>

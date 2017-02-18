@@ -242,12 +242,12 @@ public:
             if ( !IsSame )
                 M_r_tensor_expr.update( geom, face );
         }
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            M_l_tensor_expr.updateContext( ctx );
+            M_l_tensor_expr.updateContext( ctx... );
             if ( !IsSame )
-                M_r_tensor_expr.updateContext( ctx );
+                M_r_tensor_expr.updateContext( ctx... );
         }
 
         value_type

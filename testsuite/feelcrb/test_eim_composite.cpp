@@ -171,7 +171,7 @@ public:
 
             auto Pset = Dmu->sampling();
             //specify how many elements we take in each direction
-            std::vector<int> N(2);
+            std::vector<size_type> N(2);
             //40 elements in each direction
             N[0]=40; N[1]=40;
             Pset->equidistributeProduct( N );
@@ -182,7 +182,7 @@ public:
 
             std::cout << "before eim" << std::endl;
             auto e = eim( _model=eim_no_solve(this->shared_from_this()),
-                          _element=u,
+                          _element=u.element<0>(),//u,
                           _space=Xh1,
                           _parameter=mu,
                           _expr=1/sqrt( (Px()-cst_ref(mu(0)))*(Px()-cst_ref(mu(0))) + (Py()-cst_ref(mu(1)))*(Py()-cst_ref(mu(1))) ),
@@ -193,13 +193,13 @@ public:
             M_funs.push_back( e );
         }
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const
+    parameterspace_ptrtype const& parameterSpace() const
         {
             return Dmu;
         }
     std::string modelName() const { return std::string("test_eim_composite" );}
 
-    space_ptrtype functionSpace() { return Xh; }
+    space_ptrtype const& functionSpace() const { return Xh; }
 
     element_type solve( parameter_type const& mu )
         {

@@ -29,7 +29,25 @@
 #ifndef FEELPP_GINAC_HPP
 #define FEELPP_GINAC_HPP 1
 
+#include <feel/feelcore/feelmacros.hpp>
+
+// #if defined(__clang__)
+// #if !defined(__APPLE__) && FEELPP_CLANG_AT_LEAST(3,9)
+// #pragma clang diagnostic push
+// #pragma clang diagnostic ignored "-Wundefined-var-template"
+// #endif
+// #endif
+
 #include <ginac/ginac.h>
+extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
+
+// #if defined(__clang__)
+// #if !defined(__APPLE__) && FEELPP_CLANG_AT_LEAST(3,9)
+// #pragma clang diagnostic pop
+// #endif
+// #endif
+
 #include <boost/fusion/container/vector.hpp>
 
 #include <boost/parameter/preprocessor.hpp>
@@ -207,6 +225,15 @@ expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string fi
 template<int Order>
 inline
 Expr< GinacEx<Order> >
+expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string const& exprDesc="", std::string filename="",
+      WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
+{
+    return Expr< GinacEx<Order> >(  GinacEx<Order>( f, lsym, exprDesc, filename, world, dirLibExpr ));
+}
+
+template<int Order>
+inline
+Expr< GinacEx<Order> >
 expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="",
       WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
@@ -347,7 +374,7 @@ expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::initializ
 
     typename std::initializer_list<GiNaC::symbol>::iterator it1 = s.begin();
     typename std::initializer_list<ExprT>::iterator it2 = e.begin();
-    for(it1; it1!=s.end(); it1++)
+    for(; it1!=s.end(); it1++)
         {
             VFmap.push_back( std::make_pair(*it1,*it2) );
             it2++;
@@ -365,7 +392,7 @@ expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::vector<Gi
 
     typename std::vector<GiNaC::symbol>::const_iterator it1 = s.begin();
     typename std::vector<ExprT>::const_iterator it2 = e.begin();
-    for(it1; it1!=s.end(); it1++)
+    for( ; it1!=s.end(); it1++)
         {
             VFmap.push_back( std::make_pair(*it1, *it2) );
             it2++;
@@ -383,7 +410,7 @@ expr( std::string const& myexpr, std::vector<GiNaC::symbol> const & syms , std::
 
     typename std::vector<GiNaC::symbol>::const_iterator it1 = s.begin();
     typename std::vector<ExprT>::const_iterator it2 = e.begin();
-    for(it1; it1!=s.end(); it1++)
+    for( ; it1!=s.end(); it1++)
         {
             VFmap.push_back( std::make_pair(*it1, *it2) );
             it2++;
@@ -429,7 +456,7 @@ expr( std::string const& s, std::initializer_list<std::string> const& se, std::i
 
     typename std::initializer_list<std::string>::iterator it1 = se.begin();
     typename std::initializer_list<ExprT>::iterator it2 = e.begin();
-    for(it1; it1!=se.end(); it1++)
+    for( ; it1!=se.end(); it1++)
         {
             auto it = std::find_if( g.second.begin(), g.second.end(),
                                     [&it1]( GiNaC::symbol const& s ) { return s.get_name() == *it1; } );
@@ -451,7 +478,7 @@ expr( std::string const& s, std::vector<std::string> const& se, std::vector<Expr
 
     typename std::vector<std::string>::const_iterator it1 = se.begin();
     typename std::vector<ExprT>::const_iterator it2 = e.begin();
-    for(it1; it1!=se.end(); it1++)
+    for( ; it1!=se.end(); it1++)
         {
             auto it = std::find_if( g.second.begin(), g.second.end(),
                                     [&it1]( GiNaC::symbol const& s ) { return s.get_name() == *it1; } );
@@ -667,6 +694,20 @@ laplacian( Expr<GinacMatrix<M,N,Order>> const& s, std::string filename="", World
 {
     std::string exprDesc = (boost::format("laplacian(%1%)")% s.expression().exprDesc() ).str();
     return expr<M,N,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
+}
+
+template<int Order=2>
+inline
+Expr<GinacEx<Order> >
+diff( Expr<GinacEx<Order>> const& s, std::string const& diffVariable, int diffOrder = 1, std::string filename="", WorldComm const& world=Environment::worldComm() )
+{
+    std::string exprDesc = (boost::format("diff(%1%)_%2%_o%3%")% s.expression().exprDesc() %diffVariable %diffOrder ).str();
+    auto const& exprSymb = s.expression().symbols();
+    auto it = std::find_if( exprSymb.begin(), exprSymb.end(),
+                            [&diffVariable]( GiNaC::symbol const& s ) { return s.get_name() == diffVariable; } );
+    CHECK( it != exprSymb.end() ) << "symbol " << diffVariable << "not found in expression";
+    return expr<Order>( GiNaC::diff( s.expression().expression(),{ *it },diffOrder)(0,0),
+                        s.expression().symbols(), exprDesc, filename, world );
 }
 
 template<int Order=2>

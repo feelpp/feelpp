@@ -35,13 +35,28 @@
 #include <opusmodelrb.hpp>
 #include <feel/feelcrb/pfemapp.hpp>
 
-
 int
 main( int argc, char** argv )
 {
-    Feel::PFemApp<Feel::OpusModelRB<2,1,2> > app( argc, argv,
-            Feel::makeEadsAbout( "eadspfem" ),
-            Feel::makeEadsOptions() );
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=pfemapp_options( "eadspfem" )
+                     .add(makeEadsOptions())
+                     .add(crbOptions())
+                     .add(eimOptions())
+                     .add(crbSEROptions())
+                     .add(podOptions()),
+                     _about=makeEadsAbout( "eadspfem" ));
+
+    PFemApp<OpusModelRB<2,1,2> > app( argc, argv,
+                                      makeEadsAbout( "eadspfem" ),
+                                      pfemapp_options( "eadspfem" )
+                                      .add(makeEadsOptions())
+                                      .add(crbOptions())
+                                      .add(eimOptions())
+                                      .add(crbSEROptions())
+                                      .add(podOptions())
+                                      );
 
     if ( app.vm().count( "help" ) )
     {

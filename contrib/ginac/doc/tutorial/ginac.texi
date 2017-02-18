@@ -24,7 +24,7 @@
 This is a tutorial that documents GiNaC @value{VERSION}, an open
 framework for symbolic computation within the C++ programming language.
 
-Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -52,7 +52,7 @@ notice identical to this one.
 
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 1999-2011 Johannes Gutenberg University Mainz, Germany
+Copyright @copyright{} 1999-2016 Johannes Gutenberg University Mainz, Germany
 @sp 2
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -135,7 +135,7 @@ the near future.
 
 @section License
 The GiNaC framework for symbolic computation within the C++ programming
-language is Copyright @copyright{} 1999-2011 Johannes Gutenberg
+language is Copyright @copyright{} 1999-2016 Johannes Gutenberg
 University Mainz, Germany.
 
 This program is free software; you can redistribute it and/or
@@ -476,7 +476,7 @@ installation.
 
 In order to install GiNaC on your system, some prerequisites need to be
 met.  First of all, you need to have a C++-compiler adhering to the
-ANSI-standard @cite{ISO/IEC 14882:1998(E)}.  We used GCC for development
+ISO standard @cite{ISO/IEC 14882:2011(E)}.  We used GCC for development
 so if you have a different compiler you are on your own.  For the
 configuration to succeed you need a Posix compliant shell installed in
 @file{/bin/sh}, GNU @command{bash} is fine. The pkg-config utility is
@@ -484,10 +484,10 @@ required for the configuration, it can be downloaded from
 @uref{http://pkg-config.freedesktop.org}.
 Last but not least, the CLN library
 is used extensively and needs to be installed on your system.
-Please get it from @uref{ftp://ftpthep.physik.uni-mainz.de/pub/gnu/}
-(it is covered by GPL) and install it prior to trying to install
-GiNaC.  The configure script checks if it can find it and if it cannot
-it will refuse to continue.
+Please get it from @uref{http://www.ginac.de/CLN/} (it is licensed under
+the GPL) and install it prior to trying to install GiNaC.  The configure
+script checks if it can find it and if it cannot, it will refuse to
+continue.
 
 
 @node Configuration, Building GiNaC, Prerequisites, Installation
@@ -838,8 +838,8 @@ some immediate simplifications.
 Internally, the anonymous evaluator in GiNaC is implemented by the methods
 
 @example
-ex ex::eval(int level = 0) const;
-ex basic::eval(int level = 0) const;
+ex ex::eval() const;
+ex basic::eval() const;
 @end example
 
 but unless you are extending GiNaC with your own classes or functions, there
@@ -1647,27 +1647,15 @@ packages, but are sometimes used to supply a variable number of arguments of
 the same type to GiNaC methods such as @code{subs()} and some @code{matrix}
 constructors, so you should have a basic understanding of them.
 
-Lists can be constructed by assigning a comma-separated sequence of
-expressions:
+Lists can be constructed from an initializer list of expressions:
 
 @example
 @{
     symbol x("x"), y("y");
     lst l;
-    l = x, 2, y, x+y;
+    l = @{x, 2, y, x+y@};
     // now, l is a list holding the expressions 'x', '2', 'y', and 'x+y',
     // in that order
-    ...
-@end example
-
-There are also constructors that allow direct creation of lists of up to
-16 expressions, which is often more convenient but slightly less efficient:
-
-@example
-    ...
-    // This produces the same list 'l' as above:
-    // lst l(x, 2, y, x+y);
-    // lst l = lst(x, 2, y, x+y);
     ...
 @end example
 
@@ -1952,9 +1940,17 @@ matrix::matrix(unsigned r, unsigned c);
 creates a matrix with @samp{r} rows and @samp{c} columns with all elements
 set to zero.
 
-The fastest way to create a matrix with preinitialized elements is to assign
-a list of comma-separated expressions to an empty matrix (see below for an
-example). But you can also specify the elements as a (flat) list with
+The easiest way to create a matrix is using an initializer list of
+initializer lists, all of the same size:
+
+@example
+@{
+    matrix m = @{@{1, -a@},
+                @{a,  1@}@};
+@}
+@end example
+
+You can also specify the elements as a (flat) list with
 
 @example
 matrix::matrix(unsigned r, unsigned c, const lst & l);
@@ -1977,6 +1973,7 @@ matrices:
 @cindex @code{symbolic_matrix()}
 @example
 ex diag_matrix(const lst & l);
+ex diag_matrix(initializer_list<ex> l);
 ex unit_matrix(unsigned x);
 ex unit_matrix(unsigned r, unsigned c);
 ex symbolic_matrix(unsigned r, unsigned c, const string & base_name);
@@ -1984,7 +1981,7 @@ ex symbolic_matrix(unsigned r, unsigned c, const string & base_name,
                    const string & tex_base_name);
 @end example
 
-@code{diag_matrix()} constructs a diagonal matrix given the list of diagonal
+@code{diag_matrix()} constructs a square diagonal matrix given the diagonal
 elements. @code{unit_matrix()} creates an @samp{x} by @samp{x} (or @samp{r}
 by @samp{c}) unit matrix. And finally, @code{symbolic_matrix} constructs a
 matrix filled with newly generated symbols made of the specified base name
@@ -2011,10 +2008,9 @@ that specify which row and column to remove:
 
 @example
 @{
-    matrix m(3,3);
-    m = 11, 12, 13,
-        21, 22, 23,
-        31, 32, 33;
+    matrix m = @{@{11, 12, 13@},
+                @{21, 22, 23@},
+                @{31, 32, 33@}@};
     cout << reduced_matrix(m, 1, 1) << endl;
     // -> [[11,13],[31,33]]
     cout << sub_matrix(m, 1, 2, 1, 2) << endl;
@@ -2040,9 +2036,8 @@ Here are a couple of examples for constructing matrices:
 @{
     symbol a("a"), b("b");
 
-    matrix M(2, 2);
-    M = a, 0,
-        0, b;
+    matrix M = @{@{a, 0@},
+                @{0, b@}@};
     cout << M << endl;
      // -> [[a,0],[0,b]]
 
@@ -2052,13 +2047,13 @@ Here are a couple of examples for constructing matrices:
     cout << M2 << endl;
      // -> [[a,0],[0,b]]
 
-    cout << matrix(2, 2, lst(a, 0, 0, b)) << endl;
+    cout << matrix(2, 2, lst@{a, 0, 0, b@}) << endl;
      // -> [[a,0],[0,b]]
 
-    cout << lst_to_matrix(lst(lst(a, 0), lst(0, b))) << endl;
+    cout << lst_to_matrix(lst@{lst@{a, 0@}, lst@{0, b@}@}) << endl;
      // -> [[a,0],[0,b]]
 
-    cout << diag_matrix(lst(a, b)) << endl;
+    cout << diag_matrix(lst@{a, b@}) << endl;
      // -> [[a,0],[0,b]]
 
     cout << unit_matrix(3) << endl;
@@ -2094,13 +2089,12 @@ and @math{C}:
 
 @example
 @{
-    matrix A(2, 2), B(2, 2), C(2, 2);
-    A =  1, 2,
-         3, 4;
-    B = -1, 0,
-         2, 1;
-    C =  8, 4,
-         2, 1;
+    matrix A = @{@{ 1, 2@},
+                @{ 3, 4@}@};
+    matrix B = @{@{-1, 0@},
+                @{ 2, 1@}@};
+    matrix C = @{@{ 8, 4@},
+                @{ 2, 1@}@};
 
     matrix result = A.mul(B).sub(C.mul_scalar(2));
     cout << result << endl;
@@ -2940,10 +2934,9 @@ and scalar products):
     symbol x("x"), y("y");
 
     // A is a 2x2 matrix, X is a 2x1 vector
-    matrix A(2, 2), X(2, 1);
-    A = 1, 2,
-        3, 4;
-    X = x, y;
+    matrix A = @{@{1, 2@},
+                @{3, 4@}@};
+    matrix X = @{@{x, y@}@};
 
     cout << indexed(A, i, i) << endl;
      // -> 5
@@ -3033,6 +3026,8 @@ canonicalize themselves according to rules specified in the implementation
 of the non-commutative classes. The drawback is that to work with other than
 the built-in algebras you have to implement new classes yourself. Both
 symbols and user-defined functions can be specified as being non-commutative.
+For symbols, this is done by subclassing class symbol; for functions,
+by explicitly setting the return type (@pxref{Symbolic functions}).
 
 @cindex @code{return_type()}
 @cindex @code{return_type_tinfo()}
@@ -3265,7 +3260,7 @@ QED:
            dirac_gamma(mu.toggle_variance()) *
            (dirac_slash(l, D) + m * dirac_ONE());   
     e = dirac_trace(e).simplify_indexed(sp);
-    e = e.collect(lst(l, ldotq, m));
+    e = e.collect(lst@{l, ldotq, m@});
     cout << e << endl;
      // -> (8-4*D)*l^2+(8-4*D)*ldotq+4*D*m^2
 @}
@@ -3334,7 +3329,16 @@ Clifford algebras, which will commute with each other.
 Note that the call @code{clifford_unit(mu, minkmetric())} creates
 something very close to @code{dirac_gamma(mu)}, although
 @code{dirac_gamma} have more efficient simplification mechanism. 
-@cindex @code{clifford::get_metric()}
+@cindex @code{get_metric()}
+Also, the object created by @code{clifford_unit(mu, minkmetric())} is
+not aware about the symmetry of its metric, see the start of the pevious
+paragraph. A more accurate analog of 'dirac_gamma(mu)' should be
+specifies as follows:
+
+@example
+    clifford_unit(mu, indexed(minkmetric(),sy_symm(),varidx(symbol("i"),4),varidx(symbol("j"),4)));
+@end example
+
 The method @code{clifford::get_metric()} returns a metric defining this
 Clifford number.
 
@@ -3357,7 +3361,7 @@ ways. For example
     ... 
     idx i(symbol("i"), 4);
     realsymbol s("s");
-    ex M = diag_matrix(lst(1, -1, 0, s));
+    ex M = diag_matrix(lst@{1, -1, 0, s@});
     ex e = clifford_unit(i, M);
     ex e0 = e.subs(i == 0);
     ex e1 = e.subs(i == 1);
@@ -3423,11 +3427,11 @@ The previous code may be rewritten with the help of @code{lst_to_clifford()} as 
     ...
     idx i(symbol("i"), 4);
     realsymbol s("s");
-    ex M = diag_matrix(lst(1, -1, 0, s));
-    ex e0 = lst_to_clifford(lst(1, 0, 0, 0), i, M);
-    ex e1 = lst_to_clifford(lst(0, 1, 0, 0), i, M);
-    ex e2 = lst_to_clifford(lst(0, 0, 1, 0), i, M);
-    ex e3 = lst_to_clifford(lst(0, 0, 0, 1), i, M);
+    ex M = diag_matrix(@{1, -1, 0, s@});
+    ex e0 = lst_to_clifford(lst@{1, 0, 0, 0@}, i, M);
+    ex e1 = lst_to_clifford(lst@{0, 1, 0, 0@}, i, M);
+    ex e2 = lst_to_clifford(lst@{0, 0, 1, 0@}, i, M);
+    ex e3 = lst_to_clifford(lst@{0, 0, 0, 1@}, i, M);
   ...
 @}
 @end example
@@ -3482,14 +3486,13 @@ There are several functions for (anti-)automorphisms of Clifford algebras:
 
 @example
     ex clifford_prime(const ex & e)
-    inline ex clifford_star(const ex & e) @{ return e.conjugate(); @}
-    inline ex clifford_bar(const ex & e) @{ return clifford_prime(e.conjugate()); @}
+    inline ex clifford_star(const ex & e)
+    inline ex clifford_bar(const ex & e)
 @end example
 
 The automorphism of a Clifford algebra @code{clifford_prime()} simply
 changes signs of all Clifford units in the expression. The reversion
-of a Clifford algebra @code{clifford_star()} coincides with the
-@code{conjugate()} method and effectively reverses the order of Clifford
+of a Clifford algebra @code{clifford_star()} reverses the order of Clifford
 units in any product. Finally the main anti-automorphism
 of a Clifford algebra @code{clifford_bar()} is the composition of the
 previous two, i.e. it makes the reversion and changes signs of all Clifford units
@@ -3974,8 +3977,6 @@ table:
 @tab @dots{}a polynomial with (possibly complex) rational coefficients (such as @math{2/3+7/2*I})
 @item @code{rational_function}
 @tab @dots{}a rational function (@math{x+y}, @math{z/(x+y)})
-@item @code{algebraic}
-@tab @dots{}an algebraic object (@math{sqrt(2)}, @math{sqrt(x)-1})
 @end multitable
 @end cartouche
 
@@ -4068,7 +4069,7 @@ The following example illustrates the differences between
 @example
 @{
     symbol A("A"), B("B"), C("C");
-    ex e = lst(lst(A, B), C);
+    ex e = lst@{lst@{A, B@}, C@};
 
     std::copy(e.begin(), e.end(),
               std::ostream_iterator<ex>(cout, "\n"));
@@ -4155,12 +4156,12 @@ provides two functors that can be supplied as proper binary comparison
 predicates to the STL:
 
 @example
-class ex_is_less : public std::binary_function<ex, ex, bool> @{
+class ex_is_less @{
 public:
     bool operator()(const ex &lh, const ex &rh) const;
 @};
 
-class ex_is_equal : public std::binary_function<ex, ex, bool> @{
+class ex_is_equal @{
 public:
     bool operator()(const ex &lh, const ex &rh) const;
 @};
@@ -4188,7 +4189,7 @@ std::sort(v.begin(), v.end(), ex_is_less());
 
 // count the number of expressions equal to '1'
 unsigned num_ones = std::count_if(v.begin(), v.end(),
-                                  std::bind2nd(ex_is_equal(), 1));
+                                  [](const ex& e) @{ return ex_is_equal()(e, 1); @});
 @end example
 
 The implementation of @code{ex_is_less} uses the member function
@@ -4211,7 +4212,7 @@ GiNaC keeps algebraic expressions, numbers and constants in their exact form.
 To evaluate them using floating-point arithmetic you need to call
 
 @example
-ex ex::evalf(int level = 0) const;
+ex ex::evalf() const;
 @end example
 
 @cindex @code{Digits}
@@ -4268,13 +4269,13 @@ In the first form, @code{subs()} accepts a relational of the form
      // -> 73
 
     ex e2 = x*y + x;
-    cout << "e2(-2, 4) = " << e2.subs(lst(x == -2, y == 4)) << endl;
+    cout << "e2(-2, 4) = " << e2.subs(lst@{x == -2, y == 4@}) << endl;
      // -> -10
 @}
 @end example
 
 If you specify multiple substitutions, they are performed in parallel, so e.g.
-@code{subs(lst(x == y, y == x))} exchanges @samp{x} and @samp{y}.
+@code{subs(lst@{x == y, y == x@})} exchanges @samp{x} and @samp{y}.
 
 The second form of @code{subs()} takes an @code{exmap} object which is a
 pair associative container that maps expressions to expressions (currently
@@ -4305,7 +4306,7 @@ contain the same number of elements). Using this form, you would write
     symbol x("x"), y("y");
     ex e2 = x*y + x;
 
-    cout << "e2(-2, 4) = " << e2.subs(lst(x, y), lst(-2, 4)) << endl;
+    cout << "e2(-2, 4) = " << e2.subs(lst@{x, y@}, lst@{-2, 4@}) << endl;
 @}
 @end example
 
@@ -5025,7 +5026,7 @@ one variable, the variables are given as a list.
 
 @example
 (x*y*sin(y)).is_polynomial(x)         // Returns true.
-(x*y*sin(y)).is_polynomial(lst(x,y))  // Returns false.
+(x*y*sin(y)).is_polynomial(lst@{x,y@})  // Returns false.
 @end example
 
 @subsection Expanding and collecting
@@ -5352,7 +5353,7 @@ int main()
 
 Square-free decomposition is available in GiNaC:
 @example
-ex sqrfree(const ex & a, const lst & l = lst());
+ex sqrfree(const ex & a, const lst & l = lst@{@});
 @end example
 Here is an example that by the way illustrates how the exact form of the
 result may slightly depend on the order of differentiation, calling for
@@ -5362,10 +5363,10 @@ some care with subsequent processing of the result:
     symbol x("x"), y("y");
     ex BiVarPol = expand(pow(2-2*y,3) * pow(1+x*y,2) * pow(x-2*y,2) * (x+y));
 
-    cout << sqrfree(BiVarPol, lst(x,y)) << endl;
+    cout << sqrfree(BiVarPol, lst@{x,y@}) << endl;
      // -> 8*(1-y)^3*(y*x^2-2*y+x*(1-2*y^2))^2*(y+x)
 
-    cout << sqrfree(BiVarPol, lst(y,x)) << endl;
+    cout << sqrfree(BiVarPol, lst@{y,x@}) << endl;
      // -> 8*(1-y)^3*(-y*x^2+2*y+x*(-1+2*y^2))^2*(y+x)
 
     cout << sqrfree(BiVarPol) << endl;
@@ -5500,20 +5501,18 @@ above. You do this by calling
 
 @example
 ex ex::to_polynomial(exmap & m);
-ex ex::to_polynomial(lst & l);
 @end example
 or
 @example
 ex ex::to_rational(exmap & m);
-ex ex::to_rational(lst & l);
 @end example
 
-on the expression to be converted. The supplied @code{exmap} or @code{lst}
-will be filled with the generated temporary symbols and their replacement
-expressions in a format that can be used directly for the @code{subs()}
-method. It can also already contain a list of replacements from an earlier
-application of @code{.to_polynomial()} or @code{.to_rational()}, so it's
-possible to use it on multiple expressions and get consistent results.
+on the expression to be converted. The supplied @code{exmap} will be filled
+with the generated temporary symbols and their replacement expressions in a
+format that can be used directly for the @code{subs()} method. It can also
+already contain a list of replacements from an earlier application of
+@code{.to_polynomial()} or @code{.to_rational()}, so it's possible to use
+it on multiple expressions and get consistent results.
 
 The difference between @code{.to_polynomial()} and @code{.to_rational()}
 is probably best illustrated with an example:
@@ -5524,15 +5523,15 @@ is probably best illustrated with an example:
     ex a = 2*x/sin(x) - y/(3*sin(x));
     cout << a << endl;
 
-    lst lp;
-    ex p = a.to_polynomial(lp);
-    cout << " = " << p << "\n   with " << lp << endl;
+    exmap mp;
+    ex p = a.to_polynomial(mp);
+    cout << " = " << p << "\n   with " << mp << endl;
      // = symbol3*symbol2*y+2*symbol2*x
      //   with @{symbol2==sin(x)^(-1),symbol3==-1/3@}
 
-    lst lr;
-    ex r = a.to_rational(lr);
-    cout << " = " << r << "\n   with " << lr << endl;
+    exmap mr;
+    ex r = a.to_rational(mr);
+    cout << " = " << r << "\n   with " << mr << endl;
      // = -1/3*symbol4^(-1)*y+2*symbol4^(-1)*x
      //   with @{symbol4==sin(x)@}
 @}
@@ -5772,11 +5771,11 @@ almost any kind of object (anything that is @code{subs()}able):
     idx i(symbol("i"), 3), j(symbol("j"), 3), k(symbol("k"), 3);
     symbol A("A"), B("B"), a("a"), b("b"), c("c");
                                            
-    cout << indexed(A, i, j).symmetrize() << endl;
+    cout << ex(indexed(A, i, j)).symmetrize() << endl;
      // -> 1/2*A.j.i+1/2*A.i.j
-    cout << indexed(A, i, j, k).antisymmetrize(lst(i, j)) << endl;
+    cout << ex(indexed(A, i, j, k)).antisymmetrize(lst@{i, j@}) << endl;
      // -> -1/2*A.j.i.k+1/2*A.i.j.k
-    cout << lst(a, b, c).symmetrize_cyclic(lst(a, b, c)) << endl;
+    cout << ex(lst@{a, b, c@}).symmetrize_cyclic(lst@{a, b, c@}) << endl;
      // -> 1/3*@{a,b,c@}+1/3*@{b,c,a@}+1/3*@{c,a,b@}
 @}
 @end example
@@ -5858,6 +5857,9 @@ GiNaC contains the following predefined mathematical functions:
 @item @code{log(x)}
 @tab natural logarithm
 @cindex @code{log()}
+@item @code{eta(x,y)}
+@tab Eta function: @code{eta(x,y) = log(x*y) - log(x) - log(y)}
+@cindex @code{eta()}
 @item @code{Li2(x)}
 @tab dilogarithm
 @cindex @code{Li2()}
@@ -5925,6 +5927,59 @@ running away towards infinity along the imaginary axis. The
 towards -infinity.  These functions are continuous as the branch cut
 is approached coming around the finite endpoint of the cut in a
 counter clockwise direction.
+
+@c
+@subsection Expanding functions
+@cindex expand trancedent functions
+@cindex @code{expand_options::expand_transcendental}
+@cindex @code{expand_options::expand_function_args}
+GiNaC knows several expansion laws for trancedent functions, e.g.
+@tex
+$e^{a+b}=e^a e^b$,
+$|zw|=|z|\cdot |w|$
+@end tex
+@ifnottex
+@command{exp(a+b)=exp(a) exp(b), |zw|=|z| |w|}
+@end ifnottex
+or
+@tex
+$\log(c*d)=\log(c)+\log(d)$,
+@end tex
+@ifnottex
+@command{log(cd)=log(c)+log(d)}
+@end ifnottex
+(for positive
+@tex
+$c,\ d$
+@end tex
+@ifnottex
+@command{c, d}
+@end ifnottex
+). In order to use these rules you need to call @code{expand()} method
+with the option @code{expand_options::expand_transcendental}. Another
+relevant option is @code{expand_options::expand_function_args}. Their
+usage and interaction can be seen from the following example:
+@example
+@{
+	symbol x("x"),  y("y");
+	ex e=exp(pow(x+y,2));
+	cout << e.expand() << endl;
+	// -> exp((x+y)^2)
+	cout << e.expand(expand_options::expand_transcendental) << endl;
+	// -> exp((x+y)^2)
+	cout << e.expand(expand_options::expand_function_args) << endl;
+	// -> exp(2*x*y+x^2+y^2)
+	cout << e.expand(expand_options::expand_function_args
+			| expand_options::expand_transcendental) << endl;
+	// -> exp(y^2)*exp(2*x*y)*exp(x^2)
+@}
+@end example
+If both flags are set (as in the last call), then GiNaC tries to get
+the maximal expansion. For example, for the exponent GiNaC firstly expands
+the argument and then the function. For the logarithm and absolute value,
+GiNaC uses the opposite order: firstly expands the function and then its
+argument. Of course, a user can fine-tune this behavior by sequential
+calls of several @code{expand()} methods with desired flags.
 
 @node Multiple polylogarithms, Complex expressions, Built-in functions, Methods and functions
 @c    node-name, next, previous, up
@@ -6023,7 +6078,7 @@ The functions only evaluate if the indices are integers greater than zero, excep
 will be interpreted as the sequence of signs for the corresponding indices
 @code{m} or the sign of the imaginary part for the
 corresponding arguments @code{a}, it must contain 1 or -1, e.g.
-@code{zeta(lst(3,4), lst(-1,1))} means
+@code{zeta(lst@{3,4@}, lst@{-1,1@})} means
 @tex
 $\zeta(\overline{3},4)$
 @end tex
@@ -6031,7 +6086,7 @@ $\zeta(\overline{3},4)$
 @command{zeta(\overline@{3@},4)}
 @end ifnottex
 and
-@code{G(lst(a,b), lst(-1,1), c)} means
+@code{G(lst@{a,b@}, lst@{-1,1@}, c)} means
 @tex
 $G(a-0\epsilon,b+0\epsilon;c)$.
 @end tex
@@ -6040,7 +6095,7 @@ $G(a-0\epsilon,b+0\epsilon;c)$.
 @end ifnottex
 The definition of @code{H} allows indices to be 0, 1 or -1 (in expanded notation) or equally to
 be any integer (in compact notation). With GiNaC expanded and compact notation can be mixed,
-e.g. @code{lst(0,0,-1,0,1,0,0)}, @code{lst(0,0,-1,2,0,0)} and @code{lst(-3,2,0,0)} are equivalent as
+e.g. @code{lst@{0,0,-1,0,1,0,0@}}, @code{lst@{0,0,-1,2,0,0@}} and @code{lst@{-3,2,0,0@}} are equivalent as
 indices. The anonymous evaluator @code{eval()} tries to reduce the functions, if possible, to
 the least-generic multiple polylogarithm. If all arguments are unit, it returns @code{zeta}.
 Arguments equal to zero get considered, too. Riemann's zeta function @code{zeta} (with depth one)
@@ -6449,7 +6504,7 @@ to map input (sub)strings to arbitrary expressions:
     table["x"] = x+log(y)+1;
     parser reader(table);
     ex e = reader("5*x^3 - x^2");
-    // e = 5*(x+log(y)+1)^3 + (x+log(y)+1)^2
+    // e = 5*(x+log(y)+1)^3 - (x+log(y)+1)^2
 @}
 @end example
 
@@ -6462,8 +6517,8 @@ with @code{get_syms()} method:
     parser reader;
     ex e = reader("2*x+sin(y)");
     symtab table = reader.get_syms();
-    symbol x = reader["x"];
-    symbol y = reader["y"];
+    symbol x = ex_to<symbol>(table["x"]);
+    symbol y = ex_to<symbol>(table["y"]);
 @}
 @end example
 
@@ -6486,7 +6541,9 @@ Sometimes you might want to prevent GiNaC from inserting these extra symbols
 @}
 @end example
 
-With this parser, it's also easy to implement interactive GiNaC programs:
+With this parser, it's also easy to implement interactive GiNaC programs.
+When running the following program interactively, remember to send an
+EOF marker after the input, e.g. by pressing Ctrl-D on an empty line:
 
 @example
 #include <iostream>
@@ -6633,8 +6690,14 @@ ones supplied to @code{compile_ex} should appear in the expression.
 @cindex ginac-excompiler
 @code{compile_ex} uses the shell script @code{ginac-excompiler} to start the C
 compiler and produce the object files. This shell script comes with GiNaC and
-will be installed together with GiNaC in the configured @code{$PREFIX/bin}
-directory.
+will be installed together with GiNaC in the configured @code{$LIBEXECDIR}
+(typically @code{$PREFIX/libexec} or @code{$PREFIX/lib/ginac}). You can also
+export additional compiler flags via the @env{$CXXFLAGS} variable:
+
+@example
+setenv("CXXFLAGS", "-O3 -fomit-frame-pointer -ffast-math", 1);
+compile_ex(...);
+@end example
 
 @subsection Archiving
 @cindex @code{archive} (class)
@@ -7045,6 +7108,25 @@ specifies which parameter to differentiate in a partial derivative in
 case the function has more than one parameter, and its main application
 is for correct handling of the chain rule.
 
+Derivatives of some functions, for example @code{abs()} and
+@code{Order()}, could not be evaluated through the chain rule. In such
+cases the full derivative may be specified as shown for @code{Order()}:
+
+@example
+static ex Order_expl_derivative(const ex & arg, const symbol & s)
+@{
+	return Order(arg.diff(s));
+@}
+@end example
+
+That is, we need to supply a procedure, which returns the expression of
+derivative with respect to the variable @code{s} for the argument
+@code{arg}. This procedure need to be registered with the function
+through the option @code{expl_derivative_func} (see the next
+Subsection). In contrast, a partial derivative, e.g. as was defined for
+@code{cos()} above, needs to be registered through the option
+@code{derivative_func}. 
+
 An implementation of the series expansion is not needed for @code{cos()} as
 it doesn't have any poles and GiNaC can do Taylor expansion by itself (as
 long as it knows what the derivative of @code{cos()} is). @code{tan()}, on
@@ -7080,14 +7162,15 @@ functions without any special options.
 eval_func(<C++ function>)
 evalf_func(<C++ function>)
 derivative_func(<C++ function>)
+expl_derivative_func(<C++ function>)
 series_func(<C++ function>)
 conjugate_func(<C++ function>)
 @end example
 
 These specify the C++ functions that implement symbolic evaluation,
-numeric evaluation, partial derivatives, and series expansion, respectively.
-They correspond to the GiNaC methods @code{eval()}, @code{evalf()},
-@code{diff()} and @code{series()}.
+numeric evaluation, partial derivatives, explicit derivative, and series
+expansion, respectively.  They correspond to the GiNaC methods
+@code{eval()}, @code{evalf()}, @code{diff()} and @code{series()}.
 
 The @code{eval_func()} function needs to use @code{.hold()} if no further
 automatic evaluation is desired or possible.
@@ -8162,11 +8245,11 @@ class mystring : public basic
 @{
     ...
 public:
-    ex eval(int level = 0) const;
+    ex eval() const override;
     ...
 @};
 
-ex mystring::eval(int level) const
+ex mystring::eval() const
 @{
     string new_str;
     for (size_t i=0; i<str.length(); i++) @{
@@ -8179,19 +8262,19 @@ ex mystring::eval(int level) const
 
     if (new_str.length() == 0)
         return 0;
-    else
-        return mystring(new_str).hold();
+
+    return mystring(new_str).hold();
 @}
 @end example
 
-The @code{level} argument is used to limit the recursion depth of the
-evaluation.  We don't have any subexpressions in the @code{mystring}
-class so we are not concerned with this.  If we had, we would call the
-@code{eval()} functions of the subexpressions with @code{level - 1} as
-the argument if @code{level != 1}.  The @code{hold()} member function
-sets a flag in the object that prevents further evaluation.  Otherwise
-we might end up in an endless loop.  When you want to return the object
-unmodified, use @code{return this->hold();}.
+The @code{hold()} member function sets a flag in the object that prevents
+further evaluation.  Otherwise we might end up in an endless loop.  When you
+want to return the object unmodified, use @code{return this->hold();}.
+
+If our class had subobjects, we would have to evaluate them first (unless
+they are all of type @code{ex}, which are automatically evaluated). We don't
+have any subexpressions in the @code{mystring} class, so we are not concerned
+with this.
 
 Let's confirm that it works:
 
@@ -8214,8 +8297,8 @@ required but will make operations with objects of the class more efficient:
 @cindex @code{calchash()}
 @cindex @code{is_equal_same_type()}
 @example
-unsigned calchash() const;
-bool is_equal_same_type(const basic & other) const;
+unsigned calchash() const override;
+bool is_equal_same_type(const basic & other) const override;
 @end example
 
 The @code{calchash()} method returns an @code{unsigned} hash value for the
@@ -8236,10 +8319,10 @@ For a real algebraic class, there are probably some more functions that you
 might want to provide:
 
 @example
-bool info(unsigned inf) const;
-ex evalf(int level = 0) const;
-ex series(const relational & r, int order, unsigned options = 0) const;
-ex derivative(const symbol & s) const;
+bool info(unsigned inf) const override;
+ex evalf() const override;
+ex series(const relational & r, int order, unsigned options = 0) const override;
+ex derivative(const symbol & s) const override;
 @end example
 
 If your class stores sub-expressions (see the scalar product example in the
@@ -8247,11 +8330,11 @@ previous section) you will probably want to override
 
 @cindex @code{let_op()}
 @example
-size_t nops() cont;
-ex op(size_t i) const;
-ex & let_op(size_t i);
-ex subs(const lst & ls, const lst & lr, unsigned options = 0) const;
-ex map(map_function & f) const;
+size_t nops() const override;
+ex op(size_t i) const override;
+ex & let_op(size_t i) override;
+ex subs(const lst & ls, const lst & lr, unsigned options = 0) const override;
+ex map(map_function & f) const override;
 @end example
 
 @code{let_op()} is a variant of @code{op()} that allows write access. The
@@ -8350,14 +8433,9 @@ fix bugs in a traditional system.
 multiple interfaces: Though real GiNaC programs have to be written in
 some editor, then be compiled, linked and executed, there are more ways
 to work with the GiNaC engine.  Many people want to play with
-expressions interactively, as in traditional CASs.  Currently, two such
-windows into GiNaC have been implemented and many more are possible: the
-tiny @command{ginsh} that is part of the distribution exposes GiNaC's
-types to a command line and second, as a more consistent approach, an
-interactive interface to the Cint C++ interpreter has been put together
-(called GiNaC-cint) that allows an interactive scripting interface
-consistent with the C++ language.  It is available from the usual GiNaC
-FTP-site.
+expressions interactively, as in traditional CASs: The tiny
+@command{ginsh} that comes with the distribution exposes many, but not
+all, of GiNaC's types to a command line.
 
 @item
 seamless integration: it is somewhere between difficult and impossible
@@ -8408,8 +8486,7 @@ really believe that you need to use a different compiler.  We have
 occasionally used other compilers and may be able to give you advice.}
 GiNaC uses recent language features like explicit constructors, mutable
 members, RTTI, @code{dynamic_cast}s and STL, so ANSI compliance is meant
-literally.  Recent GCC versions starting at 2.95.3, although itself not
-yet ANSI compliant, support all needed features.
+literally.
     
 @end itemize
 
@@ -8679,7 +8756,7 @@ If the required version was not found, executes @var{ACTION-IF-NOT-FOUND}.
 
 @node Configure script options, Example package, Package tools, Package tools 
 @c    node-name, next, previous, up
-@subsection Configuring a package that uses GiNaC
+@appendixsection Configuring a package that uses GiNaC
 
 The directory where the GiNaC libraries are installed needs
 to be found by your system's dynamic linkers (both compile- and run-time
@@ -8732,7 +8809,7 @@ $ ./configure
 
 @node Example package, Bibliography, Configure script options, Package tools
 @c    node-name, next, previous, up
-@subsection Example of a package using GiNaC
+@appendixsection Example of a package using GiNaC
 
 The following shows how to build a simple package using automake
 and the @samp{PKG_CHECK_MODULES} macro. The program used here is @file{simple.cpp}:
@@ -8830,7 +8907,7 @@ $ make install
 @itemize @minus{}
 
 @item
-@cite{ISO/IEC 14882:1998: Programming Languages: C++}
+@cite{ISO/IEC 14882:2011: Programming Languages: C++}
 
 @item
 @cite{CLN: A Class Library for Numbers}, @email{haible@@ilog.fr, Bruno Haible}

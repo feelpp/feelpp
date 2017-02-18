@@ -15,8 +15,17 @@
 #include<iostream>
 using namespace std;
 
+// NOTE the following workaround was needed on some 32 bits builds to kill extra precision of x87 registers.
+// It seems that it os not needed anymore, but let's keep it here, just in case...
+
 template<typename T> EIGEN_DONT_INLINE
-void kill_extra_precision(T& x) { eigen_assert((void*)(&x) != (void*)0); }
+void kill_extra_precision(T& /* x */) {
+  // This one worked but triggered a warning:
+  /* eigen_assert((void*)(&x) != (void*)0); */
+  // An alternative could be:
+  /* volatile T tmp = x; */
+  /* x = tmp; */
+}
 
 
 template<typename BoxType> void alignedbox(const BoxType& _box)
@@ -48,6 +57,8 @@ template<typename BoxType> void alignedbox(const BoxType& _box)
   b0.extend(p0);
   b0.extend(p1);
   VERIFY(b0.contains(p0*s1+(Scalar(1)-s1)*p1));
+  VERIFY(b0.contains(b0.center()));
+  VERIFY_IS_APPROX(b0.center(),(p0+p1)/Scalar(2));
 
   (b2 = b0).extend(b1);
   VERIFY(b2.contains(b0));

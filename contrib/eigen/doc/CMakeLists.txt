@@ -68,9 +68,9 @@ set(snippets_targets "")
 add_definitions("-DEIGEN_MAKING_DOCS")
 add_custom_target(all_examples)
 
-add_subdirectory(examples)
-add_subdirectory(special_examples)
-add_subdirectory(snippets)
+# add_subdirectory(examples)
+# add_subdirectory(special_examples)
+# add_subdirectory(snippets)
 
 add_custom_target(
   doc-eigen-prerequisites
@@ -78,6 +78,8 @@ add_custom_target(
   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/html/
   COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/eigen_navtree_hacks.js           ${CMAKE_CURRENT_BINARY_DIR}/html/
   COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Eigen_Silly_Professor_64x64.png  ${CMAKE_CURRENT_BINARY_DIR}/html/
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/ftv2pnode.png                    ${CMAKE_CURRENT_BINARY_DIR}/html/
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/ftv2node.png                     ${CMAKE_CURRENT_BINARY_DIR}/html/
   COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/AsciiQuickReference.txt          ${CMAKE_CURRENT_BINARY_DIR}/html/
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
@@ -88,13 +90,16 @@ add_custom_target(
   COMMAND ${CMAKE_COMMAND} -E make_directory ${Eigen_BINARY_DIR}/doc/html/unsupported
   COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/eigen_navtree_hacks.js           ${CMAKE_CURRENT_BINARY_DIR}/html/unsupported/
   COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Eigen_Silly_Professor_64x64.png  ${CMAKE_CURRENT_BINARY_DIR}/html/unsupported/
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/ftv2pnode.png                    ${CMAKE_CURRENT_BINARY_DIR}/html/unsupported/
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/ftv2node.png                     ${CMAKE_CURRENT_BINARY_DIR}/html/unsupported/
   WORKING_DIRECTORY ${Eigen_BINARY_DIR}/doc
 )
 
 add_dependencies(doc-eigen-prerequisites all_snippets all_examples)
 add_dependencies(doc-unsupported-prerequisites unsupported_snippets unsupported_examples)
 
-add_custom_target(doc ALL
+if ( DOXYGEN_FOUND )
+add_custom_target(doc-eigen ALL
   COMMAND doxygen
   COMMAND doxygen Doxyfile-unsupported
   COMMAND ${CMAKE_COMMAND} -E copy ${Eigen_BINARY_DIR}/doc/html/group__TopicUnalignedArrayAssert.html ${Eigen_BINARY_DIR}/doc/html/TopicUnalignedArrayAssert.html
@@ -105,4 +110,5 @@ add_custom_target(doc ALL
   COMMAND ${CMAKE_COMMAND} -E rename eigen-doc html
   WORKING_DIRECTORY ${Eigen_BINARY_DIR}/doc)
 
-add_dependencies(doc doc-eigen-prerequisites doc-unsupported-prerequisites)
+add_dependencies(doc-eigen doc-eigen-prerequisites doc-unsupported-prerequisites)
+endif()

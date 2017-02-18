@@ -68,7 +68,7 @@ namespace Feel
       - close the tables after you are finished, with HDF5::closeTable
       - close the file: HDF5::closeFile
 */
-class HDF5
+class FEELPP_EXPORT HDF5
 {
 public:
     //! @name Public Types
@@ -79,7 +79,7 @@ public:
     //! @name Constructors and Destructor
     //@{
     //! Default empty constructor
-    HDF5() {}
+    HDF5() = default;
 
     //! Constructor
     /*!
@@ -91,6 +91,10 @@ public:
      */
     HDF5( const std::string& fileName, const comm_type& comm,
           const bool& existing = false );
+
+    // Copy constructor and assignment operator are disabled
+    HDF5 (const HDF5&) = delete;
+    HDF5& operator= (const HDF5&) = delete;
 
     //! Empty destructor
     virtual ~HDF5() {}
@@ -262,10 +266,6 @@ private:
         hid_t dataset;
         hid_t plist;
     } tableHandle;
-
-    // Copy constructor and assignment operator are disabled
-    HDF5 (const HDF5&);
-    HDF5& operator= (const HDF5&);
 
     //! Private Data Members
     //@{

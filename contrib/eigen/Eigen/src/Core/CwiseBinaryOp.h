@@ -46,7 +46,7 @@ struct traits<CwiseBinaryOp<BinaryOp, Lhs, Rhs> >
   typedef typename remove_reference<LhsNested>::type _LhsNested;
   typedef typename remove_reference<RhsNested>::type _RhsNested;
   enum {
-    Flags = _LhsNested::Flags & RowMajorBit
+    Flags = cwise_promote_storage_order<typename traits<Lhs>::StorageKind,typename traits<Rhs>::StorageKind,_LhsNested::Flags & RowMajorBit,_RhsNested::Flags & RowMajorBit>::value
   };
 };
 } // end namespace internal
@@ -84,6 +84,7 @@ class CwiseBinaryOp :
 {
   public:
     
+    typedef typename internal::remove_all<BinaryOp>::type Functor;
     typedef typename internal::remove_all<LhsType>::type Lhs;
     typedef typename internal::remove_all<RhsType>::type Rhs;
 
@@ -160,7 +161,7 @@ template<typename OtherDerived>
 EIGEN_STRONG_INLINE Derived &
 MatrixBase<Derived>::operator-=(const MatrixBase<OtherDerived> &other)
 {
-  call_assignment(derived(), other.derived(), internal::sub_assign_op<Scalar>());
+  call_assignment(derived(), other.derived(), internal::sub_assign_op<Scalar,typename OtherDerived::Scalar>());
   return derived();
 }
 
@@ -173,7 +174,7 @@ template<typename OtherDerived>
 EIGEN_STRONG_INLINE Derived &
 MatrixBase<Derived>::operator+=(const MatrixBase<OtherDerived>& other)
 {
-  call_assignment(derived(), other.derived(), internal::add_assign_op<Scalar>());
+  call_assignment(derived(), other.derived(), internal::add_assign_op<Scalar,typename OtherDerived::Scalar>());
   return derived();
 }
 

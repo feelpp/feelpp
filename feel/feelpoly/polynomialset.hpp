@@ -1558,6 +1558,14 @@ public:
             return M_gmc;
         }
 
+        /**
+         *  set the geometric mapping context
+         */
+        void setGmContext( geometric_mapping_context_ptrtype const& gmc )
+        {
+            M_gmc = gmc;
+        }
+
         //! \return the element id
         size_type eId() const
         {

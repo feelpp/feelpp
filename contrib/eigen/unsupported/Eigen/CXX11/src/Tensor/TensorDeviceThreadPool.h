@@ -12,17 +12,6 @@
 
 namespace Eigen {
 
-// Use the SimpleThreadPool by default. We'll switch to the new non blocking
-// thread pool later.
-#ifndef EIGEN_USE_SIMPLE_THREAD_POOL
-template <typename Env> using ThreadPoolTempl = NonBlockingThreadPoolTempl<Env>;
-typedef NonBlockingThreadPool ThreadPool;
-#else
-template <typename Env> using ThreadPoolTempl = SimpleThreadPoolTempl<Env>;
-typedef SimpleThreadPool ThreadPool;
-#endif
-
-
 // Barrier is an object that allows one or more threads to wait until
 // Notify has been called a specified number of times.
 class Barrier {
@@ -106,7 +95,7 @@ static EIGEN_STRONG_INLINE void wait_until_ready(SyncType* n) {
 // Build a thread pool device on top the an existing pool of threads.
 struct ThreadPoolDevice {
   // The ownership of the thread pool remains with the caller.
-  ThreadPoolDevice(ThreadPoolInterface* pool, size_t num_cores) : pool_(pool), num_threads_(num_cores) { }
+  ThreadPoolDevice(ThreadPoolInterface* pool, int num_cores) : pool_(pool), num_threads_(num_cores) { }
 
   EIGEN_STRONG_INLINE void* allocate(size_t num_bytes) const {
     return internal::aligned_malloc(num_bytes);
@@ -130,7 +119,7 @@ struct ThreadPoolDevice {
     ::memset(buffer, c, n);
   }
 
-  EIGEN_STRONG_INLINE size_t numThreads() const {
+  EIGEN_STRONG_INLINE int numThreads() const {
     return num_threads_;
   }
 
@@ -151,9 +140,7 @@ struct ThreadPoolDevice {
   template <class Function, class... Args>
   EIGEN_STRONG_INLINE Notification* enqueue(Function&& f, Args&&... args) const {
     Notification* n = new Notification();
-    std::function<void()> func =
-      std::bind(&FunctionWrapperWithNotification<Function, Args...>::run, n, f, args...);
-    pool_->Schedule(func);
+    pool_->Schedule(std::bind(&FunctionWrapperWithNotification<Function, Args...>::run, n, f, args...));
     return n;
   }
 
@@ -161,15 +148,19 @@ struct ThreadPoolDevice {
   EIGEN_STRONG_INLINE void enqueue_with_barrier(Barrier* b,
                                                 Function&& f,
                                                 Args&&... args) const {
-    std::function<void()> func = std::bind(
-        &FunctionWrapperWithBarrier<Function, Args...>::run, b, f, args...);
-    pool_->Schedule(func);
+    pool_->Schedule(std::bind(
+        &FunctionWrapperWithBarrier<Function, Args...>::run, b, f, args...));
   }
 
   template <class Function, class... Args>
   EIGEN_STRONG_INLINE void enqueueNoNotification(Function&& f, Args&&... args) const {
-    std::function<void()> func = std::bind(f, args...);
-    pool_->Schedule(func);
+    pool_->Schedule(std::bind(f, args...));
+  }
+
+  // Returns a logical thread index between 0 and pool_->NumThreads() - 1 if
+  // called from one of the threads in pool_. Returns -1 otherwise.
+  EIGEN_STRONG_INLINE int currentThreadId() const {
+    return pool_->CurrentThreadId();
   }
 
   // parallelFor executes f with [0, n) arguments in parallel and waits for
@@ -182,7 +173,7 @@ struct ThreadPoolDevice {
                    std::function<void(Index, Index)> f) const {
     typedef TensorCostModel<ThreadPoolDevice> CostModel;
     if (n <= 1 || numThreads() == 1 ||
-        CostModel::numThreads(n, cost, numThreads()) == 1) {
+        CostModel::numThreads(n, cost, static_cast<int>(numThreads())) == 1) {
       f(0, n);
       return;
     }
@@ -242,7 +233,7 @@ struct ThreadPoolDevice {
     // Recursively divide size into halves until we reach block_size.
     // Division code rounds mid to block_size, so we are guaranteed to get
     // block_count leaves that do actual computations.
-    Barrier barrier(block_count);
+    Barrier barrier(static_cast<unsigned int>(block_count));
     std::function<void(Index, Index)> handleRange;
     handleRange = [=, &handleRange, &barrier, &f](Index first, Index last) {
       if (last - first <= block_size) {
@@ -254,7 +245,7 @@ struct ThreadPoolDevice {
       // Split into halves and submit to the pool.
       Index mid = first + divup((last - first) / 2, block_size) * block_size;
       pool_->Schedule([=, &handleRange]() { handleRange(mid, last); });
-      pool_->Schedule([=, &handleRange]() { handleRange(first, mid); });
+      handleRange(first, mid);
     };
     handleRange(0, n);
     barrier.Wait();
@@ -268,7 +259,7 @@ struct ThreadPoolDevice {
 
  private:
   ThreadPoolInterface* pool_;
-  size_t num_threads_;
+  int num_threads_;
 };
 
 
