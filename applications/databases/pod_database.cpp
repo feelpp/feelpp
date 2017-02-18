@@ -29,7 +29,7 @@ runPOD( DatabaseType & myDb, boost::shared_ptr<SpaceType> const& space, std::str
     {
         if ( ( timeSetDb[k] >= (ti - 1e-9) ) &&
              ( timeSetDb[k] <= (tf + 1e-9 ) ) )
-            timeSetIndex.push_back( timeSetDb[k] );
+            timeSetIndex.push_back( k );
     }
     int nTimeStep = timeSetIndex.size();
     if ( nTimeStep == 0 )
@@ -40,6 +40,15 @@ runPOD( DatabaseType & myDb, boost::shared_ptr<SpaceType> const& space, std::str
 
     if ( myDb.worldComm().isMasterRank() )
         std::cout << "start build matrix pod of size : " << nTimeStep << "," << nTimeStep << "\n";
+
+    boost::shared_ptr<MatrixSparse<double>> scalarProductOperator;
+    bool useScalarProductOperator = boption(_name="scalar-product.use-operator");
+    if ( useScalarProductL2 && useScalarProductOperator )
+    {
+        scalarProductOperator = backend()->newMatrix(_test=space,_trial=space);
+        form2(_test=space,_trial=space,_matrix=scalarProductOperator ) =
+            integrate(_range=elements(space->mesh()),_expr=inner(idt(ui),id(ui)) );
+    }
 
     //Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> pod( timeSet.size(), timeSet.size() );
     MatrixEigenDense<double> matrixPodFeel( nTimeStep,nTimeStep );
@@ -52,19 +61,33 @@ runPOD( DatabaseType & myDb, boost::shared_ptr<SpaceType> const& space, std::str
         {
             myDb.load( timeSetIndex[j],fieldPod,uj );
             if ( useScalarProductL2 )
-                pod( i,i ) = integrate( _range=elements(space->mesh()),
-                                        _expr=inner(idv(ui),idv(uj) ) ).evaluate(false)(0,0);
+            {
+                if ( useScalarProductOperator )
+                    pod( i,j ) = scalarProductOperator->energy( ui,uj );
+                else
+                    pod( i,j ) = integrate( _range=elements(space->mesh()),
+                                            _expr=inner(idv(ui),idv(uj) ) ).evaluate()(0,0);
+            }
             else
+            {
                 pod( i,j ) = inner_product( ui, uj );
+            }
             pod( j,i ) = pod( i,j );
             if ( myDb.worldComm().isMasterRank() )
                 std::cout << "("<<i<<","<<j<<")"<<std::flush;
         }
         if ( useScalarProductL2 )
-            pod( i,i ) = integrate( _range=elements(space->mesh()),
-                                    _expr=inner(idv(ui),idv(ui), mpl::int_<InnerProperties::IS_SAME/*|InnerProperties::SQRT*/>() ) ).evaluate(false)(0,0);
+        {
+            if ( useScalarProductOperator )
+                pod( i,i ) = scalarProductOperator->energy( ui,ui );
+            else
+                pod( i,i ) = integrate( _range=elements(space->mesh()),
+                                        _expr=inner(idv(ui),idv(ui), mpl::int_<InnerProperties::IS_SAME/*|InnerProperties::SQRT*/>() ) ).evaluate()(0,0);
+        }
         else
+        {
             pod( i,i ) = inner_product( ui,ui );
+        }
         if ( myDb.worldComm().isMasterRank() )
             std::cout << "("<<i<<","<<i<<")\n"<<std::flush;
     }
@@ -98,6 +121,7 @@ int main(int argc, char**argv )
         ( "ifile", po::value<std::string>(), "input database file" )
         ( "field", po::value<std::string>(), "field loaded in database " )
         ( "scalar-product", po::value<std::string>()->default_value( "L2" ), "scalar product used in pod : L2,euclidian " )
+        ( "scalar-product.use-operator", po::value<bool>()->default_value( true ), "build  scalar product operator  " )
         ( "time-initial", po::value<double>(), "initial time used for pod" )
         ( "time-final", po::value<double>(), "final time used for pod" )
 		;
