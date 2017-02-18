@@ -500,8 +500,9 @@ ConverterAcusimDatabase<MeshType>::generateDofMappingP1( boost::shared_ptr<Space
     auto & feelDofIdToAcusimDofId = M_feelDofIdToAcusimDofId[nComp];
     feelDofIdToAcusimDofId.resize( space->nLocalDofWithGhost() );
     const size_type nLocDof = space->dof()->nLocalDof(true);
-    for (auto const& elt : elements(mesh) )
+    for (auto const& eltWrap : elements(mesh) )
     {
+        auto const& elt = boost::unwrap_ref( eltWrap );
         const size_type eltId = elt.id();
         for ( uint16_type j=0 ; j<nLocDof ; ++j )
         {
