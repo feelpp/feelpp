@@ -62,22 +62,24 @@ public :
     {
         auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
         auto Xh = Pch<2>( mesh );
+        auto Yh = Pch<3>( mesh );
         auto u = Xh->element();
-        M = backend()->newMatrix( Xh, Xh );
-        M1 = backend()->newMatrix( Xh, Xh );
-        M2 = backend()->newMatrix( Xh, Xh );
-        M3 = backend()->newMatrix( Xh, Xh );
-        M4 = backend()->newMatrix( Xh, Xh );
+        auto v = Yh->element();
+        M = backend()->newMatrix( _test=Xh, _trial=Yh );
+        M1 = backend()->newMatrix( _test=Xh, _trial=Yh );
+        M2 = backend()->newMatrix( _test=Xh, _trial=Yh );
+        M3 = backend()->newMatrix( _test=Xh, _trial=Yh );
+        M4 = backend()->newMatrix( _test=Xh, _trial=Yh );
 
-        auto f1 = form2( _test=Xh, _trial=Xh, _matrix=M1 );
-        auto f2 = form2( _test=Xh, _trial=Xh, _matrix=M2 );
-        auto f3 = form2( _test=Xh, _trial=Xh, _matrix=M3 );
-        auto f4 = form2( _test=Xh, _trial=Xh, _matrix=M4 );
+        auto f1 = form2( _test=Xh, _trial=Yh, _matrix=M1 );
+        auto f2 = form2( _test=Xh, _trial=Yh, _matrix=M2 );
+        auto f3 = form2( _test=Xh, _trial=Yh, _matrix=M3 );
+        auto f4 = form2( _test=Xh, _trial=Yh, _matrix=M4 );
 
-        f1 = integrate( markedelements(mesh,"Omega1"), id(u)*idt(u) );
-        f2 = integrate( markedelements(mesh,"Omega2"), grad(u)*trans(gradt(u)) );
-        f3 = integrate( markedfaces(mesh,"Gamma2"), grad(u)*N()*idt(u) );
-        f4 = integrate( markedfaces(mesh,"Gamma1"), id(u)*idt(u) );
+        f1 = integrate( markedelements(mesh,"Omega1"), id(u)*idt(v) );
+        f2 = integrate( markedelements(mesh,"Omega2"), grad(u)*trans(gradt(v)) );
+        f3 = integrate( markedfaces(mesh,"Gamma2"), grad(u)*N()*idt(v) );
+        f4 = integrate( markedfaces(mesh,"Gamma1"), id(u)*idt(v) );
     }
 
     void run()
