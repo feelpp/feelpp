@@ -253,6 +253,7 @@ public:
         M_backend_primal( backend( _name="backend-primal") ),
         M_backend_dual( backend( _name="backend-dual") ),
         M_backend_l2( backend( _name="backend-l2") ),
+        M_fixedpointUseAitken( boption(_name="crb.use-aitken") ),
         M_alreadyCountAffineDecompositionTerms( false ),
         M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
         M_numberOfTimeStep( 1 ),
