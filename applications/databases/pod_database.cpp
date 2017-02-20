@@ -176,7 +176,7 @@ int main(int argc, char**argv )
         auto Vh = Pch<1>( mesh );
         runPOD( myDb, Vh, fieldPod );
     }
-    else if ( myDb.isScalarField( fieldPod ) )
+    else if ( myDb.isVectorialField( fieldPod ) )
     {
         auto Vh = Pchv<1>( mesh );
         runPOD( myDb, Vh, fieldPod );
