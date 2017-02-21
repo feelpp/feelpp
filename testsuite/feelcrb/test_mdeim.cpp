@@ -17,7 +17,7 @@ po::options_description makeOptions()
     po::options_description options( "Test MDEIM Options" );
 
     options.add( feel_options() )
-        .add(eimOptions());
+        .add(deimOptions());
     return options;
 }
 

@@ -152,19 +152,20 @@ public :
      * deim.default-sampling-size and (string)
      * deim.default-sampling-mode
      */
-    DEIMBase( parameterspace_ptrtype Dmu, sampling_ptrtype sampling ) :
+    DEIMBase( parameterspace_ptrtype Dmu, sampling_ptrtype sampling, std::string prefix="" ) :
         M_parameter_space( Dmu ),
         M_trainset( sampling ),
         M_M(0),
-        M_tol(1e-8)
+        M_tol(1e-8),
+        M_prefix( prefix )
     {
         if ( !M_trainset )
             M_trainset = Dmu->sampling();
         if ( M_trainset->empty() )
         {
-            int sampling_size = ioption(_name="eim.sampling-size");
-            std::string file_name = ( boost::format("eim_trainset_%1%") % sampling_size ).str();
-            std::string sampling_mode = "log-equidistribute";
+            int sampling_size = ioption( prefixvm( M_prefix, "deim.dimension-max" ) );
+            std::string file_name = ( boost::format("deim_trainset_%1%") % sampling_size ).str();
+            std::string sampling_mode = soption( prefixvm( M_prefix, "deim.default-sampling-mode" ) );
             std::ifstream file ( file_name );
             if( ! file )
             {
@@ -201,7 +202,7 @@ public :
     void run()
     {
         tic();
-        int mMax = ioption("eim.dimension-max");
+        int mMax = ioption(  prefixvm( M_prefix, "deim.dimension-max" ) );
         double error=0;
         auto mu = M_parameter_space->max();
 
@@ -487,6 +488,7 @@ protected :
     std::vector< tensor_ptrtype > M_bases;
     std::vector<indice_type> M_index;
     solutionsmap_type M_solutions;
+    std::string M_prefix;
 };
 
 
@@ -503,8 +505,8 @@ public :
         super_type()
     {}
 
-    DEIM( parameterspace_ptrtype Dmu, sampling_ptrtype sampling=NULL ) :
-        super_type( Dmu, sampling )
+    DEIM( parameterspace_ptrtype Dmu, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
+        super_type( Dmu, sampling, prefix )
     {}
 
     ~DEIM()
@@ -530,8 +532,8 @@ public :
         super_type()
     {}
 
-    MDEIM( parameterspace_ptrtype Dmu, sampling_ptrtype sampling=NULL ) :
-        super_type( Dmu, sampling )
+    MDEIM( parameterspace_ptrtype Dmu, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
+        super_type( Dmu, sampling, prefix )
     {}
 
     ~MDEIM()
@@ -542,7 +544,7 @@ private :
 };
 
 
-    po::options_description eimOptions( std::string const& prefix ="");
+    po::options_description deimOptions( std::string const& prefix ="");
 }
 
 #endif
