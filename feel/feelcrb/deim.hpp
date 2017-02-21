@@ -46,8 +46,33 @@
 #include <Eigen/Core>
 
 
+using Feel::cout;
+
 namespace Feel
 {
+
+template <typename ParameterType>
+struct paramCompare
+{
+public :
+    typedef ParameterType parameter_type;
+
+    bool operator() ( parameter_type mu1, parameter_type mu2 )
+    {
+        return compare( mu1, mu2, 0 );
+    }
+private :
+    bool compare( parameter_type mu1, parameter_type mu2, int i )
+    {
+        if ( i==mu1.size() )
+            return false;
+        else if ( mu1[i]==mu2[i] )
+            return compare( mu1, mu2, i+1 );
+        else
+            return mu1[i]<mu2[i];
+    }
+};
+
 
 template <typename ModelType, typename TensorType>
 class DEIMBase
@@ -87,6 +112,8 @@ public :
     typedef boost::tuple<double,int> vectormax_type;
     typedef boost::tuple<double,std::pair<int,int>> matrixmax_type;
 
+    typedef std::map<parameter_type,tensor_ptrtype,paramCompare<parameter_type>> solutionsmap_type;
+
     DEIMBase()
     {}
 
@@ -113,7 +140,7 @@ public :
                 M_trainset->clear();
                 M_trainset->readFromFile(file_name);
             }
-            Feel::cout << "DEIM sampling created with " << sampling_size << " points.\n";
+            cout << "DEIM sampling created with " << sampling_size << " points.\n";
         }
     }
 
@@ -129,16 +156,16 @@ public :
         double error=0;
         auto mu = M_parameter_space->max();
 
-        Feel::cout << "DEIM : Start algorithm with mu=["<<mu[0];
+        cout << "DEIM : Start algorithm with mu=["<<mu[0];
         for ( int i=1; i<mu.size(); i++ )
-            Feel::cout << "," << mu[i];
-        Feel::cout << "]\n";
-        Feel::cout <<"===========================================\n";
+            cout << "," << mu[i];
+        cout << "]\n";
+        cout <<"===========================================\n";
         do{
-            Feel::cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu=["<<mu[0];
+            cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu=["<<mu[0];
             for ( int i=1; i<mu.size(); i++ )
-                Feel::cout << "," << mu[i];
-            Feel::cout << "]\n";
+                cout << "," << mu[i];
+            cout << "]\n";
 
             tic();
             addNewVector(mu);
@@ -149,19 +176,19 @@ public :
                 auto best_fit = computeBestFit();
                 error = best_fit.template get<1>();
                 mu = best_fit.template get<0>();
-                Feel::cout << "DEIM : Current error : "<< error
+                cout << "DEIM : Current error : "<< error
                            <<", tolerance : " << M_tol <<std::endl;
-                Feel::cout <<"===========================================\n";
+                cout <<"===========================================\n";
             }
 
         }while( M_M<mMax && error>M_tol );
 
-        Feel::cout << "DEIM : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
+        cout << "DEIM : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
 
         toc("DEIM : Total Time");
     }
 
-    vectorN_type beta( parameter_type mu )
+    vectorN_type beta( parameter_type const& mu )
     {
         return computeCoefficient( mu );
     }
@@ -178,7 +205,7 @@ public :
 
 
 protected :
-    void addNewVector( parameter_type mu )
+    void addNewVector( parameter_type const& mu )
     {
         tensor_ptrtype Phi = residual( mu );
 
@@ -202,7 +229,7 @@ protected :
             M_B(i, M_M-1) = evaluate( M_bases[M_M-1], M_index[i] );
     }
 
-    double evaluate( vector_ptrtype V, int index )
+    double evaluate( vector_ptrtype V, int const& index )
     {
         double value=0;
         int proc_number = V->map().procOnGlobalCluster(index);
@@ -214,7 +241,7 @@ protected :
         return value;
     }
 
-    double evaluate( sparse_matrix_ptrtype M, std::pair<int,int>  idx )
+    double evaluate( sparse_matrix_ptrtype M, std::pair<int,int> const&  idx )
     {
         int i = idx.first;
         int j =idx.second;
@@ -271,7 +298,7 @@ protected :
         return boost::make_tuple( max, index );
     }
 
-    vectorN_type computeCoefficient( parameter_type mu )
+    vectorN_type computeCoefficient( parameter_type const& mu )
     {
         tensor_ptrtype T = assemble( mu );
         return computeCoefficient( T );
@@ -311,9 +338,17 @@ protected :
         return boost::make_tuple( mu_max, max );
     }
 
-    tensor_ptrtype residual( parameter_type mu )
+    tensor_ptrtype residual( parameter_type const& mu )
     {
-        tensor_ptrtype T = this->assemble( mu );
+        tensor_ptrtype T;
+        if ( !M_solutions[mu] )
+        {
+            T = this->assemble( mu );
+            M_solutions[mu] = copyTensor(T);
+        }
+        else
+            T = M_solutions[mu];
+
         vectorN_type coeff = computeCoefficient( T );
 
         auto newT = copyTensor( T );
@@ -357,6 +392,7 @@ protected :
     matrixN_type M_B;
     std::vector< tensor_ptrtype > M_bases;
     std::vector<indice_type> M_index;
+    solutionsmap_type M_solutions;
 };
 
 
