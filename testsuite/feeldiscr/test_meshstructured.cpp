@@ -76,11 +76,13 @@ class Test_MeshStructured
     Test_MeshStructured(int nx,int ny)
     {
         ima = holo3_image<float>(ny,nx);
+        ima2 = holo3_image<float>(ny,nx);
         for (int i=0;i<nx;i++)
         {
             for (int j=0;j<ny;j++)
             {
                 ima(j,i)=1;
+                ima2(j,i)=0;
             }
         }
     }
@@ -89,8 +91,9 @@ class Test_MeshStructured
     void run (double pixelsize) 
     {
      tic();
-     auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize,
-                                                    Environment::worldComm() );
+    auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
+                                                    Environment::worldComm(),"", false, false);
+
      mesh->components().reset();
      mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
      mesh->updateForUse();
@@ -124,8 +127,8 @@ class Test_MeshStructured
     void runImage  (double pixelsize) 
     {
 
-     auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize,
-                                                    Environment::worldComm() );
+     auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
+                                                    Environment::worldComm(),"", false, false);
      mesh->components().reset();
      mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
      mesh->updateForUse();
@@ -135,10 +138,11 @@ class Test_MeshStructured
      auto v = Vh->element () ;
      
     auto imaP = vf::project(Vh,elements(mesh),cst(1.)); 
+    auto imaP2 = vf::project(Vh,elements(mesh),cst(0.)); 
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
                   //_expr=grad(v)*vec(idv(ima),idv(ima)));
-                  _expr=grad(v)*vec(idv(imaP),idv(imaP)));
+                  _expr=grad(v)*vec(idv(imaP),idv(imaP2)));
     
     auto a = form2( _trial=Vh, _test=Vh);
     a = integrate( _range=elements(mesh),
@@ -147,8 +151,8 @@ class Test_MeshStructured
     
     a.solve(_rhs=l,_solution=u) ;
     
-    auto value  = vf::project(Vh,elements(mesh),sqrt(2.)); 
-    auto n = normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(imaP)); 
+    auto value  = vf::project(Vh,elements(mesh),Py()); 
+    auto n = normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(value)); 
     std::cout << " Norm2 " << n << std::endl;
 
     }
@@ -158,8 +162,8 @@ class Test_MeshStructured
     {
      tic();
      Feel::cout << "[nbPt X] x [nbPt Y] = " << ima.rows() << "\t" << ima.cols() << std::endl;
-     auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize,
-                                                    Environment::worldComm() );
+     auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
+                                                    Environment::worldComm(),"", false, false);
      Feel::cout <<"  mesh->numGlobalElements() " << mesh->numGlobalElements() << std::endl;
      Feel::cout <<"  mesh->numGlobalPoints()   " << mesh->numGlobalPoints()   << std::endl;
      mesh->components().reset();
@@ -192,6 +196,7 @@ class Test_MeshStructured
     private :
 
     holo3_image<float> ima;
+    holo3_image<float> ima2;
     
 };
 
@@ -204,7 +209,8 @@ double ps=1e-2;
 BOOST_AUTO_TEST_CASE( test_run0 )
 {
     Test_MeshStructured tms0(13,4);
-    tms0.runParallel(ps);
+    tms0.runImage(ps);
+    //tms0.runParallel(ps);
 }
 
 /*
