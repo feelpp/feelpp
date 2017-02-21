@@ -51,17 +51,32 @@ using Feel::cout;
 namespace Feel
 {
 
+/**
+ * Comparison structure for 2 parameters mu1 and mu2
+ * The comparison is made component by component :
+ * - we start with i=0
+ * - if mu1[i]<mu2[i] then mu1<mu2
+ * - if mu1[i]==mu2[i] then we compare mu1[i+1] and mu2[i+1]
+ */
 template <typename ParameterType>
 struct paramCompare
 {
 public :
     typedef ParameterType parameter_type;
 
+    /**
+     * Compare the component \p i of \p mu1 and \p mu2
+     * \return true if mu1[i]<mu2[i]
+     */
     bool operator() ( parameter_type mu1, parameter_type mu2 )
     {
         return compare( mu1, mu2, 0 );
     }
 private :
+    /**
+     * Compare \p mu1 and \p mu2
+     * \return true if mu1 < mu2
+     */
     bool compare( parameter_type mu1, parameter_type mu2, int i )
     {
         if ( i==mu1.size() )
@@ -74,6 +89,17 @@ private :
 };
 
 
+/**
+ * \brief Base class for DEIM algorithm
+ *
+ * Considering a parametrized Tensor \f$ T(\mu)\f$, which can be
+ * either a vector or a matrix, DEIM builds an approximation of affine
+ * decomposition for \f$ T(\mu)\f$ under the form : \f[
+ * T(\mu)=\sum_{m=M}\beta^m(\mu)T^m \f] where the tensors \f$ T^m\f$ do not
+ * depend of \f$ \mu\f$ anymore. If such an affine decomposition
+ * exists for the tensor \f$ T(\mu)\f$, the approximation returned by
+ * DEIM will be exact, provided that \f$ M\f$ is large enough.
+ */
 template <typename ModelType, typename TensorType>
 class DEIMBase
 {
@@ -114,9 +140,18 @@ public :
 
     typedef std::map<parameter_type,tensor_ptrtype,paramCompare<parameter_type>> solutionsmap_type;
 
+    //! Default Constructor
     DEIMBase()
     {}
 
+    /**
+     * \brief Constructor of DEIM class \p Dmu a pointer to the
+     * considered parameter space \p sampling the sampling on which
+     * the greedy algorithm will iterate. Can be null and so a default
+     * sampling will be build, considering the options : (int)
+     * deim.default-sampling-size and (string)
+     * deim.default-sampling-mode
+     */
     DEIMBase( parameterspace_ptrtype Dmu, sampling_ptrtype sampling ) :
         M_parameter_space( Dmu ),
         M_trainset( sampling ),
@@ -144,11 +179,25 @@ public :
         }
     }
 
+    //! Destructor
     virtual ~DEIMBase()
     {}
 
+    /**
+     * The assemble function has to be provided by the model. This
+     * function will assemble the tensor \f$ T(\mu) \f$.
+     * \p mu the considered parameter
+     * \return the tensor \f$ T(\mu) \f$ as vector_ptrtype
+     */
     assemble_function_type assemble;
 
+    /**
+     * Run the greedy algotithm and build the affine decomposition.
+     * Greedy algorithm stops when the affine decomposition is exact
+     * or when the maximum number of terms is the decomposition is
+     * reached. This maximum is defined by the option
+     * deim.dimension-max
+     */
     void run()
     {
         tic();
@@ -183,21 +232,25 @@ public :
 
         }while( M_M<mMax && error>M_tol );
 
+        M_solutions.clear();
         cout << "DEIM : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
 
         toc("DEIM : Total Time");
     }
 
+    //! \return the \f$ \beta^m(\mu)\f$ for a specific parameter \p mu
     vectorN_type beta( parameter_type const& mu )
     {
         return computeCoefficient( mu );
     }
 
+    //! \return the tensors \f$ T^m\f$ of the affine decomposition
     std::vector<tensor_ptrtype> q()
     {
         return M_bases;
     }
 
+    //! \return the current size of the affine decompostion
     int size()
     {
         return M_M;
@@ -205,6 +258,7 @@ public :
 
 
 protected :
+    //! add a new Tensor in the base, evaluated for parameter \p mu
     void addNewVector( parameter_type const& mu )
     {
         tensor_ptrtype Phi = residual( mu );
@@ -229,6 +283,7 @@ protected :
             M_B(i, M_M-1) = evaluate( M_bases[M_M-1], M_index[i] );
     }
 
+    //! \return the value of the component \p index of the vector \p V
     double evaluate( vector_ptrtype V, int const& index )
     {
         double value=0;
@@ -241,6 +296,7 @@ protected :
         return value;
     }
 
+    //! \return the value of the entry \p idx of the matrix \p M
     double evaluate( sparse_matrix_ptrtype M, std::pair<int,int> const&  idx )
     {
         int i = idx.first;
@@ -258,6 +314,14 @@ protected :
         return value;
     }
 
+    /**
+     * Evaluate the maximum of the components of \p V in absolute
+     * value.
+     *
+     * \return a couple (max,index) where max is the maximum in
+     * absolute value and index is the index of the component where
+     * the max is reached
+     */
     vectormax_type vectorMaxAbs( vector_ptrtype V )
     {
         auto newV = V->clone();
@@ -270,6 +334,14 @@ protected :
         return boost::make_tuple( max, index );
     }
 
+    /**
+     * Evaluate the maximum of the entry of \p M in absolute
+     * value.
+     *
+     * \return a couple (max,index) where max is the maximum in
+     * absolute value and index is the couple of index of the entry
+     * where the max is reached
+     */
     matrixmax_type vectorMaxAbs( sparse_matrix_ptrtype M )
     {
         DCHECK( M->isInitialized() ) << "MatrixPetsc<> not initialized";
@@ -298,12 +370,14 @@ protected :
         return boost::make_tuple( max, index );
     }
 
+    //! \return the beta coefficient for parameter \p mu
     vectorN_type computeCoefficient( parameter_type const& mu )
     {
         tensor_ptrtype T = assemble( mu );
         return computeCoefficient( T );
     }
 
+    //! Compute the beta coefficients for a assembled tensor \p T
     vectorN_type computeCoefficient( tensor_ptrtype T )
     {
         vectorN_type rhs (M_M);
@@ -317,6 +391,15 @@ protected :
         return coeff;
     }
 
+    /**
+     * Choose the best parameter to build the next basis vector.
+     *
+     * For each parameter mu in sampling, commpute the residual \f$
+     * R_M(\mu)=T(\mu)-\hat T_M(\mu) \f$ where \f$ \hat T_M(\mu) \f$
+     * is the DEIM approximation of size \f$ M\f$.
+     * \return a couple (mu_max, max). mu_max=\f$ argmax_{\mu\in S}R(\mu)\f$
+     * and max=\f$ max_{\mu\in S}R(\mu)\f$
+     */
     bestfit_type computeBestFit()
     {
         tic();
@@ -338,6 +421,12 @@ protected :
         return boost::make_tuple( mu_max, max );
     }
 
+    /**
+     * Evavaluate the residual \f$ R_M(\mu)=T(\mu)-\hat T_M(\mu) \f$
+     * where \f$ \hat T_M(\mu) \f$ is the DEIM approximation of size
+     * \f$ M\f$.
+     * \return a shared pointer on the Residual.
+     */
     tensor_ptrtype residual( parameter_type const& mu )
     {
         tensor_ptrtype T;
@@ -359,15 +448,19 @@ protected :
         return newT;
     }
 
+    //! evaluate V= V+a*vec
     void add( vector_ptrtype V, double const& a, vector_ptrtype vec )
     {
         V->add( a, vec );
     }
+
+    //! evaluate M= M+a*mat
     void add( sparse_matrix_ptrtype M, double const& a, sparse_matrix_ptrtype mat )
     {
         M->addMatrix( a, mat );
     }
 
+    // \return a shared pointer on a copy of \p V
     vector_ptrtype copyTensor( vector_ptrtype V )
     {
         vector_ptrtype newV = V->clone();
@@ -375,6 +468,7 @@ protected :
         return newV;
     }
 
+    // \return a shared pointer on a copy of \p M
     sparse_matrix_ptrtype copyTensor( sparse_matrix_ptrtype M )
     {
         sparse_matrix_ptrtype newM = backend()->newMatrix( M->mapColPtr(),
