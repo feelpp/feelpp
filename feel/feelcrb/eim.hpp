@@ -1501,7 +1501,7 @@ public :
         {}
 
     eim_functionspace_ptrtype const& eimFunctionSpace() { return M_eimFunctionSpace; }
-    model_functionspace_ptrtype const& modelFunctionSpace() const { return M_model.lock()->functionSpace(); }
+    model_functionspace_ptrtype const modelFunctionSpace() const { return M_model.lock()->functionSpace(); }
 
     int maxQ() const { return M_max_q; }
     int maxG() const { return M_max_g; }
@@ -3445,7 +3445,7 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
 #endif
 
     std::string /*const&*/ modelName() const { return M_model.lock()->modelName(); }
-    functionspace_ptrtype const& functionSpace() const { return M_model.lock()->functionSpace(); }
+    functionspace_ptrtype const functionSpace() const { return M_model.lock()->functionSpace(); }
     parameterspace_ptrtype const& parameterSpace() const { return M_model.lock()->parameterSpace(); }
 #if 0
     struct ProjectInfCompositeCase
