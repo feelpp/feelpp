@@ -631,12 +631,10 @@ public:
      * Real part.
      */
     real_type max() const;
-    real_type maxWithIndex( int* index=NULL ) const;
+    real_type maxWithIndex( int* index=nullptr ) const;
 
 
-    /**
-     * Replaces every element in a vector with its absolute value
-     */
+    //! Replaces every element in a vector with its absolute value
     void abs();
 
     /**
