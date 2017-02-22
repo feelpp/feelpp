@@ -46,7 +46,7 @@
 #include <Eigen/Core>
 
 
-using Feel::cout;
+
 
 namespace Feel
 {
@@ -159,6 +159,8 @@ public :
         M_tol(1e-8),
         M_prefix( prefix )
     {
+        using Feel::cout;
+
         if ( !M_trainset )
             M_trainset = Dmu->sampling();
         if ( M_trainset->empty() )
@@ -201,6 +203,7 @@ public :
      */
     void run()
     {
+        using Feel::cout;
         tic();
         int mMax = ioption(  prefixvm( M_prefix, "deim.dimension-max" ) );
         double error=0;
