@@ -44,7 +44,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelalg/topetsc.hpp>
 #include <Eigen/Core>
-
+#include <feel/feelcrb/crbdb.hpp>
 
 
 
@@ -101,9 +101,10 @@ private :
  * DEIM will be exact, provided that \f$ M\f$ is large enough.
  */
 template <typename ModelType, typename TensorType>
-class DEIMBase
+class DEIMBase : public CRBDB
 {
 public :
+    typedef  CRBDB super;
     typedef ModelType model_type;
     typedef typename model_type::value_type value_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
@@ -152,14 +153,30 @@ public :
      * deim.default-sampling-size and (string)
      * deim.default-sampling-mode
      */
-    DEIMBase( parameterspace_ptrtype Dmu, sampling_ptrtype sampling, std::string prefix="" ) :
+    DEIMBase( parameterspace_ptrtype Dmu, sampling_ptrtype sampling, std::string prefix="",
+              WorldComm const& worldComm = Environment::worldComm() ) :
+        super( ( boost::format( "%1%DEIM-%2%" ) %(is_matrix ? "M":"") %prefix  ).str(),
+               worldComm ),
         M_parameter_space( Dmu ),
         M_trainset( sampling ),
         M_M(0),
         M_tol(1e-8),
-        M_prefix( prefix )
+        M_prefix( prefix ),
+        M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) )
     {
         using Feel::cout;
+
+        if ( !M_rebuild )
+        {
+            if ( this->loadDB() )
+                cout<<"DEIM : Database loaded with " << M_M << " basis functions\n";
+            else
+                cout <<"DEIM : No Database loaded : start greedy algorithm from beginning\n";
+        }
+        else
+            cout << "DEIM : option deim.rebuild-db=true : start greedy algorithm from beginning\n";
+
+
 
         if ( !M_trainset )
             M_trainset = Dmu->sampling();
@@ -209,12 +226,30 @@ public :
         double error=0;
         auto mu = M_parameter_space->max();
 
-        cout << "DEIM : Start algorithm with mu=["<<mu[0];
-        for ( int i=1; i<mu.size(); i++ )
-            cout << "," << mu[i];
-        cout << "]\n";
-        cout <<"===========================================\n";
-        do{
+        if ( M_M==0 )
+        {
+            cout <<"===========================================\n";
+            cout << "DEIM : Start algorithm with mu=["<<mu[0];
+            for ( int i=1; i<mu.size(); i++ )
+                cout << "," << mu[i];
+            cout << "]\n";
+
+            tic();
+            addNewVector(mu);
+            toc("Add new vector in DEIM basis");
+        }
+        if ( M_M<mMax )
+        {
+            auto best_fit = computeBestFit();
+            error = best_fit.template get<1>();
+            mu = best_fit.template get<0>();
+            cout << "DEIM : Current error : "<< error
+                 <<", tolerance : " << M_tol <<std::endl;
+            cout <<"===========================================\n";
+        }
+
+        while( M_M<mMax && error>M_tol )
+        {
             cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu=["<<mu[0];
             for ( int i=1; i<mu.size(); i++ )
                 cout << "," << mu[i];
@@ -234,7 +269,7 @@ public :
                 cout <<"===========================================\n";
             }
 
-        }while( M_M<mMax && error>M_tol );
+        }
 
         M_solutions.clear();
         cout << "DEIM : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
@@ -249,16 +284,21 @@ public :
     }
 
     //! \return the tensors \f$ T^m\f$ of the affine decomposition
-    std::vector<tensor_ptrtype> q()
+    std::vector<tensor_ptrtype> q() const
     {
         return M_bases;
     }
 
     //! \return the current size of the affine decompostion
-    int size()
+    int size() const
     {
         return M_M;
     }
+
+    //! save the database
+    void saveDB();
+    //! load the database
+    bool loadDB();
 
 
 protected :
@@ -285,6 +325,8 @@ protected :
         //update last col of M_B
         for ( int i=0; i<M_M-1; i++ )
             M_B(i, M_M-1) = evaluate( M_bases[M_M-1], M_index[i] );
+
+        //this->saveDB();
     }
 
     //! \return the value of the component \p index of the vector \p V
@@ -492,7 +534,108 @@ protected :
     std::vector<indice_type> M_index;
     solutionsmap_type M_solutions;
     std::string M_prefix;
+    bool M_rebuild;
+
+    friend class boost::serialization::access;
+
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void save( Archive & ar, const unsigned int version ) const;
+
+    template<class Archive>
+    void load( Archive & ar, const unsigned int version ) ;
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
+
+template <typename ModelType, typename TensorType>
+template<class Archive>
+void
+DEIMBase<ModelType,TensorType>::load( Archive & ar, const unsigned int version )
+{
+    ar & boost::serialization::base_object<super>( *this );
+    ar & BOOST_SERIALIZATION_NVP( M_parameter_space );
+    ar & BOOST_SERIALIZATION_NVP( M_M );
+    ar & BOOST_SERIALIZATION_NVP( M_B );
+    ar & BOOST_SERIALIZATION_NVP( M_index );
+
+    for( int m=0; m<M_M; m++ )
+        ar & BOOST_SERIALIZATION_NVP( M_bases[m] );
+
+    DCHECK( M_bases.size()==M_M )<<"Wrong size : M_bases.size()="<< M_bases.size() <<", M_M=" <<M_M<<std::endl;
+    for ( int i=0; i<M_M; i++)
+        DCHECK( M_bases[i] )<<"Null ptr at i="<<i<<std::endl;
+}
+
+template <typename ModelType, typename TensorType>
+template<class Archive>
+void
+DEIMBase<ModelType,TensorType>::save( Archive & ar, const unsigned int version ) const
+{
+#if 0
+    ar & boost::serialization::base_object<super>( *this );
+    ar & BOOST_SERIALIZATION_NVP( M_parameter_space );
+    ar & BOOST_SERIALIZATION_NVP( M_M );
+    ar & BOOST_SERIALIZATION_NVP( M_B );
+    ar & BOOST_SERIALIZATION_NVP( M_index );
+    for( int m=0; m<M_M; m++ )
+        ar & BOOST_SERIALIZATION_NVP( M_bases[m] );
+#endif
+}
+
+
+template <typename ModelType, typename TensorType>
+void
+DEIMBase<ModelType,TensorType>::saveDB()
+{
+#if 0
+    Feel::cout<< "DEIM : saving DB\n";
+    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+    if ( ofs )
+    {
+        //boost::archive::text_oarchive oa( ofs );
+        boost::archive::binary_oarchive oa( ofs );
+        // write class instance to archive
+        oa << *this;
+        // archive and stream closed when destructors are called
+    }
+#endif
+}
+
+
+template <typename ModelType, typename TensorType>
+bool
+DEIMBase<ModelType,TensorType>::loadDB()
+{
+    return false;
+    if( this->isDBLoaded() )
+    {
+        return true;
+    }
+
+
+    fs::path db = this->lookForDB();
+    if ( db.empty()  )
+    {
+        return false;
+    }
+
+    fs::ifstream ifs( db );
+    if ( ifs )
+    {
+        //boost::archive::text_iarchive ia( ifs );
+        boost::archive::binary_iarchive ia( ifs );
+        //write class instance to archive
+        ia >> *this;
+        this->setIsLoaded( true );
+        return true;
+    }
+
+    return false;
+}
+
 
 
 template <typename ModelType>
@@ -547,7 +690,23 @@ private :
 };
 
 
-    po::options_description deimOptions( std::string const& prefix ="");
+po::options_description deimOptions( std::string const& prefix ="");
+
+} //namespace Feel
+
+namespace boost
+{
+namespace serialization
+{
+template< typename M,typename T >
+struct version< Feel::DEIMBase<M,T> >
+{
+    typedef mpl::int_<1> type;
+    typedef mpl::integral_c_tag tag;
+    static const unsigned int value = version::type::value;
+};
+template<typename M, typename T> const unsigned int version<Feel::DEIMBase<M,T> >::value;
+}
 }
 
 #endif
