@@ -139,11 +139,17 @@ public:
 #endif
 
     //--------------------------------------------------------------------//
+    // Tensor2 symmetric function space
+    typedef Lagrange<Order, Tensor2Symm> basis_tensor2symm_type;
+    typedef FunctionSpace<mesh_type, bases<basis_tensor2symm_type>, Periodicity<periodicity_type> > space_tensor2symm_type;
+    typedef boost::shared_ptr<space_tensor2symm_type> space_tensor2symm_ptrtype;
+    typedef typename space_tensor2symm_type::element_type element_tensor2symm_type;
+    typedef boost::shared_ptr<element_tensor2symm_type> element_tensor2symm_ptrtype;
+
+    //--------------------------------------------------------------------//
     // Stretch and shear types
     typedef element_levelset_type element_stretch_type;
     typedef element_levelset_ptrtype element_stretch_ptrtype;
-    typedef element_levelset_type element_shear_type;
-    typedef element_levelset_ptrtype element_shear_ptrtype;
 
     //--------------------------------------------------------------------//
     // Projectors
@@ -152,6 +158,9 @@ public:
     
     typedef Projector<space_levelset_vectorial_type, space_levelset_vectorial_type> projector_levelset_vectorial_type;
     typedef boost::shared_ptr<projector_levelset_vectorial_type> projector_levelset_vectorial_ptrtype;
+
+    typedef Projector<space_tensor2symm_type, space_tensor2symm_type> projector_tensor2symm_type;
+    typedef boost::shared_ptr<projector_tensor2symm_type> projector_tensor2symm_ptrtype;
 
     //--------------------------------------------------------------------//
     // Reinitialization
@@ -191,8 +200,9 @@ public:
     // Backward characteristics advection
     typedef Advection<ConvexType, Lagrange<Order, Vectorial>, PeriodicityType> backwardcharacteristics_advection_type;
     typedef boost::shared_ptr<backwardcharacteristics_advection_type> backwardcharacteristics_advection_ptrtype;
+    typedef typename backwardcharacteristics_advection_type::element_advection_type element_backwardcharacteristics_type;
+    typedef boost::shared_ptr<element_backwardcharacteristics_type> element_backwardcharacteristics_ptrtype;
     // Cauchy-Green tensor invariants types
-    //typedef typename backwardcharacteristics_advection_type::element_advection_type element_cauchygreen_invariant_type;
     typedef element_levelset_type element_cauchygreen_invariant_type;
     typedef boost::shared_ptr<element_cauchygreen_invariant_type> element_cauchygreen_invariant_ptrtype;
 
@@ -282,6 +292,7 @@ public:
     //--------------------------------------------------------------------//
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
     space_levelset_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceLevelSetVec; }
+    space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const;
 
     space_levelset_ptrtype const& functionSubspace() const { return M_subspaceLevelSet; }
     space_levelset_vectorial_ptrtype const& functionSubspaceVectorial() const { return M_subspaceLevelSetVec; }
@@ -307,6 +318,8 @@ public:
     element_levelset_vectorial_ptrtype const& gradPhi() const;
     element_levelset_ptrtype const& modGradPhi() const;
     element_stretch_ptrtype const& stretch() const;
+    element_backwardcharacteristics_ptrtype const& backwardCharacteristics() const;
+
     element_levelset_ptrtype const& heaviside() const;
     element_levelset_ptrtype const& H() const { return this->heaviside(); }
     element_levelset_ptrtype const& dirac() const;
@@ -324,13 +337,16 @@ public:
 
     projector_levelset_ptrtype const& projectorL2() const { return M_projectorL2; }
     projector_levelset_vectorial_ptrtype const& projectorL2Vectorial() const { return M_projectorL2Vec; }
+    projector_tensor2symm_ptrtype const& projectorL2Tensor2Symm() const;
+
     projector_levelset_ptrtype const& smoother() const;
     projector_levelset_vectorial_ptrtype const& smootherVectorial() const;
 
     void updateInterfaceQuantities();
 
     //--------------------------------------------------------------------//
-    // Cauchy-Green tensor invariants
+    // Cauchy-Green tensor related quantities
+    element_tensor2symm_ptrtype const& leftCauchyGreenTensor() const;
     element_cauchygreen_invariant_ptrtype const& cauchyGreenInvariant1() const;
     element_cauchygreen_invariant_ptrtype const& cauchyGreenInvariant2() const;
 
@@ -494,6 +510,7 @@ private:
     // Spaces
     space_levelset_vectorial_ptrtype M_spaceLevelSetVec;
     space_markers_ptrtype M_spaceMarkers;
+    mutable space_tensor2symm_ptrtype M_spaceTensor2Symm;
 
     space_levelset_ptrtype M_subspaceLevelSet;
     space_levelset_vectorial_ptrtype M_subspaceLevelSetVec;
@@ -509,6 +526,8 @@ private:
     // Projectors
     projector_levelset_ptrtype M_projectorL2;
     projector_levelset_vectorial_ptrtype M_projectorL2Vec;
+    mutable projector_tensor2symm_ptrtype M_projectorL2Tensor2Symm;
+
     mutable projector_levelset_ptrtype M_smoother;
     mutable projector_levelset_vectorial_ptrtype M_smootherVectorial;
     //--------------------------------------------------------------------//
@@ -564,6 +583,9 @@ private:
     // Backward characteristics advection
     bool M_useCauchyAugmented;
     backwardcharacteristics_advection_ptrtype M_backwardCharacteristicsAdvection;
+    // Cauchy-Green tensor
+    mutable element_tensor2symm_ptrtype M_leftCauchyGreenTensor;
+    mutable bool M_doUpdateCauchyGreenTensor;
     // Cauchy-Green tensor invariants
     mutable element_cauchygreen_invariant_ptrtype M_cauchyGreenInvariant1;
     mutable element_cauchygreen_invariant_ptrtype M_cauchyGreenInvariant2;
