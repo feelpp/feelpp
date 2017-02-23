@@ -187,6 +187,7 @@ public :
     {
         M_model = model;
         M_rbSpace = model->rBFunctionSpace();
+        M_useMonolithicRbSpace = model->useMonolithicRbSpace();
     }
 
 private :
@@ -368,7 +369,7 @@ struct LoadDatabaseCompositeByBlock
         auto & WNdu = subRbSpace->dualRB();
         if ( WN.size() < numberOfPrimalBasisLoaded )
             WN.resize( numberOfPrimalBasisLoaded );
-        if ( WN.size() < numberOfDualBasisLoaded )
+        if ( WNdu.size() < numberOfDualBasisLoaded )
             WNdu.resize( numberOfDualBasisLoaded );
 
         CHECK( subRbSpace->functionSpace() ) << "rbspace does not defined a fespace";
@@ -551,7 +552,7 @@ CRBElementsDB<ModelType>::load( Archive & ar, const unsigned int version )
         auto & WNdu = M_rbSpace->dualRB();
         if ( WN.size() < numberOfPrimalBasisLoaded )
             WN.resize( numberOfPrimalBasisLoaded );
-        if ( WN.size() < numberOfDualBasisLoaded )
+        if ( WNdu.size() < numberOfDualBasisLoaded )
             WNdu.resize( numberOfDualBasisLoaded );
 
         element_type temp = Xh->element();

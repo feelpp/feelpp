@@ -430,6 +430,7 @@ public:
      */
     //@{
 
+    virtual bool useMonolithicRbSpace() { return true; }
     /**
      * \return  the \p variables_map
      */
