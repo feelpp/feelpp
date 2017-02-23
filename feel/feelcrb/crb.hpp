@@ -332,61 +332,6 @@ public:
     {
         this->setTruthModel( model );
 
-        if ( !M_rebuild && this->loadDB() )
-        {
-            if( this->worldComm().isMasterRank() )
-                std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
-            LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";
-
-            M_elements_database.setMN( M_N );
-            if( M_loadElementsDb )
-            {
-                if( M_elements_database.loadDB() )
-                {
-                    if( this->worldComm().isMasterRank() )
-                        std::cout<<"Database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
-                    LOG(INFO) << "Database for basis functions " << M_elements_database.lookForDB() << " available and loaded";
-                    //auto basis_functions = M_elements_database.wn();
-                    //M_model->rBFunctionSpace()->setBasis( basis_functions );
-                }
-                else
-                    M_N = 0;
-            }
-            if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
-            {
-                if ( M_scmA->loadDB() )
-                {
-                    if( this->worldComm().isMasterRank() )
-                        std::cout << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded\n";
-                    LOG( INFO ) << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded";
-                }
-                else
-                    M_N = 0;
-
-                if ( !M_model->isSteady() )
-                {
-                    if ( M_scmM->loadDB() )
-                    {
-                        if( this->worldComm().isMasterRank() )
-                            std::cout << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
-                        LOG( INFO ) << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
-                    }
-                    else
-                        M_N = 0;
-                }
-            }
-        }
-
-        if ( M_N == 0 )
-        {
-            if( this->worldComm().isMasterRank() )
-                std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
-            LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
-        }
-
-        // fe vector is requiert in online : must not be TODO
-        if ( M_use_newton && M_loadElementsDb && M_Rqm.empty() )
-            boost::tie( boost::tuples::ignore, boost::tuples::ignore/*M_Jqm*/, M_Rqm ) = M_model->computeAffineDecomposition();
 
         // define offline backend and preconditioner
         M_backend =  backend();
@@ -409,6 +354,10 @@ public:
                                                _worldcomm=M_backend_dual->comm(),
                                                _prefix=M_backend_dual->prefix() ,
                                                _rebuild=M_model->useSER());
+
+        // fe vector is requiert in online : must not be TODO
+        if ( M_use_newton && M_loadElementsDb && M_Rqm.empty() )
+            boost::tie( boost::tuples::ignore, boost::tuples::ignore/*M_Jqm*/, M_Rqm ) = M_model->computeAffineDecomposition();
     }
 
 
@@ -757,6 +706,64 @@ public:
     /** @name  Methods
      */
     //@{
+    //! initialize CRB class
+    virtual void init()
+    {
+        if ( !M_rebuild && this->loadDB() )
+        {
+            if( this->worldComm().isMasterRank() )
+                std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
+            LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";
+
+            M_elements_database.setMN( M_N );
+            if( M_loadElementsDb )
+            {
+                if( M_elements_database.loadDB() )
+                {
+                    if( this->worldComm().isMasterRank() )
+                        std::cout<<"Database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
+                    LOG(INFO) << "Database for basis functions " << M_elements_database.lookForDB() << " available and loaded";
+                    //auto basis_functions = M_elements_database.wn();
+                    //M_model->rBFunctionSpace()->setBasis( basis_functions );
+                }
+                else
+                    M_N = 0;
+            }
+            if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
+            {
+                if ( M_scmA->loadDB() )
+                {
+                    if( this->worldComm().isMasterRank() )
+                        std::cout << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded\n";
+                    LOG( INFO ) << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded";
+                }
+                else
+                    M_N = 0;
+
+                if ( !M_model->isSteady() )
+                {
+                    if ( M_scmM->loadDB() )
+                    {
+                        if( this->worldComm().isMasterRank() )
+                            std::cout << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
+                        LOG( INFO ) << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
+                    }
+                    else
+                        M_N = 0;
+                }
+            }
+        }
+
+        if ( M_N == 0 )
+        {
+            if( this->worldComm().isMasterRank() )
+                std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
+            LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
+        }
+
+
+
+    }
 
     /**
      * orthonormalize the basis
@@ -1187,6 +1194,7 @@ public:
      */
     void loadJson( std::string const& filename, size_type loadingContext = 0 );
 
+    void saveJson();
     /**
      * \brief setup Crb from property_tree::ptree
      * \param ptree : input property_tree::ptree
@@ -2405,9 +2413,9 @@ CRB<TruthModelType>::offline()
     }
     else if ( use_predefined_WNmu )
     {
-        mu = M_WNmu->at(M_N);
-        M_current_mu =mu;
         M_iter_max = this->M_WNmu->size();
+        mu = this->M_WNmu->at( std::min( M_N, this->M_iter_max-1 ) );
+        M_current_mu =mu;
     }
     else
         M_iter_max = user_max;
@@ -11287,6 +11295,55 @@ CRB<TruthModelType>::loadJson( std::string const& filename, size_type loadingCon
 }
 template<typename TruthModelType>
 void
+CRB<TruthModelType>::saveJson()
+{
+    if ( this->worldComm().isMasterRank() )
+    {
+        std::string crbjsonFilename = (boost::format("%1%.crb.json")%this->name()).str();
+        //std::string filenameJson = (this->dbLocalPath()/fs::path("crb.json")).string();
+        std::string filenameJson = (this->dbLocalPath()/fs::path(crbjsonFilename)).string();
+        boost::property_tree::ptree ptree;
+
+        boost::property_tree::ptree ptreeCrbModel;
+        M_model->updatePropertyTree( ptreeCrbModel );
+        ptree.add_child( "crbmodel", ptreeCrbModel );
+
+        boost::property_tree::ptree ptreeReducedBasisSpace;
+        std::string meshFilename = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
+        // ptreeReducedBasisSpace.add( "mesh-filename",(M_elements_database.dbLocalPath() / fs::path(meshFilename)).string() );
+        ptreeReducedBasisSpace.add( "mesh-filename",meshFilename );
+        // ptreeReducedBasisSpace.add( "database-filename", (M_elements_database.dbLocalPath() / M_elements_database.dbFilename()).string() );
+        ptreeReducedBasisSpace.add( "database-filename", M_elements_database.dbFilename() );
+        ptreeReducedBasisSpace.add( "dimension", M_N );
+        ptree.add_child( "reduced-basis-space", ptreeReducedBasisSpace );
+
+        boost::property_tree::ptree ptreeCrb;//Database;
+        ptreeCrb.add( "dimension", M_N );
+        ptreeCrb.add( "name", this->name() );
+        // ptreeCrb.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
+        ptreeCrb.add( "database-filename", this->dbFilename() );
+        ptreeCrb.add( "has-solve-dual-problem",M_solve_dual_problem );
+        ptree.add_child( "crb", ptreeCrb );
+
+        if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
+        {
+            boost::property_tree::ptree ptreeParameterScmA;
+            M_scmA->updatePropertyTree( ptreeParameterScmA );
+            ptree.add_child( "scmA", ptreeParameterScmA );
+            if ( !M_model->isSteady() )
+            {
+                boost::property_tree::ptree ptreeParameterScmM;
+                M_scmM->updatePropertyTree( ptreeParameterScmM );
+                ptree.add_child( "scmM", ptreeParameterScmM );
+            }
+        }
+
+        write_json( filenameJson, ptree );
+    }
+}
+
+template<typename TruthModelType>
+void
 CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type loadingContext, std::string const& dbDir )
 {
     auto const& ptreeCrb = ptree.get_child( "crb" );
@@ -11339,49 +11396,8 @@ CRB<TruthModelType>::saveDB()
             oa << *this;
             // archive and stream closed when destructors are called
         }
-
-
-        std::string crbjsonFilename = (boost::format("%1%.crb.json")%this->name()).str();
-        //std::string filenameJson = (this->dbLocalPath()/fs::path("crb.json")).string();
-        std::string filenameJson = (this->dbLocalPath()/fs::path(crbjsonFilename)).string();
-        boost::property_tree::ptree ptree;
-
-        boost::property_tree::ptree ptreeCrbModel;
-        M_model->updatePropertyTree( ptreeCrbModel );
-        ptree.add_child( "crbmodel", ptreeCrbModel );
-
-        boost::property_tree::ptree ptreeReducedBasisSpace;
-        std::string meshFilename = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
-        // ptreeReducedBasisSpace.add( "mesh-filename",(M_elements_database.dbLocalPath() / fs::path(meshFilename)).string() );
-        ptreeReducedBasisSpace.add( "mesh-filename",meshFilename );
-        // ptreeReducedBasisSpace.add( "database-filename", (M_elements_database.dbLocalPath() / M_elements_database.dbFilename()).string() );
-        ptreeReducedBasisSpace.add( "database-filename", M_elements_database.dbFilename() );
-        ptreeReducedBasisSpace.add( "dimension", M_N );
-        ptree.add_child( "reduced-basis-space", ptreeReducedBasisSpace );
-
-        boost::property_tree::ptree ptreeCrb;//Database;
-        ptreeCrb.add( "dimension", M_N );
-        ptreeCrb.add( "name", this->name() );
-        // ptreeCrb.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
-        ptreeCrb.add( "database-filename", this->dbFilename() );
-        ptreeCrb.add( "has-solve-dual-problem",M_solve_dual_problem );
-        ptree.add_child( "crb", ptreeCrb );
-
-        if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
-        {
-            boost::property_tree::ptree ptreeParameterScmA;
-            M_scmA->updatePropertyTree( ptreeParameterScmA );
-            ptree.add_child( "scmA", ptreeParameterScmA );
-            if ( !M_model->isSteady() )
-            {
-                boost::property_tree::ptree ptreeParameterScmM;
-                M_scmM->updatePropertyTree( ptreeParameterScmM );
-                ptree.add_child( "scmM", ptreeParameterScmM );
-            }
-        }
-
-        write_json( filenameJson, ptree );
     }
+    saveJson();
 
 }
 

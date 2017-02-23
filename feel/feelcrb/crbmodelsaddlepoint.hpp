@@ -116,6 +116,8 @@ public :
         }
     }
 
+    virtual bool useMonolithicRbSpace() { return false; }
+
     void l2solveSP( vector_ptrtype& u, vector_ptrtype const& f, int n_space )
     {
         M_backend_l2_vec[n_space]->solve( _matrix=M_inner_product_matrix_vec[n_space],
