@@ -232,8 +232,10 @@ public:
         {
             models.push_back( boost::make_shared<crbmodel_type>( M_mode, level) );
             model = models.back();
-            return boost::make_shared<crb_type>( this->about().appName() + "-" + std::to_string(level),
-                                                 model );
+            crb_ptrtype new_crb = boost::make_shared<crb_type>( this->about().appName() + "-" + std::to_string(level),
+                                                                model );
+            new_crb->init();
+            return new_crb;
         }
     crb_ptrtype & crbPtr() { return crb; }
     crb_ptrtype const& crbPtr() const { return crb; }

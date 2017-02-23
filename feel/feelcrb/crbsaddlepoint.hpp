@@ -25,47 +25,10 @@
  * @file   crbsaddlepoint.hpp
  * @date   Mon Nov 24 11:25:55 2014
  *
- * @brief
- *
- *
  */
 
 #ifndef __CRBSADDLEPOINT_H
 #define __CRBSADDLEPOINT_H 1
-
-// #include <boost/multi_array.hpp>
-// #include <boost/tuple/tuple.hpp>
-// #include "boost/tuple/tuple_io.hpp"
-// #include <boost/format.hpp>
-// #include <boost/foreach.hpp>
-// #include <boost/bimap.hpp>
-// #include <boost/bimap/support/lambda.hpp>
-// #include <boost/archive/text_oarchive.hpp>
-// #include <boost/archive/text_iarchive.hpp>
-// #include <boost/math/special_functions/fpclassify.hpp>
-// #include <fstream>
-
-// #include <boost/serialization/vector.hpp>
-// #include <boost/serialization/list.hpp>
-// #include <boost/serialization/string.hpp>
-// #include <boost/serialization/version.hpp>
-// #include <boost/serialization/split_member.hpp>
-
-// #include <vector>
-
-// #include <Eigen/Core>
-// #include <Eigen/LU>
-// #include <Eigen/Dense>
-
-// #include <feel/feelalg/solvereigen.hpp>
-
-// #include <feel/feelcore/environment.hpp>
-// #include <feel/feelcore/parameter.hpp>
-// #include <feel/feelcrb/parameterspace.hpp>
-// #include <feel/feelcrb/crbdb.hpp>
-// #include <feel/feelcrb/crbscm.hpp>
-// #include <feel/feelcore/serialization.hpp>
-// #include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feel.hpp>
 #include <feel/feelcrb/crb.hpp>
@@ -156,6 +119,7 @@ public:
     typedef typename super::max_error_type max_error_type;
     typedef typename super::error_estimation_type error_estimation_type;
 
+    //! Default Constructor
     CRBSaddlePoint( std::string const& name = "defaultname_crb",
                     WorldComm const& worldComm = Environment::worldComm() ) :
         super( name, worldComm ),
@@ -163,17 +127,55 @@ public:
         M_N1(0)
         {}
 
+    //! constructor from command line options
     CRBSaddlePoint( std::string const& name, truth_model_ptrtype const & model ) :
         super( name, model ),
         M_N0(0),
         M_N1(0)
-        {}
+        {
+        }
 
+    void init()
+    {
+        using Feel::cout;
+        if ( !this->M_rebuild && this->loadDB() )
+        {
+            cout << "Database CRB SP " << this->lookForDB() << " available and loaded with M_N0="
+                 << M_N0 << ", M_N1="<< M_N1 <<", M_N="<<this->M_N <<std::endl;
+            if( this->M_loadElementsDb )
+            {
+                if( this->M_elements_database.loadDB() )
+                {
+                    auto size0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>()->primalRB().size();
+                    auto size1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>()->primalRB().size();
+                    cout<<"Database for basis functions " << this->M_elements_database.lookForDB() << " available and loaded with\n"
+                        << size0 <<" primal basis functions in RBSpace0 and "
+                        << size1 << " primal basis functions in RBSpace0\n";
+                }
+                else
+                {
+                    this->M_N=0;
+                    M_N0=0;
+                    M_N1=0;
+                }
+            }
+        }
+
+        if ( this->M_N == 0 )
+        {
+            cout<< "Databases does not exist or incomplete -> Start from the begining\n";
+            LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
+        }
+
+    }
 
     //@{ /// Database
+    //! save the CRB SP database
     void saveDB();
+    //! load the CRB SP Database
     bool loadDB();
     //@}
+
 
     element_type expansion( parameter_type const& mu , int N=-1, int time_index=-1);
     element_type expansion( vectorN_type const& u , int const N, bool dual ) const;
@@ -224,9 +226,6 @@ private :
     double onlineResidual( int Ncur, parameter_type const& mu, vectorN_type Un ) const;
     template <int Row>
     double onlineResidualSP( int Ncur, parameter_type const& mu, vectorN_type Un, bool test=false ) const;
-
-
-    CRBDB M_crbdb;
 
     int M_N0, M_N1;
 
@@ -785,7 +784,7 @@ template<typename TruthModelType>
 void
 CRBSaddlePoint<TruthModelType>::saveRB()
 {
-
+    this->M_elements_database.saveDB();
 }
 
 
@@ -1667,9 +1666,20 @@ void
 CRBSaddlePoint<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 {
     int proc_number = this->worldComm().globalRank();
-
     LOG(INFO) <<"[CRBSaddlepoint::save] version : "<<version<<std::endl;
+    ar & boost::serialization::base_object<super>( *this );
+    ar & BOOST_SERIALIZATION_NVP( M_N0 );
+    ar & BOOST_SERIALIZATION_NVP( M_N1 );
+    ar & BOOST_SERIALIZATION_NVP( M_blockAqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_blockFqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_blockLqm_pr );
 
+    ar & BOOST_SERIALIZATION_NVP( M_R_RhsRhs );
+    ar & BOOST_SERIALIZATION_NVP( M_R_Lhs0Rhs );
+    ar & BOOST_SERIALIZATION_NVP( M_R_Lhs1Rhs );
+    ar & BOOST_SERIALIZATION_NVP( M_R_Lhs0Lhs0 );
+    ar & BOOST_SERIALIZATION_NVP( M_R_Lhs0Lhs1 );
+    ar & BOOST_SERIALIZATION_NVP( M_R_Lhs1Lhs1 );
 
 } //save( ... )
 
@@ -1681,9 +1691,21 @@ CRBSaddlePoint<TruthModelType>::load( Archive & ar, const unsigned int version )
 {
 
     int proc_number = this->worldComm().globalRank();
-
     LOG(INFO) <<"[CRBSaddlePoint::load] version"<< version <<std::endl;
 
+    ar & boost::serialization::base_object<super>( *this );
+    ar & BOOST_SERIALIZATION_NVP( M_N0 );
+    ar & BOOST_SERIALIZATION_NVP( M_N1 );
+    ar & BOOST_SERIALIZATION_NVP( M_blockAqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_blockFqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_blockLqm_pr );
+
+    ar & BOOST_SERIALIZATION_NVP( M_R_RhsRhs );
+    ar & BOOST_SERIALIZATION_NVP( M_R_Lhs0Rhs );
+    ar & BOOST_SERIALIZATION_NVP( M_R_Lhs1Rhs );
+    ar & BOOST_SERIALIZATION_NVP( M_R_Lhs0Lhs0 );
+    ar & BOOST_SERIALIZATION_NVP( M_R_Lhs0Lhs1 );
+    ar & BOOST_SERIALIZATION_NVP( M_R_Lhs1Lhs1 );
 
 } // load( ... )
 
@@ -1691,16 +1713,48 @@ template<typename TruthModelType>
 void
 CRBSaddlePoint<TruthModelType>::saveDB()
 {
+    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
 
+    if ( ofs )
+    {
+        boost::archive::text_oarchive oa( ofs );
+        // write class instance to archive
+        oa << *this;
+        // archive and stream closed when destructors are called
+    }
+    this->saveJson();
 } //saveDB()
 
 template<typename TruthModelType>
 bool
 CRBSaddlePoint<TruthModelType>::loadDB()
 {
+    if( this->isDBLoaded() )
+        return true;
+
+    fs::path db = this->lookForDB();
+
+    if ( db.empty() )
+        return false;
+
+    if ( !fs::exists( db ) )
+        return false;
+
+    fs::ifstream ifs( db );
+
+    if ( ifs )
+    {
+        boost::archive::text_iarchive ia( ifs );
+        // write class instance to archive
+        ia >> *this;
+        this->setIsLoaded( true );
+        // archive and stream closed when destructors are called
+        return true;
+    }
 
     return false;
 } // loadDB()
+
 
 } // namespace Feel
 
