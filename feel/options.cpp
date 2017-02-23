@@ -442,7 +442,9 @@ deimOptions( std::string const& prefix )
         ( prefixvm( prefix, "deim.dimension-max" ).c_str(), Feel::po::value<int>()->default_value( 20 ), "Offline  max WN size" )
         ( prefixvm( prefix, "deim.default-sampling-size" ).c_str(), Feel::po::value<int>()->default_value( 50 ), "Offline  sampling size"  )
         ( prefixvm( prefix, "deim.default-sampling-mode" ).c_str(), Feel::po::value<std::string>()->default_value( "equidistribute" ), "DEIM Offline : random, log-random, log-equidistribute, equidistribute "  )
+        ( prefixvm( prefix, "deim.rebuild-db" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Rebuild the database from beginning if true"  )
         ;
+
         return deimoptions;
 }
 
