@@ -1084,11 +1084,10 @@ typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_tensor2symm_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::projectorL2Tensor2Symm() const
 {
     if( !M_projectorL2Tensor2Symm )
-        //M_projectorL2Tensor2Symm = projector( 
-                //this->functionSpaceTensor2Symm() , this->functionSpaceTensor2Symm(), 
-                //backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm()),
-                //);
-    // TODO: solve projector instanciation in tensor2 case
+        M_projectorL2Tensor2Symm = projector( 
+                this->functionSpaceTensor2Symm() , this->functionSpaceTensor2Symm(), 
+                backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
+                );
     return M_projectorL2Tensor2Symm; 
 }
 
