@@ -346,8 +346,8 @@ public:
                     if( this->worldComm().isMasterRank() )
                         std::cout<<"Database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
                     LOG(INFO) << "Database for basis functions " << M_elements_database.lookForDB() << " available and loaded";
-                    auto basis_functions = M_elements_database.wn();
-                    M_model->rBFunctionSpace()->setBasis( basis_functions );
+                    //auto basis_functions = M_elements_database.wn();
+                    //M_model->rBFunctionSpace()->setBasis( basis_functions );
                 }
                 else
                     M_N = 0;
