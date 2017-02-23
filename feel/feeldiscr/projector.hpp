@@ -300,19 +300,7 @@ public :
     template< typename Expr>
     domain_element_type derivate( Expr const& expr )
     {
-        auto de = this->domainSpace()->element();
-        auto uImage = this->dualImageSpace()->element();
-        M_ie->zero();
-        form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
-            integrate(_range = elements( this->dualImageSpace()->mesh() ),
-                      _expr = - trace( expr * trans( grad( uImage ) ) ) );
-
-        form1(_test=this->dualImageSpace(), _vector=M_ie ) +=
-            integrate(_range = boundaryfaces( this->dualImageSpace()->mesh() ),
-                      _expr =  trans( id( uImage ) ) * expr * vf::N() );
-
-        this->backend()->solve( M_matrixFull, de, M_ie );
-        return de;
+        return this->derivateImpl<domain_element_type>( expr );
     }
 
     double epsilon() const { return M_epsilon; }
@@ -572,6 +560,33 @@ private :
                 this->applyOn( range, expr, sol );
             }
         }
+    }
+
+    template<typename T, typename ExprT,
+        typename std::enable_if<mpl::not_<is_tensor2_field<T>>::value, int>::type = 0>
+    domain_element_type derivateImpl( ExprT const& expr )
+    {
+        auto de = this->domainSpace()->element();
+        auto uImage = this->dualImageSpace()->element();
+        M_ie->zero();
+        form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
+            integrate(_range = elements( this->dualImageSpace()->mesh() ),
+                      _expr = - trace( expr * trans( grad( uImage ) ) ) );
+
+        form1(_test=this->dualImageSpace(), _vector=M_ie ) +=
+            integrate(_range = boundaryfaces( this->dualImageSpace()->mesh() ),
+                      _expr =  trans( id( uImage ) ) * expr * vf::N() );
+
+        this->backend()->solve( M_matrixFull, de, M_ie );
+        return de;
+    }
+
+    template<typename T, typename ExprT,
+        typename std::enable_if<is_tensor2_field<T>::value, int>::type = 0>
+    domain_element_type derivateImpl( ExprT const& expr )
+    {
+        static_assert( mpl::not_<is_tensor2_field<T>>::value, 
+                "Derivation in projector class is not yet supported for tensor2 fields." );
     }
 
     template<typename Range, typename Expr, typename Elem >
