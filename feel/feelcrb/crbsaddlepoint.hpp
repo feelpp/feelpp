@@ -281,7 +281,7 @@ CRBSaddlePoint<TruthModelType>::addBasis( element_type& U, element_type& Udu, pa
      if ( boption("crb.saddlepoint.add-supremizer") )
      {
          tic();
-         auto us = this->M_model->supremizer( mu, p );
+         auto us = this->M_model->supremizer( mu, U );
          XN0->addPrimalBasisElement( us );
          XN0->addDualBasisElement( us );
          M_N0++;
