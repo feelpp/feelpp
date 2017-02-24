@@ -36,6 +36,8 @@
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 
+#include <boost/serialization/export.hpp>
+
 #if defined(FEELPP_HAS_PETSC_H)
 #include <feel/feelcore/application.hpp>
 
@@ -719,6 +721,7 @@ public:
                      std::vector<size_type> const& rows,
                      bool init=true );
 
+#if 0
     /**
      * Serialization for PETSc VECSEQ
      */
@@ -741,8 +744,38 @@ public:
 
         VecRestoreArray(this->vec(), &array);
     }
+#endif
     //@}
 
+private:
+    template<class Archive>
+    void save( Archive & ar, const unsigned int version ) const
+    {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+        double * array;
+        VecGetArray(M_vec, &array);
+
+        int n = this->localSize();
+        for(int i = 0; i < n; ++i)
+            ar & boost::serialization::make_nvp("arrayi", array[i] );
+    }
+
+    template<class Archive>
+    void load( Archive & ar, const unsigned int version )
+    {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+        int n = this->map().nLocalDof();
+        double* array = new double[n];
+
+        for(int i = 0; i < n; ++i)
+            ar & boost::serialization::make_nvp("arrayi", array[i] );
+
+        std::vector<int> ind(n);
+        std::iota( ind.begin(), ind.end(), 0);
+        this->setVector(ind.data(), n, array);
+    }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER();
 
 protected:
 
@@ -800,6 +833,8 @@ class VectorPetscMPI : public VectorPetsc<T>
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
 public:
+    friend class boost::serialization::access;
+
     typedef typename super::value_type value_type;
 
     VectorPetscMPI()
@@ -925,6 +960,12 @@ public:
 
     void duplicateFromOtherPartition( Vector<T> const& vecInput );
 
+private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version )
+    {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+    }
 
 private :
 
@@ -1084,5 +1125,9 @@ vector_uptrtype vec( Vec v, datamap_ptrtype d );
 
 
 } // Feel
+
+BOOST_CLASS_EXPORT_GUID(Feel::VectorPetsc<double>, "Feel::VectorPetscdouble")
+BOOST_CLASS_EXPORT_GUID(Feel::VectorPetscMPI<double>, "Feel::VectorPetscMPIdouble")
+
 #endif /* FEELPP_HAS_PETSC */
 #endif /* __VectorPetsc_H */
