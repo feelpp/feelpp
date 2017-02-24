@@ -118,14 +118,14 @@ public :
     typedef TensorType tensor_type;
     typedef boost::shared_ptr<tensor_type> tensor_ptrtype;
 
-    typedef std::function<tensor_ptrtype ( const parameter_type& mu)> assemble_function_type;
-
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+
+    typedef std::function<tensor_ptrtype ( parameter_type const& mu)> assemble_function_type;
 
     typedef Eigen::MatrixXd matrixN_type;
     typedef Eigen::VectorXd vectorN_type;
@@ -220,19 +220,17 @@ public :
      */
     void run()
     {
+
         using Feel::cout;
         tic();
         int mMax = ioption(  prefixvm( M_prefix, "deim.dimension-max" ) );
         double error=0;
-        auto mu = M_parameter_space->max();
+        auto mu = M_trainset->max().template get<0>();
 
         if ( M_M==0 )
         {
             cout <<"===========================================\n";
-            cout << "DEIM : Start algorithm with mu=["<<mu[0];
-            for ( int i=1; i<mu.size(); i++ )
-                cout << "," << mu[i];
-            cout << "]\n";
+            cout << "DEIM : Start algorithm with mu="<<muString(mu)<<std::endl;
 
             tic();
             addNewVector(mu);
@@ -250,10 +248,7 @@ public :
 
         while( M_M<mMax && error>M_tol )
         {
-            cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu=["<<mu[0];
-            for ( int i=1; i<mu.size(); i++ )
-                cout << "," << mu[i];
-            cout << "]\n";
+            cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="muString(mu)<<std::endl;
 
             tic();
             addNewVector(mu);
@@ -283,6 +278,16 @@ public :
         return computeCoefficient( mu );
     }
 
+    /**
+     * \return the \f$ \beta^m(\mu)\f$ evaluated from an already
+     * assembled tensor (for non-linear problem)
+     */
+    vectorN_type beta( tensor_ptrtype T )
+    {
+        return computeCoefficient( T );
+    }
+
+
     //! \return the tensors \f$ T^m\f$ of the affine decomposition
     std::vector<tensor_ptrtype> q() const
     {
@@ -305,6 +310,7 @@ protected :
     //! add a new Tensor in the base, evaluated for parameter \p mu
     void addNewVector( parameter_type const& mu )
     {
+        LOG(INFO) << "DEIM : addNewVector() start with "<<muString(mu);
         tensor_ptrtype Phi = residual( mu );
 
         auto vec_max = vectorMaxAbs( Phi );
@@ -327,6 +333,7 @@ protected :
             M_B(i, M_M-1) = evaluate( M_bases[M_M-1], M_index[i] );
 
         //this->saveDB();
+        LOG(INFO) << "DEIM : addNewVector() end";
     }
 
     //! \return the value of the component \p index of the vector \p V
@@ -375,8 +382,9 @@ protected :
         newV->abs();
         int index = 0;
         double max = newV->maxWithIndex( &index );
-        double eval=evaluate( newV, index );
 
+        double max_eval=math::abs(evaluate(V,index));
+        DCHECK( max_eval==max ) << "evaluation of V(i)=" <<max_eval<<", maximum="<<max <<std::endl;
         return boost::make_tuple( max, index );
     }
 
@@ -412,6 +420,8 @@ protected :
         boost::mpi::broadcast( Environment::worldComm(), i_col, proc_number );
 
         std::pair<int,int> index (i_row,i_col);
+        double max_eval=math::abs(evaluate(M,index));
+        DCHECK( max_eval==max ) << "evaluation of M(i,j)=" <<max_eval<<", maximum="<<max <<std::endl;
 
         return boost::make_tuple( max, index );
     }
@@ -449,8 +459,9 @@ protected :
     bestfit_type computeBestFit()
     {
         tic();
+        LOG(INFO) << "DEIM : computeBestFit() start";
         double max=0;
-        auto mu_max = M_parameter_space->element();
+        auto mu_max = M_trainset->max().template get<0>();
         for ( auto const& mu : *M_trainset )
         {
             tensor_ptrtype T = residual( mu );
@@ -462,6 +473,8 @@ protected :
                 mu_max = mu;
             }
         }
+
+        LOG(INFO) << "DEIM : computeBestFit() end";
         toc("DEIM : compute best fit");
 
         return boost::make_tuple( mu_max, max );
@@ -475,6 +488,7 @@ protected :
      */
     tensor_ptrtype residual( parameter_type const& mu )
     {
+        LOG(INFO) << "DEIM : residual() start with "<< muStrin(mu);
         tensor_ptrtype T;
         if ( !M_solutions[mu] )
         {
@@ -490,7 +504,7 @@ protected :
 
         for ( int i=0; i<M_M; i++ )
             add( newT, -coeff(i), M_bases[i] );
-
+        LOG(INFO) << "DEIM : residual() end";
         return newT;
     }
 
@@ -524,6 +538,15 @@ protected :
         return newM;
     }
 
+    std::string muString( parameter_type const& mu )
+    {
+        std::ostringstream mu_str;
+        mu_str << "["<<mu[0];
+        for ( int i=1; i<mu.size(); i++ )
+            mu_str <<","<< mu[i];
+        mu_str <<"]";
+        return mu_str.str();
+    }
 
     parameterspace_ptrtype M_parameter_space;
     sampling_ptrtype M_trainset;
