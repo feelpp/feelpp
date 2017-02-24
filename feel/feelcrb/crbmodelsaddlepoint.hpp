@@ -55,6 +55,8 @@ public :
     typedef typename ModelType::mesh_ptrtype mesh_ptrtype;
 
     typedef typename model_type::space_type space_type;
+    typedef typename model_type::element_type element_type;
+
     template <int T>
     using subspace_type = typename space_type::template sub_functionspace<T>::type;
     template <int T>
@@ -124,8 +126,9 @@ public :
                                           _solution=u, _rhs=f );
     }
 
-    subelement_type<0> supremizer( parameter_type const& mu, vector_ptrtype const& vec )
+    subelement_type<0> supremizer( parameter_type const& mu, element_type const& U )
     {
+        auto vec = U.template elementPtr<1>();
         auto Xh0 = this->functionSpace()->template functionSpace<0>();
         auto Xh1 = this->functionSpace()->template functionSpace<1>();
         auto us = Xh0->element();
@@ -134,7 +137,7 @@ public :
         rhs->zero();
 
         sparse_matrix_ptrtype A01 = this->M_backend_l2_vec[0]->newMatrix( _test=Xh0, _trial=Xh1 );
-        A01 = offlineMergeForSupremizer(mu);
+        A01 = offlineMergeForSupremizer(mu,U);
 
         rhs->addVector( vec, A01 );
         this->M_backend_l2_vec[0]->solve( _matrix=this->M_inner_product_matrix_vec[0],
@@ -142,10 +145,11 @@ public :
         return us;
     }
 
-    sparse_matrix_ptrtype offlineMergeForSupremizer( parameter_type const& mu )
+    sparse_matrix_ptrtype offlineMergeForSupremizer( parameter_type const& mu,
+                                                     element_type const& U )
     {
         sparse_matrix_ptrtype A;
-        boost::tie( boost::tuples::ignore, A, boost::tuples::ignore ) = this->update(mu);
+        boost::tie( boost::tuples::ignore, A, boost::tuples::ignore ) = this->update(mu,U);
 
         auto const& Xh0_indices = A->mapRow().dofIdToContainerId( 0 );
         auto const& Xh1_indices = A->mapRow().dofIdToContainerId( 1 );
