@@ -967,6 +967,8 @@ private:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version )
     {
+        if ( Archive::is_saving::value && !this->closed() )
+            this->close();
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
     }
 
