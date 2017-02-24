@@ -656,6 +656,8 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
         }
     }
 
+
+
     if ( ioption("crb.saddlepoint.version")==2 )
         this->M_model->clearBlockMatix();
 
@@ -800,7 +802,9 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
                                                    int K, bool print_rb_matrix,
                                                    bool computeOutput ) const
 {
+    bool is_linear = this->M_model->isLinear();
     double output=0;
+    double increment = this->M_fixedpointIncrementTol;
     int N0 = boption("crb.saddlepoint.add-supremizer") ? 2*N:N;
     int N1 = N;
 
@@ -830,33 +834,84 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
     vectorN_type F( N0+N1 );
     vectorN_type L( N0+N1 );
 
-    boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = this->M_model->computeBetaQm( mu );
-
-    A.setZero( N0+N1,N0+N1);
-    for ( size_type q=0; q<Qa; q++ )
+    if ( is_linear )
     {
-        for ( size_type m=0; m<mMaxA[q]; m++ )
-        {
-            A.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_pr[0][0][q][m].block(0,0,N0,N0);
-            A.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_pr[0][1][q][m].block(0,0,N0,N1);
-            A.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_pr[1][0][q][m].block(0,0,N1,N0);
-            A.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_pr[1][1][q][m].block(0,0,N1,N1);
-        }
-    }
+        boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = this->M_model->computeBetaQm( mu );
 
-    F.setZero(N0+N1);
-    for ( size_type q=0; q<Qf; q++ )
+        A.setZero( N0+N1,N0+N1);
+        for ( size_type q=0; q<Qa; q++ )
+        {
+            for ( size_type m=0; m<mMaxA[q]; m++ )
+            {
+                A.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_pr[0][0][q][m].block(0,0,N0,N0);
+                A.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_pr[0][1][q][m].block(0,0,N0,N1);
+                A.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_pr[1][0][q][m].block(0,0,N1,N0);
+                A.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_pr[1][1][q][m].block(0,0,N1,N1);
+            }
+        }
+
+        F.setZero(N0+N1);
+        for ( size_type q=0; q<Qf; q++ )
+        {
+            for ( size_type m=0; m<mMaxF[q]; m++ )
+            {
+                F.head(N0) += betaFqm[0][q][m]*M_blockFqm_pr[0][q][m].head(N0);
+                F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
+            }
+        }
+        uN[0] = A.lu().solve( F );
+    }
+    else //non-linear
     {
-        for ( size_type m=0; m<mMaxF[q]; m++ )
+        vectorN_type previous_uN( N0+N1 );
+        uN[0].resize( N0+N1 );
+        int fi=0;
+        bool fixPointIsFinished = false;
+        do
         {
-            F.head(N0) += betaFqm[0][q][m]*M_blockFqm_pr[0][q][m].head(N0);
-            F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
-        }
+            previous_uN = uN[0];
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                this->M_model->computeBetaQm( this->expansion( uN[0], N , false ), mu );
+            A.setZero( N0+N1,N0+N1);
+            for ( size_type q=0; q<Qa; q++ )
+            {
+                for ( size_type m=0; m<mMaxA[q]; m++ )
+                {
+                    A.block( 0, 0, N0, N0 ) += betaAqm[q][m]*M_blockAqm_pr[0][0][q][m].block(0,0,N0,N0);
+                    A.block( 0, N0, N0, N1 ) += betaAqm[q][m]*M_blockAqm_pr[0][1][q][m].block(0,0,N0,N1);
+                    A.block( N0, 0, N1, N0 ) += betaAqm[q][m]*M_blockAqm_pr[1][0][q][m].block(0,0,N1,N0);
+                    A.block( N0, N0, N1, N1 ) += betaAqm[q][m]*M_blockAqm_pr[1][1][q][m].block(0,0,N1,N1);
+                }
+            }
+
+            F.setZero(N0+N1);
+            for ( size_type q=0; q<Qf; q++ )
+            {
+                for ( size_type m=0; m<mMaxF[q]; m++ )
+                {
+                    F.head(N0) += betaFqm[0][q][m]*M_blockFqm_pr[0][q][m].head(N0);
+                    F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
+                }
+            }
+            uN[0] = A.lu().solve( F );
+
+            increment = (uN[0]-previous_uN).norm();
+            auto increment_abs = (uN[0]-previous_uN).array().abs();
+            fixPointIsFinished = increment < this->M_fixedpointIncrementTol || fi>=this->M_fixedpointMaxIterations;
+            this->online_iterations_summary.first = fi;
+            this->online_iterations_summary.second = increment;
+            if( this->M_fixedpointVerbose  && this->worldComm().isMasterRank() )
+            {
+                DVLOG(2) << "iteration " << fi << " increment error: " << increment << "\n";
+                VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
+                double residual_norm = (A * uN[0] - F).norm() ;
+                VLOG(2) << " residual_norm :  "<<residual_norm;
+            }
+            ++fi;
+        }while ( !fixPointIsFinished );
+
+
     }
-
-
-
-    uN[0] = A.lu().solve( F );
 
     if ( computeOutput )
     {
