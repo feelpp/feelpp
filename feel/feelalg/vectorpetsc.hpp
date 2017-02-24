@@ -758,21 +758,24 @@ private:
         int n = this->localSize();
         for(int i = 0; i < n; ++i)
             ar & boost::serialization::make_nvp("arrayi", array[i] );
+
+        VecRestoreArray(M_vec, &array );
     }
 
     template<class Archive>
     void load( Archive & ar, const unsigned int version )
     {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
-        int n = this->map().nLocalDof();
-        double* array = new double[n];
+        int n = this->mapPtr()->nLocalDof();
+        std::vector<int> ind(n);
+        std::iota( ind.begin(), ind.end(), 0);
 
+        double* array = new double[n];
         for(int i = 0; i < n; ++i)
             ar & boost::serialization::make_nvp("arrayi", array[i] );
 
-        std::vector<int> ind(n);
-        std::iota( ind.begin(), ind.end(), 0);
         this->setVector(ind.data(), n, array);
+        this->close();
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER();
