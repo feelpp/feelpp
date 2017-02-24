@@ -248,7 +248,7 @@ public :
 
         while( M_M<mMax && error>M_tol )
         {
-            cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="muString(mu)<<std::endl;
+            cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<muString(mu)<<std::endl;
 
             tic();
             addNewVector(mu);
@@ -488,7 +488,7 @@ protected :
      */
     tensor_ptrtype residual( parameter_type const& mu )
     {
-        LOG(INFO) << "DEIM : residual() start with "<< muStrin(mu);
+        LOG(INFO) << "DEIM : residual() start with "<< muString(mu);
         tensor_ptrtype T;
         if ( !M_solutions[mu] )
         {
