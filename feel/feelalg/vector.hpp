@@ -615,7 +615,23 @@ public:
             boost::shared_ptr<Vector<T> > res;
             return res;
         }
+#if 0
+    template<class Archive>
+    void save( Archive & ar, const unsigned int version ) const
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_map );
+    }
 
+    template<class Archive>
+    void load( Archive & ar, const unsigned int version )
+    {
+        datamap_ptrtype map;
+        ar & BOOST_SERIALIZATION_NVP( map );
+        this->init(map);
+    }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER();
+#endif
 protected:
 
     /**
@@ -738,7 +754,32 @@ void
 sync( Vector<T> & v, Feel::detail::syncOperator<T> const& opSync );
 
 
-
 } // Feel
+
+namespace boost {
+    namespace serialization {
+
+    template<typename T, class Archive>
+    void save(Archive & ar, const Feel::Vector<T> & v, const unsigned int version)
+    {
+        Feel::DataMap map = v.map();
+        ar & BOOST_SERIALIZATION_NVP(map);
+    }
+    template<typename T, class Archive>
+    void load(Archive & ar, Feel::Vector<T> & v, const unsigned int version)
+    {
+        Feel::DataMap map;
+        ar & BOOST_SERIALIZATION_NVP(map);
+        auto mapPtr = boost::make_shared<Feel::DataMap>(map);
+        v.init(mapPtr);
+    }
+    template<typename T, class Archive>
+    void serialize(Archive & ar, Feel::Vector<T> & v, const unsigned int version)
+    {
+        split_free( ar, v, version );
+    }
+    } // namespace serialization
+} // namespace boost
+
 
 #endif  // #ifdef __numeric_vector_h__
