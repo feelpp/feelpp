@@ -1,6 +1,7 @@
 #define USE_BOOST_TEST 1
 #define BOOST_TEST_MODULE test_serialization
 
+// need to be before call of BOOST_CLASS_EXPORT
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
@@ -34,6 +35,7 @@ BOOST_AUTO_TEST_CASE( text_test )
     auto ex = expr("sin(x):x");
 
     form1( _test=Xh, _vector=v1) = integrate( elements(mesh), ex );
+    v1->close();
 
 
     std::string fileText = boost::str(boost::format("text_archive_%1%") % Environment::rank());
@@ -67,7 +69,7 @@ BOOST_AUTO_TEST_CASE( xml_test )
     auto ex = expr("sin(x):x");
 
     form1( _test=Xh, _vector=v1) = integrate( elements(mesh), ex );
-
+    v1->close();
 
     std::string fileXml = boost::str(boost::format("xml_archive_%1%") % Environment::rank());
 
@@ -100,6 +102,7 @@ BOOST_AUTO_TEST_CASE( binary_test )
     auto ex = expr("sin(x):x");
 
     form1( _test=Xh, _vector=v1) = integrate( elements(mesh), ex );
+    v1->close();
 
 
     std::string fileBinary = boost::str(boost::format("binary_archive_%1%") % Environment::rank());
