@@ -578,7 +578,7 @@ public:
      * \return a reference of dofIdToContainerId mapping (from functionspace id to container id with global process numbering)
      */
     std::vector<size_type>& dofIdToContainerIdRef( int tag ) { return M_dofIdToContainerId[tag]; }
-    void setDofIdToContainerId( int tag, std::vector<size_type> vec ) { M_dofIdToContainerId[tag] = vec; }
+    void setDofIdToContainerId( int tag, std::vector<size_type> const& vec ) { M_dofIdToContainerId[tag] = vec; }
 
     /**
      * \return the dofIdToContainerId mapping (from functionspace id to container id with global process numbering)
