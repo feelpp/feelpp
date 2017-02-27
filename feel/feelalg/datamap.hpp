@@ -33,6 +33,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/worldcomm.hpp>
+#include <boost/serialization/set.hpp>
 
 namespace Feel
 {
@@ -114,6 +115,16 @@ class FEELPP_EXPORT IndexSplit : public std::vector<std::vector<size_type> >
 
     self_ptrtype applyFieldsDef( FieldsDef const& fieldsDef ) const;
 
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super_type);
+        ar & BOOST_SERIALIZATION_NVP(M_firstIndex);
+        ar & BOOST_SERIALIZATION_NVP(M_lastIndex);
+        ar & BOOST_SERIALIZATION_NVP(M_nIndex);
+        ar & BOOST_SERIALIZATION_NVP(M_nIndexForSmallerRankId);
+        ar & BOOST_SERIALIZATION_NVP(M_tag);
+    }
 
 private :
 
@@ -502,6 +513,10 @@ public:
     {
         return M_closed;
     }
+    void setIsClosed( bool b )
+    {
+        M_closed = b;
+    }
 
     /**
      * print some information
@@ -563,6 +578,7 @@ public:
      * \return a reference of dofIdToContainerId mapping (from functionspace id to container id with global process numbering)
      */
     std::vector<size_type>& dofIdToContainerIdRef( int tag ) { return M_dofIdToContainerId[tag]; }
+    void setDofIdToContainerId( int tag, std::vector<size_type> const& vec ) { M_dofIdToContainerId[tag] = vec; }
 
     /**
      * \return the dofIdToContainerId mapping (from functionspace id to container id with global process numbering)
@@ -621,7 +637,25 @@ public:
 
     //@}
 
-
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_closed );
+        ar & BOOST_SERIALIZATION_NVP( M_n_dofs );
+        ar & BOOST_SERIALIZATION_NVP( M_n_localWithoutGhost_df );
+        ar & BOOST_SERIALIZATION_NVP( M_n_localWithGhost_df );
+        ar & BOOST_SERIALIZATION_NVP( M_first_df );
+        ar & BOOST_SERIALIZATION_NVP( M_last_df );
+        ar & BOOST_SERIALIZATION_NVP( M_first_df_globalcluster );
+        ar & BOOST_SERIALIZATION_NVP( M_last_df_globalcluster );
+        ar & BOOST_SERIALIZATION_NVP( M_myglobalelements );
+        ar & BOOST_SERIALIZATION_NVP( M_mapGlobalProcessToGlobalCluster );
+        ar & BOOST_SERIALIZATION_NVP( M_neighbor_processors );
+        ar & BOOST_SERIALIZATION_NVP( M_activeDofSharedOnCluster );
+        ar & BOOST_SERIALIZATION_NVP( M_indexSplit );
+        ar & BOOST_SERIALIZATION_NVP( M_indexSplitWithComponents );
+        ar & BOOST_SERIALIZATION_NVP( M_dofIdToContainerId );
+    }
 
 protected:
 
