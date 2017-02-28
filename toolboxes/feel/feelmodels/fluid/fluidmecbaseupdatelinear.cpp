@@ -279,6 +279,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     }
 
     //--------------------------------------------------------------------------------------------------//
+    // user-defined additional terms
+    this->updateLinearPDEAdditional( A, F, _BuildCstPart );
+
+    //--------------------------------------------------------------------------------------------------//
     // volume force
     this->updateSourceTermLinearPDE(F,BuildCstPart);
     // source given by user
