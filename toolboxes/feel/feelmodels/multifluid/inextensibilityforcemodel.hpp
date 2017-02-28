@@ -213,12 +213,12 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
     //auto EpN = this->levelset()->projectorL2Vectorial()->project(
             //_expr=idv(Ep)*idv(N)
             //);
-    auto GradEp = this->levelset()->smootherVectorial()->project(
-            _expr=trans(gradv(Ep))
-            );
-    //auto GradEp = this->levelset()->projectorL2Vectorial()->project(
+    //auto GradEp = this->levelset()->smootherVectorial()->project(
             //_expr=trans(gradv(Ep))
             //);
+    auto GradEp = this->levelset()->projectorL2Vectorial()->project(
+            _expr=trans(gradv(Ep))
+            );
     //auto DivEpNtN = this->levelset()->smootherVectorial()->project(
             //_expr=divv(EpN)*idv(N)
             //);
@@ -233,7 +233,10 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
             //_range=elements(this->levelset()->mesh()),
             //_expr=M_inextensibilityForceCoefficient*( (Id-NxN)*idv(GradEp)-idv(Ep)*idv(K)*idv(N) )*idv(this->levelset()->D())
             //);
-    auto Fe = this->levelset()->smootherVectorial()->project(
+    //auto Fe = this->levelset()->smootherVectorial()->project(
+            //_expr=M_inextensibilityForceCoefficient*( (Id-NxN)*idv(GradEp)-idv(Ep)*idv(K)*idv(N) )*idv(this->levelset()->D())
+            //);
+    auto Fe = this->levelset()->projectorL2Vectorial()->project(
             _expr=M_inextensibilityForceCoefficient*( (Id-NxN)*idv(GradEp)-idv(Ep)*idv(K)*idv(N) )*idv(this->levelset()->D())
             );
     *F += Fe;
@@ -245,16 +248,12 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
             "Ep", "Ep", Ep );
     M_exporter->step(this->levelset()->time())->add(
             "inextensibility-force", "inextensibility-force", Fe );
-    auto Fe_ortho = vf::project(
-            _space=this->levelset()->functionSpaceVectorial(),
-            _range=elements(this->levelset()->mesh()),
+    auto Fe_ortho = this->levelset()->projectorL2Vectorial()->project(
             _expr=( (Id-NxN)*idv(GradEp) )*idv(this->levelset()->D())
             );
     M_exporter->step(this->levelset()->time())->add(
             "inextensibility-force-ortho", "inextensibility-force-ortho", Fe_ortho );
-    auto Fe_par = vf::project(
-            _space=this->levelset()->functionSpaceVectorial(),
-            _range=elements(this->levelset()->mesh()),
+    auto Fe_par = this->levelset()->projectorL2Vectorial()->project(
             _expr=( -idv(Ep)*idv(K)*idv(N) )*idv(this->levelset()->D())
             );
     M_exporter->step(this->levelset()->time())->add(
