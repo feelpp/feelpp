@@ -85,19 +85,20 @@ if(FEELPP_ENABLE_METIS)
 endif()
 
 set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
-  -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/contrib/ginac/tools/cmake_install.cmake"
+  -P "${CMAKE_BINARY_DIR}/contrib/cmake_install.cmake"
+  -P "${CMAKE_BINARY_DIR}/tools/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/mesh/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Libs -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/cmake_install.cmake")
 
 if ( FEELPP_MINIMAL_BUILD )
   add_custom_target(install-feelpp-lib
-    DEPENDS feelpp
+    DEPENDS contrib tools feelpp 
     COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
     )
 else()
   add_custom_target(install-feelpp-lib
-    DEPENDS feelpp feelpp_mesh_partitioner
+    DEPENDS contrib tools feelpp feelpp_mesh_partitioner
     COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
     )
 endif()
@@ -205,20 +206,21 @@ add_custom_target(install-apps-models-fsi
       -P "${CMAKE_BINARY_DIR}/applications/models/fsi/cmake_install.cmake"
 )
 
-#
-# this target installs the libraries, header files, cmake files and sample applications
-#
-add_custom_target(install-feelpp-base
-  DEPENDS
-  install-feelpp-lib
-  install-feelpp-models-common
-  quickstart
-  COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Geo
-      -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Quickstart
-      -P "${CMAKE_BINARY_DIR}/quickstart/cmake_install.cmake"
-)
+if ( NOT TARGET install-feelpp-base )
+  #
+  # this target installs the libraries, header files, cmake files and sample applications
+  #
+  add_custom_target(install-feelpp-base
+    DEPENDS
+    install-feelpp-lib
+    install-quickstart
+    COMMAND
+    "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Geo
+    -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
+    "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Quickstart
+    -P "${CMAKE_BINARY_DIR}/quickstart/cmake_install.cmake"
+    )
+endif()
 
 #
 # Generic install target for feel++

@@ -2142,6 +2142,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "${feelpp_builddir}", topBuildDir );
     boost::replace_all( res, "${feelpp_databasesdir}", topSrcDir + "/databases/" );
     boost::replace_all( res, "${top_srcdir}", topSrcDir );
+    boost::replace_all( res, "${toolboxes_srcdir}", topSrcDir + "/toolboxes/" );
     boost::replace_all( res, "${top_builddir}", topBuildDir );
     boost::replace_all( res, "${cfgdir}", cfgDir );
     boost::replace_all( res, "${home}", homeDir );
@@ -2154,6 +2155,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$feelpp_builddir", topBuildDir );
     boost::replace_all( res, "$feelpp_databasesdir", topSrcDir + "/databases/" );
     boost::replace_all( res, "$top_srcdir", topSrcDir );
+    boost::replace_all( res, "$toolboxes_srcdir", topSrcDir + "/toolboxes/" );
     boost::replace_all( res, "$top_builddir", topBuildDir );
     boost::replace_all( res, "$cfgdir", cfgDir );
     boost::replace_all( res, "$home", homeDir );
