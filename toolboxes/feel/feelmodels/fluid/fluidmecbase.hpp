@@ -806,6 +806,9 @@ public :
     void updateResidualModel( element_fluid_external_storage_type const& U, vector_ptrtype& R,
                               bool BuildCstPart, bool UseJacobianLinearTerms ) const;
 
+    virtual void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const {}
+    virtual void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const {}
+
     virtual void updateInitialNewtonSolutionBCDirichlet(vector_ptrtype& U) const = 0;
     virtual void updateSourceTermResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const = 0;
@@ -826,6 +829,8 @@ public :
     void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const;
     void updateLinearPDEStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
                                    sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart ) const;
+
+    virtual void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const {}
 
     virtual void updateSourceTermLinearPDE( vector_ptrtype& F, bool BuildCstPart ) const = 0;
     virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const = 0;
