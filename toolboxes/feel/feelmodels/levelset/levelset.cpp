@@ -999,12 +999,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
     }
     else
     {
-        //*M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
-        *M_levelsetCurvature = vf::project( 
-                _space=this->functionSpace(),
-                _range=elements(this->mesh()),
-                _expr=divv(this->normal())
-                );
+        *M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
+        //*M_levelsetCurvature = vf::project( 
+                //_space=this->functionSpace(),
+                //_range=elements(this->mesh()),
+                //_expr=divv(this->normal())
+                //);
     }
 
     M_doUpdateCurvature = false;
