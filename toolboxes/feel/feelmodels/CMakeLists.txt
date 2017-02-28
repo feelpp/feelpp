@@ -86,7 +86,7 @@ endif()
 if ( FEELPP_MODELS_ENABLE_FSI )
   add_subdirectory(fsi)
 endif()
-if ( 0 ) # disable
+if ( 1 ) # enable
 if ( FEELPP_MODELS_ENABLE_ADVECTION )
   add_subdirectory(advection)
 endif()
