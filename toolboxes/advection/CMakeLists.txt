@@ -1,5 +1,5 @@
 
-feelpp_add_application( application_advection_2d SRCS main_adv.cpp
+feelpp_add_application( advection_2d SRCS main_adv.cpp
   LINK_LIBRARIES
   feelpp_model_advection
   # feelpp_model_advection2dP1G1Fekete
