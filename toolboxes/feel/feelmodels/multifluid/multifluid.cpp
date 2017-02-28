@@ -225,14 +225,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n       * rho : " << this->M_fluidDensityViscosityModel->cstRho()
            << "\n       * mu  : " << this->M_fluidDensityViscosityModel->cstMu()
            << "\n       * nu  : " << this->M_fluidDensityViscosityModel->cstNu();
-    *_ostr << this->M_fluidDensityViscosityModel->getInfo()->str();
+    *_ostr << this->M_fluidDensityViscosityModel->getInfo("")->str();
     for( uint16_type i = 0; i < M_levelsetDensityViscosityModels.size(); ++i )
     {
     *_ostr << "\n     -- fluid " << i+1
            << "\n       * rho : " << this->M_levelsetDensityViscosityModels[i]->cstRho()
            << "\n       * mu  : " << this->M_levelsetDensityViscosityModels[i]->cstMu()
            << "\n       * nu  : " << this->M_levelsetDensityViscosityModels[i]->cstNu();
-    *_ostr << this->M_levelsetDensityViscosityModels[i]->getInfo()->str();
+    *_ostr << this->M_levelsetDensityViscosityModels[i]->getInfo("")->str();
     }
 
     *_ostr << "\n   Level Sets Parameters";
