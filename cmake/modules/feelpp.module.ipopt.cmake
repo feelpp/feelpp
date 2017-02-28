@@ -57,7 +57,7 @@ if ( FEELPP_ENABLE_IPOPT )
 
       SET(FEELPP_LIBRARIES feelpp_ipopt ${FEELPP_LIBRARIES})
       SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Ipopt/Contrib" )
-      add_subdirectory(contrib/ipopt)
+      #add_subdirectory(contrib/ipopt)
 
       #SET(IPOPT_INCLUDE_DIR
       #          ${FEELPP_SOURCE_DIR}/contrib/ipopt/Ipopt/src/Interfaces

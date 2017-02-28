@@ -64,6 +64,10 @@ macro(feelpp_add_testcase )
     # COMMENT "Syncing testcase ${testcase} in ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}")
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
       DESTINATION share/feel/testcases/${FEELPP_CASE_CATEGORY} COMPONENT testcases)
+    if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc )
+      install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc 
+        DESTINATION share/feel/testcases/${FEELPP_CASE_CATEGORY} COMPONENT testcases)
+    endif()
     #add_dependencies(install-testcase ${target})
   endif()
 endmacro(feelpp_add_testcase)
@@ -73,14 +77,34 @@ endmacro(feelpp_add_testcase)
 macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
-    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT"
-    "NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT;NO_FEELPP_LIBRARY"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT;PROJECT;EXEC"
+    "NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT;NO_FEELPP_LIBRARY;INSTALL"
     ${ARGN}
     )
   CAR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
 
-  set(execname feelpp_${FEELPP_APP_NAME})
-
+  if ( FEELPP_APP_PROJECT )
+    set(execname feelpp_${FEELPP_APP_PROJECT}_${FEELPP_APP_NAME})
+  else( FEELPP_APP_PROJECT )
+    if ( PROJECT_NAME AND
+        ( NOT PROJECT_NAME STREQUAL "Feel++" )
+        )
+      
+      if ( PROJECT_SHORTNAME )
+        #message(STATUS "project: ${PROJECT_NAME} shortname: ${PROJECT_SHORTNAME}")
+        set(execname feelpp_${PROJECT_SHORTNAME}_${FEELPP_APP_NAME})
+      else()
+        #message(STATUS "project: ${PROJECT_NAME} ")
+        set(execname feelpp_${PROJECT_NAME}_${FEELPP_APP_NAME})
+      endif()
+    else()
+      set(execname feelpp_${FEELPP_APP_NAME})
+    endif()
+  endif( FEELPP_APP_PROJECT )
+  if  (FEELPP_APP_EXEC )
+    set( ${FEELPP_APP_EXEC} ${execname} )
+  endif()
+  
   if ( FEELPP_ENABLE_VERBOSE_CMAKE )
     MESSAGE("*** Arguments for Feel++ application ${FEELPP_APP_NAME}")
     MESSAGE("    Sources: ${FEELPP_APP_SRCS}")
@@ -120,7 +144,11 @@ macro(feelpp_add_application)
     add_precompiled_header( ${execname} ${FEELPP_APP_SRCS} "feel/feel.hpp")
   endif()
 
-  #INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
+  # install rule if INSTALL if target is marked to be installed
+  if ( FEELPP_APP_INSTALL )
+    install(TARGETS ${execname} RUNTIME DESTINATION bin COMPONENT Bin)
+  endif()
+  
   if ( NOT FEELPP_APP_NO_TEST )
     IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
       add_test(NAME ${execname}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS} )
@@ -251,7 +279,7 @@ endmacro()
 
 macro(feelpp_add_test)
   PARSE_ARGUMENTS(FEELPP_TEST
-    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;TIMEOUT;CLI"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;TIMEOUT;CLI;PROJECT;EXEC"
     "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;NO_FEELPP_LIBRARY"
     ${ARGN}
     )
@@ -260,35 +288,36 @@ macro(feelpp_add_test)
 
   CAR(FEELPP_TEST_NAME ${FEELPP_TEST_DEFAULT_ARGS})
   get_directory_property( FEELPP_TEST_LABEL_DIRECTORY LABEL )
-  set(targetname feelpp_test_${FEELPP_TEST_NAME})
+  #set(targetname feelpp_test_${FEELPP_TEST_NAME})
 
   if ( NOT FEELPP_TEST_SRCS )
     set(filename test_${FEELPP_TEST_NAME}.cpp)
     if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
-      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} MESH ${FEELPP_TEST_MESH}  DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
+      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} MESH ${FEELPP_TEST_MESH}  DEFS ${FEELPP_TEST_DEFS} PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
     else()
-      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}  PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
     endif()
     #add_executable(${targetname} ${filename})
   else()
      if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
-       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
+       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}   PROJECT ${FEELPP_TEST_PROJECT} TARGET targetname LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
      else()
-       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}   PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
      endif()
     #add_executable(${targetname} ${FEELPP_TEST_SRCS})
   endif()
-    #target_link_libraries(${targetname} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  )
-    set_property(TARGET ${targetname} PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY})
-    if ( TARGET  ${FEELPP_TEST_LABEL_DIRECTORY})
-      add_dependencies(  ${FEELPP_TEST_LABEL_DIRECTORY} ${targetname} )
-      add_dependencies( testsuite  ${FEELPP_TEST_LABEL_DIRECTORY} )
-    elseif( TARGET testsuite )
-      add_dependencies(testsuite ${targetname})
-    endif()
+  set( FEELPP_TEST_EXEC ${targetname} )
+  #target_link_libraries(${targetname} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  )
+  set_property(TARGET ${targetname} PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY})
+  if ( TARGET  ${FEELPP_TEST_LABEL_DIRECTORY})
+    add_dependencies(  ${FEELPP_TEST_LABEL_DIRECTORY} ${targetname} )
+    add_dependencies( testsuite  ${FEELPP_TEST_LABEL_DIRECTORY} )
+  elseif( TARGET testsuite )
+    add_dependencies(testsuite ${targetname})
+  endif()
+  
 
-
-    if ( NOT FEELPP_TEST_NO_TEST )
+  if ( NOT FEELPP_TEST_NO_TEST )
       # split command line options by whitespace into cmake list
       separate_arguments(FEELPP_TEST_CLI)
       set(BOOST_TEST_SEPARATOR "")
@@ -484,3 +513,11 @@ function(feelpp_split_libs libs libnames libpaths)
     set(${libnames} ${_names} PARENT_SCOPE)
     set(${libpaths} ${_paths} PARENT_SCOPE)
 endfunction(feelpp_split_libs)
+
+macro(feel_append_src DIRNAME FILES)
+  foreach(FILE ${FILES})
+    list(APPEND LIST ${DIRNAME}/${FILE})
+  endforeach(FILE)
+  set(FEELPP_SRCS ${FEELPP_SRCS};${LIST} PARENT_SCOPE)
+  set(FEELPP_DIRS ${FEELPP_DIRS};${DIRNAME} PARENT_SCOPE)
+endmacro(feel_append_src)

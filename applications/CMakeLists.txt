@@ -25,7 +25,7 @@
 #
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-project( feel-applications )
+project( applications )
 add_subdirectory( mesh )
 add_subdirectory( polyvis )
 add_subdirectory( check )
@@ -36,4 +36,4 @@ if ( EXISTS ${FEELPP_SOURCE_DIR}/applications/crb AND FEELPP_ENABLE_APPLICATIONS
      set(OPUS_VERSION_MICRO "${OPUS_VERSION_MICRO}" PARENT_SCOPE)
      set(OPUS_VERSION_EXTRA "${OPUS_VERSION_EXTRA}" PARENT_SCOPE)
 endif()
-add_subdirectory( models )
+
