@@ -139,11 +139,9 @@ public:
 #endif
 
     //--------------------------------------------------------------------//
-    // Stretch and shear types
+    // Stretch and shear
     typedef element_levelset_type element_stretch_type;
     typedef element_levelset_ptrtype element_stretch_ptrtype;
-    typedef element_levelset_type element_shear_type;
-    typedef element_levelset_ptrtype element_shear_ptrtype;
 
     //--------------------------------------------------------------------//
     // Projectors
@@ -186,8 +184,6 @@ public:
     // Stretch advection
     typedef Advection<ConvexType, Lagrange<Order, Scalar, Continuous>, PeriodicityType> stretch_advection_type;
     typedef boost::shared_ptr<stretch_advection_type> stretch_advection_ptrtype;
-    typedef typename stretch_advection_type::element_advection_type element_stretch_type;
-    typedef boost::shared_ptr<element_stretch_type> element_stretch_ptrtype;
 
     //--------------------------------------------------------------------//
     // Exporter
