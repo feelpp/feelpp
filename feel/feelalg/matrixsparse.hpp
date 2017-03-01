@@ -256,7 +256,7 @@ public:
     //! @return the number of allocated non-zero entries
     //!
     virtual std::size_t nnz() const = 0;
-    
+
     /**
      * set matrix properties, @see MatrixProperties
      */
@@ -352,7 +352,7 @@ public:
             checkProperties();
             return M_mprop.test( INDEFINITE );
         }
-    
+
     bool haveConsistentProperties() const
     {
         bool p1 = M_mprop.test( SINGULAR ) && M_mprop.test( POSITIVE_DEFINITE );
@@ -380,9 +380,9 @@ public:
         {
             std::ostringstream ostr;
             ostr << "Invalid matrix properties:\n"
-                 << "                   SPD: " << isSPD() << "\n"                
+                 << "                   SPD: " << isSPD() << "\n"
                  << "             SYMMETRIC: " << this->isSymmetric() << "\n"
-                 << "STRUCTURALLY_SYMMETRIC: " << isStructurallySymmetric() << "\n"                
+                 << "STRUCTURALLY_SYMMETRIC: " << isStructurallySymmetric() << "\n"
                  << "             HERMITIAN: " << isHermitian() << "\n"
                  << "         NON_HERMITIAN: " << isNonHermitian() << "\n"
                  << "              SINGULAR: " << isSingular() << "\n"
@@ -826,9 +826,9 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    virtual void zeroRows( std::vector<int> const& rows, 
-                           Vector<value_type> const& values, 
-                           Vector<value_type>& rhs, 
+    virtual void zeroRows( std::vector<int> const& rows,
+                           Vector<value_type> const& values,
+                           Vector<value_type>& rhs,
                            Context const& on_context,
                            value_type value_on_diagonal ) = 0;
 
@@ -890,12 +890,12 @@ public:
      * Get informations (filling, nnz, ...)
      * Implemented in MatrixPetsc
      */
-    virtual void getMatInfo( std::vector<double> &) 
+    virtual void getMatInfo( std::vector<double> &)
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
-    virtual void threshold( void ) 
+    virtual void threshold( void )
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );
@@ -1114,5 +1114,48 @@ bool MatrixSparse<T>::isTransposeOf ( MatrixSparse<value_type> &Trans ) const
 }
 
 } // Feel
+
+
+namespace boost {
+namespace serialization {
+
+template<typename T, class Archive>
+void save(Archive & ar, const Feel::MatrixSparse<T> & m, const unsigned int version)
+{
+    ar & BOOST_SERIALIZATION_NVP(m.mapRow());
+    ar & BOOST_SERIALIZATION_NVP(m.mapCol());
+    ar & BOOST_SERIALIZATION_NVP(*(m.graph()));
+}
+
+template<typename T, class Archive>
+void load(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
+{
+    Feel::DataMap map_row;
+    Feel::DataMap map_col;
+    Feel::GraphCSR graph;
+
+    ar & BOOST_SERIALIZATION_NVP(map_row);
+    ar & BOOST_SERIALIZATION_NVP(map_col);
+    ar & BOOST_SERIALIZATION_NVP(graph);
+
+    m.setMapRow( boost::make_shared<Feel::DataMap>( map_row ) );
+    m.setMapCol( boost::make_shared<Feel::DataMap>( map_col ) );
+
+    auto graph_ptr = boost::make_shared<Feel::GraphCSR>( graph );
+
+    m.init( map_col.nDof(), map_row.nDof(),
+            map_col.nLocalDofWithoutGhost(), map_row.nLocalDofWithoutGhost(),
+            graph_ptr );
+}
+
+template<typename T, class Archive>
+void serialize(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
+{
+    split_free( ar, m, version );
+}
+
+} // namespace serialization
+} // namespace boost
+
 
 #endif // #ifndef __sparse_matrix_h__

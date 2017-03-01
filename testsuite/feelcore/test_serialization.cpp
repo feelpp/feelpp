@@ -124,4 +124,41 @@ BOOST_AUTO_TEST_CASE( binary_test )
     BOOST_CHECK_SMALL(err, 1e-8);
 }
 
+BOOST_AUTO_TEST_CASE( binary_test_M )
+{
+    auto mesh = unitSquare();
+    auto Xh = Pch<1>( mesh );
+    auto v = Xh->element();
+
+    auto m1 = backend()->newMatrix( Xh, Xh );
+    auto m2 = backend()->newMatrix( Xh, Xh );
+
+    form2( _test=Xh, _trial=Xh, _matrix=m1) =
+        integrate( elements(mesh), math::sin(Px())*id(v)*idt(v) );
+    v1->close();
+
+
+    std::string fileBinary = boost::str(boost::format("binary_archive_%1%") % Environment::rank());
+
+    std::ofstream ofs(fileBinary);
+    if (ofs)
+    {
+        boost::archive::binary_oarchive oa(ofs);
+        oa << m1;
+    }
+
+    std::ifstream ifs(fileBinary);
+    if (ifs)
+    {
+        boost::archive::binary_iarchive ia(ifs);
+        ia >> m2;
+    }
+
+    m1->addMatrix(-1, m2);
+    double err = m1->linftyNorm();
+    BOOST_CHECK_SMALL(err, 1e-8);
+}
+
+
+
 BOOST_AUTO_TEST_SUITE_END()
