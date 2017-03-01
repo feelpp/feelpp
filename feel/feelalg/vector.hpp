@@ -25,6 +25,14 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/export.hpp>
+
 #include <feel/feelcore/traits.hpp>
 
 #include <feel/feelalg/datamap.hpp>
@@ -625,13 +633,15 @@ public:
     template<class Archive>
     void load( Archive & ar, const unsigned int version )
     {
-        datamap_ptrtype map;
-        ar & BOOST_SERIALIZATION_NVP( map );
-        this->init(map);
+        Feel::DataMap map;
+        ar & BOOST_SERIALIZATION_NVP(map);
+        auto mapPtr = boost::make_shared<Feel::DataMap>(map);
+        this->init(mapPtr);
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER();
 #endif
+
 protected:
 
     /**
@@ -755,6 +765,8 @@ sync( Vector<T> & v, Feel::detail::syncOperator<T> const& opSync );
 
 
 } // Feel
+
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(Feel::Vector)
 
 namespace boost {
     namespace serialization {
