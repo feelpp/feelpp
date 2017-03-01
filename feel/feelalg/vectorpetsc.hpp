@@ -36,11 +36,11 @@
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 
-#include <boost/serialization/export.hpp>
+BOOST_CLASS_EXPORT_KEY(Feel::VectorPetsc<double>)
+BOOST_CLASS_EXPORT_KEY(Feel::VectorPetscMPI<double>)
 
 #if defined(FEELPP_HAS_PETSC_H)
 #include <feel/feelcore/application.hpp>
-
 
 extern "C"
 {
@@ -752,6 +752,7 @@ private:
     void save( Archive & ar, const unsigned int version ) const
     {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+
         double * array;
         VecGetArray(M_vec, &array);
 
@@ -766,6 +767,7 @@ private:
     void load( Archive & ar, const unsigned int version )
     {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+
         int n = this->mapPtr()->nLocalDof();
         std::vector<int> ind(n);
         std::iota( ind.begin(), ind.end(), 0);
@@ -1131,8 +1133,6 @@ vector_uptrtype vec( Vec v, datamap_ptrtype d );
 
 } // Feel
 
-BOOST_CLASS_EXPORT_GUID(Feel::VectorPetsc<double>, "Feel::VectorPetscdouble")
-BOOST_CLASS_EXPORT_GUID(Feel::VectorPetscMPI<double>, "Feel::VectorPetscMPIdouble")
 
 #endif /* FEELPP_HAS_PETSC */
 #endif /* __VectorPetsc_H */
