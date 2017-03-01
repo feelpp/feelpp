@@ -103,7 +103,7 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::ConvergenceElasticityTest(
 	*/	
     std::string bc_type = "Dir";
     itField = M_model->modelProperties()->boundaryConditions().find("stress");
-    if (itField != M_model->modelProperties()->boundaryConditions().end() )
+    if (itField != M_model->modelProperties()->boundaryConditions().end() && bc_type != "Ibc")
     {
         auto mapField = (*itField).second;
         auto itType = mapField.find("Neumann");
@@ -112,11 +112,17 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::ConvergenceElasticityTest(
         
         itType = mapField.find("Neumann_exact");
         if ( itType != mapField.end() )
-            bc_type = "Neu";
-    }   
-
-    if (M_model->integralCondition()) 
-        bc_type = "Ibc";
+            bc_type = "Neu"; 
+    }
+    
+    itField = M_model->modelProperties()->boundaryConditions().find("stress");
+    if (itField != M_model->modelProperties()->boundaryConditions().end() && bc_type != "Ibc")
+    {
+        auto mapField = (*itField).second; 
+        auto itType = mapField.find("Integral");
+        if( itType != mapField.end())
+            bc_type = "Ibc";
+    }
 
 	
     auto repo = boost::format( "conv_mixedelasticity/D%1%/P%2%/N%3%/%4%/" )
