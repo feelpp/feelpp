@@ -33,7 +33,9 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/worldcomm.hpp>
+#include <boost/serialization/version.hpp>
 #include <boost/serialization/set.hpp>
+#include <boost/serialization/map.hpp>
 
 namespace Feel
 {
