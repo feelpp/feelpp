@@ -39,6 +39,7 @@
 
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/graphcsr.hpp>
+#include <boost/serialization/export.hpp>
 
 
 extern "C"
@@ -69,7 +70,7 @@ extern "C" {
 namespace Feel
 {
 template<typename T> class VectorPetsc;
-
+template<typename T> class VectorPetscMPI;
 /**
  * \class MatrixPetsc
  * \brief Wrapper for petsc matrices
@@ -85,6 +86,7 @@ template<typename T> class VectorPetsc;
 template<typename T>
 class MatrixPetsc : public MatrixSparse<T>
 {
+    friend class boost::serialization::access;
     typedef MatrixSparse<T> super;
 public:
     /** @name Typedefs
@@ -217,7 +219,7 @@ public:
     //! @return the number of non-zero entries
     //!
     std::size_t nnz() const;
-    
+
     //@}
 
     /** @name  Mutators
@@ -562,7 +564,7 @@ public:
     virtual void getMatInfo(std::vector<double> &);
 
     //!
-    //! 
+    //!
     //!
     virtual void threshold( void );
 
@@ -574,6 +576,16 @@ private:
     void getSubMatrixPetsc( std::vector<size_type> const& rows,
                             std::vector<size_type> const& cols,
                             Mat &submat, bool doClose = true ) const;
+
+    template<class Archive>
+    void save( Archive & ar, const unsigned int version ) const;
+
+
+    template<class Archive>
+    void load( Archive & ar, const unsigned int version );
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER();
+
 protected:
 
     /**
@@ -603,6 +615,7 @@ private:
 template<typename T>
 class MatrixPetscMPI : public MatrixPetsc<T>
 {
+    friend class boost::serialization::access;
     typedef MatrixPetsc<T> super;
 
 public :
@@ -679,11 +692,25 @@ public :
 
 private :
 
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version )
+    {
+        if ( Archive::is_saving::value && !this->closed() )
+            this->close();
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+    }
+
     void addMatrixSameNonZeroPattern( const T a, MatrixSparse<T> &X );
 };
 
 
 
 } // Feel
+
+
+BOOST_CLASS_EXPORT_GUID(Feel::MatrixPetsc<double>, "Feel::MatrixPetscdouble")
+BOOST_CLASS_EXPORT_GUID(Feel::MatrixPetscMPI<double>, "Feel::MatrixPetscMPIdouble")
+
+
 #endif /* FEELPP_HAS_PETSC */
 #endif /* __MatrixPetsc_H */

@@ -791,7 +791,7 @@ std::size_t MatrixPetsc<T>::nnz () const
 
     MatInfo info;
     int ierr = MatGetInfo( M_mat, MAT_GLOBAL_SUM, &info);
-    
+
     CHKERRABORT( this->comm(),ierr );
     return info.nz_allocated;
 }
@@ -1291,7 +1291,7 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
 #else
         ierr = PetscViewerPushFormat ( petsc_viewer,
                                        PETSC_VIEWER_ASCII_MATLAB );
-#endif       
+#endif
         //PETSC_VIEWER_ASCII_PYTHON );
         CHKERRABORT( this->comm(),ierr );
 
@@ -2325,6 +2325,84 @@ void MatrixPetsc<T>::threshold(void)
 
     this->close();
 }
+
+template <typename T>
+template<class Archive>
+void MatrixPetsc<T>::save( Archive & ar, const unsigned int version ) const
+{
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+
+    int m = this->mapRow().nLocalDofWithGhost();
+    int n = this->mapCol().nLocalDofWithGhost();
+    int idxm [m];
+    int idxn [n];
+    double array[m*n];
+
+    int i=0;
+    for ( int index=this->mapRow().firstDofGlobalCluster();
+          index<=this->mapRow().lastDofGlobalCluster(); index++ )
+    {
+        idxm[i]=index;
+        i++;
+    }
+    Feel::cout <<"Save matrix : i="<<i <<", size row="<<m <<std::endl;
+
+    i=0;
+    for ( int index=this->mapCol().firstDofGlobalCluster();
+          index<=this->mapCol().lastDofGlobalCluster(); index++ )
+    {
+        idxn[i]=index;
+        i++;
+    }
+    Feel::cout <<"Save matrix : i="<<i <<", size col="<<n <<std::endl;
+
+    MatGetValues( M_mat, m, idxm, n, idxn, array );
+
+    for( int i = 0; i < m*n; ++i )
+        ar & boost::serialization::make_nvp("arrayi", array[i] );
+
+
+}
+
+template <typename T>
+template<class Archive>
+void MatrixPetsc<T>::load( Archive & ar, const unsigned int version )
+{
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+
+    int m = this->mapRow().nLocalDofWithGhost();
+    int n = this->mapCol().nLocalDofWithGhost();
+    int idxm [m];
+    int idxn [n];
+    PetscScalar array[m*n];
+
+    int i=0;
+    for ( int index=this->mapRow().firstDofGlobalCluster();
+          index<=this->mapRow().lastDofGlobalCluster(); index++ )
+    {
+        idxm[i]=index;
+        i++;
+    }
+    Feel::cout <<"Load matrix : i="<<i <<", size row="<<m <<std::endl;
+
+    i=0;
+    for ( int index=this->mapCol().firstDofGlobalCluster();
+          index<=this->mapCol().lastDofGlobalCluster(); index++ )
+    {
+        idxn[i]=index;
+        i++;
+    }
+    Feel::cout <<"Load matrix : i="<<i <<", size col="<<n <<std::endl;
+
+    for( int i = 0; i < m*n; ++i )
+        ar & boost::serialization::make_nvp("arrayi", array[i] );
+
+    MatSetValues( M_mat, m, idxm, n, idxn, array, INSERT_VALUES );
+
+    this->close();
+
+}
+
 
 //----------------------------------------------------------------------------------------------------//
 
