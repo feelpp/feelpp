@@ -36,6 +36,9 @@
 #include <boost/smart_ptr/make_shared.hpp>
 #endif
 
+BOOST_CLASS_EXPORT_IMPLEMENT( Feel::VectorPetsc<double> )
+BOOST_CLASS_EXPORT_IMPLEMENT( Feel::VectorPetscMPI<double> )
+
 #if defined( FEELPP_HAS_PETSC_H )
 
 extern "C"
@@ -2525,5 +2528,6 @@ template class VectorPetscMPI<double>;
 template class VectorPetscMPIRange<double>;
 
 } // Feel
+
 
 #endif // FEELPP_HAS_PETSC_H
