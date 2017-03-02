@@ -46,43 +46,27 @@ enum FaceLocation { INTERNAL = false, ON_BOUNDARY = true };
  */
 enum GeoEntityContext
 {
-    MESH_ENTITY_INTERNAL          = ( 1<<0 ), /**< internal entity */
-    MESH_ENTITY_BOUNDARY          = ( 1<<1 )  /**< boundary entity */
-};
-
-/**
- * \enum ReferenceGeometry
- *
- */
-enum ReferenceGeometry
-{
-    GEOMETRY_POINT    = ( 1<<0 ), /**< point entity */
-    GEOMETRY_LINE     = ( 1<<1 ), /**< line entity */
-    GEOMETRY_SURFACE  = ( 1<<2 ), /**< surface entity */
-    GEOMETRY_VOLUME   = ( 1<<3 ), /**< volume entity */
-    GEOMETRY_4        = ( 1<<4 ), /**< hypercube entity */
-    GEOMETRY_5        = ( 1<<5 )  /**< hypercube entity */
-};
-
-/**
- * \enum ReferenceShapes
- *
- */
-enum ReferenceShapes
-{
-    SHAPE_LINEAR   = ( 1<<0 ),
-    SHAPE_BILINEAR = ( 1<<1 ),
-    SHAPE_QUADRATIC= ( 1<<2 ),
-    SHAPE_NONE     = ( 1<<3 ),
-    SHAPE_POINT    = ( 1<<4 ),
-    SHAPE_LINE     = ( 1<<5 ),
-    SHAPE_TRIANGLE = ( 1<<6 ),
-    SHAPE_QUAD     = ( 1<<7 ),
-    SHAPE_HEXA     = ( 1<<8 ),
-    SHAPE_PRISM    = ( 1<<9 ),
-    SHAPE_TETRA    = ( 1<<10 ),
-    SHAPE_SP4      = ( 1<<11 ),
-    SHAPE_SP5      = ( 1<<12 )
+    MESH_ENTITY_INTERNAL   = ( 1<<0 ), /**< internal entity */
+    MESH_ENTITY_BOUNDARY   = ( 1<<1 ),  /**< boundary entity */
+    GEOMETRY_POINT         = ( 1<<2 ), /**< point entity */
+    GEOMETRY_LINE          = ( 1<<3 ), /**< line entity */
+    GEOMETRY_SURFACE       = ( 1<<4 ), /**< surface entity */
+    GEOMETRY_VOLUME        = ( 1<<5 ), /**< volume entity */
+    GEOMETRY_4             = ( 1<<6 ), /**< hypercube entity */
+    GEOMETRY_5             = ( 1<<7 ),  /**< hypercube entity */
+    SHAPE_LINEAR   = ( 1<<8 ),
+    SHAPE_BILINEAR = ( 1<<9 ),
+    SHAPE_QUADRATIC= ( 1<<10 ),
+    SHAPE_NONE     = ( 1<<11 ),
+    SHAPE_POINT    = ( 1<<12 ),
+    SHAPE_LINE     = ( 1<<13 ),
+    SHAPE_TRIANGLE = ( 1<<14 ),
+    SHAPE_QUAD     = ( 1<<15 ),
+    SHAPE_HEXA     = ( 1<<16 ),
+    SHAPE_PRISM    = ( 1<<17 ),
+    SHAPE_TETRA    = ( 1<<18 ),
+    SHAPE_SP4      = ( 1<<19 ),
+    SHAPE_SP5      = ( 1<<20 )
 };
 
 /**

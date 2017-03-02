@@ -115,8 +115,6 @@ public:
         super(),
         M_id( 0 ),
         M_entity( MESH_ENTITY_INTERNAL ),
-        M_geometry( Geometry ),
-        M_shape( Shape ),
         M_boundaryEntityDimension( invalid_uint16_type_value ),
         M_pid( invalid_rank_type_value ),
         M_pidInPartition( invalid_rank_type_value ),
@@ -134,8 +132,6 @@ public:
         super(),
         M_id( i ),
         M_entity( context ),
-        M_geometry( geometry ),
-        M_shape( shape ),
         M_boundaryEntityDimension( invalid_uint16_type_value ),
         M_pid( invalid_rank_type_value ),
         M_pidInPartition( invalid_rank_type_value ),
@@ -151,8 +147,6 @@ public:
         super( std::move( __me ) ),
         M_id( std::move( __me.M_id ) ),
         M_entity( std::move( __me.M_entity ) ),
-        M_geometry( std::move( __me.M_geometry ) ),
-        M_shape( std::move( __me.M_shape ) ),
         M_boundaryEntityDimension( std::move( __me.M_boundaryEntityDimension ) ),
         M_pid( std::move( __me.M_pid ) ),
         M_pidInPartition( std::move( __me.M_pidInPartition ) ),
@@ -169,8 +163,6 @@ public:
             super::operator=( std::move( __me ) );
             M_id= std::move( __me.M_id );
             M_entity= std::move( __me.M_entity );
-            M_geometry= std::move( __me.M_geometry );
-            M_shape= std::move( __me.M_shape );
             M_boundaryEntityDimension= std::move( __me.M_boundaryEntityDimension );
             M_pid= std::move( __me.M_pid );
             M_pidInPartition= std::move( __me.M_pidInPartition );
@@ -306,7 +298,7 @@ public:
      */
     bool hasShape( size_type __shape ) const
     {
-        return M_shape.test( __shape );
+        return M_entity.test( __shape );
     }
 
     /**
@@ -314,7 +306,7 @@ public:
      */
     bool isAVolume() const
     {
-        return M_geometry.test( GEOMETRY_VOLUME );
+        return M_entity.test( GEOMETRY_VOLUME );
     }
 
     /**
@@ -322,7 +314,7 @@ public:
      */
     bool isASurface() const
     {
-        return M_geometry.test( GEOMETRY_SURFACE );
+        return M_entity.test( GEOMETRY_SURFACE );
     }
 
     /**
@@ -330,7 +322,7 @@ public:
      */
     bool isALine() const
     {
-        return M_geometry.test( GEOMETRY_LINE );
+        return M_entity.test( GEOMETRY_LINE );
     }
 
     /**
@@ -338,7 +330,7 @@ public:
      */
     bool isAPoint() const
     {
-        return M_geometry.test( GEOMETRY_POINT );
+        return M_entity.test( GEOMETRY_POINT );
     }
 
     /**
@@ -346,7 +338,7 @@ public:
      */
     bool isAPointShape() const
     {
-        return M_shape.test( SHAPE_POINT );
+        return M_entity.test( SHAPE_POINT );
     }
 
     /**
@@ -354,7 +346,7 @@ public:
      */
     bool isALineShape() const
     {
-        return M_shape.test( SHAPE_LINE );
+        return M_entity.test( SHAPE_LINE );
     }
 
     /**
@@ -362,7 +354,7 @@ public:
      */
     bool isATriangleShape() const
     {
-        return M_shape.test( SHAPE_TRIANGLE );
+        return M_entity.test( SHAPE_TRIANGLE );
     }
 
     /**
@@ -370,7 +362,7 @@ public:
      */
     bool isAQuadrangleShape() const
     {
-        return M_shape.test( SHAPE_QUAD );
+        return M_entity.test( SHAPE_QUAD );
     }
 
     /**
@@ -378,7 +370,7 @@ public:
      */
     bool isATetrahedraShape() const
     {
-        return M_shape.test( SHAPE_TETRA );
+        return M_entity.test( SHAPE_TETRA );
     }
 
     /**
@@ -386,7 +378,7 @@ public:
      */
     bool isAHexahedraShape() const
     {
-        return M_shape.test( SHAPE_HEXA );
+        return M_entity.test( SHAPE_HEXA );
     }
 
     /**
@@ -394,7 +386,7 @@ public:
      */
     bool isLinear() const
     {
-        return M_shape.test( SHAPE_LINEAR );
+        return M_entity.test( SHAPE_LINEAR );
     }
 
     /**
@@ -402,7 +394,7 @@ public:
      */
     bool isBilinear() const
     {
-        return M_shape.test( SHAPE_BILINEAR );
+        return M_entity.test( SHAPE_BILINEAR );
     }
 
     /**
@@ -410,7 +402,7 @@ public:
      */
     bool isQuadratic() const
     {
-        return M_shape.test( SHAPE_QUADRATIC );
+        return M_entity.test( SHAPE_QUADRATIC );
     }
 
     /**
@@ -788,12 +780,6 @@ private:
             ar & M_entity;
             DVLOG(2) << "  - entity:" << M_entity.context() << "\n";
             DVLOG(2) << "  - geometry...\n";
-            ar & M_geometry;
-            DVLOG(2) << "  - geometry:" << M_geometry.context() << "\n";
-            DVLOG(2) << "  - shape...\n";
-            ar & M_shape;
-            DVLOG(2) << "  - shape:" << M_shape.context() << "\n";
-            DVLOG(2) << "  - pid...\n";
             ar & M_pid;
             DVLOG(2) << "  - pid:" << M_pid << "\n";
             ar & M_pidInPartition;
@@ -806,9 +792,7 @@ private:
 
     size_type M_id;
 
-    Context M_entity;
-    Context M_geometry;
-    Context M_shape;
+    meta::Context<uint32_type> M_entity;
 
     //! maximum dimension of the entity touching the boundary within the element
     uint16_type M_boundaryEntityDimension;
