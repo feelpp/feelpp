@@ -722,7 +722,8 @@ public:
     //!
     element_type const& addElement( element_type& f, bool setid = true )
     {
-        M_parts[f.marker().value()]++;
+        if ( f.hasMarker() )
+            M_parts[f.marker().value()]++;
         if ( setid )
             f.setId( M_elements.size() );
         return *M_elements.insert( M_elements.end(), f );
@@ -736,7 +737,8 @@ public:
     //!
     element_type const& addElement( element_type&& f )
         {
-            M_parts[f.marker().value()]++;
+            if ( f.hasMarker() )
+                M_parts[f.marker().value()]++;
             return *M_elements.insert( f );
         }
     //!
@@ -747,7 +749,8 @@ public:
     //!
     element_type const& addElement( element_iterator pos, element_type& f, bool setid = true )
         {
-            M_parts[f.marker().value()]++;
+            if ( f.hasMarker() )
+                M_parts[f.marker().value()]++;
             if ( setid )
                 f.setId( M_elements.size() );
             return *M_elements.insert( pos, f );
@@ -763,7 +766,8 @@ public:
     //!
     element_type const& addElement( element_iterator pos, element_type&& f )
         {
-            M_parts[f.marker().value()]++;
+            if ( f.hasMarker() )
+                M_parts[f.marker().value()]++;
             return *M_elements.insert( pos, f );
             //M_elements.push_back( f );
             //return M_elements.back();
