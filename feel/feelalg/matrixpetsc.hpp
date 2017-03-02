@@ -568,6 +568,74 @@ public:
     //!
     virtual void threshold( void );
 
+    void save( std::string filename="default_archive_name", std::string format="binary" )
+    {
+        if ( !this->closed() )
+            this->close();
+
+        filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
+        std::ofstream ofs( filename );
+        if (ofs)
+        {
+            if ( format=="binary" )
+            {
+                boost::archive::binary_oarchive oa(ofs);
+                oa << *this;
+            }
+            else if ( format=="xml")
+            {
+                boost::archive::xml_oarchive oa(ofs);
+                oa << boost::serialization::make_nvp("vectorpetsc", *this );
+            }
+            else if ( format=="text")
+            {
+                boost::archive::text_oarchive oa(ofs);
+                oa << *this;
+            }
+            else
+                Feel::cout << "MatrixPetsc save() function : error with unknown format "
+                           << format <<std::endl;
+        }
+        else
+        {
+            Feel::cout << "MatrixPetsc save() function : error opening ofstream with name "
+                       << filename <<std::endl;
+        }
+    }
+
+    void load( std::string filename="default_archive_name", std::string format="binary" )
+    {
+        filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
+        std::ifstream ifs( filename );
+        if ( ifs )
+        {
+            if ( format=="binary" )
+            {
+                boost::archive::binary_iarchive ia(ifs);
+                ia >> *this;
+            }
+            else if ( format=="xml")
+            {
+                boost::archive::xml_iarchive ia(ifs);
+                ia >> boost::serialization::make_nvp("vectorpetsc", *this );
+            }
+            else if ( format=="text")
+            {
+                boost::archive::text_iarchive ia(ifs);
+                ia >> *this;
+            }
+            else
+                Feel::cout << "MatrixPetsc save() function : error with unknown format "
+                           << format <<std::endl;
+        }
+        else
+        {
+            Feel::cout << "MatrixPetsc load() function : error opening ofstream with name "
+                       << filename <<std::endl;
+        }
+    }
+
+
 private:
 
     // disable
@@ -707,9 +775,8 @@ private :
 
 } // Feel
 
-
-BOOST_CLASS_EXPORT_GUID(Feel::MatrixPetsc<double>, "Feel::MatrixPetscdouble")
-BOOST_CLASS_EXPORT_GUID(Feel::MatrixPetscMPI<double>, "Feel::MatrixPetscMPIdouble")
+BOOST_CLASS_EXPORT_KEY(Feel::MatrixPetsc<double>)
+BOOST_CLASS_EXPORT_KEY(Feel::MatrixPetscMPI<double>)
 
 
 #endif /* FEELPP_HAS_PETSC */
