@@ -3,7 +3,7 @@
 
 #include <feel/feelmodels/multifluid/multifluid.hpp>
 
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -14,7 +14,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
         WorldComm const& wc,
         std::string const& subPrefix,
         std::string const& rootRepository )
-: super_type( prefix, wc, subPrefix, self_type::expandStringFromSpec( rootRepository ) )
+: super_type( prefixvm(prefix,"fluid"), false, wc, subPrefix, self_type::expandStringFromSpec( rootRepository ) )
+, M_prefix( prefix )
 {
     //-----------------------------------------------------------------------------//
     // Load parameters
@@ -51,24 +52,26 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
     this->log("MultiFluid", "build", "start");
 
-    M_fluid.reset( 
-            new fluid_type( prefixvm(this->prefix(),"fluid"), false, this->worldComm(), "", this->rootRepositoryWithoutNumProc() ) 
-            ); 
+    // Read mesh info from multifluid options
+    if (Environment::vm().count(prefixvm(this->prefix(),"mshfile").c_str()))
+        this->setMshfileStr( Environment::expand( soption(_prefix=this->prefix(),_name="mshfile") ) );
+    if (Environment::vm().count(prefixvm(this->prefix(),"geofile").c_str()))
+        this->setGeofileStr( Environment::expand( soption(_prefix=this->prefix(),_name="geofile") ) );
+
+    this->loadMesh( this->createMesh() );
+
     M_globalLevelset.reset(
             new levelset_type( prefixvm(this->prefix(),"levelset"), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
             );
 
-    this->createMesh();
-
-    M_fluid->loadMesh( M_mesh );
     M_globalLevelset->build( this->mesh() );
     if( nLevelSets < 2 )
         M_globalLevelset->getExporter()->setDoExport( false );
 
     // "Deep" copy
-    M_fluidDensityViscosityModel.reset( new densityviscosity_model_type( M_fluid->prefix() ) );
-    M_fluidDensityViscosityModel->initFromSpace( M_fluid->densityViscosityModel()->dynamicViscositySpace() );
-    M_fluidDensityViscosityModel->updateFromModelMaterials( M_fluid->modelProperties().materials() );
+    M_fluidDensityViscosityModel.reset( new densityviscosity_model_type( this->fluidPrefix() ) );
+    M_fluidDensityViscosityModel->initFromSpace( this->densityViscosityModel()->dynamicViscositySpace() );
+    M_fluidDensityViscosityModel->updateFromModelMaterials( this->modelProperties().materials() );
 
     M_levelsets.resize( nLevelSets );
     M_levelsetDensityViscosityModels.resize( nLevelSets );
@@ -93,7 +96,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
         M_levelsetDensityViscosityModels[i].reset(
                 new densityviscosity_model_type( levelset_prefix )
                 );
-        M_levelsetDensityViscosityModels[i]->initFromMesh( this->mesh(), M_fluid->useExtendedDofTable() );
+        M_levelsetDensityViscosityModels[i]->initFromMesh( this->mesh(), this->useExtendedDofTable() );
         M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelsets[i]->modelProperties().materials() );
 
         if( Environment::vm().count( prefixvm(levelset_prefix, "interface-forces-model").c_str() ) )
@@ -125,19 +128,99 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
+typename MULTIFLUID_CLASS_TEMPLATE_TYPE::mesh_ptrtype
 MULTIFLUID_CLASS_TEMPLATE_TYPE::createMesh()
 {
+    mesh_ptrtype mesh;
+
     this->log("MultiFluid","createMesh", "start");
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
-    CHECK( M_mesh ) << "mesh generation fail";
+    std::string fmpath = (fs::path(this->rootRepository()) / fs::path(this->fileNameMeshPath())).string();
+    if (this->doRestart())
+    {
+        this->log("createMesh","", "restart with : "+fmpath);
 
-    M_fluid->setMshfileStr( this->mshfileStr() );
+        if ( !this->restartPath().empty() )
+        {
+            fmpath = (fs::path( this->restartPath()) / fs::path(this->fileNameMeshPath())).string();
+        }
+        // reload mesh path stored in file
+        std::ifstream file( fmpath.c_str() );
+        if ( !file )
+            CHECK( false ) << "Fail to open the txt file containing path of msh file : " << fmpath << "\n";
+        std::string mshfile;
+        if ( ! ( file >> mshfile ) )
+            CHECK( false ) << "Fail to read the msh path in file : " << fmpath << "\n";
+        file.close();
+
+        mesh = loadMesh(
+                _mesh=new mesh_type( this->worldComm() ),
+                _filename=mshfile,
+                _worldcomm=this->worldComm(),
+                //_prefix=this->prefix(),
+                _rebuild_partitions=false,
+                _savehdf5=0,
+                _straighten=1,
+                _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES
+                );
+    }
+    else
+    {
+        if (this->hasMshfileStr())
+        {
+            std::string mshfileRebuildPartitions = this->rootRepository() + "/" + this->prefix() + ".msh";
+
+            this->log("createMesh","", "load mesh file : " + this->mshfileStr());
+            std::string meshFileExt = fs::path( this->mshfileStr() ).extension().string();
+            bool rebuildPartition = boption(_prefix=this->prefix(), _name="gmsh.partition");
+            if ( rebuildPartition && meshFileExt != ".msh" )
+                CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
+
+            mesh = loadMesh(
+                    _mesh=new mesh_type( this->worldComm() ),
+                    _filename=this->mshfileStr(),
+                    _worldcomm=this->worldComm(),
+                    _prefix=this->prefix(),
+                    _rebuild_partitions=rebuildPartition,
+                    _rebuild_partitions_filename=mshfileRebuildPartitions,
+                    _partitions=this->worldComm().localSize(),
+                    _savehdf5=0,
+                    _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES
+                    );
+
+            if (rebuildPartition) this->setMshfileStr(mshfileRebuildPartitions);
+        }
+        else if (this->hasGeofileStr())
+        {
+            std::string mshfile = this->rootRepository() + "/" + this->prefix() + ".msh";
+            this->setMshfileStr(mshfile);
+
+            gmsh_ptrtype geodesc = geo( 
+                    _filename=this->geofileStr(),
+                    _prefix=this->prefix(),
+                    _worldcomm=this->worldComm() 
+                    );
+            // allow to have a geo and msh file with a filename equal to prefix
+            geodesc->setPrefix(this->prefix());
+            mesh = createGMSHMesh(
+                    _mesh=new mesh_type,_desc=geodesc,
+                    _prefix=this->prefix(),_worldcomm=this->worldComm(),
+                    _partitions=this->worldComm().localSize(),
+                    _directory=this->rootRepository() 
+                    );
+        }
+        this->saveMSHfilePath(fmpath);
+    }
+
+    CHECK( mesh ) << "mesh generation fail";
+
+    //M_fluid->setMshfileStr( this->mshfileStr() );
 
     double tElapsed = this->timerTool("Constructor").stop("createMesh");
     this->log("MultiFluid","createMesh", (boost::format("finish in %1% s") %tElapsed).str() );
+
+    return mesh;
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -146,14 +229,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
 {
     this->log("MultiFluid", "init", "start");
 
-    M_fluid->init();
+    super_type::init();
     M_globalLevelset->init();
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
         M_levelsets[i]->init();
     }
 
-    this->updateTime( this->timeStepBase()->time() );
+    //this->updateTime( this->timeStepBase()->time() );
 
     this->updateGlobalLevelset();
 
@@ -262,7 +345,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
     }
 
     *_ostr << "\n";
-    *_ostr << M_fluid->getInfo()->str();
+    *_ostr << super_type::getInfo()->str();
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
     *_ostr << M_levelsets[i]->getInfo()->str();
@@ -295,7 +378,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
     auto u_old = this->fluidModel()->functionSpaceVelocity()->element();
     do
     {
-        u_old = this->fluidModel()->fieldVelocity();
+        u_old = this->fieldVelocity();
         // Update density and viscosity
         this->updateFluidDensityViscosity();
         // Update interface forces
@@ -318,7 +401,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
 		    M_levelsets[n]->reinitialize( true );
         }
 
-        auto u = this->fluidModel()->fieldVelocity();
+        auto u = this->fieldVelocity();
         double uOldL2Norm = integrate(
                 _range=elements(this->mesh()),
                 _expr=trans(idv(u_old))*idv(u_old)
@@ -344,8 +427,6 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::updateTime( double time )
 {
-    // Fluid mechanics
-    M_fluid->updateTime(time);
     // Levelsets
     for( uint16_type i = 0; i < M_levelsets.size(); ++i)
     {
@@ -360,15 +441,13 @@ void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
     this->log("MultiFluid", "updateTimeStep", "start");
-    // Fluid mechanics
-    M_fluid->updateTimeStep();
+    // Fluid
+    super_type::updateTimeStep();
     // Levelsets
     for( uint16_type i = 0; i < M_levelsets.size(); ++i)
     {
         M_levelsets[i]->updateTimeStep();
     }
-
-    this->updateTime( this->timeStepBase()->time() );
 
     this->log("MultiFluid", "updateTimeStep", "finish");
 }
@@ -379,7 +458,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     this->log("MultiFluid","exportResults", "start");
 
-    M_fluid->exportResults(time);
+    super_type::exportResults(time);
 
     if( this->nLevelsets() > 1 )
         M_globalLevelset->exportResults(time);
@@ -425,33 +504,33 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
     auto globalH = M_globalLevelset->H();
 
     auto rho = vf::project( 
-            M_fluid->densityViscosityModel()->dynamicViscositySpace(),
-            elements(M_fluid->mesh()),
+            this->densityViscosityModel()->dynamicViscositySpace(),
+            elements(this->mesh()),
             idv(M_fluidDensityViscosityModel->fieldRho())*idv(globalH)
             );
 
     auto mu = vf::project( 
-            M_fluid->densityViscosityModel()->dynamicViscositySpace(),
-            elements(M_fluid->mesh()),
+            this->densityViscosityModel()->dynamicViscositySpace(),
+            elements(this->mesh()),
             idv(M_fluidDensityViscosityModel->fieldMu())*idv(globalH)
             );
 
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
         rho += vf::project( 
-                M_fluid->densityViscosityModel()->dynamicViscositySpace(),
-                elements(M_fluid->mesh()),
+                this->densityViscosityModel()->dynamicViscositySpace(),
+                elements(this->mesh()),
                 idv(M_levelsetDensityViscosityModels[i]->fieldRho())*(1. - idv(M_levelsets[i]->H()))
                 );
         mu += vf::project( 
-                M_fluid->densityViscosityModel()->dynamicViscositySpace(),
-                elements(M_fluid->mesh()),
+                this->densityViscosityModel()->dynamicViscositySpace(),
+                elements(this->mesh()),
                 idv(M_levelsetDensityViscosityModels[i]->fieldMu())*(1. - idv(M_levelsets[i]->H()))
                 );
     }
 
-    M_fluid->updateRho( idv(rho) );
-    M_fluid->updateMu( idv(mu) );
+    this->updateRho( idv(rho) );
+    this->updateMu( idv(mu) );
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log( "MultiFluid", "updateFluidDensityViscosity", 
@@ -474,7 +553,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
         {
             *M_interfaceForces += vf::project( 
                     this->functionSpaceLevelsetVectorial(),
-                    elements(M_fluid->mesh()),
+                    elements(this->mesh()),
                     - M_surfaceTensionCoeff(0,n+1)*idv(M_levelsets[n]->K())*idv(M_levelsets[n]->N())*idv(M_levelsets[n]->D())
                     );
         }
@@ -500,7 +579,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
         this->log("MultiFluid", "updateInterfaceForces", "update interface (model) forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
     }
 
-    M_fluid->updateSourceAdded( idv(M_interfaceForces) );
+    this->updateSourceAdded( idv(M_interfaceForces) );
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log( "MultiFluid", "updateInterfaceForces", 
@@ -514,7 +593,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveFluid()
     this->log("MultiFluid", "solveFluid", "start");
     this->timerTool("Solve").start();
 
-    M_fluid->solve();
+    super_type::solve();
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log( "MultiFluid", "solveFluid", 
@@ -528,7 +607,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::advectLevelsets()
     this->log("MultiFluid", "advectLevelsets", "start");
     this->timerTool("Solve").start();
 
-    auto u = M_fluid->fieldVelocity();
+    auto u = this->fieldVelocity();
     
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
