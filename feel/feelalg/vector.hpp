@@ -25,6 +25,14 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/export.hpp>
+
 #include <feel/feelcore/traits.hpp>
 
 #include <feel/feelalg/datamap.hpp>
@@ -619,23 +627,14 @@ public:
             boost::shared_ptr<Vector<T> > res;
             return res;
         }
-#if 0
-    template<class Archive>
-    void save( Archive & ar, const unsigned int version ) const
-    {
-        ar & BOOST_SERIALIZATION_NVP( M_map );
-    }
 
-    template<class Archive>
-    void load( Archive & ar, const unsigned int version )
-    {
-        datamap_ptrtype map;
-        ar & BOOST_SERIALIZATION_NVP( map );
-        this->init(map);
-    }
+    virtual void save( std::string filename="default_archive_name", std::string format="binary" )
+    {}
 
-    BOOST_SERIALIZATION_SPLIT_MEMBER();
-#endif
+    virtual void load( std::string filename="default_archive_name", std::string format="binary" )
+    {}
+
+
 protected:
 
     /**
@@ -759,6 +758,8 @@ sync( Vector<T> & v, Feel::detail::syncOperator<T> const& opSync );
 
 
 } // Feel
+
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(Feel::Vector)
 
 namespace boost {
     namespace serialization {
