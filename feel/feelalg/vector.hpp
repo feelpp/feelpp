@@ -623,24 +623,13 @@ public:
             boost::shared_ptr<Vector<T> > res;
             return res;
         }
-#if 0
-    template<class Archive>
-    void save( Archive & ar, const unsigned int version ) const
-    {
-        ar & BOOST_SERIALIZATION_NVP( M_map );
-    }
 
-    template<class Archive>
-    void load( Archive & ar, const unsigned int version )
-    {
-        Feel::DataMap map;
-        ar & BOOST_SERIALIZATION_NVP(map);
-        auto mapPtr = boost::make_shared<Feel::DataMap>(map);
-        this->init(mapPtr);
-    }
+    virtual void save( std::string filename="default_archive_name", std::string format="binary" )
+    {}
 
-    BOOST_SERIALIZATION_SPLIT_MEMBER();
-#endif
+    virtual void load( std::string filename="default_archive_name", std::string format="binary" )
+    {}
+
 
 protected:
 
