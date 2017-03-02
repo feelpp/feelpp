@@ -9,13 +9,14 @@ namespace Feel {
 namespace FeelModels {
 
 template< typename FluidType, typename LevelSetType>
-class MultiFluid : public ModelNumerical
+class MultiFluid 
+: public FluidType
 {
 public:
     // Typedefs
     //--------------------------------------------------------------------//
     // Class
-    typedef ModelNumerical super_type;
+    typedef FluidType super_type;
     typedef MultiFluid< FluidType, LevelSetType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
@@ -78,13 +79,20 @@ public:
     //--------------------------------------------------------------------//
     // Initialization
     void build();
-    void createMesh();
+    mesh_ptrtype createMesh();
 
     void init();
 
     virtual void loadParametersFromOptionsVm();
 
+    std::string const& prefix() const { return M_prefix; }
+    std::string const& fluidPrefix() const { return super_type::prefix(); }
+
     boost::shared_ptr<std::ostringstream> getInfo() const;
+
+    //--------------------------------------------------------------------//
+    boost::shared_ptr<self_type> shared_from_this() { return boost::static_pointer_cast<self_type>(super_type::shared_from_this()); }
+    boost::shared_ptr<self_type const> shared_from_this() const { return boost::static_pointer_cast<self_type const>(super_type::shared_from_this()); }
 
     //--------------------------------------------------------------------//
     // Function spaces
@@ -93,11 +101,11 @@ public:
     space_levelset_markers_ptrtype const& functionSpaceLevelsetMarkers() const { return M_globalLevelset->functionSpaceMarkers(); }
     //--------------------------------------------------------------------//
     // Mesh
-    mesh_ptrtype const& mesh() const { return M_mesh; }
+    //mesh_ptrtype const& mesh() const { return M_mesh; }
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"MultiFluidMesh.path"); }
     //--------------------------------------------------------------------//
     // Models
-    fluid_ptrtype const& fluidModel() const { return M_fluid; }
+    fluid_ptrtype fluidModel() { return this->shared_from_this(); }
     levelset_ptrtype const& levelsetModel(uint16_type n) const { return M_levelsets.at(n); }
     uint16_type nLevelsets() const { return M_levelsets.size(); }
 
@@ -111,8 +119,8 @@ public:
     void solve();
     //--------------------------------------------------------------------//
     // Time step
-    boost::shared_ptr<TSBase> timeStepBase() const { return M_fluid->timeStepBase(); }
-    boost::shared_ptr<TSBase> fluidTimeStepBase() const { return this->fluidModel()->timeStepBase(); }
+    //boost::shared_ptr<TSBase> timeStepBase() const { return M_fluid->timeStepBase(); }
+    boost::shared_ptr<TSBase> fluidTimeStepBase() const { return this->timeStepBase(); }
     boost::shared_ptr<TSBase> levelsetTimeStepBase(uint16_type n) const { return this->levelsetModel(n)->timeStepBase(); }
     void updateTime( double time );
     void updateTimeStep();
@@ -131,9 +139,9 @@ protected:
     void advectLevelsets();
 
 private:
+    std::string M_prefix;
     //--------------------------------------------------------------------//
-    mesh_ptrtype M_mesh;
-    fluid_ptrtype M_fluid;
+    //mesh_ptrtype M_mesh;
     levelset_ptrtype M_globalLevelset;
     std::vector<levelset_ptrtype> M_levelsets;
 
