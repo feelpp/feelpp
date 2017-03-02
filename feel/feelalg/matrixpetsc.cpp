@@ -37,6 +37,9 @@
 #include <feel/feelalg/topetsc.hpp>
 #include <feel/feeltiming/tic.hpp>
 
+BOOST_CLASS_EXPORT_IMPLEMENT( Feel::MatrixPetsc<double> )
+BOOST_CLASS_EXPORT_IMPLEMENT( Feel::MatrixPetscMPI<double> )
+
 #if defined( FEELPP_HAS_PETSC_H )
 
 extern "C"
@@ -2360,8 +2363,6 @@ void MatrixPetsc<T>::save( Archive & ar, const unsigned int version ) const
 
     for( int i = 0; i < m*n; ++i )
         ar & boost::serialization::make_nvp("arrayi", array[i] );
-
-
 }
 
 template <typename T>

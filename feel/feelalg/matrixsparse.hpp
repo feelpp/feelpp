@@ -55,6 +55,13 @@
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/fusion/include/fold.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/export.hpp>
 
 #include <Eigen/Core>
 
@@ -901,6 +908,12 @@ public:
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
 
+    virtual void save( std::string filename="default_archive_name", std::string format="binary" )
+    {}
+
+    virtual void load( std::string filename="default_archive_name", std::string format="binary" )
+    {}
+
 
 protected:
     /**
@@ -1115,6 +1128,7 @@ bool MatrixSparse<T>::isTransposeOf ( MatrixSparse<value_type> &Trans ) const
 
 } // Feel
 
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(Feel::MatrixSparse)
 
 namespace boost {
 namespace serialization {
@@ -1125,6 +1139,7 @@ void save(Archive & ar, const Feel::MatrixSparse<T> & m, const unsigned int vers
     ar & BOOST_SERIALIZATION_NVP(m.mapRow());
     ar & BOOST_SERIALIZATION_NVP(m.mapCol());
     ar & BOOST_SERIALIZATION_NVP(*(m.graph()));
+;
 }
 
 template<typename T, class Archive>
@@ -1138,13 +1153,14 @@ void load(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
     ar & BOOST_SERIALIZATION_NVP(map_col);
     ar & BOOST_SERIALIZATION_NVP(graph);
 
-    m.setMapRow( boost::make_shared<Feel::DataMap>( map_row ) );
-    m.setMapCol( boost::make_shared<Feel::DataMap>( map_col ) );
-
+    auto map_row_ptr = boost::make_shared<Feel::DataMap>( map_row );
+    auto map_col_ptr = boost::make_shared<Feel::DataMap>( map_col );
+    m.setMapRow( map_row_ptr );
+    m.setMapCol( map_col_ptr );
     auto graph_ptr = boost::make_shared<Feel::GraphCSR>( graph );
 
-    m.init( map_col.nDof(), map_row.nDof(),
-            map_col.nLocalDofWithoutGhost(), map_row.nLocalDofWithoutGhost(),
+    m.init( map_row.nDof(), map_col.nDof(),
+            map_row.nLocalDofWithoutGhost(), map_col.nLocalDofWithoutGhost(),
             graph_ptr );
 }
 
