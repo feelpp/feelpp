@@ -662,8 +662,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional(
         {
             bilinearForm_PatternDefault += integrate(
                     _range=elements(mesh),
-                    //_expr=this->M_gammaInextensibility*trace((Id-NxN)*gradt(u))*id(v)*idv(D)/h(),
-                    _expr=this->M_inextensibilityGamma*trace((Id-NxN)*gradt(u))*div(v)*idv(D)/h(),
+                    _expr=this->M_inextensibilityGamma*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
                     _geomap=this->geomap()
                     );
         }
