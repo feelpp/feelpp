@@ -226,6 +226,7 @@ private :
     double onlineResidual( int Ncur, parameter_type const& mu, vectorN_type Un ) const;
     template <int Row>
     double onlineResidualSP( int Ncur, parameter_type const& mu, vectorN_type Un, bool test=false ) const;
+    void testResidual();
 
     int M_N0, M_N1;
 
@@ -371,7 +372,7 @@ CRBSaddlePoint<TruthModelType>::orthonormalize( size_type N, WNType& wn, int Nm,
     DVLOG(2) << "[CRB::orthonormalize] copying back results in basis\n";
 
     return this->checkOrthonormality( N , wn, n_space );
-}
+} // orthonormalize()
 
 
 template <typename TruthModelType>
@@ -406,7 +407,7 @@ CRBSaddlePoint<TruthModelType>::checkOrthonormality ( int N, const WNType& wn, i
     //FEELPP_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
 
     return A.norm();
-}
+} //checkOrthonormality()
 
 template<typename TruthModelType>
 void
@@ -662,7 +663,7 @@ CRBSaddlePoint<TruthModelType>::buildRbMatrix( int number_of_added_elements, par
         this->M_model->clearBlockMatix();
 
     toc("Reduced Matrices Built");
-}
+} // buildRbmatrix()
 
 template<typename TruthModelType>
 void
@@ -780,7 +781,7 @@ CRBSaddlePoint<TruthModelType>::updateAffineDecompositionSize()
             }
         }
     }
-}
+} // updateAffinedecompositionsize()
 
 template<typename TruthModelType>
 void
@@ -942,7 +943,7 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
     if( print_rb_matrix && !this->M_offline_step )
         this->printRBMatrix( A,mu );
     return matrix_info;
-}
+} //fixedPointPrimal()
 
 
 template<typename TruthModelType>
@@ -965,6 +966,7 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
     auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
     auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
 
+    bool optimize = boption(_name="crb.optimize-offline-residual") ;
     int N0 = boption("crb.saddlepoint.add-supremizer") ? 2*Ncur:Ncur;
     int N1 = Ncur;
     int n_added0 = boption("crb.saddlepoint.add-supremizer") ? 2*number_of_added_elements:number_of_added_elements;
@@ -998,7 +1000,6 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                 boost::filesystem::remove_all(dir);
             boost::filesystem::create_directory(dir);
         }
-
 
         tic();
         for ( int q=0; q<QRhs; q++ )
@@ -1069,7 +1070,7 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
         {
             for ( int m1=0; m1<this->M_model->mMaxA(q1); m1++ )
             {
-                Z1->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q1 %m1 %i).str()  );
+                Z1->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q1 %m1 %i ).str()  );
 
                 // RHS LOOP
                 for ( int q2=0; q2<QRhs; q2++ )
@@ -1086,26 +1087,42 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                 // LHS0 LOOP ON J
                 for ( int j=0; j<N0; j++ )
                 {
-                    for ( int q2=0; q2<q1; q2++ )
+                    if ( Row==0 && optimize )
                     {
-                        for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                        for ( int q2=0; q2<q1; q2++ )
                         {
-                            M_R_Lhs0Lhs0[Row][q1][m1][q2][m2].conservativeResize( N0, N0 );
-                            M_R_Lhs0Lhs0[Row][q2][m2][q1][m1].conservativeResize( N0, N0 );
+                            for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                            {
+                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2].conservativeResize( N0, N0 );
+                                M_R_Lhs0Lhs0[Row][q2][m2][q1][m1].conservativeResize( N0, N0 );
 
-                            Z2->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q2 %m2 %j).str()  );
-                            double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                            M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = prod;
-                            M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = prod;
-                        } // m2 loop Lhs0
-                    } // q2 loop Lhs0
+                                Z2->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q2 %m2 %j).str()  );
+                                double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = prod;
+                                M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = prod;
+                            } // m2 loop Lhs0
+                        } // q2 loop Lhs0
 
-                    M_R_Lhs0Lhs0[Row][q1][m1][q1][m1].conservativeResize( N0, N0 );
-                    Z2->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q1 %m1 %j).str()  );
+                        M_R_Lhs0Lhs0[Row][q1][m1][q1][m1].conservativeResize( N0, N0 );
+                        Z2->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q1 %m1 %j).str()  );
 
-                    double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                    M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( i, j ) = prod;
-                    M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( j, i ) = prod;
+                        double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                        M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( i, j ) = prod;
+                        M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( j, i ) = prod;
+                    } // Row==0
+                    else
+                    {
+                        for ( int q2=0; q2<QLhs; q2++ )
+                        {
+                            for( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                            {
+                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2].conservativeResize( N0, N0 );
+                                Z2->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q2 %m2 %j).str()  );
+                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) =
+                                    this->M_model->scalarProduct( Z1, Z2, Row );
+                            } // m2 loop Lhs0
+                        } // q2 loop Lhs0
+                    }
                 } // j loop Lhs0
 
                 // LHS1 LOOP ON J
@@ -1139,16 +1156,31 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                 // LHS0 LOOP ON I
                 for ( int i=0; i<N0; i++ )
                 {
-                    for ( int q2=0; q2<q1; q2++ )
+                    if ( Row==0 && optimize )
                     {
-                        for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                        for ( int q2=0; q2<q1; q2++ )
                         {
-                            Z2->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q2 %m2 %i).str()  );
-                            double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                            M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = prod;
-                            M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = prod;
-                        } // m2 loop Lhs0
-                    } // q2 loop Lhs0
+                            for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                            {
+                                Z2->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q2 %m2 %i).str()  );
+                                double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = prod;
+                                M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = prod;
+                            } // m2 loop Lhs0
+                        } // q2 loop Lhs0
+                    } // Row==0
+                    else
+                    {
+                        for ( int q2=0; q2<QLhs; q2++ )
+                        {
+                            for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                            {
+                                Z2->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q2 %m2 %i).str()  );
+                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) =
+                                    this->M_model->scalarProduct( Z1, Z2, Row );
+                            } // m2 loop Lhs0
+                        } // q2 loop Lhs0
+                    } // ! Row==0
                 } // i loop Lhs0
             } // m1 loop Lhs0
         } // q1 loop Lhs0
@@ -1170,7 +1202,7 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                     {
                         M_R_Lhs1Rhs[Row][q1][m1][q2][m2].conservativeResize(N1);
                         Z2->load( (boost::format("Riesz/%1%_%2%%3%") %Row %q2 %m2).str() );
-                        M_R_Lhs0Rhs[Row][q1][m1][q2][m2]( i ) =
+                        M_R_Lhs1Rhs[Row][q1][m1][q2][m2]( i ) =
                             2.0*this->M_model->scalarProduct( Z1, Z2, Row );
                     } // m2 loop Rhs
                 } // q2 loop Rhs
@@ -1178,23 +1210,40 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                 // LHS1 LOOP ON J
                 for ( int j=0; j<N1; j++ )
                 {
-                    for ( int q2=0; q2<q1; q2++ )
+                    if ( Row==1 && optimize )
                     {
-                        for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                        for ( int q2=0; q2<q1; q2++ )
                         {
-                            M_R_Lhs1Lhs1[Row][q1][m1][q2][m2].conservativeResize( N1, N1 );
-                            M_R_Lhs1Lhs1[Row][q2][m2][q1][m1].conservativeResize( N1, N1 );
-                            Z2->load( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q2 %m2 %j).str()  );
-                            double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                            M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = prod;
-                            M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = prod;
-                        } // m2 loop Lhs1
-                    } // q2 loop Lhs1
-                    M_R_Lhs1Lhs1[Row][q1][m1][q1][m1].conservativeResize( N1, N1 );
-                    Z2->load( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q1 %m1 %j).str()  );
-                    double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                    M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = prod;
-                    M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = prod;
+                            for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                            {
+                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2].conservativeResize( N1, N1 );
+                                M_R_Lhs1Lhs1[Row][q2][m2][q1][m1].conservativeResize( N1, N1 );
+                                Z2->load( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q2 %m2 %j).str()  );
+                                double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = prod;
+                                M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = prod;
+                            } // m2 loop Lhs1
+                        } // q2 loop Lhs1
+                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1].conservativeResize( N1, N1 );
+                        Z2->load( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q1 %m1 %j).str()  );
+                        double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = prod;
+                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = prod;
+
+                    } // if Row==1
+                    else
+                    {
+                        for ( int q2=0; q2<QLhs; q2++ )
+                        {
+                            for( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                            {
+                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2].conservativeResize( N1, N1 );
+                                Z2->load( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q2 %m2 %j).str()  );
+                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j )
+                                    = this->M_model->scalarProduct( Z1, Z2, Row );
+                            }
+                        }
+                    } // ! Row==1
                 } // j loop Lhs1
             } // m1 loop Lhs1
         } // q1 loop Lhs1
@@ -1227,16 +1276,31 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                 // LHS1 LOOP ON I
                 for ( int i=0; i<N1; i++ )
                 {
-                    for ( int q2=0; q2<q1; q2++ )
+                    if ( Row==1 && optimize )
                     {
-                        for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                        for ( int q2=0; q2<q1; q2++ )
                         {
-                            Z2->load( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q2 %m2 %i).str()  );
-                            double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                            M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = prod;
-                            M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = prod;
-                        } // m2 loop Lhs1
-                    } // q2 loop Lhs1
+                            for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                            {
+                                Z2->load( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q2 %m2 %i).str()  );
+                                double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = prod;
+                                M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = prod;
+                            } // m2 loop Lhs1
+                        } // q2 loop Lhs1
+                    }
+                    else
+                    {
+                        for ( int q2=0; q2<QLhs; q2++ )
+                        {
+                            for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
+                            {
+                                Z2->load( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q2 %m2 %i).str()  );
+                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) =
+                                    this->M_model->scalarProduct( Z1, Z2, Row );
+                            } // m2 loop Lhs1
+                        } // q2 loop Lhs1
+                    } // !Row==1
                 } // j loop Lhs1
             } // m1 loop Lhs1
         } // q1 loop Lhs1
@@ -1263,6 +1327,7 @@ double
 CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const& mu,
                                                 vectorN_type Un, bool test ) const
 {
+    using Feel::cout;
     int N0 = boption("crb.saddlepoint.add-supremizer") ? 2*Ncur:Ncur;
     int N1 = Ncur;
 
@@ -1281,8 +1346,7 @@ CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const
     std::vector<beta_vector_type> betaFqm;
     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = this->M_model->computeBetaQm( mu );
 
-    beta_vector_type betaLhs0 = betaAqm;
-    beta_vector_type betaLhs1 = betaAqm;
+    beta_vector_type betaLhs = betaAqm;
     beta_vector_type betaRhs= betaFqm[0];
 
     double RhsRhs = 0;
@@ -1313,7 +1377,7 @@ CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const
     {
         for ( int m1=0; m1<this->M_model->mMaxA(q1); m1++ )
         {
-            double beta_q1 = betaLhs0[q1][m1];
+            double beta_q1 = betaLhs[q1][m1];
 
             // SUBLOOP ON RHS
             for ( int q2=0; q2<QRhs; q2++ )
@@ -1330,7 +1394,7 @@ CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const
             {
                 for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                 {
-                    double beta_q2 = betaLhs0[q2][m2];
+                    double beta_q2 = betaLhs[q2][m2];
 
                     auto m = M_R_Lhs0Lhs0[Row][q1][m1][q2][m2].block(0,0,N0,N0)*un;
                     Lhs0Lhs0 += beta_q1*beta_q2*un.dot(m);
@@ -1342,7 +1406,7 @@ CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const
             {
                 for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                 {
-                    double beta_q2 = betaLhs1[q2][m2];
+                    double beta_q2 = betaLhs[q2][m2];
                     auto m = M_R_Lhs0Lhs1[Row][q1][m1][q2][m2].block(0,0,N0,N1)*pn;
                     Lhs0Lhs1 += beta_q1*beta_q2*un.dot(m);
                 } // m2 loop on lhs1
@@ -1356,7 +1420,7 @@ CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const
     {
         for ( int m1=0; m1<this->M_model->mMaxA(q1); m1++ )
         {
-            double beta_q1 = betaLhs1[q1][m1];
+            double beta_q1 = betaLhs[q1][m1];
 
             // SUBLOOP ON RHS
             for ( int q2=0; q2<QRhs; q2++ )
@@ -1373,7 +1437,7 @@ CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const
             {
                 for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                 {
-                    double beta_q2 = betaLhs1[q2][m2];
+                    double beta_q2 = betaLhs[q2][m2];
                     auto m = M_R_Lhs1Lhs1[Row][q1][m1][q2][m2].block(0,0,N1,N1)*pn;
                     Lhs1Lhs1 += beta_q1*beta_q2*pn.dot(m);
                 } // m2 loop on lhs1
@@ -1383,12 +1447,114 @@ CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const
     } // q1 loop lhs1
 
 
+    if ( test )
+    {
+        cout << "test online Residual : \n RhsRhs="<<RhsRhs << ", Lhs0Rhs="<< Lhs0Rhs
+             <<", Lhs0Lhs0="<< Lhs0Lhs0 <<", Lhs0Lhs1="<<Lhs0Lhs1
+             <<", Lhs1Lhs1="<< Lhs1Lhs1 <<", Lhs1Rhs="<< Lhs1Rhs <<std::endl;
+
+        auto XhRow = this->M_model->functionSpace()->template functionSpace<Row>();
+        auto Xh0 = this->M_model->functionSpace()->template functionSpace<0>();
+        auto Xh1 = this->M_model->functionSpace()->template functionSpace<1>();
+
+        auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
+        auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
+
+        vector_ptrtype FRow = backend()->newVector( XhRow );
+        vector_ptrtype F0 = backend()->newVector( XhRow );
+        vector_ptrtype F1 = backend()->newVector( XhRow );
+        vector_ptrtype Vn = backend()->newVector( Xh0 );
+        vector_ptrtype Pn = backend()->newVector( Xh1 );
+        sparse_matrix_ptrtype A0 = backend()->newMatrix( XhRow, Xh0 );
+        sparse_matrix_ptrtype A1 = backend()->newMatrix( XhRow, Xh1 );
+        vector_ptrtype Rhs =  backend()->newVector( XhRow );
+        vector_ptrtype Lhs0 = backend()->newVector( XhRow );
+        vector_ptrtype Lhs1 = backend()->newVector( XhRow );
+
+        auto truc0 = un(0)*XN0->primalBasisElement(0);
+        for ( int k=1; k<un.size(); k++ )
+            truc0 += un(k)*XN0->primalBasisElement(k);
+        *Vn = truc0;
+
+        auto truc1 = pn(0)*XN1->primalBasisElement(0);
+        for ( int k=1; k<pn.size(); k++ )
+            truc1 += pn(k)*XN1->primalBasisElement(k);
+        *Pn = truc1;
+
+        sparse_matrix_ptrtype A;
+        std::vector<vector_ptrtype> F;
+        boost::tie(boost::tuples::ignore, A, F) = this->M_model->update( mu );
+
+        auto const& i_row = A->mapRow().dofIdToContainerId( Row );
+        auto const& i_col0 = A->mapCol().dofIdToContainerId( 0 );
+        auto const& i_col1 = A->mapCol().dofIdToContainerId( 1 );
+
+        A0 = A->createSubMatrix( i_row, i_col0 );
+        A0->multVector( Vn, F0 );
+        F0->scale(-1);
+        this->M_model->l2solveSP( Lhs0, F0, Row );
+
+        A1 = A->createSubMatrix( i_row, i_col1 );
+        A1->multVector( Pn, F1 );
+        F1->scale(-1);
+        this->M_model->l2solveSP( Lhs1, F1, Row );
+
+        FRow = F[0]->createSubVector( i_row );
+        this->M_model->l2solveSP( Rhs, FRow, Row );
+
+        auto RhsRhs_test = this->M_model->scalarProduct(Rhs,Rhs, Row);
+        auto Lhs0Rhs_test = 2.*this->M_model->scalarProduct(Lhs0, Rhs, Row);
+        auto Lhs0Lhs0_test = this->M_model->scalarProduct(Lhs0, Lhs0, Row);
+        auto Lhs0Lhs1_test = 2.*this->M_model->scalarProduct(Lhs0, Lhs1, Row);
+        auto Lhs1Rhs_test = 2.*this->M_model->scalarProduct(Lhs1, Rhs, Row);
+        auto Lhs1Lhs1_test = this->M_model->scalarProduct(Lhs1, Lhs1, Row);
+
+        cout << "test block residual : \n RhsRhs="<<RhsRhs_test << ", Lhs0Rhs="<< Lhs0Rhs_test
+             <<", Lhs0Lhs0="<< Lhs0Lhs0_test <<", Lhs0Lhs1="<<Lhs0Lhs1_test
+             <<", Lhs1Lhs1="<< Lhs1Lhs1_test <<", Lhs1Rhs="<< Lhs1Rhs_test <<std::endl;
+
+        double delta_test = math:: abs( RhsRhs_test + Lhs0Rhs_test + Lhs0Lhs0_test + Lhs0Lhs1_test + Lhs1Rhs_test + Lhs1Lhs1_test );
+        cout << "Test Residual delta_test"<<Row <<"="<<delta_test<<std::endl;
+    }
+
 
 
     double delta = math:: abs( RhsRhs + Lhs0Rhs + Lhs0Lhs0 + Lhs0Lhs1 + Lhs1Rhs + Lhs1Lhs1 );
     return delta;
 }
 
+
+template<typename TruthModelType>
+void
+CRBSaddlePoint<TruthModelType>::testResidual()
+{
+    using Feel::cout;
+    cout << "\n TEST RESIDUAL \n"
+         << "WNmu.size()="<<this->M_WNmu->size()<<std::endl;
+
+    std::vector< vectorN_type > uN;
+    std::vector< vectorN_type > uNdu;
+    std::vector< vectorN_type > uNold;
+    std::vector< vectorN_type > uNduold;
+
+    for (int k=0; k<this->M_N; k++)
+    {
+        cout << "====================================================\n";
+        parameter_type mu_test = this->M_WNmu->at(k);
+
+        this->lb( this->M_N, mu_test, uN, uNdu, uNold, uNduold );
+        cout <<"uN =\n"<<uN[0]<<std::endl;
+        cout<< "mu_test = [";
+        for ( int i=0; i<mu_test.size(); i++ )
+            cout<<mu_test( i )<<",";
+        cout<<"]"<<std::endl;
+        double rez_test0 = onlineResidualSP<0>( this->M_N, mu_test, uN[0], true );
+        double rez_test1 = onlineResidualSP<1>( this->M_N, mu_test, uN[0], true );
+        cout << "Test Residual rez0="<< std::sqrt(rez_test0)
+             << ", rez1="<< std::sqrt(rez_test1) <<std::endl;
+        }
+    cout << "====================================================\n";
+}
 
 template<typename TruthModelType>
 typename CRBSaddlePoint<TruthModelType>::max_error_type
