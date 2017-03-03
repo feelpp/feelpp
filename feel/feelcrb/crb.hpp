@@ -774,6 +774,8 @@ public:
     void checkResidual( parameter_type const& mu, std::vector< std::vector<double> > const& primal_residual_coeffs,
                         std::vector< std::vector<double> > const& dual_residual_coeffs , element_type & u, element_type & udu ) const;
 
+    virtual void testResidual() {}
+
     void compareResidualsForTransientProblems(int N, parameter_type const& mu, std::vector<element_type> const & Un,
                                               std::vector<element_type> const & Unold, std::vector<element_type> const& Undu,
                                               std::vector<element_type> const & Unduold,
@@ -2884,6 +2886,9 @@ CRB<TruthModelType>::offline()
 
     if (boption("crb.visualize-basis"))
         this->exportBasisFunctions();
+
+    if ( boption("crb.check.residual") )
+        this->testResidual();
 
     if( M_maxerror <= M_tolerance || M_N >= user_max  )
     {
