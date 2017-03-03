@@ -483,6 +483,10 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
 
         (prefixvm(prefix, "enable-surface-tension").c_str(), Feel::po::value<bool>()->default_value( true ), "enable surface tension between fluids")
         (prefixvm(prefix,"surface-tension-coeff").c_str(), po::value<std::vector<double> >()->multitoken(), "surface tension coefficients" )
+
+        (prefixvm(prefix, "enable-inextensibility").c_str(), Feel::po::value<bool>()->default_value( false ), "enable inextensibility of level set")
+        (prefixvm(prefix, "inextensibility-method").c_str(), Feel::po::value<std::string>()->default_value( "penalty" ), "method to impose level set inextensibility (penalty or lagrange-multiplier)")
+        (prefixvm(prefix, "inextensibility-gamma").c_str(), Feel::po::value<double>()->default_value( 5. ), "coeff for inextensibility by penalty method ")
         ;
 
     multifluidOptions

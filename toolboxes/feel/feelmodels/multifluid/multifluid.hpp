@@ -55,6 +55,11 @@ public:
     typedef InterfaceForcesModel<levelset_type> interfaceforces_model_type;
     typedef boost::shared_ptr<interfaceforces_model_type> interfaceforces_model_ptrtype;
     typedef Singleton<Feel::Factory<interfaceforces_model_type, std::string>> interfaceforces_factory_type;
+
+    //--------------------------------------------------------------------//
+    // Inextensibility
+
+
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -117,6 +122,7 @@ public:
     //--------------------------------------------------------------------//
     // Solve
     void solve();
+
     //--------------------------------------------------------------------//
     // Time step
     //boost::shared_ptr<TSBase> timeStepBase() const { return M_fluid->timeStepBase(); }
@@ -137,6 +143,11 @@ protected:
     void updateInterfaceForces();
     void solveFluid();
     void advectLevelsets();
+    // Linear solve
+    void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const;
+    // Non-linear solve
+    void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const;
+    void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const;
 
 private:
     std::string M_prefix;
@@ -163,6 +174,13 @@ private:
     ublas::symmetric_matrix<double, ublas::upper> M_surfaceTensionCoeff;
 
     element_levelset_vectorial_ptrtype M_interfaceForces; 
+
+    //--------------------------------------------------------------------//
+    // Inextensibility
+    bool M_enableInextensibility;
+    std::string M_inextensibilityMethod;
+    // Penalty method gamma
+    double M_inextensibilityGamma;
     //--------------------------------------------------------------------//
     // Reinitialization
     std::vector<int> M_levelsetReinitEvery;

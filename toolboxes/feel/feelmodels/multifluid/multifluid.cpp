@@ -276,6 +276,13 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
             }
     }
 
+    M_enableInextensibility = boption( _name="enable-inextensibility", _prefix=this->prefix() );
+    M_inextensibilityMethod = soption( _name="inextensibility-method", _prefix=this->prefix() );
+    CHECK( M_inextensibilityMethod == "penalty" || M_inextensibilityMethod == "lagrange-multiplier" ) 
+        << "invalid inextensiblity-method " << M_inextensibilityMethod
+        << ", should be \"penalty\" or \"lagrange-multiplier\"" << std::endl;
+    M_inextensibilityGamma = doption( _name="inextensibility-gamma", _prefix=this->prefix() );
+
     uint16_type nLevelSets = M_nFluids - 1;
     M_levelsetReinitEvery.resize(nLevelSets);
     M_levelsetReinitSmoothEvery.resize(nLevelSets);
@@ -617,6 +624,62 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::advectLevelsets()
     double timeElapsed = this->timerTool("Solve").stop();
     this->log( "MultiFluid", "advectLevelsets", 
             "level-sets advection done in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional( 
+        sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const
+{
+    if( this->M_enableInextensibility )
+    {
+        bool BuildNonCstPart = !_BuildCstPart;
+        bool BuildCstPart = _BuildCstPart;
+
+        auto mesh = this->mesh();
+        auto Xh = this->functionSpace();
+
+        auto const& U = this->fieldVelocityPressure();
+        auto u = U.template element<0>();
+        auto v = U.template element<0>();
+
+        auto rowStartInMatrix = this->rowStartInMatrix();
+        auto colStartInMatrix = this->colStartInMatrix();
+        auto rowStartInVector = this->rowStartInVector();
+        auto bilinearForm_PatternDefault = form2( 
+                _test=Xh,_trial=Xh,_matrix=A,
+                _pattern=size_type(Pattern::DEFAULT),
+                _rowstart=rowStartInMatrix,
+                _colstart=colStartInMatrix 
+                );
+
+        auto Id = vf::Id<nDim, nDim>();
+        auto N = this->globalLevelset()->N();
+        auto NxN = idv(N)*trans(idv(N));
+        auto D = this->globalLevelset()->D();
+
+        if( this->M_inextensibilityMethod == "penalty" )
+        {
+            bilinearForm_PatternDefault += integrate(
+                    _range=elements(mesh),
+                    //_expr=this->M_gammaInextensibility*trace((Id-NxN)*gradt(u))*id(v)*idv(D)/h(),
+                    _expr=this->M_inextensibilityGamma*trace((Id-NxN)*gradt(u))*div(v)*idv(D)/h(),
+                    _geomap=this->geomap()
+                    );
+        }
+    }
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const
+{
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const
+{
 }
 
 } // namespace FeelModels
