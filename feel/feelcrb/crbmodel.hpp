@@ -3588,7 +3588,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
             }
             else
             {
-                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
+                backend( _name="backend-primal")->solve( _matrix=A , _solution=u, _rhs=F[0] );
             }
         }
         else
