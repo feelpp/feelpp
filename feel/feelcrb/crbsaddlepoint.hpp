@@ -949,8 +949,12 @@ template<typename TruthModelType>
 void
 CRBSaddlePoint<TruthModelType>::offlineResidual( int Ncur , int number_of_added_elements )
 {
+    tic();
     offlineResidualSP<0>( Ncur, number_of_added_elements );
+    toc("OfflineResidual 0");
+    tic();
     offlineResidualSP<1>( Ncur, number_of_added_elements );
+    toc("OfflineResidual 1");
 }
 
 template<typename TruthModelType>
@@ -960,9 +964,6 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
 {
     auto XN0 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<0>();
     auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
-
-    bool transpose = boption("crb.saddlepoint.transpose");
-    bool optimize = boption(_name="crb.optimize-offline-residual") ;
 
     int N0 = boption("crb.saddlepoint.add-supremizer") ? 2*Ncur:Ncur;
     int N1 = Ncur;
@@ -979,156 +980,145 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
     vector_ptrtype Z2 = backend()->newVector( this->M_model->functionSpace()->template functionSpace<Row>() );
     vector_ptrtype X0 =backend()->newVector( this->M_model->functionSpace()->template functionSpace<0>() );
     vector_ptrtype X1 =backend()->newVector( this->M_model->functionSpace()->template functionSpace<1>() );
-    vector_ptrtype Y0 = backend()->newVector( this->M_model->functionSpace()->template functionSpace<0>() );
-    vector_ptrtype Y1 = backend()->newVector( this->M_model->functionSpace()->template functionSpace<1>() );
     vector_ptrtype W = backend()->newVector( this->M_model->functionSpace()->template functionSpace<Row>() );
 
+    tic();
     this->M_model->initBlockMatrix();
     std::vector< std::vector< sparse_matrix_ptrtype >> Lhs0 = this->M_model->AqmBlock( Row, 0 );
     std::vector< std::vector< sparse_matrix_ptrtype >> Lhs1 = this->M_model->AqmBlock( Row, 1 );
     std::vector< std::vector< vector_ptrtype >> Fqm = this->M_model->FqmBlock( 0, Row );
+    toc("initBlockmatrix");
 
     if ( N0==n_added0 )
     {
-        LOG(INFO) << "[offlineResidual] Compute residual data\n";
-        LOG(INFO) << "[offlineResidual] M_R_0x0\n";
+        if ( Row==0 && Environment::isMasterRank() )
+        {
+            boost::filesystem::path dir("Riesz");
+            if ((boost::filesystem::exists(dir)))
+                boost::filesystem::remove_all(dir);
+            boost::filesystem::create_directory(dir);
+        }
+
+
+        tic();
+        for ( int q=0; q<QRhs; q++ )
+        {
+            for ( int m=0; m< this->M_model->mMaxF(0,q); m++ )
+            {
+                this->M_model->l2solveSP( Z1, Fqm[q][m], Row );
+                Z1->save( (boost::format("Riesz/%1%_%2%%3%") %Row %q %m).str()  );
+            }
+        }
 
         for ( int q1=0; q1<QRhs; q1++ )
         {
             for ( int m1=0; m1< this->M_model->mMaxF(0,q1); m1++ )
             {
-                this->M_model->l2solveSP( Z1, Fqm[q1][m1], Row );
+                Z1->load( (boost::format("Riesz/%1%_%2%%3%") %Row %q1 %m1).str()  );
                 for ( int q2=0; q2<QRhs; q2++ )
                 {
                     for ( int m2=0; m2<this->M_model->mMaxF(0,q2); m2++ )
                     {
-                        this->M_model->l2solveSP( Z2, Fqm[q2][m2], Row );
+                        Z2->load( (boost::format("Riesz/%1%_%2%%3%") %Row %q2 %m2).str()  );
                         M_R_RhsRhs[Row][q1][m1][q2][m2] = this->M_model->scalarProduct( Z1, Z2, Row );
                     } // m2 loop
                 } // q2 loop
             } // m1 loop
         } // q1 loop
+        toc("rhsXrhs first update");
     } //N==M_Nm
+
+    tic();
+    for ( int i=N0-n_added0; i<N0; i++ )
+    {
+        *X0 = XN0->primalBasisElement( i );
+        for ( int q=0; q<QLhs; q++ )
+        {
+            for ( int m=0; m<this->M_model->mMaxA(q); m++ )
+            {
+                Lhs0[q][m]->multVector( X0, W );
+                W->scale(-1.);
+                this->M_model->l2solveSP( Z1, W, Row );
+                Z1->save( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q %m %i).str()  );
+            }
+        }
+    }
+    toc("Precompute Lhs0");
+
+    tic();
+    for ( int i=N1-n_added1; i<N1; i++ )
+    {
+        *X1 = XN1->primalBasisElement( i );
+        for ( int q=0; q<QLhs; q++ )
+        {
+            for ( int m=0; m<this->M_model->mMaxA(q); m++ )
+            {
+                Lhs1[q][m]->multVector( X1, W );
+                W->scale(-1.);
+                this->M_model->l2solveSP( Z1, W, Row );
+                Z1->save( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q %m %i).str()  );
+            }
+        }
+    }
+    toc("Precompute Lhs1");
 
     // LHS0 LOOP ON I
     for ( int i=N0-n_added0; i<N0; i++ )
     {
-        *X0 = XN0->primalBasisElement( i );
         for ( int q1=0; q1<QLhs; q1++ )
         {
             for ( int m1=0; m1<this->M_model->mMaxA(q1); m1++ )
             {
-                double norm1 = Lhs0[q1][m1]->linftyNorm();
-                if ( norm1>1e-12 )
-                {
-                    Lhs0[q1][m1]->multVector( X0, W );
-                    W->scale(-1.);
-                    this->M_model->l2solveSP( Z1, W, Row );
-                }
+                Z1->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q1 %m1 %i).str()  );
+
                 // RHS LOOP
                 for ( int q2=0; q2<QRhs; q2++ )
                 {
                     for ( int m2=0; m2<this->M_model->mMaxF(0,q2); m2++ )
                     {
                         M_R_Lhs0Rhs[Row][q1][m1][q2][m2].conservativeResize(N0);
-                        if ( Fqm[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12)
-                        {
-                            this->M_model->l2solveSP( Z2, Fqm[q2][m2], Row );
-                            M_R_Lhs0Rhs[Row][q1][m1][q2][m2]( i ) =
-                                2.0*this->M_model->scalarProduct( Z1, Z2, Row );
-                        }
-                        else
-                            M_R_Lhs0Rhs[Row][q1][m1][q2][m2]( i ) = 0;
+                        Z2->load( (boost::format("Riesz/%1%_%2%%3%") %Row %q2 %m2).str() );
+                        M_R_Lhs0Rhs[Row][q1][m1][q2][m2]( i ) =
+                            2.0*this->M_model->scalarProduct( Z1, Z2, Row );
                     } // m2 loop Rhs
                 } // q2 loop Rhs
 
                 // LHS0 LOOP ON J
                 for ( int j=0; j<N0; j++ )
                 {
-                        *Y0 = XN0->primalBasisElement(j);
-                        if ( optimize )
+                    for ( int q2=0; q2<q1; q2++ )
+                    {
+                        for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                         {
-                            for ( int q2=0; q2<q1; q2++ )
-                            {
-                                for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
-                                {
-                                    M_R_Lhs0Lhs0[Row][q1][m1][q2][m2].conservativeResize( N0, N0 );
-                                    M_R_Lhs0Lhs0[Row][q2][m2][q1][m1].conservativeResize( N0, N0 );
-                                    if ( Lhs0[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
-                                    {
-                                        Lhs0[q2][m2]->multVector( Y0, W );
-                                        W->scale( -1. );
-                                        this->M_model->l2solveSP( Z2, W, Row );
-                                        double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                                        M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = prod;
-                                        M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = prod;
-                                    }
-                                    else
-                                    {
-                                        M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = 0;
-                                        M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = 0;
-                                    }
-                                } // m2 loop Lhs0
-                            } // q2 loop Lhs0
+                            M_R_Lhs0Lhs0[Row][q1][m1][q2][m2].conservativeResize( N0, N0 );
+                            M_R_Lhs0Lhs0[Row][q2][m2][q1][m1].conservativeResize( N0, N0 );
 
-                            M_R_Lhs0Lhs0[Row][q1][m1][q1][m1].conservativeResize( N0, N0 );
-                            if ( norm1>1e-12 )
-                            {
-                                Lhs0[q1][m1]->multVector( Y0, W );
-                                W->scale(-1.);
-                                this->M_model->l2solveSP( Z2, W, Row );
-                                double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                                M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( i, j ) = prod;
-                                M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( j, i ) = prod;
-                            }
-                            else
-                            {
-                                M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( i, j ) = 0;
-                                M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( j, i ) = 0;
-                            }
-                        } //optimize
-                        else
-                        {
-                            for ( int q2=0; q2<QLhs; q2++ )
-                            {
-                                for( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
-                                {
-                                    M_R_Lhs0Lhs0[Row][q1][m1][q2][m2].conservativeResize( N0, N0 );
-                                    if ( Lhs0[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
-                                    {
-                                        Lhs0[q2][m2]->multVector( Y0, W );
-                                        W->scale( -1. );
-                                        this->M_model->l2solveSP( Z2, W, Row );
-                                        M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j )
-                                            = this->M_model->scalarProduct( Z1, Z2, Row );
-                                    }
-                                    else
-                                        M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = 0;
-                                } // m2 loop Lhs0
-                            } // q2 loop Lhs0
-                        } // !optimize
-                    } // j loop Lhs0
+                            Z2->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q2 %m2 %j).str()  );
+                            double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                            M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = prod;
+                            M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = prod;
+                        } // m2 loop Lhs0
+                    } // q2 loop Lhs0
+
+                    M_R_Lhs0Lhs0[Row][q1][m1][q1][m1].conservativeResize( N0, N0 );
+                    Z2->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q1 %m1 %j).str()  );
+
+                    double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                    M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( i, j ) = prod;
+                    M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( j, i ) = prod;
+                } // j loop Lhs0
 
                 // LHS1 LOOP ON J
                 for ( int j=0; j<N1; j++ )
                 {
-                    *Y1 = XN1->primalBasisElement(j);
                     for ( int q2=0; q2<QLhs; q2++ )
                     {
                         for( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                         {
                             M_R_Lhs0Lhs1[Row][q1][m1][q2][m2].conservativeResize( N0, N1 );
-                            if ( Lhs1[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
-                            {
-                                Lhs1[q2][m2]->multVector( Y1, W );
-                                W->scale( -1. );
-                                this->M_model->l2solveSP( Z2, W, Row );
-                                M_R_Lhs0Lhs1[Row][q1][m1][q2][m2]( i, j )
-                                    = 2.0*this->M_model->scalarProduct( Z1, Z2, Row );
-                            }
-                            else
-                                M_R_Lhs0Lhs1[Row][q1][m1][q2][m2]( i, j ) = 0;
-
+                            Z2->load( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q2 %m2 %j).str()  );
+                            M_R_Lhs0Lhs1[Row][q1][m1][q2][m2]( i, j )
+                                = 2.0*this->M_model->scalarProduct( Z1, Z2, Row );
                         } // m2 loop Lhs1
                     } // q2 loop Lhs1
                 } // j loop Lhs1
@@ -1140,66 +1130,26 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
     // LHS0 LOOP ON J
     for ( int j=N0-n_added0; j<N0; j++ )
     {
-        *X0 = XN0->primalBasisElement( j );
         for ( int q1=0; q1<QLhs; q1++ )
         {
             for ( int m1=0; m1<this->M_model->mMaxA(q1); m1++ )
             {
-                double norm1 = Lhs0[q1][m1]->linftyNorm();
-                if ( norm1>1e-12 )
-                {
-                    Lhs0[q1][m1]->multVector( X0, W );
-                    W->scale(-1.);
-                    this->M_model->l2solveSP( Z1, W, Row );
-                }
+                Z1->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q1 %m1 %j).str()  );
+
                 // LHS0 LOOP ON I
                 for ( int i=0; i<N0; i++ )
                 {
-                    *Y0 = XN0->primalBasisElement(i);
-                    if ( optimize )
+                    for ( int q2=0; q2<q1; q2++ )
                     {
-                        for ( int q2=0; q2<q1; q2++ )
+                        for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                         {
-                            for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
-                            {
-                                if ( Lhs0[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
-                                {
-                                    Lhs0[q2][m2]->multVector( Y0, W );
-                                    W->scale( -1. );
-                                    this->M_model->l2solveSP( Z2, W, Row );
-                                    double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                                    M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = prod;
-                                    M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = prod;
-                                }
-                                else
-                                {
-                                    M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = 0;
-                                    M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = 0;
-                                }
-                            } // m2 loop Lhs0
-                        } // q2 loop Lhs0
-                    } //optimize
-                    else
-                    {
-                        for ( int q2=0; q2<QLhs; q2++ )
-                        {
-                            for( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
-                            {
-                                if ( Lhs0[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
-                                {
-                                    Lhs0[q2][m2]->multVector( Y0, W );
-                                    W->scale( -1. );
-                                    this->M_model->l2solveSP( Z2, W, Row );
-                                    M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j )
-                                        = this->M_model->scalarProduct( Z1, Z2, Row );
-                                }
-                                else
-                                    M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = 0;
-                            } // m2 loop Lhs0
-                        } // q2 loop Lhs0
-                    } // !optimize
+                            Z2->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q2 %m2 %i).str()  );
+                            double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                            M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = prod;
+                            M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = prod;
+                        } // m2 loop Lhs0
+                    } // q2 loop Lhs0
                 } // i loop Lhs0
-
             } // m1 loop Lhs0
         } // q1 loop Lhs0
     } // j loop Lhs0
@@ -1207,18 +1157,11 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
     // LHS1 LOOP ON I
     for ( int i=N1-n_added1; i<N1; i++ )
     {
-        *X1 = XN1->primalBasisElement( i );
         for ( int q1=0; q1<QLhs; q1++ )
         {
             for ( int m1=0; m1<this->M_model->mMaxA(q1); m1++ )
             {
-                double norm1 = Lhs1[q1][m1]->linftyNorm();
-                if ( norm1>1e-12 )
-                {
-                    Lhs1[q1][m1]->multVector( X1, W );
-                    W->scale(-1.);
-                    this->M_model->l2solveSP( Z1, W, Row );
-                }
+                Z1->load( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q1 %m1 %i).str()  );
 
                 // RHS LOOP
                 for ( int q2=0; q2<QRhs; q2++ )
@@ -1226,82 +1169,33 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
                     for ( int m2=0; m2<this->M_model->mMaxF(0,q2); m2++ )
                     {
                         M_R_Lhs1Rhs[Row][q1][m1][q2][m2].conservativeResize(N1);
-                        if ( Fqm[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
-                        {
-                            this->M_model->l2solveSP( Z2, Fqm[q2][m2], Row );
-                            M_R_Lhs1Rhs[Row][q1][m1][q2][m2]( i ) = 2.0*this->M_model->scalarProduct( Z1, Z2, Row );
-                        }
-                        else
-                            M_R_Lhs1Rhs[Row][q1][m1][q2][m2]( i ) = 0;
+                        Z2->load( (boost::format("Riesz/%1%_%2%%3%") %Row %q2 %m2).str() );
+                        M_R_Lhs0Rhs[Row][q1][m1][q2][m2]( i ) =
+                            2.0*this->M_model->scalarProduct( Z1, Z2, Row );
                     } // m2 loop Rhs
                 } // q2 loop Rhs
 
                 // LHS1 LOOP ON J
                 for ( int j=0; j<N1; j++ )
                 {
-                    *Y1 = XN1->primalBasisElement(j);
-                    if ( optimize )
+                    for ( int q2=0; q2<q1; q2++ )
                     {
-                        for ( int q2=0; q2<q1; q2++ )
+                        for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                         {
-                            for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
-                            {
-                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2].conservativeResize( N1, N1 );
-                                M_R_Lhs1Lhs1[Row][q2][m2][q1][m1].conservativeResize( N1, N1 );
-                                if ( Lhs1[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
-                                {
-                                    Lhs1[q2][m2]->multVector( Y1, W );
-                                    W->scale( -1. );
-                                    this->M_model->l2solveSP( Z2, W, Row );
-                                    double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = prod;
-                                    M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = prod;
-                                }
-                                else
-                                {
-                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = 0;
-                                    M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = 0;
-                                }
-                            } // m2 loop Lhs0
-                        } // q2 loop Lhs0
-                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1].conservativeResize( N1, N1 );
-                        if ( norm1>1e-12 )
-                        {
-                            Lhs1[q1][m1]->multVector( Y1, W );
-                            W->scale(-1.);
-                            this->M_model->l2solveSP( Z2, W, Row );
+                            M_R_Lhs1Lhs1[Row][q1][m1][q2][m2].conservativeResize( N1, N1 );
+                            M_R_Lhs1Lhs1[Row][q2][m2][q1][m1].conservativeResize( N1, N1 );
+                            Z2->load( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q2 %m2 %j).str()  );
                             double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = prod;
-                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = prod;
-                        }
-                        else
-                        {
-                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = 0;
-                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = 0;
-                        }
-                    } //optimize
-                    else
-                    {
-                        for ( int q2=0; q2<QLhs; q2++ )
-                        {
-                            for( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
-                            {
-                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2].conservativeResize( N1, N1 );
-                                if ( Lhs1[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
-                                {
-                                    Lhs1[q2][m2]->multVector( Y1, W );
-                                    W->scale( -1. );
-                                    this->M_model->l2solveSP( Z2, W, Row );
-                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j )
-                                        = this->M_model->scalarProduct( Z1, Z2, Row );
-                                }
-                                else
-                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = 0;
-                            } // m2 loop Lhs1
-                        } // q2 loop Lhs1
-                    } // !optimize
+                            M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = prod;
+                            M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = prod;
+                        } // m2 loop Lhs1
+                    } // q2 loop Lhs1
+                    M_R_Lhs1Lhs1[Row][q1][m1][q1][m1].conservativeResize( N1, N1 );
+                    Z2->load( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q1 %m1 %j).str()  );
+                    double prod = this->M_model->scalarProduct( Z1, Z2, Row );
+                    M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = prod;
+                    M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = prod;
                 } // j loop Lhs1
-
             } // m1 loop Lhs1
         } // q1 loop Lhs1
     } // i loop Lhs1
@@ -1310,105 +1204,40 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
     // LHS1 LOOP ON J
     for ( int j=N1-n_added1; j<N1; j++ )
     {
-        *X1 = XN1->primalBasisElement( j );
         for ( int q1=0; q1<QLhs; q1++ )
         {
             for ( int m1=0; m1<this->M_model->mMaxA(q1); m1++ )
             {
-                double norm1 = Lhs1[q1][m1]->linftyNorm();
-                if ( norm1>1e-12 )
-                {
-                    Lhs1[q1][m1]->multVector( X1, W );
-                    W->scale(-1.);
-                    this->M_model->l2solveSP( Z1, W, Row );
-                }
+                Z1->load( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q1 %m1 %j).str()  );
 
                 // LHS0 LOOP ON I
                 for ( int i=0; i<N0; i++ )
                 {
-                    *Y0 = XN0->primalBasisElement( i );
                     for ( int q2=0; q2<QLhs; q2++ )
                     {
                         for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                         {
-                            if ( Lhs0[q2][m2]->linftyNorm()>1e-12  && norm1>1e-12 )
-                            {
-                                Lhs0[q2][m2]->multVector( Y0, W );
-                                W->scale(-1.);
-                                this->M_model->l2solveSP( Z2, W, Row );
-                                M_R_Lhs0Lhs1[Row][q2][m2][q1][m1]( i, j )
-                                    = 2.0*this->M_model->scalarProduct( Z1, Z2, Row );
-                            }
-                            else
-                                M_R_Lhs0Lhs1[Row][q2][m2][q1][m1]( i, j ) = 0;
-                        }
-                    } // q1 loop Lhs0
+                            Z2->load( (boost::format("Riesz/%1%0_%2%%3%_%4%") %Row %q2 %m2 %i).str()  );
+                            M_R_Lhs0Lhs1[Row][q2][m2][q1][m1]( i, j )
+                                = 2.0*this->M_model->scalarProduct( Z1, Z2, Row );
+                        } // m2 loop Lhs0
+                    } // q2 loop Lhs0
                 } // i loop Lhs0
 
                 // LHS1 LOOP ON I
                 for ( int i=0; i<N1; i++ )
                 {
-                    *Y1 = XN1->primalBasisElement(i);
-                    if ( optimize )
+                    for ( int q2=0; q2<q1; q2++ )
                     {
-                        for ( int q2=0; q2<q1; q2++ )
+                        for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
                         {
-                            for ( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
-                            {
-                                if ( Lhs1[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
-                                {
-                                    Lhs1[q2][m2]->multVector( Y1, W );
-                                    W->scale( -1. );
-                                    this->M_model->l2solveSP( Z2, W, Row );
-                                    double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = prod;
-                                    M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = prod;
-                                }
-                                else
-                                {
-                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = 0;
-                                    M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = 0;
-                                }
-                            } // m2 loop Lhs1
-                        } // q2 loop Lhs1
-
-                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1].conservativeResize( N1, N1 );
-                        if ( norm1>1e-12 )
-                        {
-                            Lhs1[q1][m1]->multVector( Y1, W );
-                            W->scale(-1.);
-                            this->M_model->l2solveSP( Z2, W, Row );
+                            Z2->load( (boost::format("Riesz/%1%1_%2%%3%_%4%") %Row %q2 %m2 %i).str()  );
                             double prod = this->M_model->scalarProduct( Z1, Z2, Row );
-                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = prod;
-                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = prod;
-                        }
-                        else
-                        {
-                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = 0;
-                            M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = 0;
-                        }
-                    } //optimize
-                    else
-                    {
-                        for ( int q2=0; q2<QLhs; q2++ )
-                        {
-                            for( int m2=0; m2<this->M_model->mMaxA(q2); m2++ )
-                            {
-                                if ( Lhs1[q2][m2]->linftyNorm()>1e-12 && norm1>1e-12 )
-                                {
-                                    Lhs1[q2][m2]->multVector( Y1, W );
-                                    W->scale( -1. );
-                                    this->M_model->l2solveSP( Z2, W, Row );
-                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j )
-                                        = this->M_model->scalarProduct( Z1, Z2, Row );
-                                }
-                                else
-                                    M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = 0;
-                            } // m2 loop Lhs1
-                        } // q2 loop Lhs1
-                    } // !optimize
+                            M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = prod;
+                            M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = prod;
+                        } // m2 loop Lhs1
+                    } // q2 loop Lhs1
                 } // j loop Lhs1
-
             } // m1 loop Lhs1
         } // q1 loop Lhs1
     } // j loop Lhs1
