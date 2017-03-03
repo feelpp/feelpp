@@ -23,7 +23,7 @@
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
 
-#define USE_SAME_MAT 1
+//#define USE_SAME_MAT 1
 
 namespace Feel {
 
@@ -603,13 +603,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
     bbf( 1_c, 1_c ) += integrate(_range=boundaryfaces(M_mesh),
                                  _expr=(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
 
-
-    // (1/delta_t p, w)_Omega  [only if it is not stationary]
-    if ( !this->isStationary() ) {
-        bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
-                                     _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
-    }
-
+		
     // <-tau phat, w>_Gamma\Gamma_I
     bbf( 1_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
                                  _expr=-tau_constant * idt(phat) *
@@ -659,18 +653,19 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
                                    _expr=(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
 
 
-     // (1/delta_t p, w)_Omega  [only if it is not stationary]
-      if ( !this->isStationary() ) {
-         bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
+    /*/ (1/delta_t p, w)_Omega  [only if it is not stationary]	
+	if ( !this->isStationary() ) 
+	{
+    	bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
                                       _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
-     }
+    }*/
 
-     // <-tau phat, w>_Gamma\Gamma_I
-      bbf( 1_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
+    // <-tau phat, w>_Gamma\Gamma_I
+    bbf( 1_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
                                   _expr=-tau_constant * idt(phat) *
                                      ( leftface( pow(idv(H),M_tau_order)*id(w) )+
                                      rightface( pow(idv(H),M_tau_order)*id(w) )));
-      bbf( 1_c, 2_c ) += integrate(_range=M_gammaMinusIntegral,
+    bbf( 1_c, 2_c ) += integrate(_range=M_gammaMinusIntegral,
                                   _expr=-tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
 
      // <j.n,mu>_Omega/Gamma
@@ -686,6 +681,8 @@ template<int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleNonCstPart()
 {
 #ifndef USE_SAME_MAT
+	// M_A->zero();
+	M_A_cst->close();
 	// copy constant parts of the matrix
     MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
 #endif
@@ -705,6 +702,9 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::updateConductivityTerm(Expr<ExprT> e
 {
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
+    auto p = M_Wh->element( "p" );
+    auto w = M_Wh->element( "w" );
+
 #ifdef USE_SAME_MAT
     auto bbf = blockform2( *M_ps, M_A_cst);
 #else
@@ -716,6 +716,12 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::updateConductivityTerm(Expr<ExprT> e
     else
         bbf(0_c,0_c) += integrate(_quad=_Q<expr_order>(),  _range=markedelements(M_mesh, marker), _expr=inner(idt(u),id(v))/expr);
 
+	// (1/delta_t p, w)_Omega  [only if it is not stationary]
+    if ( !this->isStationary() ) {
+        bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
+                                     _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
+    }
+
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -724,6 +730,8 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::updateConductivityTerm( bool isNL)
 {
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
+    auto p = M_Wh->element( "p" );
+    auto w = M_Wh->element( "w" );
 
 #ifdef USE_SAME_MAT
     auto bbf = blockform2( *M_ps, M_A_cst);
@@ -750,6 +758,13 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::updateConductivityTerm( bool isNL)
                                       _expr=(trans(idt(u))*id(v))/cond );
         }
     }
+    
+	// (1/delta_t p, w)_Omega  [only if it is not stationary]
+    if ( !this->isStationary() ) {
+        bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
+                                     _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
+    }
+
 }
 
 
@@ -759,13 +774,13 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRHS()
 {
     M_F->zero();
 
-    // (p_old,w)_Omega
+    // (p_old,w)_Omega	
     if ( !this->isStationary() )
 	{
 		auto bdf_poly = M_bdf_mixedpoisson->polyDeriv();
         this->assemblePotentialRHS( -idv(bdf_poly) , "");
 	}
-
+	
     auto itField = modelProperties().boundaryConditions().find( "potential");
     if ( itField != modelProperties().boundaryConditions().end() )
     {
@@ -1135,11 +1150,7 @@ template<int Dim, int Order, int G_Order, int E_Order>
 void 
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleDirichlet( std::string marker)
 {
-#ifdef USE_SAME_MAT
     auto bbf = blockform2( *M_ps, M_A_cst);
-#else
-    auto bbf = blockform2( *M_ps, M_A);
-#endif
 
     auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
@@ -1154,11 +1165,7 @@ template<int Dim, int Order, int G_Order, int E_Order>
 void 
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleNeumann( std::string marker)
 {
-#ifdef USE_SAME_MAT
     auto bbf = blockform2( *M_ps, M_A_cst);
-#else
-    auto bbf = blockform2( *M_ps, M_A);
-#endif
 
     auto u = M_Vh->element( "u" );
     auto p = M_Wh->element( "p" );
@@ -1194,11 +1201,7 @@ template<typename ExprT>
 void 
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT> expr1, Expr<ExprT> expr2, std::string marker)
 {
-#ifdef USE_SAME_MAT
     auto bbf = blockform2( *M_ps, M_A_cst);
-#else
-    auto bbf = blockform2( *M_ps, M_A);
-#endif
 
     auto blf = blockform1( *M_ps, M_F );
     auto u = M_Vh->element( "u" );
@@ -1239,11 +1242,7 @@ void
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleIBC( int i, std::string markerOpt )
 {
 
-#ifdef USE_SAME_MAT
     auto bbf = blockform2( *M_ps, M_A_cst);
-#else
-    auto bbf = blockform2( *M_ps, M_A);
-#endif
 
     auto u = M_Vh->element( "u" );
     auto p = M_Wh->element( "p" );
