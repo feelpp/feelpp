@@ -93,7 +93,7 @@ set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
 
 if ( FEELPP_MINIMAL_BUILD )
   add_custom_target(install-feelpp-lib
-    DEPENDS contrib tools feelpp 
+    DEPENDS contrib tools feelpp
     COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
     )
 else()
@@ -240,3 +240,17 @@ add_custom_target(install-feelpp-apps
   install-apps-models-solid
   install-apps-models-fsi
 )
+
+# install feel++ interpreter
+if( FEELPP_ENABLE_INTERPRETER )
+    # We create the feel++ interpreter bash script in the binary dir.
+    set( CLING_INSTALL_PREFIX ${CMAKE_BINARY_DIR} )
+    include( ${CMAKE_SOURCE_DIR}/cmake/modules/feelpp.interpreter.bash.cmake )
+    # We recreate the feel++ interpreter bash script for the cmake prefix.
+    install( CODE
+        "
+        set( CLING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+        include( ${CMAKE_SOURCE_DIR}/cmake/modules/feelpp.interpreter.bash.cmake )
+        "
+        )
+endif()
