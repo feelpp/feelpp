@@ -361,8 +361,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
                 //M_postProcessUserFieldExported.insert( o );
         //}
     //}
-
-    super_type::initPostProcess();
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
