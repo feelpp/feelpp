@@ -1,6 +1,6 @@
 # - Find Feel
 
-INCLUDE(CustomPCH)
+INCLUDE(feelpp.precompiled.headers)
 INCLUDE(ParseArguments)
 
 # list the subdicrectories of directory 'curdir'
@@ -139,7 +139,7 @@ macro(feelpp_add_application)
     target_link_libraries( ${execname} ${FEELPP_LIBRARY} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
   endif()
 
-  if( FEELPP_ENABLE_PCH_FOR_APPLICATIONS )
+  if( FEELPP_ENABLE_PCH_APPLICATIONS )
     # add several headers in a list form "one.hpp;two.hpp"
     add_precompiled_header( ${execname} ${FEELPP_APP_SRCS} "feel/feel.hpp")
   endif()

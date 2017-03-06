@@ -1524,6 +1524,20 @@ else()
 endif()
 
 
+# Enable precompiled headers (PCH)
+option( FEELPP_ENABLE_PCH "Enable precompiled headers (pch)" OFF )
+option( FEELPP_ENABLE_PCH_APPLICATIONS "Enable precompiled headers (pch) for applications" OFF )
+
+# Enable Feel++ interpreter using cling.
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter (cling)" OFF )
+else()
+    option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter (cling)" ON )
+endif()
+
+if( FEELPP_ENABLE_INTERPRETER )
+    find_package(Cling)
+endif()
 
 LINK_DIRECTORIES(
   ${VTK_LIBRARY_DIRS}

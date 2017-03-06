@@ -5,6 +5,8 @@ build/
 *.log
 *.orig
 *.vim
+*.pch
+*.gch
 /#CTestConfig.cmake#
 /#ctest.make#
 /.DS_Store
