@@ -58,8 +58,8 @@ int main(int argc, char *argv[])
 
     lc_type LC ;
     auto mesh = loadMesh( _mesh=new lc_type::mesh_type );
-    decltype( IPtr( _domainSpace=Pdh<FEELPP_ORDER>(mesh), _imageSpace=Pdh<1>(mesh) ) ) Idh ;
-    decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<1>(mesh) ) ) Idhv;
+    decltype( IPtr( _domainSpace=Pdh<FEELPP_ORDER>(mesh), _imageSpace=Pdh<FEELPP_ORDER>(mesh) ) ) Idh ;
+    decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<FEELPP_ORDER>(mesh) ) ) Idhv;
 
     LC.init(mesh);
     
